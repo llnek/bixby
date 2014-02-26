@@ -1,0 +1,39 @@
+;; This library is distributed in  the hope that it will be useful but without
+;; any  warranty; without  even  the  implied  warranty of  merchantability or
+;; fitness for a particular purpose.
+;; The use and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+;; can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any  fashion, you are agreeing to be bound by the
+;; terms of this license. You  must not remove this notice, or any other, from
+;; this software.
+;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+
+
+
+(ns testcljc.util.codes)
+
+(use '[clojure.test])
+(require '[comzotohlabscljc.util.countrycode :as CC])
+(require '[comzotohlabscljc.util.usastate :as SC])
+
+(deftest testutil-codes
+
+(is (= (CC/find-country "AU") (CC/find-country "au")))
+(is (= "Australia" (CC/find-country "AU")))
+(is (= "AU" (CC/find-code "Australia")))
+(is (false? (CC/usa? "aa")))
+(is (and (CC/usa? "US") (= (CC/usa? "US") (CC/usa? "us"))))
+(is (> (count (CC/list-codes)) 0))
+
+(is (= (SC/find-state "CA") (SC/find-state "ca")))
+(is (= "California" (SC/find-state "ca")))
+(is (= "CA" (SC/find-code "California")))
+(is (> (count (SC/list-codes)) 0))
+
+)
+
+(def ^:private codes-eof nil)
+
+;;(clojure.test/run-tests 'testcljc.util.codes)
+

@@ -1,0 +1,172 @@
+#!/bin/bash
+
+splash_crawford() {
+
+echo "  _____ __  _   ____  ____   ___"
+echo " / ___/|  |/ ] /    ||    \ /   \\"
+echo "(   \_ |  ' / |  o  ||  D  )     |"
+echo " \__  ||    \ |     ||    /|  O  |"
+echo " /  \ ||     ||  _  ||    \|     |"
+echo " \    ||  .  ||  |  ||  .  \     |"
+echo "  \___||__|\_||__|__||__|\_|\___/"
+
+}
+
+splash_crawford2() {
+  echo ""
+}
+
+splash_bubble() {
+
+echo "  _   _   _   _   _"
+echo " / \ / \ / \ / \ / \\"
+echo "( S | K | A | R | O )"
+echo " \_/ \_/ \_/ \_/ \_/"
+
+}
+
+splash() {
+  echo ""
+  splash_crawford
+  #splash_bubble
+  #echo ""
+  #echo -n "Version: "
+  #cat $SKARO_HOME/VERSION
+  echo ""
+  echo ""
+}
+
+### osx sux, has no proper readlink.
+check_darwin() {
+  SKARO_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
+  SKARO_BIN=$( dirname $SKARO_BIN )
+  SKARO_HOME=$( dirname $SKARO_BIN )
+}
+check_linux() {
+  SKARO_BIN=$(dirname $(readlink -f $0))/../
+  SKARO_HOME=$(readlink -f $SKARO_BIN)
+  SKARO_BIN=$SKARO_HOME/bin
+}
+
+OSTYPE=`uname -s`
+CWD=`pwd`
+
+if [ "$OSTYPE" = "Darwin" ]; then
+  check_darwin
+else
+  check_linux
+fi
+
+
+if [ "$JAVA_HOME" = "" ] ; then
+  echo "Attempt to reference standard java location on system: /usr/bin."
+  #echo "Please set JAVA_HOME"
+  #exit -1
+  JAVA_HOME=/usr
+fi
+
+build_all() {
+  cd apps
+  for a in `ls`
+  do
+    cd  $CWD
+    ./bin/skaro build $a
+  done
+}
+
+
+JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
+DBGOPTS="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
+PATCHDIR=$SKARO_HOME/patch/*
+DISTRO=$SKARO_HOME/dist/exec/*
+BOOT=$SKARO_HOME/dist/boot/*
+LIBDIR=$SKARO_HOME/lib/*
+BCP=$BOOT:$PATCHDIR:$DISTRO:$LIBDIR:$CLASSPATH
+
+JAVA_CMD=$JAVA_HOME/bin/java
+BG=false
+
+VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
+CLDR=" -Djava.system.class.loader=com.zotohlabs.gallifrey.loaders.ExecClassLoader"
+MAINCZ=comzotohlabscljc.tardis.etc.core
+
+LIBP="-Djava.library.path=$SKARO_HOME/bin"
+#48G
+#VMARGS="-Xms8192m -Xmx49152m"
+#36G
+#VMARGS="-Xms8192m -Xmx36864m"
+#32G
+#VMARGS="-Xms8192m -Xmx32768m"
+VMARGS="-Xms512m -Xmx7096m $VMXRGS"
+LOG4J=etc/log/logback.xml
+L4JFILE=${SKARO_HOME}/$LOG4J
+L4J=file:${L4JFILE}
+LOGCFG=$L4J
+#LOGREF="-Dlogback.configurationFile=$LOGCFG -Dlogback.ContextSelector=com.zotohlabs.frwk.util.LogbackCtxSelector"
+LOGREF="-Dlogback.configurationFile=$LOGCFG"
+BASEDIR="-Dskaro.home=$SKARO_HOME"
+KPORT=4444
+KILLPORT="-Dskaro.kill.port=$KPORT"
+NETTY=-Dio.netty.eventLoopThreads=16
+
+show_proc() {
+    pid=$( ps -ef | grep comzotohlabscljc.tardis.etc.core | grep -v grep | awk '{print $2}' )
+    if [ -n "$pid" ]; then
+      echo "Gallifrey is running with process-id: ${pid}."
+    else
+      echo "Gallifrey is not running."
+    fi
+}
+stop_proc() {
+    pid=$( ps -ef | grep comzotohlabscljc.tardis.etc.core | grep -v grep | awk '{print $2}' )
+    if [ -n "$pid" ]; then
+      #kill $pid
+      cd /tmp
+      wget http://127.0.0.1:$KPORT/kill9 2>&1 > /dev/null
+      cd $CWD
+    fi
+}
+
+if [ ! -e ${L4JFILE} ]; then
+    LOGREF=
+fi
+
+if [ $# -eq 2 ] ; then
+    if [ "$1" = "start" -a "$2" = "bg" ]; then
+       BG=true
+    fi
+fi
+
+if [ $# -eq 1 -a "$1" = "debug" ]; then
+  echo "remote debug mode"
+else
+  DBGOPTS=
+fi
+
+if [ $# -eq 1 -a "$1" = "stop" ]; then
+  echo "stopping skaro..."
+  stop_proc
+  exit $?
+fi
+
+if [ $# -eq 1 -a "$1" = "status" ]; then
+  show_proc
+  exit 0
+fi
+
+if [ $# -eq 1 -a "$1" = "build-all" ]; then
+  build_all
+  exit 0
+fi
+
+
+#CMDLINE="$JAVA_CMD -cp $BCP $DBGOPTS $LOGREF $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ "
+cd $SKARO_BIN
+if [ "$BG" = "true" ]; then
+  nohup $JAVA_CMD $VMARGS -cp $BCP $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ &
+else
+  splash
+  $JAVA_CMD $VMARGS -cp $BCP $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@
+fi
+cd $CWD
+exit 0
