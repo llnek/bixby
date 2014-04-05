@@ -331,6 +331,7 @@ target (packAll: '') {
   mkdir (dir: "${packDir}/tmp")
   tar (destfile: "${distribDir}/${PID_DISTRO}-${buildVersion}.tar.gz", compression: 'gzip') {
     tarfileset (dir: "${packDir}") {
+      exclude (name: 'apps/**')
       exclude (name: 'bin/**')
     }
     tarfileset (dir: "${packDir}", filemode: '755') {

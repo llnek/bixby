@@ -23,23 +23,24 @@
     <dependency org="bouncycastle" name="bcprov-jdk15on" rev="150" conf="libjar->default"/>
     <dependency org="bouncycastle" name="bcmail-jdk15on" rev="150" conf="libjar->default"/>
     <dependency org="bouncycastle" name="bcpkix-jdk15on" rev="150" conf="libjar->default"/>
-    <dependency org="org.jasypt" name="jasypt" rev="1.9.1" conf="libjar->default"/>
+    <dependency org="org.jasypt" name="jasypt" rev="1.9.2" conf="libjar->default"/>
     <dependency org="org.mindrot" name="jbcrypt" rev="0.3m" conf="libjar->default"/>
 
     <!-- logging -->
-    <dependency org="org.slf4j" name="slf4j-api" rev="1.7.5" conf="libjar->default"/>
+    <dependency org="org.slf4j" name="slf4j-api" rev="1.7.7" conf="libjar->default"/>
     <dependency org="log4j" name="log4j" rev="1.2.17" conf="libjar->default"/>
 
-    <dependency org="ch.qos.logback" name="logback-classic" rev="1.0.13" conf="libjar->default"/>
-    <dependency org="ch.qos.logback" name="logback-core" rev="1.0.13" conf="libjar->default"/>
+    <dependency org="ch.qos.logback" name="logback-classic" rev="1.1.2" conf="libjar->default"/>
+    <dependency org="ch.qos.logback" name="logback-core" rev="1.1.2" conf="libjar->default"/>
 
     <!-- miscellaneous -->
     <dependency org="net.sourceforge.jregex" name="jregex" rev="1.2_01"  conf="libjar->default"/>
-    <dependency org="net.sf.jopt-simple" name="jopt-simple" rev="4.5" conf="libjar->default"/>
-    <dependency org="com.google.guava" name="guava" rev="15.0" conf="libjar->default"/>
-    <dependency org="com.google.code.findbugs" name="jsr305" rev="2.0.2" conf="libjar->default"/>
+    <dependency org="net.sf.jopt-simple" name="jopt-simple" rev="4.6" conf="libjar->default"/>
+    <dependency org="com.google.guava" name="guava" rev="16.0.1" conf="libjar->default"/>
+    <dependency org="com.google.code.findbugs" name="jsr305" rev="2.0.3" conf="libjar->default"/>
     <dependency org="joda-time" name="joda-time" rev="2.3" conf="libjar->default"/>
-    <dependency org="org.zeroturnaround" name="zt-zip" rev="1.6" conf="libjar->default"/>
+    <dependency org="org.zeroturnaround" name="zt-exec" rev="1.6" conf="libjar->default"/>
+    <dependency org="org.zeroturnaround" name="zt-zip" rev="1.7" conf="libjar->default"/>
     <dependency org="org.apache.axis" name="axis" rev="1.4" conf="libjar->default"/>
     <dependency org="org.apache.axis" name="axis-jaxrpc" rev="1.4" conf="libjar->default"/>
 
@@ -47,14 +48,13 @@
     <dependency org="org.jdom" name="jdom2" rev="2.0.5" conf="libjar->default"/>
 
     <!-- JSON
-    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="2.1.1" conf="libjar->default"/>
-    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.1.1" conf="libjar->default"/>
-    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="2.1.1" conf="libjar->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="2.3.2" conf="libjar->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.3.2" conf="libjar->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="2.3.2" conf="libjar->default"/>
     -->
 
-
     <!-- apache commons -->
-    <dependency org="org.apache.commons" name="commons-lang3" rev="3.1" conf="libjar->default"/>
+    <dependency org="org.apache.commons" name="commons-lang3" rev="3.3" conf="libjar->default"/>
     <dependency org="commons-net" name="commons-net" rev="3.3" conf="libjar->default"/>
     <dependency org="commons-io" name="commons-io" rev="2.4" conf="libjar->default"/>
     <!--
@@ -64,24 +64,24 @@
     -->
     <dependency org="commons-logging" name="commons-logging" rev="1.1.3" conf="libjar->default"/>
     <dependency org="commons-email" name="commons-email" rev="1.3.2" conf="libjar->default"/>
-    <dependency org="commons-codec" name="commons-codec" rev="1.8" conf="libjar->default"/>
-    <dependency org="commons-fileupload" name="commons-fileupload" rev="1.3" conf="libjar->default"/>
+    <dependency org="commons-codec" name="commons-codec" rev="1.9" conf="libjar->default"/>
+    <dependency org="commons-fileupload" name="commons-fileupload" rev="1.3.1" conf="libjar->default"/>
     <dependency org="commons-dbutils" name="commons-dbutils" rev="1.5" conf="libjar->default"/>
-    <dependency org="com.sun.mail" name="javamail" rev="1.5.0" conf="libjar->default"/>
+    <dependency org="com.sun.mail" name="javax.mail" rev="1.5.1" conf="libjar->default"/>
 
     <!-- ant -->
     <dependency org="org.apache.ivy" name="ivy" rev="2.3.0"  conf="libjar->default"/>
-    <dependency org="org.apache.ant" name="ant" rev="1.9.2"  conf="libjar->default"/>
-    <dependency org="org.apache.ant" name="ant-launcher" rev="1.9.2"  conf="libjar->default"/>
-    <dependency org="org.apache.ant" name="ant-junit4" rev="1.9.2"  conf="libjar->default"/>
-    <dependency org="org.apache.ant" name="ant-junit" rev="1.9.2"  conf="libjar->default"/>
-    <dependency org="org.apache.ant" name="ant-apache-log4j" rev="1.9.2"  conf="libjar->default">
+    <dependency org="org.apache.ant" name="ant" rev="1.9.3"  conf="libjar->default"/>
+    <dependency org="org.apache.ant" name="ant-launcher" rev="1.9.3"  conf="libjar->default"/>
+    <dependency org="org.apache.ant" name="ant-junit4" rev="1.9.3"  conf="libjar->default"/>
+    <dependency org="org.apache.ant" name="ant-junit" rev="1.9.3"  conf="libjar->default"/>
+    <dependency org="org.apache.ant" name="ant-apache-log4j" rev="1.9.3"  conf="libjar->default">
       <exclude org="log4j"/>
     </dependency>
     <dependency org="ant-contrib" name="ant-contrib" rev="1.0b3"  conf="libjar->default">
       <exclude org="ant"/>
     </dependency>
-    <dependency org="org.codehaus.gant" name="gant_groovy2.1" rev="1.9.9"  conf="libjar->default"/>
+    <dependency org="org.codehaus.gant" name="gant_groovy2.2" rev="1.9.10"  conf="libjar->default"/>
 
     <!-- jdbc stuff
     <dependency org="com.j256.ormlite" name="ormlite-core" rev="4.42" conf="libjar->default"/>
@@ -93,38 +93,39 @@
     <dependency org="com.jolbox" name="bonecp" rev="0.8.0.RELEASE" conf="libjar->default"/>
 
     <!-- network stuff -->
-    <dependency org="org.apache.httpcomponents" name="httpcore-nio" rev="4.3" conf="libjar->default"/>
-    <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.3" conf="libjar->default"/>
-    <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.3.1" conf="libjar->default"/>
-    <dependency org="io.netty" name="netty" rev="3.8.0.Final" conf="libjar->default"/>
+    <dependency org="org.apache.httpcomponents" name="httpcore-nio" rev="4.3.2" conf="libjar->default"/>
+    <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.3.2" conf="libjar->default"/>
+    <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.3.3" conf="libjar->default"/>
+    <dependency org="io.netty" name="netty" rev="3.9.0.Final" conf="libjar->default"/>
     <!--
+    <dependency org="io.netty" name="netty" rev="4.0.18.Final" conf="libjar->default"/>
     <dependency org="org.eclipse.jetty.orbit" name="javax.servlet" rev="3.0.0.v201112011016"  conf="libjar->default">
       <artifact name="javax.servlet" type="orbit" ext="jar"/>
     </dependency>
     -->
-    <dependency org="org.eclipse.jetty" name="jetty-xml" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-util" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-security" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty.websocket" name="websocket-api" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty.websocket" name="websocket-common" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty.websocket" name="websocket-servlet" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty.websocket" name="websocket-client" rev="9.1.0.v20131115"  conf="libjar->default"/>
-    <dependency org="org.eclipse.jetty.websocket" name="websocket-server" rev="9.1.0.v20131115"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-xml" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-continuation" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-util" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-security" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-webapp" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty.websocket" name="websocket-api" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty.websocket" name="websocket-common" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty.websocket" name="websocket-servlet" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty.websocket" name="websocket-client" rev="9.1.3.v20140225"  conf="libjar->default"/>
+    <dependency org="org.eclipse.jetty.websocket" name="websocket-server" rev="9.1.3.v20140225"  conf="libjar->default"/>
 
     <!-- languages -->
-    <dependency org="org.codehaus.groovy" name="groovy-all" rev="2.2.1"  conf="libjar->default"/>
-    <dependency org="org.scala-lang" name="scala-library" rev="2.10.3"  conf="libjar->default"/>
-    <dependency org="org.scala-lang" name="scala-compiler" rev="2.10.3"  conf="libjar->default"/>
+    <dependency org="org.codehaus.groovy" name="groovy-all" rev="2.2.2"  conf="libjar->default"/>
+    <dependency org="org.scala-lang" name="scala-library" rev="2.10.4"  conf="libjar->default"/>
+    <dependency org="org.scala-lang" name="scala-compiler" rev="2.10.4"  conf="libjar->default"/>
     <dependency org="com.sun.tools" name="tools" rev="1.7.0"  conf="libjar->default"/>
     <dependency org="javassist" name="javassist" rev="3.12.1.GA"  conf="libjar->default"/>
 
     <!-- templates -->
-    <dependency org="com.github.spullara.mustache.java" name="compiler" rev="0.8.9"  conf="libjar->default"/>
+    <dependency org="com.github.spullara.mustache.java" name="compiler" rev="0.8.14"  conf="libjar->default"/>
     <dependency org="org.fusesource.scalate" name="scalate-core_2.10" rev="1.6.1"  conf="libjar->default"/>
     <dependency org="org.freemarker" name="freemarker" rev="2.3.20"  conf="libjar->default"/>
 
@@ -133,12 +134,12 @@
     </dependency>
 
     <dependency org="javax" name="geronimo-jms_1.1_spec" rev="1.1.1" conf="libjar->default"/>
-    <dependency org="com.h2database" name="h2" rev="1.3.174" conf="libjar->default"/>
-    <dependency org="org.postgresql" name="postgresql" rev="9.3-1100.jdbc41" conf="libjar->default"/>
+    <dependency org="com.h2database" name="h2" rev="1.3.175" conf="libjar->default"/>
+    <dependency org="org.postgresql" name="postgresql" rev="9.3-1101.jdbc41" conf="libjar->default"/>
     <!--
     <dependency org="com.mysql" name="mysql-connector-java" rev="5.1.23-bin" conf="libjar->default"/>
     -->
-    <dependency org="net.sf.ehcache" name="ehcache" rev="2.7.5" conf="libjar->default"/>
+    <dependency org="net.sf.ehcache" name="ehcache" rev="2.8.1" conf="libjar->default"/>
 
 
     <!--
@@ -149,22 +150,23 @@
          -->
 
     <!-- clojure  -->
-    <dependency org="org.clojure" name="math.numeric-tower" rev="0.0.2" conf="libjar->default"/>
+    <dependency org="org.clojure" name="math.numeric-tower" rev="0.0.4" conf="libjar->default"/>
     <dependency org="org.clojure" name="math.combinatorics" rev="0.0.7" conf="libjar->default"/>
     <dependency org="org.clojure" name="tools.logging" rev="0.2.6" conf="libjar->default"/>
     <dependency org="org.clojure" name="data.codec" rev="0.1.0" conf="libjar->default"/>
-    <dependency org="org.clojure" name="java.jdbc" rev="0.3.0" conf="libjar->default"/>
+    <dependency org="org.clojure" name="java.jdbc" rev="0.3.3" conf="libjar->default"/>
+    <dependency org="org.clojure" name="java.data" rev="0.1.1" conf="libjar->default"/>
     <dependency org="org.clojure" name="java.jmx" rev="0.2.0" conf="libjar->default"/>
-    <dependency org="org.clojure" name="data.json" rev="0.2.3" conf="libjar->default"/>
+    <dependency org="org.clojure" name="data.json" rev="0.2.4" conf="libjar->default"/>
     <dependency org="org.clojure" name="data.xml" rev="0.0.7" conf="libjar->default"/>
-    <dependency org="org.clojure" name="clojure" rev="1.5.1" conf="libjar->default"/>
-    <dependency org="org.clojure" name="clojurescript" rev="0.0-2120" conf="libjar->default"/>
+    <dependency org="org.clojure" name="clojure" rev="1.6.0" conf="libjar->default"/>
+    <dependency org="org.clojure" name="clojurescript" rev="0.0-2197" conf="libjar->default"/>
 
-    <dependency org="org.apache.shiro" name="shiro-core" rev="1.2.2" conf="libjar->default"/>
+    <dependency org="org.apache.shiro" name="shiro-core" rev="1.2.3" conf="libjar->default"/>
     <dependency org="rhino" name="js" rev="1.7R2" conf="libjar->default"/>
 
     <!-- testing -->
-    <dependency org="org.scalatest" name="scalatest_2.10" rev="2.0"  conf="libjar->default"/>
+    <dependency org="org.scalatest" name="scalatest_2.10" rev="2.1.0"  conf="libjar->default"/>
     <dependency org="net.mikera" name="cljunit" rev="0.3.0" conf="libjar->default"/>
     <dependency org="junit" name="junit" rev="4.11"  conf="libjar->default"/>
 

@@ -91,7 +91,7 @@
   JcaX509v3CertificateBuilder))
 (import '(org.bouncycastle.cms CMSProcessableByteArray
   CMSSignedDataGenerator CMSSignedGenerator))
-(import '(org.bouncycastle.cms.jcajce JcaSignerInfoGeneratorBuilder))
+(import '(org.bouncycastle.cms.jcajce ZlibCompressor JcaSignerInfoGeneratorBuilder))
 (import '(org.bouncycastle.openssl PEMParser))
 (import '(org.bouncycastle.operator
   DigestCalculatorProvider ContentSigner))
@@ -623,8 +623,7 @@
     (.addCertificates gen (JcaCertStore. cl))
 
     (let [ dummy (CMSProcessableByteArray. (bytesify "Hello"))
-           bits (.getEncoded (.generate gen CMSSignedGenerator/DATA
-                                        dummy false _BCProvider false)) ]
+           bits (.getEncoded (.generate gen dummy)) ]
       (FileUtils/writeByteArrayToFile fileOut bits))) )
 
 (defn new-session "Creates a new java-mail session."
@@ -761,14 +760,14 @@
   (do
     ;; force internal processing, just in case
     (.getContent mmsg)
-    (-> (make-signerGentor pkey certs algo) (.generate mmsg _BCProvider))) )
+    (-> (make-signerGentor pkey certs algo) (.generate mmsg ))) )
 
 (defmethod smime-digsig :multipart
 
   [^PrivateKey pkey certs ^String algo ^Multipart mp]
   (let [ mm (new-mimeMsg) ]
     (.setContent mm mp)
-    (-> (make-signerGentor pkey certs algo) (.generate mm _BCProvider))) )
+    (-> (make-signerGentor pkey certs algo) (.generate mm ))) )
 
 (defmethod smime-digsig :bodypart
 
@@ -776,7 +775,7 @@
 
   (let [ ^MimeBodyPart mbp bp ]
     (-> (make-signerGentor pkey certs algo)
-      (.generate mbp _BCProvider))) )
+      (.generate mbp ))) )
 
 (defn- smime-dec
   ^CMSTypedStream
@@ -953,12 +952,12 @@
                 (SDataSource. (.fileRef xdata) cType)
                 (SDataSource. (.javaBytes xdata) cType)) ]
       (.setDataHandler bp (DataHandler. ds))
-      (.generate gen bp (SMIMECompressedGenerator/ZLIB))))
+      (.generate gen bp (ZlibCompressor.))))
 
   (^MimeBodyPart [^MimeMessage msg]
    (do
     (.getContent msg) ;; make sure it's processed, just in case
-    (-> (SMIMECompressedGenerator.) (.generate msg (SMIMECompressedGenerator/ZLIB)))) )
+    (-> (SMIMECompressedGenerator.) (.generate msg (ZlibCompressor.)))) )
 
   (^MimeBodyPart [^String cType ^String contentLoc ^String cid ^XData xdata]
     (let [ gen (SMIMECompressedGenerator.)
@@ -968,7 +967,7 @@
       (when (hgl? contentLoc) (.setHeader bp "content-location" contentLoc))
       (when (hgl? cid) (.setHeader bp "content-id" cid))
       (.setDataHandler bp (DataHandler. ds))
-      (let [ zbp (.generate gen bp SMIMECompressedGenerator/ZLIB)
+      (let [ zbp (.generate gen bp (ZlibCompressor.))
              pos (.lastIndexOf cid (int \>))
              cID (if (>= pos 0) (str (.substring cid 0 pos) "--z>") (str cid "--z")) ]
         (when (hgl? contentLoc) (.setHeader zbp "content-location" contentLoc))
