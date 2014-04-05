@@ -1,14 +1,14 @@
-/* RequireJS Use Plugin v0.3.0
- * Copyright 2012, Tim Branyen (@tbranyen)
+/* Use AMD Plugin v0.4.0
+ * Copyright 2013, Tim Branyen (@tbranyen)
  * use.js may be freely distributed under the MIT license.
  */
 (function(global) {
-
+//https://github.com/tbranyen/use-amd
 // Cache used to map configuration options between load and write.
 var buildMap = {};
 
 define({
-  version: "0.3.0",
+  version: "0.4.0",
 
   // Invoked by the AMD builder, passed the path to resolve, the require
   // function, done callback, and the configuration options.
@@ -18,6 +18,7 @@ define({
       config = require.rawConfig;
     }
 
+    // Configuration is namespaced under use object.
     var module = config.use && config.use[name];
 
     // No module to load, throw.
@@ -28,16 +29,33 @@ define({
     }
 
     // Attach to the build map for use in the write method below.
-    buildMap[name] = { deps: module.deps || [], attach: module.attach };
+    var settings = buildMap[name] = {
+      deps: module.deps || [],
+      attach: module.attach || module.exports || module.init
+    };
+
+    // Determine if shim parity is necessary to handle passed dependency array.
+    // Browsers that don't support Array.isArray do not have my sympathy.
+    if (Array.isArray ? Array.isArray(module) : module.length) {
+      settings.deps = module;
+      settings.attach = undefined;
+    }
 
     // Read the current module configuration for any dependencies that are
     // required to run this particular non-AMD module.
-    req(module.deps || [], function() {
+    req(settings.deps || [], function() {
       var depArgs = arguments;
+
+      // Utilize the `js!` plugin within Curl to load the source file.  It's
+      // not recommended that this is used, but it's built in and accessible.
+      if (global.curl) {
+        name = "js!" + name;
+      }
+
       // Require this module
       req([name], function() {
         // Attach property
-        var attach = module.attach;
+        var attach = settings.attach;
 
         // If doing a build don't care about loading
         if (config.isBuild) { 
