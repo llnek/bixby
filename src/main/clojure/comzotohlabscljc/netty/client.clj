@@ -89,6 +89,8 @@
 
 (defrecord NettyClient [^Bootstrap client ^ChannelGroup cgroup ] )
 
+(declare handle-response)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- generic-handler "Make a generic Netty 4.x Pipeline Handler."

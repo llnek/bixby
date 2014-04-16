@@ -118,75 +118,10 @@
 (def ^:private attr-xs (AttributeKey. "xdata"))
 (def ^:private attr-ucb (AttributeKey. "ucb"))
 (def ^:private attr-dir (AttributeKey. "dir"))
-(def ^:private attr-rts (AttributeKey. "routes"))
 (def ^:private attr-wsk (AttributeKey. "wshsker"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MaybeSSL ""
-
-  [^ChannelHandlerContext ctx]
-
-  (notnil? (-> (NetUtils/getPipeline ctx)
-               (.get (class SslHandler)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeFullHttpReply "Make a netty http-response object."
-
-  (^HttpResponse [status ^ByteBuf obj]
-    (DefaultFullHttpResponse. HttpVersion/HTTP_1_1 (get HTTP-CODES status) obj))
-
-  (^HttpResponse [] (MakeFullHttpReply 200))
-
-  (^HttpResponse [status]
-    (DefaultFullHttpResponse. HttpVersion/HTTP_1_1 (get HTTP-CODES status))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeHttpReply "Make a netty http-response object."
-
-  (^HttpResponse [] (MakeHttpReply 200))
-
-  (^HttpResponse [status] (DefaultHttpResponse. HttpVersion/HTTP_1_1 (get HTTP-CODES status))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SendRedirect "Redirect a request."
-
-  [^Channel ch perm ^String targetUrl]
-
-  (let [ rsp (MakeFullHttpReply (if perm 301 307)) ]
-    (debug "redirecting to -> " targetUrl)
-    (HttpHeaders/setHeader rsp  "location" targetUrl)
-    (CloseCF true (WFlush ch rsp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Continue100 "Send back 100-continue."
-
-  [^ChannelHandlerContext ctx]
-
-  (-> (.channel ctx) (WFlush (MakeFullHttpReply 100))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- sa-map! "Set attachment object from the channel."
-
-  [^Channel ch akey obj]
-
-  (-> (.attr ch akey) (.set obj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- ga-map "Get attachment object from the channel."
-
-  [^Channel ch akey]
-
-  (-> (.attr ch akey) (.get)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,6 +143,7 @@
   (if (nil? cg)
     (kill9 server)
     (-> (.close ^ChannelGroup cg)
+      ;;TODO
         (add-listener { :done (fn [_] (kill9 server)) }))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,10 +151,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (declare handle-request)
-(declare handle-response)
 (declare handle-wsframe)
-(declare handle-chunk)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- generic-handler "Make a generic Netty 4.x Pipeline Handler."
 
   ^ChannelHandler
@@ -265,6 +201,8 @@
 
     ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- inizServer ""
 
   ^ChannelHandler
@@ -291,6 +229,8 @@
         pl))
     ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- makeServerNetty ""
 
   ([] (makeServerNetty {} ))
@@ -312,7 +252,7 @@
           (.option bs k v)))
       (.childHandler bs (inizServer options))
       (comzotohlabscljc.netty.server.NettyServer. bs cg)
-      )))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; private helpers
