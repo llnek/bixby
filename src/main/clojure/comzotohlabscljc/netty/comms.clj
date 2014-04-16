@@ -85,6 +85,61 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defprotocol NettyServiceIO
+  ""
+  (onreq [_ ch req msginfo xdata] )
+  (presend [_ ch msg] )
+  (onerror [_ ch msginfo err] )
+  (onres [_ ch rsp msginfo xdata] ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeNilServiceIO "Reify a no-op service-io object."
+
+  ^comzotohlabscljc.netty.comms.NettyServiceIO
+  []
+
+  (reify NettyServiceIO
+    (presend [_ ch msg] (debug "empty pre-send." ))
+    (onerror [_ ch msginfo err] (debug "empty onerror." ))
+    (onreq [_ ch req msginfo xdata] (debug "empty onreq." ))
+    (onres [_ ch rsp msginfo xdata] (debug "empty onres." ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseCF "Maybe close the channel."
+
+  [doit ^ChannelFuture cf]
+
+  (if (and doit (notnil? cf))
+    (.addListener cf ChannelFutureListener/CLOSE)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WWrite "Write object but no flush."
+
+  ^ChannelFuture
+  [^Channel ch obj]
+
+  ;; had to do this to work-around reflection warnings :(
+  (NetUtils/writeOnly ch obj))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WFlush "Write object and then flush."
+
+  ^ChannelFuture
+  [^Channel ch obj]
+
+  ;; had to do this to work-around reflection warnings :(
+  (NetUtils/wrtFlush ch obj))
+
+
+
+
 (comment
 (def HTTP-CODES
   (let [ to-key (comp int (fn [^Field f] (.code ^HttpResponseStatus (.get f nil))))
@@ -187,14 +242,6 @@
     (HttpHeaders/setHeader rsp  "location" targetUrl)
     (closeCF true (wflush ch rsp))))
 
-(defn makeNilServiceIO "Reify a no-op service-io object."
-  ^comzotohlabscljc.netty.comms.NettyServiceIO
-  []
-  (reify NettyServiceIO
-    (presend [_ ch msg] (debug "empty pre-send." ))
-    (onerror [_ ch msginfo err] (debug "empty onerror." ))
-    (onreq [_ ch req msginfo xdata] (debug "empty onreq." ))
-    (onres [_ ch rsp msginfo xdata] (debug "empty onres." ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; server side netty
