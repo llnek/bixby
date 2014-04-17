@@ -120,31 +120,100 @@
 (def ^:private attr-dir (AttributeKey. "dir"))
 (def ^:private attr-wsk (AttributeKey. "wshsker"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Netty NIO Server
+(defn BootstrapNetty ""
+
+  ( [initor] (BootstrapNetty initor {} ))
+
+  ( [initor options]
+      (let [ gp (NioEventLoopGroup.) gc (NioEventLoopGroup.)
+             bs (doto (ServerBootstrap.)
+                      (.group gp gc)
+                      (.channel io.netty.channel.socket.nio.NioServerSocketChannel)
+                      (.option ChannelOption/SO_REUSEADDR true)
+                      (.option ChannelOption/SO_BACKLOG 100)
+                      (.childOption ChannelOption/SO_RCVBUF (int (* 2 1024 1024)))
+                      (.childOption ChannelOption/TCP_NODELAY true))
+             opts (:netty options) ]
+        (doseq [ [k v] (seq opts) ]
+          (if (= :child k)
+            (doseq [ [x y] (seq v) ]
+              (.childOption bs x y))
+            (.option bs k v)))
+        (.childHandler bs (initor options))
+        bs
+      ) ))
+
+;;CM20140416_86767954
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; start netty on host/port
+(defn StartNetty ""
+
+  [^ServerBootstrap boot ^String host port]
+
+  (let [ ch (-> boot (.bind (InetSocketAddress. host (int port)))
+                     (.sync)
+                     (.channel)) ]
+    (debug "netty-xxx-server: running on host " host ", port " port)
+    { :bootstrap boot :channel ch }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- kill9 "Clean up resources used by a netty server."
+(defn StopNettyServer "Clean up resources used by a netty server."
 
-  [^ServerBootstrap bs]
+  [state]
 
-  (let [ gc (.childGroup bs)
-         gp (.group bs) ]
-    (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
-    (when-not (nil? gc) (Try! (.shutdownGracefully gc))) ))
+  (let [ ^ServerBootstrap bs (:bootstrap state)
+         gc (.childGroup bs)
+         gp (.group bs)
+         ^Channel ch (:channel state) ]
+    (-> (.close ch)
+        (.addListener (reify ChannelFutureListener
+                        (operationComplete [_ cff]
+                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
+                          (when-not (nil? gc) (Try! (.shutdownGracefully gc))) )) ))
+  ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- finzServer "Bring down a netty server."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; add SSL
+(defn EnableSSL ""
 
-  [ { server :server cg :cgroup } ]
+  ^ChannelPipeline
+  [pipe options]
 
-  (if (nil? cg)
-    (kill9 server)
-    (-> (.close ^ChannelGroup cg)
-      ;;TODO
-        (add-listener { :done (fn [_] (kill9 server)) }))))
+  (let [ kf (:serverkey options)
+         pw (:passwd options)
+         ssl (if (nil? kf)
+                 nil
+                 (make-sslContext kf pw))
+         eg (if (nil? ssl)
+                nil
+                (doto (.createSSLEngine ssl)
+                      (.setUseClientMode false))) ]
+    (when-not (nil? eg) (.addFirst pl "ssl" (SslHandler. eg)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; default initializer
+(defn DefaultChannelInitializer ""
+
+  ^ChannelHandler
+  [options]
+
+  (proxy [ChannelInitializer] []
+    (initChannel [^SocketChannel ch]
+      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+        (EnableSSL pl options)
+        ;;(.addLast "decoder" (HttpRequestDecoder.))
+        ;;(.addLast "encoder" (HttpResponseEncoder.))
+        (.addLast pl "codec" (HttpServerCodec.))
+        (.addLast pl "chunker" (ChunkedWriteHandler.))
+        ;;(.addLast pl "handler" (generic-handler options))
+        pl))
+    ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; server side netty
@@ -199,34 +268,6 @@
         :else
         (throw (IOException. (str "Got object: " (class msg))) )))
 
-    ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- inizServer ""
-
-  ^ChannelHandler
-  [options]
-
-  (proxy [ChannelInitializer] []
-    (initChannel [^SocketChannel ch]
-      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch)
-             kf (:serverkey options)
-             pw (:passwd options)
-             ssl (if (nil? kf)
-                     nil
-                     (make-sslContext kf pw))
-             eg (if (nil? ssl)
-                    nil
-                    (doto (.createSSLEngine ssl)
-                          (.setUseClientMode false))) ]
-        (when-not (nil? eg) (.addFirst pl "ssl" (SslHandler. eg)))
-          ;;(.addLast "decoder" (HttpRequestDecoder.))
-          ;;(.addLast "encoder" (HttpResponseEncoder.))
-        (.addLast pl "codec" (HttpServerCodec.))
-        (.addLast pl "chunker" (ChunkedWriteHandler.))
-        (.addLast pl "handler" (generic-handler options))
-        pl))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -757,23 +798,6 @@
       (handle-basic-chunk ctx msg)
       (decode-upload ctx msg))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Netty NIO Server
-(defn MakeNettyNIOServer "Make a Netty server."
-
-  ^NettyServer
-  [^String host port options]
-
-  (let [ rc (makeServerNetty options)
-         ^ServerBootstrap bs (:server rc)
-         ^ChannelGroup cg (:cgroup rc) ]
-    (.add cg
-          (-> bs
-              (.bind (InetSocketAddress. host (int port)))
-              (.sync)
-              (.channel)))
-    (debug "netty-xxx-server: running on host " host ", port " port)
-    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; In memory HTTPD
