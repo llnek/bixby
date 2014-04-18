@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -17,176 +16,484 @@
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
-(import '(io.netty.buffer Unpooled ByteBuf))
-(import '(java.util List))
-(import '(java.io IOException))
-
-(import '(io.netty.channel ChannelFuture
-  ChannelFutureListener
-  ChannelHandler
-  ChannelHandlerContext
-  ChannelPipeline))
-
-(import '(io.netty.handler.codec DecoderResult
-  MessageToMessageDecoder))
-
-(import '(io.netty.handler.codec.http
-  HttpHeaders HttpHeaders$Names
-  HttpVersion DefaultFullHttpResponse
-  HttpResponseStatus))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private FORMDEC-KEY (AttributeKey. "formdecoder"))
+(def ^:private XDATA-KEY (AttributeKey. "xdata"))
+(def ^:private XOS-KEY (AttributeKey. "ostream"))
+(def ^:private MSGINFO-KEY (AttributeKey. "msginfo"))
+(def ^:private CBUF-KEY (AttributeKey. "cbuffer"))
+(def ^:private WSHSK-KEY (AttributeKey. "wsockhandshaker"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private XDATA-KEY (AttributeKey. "msg-xdata"))
-(def ^:private XOS-KEY (AttributeKey. "xdata-fos"))
-(def ^:private MSG-KEY (AttributeKey. "full-msg"))
+(defn- resetAttrs ""
+
+  [^ChannelHandlerContext ctx]
+
+  (let [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY)
+         ^ByteBuf buf (getAttr ctx CBUF-KEY) ]
+    (delAttr ctx MSGINFO-KEY)
+    (delAttr ctx FORMDEC-KEY)
+    (delAttr ctx CBUF-KEY)
+    (delAttr ctx XDATA-KEY)
+    (delAttr ctx XOS-KEY)
+    (delAttr ctx WSHSK-KEY)
+    (when-not (nil? buf) (.release buf))
+    (when-not (nil? dc) (.destroy dc))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- check-decode-result ""
+(defn- delAttr ""
 
-  ^Throwable
-  [^HttpObject msg]
+  [^ChannelHandlerContext ctx ^AttributeKey akey]
 
-  (let [ r (.getDecoderResult msg) ]
-    (if (.isSuccess r)
-      nil
-      (if-let [x (.cause r) ]
-              x (IOException. "Decode Error")) )))
+  (-> (.attr ctx akey)(.remove)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-full-msg ""
+(defn- slurpByteBuf ""
 
-  ^FullHttpMessage
-  [^HttpObject msg ^ByteBuf bbuf flag]
+  [^ByteBuf buf ^OutputStream os]
 
-  (cond
-    (instance? HttpResponse msg)
-    (let [ ^HttpResponse res msg
-           cm (DefaultFullHttpResponse. (.getProtocolVersion res)
-                                (.getStatus res)
-                                bbuf
-                                flag) ]
-      (when flag
-        (-> (.headers cm) (.set (.headers res)))
-        (HttpHeaders/removeTransferEncodingChunked cm))
-      cm)
-
-    (instance? HttpRequest msg)
-    (let [ ^HttpRequest req msg
-           cm (DefaultFullHttpRequest. (.getProtocolVersion req)
-                               (.getMethod req)
-                               (.getUri req)
-                               bbuf
-                               flag) ]
-      (when flag
-        (-> (.headers cm) (.set (.headers req)))
-        (HttpHeaders/removeTransferEncodingChunked cm))
-      cm)
-
-    :else nil))
+  (let [ len (.readableBytes buf) ]
+    (.readBytes buf os len)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- switch-to-file ""
+(defn- setAttr ""
+
+  [^ChannelHandlerContext ctx ^AttributeKey akey aval]
+
+  (-> (.attr ctx akey)(.set aval)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getAttr ""
+
+  [^ChannelHandlerContext ctx ^AttributeKey akey]
+
+  (-> (.attr ctx akey)(.get)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- isFormPost ""
+
+  ;; boolean
+  [^HttpRequest req ^String method]
+
+  (let [ ct (-> (nsb (HttpHeaders/getHeader req "content-type"))
+                (.toLowerCase)) ]
+    ;; multipart form
+    (and (or (= "POST" method) (= "PUT" method) (= "PATCH" method))
+         (or (>= (.indexOf ct "multipart/form-data") 0)
+             (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- extractHeaders ""
+
+  ;; map
+  [^HttpHeaders hdrs]
+
+  (let []
+    (persistent! (reduce (fn [sum ^String n]
+                           (assoc! sum (.toLowerCase n) (vec (.getAll hdrs n))))
+                       (transient {})
+                       (.names hdrs)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- extractParams ""
+
+  ;; map
+  [^QueryStringDecoder decr]
+
+  (let []
+    (persistent! (reduce (fn [sum ^Map$Entry en]
+                           (assoc! sum (nsb (.getKey en)) (vec (.getValue en))))
+                         (transient {})
+                         (.getParameters decr)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- extractMsgInfo ""
+
+  ;; map
+  [^HttpMessage msg]
+
+  (let [ m { :host (strim (HttpHeaders/getHeader msg "Host"))
+             :protocol (strim (.getProtocolVersion msg))
+             :keep-alive (HttpHeaders/isKeepAlive msg)
+             :clen (HttpHeaders/getContentLength msg 0)
+             :uri ""
+             :formpost false
+             :wsock false
+             :params {}
+             :method ""
+             :is-chunked (.isChunked msg)
+             :headers (extractHeaders (.headers msg))  } ]
+    (if (instance? HttpRequest msg)
+      (let [ ws (-> (strim (HttpHeaders/getHeader msg "upgrade"))(.toLowerCase))
+             mo (strim (HttpHeaders/getHeader msg "X-HTTP-Method-Override"))
+             md (-> msg (.getMethod) (.getName))
+             mt (-> (if mo mo md) (.toUpperCase))
+             form (isFormPost msg mt)
+             wsock (and (= "GET" mt) (= "websocket" ws))
+             dc (QueryStringDecoder. (.getUri msg))
+             pms (extractParams dc)
+             uri (.getPath dc) ]
+        (merge m { :uri uri :formpost form :wsock wsock :params pms :method mt }))
+      m)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleFormPost ""
+
+  [^ChannelHandlerContext ctx ^HttpRequest req]
+
+  (let [ fac (DefaultHttpDataFactory. (com.zotohlabs.frwk.io.IOUtils/streamLimit))
+         dc (HttpPostRequestDecoder. fac req) ]
+    (setAttr ctx FORMDEC-KEY dc)
+    (handleFormPostChunk ctx req)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- readHttpDataChunkByChunk ""
+
+  [^HttpPostRequestDecoder dc]
+
+  (try
+    (while (.hasNext dc)
+      (let [ ^InterfaceHttpData data (.next dc) ]
+        (when (notnil? data)
+          (try
+            (writeHttpData data)
+            (finally
+              (.release data))))))
+    (catch EndOfDataDecoderException e#
+      ;; eat it => indicates end of content chunk by chunk
+      )
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- writeHttpData ""
+
+  [^InterfaceHttpData data]
+
+  (let [ nm (-> (.getHttpDataType data)(.name)) ]
+    (cond
+      (= (.getHttpDataType data) (HttpDataType/Attribute))
+      (let [ ^Attribute attr data ]
+        (try
+          (.getValue attr)
+          (catch IOException e#
+            (error e# "")))
+        (do somethiong))
+
+      (= (.getHttpDataType data) (HttpDataType/FileUpload))
+      (let [ ^FileUpload fu data ]
+        (when (.isCompleted fu)
+          ))
+
+      :else nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleFormPostChunk ""
+
+  [^ChannelHandlerContext ctx msg]
+
+  (let [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY) ]
+    (when (instance? HttpContent msg)
+      (let [ ^HttpContent chk msg ]
+        (try
+          (.offer dc chk)
+          (catch  Throwable e#
+            ;; TODO quit
+            (error e# "")))
+        (readHttpDataChunkByChunk dc)
+        (when (instance? LastHttpContent msg)
+          (let [ info (getAttr ctx MSGINFO-KEY)
+                 xs (getAttr ctx XDATA-KEY) ]
+            (resetAttrs ctx)
+            (.fireChannelRead ctx { :info info :payload xs } )))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tooMuchData? ""
+
+  ;; boolean
+  [^ByteBuf content chunc]
+
+  (let [ buf (cond
+               (instance? WebSocketFrame chunc) (.content ^WebSocketFrame chunc)
+               (instance? HttpContent chunc) (.content ^HttpContent chunc)
+               :else nil) ]
+    (if (notnil? buf)
+      (> (.readableBytes content)
+         (- (com.zotohlabs.frwk.io.IOUtils/streamLimit)
+            (.readableBytes buf)))
+      false)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- switchBufToFile ""
 
   ^OutputStream
   [^ChannelHandlerContext ctx ^CompositeByteBuf bbuf]
 
   (let [ [^File fp ^OutputStream os] (newly-tmpfile true)
-         ^XData xs (-> (.attr ctx XDATA-KEY)(.get))
-         len (.readableBytes bbuf) ]
-    (.readBytes bbuf os (int len))
+         ^XData xs (getAttr ctx XDATA-KEY) ]
+    (.readBytes bbuf os (.readableBytes bbuf))
     (.flush os)
     (.resetContent xs fp)
-    (-> (.attr ctx XOS-KEY)(.set os))
+    (setAttr ctx XOS-KEY os)
     os))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- flush-to-file ""
+(defn- flushToFile ""
 
-  [^OutputStream os ^HttpContent chk]
+  [^OutputStream os chunc]
 
-  (let [ c (.content chk)
-         len (.readableBytes c) ]
-    (.readBytes c os len)
-    (.flush os)))
+  (let [ buf (cond
+               (instance? WebSocketFrame chunc) (.content ^WebSocketFrame chunc)
+               (instance? HttpContent chunc) (.content ^HttpContent chunc)
+               :else nil) ]
+    (when-not (nil? buf)
+      (.readBytes buf os (.readableBytes c))
+      (.flush os))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- too-much-data ""
+(defn- addMoreHeaders  ""
 
-  [^ByteBuf content ^HttpObject chk]
+  [^ChannelHandlerContext ctx ^HttpHeaders hds]
 
-  (> (.readableBytes content)
-     (- (StreamLimit/xxx) (-> (.content chk)(.readableBytes)))))
+  (let [ info (getAttr ctx MSGINFO-KEY)
+         old (:headers info) ]
+    (setAttr ctx MSGINFO-KEY (assoc info
+                                    :headers
+                                    (merge old (extractHeaders hds))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; each message we will check the decode-result.  if we get an error
-;; we assume that no more chunks will follow.  (i hope so).
-;; we just hand off what we have at the moment downstream.
-(defn PayloadAggregator ""
+;;
+(defn- handleMsgChunk ""
+
+  [^ChannelHandlerContext ctx msg]
+
+  (let [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
+         ^XData xs (getAttr ctx XDATA-KEY) ]
+    (when (instance? HttpContent msg)
+      (let [ ^OutputStream os (if (and (.isEmpty xs) (tooMuchData? cbuf msg))
+                                  (switchBufToFile ctx cbuf)
+                                  (getAttr ctx XOS-KEY))
+             ^HttpContent chk msg ]
+        (when (-> (.content chk)(.isReadable))
+          (if (nil? os)
+            (do
+              (.retain chk)
+              (.addComponent cbuf (.content chk))
+              (.writerIndex cbuf (+ (.writerIndex cbuf)
+                                   (-> (.content chk)(.readableBytes)))))
+            (flushToFile os chk)))
+        (when (instance? LastHttpContent msg)
+          (addMoreHeaders ctx (.trailingHeaders ^LastHttpContent msg))
+          (if (nil? os)
+            (let [ baos (make-baos) ]
+              (slurpByteBuf cbuf baos)
+              (.resetContent xs (.toByteArray baos)))
+            (.close os))
+          (let [ info (getAttr ctx MSGINFO-KEY)
+                 olen (:clen info)
+                 clen (.size xs) ]
+            (when-not (= olen clen)
+              (warn "content-length read from headers = " olen ", new clen = " clen )
+              (setAttr MSGINFO (merge info { :clen clen }))))
+          (let [ info (getAttr ctx MSGINFO-KEY) ]
+            (resetAttrs ctx)
+            (.fireChannelRead ctx { :info info :payload xs })))
+    ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleInboundMsg ""
+
+  [^ChannelHandlerContext ctx ^HttpMessage msg]
+
+  (let []
+    (setAttr ctx CBUF-KEY (Unpooled/compositeBuffer 1024))
+    (setAttr ctx XDATA-KEY (XData .))
+    (handleMsgChunk ctx msg)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeSSL ""
+
+  [^ChannelHandlerContext ctx]
+
+  (notnil? (-> (NetUtils/getPipeline ctx)
+               (.get (class SslHandler)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- wsSSL ""
+
+  [^ChannelHandlerContext ctx]
+
+  (let [ ^SslHandler ssl (-> (NetUtils/getPipeline ctx)
+                             (.get (class SslHandler)))
+         ch (.getChannel ctx) ]
+    (when-not (nil? ssl)
+      (-> (.handshake ssl)
+          (.addListener (reify ChannelFutureListener
+                          (operationComplete [_ f]
+                            (when-not (.isSuccess f)
+                              (NetUtils/closeChannel ch)) )))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleWSock ""
+
+  [^ChannelHandlerContext ctx ^HttpRequest req]
+
+  (let [ prx (if (maybeSSL ctx) "wss://" "ws://")
+         info (getAttr ctx MSGINFO-KEY)
+         us (str prx (:host info) (.getUri req))
+         wf (WebSocketServerHandshakerFactory. us nil false)
+         hs (.newHandshaker wf req)
+         ch (.getChannel ctx) ]
+    (if (nil? hs)
+      (do
+        (.sendUnsupportedWebSocketVersionResponse wf ch)
+        (Try! (NetUtils/closeChannel ch)))
+      (do
+        (setAttr ctx CBUF-KEY (Unpooled/compositeBuffer 1024))
+        (setAttr ctx XDATA-KEY (XData .))
+        (setAttr ctx WSHSK-KEY hs)
+        (-> (.handshake hs ch req)
+            (.addListener (reify ChannelFutureListener
+                            (operationComplete [_ f]
+                              (if (.isSuccess f)
+                                  (wsSSL ctx)
+                                  (Channels/fireExceptionCaught ch  (.getCause f)))))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- readFrame  ""
+
+  [^ChannelHandlerContext ctx ^WebSocketFrame frame]
+
+  (let [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
+         ^XData xs (getAttr ctx XDATA-KEY)
+         ^OutputStream os (if (and (.isEmpty xs) (tooMuchData? cbuf frame))
+                              (switchBufToFile ctx cbuf)
+                              (getAttr ctx XOS-KEY)) ]
+    (if (nil? os)
+        (do
+          (.retain frame)
+          (.addComponent cbuf (.content frame))
+          (.writerIndex cbuf (+ (.writerIndex cbuf)
+                               (-> (.content frame)(.readableBytes)))))
+        (flushToFile os frame))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeFinzFrame ""
+
+  [^ChannelHandlerContext ctx ^WebSocketFrame frame]
+
+  (when (.isFinalFragment frame)
+    (let  [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
+            ^OutputStream os (getAttr ctx XOS-KEY)
+            ^XData xs (getAttr ctx XDATA-KEY) ]
+      (if (notnil? os)
+        (.close os)
+        (let [ baos (make-baos) ]
+          (slurpByteBuf cbuf baos)
+          (.resetContent xs (.toByteArray baos))))
+      (let [ info (getAttr ctx MSGINFO-KEY) ]
+        (resetAttrs ctx)
+        (.fireChannelRead ctx { :info info :payload xs }))
+    )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleWSockFrame  ""
+
+  [^ChannelHandlerContext ctx ^WebSocketFrame frame]
+
+  (let [ ^WebSocketServerHandshaker hs (getAttr ctx WSHSK-KEY)
+         ch (.getChannel ctx) ]
+    (debug "nio-wsframe: received a " (type frame))
+    (cond
+      (instance? CloseWebSocketFrame frame)
+      (.close hs ch ^CloseWebSocketFrame frame)
+
+      (instance? PingWebSocketFrame frame)
+      (.write ch (PongWebSocketFrame. (.content frame)))
+
+      (or (instance? ContinuationWebSocketFrame frame)
+          (instance? TextWebSocketFrame frame)
+          (instance? BinaryWebSocketFrame frame))
+      (do
+        (readFrame ctx frame)
+        (maybeFinzFrame ctx frame))
+
+      :else nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeAuxRequestDecoder
 
   ^ChannelHandler
-  [options]
+  []
 
-  (proxy [MessageToMessageDecoder] []
-    (decode [ c msg out ]
+  (proxy [SimpleChannelInboundHandler] []
+    (channelRead0 [c msg]
       (let [ ^ChannelHandlerContext ctx c ]
         (cond
           (or (instance? HttpResponse msg)
               (instance? HttpRequest msg))
-          (let [ err (check-decode-result msg) ]
-            (if err
-              (do
-                (HttpHeaders/removeTransferEncodingChunked msg)
-                (.add ^List out (make-full-msg msg (Unpooled/EMPTY_BUFFER) false)))
-              (let [ cm (make-full-msg msg (Unpooled/compositeBuffer 1024) true) ]
-                (-> (.attr ctx MSG-KEY)(.set cm)))))
+          (let [ info (extractMsgInfo msg) ]
+            (-> (.attr ctx MSGINFO-KEY)(.set info))
+            (cond
+              (:formpost info) (handleFormPost ctx msg))
+              (:wsock info) (handleWSock ctx msg)
+              :else (handleInboundMsg ctx msg))
 
           (instance? HttpContent msg)
-          (do
-            (let [ ^FullHttpMessage cm (-> (.attr ctx MSG-KEY) (.get))
-                   ^XData xs (-> (.attr ctx XDATA-KEY)(.get))
-                   ^Throwable err (check-decode-result msg)
-                   ^CompositeByteBuf cbuf (.content cm)
-                   ^HttpContent chk msg
-                   ^OutputStream os (if (and (.isEmpty xs)
-                                             (too-much-data cbuf chk))
-                                        (switch-to-file ctx cbuf)
-                                        (-> (.attr ctx XOS-KEY)(.get))) ]
-              (when (-> (.content chk)(.isReadable))
-                (if (.isEmpty xs)
-                  (do
-                    (.retain chk)
-                    (.addComponent cbuf (.content chk))
-                    (.writerIndex cbuf (+ (.writerIndex cbuf)
-                                         (-> (.content chk)(.readableBytes)))))
-                  (flush-to-file os chk)))
-              (when (instance? LastHttpContent msg)
-                (-> (.headers cm)(.add (.trailingHeaders ^LastHttpContent msg))))
-              (when err
-                (.setDecoderResult cm (DecoderResult/failure err)))
-              (when (or (instance? LastHttpContent msg) err)
-                ;; all done
-                (let [ clen (if (nil? os)
-                                (.readableBytes cbuf)
-                                (do
-                                  (.close os)
-                                  (-> (.attr ctx XOS-KEY)(.set nil))
-                                  (if-let [ ^XData s (-> (.attr ctx XDATA-KEY)(.get)) ]
-                                    (.size s)
-                                    0))) ]
-                  (-> (.headers cm)(.set (HttpHeaders$Names/CONTENT_LENGTH)
-                        (String/valueOf clen))))
-                (.add ^List out cm))))
+          (let [ info (-> (.attr ctx MSGINFO-KEY)(.get)) ]
+            (if (:formpost info)
+              (handleFormPostChunk ctx msg)
+              (handleMsgChunk ctx msg)))
 
-        :else (throw (IOException. "Bad HttpObject."))))
+          (instance? WebSocketFrame msg)
+          (handleWSockFrame ctx msg)
 
-    )))
+          :else nil)))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def ^:private aggregator-eof nil)
 
