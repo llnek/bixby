@@ -127,18 +127,25 @@
   ;; map
   [^HttpMessage msg]
 
-  (let [ m { :host (strim (HttpHeaders/getHeader msg "Host"))
-             :protocol (strim (.getProtocolVersion msg))
-             :keep-alive (HttpHeaders/isKeepAlive msg)
-             :clen (HttpHeaders/getContentLength msg 0)
-             :uri ""
-             :formpost false
-             :wsock false
-             :params {}
-             :method ""
-             :is-chunked (.isChunked msg)
-             :headers (extractHeaders (.headers msg))  } ]
-    (if (instance? HttpRequest msg)
+  (with-local-vars [ m { :host (strim (HttpHeaders/getHeader msg "Host"))
+                         :protocol (strim (.getProtocolVersion msg))
+                         :keep-alive (HttpHeaders/isKeepAlive msg)
+                         :clen (HttpHeaders/getContentLength msg 0)
+                         :uri ""
+                         :status ""
+                         :code 0
+                         :formpost false
+                         :wsock false
+                         :params {}
+                         :method ""
+                         :is-chunked (.isChunked msg)
+                         :headers (extractHeaders (.headers msg))  } ]
+    (when (instance? HttpResponse msg)
+      (let [ s (.getStatus ^HttpResponse msg)
+             r (.reasonPhrase s)
+             c (.code s) ]
+        (var-set m (merge @m { :code c :status r } ))))
+    (when (instance? HttpRequest msg)
       (let [ ws (-> (strim (HttpHeaders/getHeader msg "upgrade"))(.toLowerCase))
              mo (strim (HttpHeaders/getHeader msg "X-HTTP-Method-Override"))
              md (-> msg (.getMethod) (.getName))
@@ -148,8 +155,8 @@
              dc (QueryStringDecoder. (.getUri msg))
              pms (extractParams dc)
              uri (.getPath dc) ]
-        (merge m { :uri uri :formpost form :wsock wsock :params pms :method mt }))
-      m)
+        (var-set m (merge @m { :uri uri :formpost form :wsock wsock :params pms :method mt }))))
+    @m
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -331,14 +338,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- handleRedirect ""
+
+  [^ChannelHandlerContext ctx ^HttpMessage msg]
+
+  (error "not supported operation")
+  (throw (IOException. "Redirect is not supported at this time.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- handleInboundMsg ""
 
   [^ChannelHandlerContext ctx ^HttpMessage msg]
 
-  (let []
+  (with-local-vars [ info (getAttr ctx MSGINFO-KEY) good true ]
     (setAttr ctx CBUF-KEY (Unpooled/compositeBuffer 1024))
     (setAttr ctx XDATA-KEY (XData .))
-    (handleMsgChunk ctx msg)
+    (when (instance? HttpResponse msg)
+      (let [ c (:code @info) ]
+        (cond
+          (and (>= c 200) (< c 300))
+          nil
+
+          (and (>= c 300) (< c 400))
+          (do
+            (var-set good false)
+            (handleRedirect ctx msg))
+
+          :else (warn "received http-response with error code " c))))
+    (when @good
+      (handleMsgChunk ctx msg))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -463,7 +492,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAuxRequestDecoder
+(defn MakeAuxDecoder
 
   ^ChannelHandler
   []
@@ -475,7 +504,7 @@
           (or (instance? HttpResponse msg)
               (instance? HttpRequest msg))
           (let [ info (extractMsgInfo msg) ]
-            (-> (.attr ctx MSGINFO-KEY)(.set info))
+            (setAttr ctx MSGINFO-KEY info)
             (cond
               (:formpost info) (handleFormPost ctx msg))
               (:wsock info) (handleWSock ctx msg)

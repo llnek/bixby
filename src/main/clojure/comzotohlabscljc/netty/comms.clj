@@ -81,9 +81,60 @@
 (use '[comzotohlabscljc.util.str :only [strim nsb hgl?] ])
 (use '[comzotohlabscljc.util.io :only [make-baos] ])
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; map of { int (code) -> HttpResponseStatus }
+(def HTTP-CODES
+  (let [ to-key (fn [^Field f] (.getCode ^HttpResponseStatus (.get f nil)))
+         fields (:fields (bean HttpResponseStatus))
+         kkeys (map to-key fields)
+         vvals (map (fn [^Field f] (.get f nil)) fields) ]
+    (into {} (map vec (partition 2 (interleave kkeys vvals))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseCF "Maybe close the channel."
+
+  [^ChannelFuture cf keepAlive?]
+
+  (when (and (not keepAlive?) (notnil? cf))
+    (.addListener cf ChannelFutureListener/CLOSE)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeHttpReply "Make a netty http-response object."
+
+  (^HttpResponse [] (MakeHttpReply 200))
+
+  (^HttpResponse [status]
+    (DefaultHttpResponse. HttpVersion/HTTP_1_1
+                          (get HTTP-CODES status))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReplyXXX ""
+
+  [^Channel ch status keepAlive?]
+
+  (let [ rsp (MakeHttpReply status) ]
+    (HttpHeaders/setContentLength rsp 0)
+    (->> (.write ch rsp)
+         (CloseCF keepAlive?))
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrecord NettyNIO [])
 

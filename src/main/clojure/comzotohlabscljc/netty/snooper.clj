@@ -83,6 +83,155 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- writeReply ""
+
+  [^ChannelHandlerContext ctx
+   ^StringBuilder buf]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleReq ""
+
+  [^ChannelHandlerContext ctx
+   ^HttpRequest req
+   ^StringBuilder buf]
+
+  (let [ dc (QueryStringDecoder. (.getUri req))
+         headers (.headers req)
+         pms (.parameters dc) ]
+    (doto buf
+      (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
+      (.append "===================================\r\n")
+      (.append "VERSION: ")
+      (.append (.getProtocolVersion req))
+      (.append "\r\n")
+      (.append "HOSTNAME: ")
+      (.append (.getHost req "unknown"))
+      (.append "\r\n")
+      (.append "REQUEST_URI: ")
+      (.append (.getUri req))
+      (.append "\r\n\r\n"))
+    (reduce (fn [memo ^String n]
+              (doto buf
+                (.append "HEADER: ")
+                (.append n)
+                (.append " = ")
+                (.append (clojure.string/join "," (.getAll hdrs n)))
+                (.append "\r\n")))
+            buf
+            (.names hdrs))
+    (.append buf "\r\n")
+    (reduce (fn [memo ^Map$Entry en]
+              (doto buf
+                (.append "PARAM: ")
+                (.append (.getKey en))
+                (.append " = ")
+                (.append (clojure.string/join "," (.getValue en)))
+                (.append "\r\n")))
+            buf
+            pms)
+    (.append buf "\r\n")
+
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleData ""
+
+  [^ChannelHandlerContext ctx
+   ^HttpContent msg
+   ^StringBuilder buf]
+
+  (let [ content (.content msg) ]
+    (when (.isReadable content)
+      (doto buf
+        (.append "CONTENT: ")
+        (.append (.toString content (CharsetUtil/UTF_8)))
+        (.append "\r\n")))
+
+    (when (instance? LastHttpContent msg)
+      (.append buf "END OF CONTENT\r\n")
+      (let [ ^LastHttpContent trailer msg ]
+        (when-not (-> trailer (.trailingHeaders)(.isEmpty))
+          (.append buf "\r\n")
+          (reduce (fn [memo ^String n]
+                    (doto buf
+                      (.append "TRAILING HEADER: ")
+                      (.append n)
+                      (.append " = ")
+                      (.append (clojure.string/join "," (.getAll hdrs n)))
+                      (.append "\r\n")))
+                  buf
+                  (-> trailer (.trailingHeaders)(.names)))
+          (.append buf "\r\n")))
+      (writeReply ctx msg buf))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- snooper ""
+
+  []
+
+  (let [ buf (StringBuilder.) ]
+    (proxy [SimpleChannelInboundHandler][]
+      (channelRead0 [c msg]
+        (cond
+          (instance? HttpRequest msg)
+          (handleReq c msg buf)
+
+          (instance? HttpContent msg)
+          (handleData c msg buf)
+
+          :else nil)
+  ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- initor ""
+
+  ^ChannelHandler
+  [options]
+
+  (proxy [ChannelInitializer] []
+    (initChannel [^SocketChannel ch]
+      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+        (EnableSSL pl options)
+        (.addLast pl "expect" (Expect100))
+        (.addLast pl "codec" (HttpServerCodec.))
+        (.addLast pl "h" (snooper))
+        pl))
+    ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeMemHTTPD ""
+
+  [^String host port options]
+
+  (StartNetty host port (BootstrapNetty initor options)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+`
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Netty NIO Server
 (defn BootstrapNetty ""
