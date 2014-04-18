@@ -37,12 +37,12 @@
 (defn- extractHeaders ""
 
   ;; map
-  [^HttpMessage msg]
+  [^HttpHeaders msg]
 
   (let []
     (persistent! (reduce (fn [sum ^String n]
-                           (assoc! sum (.toLowerCase n) (vec (.getHeaders msg n))))
-                       (transient {}) (.getHeaderNames msg)))
+                           (assoc! sum (.toLowerCase n) (vec (.getAll msg n))))
+                       (transient {}) (.names msg)))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,7 +75,7 @@
              :params {}
              :method ""
              :is-chunked (.isChunked msg)
-             :headers (extractHeaders msg)  } ]
+             :headers (extractHeaders (.headers msg))  } ]
     (if (instance? HttpRequest msg)
       (let [ mo (strim (HttpHeaders/getHeader msg "X-HTTP-Method-Override"))
              ws (.toLowerCase (strim (HttpHeaders/getHeader msg "upgrade")))
@@ -213,6 +213,18 @@
          baos (make-baos) ]
     (.readBytes buf baos len)
     (.resetContent xs (-> baos (.flush)(.toByteArray)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- addMoreHeaders  ""
+
+  [^ChannelHandlerContext ctx ^HttpHeaders hds]
+
+  (let [ info (-> (.attr ctx MSGINFO-KEY)(.get))
+         old (:headers info) ]
+    (-> (.attr ctx MSGINFO-KEY)
+        (.set (assoc info :headers (merge old (extractHeaders hds))) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
