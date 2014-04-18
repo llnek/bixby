@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.adder )
+  comzotohlabscljc.netty.aggregator )
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
