@@ -95,7 +95,6 @@
          vvals (map (fn [^Field f] (.get f nil)) fields) ]
     (into {} (map vec (partition 2 (interleave kkeys vvals))))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn CloseCF "Maybe close the channel."
@@ -123,53 +122,10 @@
 
   (let [ rsp (MakeHttpReply status) ]
     (HttpHeaders/setContentLength rsp 0)
-    (->> (.write ch rsp)
-         (CloseCF keepAlive?))
+    (-> (.write ch rsp)
+        (CloseCF keepAlive?))
   ))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrecord NettyNIO [])
-
-(declare handle-chunk)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol NettyServiceIO
-  ""
-  (onreq [_ ch req msginfo xdata] )
-  (presend [_ ch msg] )
-  (onerror [_ ch msginfo err] )
-  (onres [_ ch rsp msginfo xdata] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeNilServiceIO "Reify a no-op service-io object."
-
-  ^comzotohlabscljc.netty.comms.NettyServiceIO
-  []
-
-  (reify NettyServiceIO
-    (presend [_ ch msg] (debug "empty pre-send." ))
-    (onerror [_ ch msginfo err] (debug "empty onerror." ))
-    (onreq [_ ch req msginfo xdata] (debug "empty onreq." ))
-    (onres [_ ch rsp msginfo xdata] (debug "empty onres." ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn CloseCF "Maybe close the channel."
-
-  [doit ^ChannelFuture cf]
-
-  (if (and doit (notnil? cf))
-    (.addListener cf ChannelFutureListener/CLOSE)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -213,15 +169,6 @@
   (^HttpResponse [status]
     (DefaultFullHttpResponse. HttpVersion/HTTP_1_1 (get HTTP-CODES status))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeHttpReply "Make a netty http-response object."
-
-  (^HttpResponse [] (MakeHttpReply 200))
-
-  (^HttpResponse [status] 
-     (DefaultHttpResponse. HttpVersion/HTTP_1_1 (get HTTP-CODES status))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SendRedirect "Redirect a request."
@@ -231,7 +178,7 @@
   (let [ rsp (MakeFullHttpReply (if perm 301 307)) ]
     (debug "redirecting to -> " targetUrl)
     (HttpHeaders/setHeader rsp  "location" targetUrl)
-    (CloseCF true (WFlush ch rsp))))
+    (CloseCF (WFlush ch rsp) false)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -241,31 +188,8 @@
 
   (-> (.channel ctx) (WFlush (MakeFullHttpReply 100))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- sa-map! "Set attachment object from the channel."
-
-  [^Channel ch akey obj]
-
-  (-> (.attr ch akey) (.set obj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- ga-map "Get attachment object from the channel."
-
-  [^Channel ch akey]
-
-  (-> (.attr ch akey) (.get)))
-
-
-
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def ^:private comms-eof nil)
-
 
 
