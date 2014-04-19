@@ -23,18 +23,19 @@ import com.zotohlabs.frwk.io.XData
  */
 class ULFormItems {
   private val _items= mutable.ArrayBuffer[ULFileItem]()
-  
+
   def getAll() = asJavaCollection( _items.toIterable )
   def add(x:ULFileItem) { _items += x }
-  def destroy() { 
-    _items.foreach { (x) => 
-      x.fileData match { 
+  def reset() { _items.clear() }
+  def destroy() {
+    _items.foreach { (x) =>
+      x.fileData match {
       case x:XData => x.destroy()
       case _ =>
-    }}          
+    }}
     _items.clear()
   }
-  
+
 }
 
 

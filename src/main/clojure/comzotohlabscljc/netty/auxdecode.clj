@@ -12,13 +12,14 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.aggregator )
+  comzotohlabscljc.netty.auxdecode )
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private FORMDEC-KEY (AttributeKey. "formdecoder"))
+(def ^:private FORMITMS-KEY (AttributeKey. "formitems"))
 (def ^:private XDATA-KEY (AttributeKey. "xdata"))
 (def ^:private XOS-KEY (AttributeKey. "ostream"))
 (def ^:private MSGINFO-KEY (AttributeKey. "msginfo"))
@@ -32,7 +33,9 @@
   [^ChannelHandlerContext ctx]
 
   (let [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY)
+         ^ULFormItems fis (getAttr ctx FORMITMS-KEY)
          ^ByteBuf buf (getAttr ctx CBUF-KEY) ]
+    (delAttr ctx FORMITMS-KEY)
     (delAttr ctx MSGINFO-KEY)
     (delAttr ctx FORMDEC-KEY)
     (delAttr ctx CBUF-KEY)
@@ -41,6 +44,7 @@
     (delAttr ctx WSHSK-KEY)
     (when-not (nil? buf) (.release buf))
     (when-not (nil? dc) (.destroy dc))
+    (when-not (nil? fis) (.destroy dc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -127,7 +131,7 @@
   ;; map
   [^HttpMessage msg]
 
-  (with-local-vars [ m { :host (strim (HttpHeaders/getHeader msg "Host"))
+  (with-local-vars [ m { :host (strim (HttpHeaders/getHeader msg "Host" ""))
                          :protocol (strim (.getProtocolVersion msg))
                          :keep-alive (HttpHeaders/isKeepAlive msg)
                          :clen (HttpHeaders/getContentLength msg 0)
@@ -167,6 +171,7 @@
 
   (let [ fac (DefaultHttpDataFactory. (com.zotohlabs.frwk.io.IOUtils/streamLimit))
          dc (HttpPostRequestDecoder. fac req) ]
+    (setAttr ctx FORMITMS-KEY (ULFormItems.))
     (setAttr ctx FORMDEC-KEY dc)
     (handleFormPostChunk ctx req)
   ))
@@ -179,15 +184,12 @@
 
   (try
     (while (.hasNext dc)
-      (let [ ^InterfaceHttpData data (.next dc) ]
-        (when (notnil? data)
-          (try
-            (writeHttpData data)
-            (finally
-              (.release data))))))
-    (catch EndOfDataDecoderException e#
-      ;; eat it => indicates end of content chunk by chunk
-      )
+      (when-let [ data (.next dc) ]
+        (try
+          (writeHttpData data)
+          (finally
+            (.release ^InterfaceHttpData data)))))
+    (catch EndOfDataDecoderException e#) ;; eat it => indicates end of content chunk by chunk
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -196,22 +198,36 @@
 
   [^InterfaceHttpData data]
 
-  (let [ nm (-> (.getHttpDataType data)(.name)) ]
-    (cond
-      (= (.getHttpDataType data) (HttpDataType/Attribute))
-      (let [ ^Attribute attr data ]
-        (try
-          (.getValue attr)
-          (catch IOException e#
-            (error e# "")))
-        (do somethiong))
+  (when-not (nil? data)
+    (let [ ^String nm (-> (.getHttpDataType data)(.name))
+           ^ULFormItems fis (getAttr ctx FORMITMS-KEY) ]
+      (cond
+        (= (.getHttpDataType data) (HttpDataType/Attribute))
+        (let [ ^Attribute attr data
+               baos (make-baos) ]
+          (slurpByteBuf (.content attr) baos)
+          (.add fis (ULFileItem. nm (.toByteArray baos))))
 
-      (= (.getHttpDataType data) (HttpDataType/FileUpload))
-      (let [ ^FileUpload fu data ]
-        (when (.isCompleted fu)
-          ))
+        (= (.getHttpDataType data) (HttpDataType/FileUpload))
+        (let [ ^FileUpload fu data
+               ct (.getContentType fu)
+               fnm (.getFilename fu) ]
+          (when (.isCompleted fu)
+            (cond
+              (instance? DiskFileUpload fu)
+              (let [ fp (newly-tmpfile false) ]
+                (.renameTo ^DiskFileUpload fu fp)
+                (.add fis (ULFileItem. nm  ct fnm (XData. fp))))
 
-      :else nil)
+              :else
+              (let [ [ ^File fp ^OutputStream os ] (newly-tmpfile true)
+                     buf (.content fu) ]
+                (slurpByteBuf buf os)
+                (IOUtils/closeQuietly os)
+                (.add fis (ULFileItem. nm  ct fnm (XData. fp))))
+            )))
+
+        :else nil))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,20 +236,23 @@
 
   [^ChannelHandlerContext ctx msg]
 
-  (let [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY) ]
+  (with-local-vars [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY)
+                     err nil ]
     (when (instance? HttpContent msg)
-      (let [ ^HttpContent chk msg ]
-        (try
-          (.offer dc chk)
-          (catch  Throwable e#
-            ;; TODO quit
-            (error e# "")))
-        (readHttpDataChunkByChunk dc)
-        (when (instance? LastHttpContent msg)
-          (let [ info (getAttr ctx MSGINFO-KEY)
-                 xs (getAttr ctx XDATA-KEY) ]
-            (resetAttrs ctx)
-            (.fireChannelRead ctx { :info info :payload xs } )))))
+      (try
+        (.offer @dc  ^HttpContent msg)
+        (readHttpDataChunkByChunk @dc)
+        (catch  Throwable e#
+          (var-set err e#)
+          (.fireExceptionCaught ctx e#))))
+    (when (and (nil? @err) (instance? LastHttpContent msg))
+      (let [ info (getAttr ctx MSGINFO-KEY)
+             fis (getAttr ctx FORMITMS-KEY)
+             xs (getAttr ctx XDATA-KEY) ]
+        (delAttr ctx FORMITMS-KEY)
+        (.resetContent xs fis)
+        (resetAttrs ctx)
+        (.fireChannelRead ctx { :info info :payload xs } )))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -299,6 +318,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeFinzMsgChunk
+
+  [^ChannelHandlerContext ctx msg]
+
+  (let [ ^OutputStream os (getAttr ctx XOS-KEY)
+         ^XData xs (getAttr ctx XDATA-KEY)
+         info (getAttr ctx MSGINFO-KEY) ]
+    (when (instance? LastHttpContent msg)
+      (addMoreHeaders ctx (.trailingHeaders ^LastHttpContent msg))
+      (if (nil? os)
+        (let [ baos (make-baos) ]
+          (slurpByteBuf cbuf baos)
+          (.resetContent xs baos))
+        (do (IOUtils/closeQuietly os)))
+      (let [ olen (:clen info)
+             clen (.size xs) ]
+        (when-not (= olen clen)
+          (warn "content-length read from headers = " olen ", new clen = " clen )
+          (setAttr ctx MSGINFO (merge info { :clen clen }))))
+      (let [ info (getAttr ctx MSGINFO-KEY) ]
+        (resetAttrs ctx)
+        (.fireChannelRead ctx { :info info :payload xs })))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- handleMsgChunk ""
 
   [^ChannelHandlerContext ctx msg]
@@ -306,7 +351,7 @@
   (let [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
          ^XData xs (getAttr ctx XDATA-KEY) ]
     (when (instance? HttpContent msg)
-      (let [ ^OutputStream os (if (and (.isEmpty xs) (tooMuchData? cbuf msg))
+      (let [ ^OutputStream os (if (and (not (.hasContent xs)) (tooMuchData? cbuf msg))
                                   (switchBufToFile ctx cbuf)
                                   (getAttr ctx XOS-KEY))
              ^HttpContent chk msg ]
@@ -317,24 +362,9 @@
               (.addComponent cbuf (.content chk))
               (.writerIndex cbuf (+ (.writerIndex cbuf)
                                    (-> (.content chk)(.readableBytes)))))
-            (flushToFile os chk)))
-        (when (instance? LastHttpContent msg)
-          (addMoreHeaders ctx (.trailingHeaders ^LastHttpContent msg))
-          (if (nil? os)
-            (let [ baos (make-baos) ]
-              (slurpByteBuf cbuf baos)
-              (.resetContent xs (.toByteArray baos)))
-            (.close os))
-          (let [ info (getAttr ctx MSGINFO-KEY)
-                 olen (:clen info)
-                 clen (.size xs) ]
-            (when-not (= olen clen)
-              (warn "content-length read from headers = " olen ", new clen = " clen )
-              (setAttr MSGINFO (merge info { :clen clen }))))
-          (let [ info (getAttr ctx MSGINFO-KEY) ]
-            (resetAttrs ctx)
-            (.fireChannelRead ctx { :info info :payload xs })))
-    ))))
+            (flushToFile os chk))))
+      (maybeFinzMsgChunk ctx msg))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -342,8 +372,10 @@
 
   [^ChannelHandlerContext ctx ^HttpMessage msg]
 
-  (error "not supported operation")
-  (throw (IOException. "Redirect is not supported at this time.")))
+  (let [ err (IOException. "Redirect is not supported at this time.") ]
+    (error err "")
+    (.fireExceptionCaught ctx err)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -432,7 +464,7 @@
 
   (let [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
          ^XData xs (getAttr ctx XDATA-KEY)
-         ^OutputStream os (if (and (.isEmpty xs) (tooMuchData? cbuf frame))
+         ^OutputStream os (if (and (not (.hasContent xs)) (tooMuchData? cbuf frame))
                               (switchBufToFile ctx cbuf)
                               (getAttr ctx XOS-KEY)) ]
     (if (nil? os)
@@ -454,11 +486,11 @@
     (let  [ ^CompositeByteBuf cbuf (getAttr ctx CBUF-KEY)
             ^OutputStream os (getAttr ctx XOS-KEY)
             ^XData xs (getAttr ctx XDATA-KEY) ]
-      (if (notnil? os)
-        (.close os)
+      (when-not (nil? os)
+        (do (.close os))
         (let [ baos (make-baos) ]
           (slurpByteBuf cbuf baos)
-          (.resetContent xs (.toByteArray baos))))
+          (.resetContent xs baos)))
       (let [ info (getAttr ctx MSGINFO-KEY) ]
         (resetAttrs ctx)
         (.fireChannelRead ctx { :info info :payload xs }))
@@ -475,7 +507,9 @@
     (debug "nio-wsframe: received a " (type frame))
     (cond
       (instance? CloseWebSocketFrame frame)
-      (.close hs ch ^CloseWebSocketFrame frame)
+      (do
+        (resetAttrs ctx)
+        (.close hs ch ^CloseWebSocketFrame frame))
 
       (instance? PingWebSocketFrame frame)
       (.write ch (PongWebSocketFrame. (.content frame)))
@@ -506,12 +540,17 @@
           (let [ info (extractMsgInfo msg) ]
             (setAttr ctx MSGINFO-KEY info)
             (cond
-              (:formpost info) (handleFormPost ctx msg))
-              (:wsock info) (handleWSock ctx msg)
-              :else (handleInboundMsg ctx msg))
+              (:formpost info)
+              (handleFormPost ctx msg)
+
+              (:wsock info)
+              (handleWSock ctx msg)
+
+              :else
+              (handleInboundMsg ctx msg)))
 
           (instance? HttpContent msg)
-          (let [ info (-> (.attr ctx MSGINFO-KEY)(.get)) ]
+          (let [ info (getAttr ctx MSGINFO-KEY) ]
             (if (:formpost info)
               (handleFormPostChunk ctx msg)
               (handleMsgChunk ctx msg)))
@@ -523,6 +562,18 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddAuxDecoder ""
 
-(def ^:private aggregator-eof nil)
+  ^ChannelPipeline
+  [pipe options]
+
+  (let []
+    (.addLast ^ChannelPipeline pipe "auxdecode" (MakeAuxDecoder))
+    pipe
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def ^:private auxdecode-eof nil)
 

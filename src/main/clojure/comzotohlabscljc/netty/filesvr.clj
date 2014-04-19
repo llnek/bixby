@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.server )
+  comzotohlabscljc.netty.filesvr )
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
@@ -83,119 +83,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Netty NIO Server
-(defn BootstrapNetty ""
-
-  ( [options] (BootstrapNetty (:initor options) options))
-
-  ( [initor options]
-      (let [ gp (NioEventLoopGroup.) gc (NioEventLoopGroup.)
-             bs (doto (ServerBootstrap.)
-                      (.group gp gc)
-                      (.channel io.netty.channel.socket.nio.NioServerSocketChannel)
-                      (.option ChannelOption/SO_REUSEADDR true)
-                      (.option ChannelOption/SO_BACKLOG 100)
-                      (.childOption ChannelOption/SO_RCVBUF (int (* 2 1024 1024)))
-                      (.childOption ChannelOption/TCP_NODELAY true))
-             opts (if-let [ x (:netty options) ] x {} ) ]
-        (doseq [ [k v] (seq opts) ]
-          (if (= :child k)
-            (doseq [ [x y] (seq v) ]
-              (.childOption bs x y))
-            (.option bs k v)))
-        (.childHandler bs (initor options))
-        { :bootstrap bs })
-  ))
-
-;;CM20140416_86767954
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; start netty on host/port
-(defn StartNetty ""
-
-  [^String host port netty]
-
-  (let [ ch (-> (:bootstrap netty)
-                (.bind (InetSocketAddress. host (int port)))
-                (.sync)
-                (.channel)) ]
-    (debug "netty-xxx-server: running on host " host ", port " port)
-    (merge netty { :channel ch })
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn StopNetty "Clean up resources used by a netty server."
-
-  [netty]
-
-  (let [ ^ServerBootstrap bs (:bootstrap netty)
-         gc (.childGroup bs)
-         gp (.group bs)
-         ^Channel ch (:channel netty) ]
-    (-> (.close ch)
-        (.addListener (reify ChannelFutureListener
-                        (operationComplete [_ cff]
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
-                          (when-not (nil? gc) (Try! (.shutdownGracefully gc))) )) ))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; add SSL
-(defn EnableSSL ""
-
-  ^ChannelPipeline
-  [pipe options]
-
-  (let [ kf (:serverkey options)
-         pw (:passwd options)
-         ssl (if (nil? kf)
-                 nil
-                 (make-sslContext kf pw))
-         eg (if (nil? ssl)
-                nil
-                (doto (.createSSLEngine ssl)
-                      (.setUseClientMode false))) ]
-    (when-not (nil? eg) (.addFirst pipe "ssl" (SslHandler. eg)))
-    pipe
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; default initializer
-(defn MakeChannelInitializer ""
-
-  ^ChannelHandler
-  [options]
-
-  (proxy [ChannelInitializer] []
-    (initChannel [^SocketChannel ch]
-      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-        (EnableSSL pl options)
-        (.addLast pl "codec" (HttpServerCodec.))
-        (.addLast pl "chunker" (ChunkedWriteHandler.))
-        pl))
-    ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; In memory HTTPD
-;;
-(defn MakeMemHTTPD "Make an in-memory http server."
-
-  ;; map with netty objects
-  [^String host port options]
-
-  (StartNetty host port (BootstrapNetty options)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; file handlers
 (defn- replyGetVFile ""
 
-  [^Channel ch ^XData xdata]
+  [^Channel ch info ^XData xdata]
 
-  (let [ info (ga-map ch attr-info)
+  (let [ kalive (and (notnil? info) (:keep-alive info))
          res (MakeHttpReply 200)
-         clen (.size xdata)
-         kalive (and (notnil? info) (:keep-alive info)) ]
+         clen (.size xdata) ]
     (HttpHeaders/setHeader res "content-type" "application/octet-stream")
     (HttpHeaders/setContentLength res clen)
     (HttpHeaders/setTransferEncodingChunked res)
@@ -207,7 +103,7 @@
 ;;
 (defn- filePutter ""
 
-  [^File vdir ^Channel ch ^String fname ^XData xdata]
+  [^File vdir ^Channel ch info ^String fname ^XData xdata]
 
   (try
     (save-file vdir fname xdata)
@@ -220,11 +116,11 @@
 ;;
 (defn- fileGetter ""
 
-  [^File vdir ^Channel ch ^String fname]
+  [^File vdir ^Channel ch info ^String fname]
 
   (let [ xdata (get-file vdir fname) ]
     (if (.hasContent xdata)
-      (replyGetVFile ch xdata)
+      (replyGetVFile ch info xdata)
       (ReplyXXX ch 204))
   ))
 
@@ -240,38 +136,42 @@
         (let [ ^ChannelHandlerContext ctx c
                ^XData xs (:payload msg)
                info (:info msg)
-               mtd (:method info)
                uri (:uri info)
+               mtd (:method info)
                pos (.lastIndexOf uri (int \/))
                p (if (< pos 0) uri (.substring uri (inc pos))) ]
           (debug "Method = " mtd ", Uri = " uri ", File = " p)
           (cond
-            (or (= mtd "POST")(= mtd "PUT")) (filePutter vdir ch p xs)
-            (or (= mtd "GET")(= mtd "HEAD")) (fileGetter vdir ch p)
+            (or (= mtd "POST")(= mtd "PUT")) (filePutter vdir ch info p xs)
+            (or (= mtd "GET")(= mtd "HEAD")) (fileGetter vdir ch info p)
             :else (ReplyXXX ch 405)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
 ;;
-(defn MakeMemFileSvr "A file server which can get/put files."
+(defn MakeMemFileServer "A file server which can get/put files."
 
   [^String host port options]
 
-  (let [ initor (fn []
-                  (proxy [ChannelInitializer] []
-                    (initChannel [^SocketChannel ch]
-                      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-                        (EnableSSL pl options)
-                        (.addLast pl "codec" (HttpServerCodec.))
-                        (.addLast pl "aux" (MakeAuxDecoder))
-                        (.addLast pl "chunker" (ChunkedWriteHandler.))
-                        (.addLast pl "filer" (fileHandler (:vdir options)))
-                        pl)))) ]
-    (StartNetty host port (BootstrapNetty initor options))
+  (let []
+
+    (StartNetty host port (BootstrapNetty
+      (fn []
+        (proxy [ChannelInitializer] []
+          (initChannel [^SocketChannel ch]
+            (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+              (AddEnableSSL pl options)
+              (AddExpect100 pl options)
+              (.addLast pl "codec" (HttpServerCodec.))
+              (.addLast pl "aux" (MakeAuxDecoder))
+              (.addLast pl "chunker" (ChunkedWriteHandler.))
+              (.addLast pl "filer" (fileHandler (:vdir options)))
+              pl))))
+      options))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private server-eof nil)
+(def ^:private filesvr-eof nil)
 

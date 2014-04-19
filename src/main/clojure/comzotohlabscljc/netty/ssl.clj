@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.server )
+  comzotohlabscljc.netty.ssl )
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
@@ -83,63 +83,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Netty NIO Server
-(defn BootstrapNetty ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; add SSL
+(defn EnableSSL ""
 
-  ;; map
-  [initor options]
+  ^ChannelPipeline
+  [options]
 
-  (let [ gp (NioEventLoopGroup.) gc (NioEventLoopGroup.)
-         bs (doto (ServerBootstrap.)
-                  (.group gp gc)
-                  (.channel io.netty.channel.socket.nio.NioServerSocketChannel)
-                  (.option ChannelOption/SO_REUSEADDR true)
-                  (.option ChannelOption/SO_BACKLOG 100)
-                  (.childOption ChannelOption/SO_RCVBUF (int (* 2 1024 1024)))
-                  (.childOption ChannelOption/TCP_NODELAY true))
-         opts (if-let [ x (:netty options) ] x {} ) ]
-    (doseq [ [k v] (seq opts) ]
-      (if (= :child k)
-        (doseq [ [x y] (seq v) ]
-          (.childOption bs x y))
-        (.option bs k v)))
-    (.childHandler bs (initor options))
-    { :bootstrap bs }
+  (let [ kf (:serverkey options)
+         pw (:passwd options)
+         ssl (if (nil? kf)
+                 nil
+                 (make-sslContext kf pw))
+         eg (if (nil? ssl)
+                nil
+                (doto (.createSSLEngine ssl)
+                      (.setUseClientMode false))) ]
+    (SslHandler. eg)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; start netty on host/port
-(defn StartNetty ""
-
-  [^String host port netty]
-
-  (let [ ch (-> (:bootstrap netty)
-                (.bind (InetSocketAddress. host (int port)))
-                (.sync)
-                (.channel)) ]
-    (debug "netty-xxx-server: running on host " host ", port " port)
-    (merge netty { :channel ch })
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn StopNetty "Clean up resources used by a netty server."
+(defn AddEnableSSL ""
 
-  [netty]
+  ^ChannelPipeline
+  [pipe options]
 
-  (let [ ^ServerBootstrap bs (:bootstrap netty)
-         gc (.childGroup bs)
-         gp (.group bs)
-         ^Channel ch (:channel netty) ]
-    (-> (.close ch)
-        (.addListener (reify ChannelFutureListener
-                        (operationComplete [_ cff]
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
-                          (when-not (nil? gc) (Try! (.shutdownGracefully gc))) )) ))
+  (let []
+    (.addLast ^ChannelPipeline pipe "ssl" (EnableSSL options))
+    pipe
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private server-eof nil)
+(def ^:private ssl-eof nil)
 

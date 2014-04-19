@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.server )
+  comzotohlabscljc.netty.snooper )
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
 
@@ -88,7 +88,35 @@
 (defn- writeReply ""
 
   [^ChannelHandlerContext ctx
+   ^HttpContent curObj
+   ^StringBuilder cookieBuf
    ^StringBuilder buf]
+
+  (let [ ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
+         response (DefaultFullHttpResponse.
+                    (HttpVersion/HTTP_1_1)
+                    (HttpResponseStatus/OK)
+                    (Unpooled/copiedBuffer (.toString buf) (CharsetUtil/UTF_8)))
+         clen (-> response (.content)(.readableBytes)) ]
+
+    (-> response (.headers)(.set "content-type" "text/plain; charset=UTF-8"))
+    (-> response (.headers)(.set "content-length" clen))
+
+    (when ka (-> response (.headers)(.set "connection" "keep-alive")))
+
+    (let [ cs (CookieDecoder/decode (.toString cookieBuf)) ]
+      (if (.isEmpty cs)
+        (do
+          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode "key1" "value1")))
+          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode "key2" "value2"))))
+        (doseq [ v (seq cs) ]
+          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode v))))))
+
+    (.write ctx response)
+    (.setLength cookieBuf 0)
+    (.setLength buf 0)
+
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -96,11 +124,14 @@
 
   [^ChannelHandlerContext ctx
    ^HttpRequest req
+   ^StringBuilder cookieBuf
    ^StringBuilder buf]
 
   (let [ dc (QueryStringDecoder. (.getUri req))
+         ka (HttpHeaders/isKeepAlive req)
          headers (.headers req)
          pms (.parameters dc) ]
+    (-> (.attr ctx (AttributeKey. "keepalive"))(.set ka))
     (doto buf
       (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
       (.append "===================================\r\n")
@@ -108,7 +139,7 @@
       (.append (.getProtocolVersion req))
       (.append "\r\n")
       (.append "HOSTNAME: ")
-      (.append (.getHost req "unknown"))
+      (.append (HttpHeaders/getHost req "unknown"))
       (.append "\r\n")
       (.append "REQUEST_URI: ")
       (.append (.getUri req))
@@ -118,10 +149,10 @@
                 (.append "HEADER: ")
                 (.append n)
                 (.append " = ")
-                (.append (clojure.string/join "," (.getAll hdrs n)))
+                (.append (clojure.string/join "," (.getAll headers n)))
                 (.append "\r\n")))
-            buf
-            (.names hdrs))
+            nil
+            (.names headers))
     (.append buf "\r\n")
     (reduce (fn [memo ^Map$Entry en]
               (doto buf
@@ -130,18 +161,20 @@
                 (.append " = ")
                 (.append (clojure.string/join "," (.getValue en)))
                 (.append "\r\n")))
-            buf
+            nil
             pms)
     (.append buf "\r\n")
+    (.append cookieBuf (nsb (.get headers "cookie")))
 
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleData ""
+(defn- handlec ""
 
   [^ChannelHandlerContext ctx
    ^HttpContent msg
+   ^StringBuilder cookieBuf
    ^StringBuilder buf]
 
   (let [ content (.content msg) ]
@@ -150,23 +183,23 @@
         (.append "CONTENT: ")
         (.append (.toString content (CharsetUtil/UTF_8)))
         (.append "\r\n")))
-
     (when (instance? LastHttpContent msg)
       (.append buf "END OF CONTENT\r\n")
       (let [ ^LastHttpContent trailer msg ]
         (when-not (-> trailer (.trailingHeaders)(.isEmpty))
           (.append buf "\r\n")
-          (reduce (fn [memo ^String n]
+          (reduce (fn [hdrs ^String n]
                     (doto buf
                       (.append "TRAILING HEADER: ")
                       (.append n)
                       (.append " = ")
                       (.append (clojure.string/join "," (.getAll hdrs n)))
-                      (.append "\r\n")))
-                  buf
-                  (-> trailer (.trailingHeaders)(.names)))
+                      (.append "\r\n"))
+                    hdrs)
+                  (.trailingHeaders trailer)
+                  (-> (.trailingHeaders trailer)(.names)))
           (.append buf "\r\n")))
-      (writeReply ctx msg buf))
+      (writeReply ctx msg cookieBuf buf))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -175,252 +208,43 @@
 
   []
 
-  (let [ buf (StringBuilder.) ]
+  (let [ cookies (StringBuilder.)
+         buf (StringBuilder.) ]
+
     (proxy [SimpleChannelInboundHandler][]
-      (channelRead0 [c msg]
+      (channelRead0 [ctx msg]
         (cond
-          (instance? HttpRequest msg)
-          (handleReq c msg buf)
-
-          (instance? HttpContent msg)
-          (handleData c msg buf)
-
+          (instance? HttpRequest msg) (handleReq ctx msg cookies buf)
+          (instance? HttpContent msg) (handlec ctx msg cookies buf)
           :else nil)
-  ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- initor ""
-
-  ^ChannelHandler
-  [options]
-
-  (proxy [ChannelInitializer] []
-    (initChannel [^SocketChannel ch]
-      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-        (EnableSSL pl options)
-        (.addLast pl "expect" (Expect100))
-        (.addLast pl "codec" (HttpServerCodec.))
-        (.addLast pl "h" (snooper))
-        pl))
-    ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeMemHTTPD ""
-
-  [^String host port options]
-
-  (StartNetty host port (BootstrapNetty initor options)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-`
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Netty NIO Server
-(defn BootstrapNetty ""
-
-  ( [options] (BootstrapNetty (:initor options) options))
-
-  ( [initor options]
-      (let [ gp (NioEventLoopGroup.) gc (NioEventLoopGroup.)
-             bs (doto (ServerBootstrap.)
-                      (.group gp gc)
-                      (.channel io.netty.channel.socket.nio.NioServerSocketChannel)
-                      (.option ChannelOption/SO_REUSEADDR true)
-                      (.option ChannelOption/SO_BACKLOG 100)
-                      (.childOption ChannelOption/SO_RCVBUF (int (* 2 1024 1024)))
-                      (.childOption ChannelOption/TCP_NODELAY true))
-             opts (if-let [ x (:netty options) ] x {} ) ]
-        (doseq [ [k v] (seq opts) ]
-          (if (= :child k)
-            (doseq [ [x y] (seq v) ]
-              (.childOption bs x y))
-            (.option bs k v)))
-        (.childHandler bs (initor options))
-        { :bootstrap bs })
+        ))
   ))
-
-;;CM20140416_86767954
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; start netty on host/port
-(defn StartNetty ""
-
-  [^String host port netty]
-
-  (let [ ch (-> (:bootstrap netty)
-                (.bind (InetSocketAddress. host (int port)))
-                (.sync)
-                (.channel)) ]
-    (debug "netty-xxx-server: running on host " host ", port " port)
-    (merge netty { :channel ch })
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn StopNetty "Clean up resources used by a netty server."
-
-  [netty]
-
-  (let [ ^ServerBootstrap bs (:bootstrap netty)
-         gc (.childGroup bs)
-         gp (.group bs)
-         ^Channel ch (:channel netty) ]
-    (-> (.close ch)
-        (.addListener (reify ChannelFutureListener
-                        (operationComplete [_ cff]
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
-                          (when-not (nil? gc) (Try! (.shutdownGracefully gc))) )) ))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; add SSL
-(defn EnableSSL ""
-
-  ^ChannelPipeline
-  [pipe options]
-
-  (let [ kf (:serverkey options)
-         pw (:passwd options)
-         ssl (if (nil? kf)
-                 nil
-                 (make-sslContext kf pw))
-         eg (if (nil? ssl)
-                nil
-                (doto (.createSSLEngine ssl)
-                      (.setUseClientMode false))) ]
-    (when-not (nil? eg) (.addFirst pipe "ssl" (SslHandler. eg)))
-    pipe
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; default initializer
-(defn MakeChannelInitializer ""
-
-  ^ChannelHandler
-  [options]
-
-  (proxy [ChannelInitializer] []
-    (initChannel [^SocketChannel ch]
-      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-        (EnableSSL pl options)
-        (.addLast pl "codec" (HttpServerCodec.))
-        (.addLast pl "chunker" (ChunkedWriteHandler.))
-        pl))
-    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; In memory HTTPD
-;;
 (defn MakeMemHTTPD "Make an in-memory http server."
 
-  ;; map with netty objects
   [^String host port options]
-
-  (StartNetty host port (BootstrapNetty options)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; file handlers
-(defn- replyGetVFile ""
-
-  [^Channel ch ^XData xdata]
-
-  (let [ info (ga-map ch attr-info)
-         res (MakeHttpReply 200)
-         clen (.size xdata)
-         kalive (and (notnil? info) (:keep-alive info)) ]
-    (HttpHeaders/setHeader res "content-type" "application/octet-stream")
-    (HttpHeaders/setContentLength res clen)
-    (HttpHeaders/setTransferEncodingChunked res)
-    (WWrite ch res)
-    (CloseCF (WFlush ch (ChunkedStream. (.stream xdata))) kalive)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- filePutter ""
-
-  [^File vdir ^Channel ch ^String fname ^XData xdata]
-
-  (try
-    (save-file vdir fname xdata)
-    (ReplyXXX ch 200)
-    (catch Throwable e#
-      (ReplyXXX ch 500))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fileGetter ""
-
-  [^File vdir ^Channel ch ^String fname]
-
-  (let [ xdata (get-file vdir fname) ]
-    (if (.hasContent xdata)
-      (replyGetVFile ch xdata)
-      (ReplyXXX ch 204))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fileHandler ""
-
-  [vdir]
 
   (let []
-    (proxy [ChannelInboundHandlerAdapter][]
-      (channelRead [c msg]
-        (let [ ^ChannelHandlerContext ctx c
-               ^XData xs (:payload msg)
-               info (:info msg)
-               mtd (:method info)
-               uri (:uri info)
-               pos (.lastIndexOf uri (int \/))
-               p (if (< pos 0) uri (.substring uri (inc pos))) ]
-          (debug "Method = " mtd ", Uri = " uri ", File = " p)
-          (cond
-            (or (= mtd "POST")(= mtd "PUT")) (filePutter vdir ch p xs)
-            (or (= mtd "GET")(= mtd "HEAD")) (fileGetter vdir ch p)
-            :else (ReplyXXX ch 405)))))
-  ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; make a In memory File Server
-;;
-(defn MakeMemFileSvr "A file server which can get/put files."
-
-  [^String host port options]
-
-  (let [ initor (fn []
-                  (proxy [ChannelInitializer] []
-                    (initChannel [^SocketChannel ch]
-                      (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-                        (EnableSSL pl options)
-                        (.addLast pl "codec" (HttpServerCodec.))
-                        (.addLast pl "aux" (MakeAuxDecoder))
-                        (.addLast pl "chunker" (ChunkedWriteHandler.))
-                        (.addLast pl "filer" (fileHandler (:vdir options)))
-                        pl)))) ]
-    (StartNetty host port (BootstrapNetty initor options))
+    (StartNetty host port (BootstrapNetty
+      (fn []
+        (proxy [ChannelInitializer] []
+          (initChannel [^SocketChannel ch]
+            (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+              (AddEnableSSL pl options)
+              (AddExpect100 pl options)
+              (.addLast pl "codec" (HttpServerCodec.))
+              (.addLast pl "chunker" (ChunkedWriteHandler.))
+              (.addLast pl "hhh" (snooper))
+              pl))
+          ))
+      options))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private server-eof nil)
+(def ^:private snooper-eof nil)
+
 
