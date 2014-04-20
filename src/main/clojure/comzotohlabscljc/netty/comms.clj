@@ -97,6 +97,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn NettyChannelInitor ""
+
+  [wrapper options]
+
+  (let []
+    (proxy [ChannelInitializer] []
+      (initChannel [^SocketChannel ch]
+        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+          (apply wrapper pl options))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn CloseCF "Maybe close the channel."
 
   [^ChannelFuture cf keepAlive?]
@@ -187,6 +200,29 @@
   [^ChannelHandlerContext ctx]
 
   (-> (.channel ctx) (WFlush (MakeFullHttpReply 100))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddServerCodec ""
+
+  [^ChannelPipeline pipe]
+
+  (let []
+    (.addLast pipe "codec" (HttpServerCodec.))
+    pipe
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddWriteChunker ""
+
+  [^ChannelPipeline pipe]
+
+  (let []
+    (.addLast pl "chunker" (ChunkedWriteHandler.))
+    pipe
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

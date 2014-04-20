@@ -104,7 +104,7 @@
         (doseq [ [x y] (seq v) ]
           (.childOption bs x y))
         (.option bs k v)))
-    (.childHandler bs (initor options))
+    (.childHandler bs (NettyChannelInitor initor options))
     { :bootstrap bs }
   ))
 

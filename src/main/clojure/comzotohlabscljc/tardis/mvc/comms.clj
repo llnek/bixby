@@ -54,48 +54,68 @@
 (use '[comzotohlabscljc.util.meta :only [make-obj] ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- isModified ""
 
-(defn- isModified [^String eTag lastTm ^HttpRequest req]
+  [^String eTag lastTm ^HttpRequest req]
+
   (with-local-vars [ modd true ]
     (cond
       (.containsHeader req "if-none-match")
       (var-set modd (not= eTag (HttpHeaders/getHeader req "if-none-match")))
 
       (.containsHeader req "if-unmodified-since")
-      (let [ s (HttpHeaders/getHeader req "if-unmodified-since") ]
-        (when (hgl? s)
+      (if-let [ s (HttpHeaders/getHeader req "if-unmodified-since") ]
           (Try! (when (>= (.getTime (.parse (MVCUtils/getSDF) s)) lastTm)
-                     (var-set modd false)))))
+                      (var-set modd false))))
       :else nil)
-    @modd))
+    @modd
+  ))
 
-(defn- addETag
-  [^comzotohlabscljc.tardis.core.sys.Element src
-   ^HTTPEvent evt ^HttpRequest req ^HttpResponse rsp ^File file ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- addETag ""
 
-    (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
-           lastTm (.lastModified file)
-           eTag  (str "\""  lastTm  "-"  (.hashCode file)  "\"") ]
-      (if (isModified eTag lastTm req)
+  [ ^comzotohlabscljc.tardis.core.sys.Element src
+    ^HTTPEvent evt
+    ^HttpRequest req
+    ^HttpResponse rsp
+    ^File file ]
+
+  (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
+         lastTm (.lastModified file)
+         eTag  (str "\""  lastTm  "-"  (.hashCode file)  "\"") ]
+    (if (isModified eTag lastTm req)
         (HttpHeaders/setHeader rsp "last-modified"
-                    (.format (MVCUtils/getSDF) (Date. lastTm)))
+                  (.format (MVCUtils/getSDF) (Date. lastTm)))
         (if (= (.getMethod req) HttpMethod/GET)
-          (.setStatus rsp HttpResponseStatus/NOT_MODIFIED)))
-      (HttpHeaders/setHeader rsp "cache-control"
-                  (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-      (when (.getAttr src :useETag)
-        (HttpHeaders/setHeader rsp "etag" eTag)) ))
+            (.setStatus rsp HttpResponseStatus/NOT_MODIFIED)))
+    (HttpHeaders/setHeader rsp "cache-control"
+                (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
+    (when (.getAttr src :useETag)
+      (HttpHeaders/setHeader rsp "etag" eTag))
+  ))
 
-(defn- reply-error [^Emitter src code]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reply-error ""
+
+  [^Emitter src code]
+
   (let [ ctr (.container src)
          appDir (.getAppDir ctr) ]
     (getLocalFile appDir (str "pages/errors/" code ".html"))))
 
-(defn- serve-error
-  [^comzotohlabscljc.tardis.core.sys.Element src
-   ^Channel ch
-   code]
-  (with-local-vars [ rsp (makeHttpReply code) bits nil wf nil]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ServeError ""
+
+  [ ^comzotohlabscljc.tardis.core.sys.Element src
+    ^Channel ch
+    code ]
+
+  (with-local-vars [ rsp (MakeHttpReply code) bits nil wf nil]
     (try
       (let [ h (.getAttr src :errorHandler)
              ^HTTPErrorHandler
@@ -112,16 +132,22 @@
         (var-set wf (.write ch @rsp))
         (when-not (nil? @bits)
           (var-set wf (.write ch (ChannelBuffers/wrappedBuffer ^bytes @bits))))
-        (closeCF false @wf))
+        (CloseCF @wf false))
       (catch Throwable e#
-        (NetUtils/closeChannel ch)))))
+        (NetUtils/closeChannel ch)))
+  ))
 
-(defn- handleStatic [src ^Channel ch req ^HTTPEvent evt ^File file]
-  (let [ rsp (makeHttpReply ) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleStatic ""
+
+  [src ^Channel ch req ^HTTPEvent evt ^File file]
+
+  (let [ rsp (MakeHttpReply ) ]
     (try
       (if (or (nil? file)
               (not (.exists file)))
-        (serve-error src ch 404)
+        (ServeError src ch 404)
         (do
           (debug "serving static file: " (nice-fpath file))
           (addETag src evt req rsp file)
@@ -129,13 +155,20 @@
           (if (= (-> rsp (.getStatus)(.getCode)) 304)
             (do
               (HttpHeaders/setContentLength rsp 0)
-              (closeCF (.isKeepAlive evt) (.write ch rsp)))
+              (CloseCF (.write ch rsp) (.isKeepAlive evt) ))
             (replyFileAsset src ch req rsp file))))
       (catch Throwable e#
         (error "failed to get static resource " (.getUri evt) e#)
-        (Try!  (serve-error src ch 500)))) ))
+        (Try!  (ServeError src ch 500))))
+  ))
 
-(defn- serveWelcomeFile [^HTTPEvent evt]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- serveWelcomeFile ""
+
+  [^HTTPEvent evt]
+
   (if (not (.matches (.getUri evt) "/?"))
     nil
     (let [ ^Emitter src (.emitter evt)
@@ -146,12 +179,17 @@
               (let [ file (File. appDir (str DN_PUBLIC "/" f)) ]
                 (if (and (.exists file)
                          (.canRead file)) file nil)))
-            (seq fs)) )))
+            (seq fs)))
+  ))
 
-(defn- serveStatic
-  [^Emitter src
-   ^comzotohlabscljc.net.rts.RouteInfo ri
-   ^Matcher mc ^Channel ch req ^HTTPEvent evt]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ServeStatic ""
+
+  [ ^Emitter src
+    ^comzotohlabscljc.net.rts.RouteInfo ri
+    ^Matcher mc ^Channel ch req ^HTTPEvent evt]
+
   (let [ ^File appDir (-> src (.container)(.getAppDir))
          mpt (nsb (.getf ^comzotohlabscljc.util.core.MuObj ri :mountPoint))
          ps (nice-fpath (File. appDir ^String DN_PUBLIC))
@@ -172,15 +210,21 @@
         (handleStatic src ch req evt (File. ^String @mp))
         (do
           (warn "attempt to access non public file-system: " @mp)
-          (serve-error src ch 403)
-          )))))
+          (ServeError src ch 403))
+      ))
+  ))
 
-(defn- serveRoute
-  [^comzotohlabscljc.tardis.core.sys.Element src
-   ^comzotohlabscljc.net.rts.RouteInfo ri
-   ^Matcher mc
-   ^Channel ch
-   ^comzotohlabscljc.util.core.MuObj evt]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ServeRoute ""
+
+  [ ^comzotohlabscljc.tardis.core.sys.Element src
+    ^comzotohlabscljc.net.rts.RouteInfo ri
+    ^Matcher mc
+    ^Channel ch
+    ^comzotohlabscljc.util.core.MuObj evt]
+
   (let [ wms (.getAttr src :waitMillis)
          pms (.collect ri mc)
          options { :router (.getHandler ri)
@@ -191,89 +235,8 @@
            w (make-async-wait-holder (make-netty-trigger ch evt co) evt) ]
       (.timeoutMillis w wms)
       (.hold co w)
-      (.dispatch co evt options))) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn- make-service-io [^comzotohlabscljc.tardis.io.core.EmitterAPI co]
-  (reify comzotohlabscljc.netty.comms.NettyServiceIO
-    (onReply [_ ch rsp msginfo rdata] nil)
-    (onError [_ ch msginfo exp]  nil)
-    (preSend [_ ch msg] nil)
-    (onRequest [_ ch req msginfo rdata]
-      (let [ ^HTTPEvent evt (ioes-reify-event co ch req rdata)
-             ^comzotohlabscljc.tardis.core.sys.Element
-             ctr (.container ^com.zotohlabs.gallifrey.io.Emitter co)
-             ^comzotohlabscljc.netty.comms.RouteCracker
-             rcc (.getAttr ^comzotohlabscljc.tardis.core.sys.Element co :rtcObj)
-             [r1 ^comzotohlabscljc.net.rts.RouteInfo r2 r3 r4]
-             (.crack rcc msginfo) ]
-        (cond
-          (and r1 (hgl? r4))
-          (sendRedirect ch false r4)
-
-          (= r1 true)
-          (do
-            (debug "matched one route: " (.getPath r2) " , and static = " (.isStatic? r2))
-            (if (.isStatic? r2)
-              (serveStatic co r2 r3 ch req evt)
-              (serveRoute co r2 r3 ch evt)))
-
-          :else
-          (do
-            (debug "failed to match uri: " (.getUri evt))
-            (serve-error co ch 404)) )))
-    ))
-
-(defn- mvcInitor ""
-
-  [options]
-
-  (let []
-    (proxy [ChannelInitializer] []
-      (initChannel [^SocketChannel ch]
-        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-          (AddEnableSSL pl options)
-          (AddExpect100 pl options)
-          (.addLast pl "codec" (HttpServerCodec.))
-          (AddAuxDecoder pl options)
-          (.addLast pl "chunker" (ChunkedWriteHandler.))
-          (AddMsgDispatcher pl options)
-          (AddExceptionCatcher pl options)
-          pl)))
+      (.dispatch co evt options))
   ))
-
-
-(defn- init-netty
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element
-         ctr (.parent ^Hierarchial co)
-         rtc (makeRouteCracker (.getAttr ctr :routes))
-         options { :serverkey (.getAttr co :serverKey)
-                   :passwd (.getAttr co :pwd)
-                   :forwardBadRoutes true
-                   :emitter co
-                   :rtcObj rtc }
-         nes (BootstrapNetty mvcInitor options) ]
-    (debug "server-netty - made - success.")
-    (.setAttr! co :rtcObj rtc)
-    (.setAttr! co :netty nes)
-    co))
-
-(defmethod comp-configure :czc.tardis.io/NettyMVC
-  [^comzotohlabscljc.tardis.core.sys.Element co cfg]
-  (let [ c (nsb (:context cfg)) ]
-    (.setAttr! co :contextPath (strim c))
-    (.setAttr! co :cacheMaxAgeSecs (:cacheMaxAgeSecs cfg))
-    (.setAttr! co :useETags (:useETags cfg))
-    (.setAttr! co :welcomeFiles (:welcomeFiles cfg))
-    (.setAttr! co :router (strim (:handler cfg)))
-    (.setAttr! co :errorRouter (strim (:errorHandler cfg)))
-    (http-basic-config co cfg) ))
-
-(defmethod comp-initialize :czc.tardis.io/NettyMVC
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-  (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
