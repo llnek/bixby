@@ -204,6 +204,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- discarder ""
+
+  [action]
+
+  (let []
+
+    (proxy [SimpleChannelInboundHandler][]
+      (channelRead0 [c msg]
+        (let [ ^ChannelHandlerContext ctx c
+               ^Channel ch (.channel ctx) ]
+          (when (instance? LastHttpContent msg)
+            (ReplyXXX ch 200 false)
+            (when (fn? action)
+                  (Try! (action))))
+        )))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- snooper ""
 
   []
@@ -222,7 +241,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; In memory HTTPD
-(defn MakeMemHTTPD "Make an in-memory http server."
+(defn MakeSnoopHTTPD ""
 
   [^String host port options]
 
@@ -238,6 +257,29 @@
               (.addLast pl "codec" (HttpServerCodec.))
               (.addLast pl "chunker" (ChunkedWriteHandler.))
               (.addLast pl "hhh" (snooper))
+              pl))
+          ))
+      options))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+(defn MakeDiscardHTTPD "Just returns 200 OK"
+
+  [^String host port options]
+
+  (let [ action (:action options) ]
+
+    (StartNetty host port (BootstrapNetty
+      (fn []
+        (proxy [ChannelInitializer] []
+          (initChannel [^SocketChannel ch]
+            (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+              (AddEnableSSL pl options)
+              (AddExpect100 pl options)
+              (.addLast pl "codec" (HttpServerCodec.))
+              (.addLast pl "chunker" (ChunkedWriteHandler.))
+              (.addLast pl "hhh" (discarder action))
               pl))
           ))
       options))

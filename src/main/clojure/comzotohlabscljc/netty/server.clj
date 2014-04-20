@@ -114,11 +114,14 @@
 
   [^String host port netty]
 
-  (let [ ch (-> (:bootstrap netty)
-                (.bind (InetSocketAddress. host (int port)))
+  (let [ ^InetAddress ip (if (nichts? host)
+              (InetAddress/getLocalHost)
+              (InetAddress/getByName host))
+         ch (-> (:bootstrap netty)
+                (.bind (InetSocketAddress. ip (int port)))
                 (.sync)
                 (.channel)) ]
-    (debug "netty-xxx-server: running on host " host ", port " port)
+    (debug "netty-xxx-server: running on host " ip ", port " port)
     (merge netty { :channel ch })
   ))
 

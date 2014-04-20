@@ -85,146 +85,75 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; main netty classes
+;;
+(defn BootstrapNettyClient
 
-(defrecord NettyClient [^Bootstrap client ^ChannelGroup cgroup ] )
+  ;; map
+  [initor options]
 
-(declare handle-response)
+  (let [ g (NioEventLoopGroup.)
+         bs (doto (Bootstrap.)
+                  (.group g)
+                  (.channel io.netty.channel.socket.nio.NioSocketChannel)
+                  (.option ChannelOption/TCP_NODELAY true)
+                  (.option ChannelOption/SO_KEEPALIVE true))
+         opts (:netty options) ]
+    (doseq [ [k v] (seq opts) ]
+      (.option bs k v))
+    (.handler bs (initor options))
+
+    { :bootstrap bs }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- generic-handler "Make a generic Netty 4.x Pipeline Handler."
+(defn ConnectNettyClient "Start Netty 4.x client."
 
-  ^ChannelHandler
-  [options]
+  [^URL targetUrl netty]
 
-  (proxy [SimpleChannelInboundHandler] []
+  (let [ ssl (= "https" (.getProtocol targetUrl))
+         pnum (.getPort targetUrl)
+         port (if (< pnum 0) (if ssl 443 80) pnum)
+         host (.getHost targetUrl)
+         sock (InetSocketAddress. host (int port))
+         ^ChannelFuture cf (-> (:bootstrap netty)
+                               (.connect sock)
+                               (.sync)) ]
+    (when-not (.isSuccess cf)
+      (throw (if-let [ eee (.cause cf) ]
+                     eee
+                     (IOException. (str "Connect failed: " targetUrl)))))
+    (merge netty { :channel (.channel cf) })
+  ))
 
-    (exceptionCaught [ctx err]
-      (let [ ch (.channel ^ChannelHandlerContext ctx)
-             ucb (:usercb options) ]
-        (error err "")
-        (when-not (nil? ucb)
-          (.onerror ^comzotohlabscljc.netty.comms.NettyServiceIO
-                    ucb ch nil err))
-        (Try! (NetUtils/closeChannel ch))))
-
-    (channelRead0 [ctx msg]
-      ;;(debug "pipeline-entering with msg: " (type msg))
-      (cond
-        (instance? LastHttpContent msg)
-        (handle-chunk ctx msg)
-
-        (instance? HttpResponse msg)
-        (handle-response ctx msg options)
-
-        (instance? HttpContent msg)
-        (handle-chunk ctx msg)
-
-        (nil? msg)
-        (throw (IOException. "Got null object."))
-
-        :else
-        (throw (IOException. (str "Got object: " (class msg))) )))
-
-    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizClient ""
+(defn- sendHttpClient ""
 
-  ^ChannelHandler
-  [options]
-
-  (proxy [ChannelInitializer][]
-    (initChannel [^SocketChannel ch]
-      (let [ ssl (= (.getProtocol ^URL (:targetUrl options)) "https")
-             ^ChannelPipeline pl (NetUtils/getPipeline ch)
-             ^SSLContext ctx (make-sslClientCtx ssl)
-             eg (if (notnil? ctx)
-                    (doto (.createSSLEngine ctx)
-                          (.setUseClientMode true))) ]
-        (when-not (nil? eg) (.addLast pl "ssl" (SslHandler. eg)))
-          ;;(.addLast "decoder" (HttpRequestDecoder.))
-          ;;(.addLast "encoder" (HttpResponseEncoder.))
-        (.addLast pl "codec" (HttpClientCodec.))
-        (.addLast pl "chunker" (ChunkedWriteHandler.))
-        (.addLast pl "handler" (generic-handler options))
-        pl))))
-
-(defn- makeClientNetty ""
-
-  ([] (makeClientNetty {}))
-
-  ([options]
-   (let [ g (NioEventLoopGroup.)
-          opts (:netty options)
-          bs (doto (Bootstrap.)
-                   (.group g)
-                   (.channel io.netty.channel.socket.nio.NioSocketChannel)
-                   (.option ChannelOption/TCP_NODELAY true)
-                   (.option ChannelOption/SO_KEEPALIVE true))
-          cg (DefaultChannelGroup. (uid) GlobalEventExecutor/INSTANCE) ]
-     (doseq [ [k v] (seq opts) ]
-       (.option bs k v))
-     (.handler bs (inizClient options))
-     (comzotohlabscljc.netty.client.NettyClient bs cg)
-     )))
-
-(defn- connectClient "Make a Netty 4.x client."
-
-  ([^URL targetUrl] (connectClient {}))
-
-  ([^URL targetUrl options]
-   (let [ opts (merge { :usercb (MakeNilServiceIO)
-                        :netty {}
-                        :targetUrl targetUrl }
-                      options)
-          ssl (= "https" (.getProtocol targetUrl))
-          pnum (.getPort targetUrl)
-          port (if (< pnum 0) (if ssl 443 80) pnum)
-          host (.getHost targetUrl)
-          sock (InetSocketAddress. host (int port))
-          ucb (:usercb opts)
-          nc (makeClientNetty opts)
-          ^Bootstrap bs (:client nc)
-          ^ChannelFuture cf (-> bs
-                                (.connect sock)
-                                (.sync))
-          ok (.isSuccess cf)
-          ch (if ok (.channel cf))
-          e (if (not ok) (.cause cf)) ]
-     (when-not ok
-       (if (nil? e)
-           (throw (IOException. "Failed to connect to URL: " targetUrl))
-           (throw e)))
-     (.add ^ChannelGroup (:cgroup nc) (.channel cf))
-     (debug "Netty client connected to " host ":" port " - OK.")
-     [nc ch opts] )))
-
-(defn- send-httpClient ""
-
-  [^URL targetUrl ^XData xdata options]
+  [netty ^String verb ^XData xdata options]
 
   (let [ clen (if (nil? xdata) 0 (.size xdata))
+         targetUrl (:targetUrl options)
          mo (:override options)
          md (if (> clen 0)
-              (if (hgl? mo) mo "POST")
+              (if (hgl? mo) "POST")
               (if (hgl? mo) mo "GET"))
+         mt (if-let [mo mo] mo md)
          req (DefaultHttpRequest. HttpVersion/HTTP_1_1
-                                  (HttpMethod/valueOf md)
+                                  (HttpMethod/valueOf mt)
                                   (nsb targetUrl))
-         [nc ^Channel ch opts] (connectClient targetUrl options)
-         ka (:keepAlive opts)
-         ^comzotohlabscljc.netty.comms.NettyServiceIO
-         ucb (:usercb opts) ]
-    (HttpHeaders/setHeader req "Connection" (if ka "keep-alive" "close"))
+         presend (:presend options) ]
+
+    (HttpHeaders/setHeader req "Connection" (if (:keep-alive options) "keep-alive" "close"))
     (HttpHeaders/setHeader req "host" (.getHost targetUrl))
-    (.presend ucb ch req)
+    (when (fn? presend) (presend (:channel netty) req))
+
     (let [ ct (HttpHeaders/getHeader req "content-type") ]
       (when (and (StringUtils/isEmpty ct)
                  (> clen 0))
-        (HttpHeaders/setHeader req "content-type" "application/octet-stream")) )
+        (HttpHeaders/setHeader req "content-type" "application/octet-stream")))
+
     (HttpHeaders/setContentLength req clen)
     (debug "Netty client: about to flush out request (headers)")
     (debug "Netty client: content has length " clen)
@@ -235,31 +164,30 @@
                       (WFlush ch (ChunkedStream. (.stream xdata)))
                       (WFlush ch (Unpooled/wrappedBuffer (.javaBytes xdata)))))
         (NetUtils/flush ch))
-      (CloseCF ka @wf))
+      (CloseCF @wf (:keep-alive options) ))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Async HTTP Post
 (defn AsyncPost "Async HTTP Post"
 
-  ([^URL targetUrl ^XData xdata options]
-   (send-httpClient targetUrl xdata options))
+  ([ netty ^XData xdata options ]
+   (sendHttpClient "POST" netty xdata options))
 
-  ([^URL targetUrl ^XData xdata]
-   (AsyncPost targetUrl xdata {})) )
+  ([ netty ^XData xdata ]
+   (AsyncPost netty xdata {})) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Async HTTP Get
 (defn AsyncGet "Async HTTP GET"
 
-  ([^URL targetUrl] (AsyncGet targetUrl {}))
+  ([ netty ] (AsyncGet netty {}))
 
-  ([^URL targetUrl options]
-   (send-httpClient targetUrl nil options)) )
+  ([ netty options ]
+   (sendHttpClient "GET" netty nil options)) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def ^:private client-eof nil)
-
 
 

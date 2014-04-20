@@ -85,7 +85,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; add SSL
-(defn EnableSSL ""
+(defn EnableUsrSSL ""
+
+  ^ChannelPipeline
+  [options]
+
+  (let [ ^SSLContext ctx (make-sslClientCtx true)
+         eg (if (notnil? ctx)
+                (doto (.createSSLEngine ctx)
+                      (.setUseClientMode true))) ]
+    (if (nil? eg) nil (SslHandler. eg))
+
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddEnableUsrSSL ""
+
+  ^ChannelPipeline
+  [pipe options]
+
+  (let [ ssl (= (.getProtocol ^URL (:targetUrl options)) "https") ]
+    (when ssl
+      (.addLast ^ChannelPipeline pipe "ssl" (EnableUsrSSL options)))
+    pipe
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; add SSL
+(defn EnableSvrSSL ""
 
   ^ChannelPipeline
   [options]
@@ -99,18 +127,18 @@
                 nil
                 (doto (.createSSLEngine ssl)
                       (.setUseClientMode false))) ]
-    (SslHandler. eg)
+    (if (nil? eg) nil (SslHandler. eg))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddEnableSSL ""
+(defn AddEnableSvrSSL ""
 
   ^ChannelPipeline
   [pipe options]
 
   (let []
-    (.addLast ^ChannelPipeline pipe "ssl" (EnableSSL options))
+    (.addLast ^ChannelPipeline pipe "ssl" (EnableSvrSSL options))
     pipe
   ))
 

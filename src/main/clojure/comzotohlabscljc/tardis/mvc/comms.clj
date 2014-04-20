@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.mvc.handler)
+  comzotohlabscljc.tardis.mvc.comms)
 
 (import '(org.apache.commons.lang3 StringUtils))
 (import '(java.util Date))
@@ -277,5 +277,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private handler-eof nil)
+(def ^:private comms-eof nil)
 

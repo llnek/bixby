@@ -13,7 +13,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.mvc.handler)
+  comzotohlabscljc.tardis.mvc.routing)
 
 (import '(org.apache.commons.lang3 StringUtils))
 (import '(java.util Date))
@@ -225,57 +225,46 @@
             (serve-error co ch 404)) )))
     ))
 
-(defn- mvcInitor ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RouteFilter ""
 
-  [options]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let []
-    (proxy [ChannelInitializer] []
-      (initChannel [^SocketChannel ch]
-        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-          (AddEnableSSL pl options)
-          (AddExpect100 pl options)
-          (.addLast pl "codec" (HttpServerCodec.))
-          (AddAuxDecoder pl options)
-          (.addLast pl "chunker" (ChunkedWriteHandler.))
-          (AddMsgDispatcher pl options)
-          (AddExceptionCatcher pl options)
-          pl)))
+  (let [ ^comzotohlabscljc.netty.comms.RouteCracker rcc (.getAttr co :rtcObj) ]
+    (proxy [ChannelInboundHandlerAdapter][]
+      (channelRead0 [c msg]
+        (if (instance? HttpRequest msg)
+          (let [ ^ChannelHandlerContext ctx c
+                 ch (.channel ctx)
+                 ^HttpRequest req msg
+                 [r1 ^comzotohlabscljc.net.rts.RouteInfo r2 r3 r4]
+                 (.crack rcc msginfo) ]
+            (cond
+              (and r1 (hgl? r4))
+              (SendRedirect ch false r4)
+
+              (= r1 true)
+              (.fireChannelRead ctx msg)
+
+              :else
+              (do
+                (debug "failed to match uri: " (.getUri msg))
+                (serve-error co ch 404)) ))
+          (.fireChannelRead ctx msg))))
   ))
 
 
-(defn- init-netty
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element
-         ctr (.parent ^Hierarchial co)
-         rtc (makeRouteCracker (.getAttr ctr :routes))
-         options { :serverkey (.getAttr co :serverKey)
-                   :passwd (.getAttr co :pwd)
-                   :forwardBadRoutes true
-                   :emitter co
-                   :rtcObj rtc }
-         nes (BootstrapNetty mvcInitor options) ]
-    (debug "server-netty - made - success.")
-    (.setAttr! co :rtcObj rtc)
-    (.setAttr! co :netty nes)
-    co))
 
-(defmethod comp-configure :czc.tardis.io/NettyMVC
-  [^comzotohlabscljc.tardis.core.sys.Element co cfg]
-  (let [ c (nsb (:context cfg)) ]
-    (.setAttr! co :contextPath (strim c))
-    (.setAttr! co :cacheMaxAgeSecs (:cacheMaxAgeSecs cfg))
-    (.setAttr! co :useETags (:useETags cfg))
-    (.setAttr! co :welcomeFiles (:welcomeFiles cfg))
-    (.setAttr! co :router (strim (:handler cfg)))
-    (.setAttr! co :errorRouter (strim (:errorHandler cfg)))
-    (http-basic-config co cfg) ))
 
-(defmethod comp-initialize :czc.tardis.io/NettyMVC
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-  (init-netty co))
+
+
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private handler-eof nil)
+(def ^:private routing-eof nil)
 

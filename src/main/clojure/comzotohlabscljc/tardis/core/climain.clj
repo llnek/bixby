@@ -161,16 +161,9 @@
 (defn- enableRemoteShutdown [^comzotohlabscljc.util.core.MuObj ctx]
   (let [ port (conv-long (System/getProperty "skaro.kill.port") 4444) ]
     (info "Enabling remote shutdown...")
-    (makeMemHttpd
-      "127.0.0.1"
-      port
-      { :usercb (reify NettyServiceIO
-                  (onError [_ ch msginfo evt] nil)
-                  (preSend [_ ch msg] nil)
-                  (onRequest [_ ch req msginfo rdata]
-                    (closeCF false (.write ^Channel ch (makeHttpReply 200)))
-                    (stop-cli ctx))
-                  (onReply [_ ch rsp msginfo rdata] nil)) } )))
+    ;;TODO - how to clean this up
+    (MakeDiscardHTTPD "127.0.0.1" port { :action (fn [] (stop-cli ctx)) })
+  ))
 
 (defn- hookShutdown [^comzotohlabscljc.util.core.MuObj ctx]
   (let [ cli (.getf ctx K_CLISH) ]

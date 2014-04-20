@@ -1,56 +1,52 @@
-;;
+;; This library is distributed in  the hope that it will be useful but without
+;; any  warranty; without  even  the  implied  warranty of  merchantability or
+;; fitness for a particular purpose.
+;; The use and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+;; can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any  fashion, you are agreeing to be bound by the
+;; terms of this license. You  must not remove this notice, or any other, from
+;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-;;
-;; This library is distributed in the hope that it will be useful
-;; but without any warranty; without even the implied warranty of
-;; merchantability or fitness for a particular purpose.
-;;
-;; The use and distribution terms for this software are covered by the
-;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-;; which can be found in the file epl-v10.html at the root of this distribution.
-;;
-;; By using this software in any fashion, you are agreeing to be bound by
-;; the terms of this license.
-;; You must not remove this notice, or any other, from this software.
-;;
+
 
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.triggers)
+  comzotohlabscljc.tardis.io.triggers )
 
-(import '(io.netty.handler.codec.http HttpResponseStatus))
+(import '(org.jboss.netty.handler.codec.http HttpResponseStatus))
 (import '(org.eclipse.jetty.continuation ContinuationSupport))
 (import '(org.eclipse.jetty.continuation Continuation))
-(import '(io.netty.channel Channel ChannelFuture ChannelFutureListener))
-(import '(io.netty.handler.codec.http
+(import '(org.jboss.netty.channel Channel ChannelFuture ChannelFutureListener))
+(import '(org.jboss.netty.handler.codec.http
   HttpResponse HttpHeaders HttpHeaders$Names HttpVersion
-  LastHttpContent
-  ServerCookieEncoder DefaultHttpResponse))
+  DefaultCookie
+  CookieEncoder DefaultHttpResponse))
 (import '(java.nio.channels ClosedChannelException))
 (import '(java.io OutputStream IOException))
-(import '(io.netty.handler.stream ChunkedStream))
+(import '(org.jboss.netty.handler.stream ChunkedStream))
 (import '(java.util List Timer TimerTask))
 (import '(java.net HttpCookie))
 (import '(javax.servlet.http Cookie HttpServletRequest HttpServletResponse))
-(import '(io.netty.buffer ByteBuf Unpooled ByteBufHolder))
+(import '(org.jboss.netty.buffer ChannelBuffer ChannelBuffers))
 (import '(java.nio ByteBuffer))
 
 (import '(org.apache.commons.io IOUtils))
-(import '(com.zotoh.frwk.util NCMap))
-(import '(com.zotoh.frwk.io XData))
-(import '(com.zotoh.frwk.core Identifiable))
-(import '(com.zotoh.hohenheim.io WebSockEvent WebSockResult HTTPEvent))
-(import '(io.netty.handler.codec.http.websocketx
+(import '(com.zotohlabs.frwk.util NCMap))
+(import '(com.zotohlabs.frwk.io XData))
+(import '(com.zotohlabs.frwk.core Identifiable))
+(import '(com.zotohlabs.gallifrey.io WebSockEvent WebSockResult HTTPEvent))
+(import '(org.jboss.netty.handler.codec.http.websocketx
   WebSocketFrame
   BinaryWebSocketFrame
   TextWebSocketFrame))
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohcljc.netty.comms :only [HTTP-CODES wwrite wflush makeHttpReply] ])
-(use '[comzotohcljc.util.core :only [make-mmap stringify notnil? Try!] ])
-(use '[comzotohcljc.util.str :only [nsb] ])
-(use '[comzotohcljc.hhh.io.core])
+(use '[comzotohlabscljc.netty.comms :only [HTTP-CODES makeHttpReply closeCF] ])
+(use '[comzotohlabscljc.util.core :only [make-mmap stringify notnil? Try!] ])
+(use '[comzotohlabscljc.util.str :only [nsb] ])
+(use '[comzotohlabscljc.tardis.io.core])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -70,7 +66,7 @@
         (.setSecure (.getSecure c))
         (.setVersion (.getVersion c))) )
 
-(defn- replyServlet [^comzotohcljc.util.core.MuObj res
+(defn- replyServlet [^comzotohlabscljc.util.core.MuObj res
                      ^HttpServletRequest req
                      ^HttpServletResponse rsp
                      src]
@@ -139,11 +135,21 @@
     (when-not (nil? cf)
       (.addListener cf ChannelFutureListener/CLOSE ))))
 
+(defn- cookieToNetty ^DefaultCookie [^HttpCookie c]
+  (doto (DefaultCookie. (.getName c) (.getValue c))
+        (.setDomain (.getDomain c))
+        (.setHttpOnly (.isHttpOnly c))
+        (.setMaxAge (.getMaxAge c))
+        (.setPath (.getPath c))
+        (.setSecure (.getSecure c))
+        (.setVersion (.getVersion c))) )
+
 (defn- cookiesToNetty ^String [^List cookies]
   (persistent! (reduce (fn [sum ^HttpCookie c]
                          (conj! sum
-                                (ServerCookieEncoder/encode
-                                  (.getName c)(.getValue c))))
+                                (-> (doto (CookieEncoder. true)
+                                          (.addCookie (cookieToNetty c)))
+                                    (.encode))))
                        (transient [])
                        (seq cookies)) ))
 
@@ -153,29 +159,29 @@
          ^WebSocketFrame
          f (cond
               (.isBinary res)
-              (BinaryWebSocketFrame. (Unpooled/wrappedBuffer bits))
+              (BinaryWebSocketFrame. (ChannelBuffers/wrappedBuffer bits))
 
               :else
               (TextWebSocketFrame. (nsb (stringify bits)))) ]
-    (wflush ch f)))
+    (.write ch f)))
 
 
-(defn- netty-reply "" [^comzotohcljc.util.core.MuObj res
+(defn- netty-reply "" [^comzotohlabscljc.util.core.MuObj res
                        ^Channel ch
                        ^HTTPEvent evt
                        src]
   (let [ cks (cookiesToNetty (.getf res :cookies))
          code (.getf res :code)
-         rsp (MakeHttpReply code)
+         rsp (makeHttpReply code)
          data (.getf res :data)
          hdrs (.getf res :hds) ]
-    (with-local-vars [ clen 0 xd nil ]
+    (with-local-vars [ clen 0 xd nil wf nil]
       (doseq [[^String nm vs] (seq hdrs)]
         (when-not (= "content-length" (.toLowerCase nm))
           (doseq [vv (seq vs)]
             (HttpHeaders/addHeader rsp nm vv))))
       (doseq [s cks]
-        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE cks) )
+        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE s) )
       (cond
         (and (>= code 300)(< code 400))
         (HttpHeaders/setHeader rsp "Location" (nsb (.getf res :redirect)))
@@ -193,18 +199,15 @@
         (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
 
       (HttpHeaders/setContentLength rsp @clen)
-      (WWrite ch rsp)
+      (var-set wf (.write ch rsp))
       (debug "wrote response headers out to client")
 
       (when (> @clen 0)
-        (WWrite ch (ChunkedStream. (.stream ^XData @xd)))
+        (var-set wf (.write ch (ChunkedStream. (.stream ^XData @xd))))
         (debug "wrote response body out to client"))
 
-      (let [ ^ChannelFuture wf (WFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
-        (debug "flushed last response content out to client")
-        (when-not (.isKeepAlive evt)
-          (debug "keep-alive == false, closing channel.  bye.")
-          (.addListener wf ChannelFutureListener/CLOSE)))
+      (debug "flushed last response content out to client")
+      (closeCF (.isKeepAlive evt) wf)
 
       )))
 
@@ -219,9 +222,9 @@
         (Try! (netty-reply res ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [ rsp (MakeHttpReply 500) ]
+      (let [ rsp (makeHttpReply 500) ]
         (try
-          (maybeClose evt (wflush ch rsp))
+          (maybeClose evt (.write ch rsp))
           (catch ClosedChannelException e#
             (warn "ClosedChannelException thrown while flushing headers"))
           (catch Throwable t# (error t# "") )) ))
@@ -231,7 +234,7 @@
 
 (defn make-async-wait-holder
 
-  [ ^comzotohcljc.hhh.io.core.AsyncWaitTrigger trigger
+  [ ^comzotohlabscljc.tardis.io.core.AsyncWaitTrigger trigger
     ^HTTPEvent event ]
 
   (let [ impl (make-mmap) ]
@@ -244,7 +247,7 @@
 
       (resumeOnResult [this res]
         (let [ ^Timer tm (.mm-g impl :timer)
-               ^comzotohcljc.hhh.io.core.EmitterAPI  src (.emitter event) ]
+               ^comzotohlabscljc.tardis.io.core.EmitterAPI  src (.emitter event) ]
           (when-not (nil? tm) (.cancel tm))
           (.release src this)
           ;;(.mm-s impl :result res)
@@ -261,7 +264,7 @@
         (timeoutMillis this (* 1000 secs)))
 
       (onExpiry [this]
-        (let [ ^comzotohcljc.hhh.io.core.EmitterAPI
+        (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI
                src (.emitter event) ]
           (.release src this)
           (.mm-s impl :timer nil)

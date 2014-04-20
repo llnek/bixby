@@ -1,21 +1,18 @@
-;;
+;; This library is distributed in  the hope that it will be useful but without
+;; any  warranty; without  even  the  implied  warranty of  merchantability or
+;; fitness for a particular purpose.
+;; The use and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+;; can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any  fashion, you are agreeing to be bound by the
+;; terms of this license. You  must not remove this notice, or any other, from
+;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-;;
-;; This library is distributed in the hope that it will be useful
-;; but without any warranty; without even the implied warranty of
-;; merchantability or fitness for a particular purpose.
-;;
-;; The use and distribution terms for this software are covered by the
-;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-;; which can be found in the file epl-v10.html at the root of this distribution.
-;;
-;; By using this software in any fashion, you are agreeing to be bound by
-;; the terms of this license.
-;; You must not remove this notice, or any other, from this software.
-;;
+
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   comzotohlabscljc.tardis.io.netty)
 
 (import '(java.net HttpCookie URI URL InetSocketAddress))
@@ -23,22 +20,22 @@
 (import '(java.util ArrayList List))
 (import '(java.io IOException))
 
-(import '(com.zotoh.hohenheim.io HTTPEvent))
+(import '(com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
 (import '(javax.net.ssl SSLContext))
-(import '(io.netty.handler.codec.http
-  HttpRequest HttpResponse CookieDecoder ServerCookieEncoder
-  DefaultHttpResponse HttpVersion HttpHeaders LastHttpContent
+(import '(org.jboss.netty.handler.codec.http
+  HttpRequest HttpResponse CookieDecoder CookieEncoder
+  DefaultHttpResponse HttpVersion HttpHeaders
   HttpHeaders Cookie QueryStringDecoder))
-(import '(io.netty.channel Channel))
-(import '(io.netty.channel.group
+(import '(org.jboss.netty.channel Channel))
+(import '(org.jboss.netty.channel.group
   ChannelGroup))
-(import '(io.netty.bootstrap ServerBootstrap))
-(import '(com.zotoh.frwk.net NetUtils))
+(import '(org.jboss.netty.bootstrap ServerBootstrap))
+(import '(com.zotohlabs.frwk.net NetUtils))
 
-(import '(com.zotoh.frwk.core Hierarchial Identifiable))
-(import '(com.zotoh.hohenheim.io WebSockEvent WebSockResult))
-(import '(com.zotoh.frwk.io XData))
-(import '(io.netty.handler.codec.http.websocketx
+(import '(com.zotohlabs.frwk.core Hierarchial Identifiable))
+(import '(com.zotohlabs.gallifrey.io IOSession WebSockEvent WebSockResult))
+(import '(com.zotohlabs.frwk.io XData))
+(import '(org.jboss.netty.handler.codec.http.websocketx
   WebSocketFrame
   WebSocketServerHandshaker
   WebSocketServerHandshakerFactory
@@ -50,22 +47,21 @@
   PongWebSocketFrame))
 
 (use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohcljc.hhh.core.sys])
-(use '[comzotohcljc.hhh.io.core])
-(use '[comzotohcljc.hhh.io.http])
-(use '[comzotohcljc.hhh.io.triggers])
-(use '[comzotohcljc.util.core :only [MuObj make-mmap notnil? conv-long] ])
-(use '[comzotohcljc.netty.comms :only [ makeServerNetty finzServer
-                                       makeRouteCracker] ])
-(use '[comzotohcljc.util.seqnum :only [next-long] ])
-(use '[comzotohcljc.util.mime :only [get-charset] ])
-(use '[comzotohcljc.util.str :only [hgl? nsb strim nichts?] ])
+(use '[comzotohlabscljc.tardis.core.sys])
+(use '[comzotohlabscljc.tardis.io.core])
+(use '[comzotohlabscljc.tardis.io.http])
+(use '[comzotohlabscljc.tardis.io.triggers])
+(use '[comzotohlabscljc.util.core :only [MuObj make-mmap notnil? conv-long] ])
+(use '[comzotohlabscljc.netty.comms :only [ makeServerNetty finzNetty addListener
+                                        makeRouteCracker] ])
+(use '[comzotohlabscljc.tardis.io.ios :only [ make-session]])
+(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
+(use '[comzotohlabscljc.util.mime :only [get-charset] ])
+(use '[comzotohlabscljc.util.str :only [hgl? nsb strim nichts?] ])
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-(defmulti nettyServiceReq "" (fn [a & args] (:typeid (meta a))))
 
 (defn- make-wsock-result []
   (let [ impl (make-mmap) ]
@@ -96,14 +92,15 @@
         (.setHttpOnly (.isHttpOnly c)) ))
 
 (defn- make-wsock-event
-  [^comzotohcljc.hhh.io.core.EmitterAPI co
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co
                          ^Channel ch
-                         ^XData xdata]
+                         ^XData rdata]
   (let [ ssl (notnil? (.get (NetUtils/getPipeline ch) "ssl"))
-         ^InetSocketAddress laddr (.localAddress ch)
+         ^InetSocketAddress laddr (.getLocalAddress ch)
          ^WebSockResult res (make-wsock-result)
          impl (make-mmap)
          eeid (next-long) ]
+    (.mm-s impl :ios (make-session co ssl))
     (with-meta
       (reify
         MuObj
@@ -122,39 +119,32 @@
         (getSession [_] (.mm-g impl :ios))
         (getId [_] eeid)
         (isSSL [_] ssl)
-        (isText [_] (instance? String (.content xdata)))
+        (isText [_] (instance? String (.content rdata)))
         (isBinary [this] (not (.isText this)))
-        (getData [_] xdata)
+        (getData [_] rdata)
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^comzotohcljc.hhh.io.core.WaitEventHolder
+          (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
                  wevt (.release co this) ]
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
         (emitter [_] co))
 
-      { :typeid :czc.hhh.io/WebSockEvent } )))
+      { :typeid :czc.tardis.io/WebSockEvent } )))
 
-(defmethod ioes-reify-event :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.io.core.EmitterAPI co & args]
-  (let [ ^HTTPResult res (make-http-result)
+(defmethod ioes-reify-event :czc.tardis.io/NettyIO
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
+  (let [ ^HTTPResult res (make-http-result co)
          ^HttpRequest req (nth args 1)
-         ^XData xdata (nth args 2)
+         rdata (nth args 2)
          ^Channel ch (nth args 0)
          ssl (notnil? (.get (NetUtils/getPipeline ch) "ssl"))
-         ^InetSocketAddress laddr (.localAddress ch)
+         ^InetSocketAddress laddr (.getLocalAddress ch)
          impl (make-mmap)
          eeid (next-long) ]
+    (.mm-s impl :ios (make-session co ssl))
     (with-meta
       (reify
-
-        MuObj
-
-        (setf! [_ k v] (.mm-s impl k v) )
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k) )
-        (clrf! [_ k] (.mm-r impl k) )
-        (clear! [_] (.mm-c impl))
 
         Identifiable
         (id [_] eeid)
@@ -167,14 +157,14 @@
         (getCookies [_]
           (let [ v (nsb (HttpHeaders/getHeader req "Cookie"))
                  rc (ArrayList.)
-                 cks (if (hgl? v) (CookieDecoder/decode v) []) ]
+                 cks (if (hgl? v) (-> (CookieDecoder.) (.decode v)) []) ]
             (doseq [ ^Cookie c (seq cks) ]
               (.add rc (cookieToJava c)))
             rc))
         (getCookie [_ nm]
           (let [ v (nsb (HttpHeaders/getHeader req "Cookie"))
                  lnm (.toLowerCase nm)
-                 cks (if (hgl? v) (CookieDecoder/decode v) []) ]
+                 cks (if (hgl? v) (-> (CookieDecoder.)(.decode v)) []) ]
             (some (fn [^Cookie c]
                     (if (= (.toLowerCase (.getName c)) lnm)
                       (cookieToJava c)
@@ -183,8 +173,8 @@
 
         (isKeepAlive [_] (HttpHeaders/isKeepAlive req))
 
-        (hasData [_] (notnil? xdata))
-        (data [_] xdata)
+        (hasData [_] (notnil? rdata))
+        (data [_] rdata)
 
         (contentType [_] (HttpHeaders/getHeader req "content-type"))
         (contentLength [_] (HttpHeaders/getContentLength req 0))
@@ -192,20 +182,25 @@
         (encoding [this]  (get-charset (.contentType this)))
         (contextPath [_] "")
 
-        (getHeaderValues [_ nm] (-> (.headers req) (.getAll nm)))
-        (getHeaders [_] (-> (.headers req) (.names)))
+        (getHeaderValues [_ nm] (.getHeaders req nm))
+        (getHeaders [_] (.getHeaderNames req))
         (getHeaderValue [_ nm] (HttpHeaders/getHeader req nm))
+        (hasHeader [_ nm] (.containsHeader req nm))
+
         (getParameterValues [_ nm]
           (let [ dc (QueryStringDecoder. (.getUri req))
-                 rc (.get (.parameters dc) nm) ]
+                 rc (.get (.getParameters dc) nm) ]
             (if (nil? rc) (ArrayList.) rc)))
         (getParameters [_]
           (let [ dc (QueryStringDecoder. (.getUri req))
-                 m (.parameters dc) ]
+                 m (.getParameters dc) ]
             (.keySet m)))
+        (hasParameter [this nm]
+          (.contains (.getParameters this) nm))
+
         (getParameterValue [_ nm]
           (let [ dc (QueryStringDecoder. (.getUri req))
-                 ^List rc (.get (.parameters dc) nm) ]
+                 ^List rc (.get (.getParameters dc) nm) ]
             (if (and (notnil? rc) (> (.size rc) 0))
               (.get rc 0)
               nil)))
@@ -239,78 +234,92 @@
 
         (getUri [_]
           (let [ dc (QueryStringDecoder. (.getUri req)) ]
-            (.path dc)))
+            (.getPath dc)))
 
         (getRequestURL [_] (throw (IOException. "not implemented")))
 
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^comzotohcljc.hhh.io.core.WaitEventHolder
+          (let [ ^IOSession mvs (.getSession this)
+                 code (.getStatus res)
+                 ^comzotohlabscljc.tardis.io.core.WaitEventHolder
                  wevt (.release co this) ]
+            (cond
+              (and (>= code 200) (< code 400)) (.handleResult mvs this res)
+              :else nil)
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
 
       )
 
-      { :typeid :czc.hhh.io/HTTPEvent } )) )
+      { :typeid :czc.tardis.io/HTTPEvent } )) )
 
-(defmethod comp-configure :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co cfg]
+(defmethod comp-configure :czc.tardis.io/NettyIO
+  [^comzotohlabscljc.tardis.core.sys.Element co cfg]
   (let [ c (nsb (:context cfg)) ]
     (.setAttr! co :contextPath (strim c))
     (http-basic-config co cfg) ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nettyInitor ""
-
-  [options]
-
-  (let []
-    (proxy [ChannelInitializer] []
-      (initChannel [^SocketChannel ch]
-        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-          (AddEnableSSL pl options)
-          (AddExpect100 pl options)
-          (.addLast pl "codec" (HttpServerCodec.))
-          (AddAuxDecoder pl options)
-          (.addLast pl "chunker" (ChunkedWriteHandler.))
-          (AddMsgDispatcher pl options)
-          (AddExceptionCatcher pl options)
-          pl)))
-  ))
+(defn- make-service-io [^comzotohlabscljc.tardis.io.core.EmitterAPI co]
+  (reify comzotohlabscljc.netty.comms.NettyServiceIO
+    (onReply [_ ch rsp msginfo rdata] nil)
+    (onError [_ ch msginfo exp]  nil)
+    (preSend [_ ch msg] nil)
+    (onRequest [_ ch req msginfo rdata]
+      (let [ mtd (:method msginfo)
+             evt (cond
+                   (= "WS" mtd)
+                   (if (instance? XData rdata)
+                     (make-wsock-event co ch ^XData rdata)
+                     (throw (IOException. "Unexpected websocket data.")))
+                   :else
+                   (ioes-reify-event co ch req rdata))
+             ^comzotohlabscljc.tardis.io.core.WaitEventHolder
+             w (make-async-wait-holder (make-netty-trigger ch evt co) evt) ]
+        (.timeoutMillis w
+                        (.getAttr
+                          ^comzotohlabscljc.tardis.core.sys.Element co
+                          :waitMillis))
+        (.hold co w)
+        (.dispatch co evt {}))) ))
 
 (defn- init-netty
-  [^comzotohcljc.hhh.core.sys.Element co]
-  (let [ ^comzotohcljc.hhh.core.sys.Element
+  [^comzotohlabscljc.tardis.core.sys.Element co reqcb]
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element
          ctr (.parent ^Hierarchial co)
          options { :serverkey (.getAttr co :serverKey)
-                   :forwardBadRoutes true
-                   :emitter co
                    :passwd (.getAttr co :pwd)
-                   :rtcObj (makeRouteCracker (.getAttr ctr :routes)) }
-         nes (BootstrapNetty nettyInitor options) ]
+                   :usercb reqcb }
+         nes (makeServerNetty options) ]
+    (debug "server-netty - made - success.")
     (.setAttr! co :netty nes)
     co))
 
-(defmethod ioes-start :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co]
+(defmethod ioes-start :czc.tardis.io/NettyIO
+  [^comzotohlabscljc.tardis.core.sys.Element co]
   (let [ host (nsb (.getAttr co :host))
-         port (.getAttr co :port)
+         ^long port (.getAttr co :port)
          nes (.getAttr co :netty)
-         nnn (StartNetty host port nes) ]
-    (.SetAttr! co :netty nnn)
+         ^ServerBootstrap bs (:bootstrap nes)
+         ^InetAddress ip (if (nichts? host)
+              (InetAddress/getLocalHost)
+              (InetAddress/getByName host))
+         cf (.bindAsync bs (InetSocketAddress. ip port))
+         ^ChannelGroup cg (:cgroup nes) ]
+;;    c.getConfig().setConnectTimeoutMillis(millis)
+    (addListener cf { :ok (fn [^Channel c] (.add cg c)) })
+    (debug "netty-io running on port: " port ", host: " host ", ip: " ip)
     (ioes-started co)))
 
-(defmethod ioes-stop :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co]
+(defmethod ioes-stop :czc.tardis.io/NettyIO
+  [^comzotohlabscljc.tardis.core.sys.Element co]
   (let [ nes (.getAttr co :netty) ]
-    (StopNetty nes)
+    (finzNetty nes)
     (ioes-stopped co)))
 
-(defmethod comp-initialize :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co]
-  (init-netty co))
+(defmethod comp-initialize :czc.tardis.io/NettyIO
+  [^comzotohlabscljc.tardis.core.sys.Element co]
+  (init-netty co (make-service-io co)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
