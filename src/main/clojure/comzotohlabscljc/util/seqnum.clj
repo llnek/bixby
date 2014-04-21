@@ -10,14 +10,12 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "Generate some sequence numbers." 
+(ns ^{ :doc "Generate some sequence numbers."
        :author "kenl" }
 
-  comzotohlabscljc.util.seqnum )
+  comzotohlabscljc.util.seqnum
 
-(import '(java.util.concurrent.atomic AtomicLong AtomicInteger) )
-
-
+  (:import (java.util.concurrent.atomic AtomicLong AtomicInteger) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -25,18 +23,25 @@
 (def ^:private _numInt (AtomicInteger. 1))
 (def ^:private  _numLong (AtomicLong. 1))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NextInt "Return a sequence number (integer)."
 
-(defn next-int "Return a sequence number (integer)."
-  ^Integer []
+  ^Integer
+  []
+
   (.getAndIncrement ^AtomicInteger _numInt))
 
-(defn next-long "Return a sequence number (long)."
-  ^long []
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NextLong "Return a sequence number (long)."
+
+  ^long
+  []
+
   (.getAndIncrement ^AtomicLong _numLong))
 
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private  seqnum-eof nil)
 

@@ -13,41 +13,64 @@
 (ns ^{ :doc "String utilities."
        :author "kenl" }
 
-  comzotohlabscljc.util.str)
+  comzotohlabscljc.util.str
 
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io CharArrayWriter File
-  OutputStream OutputStreamWriter
-  Reader Writer))
-(import '(java.util Arrays Collection
-  Iterator StringTokenizer))
-(import '(java.lang StringBuilder))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [notnil?] ])
 
-
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.io CharArrayWriter
+                    File
+                    OutputStream
+                    OutputStreamWriter
+                    Reader Writer))
+  (:import (java.util Arrays Collection
+                      Iterator StringTokenizer))
+  (:import (java.lang StringBuilder)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn- ^String lcs [^String s] (.toLowerCase s))
-(defn- ^String ucs [^String s] (.toUpperCase s))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro  lcs [s] `(cstr/lower-case ~s))
+(defmacro  ucs [s] `(cstr/upper-case ~s))
 
-(defn has-nocase? "Returns true if this sub-string is inside this string."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasNocase? "Returns true if this sub-string is inside this string."
+
   [^String aStr s]
+
   (do
     (>= (.indexOf (lcs aStr) (lcs s)) 0)))
 
-(defn embeds? "Returns true if this sub-string is inside this string."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Embeds? "Returns true if this sub-string is inside this string."
+
   [^String aStr ^String s]
+
   (do
     (>= (.indexOf aStr s) 0)))
 
-(defn has? "Returns true if this character is inside this string."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Has? "Returns true if this character is inside this string."
+
   [^String aStr ^Character ch]
+
   (do
     (>= (.indexOf aStr (int ch)) 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn nsb "Returns empty string if obj is null, or obj.toString."
-  ^String [^Object obj]
+
+  ^String
+  [^Object obj]
+
   (cond
 
     (nil? obj)
@@ -59,12 +82,21 @@
     :else
     (.toString obj)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn nsn "Returns \"(null)\" if obj is null, or obj.toString."
-  ^String [^Object obj]
+
+  ^String
+  [^Object obj]
+
   (if (nil? obj) "(null)" (.toString obj)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn same? "Returns true if these 2 strings are the same."
+
   [^String a ^String b]
+
   (cond
     (and (nil? a) (nil? b))
     true
@@ -78,96 +110,169 @@
     :else
     (Arrays/equals (.toCharArray a) (.toCharArray b)) ) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn hgl? "Returns true if this string is not empty."
+
   [^String s]
+
   (if (nil? s) false (> (.length s) 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn nichts?  "Returns true if this string is empty."
+
   [^String s]
+
   (not (hgl? s)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn strim "Safely trim this string - handles null."
-  ^String [^String s]
-  (if (nil? s) "" (.trim s)))
 
-(defn add-delim! "Append to a string-builder, optionally inserting a delimiter if the buffer is not empty."
-  ^StringBuilder [^StringBuilder buf ^String delim ^String item]
+  ^String
+  [^String s]
+
+  (if (nil? s) "" (cstr/trim s)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddDelim! "Append to a string-builder, optionally inserting a delimiter if the buffer is not empty."
+
+  ^StringBuilder
+  [^StringBuilder buf ^String delim ^String item]
+
   (do
     (when-not (nil? item)
-      (when (and (> (.length buf) 0) (not (nil? delim)))
+      (when (and (> (.length buf) 0) (notnil? delim))
         (.append buf delim))
       (.append buf item))
-    buf))
+    buf
+  ))
 
-(defn splunk "Split a large string into chucks, each chunk having a specific length."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Splunk "Split a large string into chucks, each chunk having a specific length."
+
   [^String largeString chunkLength]
+
   (if (nil? largeString)
     []
     (loop [ ret (transient []) src largeString ]
       (if (<= (.length src) chunkLength)
         (persistent! (if (> (.length src) 0)
-          (conj! ret src)
-          ret) )
+                         (conj! ret src)
+                         ret) )
         (recur (conj! ret (.substring src 0 chunkLength))
-               (.substring src chunkLength)) ))))
+               (.substring src chunkLength))
+      ))
+  ))
 
-(defn hasic-any? "Tests String.indexOf() against a list of possible args. (ignoring case)."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasicAny? "Tests String.indexOf() against a list of possible args. (ignoring case)."
+
   [^String src substrs]
+
   (if (nil? src)
     false
-    (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)))
+    (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
+  ))
 
-(defn has-any? "Returns true if src contains one of these substrings."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasAny? "Returns true if src contains one of these substrings."
+
   [^String src substrs]
+
   (if (nil? src)
     false
-    (if (some (fn [^String s] (>= (.indexOf src s) 0)) substrs) true false)))
+    (if (some (fn [^String s] (>= (.indexOf src s) 0)) substrs) true false)
+  ))
 
-(defn swic-any? "Tests startsWith (ignore-case)."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SWicAny? "Tests startsWith (ignore-case)."
+
   [^String src pfxs]
+
   (if (nil? src)
     false
-    (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)))
+    (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
+  ))
 
-(defn sw-any? "Tests startWith(), looping through the list of possible prefixes."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SWAny? "Tests startWith(), looping through the list of possible prefixes."
+
   [^String src pfxs]
+
   (if (nil? src)
     false
-    (if (some #(.startsWith src %) pfxs) true false)))
+    (if (some #(.startsWith src %) pfxs) true false)
+  ))
 
-(defn eqic-any? "Tests String.equals() against a list of possible args. (ignore-case)."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn EqicAny? "Tests String.equals() against a list of possible args. (ignore-case)."
+
   [^String src strs]
+
   (if (nil? src)
     false
-    (if (some #(.equalsIgnoreCase src %) strs) true false)))
+    (if (some #(.equalsIgnoreCase src %) strs) true false)
+  ))
 
-(defn eq-any? "Tests String.equals() against a list of possible args."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn EqAny? "Tests String.equals() against a list of possible args."
+
   [^String src strs]
+
   (if (nil? src)
     false
-    (if (some #(.equals src %) strs) true false)))
+    (if (some #(.equals src %) strs) true false)
+  ))
 
-(defn make-string "Make a string of contain length."
-  ^String [ ch  cnt]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeString "Make a string of contain length."
+
+  ^String
+  [ ch  cnt]
+
   (let [ buf (StringBuilder.) ]
     (dotimes [ n cnt ]
       (.append buf ^Character ch))
-    (.toString buf)) )
+    (.toString buf)
+  ))
 
-(defn right "Gets the rightmost len characters of a String."
-  ^String [^String src len]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Right "Gets the rightmost len characters of a String."
+
+  ^String
+  [^String src len]
+
   (if (nil? src)
     ""
-    (StringUtils/right src ^long len)) )
+    (StringUtils/right src ^long len)
+  ))
 
-(defn left "Gets the leftmost len characters of a String."
-  ^String [^String src len]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Left "Gets the leftmost len characters of a String."
+
+  ^String
+  [^String src len]
+
   (if (nil? src)
     ""
-    (StringUtils/left src ^long len)) )
+    (StringUtils/left src ^long len)
+  ))
 
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private str-eof nil)
 

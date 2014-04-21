@@ -17,8 +17,7 @@
   (:import (java.nio ByteBuffer CharBuffer))
   (:import (java.nio.charset Charset))
   (:import (java.io ByteArrayOutputStream ByteArrayInputStream
-                    DataOutputStream DataInputStream))
-)
+                    DataOutputStream DataInputStream)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -71,7 +70,7 @@
   [nnum]
 
   (with-open [ baos (ByteArrayOutputStream. (int 4096)) ]
-    (-> (DataOutputStream. baos)
+    (doto (DataOutputStream. baos)
       (.writeInt (int nnum))
       (.flush))
     (.toByteArray baos)
@@ -86,7 +85,7 @@
   [nnum]
 
   (with-open [ baos (ByteArrayOutputStream. (int 4096)) ]
-    (-> (DataOutputStream. baos)
+    (doto (DataOutputStream. baos)
       (.writeLong ^long nnum)
       (.flush))
     (.toByteArray baos)

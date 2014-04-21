@@ -19,10 +19,9 @@
   (:import (java.io Reader Writer))
   (:import (java.util Properties))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:require '[ clojure.string :as cstr ])
+  (:require [ clojure.string :as cstr ])
   (:use [ comzotohlabscljc.util.core :only [IntoMap IsWindows?] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb Has?] ])
-)
+  (:use [ comzotohlabscljc.util.str :only [nsb Has?] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -90,14 +89,14 @@
          chs (nsb (:choices cmdQ)) ]
     (.write cout (str q (if must "*" "" ) " ? "))
     (when-not (cstr/blank? chs)
-      (if (has? chs \n)
+      (if (Has? chs \n)
         (do (.write cout (str
               (if (.startsWith chs "\n") "[" "[\n")  chs
               (if (.endsWith chs "\n") "]" "\n]" ) )))
         (do (.write cout (str "[" chs "]")))))
     (when-not (cstr/blank? dft)
       (.write cout (str "(" dft ")")) )
-    (-> cout (.write " ")(.flush))
+    (doto cout (.write " ")(.flush))
     ;; get the input from user
     ;; point to next question, blank ends it
     (let [ rc (readData cout cin) ]

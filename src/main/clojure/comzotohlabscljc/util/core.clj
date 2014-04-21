@@ -28,8 +28,7 @@
   (:import (org.apache.commons.lang3.text StrSubstitutor))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.commons.io IOUtils FilenameUtils))
-  (:import (org.apache.commons.lang3 SerializationUtils))
-)
+  (:import (org.apache.commons.lang3 SerializationUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -45,7 +44,7 @@
 ;;
 (defmacro TryC "Catch exception and log it."
   [ & exprs ]
-  `(try (do ~@exprs) (catch Throwable e# (warn e# "") nil )) )
+  `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") nil )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -427,7 +426,7 @@
   (^InputStream [^String rcPath] (ResStream rcPath nil))
 
   (^InputStream [^String rcPath ^ClassLoader czLoader]
-    (if (nil? rcPath) nil (.getResourceAsStream (GetCZldr czLoader) rcPath))) )
+    (if (nil? rcPath) nil (.getResourceAsStream (get-czldr czLoader) rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -436,7 +435,7 @@
   (^URL [^String rcPath] (ResUrl rcPath nil))
 
   (^URL [^String rcPath ^ClassLoader czLoader]
-    (if (nil? rcPath) nil (.getResource (GetCZldr czLoader) rcPath))) )
+    (if (nil? rcPath) nil (.getResource (get-czldr czLoader) rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -829,7 +828,7 @@
         (.append buf (str k " = " v "\n")))
       (.append buf "\n")
       (when-let [ s (str buf) ]
-        (if dbg (debug s)(info s)))))
+        (if dbg (log/debug s)(log/info s)))))
 
   ([ ctx ] (PrintMutableObj ctx false)))
 

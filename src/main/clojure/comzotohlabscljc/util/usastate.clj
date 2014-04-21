@@ -12,8 +12,10 @@
 
 (ns ^{ :doc "A class that maps the state-code to the state-name." 
        :author "kenl" }
-  comzotohlabscljc.util.usastate )
+  comzotohlabscljc.util.usastate
 
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,20 +76,34 @@
 
 (def ^:private _CCODESEQ (seq _CCODES))
 
-(defn list-codes "List all the abbreviated states."
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ListCodes "List all the abbreviated states."
+
   []
+
   (keys _CCODES))
 
-(defn find-state "Return the full state name."
-  ^String [^String code]
-  (_CCODES (.toUpperCase code)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FindState "Return the full state name."
 
-(defn find-code "Return the abbreviated state code."
-  ^String [^String state]
+  ^String 
+  [^String code]
+
+  (_CCODES (cstr/upper-case code)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FindCode "Return the abbreviated state code."
+
+  ^String 
+  [^String state]
+
   (let [ rs (filter #(= (nth % 1) state) _CCODESEQ) ]
-      (if (nil? rs) nil (nth (first rs) 0))))
-
-
+    (if (nil? rs) nil (nth (first rs) 0))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

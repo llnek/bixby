@@ -13,24 +13,24 @@
 (ns ^{ :doc "This is a utility class that provides various MIME related functionality." 
        :author "kenl" }
 
-  comzotohlabscljc.util.mime)
+  comzotohlabscljc.util.mime
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log  :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
 
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.net URLDecoder URLEncoder))
-(import '(java.io IOException InputStream File))
-(import '(java.net URL))
-(import '(java.util.regex Pattern Matcher))
-(import '(java.util Properties))
-(import '(javax.mail Message))
-(import '(com.zotohlabs.frwk.mime MimeFileTypes))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.net URLDecoder URLEncoder))
+  (:import (java.io IOException InputStream File))
+  (:import (java.net URL))
+  (:import (java.util.regex Pattern Matcher))
+  (:import (java.util Properties))
+  (:import (javax.mail Message))
+  (:import (com.zotohlabs.frwk.mime MimeFileTypes))
 
-(use '[comzotohlabscljc.util.core :only [bytesify Try! into-map] ])
-(use '[comzotohlabscljc.util.meta :only [bytes-class] ])
-(use '[comzotohlabscljc.util.str :only [nsb hgl?] ])
-(use '[comzotohlabscljc.util.io :only [streamify] ])
-
+  (:use [comzotohlabscljc.util.core :only [Bytesify Try! IntoMap] ])
+  (:use [comzotohlabscljc.util.meta :only [BytesClass] ])
+  (:use [comzotohlabscljc.util.str :only [nsb hgl?] ])
+  (:use [comzotohlabscljc.util.io :only [Streamify] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -116,97 +116,166 @@
 (def ^:private _mime_cache (atom {}))
 (def ^:private _mime_types (atom nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MimeCache "Cache of most MIME types."
+  
+  [] 
+  
+  @_mime_cache)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- is-pkcs7mime? ""
+
   [^String s]
+
   (>= (.indexOf s "application/x-pkcs7-mime") 0))
 
-(defn mime-cache "Cache of most MIME types." [] @_mime_cache)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetCharset "Get charset from this content-type string."
 
-(defn get-charset "Get charset from this content-type string."
-  ^String [^String cType]
-  (let [ pos (-> (nsb cType) (.toLowerCase) (.indexOf "charset="))
+  ^String
+  [^String cType]
+
+  (let [ pos (-> (nsb cType) (cstr/lower-case ) (.indexOf "charset="))
          rc "utf-8" ]
          ;;rc "ISO-8859-1" ]
     (if (> pos 0)
       (let [ s (.substring cType (+ pos 8)) p (StringUtils/indexOfAny s "; \t\r\n") ]
         (if (> p 0) (.substring s 0 p) s))
-      rc)) )
+      rc)
+  ))
 
-(defn is-signed? "Returns true if this content-type indicates signed."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsSigned? "Returns true if this content-type indicates signed."
+
   [^String cType]
-  (let [ ct (.toLowerCase (nsb cType)) ]
+
+  (let [ ct (cstr/lower-case (nsb cType)) ]
     (or (>= (.indexOf ct "multipart/signed") 0)
-        (and (is-pkcs7mime? ct) (>= (.indexOf ct "signed-data") 0)))) )
+        (and (is-pkcs7mime? ct) (>= (.indexOf ct "signed-data") 0)))
+  ))
 
-(defn is-encrypted? "Returns true if this content-type indicates encrypted."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsEncrypted? "Returns true if this content-type indicates encrypted."
+
   [^String cType]
-  (let [ ct (.toLowerCase (nsb cType)) ]
-    (and (is-pkcs7mime? ct) (>= (.indexOf ct "enveloped-data") 0))) )
 
-(defn is-compressed? "Returns true if this content-type indicates compressed."
+  (let [ ct (cstr/lower-case (nsb cType)) ]
+    (and (is-pkcs7mime? ct) (>= (.indexOf ct "enveloped-data") 0))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsCompressed? "Returns true if this content-type indicates compressed."
+
   [^String cType]
-  (let [ ct (.toLowerCase (nsb cType)) ]
-    (and (>= (.indexOf ct "application/pkcs7-mime") 0) (>= (.indexOf ct "compressed-data") 0))) )
 
-(defn is-mdn? "Returns true if this content-type indicates MDN."
+  (let [ ct (cstr/lower-case (nsb cType)) ]
+    (and (>= (.indexOf ct "application/pkcs7-mime") 0)
+         (>= (.indexOf ct "compressed-data") 0))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsMDN? "Returns true if this content-type indicates MDN."
+
   [^String cType]
-  (let [ ct (.toLowerCase (nsb cType)) ]
-    (and (>= (.indexOf ct "multipart/report") 0) (>= (.indexOf ct "disposition-notification") 0))) )
 
-(defn maybe-stream "Turn this object into some form of stream, if possible."
-  ^InputStream [^Object obj]
+  (let [ ct (cstr/lower-case (nsb cType)) ]
+    (and (>= (.indexOf ct "multipart/report") 0) 
+         (>= (.indexOf ct "disposition-notification") 0))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MaybeStream "Turn this object into some form of stream, if possible."
+
+  ^InputStream 
+  [^Object obj]
+
   (cond
     (instance? String obj)
-    (streamify (bytesify obj))
+    (Streamify (Bytesify obj))
 
     (instance? InputStream obj)
     obj
 
-    (instance? (bytes-class) obj)
-    (streamify obj)
+    (instance? (BytesClass) obj)
+    (Streamify obj)
 
     :else
     nil))
 
-(defn url-decode "URL decode this string."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn UrlDecode "URL decode this string."
+
   [^String u]
+
   (if (nil? u)
     nil
     (Try!
-      (URLDecoder/decode u "utf-8") )))
+      (URLDecoder/decode u "utf-8") )
+  ))
 
-(defn url-encode "URL encode this string."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn UrlEncode "URL encode this string."
+
   [^String u]
+
   (if (nil? u)
     nil
     (Try!
-      (URLEncoder/encode u "utf-8") )))
+      (URLEncoder/encode u "utf-8") )
+  ))
 
-(defn guess-mimetype "Guess the MIME type of file."
-  (^String [^File file] (guess-mimetype file ""))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GuessMimeType "Guess the MIME type of file."
+
+  (^String [^File file] (GuessMimeType file ""))
+
   (^String [^File file ^String dft]
     (let [ ^Pattern rgx _extRegex
-           ^Matcher mc (.matcher rgx (.toLowerCase (.getName file)))
+           ^Matcher mc (.matcher rgx (cstr/lower-case (.getName file)))
            ex (if (.matches mc) (.group mc 1) "")
-           p (if (hgl? ex) ((keyword ex) (mime-cache))) ]
+           p (if (hgl? ex) ((keyword ex) (MimeCache))) ]
       (if (hgl? p) p dft))) )
 
-(defn guess-contenttype "Guess the content-type of file."
-  (^String [^File file] (guess-contenttype file "utf-8" "application/octet-stream" ))
-  (^String [^File file ^String enc ^String dft]
-    (let [ mt (guess-mimetype file)
-           ct (if (hgl? mt) mt dft) ]
-      (if (not (.startsWith ct "text/")) ct (str ct "; charset=" enc)))) )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GuessContentType "Guess the content-type of file."
 
-(defn setup-cache "Load file mime-types as a map."
+  (^String [^File file ^String enc ^String dft]
+    (let [ mt (GuessMimeType file)
+           ct (if (hgl? mt) mt dft) ]
+      (if (not (.startsWith ct "text/")) 
+          ct 
+          (str ct "; charset=" enc))))
+
+  (^String [^File file] (GuessContentType file "utf-8" "application/octet-stream" )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetupCache "Load file mime-types as a map."
+
   [^URL fileUrl]
+
   (with-open [ inp (.openStream fileUrl) ]
     (let [ ps (Properties.) ]
       (.load ps inp)
       (reset! _mime_types (MimeFileTypes/makeMimeFileTypes ps))
-      (reset! _mime_cache (into-map ps))) ))
+      (reset! _mime_cache (IntoMap ps))) 
+  ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private mime-eof nil)
 

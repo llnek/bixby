@@ -13,41 +13,62 @@
 (ns ^{ :doc "Locale resources."
        :author "kenl" }
 
-  comzotohlabscljc.i18n.resources)
+  comzotohlabscljc.i18n.resources
 
-(import '(java.util PropertyResourceBundle ResourceBundle Locale))
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io File FileInputStream))
-(import '(java.net URL))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
 
-(use '[ comzotohlabscljc.util.meta :only [get-cldr] ])
-(use '[ comzotohlabscljc.util.str :only [nsb] ])
+  (:import (java.util PropertyResourceBundle ResourceBundle Locale))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.io File FileInputStream))
+  (:import (java.net URL))
+
+  (:use [ comzotohlabscljc.util.meta :only [GetCldr] ])
+  (:use [ comzotohlabscljc.util.str :only [nsb] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defmulti load-resource "Load properties file with localized strings." class)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti LoadResource "Load properties file with localized strings." class)
 
-(defmethod load-resource File
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod LoadResource File
+
   ^ResourceBundle
   [^File aFile]
-  (load-resource (-> aFile (.toURI) (.toURL))))
 
-(defmethod load-resource URL
+  (LoadResource (-> aFile (.toURI) (.toURL))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod LoadResource URL
+
   ^ResourceBundle
   [^URL url]
+
   (with-open [ inp (.openStream url) ]
     (PropertyResourceBundle. inp)))
 
-(defn get-resource "Return a resource bundle."
-  ([^String baseName ^Locale locale] (get-resource baseName locale nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetResource "Return a resource bundle."
+
+  ([^String baseName ^Locale locale] (GetResource baseName locale nil))
+
   ([^String baseName ^Locale locale ^ClassLoader cl]
     (if (or (nil? baseName)(nil? locale))
       nil
-      (ResourceBundle/getBundle baseName locale (get-cldr cl))) ))
+      (ResourceBundle/getBundle baseName locale (GetCldr cl))) ))
 
-(defn get-string "Return the string value for this key, pms may contain values for positional substitutions."
-  (^String [^ResourceBundle bundle ^String pkey] (get-string bundle pkey []))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetString "Return the string value for this key, pms may contain values for positional substitutions."
+
+  (^String [^ResourceBundle bundle ^String pkey] (GetString bundle pkey []))
+
   (^String [^ResourceBundle bundle ^String pkey pms]
     (let [ kv (nsb (.getString bundle pkey)) ]
       (if (empty? pms)

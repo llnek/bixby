@@ -13,40 +13,53 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.util.scheduler )
+  comzotohlabscljc.util.scheduler
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
 
-(import '(java.util.concurrent ConcurrentHashMap))
-(import '(com.zotohlabs.frwk.util
-  RunnableWithId Schedulable TCore ))
-(import '(java.util
-  Map Properties
-  Timer TimerTask))
+  (:import (com.zotohlabs.frwk.util RunnableWithId Schedulable TCore ))
+  (:import (java.util.concurrent ConcurrentHashMap))
+  (:import (java.util Map Properties Timer TimerTask))
 
-(use '[comzotohlabscljc.util.core :only [uid make-mmap] ])
-
+  (:use [comzotohlabscljc.util.core :only [juid MakeMMap] ])
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn- xrefPID [w]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- xrefPID
+
+  [w]
+
   (if (instance? RunnableWithId w)
     (let [ p (.getId ^RunnableWithId w) ]
-      ;;(debug "runnable-with-(pid): " p)
+      ;;(log/debug "runnable-with-(pid): " p)
       p)
-    nil))
+    nil
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol SchedulerAPI
+
   ""
+
   (preRun [_ w] )
   (activate [_ options] )
   (deactivate [_] )
   (addTimer [_ task dely] ) )
 
-(defn make-scheduler "Make a Scheduler." [parObj]
-  (let [ ;;^comzotohlabscljc.util.core.MutableMapAPI
-         impl (make-mmap) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeScheduler "Make a Scheduler."
+
+  [parObj]
+
+  (let [ impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -55,45 +68,45 @@
           (preRun [_ w]
             (let [pid (xrefPID w) ]
               (when-not (nil? pid)
-                (let [ ^Map holdQ (.mm-g impl :holdQ)
-                       ^Map runQ (.mm-g impl :runQ) ]
+                (let [ ^Map holdQ (.getf impl :holdQ)
+                       ^Map runQ (.getf impl :runQ) ]
                   (.remove holdQ pid)
                   (.put runQ pid w)))) )
 
           (activate [_ options]
             (let [ ^long t (:threads options)
-                   c (TCore. (uid) (if (nil? t) 4 t)) ]
-              (.mm-s impl :timer (Timer. (uid) true))
-              (.mm-s impl :holdQ (ConcurrentHashMap.))
-              (.mm-s impl :runQ (ConcurrentHashMap.))
-              (.mm-s impl :core c)
+                   c (TCore. (juid) (if (nil? t) 4 t)) ]
+              (.setf! impl :timer (Timer. (juid) true))
+              (.setf! impl :holdQ (ConcurrentHashMap.))
+              (.setf! impl :runQ (ConcurrentHashMap.))
+              (.setf! impl :core c)
               (.start c)))
 
           (deactivate [_]
-              (let [ ^Timer t (.mm-g impl :timer)
-                     ^Map hq (.mm-g impl :holdQ)
-                     ^Map rq (.mm-g impl :runQ)
-                     ^TCore c (.mm-g impl :core) ]
+              (let [ ^Timer t (.getf impl :timer)
+                     ^Map hq (.getf impl :holdQ)
+                     ^Map rq (.getf impl :runQ)
+                     ^TCore c (.getf impl :core) ]
                 (.cancel t)
                 (.clear hq)
                 (.clear rq)
                 (.stop c)))
 
           (addTimer [_ task dely]
-            (let [ t (.mm-g impl :timer) ]
+            (let [ t (.getf impl :timer) ]
               (.schedule ^Timer t ^TimerTask task ^long dely)))
 
         Schedulable
 
           ;; called by a *running* task to remove itself from the running queue
           (dequeue [_ w]
-            (let [ ^Map runQ (.mm-g impl :runQ)
+            (let [ ^Map runQ (.getf impl :runQ)
                    pid (xrefPID w) ]
               (when-not (nil? pid)
                 (.remove runQ pid))) )
 
           (run [this w]
-            (let [ ^TCore c (.mm-g impl :core)
+            (let [ ^TCore c (.getf impl :core)
                    ^Runnable r w]
               (preRun this r)
               (.schedule c r)) )
@@ -118,8 +131,8 @@
 
           (hold [_ pid w]
             (when-not (nil? pid)
-              (let [ ^Map holdQ (.mm-g impl :holdQ)
-                     ^Map runQ (.mm-g impl :runQ) ]
+              (let [ ^Map holdQ (.getf impl :holdQ)
+                     ^Map runQ (.getf impl :runQ) ]
                 (.remove runQ pid)
                 (.put holdQ pid w) )))
 
@@ -129,8 +142,8 @@
 
           (wakeAndRun [this pid w]
             (when-not (nil? pid)
-              (let [ ^Map holdQ (.mm-g impl :holdQ)
-                     ^Map runQ (.mm-g impl :runQ) ]
+              (let [ ^Map holdQ (.getf impl :holdQ)
+                     ^Map runQ (.getf impl :runQ) ]
                 (.remove holdQ pid)
                 (.put runQ pid w)
                 (.run this w) )))
@@ -140,24 +153,14 @@
               (.run this w)))
 
           (dispose [_]
-            (let [ ^TCore c (.mm-g impl :core) ]
+            (let [ ^TCore c (.getf impl :core) ]
               (when-not (nil? c) (.dispose c)))) )
 
       { :typeid (keyword "czc.frwk.util/Scheduler") } )))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-
-
-
-
-
-
+;;
 (def ^:private scheduler-eof nil)
 
 

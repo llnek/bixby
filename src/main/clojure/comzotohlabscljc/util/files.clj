@@ -9,99 +9,126 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc "General file related utilities."
        :author "kenl" }
 
-  comzotohlabscljc.util.files)
+  comzotohlabscljc.util.files
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io
-  File FileInputStream FileOutputStream
-  InputStream OutputStream ))
-(import '(java.util ArrayList))
-(import '(org.apache.commons.io FileUtils))
-(import '(org.apache.commons.io IOUtils))
-(import '(java.util.zip ZipFile ZipEntry))
-(import '(com.zotohlabs.frwk.io XData))
-
-
-
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [ comzotohlabscljc.util.core :only [notnil?] ])
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.io File FileInputStream FileOutputStream
+                    InputStream OutputStream ))
+  (:import (java.util ArrayList))
+  (:import (org.apache.commons.io IOUtils FileUtils))
+  (:import (java.util.zip ZipFile ZipEntry))
+  (:import (com.zotohlabs.frwk.io XData))
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn file-readwrite? "Returns true if file is readable & writable."
-  [^File fp]
-  (if (and (not (nil? fp))
-           (.exists fp)
-           (.isFile fp)
-           (.canRead fp)
-           (.canWrite fp))
-    true
-    false) )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FileReadWrite? "Returns true if file is readable & writable."
 
-(defn file-read? "Returns true if file is readable."
   [^File fp]
-  (if (and (not (nil? fp))
-           (.exists fp)
-           (.isFile fp)
-           (.canRead fp))
-    true
-    false) )
 
-(defn dir-readwrite? "Returns true if directory is readable and writable."
+  (and (notnil? fp)
+       (.exists fp)
+       (.isFile fp)
+       (.canRead fp)
+       (.canWrite fp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FileRead? "Returns true if file is readable."
+
+  [^File fp]
+
+  (and (notnil? fp)
+       (.exists fp)
+       (.isFile fp)
+       (.canRead fp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DirReadWrite? "Returns true if directory is readable and writable."
+
   [^File dir]
-  (if (and (not (nil? dir))
-           (.exists dir)
-           (.isDirectory dir)
-           (.canRead dir)
-           (.canWrite dir) )
-    true
-    false) )
 
-(defn dir-read? "Returns true if directory is readable."
+  (and (notnil? dir)
+       (.exists dir)
+       (.isDirectory dir)
+       (.canRead dir)
+       (.canWrite dir) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DirRead? "Returns true if directory is readable."
+
   [^File dir]
-  (if (and (not (nil? dir))
-           (.exists dir)
-           (.isDirectory dir)
-           (.canRead dir) )
-    true
-    false) )
 
-(defn can-exec? "Returns true if file or directory is executable."
+  (and (notnil? dir)
+       (.exists dir)
+       (.isDirectory dir)
+       (.canRead dir) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CanExec? "Returns true if file or directory is executable."
+
   [^File fp]
-  (if (and (not (nil? fp))
-           (.exists fp)
-           (.canExecute fp))
-    true
-    false) )
 
-(defn parent-path "Get the path to the parent directory."
-  ^String [^String path]
-  (if (StringUtils/isEmpty path)
-    path
-    (.getParent (File. path))) )
+  (and (notnil? fp)
+       (.exists fp)
+       (.canExecute fp)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParentPath "Get the path to the parent directory."
+
+  ^String
+  [^String path]
+
+  (if (cstr/blank? path)
+      path
+      (.getParent (File. path))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- jiggleZipEntryName ""
-  ^String [^ZipEntry en]
+
+  ^String
+  [^ZipEntry en]
+
   (do
     (.replaceAll (.getName en) "^[\\/]+","")) )
 
-(defn- doOneEntry "" [^ZipFile src ^File des ^ZipEntry en]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doOneEntry ""
+
+  [^ZipFile src ^File des ^ZipEntry en]
+
   (let [ f (File. des (jiggleZipEntryName en) ) ]
     (if (.isDirectory en)
-      (.mkdirs f)
-      (do
-        (.mkdirs (.getParentFile f))
-        (with-open [ inp (.getInputStream src en) ]
-          (with-open [ os (FileOutputStream. f) ]
-            (IOUtils/copy inp os)))))))
+        (.mkdirs f)
+        (do
+          (.mkdirs (.getParentFile f))
+          (with-open [ inp (.getInputStream src en) ]
+            (with-open [ os (FileOutputStream. f) ]
+              (IOUtils/copy inp os)))))
+  ))
 
-(defn unzip "Unzip contents of zip file to a target folder."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Unzip "Unzip contents of zip file to a target folder."
+
   [^File src ^File des]
+
   (let [ fpz (ZipFile. src)
          ents (.entries fpz) ]
     (.mkdirs des)
@@ -110,31 +137,40 @@
         nil
         (do
           (doOneEntry fpz des (.nextElement ents))
-          (recur (.hasMoreElements ents)))))))
+          (recur (.hasMoreElements ents)))))
+  ))
 
-(defn save-file "Save a file to a directory."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SaveFile "Save a file to a directory."
+
   [^File dir ^String fname ^XData xdata]
+
   (let [ fp (File. dir fname) ]
     (FileUtils/deleteQuietly fp)
     (if (.isDiskFile xdata)
       (FileUtils/moveFile (.fileRef xdata) fp)
-      (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))))
-
-(defn get-file "Get a file from a directory."
-  ^XData [^File dir ^String fname]
-  (let [ fp (File. dir fname)
-         rc (XData.) ]
-    (if (and (.exists fp) (.canRead fp))
-      (doto rc (.setDeleteFile false)
-              (.resetContent fp) )
-      nil)) )
-
-
+      (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetFile "Get a file from a directory."
 
+  ^XData
+  [^File dir ^String fname]
 
+  (let [ fp (File. dir fname)
+         xs (XData.) ]
+    (if (and (.exists fp)
+             (.canRead fp))
+        (doto xs
+              (.setDeleteFile false)
+              (.resetContent fp))
+        nil)
+  ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private files-eof nil)
 

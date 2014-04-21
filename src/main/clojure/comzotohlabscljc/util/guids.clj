@@ -13,19 +13,20 @@
 (ns ^{ :doc "Ways to generate an unique id."
        :author "kenl" }
 
-  comzotohlabscljc.util.guids)
+  comzotohlabscljc.util.guids
 
-(import '(java.lang StringBuilder) )
-(import '(java.net InetAddress) )
-(import '(java.lang Math) )
-(import '(java.security SecureRandom))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (java.lang StringBuilder) )
+  (:import (java.net InetAddress) )
+  (:import (java.lang Math) )
+  (:import (java.security SecureRandom))
 
-(use '[ comzotohlabscljc.util.core :only [now-millis TryC new-random] ])
-(use '[ comzotohlabscljc.util.bytes :only [read-int read-long] ])
-(use '[ comzotohlabscljc.util.seqnum :only [next-int] ])
-(use '[ comzotohlabscljc.util.str :only [left right] ])
-
-
+  (:use [ comzotohlabscljc.util.core :only [NowMillis TryC NewRandom] ])
+  (:use [ comzotohlabscljc.util.bytes :only [ReadInt ReadLong] ])
+  (:use [ comzotohlabscljc.util.seqnum :only [NextInt] ])
+  (:require [ comzotohlabscljc.util.str :as zstr :only [Left Right] ])
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -37,39 +38,81 @@
 (def ^:private LONG_MASK "0000000000000000")
 (def ^:private INT_MASK "00000000")
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- fmt ""
-  ^String [^String pad ^String mask]
+
+  ^String
+  [^String pad ^String mask]
+
   (let [ mlen (.length mask)
          plen (.length pad) ]
     (if (>= mlen plen)
       (.substring mask 0 plen)
-      (.toString (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))) )
+      (.toString (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
+  ))
 
-(defn- fmt-int ^String [nm] (fmt INT_MASK (Integer/toHexString nm)))
-(defn- fmt-long ^String [nm] (fmt LONG_MASK (Long/toHexString nm)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtInt ""
 
-(defn- splitTime []
-  (let [ s (fmt-long (now-millis))
+  ^String
+  [nm]
+
+  (fmt INT_MASK (Integer/toHexString nm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtLong ""
+
+  ^String
+  [nm]
+
+  (fmt LONG_MASK (Long/toHexString nm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- splitTime  ""
+
+  []
+
+  (let [ s (fmtLong (NowMillis))
          n (.length s) ]
-    [ (left s (/ n 2)) (right s (max 0 (- n (/ n 2 )) )) ] ))
+    [ (zstr/Left s (/ n 2))
+      (zstr/Right s (max 0 (- n (/ n 2 )) )) ]
+  ))
 
-(defn- maybeSetIP ^long []
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeSetIP
+
+  ^long
+  []
+
   (TryC
     (let [ neta (InetAddress/getLocalHost)
            b (.getAddress neta) ]
       (if (.isLoopbackAddress neta )
-        (.nextLong (new-random))
-        (if (= 4 (alength b)) (long (read-int b)) (read-long b) )
-        ))
-    ))
+        (.nextLong (NewRandom))
+        (if (= 4 (alength b)) (long (ReadInt b)) (ReadLong b) )
+      ))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private _IP (Math/abs (maybeSetIP)) )
 
-(defn new-uuid "RFC4122, version 4 form."
-  ^String []
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NewUUid "RFC4122, version 4 form."
+
+  ^String
+  []
+
   ;; At i==19 set the high bits of clock sequence as per rfc4122, sec. 4.1.5
   (let [ rc (char-array _UUIDLEN)
-         rnd (new-random) ]
+         rnd (NewRandom) ]
     (dotimes [ n (alength rc) ]
       (aset-char rc n (case n
         (8 13 18 23) \-
@@ -78,18 +121,26 @@
                r (bit-or 0 (.intValue d))
                pos (if (= n 19) (bit-or (bit-and r 0x3) 0x8) (bit-and r 0xf) ) ]
           (aget ^chars _CHARS pos))) ))
-    (String. rc)))
+    (String. rc)
+  ))
 
-(defn new-wwid "Return a new guid based on time and ip-address."
-  ^String []
-  (let [ seed (.nextInt (new-random) (Integer/MAX_VALUE))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NewWWid "Return a new guid based on time and ip-address."
+
+  ^String
+  []
+
+  (let [ seed (.nextInt (NewRandom) (Integer/MAX_VALUE))
          ts (splitTime) ]
-      (str (nth ts 0)
-           (fmt-long _IP)
-           (fmt-int seed)
-           (fmt-int (next-int))
-           (nth ts 1)) ))
+    (str (nth ts 0)
+         (fmtLong _IP)
+         (fmtInt seed)
+         (fmtInt (NextInt))
+         (nth ts 1)) 
+  ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private guids-eof  nil)
 
