@@ -9,30 +9,32 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc "Date related utilities."
        :author "kenl" }
 
-  comzotohlabscljc.util.dates)
+  comzotohlabscljc.util.dates
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
 
-(import '(java.text ParsePosition SimpleDateFormat))
-(import '(java.util Locale TimeZone SimpleTimeZone
-  Date Calendar GregorianCalendar))
-(import '(java.sql Timestamp))
-(import '(org.apache.commons.lang3 StringUtils))
+  (:import (java.text ParsePosition SimpleDateFormat))
+  (:import (java.util Locale TimeZone SimpleTimeZone
+                      Date Calendar GregorianCalendar))
+  (:import (java.sql Timestamp))
+  (:import (org.apache.commons.lang3 StringUtils))
 
-(use '[ comzotohlabscljc.util.str :only [has? has-any? nichts?] ])
-(require '[ comzotohlabscljc.util.constants :as CS ])
-(use '[ comzotohlabscljc.util.core :only [Try!] ])
-
+  (:use [ comzotohlabscljc.util.str :only [Has? HasAny? nichts?] ])
+  (:require [ comzotohlabscljc.util.constants :as CS ])
+  (:use [ comzotohlabscljc.util.core :only [Try!] ])
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn leap-year? "Return true if this is a leap year."
+(defn LeapYear? "Return true if this is a leap year."
+
   [year]
+
   (cond
     (zero? (mod year 400))
     true
@@ -43,120 +45,210 @@
     :else
     (zero? (mod year 4))) )
 
-(defn- hastzpart [^String s]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hastzpart? ""
+
+  [^String s]
+
   (let [ pos (StringUtils/indexOf s ",; \t\r\n\f")
          ss (if (> pos 0) (.substring s (inc pos)) "") ]
-    (or (has-any? ss ["+" "-"])
-        (.matches ss "\\s*[a-zA-Z]+\\s*")) ) )
+    (or (HasAny? ss ["+" "-"])
+        (.matches ss "\\s*[a-zA-Z]+\\s*"))
+  ))
 
-(defn- has-tz? "Returns true if this datetime string contains some timezone info."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hastz? "Returns true if this datetime string contains some timezone info."
+
   [^String dateStr]
+
   (let [ p1 (.lastIndexOf dateStr (int \.))
          p2 (.lastIndexOf dateStr (int \:))
          p3 (.lastIndexOf dateStr (int \-))
          p4 (.lastIndexOf dateStr (int \/)) ]
     (cond
       (> p1 0)
-      (hastzpart (.substring dateStr (inc p1)))
+      (hastzpart? (.substring dateStr (inc p1)))
 
       (> p2 0)
-      (hastzpart (.substring dateStr (inc p2)))
+      (hastzpart? (.substring dateStr (inc p2)))
 
       (> p3 0)
-      (hastzpart (.substring dateStr (inc p3)))
+      (hastzpart? (.substring dateStr (inc p3)))
 
       (> p4 0)
-      (hastzpart (.substring dateStr (inc p4)))
+      (hastzpart? (.substring dateStr (inc p4)))
 
-      :else false)))
+      :else false)
+  ))
 
-(defn parse-timestamp "Convert string into a valid Timestamp object.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseTimestamp "Convert string into a valid Timestamp object.
   *tstr* conforming to the format \"yyyy-mm-dd hh:mm:ss.[fff...]\""
-  ^Timestamp [^String tstr]
+
+  ^Timestamp
+  [^String tstr]
+
   (Try!
     (Timestamp/valueOf tstr) ))
 
-(defn parse-date "Convert string into a Date object."
-  ^Date [^String tstr ^String fmt]
-  (if (or (StringUtils/isEmpty tstr) (StringUtils/isEmpty fmt))
-    nil
-    (.parse (SimpleDateFormat. fmt) tstr)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseDate "Convert string into a Date object."
 
-(defn- parse-iso8601 "Parses datetime in ISO8601 format."
-  ^Date [^String tstr]
+  ^Date
+  [^String tstr ^String fmt]
+
+  (if (or (cstr/blank? tstr) (cstr/blank? fmt))
+      nil
+      (.parse (SimpleDateFormat. fmt) tstr)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- parseIso8601 "Parses datetime in ISO8601 format."
+
+  ^Date
+  [^String tstr]
+
   (if (nichts? tstr)
-    nil
-    (let [ fmt (if (has? tstr \:)
-                 (if (has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
-                 CS/DATE_FMT ) ]
-      (parse-date tstr (if (has-tz? tstr) (str fmt "Z") fmt)))))
+      nil
+      (let [ fmt (if (Has? tstr \:)
+                     (if (Has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
+                     CS/DATE_FMT ) ]
+        (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))
+  ))
 
-(defn fmt-timestamp "Convert Timestamp into a string value."
-  ^String [^Timestamp ts]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FmtTimestamp "Convert Timestamp into a string value."
+
+  ^String
+  [^Timestamp ts]
+
   (if (nil? ts) "" (.toString ts)))
 
-(defn fmt-date "Convert Date into string value."
-  ( ^String [^Date dt] (fmt-date dt CS/DT_FMT_MICRO nil))
-  ( ^String [^Date dt fmt] (fmt-date dt fmt nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FmtDate "Convert Date into string value."
+
+  ( ^String [^Date dt fmt] (FmtDate dt fmt nil))
+
   ( ^String [^Date dt fmt ^TimeZone tz]
-    (if (or (nil? dt) (StringUtils/isEmpty fmt))
+    (if (or (nil? dt) (cstr/blank? fmt))
       ""
       (let [ df (SimpleDateFormat. fmt) ]
-        (if-not (nil? tz) (.setTimeZone df tz))
-        (.format df dt)))) )
+        (when-not (nil? tz) (.setTimeZone df tz))
+        (.format df dt))))
 
-(defn fmt-gmt "Convert Date object into a string - GMT timezone."
-  ^String [^Date dt]
-  (do
-    (fmt-date dt CS/DT_FMT_MICRO (SimpleTimeZone. 0 "GMT")) ))
+  ( ^String [^Date dt] (FmtDate dt CS/DT_FMT_MICRO nil)))
 
-(defn- add
-  ^Calendar [^Calendar cal calendarField amount]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FmtGMT "Convert Date object into a string - GMT timezone."
+
+  ^String
+  [^Date dt]
+
+  (let []
+    (FmtDate dt CS/DT_FMT_MICRO (SimpleTimeZone. 0 "GMT"))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- add ""
+
+  ^Calendar
+  [^Calendar cal calendarField amount]
+
   (if (nil? cal)
     nil
     (doto (GregorianCalendar. (.getTimeZone cal))
       (.setTime (.getTime cal))
-      (.add (int calendarField) ^long amount))))
+      (.add (int calendarField) ^long amount))
+  ))
 
-(defn make-cal ""
-  ^Calendar [date]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeCal ""
+
+  ^Calendar
+  [date]
+
   (doto (GregorianCalendar.) (.setTime date)))
 
-(defn add-years "Add n more years to the calendar."
-  ^Calendar [^Calendar cal yrs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddYears "Add n more years to the calendar."
+
+  ^Calendar
+  [^Calendar cal yrs]
+
   (add cal Calendar/YEAR yrs))
 
-(defn add-months "Add n more months to the calendar."
-  ^Calendar [^Calendar cal mts]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddMonths "Add n more months to the calendar."
+
+  ^Calendar
+  [^Calendar cal mts]
+
   (add cal Calendar/MONTH mts))
 
-(defn add-days "Add n more days to the calendar."
-  ^Calendar [^Calendar cal days]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddDays "Add n more days to the calendar."
+
+  ^Calendar 
+  [^Calendar cal days]
+
   (add cal Calendar/DAY_OF_YEAR days))
 
-(defn plus-months "Add n months."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PlusMonths "Add n months."
+
   ^Date
   [months]
-  (let [ now (make-cal (Date.)) ]
-    (-> (add-months now months)
-      (.getTime))))
 
-(defn plus-years "Add n years."
+  (let [ now (MakeCal (Date.)) ]
+    (-> (AddMonths now months)
+      (.getTime))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PlusYears "Add n years."
+
   ^Date
   [years]
-  (let [ now (make-cal (Date.)) ]
-    (-> (add-years now years)
-      (.getTime))))
 
-(defn plus-days "Add n days."
+  (let [ now (MakeCal (Date.)) ]
+    (-> (AddYears now years)
+      (.getTime))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PlusDays "Add n days."
+
   ^Date
   [days]
-  (let [ now (make-cal (Date.)) ]
-    (-> (add-days now days)
-      (.getTime))))
 
-(defn fmt-cal "Formats time to yyyy-MM-ddThh:mm:ss."
-  ^String [^Calendar cal]
+  (let [ now (MakeCal (Date.)) ]
+    (-> (AddDays now days)
+      (.getTime))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FmtCal "Formats time to yyyy-MM-ddThh:mm:ss."
+
+  ^String
+  [^Calendar cal]
+
   (do
     (java.lang.String/format (Locale/getDefault) "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
        (into-array Object [
@@ -165,27 +257,35 @@
             (.get cal Calendar/DAY_OF_MONTH)
             (.get cal Calendar/HOUR_OF_DAY)
             (.get cal Calendar/MINUTE)
-            (.get cal Calendar/SECOND) ] ))))
+            (.get cal Calendar/SECOND) ] ))
+  ))
 
-(defn gmt-cal "" ^GregorianCalendar []
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GmtCal ""
+
+  ^GregorianCalendar 
+  []
+
   (GregorianCalendar. (TimeZone/getTimeZone "GMT")) )
 
-(defn debug-cal "Debug show a calendar's internal data."
-  ^String [^Calendar cal]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DebugCal "Debug show a calendar's internal data."
+
+  ^String 
+  [^Calendar cal]
+
   (do
-    (clojure.string/join ""
+    (cstr/join ""
         [ "{" (.. cal (getTimeZone) (getDisplayName) )  "} "
           "{" (.. cal (getTimeZone) (getID)) "} "
           "[" (.getTimeInMillis cal) "] "
-          (fmt-cal cal) ])))
+          (FmtCal cal) ])
+  ))
 
-
-
-
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private dates-eof nil)
 
 

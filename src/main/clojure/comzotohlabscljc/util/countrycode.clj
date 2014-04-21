@@ -9,17 +9,20 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc "A class that maps country-codes to the country-names." 
        :author "kenl" }
 
-  comzotohlabscljc.util.countrycode )
+  comzotohlabscljc.util.countrycode
 
-
+  (:require '[clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require '[clojure.string :as cstr ])
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private _CCODES {
     "AF"  "Afghanistan"
     "AL"  "Albania"
@@ -258,24 +261,43 @@
 (def ^:private _CCODESEQ (seq _CCODES))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FindCountry "Return the full country name."
 
-(defn find-country "Return the full country name."
-  ^String [^String code]
-  (_CCODES (.toUpperCase code)))
+  ^String
+  [^String code]
 
-(defn list-codes "List all the country codes."
+  (_CCODES (cstr/upper-case code)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ListCodes"List all the country codes."
+
   []
+
   (keys _CCODES))
 
-(defn usa? "Returns true if the code is US."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn isUSA? "Returns true if the code is US."
+
   [^String code]
-  (= "US" (.toUpperCase code)))
 
-(defn find-code "Return the country code."
-  ^String [^String country]
+  (= "US" (cstr/upper-case code)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FindCode "Return the country code."
+
+  ^String
+  [^String country]
+
   (let [ rs (filter #(= (nth % 1) country) _CCODESEQ) ]
-    (if (nil? rs) nil (nth (first rs) 0))))
+    (if (nil? rs) nil (nth (first rs) 0))
+  ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private countrycode-eof nil)
 
