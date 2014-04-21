@@ -30,10 +30,10 @@ import org.apache.shiro.subject.Subject
 
 class Test  extends FunSuite with BeforeAndAfterEach with BeforeAndAfterAll {
 
-  override def beforeAll(configMap: Map[String, Any]) {
+  def beforeAll(configMap: Map[String, Any]) {
   }
 
-  override def afterAll(configMap: Map[String, Any]) {
+  def afterAll(configMap: Map[String, Any]) {
   }
 
   override def beforeEach() { }

@@ -1,27 +1,34 @@
 /*??
-// This library is distributed in  the hope that it will be useful but without
-// any  warranty; without  even  the  implied  warranty of  merchantability or
-// fitness for a particular purpose.
-// The use and distribution terms for this software are covered by the Eclipse
-// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
-// can be found in the file epl-v10.html at the root of this distribution.
-// By using this software in any  fashion, you are agreeing to be bound by the
-// terms of this license. You  must not remove this notice, or any other, from
-// this software.
-// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+*
+* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+*
+* This library is distributed in the hope that it will be useful
+* but without any warranty; without even the implied warranty of
+* merchantability or fitness for a particular purpose.
+*
+* The use and distribution terms for this software are covered by the
+* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+* which can be found in the file epl-v10.html at the root of this distribution.
+*
+* By using this software in any fashion, you are agreeing to be bound by
+* the terms of this license.
+* You must not remove this notice, or any other, from this software.
+*
  ??*/
-
 
 package com.zotohlabs.frwk.net
 
-import org.jboss.netty.channel.group.ChannelGroup
+import io.netty.handler.codec.http.{HttpObject,HttpContent,LastHttpContent}
+import io.netty.channel.SimpleChannelInboundHandler
+import io.netty.channel.group.ChannelGroup
 import com.zotohlabs.frwk.io.XData
-
+import io.netty.channel.Channel
+import io.netty.channel.ChannelHandlerContext
 /**
  * @author kenl
  *
  */
-class HTTPResponseHdlr(g:ChannelGroup) extends BasicChannelHandler(g) {
+class HTTPResponseHdlr(g:ChannelGroup) extends SimpleChannelInboundHandler[HttpObject] {
 
 //  private var _cb:HTTPMsgIO = null
 //  def bind(cb:HTTPMsgIO): this.type = {
@@ -37,6 +44,8 @@ class HTTPResponseHdlr(g:ChannelGroup) extends BasicChannelHandler(g) {
 //      _cb.onError(code, reason)
 //    }
 //  }
+  
+    override def channelRead0(ctx:ChannelHandlerContext, msg:HttpObject) {
+    }  
 }
-
 
