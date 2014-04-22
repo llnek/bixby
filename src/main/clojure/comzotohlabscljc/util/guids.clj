@@ -25,8 +25,7 @@
   (:use [ comzotohlabscljc.util.core :only [NowMillis TryC NewRandom] ])
   (:use [ comzotohlabscljc.util.bytes :only [ReadInt ReadLong] ])
   (:use [ comzotohlabscljc.util.seqnum :only [NextInt] ])
-  (:require [ comzotohlabscljc.util.str :as zstr :only [Left Right] ])
-)
+  (:require [ comzotohlabscljc.util.str :as zstr :only [Left Right] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

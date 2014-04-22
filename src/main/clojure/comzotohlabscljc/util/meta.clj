@@ -19,8 +19,7 @@
 
   (:import (java.lang.reflect Member Field Method Modifier))
   (:use [ comzotohlabscljc.util.str :only [EqAny? hgl?] ])
-  (:use [ comzotohlabscljc.util.core :only [test-nonil] ])
-)
+  (:use [ comzotohlabscljc.util.core :only [test-nonil] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

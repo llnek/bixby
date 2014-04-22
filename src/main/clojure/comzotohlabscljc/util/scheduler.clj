@@ -22,8 +22,7 @@
   (:import (java.util.concurrent ConcurrentHashMap))
   (:import (java.util Map Properties Timer TimerTask))
 
-  (:use [comzotohlabscljc.util.core :only [juid MakeMMap] ])
-)
+  (:use [comzotohlabscljc.util.core :only [juid MakeMMap] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -26,9 +26,7 @@
 
   (:use [ comzotohlabscljc.util.files :only [FileRead?] ])
   (:use [ comzotohlabscljc.util.core :only [ConvBool ConvLong ConvDouble] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb strim] ])
-
-)
+  (:use [ comzotohlabscljc.util.str :only [nsb strim] ]) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

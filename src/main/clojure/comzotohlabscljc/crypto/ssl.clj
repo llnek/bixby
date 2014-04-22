@@ -13,54 +13,57 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.crypto.ssl )
+  comzotohlabscljc.crypto.ssl
 
-(import '(javax.net.ssl X509TrustManager TrustManager))
-(import '(javax.net.ssl SSLEngine SSLContext))
-(import '(java.net URL))
-(import '(javax.net.ssl KeyManagerFactory TrustManagerFactory))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
 
-(use '[comzotohlabscljc.crypto.stores :only [make-crypto-store] ])
-(use '[comzotohlabscljc.crypto.core :only [pkcs-file? get-jksStore get-pkcsStore get-srand make-simpleTrustMgr] ])
+  (:import (javax.net.ssl X509TrustManager TrustManager))
+  (:import (javax.net.ssl SSLEngine SSLContext))
+  (:import (java.net URL))
+  (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory))
 
+  (:use [comzotohlabscljc.crypto.stores :only [MakeCryptoStore] ])
+  (:use [comzotohlabscljc.crypto.core :only [PkcsFile? GetJksStore
+                                             GetPkcsStore GetSRand MakeSimpleTrustMgr] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
-(defn make-sslContext "Make a server-side SSLContext."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeSslContext "Make a server-side SSLContext."
 
   (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj]
-   (make-sslContext keyUrl pwdObj "TLS"))
+   (MakeSslContext keyUrl pwdObj "TLS"))
 
   (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj ^String flavor]
     (let [ ctx (SSLContext/getInstance flavor)
            ks (with-open [ inp (.openStream keyUrl) ]
-                (if (pkcs-file? keyUrl)
-                    (get-pkcsStore inp pwdObj)
-                    (get-jksStore inp pwdObj)))
-           cs (make-crypto-store ks pwdObj)
+                (if (PkcsFile? keyUrl)
+                    (GetPkcsStore inp pwdObj)
+                    (GetJksStore inp pwdObj)))
+           cs (MakeCryptoStore ks pwdObj)
            ^TrustManagerFactory tmf   (.trustManagerFactory cs)
            ^KeyManagerFactory kmf   (.keyManagerFactory cs) ]
-
-      (.init ctx (.getKeyManagers kmf) (.getTrustManagers tmf) (get-srand))
+      (.init ctx (.getKeyManagers kmf) (.getTrustManagers tmf) (GetSRand))
       ctx)) )
 
-
-(defn make-sslClientCtx "Make a client-side SSLContext."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeSslClientCtx "Make a client-side SSLContext."
 
   ^SSLContext
   [ssl]
 
   (if (not ssl)
-    nil
-    (let [ ctx (SSLContext/getInstance "TLS") ]
-      (.init ctx nil (into-array TrustManager [(make-simpleTrustMgr)]) nil)
-      ctx)))
-
+      nil
+      (let [ ctx (SSLContext/getInstance "TLS") ]
+        (.init ctx nil (into-array TrustManager [(MakeSimpleTrustMgr)]) nil)
+        ctx)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private ssl-eof nil)
 

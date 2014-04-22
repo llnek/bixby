@@ -29,8 +29,7 @@
   (:import (org.xml.sax InputSource))
   (:import (java.nio.charset Charset))
 
-  (:use [ comzotohlabscljc.util.core :only [Try!] ])
-)
+  (:use [ comzotohlabscljc.util.core :only [Try!] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

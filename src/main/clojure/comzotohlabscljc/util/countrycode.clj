@@ -15,8 +15,7 @@
   comzotohlabscljc.util.countrycode
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr ])
-)
+  (:require [clojure.string :as cstr ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

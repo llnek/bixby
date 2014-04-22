@@ -25,8 +25,7 @@
 
   (:use [ comzotohlabscljc.util.str :only [Has? HasAny? nichts?] ])
   (:require [ comzotohlabscljc.util.constants :as CS ])
-  (:use [ comzotohlabscljc.util.core :only [Try!] ])
-)
+  (:use [ comzotohlabscljc.util.core :only [Try!] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

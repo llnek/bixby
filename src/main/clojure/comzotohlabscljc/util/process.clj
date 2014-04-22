@@ -24,8 +24,7 @@
 
   (:use [ comzotohlabscljc.util.meta :only [GetCldr] ])
   (:use [ comzotohlabscljc.util.core :only [Try!] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb] ])
-)
+  (:use [ comzotohlabscljc.util.str :only [nsb] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
