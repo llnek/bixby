@@ -9,41 +9,61 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.dbio.mysql)
+  comzotohlabscljc.dbio.mysql
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.dbio.drivers])
-(use '[comzotohlabscljc.dbio.core])
-
-(def MYSQL-DRIVER "com.mysql.jdbc.Driver")
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.dbio.drivers])
+  (:use [comzotohlabscljc.dbio.core :only [MySQL] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def MYSQL-DRIVER "com.mysql.jdbc.Driver")
 
 ;; MySQL
-(defmethod getBlobKeyword MySQL [db] "LONGBLOB")
-(defmethod getTSKeyword MySQL [db] "TIMESTAMP")
-(defmethod getDoubleKeyword MySQL [db] "DOUBLE")
-(defmethod getFloatKeyword MySQL [db]  "DOUBLE")
+(defmethod GetBlobKeyword MySQL [db] "LONGBLOB")
+(defmethod GetTSKeyword MySQL [db] "TIMESTAMP")
+(defmethod GetDoubleKeyword MySQL [db] "DOUBLE")
+(defmethod GetFloatKeyword MySQL [db]  "DOUBLE")
 
-(defmethod genEnd MySQL [db table]
-  (str "\n) Type=InnoDB" (genExec db) "\n\n"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenEnd MySQL
 
-(defmethod genAutoInteger MySQL [db table fld]
-  (str (getPad db) (genCol fld) " " (getIntKeyword db) " NOT NULL AUTO_INCREMENT"))
+  [db table]
 
-(defmethod genAutoLong MySQL [db table fld]
-  (str (getPad db) (genCol fld) " " (getLongKeyword db) " NOT NULL AUTO_INCREMENT"))
+  (str "\n) Type=InnoDB" (GenExec db) "\n\n"))
 
-(defmethod genDrop MySQL [db table]
-  (str "DROP TABLE IF EXISTS " table (genExec db) "\n\n"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoInteger MySQL
 
+  [db table fld]
 
-;;(println (getDDL (make-MetaCache testschema) (MySQL.) ))
+  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db) " NOT NULL AUTO_INCREMENT"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoLong MySQL
+
+  [db table fld]
+
+  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db) " NOT NULL AUTO_INCREMENT"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenDrop MySQL
+
+  [db table]
+
+  (str "DROP TABLE IF EXISTS " table (GenExec db) "\n\n"))
+
+;;(println (GetDDL (MakeMetaCache testschema) (MySQL.) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private mysql-eof nil)
 

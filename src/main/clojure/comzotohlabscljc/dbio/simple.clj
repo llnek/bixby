@@ -9,37 +9,44 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.dbio.simple )
+  comzotohlabscljc.dbio.simple
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(import '(com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr))
-(import '(java.sql Connection))
-
-(use '[comzotohlabscljc.util.str :only [hgl?] ])
-(use '[comzotohlabscljc.dbio.core])
-(use '[comzotohlabscljc.dbio.sql])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr))
+  (:import (java.sql Connection))
+  (:use [comzotohlabscljc.util.str :only [hgl?] ])
+  (:use [comzotohlabscljc.dbio.core :as dbcore])
+  (:use [comzotohlabscljc.dbio.sql :as dbsql]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn- openDB ^Connection [^DBAPI db]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- openDB ""
+  
+  ^Connection 
+  [^DBAPI db]
+
   (doto (.open db)
     (.setAutoCommit true)
     ;;(.setTransactionIsolation Connection/TRANSACTION_READ_COMMITTED)
-    (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE)))
+    (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE)
+  ))
 
-(defn simpleSQLr ""
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SimpleSQLr ""
 
   ^SQLr
+  [ ^MetaCache metaCache ^DBAPI db ]
 
-  [ ^MetaCache metaCache
-    ^DBAPI db ]
-
-  (let [ ^comzotohlabscljc.dbio.sql.SQLProcAPI proc (make-proc metaCache db)
+  (let [ ^comzotohlabscljc.dbio.sql.SQLProcAPI proc (dbsql/MakeProc metaCache db)
          metas (.getMetas metaCache) ]
     (reify SQLr
 
@@ -55,9 +62,9 @@
       (findSome [this model filters extraSQL]
         (with-open [ conn (openDB db) ]
           (let [ zm (get metas model)
-                 tbl (table-name zm)
+                 tbl (dbsql/Tablename zm)
                  s (str "SELECT * FROM " (ese tbl))
-                 [wc pms] (sql-filter-clause zm filters)
+                 [wc pms] (dbsql/SqlFilterClause zm filters)
                  extra (if (hgl? extraSQL) extraSQL "") ]
             (if (hgl? wc)
               (.doQuery proc conn (str s " WHERE " wc " " extra) pms model)
@@ -97,9 +104,10 @@
 
       (purge [this model]
         (with-open [ conn (openDB db) ]
-            (.doPurge proc conn model) )) )))
+            (.doPurge proc conn model) )) 
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private simple-eof nil)
 

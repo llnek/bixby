@@ -9,26 +9,21 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.dbio.h2)
+  comzotohlabscljc.dbio.h2
 
-(use '[clojure.tools.logging :only (info warn error debug)])
-
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(com.zotohlabs.frwk.dbio DBIOError))
-(import '(java.io File))
-(import '(java.sql DriverManager Connection Statement))
-
-(use '[comzotohlabscljc.util.core :only [test-nonil test-nestr] ])
-(use '[comzotohlabscljc.util.str :only [nsb] ])
-(use '[comzotohlabscljc.dbio.drivers])
-(use '[comzotohlabscljc.dbio.core])
-
+  (:require [clojure.tools.logging :as log :only (info warn error debug)])
+  (:require [clojure.string :as cstr])
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (com.zotohlabs.frwk.dbio DBIOError))
+  (:import (java.io File))
+  (:import (java.sql DriverManager Connection Statement))
+  (:use [comzotohlabscljc.util.core :only [test-nonil test-nestr] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ])
+  (:use [comzotohlabscljc.dbio.drivers])
+  (:use [comzotohlabscljc.dbio.core :as dbcore ]))
 
 (def H2-SERVER-URL "jdbc:h2:tcp://host/path/db" )
 (def H2-DRIVER "org.h2.Driver" )
@@ -43,28 +38,53 @@
 ;;(set! *warn-on-reflection* true)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; H2
-(defmethod getDateKeyword H2 [db] "TIMESTAMP")
-(defmethod getDoubleKeyword H2 [db] "DOUBLE")
-(defmethod getBlobKeyword H2 [db] "BLOB")
-(defmethod getFloatKeyword H2 [db] "FLOAT")
+(defmethod GetDateKeyword H2 [db] "TIMESTAMP")
+(defmethod GetDoubleKeyword H2 [db] "DOUBLE")
+(defmethod GetBlobKeyword H2 [db] "BLOB")
+(defmethod GetFloatKeyword H2 [db] "FLOAT")
 
-(defmethod genAutoInteger H2 [db table fld]
-  (str (getPad db) (genCol fld) " " (getIntKeyword db)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoInteger H2
+
+  [db table fld]
+
+  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db)
             (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
 
-(defmethod genAutoLong H2 [db table fld]
-  (str (getPad db) (genCol fld) " " (getLongKeyword db)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoLong H2
+
+  [db table fld]
+
+  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db)
             (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
 
-(defmethod genBegin H2 [db table]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenBegin H2
+
+  [db table]
+
   (str "CREATE CACHED TABLE " table "\n(\n" ))
 
-(defmethod genDrop H2 [db table]
-  (str "DROP TABLE " table " IF EXISTS CASCADE" (genExec db) "\n\n"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenDrop H2
 
+  [db table]
 
-(defn make-h2-db [^File dbFileDir ^String dbid ^String user pwdObj]
+  (str "DROP TABLE " table " IF EXISTS CASCADE" (GenExec db) "\n\n"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeH2Db ""
+
+  [^File dbFileDir ^String dbid ^String user pwdObj]
+
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
@@ -72,7 +92,7 @@
          u (.getCanonicalPath url)
          pwd (nsb pwdObj)
          dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
-    (debug "Creating H2: " dbUrl)
+    (log/debug "Creating H2: " dbUrl)
     (.mkdir dbFileDir)
     (with-open [ c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
@@ -82,9 +102,15 @@
       (with-open [ s (.createStatement c1) ]
         (.execute s "SHUTDOWN"))
       )
-    dbUrl))
+    dbUrl
+  ))
 
-(defn close-h2-db [^File dbFileDir ^String dbid ^String user pwdObj]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseH2Db ""
+
+  [^File dbFileDir ^String dbid ^String user pwdObj]
+
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
@@ -92,17 +118,15 @@
          u (.getCanonicalPath url)
          pwd (nsb pwdObj)
          dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
-    (debug "Closing H2: " dbUrl)
+    (log/debug "Closing H2: " dbUrl)
     (with-open [ c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
       (with-open [ s (.createStatement c1) ]
-        (.execute s "SHUTDOWN")) )))
+        (.execute s "SHUTDOWN")) )
+  ))
 
-;;(println (getDDL (make-MetaCache testschema) (H2.) ))
-
+;;(println (GetDDL (MakeMetaCache testschema) (H2.) ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private h2-eof nil)
-
-
 

@@ -9,41 +9,58 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.dbio.sqlserver)
+  comzotohlabscljc.dbio.sqlserver
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.dbio.drivers])
-(use '[comzotohlabscljc.dbio.core])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.dbio.drivers])
+  (:use [comzotohlabscljc.dbio.core :as dbcore]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; SQLServer
-(defmethod getBlobKeyword SQLServer [db] "IMAGE")
-(defmethod getTSKeyword SQLServer [db] "DATETIME")
-(defmethod getDoubleKeyword SQLServer [db] "FLOAT(53)")
-(defmethod getFloatKeyword SQLServer [db] "FLOAT(53)")
+(defmethod GetBlobKeyword SQLServer [db] "IMAGE")
+(defmethod GetTSKeyword SQLServer [db] "DATETIME")
+(defmethod GetDoubleKeyword SQLServer [db] "FLOAT(53)")
+(defmethod GetFloatKeyword SQLServer [db] "FLOAT(53)")
 
-(defmethod genAutoInteger SQLServer [db table fld]
-  (str (getPad db) (genCol fld) " " (getIntKeyword db)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoInteger SQLServer
+
+  [db table fld]
+
+  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db)
     (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")))
 
-(defmethod genAutoLong SQLServer [db table fld]
-  (str (getPad db) (genCol fld) " " (getLongKeyword db)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoLong SQLServer
+
+  [db table fld]
+
+  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db)
     (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")))
 
-(defmethod genDrop SQLServer [db table]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenDrop SQLServer
+
+  [db table]
+
   (str "IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id=object_id('"
-       table "')) DROP TABLE " table (genExec db) "\n\n"))
+       table "')) DROP TABLE " table (GenExec db) "\n\n"))
 
 
-;;(println (getDDL (make-MetaCache testschema) (SQLServer.) ))
+;;(println (GetDDL (MakeMetaCache testschema) (SQLServer.) ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private sqlserver-eof nil)
 

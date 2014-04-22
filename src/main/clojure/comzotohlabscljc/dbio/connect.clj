@@ -9,58 +9,74 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.dbio.connect )
+  comzotohlabscljc.dbio.connect
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(import '(java.util Map HashMap))
-
-(use '[comzotohlabscljc.util.core :only [Try!] ])
-(use '[comzotohlabscljc.util.str :only [nsb] ])
-(use '[comzotohlabscljc.dbio.core :only [make-db-pool] ])
-(use '[comzotohlabscljc.dbio.composite])
-(use '[comzotohlabscljc.dbio.simple])
-(use '[comzotohlabscljc.dbio.sqlserver])
-(use '[comzotohlabscljc.dbio.postgresql])
-(use '[comzotohlabscljc.dbio.mysql])
-(use '[comzotohlabscljc.dbio.oracle])
-(use '[comzotohlabscljc.dbio.h2])
-
-(import '(com.zotohlabs.frwk.dbio
-  DBAPI JDBCPool JDBCInfo
-  DBIOLocal DBIOError OptLockError))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (java.util Map HashMap))
+  (:use [comzotohlabscljc.util.core :only [Try!] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ])
+  (:require [comzotohlabscljc.dbio.core :as dbcore :only [MakeDbPool] ])
+  (:use [comzotohlabscljc.dbio.composite])
+  (:use [comzotohlabscljc.dbio.simple])
+  (:use [comzotohlabscljc.dbio.sqlserver])
+  (:use [comzotohlabscljc.dbio.postgresql])
+  (:use [comzotohlabscljc.dbio.mysql])
+  (:use [comzotohlabscljc.dbio.oracle])
+  (:use [comzotohlabscljc.dbio.h2])
+  (:import (com.zotohlabs.frwk.dbio DBAPI JDBCPool JDBCInfo
+                                    DBIOLocal DBIOError OptLockError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hashJdbc ""
 
-(defn- hashJdbc "" ^long [jdbc]
+  ^long
+  [jdbc]
+
   (.hashCode
     (str (:driver jdbc) (:url jdbc)
-         (:user jdbc) (nsb (:pwdObj jdbc)))))
+         (:user jdbc) (nsb (:pwdObj jdbc)))
+  ))
 
-(defn registerJdbcTL "" [^JDBCInfo jdbc options]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RegisterJdbcTL ""
+
+  [^JDBCInfo jdbc options]
+
   (let [ tloc (DBIOLocal/getCache)
          ^Map c (.get tloc)
          hc (.getId jdbc) ]
     (when-not (.containsKey c hc)
-      (debug "no db pool found in thread-local, creating one...")
-      (let [ p (make-db-pool jdbc options) ]
+      (log/debug "no db pool found in thread-local, creating one...")
+      (let [ p (dbcore/MakeDbPool jdbc options) ]
         (.put c hc p)))
-    (.get c hc)))
+    (.get c hc)
+  ))
 
-(defn- maybe-finz-pool "" [ hc]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybe-finz-pool ""
+
+  [ hc]
+
   (let [ tloc (DBIOLocal/getCache) ;; a thread local
          ^Map c (.get tloc) ;; c == java hashmap
          p (.get c hc) ]
     (when-not (nil? p)
       (Try! (.shutdown ^JDBCPool p))
-      (.remove c hc))))
+      (.remove c hc))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- maybe-get-pool ""
 
   ^JDBCPool
@@ -70,16 +86,19 @@
          ^Map c (.get tloc)
          rc (.get c hc) ]
     (if (nil? rc)
-      (registerJdbcTL jdbc options)
-      rc)))
+      (RegisterJdbcTL jdbc options)
+      rc)
+  ))
 
-(defn dbio-connect "Connect to a datasource."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioConnect "Connect to a datasource."
 
   ^DBAPI
   [^JDBCInfo jdbc metaCache options]
 
   (let [ hc (.getId jdbc) ]
-    ;;(debug (.getMetas metaCache))
+    ;;(log/debug (.getMetas metaCache))
     (reify DBAPI
 
       (getMetaCache [_] metaCache)
@@ -104,14 +123,12 @@
             (.nextFree p))))
 
       (newCompositeSQLr [this]
-        (compositeSQLr metaCache this))
+        (CompositeSQLr metaCache this))
 
       (newSimpleSQLr [this]
-        (simpleSQLr metaCache this)) )))
+        (SimpleSQLr metaCache this)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
+;;
 (def ^:private connect-eof nil)
 

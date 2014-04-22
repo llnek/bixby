@@ -9,33 +9,26 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.dbio.core )
+  comzotohlabscljc.dbio.core
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[clojure.set])
-
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(com.zotohlabs.frwk.dbio
-  MetaCache Schema SQLr JDBCPool JDBCInfo))
-(import '(java.sql
-  SQLException DatabaseMetaData
-  Connection Driver DriverManager))
-(import '(java.util
-  GregorianCalendar TimeZone Properties))
-(import '(java.lang Math))
-(import '(com.zotohlabs.frwk.dbio DBIOError))
-(import '(com.jolbox.bonecp BoneCP BoneCPConfig))
-(import '(org.apache.commons.lang3 StringUtils))
-
-(use '[comzotohlabscljc.crypto.codec])
-(use '[comzotohlabscljc.util.core :only [TryC Try! root-cause stripNSPath notnil? nnz nbf uid] ])
-(use '[comzotohlabscljc.util.meta :only [for-name] ])
-(use '[comzotohlabscljc.util.str :only [strim embeds? nsb has-nocase? hgl?] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:require [clojure.set :as cset])
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (com.zotohlabs.frwk.dbio MetaCache Schema SQLr JDBCPool JDBCInfo))
+  (:import (java.sql SQLException DatabaseMetaData Connection Driver DriverManager))
+  (:import (java.util GregorianCalendar TimeZone Properties))
+  (:import (java.lang Math))
+  (:import (com.zotohlabs.frwk.dbio DBIOError))
+  (:import (com.jolbox.bonecp BoneCP BoneCPConfig))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:require [comzotohlabscljc.crypto.codec :as codec ])
+  (:use [comzotohlabscljc.util.core :only [TryC Try! RootCause StripNSPath notnil? nnz nbf juid] ])
+  (:use [comzotohlabscljc.util.meta :only [ForName] ])
+  (:use [comzotohlabscljc.util.str :only [strim Embeds? nsb HasNocase? hgl?] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,24 +39,43 @@
 (def ^:dynamic *JDBC-INFO* nil)
 (def DDL_SEP "-- :")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro uc-ent ^String [ent] `(cstr/upper-case (name ~ent)))
+(defmacro lc-ent ^String [ent] `(cstr/lower-case (name ~ent)))
 
-(defn uc-ent ^String [ent] (.toUpperCase (name ent)))
-(defn lc-ent ^String [ent] (.toLowerCase (name ent)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ese "Escape string entity for sql."
+
   (^String [ent] (uc-ent ent))
+
   (^String [ch ent] (str ch (uc-ent ent) ch))
+
   (^String [c1 ent c2] (str c1 (uc-ent ent) c2)))
 
-(defn merge-meta [m1 m2] (merge m1 m2))
-(defn eseOID [] (ese "dbio_rowid"))
-(defn eseVID [] (ese "dbio_verid"))
-(defn eseLHS [] (ese "lhs_rowid"))
-(defn eseRHS [] (ese "rhs_rowid"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MergeMeta 
+  
+  [m1 m2] 
+  
+  (merge m1 m2))
 
-(defn make-jdbc "Make a JDBCInfo record."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro eseOID [] `(ese "dbio_rowid"))
+(defmacro eseVID [] `(ese "dbio_verid"))
+(defmacro eseLHS [] `(ese "lhs_rowid"))
+(defmacro eseRHS [] `(ese "rhs_rowid"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeJdbc "Make a JDBCInfo record."
+
   ^JDBCInfo
   [^String id cfg ^comzotohlabscljc.crypto.codec.Password pwdObj]
+
   ;;(debug "JDBC id= " id ", cfg = " cfg)
   (reify JDBCInfo
     (getId [_] id)
@@ -72,12 +84,16 @@
     (getUser [_] (:user cfg))
     (getPwd [_] (nsb pwdObj)) ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def SQLServer :sqlserver)
 (def Oracle :oracle)
 (def MySQL :mysql)
 (def H2 :h2)
 (def Postgresql :postgresql)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def DBTYPES {
     :sqlserver { :test-string "select count(*) from sysusers" }
     :postgresql { :test-string "select 1" }
@@ -86,46 +102,92 @@
     :oracle { :test-string "select 1 from DUAL" }
   })
 
-(defn dbio-error [^String msg] (throw (DBIOError. msg)))
-(defn dbio-scopeType [t]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioError ""
+
+  [^String msg]
+
+  (throw (DBIOError. msg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioScopeType ""
+
+  [t]
+
   (keyword (str *ns* "/" t)))
 
-(defn- maybeGetVendor [^String product]
-  (let [ lp (.toLowerCase product) ]
-    (cond
-      (has-nocase? lp "microsoft") :sqlserver
-      (has-nocase? lp "postgres") :postgresql
-      (has-nocase? lp "oracle") :oracle
-      (has-nocase? lp "mysql") :mysql
-      (has-nocase? lp "h2") :h2
-      :else (dbio-error (str "Unknown db product " product)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeGetVendor ""
 
-(defn- fmtfkey [p1 p2]
+  [^String product]
+
+  (let [ lp (cstr/lower-case product) ]
+    (cond
+      (Embeds? lp "microsoft")
+      :sqlserver
+      (Embeds? lp "postgres")
+      :postgresql
+      (Embeds? lp "oracle")
+      :oracle
+      (Embeds? lp "mysql")
+      :mysql
+      (Embeds? lp "h2")
+      :h2
+      :else
+      (DbioError (str "Unknown db product " product)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtfkey ""
+
+  [p1 p2]
+
   (keyword (str "fk_" (name p1) "_" (name p2))) )
 
-(defn match-dbtype "" [^String dbtype]
-  (let [ kw (keyword (.toLowerCase dbtype)) ]
-    (if (nil? (get DBTYPES kw)) nil kw)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MatchDbType ""
 
-(defn match-jdbc-url "" [^String url]
+  [^String dbtype]
+
+  (let [ kw (keyword (cstr/lower-case dbtype)) ]
+    (if (nil? (get DBTYPES kw))
+         nil
+         kw)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MatchJdbcUrl ""
+
+  [^String url]
+
   (let [ ss (seq (StringUtils/split url \:)) ]
     (if (> (count ss) 1)
-      (match-dbtype (nth ss 1))
-      nil)))
+        (MatchDbType (nth ss 1))
+        nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; data modelling
 ;;
 (def JOINED-MODEL-MONIKER :czc.dbio.core/dbio-joined-model)
 (def BASEMODEL-MONIKER :czc.dbio.core/dbio-basemodel)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn dbio-model
-  ([^String nm] (dbio-model *ns* nm))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioModel
+
+  ([^String nm] (DbioModel *ns* nm))
+
   ([^String nsp ^String nm]
     {
       :id (keyword (str nsp "/" nm))
-      :table (.toUpperCase nm)
+      :table (cstr/upper-case nm)
       :parent nil
       :abstract false
       :system false
@@ -135,32 +197,62 @@
       :fields {}
       :assocs {} }) )
 
-(defmacro defmodel! [ nsp model-name & body]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro DefModel!  ""
+
+  [ nsp model-name & body]
+
   `(def ~model-name
-    (-> (dbio-model ~nsp ~(name model-name))
+     (-> (DbioModel ~nsp ~(name model-name))
                  ~@body)))
 
-(defmacro defmodel "Define a data model." [model-name & body]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro DefModel "Define a data model."
+
+  [model-name & body]
+
   `(def ~model-name
-    (-> (dbio-model ~(name model-name))
+     (-> (DbioModel ~(name model-name))
                  ~@body)))
 
-(defmacro defjoined! [nsp model-name lhs rhs]
-  `(def ~model-name
-      (-> (dbio-model ~nsp ~(name model-name))
-                (with-db-parent-model JOINED-MODEL-MONIKER)
-                (with-db-joined-model ~lhs ~rhs))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro DefJoined!
 
-(defmacro defjoined [model-name lhs rhs]
-  `(def ~model-name
-      (-> (dbio-model ~(name model-name))
-                (with-db-parent-model JOINED-MODEL-MONIKER)
-                (with-db-joined-model ~lhs ~rhs))))
+  [nsp model-name lhs rhs]
 
-(defn with-db-parent-model "" [pojo par]
+  `(def ~model-name
+      (-> (DbioModel ~nsp ~(name model-name))
+                (WithDbParentModel JOINED-MODEL-MONIKER)
+                (WithDbJoinedModel ~lhs ~rhs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro DefJoined
+
+  [model-name lhs rhs]
+
+  `(def ~model-name
+      (-> (DbioModel ~(name model-name))
+                (WithDbParentModel JOINED-MODEL-MONIKER)
+                (WithDbJoinedModel ~lhs ~rhs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbParentModel ""
+
+  [pojo par]
+
   (assoc pojo :parent par))
 
-(defn with-db-joined-model "" [pojo lhs rhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbJoinedModel ""
+
+  [pojo lhs rhs]
+
   (let [ a1 { :kind :MXM :rhs lhs :fkey :lhs_rowid }
          a2 { :kind :MXM :rhs rhs :fkey :rhs_rowid }
          am (:assocs pojo)
@@ -168,21 +260,44 @@
          m2 (assoc m1 :rhs a2) ]
     (-> pojo
       (assoc :assocs m2)
-      (assoc :mxm true)) ))
+      (assoc :mxm true))
+  ))
 
-(defn with-db-table-name "" [pojo tablename]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbTablename ""
+
+  [pojo tablename]
+
   (assoc pojo :table tablename))
 
-(defn with-db-indexes "" [pojo indices]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbIndexes ""
+
+  [pojo indices]
+
   (let [ m (:indexes pojo) ]
-    (assoc pojo :indexes (merge m indices))))
+    (assoc pojo :indexes (merge m indices))
+  ))
 
-(defn with-db-uniques "" [pojo uniqs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbUniques ""
+
+  [pojo uniqs]
+
   (let [ m (:uniques pojo) ]
-    (assoc pojo :uniques (merge m uniqs))))
+    (assoc pojo :uniques (merge m uniqs))
+  ))
 
-(defn- get-fld-template "" [fid]
-  { :column (.toUpperCase (name fid))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- get-fld-template ""
+
+  [fid]
+
+  { :column (cstr/upper-case (name fid))
                :size 255
                :id fid
                :domain :String
@@ -195,20 +310,37 @@
                :system false
                :index "" } )
 
-(defn with-db-field "" [pojo fid fdef]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbField ""
+
+  [pojo fid fdef]
+
   (let [ dft (get-fld-template fid)
          fd (assoc (merge dft fdef) :id (keyword fid))
          fm (:fields pojo)
          mm (assoc fm fid fd) ]
-    (assoc pojo :fields mm)))
+    (assoc pojo :fields mm)
+  ))
 
-(defn with-db-fields "" [pojo flddefs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbFields ""
+
+  [pojo flddefs]
+
   (with-local-vars [rcmap pojo]
     (doseq [ [k v] (seq flddefs) ]
-      (var-set rcmap (with-db-field @rcmap k v)))
-    @rcmap))
+      (var-set rcmap (WithDbField @rcmap k v)))
+    @rcmap
+  ))
 
-(defn with-db-assoc "" [pojo aid adef]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbAssoc ""
+
+  [pojo aid adef]
+
   (let [ dft { :kind nil :rhs nil :fkey "" :cascade false }
          pid (:id pojo)
          ad (merge dft adef)
@@ -218,29 +350,55 @@
               (throw (DBIOError. (str "Invalid assoc def " adef))))
          am (:assocs pojo)
          mm (assoc am aid a2) ]
-    (assoc pojo :assocs mm)))
+    (assoc pojo :assocs mm)
+  ))
 
-(defn with-db-assocs "" [pojo assocs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbAssocs ""
+
+  [pojo assocs]
+
   (with-local-vars [ rcmap pojo ]
     (doseq [ [k v] (seq assocs) ]
-      (var-set rcmap (with-db-assoc @rcmap k v)))
-    @rcmap))
+      (var-set rcmap (WithDbAssoc @rcmap k v)))
+    @rcmap
+  ))
 
-(defn with-db-abstract "" [pojo] (assoc pojo :abstract true))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WithDbAbstract ""
 
-(defn- with-db-system "" [pojo] (assoc pojo :system true))
+  [pojo]
 
-(defn- nested-merge "" [src des]
+  (assoc pojo :abstract true))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- WithDbSystem ""
+
+  [pojo]
+
+  (assoc pojo :system true))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- nested-merge ""
+
+  [src des]
+
   (cond
     (and (map? src)(map? des)) (merge src des)
-    (and (set? src)(set? des)) (union src des)
+    (and (set? src)(set? des)) (cset/union src des)
     :else des))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here.
-(defmodel! "czc.dbio.core" dbio-basemodel
-  (with-db-abstract)
-  (with-db-system)
-  (with-db-fields {
+;;
+(DefModel! "czc.dbio.core" dbio-basemodel
+  (WithDbAbstract)
+  (WithDbSystem)
+  (WithDbFields {
     :rowid {:column "DBIO_ROWID" :pkey true :domain :Long
             :auto true :system true :updatable false}
     :verid {:column "DBIO_VERSION" :domain :Long :system true
@@ -251,25 +409,38 @@
                   :system true :dft [""] :updatable false}
     :created-by {:column "DBIO_CREATED_BY" :system true :domain :String } }))
 
-(defmodel! "czc.dbio.core" dbio-joined-model
-  (with-db-abstract)
-  (with-db-system)
-  (with-db-fields {
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(DefModel! "czc.dbio.core" dbio-joined-model
+  (WithDbAbstract)
+  (WithDbSystem)
+  (WithDbFields {
     :lhs-typeid {:column "LHS_TYPEID" }
     :lhs-oid {:column "LHS_ROWID" :domain :Long :null false}
     :rhs-typeid {:column "RHS_TYPEID" }
     :rhs-oid {:column "RHS_ROWID" :domain :Long :null false} }) )
 
-(defn make-Schema "" ^Schema [theModels]
-  (reify Schema
-    (getModels [_] theModels)) )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeSchema ""
 
-(defn- resolve-assocs "" [ms]
+  ^Schema
+  [theModels]
+
+  (reify Schema
+    (getModels [_] theModels)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- resolve-assocs ""
+
+  [ms]
+
   (let [ fdef { :domain :Long :assoc-key true } ]
     (with-local-vars [ rc (transient {}) xs (transient {}) ]
       ;; create placeholder maps for each model, to hold new fields from assocs.
-      (doseq [ [k m] (seq ms) ]
-        (var-set rc (assoc! @rc k {} )))
+      (doseq [ [k m] (seq ms) ] (var-set rc (assoc! @rc k {} )))
       ;; as we find new assoc fields, add them to the placeholder maps.
       (doseq [ [k m] (seq ms) ]
         (let [ socs (:assocs m) ]
@@ -289,100 +460,189 @@
           (let [ zm (get ms k)
                  fs (:fields zm) ]
             (var-set xs (assoc! @xs k (assoc zm :fields (merge fs v))))))
-        (persistent! @xs)))))
+        (persistent! @xs)))
+  ))
 
-(defn- resolve-parent "" [ms m]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- resolve-parent ""
+
+  [ms m]
+
   (let [ par (:parent m) ]
     (cond
-      (keyword? par) (if (nil? (get ms par))
-                       (dbio-error (str "Unknown model " par))
-                       m)
+      (keyword? par)
+      (if (nil? (get ms par))
+          (DbioError (str "Unknown model " par))
+          m)
+
       (nil? par)
       (assoc m :parent BASEMODEL-MONIKER)
 
-      :else (dbio-error (str "Invalid parent " par)))))
+      :else
+      (DbioError (str "Invalid parent " par)))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; idea is walk through all models and ultimately
 ;; link it's root to base-model.
-(defn- resolve-parents "" [ms]
+(defn- resolve-parents ""
+
+  [ms]
+
   (persistent! (reduce (fn [sum en]
                           (let [ rc (resolve-parent ms (last en)) ]
                             (assoc! sum (:id rc) rc)))
                        (transient {})
-                       (seq ms))) )
+                       (seq ms))
+  ))
 
-(defn- mapize-models "" [ms]
-  (persistent! (reduce (fn [sum n]
-                         (assoc! sum (:id n) n))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mapize-models ""
+
+  [ms]
+
+  (persistent! (reduce (fn [sum n] (assoc! sum (:id n) n))
                        (transient {})
-                       (seq ms))) )
+                       (seq ms))
+  ))
 
-(defn- collect-db-xxx-filter "" [a b]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- collect-db-xxx-filter ""
+
+  [a b]
+
   (cond
-    (keyword? b) :keyword
-    (map? b) :map
-    :else (dbio-error (str "Invalid arg " b))))
+    (keyword? b)
+    :keyword
 
-(defmulti collect-db-fields collect-db-xxx-filter)
+    (map? b)
+    :map
 
-(defmethod collect-db-fields :keyword [cache modelid]
+    :else
+    (DbioError (str "Invalid arg " b))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti CollectDbFields collect-db-xxx-filter)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbFields :keyword
+
+  [cache modelid]
+
   (let [ mm (get cache modelid) ]
-    (when (nil? mm) (warn "unknown model id " modelid))
-    (collect-db-fields cache mm)))
+    (when (nil? mm) (log/warn "unknown model id " modelid))
+    (CollectDbFields cache mm)
+  ))
 
-(defmethod collect-db-fields :map [cache zm]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbFields :map
+
+  [cache zm]
+
   (let [ par (:parent zm) ]
     (if (nil? par)
-      (merge {} (:fields zm))
-      (merge {} (:fields zm) (collect-db-fields cache par)))))
+        (merge {} (:fields zm))
+        (merge {} (:fields zm) (CollectDbFields cache par)))
+  ))
 
-(defmulti collect-db-indexes collect-db-xxx-filter)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti CollectDbIndexes collect-db-xxx-filter)
 
-(defmethod collect-db-indexes :keyword [cache modelid]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbIndexes :keyword
+
+  [cache modelid]
+
   (let [ mm (get cache modelid) ]
-    (when (nil? mm) (warn "unknown model id " modelid))
-    (collect-db-indexes cache mm)))
+    (when (nil? mm) (log/warn "unknown model id " modelid))
+    (CollectDbIndexes cache mm)
+  ))
 
-(defmethod collect-db-indexes :map [cache zm]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbIndexes :map
+
+  [cache zm]
+
   (let [ par (:parent zm) ]
     (if (nil? par)
-      (merge {} (:indexes zm))
-      (merge {} (:indexes zm) (collect-db-indexes cache par)))))
+        (merge {} (:indexes zm))
+        (merge {} (:indexes zm) (CollectDbIndexes cache par)))
+  ))
 
-(defmulti collect-db-uniques collect-db-xxx-filter)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti CollectDbUniques collect-db-xxx-filter)
 
-(defmethod collect-db-uniques :keyword [cache modelid]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbUniques :keyword
+
+  [cache modelid]
+
   (let [ mm (get cache modelid) ]
-    (when (nil? mm) (warn "unknown model id " modelid))
-    (collect-db-uniques cache mm)))
+    (when (nil? mm) (log/warn "unknown model id " modelid))
+    (CollectDbUniques cache mm)
+  ))
 
-(defmethod collect-db-uniques :map [cache zm]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CollectDbUniques :map
+
+  [cache zm]
+
   (let [ par (:parent zm) ]
     (if (nil? par)
-      (merge {} (:uniques zm))
-      (merge {} (:uniques zm) (collect-db-uniques cache par)))))
+        (merge {} (:uniques zm))
+        (merge {} (:uniques zm) (CollectDbUniques cache par)))
+  ))
 
-(defn- colmap-fields "" [flds]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- colmap-fields ""
+
+  [flds]
+
   (with-local-vars [ sum (transient {}) ]
     (doseq [ [k v] (seq flds) ]
-      (let [ cn (.toUpperCase (nsb (:column v))) ]
+      (let [ cn (cstr/upper-case (nsb (:column v))) ]
         (var-set sum (assoc! @sum cn v))))
-    (persistent! @sum)) )
+    (persistent! @sum)
+  ))
 
-(defn- meta-models [cache]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- meta-models ""
+
+  [cache]
+
   (with-local-vars [ sum (transient {}) ]
     (doseq [ [k m] (seq cache) ]
-      (let [ flds (collect-db-fields cache m)
+      (let [ flds (CollectDbFields cache m)
              cols (colmap-fields flds) ]
         (var-set sum
                  (assoc! @sum k
                          (with-meta m
                                     { :columns cols :fields flds } ) ))))
-    (persistent! @sum)) )
+    (persistent! @sum)
+  ))
 
-(defn make-MetaCache ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeMetaCache ""
 
-  ^MetaCache [^Schema schema]
+  ^MetaCache
+  [^Schema schema]
 
   (let [ ms (if (nil? schema) {} (mapize-models (.getModels schema)))
          m2 (if (empty? ms)
@@ -393,59 +653,77 @@
                   (assoc BASEMODEL-MONIKER dbio-basemodel)
                   (meta-models))) ]
     (reify MetaCache
-      (getMetas [_] m2))))
+      (getMetas [_] m2))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn- safeGetConn
+;;
+(defn- safeGetConn ""
 
   ^Connection
   [^JDBCInfo jdbc]
 
   (let [ user (.getUser jdbc)
-         url (.getUrl jdbc)
          dv (.getDriver jdbc)
+         url (.getUrl jdbc)
          d (if (hgl? url) (DriverManager/getDriver url))
          p (if (hgl? user)
                (doto (Properties.) (.put "password" (nsb (.getPwd jdbc)))
                                    (.put "user" user)
                                    (.put "username" user))
                (Properties.)) ]
-    (when (nil? d)
-      (dbio-error (str "Can't load Jdbc Url: " url)))
-    (when
-      (and (hgl? dv)
-           (not= (-> d (.getClass) (.getName)) dv))
-        (warn "Expected " dv ", loaded with driver: " (.getClass d)))
-    (.connect d url p)))
+    (when (nil? d) (DbioError (str "Can't load Jdbc Url: " url)))
+    (when (and (hgl? dv)
+               (not= (-> d (.getClass) (.getName)) dv))
+      (log/warn "Expected " dv ", loaded with driver: " (.getClass d)))
+    (.connect d url p)
+  ))
 
-(defn make-connection ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeConnection ""
 
   ^Connection
   [^JDBCInfo jdbc]
 
   (let [ url (.getUrl jdbc)
-         ^Connection conn (if (hgl? (.getUser jdbc))
-                (safeGetConn jdbc)
-                (DriverManager/getConnection url)) ]
-    (when (nil? conn)
-      (dbio-error (str "Failed to create db connection: " url)))
+         ^Connection
+         conn (if (hgl? (.getUser jdbc))
+                  (safeGetConn jdbc)
+                  (DriverManager/getConnection url)) ]
+    (when (nil? conn) (DbioError (str "Failed to create db connection: " url)))
     (doto conn
-      (.setTransactionIsolation  Connection/TRANSACTION_READ_COMMITTED))))
+      (.setTransactionIsolation  Connection/TRANSACTION_READ_COMMITTED))
+  ))
 
-(defn test-connection "" [jdbc]
-  (TryC (.close (make-connection jdbc))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn TestConnection ""
 
-(defmulti resolve-vendor class)
-
-(defmethod resolve-vendor JDBCInfo
   [jdbc]
-  (with-open [ conn (make-connection jdbc) ]
-    (resolve-vendor conn)))
 
-(defmethod resolve-vendor Connection
+  (TryC (.close (MakeConnection jdbc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ResolveVendor class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ResolveVendor JDBCInfo
+
+  [jdbc]
+
+  (with-open [ conn (MakeConnection jdbc) ]
+    (ResolveVendor conn)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ResolveVendor Connection
 
   [^Connection conn]
+
   (let [ md (.getMetaData conn) ]
     (-> { :id (maybeGetVendor (.getDatabaseProductName md)) }
       (assoc :version (.getDatabaseProductVersion md))
@@ -455,98 +733,137 @@
       (assoc :user (.getUserName md))
       (assoc :lcis (.storesLowerCaseIdentifiers md))
       (assoc :ucis (.storesUpperCaseIdentifiers md))
-      (assoc :mcis (.storesMixedCaseIdentifiers md)))))
+      (assoc :mcis (.storesMixedCaseIdentifiers md)))
+  ))
 
-(defmulti table-exist? (fn [a b] (class a)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti TableExist? (fn [a b] (class a)))
 
-(defmethod table-exist? JDBCInfo
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod TableExist? JDBCInfo
+
   [jdbc ^String table]
-  (with-open [ conn (make-connection jdbc) ]
-    (table-exist? conn table)))
 
-(defmethod table-exist? Connection
+  (with-open [ conn (MakeConnection jdbc) ]
+    (TableExist? conn table)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod TableExist? Connection
 
   [^Connection conn ^String table]
+
   (with-local-vars [ rc false ]
     (Try!
       (let [ mt (.getMetaData conn)
              tbl (cond
-                    (.storesUpperCaseIdentifiers mt) (.toUpperCase table)
-                    (.storesLowerCaseIdentifiers mt) (.toLowerCase table)
+                    (.storesUpperCaseIdentifiers mt) (cstr/upper-case table)
+                    (.storesLowerCaseIdentifiers mt) (cstr/lower-case table)
                     :else table) ]
         (with-open [ res (.getColumns mt nil nil tbl nil) ]
-          (when (and (not (nil? res)) (.next res))
-            (var-set rc true)))))
-    @rc))
+          (when (and (notnil? res) (.next res))
+            (var-set rc true)))
+        ))
+    @rc
+  ))
 
-(defmulti row-exist? (fn [a b] (class a)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti RowExist? (fn [a b] (class a)))
 
-(defmethod row-exist? JDBCInfo
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod RowExist? JDBCInfo
+
   [jdbc ^String table]
-  (with-open [ conn (make-connection jdbc) ]
-    (row-exist? conn table)))
 
-(defmethod row-exist? Connection
+  (with-open [ conn (MakeConnection jdbc) ]
+    (RowExist? conn table)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod RowExist? Connection
+
   [^Connection conn ^String table]
+
   (with-local-vars [ rc false ]
     (Try!
-      (let [ sql (str "SELECT COUNT(*) FROM  " (.toUpperCase table)) ]
+      (let [ sql (str "SELECT COUNT(*) FROM  " (cstr/upper-case table)) ]
         (with-open [ stmt (.createStatement conn) ]
           (with-open [ res (.executeQuery stmt sql) ]
             (when (and (notnil? res) (.next res))
-              (var-set rc (> (.getInt res (int 1)) 0)))))) )
-    @rc))
+              (var-set rc (> (.getInt res (int 1)) 0)))))
+      ))
+    @rc
+  ))
 
-(defn- load-columns [^DatabaseMetaData mt ^String catalog ^String schema ^String table]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- load-columns
+
+  [^DatabaseMetaData mt ^String catalog ^String schema ^String table]
+
   (with-local-vars [ pkeys #{} cms {} ]
     (with-open [ rs (.getPrimaryKeys mt catalog schema table) ]
       (loop [ sum (transient #{}) more (.next rs) ]
         (if (not more)
           (var-set pkeys (persistent! sum))
           (recur
-            (conj! sum (.toUpperCase (.getString rs (int 4))) )
-            (.next rs)))))
+            (conj! sum (cstr/upper-case (.getString rs (int 4))) )
+            (.next rs))
+        )))
     (with-open [ rs (.getColumns mt catalog schema table "%") ]
       (loop [ sum (transient {}) more (.next rs) ]
         (if (not more)
           (var-set cms (persistent! sum))
           (let [ opt (not= (.getInt rs (int 11)) DatabaseMetaData/columnNoNulls)
-                 cn (.toUpperCase (.getString rs (int 4)))
+                 cn (cstr/upper-case (.getString rs (int 4)))
                  ctype (.getInt rs (int 5)) ]
             (recur
               (assoc! sum (keyword cn)
                   { :column cn :sql-type ctype :null opt
                     :pkey (clojure.core/contains? @pkeys cn) })
-              (.next rs))))))
-
+              (.next rs)))
+        )))
     (with-meta @cms { :supportsGetGeneratedKeys (.supportsGetGeneratedKeys mt)
-                      :supportsTransactions (.supportsTransactions mt) } )))
+                      :supportsTransactions (.supportsTransactions mt) } )
+  ))
 
-(defn load-table-meta "" [^Connection conn ^String table]
-  (let [ mt (.getMetaData conn) dbv (resolve-vendor conn)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn LoadTableMeta ""
+
+  [^Connection conn ^String table]
+
+  (let [ mt (.getMetaData conn) dbv (ResolveVendor conn)
          catalog nil
          schema (if (= (:id dbv) :oracle) "%" nil)
          tbl (cond
-                (.storesUpperCaseIdentifiers mt) (.toUpperCase table)
-                (.storesLowerCaseIdentifiers mt) (.toLowerCase table)
+                (.storesUpperCaseIdentifiers mt) (cstr/upper-case table)
+                (.storesLowerCaseIdentifiers mt) (cstr/lower-case table)
                 :else table) ]
     ;; not good, try mixed case... arrrrrrrrrrhhhhhhhhhhhhhh
     ;;rs = m.getTables( catalog, schema, "%", null)
-    (load-columns mt catalog schema tbl)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    (load-columns mt catalog schema tbl)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- makePool ""
 
-(defn- makePool ^JDBCPool [jdbc ^BoneCP impl]
-  (let [ dbv (resolve-vendor jdbc) ]
+  ^JDBCPool
+  [jdbc ^BoneCP impl]
+
+  (let [ dbv (ResolveVendor jdbc) ]
     (reify
 
       Object
 
-      (finalize [this]
-        (Try! (.shutdown this)))
+      (finalize [this] (Try! (.shutdown this)))
 
       JDBCPool
 
@@ -556,17 +873,21 @@
         (try
             (.getConnection impl)
           (catch Throwable e#
-            (dbio-error (str "No free connection."))))) )))
+            (DbioError (str "No free connection."))))) )
+  ))
 
-(defn make-db-pool ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeDbPool ""
 
-  ([^JDBCInfo jdbc] (make-db-pool jdbc {}))
+  ([^JDBCInfo jdbc] (MakeDbPool jdbc {}))
+
   ([^JDBCInfo jdbc options]
     (let [ bcf (BoneCPConfig.)
            ^String dv (.getDriver jdbc) ]
-      ;;(debug "Driver : " dv)
-      ;;(debug "URL : "  (.getUrl jdbc))
-      (when (hgl? dv) (for-name dv))
+      ;;(log/debug "Driver : " dv)
+      ;;(log/debug "URL : "  (.getUrl jdbc))
+      (when (hgl? dv) (ForName dv))
       (doto bcf
         (.setPartitionCount (Math/max 1 (nnz (:partitions options))))
         (.setLogStatementsEnabled (nbf (:debug options)))
@@ -576,17 +897,20 @@
         (.setIdleMaxAgeInSeconds (* 60 60 24)) ;; 1 day
         (.setMaxConnectionsPerPartition (Math/max 2 (nnz (:max-conns options))))
         (.setMinConnectionsPerPartition (Math/max 1 (nnz (:min-conns options))))
-        (.setPoolName (uid))
+        (.setPoolName (juid))
         (.setAcquireRetryDelayInMs 5000)
         (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
         (.setDefaultAutoCommit false)
         (.setAcquireRetryAttempts 1))
-      (makePool jdbc (BoneCP. bcf))))  )
+      (makePool jdbc (BoneCP. bcf)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- splitLines ""
 
-(defn- splitLines [^String lines]
+  [^String lines]
+
   (with-local-vars [ w (.length ^String DDL_SEP)
                      rc []
                      s2 lines ]
@@ -601,118 +925,193 @@
           (recur (conj! sum nl) d2 p2))))
     (if (hgl? @s2)
       (conj @rc @s2)
-      @rc)) )
+      @rc)
+  ))
 
-(defn- maybeOK [^String dbn ^Throwable e]
-  (let [ oracle (embeds? (nsb dbn) "oracle")
-         ee (root-cause e)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeOK ""
+
+  [^String dbn ^Throwable e]
+
+  (let [ oracle (Embeds? (nsb dbn) "oracle")
+         ee (RootCause e)
          ec (if (instance? SQLException ee) (.getErrorCode ^SQLException ee) nil) ]
     (if (nil? ec)
       (throw e)
       (cond
-        (and oracle (= 942 ec)(= 1418 ec)(= 2289 ec)(= 0 ec)) true
-        :else (throw e)))))
+        (and oracle (= 942 ec)(= 1418 ec)(= 2289 ec)(= 0 ec))
+        true
 
-(defmulti upload-ddl (fn [a b] (class a)))
+        :else
+        (throw e)))
+  ))
 
-(defmethod upload-ddl JDBCInfo
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti UploadDdl (fn [a b] (class a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod UploadDdl JDBCInfo
+
   [jdbc ^String ddl]
-   (with-open [ conn (make-connection jdbc) ]
-     (upload-ddl conn ddl)))
 
-(defmethod upload-ddl Connection
+  (with-open [ conn (MakeConnection jdbc) ]
+     (UploadDdl conn ddl)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod UploadDdl Connection
+
   [^Connection conn ^String ddl]
-    (debug "\n" ddl)
-    (let [ dbn (.toLowerCase (-> (.getMetaData conn)(.getDatabaseProductName)))
-           lines (splitLines ddl) ]
-      (.setAutoCommit conn true)
-      (doseq [ ^String line (seq lines) ]
-        (let [ ln (StringUtils/strip (strim line) ";") ]
-          (when (and (hgl? ln) (not= (.toLowerCase ln) "go"))
-            (try
-              (with-open [ stmt (.createStatement conn) ]
-                (.executeUpdate stmt ln))
-              (catch SQLException e#
-                (maybeOK dbn e#))))
-          ))))
+
+  (log/debug "\n" ddl)
+  (let [ dbn (cstr/lower-case (-> (.getMetaData conn)(.getDatabaseProductName)))
+         lines (splitLines ddl) ]
+    (.setAutoCommit conn true)
+    (doseq [ ^String line (seq lines) ]
+      (let [ ln (StringUtils/strip (strim line) ";") ]
+        (when (and (hgl? ln) (not= (cstr/lower-case ln) "go"))
+          (try
+            (with-open [ stmt (.createStatement conn) ]
+              (.executeUpdate stmt ln))
+            (catch SQLException e#
+              (maybeOK dbn e#))))
+      ))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioCreateObj ""
 
-(defn dbio-create-obj [model]
+  [model]
+
   (with-meta
     {}
     { :typeid model } ))
 
-(defn dbio-set-fld "" [pojo fld value]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioSetFld ""
+
+  [pojo fld value]
+
   (assoc pojo (keyword fld) value))
 
-(defn dbio-clr-fld "" [pojo fld]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioClrFld ""
+
+  [pojo fld]
+
   (dissoc pojo (keyword fld)))
 
-(defn dbio-get-fld "" [pojo fld]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioGetFld ""
+
+  [pojo fld]
+
   (get pojo (keyword fld)))
 
-(defn dbio-get-assoc [mc zm id]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioGetAssoc ""
+
+  [mc zm id]
+
   (if (nil? zm)
     nil
     (let [ m (:assocs zm)
            rc (get m id) ]
       (if (nil? rc)
-        (dbio-get-assoc mc (get mc (:parent zm)) id)
-        rc))))
+        (DbioGetAssoc mc (get mc (:parent zm)) id)
+        rc))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; handling assocs
+(defn- dbio-get-o2x ""
 
-(defn- dbio-get-o2x [ctx lhs]
+  [ctx lhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
          zm (get mc (:typeid (meta lhs)))
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
          ^SQLr sql (:with ctx)
          rt (:cast ctx)
          fid (:fkey ac)
          fv (:rowid (meta lhs)) ]
-    [sql (if (nil? rt) (:rhs ac) rt) { fid fv} ]))
+    [sql (if (nil? rt) (:rhs ac) rt) { fid fv} ]
+  ))
 
-(defn- dbio-set-o2x [ctx lhs rhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- dbio-set-o2x ""
+
+  [ctx lhs rhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
          zm (get mc (:typeid (meta lhs)))
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
+         ^SQLr sql (:with ctx)
          pid (:typeid (meta rhs))
          fv (:rowid (meta lhs))
          fid (:fkey ac)
-         ^SQLr sql (:with ctx)
          x (->
-              (dbio-create-obj pid)
-              (dbio-set-fld fid fv)
-              (vary-meta merge-meta
+              (DbioCreateObj pid)
+              (DbioSetFld fid fv)
+              (vary-meta MergeMeta
                 { :rowid (:rowid (meta rhs))
                   :verid (:verid (meta rhs)) } ))
          y (.update sql x) ]
-    [lhs
-         (merge y (dissoc rhs fid)) ] ))
+    [lhs (merge y (dissoc rhs fid)) ]
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; one to many assocs
 ;;
-(defn dbio-get-o2m [ctx lhs]
-  (let [ [^SQLr sql rt pms] (dbio-get-o2x ctx lhs) ]
-    (.findSome sql rt pms)))
+(defn DbioGetO2M ""
 
-(defn dbio-set-o2m [ctx lhs rhs]
+  [ctx lhs]
+
+  (let [ [^SQLr sql rt pms] (dbio-get-o2x ctx lhs) ]
+    (.findSome sql rt pms)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioSetO2M ""
+
+  [ctx lhs rhs]
+
   (dbio-set-o2x ctx lhs rhs))
 
-(defn dbio-add-o2m [ctx lhs rhsObjs ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioAddO2M ""
+
+  [ctx lhs rhsObjs ]
+
   (with-local-vars [ rc (transient []) ]
     (doseq [ r (seq rhsObjs) ]
       (var-set rc
                (conj! @rc
                       (last (dbio-set-o2x ctx lhs r)))))
-    [ lhs (persistent! @rc) ] ))
+    [ lhs (persistent! @rc) ]
+  ))
 
-(defn dbio-clr-o2m [ctx lhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioClrO2M ""
+
+  [ctx lhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
          zm (get mc (:typeid (meta lhs)))
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
          fv (:rowid (meta lhs))
          rt (:cast ctx)
          rp (if (nil? rt) (:rhs ac) rt)
@@ -725,78 +1124,103 @@
            " where "
            (ese fid) " = ?")
       [ fv ])
-    lhs))
+    lhs
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; one to one assocs
 ;;
-(defn dbio-get-o2o [ctx lhs]
-  (let [ [^SQLr sql rt pms] (dbio-get-o2x ctx lhs) ]
-    (.findOne sql rt pms)))
+(defn DbioGetO2O ""
 
-(defn dbio-set-o2o [ctx lhs rhs]
+  [ctx lhs]
+
+  (let [ [^SQLr sql rt pms] (dbio-get-o2x ctx lhs) ]
+    (.findOne sql rt pms)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioSetO2O ""
+
+  [ctx lhs rhs]
+
   (dbio-set-o2x ctx lhs rhs))
 
-(defn dbio-clr-o2o [ctx lhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioClrO2O ""
+
+  [ctx lhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
          zm (get mc (:typeid (meta lhs)))
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
+         ^SQLr sql (:with ctx)
          fv (:rowid (meta lhs))
          rt (:cast ctx)
          fid (:fkey ac)
-         ^SQLr sql (:with ctx)
          y (.findOne sql (if (nil? rt) (:rhs ac) rt) { fid fv } ) ]
     (when-not (nil? y)
-      (let [ x (vary-meta (-> (dbio-create-obj (:typeid (meta y)))
-                   (dbio-set-fld fid nil))
-                          merge-meta (meta y)) ]
+      (let [ x (vary-meta (-> (DbioCreateObj (:typeid (meta y)))
+                   (DbioSetFld fid nil))
+                          MergeMeta (meta y)) ]
         (.update sql x)))
-    lhs))
+    lhs
+  ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; many to many assocs
 ;;
+(defn DbioSetM2M ""
 
-(defn dbio-set-m2m [ctx lhs rhs]
+  [ctx lhs rhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
+         ^SQLr sql (:with ctx)
          lid (:typeid (meta lhs))
          rid (:typeid (meta rhs))
          lv (:rowid (meta lhs))
          rv (:rowid (meta rhs))
          zm (get mc lid)
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
          mm (get mc (:joined ac))
          ml (:rhs (:lhs (:assocs mm)))
          rl (:rhs (:rhs (:assocs mm)))
-         ^SQLr sql (:with ctx)
-         x (dbio-create-obj (:id mm))
+         x (DbioCreateObj (:id mm))
          y  (if (= ml lid)
               (-> x
-                (dbio-set-fld :lhs-typeid (stripNSPath lid))
-                (dbio-set-fld :lhs-oid lv)
-                (dbio-set-fld :rhs-typeid (stripNSPath rid))
-                (dbio-set-fld :rhs-oid rv))
+                (DbioSetFld :lhs-typeid (StripNSPath lid))
+                (DbioSetFld :lhs-oid lv)
+                (DbioSetFld :rhs-typeid (StripNSPath rid))
+                (DbioSetFld :rhs-oid rv))
               (-> x
-                (dbio-set-fld :lhs-typeid (stripNSPath rid))
-                (dbio-set-fld :lhs-oid rv)
-                (dbio-set-fld :rhs-typeid (stripNSPath lid))
-                (dbio-set-fld :rhs-oid lv))) ]
-    (.insert sql y)))
+                (DbioSetFld :lhs-typeid (StripNSPath rid))
+                (DbioSetFld :lhs-oid rv)
+                (DbioSetFld :rhs-typeid (StripNSPath lid))
+                (DbioSetFld :rhs-oid lv))) ]
+    (.insert sql y)
+  ))
 
-(defn dbio-clr-m2m
-  ([ctx lhs] (dbio-clr-m2m ctx lhs nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioClrM2M
+
+  ([ctx lhs] (DbioClrM2M ctx lhs nil))
+
   ([ctx lhs rhs]
     (let [ mc (.getMetas ^MetaCache *META-CACHE*)
+           ^SQLr sql (:with ctx)
            lid (:typeid (meta lhs))
            lv (:rowid (meta lhs))
            rid (:typeid (meta rhs))
            rv (:rowid (meta rhs))
            zm (get mc lid)
-           ac (dbio-get-assoc mc zm (:as ctx))
+           ac (DbioGetAssoc mc zm (:as ctx))
            mm (get mc (:joined ac))
            flds (:fields (meta mm))
            ml (:rhs (:lhs (:assocs mm)))
            rl (:rhs (:rhs (:assocs mm)))
-           ^SQLr sql (:with ctx)
            [x y a b]  (if (= ml lid)
                         [ (:column (:lhs-oid flds)) (:column (:lhs-typeid flds))
                           (:column (:rhs-oid flds)) (:column (:rhs-typeid flds)) ]
@@ -807,26 +1231,32 @@
           sql
           (str "delete from " (ese (:table mm))
            " where " (ese x) " =? and " (ese y) " =?")
-          [ lv (stripNSPath lid) ] )
+          [ lv (StripNSPath lid) ] )
         (.execute
           sql
           (str "delete from " (ese (:table mm))
            " where " (ese x) " =? and " (ese y) " =? and "
            (ese a) " =? and " (ese b) " =?" )
-          [ lv (stripNSPath lid)
-            rv (stripNSPath rid) ])) )))
+          [ lv (StripNSPath lid)
+            rv (StripNSPath rid) ])) )
+  ))
 
-(defn dbio-clr-m2m [ctx lhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioClrM2M ""
+
+  [ctx lhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
+         ^SQLr sql (:with ctx)
          lid (:typeid (meta lhs))
          lv (:rowid (meta lhs))
          zm (get mc lid)
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
          mm (get mc (:joined ac))
          flds (:fields (meta mm))
          ml (:rhs (:lhs (:assocs mm)))
          rl (:rhs (:rhs (:assocs mm)))
-         ^SQLr sql (:with ctx)
          [x y]  (if (= ml lid)
                   [ (:column (:lhs-oid flds)) (:column (:lhs-typeid flds)) ]
                   [ (:column (:rhs-oid flds)) (:column (:rhs-typeid flds)) ]) ]
@@ -837,26 +1267,30 @@
            " where "
            (ese x) " =? and "
            (ese y) " =?")
-      [ lv (stripNSPath lid) ] ) ))
+      [ lv (StripNSPath lid) ] )
+  ))
 
-(defn dbio-get-m2m [ctx lhs]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioGetM2M ""
+
+  [ctx lhs]
+
   (let [ mc (.getMetas ^MetaCache *META-CACHE*)
+         ^SQLr sql (:with ctx)
          lid (:typeid (meta lhs))
          lv (:rowid (meta lhs))
          zm (get mc lid)
-         ac (dbio-get-assoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc zm (:as ctx))
          mm (get mc (:joined ac))
          flds (:fields (meta mm))
          ml (:rhs (:lhs (:assocs mm)))
          rl (:rhs (:rhs (:assocs mm)))
-         ^SQLr sql (:with ctx)
          eseRES (ese "RES")
          eseMM (ese "MM")
          [x y z k a t]  (if (= ml lid)
-                        [:lhs-typeid :rhs-typeid
-                         :lhs-oid :rhs-oid ml rl]
-                        [:rhs-typeid :lhs-typeid
-                         :rhs-oid :lhs-oid rl ml] ) ]
+                            [:lhs-typeid :rhs-typeid :lhs-oid :rhs-oid ml rl]
+                            [:rhs-typeid :lhs-typeid :rhs-oid :lhs-oid rl ml] ) ]
     (.select
       sql
       t
@@ -871,11 +1305,10 @@
            "=? and "
            (str eseMM "." (ese (:column (k flds))))
            " = " (str eseRES "." (ese (:column (:rowid flds)))))
-      [ (stripNSPath a) (stripNSPath t) lv ]
-      )))
-
+      [ (StripNSPath a) (StripNSPath t) lv ])
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private core-eof nil)
 

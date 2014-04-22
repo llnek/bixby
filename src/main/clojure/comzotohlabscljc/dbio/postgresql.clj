@@ -9,15 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.dbio.postgresql)
+  comzotohlabscljc.dbio.postgresql
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.dbio.drivers])
-(use '[comzotohlabscljc.dbio.core])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.dbio.drivers])
+  (:require [comzotohlabscljc.dbio.core :as dbcore]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def POSTGRESQL-URL "jdbc:postgresql://{{host}}:{{port}}/{{db}}" )
 (def POSTGRESQL-DRIVER "org.postgresql.Driver")
 
@@ -26,26 +28,51 @@
 ;;(set! *warn-on-reflection* true)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; Postgresql
-(defmethod getTSKeyword :postgresql [db] "TIMESTAMP WITH TIME ZONE")
-(defmethod getBlobKeyword :postgresql [db] "BYTEA")
-(defmethod getDoubleKeyword :postgresql [db] "DOUBLE PRECISION")
-(defmethod getFloatKeyword :postgresql [db] "REAL")
+(defmethod GetTSKeyword :postgresql [db] "TIMESTAMP WITH TIME ZONE")
+(defmethod GetBlobKeyword :postgresql [db] "BYTEA")
+(defmethod GetDoubleKeyword :postgresql [db] "DOUBLE PRECISION")
+(defmethod GetFloatKeyword :postgresql [db] "REAL")
 
-(defmethod genCal :postgresql [db fld] (genTimestamp db fld))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenCal :postgresql
 
-(defmethod genAutoInteger :postgresql [db table fld]
-  (genColDef db (genCol fld) "SERIAL" false nil))
+  [db fld]
 
-(defmethod genAutoLong :postgresql [db table fld]
-  (genColDef db (genCol fld) "BIGSERIAL" false nil))
+  (GenTimestamp db fld))
 
-(defmethod genDrop :postgresql [db table]
-  (str "DROP TABLE IF EXISTS " table " CASCADE" (genExec db) "\n\n"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoInteger :postgresql
 
-;;(def XXX (.getMetas (make-MetaCache testschema)))
-;;(println (getDDL (make-MetaCache testschema) (Postgresql.) ))
+  [db table fld]
+
+  (GenColDef db (GenCol fld) "SERIAL" false nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenAutoLong :postgresql
+
+  [db table fld]
+
+  (GenColDef db (GenCol fld) "BIGSERIAL" false nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod GenDrop :postgresql
+
+  [db table]
+
+  (str "DROP TABLE IF EXISTS " table " CASCADE" (GenExec db) "\n\n"))
+
+;;(def XXX (.getMetas (MakeMetaCache testschema)))
+;;(println (GetDDL (MakeMetaCache testschema) (Postgresql.) ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private postgresql-eof nil)
 

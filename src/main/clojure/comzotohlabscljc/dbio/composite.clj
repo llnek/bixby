@@ -9,33 +9,33 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.dbio.composite )
+  comzotohlabscljc.dbio.composite
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(import '(com.zotohlabs.frwk.dbio
-  Transactable SQLr MetaCache DBAPI))
-(import '(java.sql Connection))
-
-(use '[comzotohlabscljc.util.core :only [test-nonil Try!] ])
-(use '[comzotohlabscljc.util.str :only [hgl?] ])
-(use '[comzotohlabscljc.dbio.core])
-(use '[comzotohlabscljc.dbio.sql])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI))
+  (:import (java.sql Connection))
+  (:use [comzotohlabscljc.util.core :only [test-nonil notnil? Try!] ])
+  (:use [comzotohlabscljc.util.str :only [hgl?] ])
+  (:require  [comzotohlabscljc.dbio.core :as dbcore :only [ese] ])
+  (:require [comzotohlabscljc.dbio.sql :as dbsql ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- mk-tx ""
 
   ^SQLr
-
   [^MetaCache metaCache
    ^DBAPI db
    ^comzotohlabscljc.dbio.sql.SQLProcAPI proc
    ^Connection conn]
+
   (let [ metas (.getMetas metaCache) ]
     (reify SQLr
 
@@ -51,9 +51,9 @@
       (findSome [this model filters] (.findSome this model filters ""))
       (findSome [_ model filters extraSQL]
         (let [ zm (get metas model)
-               tbl (table-name zm)
-               s (str "SELECT * FROM " (ese tbl))
-               [wc pms] (sql-filter-clause zm filters)
+               [wc pms] (dbsql/SqlFilterClause zm filters)
+               tbl (dbsql/Tablename zm)
+               s (str "SELECT * FROM " (dbcore/ese tbl))
                extra (if (hgl? extraSQL) extraSQL "") ]
           (if (hgl? wc)
             (.doQuery proc conn (str s " WHERE " wc " " extra) pms model)
@@ -72,15 +72,17 @@
       (execute [_ sql pms] (.doExecute proc conn sql pms) )
 
       (countAll [_ model] (.doCount proc conn model) )
-      (purge [_ model] (.doPurge proc conn model) )  )) )
+      (purge [_ model] (.doPurge proc conn model) )  
+  )) )
 
-(defn compositeSQLr
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompositeSQLr ""
 
   ^Transactable
-  [ ^MetaCache metaCache
-    ^DBAPI db ]
+  [ ^MetaCache metaCache ^DBAPI db ]
 
-  (let [ proc (make-proc metaCache db) ]
+  (let [ proc (dbsql/MakeProc metaCache db) ]
     (test-nonil "sql-proc!" proc)
     (test-nonil "meta-cache" metaCache)
     (test-nonil "dbapi" db)
@@ -97,18 +99,20 @@
                 (.commit this conn)
                 @rc)
               (catch Throwable e#
-                (do (.rollback this conn) (warn e# "") (throw e#))) ))))
+                (do (.rollback this conn) (log/warn e# "") (throw e#))) ))))
 
       (rollback [_ conn] (Try! (.rollback ^Connection conn)))
       (commit [_ conn] (.commit ^Connection conn))
+
       (begin [_]
         (let [ ^Connection conn (.open db) ]
           (.setAutoCommit conn false)
           ;;(.setTransactionIsolation conn Connection/TRANSACTION_READ_COMMITTED)
           (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)
-          conn))   )) )
+          conn))   
+  )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private composite-eof nil)
 
