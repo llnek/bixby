@@ -9,28 +9,31 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.net.rts )
+  comzotohlabscljc.net.rts
 
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io File))
-(import '(jregex Matcher Pattern))
-(import '(java.util StringTokenizer))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.io File))
+  (:import (jregex Matcher Pattern))
+  (:import (java.util StringTokenizer))
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.util.core :only [MuObj make-mmap test-nestr] ])
-(use '[comzotohlabscljc.util.str :only [nsb nichts? hgl?] ])
-(use '[comzotohlabscljc.util.ini :only [parse-inifile] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap test-nestr] ])
+  (:use [comzotohlabscljc.util.str :only [nsb nichts? hgl?] ])
+  (:use [comzotohlabscljc.util.ini :only [ParseInifile] ]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol RouteInfo
+
   ""
+
   (getTemplate [_] )
   (getHandler [_] )
   (getPath [_] )
@@ -39,41 +42,45 @@
   (resemble? [_ mtd path] )
   (collect [_ matcher] ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-route-info ""
 
-(defn- make-route-info "" [route ^String verb handler]
-  (let [ verbList (.toUpperCase verb)
-         impl (make-mmap) ]
+  [route ^String verb handler]
+
+  (let [ verbList (cstr/upper-case verb)
+         impl (MakeMMap) ]
     (with-meta
       (reify
 
-        MuObj
+        MubleAPI
 
-        (setf! [_ k v] (.mm-s impl k v) )
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k) )
-        (clrf! [_ k] (.mm-r impl k) )
-        (clear! [_] (.mm-c impl))
+        (setf! [_ k v] (.setf! impl k v) )
+        (seq* [_] (.seq* impl))
+        (getf [_ k] (.getf impl k) )
+        (clrf! [_ k] (.clrf! impl k) )
+        (clear! [_] (.clear! impl))
 
         RouteInfo
 
-        (getTemplate [_] (.mm-g impl :template))
-        (isStatic? [_] (.mm-g impl :static))
+        (getTemplate [_] (.getf impl :template))
+        (isStatic? [_] (.getf impl :static))
         (getHandler [_] handler)
         (getPath [_] route)
         (getVerbs [_] verbList)
 
         (resemble? [_ mtd path]
-          (let [ rg (.mm-g impl :regex)
+          (let [ rg (.getf impl :regex)
                  m (.matcher ^Pattern rg path) ]
             (if (and (.matches m)
                      (or (= "*" verbList)
                          (>= (.indexOf verbList
-                                       (.toUpperCase ^String mtd)) 0)))
+                                       (cstr/upper-case ^String mtd)) 0)))
               m
               nil)))
 
         (collect [_ mc]
-          (let [ ph (.mm-g impl :placeHolders)
+          (let [ ph (.getf impl :placeHolders)
                  ^Matcher mmc mc
                  gc (.groupCount mmc) ]
             (with-local-vars [ rc (transient {}) r2 "" ]
@@ -85,11 +92,14 @@
                                  (nsb (.group mmc ^String @r2)))))
               (persistent! @rc)))) )
 
-      { :typeid :czc.net/RouteInfo } )) )
+      { :typeid :czc.net/RouteInfo } )
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- initRoute ""
 
-  [^comzotohlabscljc.util.core.MuObj rc
+  [^comzotohlabscljc.util.core.MubleAPI rc
    ^String path]
 
   (let [ tknz (StringTokenizer. path "/" true)
@@ -111,19 +121,24 @@
                   (var-set cg (+ @cg c)))))
             (.append buff @ts))))
       (let [ pp (.toString buff) ]
-        (info "route added: " path " \ncanonicalized to: " pp)
+        (log/info "route added: " path " \ncanonicalized to: " pp)
         (.setf! rc :regex (Pattern. pp))
         (.setf! rc :path pp))
       (.setf! rc :placeHolders (persistent! @phs))
-      rc)) )
+      rc
+    )))
 
-(defn- mkRoute "" [stat path
-                   ^comzotohlabscljc.util.ini.IWin32Conf cfile]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkRoute ""
+
+  [stat path ^comzotohlabscljc.util.ini.IWin32Conf cfile]
+
   (let [ tpl (.optString cfile path :template "")
          verb (.optString cfile path :verb "")
          mpt (.optString cfile path :mount "")
          pipe (.optString cfile path :pipe "")
-         ^comzotohlabscljc.util.core.MuObj
+         ^comzotohlabscljc.util.core.MubleAPI
          rc (make-route-info
               path
               (if (and stat (nichts? verb)) "GET" verb)
@@ -139,23 +154,25 @@
     (when (hgl? tpl)
       (.setf! rc :template tpl))
     (initRoute rc path)
-    rc))
+    rc
+  ))
 
 ;;
 ;; path can be /host.com/abc/:id1/gg/:id2
 ;;
-(defn load-routes "" [^File file]
+(defn LoadRoutes ""
+
+  [^File file]
+
   (let [ stat  (-> file (.getName)(.startsWith "static-"))
-         cf (parse-inifile file) ]
+         cf (ParseInifile file) ]
     (with-local-vars [rc (transient []) ]
       (doseq [ s (seq (.sectionKeys cf)) ]
         (var-set rc (conj! @rc (mkRoute stat s cf))))
-      (persistent! @rc))
-    ))
+      (persistent! @rc)
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private rts-eof nil)
-
-
 

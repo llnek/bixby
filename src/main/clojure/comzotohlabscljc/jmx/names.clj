@@ -9,39 +9,41 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.jmx.names )
+  comzotohlabscljc.jmx.names
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(javax.management ObjectName))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (javax.management ObjectName)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn make-objectName
+;;
+(defn MakeObjectName
   "domain: com.acme
    beanName: mybean
    paths: [ \"a=b\" \"c=d\" ]"
+
   ^ObjectName
+
   ([^String domain ^String beanName paths]
     (let [ sb (StringBuilder.)
            cs (seq paths) ]
       (doto sb
         (.append domain)
         (.append ":")
-        (.append (clojure.string/join "," cs)))
+        (.append (cstr/join "," cs)))
       (when-not (empty? cs) (.append sb ","))
       (doto sb
         (.append "name=")
         (.append beanName))
       (ObjectName. (.toString sb))))
 
-  ([domain beanName] (make-objectName domain beanName [])) )
+  ([domain beanName] (MakeObjectName domain beanName [])) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private names-eof nil)
 

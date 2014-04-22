@@ -9,50 +9,58 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.jmx.core )
+  comzotohlabscljc.jmx.core
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.util.core :only [make-mmap Try! TryC] ])
-(use '[comzotohlabscljc.util.str :only [hgl? ] ])
-
-(import '(java.lang.management ManagementFactory))
-(import '(java.net InetAddress MalformedURLException))
-(import '(java.rmi NoSuchObjectException))
-(import '(com.zotohlabs.frwk.core Startable))
-(import '(java.rmi.registry LocateRegistry Registry))
-(import '(java.rmi.server UnicastRemoteObject))
-(import '(javax.management DynamicMBean JMException MBeanServer ObjectName))
-(import '(javax.management.remote JMXConnectorServer
-  JMXConnectorServerFactory
-  JMXServiceURL))
-(import '(org.apache.commons.lang3 StringUtils))
-
-(use '[comzotohlabscljc.jmx.names])
-(use '[comzotohlabscljc.jmx.bean])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MakeMMap Try! TryC] ])
+  (:use [comzotohlabscljc.util.str :only [hgl? ] ])
+  (:import (java.lang.management ManagementFactory))
+  (:import (java.net InetAddress MalformedURLException))
+  (:import (java.rmi NoSuchObjectException))
+  (:import (com.zotohlabs.frwk.core Startable))
+  (:import (java.rmi.registry LocateRegistry Registry))
+  (:import (java.rmi.server UnicastRemoteObject))
+  (:import (javax.management DynamicMBean JMException MBeanServer ObjectName))
+  (:import (javax.management.remote JMXConnectorServer JMXConnectorServerFactory JMXServiceURL))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:use [comzotohlabscljc.jmx.names])
+  (:use [comzotohlabscljc.jmx.bean]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkJMXrror "" 
+  
+  [^String msg ^Throwable e]
 
-(defn- mkJMXrror "" [^String msg ^Throwable e]
-  (throw (doto (JMException. msg)
-           (.initCause e))))
+  (throw (doto (JMException. msg) (.initCause e))))
 
-(defn- startRMI "" [ ^comzotohlabscljc.util.core.MutableMapAPI impl]
-  (let [ ^long port (.mm-g impl :regoPort) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- startRMI "" 
+
+  [ ^comzotohlabscljc.util.core.MubleAPI impl]
+
+  (let [ ^long port (.getf impl :regoPort) ]
     (try
-      (.mm-s impl :rmi (LocateRegistry/createRegistry port))
+      (.setf! impl :rmi (LocateRegistry/createRegistry port))
     (catch Throwable e#
-      (mkJMXrror (str "Failed to create RMI registry: " port) e#)))) )
+      (mkJMXrror (str "Failed to create RMI registry: " port) e#)))
+  ))
 
-(defn- startJMX "" [ ^comzotohlabscljc.util.core.MutableMapAPI impl]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- startJMX "" 
+  
+  [ ^comzotohlabscljc.util.core.MubleAPI impl]
+
   (let [ hn (-> (InetAddress/getLocalHost)(.getHostName))
-         ^long regoPort (.mm-g impl :regoPort)
-         ^long port (.mm-g impl :port)
-         ^String host (.mm-g impl :host)
+         ^long regoPort (.getf impl :regoPort)
+         ^long port (.getf impl :port)
+         ^String host (.getf impl :host)
          endpt (-> "service:jmx:rmi://{{host}}:{{sport}}/jndi/rmi://:{{rport}}/jmxrmi"
                  (StringUtils/replace "{{host}}" (if (hgl? host) host hn))
                  (StringUtils/replace "{{sport}}" (str "" port))
@@ -74,93 +82,100 @@
       (catch Throwable e#
         (mkJMXrror (str "Failed to start JMX") e#)))
 
-    (.mm-s impl :beanSvr (.getMBeanServer conn))
-    (.mm-s impl :conn conn)))
+    (.setf! impl :beanSvr (.getMBeanServer conn))
+    (.setf! impl :conn conn)
+  ))
 
-(defn- doReg "" [ ^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doReg "" 
+  
+  [ ^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
+
   (try
     (.registerMBean svr mbean objName)
     (catch Throwable e#
       (mkJMXrror (str "Failed to register bean: " objName) e#)))
-  (info "registered jmx-bean: " objName)
+  (log/info "registered jmx-bean: " objName)
   objName)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol JMXServer
+
   ""
+
   (reg [_ obj domain nname paths] )
   (setRegistryPort [_ port])
   (setServerPort [_ port])
   (reset [_] )
   (dereg [_ nm] ))
 
-(defn make-jmxServer "" [ ^String host]
-  (let [ impl (make-mmap)
-         objNames (atom []) ]
-    (.mm-s impl :regoPort 7777)
-    (.mm-s impl :port 0)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeJmxServer "" 
+  
+  [ ^String host]
+
+  (let [ objNames (atom [])
+         impl (MakeMMap) ]
+    (.setf! impl :regoPort 7777)
+    (.setf! impl :port 0)
     (reify
 
       JMXServer
 
       (reset [_]
-        (let [ ^MBeanServer bs (.mm-g impl :beanSvr) ]
+        (let [ ^MBeanServer bs (.getf impl :beanSvr) ]
           (doseq [ nm (seq @objNames) ]
             (Try!
                (.unregisterMBean bs nm)) )
           (reset! objNames [])))
 
       (dereg [_ objName]
-        (let [ ^MBeanServer bs (.mm-g impl :beanSvr) ]
+        (let [ ^MBeanServer bs (.getf impl :beanSvr) ]
           (.unregisterMBean bs objName)))
 
       (reg [_ obj domain nname paths]
-        (let [ ^MBeanServer bs (.mm-g impl :beanSvr) ]
+        (let [ ^MBeanServer bs (.getf impl :beanSvr) ]
           (try
             (reset! objNames
                     (conj @objNames
-                          (doReg bs (make-objectName domain nname paths)
-                                 (make-jmxBean obj))))
+                          (doReg bs (MakeObjectName domain nname paths)
+                                 (MakeJmxBean obj))))
             (catch Throwable e#
               (mkJMXrror (str "Failed to register object: " obj) e#)))))
 
       ;; jconsole port
-      (setRegistryPort [_ port] (.mm-s impl :regoPort port))
+      (setRegistryPort [_ port] (.setf! impl :regoPort port))
 
-      (setServerPort[_ port] (.mm-s impl :port port))
+      (setServerPort[_ port] (.setf! impl :port port))
 
       Startable
 
       (start [_]
-        (let [ p1 (.mm-g impl :regoPort)
-               p2 (.mm-g impl :port) ]
-          (when-not (> p2 0) (.mm-s impl :port (inc p1)))
+        (let [ p1 (.getf impl :regoPort)
+               p2 (.getf impl :port) ]
+          (when-not (> p2 0) (.setf! impl :port (inc p1)))
           (startRMI impl)
           (startJMX impl)) )
 
       (stop [this]
-        (let [ ^JMXConnectorServer c (.mm-g impl :conn)
-               ^Registry r (.mm-g impl :rmi) ]
+        (let [ ^JMXConnectorServer c (.getf impl :conn)
+               ^Registry r (.getf impl :rmi) ]
           (reset this)
           (when-not (nil? c)
             (TryC (.stop c)))
-          (.mm-s impl :conn nil)
+          (.setf! impl :conn nil)
           (when-not (nil? r)
             (TryC
               (UnicastRemoteObject/unexportObject r true)))
-          (.mm-s impl :rmi nil)))
+          (.setf! impl :rmi nil)))
 
       )))
 
 
-
-
-
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private core-eof nil)
 
