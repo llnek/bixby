@@ -11,34 +11,21 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
-package com.zotohlabs.frwk.util;
-
-import java.util.Comparator;
-import java.util.TreeMap;
+package com.zotohlabs.frwk.server;
 
 /**
- * A map that has case-ignored string keys.
- *
  * @author kenl
- *
- * @param <T>
  */
-public class NCMap<T> extends TreeMap<String, T> implements java.io.Serializable {
+public class RegistryError extends Exception {
 
-  private static final long serialVersionUID = -3637175588593032279L;
+  private static final long serialVersionUID = 1L;
 
-  public NCMap()    {
-      super(new NoCase<String>());
+  public RegistryError(Throwable e) {
+    super(null,e);
   }
 
-  private static class NoCase<T> implements Comparator<T>     {
-      public int compare(T o1, T o2)        {
-          String s1 = o1 == null ? "" : o1.toString();
-          String s2 = o2 == null ? "" : o2.toString();
-          return s1.toUpperCase().compareTo(s2.toUpperCase());
-      }
+  public RegistryError(String msg) {
+    super(msg,null);
   }
 
 }

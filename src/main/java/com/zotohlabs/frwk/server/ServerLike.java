@@ -12,14 +12,17 @@
  ??*/
 
 
-
 package com.zotohlabs.frwk.server;
 
-/**
- * @author kenl
- */
-public interface Event {
-  public Object emitter();
-  public Object getId();
+import com.zotohlabs.frwk.util.Schedulable;
+
+public interface ServerLike {
+
+  public boolean hasService( Object serviceId);
+
+  public Service getService( Object serviceId);
+
+  public Schedulable core();
+
 }
 

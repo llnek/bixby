@@ -11,15 +11,11 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.crypto;
 
+public class CryptoUtils {
 
-package com.zotohlabs.frwk.server;
+  public static void main(String[] args) {
+  }
 
-/**
- * @author kenl
- */
-public interface Event {
-  public Object emitter();
-  public Object getId();
 }
-

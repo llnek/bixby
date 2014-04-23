@@ -12,34 +12,28 @@
  ??*/
 
 
+package com.zotohlabs.frwk.mime;
 
-package com.zotohlabs.frwk.util;
-
-import java.util.Comparator;
-import java.util.TreeMap;
+import java.io.*;
+import java.util.*;
+import static org.apache.commons.lang3.StringUtils.*;
+import javax.activation.MimetypesFileTypeMap;
 
 /**
- * A map that has case-ignored string keys.
- *
  * @author kenl
- *
- * @param <T>
  */
-public class NCMap<T> extends TreeMap<String, T> implements java.io.Serializable {
+public class MimeFileTypes {
 
-  private static final long serialVersionUID = -3637175588593032279L;
-
-  public NCMap()    {
-      super(new NoCase<String>());
-  }
-
-  private static class NoCase<T> implements Comparator<T>     {
-      public int compare(T o1, T o2)        {
-          String s1 = o1 == null ? "" : o1.toString();
-          String s2 = o2 == null ? "" : o2.toString();
-          return s1.toUpperCase().compareTo(s2.toUpperCase());
-      }
-  }
-
+  public static  MimetypesFileTypeMap makeMimeFileTypes(Properties props){
+    /*
+    val b= props.entrySet().foldLeft(new StringBuilder ) { (sum, en) =>
+      sum.append(  trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n")
+    }.toString()
+    new MimetypesFileTypeMap( new ByteArrayInputStream( b.getBytes("utf-8")) )
+    */
+    return null;
+  }  
+  
 }
 
+  

@@ -21,48 +21,48 @@ import java.util.Set;
 import java.util.LinkedHashMap;
 
 /**
- * A map that has case-ignored string keys. 
+ * A map that has case-ignored string keys.
  *
  * @author kenl
  *
  * @param <T>
  */
 public class NCOrderedMap<T> extends NCMap<T>  {
-  
-  private static final long serialVersionUID = -3637175588593032279L;  
+
+  private static final long serialVersionUID = -3637175588593032279L;
   private Map<String,T> _map= new LinkedHashMap<String,T>();
-  
+
   public Set<Map.Entry<String,T>> entrySet() {
-	  return _map.entrySet();
+    return _map.entrySet();
   }
-  
+
   public T put(String key, T value) {
-	  _map.put( key.toLowerCase(), value);
-	  return super.put(key, value);
+    _map.put( key.toLowerCase(), value);
+    return super.put(key, value);
   }
-  
+
   public T remove(String key) {
-	  _map.remove(key.toLowerCase());
-	  return super.remove(key);
+    _map.remove(key.toLowerCase());
+    return super.remove(key);
   }
-  
+
   public Set<String> keySet() {
-	  return _map.keySet();
+    return _map.keySet();
   }
-  
+
   public void clear() {
-	  _map.clear();
-	  super.clear();
+    _map.clear();
+    super.clear();
   }
-  
+
   public Collection<T> values() {
-	  return _map.values();
+    return _map.values();
   }
-  
+
   public void putAll(Map<? extends String,? extends T> m) {
-	  _map.putAll(m);
-	  super.putAll(m);
+    _map.putAll(m);
+    super.putAll(m);
   }
-  
+
 }
 

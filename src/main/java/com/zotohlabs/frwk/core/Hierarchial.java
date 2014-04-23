@@ -12,14 +12,9 @@
  ??*/
 
 
+package com.zotohlabs.frwk.core;
 
-package com.zotohlabs.frwk.server;
-
-/**
- * @author kenl
- */
-public interface Event {
-  public Object emitter();
-  public Object getId();
+public interface Hierarchial {
+  public Object parent();
 }
 
