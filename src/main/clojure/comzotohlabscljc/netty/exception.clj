@@ -9,27 +9,26 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.exception )
+  comzotohlabscljc.netty.exception
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (io.netty.buffer Unpooled))
+  (:import (io.netty.channel ChannelHandler ChannelHandlerContext
+                             ChannelFutureListener ChannelFuture
+                             ChannelPipeline
+                             ChannelInboundHandlerAdapter))
+  (:import (io.netty.handler.codec.http HttpMessage HttpResponseStatus
+                                        HttpHeaders HttpVersion
+                                        DefaultFullHttpResponse))
+  (:use [comzotohlabscljc.netty.comms :only [ReplyXXX] ]))
 
-(import '(io.netty.channel ChannelFutureListener ChannelFuture
-  ChannelHandler ChannelHandlerContext
-  ChannelInboundHandlerAdapter))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;(set! *warn-on-reflection* false)
 
-(import '(io.netty.buffer ByteBuf ByteBufHolder Unpooled))
-
-(import '(io.netty.handler.codec.http
-  HttpMessage HttpResponseStatus
-  HttpHeaders HttpVersion
-  DefaultFullHttpResponse))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,6 +57,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private exception-eof nil)
 

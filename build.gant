@@ -748,6 +748,14 @@ def clj_Net() {
     arg (value: 'comzotohlabscljc.net.comms')
     arg (value: 'comzotohlabscljc.net.rts')
     arg (value: 'comzotohlabscljc.netty.comms')
+    arg (value: 'comzotohlabscljc.netty.expect100')
+    arg (value: 'comzotohlabscljc.netty.exception')
+    arg (value: 'comzotohlabscljc.netty.auxdecode')
+    arg (value: 'comzotohlabscljc.netty.ssl')
+    arg (value: 'comzotohlabscljc.netty.client')
+    arg (value: 'comzotohlabscljc.netty.server')
+    arg (value: 'comzotohlabscljc.netty.filesvr')
+    arg (value: 'comzotohlabscljc.netty.snooper')
   }
 }
 

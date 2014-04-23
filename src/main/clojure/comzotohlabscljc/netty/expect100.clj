@@ -9,24 +9,24 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.expect100 )
+  comzotohlabscljc.netty.expect100
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (io.netty.buffer Unpooled))
+  (:import (io.netty.channel ChannelHandler ChannelHandlerContext
+                             ChannelFutureListener ChannelFuture
+                             ChannelPipeline
+                             ChannelInboundHandlerAdapter))
+  (:import (io.netty.handler.codec.http HttpMessage HttpResponseStatus
+                                        HttpHeaders HttpVersion
+                                        DefaultFullHttpResponse)))
 
-(import '(io.netty.channel ChannelFutureListener ChannelFuture
-  ChannelHandler ChannelHandlerContext
-  ChannelInboundHandlerAdapter))
-
-(import '(io.netty.buffer ByteBuf ByteBufHolder Unpooled))
-
-(import '(io.netty.handler.codec.http
-  HttpMessage HttpResponseStatus
-  HttpHeaders HttpVersion
-  DefaultFullHttpResponse))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -48,8 +48,8 @@
                    (HttpHeaders/is100ContinueExpected msg))
           (-> (.writeAndFlush ctx CONTINUE)
               (.addListener (reify ChannelFutureListener
-                              (operationComplete [_ ^ChannelFuture f]
-                                (when-not (.isSuccess f)
+                              (operationComplete [_  f]
+                                (when-not (.isSuccess ^ChannelFuture f)
                                           (.fireExceptionCaught ctx (.cause f))))))))
         (.fireChannelRead ctx msg)
 
@@ -68,6 +68,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private expect100-eof nil)
 

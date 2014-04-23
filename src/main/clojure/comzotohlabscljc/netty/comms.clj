@@ -9,91 +9,76 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.comms )
+  comzotohlabscljc.netty.comms
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-
-(import '(java.nio.charset Charset))
-(import '(java.lang.reflect Field))
-(import '(org.apache.commons.io IOUtils FileUtils))
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io IOException ByteArrayOutputStream
-  File OutputStream InputStream))
-(import '(java.util Map$Entry HashMap Properties ArrayList))
-(import '(java.net URI URL InetSocketAddress))
-(import '(java.util.concurrent Executors))
-(import '(javax.net.ssl SSLEngine SSLContext))
-(import '(javax.net.ssl X509TrustManager TrustManager))
-(import '( com.zotoh.frwk.net ULFileItem))
-
-(import '(io.netty.bootstrap Bootstrap ServerBootstrap))
-(import '(io.netty.util AttributeKey Attribute))
-(import '(io.netty.util.concurrent GlobalEventExecutor))
-(import '(io.netty.channel.nio NioEventLoopGroup))
-(import '(io.netty.buffer ByteBuf ByteBufHolder Unpooled))
-(import '(io.netty.handler.codec.http.multipart
-  DefaultHttpDataFactory FileUpload HttpPostRequestDecoder
-  HttpPostRequestDecoder$EndOfDataDecoderException
-  InterfaceHttpData InterfaceHttpData$HttpDataType))
-(import '(io.netty.handler.stream
-  ChunkedWriteHandler ChunkedStream))
-(import '(io.netty.channel.socket.nio
-  NioServerSocketChannel NioSocketChannel))
-(import '(io.netty.channel
-  ChannelHandlerContext Channel SimpleChannelInboundHandler
-  ChannelFutureListener ChannelFuture ChannelInitializer
-  ChannelPipeline ChannelHandler ChannelOption))
-(import '(io.netty.channel.socket SocketChannel))
-(import '(io.netty.channel.group
-  ChannelGroupFuture ChannelGroup ChannelGroupFutureListener
-  DefaultChannelGroup))
-(import '(io.netty.handler.codec.http
-  HttpHeaders HttpVersion HttpContent LastHttpContent
-  HttpHeaders$Values HttpHeaders$Names
-  HttpMessage HttpRequest HttpResponse HttpResponseStatus
-  DefaultFullHttpResponse DefaultHttpResponse QueryStringDecoder
-  HttpMethod HttpObject
-  DefaultHttpRequest HttpServerCodec HttpClientCodec
-  HttpResponseEncoder))
-(import '(io.netty.handler.ssl SslHandler))
-(import '(io.netty.handler.codec.http.websocketx
-  WebSocketFrame
-  WebSocketServerHandshaker
-  WebSocketServerHandshakerFactory
-  ContinuationWebSocketFrame
-  CloseWebSocketFrame
-  BinaryWebSocketFrame
-  TextWebSocketFrame
-  PingWebSocketFrame
-  PongWebSocketFrame))
-(import '(com.zotoh.frwk.net NetUtils))
-(import '(com.zotoh.frwk.io XData))
-
-
-(use '[comzotohlabscljc.crypto.ssl :only [make-sslContext make-sslClientCtx] ])
-(use '[comzotohlabscljc.net.rts])
-(use '[comzotohlabscljc.util.files :only [save-file get-file] ])
-(use '[comzotohlabscljc.util.core :only [uid notnil? Try! TryC] ])
-(use '[comzotohlabscljc.util.str :only [strim nsb hgl?] ])
-(use '[comzotohlabscljc.util.io :only [make-baos] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (java.lang.reflect Field))
+  (:import (java.io IOException ByteArrayOutputStream File OutputStream InputStream))
+  (:import (java.util HashMap Properties ArrayList))
+  (:import (java.net URI URL InetSocketAddress))
+  (:import (org.apache.commons.io IOUtils))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.nio.charset Charset))
+  (:import (io.netty.channel.socket SocketChannel))
+  (:import (io.netty.channel ChannelHandlerContext Channel
+                             ChannelInboundHandlerAdapter
+                             SimpleChannelInboundHandler
+                             ChannelInitializer ChannelFuture
+                             ChannelFutureListener
+                             ChannelPipeline ChannelHandler))
+  (:import (io.netty.handler.codec.http DefaultHttpResponse HttpResponseStatus
+                                        DefaultFullHttpResponse HttpServerCodec
+                                        HttpResponse
+                                        HttpHeaders HttpVersion))
+  (:import (io.netty.handler.stream ChunkedWriteHandler))
+  (:import (io.netty.handler.ssl SslHandler))
+  (:import (io.netty.buffer ByteBuf))
+  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
+  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; map of { int (code) -> HttpResponseStatus }
 (def HTTP-CODES
-  (let [ to-key (fn [^Field f] (.getCode ^HttpResponseStatus (.get f nil)))
+  (let [ to-key (fn [^Field f] (.code ^HttpResponseStatus (.get f nil)))
          fields (:fields (bean HttpResponseStatus))
          kkeys (map to-key fields)
          vvals (map (fn [^Field f] (.get f nil)) fields) ]
     (into {} (map vec (partition 2 (interleave kkeys vvals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NettyInboundAdaptor ""
+
+  ^ChannelHandler
+  [handler options]
+
+  (let []
+    (proxy [ChannelInboundHandlerAdapter][]
+      (channelRead [c msg]
+        (handler c msg options)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NettyInboundHandler ""
+
+  ^ChannelHandler
+  [handler options]
+
+  (let []
+    (proxy [SimpleChannelInboundHandler][]
+      (channelRead0 [c msg]
+        (handler c msg options)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -131,35 +116,34 @@
 ;;
 (defn ReplyXXX ""
 
-  [^Channel ch status keepAlive?]
+  ([^Channel ch status] (ReplyXXX ch status false))
 
-  (let [ rsp (MakeHttpReply status) ]
-    (HttpHeaders/setContentLength rsp 0)
-    (-> (.write ch rsp)
-        (CloseCF keepAlive?))
-  ))
-
+  ([^Channel ch status keepAlive?]
+    (let [ rsp (MakeHttpReply status) ]
+      (HttpHeaders/setContentLength rsp 0)
+      (-> (.write ch rsp)
+          (CloseCF keepAlive?))
+    )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn WWrite "Write object but no flush."
 
   ^ChannelFuture
-  [^Channel ch obj]
+  [ch obj]
 
   ;; had to do this to work-around reflection warnings :(
-  (NetUtils/writeOnly ch obj))
+  (NetUtils/writeOnly ^Channel ch obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn WFlush "Write object and then flush."
 
   ^ChannelFuture
-  [^Channel ch obj]
+  [ch obj]
 
   ;; had to do this to work-around reflection warnings :(
-  (NetUtils/wrtFlush ch obj))
-
+  (NetUtils/wrtFlush ^Channel ch obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -189,7 +173,7 @@
   [^Channel ch perm ^String targetUrl]
 
   (let [ rsp (MakeFullHttpReply (if perm 301 307)) ]
-    (debug "redirecting to -> " targetUrl)
+    (log/debug "redirecting to -> " targetUrl)
     (HttpHeaders/setHeader rsp  "location" targetUrl)
     (CloseCF (WFlush ch rsp) false)))
 
@@ -201,11 +185,11 @@
 
   (-> (.channel ctx) (WFlush (MakeFullHttpReply 100))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn AddServerCodec ""
 
+  ^ChannelPipeline
   [^ChannelPipeline pipe]
 
   (let []
@@ -217,15 +201,15 @@
 ;;
 (defn AddWriteChunker ""
 
+  ^ChannelPipeline
   [^ChannelPipeline pipe]
 
   (let []
-    (.addLast pl "chunker" (ChunkedWriteHandler.))
+    (.addLast pipe "chunker" (ChunkedWriteHandler.))
     pipe
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private comms-eof nil)
-
 

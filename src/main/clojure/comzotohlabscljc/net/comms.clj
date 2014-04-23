@@ -15,6 +15,7 @@
   comzotohlabscljc.net.comms
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
   (:import (java.security.cert X509Certificate CertificateException))
   (:import (java.security KeyStoreException KeyStore
                           InvalidAlgorithmParameterException))
@@ -42,13 +43,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:dynamic *socket-timeout* 5000)
 (def LOOPBACK "127.0.0.1")
 (def LHOST "localhost")
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -212,20 +211,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn syncPost "Perform a http-post on the target url."
+(defn SyncPost "Perform a http-post on the target url."
 
   ([^URL targetUrl contentType ^XData rdata]
-    (syncPost targetUrl contentType rdata nil))
+    (SyncPost targetUrl contentType rdata nil))
 
   ([^URL targetUrl contentType ^XData rdata beforeSendFunc]
     (doPOST targetUrl contentType rdata beforeSendFunc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn syncGet "Perform a http-get on the target url."
+(defn SyncGet "Perform a http-get on the target url."
 
   ([^URL targetUrl]
-   (syncGet targetUrl nil))
+   (SyncGet targetUrl nil))
 
   ([^URL targetUrl beforeSendFunc]
     (doGET targetUrl beforeSendFunc)))
@@ -241,16 +240,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- clean-str "" 
-  
+(defn- clean-str ""
+
   [^String s]
 
   (StringUtils/stripStart (StringUtils/stripEnd s ";,") ";,"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseIE "" 
-  
+(defn ParseIE ""
+
   [^String line]
 
   (let [ p1 #".*(MSIE\s*(\S+)\s*).*"
@@ -258,94 +257,128 @@
          p2 #".*(Windows\s*Phone\s*(\S+)\s*).*"
          m2 (re-matches p2 line)
          bw "IE"
-         dt (if (has-nocase? "iemobile") :mobile :pc) ]
+         dt (if (HasNocase? "iemobile") :mobile :pc) ]
     (let [ bv (if (and (not (empty? m1)) (> (count m1) 2))
-                (clean-str (nth m1 2))
-                "")
+                  (clean-str (nth m1 2))
+                  "")
            dev (if (and (not (empty? m2)) (> (count m2) 2))
-                 { :device-version (clean-str (nth m1 2))
-                   :device-moniker "windows phone"
-                   :device-type :phone }
-                 {} ) ]
-      (merge {:browser :ie :browser-version bv :device-type dt}
-             dev))))
+                   { :device-version (clean-str (nth m1 2))
+                     :device-moniker "windows phone"
+                     :device-type :phone }
+                   {} ) ]
+      (merge {:browser :ie :browser-version bv :device-type dt} dev)
+    )))
 
-(defn parse-chrome "" [^String line]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseChrome ""
+
+  [^String line]
+
   (let [ p1 #".*(Chrome/(\S+)).*"
          m1 (re-matches p1 line)
-         bv   (if (and (not (empty? m1)) (> (count m1) 2))
+         bv (if (and (not (empty? m1)) (> (count m1) 2))
                 (clean-str (nth m1 2))
                 "") ]
-    {:browser :chrome :browser-version bv :device-type :pc }))
+    {:browser :chrome :browser-version bv :device-type :pc }
+  ))
 
-(defn parse-kindle "" [^String line]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseKindle "" 
+  
+  [^String line]
+
   (let [ p1 #".*(Silk/(\S+)).*"
          m1 (re-matches p1 line)
-         bv   (if (and (not (empty? m1)) (> (count m1) 2))
+         bv (if (and (not (empty? m1)) (> (count m1) 2))
                 (clean-str (nth m1 2))
                 "") ]
-    { :browser :silk :browser-version bv :device-type :mobile :device-moniker "kindle" } ))
+    { :browser :silk :browser-version bv :device-type :mobile :device-moniker "kindle" } 
+  ))
 
-(defn parse-android "" [^String line]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseAndroid "" 
+  
+  [^String line]
+
   (let [ p1 #".*(Android\s*(\S+)\s*).*"
          m1 (re-matches p1 line)
-         bv   (if (and (not (empty? m1)) (> (count m1) 2))
+         bv (if (and (not (empty? m1)) (> (count m1) 2))
                 (clean-str (nth m1 2))
                 "") ]
-    { :browser :chrome :browser-version bv :device-type :mobile :device-moniker "android" } ))
+    { :browser :chrome :browser-version bv :device-type :mobile :device-moniker "android" } 
+  ))
 
-(defn parse-ffox "" [^String line]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseFFox "" 
+  
+  [^String line]
+
   (let [ p1 #".*(Firefox/(\S+)\s*).*"
          m1 (re-matches p1 line)
-         bv   (if (and (not (empty? m1)) (> (count m1) 2))
+         bv (if (and (not (empty? m1)) (> (count m1) 2))
                 (clean-str (nth m1 2))
                 "") ]
-    { :browser :firefox :browser-version bv :device-type :pc } ))
+    { :browser :firefox :browser-version bv :device-type :pc } 
+  ))
 
-(defn parse-safari "" [^String line]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseSafari "" 
+  
+  [^String line]
+
   (let [ p1 #".*(Version/(\S+)\s*).*"
          m1 (re-matches p1 line)
-         bv   (if (and (not (empty? m1)) (> (count m1) 2))
+         bv (if (and (not (empty? m1)) (> (count m1) 2))
                 (clean-str (nth m1 2))
                 "")
          rc { :browser :safari :browser-version bv :device-type :pc } ]
     (cond
-      (has-nocase? line "mobile/") (merge rc { :device-type :mobile })
-      (has-nocase? line "iphone") (merge rc { :device-type :phone :device-moniker "iphone" } )
-      (has-nocase? line "ipad") (merge rc { :device-type :mobile :device-moniker "ipad" } )
-      (has-nocase? line "ipod") (merge rc { :device-type :mobile :device-moniker "ipod" } )
-      :else rc )))
+      (HasNocase? line "mobile/") (merge rc { :device-type :mobile })
+      (HasNocase? line "iphone") (merge rc { :device-type :phone :device-moniker "iphone" } )
+      (HasNocase? line "ipad") (merge rc { :device-type :mobile :device-moniker "ipad" } )
+      (HasNocase? line "ipod") (merge rc { :device-type :mobile :device-moniker "ipod" } )
+      :else rc )
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseUserAgentLine "Retuns a map of browser/device attributes."
 
-(defn parse-userAgentLine "Retuns a map of browser/device attributes."
   [^String agentLine]
+
   (let [ line (strim agentLine) ]
     (cond
-      (and (embeds? line "Windows") (embeds? line "Trident/"))
-      (parse-ie line)
+      (and (Embeds? line "Windows") (Embeds? line "Trident/"))
+      (ParseIE line)
 
-      (and (embeds? line "AppleWebKit/")(embeds? line "Safari/")
-           (embeds? line "Chrome/"))
-      (parse-chrome line)
+      (and (Embeds? line "AppleWebKit/")(Embeds? line "Safari/")
+           (Embeds? line "Chrome/"))
+      (ParseChrome line)
 
-      (and (embeds? line "AppleWebKit/") (embeds? line "Safari/")
-           (embeds? line "Android"))
-      (parse-android line)
+      (and (Embeds? line "AppleWebKit/") (Embeds? line "Safari/")
+           (Embeds? line "Android"))
+      (ParseAndroid line)
 
-      (and (embeds? line "AppleWebKit/")(embeds? line "Safari/")
-           (embeds? line "Silk/"))
-      (parse-kindle line)
+      (and (Embeds? line "AppleWebKit/")(Embeds? line "Safari/")
+           (Embeds? line "Silk/"))
+      (ParseKindle line)
 
-      (and (embeds? line "Safari/")(embeds? line "Mac OS X"))
-      (parse-safari)
+      (and (Embeds? line "Safari/")(Embeds? line "Mac OS X"))
+      (ParseSafari)
 
-      (and (embeds? line "Gecko/")(embeds? line "Firefox/"))
-      (parse-ffox)
+      (and (Embeds? line "Gecko/")(Embeds? line "Firefox/"))
+      (ParseFFox)
 
       :else
-      {} )))
+      {} )
+  ))
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private comms-eof nil)
 

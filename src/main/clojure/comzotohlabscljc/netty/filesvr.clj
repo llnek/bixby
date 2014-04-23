@@ -13,72 +13,25 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.netty.filesvr )
+  comzotohlabscljc.netty.filesvr
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-
-(import '(java.nio.charset Charset))
-(import '(java.lang.reflect Field))
-(import '(org.apache.commons.io IOUtils FileUtils))
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.io IOException ByteArrayOutputStream
-  File OutputStream InputStream))
-(import '(java.util Map$Entry HashMap Properties ArrayList))
-(import '(java.net URI URL InetSocketAddress))
-(import '(java.util.concurrent Executors))
-(import '(javax.net.ssl SSLEngine SSLContext))
-(import '(javax.net.ssl X509TrustManager TrustManager))
-(import '( com.zotoh.frwk.net ULFileItem))
-
-(import '(io.netty.bootstrap Bootstrap ServerBootstrap))
-(import '(io.netty.util AttributeKey Attribute))
-(import '(io.netty.util.concurrent GlobalEventExecutor))
-(import '(io.netty.channel.nio NioEventLoopGroup))
-(import '(io.netty.buffer ByteBuf ByteBufHolder Unpooled))
-(import '(io.netty.handler.codec.http.multipart
-  DefaultHttpDataFactory FileUpload HttpPostRequestDecoder
-  HttpPostRequestDecoder$EndOfDataDecoderException
-  InterfaceHttpData InterfaceHttpData$HttpDataType))
-(import '(io.netty.handler.stream
-  ChunkedWriteHandler ChunkedStream))
-(import '(io.netty.channel.socket.nio
-  NioServerSocketChannel NioSocketChannel))
-(import '(io.netty.channel
-  ChannelHandlerContext Channel SimpleChannelInboundHandler
-  ChannelFutureListener ChannelFuture ChannelInitializer
-  ChannelPipeline ChannelHandler ChannelOption))
-(import '(io.netty.channel.socket SocketChannel))
-(import '(io.netty.channel.group
-  ChannelGroupFuture ChannelGroup ChannelGroupFutureListener
-  DefaultChannelGroup))
-(import '(io.netty.handler.codec.http
-  HttpHeaders HttpVersion HttpContent LastHttpContent
-  HttpHeaders$Values HttpHeaders$Names
-  HttpMessage HttpRequest HttpResponse HttpResponseStatus
-  DefaultFullHttpResponse DefaultHttpResponse QueryStringDecoder
-  HttpMethod HttpObject
-  DefaultHttpRequest HttpServerCodec HttpClientCodec
-  HttpResponseEncoder))
-(import '(io.netty.handler.ssl SslHandler))
-(import '(io.netty.handler.codec.http.websocketx
-  WebSocketFrame
-  WebSocketServerHandshaker
-  WebSocketServerHandshakerFactory
-  ContinuationWebSocketFrame
-  CloseWebSocketFrame
-  BinaryWebSocketFrame
-  TextWebSocketFrame
-  PingWebSocketFrame
-  PongWebSocketFrame))
-(import '(com.zotoh.frwk.net NetUtils))
-(import '(com.zotoh.frwk.io XData))
-
-(use '[comzotohlabscljc.crypto.ssl :only [make-sslContext make-sslClientCtx] ])
-(use '[comzotohlabscljc.net.rts])
-(use '[comzotohlabscljc.util.files :only [save-file get-file] ])
-(use '[comzotohlabscljc.util.core :only [uid notnil? Try! TryC] ])
-(use '[comzotohlabscljc.util.str :only [strim nsb hgl?] ])
-(use '[comzotohlabscljc.util.io :only [make-baos] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:import (java.io IOException File))
+  (:import (io.netty.channel ChannelHandlerContext Channel ChannelPipeline
+                             ChannelFuture ChannelHandler ))
+  (:import (io.netty.handler.codec.http HttpHeaders HttpMessage HttpResponse ))
+  (:import (io.netty.handler.stream ChunkedStream))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:use [comzotohlabscljc.util.files :only [SaveFile GetFile] ])
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
+  (:use [comzotohlabscljc.netty.comms])
+  (:use [comzotohlabscljc.netty.server])
+  (:use [comzotohlabscljc.netty.ssl])
+  (:use [comzotohlabscljc.netty.expect100])
+  (:use [comzotohlabscljc.netty.auxdecode])
+  (:use [comzotohlabscljc.netty.exception])
+  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -106,7 +59,7 @@
   [^File vdir ^Channel ch info ^String fname ^XData xdata]
 
   (try
-    (save-file vdir fname xdata)
+    (SaveFile vdir fname xdata)
     (ReplyXXX ch 200)
     (catch Throwable e#
       (ReplyXXX ch 500))
@@ -118,7 +71,7 @@
 
   [^File vdir ^Channel ch info ^String fname]
 
-  (let [ xdata (get-file vdir fname) ]
+  (let [ xdata (GetFile vdir fname) ]
     (if (.hasContent xdata)
       (replyGetVFile ch info xdata)
       (ReplyXXX ch 204))
@@ -128,50 +81,51 @@
 ;;
 (defn- fileHandler ""
 
-  [vdir]
+  [^ChannelHandlerContext ctx msg options]
 
-  (let []
-    (proxy [ChannelInboundHandlerAdapter][]
-      (channelRead [c msg]
-        (let [ ^ChannelHandlerContext ctx c
-               ^XData xs (:payload msg)
-               info (:info msg)
-               uri (:uri info)
-               mtd (:method info)
-               pos (.lastIndexOf uri (int \/))
-               p (if (< pos 0) uri (.substring uri (inc pos))) ]
-          (debug "Method = " mtd ", Uri = " uri ", File = " p)
-          (cond
-            (or (= mtd "POST")(= mtd "PUT")) (filePutter vdir ch info p xs)
-            (or (= mtd "GET")(= mtd "HEAD")) (fileGetter vdir ch info p)
-            :else (ReplyXXX ch 405)))))
+  (let [ ^XData xs (:payload msg)
+         ch (.channel ctx)
+         vdir (:vdir options)
+         info (:info msg)
+         ^String uri (:uri info)
+         mtd (:method info)
+         pos (.lastIndexOf uri (int \/))
+         p (if (< pos 0) uri (.substring uri (inc pos))) ]
+    (log/debug "Method = " mtd ", Uri = " uri ", File = " p)
+    (cond
+      (or (= mtd "POST")(= mtd "PUT")) (filePutter vdir ch info p xs)
+      (or (= mtd "GET")(= mtd "HEAD")) (fileGetter vdir ch info p)
+      :else (ReplyXXX ch 405))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- filerInitor ""
+
+  [^ChannelPipeline pipe options]
+
+  (-> pipe (AddEnableSvrSSL options)
+           (AddExpect100 options)
+           (AddServerCodec options)
+           (AddAuxDecoder options)
+           (AddWriteChunker options))
+   (.addLast pipe "filer" (NettyInboundHandler fileHandler options))
+   (AddExceptionCatcher pipe options)
+  pipe)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
 ;;
 (defn MakeMemFileServer "A file server which can get/put files."
 
+  ;; returns netty objects if you want to do clean up
   [^String host port options]
 
   (let []
-
-    (StartNetty host port (BootstrapNetty
-      (fn []
-        (proxy [ChannelInitializer] []
-          (initChannel [^SocketChannel ch]
-            (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-              (AddEnableSSL pl options)
-              (AddExpect100 pl options)
-              (.addLast pl "codec" (HttpServerCodec.))
-              (.addLast pl "aux" (MakeAuxDecoder))
-              (.addLast pl "chunker" (ChunkedWriteHandler.))
-              (.addLast pl "filer" (fileHandler (:vdir options)))
-              pl))))
-      options))
+    (StartNetty host port (BootstrapNetty filerInitor options))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private filesvr-eof nil)
 
