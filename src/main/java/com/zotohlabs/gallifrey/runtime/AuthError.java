@@ -11,22 +11,22 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.runtime;
 
+public class AuthError extends Exception {
 
-package com.zotohlabs.gallifrey.core
-
-/**
- * @author kenl
- */
-class ConfigError(msg:String,e:Throwable) extends Exception(msg,e) {
-
-  def this(e:Throwable) {
-    this(null,e)
+  public AuthError(String msg,Throwable e) {
+    super(msg,e);
   }
 
-  def this(msg:String) {
-    this(msg,null)
+  public AuthError(Throwable e) {
+    this(null,e);
+  }
+
+  public AuthError(String msg) {
+    this(msg,null);
   }
 
 }
+
 

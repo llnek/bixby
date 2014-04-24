@@ -11,42 +11,13 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.core;
 
-package com.zotohlabs.frwk.dbio
+import com.zotohlabs.frwk.core.Gettable;
 
-import java.sql.SQLException
-
-@SerialVersionUID(113241635256073760L)
-class DBIOError(msg:String, t:Throwable) extends SQLException(msg,t) {
-
-  /**
-   * @param msg
-   */
-  def this(msg:String) {
-    this(msg, null)
-  }
-
-  /**
-   * @param t
-   */
-  def this(t:Throwable) {
-    this("",t)
-  }
-
-  def this() {
-    this("")
-  }
-
+/**
+ * @author kenl
+ */
+public interface Context extends Gettable {
 }
-
-@SerialVersionUID(143241635256073760L)
-class OptLockError(opcode:String, table:String, rowID:Long) extends 
-SQLException(
-"Possible Optimistic lock failure for table: " +
-               table +
-               ", rowid= " + rowID  + " during " + opcode) {
-}
-
-
-
 

@@ -11,21 +11,20 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.net;
 
-
-package com.zotohlabs.frwk.net
-
-import org.apache.commons.fileupload.FileItemFactory
-import org.apache.commons.fileupload.FileItem
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileItem;
 
 /**
  * @author kenl
  *
  */
-class ULFileFactory extends FileItemFactory {
+public class ULFileFactory implements FileItemFactory {
 
-  def createItem(fieldName:String, contentType:String,
-      isFormField:Boolean, filename:String) = 
-    new ULFileItem(fieldName, contentType, isFormField, filename)
+  public FileItem createItem(String fieldName, String contentType, boolean isFormField, String filename) {
+    return new ULFileItem(fieldName, contentType, isFormField, filename);
+  }
 
 }
+

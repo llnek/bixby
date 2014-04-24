@@ -11,22 +11,19 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.gallifrey.mvc;
+package com.zotohlabs.frwk.dbio;
 
-import java.util.HashMap;
+import java.sql.SQLException;
 
-/**
- * @author kenl
- */
-public enum AssetCache {
-;
+public class OptLockError extends SQLException {
 
-  private static HashMap<String, Object> _cache=  new HashMap<String, Object>();
+  private static final long serialVersionUID = 143241635256073760L;
 
-  public static HashMap<String,Object> get() {
-    return _cache;
+  public OptLockError(String opcode, String table, long rowID) {
+    super("Possible Optimistic lock failure for table: " +
+               table +
+               ", rowid= " + rowID  + " during " + opcode);
   }
 
 }
-
 

@@ -11,31 +11,13 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.dbio;
 
-package com.zotohlabs.frwk.net
+import java.sql.Connection;
+import java.util.*;
 
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-import com.zotohlabs.frwk.io.XData
 
-/**
- * @author kenl
- */
-class ULFormItems {
-  private val _items= mutable.ArrayBuffer[ULFileItem]()
-
-  def getAll() = asJavaCollection( _items.toIterable )
-  def add(x:ULFileItem) { _items += x }
-  def reset() { _items.clear() }
-  def destroy() {
-    _items.foreach { (x) =>
-      x.fileData match {
-      case x:XData => x.destroy()
-      case _ =>
-    }}
-    _items.clear()
-  }
-
+public interface Schema {
+  public Object getModels();
 }
-
 

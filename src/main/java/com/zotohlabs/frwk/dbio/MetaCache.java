@@ -11,22 +11,12 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.gallifrey.mvc;
+package com.zotohlabs.frwk.dbio;
 
-import java.util.HashMap;
+import java.sql.Connection;
+import java.util.*;
 
-/**
- * @author kenl
- */
-public enum AssetCache {
-;
-
-  private static HashMap<String, Object> _cache=  new HashMap<String, Object>();
-
-  public static HashMap<String,Object> get() {
-    return _cache;
-  }
-
+public interface MetaCache {
+  public Object getMetas();
 }
-
 

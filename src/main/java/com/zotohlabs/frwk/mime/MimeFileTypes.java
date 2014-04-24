@@ -14,9 +14,14 @@
 
 package com.zotohlabs.frwk.mime;
 
-import java.io.*;
-import java.util.*;
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.trim;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Map.Entry;
+import java.util.Properties;
+
 import javax.activation.MimetypesFileTypeMap;
 
 /**
@@ -24,14 +29,16 @@ import javax.activation.MimetypesFileTypeMap;
  */
 public class MimeFileTypes {
 
-  public static  MimetypesFileTypeMap makeMimeFileTypes(Properties props){
-    /*
-    val b= props.entrySet().foldLeft(new StringBuilder ) { (sum, en) =>
-      sum.append(  trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n")
-    }.toString()
-    new MimetypesFileTypeMap( new ByteArrayInputStream( b.getBytes("utf-8")) )
-    */
-    return null;
+  public static  MimetypesFileTypeMap makeMimeFileTypes(Properties props) throws IOException{
+    StringBuilder sum = new StringBuilder();
+    for (Entry<Object, Object> en : props.entrySet()) {      
+      sum.append(  trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n");
+    }
+    try {
+      return new MimetypesFileTypeMap( new ByteArrayInputStream( sum.toString().getBytes("utf-8")) );
+    } catch (UnsupportedEncodingException e) {
+      throw new IOException("Failed to parse mime.properties.");
+    }
   }  
   
 }

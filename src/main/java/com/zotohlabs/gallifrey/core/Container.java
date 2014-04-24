@@ -11,16 +11,23 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.core;
 
-package com.zotohlabs.gallifrey.runtime
+import com.zotohlabs.gallifrey.io.IOEvent;
+import com.zotohlabs.frwk.core.Disposable;
+import java.io.File;
+import com.zotohlabs.frwk.server.ServerLike;
+import com.zotohlabs.frwk.dbio.DBAPI;
 
-import com.zotohlabs.gallifrey.core.Container
-import com.zotohlabs.frwk.core.{Startable, Initializable, Disposable}
-import org.json.JSONObject
+public interface Container extends ServerLike , Disposable {
 
-trait AppMain extends Disposable with Initializable with Startable {
+  public void notifyObservers(IOEvent evt, Object options );
 
-  def contextualize(c:Container) : Unit
-  def configure(options:JSONObject ) : Unit
+  public String getAppKey();
+
+  public File getAppDir();
+
+  public DBAPI acquireJdbc(String groupid);
 
 }
+

@@ -11,22 +11,24 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.gallifrey.mvc;
-
-import java.util.HashMap;
+package com.zotohlabs.gallifrey.core;
 
 /**
  * @author kenl
  */
-public enum AssetCache {
-;
+public class ConfigError extends Exception {
 
-  private static HashMap<String, Object> _cache=  new HashMap<String, Object>();
+  public ConfigError(String msg,Throwable e) {
+    super(msg,e);
+  }
 
-  public static HashMap<String,Object> get() {
-    return _cache;
+  public ConfigError(Throwable e) {
+    this(null,e);
+  }
+
+  public ConfigError(String msg) {
+    this(msg,null);
   }
 
 }
-
 

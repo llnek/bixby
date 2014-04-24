@@ -12,35 +12,16 @@
  ??*/
 
 
+package com.zotohlabs.gallifrey.runtime;
 
-package com.zotohlabs.frwk.jmx
+import com.zotohlabs.gallifrey.core.Container;
+import com.zotohlabs.frwk.core.*;
+import org.json.JSONObject;
 
-import java.util.Arrays
+public interface AppMain extends Disposable , Initializable , Startable {
 
-object JMXUtils {
-}
-
-class NameParams(private val _name:String, private val _pms:Array[String]) {
-
-  override def toString() = {
-    "" + _name + "/" + _pms.mkString("#")
-  }
-
-  override def hashCode() = {
-    var hash= 31 * (31 + _name.hashCode)
-    if (_pms != null) {
-      hash += Arrays.hashCode(_pms.toArray[Object] )
-    }
-    hash
-  }
-
-  override def equals(obj:Any) = {
-    if (obj == null || getClass() != obj.getClass) false else {
-      val other = obj.asInstanceOf[NameParams]
-      if ( _name != other._name) false else {
-        Arrays.equals(_pms.toArray[Object], other._pms.toArray[Object])
-      }
-    }
-  }
+  public void configure(JSONObject options);
+  public void contextualize(Container c);
 
 }
+

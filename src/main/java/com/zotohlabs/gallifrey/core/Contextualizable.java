@@ -13,11 +13,16 @@
 
 
 
-package com.zotohlabs.gallifrey.core
+package com.zotohlabs.gallifrey.core;
+
 
 /**
  * @author kenl
  */
-trait Resolvable {
-  def resolve(c:Context): Any
+public interface Contextualizable {
+
+  public void contextualize(Context ctx);
+
 }
+
+

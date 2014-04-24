@@ -11,20 +11,33 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.gallifrey.mvc;
+package com.zotohlabs.frwk.net;
 
-import java.util.HashMap;
+import com.zotohlabs.frwk.io.XData;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * @author kenl
  */
-public enum AssetCache {
-;
+public class ULFormItems {
 
-  private static HashMap<String, Object> _cache=  new HashMap<String, Object>();
+  private List<ULFileItem> _items= new ArrayList<ULFileItem>();
 
-  public static HashMap<String,Object> get() {
-    return _cache;
+  public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
+
+  public void add(ULFileItem x) { _items.add(x); }
+
+  public void reset() { _items.clear(); }
+
+  public void destroy() {
+    for (ULFileItem fi : _items) {
+      XData xs = fi.fileData();
+      if (xs != null) { xs.destroy(); }
+    }
+    _items.clear();
   }
 
 }

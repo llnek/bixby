@@ -11,22 +11,19 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.dbio;
 
+import java.sql.Connection;
+import java.util.*;
 
-package com.zotohlabs.gallifrey.core
+public interface JDBCInfo {
 
-/**
- * @author kenl
- */
-class ContextError(msg:String,e:Throwable) extends Exception(msg,e) {
-
-  def this(e:Throwable) {
-    this(null,e)
-  }
-
-  def this(msg:String) {
-    this(msg,null)
-  }
+  public String getDriver();
+  public String getUrl();
+  public String getUser();
+  public String getPwd();
+  //
+  public String getId();
 
 }
 

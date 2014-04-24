@@ -11,32 +11,16 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.dbio;
 
-package com.zotohlabs.gallifrey.runtime
+import java.sql.Connection;
+import java.util.*;
 
 
-class AuthError(msg:String,e:Throwable) extends Exception(msg,e) {
-
-  def this(e:Throwable) {
-    this(null,e)
-  }
-
-  def this(msg:String) {
-    this(msg,null)
-  }
-
+public interface  Transactable {
+  public Object execWith(Object fn) ;
+  public Connection begin();
+  public void commit(Connection c);
+  public void rollback(Connection c);
 }
-
-class UnknownUser(msg:String,e:Throwable) extends AuthError(msg,e) {
-
-  def this(e:Throwable) {
-    this(null,e)
-  }
-
-  def this(msg:String) {
-    this(msg,null)
-  }
-
-}
-
 

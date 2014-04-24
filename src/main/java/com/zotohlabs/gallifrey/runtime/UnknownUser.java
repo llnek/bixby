@@ -11,24 +11,22 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.runtime;
 
+public class UnknownUser extends AuthError {
 
-package com.zotohlabs.gallifrey.core
+  public UnknownUser(String msg,Throwable e) {
+    super(msg,e);
+  }
 
+  public UnknownUser(Throwable e) {
+    this(null,e);
+  }
 
-import com.zotohlabs.gallifrey.io.IOEvent
+  public UnknownUser(String msg) {
+    this(msg,null);
+  }
 
-import com.zotohlabs.frwk.core.Disposable
-import java.io.File
-import com.zotohlabs.frwk.server.ServerLike
-import com.zotohlabs.frwk.dbio.DBAPI
-
-trait Container extends ServerLike with Disposable {
-
-  def notifyObservers(evt:IOEvent, options:Any ) : Unit
-  def getAppKey() : String
-  def getAppDir() : File
-
-  def acquireJdbc(groupid:String) : DBAPI
 }
+
 

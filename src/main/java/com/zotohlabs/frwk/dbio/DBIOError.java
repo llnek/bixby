@@ -11,14 +11,35 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.frwk.dbio;
 
+import java.sql.SQLException;
 
-package com.zotohlabs.gallifrey.core
+public class DBIOError extends SQLException {
 
-import com.zotohlabs.frwk.core.Gettable
+  private static final long serialVersionUID = 113241635256073760L;
 
-/**
- * @author kenl
- */
-trait Context extends Gettable {
+  public DBIOError(String msg, Throwable t) {
+    super(msg,t);
+  }
+
+  /**
+   * @param msg
+   */
+  public DBIOError(String msg) {
+    this(msg, null);
+  }
+
+  /**
+   * @param t
+   */
+  public DBIOError(Throwable t) {
+    this("",t);
+  }
+
+  public DBIOError() {
+    this("");
+  }
+
 }
+
