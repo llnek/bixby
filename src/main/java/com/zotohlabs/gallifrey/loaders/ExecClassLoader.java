@@ -11,21 +11,38 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.loaders;
 
-
-package com.zotohlabs.gallifrey.etc
+import java.net.URLClassLoader;
+import java.io.File;
+import java.net.URL;
 
 /**
  * @author kenl
  */
-class PluginError(msg:String,e:Throwable) extends Exception(msg,e) {
+public class ExecClassLoader extends AbstractClassLoader {
 
-  def this(e:Throwable) {
-    this(null,e)
+  public ExecClassLoader(ClassLoader par) {
+    super( new RootClassLoader(par));
+
+    String base=System.getProperty("skaro.home","");
+    if (base.length() > 0) { load(base); }
   }
 
-  def this(msg:String) {
-    this(msg,null)
+  private void load(String base) {
+    File p= new File(base, "exec");
+
+    if (p.exists() && !_loaded) {
+      findUrls(p);
+    }
+
+    _loaded=true;
+  }
+
+  public void configure(String baseDir) {
+    if (baseDir != null) {
+      load(baseDir);
+    }
   }
 
 }

@@ -13,17 +13,34 @@
 
 
 
-package com.zotohlabs.gallifrey.etc
+package com.zotohlabs.mock.jms;
+
+import javax.jms.*;
+
 
 /**
  * @author kenl
  *
  */
-@SerialVersionUID( -3243333353892471139L)
-class CmdHelpError(msg:String) extends Exception(msg) {
-  
-  def this() {
-    this("")
+public class MockTopicConnFactory implements TopicConnectionFactory {
+
+  public MockTopicConnFactory() {}
+
+  public Connection createConnection() {
+    return  createTopicConnection();
   }
-  
+
+  public Connection createConnection(String user, String pwd) {
+    return createTopicConnection(user, pwd);
+  }
+
+  public TopicConnection createTopicConnection() {
+    return new MockTopicConnection("","");
+  }
+
+  public TopicConnection createTopicConnection(String user, String pwd) {
+    return new MockTopicConnection(user, pwd);
+  }
+
 }
+

@@ -13,17 +13,24 @@
 
 
 
-package com.zotohlabs.mock.jms
+package com.zotohlabs.mock.jms;
 
-import javax.jms.JMSException
-import javax.jms.Queue
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockQueue(private val _name:String) extends Queue {
+public class MockTopic implements Topic {
 
-  def getQueueName() = _name
+  private String _name;
+
+  public MockTopic(String n) {
+    _name=n;
+  }
+
+  public String getTopicName() { return _name; }
+
 }
+

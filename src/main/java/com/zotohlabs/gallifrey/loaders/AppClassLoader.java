@@ -11,20 +11,38 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.gallifrey.mvc;
 
+package com.zotohlabs.gallifrey.loaders;
+
+//import org.apache.commons.io.{FileUtils=>FUT}
+import java.net.URLClassLoader;
 import java.io.File;
+import java.net.URL;
 
 /**
  * @author kenl
  */
-public interface WebAsset {
+public class AppClassLoader extends AbstractClassLoader {
 
-  public String contentType();
-  public File getFile();
-  public long getTS();
-  public long size();
-  public byte[] getBytes();
+  public AppClassLoader(RootClassLoader par) {
+    super(par);
+  }
+
+  public void configure(String appDir) {
+    File c= new File(appDir, "POD-INF/classes");
+    File p= new File(appDir, "POD-INF/patch");
+    File b= new File(appDir, "POD-INF/lib");
+    if (!_loaded) {
+      findUrls(p);
+      addUrl(c);
+      findUrls(b);
+      if ( new File(appDir, "WEB-INF").exists() ) {
+        addUrl( new File(appDir, "WEB-INF/classes"));
+        findUrls(new File(appDir, "WEB-INF/lib"));
+      }
+    }
+    _loaded=true;
+  }
 
 }
 

@@ -13,38 +13,32 @@
 
 
 
+package com.zotohlabs.mock.jms;
 
-package com.zotohlabs.mock.jms
-
-import java.util.Random
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-object MockUtils {
+public class MockQueueConnFactory implements QueueConnectionFactory {
 
-  /**
-   * @return
-   */
-  def makeNewTextMsg_plus() = {
-    val r= new Random()
-    val a=r.nextInt(100)
-    val b=r.nextInt(100)
-    val c= 0L + a + b
-    "Calc.  " + a + " + " + b + " = " + c
+  public Connection createConnection() {
+    return createQueueConnection();
   }
 
-  /**
-   * @return
-   */
-  def makeNewTextMsg_x() = {
-    val r= new Random()
-    val a=r.nextInt(100)
-    val b=r.nextInt(100)
-    val c= 1L * a * b
-    "Calc.  " + a + " * " + b + " = " + c
+  public Connection createConnection(String user, String pwd) {
+    return createQueueConnection(user,pwd);
+  }
+
+  public QueueConnection createQueueConnection() {
+    return new MockQueueConnection();
+  }
+
+  public QueueConnection  createQueueConnection(String user, String pwd) {
+    return new MockQueueConnection(user, pwd);
   }
 
 }
+

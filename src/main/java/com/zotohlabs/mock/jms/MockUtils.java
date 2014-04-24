@@ -11,47 +11,39 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.mock.jms;
 
-
-package com.zotohlabs.mock.jms
-
-import javax.jms.JMSException
-import javax.jms.Message
-import javax.jms.MessageListener
-import javax.jms.Topic
-import javax.jms.TopicSubscriber
+import java.util.Random;
 
 
 /**
  * @author kenl
  *
  */
-class MockTopicSubscriber(private var _topic:Topic, private val _name:String) extends TopicSubscriber {
+public enum MockUtils {
+;
 
-  private var _sub:MessageListener = null
-
-  def close() {
-    _topic=null
-    _sub=null
+  /**
+   * @return
+   */
+  public static String makeNewTextMsg_plus() {
+    Random r= new Random();
+    int a=r.nextInt(100);
+    int b=r.nextInt(100);
+    long c= 0L + a + b;
+    return "Calc.  " + a + " + " + b + " = " + c;
   }
 
-  def getMessageListener() = _sub
-
-  def getMessageSelector() = null
-
-  def receive() = null
-
-  def receive(arg:Long) = null
-
-  def receiveNoWait() = null
-
-  def setMessageListener(ml:MessageListener ) {
-    _sub= ml
+  /**
+   * @return
+   */
+  public static String makeNewTextMsg_x(){
+    Random r= new Random();
+    int a=r.nextInt(100);
+    int b=r.nextInt(100);
+    long c= 1L * a * b;
+    return "Calc.  " + a + " * " + b + " = " + c;
   }
-
-  def getNoLocal() = false
-
-  def getTopic() = _topic
 
 }
 

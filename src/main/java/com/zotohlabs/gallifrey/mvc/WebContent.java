@@ -11,17 +11,15 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
-package com.zotohlabs.gallifrey.mvc
+package com.zotohlabs.gallifrey.mvc;
 
 /**
  * @author kenl
  */
-trait WebContent {
+public interface WebContent {
 
-  def contentType() : String
-  def body() : Array[Byte]
+  public String contentType();
+  public byte[] body();
 
 }
 

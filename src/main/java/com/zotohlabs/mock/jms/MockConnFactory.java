@@ -13,42 +13,24 @@
 
 
 
-package com.zotohlabs.mock.jms
+package com.zotohlabs.mock.jms;
 
-import javax.jms.JMSException
-import javax.jms.Message
-import javax.jms.MessageListener
-import javax.jms.Queue
-import javax.jms.QueueReceiver
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockQueueReceiver(private var _Q:Queue) extends QueueReceiver {
+public class MockConnFactory implements ConnectionFactory {
 
-  private var _sub:MessageListener = null
-
-  def close() {
-    _sub=null
-    _Q= null
+  public Connection createConnection() {
+    return new MockConnection();
   }
 
-  def getMessageListener() = _sub
-
-  def getMessageSelector() = ""
-
-  def receive()  = null
-
-  def receive(a:Long) = null
-
-  def receiveNoWait() = null
-
-  def setMessageListener(ml:MessageListener) {
-    _sub=ml
+  public Connection createConnection(String user, String pwd) {
+    return new MockConnection(user, pwd);
   }
-
-  def getQueue() = _Q
 
 }
+

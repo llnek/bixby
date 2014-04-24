@@ -13,21 +13,21 @@
 
 
 
-package com.zotohlabs.mock.jms
-
-import java.util.{Hashtable=>JHTB}
-
-import javax.naming.Context
-import javax.naming.NamingException
-import javax.naming.spi.InitialContextFactory
-
+package com.zotohlabs.gallifrey.etc;
 
 /**
  * @author kenl
  *
  */
-class MockContextFactory extends InitialContextFactory {
+public class CmdHelpError extends Exception {
 
-  def getInitialContext(env:JHTB[_,_]) = new MockContext()
+  public CmdHelpError(String msg) {
+    super(msg);
+  }
+
+  public CmdHelpError() {
+    this("");
+  }
 
 }
+

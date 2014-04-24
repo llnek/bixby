@@ -13,26 +13,23 @@
 
 
 
-package com.zotohlabs.mock.jms
+package com.zotohlabs.mock.jms;
 
-import javax.jms.Connection
-import javax.jms.JMSException
-import javax.jms.QueueConnection
-import javax.jms.QueueConnectionFactory
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockQueueConnFactory extends QueueConnectionFactory {
+public class MockQueue implements Queue {
 
-  def createConnection() = createQueueConnection()
+  private String _name;
 
-  def createConnection(user:String , pwd:String) = createQueueConnection(user,pwd)
+  public MockQueue(String n){
+    _name=n;
+  }
 
-  def createQueueConnection() = new MockQueueConnection()
-
-  def  createQueueConnection(user:String , pwd:String) = new MockQueueConnection(user, pwd)
-
+  public String getQueueName() { return _name; }
 }
+

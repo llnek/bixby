@@ -13,35 +13,23 @@
 
 
 
-package com.zotohlabs.gallifrey.loaders
-
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-import java.net.URLClassLoader
-import java.io.File
-import java.net.URL
-import java.io.FilenameFilter
+package com.zotohlabs.gallifrey.etc;
 
 /**
  * @author kenl
  */
-abstract class AbstractClassLoader(par:ClassLoader) extends URLClassLoader( Array[URL]() ,par) {
+public class PluginError extends Exception {
 
-  protected var _loaded=false
-
-  def findUrls(dir:File): this.type = {
-    if (dir.exists ) {
-      val seq = dir.listFiles( new FilenameFilter() {
-        def accept(f:File,n:String) = n.endsWith(".jar")
-      })
-      seq.foreach( addUrl _ )
-    }
-    this
+  public PluginError(String msg,Throwable e) {
+    super(msg, e);
   }
 
-  def addUrl(f:File): this.type = {
-    addURL( f.toURI.toURL)
-    this
+  public PluginError(Throwable e) {
+    this(null,e);
+  }
+
+  public PluginError(String msg) {
+    this(msg,null);
   }
 
 }

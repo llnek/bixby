@@ -12,26 +12,23 @@
  ??*/
 
 
-package demo.async
 
-import com.zotohlabs.wflow.AsyncCallback
+package com.zotohlabs.mock.jms;
+
+import java.util.*;
+
+import javax.naming.*;
+import javax.naming.spi.InitialContextFactory;
 
 
 /**
  * @author kenl
  *
  */
-object DemoAsyncWS {
+public class MockContextFactory implements InitialContextFactory {
 
-  def doLongAsyncCall( cb:AsyncCallback ) {
-    val t= new Thread(new Runnable() {
-        def run() {
-            Thread.sleep(10000)
-            cb.onSuccess("hello world")
-        }
-    })
-    t.setDaemon(true)
-    t.start()
+  public Context getInitialContext(Hashtable<?,?> env) {
+    return new MockContext();
   }
 
 }

@@ -13,18 +13,44 @@
 
 
 
-package com.zotohlabs.mock.jms
+package com.zotohlabs.mock.jms;
 
-import javax.jms.JMSException
-import javax.jms.Topic
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockTopic(private val _name:String) extends Topic {
+public class MockQueueReceiver implements QueueReceiver {
 
-  def getTopicName() = _name
+  public MockQueueReceiver(Queue q) {
+    _Q=q;
+  }
+
+  private MessageListener _sub;
+  private Queue _Q;
+
+  public void close() {
+    _sub=null;
+    _Q= null;
+  }
+
+  public MessageListener getMessageListener() { return _sub; }
+
+  public String getMessageSelector() { return ""; }
+
+  public Message receive() { return null; }
+
+  public Message receive(long a) { return null; }
+
+  public Message receiveNoWait() { return null; }
+
+  public void setMessageListener(MessageListener ml) {
+    _sub=ml;
+  }
+
+  public Queue getQueue() { return _Q; }
 
 }
+

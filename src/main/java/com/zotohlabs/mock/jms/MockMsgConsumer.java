@@ -13,21 +13,43 @@
 
 
 
-package com.zotohlabs.mock.jms
+package com.zotohlabs.mock.jms;
 
-import javax.jms.Connection
-import javax.jms.ConnectionFactory
-import javax.jms.JMSException
+import javax.jms.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockConnFactory extends ConnectionFactory {
+public class MockMsgConsumer implements MessageConsumer {
 
-  def createConnection() = new MockConnection()
+  private MessageListener _sub;
+  private Destination _dest;
 
-  def createConnection(user:String, pwd:String) = new MockConnection(user, pwd)
+  public MockMsgConsumer(Destination dest) {
+    _dest= dest;
+  }
+
+  public void close() {
+    _sub=null;
+  }
+
+  public MessageListener getMessageListener() {
+    return _sub;
+  }
+
+  public String getMessageSelector() { return ""; }
+
+  public Message receive() { return null; }
+
+  public Message receive(long a) { return null; }
+
+  public Message receiveNoWait() { return null; }
+
+  public void setMessageListener(MessageListener ml) {
+    _sub=ml;
+  }
 
 }
+

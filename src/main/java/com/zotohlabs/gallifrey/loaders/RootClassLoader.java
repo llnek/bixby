@@ -11,35 +11,42 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.loaders;
 
-package com.zotohlabs.gallifrey.loaders
-
-import scala.collection.JavaConversions._
-import scala.collection.mutable
-//import org.apache.commons.io.{FileUtils=>FUT}
-import java.net.URLClassLoader
-import java.io.File
-import java.net.URL
+import java.net.URLClassLoader;
+import java.io.File;
+import java.net.URL;
 
 /**
  * @author kenl
  */
-class AppClassLoader(par:RootClassLoader) extends AbstractClassLoader(par) {
+public class RootClassLoader extends AbstractClassLoader {
 
-  def configure(appDir:String) {
-    val c= new File(appDir, "POD-INF/classes")
-    val p= new File(appDir, "POD-INF/patch")
-    val b= new File(appDir, "POD-INF/lib")
-    if (!_loaded) {
-      findUrls(p)
-      addUrl(c)
-      findUrls(b)
-      if ( new File(appDir, "WEB-INF").exists() ) {
-        addUrl( new File(appDir, "WEB-INF/classes"))
-        findUrls(new File(appDir, "WEB-INF/lib"))
-      }
+  public RootClassLoader(ClassLoader par) {
+    super(par);
+
+    String base=System.getProperty("skaro.home","");
+    if (base.length() > 0) { load(base); }
+  }
+
+  public void configure(String baseDir) {
+    if (baseDir != null) {
+      load( baseDir);
     }
-    _loaded=true
+  }
+
+  private void load(String baseDir) {
+    File d= new File(baseDir, "dist/exec");
+    File p= new File(baseDir, "patch");
+    File b= new File(baseDir, "lib");
+
+    if (!_loaded) {
+      findUrls(p).findUrls(d).findUrls(b);
+    }
+
+    _loaded=true;
   }
 
 }
+
+

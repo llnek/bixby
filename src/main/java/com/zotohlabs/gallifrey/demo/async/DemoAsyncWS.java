@@ -12,41 +12,28 @@
  ??*/
 
 
+package demo.async;
 
-package com.zotohlabs.mock.jms
-
-import javax.jms.Destination
-import javax.jms.JMSException
-import javax.jms.Message
-import javax.jms.MessageConsumer
-import javax.jms.MessageListener
+import com.zotohlabs.wflow.AsyncCallback;
 
 
 /**
  * @author kenl
  *
  */
-class MockMsgConsumer(private val _dest:Destination) extends MessageConsumer {
+public enum DemoAsyncWS {
+;
 
-  private var _sub:MessageListener = null
-
-  def close() {
-    _sub=null
+  public static void doLongAsyncCall(final AsyncCallback cb) {
+    Thread t= new Thread(new Runnable() {
+        public void run() {
+            Thread.sleep(10000);
+            cb.onSuccess("hello world");
+        }
+    })
+    t.setDaemon(true);
+    t.start();
   }
-
-  def getMessageListener() = _sub
-
-  def getMessageSelector() = ""
-
-  def receive() = null
-
-  def receive(a:Long) = null
-
-  def receiveNoWait() = null
-
-  def setMessageListener(ml:MessageListener ) {
-    _sub=ml
-  }
-
 
 }
+

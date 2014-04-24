@@ -12,17 +12,13 @@
  ??*/
 
 
-package com.zotohlabs.gallifrey.etc
+package com.zotohlabs.gallifrey.etc;
 
-import java.io.File
-import com.zotohlabs.frwk.core.{Configurable, Disposable, Startable}
-import com.zotohlabs.gallifrey.core.Container
+import java.io.File;
+import com.zotohlabs.frwk.core.*;
+import com.zotohlabs.gallifrey.core.Container;
 
-trait Plugin extends Startable with Configurable with Disposable {
-  def contextualize(c:Container) : Unit
-  def initialize() : Unit
+public interface PluginFactory {
+  public Plugin createPlugin ();
 }
 
-trait PluginFactory {
-  def createPlugin () : Plugin
-}

@@ -11,14 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
-package com.zotohlabs.gallifrey.mvc
+package com.zotohlabs.gallifrey.mvc;
 
 /**
  * @author kenl
  */
-trait HTTPErrorHandler {
-  def getErrorResponse(code:Int) : WebContent
+public interface HTTPErrorHandler {
+
+  public WebContent getErrorResponse( int code);
+
 }
 

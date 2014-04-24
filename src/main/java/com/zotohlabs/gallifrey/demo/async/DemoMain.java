@@ -12,27 +12,39 @@
  ??*/
 
 
+package demo.async;
 
-package com.zotohlabs.mock.jms
-
-import javax.jms.Connection
-import javax.jms.JMSException
-import javax.jms.TopicConnection
-import javax.jms.TopicConnectionFactory
-
+import com.zotohlabs.gallifrey.runtime.AppMain;
+import com.zotohlabs.gallifrey.core.Container;
+import org.json.JSONObject;
+import com.zotohlabs.wflow.*;
+import com.zotohlabs.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
-class MockTopicConnFactory extends TopicConnectionFactory {
+public class DemoMain extends AppMain {
 
-  def createConnection() = createTopicConnection()
+  public DemoMain() {}
 
-  def createConnection(user:String , pwd:String ) = createTopicConnection(user, pwd)
+  public void contextualize(Container c) {
+  }
 
-  def createTopicConnection() = new MockTopicConnection("","")
+  public void initialize() {
+    System.out.println("Demo calling an async java-api & resuming.");
+  }
 
-  def createTopicConnection(user:String , pwd:String ) = new MockTopicConnection(user, pwd)
+  public void configure(JSONObject cfg) {
+  }
+
+  public void start() {}
+
+  public void stop() {
+  }
+
+  public void dispose() {
+  }
 
 }
+
