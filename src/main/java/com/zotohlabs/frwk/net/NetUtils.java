@@ -62,31 +62,31 @@ public class NetUtils {
     };
   }
 
-  public ChannelPipeline getPipeline(ChannelHandlerContext ctx) { 
+  public static ChannelPipeline getPipeline(ChannelHandlerContext ctx) {
     return ctx.pipeline();
   }
 
-  public ChannelPipeline getPipeline(Channel ch) {
+  public static ChannelPipeline getPipeline(Channel ch) {
     return ch.pipeline();
   }
 
-  public ChannelFuture wrtFlush(Channel ch, Object obj) {
+  public static ChannelFuture wrtFlush(Channel ch, Object obj) {
     return ch.writeAndFlush(obj);
   }
 
-  public  Channel flush(Channel ch) { 
-    return ch.flush(); 
+  public  static Channel flush(Channel ch) {
+    return ch.flush();
   }
 
-  public ChannelFuture writeOnly(Channel ch, Object obj) {
+  public static ChannelFuture writeOnly(Channel ch, Object obj) {
     return ch.write(obj);
   }
 
-  public ChannelFuture closeChannel(Channel ch) {
+  public static ChannelFuture closeChannel(Channel ch) {
     return ch.close();
   }
 
-  public long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum) throws IOException {
+  public static long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum) throws IOException {
     int cnt= (cbuf==null) ? 0 : cbuf.readableBytes();
     if (cnt > 0) {
       byte[] bits= new byte[4096];
@@ -102,7 +102,7 @@ public class NetUtils {
     return lastSum + cnt;
   }
 
-  public OutputStream swapFileBacked(XData x, OutputStream out, long lastSum) throws IOException {
+  public static OutputStream swapFileBacked(XData x, OutputStream out, long lastSum) throws IOException {
     if (lastSum > IOUtils.streamLimit() ) {
       Object[] fos = IOUtils.newTempFile(true);
       x.resetContent(fos[0] );

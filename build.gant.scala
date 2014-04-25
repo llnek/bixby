@@ -246,6 +246,9 @@ target (packSrc: '') {
   copy (todir: "${packDir}/docs/src/main/clojure") {
     fileset (dir: "${srcDir}/clojure")
   }
+  copy (todir: "${packDir}/docs/src/main/scala") {
+    fileset (dir: "${srcDir}/scala")
+  }
   copy (todir: "${packDir}/docs/src/main/java") {
     fileset (dir: "${srcDir}/java")
   }
@@ -314,7 +317,7 @@ target (packBin: '') {
        ================================= */
 
 target (packSamples: '') {
-  new File( "${srcDir}/java/demo").eachDir { dir ->
+  new File( "${srcDir}/scala/com/zotohlabs/gallifrey/demo").eachDir { dir ->
     createOneDemoApp(dir)
   }
 }
@@ -472,8 +475,8 @@ target (packAllLics: '') {
        */
 
 def createOneDemoApp(dir) {
+  final demoSrc="${srcDir}/scala/com/zotohlabs/gallifrey"
   final demoDir="${packDir}/docs/samples"
-  final demoSrc="${srcDir}/java"
   final appkey= generateUUID()
   final appid= dir.getName()
   final res= "${demoDir}/${appid}/src/main/resources/"
@@ -514,7 +517,7 @@ def createOneDemoApp(dir) {
   }
   copy (todir: "${demoDir}/${appid}/conf", file: "${basedir}/etc/app/app.conf")
   replace (file: "${demoDir}/${appid}/conf/app.conf", token: "@@USER@@", value: 'test')
-  ant.copy (todir: "${demoDir}/${appid}/src/main/java/demo/${appid}") {
+  ant.copy (todir: "${demoDir}/${appid}/src/main/scala/demo/${appid}") {
     fileset (dir: "${demoSrc}/demo/${appid}") {
       exclude (name: '**/env.conf')
     }
@@ -602,20 +605,6 @@ def compile_clj() {
   }
 }
 
-def compileBootJava() {
-  javac (sourcepath: '',
-         srcdir: "${srcDir}/java",
-         destdir: "${buildDir}",
-         includeantruntime: false,
-         excludes: '',
-         debug: "${buildDebug}",
-         debuglevel: 'lines,vars,source',
-         classpathref: 'compilePathId') {
-    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
-    include (name: 'com/zotohlabs/gallifrey/loaders/**/*.java')
-  }
-}
-
 def compileJava() {
   javac (sourcepath: '',
          srcdir: "${srcDir}/java",
@@ -626,7 +615,6 @@ def compileJava() {
          debuglevel: 'lines,vars,source',
          classpathref: 'compilePathId') {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
-    exclude (name: '**/loaders/*.java')
     include (name: '**/*.java')
   }
 }
@@ -634,7 +622,13 @@ def compileJava() {
 def compileAndJar() {
 
   /* build the classloaders */
-  compileBootJava()
+  scalac (srcdir: "${srcDir}/scala",
+    destdir: "${buildDir}",
+    classpathref: 'compilePathId',
+    fork: true,
+    jvmargs: '-Xmx5120M -Xms1024M') {
+    include (name: 'com/zotohlabs/gallifrey/loaders/**/*.scala')
+  }
 
   jar (destfile: "${distribDir}/boot/${PID}-spec-${buildVersion}.jar") {
     fileset (dir: "${buildDir}")
@@ -643,9 +637,18 @@ def compileAndJar() {
   delete (dir: "${buildDir}")
   mkdir (dir: "${buildDir}")
 
-  /* build other java stuff */
+  /* build java + scala stuff */
 
   compileJava()
+
+  scalac (srcdir: "${srcDir}/scala",
+    destdir: "${buildDir}",
+    classpathref: 'compilePathId',
+    fork: true,
+    jvmargs: '-Xmx5120M -Xms1024M') {
+    exclude (name: '**/loaders/*.scala')
+    include (name: '**/*.scala')
+  }
 
   /* copy over other resources */
   copy (todir: "${buildDir}") {
@@ -653,9 +656,13 @@ def compileAndJar() {
       exclude (name: '**/*.java')
       exclude (name: '**/.svn')
     }
+    fileset (dir: "${srcDir}/scala") {
+      exclude (name: '**/*.scala')
+      exclude (name: '**/.svn')
+    }
   }
 
-  //compile_clj()
+  compile_clj()
   jarit()
 
 }
