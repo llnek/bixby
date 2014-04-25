@@ -28,7 +28,7 @@ public class Demo extends PipelineDelegate {
 
   public Demo() {}
 
-  public Activity getStartActivity(Pipeline pipe) { 
+  public Activity getStartActivity(Pipeline pipe) {
     return new PTask( new Work() {
       public Activity perform(FlowPoint cur, Job job, Object arg) {
         final AsyncResumeToken t= new AsyncResumeToken( cur );

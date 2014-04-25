@@ -27,10 +27,14 @@ public enum DemoAsyncWS {
   public static void doLongAsyncCall(final AsyncCallback cb) {
     Thread t= new Thread(new Runnable() {
         public void run() {
+          try {
             Thread.sleep(10000);
-            cb.onSuccess("hello world");
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          cb.onSuccess("hello world");
         }
-    })
+    });
     t.setDaemon(true);
     t.start();
   }
