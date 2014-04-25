@@ -11,25 +11,21 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.gallifrey.io;
 
-
-package com.zotohlabs.gallifrey.io
-
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import com.zotohlabs.gallifrey.core.Container
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import com.zotohlabs.gallifrey.core.Container;
 
 /**
  * @author kenl
  *
  */
-trait Emitter {
-  def container() : Container
+public interface Emitter {
+  public Container container();
 }
 
-trait ServletEmitter extends Emitter {
-  def doService(req:HttpServletRequest, rsp:HttpServletResponse) : Unit
-}
+
 
 
 
