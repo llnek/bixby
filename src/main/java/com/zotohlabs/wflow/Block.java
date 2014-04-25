@@ -11,24 +11,31 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
-
-import javax.mail.Session;
-import javax.mail.URLName;
-
+package com.zotohlabs.wflow;
 
 /**
+ * A logical group - sequence of connected activities.
+ *
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class Block extends Composite {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  public Block(Activity a) {
+    add(a);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public Block() {}
+
+  public Activity chain(Activity a) {
+    add(a);
+    return this;
+  }
+
+  public FlowPoint reifyPoint(FlowPoint cur) {
+    return new BlockPoint(cur,this);
+  }
 
 }
+
 

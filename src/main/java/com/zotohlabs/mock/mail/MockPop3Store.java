@@ -11,80 +11,79 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.mock.mail;
 
-
-package com.zotohlabs.mock.mail
-
-import javax.mail.Folder
-import javax.mail.MessagingException
-import javax.mail.Session
-import javax.mail.Store
-import javax.mail.URLName
+import javax.mail.*;
 
 
 /**
  * @author kenl
  *
  */
-class MockPop3Store( s:Session,url:URLName) extends Store(s,url) {
+public class MockPop3Store extends Store {
 
-  private val _name:String="pop3"
-  protected var _dftPort = 110
-  protected var _portNum = -1
-  protected var _isSSL=false
-  protected var _host =""
-  protected var _user = ""
-  protected var _pwd = ""
+  public MockPop3Store(Session s,URLName url) {
+    super(s, url);
+  }
+
+  private String _name="pop3";
+  protected int _dftPort = 110;
+  protected int _portNum = -1;
+  protected boolean _isSSL=false;
+  protected String _host ="";
+  protected String _user = "";
+  protected String _pwd = "";
 
     /*
     if (url != null)
       name = url.getProtocol()
       */
 
-  override def protocolConnect(host:String, portNum:Int,
-          user:String, pwd:String) = synchronized  {
-
-    if ((host == null) || (pwd == null) || (user == null)) false else {
-
-      _portNum = if (portNum == -1) _dftPort else portNum
-      _host = host
-      _user = user
-      _pwd = pwd
-
-      true
+  public synchronized boolean protocolConnect( String host, int portNum,
+          String user, String pwd) {
+    if ((host == null) || (pwd == null) || (user == null)) { return false; } else {
+      _portNum = (portNum == -1) ? _dftPort : portNum ;
+      _host = host;
+      _user = user;
+      _pwd = pwd;
+      return true;
     }
   }
 
-  override def isConnected() = synchronized {
-    if ( super.isConnected()) true else false
+  public synchronized boolean isConnected() {
+    return ( super.isConnected()) ? true : false;
   }
 
-  override def close() = synchronized  {
-    super.close()
+  public synchronized void close() throws MessagingException {
+    super.close();
   }
 
-  def getDefaultFolder() = {
-    checkConnected()
-    new DefaultFolder(this)
+  public Folder getDefaultFolder() {
+    checkConnected();
+    return new DefaultFolder(this);
   }
 
-  def getFolder(name:String) = {
-    checkConnected()
-    new MockPop3Folder(name,this)
+  public Folder getFolder(String name) {
+    checkConnected();
+    return new MockPop3Folder(name,this);
   }
 
-  def getFolder(url:URLName ) = {
-    checkConnected()
-    new MockPop3Folder( url.getFile(), this)
+  public Folder getFolder(URLName url) {
+    checkConnected();
+    return new MockPop3Folder( url.getFile(), this);
   }
 
-  override def finalize() {
-    super.finalize()
+  public void finalize() throws Throwable {
+    super.finalize();
   }
 
-  private def checkConnected() {
+  private void checkConnected()  {
     if (!super.isConnected())
-      throw new MessagingException("Not connected")
+      try {
+        throw new MessagingException("Not connected");
+      } catch (MessagingException e) {
+        e.printStackTrace();
+      }
   }
 
 }

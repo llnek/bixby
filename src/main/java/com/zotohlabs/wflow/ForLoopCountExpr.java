@@ -11,24 +11,12 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
+import com.zotohlabs.wflow.core.Job;
 
-
-/**
- * @author kenl
- *
- */
-public class MockPop3SSLStore extends MockPop3Store {
-
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
-  }
-
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
-
+public interface ForLoopCountExpr {
+  public int getCount(Job job);
 }
+
 

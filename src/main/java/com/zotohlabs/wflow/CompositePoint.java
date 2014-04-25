@@ -11,24 +11,27 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import java.util.ListIterator;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public abstract class CompositePoint extends FlowPoint {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  protected CompositePoint(FlowPoint cur,Activity a) {
+    super(cur,a);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  protected Iter _inner = null;
+
+  public void reifyInner( ListIterator<Activity> children) {
+    _inner=new Iter(this,children);
+  }
+
+  public Iter inner() { return _inner; }
 
 }
 

@@ -11,83 +11,127 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.mock.mail;
 
-
-package com.zotohlabs.mock.mail
-
-import javax.mail.Flags
-import javax.mail.Folder
-import javax.mail.Message
-import javax.mail.MessagingException
-import javax.mail.MethodNotSupportedException
-import javax.mail.Store
-
+import javax.mail.*;
 
 /**
  * @author kenl
  *
  */
-class DefaultFolder protected[mail] (s:Store) extends Folder(s) {
+public class DefaultFolder extends Folder {
 
-  def getName() = ""
+  public DefaultFolder(Store s) {
+    super(s);
+  }
 
-  def getFullName() = ""
-
-  def getParent() = null
-
-  def exists() = true
-
-  def list(pn:String) = Array( getInbox() )
-
-  def getSeparator() = '/'
-
-  def getType()  = 2
-
-  def create(t:Int) = false
-
-  def hasNewMessages() = false
-
-  def getFolder(name:String) = {
-    if (!name.equalsIgnoreCase("INBOX")) {
-      throw new MessagingException("Only INBOX is supported")
+  private Folder getInbox() {
+    try {
+      return getStore().getFolder("INBOX");
+    } catch (MessagingException e) {
+      e.printStackTrace();
+      return null;
     }
-    getInbox()
   }
 
-  def getInbox() = getStore().getFolder("INBOX")
-
-  def delete(recurse:Boolean) = {
-    throw new MethodNotSupportedException("delete")
+  @Override
+  public String getName() {
+    return "";
   }
 
-  def renameTo(f:Folder) = {
-    throw new MethodNotSupportedException("renameTo")
+  @Override
+  public String getFullName() {
+    return "";
   }
 
-  def open(mode:Int) {
-    throw new MethodNotSupportedException("open")
+  @Override
+  public Folder getParent() throws MessagingException {
+    return null;
   }
 
-  def close(expunge:Boolean) {
-    throw new MethodNotSupportedException("close")
+  @Override
+  public boolean exists() throws MessagingException {
+    return true;
   }
 
-  def isOpen() = false
-
-  def getPermanentFlags() = new Flags()
-
-  def getMessageCount() = 0
-
-  def getMessage(msgno:Int) = {
-    throw new MethodNotSupportedException("getMessage")
+  @Override
+  public Folder[] list(String s) throws MessagingException {
+    return new Folder[] { getInbox() };
   }
 
-  def appendMessages(msgs:Array[Message] ) {
-    throw new MethodNotSupportedException("Append not supported")
+  @Override
+  public char getSeparator() throws MessagingException {
+    return '/';
   }
 
-  def expunge() = {
-    throw new MethodNotSupportedException("expunge")
+  @Override
+  public int getType() throws MessagingException {
+    return 2;
+  }
+
+  @Override
+  public boolean create(int i) throws MessagingException {
+    return false;
+  }
+
+  @Override
+  public boolean hasNewMessages() throws MessagingException {
+    return false;
+  }
+
+  @Override
+  public Folder getFolder(String name) throws MessagingException {
+    if (!name.equalsIgnoreCase("INBOX")) {
+      throw new MessagingException("Only INBOX is supported");
+    }
+    return getInbox();
+  }
+
+  @Override
+  public boolean delete(boolean b) throws MessagingException {
+    return false;
+  }
+
+  @Override
+  public boolean renameTo(Folder folder) throws MessagingException {
+    return false;
+  }
+
+  @Override
+  public void open(int i) throws MessagingException {
+  }
+
+  @Override
+  public void close(boolean b) throws MessagingException {
+  }
+
+  @Override
+  public boolean isOpen() {
+    return false;
+  }
+
+  @Override
+  public Flags getPermanentFlags() {
+    return null;
+  }
+
+  @Override
+  public int getMessageCount() throws MessagingException {
+    return 0;
+  }
+
+  @Override
+  public Message getMessage(int i) throws MessagingException {
+    return null;
+  }
+
+  @Override
+  public void appendMessages(Message[] messages) throws MessagingException {
+  }
+
+  @Override
+  public Message[] expunge() throws MessagingException {
+    return new Message[0];
   }
 
 }

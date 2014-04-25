@@ -11,24 +11,42 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import com.zotohlabs.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class OrPoint  extends JoinPoint {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  public OrPoint(FlowPoint s, Or a) {
+    super(s,a);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public FlowPoint eval(Job j) {
+    int nv= _cntr.incrementAndGet();
+    FlowPoint rc= this;
+    Object c= getClosureArg();
+    FlowPoint np=nextPoint();
+
+    if (size() == 0) {
+      rc= np;
+      realize();
+    }
+    else if (nv==1) {
+      rc= (_body== null) ? np : _body;
+    }
+    else if ( nv==size() ) {
+      rc=null;
+      realize();
+    }
+
+    if (rc != null) { rc.attachClosureArg(c); }
+    return rc;
+  }
 
 }
+
 

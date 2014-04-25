@@ -11,24 +11,45 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import com.zotohlabs.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class IfPoint extends ConditionalPoint {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  public IfPoint(FlowPoint s, If a) {
+    super(s,a);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  private FlowPoint _then= null;
+  private FlowPoint _else= null;
+
+  public IfPoint withElse(FlowPoint s ) {
+    _else=s;
+    return this;
+  }
+
+  public IfPoint withThen(FlowPoint s ) {
+    _then=s;
+    return this;
+  }
+
+  public FlowPoint eval(Job j) {
+    Object c= getClosureArg() ;  // data pass back from previous async call?
+    boolean b = test(j);
+    tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
+    FlowPoint rc = b ? _then : _else;
+    if (rc != null) {
+      rc.attachClosureArg(c);
+    }
+    realize();
+    return rc;
+  }
 
 }
+
 

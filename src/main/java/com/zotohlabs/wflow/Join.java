@@ -11,24 +11,27 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+package com.zotohlabs.wflow;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public abstract class Join  extends Activity {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  protected int _branches=0;
+  protected Activity _body;
+
+  protected Join(Activity b) {
+    _body=b;
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  protected Join withBranches(int n) {
+    _branches=n;
+    return this;
+  }
 
 }
+
 

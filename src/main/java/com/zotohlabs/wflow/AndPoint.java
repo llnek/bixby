@@ -11,24 +11,40 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import com.zotohlabs.frwk.util.CoreUtils.*;
+import com.zotohlabs.wflow.core.Job;
 
 /**
+ * A "AND" join enforces that all bound activities must return before Join continues.
+ *
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class AndPoint extends JoinPoint {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  public AndPoint(FlowPoint s,And a) {
+    super(s,a);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public FlowPoint eval(Job j) {
+    int nv= _cntr.incrementAndGet();
+    Object c= getClosureArg();
+    FlowPoint rc= null;
+
+    tlog().debug("AndPoint: size={}, cntr={}, join={}", size(),  nv, this);
+
+    // all branches have returned, proceed...
+    if (nv == size() ) {
+      rc= (_body == null) ? nextPoint() : _body;
+      if (rc != null) { rc.attachClosureArg(c); }
+      realize();
+    }
+
+    return rc;
+  }
 
 }
+
 

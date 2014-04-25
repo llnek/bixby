@@ -11,92 +11,84 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlabs.mock.mail;
 
+import org.apache.commons.lang3.StringUtils;
 
+import javax.mail.*;
+import javax.mail.internet.MimeMessage;
+import java.io.ByteArrayInputStream;
+import java.util.Date;
+import java.util.Enumeration;
 
-package com.zotohlabs.mock.mail
-
-import scala.collection.JavaConversions._
-import java.io.IOException
-import java.io.{InputStream,ByteArrayInputStream=>ByteArrayIS}
-import java.util.{Date=>JDate}
-import java.util.Enumeration
-import java.util.Random
-import java.util.Vector
-import javax.mail.Folder
-import javax.mail.MessagingException
-import javax.mail.internet.MimeMessage
-import javax.mail.Session
-import javax.mail.Message
-import javax.mail.Multipart
-import org.apache.commons.lang3.{StringUtils=>STU}
-
-/**
- * @author kenl
- */
-object MockPop3Msg {
-  
-  private val _mime=
-"From: Some One <someone@example.com>\r\n"+
-"To: Some Body <somebody@ex.com>\r\n"+
-"Subject: Hello Jack\r\n"+
-"MIME-Version: 1.0\r\n"+
-"Content-Type: multipart/mixed;boundary=\"XXXXboundary text\"\r\n"+
-"This is a multipart message in MIME format.\r\n"+
-"\r\n"+
-"--XXXXboundary text\r\n"+
-"Content-Type: text/plain\r\n"+
-"\r\n"+
-"this is the time ${TS}\r\n"+
-"\r\n"+
-"--XXXXboundary text\r\n"+
-"Content-Type: text/plain\r\n"+
-"Content-Disposition: attachment; filename=\"test.txt\"\r\n"+
-"\r\n"+
-"this is the attachment text\r\n"+
-"\r\n"+
-"--XXXXboundary text--\r\n"    
-    
-  def main(args:Array[String]) {
-    val m=new MimeMessage( Session.getInstance(System.getProperties()) , 
-        new ByteArrayIS(_mime.getBytes("utf-8")))
-    m.saveChanges()
-    val h=m.getAllHeaderLines()
-    val ct=m.getContentType()
-    val x=m.getContent() match {
-      case p:Multipart =>
-        var c=p.getCount()
-        val pp=p.getBodyPart(0)
-        c=0
-      case _ =>
-    }
-    val s= m.getFrom()(0)
-    val r= m.getRecipients(Message.RecipientType.TO)(0)
-    val n=m.getMessageNumber()
-    return
-  }
-  
-  
-}
 
 /**
  * @author kenl
  *
  */
-class MockPop3Msg (f:Folder, m:Int)  {
+public class MockPop3Msg {
+  private static final String _mime=
+  "From: Some One <someone@example.com>\r\n"+
+  "To: Some Body <somebody@ex.com>\r\n"+
+  "Subject: Hello Jack\r\n"+
+  "MIME-Version: 1.0\r\n"+
+  "Content-Type: multipart/mixed;boundary=\"XXXXboundary text\"\r\n"+
+  "This is a multipart message in MIME format.\r\n"+
+  "\r\n"+
+  "--XXXXboundary text\r\n"+
+  "Content-Type: text/plain\r\n"+
+  "\r\n"+
+  "this is the time ${TS}\r\n"+
+  "\r\n"+
+  "--XXXXboundary text\r\n"+
+  "Content-Type: text/plain\r\n"+
+  "Content-Disposition: attachment; filename=\"test.txt\"\r\n"+
+  "\r\n"+
+  "this is the attachment text\r\n"+
+  "\r\n"+
+  "--XXXXboundary text--\r\n";
 
-  import MockPop3Msg._
-
-  def newMimeMsg() = {
-    val s=STU.replace(_mime, "${TS}",  new JDate().toString )
-      val m= new MimeMessage( Session.getInstance(System.getProperties()) , 
-        new ByteArrayIS( s.getBytes("utf-8")))
-      m.saveChanges()
-      m
+  public static void main(String[] args) {
+    try {
+      start(args);
+    }
+    catch (Throwable e) {
+      e.printStackTrace();
+    }
   }
-  
-  
-  
+
+  private static void start(String[] args) throws Exception {
+    MimeMessage m = new MimeMessage( Session.getInstance(System.getProperties()) ,
+        new ByteArrayInputStream(_mime.getBytes("utf-8")));
+    m.saveChanges();
+    Enumeration<?> h=m.getAllHeaderLines();
+    String ct=m.getContentType();
+    Object cc= m.getContent();
+    if (cc instanceof Multipart) {
+      Multipart p= (Multipart)cc;
+      int c=p.getCount();
+      BodyPart pp=p.getBodyPart(0);
+      c=0;
+    }
+    Address s= m.getFrom()[0];
+    Address r= m.getRecipients(Message.RecipientType.TO)[0];
+    int n=m.getMessageNumber();
+    n=0;
+  }
+
+  public MockPop3Msg (Folder f, int m)  {
+  }
+
+  public MimeMessage newMimeMsg() throws Exception {
+    String s = StringUtils.replace(_mime, "${TS}",  new Date().toString() );
+    MimeMessage m= new MimeMessage( Session.getInstance(System.getProperties()) ,
+        new ByteArrayInputStream( s.getBytes("utf-8")));
+    m.saveChanges();
+    return m;
+  }
+
+
+
 }
 
 

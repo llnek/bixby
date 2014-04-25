@@ -11,24 +11,23 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow.core;
 
-import javax.mail.Session;
-import javax.mail.URLName;
+public class FlowError extends Exception {
 
-
-/**
- * @author kenl
- *
- */
-public class MockPop3SSLStore extends MockPop3Store {
-
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  public FlowError(String msg,Throwable e) {
+    super(msg,e);
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public FlowError(Throwable e) {
+    this(null,e);
+  }
+
+  public FlowError(String msg) {
+    this(msg,null);
+  }
 
 }
+
+
 

@@ -11,24 +11,21 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow.core;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import com.zotohlabs.frwk.server.*;
+import com.zotohlabs.frwk.core.*;
 
 /**
  * @author kenl
- *
  */
-public class MockPop3SSLStore extends MockPop3Store {
-
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
-  }
-
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+public interface Job extends Gettable , Settable {
+  public ServerLike container() ;
+  public Event event() ;
+  public Object id() ;
+  public void setLastResult( Object v) ;
+  public void clrLastResult() ;
+  public Object getLastResult() ;
 
 }
 

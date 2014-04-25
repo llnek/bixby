@@ -11,24 +11,39 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
+package com.zotohlabs.wflow;
 
-import javax.mail.Session;
-import javax.mail.URLName;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class Iter {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  private List<Activity> _acts= new ArrayList<Activity>();
+  private FlowPoint _outer;
+
+  public Iter(FlowPoint outer) {
+    _outer= outer;
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public Iter(FlowPoint c, ListIterator<Activity> a) {
+    this(c);
+    while (a.hasNext()) {
+      _acts.add(a.next());
+    }
+  }
+
+  public boolean isEmpty() { return  _acts.size() == 0; }
+
+  public FlowPoint next() {
+    return (_acts.size() > 0) ? _acts.remove(0).reify(_outer) : null;
+  }
+
+  public int size() { return _acts.size(); }
 
 }
 

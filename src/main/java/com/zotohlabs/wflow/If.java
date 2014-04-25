@@ -11,24 +11,37 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
-
-import javax.mail.Session;
-import javax.mail.URLName;
-
+package com.zotohlabs.wflow;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class If extends Conditional {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  private Activity _thenCode;
+  private Activity _elseCode;
+
+  public If(BoolExpr expr,Activity thenCode, Activity elseCode) {
+    super(expr);
+    _elseCode= elseCode;
+    _thenCode= thenCode;
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public If(BoolExpr expr,Activity thenCode) {
+    this(expr, thenCode, null );
+  }
+
+  public FlowPoint reifyPoint(FlowPoint cur) { return new IfPoint(cur,this); }
+
+  public void realize(FlowPoint fp) {
+    IfPoint s= (IfPoint) fp;
+    FlowPoint np= s.nextPoint();
+    s.withElse( (_elseCode ==null) ? np : _elseCode.reify(np) );
+    s.withThen( _thenCode.reify(np));
+    s.withTest( expr());
+  }
 
 }
+
 

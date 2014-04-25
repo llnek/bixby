@@ -11,24 +11,35 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlabs.mock.mail;
-
-import javax.mail.Session;
-import javax.mail.URLName;
-
+package com.zotohlabs.wflow;
 
 /**
  * @author kenl
  *
  */
-public class MockPop3SSLStore extends MockPop3Store {
+public class Delay extends Activity {
 
-  public MockPop3SSLStore(Session s,URLName url) {
-    super(s, url);
+  private long _delayMillis;
+
+  public Delay(long delay) {
+    _delayMillis = delay;
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
+  public Delay() {
+    this(0L);
+  }
+
+  public FlowPoint reifyPoint(FlowPoint cur) { return new DelayPoint(cur,this); }
+
+  public void realize(FlowPoint fp) {
+    DelayPoint p= (DelayPoint) fp;
+    p.withDelay(_delayMillis);
+  }
+
+  public long delayMillis() { return _delayMillis; }
 
 }
+
+
+
 
