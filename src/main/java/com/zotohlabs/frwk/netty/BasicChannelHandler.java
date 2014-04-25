@@ -16,10 +16,9 @@
 *
  ??*/
 
-package com.zotohlabs.frwk.net;
+package com.zotohlabs.frwk.netty;
 
 import io.netty.handler.codec.http.Cookie;
-import io.netty.handler.codec.http.HttpHeaders.*;
 
 import java.util.*;
 import java.io.*;

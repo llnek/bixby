@@ -16,7 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:import (java.lang.reflect Field))
+  (:import (java.lang.reflect Field)
+           [com.zotohlabs.frwk.netty NetUtils])
   (:import (java.io IOException ByteArrayOutputStream File OutputStream InputStream))
   (:import (java.util HashMap Properties ArrayList))
   (:import (java.net URI URL InetSocketAddress))

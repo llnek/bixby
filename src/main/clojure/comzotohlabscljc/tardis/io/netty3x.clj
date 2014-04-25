@@ -13,7 +13,8 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.netty)
+  comzotohlabscljc.tardis.io.netty
+  (:import [com.zotohlabs.frwk.netty NetUtils]))
 
 (import '(java.net HttpCookie URI URL InetSocketAddress))
 (import '(java.net SocketAddress InetAddress))

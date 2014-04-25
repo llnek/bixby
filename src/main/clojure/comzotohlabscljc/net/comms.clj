@@ -16,7 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:import (java.security.cert X509Certificate CertificateException))
+  (:import (java.security.cert X509Certificate CertificateException)
+           [com.zotohlabs.frwk.netty NetUtils])
   (:import (java.security KeyStoreException KeyStore
                           InvalidAlgorithmParameterException))
   (:import (javax.net.ssl SSLContext SSLEngine X509TrustManager

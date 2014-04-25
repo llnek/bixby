@@ -12,7 +12,8 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.tardis.mvc.tpls)
+  comzotohlabscljc.tardis.mvc.tpls
+  (:import [com.zotohlabs.frwk.netty NetUtils]))
 
 (import '(org.jboss.netty.handler.codec.http
   HttpMethod HttpHeaders HttpResponseStatus

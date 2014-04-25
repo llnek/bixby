@@ -13,7 +13,8 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.mvc.comms)
+  comzotohlabscljc.tardis.mvc.comms
+  (:import [com.zotohlabs.frwk.netty NetUtils]))
 
 (import '(org.apache.commons.lang3 StringUtils))
 (import '(java.util Date))
