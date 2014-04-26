@@ -31,10 +31,10 @@ import org.slf4j.*;
 import org.json.*;
 
 
-public enum NettyUtils {
+public enum NettyFW {
 ;
 
-  private static Logger _log=LoggerFactory.getLogger(NettyUtils.class);
+  private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
   public static Logger tlog() {
     return _log;
   }
