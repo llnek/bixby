@@ -51,7 +51,9 @@
     <dependency org="com.fasterxml.jackson.core" name="jackson-core" rev="2.3.2" conf="libjar->default"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.3.2" conf="libjar->default"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations" rev="2.3.2" conf="libjar->default"/>
+    <dependency org="com.googlecode.json-simple" name="json-simple" rev="1.1.1" conf="libjar->default"/>
     -->
+    <dependency org="com.google.code.gson" name="gson" rev="2.2.4" conf="libjar->default"/>
 
     <!-- apache commons -->
     <dependency org="org.apache.commons" name="commons-lang3" rev="3.3" conf="libjar->default"/>

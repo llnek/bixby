@@ -13,6 +13,8 @@
 
 package com.zotohlabs.frwk.util;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.slf4j.*;
 
 import java.io.File;
@@ -23,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
-import org.json.*;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class CoreUtils {
@@ -94,7 +96,7 @@ public class CoreUtils {
     }
   }
 
-  public static JSONObject readJson(File f) {
+  public static JsonElement readJson(File f) {
     try {
     return readJson( FileUtils.readFileToString(f, "utf-8"));
   } catch (IOException e) {
@@ -103,8 +105,8 @@ public class CoreUtils {
   }
   }
 
-  public static JSONObject readJson(String s) {
-    return new JSONObject( new JSONTokener(s));
+  public static JsonElement readJson(String s) {
+    return new JsonParser().parse(s);
   }
 
   public static String[] splitNull(String s) {

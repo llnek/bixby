@@ -1,99 +1,62 @@
 
 package com.zotohlabs.frwk.netty;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.zotohlabs.frwk.io.IOUtils;
-import com.zotohlabs.frwk.io.XData;
-import com.zotohlabs.frwk.net.ULFileItem;
-import com.zotohlabs.frwk.net.ULFormItems;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.http.multipart.*;
-import io.netty.handler.codec.http.websocketx.*;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public enum AuxRequestDecoder {
+;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+  private static final AttributeKey FORMDEC-KEY =AttributeKey.valueOf( "formdecoder");
+  private static final AttributeKey FORMITMS-KEY= AttributeKey.valueOf("formitems");
+  private static final AttributeKey XDATA-KEY =AttributeKey.valueOf("xdata");
+  private static final AttributeKey XOS-KEY =AttributeKey.valueOf("ostream");
+  private static final AttributeKey MSGINFO-KEY= AttributeKey.valueOf("msginfo");
+  private static final AttributeKey CBUF-KEY =AttributeKey.valueOf("cbuffer");
+  private static final AttributeKey WSHSK-KEY =AttributeKey.valueOf("wsockhandshaker");
 
-import static com.zotohlabs.frwk.util.CoreUtils.*;
-
-public class AuxRequestDecoder {
-
-  private static Logger _log = LoggerFactory.getLogger(AuxRequestDecoder.class);
-  public Logger tlog() { return _log; }
-
-  protected static final AttributeKey FORMDEC_KEY =AttributeKey.valueOf( "formdecoder");
-  protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
-  protected static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
-  protected static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
-  protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
-  protected static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
-  protected static final AttributeKey WSHSK_KEY =AttributeKey.valueOf("wsockhandshaker");
-
-  private void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
+  private static void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
     ctx.attr(akey).set(aval);
   }
 
-  private void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
+  private static void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
     ctx.attr(akey).remove();
   }
 
-  private Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
+  private static Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
     return ctx.attr(akey).get();
   }
 
-  private void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
+  private static void slurpByteBuf(ByteBuf buf, OutputStream os) {
     int len =  buf.readableBytes();
     if (len > 0) {
       buf.readBytes( os, len);
     }
   }
 
-  private void resetAttrs(ChannelHandlerContext ctx) {
-    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);
-    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
-    ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
+  private static void resetAttrs(ChannelHandlerContext ctx) {
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC-KEY);
+    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS-KEY);
+    ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF-KEY);
 
-    delAttr(ctx,FORMITMS_KEY);
-    delAttr(ctx,MSGINFO_KEY);
-    delAttr(ctx,FORMDEC_KEY);
-    delAttr(ctx,CBUF_KEY);
-    delAttr(ctx,XDATA_KEY);
-    delAttr(ctx,XOS_KEY);
-    delAttr(ctx,WSHSK_KEY);
+    delAttr(ctx,FORMITMS-KEY);
+    delAttr(ctx,MSGINFO-KEY);
+    delAttr(ctx,FORMDEC-KEY);
+    delAttr(ctx,CBUF-KEY);
+    delAttr(ctx,XDATA-KEY);
+    delAttr(ctx,XOS-KEY);
+    delAttr(ctx,WSHSK-KEY);
     if (buf != null) buf.release();
     if (dc != null) dc.destroy();
     if (fis != null) fis.destroy();
   }
 
-  private boolean isFormPost ( HttpMessage req, String method) {
+  private static boolean isFormPost ( HttpRequest req, String method) {
     String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
-    // multipart form
+    ;; multipart form
     return ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) &&
          ( ct.indexOf("multipart/form-data") >= 0 ||
              ct.indexOf("application/x-www-form-urlencoded") >= 0 );
   }
 
-  private JsonObject extractHeaders(HttpHeaders hdrs) {
+  private static JsonObject extractHeaders(HttpHeaders hdrs) {
     JsonObject sum= new JsonObject();
     JsonArray arr;
     for (String n : hdrs.names()) {
@@ -106,10 +69,10 @@ public class AuxRequestDecoder {
     return sum;
   }
 
-  private JsonObject extractParams(QueryStringDecoder decr) {
+  private static JsonObject extractParams(QueryStringDecoder decr) {
     JsonObject sum= new JsonObject();
     JsonArray arr;
-    for (Map.Entry<String,List<String>> en : decr.parameters().entrySet()) {
+    for (Map.Entry<String,List<String> en : decr.parameters().entrySet()) {
       en.getKey();
       arr= new JsonArray();
       for (String s : en.getValue()) {
@@ -120,13 +83,13 @@ public class AuxRequestDecoder {
     return sum;
   }
 
-  private JsonObject extractMsgInfo( HttpMessage msg) {
+  private static JsonObject extractMsgInfo( HttpMessage msg) {
     JsonObject info= new JsonObject();
     info.add("is-chunked", new JsonPrimitive( HttpHeaders.isTransferEncodingChunked(msg)));
     info.add("keep-alive", new JsonPrimitive(HttpHeaders.isKeepAlive(msg)));
-    info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
-    info.addProperty("protocol", msg.getProtocolVersion().toString());
-    info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
+    info.add("host", HttpHeaders.getHeader(msg, "Host", ""));
+    info.add("protocol", msg.getProtocolVersion());
+    info.add("clen", HttpHeaders.getContentLength(msg, 0));
     info.add("uri", new JsonPrimitive(""));
     info.add("status", new JsonPrimitive( ""));
     info.add("code", new JsonPrimitive(0));
@@ -138,7 +101,7 @@ public class AuxRequestDecoder {
     if (msg instanceof HttpResponse) {
       HttpResponseStatus s= ((HttpResponse) msg).getStatus();
       info.add("status", new JsonPrimitive( nsb(s.reasonPhrase())));
-      info.addProperty("code", s.code());
+      info.add("code", s.code());
     }
     else
     if (msg instanceof HttpRequest) {
@@ -163,18 +126,18 @@ public class AuxRequestDecoder {
     return info;
   }
 
-  private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req) {
+  private static void handleFormPost(ChannelHandlerContext ctx , HttpRequest req) {
     DefaultHttpDataFactory fac= new DefaultHttpDataFactory(com.zotohlabs.frwk.io.IOUtils.streamLimit());
     HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
-    setAttr(ctx ,FORMITMS_KEY, new ULFormItems() );
-    setAttr( ctx, FORMDEC_KEY, dc);
+    setAttr(ctx ,FORMITMS-KEY, new ULFormItems() );
+    setAttr( ctx, FORMDEC-KEY, dc);
     handleFormPostChunk(ctx, req);
   }
 
-  private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) throws IOException {
+  private static void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) {
     if (data==null) { return; }
     InterfaceHttpData.HttpDataType dt= data.getHttpDataType();
-    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
+    ULFormItems fis =getAttr(ctx, FORMITMS-KEY);
     String nm = dt.name();
     if (dt == InterfaceHttpData.HttpDataType.FileUpload) {
       FileUpload fu = (FileUpload)data;
@@ -191,15 +154,15 @@ public class AuxRequestDecoder {
           File fp = (File)fos[0];
           ByteBuf buf = fu.content();
           slurpByteBuf( buf, os);
-          org.apache.commons.io.IOUtils.closeQuietly(os);
+          IOUtils.closeQuietly(os);
           fis.add( new ULFileItem( nm , ct, fnm,  new XData( fp)));
         }
       }
     }
     else
     if (dt == InterfaceHttpData.HttpDataType.Attribute) {
+      io.netty.handler.codec.http.multipart.Attribute attr =  data;
       ByteArrayOutputStream baos= new ByteArrayOutputStream();
-      Attribute attr =  (Attribute) data;
       slurpByteBuf(attr.content(), baos);
       fis.add(new ULFileItem( nm, baos.toByteArray() ));
     }
@@ -208,7 +171,7 @@ public class AuxRequestDecoder {
     }
   }
 
-  private void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc) throws IOException {
+  private static void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc) {
     try {
       while (dc.hasNext() ) {
         InterfaceHttpData data = dc.next();
@@ -225,8 +188,8 @@ public class AuxRequestDecoder {
     }
   }
 
-  private void handleFormPostChunk(ChannelHandlerContext ctx, Object msg) {
-    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);
+  private static void handleFormPostChunk(ChannelHandlerContext ctx, Object msg) {
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC-KEY);
     Throwable err= null;
     if (msg instanceof HttpContent) {
       try {
@@ -239,17 +202,16 @@ public class AuxRequestDecoder {
       }
     }
     if (err==null && msg instanceof LastHttpContent) {
-      ULFormItems fis= (ULFormItems) getAttr(ctx, FORMITMS_KEY);
-      JsonObject info = (JsonObject) getAttr(ctx, MSGINFO_KEY);
+      ULFormItems fis= (ULFormItems) getAttr(ctx, FORMITMS-KEY);
+      JsonObject info = (JsonObject) getAttr(ctx, MSGINFO-KEY);
       JsonObject result= new JsonObject();
-      XData xs = (XData) getAttr( ctx, XDATA_KEY);
-      delAttr(ctx, FORMITMS_KEY);
+      XData xs = getAttr( ctx, XDATA-KEY);
+      delAttr( ctx, FORMITMS-KEY);
       xs.resetContent(fis);
       resetAttrs(ctx);
-      ctx.fireChannelRead(new HashMap<String,Object>() {{
-        put("payload", xs);
-        put("info", info);
-        }});
+      result.add("payload", xs);
+      result.add("info", info);
+      ctx.fireChannelRead(result);
     }
   }
 
@@ -269,19 +231,19 @@ public class AuxRequestDecoder {
     return rc;
   }
 
-  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) throws IOException {
-    Object[] fos = IOUtils.newTempFile(true);
+  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) {
+    Object fos = IOUtils.newTempFile(true);
     OutputStream os = (OutputStream) fos[1];
     File fp = (File) fos[0];
-    XData xs = (XData) getAttr(ctx, XDATA_KEY);
+    XData xs = getAttr(ctx, XDATA_KEY);
     slurpByteBuf(bbuf, os);
-    os.flush();
+    so.flush();
     xs.resetContent(fp);
     setAttr( ctx, XOS_KEY, os);
     return os;
   }
 
-  protected void flushToFile(OutputStream os , Object chunc) throws IOException {
+  protected void flushToFile(OutputStream os , Object chunc) {
     ByteBuf buf = null;
     if (chunc instanceof WebSocketFrame) { buf = ((WebSocketFrame) chunc).content(); }
     if (chunc instanceof HttpContent) { buf = ((HttpContent) chunc).content(); }
@@ -300,7 +262,7 @@ public class AuxRequestDecoder {
     }
   }
 
-  protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+  protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) {
     if (! (msg instanceof LastHttpContent))  {
       return;
     }
@@ -314,7 +276,7 @@ public class AuxRequestDecoder {
       slurpByteBuf( cbuf, baos);
       xs.resetContent(baos);
     } else {
-      org.apache.commons.io.IOUtils.closeQuietly(os);
+      IOUtils.closeQuietly(os);
     }
     Map<String,Object> result= new HashMap<String,Object>();
     long olen = info.get("clen").getAsLong();
@@ -329,7 +291,7 @@ public class AuxRequestDecoder {
     ctx.fireChannelRead(result);
   }
 
-  protected void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+  protected void handleMsgChunk(ChannelHandlerContext ctx, Object msg) {
     if (msg instanceof HttpContent) {} else {
       return;
     }
@@ -354,16 +316,16 @@ public class AuxRequestDecoder {
 
   protected void handleRedirect(ChannelHandlerContext ctx, HttpMessage msg) {
     IOException err = new IOException( "Redirect is not supported at this time.");
-    tlog().error("", err);
+    tlog.error("",err);
     ctx.fireExceptionCaught(err);
   }
 
-  protected void handleInboundMsg(ChannelHandlerContext ctx, HttpMessage msg) throws IOException {
+  protected void handleInboundMsg(ChannelHandlerContext ctx, HttpMessage msg) {
     JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
     int c;
     boolean good= true;
-    setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
-    setAttr( ctx, XDATA_KEY, new XData());
+    setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024);
+    setAttr( ctx, XDATA_KEY, new XData();
     if (msg instanceof HttpResponse) {
       c = info.get("code").getAsInt();
       if (c >= 200 && c < 300) {
@@ -388,24 +350,24 @@ public class AuxRequestDecoder {
 
   protected void wsSSL(ChannelHandlerContext ctx) {
     SslHandler ssl  = ctx.pipeline().get(SslHandler.class);
-    final Channel ch = ctx.channel();
+    Channel ch = ctx.channel();
     if (ssl != null) {
-      ssl.handshakeFuture().addListener(new GenericFutureListener<Future<Channel>>() {
-        public void operationComplete(Future<Channel> ff) throws Exception {
+      ssl.handshakeFuture().addListener(new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture ff) {
           if (! ff.isSuccess()) {
-            NettyFW.closeChannel(ff.get());
+            NetUtils.closeChannel(ch);
           }
         }
       });
     }
   }
 
-  protected void handleWSock(ChannelHandlerContext ctx , FullHttpRequest req) {
+  protected void handleWSock(ChannelHandlerContext ctx , HttpRequest req) {
     JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
     String prx = maybeSSL(ctx) ?  "wss://" : "ws://";
     String us = prx +  info.get("host").getAsString() + req.getUri();
     WebSocketServerHandshakerFactory wf= new WebSocketServerHandshakerFactory( us, null, false);
-    WebSocketServerHandshaker hs =  wf.newHandshaker(req);
+    Object hs =  wf.newHandshaker(req);
     Channel ch = ctx.channel();
     if (hs == null) {
       WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ch);
@@ -414,19 +376,19 @@ public class AuxRequestDecoder {
       setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
       setAttr( ctx, XDATA_KEY, new XData());
       setAttr( ctx, WSHSK_KEY, hs);
-      hs.handshake(ch, req).addListener(new ChannelFutureListener() {
+      hs.handshake( ch, req).addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture ff) {
-          if (ff.isSuccess()) {
+          if (f.isSuccess()) {
             wsSSL(ctx);
           } else {
-            ctx.fireExceptionCaught(ff.cause());
+            ctx.fireExceptionCaught( ff.cause());
           }
         }
       });
     }
   }
 
-  protected void readFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {
+  protected void readFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
     CompositeByteBuf cbuf = (CompositeByteBuf)  getAttr( ctx, CBUF_KEY);
     XData xs = (XData) getAttr( ctx, XDATA_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
@@ -442,7 +404,7 @@ public class AuxRequestDecoder {
     }
   }
 
-  protected void maybeFinzFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {
+  protected void maybeFinzFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
     if (frame.isFinalFragment()) {} else {
       return;
     }
@@ -451,7 +413,7 @@ public class AuxRequestDecoder {
     final JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
     final XData xs = (XData) getAttr( ctx, XDATA_KEY);
     if (os != null) {
-      org.apache.commons.io.IOUtils.closeQuietly(os);
+      IOUtils.closeQuietly(os);
     } else {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       slurpByteBuf( cbuf, baos);
@@ -464,7 +426,7 @@ public class AuxRequestDecoder {
     }});
   }
 
-  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {
+  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
     WebSocketServerHandshaker hs = (WebSocketServerHandshaker) getAttr( ctx, WSHSK_KEY);
     Channel ch = ctx.channel();
     tlog().debug( "nio-wsframe: received a " + frame.getClass());
@@ -492,4 +454,63 @@ public class AuxRequestDecoder {
 
 }
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- auxReqHandler ""
+
+  [^ChannelHandlerContext ctx msg options]
+
+  (let []
+    (cond
+      (or (instance? HttpResponse msg)
+          (instance? HttpRequest msg))
+      (let [ info (extractMsgInfo msg) ]
+        (setAttr ctx MSGINFO-KEY info)
+        (cond
+          (:formpost info)
+          (handleFormPost ctx msg)
+
+          (:wsock info)
+          (handleWSock ctx msg)
+
+          :else
+          (handleInboundMsg ctx msg)))
+
+      (instance? HttpContent msg)
+      (let [ info (getAttr ctx MSGINFO-KEY) ]
+        (if (:formpost info)
+          (handleFormPostChunk ctx msg)
+          (handleMsgChunk ctx msg)))
+
+      (instance? WebSocketFrame msg)
+      (handleWSockFrame ctx msg)
+
+      :else (throw (IOException. (str "Bad message: unknown http object: " (type msg)))) )
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AuxDecoder
+
+  ^ChannelHandler
+  [options]
+
+  (NettyInboundHandler auxReqHandler options))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddAuxDecoder ""
+
+  ^ChannelPipeline
+  [pipe options]
+
+  (let []
+    (.addLast ^ChannelPipeline pipe "auxdecode" (AuxDecoder options))
+    pipe
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private auxdecode-eof nil)
 
