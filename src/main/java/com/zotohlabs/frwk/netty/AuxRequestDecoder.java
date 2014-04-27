@@ -1,133 +1,67 @@
-;; This library is distributed in  the hope that it will be useful but without
-;; any  warranty; without  even  the  implied  warranty of  merchantability or
-;; fitness for a particular purpose.
-;; The use and distribution terms for this software are covered by the Eclipse
-;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
-;; can be found in the file epl-v10.html at the root of this distribution.
-;; By using this software in any  fashion, you are agreeing to be bound by the
-;; terms of this license. You  must not remove this notice, or any other, from
-;; this software.
-;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+package com.zotohlabs.frwk.netty;
 
-  comzotohlabscljc.netty.auxdecode
+public enum AuxRequestDecoder {
+;
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:import (org.apache.commons.io IOUtils )
-           [com.zotohlabs.frwk.netty NetUtils])
-  (:import (java.io ByteArrayOutputStream IOException File OutputStream ))
-  (:import (java.util Map$Entry))
-  (:import ( com.zotohlabs.frwk.net ULFormItems ULFileItem))
-  (:import (io.netty.util AttributeKey Attribute))
-  (:import (io.netty.buffer CompositeByteBuf ByteBuf Unpooled))
-  (:import (io.netty.handler.codec.http.multipart DefaultHttpDataFactory DiskFileUpload
-                                                  FileUpload HttpPostRequestDecoder
-                                                  HttpPostRequestDecoder$EndOfDataDecoderException
-                                                  InterfaceHttpData InterfaceHttpData$HttpDataType))
-  (:import (io.netty.handler.stream ChunkedWriteHandler ChunkedStream))
-  (:import (io.netty.channel ChannelHandlerContext Channel
-                             ChannelFutureListener ChannelFuture
-                             ChannelPipeline ChannelHandler))
-  (:import (io.netty.handler.codec.http HttpHeaders HttpVersion HttpContent LastHttpContent
-                                        HttpHeaders$Values HttpHeaders$Names
-                                        HttpMessage HttpRequest HttpResponse HttpResponseStatus
-                                        DefaultFullHttpResponse DefaultHttpResponse QueryStringDecoder
-                                        HttpMethod HttpObject
-                                        DefaultHttpRequest HttpServerCodec HttpClientCodec
-                                        HttpResponseEncoder))
-  (:import (io.netty.handler.ssl SslHandler))
-  (:import (io.netty.handler.codec.http.websocketx WebSocketFrame WebSocketServerHandshaker
-                                                   WebSocketServerHandshakerFactory ContinuationWebSocketFrame
-                                                   CloseWebSocketFrame BinaryWebSocketFrame TextWebSocketFrame
-                                                   PingWebSocketFrame PongWebSocketFrame))
-  (:import (com.zotohlabs.frwk.net NetUtils))
-  (:import (com.zotohlabs.frwk.io XData))
-  (:use [comzotohlabscljc.util.core :only [ notnil? Try! TryC] ])
-  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ])
-  (:use [comzotohlabscljc.netty.comms])
-  (:use [comzotohlabscljc.util.io :only [NewlyTmpfile MakeBitOS] ]))
+  private static final AttributeKey FORMDEC-KEY =AttributeKey.valueOf( "formdecoder");
+  private static final AttributeKey FORMITMS-KEY= AttributeKey.valueOf("formitems");
+  private static final AttributeKey XDATA-KEY =AttributeKey.valueOf("xdata");
+  private static final AttributeKey XOS-KEY =AttributeKey.valueOf("ostream");
+  private static final AttributeKey MSGINFO-KEY= AttributeKey.valueOf("msginfo");
+  private static final AttributeKey CBUF-KEY =AttributeKey.valueOf("cbuffer");
+  private static final AttributeKey WSHSK-KEY =AttributeKey.valueOf("wsockhandshaker");
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private FORMDEC-KEY (AttributeKey. "formdecoder"))
-(def ^:private FORMITMS-KEY (AttributeKey. "formitems"))
-(def ^:private XDATA-KEY (AttributeKey. "xdata"))
-(def ^:private XOS-KEY (AttributeKey. "ostream"))
-(def ^:private MSGINFO-KEY (AttributeKey. "msginfo"))
-(def ^:private CBUF-KEY (AttributeKey. "cbuffer"))
-(def ^:private WSHSK-KEY (AttributeKey. "wsockhandshaker"))
+  private static void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
+    ctx.attr(akey).set(aval);
+  }
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- delAttr ""
+  private static void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
+    ctx.attr(akey).remove();
+  }
 
-  [^ChannelHandlerContext ctx ^AttributeKey akey]
+  private static Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
+    return ctx.attr(akey).get();
+  }
 
-  (-> (.attr ctx akey)(.remove)))
+  private static void slurpByteBuf(ByteBuf buf, OutputStream os) {
+    int len =  buf.readableBytes();
+    if (len > 0) {
+      buf.readBytes( os, len);
+    }
+  }
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- slurpByteBuf ""
 
-  [^ByteBuf buf ^OutputStream os]
+  private static void resetAttrs(ChannelHandlerContext ctx) {
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC-KEY);
+    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS-KEY);
+    ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF-KEY);
 
-  (let [ len (.readableBytes buf) ]
-    (.readBytes buf os len)
-  ))
+    delAttr(ctx,FORMITMS-KEY);
+    delAttr(ctx,MSGINFO-KEY);
+    delAttr(ctx,FORMDEC-KEY);
+    delAttr(ctx,CBUF-KEY);
+    delAttr(ctx,XDATA-KEY);
+    delAttr(ctx,XOS-KEY);
+    delAttr(ctx,WSHSK-KEY);
+    if (buf != null) buf.release();
+    if (dc != null) dc.destroy();
+    if (fis != null) fis.destroy();
+  }
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setAttr ""
 
-  [^ChannelHandlerContext ctx ^AttributeKey akey aval]
-
-  (-> (.attr ctx akey)(.set aval)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- getAttr ""
-
-  [^ChannelHandlerContext ctx ^AttributeKey akey]
-
-  (-> (.attr ctx akey)(.get)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- resetAttrs ""
-
-  [^ChannelHandlerContext ctx]
-
-  (let [ ^HttpPostRequestDecoder dc (getAttr ctx FORMDEC-KEY)
-         ^ULFormItems fis (getAttr ctx FORMITMS-KEY)
-         ^ByteBuf buf (getAttr ctx CBUF-KEY) ]
-    (delAttr ctx FORMITMS-KEY)
-    (delAttr ctx MSGINFO-KEY)
-    (delAttr ctx FORMDEC-KEY)
-    (delAttr ctx CBUF-KEY)
-    (delAttr ctx XDATA-KEY)
-    (delAttr ctx XOS-KEY)
-    (delAttr ctx WSHSK-KEY)
-    (when-not (nil? buf) (.release buf))
-    (when-not (nil? dc) (.destroy dc))
-    (when-not (nil? fis) (.destroy fis))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- isFormPost ""
-
-  ;; boolean
-  [^HttpRequest req ^String method]
-
-  (let [ ct (cstr/lower-case (nsb (HttpHeaders/getHeader req "content-type"))) ]
+  private static boolean isFormPost ( HttpRequest req, String method) {
+    String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
     ;; multipart form
-    (and (or (= "POST" method) (= "PUT" method) (= "PATCH" method))
+    return ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) ||
          (or (>= (.indexOf ct "multipart/form-data") 0)
              (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
-  ))
+  }
+
+
+
+}
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

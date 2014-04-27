@@ -1,8 +1,46 @@
+/*??
+*
+* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+*
+* This library is distributed in the hope that it will be useful
+* but without any warranty; without even the implied warranty of
+* merchantability or fitness for a particular purpose.
+*
+* The use and distribution terms for this software are covered by the
+* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+* which can be found in the file epl-v10.html at the root of this distribution.
+*
+* By using this software in any fashion, you are agreeing to be bound by
+* the terms of this license.
+* You must not remove this notice, or any other, from this software.
+*
+ ??*/
 
 package com.zotohlabs.frwk.netty;
 
+import com.zotohlabs.frwk.core.Callable;
+import com.zotohlabs.frwk.io.XData;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.*;
+import io.netty.handler.stream.ChunkedStream;
+import io.netty.util.AttributeKey;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URL;
+
 public enum ClientSide {
 ;
+
+  private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
+  public static Logger tlog() { return ClientSide._log; }
 
   private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JSONObject options) {
     return new ChannelInitializer() {
@@ -22,7 +60,7 @@ public enum ClientSide {
     return bs;
   }
 
-  private static final URL_KEY = new AttributeKey("targetUrl");
+  private static final AttributeKey URL_KEY = AttributeKey.valueOf("targetUrl");
 
   public static Channel connect(Bootstrap bs, URL targetUrl) throws IOException {
     boolean ssl = "https".equals(targetUrl.getProtocol());
@@ -30,66 +68,72 @@ public enum ClientSide {
     int port = (pnum < 0) ? (ssl ?  443 : 80) : pnum;
     String host = targetUrl.getHost();
     InetSocketAddress sock = new InetSocketAddress( host, port);
-    ChannelFuture cf = bs.connect(sock).sync();
-    if (! cf.isSuccess() ) {
-      throw new IOException("Connect failed: ", cf.cause() );
+    ChannelFuture cf = null;
+    try {
+      cf = bs.connect(sock).sync();
+    } catch (InterruptedException e) {
+      throw new IOException("Connect failed: ", e);
+    }
+    if ( ! cf.isSuccess() ) {
+      throw new IOException("Connect error: ", cf.cause() );
     }
     Channel c= cf.channel();
     c.attr(URL_KEY).set(targetUrl);
     return c;
   }
 
-  public static  XData post(Channel c, XData data, JSONObject options) {
+  public static XData post(Channel c, XData data, JSONObject options) throws IOException {
     return send(c, "POST", data, options);
   }
 
-  public static  XData post(Channel c, XData data) {
+  public static  XData post(Channel c, XData data) throws IOException {
     return send(c,"POST", data, new JSONObject() );
   }
 
-  public static  XData get(Channel c, JSONObject options) {
-    return send(c, "GET", options);
+  public static  XData get(Channel c, JSONObject options) throws IOException {
+    return send(c, "GET", new XData(), options);
   }
 
-  public static  XData get(Channel c) {
-    return send(c,"GET", new JSONObject() );
+  public static  XData get(Channel c) throws IOException {
+    return send(c,"GET", new XData(), new JSONObject() );
   }
 
-  private static void send(Channel ch, String op, XData xdata, JSONObject options) {
+  private static XData send(Channel ch, String op, XData xdata, JSONObject options) throws IOException {
     long clen = (xdata == null) ?  0L : xdata.size();
     URL targetUrl = (URL) ch.attr(URL_KEY).get();
     String mo = options.optString("override");
-         md (if (> clen 0)
-              (if (hgl? mo) "POST")
-              (if (hgl? mo) mo "GET"))
-         mt (if-let [mo mo] mo md)
-         req (DefaultHttpRequest. HttpVersion/HTTP_1_1
-                                  (HttpMethod/valueOf mt)
-                                  (nsb targetUrl))
-         presend (:presend options) ]
+    String mt = op;
+    if (mo != null) {
+      mt= mo;
+    }
+    HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(mt), targetUrl.toString() );
+    Callable cb = (Callable) options.opt("presend");
+    HttpHeaders.setHeader(req, "Connection", options.optBoolean("keepalive") ? "keep-alive" : "close");
+    HttpHeaders.setHeader(req, "host", targetUrl.getHost());
+    if (cb != null) {
+      cb.call(req);
+    }
 
-    (HttpHeaders/setHeader req "Connection" (if (:keep-alive options) "keep-alive" "close"))
-    (HttpHeaders/setHeader req "host" (.getHost targetUrl))
-    (when (fn? presend) (presend ch req))
+    String ct = HttpHeaders.getHeader(req, "content-type");
+    if (clen > 0L && ct == null) {
+      HttpHeaders.setHeader(req, "content-type",  "application/octet-stream");
+    }
 
-    (let [ ct (HttpHeaders/getHeader req "content-type") ]
-      (when (and (cstr/blank? ct)
-                 (> clen 0))
-        (HttpHeaders/setHeader req "content-type" "application/octet-stream")))
+    HttpHeaders.setContentLength(req, clen);
 
-    (HttpHeaders/setContentLength req clen)
-    (log/debug "Netty client: about to flush out request (headers)")
-    (log/debug "Netty client: content has length " clen)
-    (with-local-vars [wf nil]
-      (var-set wf (WWrite ch req))
-      (if (> clen 0)
-        (var-set wf (if (> clen (com.zotohlabs.frwk.io.IOUtils/streamLimit))
-                      (WFlush ch (ChunkedStream. (.stream xdata)))
-                      (WFlush ch (Unpooled/wrappedBuffer (.javaBytes xdata)))))
-        (NetUtils/flush ch))
-      (CloseCF @wf (:keep-alive options) ))
-  ))
+    tlog().debug("Netty client: about to flush out request (headers)");
+    tlog().debug( "Netty client: content has length " +  clen);
 
+    ChannelFuture cf= ch.write(req);
+    if (clen > 0L) {
+      if (clen > com.zotohlabs.frwk.io.IOUtils.streamLimit() ) {
+        cf= ch.writeAndFlush( new ChunkedStream(xdata.stream()) );
+      } else {
+        cf= ch.writeAndFlush(Unpooled.wrappedBuffer(xdata.javaBytes()));
+      }
+    }
+
+    return null;
   }
 
 
