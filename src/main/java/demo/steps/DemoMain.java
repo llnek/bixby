@@ -14,12 +14,13 @@
 
 package demo.steps;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 
 import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.wflow.*;
-import org.json.JSONObject;
+
 
 /**
  * @author kenl
@@ -31,7 +32,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Demo a set of workflow control features..." );
   }
-  public void configure(JSONObject j) {
+  public void configure(JsonObject j) {
   }
   public void start() {}
   public void stop() {

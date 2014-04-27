@@ -16,11 +16,13 @@ package demo.file;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 import java.io.File;
+
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.FileEvent;
-import org.json.*;
+
 import com.zotohlabs.frwk.server.Service;
 
 import com.zotohlabs.wflow.core.Job;
@@ -35,7 +37,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Demo file directory monitoring - picking up new files");
   }
-  public void configure(JSONObject c) {
+  public void configure(JsonObject c) {
   }
   public void start() {
   }

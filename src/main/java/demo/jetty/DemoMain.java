@@ -16,11 +16,13 @@ package demo.jetty;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.io.*;
 import com.zotohlabs.frwk.io.XData;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
-import org.json.*;
+
 
 import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.wflow.*;
@@ -35,7 +37,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Point your browser to http://localhost:8085/helloworld");
   }
-  public void configure(JSONObject j) {
+  public void configure(JsonObject j) {
   }
   public void start() {
   }

@@ -19,13 +19,14 @@
 package com.zotohlabs.frwk.netty;
 
 
+import com.google.gson.JsonObject;
 import io.netty.channel.*;
-import org.json.*;
+
 
 
 public interface ChannelReader {
 
-  public void handle(ChannelHandlerContext ctx, Object msg, JSONObject options);
+  public void handle(ChannelHandlerContext ctx, Object msg, JsonObject options);
 
 }
 

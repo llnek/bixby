@@ -17,8 +17,8 @@ package demo.http;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.json.*;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.*;
@@ -37,7 +37,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Point your browser to http://localhost:8080/test/hello");
   }
-  public void configure(JSONObject c) {
+  public void configure(JsonObject c) {
   }
   public void start() {}
   public void stop() {

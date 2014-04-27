@@ -16,8 +16,8 @@ package demo.timer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Date;
-import org.json.*;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.TimerEvent;
@@ -28,11 +28,13 @@ import com.zotohlabs.wflow.*;
 
 
 public class DemoMain implements AppMain {
+
   public void contextualize(Container c) {
   }
   public void initialize() {
   }
-  public void configure(JSONObject j) {
+
+  public void configure(JsonObject j) {
   }
   public void start() {}
   public void stop() {

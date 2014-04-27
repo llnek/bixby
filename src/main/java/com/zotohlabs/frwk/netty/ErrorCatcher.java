@@ -18,11 +18,12 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import org.json.JSONObject;
+
 import static com.zotohlabs.frwk.netty.NettyFW.*;
 
 /**
@@ -31,7 +32,7 @@ import static com.zotohlabs.frwk.netty.NettyFW.*;
 public enum ErrorCatcher {
 ;
 
-  public static ChannelHandler makeHandler(JSONObject options) {
+  public static ChannelHandler makeHandler(JsonObject options) {
     return new ChannelInboundHandlerAdapter() {
       public void exceptionCaught (ChannelHandlerContext ctx, Exception err) {
         replyXXX( ctx.channel(), 500);
@@ -39,7 +40,7 @@ public enum ErrorCatcher {
     };
   }
 
-  public static ChannelPipeline addLast(ChannelPipeline pl, JSONObject options) {
+  public static ChannelPipeline addLast(ChannelPipeline pl, JsonObject options) {
     pl.addLast("err-catch", makeHandler(options));
     return pl;
   }

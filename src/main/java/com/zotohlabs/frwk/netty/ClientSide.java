@@ -18,6 +18,7 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.frwk.core.Callable;
 import com.zotohlabs.frwk.io.XData;
 import io.netty.bootstrap.Bootstrap;
@@ -28,7 +29,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.util.AttributeKey;
-import org.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,15 +43,15 @@ public enum ClientSide {
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return ClientSide._log; }
 
-  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JSONObject options) {
+  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JsonObject options) {
     return new ChannelInitializer() {
       public void initChannel(Channel ch) {
-        cfg.handle(ch.pipeline(), options);
+        cfg.assemble(ch.pipeline(), options);
       }
     };
   }
 
-  public static Bootstrap initClientSide(PipelineConfigurator cfg, JSONObject options) {
+  public static Bootstrap initClientSide(PipelineConfigurator cfg, JsonObject options) {
     Bootstrap bs= new Bootstrap();
     bs.group( new NioEventLoopGroup() );
     bs.channel(NioSocketChannel.class);
@@ -82,33 +83,35 @@ public enum ClientSide {
     return c;
   }
 
-  public static XData post(Channel c, XData data, JSONObject options) throws IOException {
+  public static XData post(Channel c, XData data, JsonObject options) throws IOException {
     return send(c, "POST", data, options);
   }
 
   public static  XData post(Channel c, XData data) throws IOException {
-    return send(c,"POST", data, new JSONObject() );
+    return send(c,"POST", data, new JsonObject() );
   }
 
-  public static  XData get(Channel c, JSONObject options) throws IOException {
+  public static  XData get(Channel c, JsonObject options) throws IOException {
     return send(c, "GET", new XData(), options);
   }
 
   public static  XData get(Channel c) throws IOException {
-    return send(c,"GET", new XData(), new JSONObject() );
+    return send(c,"GET", new XData(), new JsonObject() );
   }
 
-  private static XData send(Channel ch, String op, XData xdata, JSONObject options) throws IOException {
+  private static XData send(Channel ch, String op, XData xdata, JsonObject options) throws IOException {
     long clen = (xdata == null) ?  0L : xdata.size();
     URL targetUrl = (URL) ch.attr(URL_KEY).get();
-    String mo = options.optString("override");
+    String mo = options.has("override") ? options.get("override").getAsString() : null;
     String mt = op;
     if (mo != null) {
       mt= mo;
     }
     HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(mt), targetUrl.toString() );
-    Callable cb = (Callable) options.opt("presend");
-    HttpHeaders.setHeader(req, "Connection", options.optBoolean("keepalive") ? "keep-alive" : "close");
+    //TODO: fix this
+    Callable cb = (Callable) options.get("presend");
+    HttpHeaders.setHeader(req, "Connection",
+        options.has("keepalive") && options.get("keep-alive").getAsBoolean() ? "keep-alive" : "close");
     HttpHeaders.setHeader(req, "host", targetUrl.getHost());
     if (cb != null) {
       cb.call(req);

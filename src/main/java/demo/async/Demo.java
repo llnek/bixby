@@ -15,7 +15,6 @@ package demo.async;
 
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
-import org.json.JSONObject;
 import com.zotohlabs.wflow.*;
 import com.zotohlabs.wflow.core.Job;
 

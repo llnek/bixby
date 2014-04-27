@@ -18,6 +18,7 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import com.zotohlabs.frwk.io.*;
@@ -28,7 +29,7 @@ import java.io.*;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.slf4j.*;
-import org.json.*;
+
 
 
 public enum NettyFW {
@@ -119,7 +120,7 @@ public enum NettyFW {
     }
   }
 
-  public static ChannelHandler makeInboundAdaptor(final ChannelReader rdr, final JSONObject options) {
+  public static ChannelHandler makeInboundAdaptor(final ChannelReader rdr, final JsonObject options) {
 
     return new ChannelInboundHandlerAdapter() {
       public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -129,7 +130,7 @@ public enum NettyFW {
 
   }
 
-  public static ChannelHandler makeInboundHandler(final ChannelReader rdr, final JSONObject options) {
+  public static ChannelHandler makeInboundHandler(final ChannelReader rdr, final JsonObject options) {
 
     return new SimpleChannelInboundHandler<Object>() {
       public void channelRead0(ChannelHandlerContext ctx, Object msg) {
@@ -139,11 +140,11 @@ public enum NettyFW {
 
   }
 
-  public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg, final JSONObject options) {
+  public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg, final JsonObject options) {
 
     return new ChannelInitializer<SocketChannel>() {
       protected void initChannel(SocketChannel ch) {
-        cfg.handle(ch.pipeline() , options);
+        cfg.assemble(ch.pipeline() , options);
       }
     };
 

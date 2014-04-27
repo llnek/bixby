@@ -1,11 +1,12 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,7 @@ public enum ServerSide {
   private static Logger _log = LoggerFactory.getLogger(ServerSide.class);
   public static Logger tlog() { return _log; }
 
-  public static ServerBootstrap initServerSide(PipelineConfigurator cfg, JSONObject options) {
+  public static ServerBootstrap initServerSide(PipelineConfigurator cfg, JsonObject options) {
     ServerBootstrap bs= new ServerBootstrap();
     bs.group( new NioEventLoopGroup(), new NioEventLoopGroup() );
     bs.channel(NioServerSocketChannel.class);
@@ -30,10 +31,10 @@ public enum ServerSide {
     return bs;
   }
 
-  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JSONObject options) {
+  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JsonObject options) {
     return new ChannelInitializer() {
       public void initChannel(Channel ch) {
-        cfg.handle(ch.pipeline(), options);
+        cfg.assemble(ch.pipeline(), options);
       }
     };
   }

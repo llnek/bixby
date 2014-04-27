@@ -14,6 +14,7 @@
 
 package demo.pop3;
 
+import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.mail.Message;
@@ -21,7 +22,7 @@ import javax.mail.Multipart;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.EmailEvent;
-import org.json.*;
+
 
 import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.wflow.*;
@@ -44,7 +45,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Demo receiving POP3 emails..." );
   }
-  public void configure(JSONObject j) {
+  public void configure(JsonObject j) {
   }
   public void start() {
   }

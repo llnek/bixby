@@ -23,7 +23,7 @@ import javax.mail.internet.MimeMessage;
 import com.zotohlabs.gallifrey.runtime.AppMain;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.EmailEvent;
-import org.json.*;
+
 
 import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.wflow.*;

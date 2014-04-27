@@ -48,7 +48,7 @@ import java.util.Map;
 
 import static com.zotohlabs.frwk.util.CoreUtils.*;
 
-public class FormPostCodec extends AuxHttpDecoder {
+public class FormPostCodec extends RequestCodec {
 
   protected static final AttributeKey FORMDEC_KEY =AttributeKey.valueOf( "formdecoder");
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
@@ -62,7 +62,7 @@ public class FormPostCodec extends AuxHttpDecoder {
     if (dc != null) dc.destroy();
     if (fis != null) fis.destroy();
 
-    super(ctx);
+    super.resetAttrs(ctx);
   }
 
   private boolean isFormPost ( HttpMessage req, String method) {
@@ -73,8 +73,8 @@ public class FormPostCodec extends AuxHttpDecoder {
              ct.indexOf("application/x-www-form-urlencoded") >= 0 );
   }
 
-  private JsonObject extractMsgInfo( HttpMessage msg) {
-    JsonObject info = super(msg);
+  protected JsonObject extractMsgInfo( HttpMessage msg) {
+    JsonObject info = super.extractMsgInfo(msg);
     String mt = info.get("method").getAsString();
     info.addProperty("formpost", isFormPost( msg, mt));
     return info;

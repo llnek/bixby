@@ -1,10 +1,11 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.SslHandler;
-import org.json.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,16 +22,16 @@ public enum  SSLFirst {
   private static Logger _log = LoggerFactory.getLogger(SSLFirst.class);
   public static Logger tlog() { return _log; }
 
-  public static ChannelHandler makeServerHandler(JSONObject options) {
+  public static ChannelHandler makeServerHandler(JsonObject options) {
 
-    URL keyUrl = (URL) options.opt("serverkey");
-    String pwd = options.optString("passwd");
+    String keyUrlStr =  options.has("serverkey") ? options.get("serverkey").getAsString() : null;
+    String pwdStr = options.has("passwd") ? options.get("passwd").getAsString() : null;
     InputStream inp = null;
     SslHandler hh = null;
 
-    if (keyUrl != null) try {
-      boolean jks = keyUrl.getFile().endsWith(".jks");
+    if (keyUrlStr != null) try {
       SSLContext x = SSLContext.getInstance("TLS");
+      boolean jks = keyUrlStr.trim().endsWith(".jks");
       KeyStore ks;
       if (!jks) {
         ks = KeyStore.getInstance("PKCS12");
@@ -39,10 +40,10 @@ public enum  SSLFirst {
       }
       TrustManagerFactory t = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       KeyManagerFactory k = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-      inp = keyUrl.openStream();
-      ks.load(inp, pwd.toCharArray());
+      inp = new URL(keyUrlStr).openStream();
+      ks.load(inp, pwdStr.toCharArray());
       t.init(ks);
-      k.init(ks, pwd.toCharArray());
+      k.init(ks, pwdStr.toCharArray());
       x.init(k.getKeyManagers(), t.getTrustManagers(), SecureRandom.getInstanceStrong());
       SSLEngine se = x.createSSLEngine();
       se.setUseClientMode(false);
@@ -59,7 +60,7 @@ public enum  SSLFirst {
     return hh;
   }
 
-  public static ChannelHandler makeClientHandler(JSONObject options) {
+  public static ChannelHandler makeClientHandler(JsonObject options) {
     SSLContext ctx = null;
     SSLEngine eg = null;
     SslHandler hh= null;
@@ -87,7 +88,7 @@ public enum  SSLFirst {
     return hh;
   }
 
-  public static ChannelPipeline mountAsServer(ChannelPipeline pipe, JSONObject options) {
+  public static ChannelPipeline mountAsServer(ChannelPipeline pipe, JsonObject options) {
     ChannelHandler ch = makeServerHandler(options);
     if (ch != null) {
       pipe.addFirst("ssl-hs", ch);
@@ -95,9 +96,9 @@ public enum  SSLFirst {
     return pipe;
   }
 
-  public static ChannelPipeline mountAsClient(ChannelPipeline pipe, JSONObject options) {
-    URL url = (URL) options.opt("targetUrl");
-    if (url != null &&  url.getProtocol().equals("https")) {
+  public static ChannelPipeline mountAsClient(ChannelPipeline pipe, JsonObject options) {
+    String urlStr = options.has("targetUrl") ? options.get("targetUrl").getAsString() : null;
+    if (urlStr != null &&  urlStr.trim().startsWith("https://")) {
       pipe.addFirst("ssl-hs", makeClientHandler(options));
     }
     return pipe;

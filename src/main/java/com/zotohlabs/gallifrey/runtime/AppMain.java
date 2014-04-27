@@ -14,13 +14,14 @@
 
 package com.zotohlabs.gallifrey.runtime;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.frwk.core.*;
-import org.json.JSONObject;
+
 
 public interface AppMain extends Disposable , Initializable , Startable {
 
-  public void configure(JSONObject options);
+  public void configure(JsonObject options);
   public void contextualize(Container c);
 
 }

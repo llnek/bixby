@@ -16,13 +16,15 @@ package demo.jms;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.jms.*;
+
+import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.gallifrey.io.JMSEvent;
 
 import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.wflow.*;
 import com.zotohlabs.gallifrey.runtime.AppMain;
-import org.json.JSONObject;
+
 
 /**
  * @author kenl
@@ -33,7 +35,7 @@ public class DemoMain implements AppMain {
   public void initialize() {
     System.out.println("Demo receiving JMS messages..." );
   }
-  public void configure(JSONObject j) {
+  public void configure(JsonObject j) {
   }
   public void start() {}
   public void stop() {

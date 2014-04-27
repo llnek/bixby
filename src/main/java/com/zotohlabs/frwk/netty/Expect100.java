@@ -18,10 +18,11 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import com.zotohlabs.wflow.Pipeline;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
-import org.json.JSONObject;
+
 
 public enum Expect100 {
 ;
@@ -30,7 +31,7 @@ public enum Expect100 {
                                                   HttpResponseStatus.CONTINUE);
   }
 
-  public static ChannelHandler makeHandler(JSONObject options) {
+  public static ChannelHandler makeHandler(JsonObject options) {
     return new ChannelInboundHandlerAdapter() {
       public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpMessage &&
@@ -49,7 +50,7 @@ public enum Expect100 {
     };
   }
 
-  public static ChannelPipeline addLast(ChannelPipeline pl, JSONObject options) {
+  public static ChannelPipeline addLast(ChannelPipeline pl, JsonObject options) {
     pl.addLast("ex-100", makeHandler( options ));
     return pl;
   }

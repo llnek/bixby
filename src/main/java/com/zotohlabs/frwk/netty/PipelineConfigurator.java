@@ -18,12 +18,12 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.channel.*;
-import org.json.*;
 
 public interface PipelineConfigurator {
 
-  public void handle(ChannelPipeline pipe, JSONObject options);
+  public void assemble(ChannelPipeline pipe, JsonObject options);
 
 }
 
