@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:import (org.apache.commons.io IOUtils )
-           [com.zotohlabs.frwk.netty NetUtils])
+           [com.zotohlabs.frwk.netty NettyFW])
   (:import (java.io ByteArrayOutputStream IOException File OutputStream ))
   (:import (java.util Map$Entry))
   (:import ( com.zotohlabs.frwk.net ULFormItems ULFileItem))
@@ -43,7 +43,7 @@
                                                    WebSocketServerHandshakerFactory ContinuationWebSocketFrame
                                                    CloseWebSocketFrame BinaryWebSocketFrame TextWebSocketFrame
                                                    PingWebSocketFrame PongWebSocketFrame))
-  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.io XData))
   (:use [comzotohlabscljc.util.core :only [ notnil? Try! TryC] ])
   (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ])
@@ -445,7 +445,7 @@
 
   [^ChannelHandlerContext ctx]
 
-  (notnil? (-> (NetUtils/getPipeline ctx)
+  (notnil? (-> (NettyFW/getPipeline ctx)
                (.get (class SslHandler)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -454,7 +454,7 @@
 
   [^ChannelHandlerContext ctx]
 
-  (let [ ^SslHandler ssl (-> (NetUtils/getPipeline ctx)
+  (let [ ^SslHandler ssl (-> (NettyFW/getPipeline ctx)
                              (.get (class SslHandler)))
          ch (.channel ctx) ]
     (when-not (nil? ssl)
@@ -462,7 +462,7 @@
           (.addListener (reify ChannelFutureListener
                           (operationComplete [_ f]
                             (when-not (.isSuccess f)
-                              (NetUtils/closeChannel ch)) )))))
+                              (NettyFW/closeChannel ch)) )))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -480,7 +480,7 @@
     (if (nil? hs)
       (do
         (WebSocketServerHandshakerFactory/sendUnsupportedVersionResponse ch)
-        (Try! (NetUtils/closeChannel ch)))
+        (Try! (NettyFW/closeChannel ch)))
       (do
         (setAttr ctx CBUF-KEY (Unpooled/compositeBuffer 1024))
         (setAttr ctx XDATA-KEY (XData.))
@@ -547,7 +547,7 @@
       (do
         (resetAttrs ctx)
         (.close hs ch ^CloseWebSocketFrame frame)
-        (Try! (NetUtils/closeChannel ch)))
+        (Try! (NettyFW/closeChannel ch)))
 
       (instance? PingWebSocketFrame frame)
       (.write ch (PongWebSocketFrame. (.content frame)))

@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:import (java.lang.reflect Field)
-           [com.zotohlabs.frwk.netty NetUtils])
+           [com.zotohlabs.frwk.netty NettyFW])
   (:import (java.io IOException ByteArrayOutputStream File OutputStream InputStream))
   (:import (java.util HashMap Properties ArrayList))
   (:import (java.net URI URL InetSocketAddress))
@@ -38,7 +38,7 @@
   (:import (io.netty.handler.stream ChunkedWriteHandler))
   (:import (io.netty.handler.ssl SslHandler))
   (:import (io.netty.buffer ByteBuf))
-  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
   (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
   (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
 
@@ -90,7 +90,7 @@
   (let []
     (proxy [ChannelInitializer] []
       (initChannel [^SocketChannel ch]
-        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
+        (let [ ^ChannelPipeline pl (NettyFW/getPipeline ch) ]
           (apply wrapper pl options))))
   ))
 
@@ -134,7 +134,7 @@
   [ch obj]
 
   ;; had to do this to work-around reflection warnings :(
-  (NetUtils/writeOnly ^Channel ch obj))
+  (NettyFW/writeOnly ^Channel ch obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,7 +144,7 @@
   [ch obj]
 
   ;; had to do this to work-around reflection warnings :(
-  (NetUtils/wrtFlush ^Channel ch obj))
+  (NettyFW/writeFlush ^Channel ch obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,7 +152,7 @@
 
   [^ChannelHandlerContext ctx]
 
-  (notnil? (-> (NetUtils/getPipeline ctx)
+  (notnil? (-> (NettyFW/getPipeline ctx)
                (.get (class SslHandler)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

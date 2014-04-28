@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:import [java.net URL URI InetSocketAddress]
-           [com.zotohlabs.frwk.netty NetUtils])
+           [com.zotohlabs.frwk.netty NettyFW])
   (:import [java.io IOException])
   (:import (io.netty.buffer Unpooled))
   (:import (io.netty.channel.nio NioEventLoopGroup))
@@ -30,7 +30,7 @@
                                         HttpMethod
                                         HttpHeaders HttpVersion
                                         DefaultHttpRequest))
-  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.io XData))
   (:use [comzotohlabscljc.netty.comms])
   (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
@@ -118,7 +118,7 @@
         (var-set wf (if (> clen (com.zotohlabs.frwk.io.IOUtils/streamLimit))
                       (WFlush ch (ChunkedStream. (.stream xdata)))
                       (WFlush ch (Unpooled/wrappedBuffer (.javaBytes xdata)))))
-        (NetUtils/flush ch))
+        (NettyFW/flush ch))
       (CloseCF @wf (:keep-alive options) ))
   ))
 

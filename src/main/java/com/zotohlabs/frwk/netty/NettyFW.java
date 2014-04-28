@@ -40,28 +40,6 @@ public enum NettyFW {
     return _log;
   }
 
-  /*
-  public static void cfgForRedirect(AbstractHttpClient cli)  {
-    cli.setRedirectStrategy(new DefaultRedirectStrategy() {
-      public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
-        boolean isRedirect=false;
-        try {
-          isRedirect = super.isRedirected(request, response, context);
-        } catch (ProtocolException  e) {
-          _log.warn("",e);
-        }
-        if (!isRedirect) {
-          int responseCode = response.getStatusLine().getStatusCode();
-          if (responseCode == 301 || responseCode == 302 || responseCode == 307 || responseCode == 308) {
-            isRedirect= true;
-          }
-        }
-        return isRedirect;
-      }
-    });
-  }
-  */
-
   public static ChannelFutureListener dbgNettyDone(final String msg) {
     return new ChannelFutureListener() {
       public void operationComplete(ChannelFuture fff) {

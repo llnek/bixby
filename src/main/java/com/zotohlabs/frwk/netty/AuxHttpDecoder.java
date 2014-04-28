@@ -71,7 +71,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
   protected void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
     ctx.attr(akey).set(aval);
   }
-  
+
   @SuppressWarnings("unchecked")
   protected void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
     ctx.attr(akey).remove();
