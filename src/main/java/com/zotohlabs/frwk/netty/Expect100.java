@@ -27,6 +27,9 @@ import io.netty.handler.codec.http.*;
 @ChannelHandler.Sharable
 public class Expect100 extends SimpleChannelInboundHandler {
 
+  private static final Expect100 shared = new Expect100();
+  public static Expect100 getInstance() { return shared; }
+
   private static HttpResponse c100_rsp() {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                   HttpResponseStatus.CONTINUE);

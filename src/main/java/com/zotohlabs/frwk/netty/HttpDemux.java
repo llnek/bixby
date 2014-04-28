@@ -33,6 +33,9 @@ import static com.zotohlabs.frwk.util.CoreUtils.nsb;
 @ChannelHandler.Sharable
 public class HttpDemux extends AuxHttpDecoder {
 
+  private static final HttpDemux sharedHandler = new HttpDemux();
+  public static HttpDemux getInstance() { return sharedHandler; }
+
   private boolean isFormPost ( HttpMessage req, String method) {
     String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
     // multipart form
@@ -55,19 +58,23 @@ public class HttpDemux extends AuxHttpDecoder {
     String md = req.getMethod().name();
     String mt = mo.length() > 0 ? mo.toUpperCase() : md.toUpperCase();
     ChannelPipeline pipe = ctx.pipeline();
+    AuxHttpDecoder nxt;
 
     setAttr(ctx, MSGINFO_KEY, extractMsgInfo(req));
     Expect100.handle100(ctx, req);
 
     if (isFormPost(req, mt)) {
-      pipe.addAfter( getName(), FormPostCodec.sharedHandler.getName(), FormPostCodec.sharedHandler );
+      nxt = FormPostCodec.getInstance();
+      pipe.addAfter( getName(), nxt.getName(), nxt );
     }
     else
     if (isWSock(req,mt)) {
-      pipe.addAfter( getName(), WebSockCodec.sharedHandler.getName(), WebSockCodec.sharedHandler );
+      nxt= WebSockCodec.getInstance();
+      pipe.addAfter( getName(), nxt.getName(), nxt );
     }
     else {
-      pipe.addAfter( getName(), RequestCodec.sharedHandler.getName(), RequestCodec.sharedHandler );
+      nxt=RequestCodec.getInstance();
+      pipe.addAfter( getName(), nxt.getName(), nxt );
     }
   }
 

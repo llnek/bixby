@@ -42,7 +42,8 @@ public class  WebSockCodec extends RequestCodec {
 
   protected static final AttributeKey WSHSK_KEY =AttributeKey.valueOf("wsockhandshaker");
 
-  public static final WebSockCodec sharedHandler = new WebSockCodec();
+  private static final WebSockCodec shared = new WebSockCodec();
+  public static  WebSockCodec getInstance() { return shared; }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     delAttr(ctx,WSHSK_KEY);
@@ -120,10 +121,7 @@ public class  WebSockCodec extends RequestCodec {
       xs.resetContent(baos);
     }
     resetAttrs(ctx);
-    ctx.fireChannelRead( new HashMap<String,Object>() {{
-      put("payload", xs);
-      put("info", info);
-    }});
+    ctx.fireChannelRead( new DemuxedMsg(info, xs) );
   }
 
   protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {

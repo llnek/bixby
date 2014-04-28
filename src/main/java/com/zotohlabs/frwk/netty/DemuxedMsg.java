@@ -18,29 +18,26 @@
 
 package com.zotohlabs.frwk.netty;
 
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-
-import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
+import com.google.gson.JsonObject;
+import com.zotohlabs.frwk.io.XData;
 
 /**
  * @author kenl
  */
-@ChannelHandler.Sharable
-public class ErrorCatcher extends SimpleChannelInboundHandler {
+public class DemuxedMsg {
 
-  private static final ErrorCatcher shared = new ErrorCatcher();
-  public static ErrorCatcher getInstance() { return shared; }
+  private JsonObject _info;
+  private XData _payload;
 
-  public ErrorCatcher() {
-
+  public DemuxedMsg(JsonObject info, XData payload) {
+    _payload = payload;
+    _info = info;
   }
 
-  @Override
-  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-    replyXXX( ctx.channel(), 500);
-  }
+  public XData payload() { return _payload; }
+
+  public JsonObject info() { return _info; }
 
 }
+
 

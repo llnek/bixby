@@ -16,23 +16,31 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:import (java.util Map$Entry))
+  (:import (java.io IOException File))
   (:import (io.netty.buffer Unpooled))
   (:import (io.netty.util Attribute AttributeKey CharsetUtil))
-  (:import (io.netty.channel ChannelHandlerContext Channel ChannelFuture
-                             ChannelPipeline ChannelHandler ))
-  (:import (io.netty.handler.codec.http HttpHeaders HttpVersion HttpContent LastHttpContent
-                                        HttpHeaders$Values HttpHeaders$Names Cookie
-                                        CookieDecoder ServerCookieEncoder
-                                        HttpMessage HttpRequest HttpResponse HttpResponseStatus
-                                        DefaultFullHttpResponse QueryStringDecoder))
-  (:use [comzotohlabscljc.util.core :only [ notnil? Try! TryC] ])
-  (:use [comzotohlabscljc.netty.comms])
-  (:use [comzotohlabscljc.netty.server])
-  (:use [comzotohlabscljc.netty.ssl])
-  (:use [comzotohlabscljc.netty.expect100])
-  (:use [comzotohlabscljc.netty.exception])
+  (:import (java.util Map$Entry))
+  (:import (io.netty.channel ChannelHandlerContext Channel ChannelPipeline
+                             SimpleChannelInboundHandler
+                             ChannelFuture ChannelHandler ))
+  (:import (io.netty.handler.codec.http HttpHeaders HttpMessage  HttpVersion
+                                        HttpContent DefaultFullHttpResponse
+                                        HttpResponseStatus CookieDecoder
+                                        ServerCookieEncoder Cookie
+                                        HttpRequest QueryStringDecoder
+                                        LastHttpContent
+                                        HttpResponse HttpServerCodec))
+  (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
+  (:import (com.zotohlabs.frwk.netty ServerSide PipelineConfigurator
+                                     SSLServerHShake DemuxedMsg
+                                     Expect100
+                                     HttpDemux ErrorCatcher))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.google.gson JsonObject JsonElement))
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
   (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -158,61 +166,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- discardHandler ""
-
-  [^ChannelHandlerContext ctx msg options]
-
-  (let [ ^Channel ch (.channel ctx)
-         a (:action options) ]
-    (when (instance? LastHttpContent msg)
-      (ReplyXXX ch 200)
-      (when (fn? a)
-            (Try! (a))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- discardInitor ""
-
-  ^ChannelPipeline
-  [^ChannelPipeline pipe options]
-
-  (-> pipe (AddEnableSvrSSL options)
-           (AddExpect100 options)
-           (AddServerCodec options)
-           (AddWriteChunker options))
-  (.addLast pipe "discarder" (NettyInboundHandler discardHandler options))
-  (AddExceptionCatcher pipe options)
-  pipe)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- snooperHandler ""
 
-  [^ChannelHandlerContext ctx msg options]
+  ^ChannelHandler
+  []
 
   (let [ cookies (StringBuilder.)
          buf (StringBuilder.) ]
-    (cond
-      (instance? HttpRequest msg) (handleReq ctx msg cookies buf)
-      (instance? HttpContent msg) (handlec ctx msg cookies buf)
-      :else nil)
+    (proxy [SimpleChannelInboundHandler][]
+      (channelRead0 [ ctx msg ]
+        (cond
+          (instance? HttpRequest msg) (handleReq ctx msg cookies buf)
+          (instance? HttpContent msg) (handlec ctx msg cookies buf)
+          :else nil)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- snooperInitor ""
+(defn- snooper ""
 
-  ^ChannelPipeline
-  [^ChannelPipeline pipe options]
+  ^PipelineConfigurator
+  []
 
-  (-> pipe (AddEnableSvrSSL options)
-           (AddExpect100 options)
-           (AddServerCodec options)
-           (AddWriteChunker options))
-  (.addLast pipe "snooper" (NettyInboundHandler snooperHandler options))
-  (AddExceptionCatcher pipe options)
-  pipe)
+  (proxy [PipelineConfigurator][]
+    (assemble [p o]
+      (let [ ^ChannelPipeline pipe p ^JsonObject options o]
+        (doto pipe
+          (.addLast "ssl" (SSLServerHShake/getInstance options))
+          (.addLast "codec" (HttpServerCodec.))
+          (.addLast "e100" (Expect100/getInstance))
+          (.addLast "chunker" (ChunkedWriteHandler.))
+          (.addLast "snooper" (snooperHandler))
+          (.addLast "error" (ErrorCatcher/getInstance)))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sample Snooper HTTPD
@@ -220,15 +206,10 @@
 
   [^String host port options]
 
-  (StartNetty host port (BootstrapNetty snooperInitor options)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeDiscardHTTPD "Just returns 200 OK"
-
-  [^String host port options]
-
-  (StartNetty host port (BootstrapNetty discardInitor options)))
+  (let [ ^ServerBootstrap bs (ServerSide/initServerSide (snooper) options)
+         ch (ServerSide/start bs host port) ]
+    { :bootstrap bs :channel ch }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

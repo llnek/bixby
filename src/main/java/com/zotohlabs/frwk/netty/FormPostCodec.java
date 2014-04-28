@@ -13,38 +13,27 @@
 
 package com.zotohlabs.frwk.netty;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.zotohlabs.frwk.io.IOUtils;
 import com.zotohlabs.frwk.io.XData;
 import com.zotohlabs.frwk.net.ULFileItem;
 import com.zotohlabs.frwk.net.ULFormItems;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.*;
-import io.netty.handler.codec.http.websocketx.*;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import static com.zotohlabs.frwk.util.CoreUtils.*;
-import static com.zotohlabs.frwk.io.IOUtils.*;
+import static com.zotohlabs.frwk.io.IOUtils.streamLimit;
 
 /**
  * @author kenl
@@ -55,7 +44,8 @@ public class FormPostCodec extends RequestCodec {
   protected static final AttributeKey FORMDEC_KEY =AttributeKey.valueOf( "formdecoder");
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
 
-  public static FormPostCodec sharedHandler = new FormPostCodec();
+  private static FormPostCodec shared = new FormPostCodec();
+  public static FormPostCodec getInstance() { return shared; }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);

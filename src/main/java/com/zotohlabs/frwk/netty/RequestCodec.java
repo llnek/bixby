@@ -49,9 +49,13 @@ import java.util.Map;
 
 import static com.zotohlabs.frwk.util.CoreUtils.*;
 
+/**
+ * @author kenl
+ */
 public class RequestCodec extends AuxHttpDecoder {
 
-  public static final RequestCodec sharedHandler = new RequestCodec();
+  private static final RequestCodec shared = new RequestCodec();
+  public static RequestCodec getInstance() { return shared;  }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
@@ -147,8 +151,15 @@ public class RequestCodec extends AuxHttpDecoder {
 
 
   @Override
-  protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    if (msg instanceof HttpRequest || msg instanceof HttpResponse) {
+      HttpMessage m= (HttpMessage) msg;
+      handleInboundMsg(ctx, m);
+    }
+    else
+    if (msg instanceof HttpContent) {
+      handleMsgChunk(ctx, msg);
+    }
   }
 }
 
