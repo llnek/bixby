@@ -9,32 +9,34 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.core )
+  comzotohlabscljc.tardis.io.core
 
-(import '(java.util.concurrent ConcurrentHashMap))
-(import '(com.zotohlabs.frwk.server Component Service))
+  (:import (com.zotohlabs.frwk.server Component Service))
+  (:import (java.util.concurrent ConcurrentHashMap))
 
-(import '(com.zotohlabs.frwk.core
-  Versioned Hierarchial
-  Identifiable Disposable Startable))
-(import '(com.zotohlabs.gallifrey.core Container))
-(import '(com.zotohlabs.gallifrey.io ServletEmitter Emitter))
-(import '(java.util Map))
+  (:import (com.zotohlabs.frwk.core Versioned Hierarchial
+                                    Identifiable Disposable Startable))
+  (:import (com.zotohlabs.gallifrey.core Container))
+  (:import (com.zotohlabs.gallifrey.io ServletEmitter Emitter))
+  (:import (java.util Map))
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.util.core :only [make-mmap TryC] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.util.core :only [MakeMMap TryC] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol EmitterAPI
+
   ""
+
   (enabled? [_] )
   (active? [_] )
 
@@ -45,66 +47,123 @@
   (hold [_ wevt] )
   (dispatch [_ ev options] ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol WaitEventHolder
+
   ""
+
   (timeoutMillis [_ millis] )
   (resumeOnResult [_ res] )
   (onExpiry [_])
   (timeoutSecs [_ secs] ) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol AsyncWaitTrigger
+
   ""
+
   (resumeWithResult [_ res] )
   (resumeWithError [_] )
   (emitter [_] ))
 
-(defmulti ioes-reify-event "" (fn [a & args] (:typeid (meta a))))
-(defmulti ioes-dispatch "" (fn [a & args] (:typeid (meta a))))
-(defmulti ioes-dispose "" (fn [a] (:typeid (meta a))))
-
-(defmulti ioes-suspend "" (fn [a] (:typeid (meta a))))
-(defmulti ioes-start "" (fn [a] (:typeid (meta a))))
-(defmulti ioes-stop "" (fn [a] (:typeid (meta a))))
-(defmulti ioes-resume "" (fn [a] (:typeid (meta a))))
-
-(defmulti ioes-stopped "" (fn [a] (:typeid (meta a))))
-(defmulti ioes-started "" (fn [a] (:typeid (meta a))))
-
-(defmethod ioes-started :default [co]
-  (info "Emitter "
-        (:typeid (meta co))
-        " started - OK"))
-
-(defmethod ioes-stopped :default [co]
-  (info "Emitter "
-        (:typeid (meta co))  " stopped - OK"))
-
-(defmethod ioes-dispose :default [co]
-  (info "Emitter "
-        (:typeid (meta co))  " disposed - OK"))
-
-(defmethod ioes-suspend :default [co]
-  (throw (Exception. "Not Implemented")))
-
-(defmethod ioes-resume :default [co]
-  (throw (Exception. "Not Implemented")))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESReifyEvent "" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESDispatch "" (fn [a & args] (:typeid (meta a))))
 
-(defn makeEmitter "" [^Container parObj emId emAlias]
-  (let [ impl (make-mmap)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESDispose "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESSuspend "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESStart "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESStop "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESResume "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESStopped "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESStarted "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStarted :default
+
+  [co]
+
+  (log/info "Emitter " (:typeid (meta co)) " started - OK"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStopped :default
+
+  [co]
+
+  (log/info "Emitter " (:typeid (meta co))  " stopped - OK"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESDispose :default
+
+  [co]
+
+  (log/info "Emitter " (:typeid (meta co))  " disposed - OK"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESSuspend :default
+
+  [co]
+
+  (throw (IOException. "Not Implemented")))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESResume :default
+
+  [co]
+
+  (throw (IOException. "Not Implemented")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeEmitter ""
+
+  [^Container parObj emId emAlias]
+
+  (let [ impl (MakeMMap)
          eeid emAlias ]
-    (.mm-s impl :backlog (ConcurrentHashMap.))
+    (.setf! impl :backlog (ConcurrentHashMap.))
     (with-meta
       (reify
 
         Element
 
-        (setCtx! [_ x] (.mm-s impl :ctx x))
-        (getCtx [_] (.mm-g impl :ctx))
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clr! impl a) )
+        (getAttr [_ a] (.getf impl a) )
 
         Component
 
@@ -121,40 +180,39 @@
 
         Disposable
 
-        (dispose [this] (ioes-dispose this))
+        (dispose [this] (IOESDispose this))
 
         Startable
 
-        (start [this] (ioes-start this))
-        (stop [this] (ioes-stop this))
+        (start [this] (IOESStart this))
+        (stop [this] (IOESStop this))
 
         Service
 
-        (getv [_ k] (.mm-g impl (keyword k)))
-        (setv [_ k v]
-              (.mm-s impl (keyword k) v))
+        (setv [_ k v] (.setf! impl (keyword k) v))
+        (getv [_ k] (.getf impl (keyword k)))
 
         EmitterAPI
 
-        (enabled? [_] (if (false? (.mm-g impl :enabled)) false true ))
-        (active? [_] (if (false? (.mm-g impl :active)) false true))
+        (enabled? [_] (if (false? (.getf impl :enabled)) false true ))
+        (active? [_] (if (false? (.getf impl :active)) false true))
 
-        (suspend [this] (ioes-suspend this))
-        (resume [this] (ioes-resume this))
+        (suspend [this] (IOESSuspend this))
+        (resume [this] (IOESResume this))
 
         (release [_ wevt]
           (when-not (nil? wevt)
-            (let [ ^Map b (.mm-g impl :backlog)
-                   wid (.id ^Identifiable wevt) ]
-              (debug "emitter releasing an event with id: " wid)
-              (.remove b wid))))
+            (let [ wid (.id ^Identifiable wevt)
+                   b (.getf impl :backlog) ]
+              (log/debug "emitter releasing an event with id: " wid)
+              (.remove ^Map b wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
-            (let [ ^Map b (.mm-g impl :backlog)
-                   wid (.id ^Identifiable wevt) ]
-              (debug "emitter holding an event with id: " wid)
-              (.put b wid wevt))))
+            (let [ wid (.id ^Identifiable wevt)
+                   b (.getf impl :backlog) ]
+              (log/debug "emitter holding an event with id: " wid)
+              (.put ^Map b wid wevt))))
 
         (dispatch [_ ev options]
           (TryC
@@ -162,12 +220,18 @@
 
       { :typeid emId } )))
 
-(defmethod comp-contextualize :czc.tardis.io/Emitter [co ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompContextualize :czc.tardis.io/Emitter
+
+  [co ctx]
+
   (let [ ^comzotohlabscljc.tardis.core.sys.Element c ctx ]
-    (comp-clone-context co (.getCtx c))))
+    (CompCloneContext co (.getCtx c))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (derive :czc.tardis.io/HTTP :czc.tardis.io/Emitter)
 
 (derive :czc.tardis.io/JettyIO :czc.tardis.io/HTTP)
@@ -187,7 +251,7 @@
 (derive :czc.tardis.io/JMS :czc.tardis.io/Emitter)
 (derive :czc.tardis.io/SocketIO :czc.tardis.io/Emitter)
 
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private core-eof nil)
 

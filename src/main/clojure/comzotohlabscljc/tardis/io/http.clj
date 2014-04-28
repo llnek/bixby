@@ -9,83 +9,87 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.http )
+  comzotohlabscljc.tardis.io.http
 
-(import '(org.eclipse.jetty.server Server Connector ConnectionFactory))
-(import '(java.util.concurrent ConcurrentHashMap))
-(import '(java.net URL))
-(import '(java.util List Map HashMap ArrayList))
-(import '(java.io File))
-(import '(com.zotohlabs.frwk.util NCMap))
-(import '(javax.servlet.http Cookie HttpServletRequest))
-(import '(java.net HttpCookie))
-(import '(org.eclipse.jetty.continuation Continuation ContinuationSupport))
-(import '(com.zotohlabs.frwk.server Component))
-(import '(com.zotohlabs.frwk.core
-  Versioned Hierarchial
-  Identifiable Disposable Startable))
-(import '(org.apache.commons.codec.binary Base64))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI notnil? juid TryC
+                                           MakeMMap test-cond Stringify] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.crypto.ssl])
+  (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
+  (:use [comzotohlabscljc.crypto.codec :only [Pwdify] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.io.triggers])
+  (:import (org.eclipse.jetty.server Server Connector ConnectionFactory))
+  (:import (java.util.concurrent ConcurrentHashMap))
+  (:import (java.net URL))
+  (:import (java.util List Map HashMap ArrayList))
+  (:import (java.io File))
+  (:import (com.zotohlabs.frwk.util NCMap))
+  (:import (javax.servlet.http Cookie HttpServletRequest))
+  (:import (java.net HttpCookie))
+  (:import (org.eclipse.jetty.continuation Continuation ContinuationSupport))
+  (:import (com.zotohlabs.frwk.server Component))
+  (:import (com.zotohlabs.frwk.core Versioned Hierarchial
+                                    Identifiable Disposable Startable))
+  (:import (org.apache.commons.codec.binary Base64))
+  (:import '(org.eclipse.jetty.server Connector HttpConfiguration
+                                      HttpConnectionFactory SecureRequestCustomizer
+                                      Server ServerConnector
+                                      SslConnectionFactory))
+  (:import (org.eclipse.jetty.util.ssl SslContextFactory))
+  (:import (org.eclipse.jetty.util.thread QueuedThreadPool))
+  (:import (org.eclipse.jetty.server.handler AbstractHandler ContextHandler))
+  (:import (com.zotohlabs.gallifrey.io IOSession ServletEmitter Emitter))
+  (:import (org.eclipse.jetty.webapp WebAppContext))
+  (:import (javax.servlet.http HttpServletRequest HttpServletResponse))
 
-(import '(org.eclipse.jetty.server
-  Connector
-  HttpConfiguration
-  HttpConnectionFactory
-  SecureRequestCustomizer
-  Server
-  ServerConnector
-  SslConnectionFactory))
-(import '(org.eclipse.jetty.util.ssl SslContextFactory))
-(import '(org.eclipse.jetty.util.thread QueuedThreadPool))
-(import '(org.eclipse.jetty.server.handler AbstractHandler ContextHandler))
-(import '(com.zotohlabs.gallifrey.io IOSession ServletEmitter Emitter))
-(import '(org.eclipse.jetty.webapp WebAppContext))
-(import '(javax.servlet.http HttpServletRequest HttpServletResponse))
-
-(import '(com.zotohlabs.gallifrey.io HTTPResult HTTPEvent JettyUtils))
-(import '(com.zotohlabs.gallifrey.core Container))
-
-(use '[comzotohlabscljc.util.core :only [MuObj notnil? uid TryC make-mmap test-cond stringify] ])
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.crypto.ssl])
-(use '[comzotohlabscljc.crypto.codec :only [pwdify] ])
-(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
-(use '[comzotohlabscljc.util.str :only [hgl? nsb strim] ])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.tardis.io.core])
-(use '[comzotohlabscljc.tardis.io.triggers])
+  (:import (com.zotohlabs.gallifrey.io HTTPResult HTTPEvent JettyUtils))
+  (:import (com.zotohlabs.gallifrey.core Container)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ScanBasicAuth ""
 
-(defn scanBasicAuth "" [^HTTPEvent evt]
+  [^HTTPEvent evt]
+
   (if (.hasHeader evt "authorization")
-    (let [ s (stringify (Base64/decodeBase64 (.getHeaderValue evt "authorization")))
+    (let [ s (Stringify (Base64/decodeBase64 (.getHeaderValue evt "authorization")))
            pos (.indexOf s ":") ]
       (if (pos > 0)
         [ (.substring s 0 pos) (.substring s (inc pos)) ]
         []))
-    nil))
+    nil
+  ))
 
-(defn makeServletEmitter "" [^Container parObj]
-  (let [ eeid (next-long)
-         impl (make-mmap) ]
-    (.mm-s impl :backlog (ConcurrentHashMap.))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeServletEmitter ""
+
+  [^Container parObj]
+
+  (let [ eeid (NextLong)
+         impl (MakeMMap) ]
+    (.setf! impl :backlog (ConcurrentHashMap.))
     (with-meta
       (reify
 
         Element
 
-        (setCtx! [_ x] (.mm-s impl :ctx x))
-        (getCtx [_] (.mm-g impl :ctx))
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
 
         Component
 
@@ -105,59 +109,64 @@
             (doto (ContinuationSupport/getContinuation req)
               (.setTimeout wm)
               (.suspend rsp))
-            (let [ evt (ioes-reify-event this req)
+            (let [ evt (IOESReifyEvent this req)
                    ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-                     w  (make-async-wait-holder
-                          (make-servlet-trigger req rsp dev) evt)
-                     ^comzotohlabscljc.tardis.io.core.EmitterAPI  src this ]
-                (.timeoutMillis w wm)
-                (.hold src w)
-                (.dispatch src evt {}))) )
+                   w (MakeAsyncWaitHolder (MakeServletTrigger req rsp dev) evt)
+                   ^comzotohlabscljc.tardis.io.core.EmitterAPI  src this ]
+              (.timeoutMillis w wm)
+              (.hold src w)
+              (.dispatch src evt {}))) )
 
         Disposable
 
-        (dispose [this] (ioes-dispose this))
+        (dispose [this] (IOESDispose this))
 
         Startable
 
-        (start [this] (ioes-start this))
-        (stop [this] (ioes-stop this))
+        (start [this] (IOESStart this))
+        (stop [this] (IOESStop this))
 
         EmitterAPI
 
-        (enabled? [_] (if (false? (.mm-g impl :enabled)) false true ))
-        (active? [_] (if (false? (.mm-g impl :active)) false true))
+        (enabled? [_] (if (false? (.getf impl :enabled)) false true ))
+        (active? [_] (if (false? (.getf impl :active)) false true))
 
-        (suspend [this] (ioes-suspend this))
-        (resume [this] (ioes-resume this))
+        (suspend [this] (IOESSuspend this))
+        (resume [this] (IOESResume this))
 
         (release [_ wevt]
           (when-not (nil? wevt)
-            (let [ ^Map b (.mm-g impl :backlog)
-                   wid (.id ^Identifiable wevt) ]
-              (debug "emitter releasing an event with id: " wid)
-              (.remove b wid))))
+            (let [ wid (.id ^Identifiable wevt)
+                   b (.getf impl :backlog) ]
+              (log/debug "emitter releasing an event with id: " wid)
+              (.remove ^Map b wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
-            (let [ ^Map b (.mm-g impl :backlog)
-                   wid (.id ^Identifiable wevt) ]
-              (debug "emitter holding an event with id: " wid)
-              (.put b wid wevt))))
+            (let [ wid (.id ^Identifiable wevt)
+                   b (.getf impl :backlog) ]
+              (log/debug "emitter holding an event with id: " wid)
+              (.put ^Map b wid wevt))))
 
         (dispatch [this ev options]
           (TryC
               (.notifyObservers parObj ev options) )) )
 
-      { :typeid :czc.tardis.io/JettyIO } )))
+      { :typeid :czc.tardis.io/JettyIO } )
+  ))
 
-(defn http-basic-config [^comzotohlabscljc.tardis.core.sys.Element co cfg]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HttpBasicConfig ""
+
+  [^comzotohlabscljc.tardis.core.sys.Element co cfg]
+
   (let [ ^String file (:server-key cfg)
-         port (:port cfg)
          ^String fv (:flavor cfg)
          socto (:soctoutmillis cfg)
          kbs (:threshold-kb cfg)
          w (:wait-millis cfg)
+         port (:port cfg)
          bio (:sync cfg)
          tds (:workers cfg)
          pkey (:hhh.pkey cfg)
@@ -171,7 +180,7 @@
     (when (hgl? file)
       (test-cond "server-key file url" (.startsWith file "file:"))
       (.setAttr! co :serverKey (URL. file))
-      (.setAttr! co :pwd (pwdify ^String (:passwd cfg) pkey)) )
+      (.setAttr! co :pwd (Pwdify ^String (:passwd cfg) pkey)) )
 
     (.setAttr! co :sockTimeOut
                (if (and (number? socto)(pos? socto)) socto 0))
@@ -182,11 +191,17 @@
                (if (and (number? kbs)(pos? kbs)) kbs (* 1024 8))) ;; 8M
     (.setAttr! co :waitMillis
                (if (and (number? w)(pos? w)) w 300000)) ;; 5 mins
-    co))
+    co
+  ))
 
-(defmethod comp-configure :czc.tardis.io/HTTP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.io/HTTP
+
   [co cfg]
-  (http-basic-config co cfg))
+
+  (HttpBasicConfig co cfg))
 
 (defmethod comp-configure :czc.tardis.io/JettyIO
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]

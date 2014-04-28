@@ -9,66 +9,64 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.files )
+  comzotohlabscljc.tardis.io.files
 
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.tardis.core.sys :rename { seq* rego-seq*
+                                                    has? rego-has? } ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.io.loops :only
+                                          [LoopableSchedule LoopableOneloop
+                                           CfgLoopable] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.util.core :only
+                                    [MakeMMap notnil?  test-nestr TryC SubsVar] ])
+  (:use [comzotohlabscljc.util.str :only [nsb hgl? nsn] ])
 
-(import '(java.io FileFilter File FilenameFilter IOException))
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.util Properties ResourceBundle))
-(import '(org.apache.commons.io.filefilter
-  SuffixFileFilter
-  PrefixFileFilter
-  RegexFileFilter
-  FileFileFilter))
-
-(import '(org.apache.commons.io FileUtils))
-(import '(org.apache.commons.io.monitor
- FileAlterationListener
- FileAlterationListenerAdaptor
- FileAlterationMonitor
- FileAlterationObserver))
-(import '(com.zotohlabs.gallifrey.io FileEvent))
-(import '(com.zotohlabs.frwk.core Identifiable))
-
-
-(use '[comzotohlabscljc.tardis.core.sys :rename { seq* rego-seq*
-                                           has? rego-has? } ])
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.tardis.io.loops
-       :only [loopable-schedule loopable-oneloop cfg-loopable] ])
-(use '[comzotohlabscljc.tardis.io.core])
-(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
-(use '[comzotohlabscljc.util.core :only [make-mmap notnil?
-                                     test-nestr
-                                     TryC subs-var subs-var] ])
-(use '[comzotohlabscljc.util.str :only [nsb hgl? nsn] ])
-
+  (:import (java.io FileFilter File FilenameFilter IOException))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (java.util Properties ResourceBundle))
+  (:import (org.apache.commons.io.filefilter SuffixFileFilter PrefixFileFilter
+                                             RegexFileFilter FileFileFilter))
+  (:import (org.apache.commons.io FileUtils))
+  (:import (org.apache.commons.io.monitor FileAlterationListener
+                                          FileAlterationListenerAdaptor
+                                          FileAlterationMonitor
+                                          FileAlterationObserver))
+  (:import (com.zotohlabs.gallifrey.io FileEvent))
+  (:import (com.zotohlabs.frwk.core Identifiable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def FP_CREATED :FP-CREATED )
 (def FP_CHANGED :FP-CHANGED )
 (def FP_DELETED :FP-DELETED )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FilePicker
+(defn MakeFilePicker
 
-(defn makeFilePicker [container]
-  (makeEmitter container :czc.tardis.io/FilePicker))
+  [container]
 
-(defmethod ioes-reify-event :czc.tardis.io/FilePicker
+  (MakeEmitter container :czc.tardis.io/FilePicker))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.tardis.io/FilePicker
+
   [co & args]
-  (let [ eeid (next-long)
-         impl (make-mmap)
-         ^File
-         f (nth args 1) ]
+
+  (let [ ^File f (nth args 1)
+         eeid (NextLong)
+         impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -78,17 +76,20 @@
 
         FileEvent
 
-        (bindSession [_ s] (.mm-s impl :ios s))
-        (getSession [_] (.mm-g impl :ios))
+        (bindSession [_ s] (.setf! impl :ios s))
+        (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
         (emitter [_] co)
         (getFile [_] f))
 
       { :typeid :czc.tardis.io/FileEvent } )))
 
-(defn- postPoll [^comzotohlabscljc.tardis.core.sys.Element co
-                 ^File f
-                 action]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- postPoll ""
+
+  [^comzotohlabscljc.tardis.core.sys.Element co ^File f action]
+
   (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI src co
          ^File des (.getAttr co :dest)
          fname (.getName f)
@@ -101,16 +102,20 @@
                 f)
               :else nil) ]
     (when-not (nil? cf)
-      (.dispatch src (ioes-reify-event co fname cf action) {} ))) )
+      (.dispatch src (IOESReifyEvent co fname cf action) {} ))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.io/FilePicker
 
-(defmethod comp-configure :czc.tardis.io/FilePicker
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
-  (let [ ^String root (subs-var (nsb (:target-folder cfg)))
-         ^String dest (subs-var (nsb (:recv-folder cfg)))
+
+  (let [ ^String root (SubsVar (nsb (:target-folder cfg)))
+         ^String dest (SubsVar (nsb (:recv-folder cfg)))
          ^String mask (nsb (:fmask cfg)) ]
-    (cfg-loopable co cfg)
     (test-nestr "file-root-folder" root)
+    (CfgLoopable co cfg)
     (.setAttr! co :target (doto (File. root) (.mkdirs)))
     (.setAttr! co :mask
       (cond
@@ -128,16 +133,19 @@
     (when (hgl? dest)
       (.setAttr! co :dest (doto (File. dest) (.mkdirs))))
 
-    (info "Monitoring folder: " root)
-    (info "Recv folder: " (nsn dest))
+    (log/info "Monitoring folder: " root)
+    (log/info "Recv folder: " (nsn dest))
+    co
+  ))
 
-    co))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.io/FilePicker
 
-(defmethod comp-initialize :czc.tardis.io/FilePicker
   [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ obs (FileAlterationObserver.
-               ^File (.getAttr co :target)
-               ^FileFilter (.getAttr co :mask))
+
+  (let [ obs (FileAlterationObserver.  ^File (.getAttr co :target)
+                                       ^FileFilter (.getAttr co :mask))
          ^long intv (.getAttr co :intervalMillis)
          mon (FileAlterationMonitor. intv)
          lnr (proxy [FileAlterationListenerAdaptor][]
@@ -150,17 +158,22 @@
     (.addListener obs lnr)
     (.addObserver mon obs)
     (.setAttr! co :monitor mon)
-    (info "FilePicker's apache io monitor created - OK.")
-    co))
-
-
-(defmethod loopable-schedule :czc.tardis.io/FilePicker
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^FileAlterationMonitor mon (.getAttr co :monitor) ]
-    (info "FilePicker's apache io monitor starting...")
-    (.start mon)))
+    (log/info "FilePicker's apache io monitor created - OK.")
+    co
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod LoopableSchedule :czc.tardis.io/FilePicker
 
+  [^comzotohlabscljc.tardis.core.sys.Element co]
+
+  (let [ ^FileAlterationMonitor mon (.getAttr co :monitor) ]
+    (log/info "FilePicker's apache io monitor starting...")
+    (.start mon)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private files-eof nil)
 

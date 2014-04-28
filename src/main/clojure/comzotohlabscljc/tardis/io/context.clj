@@ -9,61 +9,80 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
   comzotohlabscljc.tardis.io.context
 
   (:gen-class
-    :name comzotohlabscljc.tardis.io.WebContext
-    :extends javax.servlet.ServletContextListener
-    :init myInit
-    :constructors {[] []}
-    :state myState
-  ))
+   :extends javax.servlet.ServletContextListener
+   :name comzotohlabscljc.tardis.io.WebContext
+   :init myInit
+   :constructors {[] []}
+   :state myState
+  )
 
-(import '(javax.servlet ServletContextListener ServletContext ServletContextEvent))
-(import '(java.io File))
-(import '(com.zotohlabs.gallifrey.core Container))
-(import '(com.zotohlabs.gallifrey.io Emitter))
+  (:import (javax.servlet ServletContextListener ServletContext ServletContextEvent))
+  (:import (java.io File))
+  (:import (com.zotohlabs.gallifrey.core Container))
+  (:import (com.zotohlabs.gallifrey.io Emitter))
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.util.core :only [TryC] ])
-(use '[comzotohlabscljc.util.str :only [nsb] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [TryC] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(set! *warn-on-reflection* false)
+;;(set! *warn-on-reflection* false)
 
-(defn- inizAsJ2EE [^ServletContext ctx ^String ctxPath]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- inizAsJ2EE ""
+
+  [^ServletContext ctx ^String ctxPath]
+
   (let [ webinf (File. (.getRealPath ctx "/WEB-INF/"))
          root (.getParentFile webinf) ]
     nil))
 
-(defn -contextInitialized [_ ^ServletContextEvent evt]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -contextInitialized ""
+
+  [_ ^ServletContextEvent evt]
+
   (let [ x (.getServletContext evt)
          m (.getMajorVersion x)
          n (.getMinorVersion x)
          ctx   (if (or (> m 2) (and (= m 2)(> n 4)))
                    (.getContextPath x)
                    nil) ]
-    (debug "WEBContextListener: contextInitialized()")
+    (log/debug "WEBContextListener: contextInitialized()")
     (TryC
-        (inizAsJ2EE x (nsb ctx)) ) ))
+        (inizAsJ2EE x (nsb ctx)) )
+  ))
 
-(defn -contextDestroyed [this e]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -contextDestroyed  ""
+
+  [this e]
+
   (let [ state (.myState this)
          ^Emitter src @state ]
-    (debug "WEBContextListener: contextDestroyed()")
+    (log/debug "WEBContextListener: contextDestroyed()")
     (reset! state nil)
     (when-not (nil? src)
-      (-> src (.container) (.dispose )))))
+      (-> src (.container) (.dispose )))
+  ))
 
-(defn -myInit []
-  ([] (atom nil)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -myInit [] ([] (atom nil)))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private context-eof nil)
 
 

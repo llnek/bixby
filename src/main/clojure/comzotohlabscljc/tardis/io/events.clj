@@ -9,88 +9,131 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.events )
+  comzotohlabscljc.tardis.io.events
 
-(import '(org.apache.commons.io IOUtils))
-(import '(javax.mail.internet MimeMessage))
-(import '(javax.jms Message))
-(import '(java.net Socket))
-(import '(java.io File))
-(import '(com.zotohlabs.frwk.io XData))
-(import '(com.zotohlabs.frwk.core Identifiable))
-(import '(com.zotohlabs.gallifrey.io IOResult IOEvent Emitter))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap] ])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.util.core :only [MuObj make-mmap] ])
-(use '[comzotohlabscljc.tardis.io.core])
-(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
-
+  (:import (javax.mail.internet MimeMessage))
+  (:import (org.apache.commons.io IOUtils))
+  (:import (javax.jms Message))
+  (:import (java.net Socket))
+  (:import (java.io File))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlabs.frwk.core Identifiable))
+  (:import (com.zotohlabs.gallifrey.io IOResult IOEvent Emitter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defmulti eve-set-session "" (fn [a b] (:typeid (meta a))))
-(defmulti eve-set-result "" (fn [a b] (:typeid (meta a))))
-(defmulti eve-destroy "" (fn [a] (:typeid (meta a))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti EveSetSession "" (fn [a b] (:typeid (meta a))))
 
-(defn makeEvent [src evtId]
-  (let [ eeid (next-long)
-         impl (make-mmap) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti EveSetResult "" (fn [a b] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti EveDestroy "" (fn [a] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeEvent ""
+
+  [src evtId]
+
+  (let [ eeid (NextLong)
+         impl (MakeMMap) ]
     (with-meta
       (reify
 
-        MuObj
+        MubleAPI
 
-        (setf! [_ k v] (.mm-s impl k v) )
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k) )
-        (clrf! [_ k] (.mm-r impl k) )
-        (clear! [_] (.mm-c impl))
+        (setf! [_ k v] (.setf! impl k v) )
+        (seq* [_] (seq (.seq* impl)))
+        (getf [_ k] (.getf impl k) )
+        (clrf! [_ k] (.clrf! impl k) )
+        (clear! [_] (.clear! impl))
 
         IOEvent
 
         (emitter [_] src) )
 
-      { :typeid evtId } )))
+      { :typeid evtId } )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn EveUnbind ""
 
-(defn eve-unbind [^comzotohlabscljc.util.core.MuObj ev]
+  [^comzotohlabscljc.util.core.MubleAPI ev]
+
   (.setf! ev :waitHolder nil))
 
-(defn eve-bind [^comzotohlabscljc.util.core.MuObj ev obj]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn EveBind ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ev obj]
+
   (.setf! ev :waitHolder obj))
 
-(defmethod eve-set-session :czc.tardis.io/EmEvent [^comzotohlabscljc.util.core.MuObj obj s]
-  (do
-    (.setf! obj :session s)
-    obj))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod EveSetSession :czc.tardis.io/EmEvent
 
-(defmethod eve-destroy :czc.tardis.io/EmEvent [^comzotohlabscljc.util.core.MuObj obj] nil)
+  [^comzotohlabscljc.util.core.MubleAPI obj ss]
 
-(defmethod eve-set-result :czc.tardis.io/EmEvent [^IOEvent obj ^IOResult res]
+  (.setf! obj :session ss)
+  obj)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod EveDestroy :czc.tardis.io/EmEvent
+
+  [^comzotohlabscljc.util.core.MubleAPI obj]
+
+  nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod EveSetResult :czc.tardis.io/EmEvent
+
+  [^IOEvent obj ^IOResult res]
+
   (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-         weh (.getf ^comzotohlabscljc.util.core.MuObj obj :waitEventHolder)
-         s (.getSession obj)
+         weh (.getf ^comzotohlabscljc.util.core.MubleAPI obj :waitEventHolder)
+         ss (.getSession obj)
          src (.emitter obj) ]
-    (when-not (nil? s) (.handleResult s obj res))
-    (.setf! ^comzotohlabscljc.util.core.MuObj obj :result res)
+    (when-not (nil? ss) (.handleResult ss obj res))
+    (.setf! ^comzotohlabscljc.util.core.MubleAPI obj :result res)
     (when-not (nil? weh)
       (try
-          (.resumeOnResult weh res)
+        (.resumeOnResult weh res)
         (finally
-          (.setf! ^comzotohlabscljc.util.core.MuObj obj :waitEventHolder nil)
-          (.release ^comzotohlabscljc.tardis.io.core.EmitterAPI src weh))))))
+          (.setf! ^comzotohlabscljc.util.core.MubleAPI obj :waitEventHolder nil)
+          (.release ^comzotohlabscljc.tardis.io.core.EmitterAPI src weh))))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod EveDestroy :czc.tardis.io/SocketEvent
 
-(defmethod eve-destroy :czc.tardis.io/SocketEvent [^comzotohlabscljc.util.core.MuObj obj]
+  [^comzotohlabscljc.util.core.MubleAPI obj]
+
   (let [ ^Socket s (.getf obj :socket) ]
     (.setf! obj :socket nil)
-    (when-not (nil? s) (IOUtils/closeQuietly s))))
+    (when-not (nil? s) (IOUtils/closeQuietly s))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,5 +146,8 @@
 (derive :czc.tardis.io/HTTPEvent :czc.tardis.io/EmEvent)
 ;;(derive :czc.tardis.io/MVCEvent :czc.tardis.io/HTTPEvent)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private events-eof nil)
 
