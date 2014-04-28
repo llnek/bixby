@@ -24,10 +24,7 @@ import com.zotohlabs.frwk.net.ULFormItems;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.handler.codec.http.websocketx.*;
@@ -47,11 +44,18 @@ import java.util.List;
 import java.util.Map;
 
 import static com.zotohlabs.frwk.util.CoreUtils.*;
+import static com.zotohlabs.frwk.io.IOUtils.*;
 
+/**
+ * @author kenl
+ */
+@ChannelHandler.Sharable
 public class FormPostCodec extends RequestCodec {
 
   protected static final AttributeKey FORMDEC_KEY =AttributeKey.valueOf( "formdecoder");
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
+
+  public static FormPostCodec sharedHandler = new FormPostCodec();
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);
@@ -65,23 +69,8 @@ public class FormPostCodec extends RequestCodec {
     super.resetAttrs(ctx);
   }
 
-  private boolean isFormPost ( HttpMessage req, String method) {
-    String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
-    // multipart form
-    return ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) &&
-         ( ct.indexOf("multipart/form-data") >= 0 ||
-             ct.indexOf("application/x-www-form-urlencoded") >= 0 );
-  }
-
-  protected JsonObject extractMsgInfo( HttpMessage msg) {
-    JsonObject info = super.extractMsgInfo(msg);
-    String mt = info.get("method").getAsString();
-    info.addProperty("formpost", isFormPost( msg, mt));
-    return info;
-  }
-
   private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req) {
-    DefaultHttpDataFactory fac= new DefaultHttpDataFactory(com.zotohlabs.frwk.io.IOUtils.streamLimit());
+    DefaultHttpDataFactory fac= new DefaultHttpDataFactory(streamLimit());
     HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
     setAttr(ctx ,FORMITMS_KEY, new ULFormItems() );
     setAttr( ctx, FORMDEC_KEY, dc);
@@ -147,18 +136,16 @@ public class FormPostCodec extends RequestCodec {
     Throwable err= null;
     if (msg instanceof HttpContent) {
       try {
-        dc.offer( (HttpContent) msg) ;
+        dc.offer( (HttpContent) msg);
         readHttpDataChunkByChunk(ctx, dc);
-      }
-      catch (Throwable e) {
-        err= e;
+      } catch (Throwable e) {
+        err = e;
         ctx.fireExceptionCaught(e);
       }
     }
     if (err==null && msg instanceof LastHttpContent) {
       ULFormItems fis= (ULFormItems) getAttr(ctx, FORMITMS_KEY);
       JsonObject info = (JsonObject) getAttr(ctx, MSGINFO_KEY);
-      JsonObject result= new JsonObject();
       XData xs = (XData) getAttr( ctx, XDATA_KEY);
       delAttr(ctx, FORMITMS_KEY);
       xs.resetContent(fis);
@@ -170,6 +157,18 @@ public class FormPostCodec extends RequestCodec {
     }
   }
 
+  @Override
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    if (msg instanceof HttpRequest) {
+      HttpRequest req = (HttpRequest) msg;
+      handleFormPost(ctx, req);
+    }
+    else
+    if (msg instanceof HttpContent) {
+      HttpContent c = (HttpContent) msg;
+      handleFormPostChunk(ctx,c);
+    }
+  }
 }
 
 

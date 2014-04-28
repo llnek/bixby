@@ -37,19 +37,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 
+@SuppressWarnings("unchecked")
 public enum ClientSide {
 ;
 
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return ClientSide._log; }
-
-  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JsonObject options) {
-    return new ChannelInitializer() {
-      public void initChannel(Channel ch) {
-        cfg.assemble(ch.pipeline(), options);
-      }
-    };
-  }
 
   public static Bootstrap initClientSide(PipelineConfigurator cfg, JsonObject options) {
     Bootstrap bs= new Bootstrap();
@@ -57,7 +50,7 @@ public enum ClientSide {
     bs.channel(NioSocketChannel.class);
     bs.option(ChannelOption.SO_KEEPALIVE,true);
     bs.option(ChannelOption.TCP_NODELAY,true);
-    bs.handler( makeChannelInitor(cfg, options));
+    bs.handler( cfg.configure(options));
     return bs;
   }
 

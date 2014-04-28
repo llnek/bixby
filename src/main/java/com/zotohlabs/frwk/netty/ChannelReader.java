@@ -22,8 +22,9 @@ package com.zotohlabs.frwk.netty;
 import com.google.gson.JsonObject;
 import io.netty.channel.*;
 
-
-
+/**
+ * @author kenl
+ */
 public interface ChannelReader {
 
   public void handle(ChannelHandlerContext ctx, Object msg, JsonObject options);

@@ -18,31 +18,25 @@
 
 package com.zotohlabs.frwk.netty;
 
-import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 
-import static com.zotohlabs.frwk.netty.NettyFW.*;
+import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 
 /**
  * @author kenl
  */
-public enum ErrorCatcher {
-;
+@ChannelHandler.Sharable
+public class ErrorCatcher extends SimpleChannelInboundHandler {
 
-  public static ChannelHandler makeHandler(JsonObject options) {
-    return new ChannelInboundHandlerAdapter() {
-      public void exceptionCaught (ChannelHandlerContext ctx, Exception err) {
-        replyXXX( ctx.channel(), 500);
-      }
-    };
+  public ErrorCatcher() {
+
   }
 
-  public static ChannelPipeline addLast(ChannelPipeline pl, JsonObject options) {
-    pl.addLast("err-catch", makeHandler(options));
-    return pl;
+  @Override
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    replyXXX( ctx.channel(), 500);
   }
 
 }

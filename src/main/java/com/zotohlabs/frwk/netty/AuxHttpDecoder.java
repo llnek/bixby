@@ -29,10 +29,7 @@ import com.zotohlabs.frwk.net.ULFormItems;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.handler.codec.http.websocketx.*;
@@ -56,7 +53,7 @@ import static com.zotohlabs.frwk.util.CoreUtils.*;
 /**
  * @author kenl
  */
-public abstract class AuxHttpDecoder {
+public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
   private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
   public Logger tlog() { return _log; }
@@ -66,15 +63,21 @@ public abstract class AuxHttpDecoder {
   protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
   protected static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
 
+  public String getName() {
+    return this.getClass().getSimpleName();
+  }
 
+  @SuppressWarnings("unchecked")
   protected void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
     ctx.attr(akey).set(aval);
   }
-
+  
+  @SuppressWarnings("unchecked")
   protected void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
     ctx.attr(akey).remove();
   }
 
+  @SuppressWarnings("unchecked")
   protected Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
     return ctx.attr(akey).get();
   }

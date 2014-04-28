@@ -18,43 +18,38 @@
 
 package com.zotohlabs.frwk.netty;
 
-import com.google.gson.JsonObject;
-import com.zotohlabs.wflow.Pipeline;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 
+/**
+ * @author kenl
+ */
+@ChannelHandler.Sharable
+public class Expect100 extends SimpleChannelInboundHandler {
 
-public enum Expect100 {
-;
   private static HttpResponse c100_rsp() {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                   HttpResponseStatus.CONTINUE);
   }
 
-  public static ChannelHandler makeHandler(JsonObject options) {
-    return new ChannelInboundHandlerAdapter() {
-      public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (msg instanceof HttpMessage &&
-                   HttpHeaders.is100ContinueExpected( (HttpMessage) msg)) {
-          ctx.writeAndFlush( c100_rsp() ).addListener(new ChannelFutureListener() {
-            public void operationComplete(ChannelFuture f) {
-              if (! f.isSuccess()) {
-                ctx.fireExceptionCaught(f.cause() );
-              }
-            }
-          });
-        } else {
-          ctx.fireChannelRead(msg);
+  public static void handle100(ChannelHandlerContext ctx, HttpMessage msg) {
+    if (HttpHeaders.is100ContinueExpected(msg)) {
+      ctx.writeAndFlush( c100_rsp() ).addListener(new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture f) {
+          if (!f.isSuccess()) {
+            ctx.fireExceptionCaught(f.cause());
+          }
         }
-      }
-    };
+      });
+    }
   }
 
-  public static ChannelPipeline addLast(ChannelPipeline pl, JsonObject options) {
-    pl.addLast("ex-100", makeHandler( options ));
-    return pl;
+  @Override
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+    if (msg instanceof HttpMessage) {
+      handle100(ctx, (HttpMessage) msg);
+    }
   }
-
 }
 
 

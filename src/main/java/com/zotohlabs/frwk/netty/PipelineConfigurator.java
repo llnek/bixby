@@ -21,9 +21,23 @@ package com.zotohlabs.frwk.netty;
 import com.google.gson.JsonObject;
 import io.netty.channel.*;
 
-public interface PipelineConfigurator {
+/**
+ * @author kenl
+ */
+public abstract class PipelineConfigurator {
 
-  public void assemble(ChannelPipeline pipe, JsonObject options);
+  protected PipelineConfigurator() {
+  }
+
+  public ChannelHandler configure(JsonObject options) {
+    return new ChannelInitializer() {
+      public void initChannel(Channel ch) {
+        assemble(ch.pipeline(), options);
+      }
+    };
+  }
+
+  protected abstract void assemble(ChannelPipeline pipe, JsonObject options);
 
 }
 

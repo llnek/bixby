@@ -51,6 +51,8 @@ import static com.zotohlabs.frwk.util.CoreUtils.*;
 
 public class RequestCodec extends AuxHttpDecoder {
 
+  public static final RequestCodec sharedHandler = new RequestCodec();
+
   protected void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
 
@@ -144,6 +146,10 @@ public class RequestCodec extends AuxHttpDecoder {
   }
 
 
+  @Override
+  protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
+
+  }
 }
 
 

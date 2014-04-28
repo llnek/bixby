@@ -1,3 +1,20 @@
+/*??
+*
+* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+*
+* This library is distributed in the hope that it will be useful
+* but without any warranty; without even the implied warranty of
+* merchantability or fitness for a particular purpose.
+*
+* The use and distribution terms for this software are covered by the
+* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+* which can be found in the file epl-v10.html at the root of this distribution.
+*
+* By using this software in any fashion, you are agreeing to be bound by
+* the terms of this license.
+* You must not remove this notice, or any other, from this software.
+*
+ ??*/
 
 package com.zotohlabs.frwk.netty;
 
@@ -14,12 +31,16 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
+/**
+ * @author kenl
+ */
 public enum ServerSide {
 ;
   private static Logger _log = LoggerFactory.getLogger(ServerSide.class);
   public static Logger tlog() { return _log; }
 
-  public static ServerBootstrap initServerSide(PipelineConfigurator cfg, JsonObject options) {
+  public static ServerBootstrap initServerSide(PipelineConfigurator cfg,
+                                               JsonObject options) {
     ServerBootstrap bs= new ServerBootstrap();
     bs.group( new NioEventLoopGroup(), new NioEventLoopGroup() );
     bs.channel(NioServerSocketChannel.class);
@@ -27,16 +48,8 @@ public enum ServerSide {
     bs.option(ChannelOption.SO_BACKLOG,100);
     bs.childOption(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
     bs.childOption(ChannelOption.TCP_NODELAY,true);
-    bs.childHandler( makeChannelInitor(cfg, options));
+    bs.childHandler( cfg.configure(options));
     return bs;
-  }
-
-  private static ChannelHandler makeChannelInitor(PipelineConfigurator cfg, JsonObject options) {
-    return new ChannelInitializer() {
-      public void initChannel(Channel ch) {
-        cfg.assemble(ch.pipeline(), options);
-      }
-    };
   }
 
   public static Channel start(ServerBootstrap bs, String host, int port) throws IOException {
