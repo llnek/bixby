@@ -20,19 +20,20 @@ import java.util.*;
  */
 public interface Configuration {
 
-  public Configuration getChild(String name);
-  public List<?> getSequence(String name);
+  public Configuration getChild( String name);
+  public List<?> getSequence( String name);
 
-  public boolean contains(String name);
+  public boolean contains( String name);
   public int size();
 
-  public String getString(String name, String dft);
-  public long getLong(String name, long dft);
-  public double getDouble(String name, double dft);
-  public boolean getBool(String name, boolean dft);
-  public Date getDate(String name);
+  public String getString( String name, String dft);
+  public long getLong( String name, long dft);
+  public double getDouble( String name, double dft);
+  public boolean getBool( String name, boolean dft);
+  public Date getDate( String name);
 
   public Set<String> getKeys();
+
 }
 
 

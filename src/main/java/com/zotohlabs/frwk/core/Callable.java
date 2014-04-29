@@ -18,7 +18,7 @@ package com.zotohlabs.frwk.core;
  */
 public interface Callable {
 
-  public Object call(Object c);
+  public Object call( Object c);
 
 }
 

@@ -18,7 +18,7 @@ package com.zotohlabs.frwk.core;
  */
 public interface Configurable {
 
-  public void configure(Object c);
+  public void configure( Object c);
 
 }
 
