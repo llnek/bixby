@@ -13,39 +13,53 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.impl.defaults)
+  comzotohlabscljc.tardis.impl.defaults
 
-(import '(com.zotohlabs.frwk.util CoreUtils))
-(import '(com.zotohlabs.gallifrey.loaders AppClassLoader))
-(import '(com.zotohlabs.frwk.core
-  Versioned Identifiable Hierarchial))
-(import '(com.zotohlabs.frwk.server
-  Component ComponentRegistry
-  RegistryError ServiceError ))
-(import '(com.zotohlabs.gallifrey.core
-  ConfigError))
-(import '(java.io File))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [ comzotohlabscljc.util.core :only [MubleAPI] ] )
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [ comzotohlabscljc.util.files :only [FileRead? DirReadWrite? ] ] )
+  (:use [ comzotohlabscljc.util.core :only [test-cond MakeMMap test-nestr] ] )
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[ comzotohlabscljc.util.core :only [MuObj] ] )
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[ comzotohlabscljc.util.files :only [file-read? dir-readwrite? ] ] )
-(use '[ comzotohlabscljc.util.core :only [test-cond make-mmap test-nestr] ] )
-
+  (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial))
+  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
+  (:import (com.zotohlabs.frwk.util CoreUtils))
+  (:import (com.zotohlabs.frwk.server Component ComponentRegistry
+                                      RegistryError ServiceError ))
+  (:import (com.zotohlabs.gallifrey.core ConfigError))
+  (:import (java.io File)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-(defn precondDir "" [d]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PrecondDir ""
+
+  [d]
+
   (test-cond (str "Directory " d " must be read-writable.")
-                (dir-readwrite? d)))
+                (DirReadWrite? d)))
 
-(defn precondFile "" [f]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PrecondFile ""
+
+  [f]
+
   (test-cond (str "File " f " must be readable.")
-                (file-read? f)))
+                (FileRead? f)))
 
-(defn maybeDir "" ^File [^comzotohlabscljc.util.core.MuObj m kn]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MaybeDir ""
+
+  ^File
+  [^comzotohlabscljc.util.core.MubleAPI m kn]
+
   (let [ v (.getf m kn) ]
     (cond
       (instance? String v)
@@ -55,49 +69,63 @@
       v
 
       :else
-      (throw (ConfigError. (str "No such folder for key: " kn))))))
-
+      (throw (ConfigError. (str "No such folder for key: " kn))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (defprotocol Deployer
+
   ""
+
   (undeploy [_ app] )
   (deploy [_ src] ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol BlockMeta
+
   ""
+
   (enabled? [_] )
   (metaUrl [_] ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol PODMeta
+
   ""
+
   (typeof [_ ] )
   (moniker [_] )
   (appKey [_ ] )
   (srcUrl [_ ]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol Kernel "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeComponentRegistry "" 
+  
+  [regoType regoId ver parObj]
 
-(defn make-component-registry "" [regoType regoId ver parObj]
-
-  (let [ impl (make-mmap) ]
+  (let [ impl (MakeMMap) ]
     (test-cond "registry type" (keyword? regoType))
     (test-cond "registry id" (keyword? regoId))
     (test-nestr "registry version" ver)
-    (.mm-s impl :cache {} )
+    (.setf! impl :cache {} )
     (with-meta
       (reify
 
         Element
 
-        (setCtx! [_ x] (.mm-s impl :ctx x))
-        (getCtx [_] (.mm-g impl :ctx))
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
 
         Hierarchial
         (parent [_] parObj)
@@ -108,11 +136,11 @@
 
         ComponentRegistry
         (has [this cid]
-            (let [ cache (.mm-g impl :cache)
+            (let [ cache (.getf impl :cache)
                    c (get cache cid) ]
               (if (nil? c) false true)) )
         (lookup [this cid]
-            (let [ cache (.mm-g impl :cache)
+            (let [ cache (.getf impl :cache)
                    c (get cache cid) ]
               (if (and (nil? c) (instance? ComponentRegistry parObj))
                 (.lookup ^ComponentRegistry parObj cid)
@@ -120,28 +148,28 @@
 
         (dereg [this c]
           (let [ cid (if (nil? c) nil (.id  ^Identifiable c))
-                 cache (.mm-g impl :cache) ]
+                 cache (.getf impl :cache) ]
             (when (.has this cid)
-              (.mm-s impl :cache (dissoc cache cid)))))
+              (.setf! impl :cache (dissoc cache cid)))))
 
         (reg [this c]
           (let [ cid (if (nil? c) nil (.id  ^Identifiable c))
-                 cache (.mm-g impl :cache) ]
+                 cache (.getf impl :cache) ]
             (when (.has this cid)
               (throw (RegistryError.
                        (str "Component \"" cid "\" already exists" ))))
-            (.mm-s impl :cache (assoc cache cid c))))
+            (.setf! impl :cache (assoc cache cid c))))
 
         Registry
           (seq* [_]
-            (let [ cache (.mm-g impl :cache) ]
+            (let [ cache (.getf impl :cache) ]
               (seq cache))) )
 
-      { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) } )) )
+      { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) } 
+
+  )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
+;;
 (def ^:private defaults-eof nil)
 

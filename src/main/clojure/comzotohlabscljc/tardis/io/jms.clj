@@ -9,103 +9,114 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.jms)
+  comzotohlabscljc.tardis.io.jms
 
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(com.zotohlabs.frwk.core Identifiable))
-(import '(java.util
-  Hashtable Properties ResourceBundle))
-(import '(javax.jms Connection
-  ConnectionFactory
-  Destination
-  Connection
-  Message
-  MessageConsumer
-  MessageListener
-  Queue
-  QueueConnection
-  QueueConnectionFactory
-  QueueReceiver
-  QueueSession
-  Session
-  Topic
-  TopicConnection
-  TopicConnectionFactory
-  TopicSession
-  TopicSubscriber))
-(import '(javax.naming Context InitialContext))
-(import '(java.io IOException))
-(import '(com.zotohlabs.gallifrey.io JMSEvent))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap juid TryC] ])
+  (:use [comzotohlabscljc.crypto.codec :only [Pwdify] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:use [comzotohlabscljc.util.str :only [hgl? nsb] ])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.io.core])
 
-(use '[comzotohlabscljc.util.core :only [MuObj make-mmap uid TryC] ])
-(use '[comzotohlabscljc.crypto.codec :only [pwdify] ])
-(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
-(use '[comzotohlabscljc.util.str :only [hgl? nsb] ])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.tardis.io.core])
-
+  (:import (java.util Hashtable Properties ResourceBundle))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (com.zotohlabs.frwk.core Identifiable))
+  (:import (javax.jms Connection ConnectionFactory Destination Connection
+                      Message MessageConsumer MessageListener Queue
+                      QueueConnection QueueConnectionFactory QueueReceiver
+                      QueueSession Session Topic TopicConnection
+                      TopicConnectionFactory TopicSession TopicSubscriber))
+  (:import (javax.naming Context InitialContext))
+  (:import (java.io IOException))
+  (:import (com.zotohlabs.gallifrey.io JMSEvent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeJMSClient "" 
+  
+  [container]
 
-(defn makeJMSClient "" [container]
-  (makeEmitter container :czc.tardis.io/JMS))
+  (MakeEmitter container :czc.tardis.io/JMS))
 
-(defmethod ioes-reify-event :czc.tardis.io/JMS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.tardis.io/JMS
+
   [co & args]
-  (let [ eeid (next-long)
-         impl (make-mmap)
+
+  (let [ eeid (NextLong)
+         impl (MakeMMap)
          msg (first args) ]
     (with-meta
       (reify
 
         Identifiable
+
         (id [_] eeid)
 
         JMSEvent
-        (bindSession [_ s] (.mm-s impl :ios s))
-        (getSession [_] (.mm-g impl :ios))
+
+        (bindSession [_ s] (.setf! impl :ios s))
+        (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
         (emitter [_] co)
         (getMsg [_] msg))
 
-      { :typeid :czc.tardis.io/JMSEvent } )))
+      { :typeid :czc.tardis.io/JMSEvent } 
 
-(defn- onMessage [^comzotohlabscljc.tardis.io.core.EmitterAPI co msg]
+  )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onMessage ""
+  
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co msg]
+
       ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (ioes-reify-event co msg) {} ))
+  (.dispatch co (IOESReifyEvent co msg) {} ))
 
-(defmethod comp-configure :czc.tardis.io/JMS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.io/JMS
+
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
+
   (let [ pkey (:hhh.pkey cfg) ]
     (.setAttr! co :contextFactory (:contextfactory cfg))
     (.setAttr! co :connFactory (:connfactory cfg))
     (.setAttr! co :jndiUser (:jndiuser cfg))
-    (.setAttr! co :jndiPwd (pwdify (:jndipwd cfg) pkey))
+    (.setAttr! co :jndiPwd (Pwdify (:jndipwd cfg) pkey))
     (.setAttr! co :jmsUser (:jmsuser cfg))
-    (.setAttr! co :jmsPwd (pwdify (:jmspwd cfg) pkey))
+    (.setAttr! co :jmsPwd (Pwdify (:jmspwd cfg) pkey))
     (.setAttr! co :durable (:durable cfg))
     (.setAttr! co :providerUrl (:providerurl cfg))
     (.setAttr! co :destination (:destination cfg))
-    co))
+    co
+  ))
 
-(defn- inizFac ^Connection [^comzotohlabscljc.tardis.core.sys.Element co
-                ^InitialContext ctx
-                ^ConnectionFactory cf]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- inizFac ""
+  
+  ^Connection
+  
+  [^comzotohlabscljc.tardis.core.sys.Element co ^InitialContext ctx ^ConnectionFactory cf]
 
   (let [ ^String des (.getAttr co :destination)
          c (.lookup ctx des)
          ju (.getAttr co :jmsUser)
          jp (nsb (.getAttr co :jmsPwd))
          ^Connection conn (if (hgl? ju)
-                (.createConnection cf ju (if (hgl? jp) jp nil))
-                (.createConnection cf)) ]
-
+                              (.createConnection cf ju (if (hgl? jp) jp nil))
+                              (.createConnection cf)) ]
     (if (instance? Destination c)
       ;;TODO ? ack always ?
       (->
@@ -114,19 +125,23 @@
         (.setMessageListener (reify MessageListener
           (onMessage [_ m] (onMessage co m)))))
       (throw (IOException. "Object not of Destination type.")))
+    conn
+  ))
 
-    conn))
-
-(defn- inizTopic ^Connection [^comzotohlabscljc.tardis.core.sys.Element co
-                  ^InitialContext ctx
-                  ^TopicConnectionFactory cf]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- inizTopic ""
+  
+  ^Connection 
+  
+  [^comzotohlabscljc.tardis.core.sys.Element co ^InitialContext ctx ^TopicConnectionFactory cf]
 
   (let [ ^String jp (nsb (.getAttr co :jmsPwd))
          ^String des (.getAttr co :destination)
          ^String ju (.getAttr co :jmsUser)
          conn (if (hgl? ju)
-                (.createTopicConnection cf ju (if (hgl? jp) jp nil))
-                (.createTopicConnection cf))
+                  (.createTopicConnection cf ju (if (hgl? jp) jp nil))
+                  (.createTopicConnection cf))
          s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
          t (.lookup ctx des) ]
 
@@ -138,19 +153,22 @@
           (.createSubscriber s t))
       (.setMessageListener (reify MessageListener
                               (onMessage [_ m] (onMessage co m))) ))
-    conn))
+    conn
+  ))
 
-
-(defn- inizQueue ^Connection [^comzotohlabscljc.tardis.core.sys.Element co
-                  ^InitialContext ctx
-                  ^QueueConnectionFactory cf]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- inizQueue ""
+  
+  ^Connection 
+  [^comzotohlabscljc.tardis.core.sys.Element co ^InitialContext ctx ^QueueConnectionFactory cf]
 
   (let [ ^String jp (nsb (.getAttr co :jmsPwd))
          ^String des (.getAttr co :destination)
          ^String ju (.getAttr co :jmsUser)
          conn (if (hgl? ju)
-                (.createQueueConnection cf ju (if (hgl? jp) jp nil))
-                (.createQueueConnection cf))
+                  (.createQueueConnection cf ju (if (hgl? jp) jp nil))
+                  (.createQueueConnection cf))
          s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
          q (.lookup ctx des) ]
 
@@ -160,11 +178,16 @@
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener (reify MessageListener
               (onMessage [_ m] (onMessage co m)))))
-    conn))
+    conn
+    
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStart :czc.tardis.io/JMS
 
-(defmethod ioes-start :czc.tardis.io/JMS
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^String cf (.getAttr co :contextFactory)
          pl (.getAttr co :providerUrl)
          ^String ju (.getAttr co :jndiUser)
@@ -201,19 +224,23 @@
 
       (.setAttr! co :conn c)
       (.start c)
-      (ioes-started co))))
+      (IOESStarted co))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStop :czc.tardis.io/JMS
 
-(defmethod ioes-stop :czc.tardis.io/JMS
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^Connection c (.getAttr co :conn) ]
     (when-not (nil? c)
       (TryC (.close c)))
     (.setAttr! co :conn nil)
-    (ioes-stopped co)))
-
+    (IOESStopped co)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private jms-eof nil)
 

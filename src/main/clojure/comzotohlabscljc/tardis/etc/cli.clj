@@ -9,121 +9,176 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.tardis.etc.cli )
+  comzotohlabscljc.tardis.etc.cli
 
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(org.apache.commons.io.filefilter
-  FileFileFilter FileFilterUtils))
-(import '(org.apache.commons.io
-  FilenameUtils FileUtils))
-(import '(java.util UUID))
-(import '(java.io File))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:require [clojure.data.json :as json])
+  (:use [comzotohlabscljc.util.files :only [Unzip] ])
+  (:use [comzotohlabscljc.util.core :only [juid IsWindows?] ])
+  (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.etc.task])
 
-(use '[comzotohlabscljc.util.files :only [unzip] ])
-(use '[comzotohlabscljc.util.core :only [uid is-windows?] ])
-(use '[comzotohlabscljc.util.ini :only [parse-inifile] ])
-(require '[clojure.data.json :as json])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.etc.task])
-
+  (:import (org.apache.commons.io.filefilter FileFileFilter FileFilterUtils))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (org.apache.commons.io FilenameUtils FileUtils))
+  (:import (java.util UUID))
+  (:import (java.io File)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:dynamic *SKARO-WEBCSSLANG* "scss")
 (def ^:dynamic *SKARO-WEBLANG* "coffee")
 
-(defn- copy-files "" [^File srcDir ^File destDir ext]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- copy-files ""
+
+  [^File srcDir ^File destDir ext]
+
   (FileUtils/copyDirectory
     srcDir
     destDir
     (FileFilterUtils/andFileFilter FileFileFilter/FILE
-                                   (FileFilterUtils/suffixFileFilter (str "." ext)))))
+                                   (FileFilterUtils/suffixFileFilter (str "." ext)))
+  ))
 
-(defn- sanitizeAppDomain [appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- sanitizeAppDomain ""
+
+  [appDomain]
+
   (-> appDomain
     (StringUtils/stripStart ".")
-    (StringUtils/stripEnd ".")))
+    (StringUtils/stripEnd ".")
+  ))
 
-(defn runAppBg "" [^File hhhHome bg]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunAppBg ""
+
+  [^File hhhHome bg]
+
   (let [ prog2 (.getCanonicalPath (File. hhhHome "bin/skaro.bat"))
          prog (.getCanonicalPath (File. hhhHome "bin/skaro"))
-         pj (if (is-windows?)
-              (make-ExecTask "cmd.exe" hhhHome
+         pj (if (IsWindows?)
+              (MakeExecTask "cmd.exe" hhhHome
                              [ "/C" "start" "/B" "/MIN" prog2 "start" ])
-              (make-ExecTask prog hhhHome [ "start" "bg" ])) ]
-    (execProj pj)))
+              (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
+    (ExecProj pj)
+  ))
 
-(defn bundleApp "" [^File hhhHome appId]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BundleApp ""
+
+  [^File hhhHome appId]
+
   (let [ srcDir (File. hhhHome (str "apps/" appId))
          pod (File. hhhHome (str "pods/" appId ".pod"))
-         pj (make-ZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
-    (execProj pj)))
+         pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
+    (ExecProj pj)
+  ))
 
-(defn antBuildApp "" [^File hhhHome appId antTarget]
-  (let [ pj (make-AntTask hhhHome appId antTarget) ]
-    (execProj pj)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntBuildApp ""
 
-(defn cleanAppClasses "" [^File webzDir ^File czDir]
+  [^File hhhHome appId antTarget]
+
+  (let [ pj (MakeAntTask hhhHome appId antTarget) ]
+    (ExecProj pj)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CleanAppClasses ""
+
+  [^File webzDir ^File czDir]
+
   (FileUtils/cleanDirectory webzDir)
   (FileUtils/cleanDirectory czDir)
   (.mkdirs czDir))
 
-(defn createDemo "Unzip the demo pod." [^File hhhHome demoId]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateDemo "Unzip the demo pod."
+
+  [^File hhhHome demoId]
+
   (let [ fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
          dest (File. hhhHome (str "apps/demo-" demoId)) ]
-    (debug "Unzipping demo pod: " demoId)
+    (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
       (.mkdirs dest)
-      (unzip fp dest))))
+      (unzip fp dest))
+  ))
 
-(defn createSamples "Unzip all samples." [^File hhhHome]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateSamples "Unzip all samples."
+
+  [^File hhhHome]
+
   (let [ top (File. hhhHome (str "docs/samples"))
          fs (.listFiles top) ]
-    (debug "Unzipping all samples.")
+    (log/debug "Unzipping all samples.")
     (doseq [ ^File f (seq fs) ]
       (when (and (.isFile f) (.endsWith (.getName f) ".pod"))
-        (createDemo hhhHome (FilenameUtils/getBaseName (.toString f)))))))
+        (CreateDemo hhhHome (FilenameUtils/getBaseName (.toString f)))))
+  ))
 
-(defn- post-create-app "" [^File hhhHome appId ^String appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- post-create-app ""
+
+  [^File hhhHome appId ^String appDomain]
+
   (let [ appDir (File. hhhHome (str "apps/" appId))
-         h2db (str (if (is-windows?) "/c:/temp/" "/tmp/") (uid))
+         h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
          appDomainPath (.replace appDomain "." "/") ]
     (-> (File. h2db) (.mkdirs))
     (with-local-vars [ fp nil ]
       (var-set fp (File. appDir (str "src/main/clojure/" appDomainPath "/core.clj")))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
 
       (var-set fp (File. appDir (str "src/main/clojure/" appDomainPath "/pipe.clj")))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
 
       (var-set fp (File. appDir "conf/env.conf"))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@H2DBPATH@@" (str h2db "/" appId))
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+            (StringUtils/replace "@@H2DBPATH@@" (str h2db "/" appId))
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
 
       (var-set fp (File. appDir "build.xml"))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPCLJFILES@@"
+            (StringUtils/replace "@@APPCLJFILES@@"
                                (str "<arg value=\""
                                     appDomain
                                     ".core\"/>"
                                     "<arg value=\""
                                     appDomain
                                     ".pipe\"/>" ))
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-          (StringUtils/replace "@@APPID@@" appId)) "utf-8")
-    )))
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+  )))
 
-(defn- create-app-common "" [^File hhhHome appId ^String appDomain flavor]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- create-app-common ""
+
+  [^File hhhHome appId ^String appDomain flavor]
+
   (let [ appDir (doto (File. hhhHome (str "apps/" appId)) (.mkdirs))
          mfDir (doto (File. appDir "META-INF")(.mkdirs))
          appDomainPath (.replace appDomain "." "/") ]
@@ -151,11 +206,11 @@
       (var-set fp (File. appDir "conf/app.conf"))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@USER@@"
+            (StringUtils/replace "@@USER@@"
                                (System/getProperty "user.name")))
         "utf-8")
 
-      (doseq [ s [ "scala" "java" (str "clojure/" appDomainPath) ]]
+      (doseq [ s [ "java" (str "clojure/" appDomainPath) ]]
         (-> (File. appDir (str "src/main/" s)) (.mkdirs))
         (-> (File. appDir (str "src/test/" s)) (.mkdirs)))
 
@@ -173,37 +228,47 @@
       (var-set fp (File. mfDir "MANIFEST.MF"))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPKEY@@" (.toString (UUID/randomUUID)))
-          (StringUtils/replace "@@APPMAINCLASS@@"  (str appDomain ".core.MyAppMain")))
+            (StringUtils/replace "@@APPKEY@@" (.toString (UUID/randomUUID)))
+            (StringUtils/replace "@@APPMAINCLASS@@"  (str appDomain ".core.MyAppMain")))
                                    "utf-8")
 
       (var-set fp (File. appDir "pom.xml"))
       (FileUtils/writeStringToFile ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-          (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
 
       (var-set fp (File. appDir "ivy.xml"))
       (FileUtils/writeStringToFile  ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-          (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
 
       (var-set fp (File. appDir "build.xs"))
       (FileUtils/writeStringToFile  ^File @fp
         (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
-          (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
-          (StringUtils/replace "@@APPTYPE@@" flavor)
-          (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome))) "utf-8")
+            (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
+            (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
+            (StringUtils/replace "@@APPTYPE@@" flavor)
+            (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome))) "utf-8")
 
-    )))
+  )))
 
-(defn createBasic "" [^File hhhHome appId ^String appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn createBasic ""
+
+  [^File hhhHome appId ^String appDomain]
+
   (create-app-common hhhHome appId appDomain "basic")
   (post-create-app hhhHome appId appDomain))
 
-(defn- create-web-common "" [^File hhhHome appId ^String appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- create-web-common ""
+
+  [^File hhhHome appId ^String appDomain]
+
   (let [ wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ) )
          wbs (json/read-str (FileUtils/readFileToString wfc "utf-8")
                             :key-fn keyword)
@@ -250,9 +315,14 @@
                                  ""
                                  "utf-8")
 
-    ))
+  ))
 
-(defn createJetty "" [^File hhhHome appId ^String appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateJetty ""
+
+  [^File hhhHome appId ^String appDomain]
+
   (let [ appDir (File. hhhHome (str "apps/" appId)) ]
     (create-app-common hhhHome appId appDomain "web")
     (create-web-common hhhHome appId appDomain)
@@ -262,9 +332,15 @@
                         (File. appDir "conf/env.conf"))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/jetty/web.xml")
                                    (File. appDir "WEB-INF"))
-    (post-create-app hhhHome appId appDomain)))
+    (post-create-app hhhHome appId appDomain)
+  ))
 
-(defn createWeb "" [^File hhhHome appId ^String appDomain]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateWeb ""
+
+  [^File hhhHome appId ^String appDomain]
+
   (let [ appDir (File. hhhHome (str "apps/" appId))
          appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [fp nil]
@@ -293,9 +369,10 @@
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/pipe.clj")
                                    (File. appDir (str "src/main/clojure/" appDomainPath)))
 
-      (post-create-app hhhHome appId appDomain) )))
-
+      (post-create-app hhhHome appId appDomain)
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private cli-eof nil)
+

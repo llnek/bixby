@@ -9,29 +9,30 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
   comzotohlabscljc.tardis.etc.core
-  (:gen-class))
 
-(import '(com.zotohlabs.gallifrey.etc CmdHelpError))
-(import '(java.util Locale))
-(import '(java.io File))
+  (:gen-class)
 
-(use '[clojure.tools.logging :only [info debug] ])
-(use '[comzotohlabscljc.tardis.etc.cmdline :only [get-commands eval-command] ])
-(use '[comzotohlabscljc.util.core :only [test-cond] ])
-(use '[comzotohlabscljc.util.str :only [make-string] ])
-(use '[comzotohlabscljc.util.files :only [dir-read?] ])
-(use '[comzotohlabscljc.i18n.resources :only [get-resource] ])
+  (:require [clojure.tools.logging :as log :only [warn error info debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.etc.cmdline :only [GetCommands EvalCommand] ])
+  (:use [comzotohlabscljc.util.core :only [test-cond] ])
+  (::use'[comzotohlabscljc.util.str :only [MakeString] ])
+  (:use [comzotohlabscljc.util.files :only [DirRead?] ])
+  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
+  (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
+  (:import (java.util Locale))
+  (:import (java.io File)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private CMDLINE-INFO [
   ["new [mvc|jetty|basic] <app-name> "  "e.g. new mvc foo"]
   ["podify <app-name>"  "e.g. package app as a pod file"]
@@ -54,49 +55,68 @@
   ["demo samples" "Generate a set of samples."]
   ["version" "Show version info."] ])
 
-(defn- drawHelpLines [^String fmt ^clojure.lang.IPersistentCollection arr]
-  (doseq [ [k v] (seq arr) ]
-    (print (String/format fmt (into-array Object [k v]) ))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- drawHelpLines ""
 
-(defn- usage []
- (println (make-string \= 78))
+  [^String fmt ^clojure.lang.IPersistentCollection arr]
+
+  (doseq [ [k v] (seq arr) ]
+    (print (String/format fmt (into-array Object [k v]) ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- usage ""
+
+  []
+
+ (println (MakeString \= 78))
   (println "> tardis <commands & options>")
   (println "> -----------------")
   (drawHelpLines "> %-35s %s\n" CMDLINE-INFO)
   (println ">")
   (println "> help - show standard commands")
-  (println (make-string \= 78))
-  )
+  (println (MakeString \= 78)))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; arg(0) is skaro-home
 ;;println("#### apprunner loader = " + getClass().getClassLoader().getClass().getName())
 ;;println("#### sys loader = " + ClassLoader.getSystemClassLoader().getClass().getName())
 ;;mkCZldrs(home)
-(defn- parseArgs [rcb & args]
-  (let [ h (File. ^String (first args)) ]
-    (test-cond (str "Cannot access Skaro home " h) (dir-read? h))
-      (if (not (contains? (get-commands) (keyword (nth args 1))))
-        false
-        (fn [] (apply eval-command h rcb (drop 1 args))))))
+(defn- parseArgs ""
 
-(defn -main "Main Entry" [& args]
+  [rcb & args]
+
+  (let [ h (File. ^String (first args)) ]
+    (test-cond (str "Cannot access Skaro home " h) (DirRead? h))
+      (if (not (contains? (GetCommands) (keyword (nth args 1))))
+        false
+        (fn [] (apply EvalCommand h rcb (drop 1 args))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -main "Main Entry"
+
+  [& args]
+
   ;;(debug "Skaro: Main Entry")
   ;; for security, don't just eval stuff
   ;;(alter-var-root #'*read-eval* (constantly false))
   (let [ rcpath (str "comzotohlabscljc/tardis/etc/Resources")
-         rcb (get-resource rcpath (Locale/getDefault)) ]
+         rcb (GetResource rcpath (Locale/getDefault)) ]
     (if (< (count args) 2)
       (usage)
       (let [ rc (apply parseArgs rcb args) ]
         (if (fn? rc)
           (try (rc) (catch CmdHelpError e# (usage)))
-          (usage))))))
+          (usage))))
+  ))
 
 
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private core-eof nil)
 

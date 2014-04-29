@@ -9,126 +9,176 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.core.climain )
+  comzotohlabscljc.tardis.core.climain
 
-(use '[clojure.tools.logging :only (info warn error debug)])
+  (:require [clojure.tools.logging :as log :only (info warn error debug)])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
+  (:use [comzotohlabscljc.util.process :only [ProcessPid SafeWait] ])
+  (:use [comzotohlabscljc.util.meta :only [SetCldr GetCldr] ])
+  (:use [comzotohlabscljc.util.core :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ])
+  (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
+  (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
+  (:use [comzotohlabscljc.tardis.impl.exec :only [MakeExecvisor] ])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.impl.defaults])
 
-(import '(org.jboss.netty.channel
-  Channel ChannelFuture ChannelFutureListener))
-
-(import '(com.zotohlabs.gallifrey.core ConfigError))
-(import '(com.zotohlabs.frwk.server Component ComponentRegistry))
-(import '(com.zotohlabs.frwk.core
-  Versioned Identifiable Hierarchial
-  Startable ))
-(import '(com.zotohlabs.gallifrey.loaders
-  AppClassLoader RootClassLoader ExecClassLoader))
-(import '(com.zotohlabs.gallifrey.etc CmdHelpError))
-(import '(java.util Locale))
-(import '(java.io File))
-(import '(org.apache.commons.io FileUtils))
-
-(use '[comzotohlabscljc.i18n.resources :only [get-resource] ])
-(use '[comzotohlabscljc.util.process :only [pid safe-wait] ])
-(use '[comzotohlabscljc.util.meta :only [set-cldr get-cldr] ])
-(use '[comzotohlabscljc.util.core :only [test-nonil test-cond conv-long Try! print-mutableObj make-mmap] ])
-(use '[comzotohlabscljc.util.str :only [hgl? nsb strim] ])
-(use '[comzotohlabscljc.util.ini :only [parse-inifile] ])
-(use '[comzotohlabscljc.netty.comms])
-(use '[comzotohlabscljc.tardis.impl.exec :only [make-execvisor] ])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.tardis.impl.defaults])
+  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader RootClassLoader ExecClassLoader))
+  (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial Startable ))
+  (:import (org.jboss.netty.channel Channel ChannelFuture ChannelFutureListener))
+  (:import (com.zotohlabs.gallifrey.core ConfigError))
+  (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
+  (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
+  (:import (java.util Locale))
+  (:import (java.io File))
+  (:import (org.apache.commons.io FileUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def CLI-TRIGGER (promise))
 (def STOPCLI (atom false))
 
-(defn- inizContext ^comzotohlabscljc.util.core.MuObj [^File baseDir]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- inizContext ""
+
+  ^comzotohlabscljc.util.core.MubleAPI
+  [^File baseDir]
+
   (let [ cfg (File. baseDir ^String DN_CFG)
          home (.getParentFile cfg) ]
-    (precondDir home)
-    (precondDir cfg)
-    (doto (make-context)
+    (PrecondDir home)
+    (PrecondDir cfg)
+    (doto (MakeContext)
           (.setf! K_BASEDIR home)
-          (.setf! K_CFGDIR cfg))))
+          (.setf! K_CFGDIR cfg))
+  ))
 
-(defn- setupClassLoader [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setupClassLoader ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ root (.getf ctx K_ROOT_CZLR)
          cl (ExecClassLoader. root) ]
-    (set-cldr cl)
+    (SetCldr cl)
     (.setf! ctx K_EXEC_CZLR cl)
-    ctx))
+    ctx
+  ))
 
-(defn- setupClassLoaderAsRoot [^comzotohlabscljc.util.core.MuObj ctx]
-  (let [ root (RootClassLoader. (get-cldr)) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setupClassLoaderAsRoot ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
+  (let [ root (RootClassLoader. (GetCldr)) ]
     (.setf! ctx K_ROOT_CZLR root)
-    ctx))
+    ctx
+  ))
 
-(defn- maybeInizLoaders [^comzotohlabscljc.util.core.MuObj ctx]
-  (let [ cz (get-cldr) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeInizLoaders ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
+  (let [ cz (GetCldr) ]
     (cond
       (instance? RootClassLoader cz)
       (do
         (.setf! ctx K_ROOT_CZLR cz)
         (setupClassLoader ctx))
+
       (instance? ExecClassLoader cz)
       (do
         (.setf! ctx K_ROOT_CZLR (.getParent cz))
         (.setf! ctx K_EXEC_CZLR cz))
+
       :else
       (setupClassLoader (setupClassLoaderAsRoot ctx)))
-    (info "classloaders configured.  using ExecClassLoader.")
-    ctx))
 
-(defn- loadConf [^comzotohlabscljc.util.core.MuObj ctx]
+    (log/info "classloaders configured.  using ExecClassLoader.")
+    ctx
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- loadConf ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ ^File home (.getf ctx K_BASEDIR)
          cf (File. home  (str DN_CONF "/" (name K_PROPS) ))
         ^comzotohlabscljc.util.ini.IWin32Conf
-         w (parse-inifile cf)
-         lg (.toLowerCase ^String (.optString w K_LOCALE K_LANG "en"))
-         cn (.toUpperCase ^String (.optString w K_LOCALE K_COUNTRY ""))
+         w (ParseInifile cf)
+         cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
+         lg (cstr/lower-case (.optString w K_LOCALE K_LANG "en"))
          loc (if (hgl? cn) (Locale. lg cn) (Locale. lg)) ]
-    (info (str "using locale: " loc))
+    (log/info (str "using locale: " loc))
     (doto ctx
-      (.setf! K_PROPS w)
-      (.setf! K_LOCALE loc))) )
+          (.setf! K_PROPS w)
+          (.setf! K_LOCALE loc))) )
 
-(defn- setupResources [^comzotohlabscljc.util.core.MuObj ctx]
-  (let [ rc (get-resource "comzotohlabscljc/tardis/etc/Resources"
-                             (.getf ctx K_LOCALE)) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setupResources ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
+  (let [ rc (GetResource "comzotohlabscljc/tardis/etc/Resources" (.getf ctx K_LOCALE)) ]
     (test-nonil "etc/resouces" rc)
     (.setf! ctx K_RCBUNDLE rc)
-    (info "resource bundle found and loaded.")
-    ctx))
+    (log/info "resource bundle found and loaded.")
+    ctx
+  ))
 
-(defn- pre-parse [^comzotohlabscljc.tardis.core.sys.Element cli args]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- pre-parse ""
+
+  [^comzotohlabscljc.tardis.core.sys.Element cli args]
+
   (let [ bh (File. ^String (first args))
          ctx (inizContext bh) ]
-    (info "inside pre-parse()")
+    (log/info "inside pre-parse()")
     ;;(precondDir (File. bh ^String DN_BLOCKS))
-    (precondDir (File. bh ^String DN_CFG))
-    (precondDir (File. bh ^String DN_BOXX))
+    (PrecondDir (File. bh ^String DN_BOXX))
+    (PrecondDir (File. bh ^String DN_CFG))
     (.setf! ctx K_CLISH cli)
     (.setCtx! cli ctx)
-    (info "home directory looks ok.")
-    ctx))
+    (log/info "home directory looks ok.")
+    ctx
+  ))
 
-(defn- start-exec [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- start-exec ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (do
-    (info "about to start Skaro...")
+    (log/info "about to start Skaro...")
     (let [ ^Startable exec (.getf ctx K_EXECV) ]
       (.start exec))
-    (info "Skaro started.")
-    ctx))
+    (log/info "Skaro started.")
+    ctx
+  ))
 
-(defn- primodial [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- primodial ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ cl (.getf ctx K_EXEC_CZLR)
          cli (.getf ctx K_CLISH)
         ^comzotohlabscljc.util.ini.IWin32Conf
@@ -136,77 +186,107 @@
          cz (.optString wc K_COMPS K_EXECV "") ]
     (test-cond "conf file:exec-visor"
                   (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
-    (info "inside primodial()")
-    (let [ ^comzotohlabscljc.util.core.MuObj execv (make-execvisor cli) ]
+    (log/info "inside primodial()")
+    (let [ ^comzotohlabscljc.util.core.MubleAPI execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
-      (synthesize-component execv { :ctx ctx } )
-      (info "Execvisor created and synthesized - OK.")
-      ctx)))
+      (SynthesizeComponent execv { :ctx ctx } )
+      (log/info "Execvisor created and synthesized - OK.")
+      ctx
+  )))
 
-(defn- stop-cli [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- stop-cli ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ ^File pid (.getf ctx K_PIDFILE)
          execv (.getf ctx K_EXECV) ]
     (if-not @STOPCLI
       (do
         (reset! STOPCLI true)
         (when-not (nil? pid) (FileUtils/deleteQuietly pid))
-        (info "about to stop Skaro...")
-        (info "applications are shutting down...")
+        (log/info "about to stop Skaro...")
+        (log/info "applications are shutting down...")
         (when-not (nil? execv)
           (.stop ^Startable execv))
-        (info "Skaro stopped.")
-        (info "Tardis says \"Goodbye\".")
-        (deliver CLI-TRIGGER 911)))))
-
-(defn- enableRemoteShutdown [^comzotohlabscljc.util.core.MuObj ctx]
-  (let [ port (conv-long (System/getProperty "skaro.kill.port") 4444) ]
-    (info "Enabling remote shutdown...")
-    ;;TODO - how to clean this up
-    (MakeDiscardHTTPD "127.0.0.1" port { :action (fn [] (stop-cli ctx)) })
+        (log/info "Skaro stopped.")
+        (log/info "Tardis says \"Goodbye\".")
+        (deliver CLI-TRIGGER 911)))
   ))
 
-(defn- hookShutdown [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- enableRemoteShutdown ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
+  (let [ port (ConvLong (System/getProperty "skaro.kill.port") 4444) ]
+    (log/info "Enabling remote shutdown...")
+    ;;TODO - how to clean this up
+    (MakeDiscardHTTPD "127.0.0.1" port (fn [] (stop-cli ctx)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hookShutdown ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ cli (.getf ctx K_CLISH) ]
     (.addShutdownHook (Runtime/getRuntime)
           (Thread. (reify Runnable
                       (run [_] (Try! (stop-cli ctx))))))
     (enableRemoteShutdown ctx)
-    (info "added shutdown hook.")
-    ctx))
+    (log/info "added shutdown hook.")
+    ctx
+  ))
 
-(defn- writePID [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- writePID ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (let [ fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
     (FileUtils/writeStringToFile fp (pid) "utf-8")
     (.setf! ctx K_PIDFILE fp)
-    (info "wrote skaro.pid - OK.")
-    ctx))
+    (log/info "wrote skaro.pid - OK.")
+    ctx
+  ))
 
-(defn- pause-cli [^comzotohlabscljc.util.core.MuObj ctx]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- pause-cli ""
+
+  [^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (do
-    (print-mutableObj ctx)
-    (info "applications are now running...")
-    (info "system thread paused on promise - awaits delivery.")
+    (PrintMutableObj ctx)
+    (log/info "applications are now running...")
+    (log/info "system thread paused on promise - awaits delivery.")
     (deref CLI-TRIGGER) ;; pause here
-    (info "promise delivered!")
-    (safe-wait 5000) ;; give some time for stuff to wind-down.
-    (System/exit 0)))
-
-
+    (log/info "promise delivered!")
+    (SafeWait 5000) ;; give some time for stuff to wind-down.
+    (System/exit 0)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-climain ""
 
+  [ & args ]
 
-(defn- make-climain [ & args ]
-  (let [ impl (make-mmap) ]
+  (let [ impl (MakeMMap) ]
     (reify
 
       Element
 
-      (setCtx! [_ x] (.mm-s impl :ctx x))
-      (getCtx [_] (.mm-g impl :ctx))
-      (setAttr! [_ a v] (.mm-s impl a v) )
-      (clrAttr! [_ a] (.mm-r impl a) )
-      (getAttr [_ a] (.mm-g impl a) )
+      (setCtx! [_ x] (.setf! impl :ctx x))
+      (getCtx [_] (.getf impl :ctx))
+      (setAttr! [_ a v] (.setf! impl a v) )
+      (clrAttr! [_ a] (.clrf! impl a) )
+      (getAttr [_ a] (.getf impl a) )
 
       Hierarchial
       (parent [_] nil)
@@ -231,27 +311,25 @@
           (pause-cli)) )
 
       (stop [this]
-        (let [ ^comzotohlabscljc.util.core.MuObj ctx (getCtx this) ]
-          (stop-cli ctx))))) )
+        (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this) ]
+          (stop-cli ctx))))
+  ) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn start-main ""
 
-(defn start-main "" [ & args ]
+  [ & args ]
+
   (do
     (when (< (count args) 1)
       (throw (CmdHelpError. "Skaro Home not defined.")))
-    (info "set skaro-home= " (first args))
+    (log/info "set skaro-home= " (first args))
     (let [ ^Startable cm  (apply make-climain args) ]
-      (.start cm))))
-
-
-
-
-
-
+      (.start cm))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
+;;
 (def ^:private climain-eof nil)
 

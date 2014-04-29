@@ -9,40 +9,36 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.impl.sys )
+  comzotohlabscljc.tardis.impl.sys
 
-(import '(org.apache.commons.io FilenameUtils FileUtils))
-(import '(org.apache.commons.lang3 StringUtils))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.impl.ext])
+  (:use [comzotohlabscljc.tardis.impl.defaults :rename {Enabled? blockmeta-enabled?
+                                                        Start kernel-start
+                                                        Stop kernel-stop}])
+  (:use [ comzotohlabscljc.util.core :only [MakeMMap TryC NiceFPath notnil? NewRandom] ])
+  (:use [ comzotohlabscljc.util.str :only [strim] ])
+  (:use [ comzotohlabscljc.util.process :only [SafeWait] ])
+  (:use [ comzotohlabscljc.util.files :only [Unzip] ])
+  (:use [ comzotohlabscljc.util.mime :only [SetupCache] ])
+  (:use [ comzotohlabscljc.util.seqnum :only [NextLong] ] )
+  (:import (org.apache.commons.io FilenameUtils FileUtils))
+  (:import (org.apache.commons.lang3 StringUtils))
 
-(import '(com.zotohlabs.gallifrey.loaders AppClassLoader))
-(import '(com.zotohlabs.frwk.server Component ComponentRegistry))
-(import '(com.zotohlabs.frwk.core
-  Disposable Identifiable Hierarchial Versioned Startable))
-(import '(java.net URL))
-(import '(java.io File))
-(import '(java.security SecureRandom))
-(import '(java.util.zip ZipFile))
-(import '(com.zotohlabs.frwk.io IOUtils))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.tardis.impl.ext])
-(use '[comzotohlabscljc.tardis.impl.defaults
-       :rename {enabled? blockmeta-enabled?
-                start kernel-start
-                stop kernel-stop}])
-(use '[ comzotohlabscljc.util.core :only [make-mmap TryC nice-fpath notnil? new-random] ])
-(use '[ comzotohlabscljc.util.str :only [strim] ])
-(use '[ comzotohlabscljc.util.process :only [safe-wait] ])
-(use '[ comzotohlabscljc.util.files :only [unzip] ])
-(use '[ comzotohlabscljc.util.mime :only [setup-cache] ])
-(use '[ comzotohlabscljc.util.seqnum :only [next-long] ] )
+  (:import (com.zotohlabs.frwk.core Disposable Identifiable Hierarchial Versioned Startable))
+  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
+  (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
+  (:import (java.net URL))
+  (:import (java.io File))
+  (:import (java.security SecureRandom))
+  (:import (java.util.zip ZipFile))
+  (:import (com.zotohlabs.frwk.io IOUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -50,19 +46,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Deployer
+(defn MakeDeployer ""
 
-(defn make-deployer "" []
-  (let [ impl (make-mmap) ]
+  []
+
+  (let [ impl (MakeMMap) ]
     (with-meta
       (reify
 
         Element
 
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
-        (setCtx! [_ x] (.mm-s impl :ctx x) )
-        (getCtx [_] (.mm-g impl :ctx) )
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x) )
+        (getCtx [_] (.getf impl :ctx) )
 
         Component
         (id [_] K_DEPLOYER )
@@ -74,42 +72,49 @@
         Deployer
 
         (undeploy [this app]
-          (let [ ^comzotohlabscljc.util.core.MuObj ctx (getCtx this)
+          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
                  dir (File. ^File (.getf ctx K_PLAYDIR) ^String app) ]
             (when (.exists dir)
                 (FileUtils/deleteDirectory dir))))
 
         (deploy [this src]
-          (let [ app (FilenameUtils/getBaseName (nice-fpath src))
-                 ^comzotohlabscljc.util.core.MuObj ctx (getCtx this)
+          (let [ app (FilenameUtils/getBaseName (NiceFPath src))
+                 ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
                  des (File. ^File (.getf ctx K_PLAYDIR) ^String app) ]
             (when-not (.exists des)
-              (unzip src des)))) )
+              (Unzip src des)))) )
 
-      { :typeid (keyword "czc.tardis.impl/Deployer") } )))
+      { :typeid (keyword "czc.tardis.impl/Deployer") }
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompContextualize :czc.tardis.impl/Deployer
 
-(defmethod comp-contextualize :czc.tardis.impl/Deployer
   [co ctx]
-  (do
-    (precondDir (maybeDir ctx K_BASEDIR))
-    ;;(precondDir (maybeDir ctx K_PODSDIR))
-    (precondDir (maybeDir ctx K_PLAYDIR))
-    (comp-clone-context co ctx)))
 
-(defmethod comp-initialize :czc.tardis.impl/Deployer
+  (do
+    (PrecondDir (MaybeDir ctx K_BASEDIR))
+    ;;(precondDir (maybeDir ctx K_PODSDIR))
+    (PrecondDir (MaybeDir ctx K_PLAYDIR))
+    (CompCloneContext co ctx)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/Deployer
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.util.core.MuObj ctx (.getCtx co)
+
+  (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
          ^File py (.getf ctx K_PLAYDIR)
          ^File pd (.getf ctx K_PODSDIR) ]
     (when (.isDirectory pd)
       (doseq [ ^File f (seq (IOUtils/listFiles pd "pod" false)) ]
-        (.deploy ^comzotohlabscljc.tardis.impl.defaults.Deployer co f)))))
+        (.deploy ^comzotohlabscljc.tardis.impl.defaults.Deployer co f)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Kernel
-
 (defn- maybe-start-pod
 
   [^comzotohlabscljc.tardis.core.sys.Element knl
@@ -123,33 +128,36 @@
            ctr (if (and (not (empty? cset))
                         (not (contains? cset app)))
                  nil
-                 (make-container pod)) ]
-      (debug "start-pod? cid = " cid ", app = " app " !! cset = " cset)
+                 (MakeContainer pod)) ]
+      (log/debug "start-pod? cid = " cid ", app = " app " !! cset = " cset)
       (if (notnil? ctr)
         (do
           (.setAttr! knl K_CONTAINERS (assoc cache cid ctr))
         ;;_jmx.register(ctr,"", c.name)
-          true
-          )
+          true)
         (do
-          (info "kernel: container " cid " disabled.")
-          false) ) )))
+          (log/info "kernel: container " cid " disabled.")
+          false) ) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeKernel ""
 
-(defn make-kernel "" []
-  (let [ impl (make-mmap) ]
-    (.mm-s impl K_CONTAINERS {} )
+  []
+
+  (let [ impl (MakeMMap) ]
+    (.setf! impl K_CONTAINERS {} )
     (with-meta
       (reify
 
         Element
 
-        (setCtx! [_ x] (.mm-s impl :ctx x))
-        (getCtx [_] (.mm-g impl :ctx))
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
 
         Component
         (version [_] "1.0")
@@ -162,54 +170,56 @@
 
         Startable
         (start [this]
-          (let [ ^comzotohlabscljc.util.core.MuObj ctx (getCtx this)
+          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
                  ^ComponentRegistry root (.getf ctx K_COMPS)
                  ^comzotohlabscljc.util.ini.IWin32Conf
-                  wc (.getf ctx K_PROPS)
-                  endorsed (strim (.optString wc K_APPS "endorsed" ""))
+                 wc (.getf ctx K_PROPS)
+                 endorsed (strim (.optString wc K_APPS "endorsed" ""))
                  ^comzotohlabscljc.tardis.core.sys.Registry
                  apps (.lookup root K_APPS)
                  cs (if (= "*" endorsed)
                       #{}
-                      (into #{}
-                            (filter (fn [^String s] (> (.length s) 0))
-                                    (map #(strim %)
-                                         (seq (StringUtils/split endorsed ",;"))) ) )) ]
+                      (into #{} (filter (fn [^String s] (> (.length s) 0))
+                                        (map #(strim %)
+                                             (seq (StringUtils/split endorsed ",;"))) ) )) ]
             ;; need this to prevent deadlocks amongst pods
             ;; when there are dependencies
             ;; TODO: need to handle this better
             (doseq [ [k v] (seq* apps) ]
-              (let [ r (-> (new-random) (.nextInt 6)) ]
+              (let [ r (-> (NewRandom) (.nextInt 6)) ]
                 (if (maybe-start-pod this cs v)
-                  (safe-wait (* 1000 (Math/max (int 1) r))))))) )
+                  (SafeWait (* 1000 (Math/max (int 1) r))))))) )
 
         (stop [this]
-          (let [ cs (.mm-g impl K_CONTAINERS) ]
+          (let [ cs (.getf impl K_CONTAINERS) ]
             (doseq [ [k v] (seq cs) ]
               (.stop ^Startable v))
             (doseq [ [k v] (seq cs) ]
               (.dispose ^Disposable v))
-            (.mm-s impl K_CONTAINERS {}))) )
+            (.setf! impl K_CONTAINERS {}))) )
 
-      { :typeid (keyword "czc.tardis.impl/Kernel") } )))
-
+      { :typeid (keyword "czc.tardis.impl/Kernel") }
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakePodMeta ""
 
-(defn make-podmeta "" [app ver parObj podType appid pathToPOD]
-  (let [ pid (str podType "#" (next-long))
-         impl (make-mmap) ]
-    (info "PODMeta: " app ", " ver ", " podType ", " appid ", " pathToPOD )
+  [app ver parObj podType appid pathToPOD]
+
+  (let [ pid (str podType "#" (NextLong))
+         impl (MakeMMap) ]
+    (log/info "PODMeta: " app ", " ver ", " podType ", " appid ", " pathToPOD )
     (with-meta
       (reify
 
         Element
 
-        (setCtx! [_ x] (.mm-s impl :ctx x))
-        (getCtx [_] (.mm-g impl :ctx))
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
 
         Component
         (version [_] ver)
@@ -226,57 +236,50 @@
         (appKey [_] appid)
         (typeof [_] podType))
 
-      { :typeid (keyword "czc.tardis.impl/PODMeta") } )))
+      { :typeid (keyword "czc.tardis.impl/PODMeta") }
 
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/PODMeta
 
-(defmethod comp-initialize :czc.tardis.impl/PODMeta
   [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.util.core.MuObj ctx (.getCtx co)
+
+  (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
          rcl (.getf ctx K_ROOT_CZLR)
          ^URL url (.srcUrl ^comzotohlabscljc.tardis.impl.defaults.PODMeta co)
          cl  (AppClassLoader. rcl) ]
-    (.configure cl (nice-fpath (File. (.toURI  url))) )
-    (.setf! ctx K_APP_CZLR cl)))
+    (.configure cl (NiceFPath (File. (.toURI  url))) )
+    (.setf! ctx K_APP_CZLR cl)
+  ))
 
-(defmethod comp-compose :czc.tardis.impl/Kernel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompCompose :czc.tardis.impl/Kernel
+
   [co rego]
+
   ;; get the jmx server from root
   co)
 
-(defmethod comp-contextualize :czc.tardis.impl/Kernel
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompContextualize :czc.tardis.impl/Kernel
+
   [co ctx]
-  (let [ base (maybeDir ctx K_BASEDIR) ]
-    (precondDir base)
+
+  (let [ base (MaybeDir ctx K_BASEDIR) ]
+    (PrecondDir base)
     ;;(precondDir (maybeDir ctx K_PODSDIR))
-    (precondDir (maybeDir ctx K_PLAYDIR))
-    (setup-cache (-> (File. base (str DN_CFG "/app/mime.properties"))
+    (PrecondDir (MaybeDir ctx K_PLAYDIR))
+    (SetupCache (-> (File. base (str DN_CFG "/app/mime.properties"))
                       (.toURI)(.toURL )))
-    (comp-clone-context co ctx)))
+    (CompCloneContext co ctx)
+  ))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private sys-eof nil)
 

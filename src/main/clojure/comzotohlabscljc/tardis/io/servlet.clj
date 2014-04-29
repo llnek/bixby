@@ -22,73 +22,101 @@
     :constructors {[] []}
     :exposes-methods { init superInit  getServletName myName}
     :state myState
-  ))
+  )
 
-(import '(org.eclipse.jetty.continuation ContinuationSupport))
-(import '(org.eclipse.jetty.continuation Continuation))
-(import '(javax.servlet.http Cookie HttpServletRequest))
-(import '(javax.servlet ServletConfig))
-(import '(java.util ArrayList))
-(import '(java.net HttpCookie))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.io.http  :only [MakeHttpResult] ])
+  (:use [comzotohlabscljc.util.core :only [TryC] ])
+  (:use [comzotohlabscljc.tardis.io.triggers])
+  (:use [comzotohlabscljc.tardis.io.core])
 
-(import '(org.apache.commons.io IOUtils))
-(import '(java.io IOException))
-(import '(com.zotohlabs.frwk.io XData))
-(import '(com.zotohlabs.gallifrey.io IOSession HTTPResult HTTPEvent))
-(import '(com.zotohlabs.frwk.core Identifiable))
+  (:import (org.eclipse.jetty.continuation ContinuationSupport))
+  (:import (org.eclipse.jetty.continuation Continuation))
+  (:import (javax.servlet.http Cookie HttpServletRequest))
+  (:import (javax.servlet ServletConfig))
+  (:import (java.util ArrayList))
+  (:import (java.net HttpCookie))
 
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.tardis.io.http  :only [make-http-result] ])
-(use '[comzotohlabscljc.util.core :only [TryC] ])
-(use '[comzotohlabscljc.tardis.io.triggers])
-(use '[comzotohlabscljc.tardis.io.core])
-
+  (:import (org.apache.commons.io IOUtils))
+  (:import (java.io IOException))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlabs.gallifrey.io IOSession HTTPResult HTTPEvent))
+  (:import (com.zotohlabs.frwk.core Identifiable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn- dispREQ [ ^comzotohlabscljc.tardis.io.WEBServlet c0
-                 ^Continuation ct evt req rsp]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- dispREQ ""
+
+  [ ^comzotohlabscljc.tardis.io.WEBServlet c0
+    ^Continuation ct evt req rsp]
+
   (let [ ^comzotohlabscljc.tardis.core.sys.Element dev @(.myState c0)
          wm (.getAttr dev :waitMillis) ]
     (doto ct
-      (.setTimeout wm)
-      (.suspend rsp))
+          (.setTimeout wm)
+          (.suspend rsp))
     (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-           w  (make-async-wait-holder (make-servlet-trigger req rsp dev) evt)
+           w  (MakeAsyncWaitHolder (MakeServletTrigger req rsp dev) evt)
           ^comzotohlabscljc.tardis.io.core.EmitterAPI  src @(.myState c0) ]
       (.timeoutMillis w wm)
       (.hold src w)
-      (.dispatch src evt {}))))
+      (.dispatch src evt {}))
+  ))
 
-(defn- doASyncSvc [this evt req rsp]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doASyncSvc ""
+  
+  [this evt req rsp]
+
   (let [ c (ContinuationSupport/getContinuation req) ]
-    (when (.isInitial c) 
+    (when (.isInitial c)
       (TryC
-          (dispREQ this c evt req rsp) ))))
+          (dispREQ this c evt req rsp) ))
+  ))
 
-(defn- doSyncSvc [this evt req rsp]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doSyncSvc ""
+  
+  [this evt req rsp]
+
   (throw (IOException. "No Sync Service!!!!!!")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn -myInit []
-  [ [] 
+  [ []
     (atom nil) ] )
 
-(defn -service [ ^comzotohlabscljc.tardis.io.WEBServlet this
-                 ^HttpServletRequest req rsp]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -service ""
+  
+  [ ^comzotohlabscljc.tardis.io.WEBServlet this
+    ^HttpServletRequest req rsp]
+
   (let [ state (.myState this)
-         evt (ioes-reify-event @state req) ]
-    (debug
+         evt (IOESReifyEvent @state req) ]
+    (log/debug
       "********************************************************************"
       (.getRequestURL req)
       "********************************************************************")
     (if true
       (doASyncSvc this evt req rsp)
-      (doSyncSvc this evt req rsp))))
+      (doSyncSvc this evt req rsp))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -init ""
+  
+  [ ^comzotohlabscljc.tardis.io.WEBServlet this ^ServletConfig cfg]
 
-(defn -init [ ^comzotohlabscljc.tardis.io.WEBServlet this ^ServletConfig cfg]
   (do
     (.superInit this cfg)
     (let [ ctx (.getServletContext cfg)
@@ -96,20 +124,16 @@
            src (.getAttribute ctx "czchhhiojetty") ]
       (reset! state src)
       (TryC
-        (debug
+        (log/debug
           "********************************************************************\n"
           (str "Servlet Container: " (.getServerInfo ctx) "\n")
           (str "Servlet IO: " src "\n")
           "********************************************************************\n"
-          (str "Servlet:iniz() - servlet:" (.myName this) "\n" ) )) )))
-
+          (str "Servlet:iniz() - servlet:" (.myName this) "\n" ) )) )
+  ))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
+;;
 (def ^:private servlet-eof nil)
 

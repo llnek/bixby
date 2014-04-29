@@ -194,7 +194,6 @@
     co
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompConfigure :czc.tardis.io/HTTP
@@ -203,19 +202,30 @@
 
   (HttpBasicConfig co cfg))
 
-(defmethod comp-configure :czc.tardis.io/JettyIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.io/JettyIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
+
   (let [ c (nsb (:context cfg)) ]
     (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR))
     (.setAttr! co :contextPath (strim c))
-    (http-basic-config co cfg) ))
+    (HttpBasicConfig co cfg)
+  ))
 
-(defn- cfgHTTPS ^ServerConnector [^Server server port ^URL keyfile ^String pwd conf]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cfgHTTPS ""
+
+  ^ServerConnector
+  [^Server server port ^URL keyfile ^String pwd conf]
+
   ;; SSL Context Factory for HTTPS and SPDY
   (let [ sslxf (doto (SslContextFactory.)
-                (.setKeyStorePath (-> keyfile (.toURI)(.toURL)(.toString)))
-                (.setKeyStorePassword pwd)
-                (.setKeyManagerPassword pwd))
+                     (.setKeyStorePath (-> keyfile (.toURI)(.toURL)(.toString)))
+                     (.setKeyStorePassword pwd)
+                     (.setKeyManagerPassword pwd))
          config (doto (HttpConfiguration. conf)
                       (.addCustomizer (SecureRequestCustomizer.)))
          https (doto (ServerConnector. server)
@@ -223,10 +233,15 @@
                      (.addConnectionFactory (HttpConnectionFactory. config))) ]
     (doto https
           (.setPort port)
-          (.setIdleTimeout (int 500000)))))
+          (.setIdleTimeout (int 500000)))
+  ))
 
-(defmethod comp-initialize :czc.tardis.io/JettyIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.io/JettyIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ conf (doto (HttpConfiguration.)
                     (.setRequestHeaderSize 8192)  ;; from jetty examples
                     (.setOutputBufferSize (int 32768)))
@@ -239,8 +254,8 @@
          svr (Server.)
          cc  (if (nil? keyfile)
                (doto (JettyUtils/makeConnector svr conf)
-                 (.setPort port)
-                 (.setIdleTimeout (int 30000)))
+                     (.setPort port)
+                     (.setIdleTimeout (int 30000)))
                (cfgHTTPS svr port keyfile (nsb pwdObj)
                          (doto conf
                                (.setSecureScheme "https")
@@ -252,31 +267,48 @@
       (.setConnectors (into-array Connector [cc])))
     (.setAttr! co :jetty svr)
 
-    co))
+    co
+  ))
 
-(defn- dispREQ [ ^comzotohlabscljc.tardis.core.sys.Element co
-                 ^Continuation ct req rsp]
-  (let [ evt (ioes-reify-event co req)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- dispREQ ""
+
+  [ ^comzotohlabscljc.tardis.core.sys.Element co ^Continuation ct req rsp]
+
+  (let [ evt (IOESReifyEvent co req)
          wm (.getAttr co :waitMillis) ]
     (doto ct
-      (.setTimeout wm)
-      (.suspend rsp))
+          (.setTimeout wm)
+          (.suspend rsp))
     (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-           w  (make-async-wait-holder (make-servlet-trigger req rsp co) evt)
+           w  (MakeAsyncWaitHolder (MakeServletTrigger req rsp co) evt)
           ^comzotohlabscljc.tardis.io.core.EmitterAPI src co ]
       (.timeoutMillis w wm)
       (.hold src w)
-      (.dispatch src evt {}))))
+      (.dispatch src evt {}))
+  ))
 
-(defn- serviceJetty "" [ co ^HttpServletRequest req ^HttpServletResponse rsp]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- serviceJetty "" 
+  
+  [ co ^HttpServletRequest req ^HttpServletResponse rsp]
+
   (let [ c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (TryC
-          (dispREQ co req rsp) ))))
+          (dispREQ co req rsp) ))
+  ))
 
-(defmethod ioes-start :czc.tardis.io/JettyIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStart :czc.tardis.io/JettyIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
+
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element 
+         ctr (.parent ^Hierarchial co)
          ^Server jetty (.getAttr co :jetty)
          ^File app (.getAttr ctr K_APPDIR)
          ^String cp (strim (.getAttr co :contextPath))
@@ -285,17 +317,22 @@
                        (serviceJetty co req rsp))) ]
     ;; static resources are based from resBase, regardless of context
     (.setHandler jetty (doto (ContextHandler.)
-                         (.setContextPath cp)
-                         (.setResourceBase (-> app (.toURI)(.toURL)(.toString)))
-                         (.setClassLoader (.getAttr co K_APP_CZLR))
-                         (.setHandler myHandler)))
+                             (.setContextPath cp)
+                             (.setResourceBase (-> app (.toURI)(.toURL)(.toString)))
+                             (.setClassLoader (.getAttr co K_APP_CZLR))
+                             (.setHandler myHandler)))
     (.start jetty)
-    (ioes-started co)))
+    (IOESStarted co)
+  ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn _ioes-start ;;:czc.tardis.io/JettyIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
+
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element 
+         ctr(.parent ^Hierarchial co)
          ^Server jetty (.getAttr co :jetty)
          ^File app (.getAttr ctr K_APPDIR)
          ^String cp (strim (.getAttr co :contextPath))
@@ -306,100 +343,120 @@
     ;; static resources are based from resBase, regardless of context
     (.setClassLoader webapp (.getAttr co K_APP_CZLR))
     (doto webapp
-      (.setDescriptor (-> (File. app "WEB-INF/web.xml")(.toURI)(.toURL)(.toString)))
-      (.setParentLoaderPriority true)
-      (.setResourceBase resBase )
-      (.setContextPath cp))
+          (.setDescriptor (-> (File. app "WEB-INF/web.xml")(.toURI)(.toURL)(.toString)))
+          (.setParentLoaderPriority true)
+          (.setResourceBase resBase )
+          (.setContextPath cp))
     ;;webapp.getWebInf()
     (.setHandler jetty webapp)
     (.start jetty)
-    (ioes-started co)))
+    (IOESStarted co)
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStop :czc.tardis.io/JettyIO
 
-(defmethod ioes-stop :czc.tardis.io/JettyIO
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^Server svr (.getAttr co :jetty) ]
     (when-not (nil? svr)
       (TryC
           (.stop svr) ))
-    (ioes-stopped co)))
+    (IOESStopped co)
+  ))
 
-(defn make-http-result [co]
-  (let [ impl (make-mmap) ]
-    (.mm-s impl :version "HTTP/1.1" )
-    (.mm-s impl :code -1)
-    (.mm-s impl :hds (NCMap.))
-    (.mm-s impl :cookies (ArrayList.))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeHttpResult ""
+  
+  [co]
+
+  (let [ impl (MakeMMap) ]
+    (.setf! impl :version "HTTP/1.1" )
+    (.setf! impl :code -1)
+    (.setf! impl :hds (NCMap.))
+    (.setf! impl :cookies (ArrayList.))
     (reify
 
-      MuObj
+      MubleAPI
 
-      (setf! [_ k v] (.mm-s impl k v) )
-      (seq* [_] (seq (.mm-m* impl)))
-      (getf [_ k] (.mm-g impl k) )
-      (clrf! [_ k] (.mm-r impl k) )
-      (clear! [_] (.mm-c impl))
+      (setf! [_ k v] (.setf! impl k v) )
+      (seq* [_] (.seq* impl))
+      (getf [_ k] (.getf impl k) )
+      (clrf! [_ k] (.clrf! impl k) )
+      (clear! [_] (.clear! impl))
 
       HTTPResult
-      (setRedirect [_ url] (.mm-s impl :redirect url))
+      (setRedirect [_ url] (.setf! impl :redirect url))
 
-      (setProtocolVersion [_ ver]  (.mm-s impl :version ver))
-      (setStatus [_ code] (.mm-s impl :code code))
-      (getStatus [_] (.mm-g impl :code))
+      (setProtocolVersion [_ ver]  (.setf! impl :version ver))
+      (setStatus [_ code] (.setf! impl :code code))
+      (getStatus [_] (.getf impl :code))
       (emitter [_] co)
       (addCookie [_ c]
-        (let [ ^List a (.mm-g impl :cookies) ]
+        (let [ ^List a (.getf impl :cookies) ]
           (when-not (nil? c)
             (.add a c))))
 
       (containsHeader [_ nm]
-        (let [ ^NCMap m (.mm-g impl :hds) ]
+        (let [ ^NCMap m (.getf impl :hds) ]
           (.containsKey m nm)))
 
       (removeHeader [_ nm]
-        (let [ ^NCMap m (.mm-g impl :hds) ]
+        (let [ ^NCMap m (.getf impl :hds) ]
           (.remove m nm)))
 
       (clearHeaders [_]
-        (let [ ^NCMap m (.mm-g impl :hds) ]
+        (let [ ^NCMap m (.getf impl :hds) ]
           (.clear m)))
 
       (addHeader [_ nm v]
-        (let [ ^NCMap m (.mm-g impl :hds) ^List a (.get m nm) ]
+        (let [ ^NCMap m (.getf impl :hds)
+               ^List a (.get m nm) ]
           (if (nil? a)
             (.put m nm (doto (ArrayList.) (.add v)))
             (.add a v))))
 
       (setHeader [_ nm v]
-        (let [ ^NCMap m (.mm-g impl :hds)
+        (let [ ^NCMap m (.getf impl :hds)
                a (ArrayList.) ]
           (.add a v)
           (.put m nm a)))
 
-      (setChunked [_ b] (.mm-s impl :chunked b))
+      (setChunked [_ b] (.setf! impl :chunked b))
 
       (setContent [_ data]
         (if-not (nil? data)
-          (.mm-s impl :data data)) )
+          (.setf! impl :data data)) )
 
-      )) )
+  )) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cookie-to-javaCookie  ""
+  
+  [^Cookie c]
 
-(defn- cookie-to-javaCookie [^Cookie c]
   (doto (HttpCookie. (.getName c) (.getValue c))
         (.setDomain (.getDomain c))
         (.setHttpOnly (.isHttpOnly c))
         (.setMaxAge (.getMaxAge c))
         (.setPath (.getPath c))
         (.setSecure (.getSecure c))
-        (.setVersion (.getVersion c))) )
+        (.setVersion (.getVersion c))
+  ))
 
-(defmethod ioes-reify-event :czc.tardis.io/JettyIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.tardis.io/JettyIO
+
   [co & args]
-  (let [ ^HTTPResult result (make-http-result co)
+
+  (let [ ^HTTPResult result (MakeHttpResult co)
          ^HttpServletRequest req (first args)
-         impl (make-mmap)
-         eid (next-long) ]
+         impl (MakeMMap)
+         eid (NextLong) ]
     (reify
 
       Identifiable
@@ -409,26 +466,26 @@
 
       (getId [_] eid)
       (getCookie [_ nm]
-        (let [ lnm (.toLowerCase nm) cs (.getCookies req) ]
+        (let [ lnm (cstr/lower-case nm)
+               cs (.getCookies req) ]
           (some (fn [^Cookie c]
-                  (if (= lnm (.toLowerCase (.getName c)))
+                  (if (= lnm (cstr/lower-case (.getName c)))
                     (cookie-to-javaCookie c)
                     nil) )
                   (if (nil? cs) [] (seq cs)))) )
 
       (getCookies [_]
-        (let [ rc (ArrayList.) cs (.getCookies req) ]
+        (let [ rc (ArrayList.)
+               cs (.getCookies req) ]
           (if-not (nil? cs)
             (doseq [ c (seq cs) ]
               (.add rc (cookie-to-javaCookie c))))
           rc))
 
-      (bindSession [_ s] (.mm-s impl :ios s))
-      (getSession [_] (.mm-g impl :ios))
+      (bindSession [_ s] (.setf! impl :ios s))
+      (getSession [_] (.getf impl :ios))
       (emitter [_] co)
-      (isKeepAlive [_]
-        (= (-> (nsb (.getHeader req "connection")) (.toLowerCase))
-        "keep-alive"))
+      (isKeepAlive [_] (= (cstr/lower-case (nsb (.getHeader req "connection"))) "keep-alive"))
       (data [_] nil)
       (hasData [_] false)
       (contentLength [_] (.getContentLength req))
@@ -481,7 +538,6 @@
 
       (host [_] (.getHeader req "host"))
 
-
       (isSSL [_] (= "https" (.getScheme req)))
 
       (getUri [_] (.getRequestURI req))
@@ -500,12 +556,9 @@
           (when-not (nil? wevt)
             (.resumeOnResult wevt result))))
 
-
-      )))
-
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private http-eof nil)
 

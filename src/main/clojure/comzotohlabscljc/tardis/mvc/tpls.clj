@@ -12,49 +12,58 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   comzotohlabscljc.tardis.mvc.tpls
-  (:import [com.zotohlabs.frwk.netty NetUtils]))
 
-(import '(org.jboss.netty.handler.codec.http
-  HttpMethod HttpHeaders HttpResponseStatus
-  HttpRequest HttpResponse))
-(import '(org.jboss.netty.handler.stream
-  ChunkedFile ChunkedStream ChunkedInput ))
-(import '(org.jboss.netty.channel ChannelFuture ChannelFutureListener Channel))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [Try! notnil? NiceFPath] ])
+  (:use [comzotohlabscljc.util.mime :only [GuessContentType] ])
+  (:use [comzotohlabscljc.util.io :only [Streamify] ])
 
-(import '(org.apache.commons.io FileUtils))
-(import '(com.zotohlabs.gallifrey.mvc
-  WebContent WebAsset
-  HTTPRangeInput AssetCache))
-(import '(java.io RandomAccessFile File))
-(import '(java.util HashMap))
-(import '(com.zotohlabs.frwk.net NetUtils))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.netty.comms :only [addListener closeCF] ])
-(use '[comzotohlabscljc.util.mime :only [guess-contenttype] ])
-(use '[comzotohlabscljc.util.core :only [Try! notnil? nice-fpath] ])
-(use '[comzotohlabscljc.util.io :only [streamify] ])
-
+  (:import (org.jboss.netty.handler.codec.http HttpMethod HttpHeaders HttpResponseStatus
+                                               HttpRequest HttpResponse))
+  (:import (org.jboss.netty.handler.stream ChunkedFile ChunkedStream ChunkedInput ))
+  (:import (org.jboss.netty.channel ChannelFuture ChannelFutureListener Channel))
+  (:import [com.zotohlabs.frwk.netty NettyFW])
+  (:import (org.apache.commons.io FileUtils))
+  (:import (com.zotohlabs.gallifrey.mvc WebContent WebAsset
+                                        HTTPRangeInput AssetCache))
+  (:import (java.io RandomAccessFile File))
+  (:import (java.util HashMap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-webcontent ""
+  
+  [^String cType bits]
 
-(defn- make-webcontent [^String cType bits]
   (reify
     WebContent
     (contentType [_] cType)
     (body [_] bits)))
 
-(defn getLocalFile [^File appDir ^String fname]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getLocalFile ""
+  
+  [^File appDir ^String fname]
+
   (let [ f (File. appDir fname) ]
     (if (.canRead f)
       (make-webcontent
-        (guess-contenttype f "utf-8")
+        (GuessContentType f "utf-8")
         (FileUtils/readFileToByteArray f))
-      nil)))
+      nil)
+  ))
 
-(defn- maybeCache [^File fp]
-  (let [ ^String fpath (.toLowerCase (nice-fpath fp)) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeCache ""
+  
+  [^File fp]
+
+  (let [ ^String fpath (cstr/lower-case (NiceFPath fp)) ]
     (or (.endsWith fpath ".css")
         (.endsWith fpath ".gif")
         (.endsWith fpath ".jpg")
@@ -62,8 +71,13 @@
         (.endsWith fpath ".png")
         (.endsWith fpath ".js"))))
 
-(defn- make-web-asset [^File file]
-  (let [ ct (guess-contenttype file "utf-8" "text/plain")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-web-asset ""
+
+  [^File file]
+
+  (let [ ct (GuessContentType file "utf-8" "text/plain")
          ts (.lastModified file)
          bits (FileUtils/readFileToByteArray file) ]
     (reify
@@ -75,60 +89,79 @@
       (size [_] (alength bits))
       (getBytes [_] bits) )))
 
-(defn- fetchAndSetAsset [^HashMap cache fp ^File file]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fetchAndSetAsset ""
+  
+  [^HashMap cache fp ^File file]
+
   (let [ wa (if (and (.exists file)
                     (.canRead file))
               (make-web-asset file)) ]
     (if (nil? wa)
       (do
-        (warn "asset-cache: failed to read/find file: " fp)
+        (log/warn "asset-cache: failed to read/find file: " fp)
         nil)
       (do
-        (debug "asset-cache: cached new file: " fp)
+        (log/debug "asset-cache: cached new file: " fp)
         (.put cache fp wa)
-        wa))))
+        wa))
+  ))
 
-(defn- getAsset [^File file]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getAsset ""
+  
+  [^File file]
+
   (let [ cache (AssetCache/get)
-         fp (nice-fpath file)
+         fp (NiceFPath file)
          ^WebAsset wa (.get cache fp)
          ^File cf (if (nil? wa) nil (.getFile wa)) ]
     (if (or (nil? cf)
             (> (.lastModified file)
                (.getTS wa)))
       (fetchAndSetAsset cache fp file)
-      wa)))
+      wa)
+  ))
 
-(defn- getFileInput
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getFileInput ""
 
   [ ^RandomAccessFile raf
     ^String ct
     ^HttpRequest req
     ^HttpResponse rsp ]
 
-    (if (HTTPRangeInput/accepts req)
-      (let [ inp (HTTPRangeInput. raf ct req) ]
-        (.prepareNettyResponse inp rsp)
-        inp)
-      (ChunkedFile. raf)))
+  (if (HTTPRangeInput/accepts req)
+    (let [ inp (HTTPRangeInput. raf ct req) ]
+      (.prepareNettyResponse inp rsp)
+      inp)
+    (ChunkedFile. raf)
+  ))
 
-(defn replyFileAsset
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn replyFileAsset ""
+
   [ src ^Channel ch ^HttpRequest req ^HttpResponse rsp ^File file]
+
   (let [ ^WebAsset asset (if (not (maybeCache file))
-                 nil
-                 (getAsset file)) ]
+                             nil
+                             (getAsset file)) ]
     (with-local-vars [raf nil clen 0 inp nil ct "" wf nil]
       (if (nil? asset)
         (do
-          (var-set ct (guess-contenttype file "utf-8" "text/plain"))
+          (var-set ct (GuessContentType file "utf-8" "text/plain"))
           (var-set raf (RandomAccessFile. file "r"))
           (var-set clen (.length ^RandomAccessFile @raf))
           (var-set inp (getFileInput @raf @ct req rsp)))
         (do
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
-          (var-set inp (ChunkedStream. (streamify (.getBytes asset))))) )
-      (debug "serving file: " (.getName file) " with clen= " @clen ", ctype= " @ct)
+          (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
+      (log/debug "serving file: " (.getName file) " with clen= " @clen ", ctype= " @ct)
       (try
         (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
           (var-set clen 0))
@@ -138,11 +171,12 @@
         (var-set wf (.write ch rsp))
         (when-not (= (.getMethod req) HttpMethod/HEAD)
           (var-set wf (.write ch @inp)))
-        (addListener ^ChannelFuture @wf
-                     { :done (fn [^Channel c]
-                               (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                               (when-not (HttpHeaders/isKeepAlive req)
-                                 (NetUtils/closeChannel c))) })
+        (.addListener ^ChannelFuture @wf 
+                      (reify ChannelFutureListener
+                        (operationComplete [_ ff]
+                          (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
+                          (when-not (HttpHeaders/isKeepAlive req)
+                                 (NettyFW/closeChannel ch)))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))
           (error e# "")

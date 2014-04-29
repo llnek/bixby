@@ -14,45 +14,36 @@
        :author "kenl" }
 
   comzotohlabscljc.tardis.mvc.comms
-  (:import [com.zotohlabs.frwk.netty NetUtils]))
 
-(import '(org.apache.commons.lang3 StringUtils))
-(import '(java.util Date))
-(import '(java.io File))
-(import '(com.zotohlabs.frwk.io XData))
-(import '(com.zotohlabs.frwk.core Hierarchial Identifiable))
-
-(import '(com.zotohlabs.gallifrey.io HTTPEvent Emitter))
-(import '(com.zotohlabs.gallifrey.mvc
-  HTTPErrorHandler MVCUtils WebAsset WebContent))
-
-(import '(org.jboss.netty.buffer ChannelBuffers ChannelBuffer))
-(import '(org.jboss.netty.channel Channel))
-
-(import '(org.jboss.netty.handler.codec.http
-  HttpHeaders$Values HttpHeaders$Names
-  DefaultHttpRequest
-  HttpContentCompressor HttpHeaders HttpVersion
-  HttpMessage HttpRequest HttpResponse HttpResponseStatus
-  DefaultHttpResponse HttpMethod))
-
-(import '(com.zotohlabs.frwk.net NetUtils))
-(import '(jregex Matcher Pattern))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.util.core :only [MuObj Try! nice-fpath] ])
-(use '[comzotohlabscljc.tardis.io.triggers])
-(use '[comzotohlabscljc.tardis.io.http :only [http-basic-config] ])
-(use '[comzotohlabscljc.tardis.io.netty])
-(use '[comzotohlabscljc.tardis.io.core])
-(use '[comzotohlabscljc.tardis.core.sys])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.mvc.tpls :only [getLocalFile replyFileAsset] ])
-(use '[comzotohlabscljc.netty.comms :only [sendRedirect makeRouteCracker
-                                       makeServerNetty finzNetty addListener
-                                       makeHttpReply closeCF] ])
-(use '[comzotohlabscljc.util.str :only [hgl? nsb strim] ])
-(use '[comzotohlabscljc.util.meta :only [make-obj] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI Try! NiceFPath] ])
+  (:use [comzotohlabscljc.tardis.io.triggers])
+  (:use [comzotohlabscljc.tardis.io.http :only [HttpBasicConfig] ])
+  (:use [comzotohlabscljc.tardis.io.netty])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.mvc.tpls :only [GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
+  (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
+  (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler MVCUtils WebAsset WebContent))
+  (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import [com.zotohlabs.frwk.netty NettyFW])
+  (:import (java.util Date))
+  (:import (java.io File))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (org.jboss.netty.buffer ChannelBuffers ChannelBuffer))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
+  (:import (org.jboss.netty.channel Channel))
+  (:import (org.jboss.netty.handler.codec.http HttpHeaders$Values HttpHeaders$Names
+                                               HttpContentCompressor HttpHeaders HttpVersion
+                                               DefaultHttpRequest HttpResponse
+                                               HttpMessage HttpRequest HttpResponseStatus
+                                               DefaultHttpResponse HttpMethod))
+  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,10 +84,8 @@
             (.setStatus rsp HttpResponseStatus/NOT_MODIFIED)))
     (HttpHeaders/setHeader rsp "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (.getAttr src :useETag)
-      (HttpHeaders/setHeader rsp "etag" eTag))
+    (when (.getAttr src :useETag) (HttpHeaders/setHeader rsp "etag" eTag))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -106,7 +95,8 @@
 
   (let [ ctr (.container src)
          appDir (.getAppDir ctr) ]
-    (getLocalFile appDir (str "pages/errors/" code ".html"))))
+    (getLocalFile appDir (str "pages/errors/" code ".html"))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -116,11 +106,11 @@
     ^Channel ch
     code ]
 
-  (with-local-vars [ rsp (MakeHttpReply code) bits nil wf nil]
+  (with-local-vars [ rsp (NettyFW/makeHttpReply code) bits nil wf nil]
     (try
       (let [ h (.getAttr src :errorHandler)
              ^HTTPErrorHandler
-             cb (if (hgl? h) (make-obj h) nil)
+             cb (if (hgl? h) (MakeObj h) nil)
              ^WebContent
              rc (if (nil? cb)
                   (reply-error src code)
@@ -133,9 +123,9 @@
         (var-set wf (.write ch @rsp))
         (when-not (nil? @bits)
           (var-set wf (.write ch (ChannelBuffers/wrappedBuffer ^bytes @bits))))
-        (CloseCF @wf false))
+        (NettyFW/closeCF @wf false))
       (catch Throwable e#
-        (NetUtils/closeChannel ch)))
+        (NettyFW/closeChannel ch)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,25 +134,24 @@
 
   [src ^Channel ch req ^HTTPEvent evt ^File file]
 
-  (let [ rsp (MakeHttpReply ) ]
+  (let [ rsp (NettyFW/makeHttpReply ) ]
     (try
       (if (or (nil? file)
               (not (.exists file)))
         (ServeError src ch 404)
         (do
-          (debug "serving static file: " (nice-fpath file))
+          (log/debug "serving static file: " (nice-fpath file))
           (addETag src evt req rsp file)
           ;; 304 not-modified
           (if (= (-> rsp (.getStatus)(.getCode)) 304)
             (do
               (HttpHeaders/setContentLength rsp 0)
-              (CloseCF (.write ch rsp) (.isKeepAlive evt) ))
-            (replyFileAsset src ch req rsp file))))
+              (NettyFW/closeCF (.write ch rsp) (.isKeepAlive evt) ))
+            (ReplyFileAsset src ch req rsp file))))
       (catch Throwable e#
-        (error "failed to get static resource " (.getUri evt) e#)
+        (log/error "failed to get static resource " (.getUri evt) e#)
         (Try!  (ServeError src ch 500))))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -192,29 +181,25 @@
     ^Matcher mc ^Channel ch req ^HTTPEvent evt]
 
   (let [ ^File appDir (-> src (.container)(.getAppDir))
-         mpt (nsb (.getf ^comzotohlabscljc.util.core.MuObj ri :mountPoint))
-         ps (nice-fpath (File. appDir ^String DN_PUBLIC))
+         mpt (nsb (.getf ^comzotohlabscljc.util.core.MubleAPI ri :mountPoint))
+         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
          uri (.getUri evt)
          gc (.groupCount mc) ]
-
-    (with-local-vars [ mp (StringUtils/replace mpt
-                                               "${app.dir}"
-                                               (nice-fpath appDir)) ]
+    (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
       (if (> gc 1)
         (doseq [ i (range 1 gc) ]
           (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
 
       ;; ONLY serve static assets from *public folder*
-      (var-set mp (nice-fpath (File. ^String @mp)))
-      (debug "request to serve static file: " @mp)
+      (var-set mp (NiceFPath (File. ^String @mp)))
+      (log/debug "request to serve static file: " @mp)
       (if (.startsWith ^String @mp ps)
         (handleStatic src ch req evt (File. ^String @mp))
         (do
-          (warn "attempt to access non public file-system: " @mp)
+          (log/warn "attempt to access non public file-system: " @mp)
           (ServeError src ch 403))
       ))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -224,7 +209,7 @@
     ^comzotohlabscljc.net.rts.RouteInfo ri
     ^Matcher mc
     ^Channel ch
-    ^comzotohlabscljc.util.core.MuObj evt]
+    ^comzotohlabscljc.util.core.MubleAPI evt]
 
   (let [ wms (.getAttr src :waitMillis)
          pms (.collect ri mc)
@@ -233,13 +218,13 @@
                    :template (.getTemplate ri) } ]
     (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI co src
            ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-           w (make-async-wait-holder (make-netty-trigger ch evt co) evt) ]
+           w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
       (.timeoutMillis w wms)
       (.hold co w)
       (.dispatch co evt options))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private comms-eof nil)
 

@@ -9,75 +9,67 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.impl.ext )
+  comzotohlabscljc.tardis.impl.ext
 
-(import '(org.apache.commons.io FilenameUtils FileUtils))
-(import '(org.apache.commons.lang3 StringUtils))
-
-(import '(freemarker.template Configuration Template DefaultObjectWrapper))
-(import '(java.util Map Properties))
-(import '(java.net URL))
-(import '(java.io File StringWriter))
-(import '(com.zotohlabs.gallifrey.runtime AppMain))
-(import '(com.zotohlabs.gallifrey.etc PluginFactory Plugin))
-(import '(com.zotohlabs.frwk.dbio MetaCache Schema DBIOLocal DBAPI))
-
-(import '(com.zotohlabs.frwk.core
-  Versioned Hierarchial Startable Disposable
-  Identifiable ))
-(import '(com.zotohlabs.frwk.server
-  ComponentRegistry Component ServiceError ))
-(import '(com.zotohlabs.gallifrey.core
-  Container ConfigError ))
-
-(import '(com.zotohlabs.gallifrey.io IOEvent))
-(import '(com.zotohlabs.frwk.util Schedulable CoreUtils))
-(import '(com.zotohlabs.frwk.io XData))
-(import '(com.zotohlabs.wflow.core Job))
-(import '(com.zotohlabs.wflow Pipeline))
-
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-;;(use '[comzotohlabscljc.tardis.io.core :only (make-emitter)])
-(use '[comzotohlabscljc.tardis.io.core :rename {enabled? io-enabled?} ])
-(use '[comzotohlabscljc.tardis.io.loops])
-(use '[comzotohlabscljc.tardis.io.mails])
-(use '[comzotohlabscljc.tardis.io.files])
-(use '[comzotohlabscljc.tardis.io.jms])
-(use '[comzotohlabscljc.tardis.io.http])
-(use '[comzotohlabscljc.tardis.io.netty])
-(use '[comzotohlabscljc.tardis.io.socket])
-(use '[comzotohlabscljc.tardis.mvc.handler])
-(use '[comzotohlabscljc.tardis.core.constants])
-(use '[comzotohlabscljc.tardis.impl.defaults
-       :rename {enabled? blockmeta-enabled?
-                start kernel-start
-                stop kernel-stop } ])
-(use '[comzotohlabscljc.tardis.etc.misc])
-(use '[comzotohlabscljc.tardis.core.sys])
-
-(use '[comzotohlabscljc.util.core :only [MuObj make-mmap] ])
-(use '[ comzotohlabscljc.util.scheduler :only [make-scheduler] ])
-(use '[ comzotohlabscljc.util.process :only [coroutine] ])
-(use '[ comzotohlabscljc.util.core :only [load-javaprops] ])
-(use '[ comzotohlabscljc.util.seqnum :only [next-long] ])
-(use '[ comzotohlabscljc.util.str :only [hgl? nsb strim nichts?] ])
-(use '[ comzotohlabscljc.util.meta :only [make-obj] ])
-(use '[ comzotohlabscljc.crypto.codec :only [pwdify] ])
-(use '[ comzotohlabscljc.dbio.connect :only [dbio-connect] ])
-(use '[ comzotohlabscljc.dbio.core :only [make-jdbc make-MetaCache make-db-pool make-Schema] ])
-(use '[ comzotohlabscljc.net.rts :only [load-routes] ])
-(require '[clojure.data.json :as json])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:require [clojure.data.json :as json])
+  (:use [comzotohlabscljc.tardis.io.core :rename {Enabled? io-enabled?} ])
+  (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.io.loops])
+  (:use [comzotohlabscljc.tardis.io.mails])
+  (:use [comzotohlabscljc.tardis.io.files])
+  (:use [comzotohlabscljc.tardis.io.jms])
+  (:use [comzotohlabscljc.tardis.io.http])
+  (:use [comzotohlabscljc.tardis.io.netty])
+  (:use [comzotohlabscljc.tardis.io.socket])
+  (:use [comzotohlabscljc.tardis.mvc.handler])
+  (:use [comzotohlabscljc.tardis.impl.defaults :rename {Enabled? blockmeta-enabled?
+                                                        start kernel-start
+                                                        stop kernel-stop } ])
+  (:use [comzotohlabscljc.tardis.etc.misc])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap] ])
+  (:use [ comzotohlabscljc.util.scheduler :only [MakeScheduler] ])
+  (:use [ comzotohlabscljc.util.process :only [Coroutine] ])
+  (:use [ comzotohlabscljc.util.core :only [LoadJavaProps] ])
+  (:use [ comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:use [ comzotohlabscljc.util.str :only [hgl? nsb strim nichts?] ])
+  (:use [ comzotohlabscljc.util.meta :only [MakeObj] ])
+  (:use [ comzotohlabscljc.crypto.codec :only [Pwdify] ])
+  (:use [ comzotohlabscljc.dbio.connect :only [DbioConnect] ])
+  (:use [ comzotohlabscljc.dbio.core :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
+  (:use [ comzotohlabscljc.net.rts :only [LoadRoutes] ])
+  (:import (org.apache.commons.io FilenameUtils FileUtils))
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (freemarker.template Configuration Template DefaultObjectWrapper))
+  (:import (java.util Map Properties))
+  (:import (java.net URL))
+  (:import (java.io File StringWriter))
+  (:import (com.zotohlabs.gallifrey.runtime AppMain))
+  (:import (com.zotohlabs.gallifrey.etc PluginFactory Plugin))
+  (:import (com.zotohlabs.frwk.dbio MetaCache Schema DBIOLocal DBAPI))
+  (:import (com.zotohlabs.frwk.core Versioned Hierarchial Startable Disposable Identifiable ))
+  (:import (com.zotohlabs.frwk.server ComponentRegistry Component ServiceError ))
+  (:import (com.zotohlabs.gallifrey.core Container ConfigError ))
+  (:import (com.zotohlabs.gallifrey.io IOEvent))
+  (:import (com.zotohlabs.frwk.util Schedulable CoreUtils))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlabs.wflow.core Job))
+  (:import (com.zotohlabs.wflow Pipeline)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol CljAppMain
+
   ""
+
   (contextualize [_ ctr] )
   (configure [_ options] )
   (initialize [_] )
@@ -85,19 +77,25 @@
   (stop [_])
   (dispose [_] ))
 
-(defn- make-job "" ^Job [_container evt]
-  (let [ impl (make-mmap)
-         jid (next-long) ]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-job ""
+
+  ^Job
+  [_container evt]
+
+  (let [ impl (MakeMMap)
+         jid (NextLong) ]
     (with-meta
       (reify
 
         MuObj
 
-        (setf! [_ k v] (.mm-s impl k v))
-        (clear! [_] (.mm-c impl))
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k))
-        (clrf! [_ k] (.mm-r impl k))
+        (setf! [_ k v] (.setf! impl k v))
+        (clear! [_] (.clear! impl))
+        (seq* [_] (.seq* impl))
+        (getf [_ k] (.getf impl k))
+        (clrf! [_ k] (.clrf! impl k))
 
         Job
 
@@ -111,16 +109,26 @@
         (event [_] evt)
         (id [_] jid))
 
-      { :typeid (keyword "czc.tardis.impl/Job") } )))
+      { :typeid (keyword "czc.tardis.impl/Job") }
+  )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol ^:private JobCreator
+
   ""
+
   (update [_ event options] ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- make-jobcreator ""
-  ^comzotohlabscljc.tardis.impl.ext.JobCreator [parObj]
-  (let [ impl (make-mmap) ]
-    (info "about to synthesize a job-creator...")
+
+  ^comzotohlabscljc.tardis.impl.ext.JobCreator
+  [parObj]
+
+  (let [ impl (MakeMMap) ]
+    (log/info "about to synthesize a job-creator...")
     (with-meta
       (reify
 
@@ -132,26 +140,27 @@
                  c0 (.getAttr src :router)
                  c1 (:router options)
                  job (make-job parObj evt) ]
-            (debug "event type = " (type evt))
-            (debug "event options = " options)
-            (debug "event router = " c1)
-            (debug "io router = " c0)
+            (log/debug "event type = " (type evt))
+            (log/debug "event options = " options)
+            (log/debug "event router = " c1)
+            (log/debug "io router = " c0)
             (try
               (let [ p (Pipeline. job (if (hgl? c1) c1 c0))
-                     q (if (nil? p) (make-OrphanFlow job) p) ]
+                     q (if (nil? p) (MakeOrphanFlow job) p) ]
                 (.setv job EV_OPTS options)
                 (.start ^Pipeline q))
               (catch Throwable e#
-                (-> (make-FatalErrorFlow job) (.start)))))))
+                (-> (MakeFatalErrorFlow job) (.start)))))))
 
-      { :typeid (keyword "czc.tardis.impl/JobCreator") } )))
-
+      { :typeid (keyword "czc.tardis.impl/JobCreator") } 
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ContainerAPI
-
 (defprotocol ^:private ContainerAPI
+
   ""
+
   (reifyOneService [_ sid cfg] )
   (reifyService [_ svc sid cfg] )
   (reifyServices [_] )
@@ -159,37 +168,53 @@
   (enabled? [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-service-block 
+  
+  [^Identifiable bk container nm cfg]
 
-(defn- make-service-block [^Identifiable bk container nm cfg]
   (let [ eid (.id bk)
          ^comzotohlabscljc.tardis.core.sys.Element
          obj (if (= :czc.tardis.io/JettyIO eid)
-               (makeServletEmitter container)
-               (makeEmitter container eid nm))
+               (MakeServletEmitter container)
+               (MakeEmitter container eid nm))
          pkey (.getAppKey ^Container container)
          hid (:handler cfg)
          mm (meta obj) ]
-    (info "about to synthesize an emitter: " eid)
-    (info "emitter meta: " mm)
-    (info "is emitter = " (isa?  (:typeid mm) :czc.tardis.io/Emitter))
-    (info "config params = " cfg)
-    (synthesize-component
+    (log/info "about to synthesize an emitter: " eid)
+    (log/info "emitter meta: " mm)
+    (log/info "is emitter = " (isa?  (:typeid mm) :czc.tardis.io/Emitter))
+    (log/info "config params = " cfg)
+    (SynthesizeComponent
       obj
       { :ctx container :props (assoc cfg :hhh.pkey pkey) })
     (.setAttr! obj :router hid)
-    (info "emitter synthesized - OK. handler => " hid)
-    obj))
+    (log/info "emitter synthesized - OK. handler => " hid)
+    obj
+  ))
 
-(defn- getDBAPI? ^DBAPI [^String mkey cfg ^String pkey mcache]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getDBAPI? 
+  
+  ^DBAPI 
+  [^String mkey cfg ^String pkey mcache]
+
   (let [ ^Map c (.get (DBIOLocal/getCache))
-         jdbc (make-jdbc mkey cfg
-                            (pwdify (:passwd cfg) pkey)) ]
+         jdbc (MakeJdbc mkey cfg
+                            (Pwdify (:passwd cfg) pkey)) ]
     (when-not (.containsKey c mkey)
-      (let [ p (make-db-pool jdbc {} ) ]
+      (let [ p (MakeDbPool jdbc {} ) ]
         (.put c mkey p)))
-    (dbio-connect jdbc mcache {})))
+    (DbioConnect jdbc mcache {})
+  ))
 
-(defn- maybeGetDBAPI [^comzotohlabscljc.tardis.core.sys.Element co ^String gid]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeGetDBAPI ""
+  
+  [^comzotohlabscljc.tardis.core.sys.Element co ^String gid]
+
   (let [ pkey (.getAppKey ^Container co)
          mcache (.getAttr co K_MCACHE)
          env (.getAttr co K_ENVCONF)
@@ -198,29 +223,41 @@
          jj (cfg (keyword dk)) ]
     (if (nil? jj)
       nil
-      (getDBAPI? dk jj pkey mcache))))
+      (getDBAPI? dk jj pkey mcache))
+  ))
 
-(defn- releaseSysResources [^comzotohlabscljc.tardis.core.sys.Element co]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- releaseSysResources ""
+  
+  [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^Schedulable sc (.getAttr co K_SCHEDULER)
          jc (.getAttr co K_JCTOR) ]
-    (info "container releasing all system resources.")
+    (log/info "container releasing all system resources.")
     (when-not (nil? sc)
-      (.dispose sc))))
+      (.dispose sc))
+  ))
 
-(defn- make-app-container [pod]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-app-container ""
+  
+  [pod]
+
   (let [ ftlCfg (Configuration.)
-         impl (make-mmap) ]
-    (info "about to create an app-container...")
+         impl (MakeMMap) ]
+    (log/info "about to create an app-container...")
     (with-meta
       (reify
 
         Element
 
-        (setAttr! [_ a v] (.mm-s impl a v) )
-        (clrAttr! [_ a] (.mm-r impl a) )
-        (getAttr [_ a] (.mm-g impl a) )
-        (setCtx! [_ x] (.mm-s impl :ctx x) )
-        (getCtx [_] (.mm-g impl :ctx) )
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
+        (setCtx! [_ x] (.setf! impl :ctx x) )
+        (getCtx [_] (.getf impl :ctx) )
 
         Container
 
@@ -234,11 +271,11 @@
         (core [this]
           (.getAttr this K_SCHEDULER))
         (hasService [_ serviceId]
-          (let [ ^ComponentRegistry srg (.mm-g impl K_SVCS) ]
+          (let [ ^ComponentRegistry srg (.getf impl K_SVCS) ]
             (.has srg (keyword serviceId))))
 
         (getService [_ serviceId]
-          (let [ ^ComponentRegistry srg (.mm-g impl K_SVCS) ]
+          (let [ ^ComponentRegistry srg (.getf impl K_SVCS) ]
             (.lookup srg (keyword serviceId))))
 
         Component
@@ -253,17 +290,17 @@
         Startable
 
         (start [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.mm-g impl K_SVCS)
-                 main (.mm-g impl :main-app) ]
-            (info "container starting all services...")
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
+                 main (.getf impl :main-app) ]
+            (log/info "container starting all services...")
             (doto ftlCfg
               (.setDirectoryForTemplateLoading
                 (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
               (.setObjectWrapper (DefaultObjectWrapper.)))
             (doseq [ [k v] (seq* srg) ]
-              (info "service: " k " about to start...")
+              (log/info "service: " k " about to start...")
               (.start ^Startable v))
-            (info "container starting main app...")
+            (log/info "container starting main app...")
             (cond
               (satisfies? CljAppMain main)
               (.start ^comzotohlabscljc.tardis.impl.ext.CljAppMain main)
@@ -272,16 +309,16 @@
               :else nil)))
 
         (stop [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.mm-g impl K_SVCS)
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
                  pls (.getAttr this K_PLUGINS)
-                 main (.mm-g impl :main-app) ]
-            (info "container stopping all services...")
+                 main (.getf impl :main-app) ]
+            (log/info "container stopping all services...")
             (doseq [ [k v] (seq* srg) ]
               (.stop ^Startable v))
-            (info "container stopping all plugins...")
+            (log/info "container stopping all plugins...")
             (doseq [ p (seq pls) ]
               (.stop ^Startable p))
-            (info "container stopping...")
+            (log/info "container stopping...")
             (cond
               (satisfies? CljAppMain main)
               (.stop ^comzotohlabscljc.tardis.impl.ext.CljAppMain main)
@@ -292,14 +329,14 @@
         Disposable
 
         (dispose [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.mm-g impl K_SVCS)
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
                  pls (.getAttr this K_PLUGINS)
-                 main (.mm-g impl :main-app) ]
+                 main (.getf impl :main-app) ]
             (doseq [ [k v] (seq* srg) ]
               (.dispose ^Disposable v))
             (doseq [ p (seq pls) ]
               (.dispose ^Disposable p))
-            (info "container dispose() - main app getting disposed.")
+            (log/info "container dispose() - main app getting disposed.")
             (cond
               (satisfies? CljAppMain main)
               (.dispose ^comzotohlabscljc.tardis.impl.ext.CljAppMain main)
@@ -330,21 +367,21 @@
                 "text/plain") ] ))
 
         (enabled? [_]
-          (let [ env (.mm-g impl K_ENVCONF)
+          (let [ env (.getf impl K_ENVCONF)
                  c (:container env) ]
             (if (false? (:enabled c))
               false
               true)))
 
         (reifyServices [this]
-          (let [ env (.mm-g impl K_ENVCONF)
+          (let [ env (.getf impl K_ENVCONF)
                  s (:services env) ]
             (if-not (empty? s)
                 (doseq [ [k v] (seq s) ]
                   (reifyOneService this k v)))))
 
         (reifyOneService [this nm cfg]
-          (let [ ^ComponentRegistry srg (.mm-g impl K_SVCS)
+          (let [ ^ComponentRegistry srg (.getf impl K_SVCS)
                  svc (nsb (:service cfg))
                  b (:enabled cfg) ]
             (if-not (or (false? b) (nichts? svc))
@@ -352,7 +389,7 @@
                 (.reg srg s)))))
 
         (reifyService [this svc nm cfg]
-          (let [^comzotohlabscljc.util.core.MuObj ctx (.getCtx this)
+          (let [^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry root (.getf ctx K_COMPS)
                  ^ComponentRegistry bks (.lookup root K_BLOCKS)
                  ^ComponentRegistry bk (.lookup bks (keyword svc)) ]
@@ -360,34 +397,44 @@
               (throw (ServiceError. (str "No such Service: " svc "."))))
             (make-service-block bk this nm cfg))) )
 
-    { :typeid (keyword "czc.tardis.ext/Container") } )) )
+    { :typeid (keyword "czc.tardis.ext/Container") } i
 
-(defn make-container [^comzotohlabscljc.tardis.core.sys.Element pod]
+  )) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeContainer ""
+  
+  [^comzotohlabscljc.tardis.core.sys.Element pod]
+
   (let [ c (make-app-container pod)
-         ^comzotohlabscljc.util.core.MuObj ctx (.getCtx pod)
+         ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx pod)
          cl (.getf ctx K_APP_CZLR)
          ^ComponentRegistry root (.getf ctx K_COMPS)
          apps (.lookup root K_APPS)
          ^URL url (.srcUrl ^comzotohlabscljc.tardis.impl.defaults.PODMeta pod)
          ps { K_APPDIR (File. (.toURI  url)) K_APP_CZLR cl } ]
-    (comp-compose c apps)
-    (comp-contextualize c ctx)
-    (comp-configure c ps)
+    (CompCompose c apps)
+    (CompContextualize c ctx)
+    (CompConfigure c ps)
     (if (.enabled? ^comzotohlabscljc.tardis.impl.ext.ContainerAPI c)
-      (do (coroutine (fn []
+      (do (Coroutine (fn []
                           (do
-                            (comp-initialize c)
+                            (CompInitialize c)
                             (.start ^Startable c))) cl) c)
-      nil)))
+      nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.ext/Container
 
-(defmethod comp-configure :czc.tardis.ext/Container
   [^comzotohlabscljc.tardis.core.sys.Element co props]
-  (let [ ^File appDir (K_APPDIR props)
+
+  (let [ srg (MakeComponentRegistry :EventSources K_SVCS "1.0" co)
+         ^File appDir (K_APPDIR props)
          cfgDir (File. appDir ^String DN_CONF)
-         srg (make-component-registry :EventSources K_SVCS "1.0" co)
-         mf (load-javaprops (File. appDir ^String MN_FILE))
+         mf (LoadJavaProps (File. appDir ^String MN_FILE))
          envConf (json/read-str (FileUtils/readFileToString
                                 (File. cfgDir "env.conf"))
                               :key-fn keyword)
@@ -399,7 +446,7 @@
     ;;_ftlCfg = new FTLCfg()
     ;;_ftlCfg.setDirectoryForTemplateLoading( new File(_appDir, DN_PAGES+"/"+DN_TEMPLATES))
     ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
-    (synthesize-component srg {} )
+    (SynthesizeComponent srg {} )
     (doto co
       (.setAttr! K_APPDIR appDir)
       (.setAttr! K_SVCS srg)
@@ -408,54 +455,94 @@
       (.setAttr! K_ENVCONF envConf)
       (.setAttr! K_APPCONF appConf)
       (.setAttr! K_MFPROPS mf))
-    (info "container: configured app: " (.id ^Identifiable co))))
+    (log/info "container: configured app: " (.id ^Identifiable co))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doCljApp ""
+  
+  [ctr opts ^comzotohlabscljc.tardis.impl.ext.CljAppMain obj]
 
-(defn- doCljApp [ctr opts ^comzotohlabscljc.tardis.impl.ext.CljAppMain obj]
   (.contextualize obj ctr)
   (.configure obj opts)
   (.initialize obj))
 
-(defn- doJavaApp [^comzotohlabscljc.tardis.core.sys.Element ctr ^AppMain obj]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doJavaApp ""
+  
+  [^comzotohlabscljc.tardis.core.sys.Element ctr ^AppMain obj]
+
   (let [ ^File cfg (.getAttr ctr K_APPCONF_FP)
          json (CoreUtils/readJson cfg) ]
   (.contextualize obj ctr)
   (.configure obj json)
   (.initialize obj)) )
 
-(defn- fmtPluginFname ^File [^String v ^File appDir]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtPluginFname ""
+  
+  ^File 
+  [^String v ^File appDir]
+
   (let [ fnn (StringUtils/replace v "." "")
          m (File. appDir (str "modules/" fnn)) ]
-    m))
+    m
+  ))
 
-(defn- plugin-inited? [^String v ^File appDir]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- plugin-inited? ""
+  
+  [^String v ^File appDir]
+
   (let [ pfile (fmtPluginFname v appDir) ]
-    (.exists pfile)))
+    (.exists pfile)
+  ))
 
-(defn- post-init-plugin [^String v ^File appDir]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- post-init-plugin ""
+  
+  [^String v ^File appDir]
+
   (let [ pfile (fmtPluginFname v appDir) ]
     (FileUtils/writeStringToFile pfile "ok" "utf-8")
-    (info "initialized plugin: " v)))
+    (log/info "initialized plugin: " v)
+  ))
 
-(defn- doOnePlugin ^Plugin [co ^String v ^File appDir env app]
-  (let [ ^PluginFactory pf (make-obj v)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doOnePlugin ""
+  
+  ^Plugin 
+  [co ^String v ^File appDir env app]
+
+  (let [ ^PluginFactory pf (MakeObj v)
          ^Plugin p (if (instance? PluginFactory pf)
              (.createPlugin pf)
              nil) ]
     (when (instance? Plugin p)
-      (info "calling plugin-factory: " v)
+      (log/info "calling plugin-factory: " v)
       (.contextualize p co)
       (.configure p { :env env :app app })
       (if (plugin-inited? v appDir)
-        (info "plugin " v " already initialized.")
+        (log/info "plugin " v " already initialized.")
         (do
           (.initialize p)
           (post-init-plugin v appDir)))
       (.start p))
-    p))
+    p
+  ))
 
-(defmethod comp-initialize :czc.tardis.ext/Container
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.ext/Container
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^File appDir (.getAttr co K_APPDIR)
          env (.getAttr co K_ENVCONF)
          app (.getAttr co K_APPCONF)
@@ -465,7 +552,7 @@
          reg (.getAttr co K_SVCS)
          jc (make-jobcreator co)
          ^comzotohlabscljc.util.scheduler.SchedulerAPI
-         sc (make-scheduler co)
+         sc (MakeScheduler co)
          cfg (:container env) ]
 
     ;; handle the plugins
@@ -479,20 +566,20 @@
     (.setAttr! co K_JCTOR jc)
 
     ;; build the user data-models or create a default one.
-    (info "application data-model schema-class: " dmCZ )
-    (.setAttr! co K_MCACHE (make-MetaCache
+    (log/info "application data-model schema-class: " dmCZ )
+    (.setAttr! co K_MCACHE (MakeMetaCache
                              (if (hgl? dmCZ)
-                               (let [ sc (make-obj dmCZ) ]
+                               (let [ sc (MakeObj dmCZ) ]
                                  (when-not (instance? Schema sc)
                                    (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
                                  sc)
-                               (make-Schema [])) ))
+                               (MakeSchema [])) ))
 
     (when (nichts? mCZ) (warn "no main-class defined."))
     ;;(test-nestr "Main-Class" mCZ)
 
     (when (hgl? mCZ)
-      (let [ obj (make-obj mCZ) ]
+      (let [ obj (MakeObj mCZ) ]
         (cond
           (satisfies? CljAppMain obj)
           (doCljApp co app obj)
@@ -500,35 +587,26 @@
           (doJavaApp co obj)
           :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
         (.setAttr! co :main-app obj)
-        (info "application main-class " mCZ " created and invoked")))
+        (log/info "application main-class " mCZ " created and invoked")))
 
     (let [ sf (File. appDir (str DN_CONF "/static-routes.conf"))
            rf (File. appDir (str DN_CONF "/routes.conf")) ]
       (.setAttr! co :routes
-        (vec (concat (if (.exists sf) (load-routes sf) [] )
-                     (if (.exists rf) (load-routes rf) [] ))) ))
+        (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
+                     (if (.exists rf) (LoadRoutes rf) [] ))) ))
 
     (let [ svcs (:services env) ]
       (if (empty? svcs)
-          (warn "No system service defined in env.conf.")
+          (log/warn "No system service defined in env.conf.")
           (.reifyServices ^comzotohlabscljc.tardis.impl.ext.ContainerAPI co)))
 
     ;; start the scheduler
     (.activate sc cfg)
 
-    (info "Initialized app: " (.id ^Identifiable co))))
-
+    (log/info "Initialized app: " (.id ^Identifiable co))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-
-
-
-
-
+;;
 (def ^:private ext-eof nil)
 

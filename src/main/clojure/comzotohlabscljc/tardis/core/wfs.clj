@@ -9,28 +9,25 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.core.wfs )
+  comzotohlabscljc.tardis.core.wfs
 
-(import '( com.zotohlabs.wflow
-  If BoolExpr
-  FlowPoint Activity Pipeline PipelineDelegate PTask Work))
-(import '(com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
-(import '(com.zotohlabs.wflow.core Job))
-
+  (:import ( com.zotohlabs.wflow If BoolExpr FlowPoint Activity Pipeline PipelineDelegate PTask Work))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
+  (:import (com.zotohlabs.wflow.core Job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (defmacro DefWFTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro DefPredicate [ & exprs ] `(reify BoolExpr ~@exprs))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private wfs-eof nil)
 
 

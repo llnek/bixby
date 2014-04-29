@@ -13,48 +13,71 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.core.sys )
+  comzotohlabscljc.tardis.core.sys
 
-(import '(com.zotohlabs.frwk.core
-  Hierarchial Identifiable Versioned))
-
-(use '[comzotohlabscljc.util.core :only [MuObj make-mmap] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [MuleAPI MakeMMap] ])
+  (:import (com.zotohlabs.frwk.core Hierarchial Identifiable Versioned)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol Element
+
   ""
+
   (setCtx! [_ ctx] )
   (getCtx [_] )
   (setAttr! [_ a v] )
   (clrAttr! [_ a] )
   (getAttr [_ a] ) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol Registry
+
   ""
+
   (seq* [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompContextualize
 
-
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element comp-contextualize
   ""
+
   (fn [a ctx] (:typeid (meta a))))
 
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element comp-compose
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompCompose
+
   ""
+
   (fn [a rego] (:typeid (meta a))))
 
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element comp-configure
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompConfigure
+
   ""
+
   (fn [a options] (:typeid (meta a))))
 
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element comp-initialize
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompInitialize
+
   ""
+
   (fn [a] (:typeid (meta a))))
 
-(defn synthesize-component ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SynthesizeComponent ""
 
   ^comzotohlabscljc.tardis.core.sys.Element
   [c options]
@@ -62,41 +85,78 @@
   (let [ rego (:rego options)
          ctx (:ctx options)
          props (:props options) ]
-   (when-not (nil? rego) (comp-compose c rego))
-   (when-not (nil? ctx) (comp-contextualize c ctx))
-   (when-not (nil? props) (comp-configure c props))
-   (comp-initialize c)
-   c) )
+   (when-not (nil? rego) (CompCompose c rego))
+   (when-not (nil? ctx) (CompContextualize c ctx))
+   (when-not (nil? props) (CompConfigure c props))
+   (CompInitialize c)
+   c
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeContext ""
 
-(defn make-context "" ^comzotohlabscljc.util.core.MuObj []
-  (let [ impl (make-mmap) ]
-    (reify MuObj
-      (setf! [_ k v] (.mm-s impl k v) )
-      (seq* [_] (seq (.mm-m* impl)))
-      (getf [_ k] (.mm-g impl k) )
-      (clrf! [_ k] (.mm-r impl k) )
-      (clear! [_] (.mm-c impl)))) )
+  ^comzotohlabscljc.util.core.MubleAPI
+  []
 
-(defn comp-clone-context
+  (let [ impl (MakeMMap) ]
+    (reify MubleAPI
+      (setf! [_ k v] (.setf! impl k v) )
+      (seq* [_] (.seq* impl))
+      (getf [_ k] (.getf impl k) )
+      (clrf! [_ k] (.clrf! impl k) )
+      (clear! [_] (.clear! impl)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompCloneContext
+
   [^comzotohlabscljc.tardis.core.sys.Element co
-   ^comzotohlabscljc.util.core.MuObj ctx]
+   ^comzotohlabscljc.util.core.MubleAPI ctx]
+
   (do
     (when-not (nil? ctx)
-      (let [ x (make-context) ]
+      (let [ x (MakeContext) ]
         (doseq [ [k v] (.seq* ctx) ]
           (.setf! x k v))
         (.setCtx! co x)))
-    co))
-
-(defmethod comp-contextualize :default [co ctx]
-  (comp-clone-context co ctx))
-
-(defmethod comp-configure :default [co props] co)
-(defmethod comp-initialize :default [co] co)
-(defmethod comp-compose :default [co rego] co)
+    co
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompContextualize :default
 
+  [co ctx]
+
+  (CompCloneContext co ctx))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :default
+
+  [co props]
+
+  co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :default
+
+  [co]
+
+  co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompCompose :default
+
+  [co rego]
+
+  co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private sys-eof nil)
 

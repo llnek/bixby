@@ -13,33 +13,42 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.socket)
+  comzotohlabscljc.tardis.io.socket
 
-(import '(java.net InetAddress ServerSocket Socket))
-(import '(org.apache.commons.io IOUtils))
-(import '(com.zotohlabs.frwk.core Identifiable))
-(import '(com.zotohlabs.gallifrey.io SocketEvent))
+  (:require [clojure.tools.logging :as log :only (info warn error debug)])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.core.sys])
 
-(use '[clojure.tools.logging :only (info warn error debug)])
-(use '[comzotohlabscljc.tardis.io.core])
-(use '[comzotohlabscljc.tardis.core.sys])
-
-(use '[comzotohlabscljc.util.process :only [coroutine] ])
-(use '[comzotohlabscljc.util.meta :only [get-cldr] ])
-(use '[comzotohlabscljc.util.core :only [test-posnum conv-long] ])
-(use '[comzotohlabscljc.util.str :only [nsb hgl?] ])
-(use '[comzotohlabscljc.util.seqnum :only [next-long] ])
+  (:use [comzotohlabscljc.util.process :only [Coroutine] ])
+  (:use [comzotohlabscljc.util.meta :only [GetCldr] ])
+  (:use [comzotohlabscljc.util.core :only [test-posnum ConvLong] ])
+  (:use [comzotohlabscljc.util.str :only [nsb hgl?] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:import (java.net InetAddress ServerSocket Socket))
+  (:import (org.apache.commons.io IOUtils))
+  (:import (com.zotohlabs.frwk.core Identifiable))
+  (:import (com.zotohlabs.gallifrey.io SocketEvent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn makeSocketIO "" [container]
-  (makeEmitter container :czc.tardis.io/SocketIO))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeSocketIO "" 
+  
+  [container]
 
-(defmethod ioes-reify-event :czc.tardis.io/SocketIO
+  (MakeEmitter container :czc.tardis.io/SocketIO))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.tardis.io/SocketIO
+
   [co & args]
+
   (let [ ^Socket soc (first args)
-         eeid (next-long) ]
+         eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -55,23 +64,31 @@
         (emitter [_] co)
         (dispose [_] (IOUtils/closeQuietly soc)))
 
-      { :typeid :czc.tardis.io/SocketEvent } )))
+      { :typeid :czc.tardis.io/SocketEvent } 
+  )))
 
-(defmethod comp-configure :czc.tardis.io/SocketIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.tardis.io/SocketIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
+
   (let [ tout (:sock-timeout-millis cfg)
          host (:host cfg)
          port (:port cfg)
          blog (:backlog cfg) ]
     (test-posnum "socket-io port" port)
-    (.setAttr! co :timeoutMillis (conv-long tout 0))
+    (.setAttr! co :timeoutMillis (ConvLong tout 0))
     (.setAttr! co :host (nsb host))
     (.setAttr! co :port port)
-    (.setAttr! co :backlog (conv-long blog 100))
-    co))
+    (.setAttr! co :backlog (ConvLong blog 100))
+    co
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.io/SocketIO
 
-(defmethod comp-initialize :czc.tardis.io/SocketIO
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ backlog (.getAttr co :backlog)
@@ -79,38 +96,55 @@
          port (.getAttr co :port)
          ip (if (hgl? host) (InetAddress/getByName host) (InetAddress/getLocalHost))
          soc (ServerSocket. port backlog ip) ]
-    (info "opened Server Socket " soc  " (bound?) " (.isBound soc))
+    (log/info "opened Server Socket " soc  " (bound?) " (.isBound soc))
     (doto soc (.setReuseAddress true))
-    (.setAttr! co :ssocket soc)))
+    (.setAttr! co :ssocket soc)
+  ))
 
-(defn- sockItDown [^comzotohlabscljc.tardis.io.core.EmitterAPI co ^Socket soc]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- sockItDown ""
+  
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co ^Socket soc]
+
   (let []
-    (.dispatch co (ioes-reify-event co soc) {} )))
+    (.dispatch co (IOESReifyEvent co soc) {} )
+  ))
 
-(defmethod ioes-start :czc.tardis.io/SocketIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStart :czc.tardis.io/SocketIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^ServerSocket ssoc (.getAttr co :ssocket)
-         cl (get-cldr) ]
+         cl (GetCldr) ]
     (when-not (nil? ssoc)
-      (coroutine (fn [] 
+      (Coroutine (fn [] 
                    (while (.isBound ssoc)
                      (try
                        (sockItDown co (.accept ssoc))
                        (catch Throwable e#
-                         (warn e# "")
+                         (log/warn e# "")
                          (IOUtils/closeQuietly ssoc)
                          (.setAttr! co :ssocket nil)))))
                  cl))
-    (ioes-started co)))
+    (IOESStarted co)
+  ))
 
-(defmethod ioes-stop :czc.tardis.io/SocketIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStop :czc.tardis.io/SocketIO
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
+
   (let [ ^ServerSocket ssoc (.getAttr co :ssocket) ]
     (IOUtils/closeQuietly ssoc)
     (.setAttr! co :ssocket nil)
-    (ioes-stopped co)))
+    (IOESStopped co)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private socket-eof nil)
 

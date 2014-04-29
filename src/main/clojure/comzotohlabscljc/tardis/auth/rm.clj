@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -22,64 +21,77 @@
     :constructors {[] []}
     :exposes-methods { }
     :state myState
-  ))
+  )
 
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.crypto.codec :only [Pwdify] ])
+  (:use [comzotohlabscljc.tardis.auth.core])
+  (:use [comzotohlabscljc.dbio.connect])
+  (:use [comzotohlabscljc.dbio.core])
 
-(import '(org.apache.shiro.authz AuthorizationException AuthorizationInfo))
-(import '(org.apache.shiro.subject PrincipalCollection))
-(import '(org.apache.shiro.realm AuthorizingRealm))
-(import '(org.apache.shiro.authc
-  AuthenticationException AuthenticationToken SimpleAccount))
-(import '(com.zotohlabs.frwk.dbio DBAPI))
-(import '(org.apache.shiro.realm CachingRealm))
-(import '(java.util Collection))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.crypto.codec :only [pwdify] ])
-(use '[comzotohlabscljc.tardis.auth.core])
-(use '[comzotohlabscljc.dbio.connect])
-(use '[comzotohlabscljc.dbio.core])
+  (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken SimpleAccount))
+  (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
+  (:import (org.apache.shiro.subject PrincipalCollection))
+  (:import (org.apache.shiro.realm AuthorizingRealm))
+  (:import (com.zotohlabs.frwk.dbio DBAPI))
+  (:import (org.apache.shiro.realm CachingRealm))
+  (:import (java.util Collection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (defn -myInit []
   [ []
     (atom nil) ] )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn -doGetAuthenticationInfo
-  [^AuthorizingRealm this ^AuthenticationToken token]
-    (let [ ^DBAPI db (dbio-connect *JDBC-INFO* *META-CACHE*)
-           pwd (.getCredentials token)
-           user (.getPrincipal token)
-           sql (.newSimpleSQLr db) ]
-      (try
-        (let[ acc (get-loginAccount sql user (pwdify pwd))
-              rc (SimpleAccount.  acc (:passwd acc) (.getName this)) ]
-          rc)
-        (catch Throwable e#
-          (throw (AuthenticationException. e#)))
-        (finally
-          (.finz db)))
-      ))
 
-(defn- getAvailablePrinc [^PrincipalCollection princs ^String rname]
+  [^AuthorizingRealm this ^AuthenticationToken token]
+
+  (let [ ^DBAPI db (DbioConnect *JDBC-INFO* *META-CACHE*)
+         pwd (.getCredentials token)
+         user (.getPrincipal token)
+         sql (.newSimpleSQLr db) ]
+    (try
+      (let[ acc (GetLoginAccount sql user (Pwdify pwd))
+            rc (SimpleAccount.  acc (:passwd acc) (.getName this)) ]
+        rc)
+      (catch Throwable e#
+        (throw (AuthenticationException. e#)))
+      (finally
+        (.finz db)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getAvailablePrinc ""
+  
+  [^PrincipalCollection princs ^String rname]
+
   (if (or (nil? princs)
           (.isEmpty princs))
     nil
     (let [ ^Collection ps (.fromRealm princs rname) ]
       (if (or (nil? ps) (.isEmpty ps))
         (.getPrimaryPrincipal princs)
-        (-> ps (.iterator)(.next))))))
+        (-> ps (.iterator)(.next))))
+  ))
 
-(defn -doGetAuthorizationInfo
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -doGetAuthorizationInfo ""
+
   [^AuthorizingRealm  this ^PrincipalCollection principals]
-  (let [ ^DBAPI db (dbio-connect *JDBC-INFO* *META-CACHE*)
+
+  (let [ ^DBAPI db (DbioConnect *JDBC-INFO* *META-CACHE*)
          rname (.getName this)
          sql (.newSimpleSQLr db) ]
     (try
       (let [ acc (getAvailablePrinc principals rname)
              rc (SimpleAccount.  ^String acc (:passwd acc) rname)
-             rs (dbio-get-m2m {:as :roles :with sql } acc) ]
+             rs (DbioGetM2M {:as :roles :with sql } acc) ]
           (doseq [ r (seq rs) ]
             (.addRole rc ^String (:name r)))
           rc)
@@ -87,15 +99,15 @@
           (throw (AuthorizationException. e#)))
         (finally
           (.finz db)))
-      ))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn -init []
   nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private rm-eof nil)
-
 
 

@@ -9,26 +9,25 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.auth.shiro)
+  comzotohlabscljc.tardis.auth.shiro
 
-
-(import '(org.apache.shiro.authz AuthorizationException AuthorizationInfo))
-(import '(org.apache.shiro.authc.credential CredentialsMatcher))
-(import '(org.apache.shiro.realm AuthorizingRealm))
-(import '(org.apache.shiro.authc
-  AuthenticationException AuthenticationToken AuthenticationInfo SimpleAccount))
-(import '(com.zotohlabs.frwk.dbio DBAPI))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohlabscljc.crypto.codec :only [pwdify] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.crypto.codec :only [Pwdify] ])
+  (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
+  (:import (org.apache.shiro.authc.credential CredentialsMatcher))
+  (:import (org.apache.shiro.realm AuthorizingRealm))
+  (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken
+                                   AuthenticationInfo SimpleAccount))
+  (:import (com.zotohlabs.frwk.dbio DBAPI)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (deftype PwdMatcher [] CredentialsMatcher
+
   (doCredentialsMatch [_ token info]
     (let [ pwd (.getCredentials ^AuthenticationToken token)
            uid (.getPrincipal ^AuthenticationToken token)
@@ -36,13 +35,10 @@
            pu (-> (.getPrincipals ^AuthenticationInfo info)
                   (.getPrimaryPrincipal)) ]
       (and (= pu uid)
-               (= pc (pwdify pwd ""))) )))
-
+               (= pc (Pwdify pwd ""))) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private shiro-eof nil)
-
-
 

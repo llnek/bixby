@@ -16,110 +16,105 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.tardis.io.netty)
 
-(import '(java.net HttpCookie URI URL InetSocketAddress))
-(import '(java.net SocketAddress InetAddress))
-(import '(java.util ArrayList List))
-(import '(java.io IOException))
+  comzotohlabscljc.tardis.io.netty
 
-(import '(com.zotoh.hohenheim.io HTTPEvent))
-(import '(javax.net.ssl SSLContext))
-(import '(io.netty.handler.codec.http
-  HttpRequest HttpResponse CookieDecoder ServerCookieEncoder
-  DefaultHttpResponse HttpVersion HttpHeaders LastHttpContent
-  HttpHeaders Cookie QueryStringDecoder))
-(import '(io.netty.channel Channel))
-(import '(io.netty.channel.group
-  ChannelGroup))
-(import '(io.netty.bootstrap ServerBootstrap))
-(import '(com.zotoh.frwk.net NetUtils))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohcljc.hhh.core.sys])
+  (:use [comzotohcljc.hhh.io.core])
+  (:use [comzotohcljc.hhh.io.http])
+  (:use [comzotohcljc.hhh.io.triggers])
+  (:use [comzotohcljc.util.core :only [MubleAPI MakeMMap notnil? ConvLong] ])
+  (:use [comzotohcljc.util.seqnum :only [NextLong] ])
+  (:use [comzotohcljc.util.mime :only [GetCharset] ])
+  (:use [comzotohcljc.util.str :only [hgl? nsb strim nichts?] ])
+  (:import (java.net HttpCookie URI URL InetSocketAddress))
+  (:import (java.net SocketAddress InetAddress))
+  (:import (java.util ArrayList List))
+  (:import (java.io IOException))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent WebSocketEvent WebSocketResult))
+  (:import (javax.net.ssl SSLContext))
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse CookieDecoder ServerCookieEncoder
+                                        DefaultHttpResponse HttpVersion HttpHeaders LastHttpContent
+                                        HttpHeaders Cookie QueryStringDecoder))
+  (:import (io.netty.bootstrap ServerBootstrap))
+  (:import (io.netty.channel Channel))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
 
-(import '(com.zotoh.frwk.core Hierarchial Identifiable))
-(import '(com.zotoh.hohenheim.io WebSockEvent WebSockResult))
-(import '(com.zotoh.frwk.io XData))
-(import '(io.netty.handler.codec.http.websocketx
-  WebSocketFrame
-  WebSocketServerHandshaker
-  WebSocketServerHandshakerFactory
-  ContinuationWebSocketFrame
-  CloseWebSocketFrame
-  BinaryWebSocketFrame
-  TextWebSocketFrame
-  PingWebSocketFrame
-  PongWebSocketFrame))
-
-(use '[clojure.tools.logging :only [info warn error debug] ])
-(use '[comzotohcljc.hhh.core.sys])
-(use '[comzotohcljc.hhh.io.core])
-(use '[comzotohcljc.hhh.io.http])
-(use '[comzotohcljc.hhh.io.triggers])
-(use '[comzotohcljc.util.core :only [MuObj make-mmap notnil? conv-long] ])
-(use '[comzotohcljc.netty.comms :only [ makeServerNetty finzServer
-                                       makeRouteCracker] ])
-(use '[comzotohcljc.util.seqnum :only [next-long] ])
-(use '[comzotohcljc.util.mime :only [get-charset] ])
-(use '[comzotohcljc.util.str :only [hgl? nsb strim nichts?] ])
-
+  (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
+  (:import (com.zotohlabs.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defmulti nettyServiceReq "" (fn [a & args] (:typeid (meta a))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-wsock-result ""
 
-(defn- make-wsock-result []
-  (let [ impl (make-mmap) ]
-    (.mm-s impl :binary false)
-    (.mm-s impl :text false)
-    (.mm-s impl :data nil)
+  []
+
+  (let [ impl (MakeMMap) ]
+    (.setf! impl :binary false)
+    (.setf! impl :text false)
+    (.setf! impl :data nil)
     (reify
-      MuObj
-      (setf! [_ k v] (.mm-s impl k v) )
-      (seq* [_] (seq (.mm-m* impl)))
-      (getf [_ k] (.mm-g impl k) )
-      (clrf! [_ k] (.mm-r impl k) )
-      (clear! [_] (.mm-c impl))
+      MubleAPI
+      (setf! [_ k v] (.setf! impl k v) )
+      (seq* [_] (.seq* impl))
+      (getf [_ k] (.getf impl k) )
+      (clrf! [_ k] (.clrf! impl k) )
+      (clear! [_] (.clear! impl))
 
       WebSockResult
-      (isBinary [_] (.mm-g impl :binary))
-      (isText [_] (.mm-g impl :text))
-      (getData [_] (XData. (.mm-g impl :data)))
-      )))
+      (isBinary [_] (.getf impl :binary))
+      (isText [_] (.getf impl :text))
+      (getData [_] (XData. (.getf impl :data)))
+  )))
 
-(defn- cookieToJava [^Cookie c]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cookieToJava ""
+
+  [^Cookie c]
+
   (doto (HttpCookie. (.getName c)(.getValue c))
         (.setComment (.getComment c))
         (.setDomain (.getDomain c))
         (.setMaxAge (.getMaxAge c))
         (.setPath (.getPath c))
         (.setVersion (.getVersion c))
-        (.setHttpOnly (.isHttpOnly c)) ))
+        (.setHttpOnly (.isHttpOnly c))
+  ))
 
-(defn- make-wsock-event
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-wsock-event ""
+
   [^comzotohcljc.hhh.io.core.EmitterAPI co
-                         ^Channel ch
-                         ^XData xdata]
-  (let [ ssl (notnil? (.get (NetUtils/getPipeline ch) "ssl"))
+   ^Channel ch ^XData xdata]
+
+  (let [ ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
          ^WebSockResult res (make-wsock-result)
-         impl (make-mmap)
-         eeid (next-long) ]
+         impl (MakeMMap)
+         eeid (NextLong) ]
     (with-meta
       (reify
-        MuObj
+        MubleAPI
 
-        (setf! [_ k v] (.mm-s impl k v) )
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k) )
-        (clrf! [_ k] (.mm-r impl k) )
-        (clear! [_] (.mm-c impl))
+        (setf! [_ k v] (.setf! impl k v) )
+        (seq* [_] (.seq* impl))
+        (getf [_ k] (.getf impl k) )
+        (clrf! [_ k] (.clrf! impl k) )
+        (clear! [_] (.clear! impl))
 
         Identifiable
         (id [_] eeid)
 
         WebSockEvent
-        (bindSession [_ s] (.mm-s impl :ios s))
-        (getSession [_] (.mm-g impl :ios))
+        (bindSession [_ s] (.setf! impl :ios s))
+        (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
         (isSSL [_] ssl)
         (isText [_] (instance? String (.content xdata)))
@@ -133,35 +128,41 @@
               (.resumeOnResult wevt res))))
         (emitter [_] co))
 
-      { :typeid :czc.hhh.io/WebSockEvent } )))
+      { :typeid :czc.hhh.io/WebSockEvent }
 
-(defmethod ioes-reify-event :czc.hhh.io/NettyIO
+  )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.hhh.io/NettyIO
+
   [^comzotohcljc.hhh.io.core.EmitterAPI co & args]
-  (let [ ^HTTPResult res (make-http-result)
+
+  (let [ ^HTTPResult res (MakeHttpResult)
          ^HttpRequest req (nth args 1)
          ^XData xdata (nth args 2)
          ^Channel ch (nth args 0)
-         ssl (notnil? (.get (NetUtils/getPipeline ch) "ssl"))
+         ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
-         impl (make-mmap)
-         eeid (next-long) ]
+         impl (MakeMMap)
+         eeid (NextLong) ]
     (with-meta
       (reify
 
-        MuObj
+        MubleAPI
 
-        (setf! [_ k v] (.mm-s impl k v) )
-        (seq* [_] (seq (.mm-m* impl)))
-        (getf [_ k] (.mm-g impl k) )
-        (clrf! [_ k] (.mm-r impl k) )
-        (clear! [_] (.mm-c impl))
+        (setf! [_ k v] (.setf! impl k v) )
+        (seq* [_] (.seq* impl))
+        (getf [_ k] (.getf impl k) )
+        (clrf! [_ k] (.clrf! impl k) )
+        (clear! [_] (.clear! impl))
 
         Identifiable
         (id [_] eeid)
 
         HTTPEvent
-        (bindSession [_ s] (.mm-s impl :ios s))
-        (getSession [_] (.mm-g impl :ios))
+        (bindSession [_ s] (.setf! impl :ios s))
+        (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
         (emitter [_] co)
         (getCookies [_]
@@ -173,10 +174,10 @@
             rc))
         (getCookie [_ nm]
           (let [ v (nsb (HttpHeaders/getHeader req "Cookie"))
-                 lnm (.toLowerCase nm)
+                 lnm (cstr/lower-case nm)
                  cks (if (hgl? v) (CookieDecoder/decode v) []) ]
             (some (fn [^Cookie c]
-                    (if (= (.toLowerCase (.getName c)) lnm)
+                    (if (= (cstr/lower-case (.getName c)) lnm)
                       (cookieToJava c)
                       nil))
                     (seq cks))))
@@ -189,7 +190,7 @@
         (contentType [_] (HttpHeaders/getHeader req "content-type"))
         (contentLength [_] (HttpHeaders/getContentLength req 0))
 
-        (encoding [this]  (get-charset (.contentType this)))
+        (encoding [this]  (GetCharset (.contentType this)))
         (contextPath [_] "")
 
         (getHeaderValues [_ nm] (-> (.headers req) (.getAll nm)))
@@ -232,7 +233,7 @@
 
         (scheme [_] (if ssl "https" "http"))
 
-        (serverPort [_] (conv-long (HttpHeaders/getHeader req "SERVER_PORT") 0))
+        (serverPort [_] (ConvLong (HttpHeaders/getHeader req "SERVER_PORT") 0))
         (serverName [_] (nsb (HttpHeaders/getHeader req "SERVER_NAME")))
 
         (isSSL [_] ssl)
@@ -249,16 +250,22 @@
                  wevt (.release co this) ]
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
-
       )
 
-      { :typeid :czc.hhh.io/HTTPEvent } )) )
+      { :typeid :czc.hhh.io/HTTPEvent } 
 
-(defmethod comp-configure :czc.hhh.io/NettyIO
+  )) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompConfigure :czc.hhh.io/NettyIO
+
   [^comzotohcljc.hhh.core.sys.Element co cfg]
+
   (let [ c (nsb (:context cfg)) ]
     (.setAttr! co :contextPath (strim c))
-    (http-basic-config co cfg) ))
+    (HttpBasicConfig co cfg) 
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -280,40 +287,61 @@
           pl)))
   ))
 
-(defn- init-netty
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- init-netty ""
+
   [^comzotohcljc.hhh.core.sys.Element co]
+
   (let [ ^comzotohcljc.hhh.core.sys.Element
          ctr (.parent ^Hierarchial co)
-         options { :serverkey (.getAttr co :serverKey)
-                   :forwardBadRoutes true
-                   :emitter co
-                   :passwd (.getAttr co :pwd)
-                   :rtcObj (makeRouteCracker (.getAttr ctr :routes)) }
-         nes (BootstrapNetty nettyInitor options) ]
-    (.setAttr! co :netty nes)
-    co))
+         options (doto (JsonObject.)
+                   (.addProperty "serverkey" (.getAttr co :serverKey))
+                   (.addProperty "passwd" (.getAttr co :passwd)))
+         options { :emitter co
+                   :rtcObj (MakeRouteCracker (.getAttr ctr :routes)) }
+         bs (ServerSide/initServerSide cfg options) ]
+    (.setAttr! co :netty  { :bootstrap bs })
+    co
+  ))
 
-(defmethod ioes-start :czc.hhh.io/NettyIO
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStart :czc.hhh.io/NettyIO
+
   [^comzotohcljc.hhh.core.sys.Element co]
+
   (let [ host (nsb (.getAttr co :host))
          port (.getAttr co :port)
          nes (.getAttr co :netty)
-         nnn (StartNetty host port nes) ]
-    (.SetAttr! co :netty nnn)
-    (ioes-started co)))
-
-(defmethod ioes-stop :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co]
-  (let [ nes (.getAttr co :netty) ]
-    (StopNetty nes)
-    (ioes-stopped co)))
-
-(defmethod comp-initialize :czc.hhh.io/NettyIO
-  [^comzotohcljc.hhh.core.sys.Element co]
-  (init-netty co))
-
+         ^ServerBootstrap bs (:bootstrap nes)
+         ch (ServerSide/start bs host (int port)) ]
+    (.setAttr! co :netty (assoc nes :channel ch))
+    (IOESStarted co)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESStop :czc.hhh.io/NettyIO
 
+  [^comzotohcljc.hhh.core.sys.Element co]
+
+  (let [ nes (.getAttr co :netty)
+         ^ServerBootstrap bs (:bootstrap nes)
+         ^Channel ch (:channel nes) ]
+    (ServerSide/stop  bs ch)
+    (IOESStopped co)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.hhh.io/NettyIO
+
+  [^comzotohcljc.hhh.core.sys.Element co]
+
+  (init-netty co))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private netty-eof nil)
 

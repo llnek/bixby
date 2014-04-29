@@ -10,59 +10,81 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.etc.misc )
+  comzotohlabscljc.tardis.etc.misc
 
-(import '(com.zotohlabs.wflow.core FlowError))
-(import '(com.zotohlabs.wflow Pipeline PipelineDelegate PTask Work))
-(import '(com.zotohlabs.gallifrey.io IOEvent HTTPEvent HTTPResult))
-(import '(com.zotohlabs.frwk.core Startable))
+  (:import (com.zotohlabs.wflow.core FlowError))
+  (:import (com.zotohlabs.wflow Pipeline PipelineDelegate PTask Work))
+  (:import (com.zotohlabs.gallifrey.io IOEvent HTTPEvent HTTPResult))
+  (:import (com.zotohlabs.frwk.core Startable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal flows
+(defn- make-work ""
 
-(defn- make-work [s]
+  [s]
+
   (reify Work
              (perform [_ cur job arg]
                (let [ ^HTTPEvent evt (.event job)
                       ^HTTPResult res (.getResultObj evt) ]
                  (.setStatus res s)
-                 (.replyResult evt)))) )
+                 (.replyResult evt)))
+  ))
 
-(defn- make-internal-flow [^Pipeline pipe s]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- make-internal-flow ""
+
+  [^Pipeline pipe s]
+
   (let [ ev (.event (.job pipe)) ]
     (cond
       (instance? HTTPEvent ev)
       (PTask. (make-work s))
+
       :else
       (throw (FlowError.
-               (str "Unhandled event-type \"" (:typeid (meta ev))  "\"."))))))
+               (str "Unhandled event-type \"" (:typeid (meta ev))  "\"."))))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftype FatalErrorFlow [] PipelineDelegate
-  (getStartActivity [_ pipe]
-    (make-internal-flow pipe 500))
+
+  (getStartActivity [_ pipe] (make-internal-flow pipe 500))
   (onStop [_ pipe ] nil)
   (onError [_ error cur] nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftype OrphanFlow [] PipelineDelegate
-  (getStartActivity [_  pipe]
-    (make-internal-flow pipe 501))
+
+  (getStartActivity [_  pipe] (make-internal-flow pipe 501))
   (onStop [_  pipe] nil)
   (onError [_  error cur] nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeFatalErrorFlow
 
-(defn make-FatalErrorFlow ^Startable [job]
+  ^Startable
+  [job]
+
   (Pipeline. job "comzotohlabscljc.tardis.etc.misc.FatalErrorFlow"))
 
-(defn make-OrphanFlow ^Startable [job]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeOrphanFlow ""
+
+  ^Startable
+  [job]
+
   (Pipeline. job "comzotohlabscljc.tardis.etc.misc.OrphanFlow"))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+;;
 (def ^:private misc-eof nil)
 

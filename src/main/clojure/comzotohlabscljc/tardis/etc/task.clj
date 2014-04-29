@@ -12,21 +12,30 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.tardis.etc.task )
 
-(import '(org.apache.tools.ant.listener TimestampedLogger))
-(import '(org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac))
-(import '(org.apache.tools.ant.types
-  FileSet Path DirSet))
-(import '(org.apache.tools.ant
-  Project Target Task))
-(import '(java.io File))
+  comzotohlabscljc.tardis.etc.task
+
+  (:import (org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac))
+  (:import (org.apache.tools.ant.listener TimestampedLogger))
+  (:import (org.apache.tools.ant.types FileSet Path DirSet))
+  (:import (org.apache.tools.ant Project Target Task))
+  (:import (java.io File)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExecProj ""
+  
+  [^Project pj] 
+  
+  (.executeTarget pj "mi6"))
 
-(defn execProj [^Project pj] (.executeTarget pj "mi6"))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ProjAntTask "" 
+  
+  ^Project 
+  [^Task taskObj]
 
-(defn projAntTask "" ^Project [^Task taskObj]
   (let [ pj (doto (Project.)
               (.setName "hhh-project")
               (.init))
@@ -43,11 +52,17 @@
           (.setProject pj)
           (.setOwningTarget tg))
     (.addTask tg taskObj)
-    pj))
+    pj
+  ))
 
-(defn make-AntTask "" [^File hhhHome appId taskId]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeAntTask "" 
+  
+  [^File hhhHome appId taskId]
+
   (let [ tk (Ant.)
-         pj (projAntTask tk) ]
+         pj (ProjAntTask tk) ]
     (doto tk
           (.setDir (File. hhhHome (str "apps/" appId)))
           (.setAntfile "build.xml")
@@ -55,22 +70,34 @@
           ;;(.setOutput "/tmp/out.txt")
           (.setUseNativeBasedir true)
           (.setInheritAll false))
-    pj))
+    pj
+  ))
 
-(defn make-ExecTask "" [^String execProg ^File workDir args]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeExecTask "" 
+  
+  [^String execProg ^File workDir args]
+
   (let [ tk (ExecTask.)
-         pj (projAntTask tk) ]
+         pj (ProjAntTask tk) ]
     (doto tk
           (.setTaskName "hhh-exec-task")
           (.setExecutable execProg)
           (.setDir workDir))
     (doseq [ v (seq args) ]
       (-> (.createArg tk)(.setValue v)))
-    pj))
+    pj
+  ))
 
-(defn make-ZipTask "" [^File srcDir ^File zipFile includes excludes]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeZipTask "" 
+  
+  [^File srcDir ^File zipFile includes excludes]
+
   (let [ tk (Zip.)
-         pj (projAntTask tk)
+         pj (ProjAntTask tk)
          fs (doto (FileSet.)
                   (.setDir srcDir)) ]
     (doseq [ s (seq excludes) ]
@@ -80,11 +107,17 @@
     (doto tk
           (.add fs)
           (.setDestFile zipFile))
-    pj))
+    pj
+  ))
 
-(defn make-AntJavac "" [^File srcPath ^File destDir]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeAntJavac "" 
+  
+  [^File srcPath ^File destDir]
+
   (let [ ct (Javac.)
-         pj (projAntTask ct) ]
+         pj (ProjAntTask ct) ]
     (doto ct
           (.setTaskName "compile")
           (.setFork true)
@@ -95,10 +128,10 @@
     (-> (.createSrc ct)
       (.addDirset (doto (DirSet.) (.setDir srcPath))))
 
-    pj))
-
+    pj
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 (def ^:private task-eof nil)
 
