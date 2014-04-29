@@ -11,7 +11,7 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.net.rts
+  comzotohlabscljc.net.routes
 
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.io File))
@@ -27,6 +27,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defprotocol RouteCracker
+
+  ""
+
+  (routable? [_ msgInfo] )
+  (hasRoutes? [_])
+  (crack [_ msgInfo] ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -173,6 +184,45 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; [ri mc] routeinfo matcher
+(defn- seek-route ""
+
+  [mtd uri rts]
+
+  (if-not (nil? rts)
+    (some (fn [^comzotohlabscljc.net.routes.RouteInfo ri]
+            (let [ m (.resemble? ri mtd uri) ]
+              (if (nil? m) nil [ri m])))
+          (seq rts))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; router cracker
+(defn MakeRouteCracker "Create a url route cracker."
+
+  ^comzotohlabscljc.netty.routes.RouteCracker
+  [routes]
+
+  (reify RouteCracker
+    (hasRoutes? [_] (> (count routes) 0))
+    (routable? [this msgInfo]
+      (first (crack this msgInfo)))
+    (crack [_ msgInfo]
+      (let [ ^JsonObject info msgInfo
+             mtd (-> info (.get "method")(.getAsString))
+             uri (-> info (.get "uri")(.getAsString))
+             rc (seek-route mtd uri routes)
+             rt (if (nil? rc)
+                  [false nil nil ""]
+                  [true (first rc)(last rc) ""] ) ]
+        (if (and (false? (nth rt 0))
+                 (not (.endsWith uri "/"))
+                 (seek-route mtd (str uri "/") routes))
+          [true nil nil (str uri "/")]
+          rt)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private rts-eof nil)
+(def ^:private routes-eof nil)
 
