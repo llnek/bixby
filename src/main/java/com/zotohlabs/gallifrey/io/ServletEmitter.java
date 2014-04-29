@@ -22,7 +22,9 @@ import com.zotohlabs.gallifrey.core.Container;
  *
  */
 public interface ServletEmitter extends Emitter {
+
   public void doService(HttpServletRequest req, HttpServletResponse rsp);
+
 }
 
 

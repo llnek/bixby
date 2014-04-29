@@ -11,8 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
 
@@ -21,12 +19,14 @@ import java.util.Set;
 import java.util.Map;
 import java.net.HttpCookie;
 
-
+/**
+ * @author kenl
+ */
 public interface HTTPEvent  extends IOEvent {
 
-  public List<HttpCookie> getCookies();
-
   public HttpCookie getCookie(String name);
+
+  public List<HttpCookie> getCookies();
 
   public boolean isKeepAlive();
 
@@ -88,6 +88,7 @@ public interface HTTPEvent  extends IOEvent {
 
   public HTTPResult getResultObj();
   public void replyResult();
+
 }
 
 

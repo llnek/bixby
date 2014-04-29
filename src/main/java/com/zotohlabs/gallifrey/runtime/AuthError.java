@@ -13,6 +13,9 @@
 
 package com.zotohlabs.gallifrey.runtime;
 
+/**
+ * @author kenl
+ */
 public class AuthError extends Exception {
 
   public AuthError(String msg,Throwable e) {

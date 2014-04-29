@@ -11,11 +11,19 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.gallifrey.io;
 
+/**
+ * @author kenl
+ */
 public interface IOSession {
+
   public void handleResult(IOEvent ev, IOResult res);
+
   public void handleEvent(IOEvent ev);
+
   public Object getImpl();
+
 }
+
+

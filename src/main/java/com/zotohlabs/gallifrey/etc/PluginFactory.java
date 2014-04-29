@@ -18,7 +18,12 @@ import java.io.File;
 import com.zotohlabs.frwk.core.*;
 import com.zotohlabs.gallifrey.core.Container;
 
+/**
+ * @author kenl
+ */
 public interface PluginFactory {
+
   public Plugin createPlugin ();
+
 }
 

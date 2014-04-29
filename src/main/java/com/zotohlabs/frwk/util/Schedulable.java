@@ -11,8 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.frwk.util;
 
 /**
@@ -20,16 +18,22 @@ package com.zotohlabs.frwk.util;
  */
 public interface Schedulable {
 
-  public void dequeue(Runnable w);
-  public void run(Runnable w);
   public void postpone(Runnable w, long delayMillis);
+
+  public void dequeue(Runnable w);
+
+  public void run(Runnable w);
+
   public void hold(Object pid, Runnable w);
+
   public void hold(Runnable w);
 
   public void dispose();
 
-  public void wakeup(Runnable w);
   public void wakeAndRun(Object pid,Runnable w);
+
+  public void wakeup(Runnable w);
+
   public void reschedule(Runnable w);
 
 }

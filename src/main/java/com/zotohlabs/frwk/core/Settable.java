@@ -11,7 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.core;
 
 /**
@@ -19,8 +18,9 @@ package com.zotohlabs.frwk.core;
  */
 public interface Settable {
 
-  public void setv(Object key, Object p);
-  public void unsetv(Object key);
+  public void setv( Object key, Object p);
+
+  public void unsetv( Object key);
 
 }
 

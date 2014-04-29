@@ -11,13 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.core;
 
 /**
  * @author kenl
  */
 public interface Initializable {
+
   public void initialize();
+
 }
 

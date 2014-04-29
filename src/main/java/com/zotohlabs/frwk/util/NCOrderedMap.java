@@ -11,8 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.frwk.util;
 
 import java.util.Collection;
@@ -27,7 +25,7 @@ import java.util.LinkedHashMap;
  *
  * @param <T>
  */
-public class NCOrderedMap<T> extends NCMap<T>  {
+public class NCOrderedMap<T> extends NCMap<T> {
 
   private static final long serialVersionUID = -3637175588593032279L;
   private Map<String,T> _map= new LinkedHashMap<String,T>();

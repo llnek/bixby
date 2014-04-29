@@ -13,6 +13,9 @@
 
 package com.zotohlabs.gallifrey.runtime;
 
+/**
+ * @author kenl
+ */
 public class UnknownUser extends AuthError {
 
   public UnknownUser(String msg,Throwable e) {

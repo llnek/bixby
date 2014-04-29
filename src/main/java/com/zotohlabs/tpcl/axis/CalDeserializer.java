@@ -21,12 +21,15 @@ import org.apache.axis.i18n.Messages;
 import javax.xml.namespace.QName;
 import org.slf4j.*;
 
+/**
+ * @author kenl
+ */
 // axis gives the  wrong timezone, this fixes it
 // and get the right timezone
 public class CalDeserializer extends CalendarDeserializer {
 
   private static Logger _log= LoggerFactory.getLogger(CalDeserializer.class);
-  public Logger tlog() { return CalDeserializer._log; }
+  public Logger tlog() { return _log; }
 
   public CalDeserializer(Class<?> javaType, QName xmlType) {
     super(javaType,xmlType);
@@ -161,4 +164,6 @@ public class CalDeserializer extends CalendarDeserializer {
   }
 
 }
+
+
 

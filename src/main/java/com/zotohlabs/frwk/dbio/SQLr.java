@@ -16,6 +16,9 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
+/**
+ * @author kenl
+ */
 public interface SQLr {
 
   public List<?> findSome(Object model, Map<String,Object> filters, String ordering);

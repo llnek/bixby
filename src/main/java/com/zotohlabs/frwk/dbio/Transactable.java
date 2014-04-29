@@ -16,11 +16,18 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
-
+/**
+ * @author kenl
+ */
 public interface  Transactable {
+
   public Object execWith(Object fn) ;
+
   public Connection begin();
+
   public void commit(Connection c);
+
   public void rollback(Connection c);
+
 }
 

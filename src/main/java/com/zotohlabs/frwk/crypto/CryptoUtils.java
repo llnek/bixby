@@ -13,6 +13,9 @@
 
 package com.zotohlabs.frwk.crypto;
 
+/**
+ * @author kenl
+ */
 public class CryptoUtils {
 
   public static void main(String[] args) {

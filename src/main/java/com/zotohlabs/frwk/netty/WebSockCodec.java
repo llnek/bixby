@@ -11,7 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.netty;
 
 import com.google.gson.JsonObject;
@@ -43,7 +42,9 @@ public class  WebSockCodec extends RequestCodec {
   protected static final AttributeKey WSHSK_KEY =AttributeKey.valueOf("wsockhandshaker");
 
   private static final WebSockCodec shared = new WebSockCodec();
-  public static  WebSockCodec getInstance() { return shared; }
+  public static  WebSockCodec getInstance() { 
+    return shared; 
+  }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     delAttr(ctx,WSHSK_KEY);
@@ -110,8 +111,8 @@ public class  WebSockCodec extends RequestCodec {
       return;
     }
     CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
-    OutputStream os= (OutputStream) getAttr( ctx, XOS_KEY);
     final JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
+    OutputStream os= (OutputStream) getAttr( ctx, XOS_KEY);
     final XData xs = (XData) getAttr( ctx, XDATA_KEY);
     if (os != null) {
       org.apache.commons.io.IOUtils.closeQuietly(os);
@@ -124,7 +125,8 @@ public class  WebSockCodec extends RequestCodec {
     ctx.fireChannelRead( new DemuxedMsg(info, xs) );
   }
 
-  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {
+  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) 
+    throws IOException {
     WebSocketServerHandshaker hs = (WebSocketServerHandshaker) getAttr( ctx, WSHSK_KEY);
     Channel ch = ctx.channel();
     tlog().debug( "nio-wsframe: received a " + frame.getClass());

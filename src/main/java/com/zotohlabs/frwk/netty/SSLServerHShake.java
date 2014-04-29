@@ -76,9 +76,9 @@ public class SSLServerHShake {
       tlog().error("", e);
     }
     finally {
-        if (inp != null) try {
-          inp.close();
-        } catch (Throwable e) {}
+      if (inp != null) try {
+        inp.close();
+      } catch (Throwable e) {}
     }
     return hh;
   }

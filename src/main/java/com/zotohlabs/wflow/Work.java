@@ -20,7 +20,9 @@ import com.zotohlabs.wflow.core.Job;
  *
  */
 public interface Work {
+
   public Object perform(FlowPoint cur, Job job, Object arg);
+
 }
 
 

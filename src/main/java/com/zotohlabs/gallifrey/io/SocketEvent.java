@@ -11,13 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
 import java.io.OutputStream;
 import java.io.InputStream;
 
+/**
+ * @author kenl
+ */
 public interface SocketEvent  extends IOEvent {
 
   public OutputStream getSockOut();

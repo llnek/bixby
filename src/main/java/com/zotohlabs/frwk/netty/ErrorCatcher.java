@@ -18,11 +18,10 @@
 
 package com.zotohlabs.frwk.netty;
 
+import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-
-import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 
 /**
  * @author kenl
@@ -31,10 +30,11 @@ import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 public class ErrorCatcher extends SimpleChannelInboundHandler {
 
   private static final ErrorCatcher shared = new ErrorCatcher();
-  public static ErrorCatcher getInstance() { return shared; }
+  public static ErrorCatcher getInstance() {
+    return shared;
+  }
 
   public ErrorCatcher() {
-
   }
 
   @Override

@@ -28,14 +28,16 @@ import io.netty.handler.codec.http.*;
 public class Expect100 extends SimpleChannelInboundHandler {
 
   private static final Expect100 shared = new Expect100();
-  public static Expect100 getInstance() { return shared; }
+  public static Expect100 getInstance() {
+    return shared;
+  }
 
   private static HttpResponse c100_rsp() {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                   HttpResponseStatus.CONTINUE);
   }
 
-  public static void handle100(ChannelHandlerContext ctx, HttpMessage msg) {
+  public static void handle100( ChannelHandlerContext ctx, HttpMessage msg) {
     if (HttpHeaders.is100ContinueExpected(msg)) {
       ctx.writeAndFlush( c100_rsp() ).addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture f) {
@@ -52,7 +54,9 @@ public class Expect100 extends SimpleChannelInboundHandler {
     if (msg instanceof HttpMessage) {
       handle100(ctx, (HttpMessage) msg);
     }
+    ctx.fireChannelRead(msg);
   }
+
 }
 
 

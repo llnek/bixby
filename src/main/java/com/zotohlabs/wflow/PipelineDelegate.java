@@ -21,12 +21,18 @@ import com.zotohlabs.wflow.core.Job;
 import com.zotohlabs.frwk.core.Startable;
 import com.zotohlabs.frwk.server.ServerLike;
 
-
+/**
+ * @author kenl
+ */
 public interface PipelineDelegate {
 
   public Activity getStartActivity(Pipeline p);
+
   public void onStop(Pipeline p);
+
   public Activity onError(Throwable e, FlowPoint cur);
 
 }
+
+
 

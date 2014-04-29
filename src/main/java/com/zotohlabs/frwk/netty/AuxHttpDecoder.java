@@ -49,19 +49,20 @@ import java.util.List;
 import java.util.Map;
 
 import static com.zotohlabs.frwk.util.CoreUtils.*;
+import static com.zotohlabs.frwk.io.IOUtils.*;
 
 /**
  * @author kenl
  */
 public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
-  private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
-  public Logger tlog() { return _log; }
-
-  protected static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
-  protected static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
   protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
   protected static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
+  protected static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
+  protected static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
+
+  private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
+  public Logger tlog() { return _log; }
 
   public String getName() {
     return this.getClass().getSimpleName();
@@ -83,13 +84,14 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
   }
 
   protected void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
-    int len =  buf.readableBytes();
+    int len = buf==null ? 0 :  buf.readableBytes();
     if (len > 0) {
       buf.readBytes( os, len);
+      os.flush();
     }
   }
 
-  protected JsonObject extractHeaders(HttpHeaders hdrs) {
+  protected JsonObject extractHeaders( HttpHeaders hdrs) {
     JsonObject sum= new JsonObject();
     JsonArray arr;
     for (String n : hdrs.names()) {
@@ -106,7 +108,6 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     JsonObject sum= new JsonObject();
     JsonArray arr;
     for (Map.Entry<String,List<String>> en : decr.parameters().entrySet()) {
-      en.getKey();
       arr= new JsonArray();
       for (String s : en.getValue()) {
         arr.add( new JsonPrimitive(s));
@@ -118,20 +119,20 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
   protected JsonObject extractMsgInfo( HttpMessage msg) {
     JsonObject info= new JsonObject();
-    info.add("is-chunked", new JsonPrimitive( HttpHeaders.isTransferEncodingChunked(msg)));
-    info.add("keep-alive", new JsonPrimitive(HttpHeaders.isKeepAlive(msg)));
+    info.addProperty("is-chunked", HttpHeaders.isTransferEncodingChunked(msg));
+    info.addProperty("keep-alive", HttpHeaders.isKeepAlive(msg));
     info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
     info.addProperty("protocol", msg.getProtocolVersion().toString());
     info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
-    info.add("uri", new JsonPrimitive(""));
-    info.add("status", new JsonPrimitive( ""));
-    info.add("code", new JsonPrimitive(0));
+    info.addProperty("uri", "");
+    info.addProperty("status", "");
+    info.addProperty("code", 0);
     info.add("params", new JsonObject());
-    info.add("method", new JsonPrimitive(""));
+    info.addProperty("method", "");
     info.add("headers", extractHeaders(msg.headers() ));
     if (msg instanceof HttpResponse) {
       HttpResponseStatus s= ((HttpResponse) msg).getStatus();
-      info.add("status", new JsonPrimitive( nsb(s.reasonPhrase())));
+      info.addProperty("status", nsb(s.reasonPhrase()));
       info.addProperty("code", s.code());
     }
     else
@@ -140,16 +141,15 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
       HttpRequest req = (HttpRequest) msg;
       String md = req.getMethod().name();
       String mt;
-      if (mo != null) {
+      if (mo != null && mo.length() > 0) {
         mt= mo;
       } else {
         mt=md;
       }
       QueryStringDecoder dc = new QueryStringDecoder(req.getUri());
-      mt=mt.toUpperCase();
+      info.addProperty("method", mt.toUpperCase());
       info.add("params", extractParams(dc));
-      info.add("uri", new JsonPrimitive( dc.path()));
-      info.add("method", new JsonPrimitive(mt));
+      info.addProperty("uri", dc.path());
     }
     return info;
   }
@@ -157,24 +157,20 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
   protected boolean tooMuchData(ByteBuf content, Object chunc) {
     ByteBuf buf= null;
     boolean rc=false;
-    if (chunc instanceof WebSocketFrame) {
-      buf = ((WebSocketFrame) chunc).content();
-    }
+    if (chunc instanceof WebSocketFrame) { buf = ((WebSocketFrame) chunc).content(); }
     else
-    if (chunc instanceof HttpContent) {
-      buf = ((HttpContent) chunc).content();
-    }
+    if (chunc instanceof HttpContent) { buf = ((HttpContent) chunc).content(); }
     if (buf != null) {
-      rc = content.readableBytes() > com.zotohlabs.frwk.io.IOUtils.streamLimit() - buf.readableBytes();
+      rc = content.readableBytes() > streamLimit() - buf.readableBytes();
     }
     return rc;
   }
 
   protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) throws IOException {
+    XData xs = (XData) getAttr(ctx, XDATA_KEY);
     Object[] fos = IOUtils.newTempFile(true);
     OutputStream os = (OutputStream) fos[1];
     File fp = (File) fos[0];
-    XData xs = (XData) getAttr(ctx, XDATA_KEY);
     slurpByteBuf(bbuf, os);
     os.flush();
     xs.resetContent(fp);
@@ -185,6 +181,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
   protected void flushToFile(OutputStream os , Object chunc) throws IOException {
     ByteBuf buf = null;
     if (chunc instanceof WebSocketFrame) { buf = ((WebSocketFrame) chunc).content(); }
+    else
     if (chunc instanceof HttpContent) { buf = ((HttpContent) chunc).content(); }
     if (buf != null) {
       slurpByteBuf(buf, os);

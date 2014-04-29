@@ -20,9 +20,9 @@ package com.zotohlabs.frwk.server;
  */
 public interface ComponentRegistry  {
 
-  public boolean has( Object name) ;
-
   public Component lookup( Object name);
+
+  public boolean has( Object name) ;
 
   public void dereg(Component c);
 

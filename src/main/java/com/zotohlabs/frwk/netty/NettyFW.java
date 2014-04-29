@@ -74,7 +74,8 @@ public enum NettyFW {
     return ch.close();
   }
 
-  public static long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum) throws IOException {
+  public static long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum) 
+    throws IOException {
     int cnt= (cbuf==null) ? 0 : cbuf.readableBytes();
     if (cnt > 0) {
       byte[] bits= new byte[4096];
@@ -90,7 +91,8 @@ public enum NettyFW {
     return lastSum + cnt;
   }
 
-  public static OutputStream swapFileBacked(XData x, OutputStream out, long lastSum) throws IOException {
+  public static OutputStream swapFileBacked(XData x, OutputStream out, long lastSum) 
+    throws IOException {
     if (lastSum > IOUtils.streamLimit() ) {
       Object[] fos = IOUtils.newTempFile(true);
       x.resetContent(fos[0] );
@@ -187,7 +189,7 @@ public enum NettyFW {
   }
 
   public static ChannelPipeline addWriteChunker(ChannelPipeline pipe) {
-    pipe.addLast( "wrt-chunker", new ChunkedWriteHandler() );
+    pipe.addLast( "ChunkedWriteHandler", new ChunkedWriteHandler() );
     return pipe;
   }
 

@@ -19,6 +19,9 @@ import java.io.File;
 import com.zotohlabs.frwk.server.ServerLike;
 import com.zotohlabs.frwk.dbio.DBAPI;
 
+/**
+ * @author kenl
+ */
 public interface Container extends ServerLike , Disposable {
 
   public void notifyObservers(IOEvent evt, Object options );

@@ -25,8 +25,7 @@ import  org.apache.commons.io.IOUtils;
 
 /**
  * Wrapper structure to abstract a piece of data which can be a file
- * or a memory byte[].  If the data is byte[], it will also be
- * compressed if a certain threshold is exceeded.
+ * or a memory byte[], String or some object.
  *
  * @author kenl
  *
@@ -91,9 +90,8 @@ public class XData implements Serializable {
     return resetContent(obj, true);
   }
 
-  public Object content() { return _data; }
-
   public boolean hasContent() { return _data != null; }
+  public Object content() { return _data; }
 
   public byte[] javaBytes() throws IOException {
     byte[] bits= new byte[0];

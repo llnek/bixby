@@ -19,6 +19,7 @@
 package com.zotohlabs.frwk.netty;
 
 import com.google.gson.JsonObject;
+import com.zotohlabs.frwk.net.SSLTrustMgrFactory;
 import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
@@ -42,17 +43,9 @@ public class  SSLClientHShake {
   public static ChannelHandler getInstance(JsonObject options) {
     SslHandler hh= null;
     try {
-      TrustManager m = new X509TrustManager() {
-        public void checkClientTrusted(X509Certificate[] c, String a) {
-        }
-        public void checkServerTrusted(X509Certificate[] c, String a) {
-        }
-        public X509Certificate[] getAcceptedIssuers() {
-          return new X509Certificate[]{};
-        }
-      };
       SSLContext ctx = SSLContext.getInstance("TLS");
-      ctx.init(null, new TrustManager[]{m}, SecureRandom.getInstanceStrong());
+      ctx.init(null, SSLTrustMgrFactory.getTrustManagers(),
+                     SecureRandom.getInstanceStrong());
       SSLEngine eg = ctx.createSSLEngine();
       eg.setUseClientMode(true);
       hh= new SslHandler(eg);

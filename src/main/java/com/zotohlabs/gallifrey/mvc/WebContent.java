@@ -19,6 +19,7 @@ package com.zotohlabs.gallifrey.mvc;
 public interface WebContent {
 
   public String contentType();
+
   public byte[] body();
 
 }

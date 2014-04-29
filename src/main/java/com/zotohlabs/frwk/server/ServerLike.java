@@ -16,6 +16,9 @@ package com.zotohlabs.frwk.server;
 
 import com.zotohlabs.frwk.util.Schedulable;
 
+/**
+ * @author kenl
+ */
 public interface ServerLike {
 
   public boolean hasService( Object serviceId);

@@ -11,15 +11,15 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.frwk.util;
 
 /**
  * @author kenl
  */
 public interface RunnableWithId extends Runnable {
+
   public Object getId();
+
 }
 
 

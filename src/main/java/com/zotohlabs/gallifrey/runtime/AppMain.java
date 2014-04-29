@@ -18,10 +18,13 @@ import com.google.gson.JsonObject;
 import com.zotohlabs.gallifrey.core.Container;
 import com.zotohlabs.frwk.core.*;
 
-
+/**
+ * @author kenl
+ */
 public interface AppMain extends Disposable , Initializable , Startable {
 
   public void configure(JsonObject options);
+
   public void contextualize(Container c);
 
 }

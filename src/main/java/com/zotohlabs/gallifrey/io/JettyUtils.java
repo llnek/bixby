@@ -11,9 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
-
 package com.zotohlabs.gallifrey.io;
 
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -34,16 +31,23 @@ public class JettyUtils {
     return new ServerConnector( svr , new HttpConnectionFactory(conf)) ;
   }
 
-  public static WebAppContext newWebAppContext(
-      final File warPath, final String ctxPath, final String attr, final Object obj) throws IOException {
-    String cp;
-    if (ctxPath==null) { cp= ""; } else { cp = ctxPath; }
+  public static WebAppContext newWebAppContext( final File warPath, final String ctxPath, final String attr, final Object obj) throws IOException {
+
+    String cp = "";
+
+    if (ctxPath != null) {
+      cp = ctxPath;
+    }
+
     return new WebAppContext(warPath.toURI().toURL().toString(), cp) {
+
       public void setContextPath(String s) {
         super.setContextPath(s);
         _scontext.setAttribute(attr, obj);
       }
+
     };
+
   }
 
 }

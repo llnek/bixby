@@ -11,22 +11,18 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.crypto;
 
-import java.io.*;
-
-import javax.activation.DataSource;
-
 import static com.zotohlabs.frwk.util.CoreUtils.*;
-
+import javax.activation.DataSource;
+import java.io.*;
 import com.zotohlabs.frwk.io.XStream;
 
 /**
  * @author kenl
  *
  */
-class SDataSource implements DataSource {
+public class SDataSource implements DataSource {
 
   private String _ctype= "";
   private byte[] _bits;
@@ -36,7 +32,7 @@ class SDataSource implements DataSource {
    * @param content
    * @param contentType
    */
-  public SDataSource(File content, String contentType) {
+  public SDataSource( File content, String contentType) {
     _ctype= nsb(contentType);
     _fn= content;
   }
@@ -45,7 +41,7 @@ class SDataSource implements DataSource {
    * @param content
    * @param contentType
    */
-  public SDataSource(byte[] content, String contentType) {
+  public SDataSource( byte[] content, String contentType) {
     _ctype= nsb(contentType);
     _bits= content;
   }
@@ -53,21 +49,21 @@ class SDataSource implements DataSource {
   /**
    * @param content
    */
-  public SDataSource(File content) {
+  public SDataSource( File content) {
     this(content, "");
   }
 
   /**
    * @param content
    */
-  public SDataSource(byte[] content) {
+  public SDataSource( byte[] content) {
     this(content, "");
   }
 
   public String getContentType() { return _ctype; }
 
   @SuppressWarnings("resource")
-public InputStream getInputStream() {
+  public InputStream getInputStream() {
     return (_fn==null) ? new ByteArrayInputStream(_bits) : new XStream(_fn);
   }
 

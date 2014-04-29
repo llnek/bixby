@@ -34,7 +34,9 @@ import static com.zotohlabs.frwk.util.CoreUtils.nsb;
 public class HttpDemux extends AuxHttpDecoder {
 
   private static final HttpDemux sharedHandler = new HttpDemux();
-  public static HttpDemux getInstance() { return sharedHandler; }
+  public static HttpDemux getInstance() {
+    return sharedHandler;
+  }
 
   private boolean isFormPost ( HttpMessage req, String method) {
     String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
@@ -43,39 +45,47 @@ public class HttpDemux extends AuxHttpDecoder {
          ( ct.indexOf("multipart/form-data") >= 0 ||
              ct.indexOf("application/x-www-form-urlencoded") >= 0 );
   }
-  
+
   private boolean isWSock( HttpMessage req, String method) {
-      String ws = HttpHeaders.getHeader( req ,"upgrade").trim().toLowerCase();
-      return "GET".equals(method) && "websocket".equals(ws);
+    String ws = HttpHeaders.getHeader( req ,"upgrade").trim().toLowerCase();
+    return "GET".equals(method) && "websocket".equals(ws);
   }
 
-  public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if (msg instanceof HttpRequest) {} else {
-      return;
-    }
+  private void doRequest(ChannelHandlerContext ctx, HttpMessage msg) throws Exception {
+    String mo = HttpHeaders.getHeader( msg, "X-HTTP-Method-Override");
     HttpRequest req = (HttpRequest) msg;
-    String mo = nsb(HttpHeaders.getHeader(req, "X-HTTP-Method-Override"));
-    String md = req.getMethod().name();
-    String mt = mo.length() > 0 ? mo.toUpperCase() : md.toUpperCase();
+    String mt = req.getMethod().name().toUpperCase();
     ChannelPipeline pipe = ctx.pipeline();
-    AuxHttpDecoder nxt;
+    AuxHttpDecoder nxt = null;
 
-    setAttr(ctx, MSGINFO_KEY, extractMsgInfo(req));
-    Expect100.handle100(ctx, req);
+    if (mo != null) {
+      mt = mo.toUpperCase();
+    }
 
-    if (isFormPost(req, mt)) {
+    setAttr(ctx, MSGINFO_KEY, extractMsgInfo(msg));
+    Expect100.handle100(ctx, msg);
+
+    if (isFormPost(msg, mt)) {
       nxt = FormPostCodec.getInstance();
-      pipe.addAfter( getName(), nxt.getName(), nxt );
     }
     else
-    if (isWSock(req,mt)) {
+    if (isWSock(msg,mt)) {
       nxt= WebSockCodec.getInstance();
-      pipe.addAfter( getName(), nxt.getName(), nxt );
     }
     else {
       nxt=RequestCodec.getInstance();
+    }
+
+    if (nxt != null) {
       pipe.addAfter( getName(), nxt.getName(), nxt );
     }
+  }
+
+  public void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
+    if (obj instanceof HttpRequest) {
+      doRequest(ctx, (HttpMessage) obj);
+    }
+    ctx.fireChannelRead(obj);
   }
 
 }

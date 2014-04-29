@@ -11,11 +11,11 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
-
+/**
+ * @author kenl
+ */
 public interface TimerEvent  extends IOEvent {
 
   public boolean isRepeating();

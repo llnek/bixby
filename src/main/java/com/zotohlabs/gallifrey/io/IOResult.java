@@ -11,13 +11,15 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
-
+/**
+ * @author kenl
+ */
 public interface IOResult {
+
   public Object emitter();
+
 }
 
 

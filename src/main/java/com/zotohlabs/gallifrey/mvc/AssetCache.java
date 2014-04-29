@@ -14,6 +14,7 @@
 package com.zotohlabs.gallifrey.mvc;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author kenl
@@ -21,9 +22,9 @@ import java.util.HashMap;
 public enum AssetCache {
 ;
 
-  private static HashMap<String, Object> _cache=  new HashMap<String, Object>();
+  private static Map<String, Object> _cache=  new HashMap<String, Object>();
 
-  public static HashMap<String,Object> get() {
+  public static Map<String,Object> get() {
     return _cache;
   }
 

@@ -11,12 +11,13 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
 import java.io.File;
 
+/**
+ * @author kenl
+ */
 public interface FileEvent  extends IOEvent {
 
   public File getFile();

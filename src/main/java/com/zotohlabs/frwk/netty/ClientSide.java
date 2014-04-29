@@ -18,6 +18,7 @@
 
 package com.zotohlabs.frwk.netty;
 
+import static com.zotohlabs.frwk.io.IOUtils.*;
 import com.google.gson.JsonObject;
 import com.zotohlabs.frwk.core.Callable;
 import com.zotohlabs.frwk.io.XData;
@@ -44,7 +45,8 @@ public enum ClientSide {
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return ClientSide._log; }
 
-  public static Bootstrap initClientSide(PipelineConfigurator cfg, JsonObject options) {
+
+  public static Bootstrap initClientSide( PipelineConfigurator cfg, JsonObject options) {
     Bootstrap bs= new Bootstrap();
     bs.group( new NioEventLoopGroup() );
     bs.channel(NioSocketChannel.class);
@@ -76,23 +78,24 @@ public enum ClientSide {
     return c;
   }
 
-  public static XData post(Channel c, XData data, JsonObject options) throws IOException {
-    return send(c, "POST", data, options);
+  public static void post(Channel c, XData data, JsonObject options) throws IOException {
+     send(c, "POST", data, options);
   }
 
-  public static  XData post(Channel c, XData data) throws IOException {
-    return send(c,"POST", data, new JsonObject() );
+  public static  void post(Channel c, XData data) throws IOException {
+     send(c,"POST", data, new JsonObject() );
   }
 
-  public static  XData get(Channel c, JsonObject options) throws IOException {
-    return send(c, "GET", new XData(), options);
+  public static  void get(Channel c, JsonObject options) throws IOException {
+     send(c, "GET", new XData(), options);
   }
 
-  public static  XData get(Channel c) throws IOException {
-    return send(c,"GET", new XData(), new JsonObject() );
+  public static  void get(Channel c) throws IOException {
+     send(c,"GET", new XData(), new JsonObject() );
   }
 
-  private static XData send(Channel ch, String op, XData xdata, JsonObject options) throws IOException {
+  private static ChannelFuture send(Channel ch, String op, XData xdata, JsonObject options)
+    throws IOException {
     long clen = (xdata == null) ?  0L : xdata.size();
     URL targetUrl = (URL) ch.attr(URL_KEY).get();
     String mo = options.has("override") ? options.get("override").getAsString() : null;
@@ -122,14 +125,14 @@ public enum ClientSide {
 
     ChannelFuture cf= ch.write(req);
     if (clen > 0L) {
-      if (clen > com.zotohlabs.frwk.io.IOUtils.streamLimit() ) {
+      if (clen > streamLimit() ) {
         cf= ch.writeAndFlush( new ChunkedStream(xdata.stream()) );
       } else {
         cf= ch.writeAndFlush(Unpooled.wrappedBuffer(xdata.javaBytes()));
       }
     }
 
-    return null;
+    return cf;
   }
 
 

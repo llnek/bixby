@@ -20,12 +20,21 @@ import com.zotohlabs.frwk.core.*;
  * @author kenl
  */
 public interface Job extends Gettable , Settable {
+
   public ServerLike container() ;
+
   public Event event() ;
+
   public Object id() ;
+
   public void setLastResult( Object v) ;
+
   public void clrLastResult() ;
+
   public Object getLastResult() ;
 
 }
+
+
+
 

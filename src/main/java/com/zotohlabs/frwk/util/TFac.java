@@ -24,11 +24,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author kenl
  */
 public class TFac implements ThreadFactory {
+
   private ClassLoader _cl = Thread.currentThread().getContextClassLoader();
   private ThreadFactory _fac = Executors.defaultThreadFactory();
   private AtomicInteger _seq= new AtomicInteger(0);
+
   @SuppressWarnings("unused")
   private ThreadGroup _group;
+
   private String _pfx="";
 
   public TFac(String pfx) {

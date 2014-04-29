@@ -11,10 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
-
 
 import com.zotohlabs.frwk.server.Event;
 
@@ -24,6 +21,7 @@ import com.zotohlabs.frwk.server.Event;
 public interface IOEvent extends Event {
 
   public void bindSession(IOSession s);
+
   public IOSession getSession();
 
 }

@@ -15,13 +15,11 @@
 package com.zotohlabs.frwk.mime;
 
 import static org.apache.commons.lang3.StringUtils.trim;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Map.Entry;
 import java.util.Properties;
-
 import javax.activation.MimetypesFileTypeMap;
 
 /**
@@ -31,7 +29,7 @@ public class MimeFileTypes {
 
   public static  MimetypesFileTypeMap makeMimeFileTypes(Properties props) throws IOException{
     StringBuilder sum = new StringBuilder();
-    for (Entry<Object, Object> en : props.entrySet()) {      
+    for (Entry<Object, Object> en : props.entrySet()) {
       sum.append(  trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n");
     }
     try {
@@ -39,8 +37,8 @@ public class MimeFileTypes {
     } catch (UnsupportedEncodingException e) {
       throw new IOException("Failed to parse mime.properties.");
     }
-  }  
-  
+  }
+
 }
 
-  
+

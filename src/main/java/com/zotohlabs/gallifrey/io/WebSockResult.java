@@ -12,14 +12,16 @@
  ??*/
 
 
-
 package com.zotohlabs.gallifrey.io;
 
 
-
+/**
+ * @author kenl
+ */
 public interface WebSockResult extends IOResult {
 
   public boolean isBinary();
+
   public boolean isText();
 
   public Object getData();

@@ -20,6 +20,7 @@ package com.zotohlabs.frwk.core;
 public interface Startable {
 
   public void start();
+
   public void stop();
 
 }

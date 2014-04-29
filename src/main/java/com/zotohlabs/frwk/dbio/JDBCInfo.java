@@ -16,12 +16,19 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
+/**
+ * @author kenl
+ */
 public interface JDBCInfo {
 
   public String getDriver();
+
   public String getUrl();
+
   public String getUser();
+
   public String getPwd();
+
   //
   public String getId();
 

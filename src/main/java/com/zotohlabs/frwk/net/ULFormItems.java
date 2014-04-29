@@ -26,6 +26,9 @@ public class ULFormItems {
 
   private List<ULFileItem> _items= new ArrayList<ULFileItem>();
 
+  public ULFormItems() {
+  }
+
   public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
 
   public void add(ULFileItem x) { _items.add(x); }

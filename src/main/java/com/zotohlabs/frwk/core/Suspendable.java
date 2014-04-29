@@ -11,7 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.core;
 
 /**
@@ -20,6 +19,7 @@ package com.zotohlabs.frwk.core;
 public interface Suspendable {
 
   public void suspend();
+
   public void resume();
 
 }

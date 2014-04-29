@@ -16,8 +16,12 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
-
+/**
+ * @author kenl
+ */
 public interface Schema {
+
   public Object getModels();
+
 }
 

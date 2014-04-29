@@ -16,10 +16,15 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
+/**
+ * @author kenl
+ */
 public interface JDBCPool {
 
   public Connection nextFree();
+
   public void shutdown();
+
   public Object vendor();
 
 }

@@ -16,14 +16,23 @@ package com.zotohlabs.frwk.dbio;
 import java.sql.Connection;
 import java.util.*;
 
+/**
+ * @author kenl
+ */
 public interface DBAPI {
 
   public boolean supportsOptimisticLock();
+
   public MetaCache getMetaCache();
+
   public Object vendor();
+
   public void finz();
+
   public Connection open();
+
   public Transactable newCompositeSQLr();
+
   public SQLr newSimpleSQLr();
 
 }

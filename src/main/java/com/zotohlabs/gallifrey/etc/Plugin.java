@@ -11,16 +11,21 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.gallifrey.etc;
 
 import java.io.File;
 import com.zotohlabs.frwk.core.*;
 import com.zotohlabs.gallifrey.core.Container;
 
+/**
+ * @author kenl
+ */
 public interface Plugin extends Startable , Configurable , Disposable {
+
   public void contextualize(Container c);
+
   public void initialize();
+
 }
 
 

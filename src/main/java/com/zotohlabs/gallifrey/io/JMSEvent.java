@@ -11,14 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
 
 
 import javax.jms.Message;
 
-
+/**
+ * @author kenl
+ */
 public interface JMSEvent  extends IOEvent {
 
   public Message getMsg();

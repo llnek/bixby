@@ -16,17 +16,25 @@ package com.zotohlabs.gallifrey.mvc;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * @author kenl
+ */
 public enum MVCUtils {
 ;
 
   private static ThreadLocal<SimpleDateFormat> _fmt = new ThreadLocal<SimpleDateFormat>() {
+
     public SimpleDateFormat initialValue() {
       SimpleDateFormat f= new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
       f.setTimeZone(TimeZone.getTimeZone("GMT"));
       return f;
     }
+
   };
 
   public static SimpleDateFormat getSDF() { return _fmt.get(); }
 
 }
+
+
+

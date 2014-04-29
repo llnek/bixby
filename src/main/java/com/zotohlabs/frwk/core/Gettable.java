@@ -11,13 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlabs.frwk.core;
 
 /**
  * @author kenl
  */
 public interface Gettable {
-  public Object getv(Object key);
+
+  public Object getv( Object key);
+
 }
 

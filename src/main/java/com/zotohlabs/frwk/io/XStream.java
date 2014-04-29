@@ -68,9 +68,8 @@ public class XStream extends InputStream {
     }
   }
 
-
   public int read(byte[] b) throws IOException {
-      return (b==null) ? -1 : read(b, 0, b.length);
+    return (b==null) ? -1 : read(b, 0, b.length);
   }
 
   public long skip(long n) throws IOException {
@@ -120,8 +119,8 @@ public class XStream extends InputStream {
     try {
       return (_fn != null) ? _fn.getCanonicalPath() : "" ;
     } catch (IOException e) {
-        tlog().error("",e);
-        return "";
+      tlog().error("",e);
+      return "";
     }
   }
 

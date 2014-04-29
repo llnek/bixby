@@ -11,28 +11,26 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.frwk.dbio;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
- * 
  * @author kenl
- *
  */
 public enum DBIOLocal {
 ;
 
-  private static ThreadLocal<Object> _cache=new ThreadLocal<Object>() {
-    protected Object initialValue() {
+  private static ThreadLocal<Map> _cache=new ThreadLocal<Map>() {
+    protected Map initialValue() {
       return new HashMap<Object,Object>();
     }
   };
 
-  public static ThreadLocal<Object> getCache() {
+  public static ThreadLocal<Map> getCache() {
     return _cache;
   }
 
 }
+

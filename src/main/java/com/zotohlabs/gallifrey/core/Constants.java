@@ -13,6 +13,9 @@
 
 package com.zotohlabs.gallifrey.core;
 
+/**
+ * @author kenl
+ */
 public class Constants {
 
   public static String  SYS_DEVID_PFX= "system.####";
@@ -112,3 +115,4 @@ public class Constants {
   public static String K_META="meta";
 
 }
+

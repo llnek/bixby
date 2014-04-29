@@ -25,11 +25,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 
-
+/**
+ * @author kenl
+ */
 public class ByteRange {
 
   private static Logger _log= LoggerFactory.getLogger(ByteRange.class);
-  public Logger tlog() { return ByteRange._log; }
+  public Logger tlog() { return _log; }
 
   private RandomAccessFile _file;
   private boolean _incHeader;
@@ -106,3 +108,7 @@ public class ByteRange {
   }
 
 }
+
+
+
+

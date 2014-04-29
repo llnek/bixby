@@ -32,9 +32,9 @@ import static com.zotohlabs.frwk.util.CoreUtils.nsb;
  */
 public class ULFileItem implements FileItem , Serializable {
 
-  private static Logger _log= LoggerFactory.getLogger(ULFileItem.class);
+  private static final Logger _log= LoggerFactory.getLogger(ULFileItem.class);
   private static final long serialVersionUID= 2214937997601489203L;
-  public Logger tlog() { return ULFileItem._log; }
+  public Logger tlog() { return _log; }
 
   private transient OutputStream _os;
   private byte[] _fieldBits;
@@ -71,11 +71,11 @@ public class ULFileItem implements FileItem , Serializable {
     _ff= true;
     _filename= "";
     _os=iniz();
-      try {
-          _os.write(value);
-      } catch (IOException e) {
-          tlog().error("",e);
-      }
+    try {
+      _os.write(value);
+    } catch (IOException e) {
+      tlog().error("",e);
+    }
   }
 
   public void delete()  {
@@ -112,18 +112,16 @@ public class ULFileItem implements FileItem , Serializable {
   public String getString() { return getString("UTF-8"); }
 
   public String getString(String charset) {
-
-      try {
-          return (maybeGetBits() == null) ?  null : new String(_fieldBits, charset);
-      } catch (UnsupportedEncodingException e) {
-          tlog().error("",e);
-          return null;
-      }
+    try {
+      return (maybeGetBits() == null) ?  null : new String(_fieldBits, charset);
+    } catch (UnsupportedEncodingException e) {
+      tlog().error("",e);
+      return null;
+    }
   }
 
-  public boolean isFormField() {return _ff;}
-
   public boolean isInMemory() { return false; }
+  public boolean isFormField() {return _ff;}
 
   public void setFieldName(String s) {
     _field=s;
@@ -152,12 +150,12 @@ public class ULFileItem implements FileItem , Serializable {
     "filename= " + getName() + "\n"  ;
 
     if (_ds != null) {
-        try {
-            s2 ="filepath = " + _ds.filePath();
-        } catch (IOException e) {
-            tlog().error("",e);
-            s2="ERROR";
-        }
+      try {
+        s2 ="filepath = " + _ds.filePath();
+      } catch (IOException e) {
+        tlog().error("",e);
+        s2="ERROR";
+      }
     } else {
       s2= "field-value = " + getString();
     }

@@ -15,25 +15,28 @@ package com.zotohlabs.frwk.dbio;
 
 import java.sql.SQLException;
 
+/**
+ * @author kenl
+ */
 public class DBIOError extends SQLException {
 
   private static final long serialVersionUID = 113241635256073760L;
 
-  public DBIOError(String msg, Throwable t) {
+  public DBIOError( String msg, Throwable t) {
     super(msg,t);
   }
 
   /**
    * @param msg
    */
-  public DBIOError(String msg) {
+  public DBIOError( String msg) {
     this(msg, null);
   }
 
   /**
    * @param t
    */
-  public DBIOError(Throwable t) {
+  public DBIOError( Throwable t) {
     this("",t);
   }
 

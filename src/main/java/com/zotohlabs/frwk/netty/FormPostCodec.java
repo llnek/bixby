@@ -45,7 +45,9 @@ public class FormPostCodec extends RequestCodec {
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
 
   private static FormPostCodec shared = new FormPostCodec();
-  public static FormPostCodec getInstance() { return shared; }
+  public static FormPostCodec getInstance() { 
+    return shared; 
+  }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);
@@ -53,8 +55,9 @@ public class FormPostCodec extends RequestCodec {
 
     delAttr(ctx,FORMITMS_KEY);
     delAttr(ctx,FORMDEC_KEY);
-    if (dc != null) dc.destroy();
+
     if (fis != null) fis.destroy();
+    if (dc != null) dc.destroy();
 
     super.resetAttrs(ctx);
   }
@@ -64,13 +67,14 @@ public class FormPostCodec extends RequestCodec {
     HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
     setAttr(ctx ,FORMITMS_KEY, new ULFormItems() );
     setAttr( ctx, FORMDEC_KEY, dc);
+    setAttr( ctx, XDATA_KEY, new XData() );
     handleFormPostChunk(ctx, req);
   }
 
   private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) throws IOException {
     if (data==null) { return; }
-    InterfaceHttpData.HttpDataType dt= data.getHttpDataType();
     ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
+    InterfaceHttpData.HttpDataType dt= data.getHttpDataType();
     String nm = dt.name();
     if (dt == InterfaceHttpData.HttpDataType.FileUpload) {
       FileUpload fu = (FileUpload)data;
@@ -104,7 +108,8 @@ public class FormPostCodec extends RequestCodec {
     }
   }
 
-  private void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc) throws IOException {
+  private void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc) 
+    throws IOException {
     try {
       while (dc.hasNext() ) {
         InterfaceHttpData data = dc.next();
@@ -140,10 +145,7 @@ public class FormPostCodec extends RequestCodec {
       delAttr(ctx, FORMITMS_KEY);
       xs.resetContent(fis);
       resetAttrs(ctx);
-      ctx.fireChannelRead(new HashMap<String,Object>() {{
-        put("payload", xs);
-        put("info", info);
-        }});
+      ctx.fireChannelRead(new DemuxedMsg(info, xs));
     }
   }
 
@@ -157,6 +159,10 @@ public class FormPostCodec extends RequestCodec {
     if (msg instanceof HttpContent) {
       HttpContent c = (HttpContent) msg;
       handleFormPostChunk(ctx,c);
+    }
+    else {
+      // what is this ? let downstream deal with it
+      ctx.fireChannelRead(msg);
     }
   }
 }

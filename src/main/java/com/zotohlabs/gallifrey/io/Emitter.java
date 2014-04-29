@@ -22,7 +22,9 @@ import com.zotohlabs.gallifrey.core.Container;
  *
  */
 public interface Emitter {
+
   public Container container();
+
 }
 
 

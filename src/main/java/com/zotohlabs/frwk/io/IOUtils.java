@@ -20,6 +20,9 @@ import java.util.Collection;
 import org.slf4j.*;
 import org.apache.commons.io.FileUtils;
 
+/**
+ * @author kenl
+ */
 public class IOUtils {
 
   private static File _wd = new File( System.getProperty("java.io.tmpdir"));
@@ -39,16 +42,16 @@ public class IOUtils {
     _wd= fpDir;
   }
 
-  public static  Object[] newTempFile(boolean open) throws IOException { // (File,OutputStream)
+  public static Object[] newTempFile(boolean open) throws IOException { // (File,OutputStream)
     Object[] objs= new Object[2];
     File fp = mkTempFile("","");
     objs[0] = fp;
-      try {
-          objs[1] = open ? new FileOutputStream(fp) : null;
-      } catch (FileNotFoundException e) {
-          throw new IOException("Failed to create temp file.");
-      }
-      return objs;
+    try {
+      objs[1] = open ? new FileOutputStream(fp) : null;
+    } catch (FileNotFoundException e) {
+      throw new IOException("Failed to create temp file.");
+    }
+    return objs;
   }
 
   public static File mkTempFile(String pfx, String sux) throws IOException {

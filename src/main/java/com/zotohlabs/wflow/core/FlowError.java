@@ -13,6 +13,9 @@
 
 package com.zotohlabs.wflow.core;
 
+/**
+ * @author kenl
+ */
 public class FlowError extends Exception {
 
   public FlowError(String msg,Throwable e) {

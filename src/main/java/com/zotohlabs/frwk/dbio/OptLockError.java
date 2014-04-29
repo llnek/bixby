@@ -15,6 +15,9 @@ package com.zotohlabs.frwk.dbio;
 
 import java.sql.SQLException;
 
+/**
+ * @author kenl
+ */
 public class OptLockError extends SQLException {
 
   private static final long serialVersionUID = 143241635256073760L;

@@ -38,11 +38,13 @@ import java.util.List;
 
 import static com.zotohlabs.frwk.util.CoreUtils.nsb;
 
-
+/**
+ * @author kenl
+ */
 public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   private static Logger _log= LoggerFactory.getLogger(HTTPRangeInput.class);
-  public Logger tlog()  { return HTTPRangeInput._log; }
+  public Logger tlog()  { return _log; }
 
   private boolean _unsatisfiable = false;
   private int _chunkSize = 8096;

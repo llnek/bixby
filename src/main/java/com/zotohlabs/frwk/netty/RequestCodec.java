@@ -55,7 +55,9 @@ import static com.zotohlabs.frwk.util.CoreUtils.*;
 public class RequestCodec extends AuxHttpDecoder {
 
   private static final RequestCodec shared = new RequestCodec();
-  public static RequestCodec getInstance() { return shared;  }
+  public static RequestCodec getInstance() {
+    return shared;
+  }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
@@ -71,10 +73,10 @@ public class RequestCodec extends AuxHttpDecoder {
     if (! (msg instanceof LastHttpContent))  {
       return;
     }
+    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
     OutputStream os = (OutputStream) getAttr( ctx, XOS_KEY);
     ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
     XData xs = (XData) getAttr( ctx, XDATA_KEY);
-    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
     addMoreHeaders( ctx, ((LastHttpContent ) msg).trailingHeaders());
     if (os == null) {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -83,7 +85,6 @@ public class RequestCodec extends AuxHttpDecoder {
     } else {
       org.apache.commons.io.IOUtils.closeQuietly(os);
     }
-    Map<String,Object> result= new HashMap<String,Object>();
     long olen = info.get("clen").getAsLong();
     long clen =  xs.size();
     if (olen != clen) {
@@ -91,9 +92,7 @@ public class RequestCodec extends AuxHttpDecoder {
       info.addProperty("clen", clen);
     }
     resetAttrs(ctx);
-    result.put("payload", info);
-    result.put("info", info);
-    ctx.fireChannelRead(result);
+    ctx.fireChannelRead( new DemuxedMsg(info, xs));
   }
 
   protected void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {

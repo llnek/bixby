@@ -11,15 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlabs.gallifrey.io;
-
-
 
 import java.net.HttpCookie;
 import java.net.URL;
 
+/**
+ * @author kenl
+ */
 public interface HTTPResult extends IOResult {
 
   public void setRedirect(URL location);
@@ -39,7 +38,7 @@ public interface HTTPResult extends IOResult {
   public void setContent(Object data);
 
   public int getStatus();
-  
+
 }
 
 

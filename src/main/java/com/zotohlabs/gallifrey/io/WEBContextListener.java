@@ -13,11 +13,11 @@
 
 package com.zotohlabs.gallifrey.io;
 
+import org.eclipse.jetty.webapp.WebAppContext;
 import javax.servlet.*;
 import java.io.*;
 import java.util.*;
 import org.slf4j.*;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * @author kenl
@@ -26,7 +26,7 @@ public class WEBContextListener implements ServletContextListener {
 
   private static Logger _log=LoggerFactory.getLogger(WEBContextListener.class);
   private Object _src;
-  public Logger tlog() { return WEBContextListener._log; }
+  public Logger tlog() { return _log; }
 
   public void contextInitialized(ServletContextEvent evt) {
 

@@ -14,9 +14,11 @@
 package com.zotohlabs.frwk.jmx;
 
 import org.apache.commons.lang3.StringUtils;
-
 import java.util.Arrays;
 
+/**
+ * @author
+ */
 public class NameParams {
 
   private String[] _pms;
@@ -53,3 +55,5 @@ public class NameParams {
   }
 
 }
+
+

@@ -15,8 +15,13 @@ package com.zotohlabs.wflow;
 
 import com.zotohlabs.wflow.core.Job;
 
+/**
+ * @author kenl
+ */
 public interface ForLoopCountExpr {
+
   public int getCount(Job job);
+
 }
 
 

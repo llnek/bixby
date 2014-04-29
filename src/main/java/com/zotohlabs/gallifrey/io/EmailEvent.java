@@ -12,13 +12,16 @@
  ??*/
 
 
-
-
 package com.zotohlabs.gallifrey.io;
 
 import javax.mail.internet.MimeMessage;
 
-
+/**
+ * @author kenl
+ */
 public interface EmailEvent extends IOEvent {
+
   public MimeMessage getMsg();
+
 }
+

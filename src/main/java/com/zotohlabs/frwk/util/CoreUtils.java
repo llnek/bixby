@@ -24,50 +24,44 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FileUtils;
 
-import org.apache.commons.lang3.StringUtils;
-
-public class CoreUtils {
+/**
+ * @author kenl
+ */
+public enum CoreUtils {
+;
 
   private static Logger _log= LoggerFactory.getLogger(CoreUtils.class);
+  public static Logger tlog() { return _log; }
 
   public static void main(String[] args) {
     System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
   }
 
-  /*
-  def using[A <: {def close(): Unit}, B](param: A)(f: A => B): B = {
-    try {
-      f(param)
-    } catch {
-      case e:Throwable => _log.warn("", e); throw e
-    } finally {
-      tryc { () => param.close }
-    }
-  }
-
-  def tryc ( f:  ()  => Unit ) {
-    try {
-      f()
-    } catch { case e:Throwable =>  }
-  }
-  */
-
   public static void blockAndWait(Object lock, long waitMillis) {
-    synchronized(lock) {
-      try {
-        if (waitMillis > 0L) { lock.wait(waitMillis); } else { lock.wait(); }
-      }
-      catch (Throwable e) {
+    try {
+      synchronized (lock) {
+        if (waitMillis > 0L) {
+          lock.wait(waitMillis);
+        } else {
+          lock.wait();
+        }
       }
     }
+    catch (Throwable e)
+    {}
   }
 
   public static void unblock(Object lock) {
-    synchronized(lock) {
-      try { lock.notifyAll(); } catch (Throwable e) {}
+    try {
+      synchronized (lock) {
+        lock.notifyAll();
+      }
     }
+    catch (Throwable e)
+    {}
   }
 
   public static Object asJObj(Object a) {
@@ -75,12 +69,15 @@ public class CoreUtils {
   }
 
   public static String nsb(Object x) {
-    return (x==null) ? "" : x.toString();
+    return x==null ? "" : x.toString();
   }
 
   public static String shuffle(String s) {
     List<Character> lst = new ArrayList<>();
     char[] cs= s.toCharArray();
+    for (int n= 0; n < cs.length; ++n) {
+      lst.add(cs[n]);
+    }
     Collections.shuffle(lst);
     for (int n= 0; n < lst.size(); ++n) {
       cs[n] = lst.get(n).charValue();
@@ -92,17 +89,17 @@ public class CoreUtils {
     while (true) try {
       Thread.sleep(8000);
     }
-    catch (Throwable e) {
-    }
+    catch (Throwable e)
+    {}
   }
 
   public static JsonElement readJson(File f) {
     try {
-    return readJson( FileUtils.readFileToString(f, "utf-8"));
-  } catch (IOException e) {
-    e.printStackTrace();
-    return null;
-  }
+      return readJson( FileUtils.readFileToString(f, "utf-8"));
+    } catch (IOException e) {
+      tlog().error("",e);
+      return null;
+    }
   }
 
   public static JsonElement readJson(String s) {
@@ -112,5 +109,6 @@ public class CoreUtils {
   public static String[] splitNull(String s) {
     return StringUtils.split( nsb(s), "\u0000");
   }
+
 }
 

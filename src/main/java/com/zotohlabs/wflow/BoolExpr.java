@@ -15,9 +15,13 @@ package com.zotohlabs.wflow;
 
 import com.zotohlabs.wflow.core.Job;
 
-
+/**
+ * @author kenl
+ */
 public interface BoolExpr {
+
   public boolean evaluate(Job j);
+
 }
 
 

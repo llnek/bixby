@@ -21,6 +21,7 @@ package com.zotohlabs.frwk.netty;
 import com.google.gson.JsonObject;
 import com.zotohlabs.frwk.io.XData;
 
+
 /**
  * @author kenl
  */
@@ -29,7 +30,7 @@ public class DemuxedMsg {
   private JsonObject _info;
   private XData _payload;
 
-  public DemuxedMsg(JsonObject info, XData payload) {
+  public DemuxedMsg( JsonObject info, XData payload) {
     _payload = payload;
     _info = info;
   }

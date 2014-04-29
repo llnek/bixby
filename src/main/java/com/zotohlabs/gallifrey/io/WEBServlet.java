@@ -31,7 +31,7 @@ public class WEBServlet extends HttpServlet implements Serializable {
 
   private static Logger _log = LoggerFactory.getLogger(WEBServlet.class);
   private static final long serialVersionUID= -3862652820921092885L;
-  public Logger tlog() { return WEBServlet._log; }
+  public Logger tlog() { return _log; }
   private ServletEmitter _src;
 
   public WEBServlet(ServletEmitter src) {
@@ -82,9 +82,12 @@ public class WEBServlet extends HttpServlet implements Serializable {
         "Servlet:iniz() - servlet:" ,
         getServletName());
     }
-    catch (Throwable e) {
-    }
+    catch (Throwable e)
+    {}
 
   }
 
 }
+
+
+
