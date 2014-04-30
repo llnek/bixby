@@ -9,21 +9,22 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{  :doc "Utility functions for class related or reflection related operations."
         :author "kenl" }
   comzotohlabscljc.util.meta
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.util.str :only [EqAny? hgl?] ])
+  (:use [comzotohlabscljc.util.core :only [test-nonil] ])
   (:require [clojure.string :as cstr])
 
-  (:import (java.lang.reflect Member Field Method Modifier))
-  (:use [ comzotohlabscljc.util.str :only [EqAny? hgl?] ])
-  (:use [ comzotohlabscljc.util.core :only [test-nonil] ]))
+  (:import (java.lang.reflect Member Field Method Modifier)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmulti IsChild "Returns true if clazz is subclass of this base class."
   (fn [a b]
     (cond
@@ -167,18 +168,24 @@
 ;;
 (defn ForName "Load a java class by name."
 
-  (^Class [^String z] (ForName z nil))
+  (^Class
+    [^String z]
+    (ForName z nil))
 
-  (^Class [^String z ^ClassLoader cl]
+  (^Class
+    [^String z ^ClassLoader cl]
     (if (nil? cl) (java.lang.Class/forName z) (java.lang.Class/forName z true cl))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetCldr "Get the current classloader."
 
-  (^ClassLoader [] (GetCldr nil))
+  (^ClassLoader
+    []
+    (GetCldr nil))
 
-  (^ClassLoader [^ClassLoader cl]
+  (^ClassLoader
+    [^ClassLoader cl]
     (if (nil? cl) (.getContextClassLoader (Thread/currentThread)) cl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,17 +194,19 @@
 
   [^ClassLoader cl]
 
-  (let []
-    (test-nonil "class-loader" cl)
-    (.setContextClassLoader (Thread/currentThread) cl)))
+  (test-nonil "class-loader" cl)
+  (.setContextClassLoader (Thread/currentThread) cl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn LoadClass "Load this class by name."
 
-  (^Class [^String clazzName] (LoadClass clazzName nil))
+  (^Class
+    [^String clazzName]
+    (LoadClass clazzName nil))
 
-  (^Class [^String clazzName ^ClassLoader cl]
+  (^Class
+    [^String clazzName ^ClassLoader cl]
     (if (not (hgl? clazzName)) nil (.loadClass (GetCldr cl) clazzName))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -207,18 +216,20 @@
   ^Object
   [^Class cz]
 
-  (do
-    (test-nonil "java-class" cz)
-    (.newInstance (.getDeclaredConstructor cz (make-array Class 0))
-                  (make-array Object 0)  )))
+  (test-nonil "java-class" cz)
+  (.newInstance (.getDeclaredConstructor cz (make-array Class 0))
+                (make-array Object 0)  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeObj "Make an object of this class by calling the default constructor."
 
-  (^Object [^String clazzName] (MakeObj clazzName nil))
+  (^Object
+    [^String clazzName]
+    (MakeObj clazzName nil))
 
-  (^Object [^String clazzName ^ClassLoader cl]
+  (^Object
+    [^String clazzName ^ClassLoader cl]
    (if (not (hgl? clazzName)) nil (ctorObj (LoadClass clazzName cl)))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -227,12 +238,17 @@
 
   [^Class javaClass]
 
-  (let [ rc (loop [ sum (transient []) par javaClass ]
-              (if (nil? par)
-                (persistent! sum)
-                (recur (conj! sum par) (.getSuperclass par))))  ]
+  (let [ rc
+         (loop [ sum (transient [])
+                 par javaClass ]
+           (if (nil? par)
+             (persistent! sum)
+             (recur (conj! sum par) (.getSuperclass par)))) ]
     ;; since we always add the original class, we need to ignore it on return
-    (if (> (count rc) 1) (rest rc) [] )))
+    (if (> (count rc) 1)
+        (rest rc)
+        [])
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -246,18 +262,19 @@
                 (if (and (> level 0)
                          (or (Modifier/isStatic x) (Modifier/isPrivate x)) )
                   sum
-                  (assoc! sum (.getName m) m)))) bin props) 
+                  (assoc! sum (.getName m) m))))
+            bin props)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- listMtds ""
-  
+
   [ ^Class cz ^long level ]
 
   (let [ par (.getSuperclass cz) ]
-    (iterXXX cz 
-             level 
+    (iterXXX cz
+             level
              (fn [^Class c] (.getDeclaredMethods c))
              (if (nil? par) (transient {}) (listMtds par (inc level))))
   ))
@@ -265,12 +282,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- listFlds ""
-  
+
   [ ^Class cz ^long level ]
 
   (let [ par (.getSuperclass cz) ]
-    (iterXXX cz 
-             level 
+    (iterXXX cz
+             level
              (fn [^Class c] (.getDeclaredFields c))
              (if (nil? par) (transient {}) (listFlds par (inc level))))
   ))
@@ -282,8 +299,9 @@
   [^Class javaClass]
 
   (vals (if (nil? javaClass)
-          {}
-          (persistent! (listMtds javaClass 0 ))   )) )
+            {}
+            (persistent! (listMtds javaClass 0 )))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -292,8 +310,9 @@
   [^Class javaClass]
 
   (vals (if (nil? javaClass)
-          {}
-          (persistent! (listFlds javaClass 0 ))     )) )
+            {}
+            (persistent! (listFlds javaClass 0 )))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

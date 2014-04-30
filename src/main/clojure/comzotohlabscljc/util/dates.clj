@@ -15,17 +15,16 @@
   comzotohlabscljc.util.dates
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [comzotohlabscljc.util.constants :as CS ])
   (:require [clojure.string :as cstr])
+  (:use [ comzotohlabscljc.util.str :only [Has? HasAny? nichts?] ])
+  (:use [ comzotohlabscljc.util.core :only [Try!] ])
 
   (:import (java.text ParsePosition SimpleDateFormat))
   (:import (java.util Locale TimeZone SimpleTimeZone
                       Date Calendar GregorianCalendar))
   (:import (java.sql Timestamp))
-  (:import (org.apache.commons.lang3 StringUtils))
-
-  (:use [ comzotohlabscljc.util.str :only [Has? HasAny? nichts?] ])
-  (:require [ comzotohlabscljc.util.constants :as CS ])
-  (:use [ comzotohlabscljc.util.core :only [Try!] ]))
+  (:import (org.apache.commons.lang3 StringUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -35,14 +34,10 @@
   [year]
 
   (cond
-    (zero? (mod year 400))
-    true
-
-    (zero? (mod year 100))
-    false
-
-    :else
-    (zero? (mod year 4))) )
+    (zero? (mod year 400)) true
+    (zero? (mod year 100)) false
+    :else (zero? (mod year 4))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,8 +85,7 @@
   ^Timestamp
   [^String tstr]
 
-  (Try!
-    (Timestamp/valueOf tstr) ))
+  (Try! (Timestamp/valueOf tstr) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -133,16 +127,21 @@
 ;;
 (defn FmtDate "Convert Date into string value."
 
-  ( ^String [^Date dt fmt] (FmtDate dt fmt nil))
+  ( ^String
+    [^Date dt]
+    (FmtDate dt CS/DT_FMT_MICRO nil))
 
-  ( ^String [^Date dt fmt ^TimeZone tz]
+  ( ^String
+    [^Date dt fmt]
+    (FmtDate dt fmt nil))
+
+  ( ^String
+    [^Date dt fmt ^TimeZone tz]
     (if (or (nil? dt) (cstr/blank? fmt))
-      ""
-      (let [ df (SimpleDateFormat. fmt) ]
-        (when-not (nil? tz) (.setTimeZone df tz))
-        (.format df dt))))
-
-  ( ^String [^Date dt] (FmtDate dt CS/DT_FMT_MICRO nil)))
+        ""
+        (let [ df (SimpleDateFormat. fmt) ]
+          (when-not (nil? tz) (.setTimeZone df tz))
+          (.format df dt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,9 +150,7 @@
   ^String
   [^Date dt]
 
-  (let []
-    (FmtDate dt CS/DT_FMT_MICRO (SimpleTimeZone. 0 "GMT"))
-  ))
+  (FmtDate dt CS/DT_FMT_MICRO (SimpleTimeZone. 0 "GMT")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -165,8 +162,8 @@
   (if (nil? cal)
     nil
     (doto (GregorianCalendar. (.getTimeZone cal))
-      (.setTime (.getTime cal))
-      (.add (int calendarField) ^long amount))
+          (.setTime (.getTime cal))
+          (.add (int calendarField) ^long amount))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,7 +197,7 @@
 ;;
 (defn AddDays "Add n more days to the calendar."
 
-  ^Calendar 
+  ^Calendar
   [^Calendar cal days]
 
   (add cal Calendar/DAY_OF_YEAR days))
@@ -214,7 +211,7 @@
 
   (let [ now (MakeCal (Date.)) ]
     (-> (AddMonths now months)
-      (.getTime))
+        (.getTime))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,7 +223,7 @@
 
   (let [ now (MakeCal (Date.)) ]
     (-> (AddYears now years)
-      (.getTime))
+        (.getTime))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,7 +235,7 @@
 
   (let [ now (MakeCal (Date.)) ]
     (-> (AddDays now days)
-      (.getTime))
+        (.getTime))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,22 +245,22 @@
   ^String
   [^Calendar cal]
 
-  (do
-    (java.lang.String/format (Locale/getDefault) "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
-       (into-array Object [
-            (.get cal Calendar/YEAR)
-            (+ 1 (.get cal Calendar/MONTH))
-            (.get cal Calendar/DAY_OF_MONTH)
-            (.get cal Calendar/HOUR_OF_DAY)
-            (.get cal Calendar/MINUTE)
-            (.get cal Calendar/SECOND) ] ))
+  (java.lang.String/format (Locale/getDefault)
+                           "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
+                           (into-array Object [
+                                (.get cal Calendar/YEAR)
+                                (+ 1 (.get cal Calendar/MONTH))
+                                (.get cal Calendar/DAY_OF_MONTH)
+                                (.get cal Calendar/HOUR_OF_DAY)
+                                (.get cal Calendar/MINUTE)
+                                (.get cal Calendar/SECOND) ] )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GmtCal ""
 
-  ^GregorianCalendar 
+  ^GregorianCalendar
   []
 
   (GregorianCalendar. (TimeZone/getTimeZone "GMT")) )
@@ -272,19 +269,17 @@
 ;;
 (defn DebugCal "Debug show a calendar's internal data."
 
-  ^String 
+  ^String
   [^Calendar cal]
 
-  (do
-    (cstr/join ""
-        [ "{" (.. cal (getTimeZone) (getDisplayName) )  "} "
-          "{" (.. cal (getTimeZone) (getID)) "} "
-          "[" (.getTimeInMillis cal) "] "
-          (FmtCal cal) ])
+  (cstr/join  ""
+              [ "{" (.. cal (getTimeZone) (getDisplayName) )  "} "
+                "{" (.. cal (getTimeZone) (getID)) "} "
+                "[" (.getTimeInMillis cal) "] "
+                (FmtCal cal) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private dates-eof nil)
-
 

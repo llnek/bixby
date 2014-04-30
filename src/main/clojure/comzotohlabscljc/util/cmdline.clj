@@ -14,14 +14,15 @@
 
   comzotohlabscljc.util.cmdline
 
-  (:import (java.io BufferedOutputStream InputStreamReader OutputStreamWriter))
   (:require [clojure.tools.logging :as log :only [info warn error debug]])
-  (:import (java.io Reader Writer))
-  (:import (java.util Properties))
-  (:import (org.apache.commons.lang3 StringUtils))
   (:require [ clojure.string :as cstr ])
   (:use [ comzotohlabscljc.util.core :only [IntoMap IsWindows?] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb Has?] ]))
+  (:use [ comzotohlabscljc.util.str :only [strim nsb Has?] ])
+  (:import (java.io BufferedOutputStream InputStreamReader
+                    OutputStreamWriter))
+  (:import (java.io Reader Writer))
+  (:import (java.util Map HashMap))
+  (:import (org.apache.commons.lang3 StringUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -47,7 +48,6 @@
     :must mandatory
     :onok fnOK } )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readData "Read user input."
@@ -55,32 +55,27 @@
   ^String
   [^Writer cout ^Reader cin]
 
+  ;; windows has '\r\n' linux has '\n'
+
   (let [ buf (StringBuilder.)
-         ms (loop [ c (.read cin) ] ;; windows has '\r\n' linux has '\n'
+         ms (loop [ c (.read cin) ]
               (let [ m (cond
-                          (or (= c -1)(= c 4))
-                          #{ :quit :break }
-
-                          (= c (int \newline))
-                          #{ :break }
-
-                          (or (= c (int \return))
-                              (= c (int \backspace)) (= c 27))
-                          #{}
-
-                          :else
-                          (do (.append buf (char c)) #{})) ]
+                         (or (= c -1)(= c 4)) #{ :quit :break }
+                         (= c (int \newline)) #{ :break }
+                         (or (= c (int \return))
+                             (= c (int \backspace)) (= c 27)) #{}
+                         :else (do (.append buf (char c)) #{})) ]
                 (if (contains? m :break)
                   m
                   (recur (.read cin))))) ]
-    (if (contains? ms :quit) nil (.trim (.toString buf)))
+    (if (contains? ms :quit) nil (strim (.toString buf)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- popQQ ""
 
-  [^Writer cout ^Reader cin cmdQ ^Properties props]
+  [^Writer cout ^Reader cin cmdQ ^java.util.Map props]
 
   (let [ dft (nsb (:dft cmdQ))
          must (:must cmdQ)
@@ -88,12 +83,14 @@
          q (:qline cmdQ)
          chs (nsb (:choices cmdQ)) ]
     (.write cout (str q (if must "*" "" ) " ? "))
+    ;; choices ?
     (when-not (cstr/blank? chs)
       (if (Has? chs \n)
         (do (.write cout (str
               (if (.startsWith chs "\n") "[" "[\n")  chs
               (if (.endsWith chs "\n") "]" "\n]" ) )))
         (do (.write cout (str "[" chs "]")))))
+    ;; defaults ?
     (when-not (cstr/blank? dft)
       (.write cout (str "(" dft ")")) )
     (doto cout (.write " ")(.flush))
@@ -110,31 +107,26 @@
 ;;
 (defn- popQ ""
 
-  [^Writer cout ^Reader cin cmdQ ^Properties props]
+  [^Writer cout ^Reader cin cmdQ ^java.util.Map props]
 
   (if (nil? cmdQ)
     ""
     (popQQ cout cin cmdQ props)
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cycleQ ""
 
-  [^Writer cout ^Reader cin cmdQNs ^String start ^Properties props]
+  ;; map
+  [^Writer cout ^Reader cin cmdQNs ^String start ^java.util.Map props]
 
   (do
     (loop [ rc (popQ cout cin (get cmdQNs start) props) ]
       (cond
-        (nil? rc)
-        nil
-
-        (cstr/blank? rc)
-        (IntoMap props)
-
-        :else
-        (recur (popQ cout cin (get cmdQNs rc) props))
+        (nil? rc) {}
+        (cstr/blank? rc) (IntoMap props)
+        :else (recur (popQ cout cin (get cmdQNs rc) props))
       ))
   ))
 
@@ -142,14 +134,14 @@
 ;;
 (defn CLIConverse "Prompt a sequence of questions via console."
 
+  ;; map
   [^String question1 cmdQs]
 
   (let [ cout (OutputStreamWriter. (BufferedOutputStream. (System/out)))
          kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
-         cin (InputStreamReader. (System/in))
-         props (Properties.) ]
+         cin (InputStreamReader. (System/in)) ]
     (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
-    (cycleQ cout cin cmdQs question1 props)
+    (cycleQ cout cin cmdQs question1 (HashMap.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

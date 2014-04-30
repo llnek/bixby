@@ -103,8 +103,7 @@
   ^String
   [^ZipEntry en]
 
-  (do
-    (.replaceAll (.getName en) "^[\\/]+","")) )
+  (.replaceAll (.getName en) "^[\\/]+",""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -119,7 +118,8 @@
           (.mkdirs (.getParentFile f))
           (with-open [ inp (.getInputStream src en) ]
             (with-open [ os (FileOutputStream. f) ]
-              (IOUtils/copy inp os)))))
+              (IOUtils/copy inp os)))
+        ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,12 +131,8 @@
   (let [ fpz (ZipFile. src)
          ents (.entries fpz) ]
     (.mkdirs des)
-    (loop [ hasMore (.hasMoreElements ents) ]
-      (if (false? hasMore)
-        nil
-        (do
-          (doOneEntry fpz des (.nextElement ents))
-          (recur (.hasMoreElements ents)))))
+    (while (.hasMoreElements ents)
+           (doOneEntry fpz des (.nextElement ents)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -148,8 +144,8 @@
   (let [ fp (File. dir fname) ]
     (FileUtils/deleteQuietly fp)
     (if (.isDiskFile xdata)
-      (FileUtils/moveFile (.fileRef xdata) fp)
-      (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
+        (FileUtils/moveFile (.fileRef xdata) fp)
+        (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

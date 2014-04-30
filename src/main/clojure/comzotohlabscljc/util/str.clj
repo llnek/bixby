@@ -43,8 +43,7 @@
 
   [^String aStr s]
 
-  (do
-    (>= (.indexOf (lcs aStr) (lcs s)) 0)))
+  (>= (.indexOf (lcs aStr) (lcs s)) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -52,8 +51,7 @@
 
   [^String aStr ^String s]
 
-  (do
-    (>= (.indexOf aStr s) 0)))
+  (>= (.indexOf aStr s) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -61,8 +59,7 @@
 
   [^String aStr ^Character ch]
 
-  (do
-    (>= (.indexOf aStr (int ch)) 0)))
+  (>= (.indexOf aStr (int ch)) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,14 +70,13 @@
 
   (cond
 
-    (nil? obj)
-    ""
-
-    (keyword? obj)
-    (name obj)
+    (nil? obj) ""
+    (keyword? obj) (name obj)
 
     :else
-    (.toString obj)))
+    (.toString obj)
+
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,7 +104,9 @@
     false
 
     :else
-    (Arrays/equals (.toCharArray a) (.toCharArray b)) ) )
+    (Arrays/equals (.toCharArray a) (.toCharArray b))
+
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,13 +140,11 @@
   ^StringBuilder
   [^StringBuilder buf ^String delim ^String item]
 
-  (do
-    (when-not (nil? item)
-      (when (and (> (.length buf) 0) (notnil? delim))
-        (.append buf delim))
-      (.append buf item))
-    buf
-  ))
+  (when-not (nil? item)
+    (when (and (> (.length buf) 0) (notnil? delim))
+      (.append buf delim))
+    (.append buf item))
+  buf)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -157,14 +153,15 @@
   [^String largeString chunkLength]
 
   (if (nil? largeString)
-    []
-    (loop [ ret (transient []) src largeString ]
-      (if (<= (.length src) chunkLength)
-        (persistent! (if (> (.length src) 0)
-                         (conj! ret src)
-                         ret) )
-        (recur (conj! ret (.substring src 0 chunkLength))
-               (.substring src chunkLength))
+      []
+      (loop [ ret (transient [])
+              src largeString ]
+        (if (<= (.length src) chunkLength)
+          (persistent! (if (> (.length src) 0)
+                           (conj! ret src)
+                           ret) )
+          (recur (conj! ret (.substring src 0 chunkLength))
+                 (.substring src chunkLength))
       ))
   ))
 
@@ -175,8 +172,8 @@
   [^String src substrs]
 
   (if (nil? src)
-    false
-    (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
+      false
+      (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,8 +183,8 @@
   [^String src substrs]
 
   (if (nil? src)
-    false
-    (if (some (fn [^String s] (>= (.indexOf src s) 0)) substrs) true false)
+      false
+      (if (some (fn [^String s] (>= (.indexOf src s) 0)) substrs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -197,8 +194,8 @@
   [^String src pfxs]
 
   (if (nil? src)
-    false
-    (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
+      false
+      (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,8 +205,8 @@
   [^String src pfxs]
 
   (if (nil? src)
-    false
-    (if (some #(.startsWith src %) pfxs) true false)
+      false
+      (if (some #(.startsWith src %) pfxs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -219,8 +216,8 @@
   [^String src strs]
 
   (if (nil? src)
-    false
-    (if (some #(.equalsIgnoreCase src %) strs) true false)
+      false
+      (if (some #(.equalsIgnoreCase src %) strs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,8 +227,8 @@
   [^String src strs]
 
   (if (nil? src)
-    false
-    (if (some #(.equals src %) strs) true false)
+      false
+      (if (some #(.equals src %) strs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,8 +252,8 @@
   [^String src len]
 
   (if (nil? src)
-    ""
-    (StringUtils/right src ^long len)
+      ""
+      (StringUtils/right src ^long len)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -267,8 +264,8 @@
   [^String src len]
 
   (if (nil? src)
-    ""
-    (StringUtils/left src ^long len)
+      ""
+      (StringUtils/left src ^long len)
   ))
 
 

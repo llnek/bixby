@@ -14,19 +14,17 @@
 
   comzotohlabscljc.util.ini
 
+  (:use [comzotohlabscljc.util.core :only [ThrowBadData ThrowIOE ConvBool ConvLong ConvDouble] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-
+  (:use [ comzotohlabscljc.util.files :only [FileRead?] ])
+  (:use [ comzotohlabscljc.util.str :only [nsb strim] ])
+  (:import (com.zotohlabs.frwk.util NCOrderedMap))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.net URL))
   (:import (java.io File IOException InputStreamReader
                     LineNumberReader PrintStream))
-  (:import (com.zotohlabs.frwk.util NCOrderedMap))
-  (:import (java.util Map))
-
-  (:use [ comzotohlabscljc.util.files :only [FileRead?] ])
-  (:use [ comzotohlabscljc.util.core :only [ConvBool ConvLong ConvDouble] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb strim] ]) )
+  (:import (java.util Map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -49,7 +47,6 @@
   (optBool [_ sectionName property dft] )
   (optDouble [_ sectionName property dft] ) )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ^comzotohlabscljc.util.ini.IWin32Conf ParseInifile "Parse a INI config file." class)
@@ -60,15 +57,23 @@
 
   [^LineNumberReader rdr]
 
-  (throw (IOException. (str "Bad ini line: " (.getLineNumber rdr)))))
+  (ThrowBadData (str "Bad ini line: " (.getLineNumber rdr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- throwBadKey [k] (throw (Exception. (str "No such property " k "."))))
+(defn- throwBadKey
+
+  [k]
+
+  (ThrowBadData (str "No such property " k ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- throwBadMap [s] (throw (Exception. (str "No such section " s "."))))
+(defn- throwBadMap
+
+  [s]
+
+  (ThrowBadData (str "No such section " s ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -105,33 +110,28 @@
 
   (let [ ln (strim line) ]
     (cond
-      (or (cstr/blank? ln) (.startsWith ln "#"))
-      curSec
-
-      (.matches ln "^\\[.*\\]$")
-      (maybeSection rdr ncmap ln)
-
-      :else
-      (do (maybeLine rdr ncmap curSec ln) curSec))
+      (or (cstr/blank? ln) (.startsWith ln "#")) curSec
+      (.matches ln "^\\[.*\\]$") (maybeSection rdr ncmap ln)
+      :else (do (maybeLine rdr ncmap curSec ln) curSec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- hasKV ""
-  
+
   [^Map m k]
 
   (let [ kn (name k) ]
     (if (or (nil? kn) (nil? m))
         nil
-        (.containsKey m kn)) 
+        (.containsKey m kn))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getKV ""
 
-  ^String 
+  ^String
   [^comzotohlabscljc.util.ini.IWin32Conf cf s k err]
 
   (let [ kn (name k)
@@ -147,62 +147,73 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- makeWinini ""
-  
+
   [^Map mapOfSections]
 
   (reify IWin32Conf
 
-    (getSection [_ sectionName]
-      (if (nil? sectionName)
-        nil
-        (let [ m (.get mapOfSections (name sectionName)) ]
-          (if (nil? m) nil (into {} m)))))
+    (getSection
+      [_ sectionName]
+      (if (cstr/blank? sectionName)
+          nil
+          (let [ m (.get mapOfSections (name sectionName)) ]
+            (if (nil? m) nil (into {} m)))))
 
-    (sectionKeys [_] (.keySet mapOfSections))
+    (sectionKeys
+      [_]
+      (.keySet mapOfSections))
 
-    (getString [this section property]
+    (getString
+      [this section property]
       (nsb (getKV this section property true)))
 
-    (optString [this section property dft]
+    (optString
+      [this section property dft]
       (let [ rc (getKV this section property false) ]
-        (if (nil? rc) dft rc)))
+           (if (nil? rc) dft rc)))
 
-    (getLong [this section property]
+    (getLong
+      [this section property]
       (ConvLong (getKV this section property true) 0))
 
-    (optLong [this section property dft]
+    (optLong
+      [this section property dft]
       (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-          dft
-          (ConvLong rc 0))))
+           (if (nil? rc)
+               dft
+               (ConvLong rc 0))))
 
-    (getDouble [this section property]
+    (getDouble
+      [this section property]
       (ConvDouble (getKV this section property true) 0.0))
 
-    (optDouble [this section property dft]
+    (optDouble
+      [this section property dft]
       (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-          dft
-          (ConvDouble rc 0.0))))
+           (if (nil? rc)
+               dft
+               (ConvDouble rc 0.0))))
 
-    (getBool [this section property]
+    (getBool
+      [this section property]
       (ConvBool (getKV this section property true) false))
 
-    (optBool [this section property dft]
+    (optBool
+      [this section property dft]
       (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-          dft
-          (ConvBool rc false))))
+           (if (nil? rc)
+               dft
+               (ConvBool rc false))))
 
-    (dbgShow [_]
-      (let [ buf (StringBuilder.) ]
-        (doseq [ [k v] (seq mapOfSections) ]
-          (do
-            (.append buf (str "[" (name k) "]\n"))
-            (doseq [ [x y] (seq v) ]
-              (.append buf (str (name x) "=" y)))
-            (.append buf "\n")))
-        (println buf)))
+    (dbgShow
+      [_]
+      (let  [ buf (StringBuilder.) ]
+            (doseq [ [k v] (seq mapOfSections) ]
+              (.append buf (str "[" (name k) "]\n"))
+              (doseq [ [x y] (seq v) ]
+                (.append buf (str (name x) "=" y)))
+              (.append buf "\n"))
+            (println buf)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,12 +248,13 @@
   [^URL fUrl]
 
   (with-open [ inp (.openStream fUrl) ]
-    (let [ rdr (LineNumberReader. (InputStreamReader. inp "utf-8"))
-           total (NCOrderedMap.) ]
-      (loop [ curSec "" line (.readLine rdr)  ]
-        (if (nil? line)
-            (makeWinini total)
-            (recur (evalOneLine rdr total line curSec) (.readLine rdr) ))
+    (loop [ rdr (LineNumberReader. (InputStreamReader. inp "utf-8"))
+            total (NCOrderedMap.)
+            curSec ""
+            line (.readLine rdr)  ]
+      (if (nil? line)
+          (makeWinini total)
+          (recur rdr total (evalOneLine rdr total line curSec) (.readLine rdr) )
       ))
   ))
 
@@ -250,7 +262,7 @@
 ;;
 (defmethod ParseInifile URL
 
-  ^comzotohlabscljc.util.ini.IWin32Conf 
+  ^comzotohlabscljc.util.ini.IWin32Conf
   [^URL fileUrl]
 
   (if (nil? fileUrl)

@@ -17,14 +17,14 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.meta :only [GetCldr] ])
+  (:use [comzotohlabscljc.util.core :only [Try!] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ])
 
   (:import (java.lang.management ManagementFactory))
   (:import (com.zotohlabs.frwk.util CoreUtils))
-  (:import (java.lang Thread Runnable))
+  (:import (java.lang Thread Runnable)))
 
-  (:use [ comzotohlabscljc.util.meta :only [GetCldr] ])
-  (:use [ comzotohlabscljc.util.core :only [Try!] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -34,25 +34,27 @@
 ;;
 (defn AsyncExec "Run the code (runnable) in a separate daemon thread."
 
-  ([^Runnable runable] (AsyncExec runable (GetCldr)))
+  ([^Runnable runable]
+   (AsyncExec runable (GetCldr)))
 
   ([^Runnable runable ^ClassLoader cl]
-    (if (nil? runable)
-      nil
-      (doto (Thread. runable)
-        (.setContextClassLoader cl)
-        (.setDaemon true)
-        (.start))) ))
+   (if (nil? runable)
+       nil
+       (doto (Thread. runable)
+         (.setContextClassLoader cl)
+         (.setDaemon true)
+         (.start))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn Coroutine "Run this function asynchronously."
 
-  ([func] (Coroutine func nil))
+  ([func]
+   (Coroutine func nil))
 
   ([func cl]
-    (let [ r (reify Runnable
-               (run [_] (when (fn? func) (func)))) ]
+   (let [ r (reify Runnable
+              (run [_] (when (fn? func) (func)))) ]
       (AsyncExec r cl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,9 +63,7 @@
 
   [millisecs]
 
-  (Try!
-    (when (> millisecs 0) (Thread/sleep millisecs))
-  ))
+  (Try!  (when (> millisecs 0) (Thread/sleep millisecs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

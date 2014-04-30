@@ -16,24 +16,28 @@
   comzotohlabscljc.util.guids
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [comzotohlabscljc.util.str :as zstr :only [Left Right] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [NowMillis TryC NewRandom] ])
+  (:use [comzotohlabscljc.util.bytes :only [ReadInt ReadLong] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextInt] ])
   (:import (java.lang StringBuilder) )
   (:import (java.net InetAddress) )
   (:import (java.lang Math) )
-  (:import (java.security SecureRandom))
+  (:import (java.security SecureRandom)))
 
-  (:use [ comzotohlabscljc.util.core :only [NowMillis TryC NewRandom] ])
-  (:use [ comzotohlabscljc.util.bytes :only [ReadInt ReadLong] ])
-  (:use [ comzotohlabscljc.util.seqnum :only [NextInt] ])
-  (:require [ comzotohlabscljc.util.str :as zstr :only [Left Right] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;(def ^:private  _CHARS (.toCharArray "0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"))
 (def ^:private  _CHARS (.toCharArray "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW"))
 (def ^:private  _UUIDLEN 36)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private LONG_MASK "0000000000000000")
 (def ^:private INT_MASK "00000000")
 
@@ -48,8 +52,8 @@
   (let [ mlen (.length mask)
          plen (.length pad) ]
     (if (>= mlen plen)
-      (.substring mask 0 plen)
-      (.toString (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
+        (.substring mask 0 plen)
+        (.toString (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -136,7 +140,7 @@
          (fmtLong _IP)
          (fmtInt seed)
          (fmtInt (NextInt))
-         (nth ts 1)) 
+         (nth ts 1))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

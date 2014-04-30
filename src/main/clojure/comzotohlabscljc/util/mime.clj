@@ -10,13 +10,17 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "This is a utility class that provides various MIME related functionality." 
+(ns ^{ :doc "This is a utility class that provides various MIME related functionality."
        :author "kenl" }
 
   comzotohlabscljc.util.mime
 
   (:require [clojure.tools.logging :as log  :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [Bytesify Try! IntoMap] ])
+  (:use [comzotohlabscljc.util.meta :only [BytesClass] ])
+  (:use [comzotohlabscljc.util.str :only [nsb hgl?] ])
+  (:use [comzotohlabscljc.util.io :only [Streamify] ])
 
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.net URLDecoder URLEncoder))
@@ -25,12 +29,8 @@
   (:import (java.util.regex Pattern Matcher))
   (:import (java.util Properties))
   (:import (javax.mail Message))
-  (:import (com.zotohlabs.frwk.mime MimeFileTypes))
+  (:import (com.zotohlabs.frwk.mime MimeFileTypes)))
 
-  (:use [comzotohlabscljc.util.core :only [Bytesify Try! IntoMap] ])
-  (:use [comzotohlabscljc.util.meta :only [BytesClass] ])
-  (:use [comzotohlabscljc.util.str :only [nsb hgl?] ])
-  (:use [comzotohlabscljc.util.io :only [Streamify] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -112,6 +112,8 @@
 (def CRLF "\r\n")
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
 (def ^:private _mime_cache (atom {}))
 (def ^:private _mime_types (atom nil))
@@ -119,9 +121,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MimeCache "Cache of most MIME types."
-  
-  [] 
-  
+
+  []
+
   @_mime_cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,9 +145,10 @@
          rc "utf-8" ]
          ;;rc "ISO-8859-1" ]
     (if (> pos 0)
-      (let [ s (.substring cType (+ pos 8)) p (StringUtils/indexOfAny s "; \t\r\n") ]
-        (if (> p 0) (.substring s 0 p) s))
-      rc)
+        (let [ s (.substring cType (+ pos 8))
+               p (StringUtils/indexOfAny s "; \t\r\n") ]
+          (if (> p 0) (.substring s 0 p) s))
+        rc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,7 +190,7 @@
   [^String cType]
 
   (let [ ct (cstr/lower-case (nsb cType)) ]
-    (and (>= (.indexOf ct "multipart/report") 0) 
+    (and (>= (.indexOf ct "multipart/report") 0)
          (>= (.indexOf ct "disposition-notification") 0))
   ))
 
@@ -195,7 +198,7 @@
 ;;
 (defn MaybeStream "Turn this object into some form of stream, if possible."
 
-  ^InputStream 
+  ^InputStream
   [^Object obj]
 
   (cond
@@ -218,9 +221,8 @@
   [^String u]
 
   (if (nil? u)
-    nil
-    (Try!
-      (URLDecoder/decode u "utf-8") )
+      nil
+      (Try!  (URLDecoder/decode u "utf-8") )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,20 +232,21 @@
   [^String u]
 
   (if (nil? u)
-    nil
-    (Try!
-      (URLEncoder/encode u "utf-8") )
+      nil
+      (Try!  (URLEncoder/encode u "utf-8") )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GuessMimeType "Guess the MIME type of file."
 
-  (^String [^File file] (GuessMimeType file ""))
+  (^String
+    [^File file]
+    (GuessMimeType file ""))
 
-  (^String [^File file ^String dft]
-    (let [ ^Pattern rgx _extRegex
-           ^Matcher mc (.matcher rgx (cstr/lower-case (.getName file)))
+  (^String
+    [^File file ^String dft]
+    (let [ ^Matcher mc (.matcher ^Pattern _extRegex (cstr/lower-case (.getName file)))
            ex (if (.matches mc) (.group mc 1) "")
            p (if (hgl? ex) ((keyword ex) (MimeCache))) ]
       (if (hgl? p) p dft))) )
@@ -252,14 +255,17 @@
 ;;
 (defn GuessContentType "Guess the content-type of file."
 
-  (^String [^File file ^String enc ^String dft]
+  (^String
+    [^File file ^String enc ^String dft]
     (let [ mt (GuessMimeType file)
            ct (if (hgl? mt) mt dft) ]
-      (if (not (.startsWith ct "text/")) 
-          ct 
+      (if (not (.startsWith ct "text/"))
+          ct
           (str ct "; charset=" enc))))
 
-  (^String [^File file] (GuessContentType file "utf-8" "application/octet-stream" )))
+  (^String
+    [^File file]
+    (GuessContentType file "utf-8" "application/octet-stream" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -271,9 +277,8 @@
     (let [ ps (Properties.) ]
       (.load ps inp)
       (reset! _mime_types (MimeFileTypes/makeMimeFileTypes ps))
-      (reset! _mime_cache (IntoMap ps))) 
+      (reset! _mime_cache (IntoMap ps)))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

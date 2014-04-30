@@ -16,6 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr ])
+  (:import (com.zotohlabs.frwk.util CrappyDataError))
   (:import (java.security SecureRandom))
   (:import (java.net URL))
   (:import (java.nio.charset Charset))
@@ -33,9 +34,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmulti ^String NiceFPath "Convert the path into nice format (no) backslash." class)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmulti ^Properties LoadJavaProps "Load java properties from input-stream." class)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private _BOOLS #{ "true" "yes"  "on"  "ok"  "active"  "1"} )
 (def ^:private _PUNCS #{ \_ \- \. \( \) \space } )
 (deftype TYPE_NICHTS [])
@@ -58,20 +67,24 @@
   [x]
   `(not (nil? ~x)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def NICHTS (TYPE_NICHTS.) )
-(def _KB 1024)
-(def _MB (* 1024 1024))
-(def _GB (* 1024 1024 1024))
+(def KBS 1024)
+(def MBS (* 1024 1024))
+(def GBS (* 1024 1024 1024))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nsb "" ^String [s] (if (nil? s) "" (.toString ^Object s)))
+;; local hack
+(defn- nsb ""
+
+  ^String
+  [s]
+
+  (if (nil? s) "" (.toString ^Object s)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; local hack
 (defn- get-czldr ""
 
   (^ClassLoader [] (get-czldr nil) )
@@ -98,56 +111,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ThrowBadArg "Force throw a bad parameter exception."
+
+  [msg]
+
+  (throw (IllegalArgumentException. ^String msg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ThrowIOE "Throw an IO Exception."
+
+  [msg]
+
+  (throw (java.io.IOException. ^String msg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ThrowBadData "Throw an Bad Data Exception."
+
+  [msg]
+
+  (throw (CrappyDataError. ^String msg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn FlattenNil "Get rid of any nil(s) in a sequence."
 
-  [vs]
+  ;; a vector
+  [somesequence]
 
   (cond
-    (nil? vs)
-    nil
-    (empty? vs)
-    []
-    :else
-    (into [] (remove nil? vs))))
+    (nil? somesequence) nil
+    (empty? somesequence) []
+    :else (into [] (remove nil? somesequence))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ndz "Returns 0.0 if param is nil." ^double [d] (if (nil? d) 0.0 d))
+(defn ternary ""
+
+  [x y]
+
+  (if (nil? x) y x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nnz "Returns 0 is param is nil." ^long [n] (if (nil? n) 0 n))
+(defn ndz "Returns 0.0 if param is nil."
+
+  ^double
+  [d]
+
+  (if (nil? d) 0.0 d))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nbf "Returns false if param is nil." [b] (if (nil? b) false b))
+(defn nnz "Returns 0 is param is nil."
+
+  ^long
+  [n]
+
+  (if (nil? n) 0 n))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn nbf "Returns false if param is nil."
+
+  ;; boolean
+  [b]
+
+  (if (nil? b) false b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MatchChar? "Returns true if this char exists inside this set of chars."
 
+  ;; boolean
   [ch setOfChars]
 
   (if (nil? setOfChars) false (contains? setOfChars ch)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SysVar "Get value for this system property."
 
   ^String
-  [^String v]
+  [^String propname]
 
-  (if (cstr/blank? v) nil (System/getProperty v)))
+  (if (cstr/blank? propname) nil (System/getProperty propname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn EnvVar "Get value for this env var."
 
   ^String
-  [^String v]
+  [^String envname]
 
-  (if (cstr/blank? v) nil (System/getenv v)))
+  (if (cstr/blank? envname) nil (System/getenv envname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,7 +236,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NowDate "Return a java Date." ^Date [] (Date.) )
+(defn NowDate "Return a java Date."
+
+  ^Date
+  []
+
+  (Date.) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -222,9 +286,10 @@
   [^String value]
 
   (if (nil? value)
-    ""
-    (.replace (StrSubstitutor. (System/getenv))
-              (StrSubstitutor/replaceSystemProperties value))))
+      ""
+      (.replace (StrSubstitutor. (System/getenv))
+                (StrSubstitutor/replaceSystemProperties value))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -233,7 +298,10 @@
   ^String
   [^String value]
 
-  (if (nil? value) "" (StrSubstitutor/replaceSystemProperties value)) )
+  (if (nil? value)
+      ""
+      (StrSubstitutor/replaceSystemProperties value)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -242,7 +310,10 @@
   ^String
   [^String value]
 
-  (if (nil? value) "" (.replace (StrSubstitutor. (System/getenv)) value)) )
+  (if (nil? value)
+      ""
+      (.replace (StrSubstitutor. (System/getenv)) value)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -251,10 +322,12 @@
   ^Properties
   [^Properties props]
 
-  (reduce
-    (fn [^Properties bc k]
-      (.put bc k (SubsVar (.get props k))) bc )
-    (Properties.) (.keySet props) ))
+  (reduce (fn [^Properties memo k]
+              (.put memo k (SubsVar (.get props k)))
+              memo )
+          (Properties.)
+          (.keySet props)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -305,35 +378,49 @@
 ;;
 (defn Serialize "Object serialization."
 
+  ^bytes
   [obj]
 
-  (if (nil? obj) nil (SerializationUtils/serialize obj)) )
+  (if (nil? obj)
+      nil
+      (SerializationUtils/serialize obj)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn Deserialize "Object deserialization."
 
+  ^Object
   [^bytes bits]
 
-  (if (nil? bits) nil (SerializationUtils/deserialize bits)))
+  (if (nil? bits)
+      nil
+      (SerializationUtils/deserialize bits)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetClassname "Get the object's class name."
 
   ^String
-  [^Object obj]
+  [obj]
 
-  (if (nil? obj) "null" (.getName (.getClass obj))))
+  (if (nil? obj)
+      "null"
+      (.getName (.getClass ^Object obj))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn FilePath "Get the file path."
 
   ^String
-  [^File aFile]
+  [aFile]
 
-  (if (nil? aFile) "" (NiceFPath aFile)))
+  (if (nil? aFile)
+      ""
+      (NiceFPath ^File aFile)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -401,7 +488,8 @@
   [^URL aFile]
 
   (with-open [ inp (.openStream aFile) ]
-    (LoadJavaProps inp)))
+    (LoadJavaProps inp)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -463,6 +551,7 @@
 ;;
 (defn Deflate "Compress the given byte[]."
 
+  ^bytes
   [^bytes bits]
 
   (if (nil? bits)
@@ -473,11 +562,11 @@
         (.setLevel (Deflater/BEST_COMPRESSION))
         (.setInput bits)
         (.finish))
-      (with-open [ bos (ByteArrayOutputStream. (alength bits)) ]
+      (with-open [ baos (ByteArrayOutputStream. (alength bits)) ]
         (loop []
           (if (.finished cpz)
-            (.toByteArray bos)
-            (do (.write bos buf 0 (.deflate cpz buf)) (recur))
+            (.toByteArray baos)
+            (do (.write baos buf 0 (.deflate cpz buf)) (recur))
           ))
       ))
   ))
@@ -486,6 +575,7 @@
 ;;
 (defn Inflate "Decompress the given byte[]."
 
+  ^bytes
   [^bytes bits]
 
   (if (nil? bits)
@@ -505,18 +595,15 @@
 ;;
 (defn Normalize "Normalize a filepath, hex-code all non-alpha characters."
 
+  ^String
   [^String fname]
 
-  (let [ rc (reduce
-              (fn [^StringBuilder buf ^Character ch]
-                (if (or (java.lang.Character/isLetterOrDigit ch)
-                        (contains? _PUNCS ch))
-                  (.append buf ch)
-                  (.append buf (str "0x" (Integer/toString (int ch) 16)) ))
-                buf)
-              (StringBuilder.)
-              (seq fname)) ]
-    (str "" rc)
+  (str "" (reduce (fn [^StringBuilder buf ^Character ch]
+                      (if (or (java.lang.Character/isLetterOrDigit ch) (contains? _PUNCS ch))
+                          (.append buf ch)
+                          (.append buf (str "0x" (Integer/toString (int ch) 16)) )))
+                  (StringBuilder.)
+                  (seq fname))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -528,7 +615,6 @@
 
   (java.lang.System/currentTimeMillis))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetFPath "Return the file path only."
@@ -537,8 +623,8 @@
   [^String fileUrlPath]
 
   (if (nil? fileUrlPath)
-    ""
-    (.getPath (URL. fileUrlPath))) )
+      ""
+      (.getPath (URL. fileUrlPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -548,8 +634,8 @@
   [^String path]
 
   (if (cstr/blank? path)
-    nil
-    (.toURL (.toURI (File. path)))
+      nil
+      (.toURL (.toURI (File. path)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,7 +735,7 @@
       (instance? Long b) :long
       (instance? Float b) :double
       (instance? Integer b) :long
-      :else (throw (IllegalArgumentException. "allow numbers only")))))
+      :else (ThrowBadArg "allow numbers only"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -660,7 +746,7 @@
       (instance? Long b) :long
       (instance? Float b) :double
       (instance? Integer b) :long
-      :else (throw (IllegalArgumentException. "allow numbers only")))))
+      :else (ThrowBadArg "allow numbers only"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -714,14 +800,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThrowBadArg "Force throw a bad parameter exception."
-
-  [msg]
-
-  (throw (IllegalArgumentException. ^String msg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn RootCause "Dig into error and find the root exception."
 
   ^Throwable
@@ -751,17 +829,18 @@
   [start end howMany]
 
   (if (or (>= start end) (< (- end start) howMany) )
-    []
-    (let [ _end (if (< end Integer/MAX_VALUE) (+ end 1) end )
-           r (NewRandom) ]
-      (loop [ rc (transient []) cnt howMany ]
+      []
+      (loop [ _end (if (< end Integer/MAX_VALUE) (+ end 1) end )
+              r (NewRandom)
+              rc (transient [])
+              cnt howMany ]
         (if (<= cnt 0)
           (persistent! rc)
           (let [ n (.nextInt r _end) ]
             (if (and (>= n start) (not (contains? rc n)))
-                (recur (conj! rc n) (dec cnt))
-                (recur rc cnt) )))
-      ))
+                (recur _end r (conj! rc n) (dec cnt))
+                (recur _end r rc cnt) ))
+        ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -776,10 +855,10 @@
 ;;
 (defn IntoMap ""
 
-  [^Properties props]
+  [^java.util.Map props]
 
   (persistent! (reduce (fn [sum k]
-                         (assoc! sum (keyword k) (.get props k)))
+                           (assoc! sum (keyword k) (.get props k)))
                        (transient {})
                        (seq (.keySet props)))
   ))
@@ -836,6 +915,7 @@
 ;;
 (defn StripNSPath ""
 
+  ^String
   [path]
 
   (let [ s (str path) ]

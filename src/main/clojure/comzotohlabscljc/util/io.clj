@@ -17,6 +17,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [Try!] ])
 
   (:import (java.io ByteArrayInputStream ByteArrayOutputStream DataInputStream
                     FileInputStream FileOutputStream CharArrayWriter OutputStreamWriter
@@ -27,9 +28,8 @@
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.commons.io IOUtils))
   (:import (org.xml.sax InputSource))
-  (:import (java.nio.charset Charset))
+  (:import (java.nio.charset Charset)))
 
-  (:use [ comzotohlabscljc.util.core :only [Try!] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -42,24 +42,26 @@
 ;;
 (defn MakeTmpfile "Create a temp file in the temp dir."
 
-  (^File [] (MakeTmpfile "" ""))
+  (^File
+    []
+    (MakeTmpfile "" ""))
 
-  (^File [^String pfx ^String sux]
-    (File/createTempFile
-      (if (cstr/blank? pfx) "tmp-" pfx)
-      (if (cstr/blank? sux) ".dat" sux)
-      (com.zotohlabs.frwk.io.IOUtils/workDir))
-  ))
+  (^File
+    [^String pfx ^String sux]
+    (File/createTempFile (if (cstr/blank? pfx) "tmp-" pfx)
+                         (if (cstr/blank? sux) ".dat" sux)
+                         (com.zotohlabs.frwk.io.IOUtils/workDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn NewlyTmpfile "Create a new temp file, optionally open it for write as stream."
 
-  ([] (NewlyTmpfile false))
+  ([]
+   (NewlyTmpfile false))
 
   ([open]
-    (let [ f (MakeTmpfile) ]
-      (if open [ f (FileOutputStream. f) ] [ f nil ]))) )
+   (let [ f (MakeTmpfile) ]
+     (if open [ f (FileOutputStream. f) ] [ f nil ]))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -69,8 +71,8 @@
   [bits]
 
   (if (nil? bits)
-    nil
-    (ByteArrayInputStream. ^bytes bits)
+      nil
+      (ByteArrayInputStream. ^bytes bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,14 +93,13 @@
 
   (let [ len (* 2 (if (nil? bits) 0 (alength bits)))
          out (char-array len) ]
-    (when (> len 0)
-      (loop [ k 0 pos 0 ]
-        (if (>= pos len)
-          nil
-          (let [ n (bit-and (aget ^bytes bits k) 0xff) ]
-            (aset-char out pos (aget ^chars HEX_CHS (bit-shift-right n 4))) ;; high 4 bits
-            (aset-char out (+ pos 1) (aget ^chars HEX_CHS (bit-and n 0xf))) ;; low 4 bits
-            (recur (inc k) (+ 2 pos)) ))))
+    (loop [ k 0 pos 0 ]
+      (if (>= pos len)
+        nil
+        (let [ n (bit-and (aget ^bytes bits k) 0xff) ]
+          (aset-char out pos (aget ^chars HEX_CHS (bit-shift-right n 4))) ;; high 4 bits
+          (aset-char out (+ pos 1) (aget ^chars HEX_CHS (bit-and n 0xf))) ;; low 4 bits
+          (recur (inc k) (+ 2 pos)) )))
     out
   ))
 
@@ -110,7 +111,6 @@
   [^bytes bits]
 
   (if (nil? bits) nil (String. (HexifyChars bits))) )
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,8 +149,7 @@
 
   [^InputStream inp]
 
-  (Try!
-    (when-not (nil? inp)  (.reset inp)) ))
+  (Try!  (when-not (nil? inp)  (.reset inp)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -192,6 +191,7 @@
 ;;
 (defn Available "Get the available bytes in this stream."
 
+  ;; int
   [^InputStream inp]
 
   (if (nil? inp) 0 (.available inp)) )
@@ -203,7 +203,8 @@
   ^File
   [^InputStream inp]
 
-  (let [ [^File fp ^OutputStream os] (NewlyTmpfile true) ]
+  (let [ [^File fp ^OutputStream os]
+         (NewlyTmpfile true) ]
     (try
       (IOUtils/copy inp os)
       (finally
@@ -229,19 +230,21 @@
   (when-not (nil? inpsrc)
     (let [ rdr (.getCharacterStream inpsrc)
            ism (.getByteStream inpsrc) ]
-      (Try!
-        (when-not (nil? ism) (.reset ism)) )
-      (Try!
-        (when-not (nil? rdr) (.reset rdr)) ))
+      (Try!  (when-not (nil? ism) (.reset ism)) )
+      (Try!  (when-not (nil? rdr) (.reset rdr)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeXData "Return a newly created XData."
 
-  (^XData [] (MakeXData false))
+  (^XData
+    []
+    (MakeXData false))
 
-  (^XData [usefile] (if usefile (XData. (MakeTmpfile)) (XData.)) ))
+  (^XData
+    [usefile]
+    (if usefile (XData. (MakeTmpfile)) (XData.)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -249,7 +252,8 @@
 
   [^ByteArrayOutputStream baos]
 
-  (let [ [^File fp ^OutputStream os] (NewlyTmpfile true) ]
+  (let [ [^File fp ^OutputStream os]
+         (NewlyTmpfile true) ]
     (doto os (.write (.toByteArray baos)) (.flush))
     (.close baos)
     [fp os]
@@ -261,7 +265,8 @@
 
   [^InputStream inp ^ByteArrayOutputStream baos]
 
-  (let [ [^File fp ^OutputStream os] (swap-bytes baos)
+  (let [ [^File fp ^OutputStream os]
+         (swap-bytes baos)
          bits (byte-array 4096) ]
     (try
       (loop [ c (.read inp bits) ]
@@ -272,7 +277,8 @@
             (do (.write os bits 0 c)
                 (recur (.read inp bits))))))
       (finally
-        (IOUtils/closeQuietly os)))) )
+        (IOUtils/closeQuietly os)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -283,7 +289,8 @@
 
   (let [ bits (byte-array 4096)
          baos (MakeBitOS) ]
-    (loop [ c (.read inp bits) cnt 0 ]
+    (loop [ c (.read inp bits)
+            cnt 0 ]
       (if (< c 0)
         (XData. baos)
         (if (= c 0)
@@ -302,7 +309,8 @@
 
   [^CharArrayWriter wtr]
 
-  (let [ [^File fp ^OutputStream out] (NewlyTmpfile true)
+  (let [ [^File fp ^OutputStream out]
+         (NewlyTmpfile true)
          bits (.toCharArray wtr)
          os (OutputStreamWriter. out "utf-8") ]
     (doto os (.write bits) (.flush))
@@ -317,7 +325,8 @@
   ^XData
   [^Reader inp ^CharArrayWriter wtr]
 
-  (let [ [^File fp ^Writer os] (swap-chars wtr)
+  (let [ [^File fp ^Writer os]
+         (swap-chars wtr)
          bits (char-array 4096) ]
     (try
       (loop [ c (.read inp bits) ]
@@ -358,29 +367,36 @@
 ;;
 (defn ReadBytes "Read bytes and return a XData."
 
-  (^XData [^InputStream inp usefile] 
+  (^XData
+    [^InputStream inp usefile]
     (slurp-bytes inp (if usefile 1 (com.zotohlabs.frwk.io.IOUtils/streamLimit))))
 
-  (^XData [^InputStream inp] 
+  (^XData
+    [^InputStream inp]
     (slurp-bytes inp (com.zotohlabs.frwk.io.IOUtils/streamLimit))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ReadChars "Read chars and return a XData."
 
-  (^XData [^Reader rdr] 
+  (^XData
+    [^Reader rdr]
     (slurp-chars rdr (com.zotohlabs.frwk.io.IOUtils/streamLimit)))
 
-  (^XData [^Reader rdr usefile] 
+  (^XData
+    [^Reader rdr usefile]
     (slurp-chars rdr (if usefile 1 (com.zotohlabs.frwk.io.IOUtils/streamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MorphChars "Convert these bytes to chars."
 
-  (^chars [^bytes bits] (MorphChars bits (Charset/forName "utf-8")) )
+  (^chars
+    [^bytes bits]
+    (MorphChars bits (Charset/forName "utf-8")) )
 
-  (^chars [^bytes bits ^Charset charSet]
+  (^chars
+    [^bytes bits ^Charset charSet]
 ;;    (1 to min(b.length, count)).foreach { (i) =>
 ;;      val b1 = b(i-1)
 ;;      ch(i-1) = (if (b1 < 0) { 256 + b1 } else b1 ).asInstanceOf[Char]
@@ -398,7 +414,8 @@
   (cond
     (and (nil? inp1) (nil? inp2)) false
     (or (nil? inp1) (nil? inp2)) true
-    :else (not (IOUtils/contentEquals inp1 inp2))) )
+    :else (not (IOUtils/contentEquals inp1 inp2))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

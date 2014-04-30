@@ -37,7 +37,7 @@
 (def MONTHS [ "JAN" "FEB" "MAR" "APR" "MAY" "JUN" "JUL" "AUG" "SEP" "OCT" "NOV" "DEC" ] )
 
 
-(def COPYRIGHT "Copyright (c) 2013 Cherimoia, LLC. All rights reserved.")
+(def COPYRIGHT "Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.")
 
 
 

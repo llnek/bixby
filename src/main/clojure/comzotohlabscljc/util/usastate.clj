@@ -10,7 +10,7 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "A class that maps the state-code to the state-name." 
+(ns ^{ :doc "A class that maps the state-code to the state-name."
        :author "kenl" }
   comzotohlabscljc.util.usastate
 
@@ -74,8 +74,9 @@
     "WY"  "Wyoming"
 })
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private _CCODESEQ (seq _CCODES))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -89,7 +90,7 @@
 ;;
 (defn FindState "Return the full state name."
 
-  ^String 
+  ^String
   [^String code]
 
   (_CCODES (cstr/upper-case code)))
@@ -98,7 +99,7 @@
 ;;
 (defn FindCode "Return the abbreviated state code."
 
-  ^String 
+  ^String
   [^String state]
 
   (let [ rs (filter #(= (nth % 1) state) _CCODESEQ) ]
