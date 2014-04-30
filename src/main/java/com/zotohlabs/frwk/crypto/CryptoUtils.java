@@ -13,10 +13,22 @@
 
 package com.zotohlabs.frwk.crypto;
 
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableEntryException;
+
 /**
  * @author kenl
  */
-public class CryptoUtils {
+public enum CryptoUtils {
+;
+
+  public static KeyStore.PrivateKeyEntry getPKey(KeyStore ks, String n, char[] pwd)
+      throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
+    Object obj = ks.getEntry(n, new KeyStore.PasswordProtection(pwd));
+    return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
+  }
 
   public static void main(String[] args) {
   }

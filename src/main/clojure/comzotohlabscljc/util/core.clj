@@ -221,9 +221,13 @@
 ;;
 (defn NewRandom "Return a new random object."
 
-  (^SecureRandom [] (NewRandom 4))
+  (^SecureRandom
+    []
+    (NewRandom 4))
 
-  (^SecureRandom [numBytes] (SecureRandom. (SecureRandom/getSeed numBytes)) ))
+  (^SecureRandom
+    [numBytes]
+    (SecureRandom. (SecureRandom/getSeed numBytes)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
