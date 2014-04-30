@@ -105,6 +105,7 @@
   (:import (org.apache.commons.io FileUtils IOUtils))
   (:import (com.zotohlabs.frwk.crypto CryptoUtils SDataSource))
   (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
   (:import (java.lang Math)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -180,7 +181,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(doto ^MailcapCommandMap mcm (CommandMap/getDefaultCommandMap)
+(doto ^MailcapCommandMap (CommandMap/getDefaultCommandMap)
   (.addMailcap (str "application/pkcs7-signature;; "
             "x-java-content-handler="
             "org.bouncycastle.mail.smime.handlers.pkcs7_signature"))
@@ -290,7 +291,7 @@
 
   (let [ ^chars ca (if-not (nil? pwdObj)(.toCharArray pwdObj)) ]
     (doseq [ ^String a (PKeyAliases ks) ]
-      (let [ cs (-> (CryptoUtils/getPKey(ks a ca)) (.getCertificateChain )) ]
+      (let [ cs (-> (CryptoUtils/getPKey ks a ca) (.getCertificateChain )) ]
         (doseq [ c (seq cs) ]
           (.setCertificateEntry ks (NewAlias) c))
       ))
@@ -678,7 +679,7 @@
     (-> bdr (.addExtension X509Extension/authorityKeyIdentifier false
                    (.createAuthorityKeyIdentifier exUte issuer)))
     (-> bdr (.addExtension X509Extension/subjectKeyIdentifier false
-                   (.createSubjectKeyIdentifier exUte pub)))
+                   (.createSubjectKeyIdentifier exUte (.getPublic kp))))
 
     (let [ ct (-> (JcaX509CertificateConverter.)
                   (.setProvider pv)
@@ -1080,32 +1081,32 @@
 ;;
 (defn TestSmimeDigSig "Verify the signature and return content if ok."
 
-  ([^Multipart mp certs] 
-   (TestSmimeDigSig mp certs ""))
+  ( [^Multipart mp certs]
+    (TestSmimeDigSig mp certs ""))
 
-  ([^Multipart mp certs ^String cte]
-   (let [ ^MimeMultipart mmp mp
-           sc (if (hgl? cte) (SMIMESigned. mmp cte) (SMIMESigned. mmp))
-           s (JcaCertStore. (vec certs))
+  ( [^Multipart mp certs ^String cte]
+    (let [ sc (if (hgl? cte)
+                  (SMIMESigned. ^MimeMultipart mp cte)
+                  (SMIMESigned. ^MimeMultipart mp))
            sns (-> (.getSignerInfos sc) (.getSigners) )
+           s (JcaCertStore. (vec certs))
            rc (some (fn [^SignerInformation si]
-                      (let [ c (.getMatches s (.getSID si))
-                             it (.iterator c)
-                             rc (loop [ ret [] stop false]
-                                  (if (or stop (not (.hasNext it)))
-                                    ret
-                                    (let [ bdr (-> (JcaSimpleSignerInfoVerifierBuilder.)
-                                                 (.setProvider _BCProvider))
-                                           ^X509CertificateHolder hdr (.next it) ]
-                                      (if (.verify si (.build bdr hdr))
-                                        (let [ digest (.getContentDigest si) ]
-                                          (if (nil? digest)
-                                            (recur ret false)
-                                            (recur [sc digest] true )))
-                                        (recur ret false))))) ]
-                        (if (empty? rc) nil rc)))
+                      (loop [ c (.getMatches s (.getSID si))
+                              it (.iterator c)
+                              ret nil
+                              stop false]
+                        (if (or stop (not (.hasNext it)))
+                          ret
+                          (let [ ci (-> (JcaSimpleSignerInfoVerifierBuilder.)
+                                        (.setProvider _BCProvider)
+                                        (.build ^X509CertificateHolder (.next it))) ]
+                            (if (.verify si ci)
+                              (if-let [ digest (.getContentDigest si) ]
+                                (recur c it [sc digest] true)
+                                (recur c it nil false))
+                              (recur c it nil false))))))
                     (seq sns)) ]
-      (when (empty? rc) (throw (GeneralSecurityException. "Verify signature: no matching cert.")) )
+      (when (nil? rc) (throw (GeneralSecurityException. "Verify signature: no matching cert.")) )
       [ (-> (.getContentAsMimeMessage sc (NewSession)) (.getContent)) (nth rc 1) ] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1120,7 +1121,7 @@
       :bodypart
 
       :else
-      (throw (IllegalArgumentException. "wrong type")))))
+      (ThrowBadArg "wrong type"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1143,7 +1144,8 @@
 
   (if (nil? inp)
     (XData.)
-    (let [ cms (-> (CMSCompressedDataParser. inp) (.getContent (ZlibExpanderProvider.))) ]
+    (let [ cms (-> (CMSCompressedDataParser. inp)
+                   (.getContent (ZlibExpanderProvider.))) ]
       (when (nil? cms) (throw (GeneralSecurityException. "Decompress stream: corrupted content.")))
       (XData. (IOUtils/toByteArray (.getContentStream cms))))
   ))
@@ -1163,7 +1165,7 @@
       :bodypart
 
       :else
-      (throw (IllegalArgumentException. "wrong type")))))
+      (ThrowBadArg "wrong type"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1172,13 +1174,15 @@
   ^MimeBodyPart
   [^Certificate cert ^String algo ^BodyPart bp]
 
-  (let [ gen (SMIMEEnvelopedGenerator.)
-         ^MimeBodyPart mb bp
-         ^X509Certificate xc cert ]
+  (let [ gen (SMIMEEnvelopedGenerator.) ]
     (.addRecipientInfoGenerator gen
-        (-> (JceKeyTransRecipientInfoGenerator. xc) (.setProvider _BCProvider)))
-    (.generate gen mb
-        (-> (JceCMSContentEncryptorBuilder. algo) (.setProvider _BCProvider) (.build)))))
+        (-> (JceKeyTransRecipientInfoGenerator. ^X509Certificate cert)
+            (.setProvider _BCProvider)))
+    (.generate gen ^MimeBodyPart bp
+        (-> (JceCMSContentEncryptorBuilder. algo)
+            (.setProvider _BCProvider)
+            (.build)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1187,14 +1191,17 @@
   ^MimeBodyPart
   [^Certificate cert ^String algo ^MimeMessage msg]
 
-  (let [ gen (SMIMEEnvelopedGenerator.)
-         ^X509Certificate xc cert
-         g (-> (JceKeyTransRecipientInfoGenerator. xc) (.setProvider _BCProvider)) ]
+  (let [ gen (SMIMEEnvelopedGenerator.) ]
     ;; force message to be processed, just in case.
     (.getContent msg)
-    (.addRecipientInfoGenerator gen g)
+    (.addRecipientInfoGenerator gen
+      (-> (JceKeyTransRecipientInfoGenerator. ^X509Certificate cert)
+          (.setProvider _BCProvider)))
     (.generate gen msg
-      (-> (JceCMSContentEncryptorBuilder. algo) (.setProvider _BCProvider) (.build)))))
+      (-> (JceCMSContentEncryptorBuilder. algo)
+          (.setProvider _BCProvider)
+          (.build)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1203,41 +1210,44 @@
   ^MimeBodyPart
   [^Certificate cert ^String algo ^Multipart mp]
 
-  (let [ gen (SMIMEEnvelopedGenerator.)
-         ^X509Certificate xc cert
-         mm (doto (NewMimeMsg) (.setContent mp))
-         g (-> (JceKeyTransRecipientInfoGenerator. xc) (.setProvider _BCProvider)) ]
-    (.addRecipientInfoGenerator gen g)
-    (.generate gen mm
-      (-> (JceCMSContentEncryptorBuilder. algo) (.setProvider _BCProvider) (.build)))))
+  (let [ gen (SMIMEEnvelopedGenerator.) ]
+    (.addRecipientInfoGenerator gen
+      (-> (JceKeyTransRecipientInfoGenerator. ^X509Certificate cert)
+          (.setProvider _BCProvider)))
+    (.generate gen (doto (NewMimeMsg)(.setContent mp))
+      (-> (JceCMSContentEncryptorBuilder. algo)
+          (.setProvider _BCProvider)
+          (.build)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SmimeCompress "Generates a MimeBodyPart."
 
-  (^MimeBodyPart [^String cType ^XData xdata]
-    (let [ gen (SMIMECompressedGenerator.)
-           bp (MimeBodyPart.)
-           ds (if (.isDiskFile xdata)
-                (SDataSource. (.fileRef xdata) cType)
-                (SDataSource. (.javaBytes xdata) cType)) ]
+  (^MimeBodyPart
+    [^String cType ^XData xs]
+    (let [ ds (if (.isDiskFile xs)
+                  (SDataSource. (.fileRef xs) cType)
+                  (SDataSource. (.javaBytes xs) cType))
+           bp (MimeBodyPart.) ]
       (.setDataHandler bp (DataHandler. ds))
-      (.generate gen bp (ZlibCompressor.))))
+      (.generate (SMIMECompressedGenerator.) bp (ZlibCompressor.))))
 
-  (^MimeBodyPart [^MimeMessage msg]
-   (do
+  (^MimeBodyPart
+    [^MimeMessage msg]
     (.getContent msg) ;; make sure it's processed, just in case
-    (-> (SMIMECompressedGenerator.) (.generate msg (ZlibCompressor.)))) )
+    (-> (SMIMECompressedGenerator.) (.generate msg (ZlibCompressor.))))
 
-  (^MimeBodyPart [^String cType ^String contentLoc ^String cid ^XData xdata]
-    (let [ gen (SMIMECompressedGenerator.)
-           bp (MimeBodyPart.)
-           ds (if (.isDiskFile xdata) (SDataSource. (.fileRef xdata) cType)
-                    (SDataSource. (.javaBytes xdata) cType)) ]
+  (^MimeBodyPart
+    [^String cType ^String contentLoc ^String cid ^XData xs]
+    (let [ ds (if (.isDiskFile xs)
+                  (SDataSource. (.fileRef xs) cType)
+                  (SDataSource. (.javaBytes xs) cType))
+           bp (MimeBodyPart.) ]
       (when (hgl? contentLoc) (.setHeader bp "content-location" contentLoc))
       (when (hgl? cid) (.setHeader bp "content-id" cid))
       (.setDataHandler bp (DataHandler. ds))
-      (let [ zbp (.generate gen bp (ZlibCompressor.))
+      (let [ zbp (.generate (SMIMECompressedGenerator.) bp (ZlibCompressor.))
              pos (.lastIndexOf cid (int \>))
              cID (if (>= pos 0) (str (.substring cid 0 pos) "--z>") (str cid "--z")) ]
         (when (hgl? contentLoc) (.setHeader zbp "content-location" contentLoc))
@@ -1245,33 +1255,34 @@
         ;; always base64
         ;;cte="base64"
         (.setHeader zbp "content-transfer-encoding" "base64")
-        zbp
-      ))))
+        zbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn PkcsDigSig "SMIME sign some data."
 
   ^bytes
-  [^PrivateKey pkey certs ^String algo ^XData xdata]
+  [^PrivateKey pkey certs ^String algo ^XData xs]
 
-  (let [ gen (CMSSignedDataGenerator.)
-         cl (vec certs)
-         ^X509Certificate cert (first cl)
-         cs (-> (JcaContentSignerBuilder. (nsb algo))
-              (.setProvider _BCProvider)
-              (.build pkey))
-         bdr (JcaSignerInfoGeneratorBuilder.
+  (let [ bdr (JcaSignerInfoGeneratorBuilder.
                 (-> (JcaDigestCalculatorProviderBuilder.)
-                  (.setProvider _BCProvider)
-                  (.build))) ]
+                    (.setProvider _BCProvider)
+                    (.build)))
+         cs (-> (JcaContentSignerBuilder. (nsb algo))
+                (.setProvider _BCProvider)
+                (.build pkey))
+         gen (CMSSignedDataGenerator.)
+         cl (vec certs)
+         cert (first cl) ]
     (.setDirectSignature bdr true)
-    (.addSignerInfoGenerator gen (.build bdr cs cert))
+    (.addSignerInfoGenerator gen (.build bdr cs ^X509Certificate cert))
     (.addCertificates gen (JcaCertStore. cl))
-    (let [ ^CMSTypedData cms (if (.isDiskFile xdata)
-                                 (CMSProcessableFile. (.fileRef xdata))
-                                 (CMSProcessableByteArray. (.javaBytes xdata))) ]
-      (.getEncoded (.generate gen cms false) ))
+    (-> (.generate gen
+                   (if (.isDiskFile xs)
+                       (CMSProcessableFile. (.fileRef xs))
+                       (CMSProcessableByteArray. (.javaBytes xs)))
+                   false)
+        (.getEncoded))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1281,26 +1292,27 @@
   ^bytes
   [^Certificate cert ^XData xdata ^bytes signature]
 
-  (let [ ^CMSProcessable
-         cproc (if (.isDiskFile xdata)
+  (let [ cproc (if (.isDiskFile xdata)
                    (CMSProcessableFile. (.fileRef xdata))
                    (CMSProcessableByteArray. (.javaBytes xdata)))
-         cms (CMSSignedData. cproc signature)
+         cms (CMSSignedData. ^CMSProcessable cproc signature)
          s (JcaCertStore. [cert])
          sls (-> cms (.getSignerInfos) (.getSigners))
          rc (some (fn [^SignerInformation si]
-                     (let [ c (.getMatches s (.getSID si))
-                            it (.iterator c) ]
-                       (loop [ digest nil stop false ]
-                         (if (or stop (not (.hasNext it)))
-                           digest
-                           (let [ bdr (-> (JcaSimpleSignerInfoVerifierBuilder.)
+                     (loop [ c (.getMatches s (.getSID si))
+                             it (.iterator c)
+                             digest nil
+                             stop false ]
+                       (if (or stop (not (.hasNext it)))
+                         digest
+                         (let [ bdr (-> (JcaSimpleSignerInfoVerifierBuilder.)
                                         (.setProvider _BCProvider))
-                                  ^X509CertificateHolder hdr (.next it)
-                                  ok (.verify si (.build bdr hdr))
-                                  dg (if ok (.getContentDigest si) nil) ]
-                             (if (notnil? dg) (recur dg true) (recur nil false)))))))
-                    (seq sls)) ]
+                                ok (.verify si (.build bdr ^X509CertificateHolder (.next it)))
+                                dg (if ok (.getContentDigest si) nil) ]
+                           (if (nil? dg)
+                               (recur c it nil false)
+                               (recur c it dg true))))))
+                  (seq sls)) ]
     (when (nil? rc) (throw (GeneralSecurityException. "Decode signature: no matching cert.")))
     rc
   ))
@@ -1315,7 +1327,7 @@
     "SHA-512" SMIMESignedGenerator/DIGEST_SHA512
     "SHA-1" SMIMESignedGenerator/DIGEST_SHA1
     "MD5" SMIMESignedGenerator/DIGEST_MD5
-    (throw (IllegalArgumentException. (str "Unsupported signing algo: " algo)))))
+    (ThrowBadArg (str "Unsupported signing algo: " algo))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1324,17 +1336,19 @@
   ^String
   [^bytes data ^String algo]
 
-  (let [ md (MessageDigest/getInstance (nsb algo))
-         ret (StringBuilder. (int 256))
-         hv (.digest md data)
-         tail (dec (alength hv)) ]
-    (loop [ i 0 ]
-      (if (>= i (alength hv))
-        (.toString ret)
+  (let [ hv (-> (MessageDigest/getInstance (nsb algo))
+                (.digest data))
+         hlen (alength hv)
+         tail (dec hlen) ]
+    (loop [ ret (StringBuilder.)
+            i 0 ]
+      (if (>= i hlen)
+        (nsb ret)
         (let [ n (cstr/upper-case (Integer/toString (bit-and (aget ^bytes hv i) 0xff) 16)) ]
-          (-> ret (.append (if (= (.length n) 1) (str "0" n) n))
-                (.append (if (= i tail) "" ":")))
-          (recur (inc i)))
+          (-> ret
+              (.append (if (= (.length n) 1) (str "0" n) n))
+              (.append (if (= i tail) "" ":")))
+          (recur ret (inc i)))
       ))
   ))
 
@@ -1382,17 +1396,15 @@
 
   ( ^comzotohlabscljc.crypto.core.CertDesc
     [^bytes privateKeyBits ^comzotohlabscljc.crypto.codec.Password pwdObj]
-      (let [ pkey (ConvPKey privateKeyBits pwdObj) ]
-        (if (nil? pkey)
-            (->CertDesc nil nil nil nil)
-            (DescCertificate (.getCertificate pkey)) )))
+      (if-let [ pkey (ConvPKey privateKeyBits pwdObj) ]
+              (DescCertificate (.getCertificate pkey))
+              (->CertDesc nil nil nil nil)))
 
   ( ^comzotohlabscljc.crypto.core.CertDesc
     [^bytes certBits]
-      (let [ cert (ConvCert certBits) ]
-        (if (nil? cert)
-            (->CertDesc nil nil nil nil)
-            (DescCertificate (.getTrustedCertificate cert))))) )
+      (if-let [ cert (ConvCert certBits) ]
+              (DescCertificate (.getTrustedCertificate cert))
+              (->CertDesc nil nil nil nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1402,7 +1414,7 @@
 
   (try
     (.checkValidity x509 (Date.))
-    (catch Throwable e false)
+    (catch Throwable e# false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1411,10 +1423,10 @@
 
   [^bytes keyBits ^comzotohlabscljc.crypto.codec.Password pwdObj]
 
-  (let [ pkey (ConvPKey keyBits pwdObj) ]
-    (if (nil? pkey)
-      false
-      (ValidCertificate? (.getCertificate pkey)))) )
+  (if-let [ pkey (ConvPKey keyBits pwdObj) ]
+          (ValidCertificate? (.getCertificate pkey))
+          false
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1422,10 +1434,9 @@
 
   [^bytes certBits]
 
-  (let [ cert (ConvCert certBits) ]
-    (if (nil? cert)
-        false
-        (ValidCertificate? (.getTrustedCertificate cert)))
+  (if-let [ cert (ConvCert certBits) ]
+          (ValidCertificate? (.getTrustedCertificate cert))
+          false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1436,7 +1447,8 @@
 
   (if (empty? certs)
       []
-      (map (fn [ ^KeyStore$TrustedCertificateEntry x] (.getTrustedCertificate x)) (seq certs))
+      (map (fn [ ^KeyStore$TrustedCertificateEntry x] (.getTrustedCertificate x))
+           (seq certs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1447,7 +1459,8 @@
 
   (if (empty? pkeys)
       []
-      (map (fn [^KeyStore$PrivateKeyEntry x] (.getPrivateKey x)) (seq pkeys))
+      (map (fn [^KeyStore$PrivateKeyEntry x] (.getPrivateKey x))
+           (seq pkeys))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1457,11 +1470,7 @@
   ^X509TrustManager
   []
 
-  (reify X509TrustManager
-    (getAcceptedIssuers [_] (make-array X509Certificate 0))
-    (checkClientTrusted [_ x y] nil)
-    (checkServerTrusted [_ x y] nil)
-  ))
+  (nth (SSLTrustMgrFactory/getTrustManagers) 0))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

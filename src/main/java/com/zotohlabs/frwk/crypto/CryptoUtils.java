@@ -30,7 +30,15 @@ public enum CryptoUtils {
     return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
   }
 
+  public static KeyStore.TrustedCertificateEntry getCert(KeyStore ks, String n)
+      throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
+    Object obj = ks.getEntry(n, null);
+    return obj instanceof KeyStore.TrustedCertificateEntry ? (KeyStore.TrustedCertificateEntry) obj : null;
+  }
+
   public static void main(String[] args) {
   }
+
+
 
 }

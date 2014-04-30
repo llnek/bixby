@@ -17,6 +17,10 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:require [clojure.math.numeric-tower :as math])
+  (:use [comzotohlabscljc.util.core
+         :only [NewRandom Bytesify Stringify ThrowBadArg ternary] ])
+  (:use [comzotohlabscljc.util.io :only [MakeBitOS] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ])
   (:import (org.apache.commons.codec.binary Base64))
   (:import (javax.crypto.spec SecretKeySpec))
   (:import (org.jasypt.encryption.pbe StandardPBEStringEncryptor))
@@ -31,10 +35,7 @@
   (:import (org.bouncycastle.crypto.engines DESedeEngine))
   (:import (org.bouncycastle.crypto.generators DESedeKeyGenerator))
   (:import (org.bouncycastle.crypto.modes CBCBlockCipher))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:use [ comzotohlabscljc.util.core :only [Bytesify Stringify ThrowBadArg] ])
-  (:use [ comzotohlabscljc.util.io :only [MakeBitOS] ])
-  (:use [ comzotohlabscljc.util.str :only [nsb] ]))
+  (:import (org.apache.commons.lang3 StringUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; using amap below causes reflection warnings, I can't fix it, so turn checking
@@ -72,7 +73,8 @@
   [^String keystr ^String algo]
 
   (let [ len (alength (Bytesify keystr)) ]
-    (when (and (= T3_DES algo) (< len 24))
+    (when (and (= T3_DES algo)
+               (< len 24))
       (ThrowBadArg "Encryption key length must be 24, when using TripleDES"))
     keystr
   ))
@@ -85,10 +87,11 @@
   [^String pwd ^String algo]
 
   (let [ bits (Bytesify pwd) ]
-    (if (and (= T3_DES algo) (> (alength bits) 24))
+    (if (and (= T3_DES algo)
+             (> (alength bits) 24))
       (into-array Byte/TYPE (take 24 bits)) ;; only 24 bits wanted
-      bits
-  )))
+      bits)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -115,7 +118,7 @@
   (hashed [_] )
   (text [_] ) )
 
-(declare pwdify)
+(declare Pwdify)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; caesar cipher
@@ -135,7 +138,7 @@
 
   (let [ idx (some (fn [i] (if (= ch (aget ^chars VISCHS i)) i nil))
                    (range VISCHS_LEN)) ]
-    (if (nil? idx) -1 idx)
+    (ternary idx -1)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,7 +229,8 @@
 ;; jasypt cryptor
 (defn- jaDecr ""
 
-  ^String [^String pkey ^String text]
+  ^String
+  [^String pkey ^String text]
 
   (let [ c (StrongTextEncryptor.) ]
     (.setPassword c pkey)
@@ -237,7 +241,8 @@
 ;;
 (defn- jaEncr ""
 
-  ^String [^String pkey ^String text]
+  ^String
+  [^String pkey ^String text]
 
   (let [ c (StrongTextEncryptor.) ]
     (.setPassword c pkey)
@@ -254,12 +259,10 @@
   (reify BaseCryptor
 
     (decrypt [this cipherText] (decrypt this C_KEY cipherText))
-    (decrypt [_ pkey cipherText]
-        (jaDecr pkey cipherText))
+    (decrypt [_ pkey cipherText] (jaDecr pkey cipherText))
 
     (encrypt [this clearText] (encrypt this C_KEY clearText))
-    (encrypt [_ pkey clearText]
-        (jaEncr pkey clearText))
+    (encrypt [_ pkey clearText] (jaEncr pkey clearText))
 
     (algo [_] "PBEWithMD5AndTripleDES")
   ))
@@ -268,7 +271,8 @@
 ;; java cryptor
 (defn- getCipher ""
 
-  ^Cipher [^String pkey mode ^String algo]
+  ^Cipher
+  [^String pkey mode ^String algo]
 
   (let [ spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
     (doto (Cipher/getInstance algo)
@@ -326,15 +330,13 @@
 
     (decrypt [this cipherText] (decrypt this C_KEY cipherText))
     (decrypt [this pkey cipherText]
-      (do
-        (ensureKeySize pkey (algo this))
-        (jcDecr pkey cipherText (algo this))) )
+      (ensureKeySize pkey (algo this))
+      (jcDecr pkey cipherText (algo this)))
 
     (encrypt [this clearText] (encrypt this C_KEY clearText))
     (encrypt [this pkey clearText]
-      (do
-        (ensureKeySize pkey (algo this))
-        (jcEncr pkey clearText (algo this))) )
+      (ensureKeySize pkey (algo this))
+      (jcEncr pkey clearText (algo this)))
 
     (algo [_] T3_DES) ;;PBEWithMD5AndDES
   ))
@@ -349,7 +351,7 @@
   (if (StringUtils/isEmpty text)
     text
     (let [ cipher (doto (PaddedBufferedBlockCipher. (CBCBlockCipher. (DESedeEngine.)))
-                    (.init false (KeyParameter. (keyAsBits pkey algo))))
+                        (.init false (KeyParameter. (keyAsBits pkey algo))))
            p (Base64/decodeBase64 text)
            out (byte-array 1024)
            baos (MakeBitOS)
@@ -370,7 +372,7 @@
   (if (StringUtils/isEmpty text)
     text
     (let [ cipher (doto (PaddedBufferedBlockCipher. (CBCBlockCipher. (DESedeEngine.)))
-                    (.init true (KeyParameter. (keyAsBits pkey algo))))
+                        (.init true (KeyParameter. (keyAsBits pkey algo))))
            out (byte-array 4096)
            baos (MakeBitOS)
            p (Bytesify text)
@@ -391,15 +393,13 @@
   (reify BaseCryptor
     (decrypt [this cipherText] (decrypt this C_KEY cipherText))
     (decrypt [this pkey cipherText]
-      (do
-        (ensureKeySize pkey (algo this))
-        (bcDecr pkey cipherText (algo this))) )
+      (ensureKeySize pkey (algo this))
+      (bcDecr pkey cipherText (algo this)))
 
     (encrypt [this clearText] (encrypt this C_KEY clearText))
     (encrypt [this pkey clearText]
-      (do
-        (ensureKeySize pkey (algo this))
-        (bcEncr pkey clearText (algo this))) )
+      (ensureKeySize pkey (algo this))
+      (bcEncr pkey clearText (algo this)))
 
     (algo [_] T3_DES)
   ))
@@ -418,9 +418,9 @@
     ""
 
     :else
-    (let [ r (SecureRandom/getInstance "SHA1PRNG")
-           ostr (char-array len)
+    (let [ ostr (char-array len)
            cl (alength chArray)
+           r (NewRandom)
            rc (amap ^chars ostr pos ret
                     (let [ n (mod (.nextInt r Integer/MAX_VALUE) cl) ]
                       (aget chArray n))) ]
@@ -433,7 +433,9 @@
 
   Object
 
-  (equals [this obj] (and (instance? Password obj) (= (.toString this) (.toString ^Object obj))) )
+  (equals [this obj] (and (instance? Password obj)
+                          (= (.toString this)
+                             (.toString ^Object obj))) )
   (hashCode [this] (.hashCode (nsb (.pwdStr this))))
   (toString [this] (.text this))
 
@@ -467,10 +469,11 @@
 ;;
 (defn Pwdify "Create a password object."
 
-  ([ ^String pwdStr] (Pwdify pwdStr C_KEY))
+  ([^String pwdStr]
+   (Pwdify pwdStr C_KEY))
 
-  ([ ^String pwdStr  ^String pkey]
-    (cond
+  ([^String pwdStr  ^String pkey]
+   (cond
       (StringUtils/isEmpty pwdStr)
       (Password. "" pkey)
 

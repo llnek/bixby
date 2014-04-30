@@ -17,15 +17,17 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-
+  (:use [comzotohlabscljc.crypto.stores :only [MakeCryptoStore] ])
+  (:use [comzotohlabscljc.util.core :only [NewRandom] ])
+  (:use [comzotohlabscljc.crypto.core
+         :only [PkcsFile? GetJksStore
+                GetPkcsStore MakeSimpleTrustMgr] ])
   (:import (javax.net.ssl X509TrustManager TrustManager))
   (:import (javax.net.ssl SSLEngine SSLContext))
+  (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
   (:import (java.net URL))
-  (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory))
+  (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory)))
 
-  (:use [comzotohlabscljc.crypto.stores :only [MakeCryptoStore] ])
-  (:use [comzotohlabscljc.crypto.core :only [PkcsFile? GetJksStore
-                                             GetPkcsStore GetSRand MakeSimpleTrustMgr] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -34,20 +36,25 @@
 ;;
 (defn MakeSslContext "Make a server-side SSLContext."
 
-  (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj]
-   (MakeSslContext keyUrl pwdObj "TLS"))
+  ( ^SSLContext
+    [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj]
+    (MakeSslContext keyUrl pwdObj "TLS"))
 
-  (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj ^String flavor]
-    (let [ ctx (SSLContext/getInstance flavor)
-           ks (with-open [ inp (.openStream keyUrl) ]
+  ( ^SSLContext
+    [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj ^String flavor]
+    (let [ ks (with-open [ inp (.openStream keyUrl) ]
                 (if (PkcsFile? keyUrl)
                     (GetPkcsStore inp pwdObj)
                     (GetJksStore inp pwdObj)))
            cs (MakeCryptoStore ks pwdObj)
-           ^TrustManagerFactory tmf   (.trustManagerFactory cs)
-           ^KeyManagerFactory kmf   (.keyManagerFactory cs) ]
-      (.init ctx (.getKeyManagers kmf) (.getTrustManagers tmf) (GetSRand))
-      ctx)) )
+           tmf (.trustManagerFactory cs)
+           kmf (.keyManagerFactory cs)
+           ctx (SSLContext/getInstance flavor) ]
+      (.init ctx
+             (.getKeyManagers ^KeyManagerFactory kmf)
+             (.getTrustManagers ^TrustManagerFactory tmf)
+             (NewRandom))
+      ctx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,9 +65,8 @@
 
   (if (not ssl)
       nil
-      (let [ ctx (SSLContext/getInstance "TLS") ]
-        (.init ctx nil (into-array TrustManager [(MakeSimpleTrustMgr)]) nil)
-        ctx)
+      (doto (SSLContext/getInstance "TLS")
+            (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
