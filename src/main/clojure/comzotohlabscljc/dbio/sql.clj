@@ -30,7 +30,8 @@
   (:import (com.zotohlabs.frwk.dbio DBAPI))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (java.sql ResultSet Types SQLException
-                     DatabaseMetaData ResultSetMetaData Date Timestamp Blob Clob
+                     DatabaseMetaData ResultSetMetaData
+                     Date Timestamp Blob Clob
                      Statement PreparedStatement Connection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,17 +41,25 @@
 ;;
 (defn Tablename ""
 
-  (^String [mdef] (:table mdef))
+  ( ^String
+    [mdef]
+    (:table mdef))
 
-  (^String [mid cache] (Tablename (get cache mid))))
+  ( ^String
+    [mid cache]
+    (Tablename (get cache mid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn Colname ""
 
-  (^String [fdef] (:column fdef))
+  ( ^String
+    [fdef]
+    (:column fdef))
 
-  (^String [fid zm] (Colname (get (:fields (meta zm)) fid))))
+  ( ^String
+    [fid zm]
+    (Colname (get (:fields (meta zm)) fid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -61,8 +70,8 @@
 
   (str (dbcore/ese (Colname :rowid zm)) "=?"
        (if lock
-          (str " AND " (dbcore/ese (Colname :verid zm)) "=?")
-          "")
+           (str " AND " (dbcore/ese (Colname :verid zm)) "=?")
+           "")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,11 +92,15 @@
 
   (let [ flds (:fields (meta zm))
          wc (reduce (fn [^StringBuilder sum en]
-                      (let [ k (first en) fld (get flds k)
-                             c (if (nil? fld) k (dbcore/ese (:column fld))) ]
-                      (AddDelim! sum " AND "
-                        (str c
-                             (if (nil? (last en)) " IS NULL " " = ? ")))))
+                      (let [ k (first en)
+                             fld (get flds k)
+                             c (if (nil? fld)
+                                   k
+                                   (dbcore/ese (:column fld))) ]
+                        (AddDelim! sum " AND "
+                          (str c (if (nil? (last en))
+                                     " IS NULL "
+                                     " = ? ")))))
                     (StringBuilder.)
                     (seq filters)) ]
     [ (nsb wc) (FlattenNil (vals filters)) ]
@@ -218,7 +231,8 @@
   (loop [ stop false sql sqlstr ]
     (if stop
       sql
-      (let [ lcs (cstr/lower-case sql) pos (.indexOf lcs (name token))
+      (let [ lcs (cstr/lower-case sql)
+             pos (.indexOf lcs (name token))
              rc (if (< pos 0)
                   []
                   [(.substring sql 0 pos) (.substring sql pos)]) ]
@@ -345,7 +359,7 @@
   (with-local-vars [ ps (transient []) ]
     (doseq [ [k v] (seq obj) ]
       (let [ fdef (get flds k)
-             ^String cn (:column fdef) ]
+             cn (:column fdef) ]
         (when (and (notnil? fdef)
                  (not (:auto fdef))
                  (not (:system fdef)))
@@ -387,12 +401,11 @@
   (let [ mm { :typeid model
                :verid (:verid obj)
                :rowid (:rowid obj)
-               :last-modify (:last-modify obj)
-              }
+               :last-modify (:last-modify obj) }
          rc (with-meta (-> obj
-                         (dbcore/DbioClrFld :rowid)
-                         (dbcore/DbioClrFld :verid)
-                         (dbcore/DbioClrFld :last-modify)) mm) ]
+                           (dbcore/DbioClrFld :rowid)
+                           (dbcore/DbioClrFld :verid)
+                           (dbcore/DbioClrFld :last-modify)) mm) ]
     rc
   ))
 
@@ -409,15 +422,17 @@
       (doQuery [_ conn sql pms model]
         (let [ zm (get metas model) ]
           (when (nil? zm)
-            (dbcore/DbioError (str "Unknown model " model)))
+                (dbcore/DbioError (str "Unknown model " model)))
           (let [ px (partial model-injtor metaCache zm)
                  pf (partial row2obj px)
                  f2 (fn [obj] (postFmtModelRow model obj)) ]
-            (-> (make-sql metaCache db conn) (.sql-select sql pms pf f2)))))
+            (-> (make-sql metaCache db conn)
+                (.sql-select sql pms pf f2)))))
 
       (doQuery [_ conn sql pms]
         (let []
-          (-> (make-sql metaCache db conn) (.sql-select sql pms ))) )
+          (-> (make-sql metaCache db conn)
+              (.sql-select sql pms ))) )
 
       (doCount [this conn model]
         (let [ rc (doQuery this conn
@@ -429,7 +444,9 @@
 
       (doPurge [_ conn model]
         (let [ sql (str "DELETE FROM " (dbcore/ese (Tablename model metas))) ]
-          (do (-> (make-sql metaCache db conn) (.sql-execute sql [])) nil)))
+          (do (-> (make-sql metaCache db conn)
+                  (.sql-execute sql []))
+              nil)))
 
       (doDelete [this conn obj]
         (let [ info (meta obj) model (:typeid info)
@@ -453,10 +470,10 @@
           (when (nil? zm) (dbcore/DbioError (str "Unknown model " model)))
           (let [ lock (.supportsOptimisticLock db)
                  flds (:fields (meta zm))
-                 table (Tablename zm)
-                 now (NowJTstamp)
                  s2 (StringBuilder.)
                  s1 (StringBuilder.)
+                 table (Tablename zm)
+                 now (NowJTstamp)
                  pms (insert-fields flds obj s1 s2) ]
             (if (== (.length s1) 0)
               nil

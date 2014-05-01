@@ -16,11 +16,11 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:import (com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr))
-  (:import (java.sql Connection))
   (:use [comzotohlabscljc.util.str :only [hgl?] ])
   (:use [comzotohlabscljc.dbio.core :as dbcore])
-  (:use [comzotohlabscljc.dbio.sql :as dbsql]))
+  (:use [comzotohlabscljc.dbio.sql :as dbsql])
+  (:import (com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr))
+  (:import (java.sql Connection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -28,8 +28,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- openDB ""
-  
-  ^Connection 
+
+  ^Connection
   [^DBAPI db]
 
   (doto (.open db)
@@ -38,7 +38,6 @@
     (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE)
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SimpleSQLr ""
@@ -46,7 +45,8 @@
   ^SQLr
   [ ^MetaCache metaCache ^DBAPI db ]
 
-  (let [ ^comzotohlabscljc.dbio.sql.SQLProcAPI proc (dbsql/MakeProc metaCache db)
+  (let [ ^comzotohlabscljc.dbio.sql.SQLProcAPI
+         proc (dbsql/MakeProc metaCache db)
          metas (.getMetas metaCache) ]
     (reify SQLr
 
@@ -76,35 +76,35 @@
 
       (delete [this obj]
         (with-open [ conn (openDB db) ]
-            (.doDelete proc conn obj) ))
+          (.doDelete proc conn obj) ))
 
       (insert [this obj]
         (with-open [ conn (openDB db) ]
-            (.doInsert proc conn obj) ))
+          (.doInsert proc conn obj) ))
 
       (select [this model sql params]
         (with-open [ conn (openDB db) ]
-            (.doQuery proc conn sql params model) ))
+          (.doQuery proc conn sql params model) ))
 
       (select [this sql params]
         (with-open [ conn (openDB db) ]
-            (.doQuery proc conn sql params) ))
+          (.doQuery proc conn sql params) ))
 
       (executeWithOutput [this sql pms]
         (with-open [ conn (openDB db) ]
-            (.doExecuteWithOutput proc conn sql pms { :pkey "DBIO_ROWID" } ) ))
+          (.doExecuteWithOutput proc conn sql pms { :pkey "DBIO_ROWID" } )))
 
       (execute [this sql pms]
         (with-open [ conn (openDB db) ]
-            (doExecute proc conn sql pms) ))
+          (doExecute proc conn sql pms) ))
 
       (countAll [this model]
         (with-open [ conn (openDB db) ]
-            (.doCount proc conn model) ))
+          (.doCount proc conn model) ))
 
       (purge [this model]
         (with-open [ conn (openDB db) ]
-            (.doPurge proc conn model) )) 
+          (.doPurge proc conn model) ))
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

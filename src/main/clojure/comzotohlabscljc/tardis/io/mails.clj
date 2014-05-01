@@ -18,7 +18,7 @@
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.crypto.codec :only [Pwdify] ])
   (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
-  (:use [comzotohlabscljc.util.core :only [TryC notnil?] ])
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE TryC notnil?] ])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb] ])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.io.loops ])
@@ -37,17 +37,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- closeFolder ""
-  
+
   [^Folder fd]
 
   (TryC
     (when-not (nil? fd)
-      (when (.isOpen fd) (.close fd true))) ))
+      (when (.isOpen fd) (.close fd true)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- closeStore ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ ^Store conn (.getAttr co :store)
@@ -57,14 +58,14 @@
       (when-not (nil? conn) (.close conn)) )
     (.setAttr! co :store nil)
     (.setAttr! co :folder nil)
-  ) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resolve-provider ""
 
-  [^comzotohlabscljc.tardis.core.sys.Element co 
-   protos 
+  [^comzotohlabscljc.tardis.core.sys.Element co
+   protos
    ^String demo ^String mock]
 
   (let [ [^String pkey ^String sn]  protos
@@ -75,7 +76,7 @@
     (with-local-vars [proto sn sun nil]
       (var-set sun (some (fn [^Provider x] (if (= pkey (.getClassName x)) x nil)) (seq ps)))
       (when (nil? @sun)
-        (throw (IOException. (str "Failed to find store: " pkey) )))
+        (ThrowIOE (str "Failed to find store: " pkey) ))
       (when (hgl? demo)
         (var-set sun  (Provider. Provider$Type/STORE mock demo "test" "1.0.0"))
         (log/debug "using demo store " mock " !!!")
@@ -89,7 +90,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ctor-email-event ""
-  
+
   [co msg]
 
   (let [ eeid (NextLong) ]
@@ -106,7 +107,7 @@
         (emitter [_] co)
         (getMsg [_] msg))
 
-      { :typeid :czc.tardis.io/EmailEvent } 
+      { :typeid :czc.tardis.io/EmailEvent }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,8 +120,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePOP3Client "" 
-  
+(defn MakePOP3Client ""
+
   [container]
 
   (MakeEmitter container :czc.tardis.io/POP3))
@@ -136,11 +137,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- connect-pop3 ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ pwd (nsb (.getAttr co :pwd))
-         ^Session session (.getAttr co :session)
+  (let [ ^Session session (.getAttr co :session)
+         pwd (nsb (.getAttr co :pwd))
          user (.getAttr co :user)
          ^String host (.getAttr co :host)
          ^long port (.getAttr co :port)
@@ -154,13 +155,13 @@
       (.setAttr! co :folder (.getFolder fd "INBOX")))
     (let [ ^Folder fd (.getAttr co :folder) ]
       (when (or (nil? fd) (not (.exists fd)))
-        (throw (IOException. "cannot find inbox.")) ))
+        (ThrowIOE "cannot find inbox.")) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- read-pop3 ""
-  
+
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co msgs]
 
   (let [^comzotohlabscljc.tardis.core.sys.Element src co]
@@ -176,11 +177,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- scan-pop3 ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^Store s (.getAttr co :store)
-         ^Folder fd (.getAttr co :folder) ]
+  (let [ ^Folder fd (.getAttr co :folder)
+         ^Store s (.getAttr co :store) ]
     (when (and (notnil? fd) (not (.isOpen fd)))
       (.open fd Folder/READ_WRITE) )
     (when (.isOpen fd)
@@ -200,7 +201,7 @@
       (connect-pop3 co)
       (scan-pop3 co)
     (catch Throwable e#
-      (warn e# ""))
+      (log/warn e# ""))
     (finally
       (closeStore co))
   ))
@@ -208,7 +209,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- std-config ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
   (let [ intv (:interval-secs cfg)
@@ -251,8 +252,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeIMAPClient "" ""
-  
+(defn MakeIMAPClient ""
+
   [container]
 
   (MakeEmitter container :czc.tardis.io/IMAP))
@@ -268,25 +269,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- connect-imap ""
-  
-  [co] 
-  
+
+  [co]
+
   (connect-pop3 co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- read-imap ""
-  
-  [co msgs] 
-  
+
+  [co msgs]
+
   (read-pop3 co msgs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- scan-imap ""
-  
-  [co] 
-  
+
+  [co]
+
   (scan-pop3 co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

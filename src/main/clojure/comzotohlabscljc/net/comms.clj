@@ -16,6 +16,10 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.str :only [strim Embeds? HasNocase?] ])
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE Try!] ])
+  (:use [comzotohlabscljc.util.mime :only [GetCharset] ])
+
   (:import (java.security.cert X509Certificate CertificateException))
   (:import (java.security KeyStoreException KeyStore
                           InvalidAlgorithmParameterException))
@@ -36,10 +40,7 @@
   (:import (org.apache.http.params HttpConnectionParams))
   (:import (org.apache.http.entity InputStreamEntity))
   (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem))
-  (:import (com.zotohlabs.frwk.io XData))
-  (:use [comzotohlabscljc.util.core :only [Try!] ])
-  (:use [comzotohlabscljc.util.mime :only [GetCharset] ])
-  (:use [comzotohlabscljc.util.str :only [strim Embeds? HasNocase?] ]))
+  (:import (com.zotohlabs.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -142,10 +143,8 @@
 
   [^HttpResponse rsp ^Throwable exp]
 
-  (do
-    (Try! (EntityUtils/consumeQuietly (.getEntity rsp)))
-    (throw exp)
-  ))
+  (Try! (EntityUtils/consumeQuietly (.getEntity rsp)))
+  (throw exp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -154,7 +153,7 @@
   [^HttpResponse rsp]
 
   ;;TODO - handle redirect
-  (processError rsp (IOException. "Redirect not supported.")) )
+  (processError rsp (ThrowIOE "Redirect not supported.")) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -173,7 +172,7 @@
       (processRedirect rsp)
 
       :else
-      (processError rsp (IOException. (str "Service Error: code = " rc ": " msg))))
+      (processError rsp (ThrowIOE (str "Service Error: " rc ": " msg))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

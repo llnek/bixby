@@ -24,16 +24,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ExecProj ""
-  
-  [^Project pj] 
-  
+
+  [^Project pj]
+
   (.executeTarget pj "mi6"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTask "" 
-  
-  ^Project 
+(defn ProjAntTask ""
+
+  ^Project
   [^Task taskObj]
 
   (let [ pj (doto (Project.)
@@ -57,8 +57,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAntTask "" 
-  
+(defn MakeAntTask ""
+
   [^File hhhHome appId taskId]
 
   (let [ tk (Ant.)
@@ -75,8 +75,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeExecTask "" 
-  
+(defn MakeExecTask ""
+
   [^String execProg ^File workDir args]
 
   (let [ tk (ExecTask.)
@@ -92,8 +92,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeZipTask "" 
-  
+(defn MakeZipTask ""
+
   [^File srcDir ^File zipFile includes excludes]
 
   (let [ tk (Zip.)
@@ -112,8 +112,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAntJavac "" 
-  
+(defn MakeAntJavac ""
+
   [^File srcPath ^File destDir]
 
   (let [ ct (Javac.)

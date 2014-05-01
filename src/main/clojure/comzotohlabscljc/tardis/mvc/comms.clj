@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -24,10 +23,12 @@
   (:use [comzotohlabscljc.tardis.io.core])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.core.constants])
-  (:use [comzotohlabscljc.tardis.mvc.tpls :only [GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.tardis.mvc.templates
+         :only [GetLocalFile ReplyFileAsset] ])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
-  (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler MVCUtils WebAsset WebContent))
+  (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler
+                                        MVCUtils WebAsset WebContent))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import [com.zotohlabs.frwk.netty NettyFW])
@@ -38,9 +39,11 @@
   (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
   (:import (org.jboss.netty.channel Channel))
   (:import (org.jboss.netty.handler.codec.http HttpHeaders$Values HttpHeaders$Names
-                                               HttpContentCompressor HttpHeaders HttpVersion
+                                               HttpContentCompressor
+                                               HttpHeaders HttpVersion
                                                DefaultHttpRequest HttpResponse
-                                               HttpMessage HttpRequest HttpResponseStatus
+                                               HttpMessage HttpRequest
+                                               HttpResponseStatus
                                                DefaultHttpResponse HttpMethod))
   (:import (com.zotohlabs.frwk.net NetUtils))
   (:import (jregex Matcher Pattern)))

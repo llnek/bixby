@@ -39,7 +39,7 @@
   (:import (com.zotohlabs.frwk.core Versioned Hierarchial
                                     Identifiable Disposable Startable))
   (:import (org.apache.commons.codec.binary Base64))
-  (:import '(org.eclipse.jetty.server Connector HttpConfiguration
+  (:import (org.eclipse.jetty.server Connector HttpConfiguration
                                       HttpConnectionFactory SecureRequestCustomizer
                                       Server ServerConnector
                                       SslConnectionFactory))
@@ -152,8 +152,8 @@
           (TryC
               (.notifyObservers parObj ev options) )) )
 
-      { :typeid :czc.tardis.io/JettyIO } )
-  ))
+      { :typeid :czc.tardis.io/JettyIO }
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -262,11 +262,10 @@
                                (.setSecurePort port)))) ]
 
     (when (hgl? host) (.setHost cc host))
-    (.setName cc (uid))
+    (.setName cc (juid))
     (doto svr
       (.setConnectors (into-array Connector [cc])))
     (.setAttr! co :jetty svr)
-
     co
   ))
 
@@ -291,8 +290,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- serviceJetty "" 
-  
+(defn- serviceJetty ""
+
   [ co ^HttpServletRequest req ^HttpServletResponse rsp]
 
   (let [ c (ContinuationSupport/getContinuation req) ]
@@ -307,11 +306,11 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element 
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element
          ctr (.parent ^Hierarchial co)
          ^Server jetty (.getAttr co :jetty)
          ^File app (.getAttr ctr K_APPDIR)
-         ^String cp (strim (.getAttr co :contextPath))
+         cp (strim (.getAttr co :contextPath))
          myHandler (proxy [AbstractHandler] []
                      (handle [target,baseReq,req,rsp]
                        (serviceJetty co req rsp))) ]
@@ -331,11 +330,11 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element 
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element
          ctr(.parent ^Hierarchial co)
+         cp (strim (.getAttr co :contextPath))
          ^Server jetty (.getAttr co :jetty)
          ^File app (.getAttr ctr K_APPDIR)
-         ^String cp (strim (.getAttr co :contextPath))
          ^WebAppContext
          webapp (JettyUtils/newWebAppContext app cp "czchhhiojetty" co)
          logDir (-> (File. app "WEB-INF/logs")(.toURI)(.toURL)(.toString))
@@ -369,14 +368,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeHttpResult ""
-  
+
   [co]
 
   (let [ impl (MakeMMap) ]
-    (.setf! impl :version "HTTP/1.1" )
+    (.setf! impl :cookies (ArrayList.))
     (.setf! impl :code -1)
     (.setf! impl :hds (NCMap.))
-    (.setf! impl :cookies (ArrayList.))
+    (.setf! impl :version "HTTP/1.1" )
     (reify
 
       MubleAPI
@@ -395,31 +394,31 @@
       (getStatus [_] (.getf impl :code))
       (emitter [_] co)
       (addCookie [_ c]
-        (let [ ^List a (.getf impl :cookies) ]
+        (let [ a (.getf impl :cookies) ]
           (when-not (nil? c)
-            (.add a c))))
+            (.add ^List a c))))
 
       (containsHeader [_ nm]
-        (let [ ^NCMap m (.getf impl :hds) ]
-          (.containsKey m nm)))
+        (let [ m (.getf impl :hds) ]
+          (.containsKey ^Map m nm)))
 
       (removeHeader [_ nm]
-        (let [ ^NCMap m (.getf impl :hds) ]
-          (.remove m nm)))
+        (let [ m (.getf impl :hds) ]
+          (.remove ^Map m nm)))
 
       (clearHeaders [_]
-        (let [ ^NCMap m (.getf impl :hds) ]
-          (.clear m)))
+        (let [ m (.getf impl :hds) ]
+          (.clear ^Map m)))
 
       (addHeader [_ nm v]
-        (let [ ^NCMap m (.getf impl :hds)
+        (let [ ^Map m (.getf impl :hds)
                ^List a (.get m nm) ]
           (if (nil? a)
             (.put m nm (doto (ArrayList.) (.add v)))
             (.add a v))))
 
       (setHeader [_ nm v]
-        (let [ ^NCMap m (.getf impl :hds)
+        (let [ ^Map m (.getf impl :hds)
                a (ArrayList.) ]
           (.add a v)
           (.put m nm a)))
@@ -435,7 +434,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cookie-to-javaCookie  ""
-  
+
   [^Cookie c]
 
   (doto (HttpCookie. (.getName c) (.getValue c))
@@ -464,15 +463,16 @@
 
       HTTPEvent
 
-      (getId [_] eid)
       (getCookie [_ nm]
         (let [ lnm (cstr/lower-case nm)
                cs (.getCookies req) ]
           (some (fn [^Cookie c]
                   (if (= lnm (cstr/lower-case (.getName c)))
                     (cookie-to-javaCookie c)
-                    nil) )
-                  (if (nil? cs) [] (seq cs)))) )
+                    nil))
+                (if (nil? cs) [] (seq cs)))) )
+
+      (getId [_] eid)
 
       (getCookies [_]
         (let [ rc (ArrayList.)

@@ -20,9 +20,11 @@
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.impl.defaults])
   (:use [comzotohlabscljc.jmx.core])
-  (:use [comzotohlabscljc.tardis.impl.sys :only [MakeKernel MakePodMeta MakeDeployer] ])
-  (:use [ comzotohlabscljc.util.core :only [LoadJavaProps test-nestr NiceFPath TryC
-                                            ConvLong MakeMMap juid test-nonil] ])
+  (:use [comzotohlabscljc.tardis.impl.sys
+         :only [MakeKernel MakePodMeta MakeDeployer] ])
+  (:use [ comzotohlabscljc.util.core
+         :only [LoadJavaProps test-nestr NiceFPath TryC
+                ConvLong MakeMMap juid test-nonil] ])
   (:use [ comzotohlabscljc.util.str :only [nsb strim hgl?] ])
   (:use [ comzotohlabscljc.util.ini :only [ParseInifile] ])
   (:import (org.apache.commons.io.filefilter DirectoryFileFilter))

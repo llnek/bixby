@@ -27,11 +27,11 @@
   [s]
 
   (reify Work
-             (perform [_ cur job arg]
-               (let [ ^HTTPEvent evt (.event job)
-                      ^HTTPResult res (.getResultObj evt) ]
-                 (.setStatus res s)
-                 (.replyResult evt)))
+     (perform [_ cur job arg]
+       (let [ ^HTTPEvent evt (.event job)
+              ^HTTPResult res (.getResultObj evt) ]
+         (.setStatus res s)
+         (.replyResult evt)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

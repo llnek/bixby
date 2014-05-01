@@ -16,6 +16,9 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.files :only [SaveFile GetFile] ])
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
+  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ])
   (:import (java.io IOException File))
   (:import (io.netty.channel ChannelHandlerContext Channel ChannelPipeline
                              SimpleChannelInboundHandler
@@ -27,10 +30,7 @@
                                      HttpDemux ErrorCatcher))
   (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.google.gson JsonObject JsonElement))
-  (:use [comzotohlabscljc.util.files :only [SaveFile GetFile] ])
-  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
-  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
+  (:import (com.google.gson JsonObject JsonElement)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -41,7 +41,8 @@
 
   [^Channel ch ^JsonObject info ^XData xdata]
 
-  (let [ kalive (and (notnil? info) (-> info (.get "keep-alive")(.getAsBoolean)))
+  (let [ kalive (and (notnil? info)
+                     (-> info (.get "keep-alive")(.getAsBoolean)))
          res (NettyFW/makeHttpReply 200)
          clen (.size xdata) ]
     (HttpHeaders/setHeader res "content-type" "application/octet-stream")
@@ -128,7 +129,7 @@
 (defn MakeMemFileServer "A file server which can get/put files."
 
   ;; returns netty objects if you want to do clean up
-  [^String host port options]
+  [^String host port ^JsonObject options]
 
   (let [ ^ServerBootstrap bs (ServerSide/initServerSide  (fileCfgtor) options)
          ch (ServerSide/start bs host port) ]

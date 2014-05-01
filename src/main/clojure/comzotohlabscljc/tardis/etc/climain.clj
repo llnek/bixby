@@ -19,15 +19,16 @@
   (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
   (:use [comzotohlabscljc.util.process :only [ProcessPid SafeWait] ])
   (:use [comzotohlabscljc.util.meta :only [SetCldr GetCldr] ])
-  (:use [comzotohlabscljc.util.core :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ])
+  (:use [comzotohlabscljc.util.core
+         :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
   (:use [comzotohlabscljc.tardis.impl.exec :only [MakeExecvisor] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.impl.defaults])
-
-  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader RootClassLoader ExecClassLoader))
+  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader
+                                            RootClassLoader ExecClassLoader))
   (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial Startable ))
   (:import (org.jboss.netty.channel Channel ChannelFuture ChannelFutureListener))
   (:import (com.zotohlabs.gallifrey.core ConfigError))
@@ -179,15 +180,16 @@
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (let [ cl (.getf ctx K_EXEC_CZLR)
-         cli (.getf ctx K_CLISH)
-        ^comzotohlabscljc.util.ini.IWin32Conf
+  (let [ ^comzotohlabscljc.util.ini.IWin32Conf
          wc (.getf ctx K_PROPS)
+         cl (.getf ctx K_EXEC_CZLR)
+         cli (.getf ctx K_CLISH)
          cz (.optString wc K_COMPS K_EXECV "") ]
     (test-cond "conf file:exec-visor"
                   (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
     (log/info "inside primodial()")
-    (let [ ^comzotohlabscljc.util.core.MubleAPI execv (MakeExecvisor cli) ]
+    (let [ ^comzotohlabscljc.util.core.MubleAPI
+           execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
       (SynthesizeComponent execv { :ctx ctx } )
       (log/info "Execvisor created and synthesized - OK.")
@@ -202,7 +204,7 @@
 
   (let [ ^File pid (.getf ctx K_PIDFILE)
          execv (.getf ctx K_EXECV) ]
-    (if-not @STOPCLI
+    (when-not @STOPCLI
       (do
         (reset! STOPCLI true)
         (when-not (nil? pid) (FileUtils/deleteQuietly pid))
@@ -261,15 +263,13 @@
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (do
-    (PrintMutableObj ctx)
-    (log/info "applications are now running...")
-    (log/info "system thread paused on promise - awaits delivery.")
-    (deref CLI-TRIGGER) ;; pause here
-    (log/info "promise delivered!")
-    (SafeWait 5000) ;; give some time for stuff to wind-down.
-    (System/exit 0)
-  ))
+  (PrintMutableObj ctx)
+  (log/info "applications are now running...")
+  (log/info "system thread paused on promise - awaits delivery.")
+  (deref CLI-TRIGGER) ;; pause here
+  (log/info "promise delivered!")
+  (SafeWait 5000) ;; give some time for stuff to wind-down.
+  (System/exit 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -301,19 +301,20 @@
 
       (start [this]
         (-> (pre-parse this args)
-          (maybeInizLoaders)
-          (loadConf)
-          (setupResources )
-          (primodial)
-          (start-exec)
-          (writePID)
-          (hookShutdown)
-          (pause-cli)) )
+            (maybeInizLoaders)
+            (loadConf)
+            (setupResources )
+            (primodial)
+            (start-exec)
+            (writePID)
+            (hookShutdown)
+            (pause-cli)) )
 
       (stop [this]
-        (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this) ]
+        (let [ ^comzotohlabscljc.util.core.MubleAPI
+               ctx (getCtx this) ]
           (stop-cli ctx))))
-  ) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -321,13 +322,9 @@
 
   [ & args ]
 
-  (do
-    (when (< (count args) 1)
-      (throw (CmdHelpError. "Skaro Home not defined.")))
-    (log/info "set skaro-home= " (first args))
-    (let [ ^Startable cm  (apply make-climain args) ]
-      (.start cm))
-  ))
+  (when (< (count args) 1) (throw (CmdHelpError. "Skaro Home not defined.")))
+  (log/info "set skaro-home= " (first args))
+  (.start ^Startable (apply make-climain args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

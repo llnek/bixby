@@ -18,29 +18,32 @@
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.util.core :only [MakeMMap Try! TryC] ])
   (:use [comzotohlabscljc.util.str :only [hgl? ] ])
+  (:use [comzotohlabscljc.jmx.names])
+  (:use [comzotohlabscljc.jmx.bean])
   (:import (java.lang.management ManagementFactory))
   (:import (java.net InetAddress MalformedURLException))
   (:import (java.rmi NoSuchObjectException))
   (:import (com.zotohlabs.frwk.core Startable))
   (:import (java.rmi.registry LocateRegistry Registry))
   (:import (java.rmi.server UnicastRemoteObject))
-  (:import (javax.management DynamicMBean JMException MBeanServer ObjectName))
-  (:import (javax.management.remote JMXConnectorServer JMXConnectorServerFactory JMXServiceURL))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:use [comzotohlabscljc.jmx.names])
-  (:use [comzotohlabscljc.jmx.bean]))
+  (:import (javax.management DynamicMBean JMException
+                             MBeanServer ObjectName))
+  (:import (javax.management.remote JMXConnectorServer
+                                    JMXConnectorServerFactory
+                                    JMXServiceURL))
+  (:import (org.apache.commons.lang3 StringUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkJMXrror "" 
-  
+(defn- mkJMXrror ""
+
   [^String msg ^Throwable e]
 
   (throw (doto (JMException. msg) (.initCause e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- startRMI "" 
+(defn- startRMI ""
 
   [ ^comzotohlabscljc.util.core.MubleAPI impl]
 
@@ -53,8 +56,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- startJMX "" 
-  
+(defn- startJMX ""
+
   [ ^comzotohlabscljc.util.core.MubleAPI impl]
 
   (let [ hn (-> (InetAddress/getLocalHost)(.getHostName))
@@ -62,9 +65,9 @@
          ^long port (.getf impl :port)
          ^String host (.getf impl :host)
          endpt (-> "service:jmx:rmi://{{host}}:{{sport}}/jndi/rmi://:{{rport}}/jmxrmi"
-                 (StringUtils/replace "{{host}}" (if (hgl? host) host hn))
-                 (StringUtils/replace "{{sport}}" (str "" port))
-                 (StringUtils/replace "{{rport}}" (str "" regoPort)))
+                   (StringUtils/replace "{{host}}" (if (hgl? host) host hn))
+                   (StringUtils/replace "{{sport}}" (str "" port))
+                   (StringUtils/replace "{{rport}}" (str "" regoPort)))
          url (try
                (JMXServiceURL. endpt)
                (catch Throwable e#
@@ -88,9 +91,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doReg "" 
-  
-  [ ^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
+(defn- doReg ""
+
+  [ ^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean ]
 
   (try
     (.registerMBean svr mbean objName)
@@ -113,8 +116,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJmxServer "" 
-  
+(defn MakeJmxServer ""
+
   [ ^String host]
 
   (let [ objNames (atom [])

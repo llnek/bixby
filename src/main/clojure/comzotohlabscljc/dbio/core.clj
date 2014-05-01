@@ -17,6 +17,11 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:require [clojure.set :as cset])
+  (:require [comzotohlabscljc.crypto.codec :as codec ])
+  (:use [comzotohlabscljc.util.str :only [strim Embeds? nsb HasNocase? hgl?] ])
+  (:use [comzotohlabscljc.util.core
+         :only [TryC Try! RootCause StripNSPath notnil? nnz nbf juid] ])
+  (:use [comzotohlabscljc.util.meta :only [ForName] ])
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.frwk.dbio MetaCache Schema SQLr JDBCPool JDBCInfo))
   (:import (java.sql SQLException DatabaseMetaData Connection Driver DriverManager))
@@ -24,11 +29,7 @@
   (:import (java.lang Math))
   (:import (com.zotohlabs.frwk.dbio DBIOError))
   (:import (com.jolbox.bonecp BoneCP BoneCPConfig))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:require [comzotohlabscljc.crypto.codec :as codec ])
-  (:use [comzotohlabscljc.util.core :only [TryC Try! RootCause StripNSPath notnil? nnz nbf juid] ])
-  (:use [comzotohlabscljc.util.meta :only [ForName] ])
-  (:use [comzotohlabscljc.util.str :only [strim Embeds? nsb HasNocase? hgl?] ]))
+  (:import (org.apache.commons.lang3 StringUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -56,10 +57,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MergeMeta 
-  
-  [m1 m2] 
-  
+(defn MergeMeta
+
+  [m1 m2]
+
   (merge m1 m2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,9 +183,10 @@
 ;;
 (defn DbioModel
 
-  ([^String nm] (DbioModel *ns* nm))
+  ( [^String nm]
+    (DbioModel *ns* nm))
 
-  ([^String nsp ^String nm]
+  ( [^String nsp ^String nm]
     {
       :id (keyword (str nsp "/" nm))
       :table (cstr/upper-case nm)
@@ -201,7 +203,7 @@
 ;;
 (defmacro DefModel!  ""
 
-  [ nsp model-name & body]
+  [ nsp model-name & body ]
 
   `(def ~model-name
      (-> (DbioModel ~nsp ~(name model-name))
@@ -298,17 +300,17 @@
   [fid]
 
   { :column (cstr/upper-case (name fid))
-               :size 255
-               :id fid
-               :domain :String
-               :assoc-key false
-               :pkey false
-               :null true
-               :auto false
-               :dft nil
-               :updatable true
-               :system false
-               :index "" } )
+    :size 255
+    :id fid
+    :domain :String
+    :assoc-key false
+    :pkey false
+    :null true
+    :auto false
+    :dft nil
+    :updatable true
+    :system false
+    :index "" } )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -347,7 +349,7 @@
          a2 (case (:kind ad)
               (:O2O :O2M) (assoc ad :fkey (fmtfkey pid aid))
               (:M2M :MXM) ad
-              (throw (DBIOError. (str "Invalid assoc def " adef))))
+              (DbioError (str "Invalid assoc def " adef)))
          am (:assocs pojo)
          mm (assoc am aid a2) ]
     (assoc pojo :assocs mm)
@@ -388,9 +390,10 @@
   [src des]
 
   (cond
-    (and (map? src)(map? des)) (merge src des)
     (and (set? src)(set? des)) (cset/union src des)
-    :else des))
+    (and (map? src)(map? des)) (merge src des)
+    :else des
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here.
@@ -633,7 +636,8 @@
         (var-set sum
                  (assoc! @sum k
                          (with-meta m
-                                    { :columns cols :fields flds } ) ))))
+                                    { :columns cols
+                                      :fields flds } ) ))))
     (persistent! @sum)
   ))
 
@@ -644,14 +648,16 @@
   ^MetaCache
   [^Schema schema]
 
-  (let [ ms (if (nil? schema) {} (mapize-models (.getModels schema)))
+  (let [ ms (if (nil? schema)
+                {}
+                (mapize-models (.getModels schema)))
          m2 (if (empty? ms)
-              {}
-              (-> (assoc ms JOINED-MODEL-MONIKER dbio-joined-model)
-                  (resolve-parents)
-                  (resolve-assocs)
-                  (assoc BASEMODEL-MONIKER dbio-basemodel)
-                  (meta-models))) ]
+                {}
+                (-> (assoc ms JOINED-MODEL-MONIKER dbio-joined-model)
+                    (resolve-parents)
+                    (resolve-assocs)
+                    (assoc BASEMODEL-MONIKER dbio-basemodel)
+                    (meta-models))) ]
     (reify MetaCache
       (getMetas [_] m2))
   ))
@@ -668,9 +674,10 @@
          url (.getUrl jdbc)
          d (if (hgl? url) (DriverManager/getDriver url))
          p (if (hgl? user)
-               (doto (Properties.) (.put "password" (nsb (.getPwd jdbc)))
-                                   (.put "user" user)
-                                   (.put "username" user))
+               (doto (Properties.)
+                     (.put "password" (nsb (.getPwd jdbc)))
+                     (.put "user" user)
+                     (.put "username" user))
                (Properties.)) ]
     (when (nil? d) (DbioError (str "Can't load Jdbc Url: " url)))
     (when (and (hgl? dv)
@@ -693,7 +700,7 @@
                   (DriverManager/getConnection url)) ]
     (when (nil? conn) (DbioError (str "Failed to create db connection: " url)))
     (doto conn
-      (.setTransactionIsolation  Connection/TRANSACTION_READ_COMMITTED))
+          (.setTransactionIsolation Connection/TRANSACTION_READ_COMMITTED))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -726,14 +733,14 @@
 
   (let [ md (.getMetaData conn) ]
     (-> { :id (maybeGetVendor (.getDatabaseProductName md)) }
-      (assoc :version (.getDatabaseProductVersion md))
-      (assoc :name (.getDatabaseProductName md))
-      (assoc :quote-string (.getIdentifierQuoteString md))
-      (assoc :url (.getURL md))
-      (assoc :user (.getUserName md))
-      (assoc :lcis (.storesLowerCaseIdentifiers md))
-      (assoc :ucis (.storesUpperCaseIdentifiers md))
-      (assoc :mcis (.storesMixedCaseIdentifiers md)))
+        (assoc :version (.getDatabaseProductVersion md))
+        (assoc :name (.getDatabaseProductName md))
+        (assoc :quote-string (.getIdentifierQuoteString md))
+        (assoc :url (.getURL md))
+        (assoc :user (.getUserName md))
+        (assoc :lcis (.storesLowerCaseIdentifiers md))
+        (assoc :ucis (.storesUpperCaseIdentifiers md))
+        (assoc :mcis (.storesMixedCaseIdentifiers md)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -760,13 +767,15 @@
     (Try!
       (let [ mt (.getMetaData conn)
              tbl (cond
-                    (.storesUpperCaseIdentifiers mt) (cstr/upper-case table)
-                    (.storesLowerCaseIdentifiers mt) (cstr/lower-case table)
+                    (.storesUpperCaseIdentifiers mt)
+                    (cstr/upper-case table)
+                    (.storesLowerCaseIdentifiers mt)
+                    (cstr/lower-case table)
                     :else table) ]
         (with-open [ res (.getColumns mt nil nil tbl nil) ]
           (when (and (notnil? res) (.next res))
             (var-set rc true)))
-        ))
+      ))
     @rc
   ))
 
@@ -792,7 +801,8 @@
 
   (with-local-vars [ rc false ]
     (Try!
-      (let [ sql (str "SELECT COUNT(*) FROM  " (cstr/upper-case table)) ]
+      (let [ sql (str "SELECT COUNT(*) FROM  "
+                      (cstr/upper-case table)) ]
         (with-open [ stmt (.createStatement conn) ]
           (with-open [ res (.executeQuery stmt sql) ]
             (when (and (notnil? res) (.next res))
@@ -829,8 +839,10 @@
                     :pkey (clojure.core/contains? @pkeys cn) })
               (.next rs)))
         )))
-    (with-meta @cms { :supportsGetGeneratedKeys (.supportsGetGeneratedKeys mt)
-                      :supportsTransactions (.supportsTransactions mt) } )
+    (with-meta @cms { :supportsGetGeneratedKeys
+                      (.supportsGetGeneratedKeys mt)
+                      :supportsTransactions
+                      (.supportsTransactions mt) } )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -839,12 +851,15 @@
 
   [^Connection conn ^String table]
 
-  (let [ mt (.getMetaData conn) dbv (ResolveVendor conn)
+  (let [ dbv (ResolveVendor conn)
+         mt (.getMetaData conn)
          catalog nil
          schema (if (= (:id dbv) :oracle) "%" nil)
          tbl (cond
-                (.storesUpperCaseIdentifiers mt) (cstr/upper-case table)
-                (.storesLowerCaseIdentifiers mt) (cstr/lower-case table)
+                (.storesUpperCaseIdentifiers mt)
+                (cstr/upper-case table)
+                (.storesLowerCaseIdentifiers mt)
+                (cstr/lower-case table)
                 :else table) ]
     ;; not good, try mixed case... arrrrrrrrrrhhhhhhhhhhhhhh
     ;;rs = m.getTables( catalog, schema, "%", null)
@@ -880,30 +895,30 @@
 ;;
 (defn MakeDbPool ""
 
-  ([^JDBCInfo jdbc] (MakeDbPool jdbc {}))
+  ( [^JDBCInfo jdbc]
+    (MakeDbPool jdbc {}))
 
-  ([^JDBCInfo jdbc options]
-    (let [ bcf (BoneCPConfig.)
-           ^String dv (.getDriver jdbc) ]
+  ( [^JDBCInfo jdbc options]
+    (let [ ^String dv (.getDriver jdbc)
+           bcf (BoneCPConfig.) ]
       ;;(log/debug "Driver : " dv)
       ;;(log/debug "URL : "  (.getUrl jdbc))
       (when (hgl? dv) (ForName dv))
       (doto bcf
-        (.setPartitionCount (Math/max 1 (nnz (:partitions options))))
-        (.setLogStatementsEnabled (nbf (:debug options)))
-        (.setPassword (nsb (.getPwd jdbc)))
-        (.setJdbcUrl (.getUrl jdbc))
-        (.setUsername (.getUser jdbc))
-        (.setIdleMaxAgeInSeconds (* 60 60 24)) ;; 1 day
-        (.setMaxConnectionsPerPartition (Math/max 2 (nnz (:max-conns options))))
-        (.setMinConnectionsPerPartition (Math/max 1 (nnz (:min-conns options))))
-        (.setPoolName (juid))
-        (.setAcquireRetryDelayInMs 5000)
-        (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
-        (.setDefaultAutoCommit false)
-        (.setAcquireRetryAttempts 1))
-      (makePool jdbc (BoneCP. bcf)))
-  ))
+            (.setPartitionCount (Math/max 1 (nnz (:partitions options))))
+            (.setLogStatementsEnabled (nbf (:debug options)))
+            (.setPassword (nsb (.getPwd jdbc)))
+            (.setJdbcUrl (.getUrl jdbc))
+            (.setUsername (.getUser jdbc))
+            (.setIdleMaxAgeInSeconds (* 60 60 24)) ;; 1 day
+            (.setMaxConnectionsPerPartition (Math/max 2 (nnz (:max-conns options))))
+            (.setMinConnectionsPerPartition (Math/max 1 (nnz (:min-conns options))))
+            (.setPoolName (juid))
+            (.setAcquireRetryDelayInMs 5000)
+            (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
+            (.setDefaultAutoCommit false)
+            (.setAcquireRetryAttempts 1))
+      (makePool jdbc (BoneCP. bcf)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -938,13 +953,13 @@
          ee (RootCause e)
          ec (if (instance? SQLException ee) (.getErrorCode ^SQLException ee) nil) ]
     (if (nil? ec)
-      (throw e)
-      (cond
-        (and oracle (= 942 ec)(= 1418 ec)(= 2289 ec)(= 0 ec))
-        true
+        (throw e)
+        (cond
+          (and oracle (= 942 ec)(= 1418 ec)(= 2289 ec)(= 0 ec))
+          true
 
-        :else
-        (throw e)))
+          :else
+          (throw e)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1060,12 +1075,11 @@
          pid (:typeid (meta rhs))
          fv (:rowid (meta lhs))
          fid (:fkey ac)
-         x (->
-              (DbioCreateObj pid)
-              (DbioSetFld fid fv)
-              (vary-meta MergeMeta
-                { :rowid (:rowid (meta rhs))
-                  :verid (:verid (meta rhs)) } ))
+         x (-> (DbioCreateObj pid)
+               (DbioSetFld fid fv)
+               (vary-meta MergeMeta
+                 { :rowid (:rowid (meta rhs))
+                   :verid (:verid (meta rhs)) } ))
          y (.update sql x) ]
     [lhs (merge y (dissoc rhs fid)) ]
   ))

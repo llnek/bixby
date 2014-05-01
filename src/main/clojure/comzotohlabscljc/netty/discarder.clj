@@ -16,6 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
+  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ])
   (:import (java.io IOException File))
   (:import (io.netty.buffer Unpooled))
   (:import (io.netty.util Attribute AttributeKey CharsetUtil))
@@ -37,9 +39,7 @@
                                      HttpDemux ErrorCatcher))
   (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.google.gson JsonObject JsonElement))
-  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
-  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
+  (:import (com.google.gson JsonObject JsonElement)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +50,7 @@
 (defn- discardHandler ""
 
   ^ChannelHandler
-  [^com.zotohlabs.frwk.core.Callable callback]
+  [callback]
 
   (proxy [SimpleChannelInboundHandler][]
     (channelRead0 [ c msg ]
@@ -58,8 +58,8 @@
             ch (.channel ctx) ]
         (when (instance? LastHttpContent msg)
           (NettyFW/replyXXX ch 200)
-          (when-not (nil? callback)
-            (Try! (.call callback nil))))))
+          (when (fn? callback)
+            (Try! (apply callback nil))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +84,7 @@
 ;;
 (defn MakeDiscardHTTPD "Just returns 200 OK"
 
-  [^String host port options callback]
+  [^String host port ^JsonObject options callback]
 
   (let [ ^ServerBootstrap bs (ServerSide/initServerSide (discarder callback) options)
          ch (ServerSide/start bs host port) ]

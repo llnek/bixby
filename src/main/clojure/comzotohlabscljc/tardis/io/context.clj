@@ -19,8 +19,7 @@
    :name comzotohlabscljc.tardis.io.WebContext
    :init myInit
    :constructors {[] []}
-   :state myState
-  )
+   :state myState)
 
   (:import (javax.servlet ServletContextListener ServletContext ServletContextEvent))
   (:import (java.io File))
@@ -34,7 +33,8 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* false)
+;; complains about myState :(
+(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -44,7 +44,8 @@
 
   (let [ webinf (File. (.getRealPath ctx "/WEB-INF/"))
          root (.getParentFile webinf) ]
-    nil))
+    nil
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -84,5 +85,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private context-eof nil)
-
 

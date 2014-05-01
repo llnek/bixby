@@ -16,12 +16,13 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI))
-  (:import (java.sql Connection))
   (:use [comzotohlabscljc.util.core :only [test-nonil notnil? Try!] ])
   (:use [comzotohlabscljc.util.str :only [hgl?] ])
   (:require  [comzotohlabscljc.dbio.core :as dbcore :only [ese] ])
-  (:require [comzotohlabscljc.dbio.sql :as dbsql ]))
+  (:require [comzotohlabscljc.dbio.sql :as dbsql ])
+
+  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI))
+  (:import (java.sql Connection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -72,7 +73,7 @@
       (execute [_ sql pms] (.doExecute proc conn sql pms) )
 
       (countAll [_ model] (.doCount proc conn model) )
-      (purge [_ model] (.doPurge proc conn model) )  
+      (purge [_ model] (.doPurge proc conn model) )
   )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -83,8 +84,8 @@
   [ ^MetaCache metaCache ^DBAPI db ]
 
   (let [ proc (dbsql/MakeProc metaCache db) ]
-    (test-nonil "sql-proc!" proc)
     (test-nonil "meta-cache" metaCache)
+    (test-nonil "sql-proc!" proc)
     (test-nonil "dbapi" db)
     (reify Transactable
 
@@ -109,7 +110,7 @@
           (.setAutoCommit conn false)
           ;;(.setTransactionIsolation conn Connection/TRANSACTION_READ_COMMITTED)
           (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)
-          conn))   
+          conn))
   )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -35,8 +34,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSocketIO "" 
-  
+(defn MakeSocketIO ""
+
   [container]
 
   (MakeEmitter container :czc.tardis.io/SocketIO))
@@ -64,7 +63,7 @@
         (emitter [_] co)
         (dispose [_] (IOUtils/closeQuietly soc)))
 
-      { :typeid :czc.tardis.io/SocketEvent } 
+      { :typeid :czc.tardis.io/SocketEvent }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,7 +93,9 @@
   (let [ backlog (.getAttr co :backlog)
          host (.getAttr co :host)
          port (.getAttr co :port)
-         ip (if (hgl? host) (InetAddress/getByName host) (InetAddress/getLocalHost))
+         ip (if (hgl? host)
+                (InetAddress/getByName host)
+                (InetAddress/getLocalHost))
          soc (ServerSocket. port backlog ip) ]
     (log/info "opened Server Socket " soc  " (bound?) " (.isBound soc))
     (doto soc (.setReuseAddress true))
@@ -104,12 +105,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sockItDown ""
-  
+
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co ^Socket soc]
 
-  (let []
-    (.dispatch co (IOESReifyEvent co soc) {} )
-  ))
+  (.dispatch co (IOESReifyEvent co soc) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -120,7 +119,7 @@
   (let [ ^ServerSocket ssoc (.getAttr co :ssocket)
          cl (GetCldr) ]
     (when-not (nil? ssoc)
-      (Coroutine (fn [] 
+      (Coroutine (fn []
                    (while (.isBound ssoc)
                      (try
                        (sockItDown co (.accept ssoc))

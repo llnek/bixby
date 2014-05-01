@@ -27,9 +27,10 @@
   (:use [comzotohlabscljc.tardis.io.netty])
   (:use [comzotohlabscljc.tardis.io.socket])
   (:use [comzotohlabscljc.tardis.mvc.handler])
-  (:use [comzotohlabscljc.tardis.impl.defaults :rename {Enabled? blockmeta-enabled?
-                                                        start kernel-start
-                                                        stop kernel-stop } ])
+  (:use [comzotohlabscljc.tardis.impl.defaults
+         :rename {Enabled? blockmeta-enabled?
+                  start kernel-start
+                  stop kernel-stop } ])
   (:use [comzotohlabscljc.tardis.etc.misc])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap] ])
@@ -41,7 +42,8 @@
   (:use [ comzotohlabscljc.util.meta :only [MakeObj] ])
   (:use [ comzotohlabscljc.crypto.codec :only [Pwdify] ])
   (:use [ comzotohlabscljc.dbio.connect :only [DbioConnect] ])
-  (:use [ comzotohlabscljc.dbio.core :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
+  (:use [ comzotohlabscljc.dbio.core
+         :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
   (:use [ comzotohlabscljc.net.rts :only [LoadRoutes] ])
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
@@ -52,7 +54,8 @@
   (:import (com.zotohlabs.gallifrey.runtime AppMain))
   (:import (com.zotohlabs.gallifrey.etc PluginFactory Plugin))
   (:import (com.zotohlabs.frwk.dbio MetaCache Schema DBIOLocal DBAPI))
-  (:import (com.zotohlabs.frwk.core Versioned Hierarchial Startable Disposable Identifiable ))
+  (:import (com.zotohlabs.frwk.core Versioned Hierarchial
+                                    Startable Disposable Identifiable ))
   (:import (com.zotohlabs.frwk.server ComponentRegistry Component ServiceError ))
   (:import (com.zotohlabs.gallifrey.core Container ConfigError ))
   (:import (com.zotohlabs.gallifrey.io IOEvent))
@@ -152,7 +155,7 @@
               (catch Throwable e#
                 (-> (MakeFatalErrorFlow job) (.start)))))))
 
-      { :typeid (keyword "czc.tardis.impl/JobCreator") } 
+      { :typeid (keyword "czc.tardis.impl/JobCreator") }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,8 +172,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-service-block 
-  
+(defn- make-service-block
+
   [^Identifiable bk container nm cfg]
 
   (let [ eid (.id bk)
@@ -195,9 +198,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getDBAPI? 
-  
-  ^DBAPI 
+(defn- getDBAPI?
+
+  ^DBAPI
   [^String mkey cfg ^String pkey mcache]
 
   (let [ ^Map c (.get (DBIOLocal/getCache))
@@ -212,7 +215,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBAPI ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co ^String gid]
 
   (let [ pkey (.getAppKey ^Container co)
@@ -229,7 +232,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- releaseSysResources ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ ^Schedulable sc (.getAttr co K_SCHEDULER)
@@ -242,7 +245,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- make-app-container ""
-  
+
   [pod]
 
   (let [ ftlCfg (Configuration.)
@@ -404,7 +407,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeContainer ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element pod]
 
   (let [ c (make-app-container pod)
@@ -461,7 +464,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doCljApp ""
-  
+
   [ctr opts ^comzotohlabscljc.tardis.impl.ext.CljAppMain obj]
 
   (.contextualize obj ctr)
@@ -471,7 +474,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doJavaApp ""
-  
+
   [^comzotohlabscljc.tardis.core.sys.Element ctr ^AppMain obj]
 
   (let [ ^File cfg (.getAttr ctr K_APPCONF_FP)
@@ -483,8 +486,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- fmtPluginFname ""
-  
-  ^File 
+
+  ^File
   [^String v ^File appDir]
 
   (let [ fnn (StringUtils/replace v "." "")
@@ -495,7 +498,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- plugin-inited? ""
-  
+
   [^String v ^File appDir]
 
   (let [ pfile (fmtPluginFname v appDir) ]
@@ -505,7 +508,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- post-init-plugin ""
-  
+
   [^String v ^File appDir]
 
   (let [ pfile (fmtPluginFname v appDir) ]
@@ -516,8 +519,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doOnePlugin ""
-  
-  ^Plugin 
+
+  ^Plugin
   [co ^String v ^File appDir env app]
 
   (let [ ^PluginFactory pf (MakeObj v)

@@ -16,6 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
+  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ])
   (:import (java.io IOException File))
   (:import (io.netty.buffer Unpooled))
   (:import (io.netty.util Attribute AttributeKey CharsetUtil))
@@ -37,9 +39,7 @@
                                      HttpDemux ErrorCatcher))
   (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.google.gson JsonObject JsonElement))
-  (:use [comzotohlabscljc.util.core :only [notnil? Try! TryC] ])
-  (:use [comzotohlabscljc.util.str :only [strim nsb hgl?] ]))
+  (:import (com.google.gson JsonObject JsonElement)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,15 +50,15 @@
 (defn- writeReply ""
 
   [^ChannelHandlerContext ctx
-   ^HttpContent curObj
    ^StringBuilder cookieBuf
-   ^StringBuilder buf]
+   ^StringBuilder buf
+   ^HttpContent curObj ]
 
   (let [ ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
          response (DefaultFullHttpResponse.
                     (HttpVersion/HTTP_1_1)
                     (HttpResponseStatus/OK)
-                    (Unpooled/copiedBuffer (.toString buf) (CharsetUtil/UTF_8)))
+                    (Unpooled/copiedBuffer (nsb buf) (CharsetUtil/UTF_8)))
          clen (-> response (.content)(.readableBytes)) ]
 
     (-> response (.headers)(.set "content-type" "text/plain; charset=UTF-8"))
@@ -66,7 +66,7 @@
 
     (when ka (-> response (.headers)(.set "connection" "keep-alive")))
 
-    (let [ cs (CookieDecoder/decode (.toString cookieBuf)) ]
+    (let [ cs (CookieDecoder/decode (nsb cookieBuf)) ]
       (if (.isEmpty cs)
         (do
           (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode "key1" "value1")))
@@ -74,9 +74,9 @@
         (doseq [ v (seq cs) ]
           (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode ^Cookie v))))))
 
-    (.write ctx response)
     (.setLength cookieBuf 0)
     (.setLength buf 0)
+    (.write ctx response)
 
   ))
 
@@ -85,9 +85,9 @@
 (defn- handleReq ""
 
   [^ChannelHandlerContext ctx
-   ^HttpRequest req
    ^StringBuilder cookieBuf
-   ^StringBuilder buf]
+   ^StringBuilder buf
+   ^HttpRequest req ]
 
   (let [ dc (QueryStringDecoder. (.getUri req))
          ka (HttpHeaders/isKeepAlive req)
@@ -95,17 +95,17 @@
          pms (.parameters dc) ]
     (-> (.attr ctx (AttributeKey. "keepalive"))(.set ka))
     (doto buf
-      (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
-      (.append "===================================\r\n")
-      (.append "VERSION: ")
-      (.append (.getProtocolVersion req))
-      (.append "\r\n")
-      (.append "HOSTNAME: ")
-      (.append (HttpHeaders/getHost req "unknown"))
-      (.append "\r\n")
-      (.append "REQUEST_URI: ")
-      (.append (.getUri req))
-      (.append "\r\n\r\n"))
+          (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
+          (.append "===================================\r\n")
+          (.append "VERSION: ")
+          (.append (.getProtocolVersion req))
+          (.append "\r\n")
+          (.append "HOSTNAME: ")
+          (.append (HttpHeaders/getHost req "unknown"))
+          (.append "\r\n")
+          (.append "REQUEST_URI: ")
+          (.append (.getUri req))
+          (.append "\r\n\r\n"))
     (reduce (fn [memo ^String n]
               (doto buf
                 (.append "HEADER: ")
@@ -135,9 +135,9 @@
 (defn- handlec ""
 
   [^ChannelHandlerContext ctx
-   ^HttpContent msg
    ^StringBuilder cookieBuf
-   ^StringBuilder buf]
+   ^StringBuilder buf
+   ^HttpContent msg]
 
   (let [ content (.content msg) ]
     (when (.isReadable content)
@@ -161,7 +161,7 @@
                   nil
                   (.names thds))
           (.append buf "\r\n")))
-      (writeReply ctx msg cookieBuf buf))
+      (writeReply ctx cookieBuf buf msg))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,8 +176,8 @@
     (proxy [SimpleChannelInboundHandler][]
       (channelRead0 [ ctx msg ]
         (cond
-          (instance? HttpRequest msg) (handleReq ctx msg cookies buf)
-          (instance? HttpContent msg) (handlec ctx msg cookies buf)
+          (instance? HttpRequest msg) (handleReq ctx cookies buf msg)
+          (instance? HttpContent msg) (handlec ctx cookies buf msg)
           :else nil)))
   ))
 
@@ -204,7 +204,7 @@
 ;; Sample Snooper HTTPD
 (defn MakeSnoopHTTPD ""
 
-  [^String host port options]
+  [^String host port ^JsonObject options]
 
   (let [ ^ServerBootstrap bs (ServerSide/initServerSide (snooper) options)
          ch (ServerSide/start bs host port) ]

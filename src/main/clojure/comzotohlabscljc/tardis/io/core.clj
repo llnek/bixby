@@ -14,6 +14,11 @@
 
   comzotohlabscljc.tardis.io.core
 
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE MakeMMap TryC] ])
+
   (:import (com.zotohlabs.frwk.server Component Service))
   (:import (java.util.concurrent ConcurrentHashMap))
 
@@ -21,12 +26,8 @@
                                     Identifiable Disposable Startable))
   (:import (com.zotohlabs.gallifrey.core Container))
   (:import (com.zotohlabs.gallifrey.io ServletEmitter Emitter))
-  (:import (java.util Map))
+  (:import (java.util Map)))
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.tardis.core.sys])
-  (:use [comzotohlabscljc.util.core :only [MakeMMap TryC] ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -36,6 +37,7 @@
 (defprotocol EmitterAPI
 
   ""
+  (dispatch [_ evt options] )
 
   (enabled? [_] )
   (active? [_] )
@@ -44,8 +46,7 @@
   (resume [_] )
 
   (release [_ wevt] )
-  (hold [_ wevt] )
-  (dispatch [_ ev options] ))
+  (hold [_ wevt] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,7 +135,7 @@
 
   [co]
 
-  (throw (IOException. "Not Implemented")))
+  (ThrowIOE "Not Implemented"))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +144,7 @@
 
   [co]
 
-  (throw (IOException. "Not Implemented")))
+  (ThrowIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,7 +163,7 @@
         (setCtx! [_ x] (.setf! impl :ctx x))
         (getCtx [_] (.getf impl :ctx))
         (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clr! impl a) )
+        (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
 
         Component
@@ -200,6 +201,10 @@
         (suspend [this] (IOESSuspend this))
         (resume [this] (IOESResume this))
 
+        (dispatch [_ ev options]
+          (TryC
+              (.notifyObservers parObj ev options) ))
+
         (release [_ wevt]
           (when-not (nil? wevt)
             (let [ wid (.id ^Identifiable wevt)
@@ -212,13 +217,11 @@
             (let [ wid (.id ^Identifiable wevt)
                    b (.getf impl :backlog) ]
               (log/debug "emitter holding an event with id: " wid)
-              (.put ^Map b wid wevt))))
+              (.put ^Map b wid wevt)))) )
 
-        (dispatch [_ ev options]
-          (TryC
-              (.notifyObservers parObj ev options) )) )
+      { :typeid emId }
 
-      { :typeid emId } )))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

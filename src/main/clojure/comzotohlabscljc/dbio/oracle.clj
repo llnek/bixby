@@ -28,13 +28,13 @@
   [db table col]
 
   (str "CREATE OR REPLACE TRIGGER TRIG_" table "\n"
-        "BEFORE INSERT ON " table "\n"
-        "REFERENCING NEW AS NEW\n"
-        "FOR EACH ROW\n"
-        "BEGIN\n"
-        "SELECT SEQ_" table ".NEXTVAL INTO :NEW."
-        col " FROM DUAL;\n"
-        "END" (GenExec db) "\n\n"))
+       "BEFORE INSERT ON " table "\n"
+       "REFERENCING NEW AS NEW\n"
+       "FOR EACH ROW\n"
+       "BEGIN\n"
+       "SELECT SEQ_" table ".NEXTVAL INTO :NEW."
+       col " FROM DUAL;\n"
+       "END" (GenExec db) "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -44,7 +44,7 @@
 
   (str "CREATE SEQUENCE SEQ_" table
        " START WITH 1 INCREMENT BY 1"
-          (GenExec db) "\n\n"))
+       (GenExec db) "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Oracle
@@ -60,10 +60,8 @@
 
   [db table fld]
 
-  (do
-    (.put ^Map *DDL_BVS* table (:column fld))
-    (GenInteger db fld)
-  ))
+  (.put ^Map *DDL_BVS* table (:column fld))
+  (GenInteger db fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,10 +69,8 @@
 
   [db table fld]
 
-  (do
-    (.put ^Map *DDL_BVS* table (:column fld))
-    (GenLong db fld)
-  ))
+  (.put ^Map *DDL_BVS* table (:column fld))
+  (GenLong db fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,7 +78,8 @@
 
   [db]
 
-  (let [ m (into {} *DDL_BVS*) bf (StringBuilder.) ]
+  (let [ m (into {} *DDL_BVS*)
+         bf (StringBuilder.) ]
     (doseq [ en (seq m) ]
       (doto bf
         (.append (create_sequence db (first en)))

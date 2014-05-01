@@ -18,6 +18,7 @@
   (:require [clojure.data.json :as json])
   (:use [comzotohlabscljc.util.files :only [Unzip] ])
   (:use [comzotohlabscljc.util.core :only [juid IsWindows?] ])
+  (:use [comzotohlabscljc.util.str :only [strim nsb] ])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.etc.task])
@@ -53,8 +54,8 @@
   [appDomain]
 
   (-> appDomain
-    (StringUtils/stripStart ".")
-    (StringUtils/stripEnd ".")
+      (StringUtils/stripStart ".")
+      (StringUtils/stripEnd ".")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,9 +67,9 @@
   (let [ prog2 (.getCanonicalPath (File. hhhHome "bin/skaro.bat"))
          prog (.getCanonicalPath (File. hhhHome "bin/skaro"))
          pj (if (IsWindows?)
-              (MakeExecTask "cmd.exe" hhhHome
+                (MakeExecTask "cmd.exe" hhhHome
                              [ "/C" "start" "/B" "/MIN" prog2 "start" ])
-              (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
+                (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
     (ExecProj pj)
   ))
 
@@ -129,7 +130,7 @@
     (log/debug "Unzipping all samples.")
     (doseq [ ^File f (seq fs) ]
       (when (and (.isFile f) (.endsWith (.getName f) ".pod"))
-        (CreateDemo hhhHome (FilenameUtils/getBaseName (.toString f)))))
+        (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

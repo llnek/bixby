@@ -39,24 +39,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-repeat-timer "" 
-  
+(defn- config-repeat-timer ""
+
   [^Timer tm delays intv func]
 
   (let [ tt (proxy [TimerTask][]
               (run []
-                (TryC
-                    (when (fn? func) (func)))))
+                (TryC (when (fn? func) (func)))))
          [^Date dw ^long ds] delays ]
     (when (instance? Date dw)
       (.schedule tm tt dw ^long intv) )
     (when (number? ds)
-      (.schedule tm tt ds ^long intv))) )
+      (.schedule tm tt ds ^long intv))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-timer "" 
-  
+(defn- config-timer ""
+
   [^Timer tm delays func]
 
   (let [ tt (proxy [TimerTask][]
@@ -66,12 +66,13 @@
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)
-      (.schedule tm tt ds))) )
+      (.schedule tm tt ds))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-timertask "" 
-  
+(defn- config-timertask ""
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ intv (.getAttr co :intervalMillis)
@@ -87,8 +88,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CfgLoopable "" 
-  
+(defn CfgLoopable ""
+
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
   (let [ intv (:interval-secs cfg)
@@ -107,35 +108,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start-timer "" 
-  
+(defn- start-timer ""
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (do
-    (.setAttr! co :timer (Timer. true))
-    (LoopableSchedule co)))
+  (.setAttr! co :timer (Timer. true))
+  (LoopableSchedule co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- kill-timer "" 
-  
+(defn- kill-timer ""
+
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ ^Timer t (.getAttr co :timer) ]
     (TryC
-        (when-not (nil? t) (.cancel t)) )))
+        (when-not (nil? t) (.cancel t)) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Repeating Timer
 (defn MakeRepeatingTimer ""
-  
+
   [container]
 
   (MakeEmitter container :czc.tardis.io/RepeatingTimer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReify-event :czc.tardis.io/RepeatingTimer
+(defmethod IOESReifyEvent :czc.tardis.io/RepeatingTimer
 
   [co & args]
 
@@ -153,7 +154,7 @@
         (emitter [_] co)
         (isRepeating [_] true))
 
-      { :typeid :czc.tardis.io/TimerEvent } 
+      { :typeid :czc.tardis.io/TimerEvent }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -192,13 +193,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod LoopableSchedule :default [co]
+(defmethod LoopableSchedule :default
+
+  [co]
+
   (config-timertask co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Once Timer
 (defn MakeOnceTimer ""
-  
+
   [container]
 
   (MakeEmitter container :czc.tardis.io/OnceTimer))
@@ -223,7 +227,7 @@
         (emitter [_] co)
         (isRepeating [_] false))
 
-      { :typeid :czc.tardis.io/TimerEvent } 
+      { :typeid :czc.tardis.io/TimerEvent }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -259,10 +263,8 @@
 
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
 
-  (do
-    (.dispatch co (IOESReifyEvent co) {} )
-    (.stop ^Startable co)
-  ))
+  (.dispatch co (IOESReifyEvent co) {} )
+  (.stop ^Startable co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Threaded Timer
@@ -276,12 +278,11 @@
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ intv (.getAttr co :intervalMillis)
-         cl (GetCldr)
          loopy (atom true)
-         func (fn []
-                (Coroutine (fn []
-                             (while @loopy (LoopableWakeup co intv)))
-                           cl)) ]
+         cl (GetCldr)
+         func (fn [] (Coroutine (fn []
+                                  (while @loopy
+                                    (LoopableWakeup co intv))) cl)) ]
     (.setAttr! co :loopy loopy)
     (log/info "threaded one timer - interval = " intv)
     (func)
@@ -293,11 +294,8 @@
 
   [co & args]
 
-  (do
-    (TryC
-        (LoopableOneLoop co) )
-    (SafeWait (first args) )
-  ))
+  (TryC (LoopableOneLoop co) )
+  (SafeWait (first args) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -305,16 +303,16 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ds (.getAttr co :delayMillis)
+  (let [ intv (.getAttr co :intervalMillis)
+         ds (.getAttr co :delayMillis)
          dw (.getAttr co :delayWhen)
-         intv (.getAttr co :intervalMillis)
          loopy (atom true)
          cl (GetCldr)
          func (fn [] (LoopableSchedule co)) ]
     (.setAttr! co :loopy loopy)
     (if (or (number? ds) (instance? Date dw))
-      (config-timer (Timer.) [dw ds] func)
-      (func))
+        (config-timer (Timer.) [dw ds] func)
+        (func))
     (IOESStarted co)
   ))
 

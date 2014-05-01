@@ -19,10 +19,12 @@
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.impl.ext])
-  (:use [comzotohlabscljc.tardis.impl.defaults :rename {Enabled? blockmeta-enabled?
-                                                        Start kernel-start
-                                                        Stop kernel-stop}])
-  (:use [ comzotohlabscljc.util.core :only [MakeMMap TryC NiceFPath notnil? NewRandom] ])
+  (:use [comzotohlabscljc.tardis.impl.defaults
+         :rename {Enabled? blockmeta-enabled?
+                  Start kernel-start
+                  Stop kernel-stop}])
+  (:use [ comzotohlabscljc.util.core
+         :only [MakeMMap TryC NiceFPath notnil? NewRandom] ])
   (:use [ comzotohlabscljc.util.str :only [strim] ])
   (:use [ comzotohlabscljc.util.process :only [SafeWait] ])
   (:use [ comzotohlabscljc.util.files :only [Unzip] ])
@@ -30,10 +32,10 @@
   (:use [ comzotohlabscljc.util.seqnum :only [NextLong] ] )
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
-
-  (:import (com.zotohlabs.frwk.core Disposable Identifiable Hierarchial Versioned Startable))
-  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
+  (:import (com.zotohlabs.frwk.core Disposable Identifiable
+                                    Hierarchial Versioned Startable))
   (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
+  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
   (:import (java.net URL))
   (:import (java.io File))
   (:import (java.security SecureRandom))
@@ -93,11 +95,10 @@
 
   [co ctx]
 
-  (do
-    (PrecondDir (MaybeDir ctx K_BASEDIR))
-    ;;(precondDir (maybeDir ctx K_PODSDIR))
-    (PrecondDir (MaybeDir ctx K_PLAYDIR))
-    (CompCloneContext co ctx)))
+  (PrecondDir (MaybeDir ctx K_BASEDIR))
+  ;;(precondDir (maybeDir ctx K_PODSDIR))
+  (PrecondDir (MaybeDir ctx K_PLAYDIR))
+  (CompCloneContext co ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

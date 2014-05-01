@@ -9,11 +9,10 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.mvc.tpls
+  comzotohlabscljc.tardis.mvc.templates
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
@@ -21,7 +20,8 @@
   (:use [comzotohlabscljc.util.mime :only [GuessContentType] ])
   (:use [comzotohlabscljc.util.io :only [Streamify] ])
 
-  (:import (org.jboss.netty.handler.codec.http HttpMethod HttpHeaders HttpResponseStatus
+  (:import (org.jboss.netty.handler.codec.http HttpMethod HttpHeaders
+                                               HttpResponseStatus
                                                HttpRequest HttpResponse))
   (:import (org.jboss.netty.handler.stream ChunkedFile ChunkedStream ChunkedInput ))
   (:import (org.jboss.netty.channel ChannelFuture ChannelFutureListener Channel))
@@ -35,18 +35,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- make-webcontent ""
-  
+
   [^String cType bits]
 
   (reify
     WebContent
     (contentType [_] cType)
-    (body [_] bits)))
+    (body [_] bits)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getLocalFile ""
-  
+(defn GetLocalFile ""
+
   [^File appDir ^String fname]
 
   (let [ f (File. appDir fname) ]
@@ -60,7 +61,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeCache ""
-  
+
   [^File fp]
 
   (let [ ^String fpath (cstr/lower-case (NiceFPath fp)) ]
@@ -69,7 +70,8 @@
         (.endsWith fpath ".jpg")
         (.endsWith fpath ".jpeg")
         (.endsWith fpath ".png")
-        (.endsWith fpath ".js"))))
+        (.endsWith fpath ".js"))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,12 +89,13 @@
       (getFile [_] file)
       (getTS [_] ts)
       (size [_] (alength bits))
-      (getBytes [_] bits) )))
+      (getBytes [_] bits) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- fetchAndSetAsset ""
-  
+
   [^HashMap cache fp ^File file]
 
   (let [ wa (if (and (.exists file)
@@ -111,7 +114,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getAsset ""
-  
+
   [^File file]
 
   (let [ cache (AssetCache/get)
@@ -164,28 +167,26 @@
       (log/debug "serving file: " (.getName file) " with clen= " @clen ", ctype= " @ct)
       (try
         (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
-          (var-set clen 0))
+              (var-set clen 0))
         (HttpHeaders/setContentLength rsp @clen)
         (HttpHeaders/addHeader rsp "Accept-Ranges" "bytes")
         (HttpHeaders/setHeader rsp "Content-Type" @ct)
         (var-set wf (.write ch rsp))
         (when-not (= (.getMethod req) HttpMethod/HEAD)
-          (var-set wf (.write ch @inp)))
-        (.addListener ^ChannelFuture @wf 
+                  (var-set wf (.write ch @inp)))
+        (.addListener ^ChannelFuture @wf
                       (reify ChannelFutureListener
                         (operationComplete [_ ff]
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
                           (when-not (HttpHeaders/isKeepAlive req)
-                                 (NettyFW/closeChannel ch)))))
+                                    (NettyFW/closeChannel ch)))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))
-          (error e# "")
-          (Try! (NetUtils/closeChannel ch))) )
-      )))
+          (log/error e# "")
+          (Try! (NettyFW/closeChannel ch))) )
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-(def ^:private tpls-eof nil)
-
+;;
+(def ^:private templates-eof nil)
 

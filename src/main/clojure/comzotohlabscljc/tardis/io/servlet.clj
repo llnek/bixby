@@ -16,18 +16,17 @@
   comzotohlabscljc.tardis.io.servlet
 
   (:gen-class
+    :exposes-methods { init superInit  getServletName myName}
     :name comzotohlabscljc.tardis.io.WEBServlet
     :extends javax.servlet.http.HttpServlet
     :init myInit
     :constructors {[] []}
-    :exposes-methods { init superInit  getServletName myName}
-    :state myState
-  )
+    :state myState)
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.io.http  :only [MakeHttpResult] ])
-  (:use [comzotohlabscljc.util.core :only [TryC] ])
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE TryC] ])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:use [comzotohlabscljc.tardis.io.core])
 
@@ -70,7 +69,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doASyncSvc ""
-  
+
   [this evt req rsp]
 
   (let [ c (ContinuationSupport/getContinuation req) ]
@@ -82,10 +81,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doSyncSvc ""
-  
+
   [this evt req rsp]
 
-  (throw (IOException. "No Sync Service!!!!!!")))
+  (ThrowIOE "No Sync Service!!!!!!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -96,7 +95,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -service ""
-  
+
   [ ^comzotohlabscljc.tardis.io.WEBServlet this
     ^HttpServletRequest req rsp]
 
@@ -114,7 +113,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -init ""
-  
+
   [ ^comzotohlabscljc.tardis.io.WEBServlet this ^ServletConfig cfg]
 
   (do

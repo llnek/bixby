@@ -15,11 +15,10 @@
   comzotohlabscljc.dbio.connect
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [comzotohlabscljc.dbio.core :as dbcore :only [MakeDbPool] ])
   (:require [clojure.string :as cstr])
-  (:import (java.util Map HashMap))
   (:use [comzotohlabscljc.util.core :only [Try!] ])
   (:use [comzotohlabscljc.util.str :only [nsb] ])
-  (:require [comzotohlabscljc.dbio.core :as dbcore :only [MakeDbPool] ])
   (:use [comzotohlabscljc.dbio.composite])
   (:use [comzotohlabscljc.dbio.simple])
   (:use [comzotohlabscljc.dbio.sqlserver])
@@ -27,6 +26,7 @@
   (:use [comzotohlabscljc.dbio.mysql])
   (:use [comzotohlabscljc.dbio.oracle])
   (:use [comzotohlabscljc.dbio.h2])
+  (:import (java.util Map HashMap))
   (:import (com.zotohlabs.frwk.dbio DBAPI JDBCPool JDBCInfo
                                     DBIOLocal DBIOError OptLockError)))
 
@@ -52,8 +52,8 @@
   [^JDBCInfo jdbc options]
 
   (let [ tloc (DBIOLocal/getCache)
-         ^Map c (.get tloc)
-         hc (.getId jdbc) ]
+         hc (.getId jdbc)
+         ^Map c (.get tloc) ]
     (when-not (.containsKey c hc)
       (log/debug "no db pool found in thread-local, creating one...")
       (let [ p (dbcore/MakeDbPool jdbc options) ]
@@ -126,7 +126,8 @@
         (CompositeSQLr metaCache this))
 
       (newSimpleSQLr [this]
-        (SimpleSQLr metaCache this)) )))
+        (SimpleSQLr metaCache this)) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

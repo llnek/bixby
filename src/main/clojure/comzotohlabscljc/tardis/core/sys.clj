@@ -17,7 +17,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.util.core :only [MuleAPI MakeMMap] ])
+  (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap] ])
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable Versioned)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

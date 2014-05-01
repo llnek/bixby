@@ -58,7 +58,7 @@
         MubleAPI
 
         (setf! [_ k v] (.setf! impl k v) )
-        (seq* [_] (seq (.seq* impl)))
+        (seq* [_] (.seq* impl))
         (getf [_ k] (.getf impl k) )
         (clrf! [_ k] (.clrf! impl k) )
         (clear! [_] (.clear! impl))
@@ -67,8 +67,9 @@
 
         (emitter [_] src) )
 
-      { :typeid evtId } )
-  ))
+      { :typeid evtId }
+
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -132,7 +133,7 @@
 
   (let [ ^Socket s (.getf obj :socket) ]
     (.setf! obj :socket nil)
-    (when-not (nil? s) (IOUtils/closeQuietly s))
+    (IOUtils/closeQuietly s)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -12,7 +12,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.io.ios
+  comzotohlabscljc.tardis.io.webss
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
@@ -74,7 +74,7 @@
     (with-local-vars [user nil pwd nil email nil]
       (cond
         (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (getFormFields data) ]
+        (doseq [ ^ULFileItem x (GetFormFields data) ]
           (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
           (case (.getFieldName x)
             "password" (var-set pwd  (.getString x))
@@ -102,7 +102,7 @@
     (with-local-vars [user nil pwd nil]
       (cond
         (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (getFormFields data) ]
+        (doseq [ ^ULFileItem x (GetFormFields data) ]
           (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
           (case (.getFieldName x)
             "password" (var-set pwd  (.getString x))
@@ -129,7 +129,7 @@
 
   [^HTTPEvent evt acctObj roles]
 
-  (let [ ^comzotohlabscljc.tardis.io.ios.WebSession mvs (.getSession evt)
+  (let [ ^comzotohlabscljc.tardis.io.webss.WebSession mvs (.getSession evt)
          ^comzotohlabscljc.tardis.core.sys.Element netty (.emitter evt)
          idleSecs (.getAttr netty :cacheMaxAgeSecs) ]
     (doto mvs
@@ -147,7 +147,7 @@
 
   [ ^HTTPEvent evt ^HTTPResult res ]
 
-  (let [ ^comzotohlabscljc.tardis.io.ios.WebSession mvs (.getSession evt)
+  (let [ ^comzotohlabscljc.tardis.io.webss.WebSession mvs (.getSession evt)
          ctr (.container ^Emitter (.emitter res))
          pkey (-> ctr (.getAppKey)(Bytesify))
          s (reduce (fn [sum en]
@@ -173,11 +173,13 @@
 
   [ ^HTTPEvent evt ]
 
-  (let [ ^Emitter netty (.emitter evt)
+  (let [ ck (.getCookie evt SESSION_COOKIE)
+         ^Emitter netty (.emitter evt)
          ctr (.container netty)
-         pkey (-> ctr (.getAppKey)(Bytesify))
-         ck (.getCookie evt SESSION_COOKIE)
-         cookie (nsb (if-not (nil? ck) (.getValue ck)))
+         pkey (-> ctr (.getAppKey)
+                      (Bytesify))
+         cookie (nsb (if-not (nil? ck)
+                             (.getValue ck)))
          pos (.indexOf cookie (int \-))
          [rc1 rc2] (if (< pos 0)
                        ["" ""]
@@ -192,7 +194,7 @@
            idleSecs (.getAttr
                      ^comzotohlabscljc.tardis.core.sys.Element
                      netty :cacheMaxAgeSecs)
-           ^comzotohlabscljc.tardis.io.ios.WebSession mvs (.getSession evt) ]
+           ^comzotohlabscljc.tardis.io.webss.WebSession mvs (.getSession evt) ]
       (doseq [ s (seq ss) ]
         (let [ [n v] (StringUtils/split ^String s ":") ]
           (.setAttribute mvs (keyword n) v)))
@@ -229,7 +231,7 @@
           (.setf! attrs k v))
 
         (getAttribute [_ k] (.getf attrs k) )
-        (removeAttribute [_ k] (.clr! attrs k) )
+        (removeAttribute [_ k] (.clrf! attrs k) )
         (clear [_] (.clear! attrs))
         (listAttributes [_] (.seq* attrs))
 
@@ -277,5 +279,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ios-eof nil)
+(def ^:private webss-eof nil)
 

@@ -21,27 +21,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeObjectName
-  "domain: com.acme
-   beanName: mybean
-   paths: [ \"a=b\" \"c=d\" ]"
-
-  ^ObjectName
-
-  ([^String domain ^String beanName paths]
+(defn MakeObjectName "domain: com.acme
+                      beanName: mybean
+                      paths: [ \"a=b\" \"c=d\" ]"
+  ( ^ObjectName
+    [^String domain ^String beanName paths]
     (let [ sb (StringBuilder.)
            cs (seq paths) ]
       (doto sb
-        (.append domain)
-        (.append ":")
-        (.append (cstr/join "," cs)))
+            (.append domain)
+            (.append ":")
+            (.append (cstr/join "," cs)))
       (when-not (empty? cs) (.append sb ","))
       (doto sb
-        (.append "name=")
-        (.append beanName))
+            (.append "name=")
+            (.append beanName))
       (ObjectName. (.toString sb))))
 
-  ([domain beanName] (MakeObjectName domain beanName [])) )
+  ( ^ObjectName
+    [domain beanName]
+    (MakeObjectName domain beanName [])) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

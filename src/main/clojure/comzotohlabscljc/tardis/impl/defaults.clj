@@ -107,8 +107,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeComponentRegistry "" 
-  
+(defn MakeComponentRegistry ""
+
   [regoType regoId ver parObj]
 
   (let [ impl (MakeMMap) ]
@@ -165,7 +165,7 @@
             (let [ cache (.getf impl :cache) ]
               (seq cache))) )
 
-      { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) } 
+      { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) }
 
   )) )
 

@@ -21,9 +21,9 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohcljc.util.core :only [MakeMMap Stringify notnil? Try!] ])
-  (:use [comzotohcljc.util.str :only [nsb] ])
-  (:use [comzotohcljc.hhh.io.core])
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE MakeMMap Stringify notnil? Try!] ])
+  (:use [comzotohlabscljc.util.str :only [nsb] ])
+  (:use [comzotohlabscljc.tardis.io.core])
 
   (:import (org.eclipse.jetty.continuation Continuation ContinuationSupport))
   (:import (io.netty.channel Channel ChannelFuture ChannelFutureListener))
@@ -40,10 +40,13 @@
   (:import (io.netty.buffer ByteBuf Unpooled ByteBufHolder))
   (:import (com.zotohlabs.gallifrey.io WebSockEvent WebSockResult HTTPEvent))
   (:import (org.apache.commons.io IOUtils))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.zotohlabs.frwk.util NCMap))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (com.zotohlabs.frwk.core Identifiable))
-  (:import (io.netty.handler.codec.http.websocketx WebSocketFrame BinaryWebSocketFrame TextWebSocketFrame)))
+  (:import (io.netty.handler.codec.http.websocketx WebSocketFrame
+                                                   BinaryWebSocketFrame
+                                                   TextWebSocketFrame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -79,20 +82,20 @@
 ;;
 (defn- replyServlet ""
 
-  [^comzotohcljc.util.core.MubleAPI res
+  [^comzotohlabscljc.util.core.MubleAPI res
    ^HttpServletRequest req
    ^HttpServletResponse rsp
    src]
 
-  (let [ ^OutputStream os (.getOutputStream rsp)
-         ^List cks (.getf res :cookies)
+  (let [ ^List cks (.getf res :cookies)
          ^URL url (.getf res :redirect)
          ^NCMap hds (.getf res :hds)
+         os (.getOutputStream rsp)
          code (.getf res :code)
          data (.getf res :data)
          status (HttpResponseStatus/valueOf (int code)) ]
 
-    (when (nil? status) (throw (IOException. (str "Bad HTTP Status code: " code))))
+    (when (nil? status) (ThrowIOE (str "Bad HTTP Status code: " code)))
     (try
       (.setStatus rsp code)
       (doseq [[^String nm vs] (seq hds)]
@@ -115,14 +118,13 @@
             (.setContentLength rsp clen)
             (.flushBuffer rsp)
             (when (> clen 0)
-                (IOUtils/copyLarge (.stream dd) os 0 clen)
-                (.flush os) )))
-      (catch Throwable e#
-        (error e# ""))
+                  (IOUtils/copyLarge (.stream dd) os 0 clen)
+                  (.flush os) )))
+      (catch Throwable e# (log/error e# ""))
       (finally
         (Try! (when-not (isServletKeepAlive req) (.close os)))
         (-> (ContinuationSupport/getContinuation req)
-          (.complete))) ) 
+          (.complete))) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,7 +142,7 @@
         (try
             (.sendError rsp 500)
           (catch Throwable e#
-            (error e# ""))
+            (log/error e# ""))
           (finally
             (-> (ContinuationSupport/getContinuation req)
               (.complete)))) )
@@ -149,7 +151,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeClose ""
-  
+
   [^HTTPEvent evt ^ChannelFuture cf]
 
   (when-not (.isKeepAlive evt)
@@ -160,8 +162,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cookiesToNetty ""
-  
-  ^String 
+
+  ^String
   [^List cookies]
 
   (persistent! (reduce (fn [sum ^HttpCookie c]
@@ -169,13 +171,13 @@
                                 (ServerCookieEncoder/encode
                                   (.getName c)(.getValue c))))
                        (transient [])
-                       (seq cookies)) 
+                       (seq cookies))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- netty-ws-reply ""
-  
+
   [^WebSockResult res ^Channel ch ^WebSockEvent evt src]
 
   (let [ ^XData xs (.getData res)
@@ -192,16 +194,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- netty-reply "" 
-  
-  [^comzotohcljc.util.core.MubleAPI res
+(defn- netty-reply ""
+
+  [^comzotohlabscljc.util.core.MubleAPI res
    ^Channel ch
    ^HTTPEvent evt
    src]
 
   (let [ cks (cookiesToNetty (.getf res :cookies))
          code (.getf res :code)
-         rsp (MakeHttpReply code)
+         rsp (NettyFW/makeHttpReply code)
          data (.getf res :data)
          hdrs (.getf res :hds) ]
     (with-local-vars [ clen 0 xd nil ]
@@ -235,7 +237,7 @@
         (NettyFW/writeOnly ch (ChunkedStream. (.stream ^XData @xd)))
         (log/debug "wrote response body out to client"))
 
-      (let [ ^ChannelFuture wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
+      (let [ wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
         (log/debug "flushed last response content out to client")
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel.  bye.")
@@ -246,7 +248,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeNettyTrigger ""
-  
+
   [^Channel ch evt src]
 
   (reify AsyncWaitTrigger
@@ -259,20 +261,19 @@
         (Try! (netty-reply res ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [ rsp (MakeHttpReply 500) ]
+      (let [ rsp (NettyFW/makeHttpReply 500) ]
         (try
-          (maybeClose evt (wflush ch rsp))
+          (maybeClose evt (NettyFW/writeFlush ch rsp))
           (catch ClosedChannelException e#
             (log/warn "ClosedChannelException thrown while flushing headers"))
-          (catch Throwable t# (error t# "") )) ))
-
+          (catch Throwable t# (log/error t# "") )) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeAsyncWaitHolder
 
-  [ ^comzotohcljc.hhh.io.core.AsyncWaitTrigger trigger
+  [ ^comzotohlabscljc.tardis.io.core.AsyncWaitTrigger trigger
     ^HTTPEvent event ]
 
   (let [ impl (MakeMMap) ]
@@ -285,31 +286,28 @@
 
       (resumeOnResult [this res]
         (let [ ^Timer tm (.getf impl :timer)
-               ^comzotohcljc.hhh.io.core.EmitterAPI  src (.emitter event) ]
+               ^comzotohlabscljc.tardis.io.core.EmitterAPI  src (.emitter event) ]
           (when-not (nil? tm) (.cancel tm))
           (.release src this)
           ;;(.mm-s impl :result res)
-          (.resumeWithResult trigger res)
-          ))
+          (.resumeWithResult trigger res)))
 
       (timeoutMillis [me millis]
         (let [ tm (Timer. true) ]
           (.setf! impl :timer tm)
           (.schedule tm (proxy [TimerTask][]
-            (run [] (.onExpiry me))) ^long millis)))
+                          (run [] (.onExpiry me))) ^long millis)))
 
       (timeoutSecs [this secs]
         (timeoutMillis this (* 1000 secs)))
 
       (onExpiry [this]
-        (let [ ^comzotohcljc.hhh.io.core.EmitterAPI
+        (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI
                src (.emitter event) ]
           (.release src this)
           (.setf! impl :timer nil)
           (.resumeWithError trigger) ))
-
   )))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

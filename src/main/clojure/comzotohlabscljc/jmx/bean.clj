@@ -16,6 +16,11 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:use [comzotohlabscljc.util.core :only [ThrowBadArg MakeMMap notnil? TryC] ])
+  (:use [comzotohlabscljc.util.str :only [HasAny?] ])
+  (:use [comzotohlabscljc.util.meta :only [IsBoolean? IsVoid? IsObject?
+                                       IsString? IsShort? IsLong?
+                                       IsInt? IsDouble? IsFloat? IsChar? ] ])
   (:import (java.lang Exception IllegalArgumentException))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.frwk.jmx NameParams))
@@ -29,12 +34,7 @@
                              MBeanInfo
                              MBeanOperationInfo
                              MBeanParameterInfo
-                             ReflectionException))
-  (:use [comzotohlabscljc.util.core :only [ThrowBadArg MakeMMap notnil? TryC] ])
-  (:use [comzotohlabscljc.util.str :only [HasAny?] ])
-  (:use [comzotohlabscljc.util.meta :only [IsBoolean? IsVoid? IsObject?
-                                       IsString? IsShort? IsLong?
-                                       IsInt? IsDouble? IsFloat? IsChar? ] ]))
+                             ReflectionException)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,7 +104,7 @@
             false
             (and (-> g (.getName)(.startsWith "is"))
                  (IsBoolean? (getType this))))))
-    )))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,14 +121,6 @@
   [^String msg]
 
   (MBeanException. (Exception. msg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- badArg ""
-
-  [^String msg]
-
-  (IllegalArgumentException. msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -156,8 +148,9 @@
                :else
                -1) ]
     (if (< pos 0)
-      ""
-      (str (Character/toLowerCase (.charAt mn pos)) (.substring mn (+ pos 1))))
+        ""
+        (str (Character/toLowerCase (.charAt mn pos))
+             (.substring mn (+ pos 1))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,8 +171,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- testJmxType "" 
-  
+(defn- testJmxType ""
+
   [ ^Class cz]
 
   (if (or (IsBoolean? cz)
@@ -193,24 +186,26 @@
           (IsFloat? cz)
           (IsChar? cz))
     cz
-    nil))
+    nil
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- testJmxTypes "" 
-  
+(defn- testJmxTypes ""
+
   [^Class rtype ptypes]
 
   (if (and (not (empty? ptypes))
            (true? (some (fn [^Class c] (if (testJmxType c) false true))
                    (seq ptypes))) )
     false
-    (testJmxType rtype)))
+    (testJmxType rtype)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleProps "" 
-  
+(defn- handleProps ""
+
   [^Class cz mtds]
 
   (with-local-vars [ props (transient {}) ba (transient []) ]
@@ -249,12 +244,13 @@
                    (notnil? (.getter v))
                    (notnil? (.setter v))
                    (.isQuery v)))) )
-      [ (persistent! @ba) rc ] )) )
+      [ (persistent! @ba) rc ] )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleFlds 
-  
+(defn- handleFlds
+
   [^Class cz]
 
   (with-local-vars [ flds (transient {})
@@ -274,13 +270,13 @@
                        true
                        (and (.startsWith fnm "is")
                             (IsBoolean? (.getType field)))))))))
-    [ (persistent! @rc)(persistent! @flds) ] 
+    [ (persistent! @rc)(persistent! @flds) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleMethods "" 
-  
+(defn- handleMethods ""
+
   [^Class cz mtds]
 
   (log/info "jmx-bean: processing class: " cz)
@@ -292,7 +288,6 @@
         (cond
           (HasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
           (log/info "jmx-skipping " mn)
-
           (testJmxTypes rtype ptypes)
           (let [ pns (map (fn [^Class c] (.getName c)) (seq ptypes))
                  nameParams (NameParams. mn (into-array String pns))
@@ -309,13 +304,13 @@
 
           :else
           (log/info "jmx-skipping " mn) )))
-    [ (persistent! @rc) (persistent! @metds)] 
+    [ (persistent! @rc) (persistent! @metds)]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJmxBean "Make a JMX bean from this object." 
-  
+(defn MakeJmxBean "Make a JMX bean from this object."
+
   [^Object obj]
 
   (let [ impl (MakeMMap) cz (.getClass obj)
@@ -411,7 +406,7 @@
               (.invoke mtd obj (into-array Object []))
               (.invoke mtd obj params)))))
 
-      )))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -43,7 +43,8 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db) " NOT NULL AUTO_INCREMENT"))
+  (str (GetPad db) (GenCol fld)
+       " " (GetIntKeyword db) " NOT NULL AUTO_INCREMENT"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -51,7 +52,8 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db) " NOT NULL AUTO_INCREMENT"))
+  (str (GetPad db) (GenCol fld)
+       " " (GetLongKeyword db) " NOT NULL AUTO_INCREMENT"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

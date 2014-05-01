@@ -15,11 +15,11 @@
   comzotohlabscljc.dbio.drivers
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:import (com.zotohlabs.frwk.dbio MetaCache DBAPI DBIOError))
-  (:import (java.util Map HashMap))
   (:use [comzotohlabscljc.util.str :only [hgl? AddDelim! nsb] ])
-  (:require [comzotohlabscljc.dbio.core :as dbcore]))
+  (:require [clojure.string :as cstr])
+  (:require [comzotohlabscljc.dbio.core :as dbcore])
+  (:import (com.zotohlabs.frwk.dbio MetaCache DBAPI DBIOError))
+  (:import (java.util Map HashMap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -37,29 +37,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getNotNull ^String [db] "NOT NULL")
+(defn- getNotNull  ""
+
+  ^String
+  [db]
+
+  "NOT NULL")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getNull ^String [db] "NULL")
+(defn- getNull  ""
+
+  ^String
+  [db]
+
+  "NULL")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetPad ^String [db] "    ")
+(defn GetPad  ""
+
+  ^String
+  [db]
+
+  "    ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- nullClause [db opt?]
+(defn- nullClause ""
+
+  [db opt?]
+
   (if opt? (getNull db) (getNotNull db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genSep ^String [db]
+(defn- genSep ""
+
+  ^String
+  [db]
+
   (if dbcore/*USE_DDL_SEP* dbcore/DDL_SEP ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GenCol ^String [fld]
+(defn GenCol ""
+
+  ^String
+  [fld]
+
   (cstr/upper-case ^String (:column fld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,34 +124,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenExec :default ^String [db] (str ";\n" (genSep db)))
+(defmethod GenExec :default
+
+  ^String
+  [db]
+  (str ";\n" (genSep db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenDrop :default ^String [db table]
+(defmethod GenDrop :default
+
+  ^String
+  [db table]
+
   (str "DROP TABLE " table (GenExec db) "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenBegin :default ^String [db table]
+(defmethod GenBegin :default
+
+  ^String
+  [db table]
+
   (str "CREATE TABLE " table "\n(\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenEnd :default ^String [db table] (str "\n)" (GenExec db) "\n\n"))
+(defmethod GenEnd :default
+
+  ^String
+  [db table]
+
+  (str "\n)" (GenExec db) "\n\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenGrant :default ^String [db table] "")
+(defmethod GenGrant :default
+
+  ^String
+  [db table]
+
+  "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenEndSQL :default ^String [db] "")
+(defmethod GenEndSQL :default
+
+  ^String
+  [db]
+
+  "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GenColDef ^String [db ^String col ty opt? dft]
-  (str (GetPad db) (cstr/upper-case col) " " ty " " (nullClause db opt?)
+(defn GenColDef
+
+  ^String
+  [db ^String col ty opt? dft]
+
+  (str (GetPad db) (cstr/upper-case col)
+       " " ty " " (nullClause db opt?)
        (if (nil? dft) "" (str " DEFAULT " dft))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,74 +200,125 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenBytes :default [db fld]
+(defmethod GenBytes :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetBlobKeyword db) (:null fld) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenString :default [db fld]
+(defmethod GenString :default
+
+  [db fld]
+
   (GenColDef  db (:column fld)
     (str (GetStringKeyword db) "(" (:size fld) ")")
     (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)))
+    (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenInteger :default [db fld]
+(defmethod GenInteger :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetIntKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)))
+    (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenAutoInteger :default [db table fld] "")
+(defmethod GenAutoInteger :default
+
+  [db table fld]
+
+  "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenDouble :default [db fld]
+(defmethod GenDouble :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetDoubleKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)))
+    (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenFloat :default [db fld]
+(defmethod GenFloat :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetFloatKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)))
+    (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenLong :default [db fld]
+(defmethod GenLong :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetLongKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)))
+    (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenAutoLong :default [db table fld] "")
+(defmethod GenAutoLong :default
+
+  [db table fld]
+
+  "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GetTSDefault :default [db] "CURRENT_TIMESTAMP")
+(defmethod GetTSDefault :default
+
+  [db]
+
+  "CURRENT_TIMESTAMP")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenTimestamp :default [db fld]
+(defmethod GenTimestamp :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetTSKeyword db) (:null fld)
-    (if (:dft fld) (GetTSDefault db) nil)))
+    (if (:dft fld) (GetTSDefault db) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenDate :default [db fld]
+(defmethod GenDate :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetDateKeyword db) (:null fld)
-    (if (:dft fld) (GetTSDefault db) nil)))
+    (if (:dft fld) (GetTSDefault db) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenCal :default [db fld] (GenTimestamp db fld))
+(defmethod GenCal :default
+
+  [db fld]
+
+  (GenTimestamp db fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod GenBool :default [db fld]
+(defmethod GenBool :default
+
+  [db fld]
+
   (GenColDef db (:column fld) (GetBoolKeyword db) (:null fld)
-      (if (:dft fld) (first (:dft fld)) nil)))
+      (if (:dft fld) (first (:dft fld)) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -222,7 +331,8 @@
          bf (StringBuilder.) ]
     (doseq [ [nm nv] (seq m) ]
       (let [ cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols) (dbcore/DbioError (str "Cannot have empty index: " nm)))
+        (when (empty? cols) 
+              (dbcore/DbioError (str "Cannot have empty index: " nm)))
         (.append bf (str "CREATE INDEX "
                          (cstr/lower-case (str table "_" (name nm)))
                          " ON " table
@@ -240,7 +350,8 @@
          bf (StringBuilder.) ]
     (doseq [ [nm nv] (seq m) ]
       (let [ cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols) (dbcore/DbioError (str "Cannot have empty unique: " (name nm))))
+        (when (empty? cols) 
+              (dbcore/DbioError (str "Illegal empty unique: " (name nm))))
         (AddDelim! bf ",\n"
             (str (GetPad db) "UNIQUE(" (cstr/join "," cols) ")"))))
     (.toString bf)
@@ -295,7 +406,7 @@
       ;; now uniques, primary keys and done.
       (when (> (.length bf) 0)
         (when (> (count @pkeys) 0)
-          (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
+              (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
         (let [ s (genUniques db cache flds zm) ]
           (when (hgl? s)
             (.append bf (str ",\n" s)))))
@@ -310,12 +421,12 @@
   [db ms zm]
 
   (let [ table (cstr/upper-case ^String (:table zm))
-           b (GenBegin db table)
-           d (genBody db ms table zm)
-           e (GenEnd db table)
-           s1 (str b (first d) e)
-           inx (last d) ]
-      (str s1 (if (hgl? inx) inx "") (GenGrant db table))
+         b (GenBegin db table)
+         d (genBody db ms table zm)
+         e (GenEnd db table)
+         s1 (str b (first d) e)
+         inx (last d) ]
+    (str s1 (if (hgl? inx) inx "") (GenGrant db table))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

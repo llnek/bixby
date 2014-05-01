@@ -16,14 +16,15 @@
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
   (:require [clojure.string :as cstr])
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.dbio DBIOError))
-  (:import (java.io File))
-  (:import (java.sql DriverManager Connection Statement))
   (:use [comzotohlabscljc.util.core :only [test-nonil test-nestr] ])
   (:use [comzotohlabscljc.util.str :only [nsb] ])
   (:use [comzotohlabscljc.dbio.drivers])
-  (:use [comzotohlabscljc.dbio.core :as dbcore ]))
+  (:use [comzotohlabscljc.dbio.core :as dbcore ])
+
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (com.zotohlabs.frwk.dbio DBIOError))
+  (:import (java.io File))
+  (:import (java.sql DriverManager Connection Statement)))
 
 (def H2-SERVER-URL "jdbc:h2:tcp://host/path/db" )
 (def H2-DRIVER "org.h2.Driver" )
@@ -51,8 +52,10 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db)
-            (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
+  (str (GetPad db) (GenCol fld)
+       " " (GetIntKeyword db)
+       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -60,8 +63,10 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db)
-            (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
+  (str (GetPad db) (GenCol fld)
+       " " (GetLongKeyword db)
+       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,8 +105,7 @@
         ;;(.execute s (str "CREATE USER " user " PASSWORD \"" pwd "\" ADMIN"))
         (.execute s "SET DEFAULT_TABLE_TYPE CACHED"))
       (with-open [ s (.createStatement c1) ]
-        (.execute s "SHUTDOWN"))
-      )
+        (.execute s "SHUTDOWN")))
     dbUrl
   ))
 

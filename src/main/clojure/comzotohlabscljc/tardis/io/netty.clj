@@ -19,28 +19,40 @@
 
   comzotohlabscljc.tardis.io.netty
 
+  (:use [comzotohlabscljc.util.core :only [ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohcljc.hhh.core.sys])
-  (:use [comzotohcljc.hhh.io.core])
-  (:use [comzotohcljc.hhh.io.http])
-  (:use [comzotohcljc.hhh.io.triggers])
-  (:use [comzotohcljc.util.core :only [MubleAPI MakeMMap notnil? ConvLong] ])
-  (:use [comzotohcljc.util.seqnum :only [NextLong] ])
-  (:use [comzotohcljc.util.mime :only [GetCharset] ])
-  (:use [comzotohcljc.util.str :only [hgl? nsb strim nichts?] ])
+  (:use [comzotohlabscljc.tardis.core.sys])
+  (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.io.http])
+  (:use [comzotohlabscljc.tardis.io.triggers])
+  (:use [comzotohlabscljc.util.str :only [hgl? nsb strim nichts?] ])
+  (:use [comzotohlabscljc.net.routes :only [MakeRouteCracker RouteCracker] ])
+  (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
+  (:use [comzotohlabscljc.util.mime :only [GetCharset] ])
   (:import (java.net HttpCookie URI URL InetSocketAddress))
   (:import (java.net SocketAddress InetAddress))
   (:import (java.util ArrayList List))
+  (:import (com.google.gson JsonObject))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent WebSocketEvent WebSocketResult))
+  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent WebSockEvent WebSockResult))
   (:import (javax.net.ssl SSLContext))
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse CookieDecoder ServerCookieEncoder
-                                        DefaultHttpResponse HttpVersion HttpHeaders LastHttpContent
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
+                                        CookieDecoder ServerCookieEncoder
+                                        DefaultHttpResponse HttpVersion
+                                        HttpServerCodec
+                                        HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.bootstrap ServerBootstrap))
-  (:import (io.netty.channel Channel))
-  (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (io.netty.channel Channel ChannelHandler
+                             SimpleChannelInboundHandler
+                             ChannelPipeline ChannelHandlerContext))
+  (:import (io.netty.handler.stream ChunkedWriteHandler))
+  (:import (com.zotohlabs.frwk.netty NettyFW
+                                     SSLServerHShake
+                                     ServerSide
+                                     HttpDemux ErrorCatcher
+                                     PipelineConfigurator))
 
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
   (:import (com.zotohlabs.frwk.io XData)))
@@ -91,8 +103,9 @@
 ;;
 (defn- make-wsock-event ""
 
-  [^comzotohcljc.hhh.io.core.EmitterAPI co
-   ^Channel ch ^XData xdata]
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co
+   ^Channel ch
+   ^XData xdata]
 
   (let [ ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
@@ -122,7 +135,7 @@
         (getData [_] xdata)
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^comzotohcljc.hhh.io.core.WaitEventHolder
+          (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
                  wevt (.release co this) ]
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
@@ -136,7 +149,7 @@
 ;;
 (defmethod IOESReifyEvent :czc.hhh.io/NettyIO
 
-  [^comzotohcljc.hhh.io.core.EmitterAPI co & args]
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
 
   (let [ ^HTTPResult res (MakeHttpResult)
          ^HttpRequest req (nth args 1)
@@ -180,7 +193,7 @@
                     (if (= (cstr/lower-case (.getName c)) lnm)
                       (cookieToJava c)
                       nil))
-                    (seq cks))))
+                  (seq cks))))
 
         (isKeepAlive [_] (HttpHeaders/isKeepAlive req))
 
@@ -196,14 +209,17 @@
         (getHeaderValues [_ nm] (-> (.headers req) (.getAll nm)))
         (getHeaders [_] (-> (.headers req) (.names)))
         (getHeaderValue [_ nm] (HttpHeaders/getHeader req nm))
+
         (getParameterValues [_ nm]
           (let [ dc (QueryStringDecoder. (.getUri req))
                  rc (.get (.parameters dc) nm) ]
             (if (nil? rc) (ArrayList.) rc)))
+
         (getParameters [_]
           (let [ dc (QueryStringDecoder. (.getUri req))
                  m (.parameters dc) ]
             (.keySet m)))
+
         (getParameterValue [_ nm]
           (let [ dc (QueryStringDecoder. (.getUri req))
                  ^List rc (.get (.parameters dc) nm) ]
@@ -227,7 +243,7 @@
               (.substring s pos)
               "")))
 
-        (remotePort [_] (conv-long (HttpHeaders/getHeader req "REMOTE_PORT") 0))
+        (remotePort [_] (ConvLong (HttpHeaders/getHeader req "REMOTE_PORT") 0))
         (remoteAddr [_] (nsb (HttpHeaders/getHeader req "REMOTE_ADDR")))
         (remoteHost [_] (nsb (HttpHeaders/getHeader req "")))
 
@@ -246,13 +262,13 @@
 
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^comzotohcljc.hhh.io.core.WaitEventHolder
+          (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
                  wevt (.release co this) ]
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
       )
 
-      { :typeid :czc.hhh.io/HTTPEvent } 
+      { :typeid :czc.hhh.io/HTTPEvent }
 
   )) )
 
@@ -260,48 +276,89 @@
 ;;
 (defmethod CompConfigure :czc.hhh.io/NettyIO
 
-  [^comzotohcljc.hhh.core.sys.Element co cfg]
+  [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
   (let [ c (nsb (:context cfg)) ]
     (.setAttr! co :contextPath (strim c))
-    (HttpBasicConfig co cfg) 
+    (HttpBasicConfig co cfg)
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RouteFilter ""
+
+  ^ChannelHandler
+  ;;[^comzotohlabscljc.hhh.io.core.EmitterAPI co]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
+
+  (proxy [SimpleChannelInboundHandler] []
+    (channelRead0 [c msg]
+      (let [ ^comzotohlabscljc.net.routes.RouteCracker c (.getAttr co :cracker)
+             ^ChannelHandlerContext ctx c
+             ch (.channel ctx) ]
+        (if (instance? HttpRequest msg)
+          (let [ ^HttpRequest req msg
+                 qqq (QueryStringDecoder. (.getUri req)) ]
+            ))
+        (.fireChannelRead ctx msg)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MsgDispatcher ""
+
+  ^ChannelHandler
+  ;;[^comzotohlabscljc.hhh.core.sys.Element co]
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co]
+
+  (proxy [SimpleChannelInboundHandler] []
+    (channelRead0 [ctx msg]
+      (let [ ch (.channel ^ChannelHandlerContext ctx)
+             evt (IOESReifyEvent co ch msg)
+             ^comzotohlabscljc.tardis.io.core.WaitEventHolder
+             w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+        (.timeoutMillis w (.getAttr ^comzotohlabscljc.tardis.core.sys.Element co :waitMillis))
+        (.hold co w)
+        (.dispatch co evt {})))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- nettyInitor ""
 
-  [options]
+  ^PipelineConfigurator
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let []
-    (proxy [ChannelInitializer] []
-      (initChannel [^SocketChannel ch]
-        (let [ ^ChannelPipeline pl (NetUtils/getPipeline ch) ]
-          (AddEnableSSL pl options)
-          (AddExpect100 pl options)
-          (.addLast pl "codec" (HttpServerCodec.))
-          (AddAuxDecoder pl options)
-          (.addLast pl "chunker" (ChunkedWriteHandler.))
-          (AddMsgDispatcher pl options)
-          (AddExceptionCatcher pl options)
-          pl)))
+  (proxy [PipelineConfigurator] []
+    (assemble [p o]
+      (let [ ^ChannelPipeline pipe p
+             ^JsonObject options o ]
+        (-> pipe
+            (.addLast "ssl" (SSLServerHShake/getInstance options))
+            (.addLast "codec" (HttpServerCodec.))
+            (.addLast "filter" (RouteFilter co))
+            (.addLast "demux" (HttpDemux/getInstance))
+            (.addLast "chunker" (ChunkedWriteHandler.))
+            (.addLast "disp" (MsgDispatcher co))
+            (.addLast "error" (ErrorCatcher/getInstance)))
+        pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- init-netty ""
 
-  [^comzotohcljc.hhh.core.sys.Element co]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^comzotohcljc.hhh.core.sys.Element
-         ctr (.parent ^Hierarchial co)
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
+         cracker (MakeRouteCracker (.getAttr ctr :routes))
          options (doto (JsonObject.)
-                   (.addProperty "serverkey" (.getAttr co :serverKey))
-                   (.addProperty "passwd" (.getAttr co :passwd)))
-         options { :emitter co
-                   :rtcObj (MakeRouteCracker (.getAttr ctr :routes)) }
-         bs (ServerSide/initServerSide cfg options) ]
+                   (.addProperty "serverkey" (nsb (.getAttr co :serverKey)))
+                   (.addProperty "passwd" (nsb (.getAttr co :passwd))))
+         bs (ServerSide/initServerSide (nettyInitor co) options) ]
     (.setAttr! co :netty  { :bootstrap bs })
+    (.setAttr! co :cracker cracker)
     co
   ))
 
@@ -309,7 +366,7 @@
 ;;
 (defmethod IOESStart :czc.hhh.io/NettyIO
 
-  [^comzotohcljc.hhh.core.sys.Element co]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ host (nsb (.getAttr co :host))
          port (.getAttr co :port)
@@ -324,7 +381,7 @@
 ;;
 (defmethod IOESStop :czc.hhh.io/NettyIO
 
-  [^comzotohcljc.hhh.core.sys.Element co]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ nes (.getAttr co :netty)
          ^ServerBootstrap bs (:bootstrap nes)
@@ -337,7 +394,7 @@
 ;;
 (defmethod CompInitialize :czc.hhh.io/NettyIO
 
-  [^comzotohcljc.hhh.core.sys.Element co]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (init-netty co))
 

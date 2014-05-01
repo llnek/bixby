@@ -17,21 +17,23 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.core.climain :only [StartMain] ])
-  (:use [comzotohlabscljc.tardis.etc.cli :only [CreateWeb CreateJetty CreateBasic
-                                                AntBuildApp BundleApp RunAppBg
-                                                *SKARO-WEBLANG*
-                                                CreateSamples CreateDemo] ])
+  (:use [comzotohlabscljc.tardis.etc.cli
+         :only [CreateWeb CreateJetty CreateBasic
+                AntBuildApp BundleApp RunAppBg
+                *SKARO-WEBLANG*
+                CreateSamples CreateDemo] ])
   (:use [comzotohlabscljc.i18n.resources :only [GetString] ])
-  (:use [comzotohlabscljc.util.core :only [NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
+  (:use [comzotohlabscljc.util.core
+         :only [NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
   (:use [comzotohlabscljc.util.dates :only [AddMonths MakeCal] ])
   (:use [comzotohlabscljc.util.meta :only [] ])
   (:use [comzotohlabscljc.util.str :only [nsb hgl? strim] ])
   (:use [comzotohlabscljc.util.cmdline :only [MakeCmdSeqQ CliConverse] ])
   (:use [comzotohlabscljc.crypto.codec :only [CreateStrongPwd Pwdify] ])
-  (:use [comzotohlabscljc.crypto.core :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
+  (:use [comzotohlabscljc.crypto.core
+         :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
-
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
   (:import (org.apache.commons.io FileUtils))
@@ -198,41 +200,41 @@
   { "fname"
     (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
                    "" "csr-req" true
-                   (fn [a ^Properties ps] (do (.put ps "fn" a) "")))
+                   (fn [a ^Map ps] (do (.put ps "fn" a) "")))
 
     "size"
     (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
                    "" "1024" true
-                   (fn [a ^Properties ps] (do (.put ps "size" a) "fname")))
+                   (fn [a ^Map ps] (do (.put ps "size" a) "fname")))
     "c"
     (MakeCmdSeqQ "c" (GetString rcb "cmd.dn.c")
                    "" "US" true
-                   (fn [a ^Properties ps] (do (.put ps "c" a) "size")))
+                   (fn [a ^Map ps] (do (.put ps "c" a) "size")))
 
     "st"
     (MakeCmdSeqQ "st" (GetString rcb "cmd.dn.st")
                    "" "" true
-                   (fn [a ^Properties ps] (do (.put ps "st" a) "c")))
+                   (fn [a ^Map ps] (do (.put ps "st" a) "c")))
 
     "loc"
     (MakeCmdSeqQ "loc" (GetString rcb "cmd.dn.loc")
                    "" "" true
-                   (fn [a ^Properties ps] (do (.put ps "l" a) "st")))
+                   (fn [a ^Map ps] (do (.put ps "l" a) "st")))
 
     "o"
     (MakeCmdSeqQ "o" (GetString rcb "cmd.dn.org")
                    "" "" true
-                   (fn [a ^Properties ps] (do (.put ps "o" a) "loc")))
+                   (fn [a ^Map ps] (do (.put ps "o" a) "loc")))
 
     "ou"
     (MakeCmdSeqQ "ou" (GetString rcb "cmd.dn.ou")
                    "" "" true
-                   (fn [a ^Properties ps] (do (.put ps "ou" a) "o")))
+                   (fn [a ^Map ps] (do (.put ps "ou" a) "o")))
 
     "cn"
     (MakeCmdSeqQ "cn" (GetString rcb "cmd.dn.cn")
                    "" "" true
-                   (fn [a ^Properties ps] (do (.put ps "cn" a) "ou")))
+                   (fn [a ^Map ps] (do (.put ps "cn" a) "ou")))
   } )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -245,22 +247,22 @@
     "fname"
     (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
                      "" "test.p12" true
-                     (fn [a ^Properties ps] (do (.put ps "fn" a) "")))
+                     (fn [a ^Map ps] (do (.put ps "fn" a) "")))
 
     "pwd"
     (MakeCmdSeqQ "pwd" (GetString rcb "cmd.key.pwd")
                      "" "" true
-                     (fn [a ^Properties ps] (do (.put ps "pwd" a) "fname")))
+                     (fn [a ^Map ps] (do (.put ps "pwd" a) "fname")))
 
     "duration"
     (MakeCmdSeqQ "duration" (GetString rcb "cmd.key.duration")
                      "" "12" true
-                     (fn [a ^Properties ps] (do (.put ps "months" a) "pwd")))
+                     (fn [a ^Map ps] (do (.put ps "months" a) "pwd")))
 
     "size"
     (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
                    "" "1024" true
-                   (fn [a ^Properties ps] (do (.put ps "size" a) "duration")))
+                   (fn [a ^Map ps] (do (.put ps "size" a) "duration")))
 
    } )
 
@@ -409,10 +411,8 @@
 
   [ & args]
 
-  (do
-    (AssertJce)
-    (println "JCE is OK.")
-  ))
+  (AssertJce)
+  (println "JCE is OK."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

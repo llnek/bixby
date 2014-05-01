@@ -35,8 +35,10 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetIntKeyword db)
-    (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")))
+  (str (GetPad db) (GenCol fld)
+       " " (GetIntKeyword db)
+       (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -44,8 +46,10 @@
 
   [db table fld]
 
-  (str (GetPad db) (GenCol fld) " " (GetLongKeyword db)
-    (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")))
+  (str (GetPad db) (GenCol fld)
+       " " (GetLongKeyword db)
+       (if (:pkey fld) " IDENTITY (1,1) " " AUTOINCREMENT ")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -54,7 +58,8 @@
   [db table]
 
   (str "IF EXISTS (SELECT * FROM dbo.sysobjects WHERE id=object_id('"
-       table "')) DROP TABLE " table (GenExec db) "\n\n"))
+       table "')) DROP TABLE "
+       table (GenExec db) "\n\n"))
 
 
 ;;(println (GetDDL (MakeMetaCache testschema) (SQLServer.) ))

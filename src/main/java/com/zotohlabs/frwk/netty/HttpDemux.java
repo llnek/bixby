@@ -18,6 +18,7 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonObject;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -57,20 +58,23 @@ public class HttpDemux extends AuxHttpDecoder {
     String mt = req.getMethod().name().toUpperCase();
     ChannelPipeline pipe = ctx.pipeline();
     AuxHttpDecoder nxt = null;
+    JsonObject info = extractMsgInfo(msg);
 
     if (mo != null) {
       mt = mo.toUpperCase();
     }
 
-    setAttr(ctx, MSGINFO_KEY, extractMsgInfo(msg));
+    setAttr(ctx, MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
 
     if (isFormPost(msg, mt)) {
       nxt = FormPostCodec.getInstance();
+      info.addProperty("formpost", true);
     }
     else
     if (isWSock(msg,mt)) {
       nxt= WebSockCodec.getInstance();
+      info.addProperty("wsock", true);
     }
     else {
       nxt=RequestCodec.getInstance();

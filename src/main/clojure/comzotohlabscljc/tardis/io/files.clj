@@ -18,13 +18,12 @@
   (:use [comzotohlabscljc.tardis.core.sys :rename { seq* rego-seq*
                                                     has? rego-has? } ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.tardis.io.loops :only
-                                          [LoopableSchedule LoopableOneloop
-                                           CfgLoopable] ])
+  (:use [comzotohlabscljc.tardis.io.loops
+         :only [LoopableSchedule LoopableOneLoop CfgLoopable] ])
   (:use [comzotohlabscljc.util.seqnum :only [NextLong] ])
   (:use [comzotohlabscljc.tardis.io.core])
-  (:use [comzotohlabscljc.util.core :only
-                                    [MakeMMap notnil?  test-nestr TryC SubsVar] ])
+  (:use [comzotohlabscljc.util.core
+         :only [MakeMMap notnil?  test-nestr TryC SubsVar] ])
   (:use [comzotohlabscljc.util.str :only [nsb hgl? nsn] ])
 
   (:import (java.io FileFilter File FilenameFilter IOException))
@@ -42,7 +41,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,7 +80,8 @@
         (emitter [_] co)
         (getFile [_] f))
 
-      { :typeid :czc.tardis.io/FileEvent } )))
+      { :typeid :czc.tardis.io/FileEvent }
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

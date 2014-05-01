@@ -11,19 +11,20 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
-  comzotohlabscljc.net.routes
 
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.io File))
-  (:import (jregex Matcher Pattern))
-  (:import (java.util StringTokenizer))
+  comzotohlabscljc.net.routes
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.util.core :only [MubleAPI MakeMMap test-nestr] ])
   (:use [comzotohlabscljc.util.str :only [nsb nichts? hgl?] ])
-  (:use [comzotohlabscljc.util.ini :only [ParseInifile] ]))
+  (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
 
+  (:import (org.apache.commons.lang3 StringUtils))
+  (:import (com.google.gson JsonObject))
+  (:import (java.io File))
+  (:import (jregex Matcher Pattern))
+  (:import (java.util StringTokenizer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -37,7 +38,6 @@
   (routable? [_ msgInfo] )
   (hasRoutes? [_])
   (crack [_ msgInfo] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -137,7 +137,7 @@
         (.setf! rc :path pp))
       (.setf! rc :placeHolders (persistent! @phs))
       rc
-    )))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -175,7 +175,7 @@
 
   [^File file]
 
-  (let [ stat  (-> file (.getName)(.startsWith "static-"))
+  (let [ stat (-> file (.getName)(.startsWith "static-"))
          cf (ParseInifile file) ]
     (with-local-vars [rc (transient []) ]
       (doseq [ s (seq (.sectionKeys cf)) ]
@@ -200,13 +200,13 @@
 ;; router cracker
 (defn MakeRouteCracker "Create a url route cracker."
 
-  ^comzotohlabscljc.netty.routes.RouteCracker
+  ^comzotohlabscljc.net.routes.RouteCracker
   [routes]
 
   (reify RouteCracker
+    (routable? [this msgInfo] (first (crack this msgInfo)))
     (hasRoutes? [_] (> (count routes) 0))
-    (routable? [this msgInfo]
-      (first (crack this msgInfo)))
+    ;; msgInfo is a json object of http headers...etc
     (crack [_ msgInfo]
       (let [ ^JsonObject info msgInfo
              mtd (-> info (.get "method")(.getAsString))

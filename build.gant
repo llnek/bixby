@@ -400,6 +400,8 @@ target (cljhhhMain: '') { cljhhh_Main() }
 
 target (cljhhhCore: '') { cljhhh_Core() }
 
+target (cljhhhEtc: '') { cljhhh_Etc() }
+
 target (cljhhhIO: '') { cljhhh_IO() }
 
 target (cljhhhAuth: '') { cljhhh_Auth() }
@@ -587,8 +589,9 @@ def compile_clj() {
   clj_Net()
   clj_JMX()
   clj_DBIO()
-  cljhhh_IO()
   cljhhh_Core()
+  cljhhh_IO()
+  cljhhh_Etc()
   cljhhh_Auth()
   cljhhh_MVC()
   cljhhh_Main()
@@ -739,7 +742,7 @@ def clj_Net() {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.net.comms')
-    arg (value: 'comzotohlabscljc.net.rts')
+    arg (value: 'comzotohlabscljc.net.routes')
     arg (value: 'comzotohlabscljc.netty.filesvr')
     arg (value: 'comzotohlabscljc.netty.discarder')
     arg (value: 'comzotohlabscljc.netty.snooper')
@@ -807,6 +810,7 @@ def cljhhh_IO() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.tardis.io.context')
     arg (value: 'comzotohlabscljc.tardis.io.core')
+    arg (value: 'comzotohlabscljc.tardis.io.events')
     arg (value: 'comzotohlabscljc.tardis.io.socket')
     arg (value: 'comzotohlabscljc.tardis.io.files')
     arg (value: 'comzotohlabscljc.tardis.io.http')
@@ -816,7 +820,7 @@ def cljhhh_IO() {
     arg (value: 'comzotohlabscljc.tardis.io.netty')
     arg (value: 'comzotohlabscljc.tardis.io.servlet')
     arg (value: 'comzotohlabscljc.tardis.io.triggers')
-    arg (value: 'comzotohlabscljc.tardis.io.ios')
+    arg (value: 'comzotohlabscljc.tardis.io.webss')
   }
 }
 
@@ -829,9 +833,20 @@ def cljhhh_Core() {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.tardis.core.constants')
-    arg (value: 'comzotohlabscljc.tardis.core.climain')
     arg (value: 'comzotohlabscljc.tardis.core.sys')
-    arg (value: 'comzotohlabscljc.tardis.core.wfs')
+  }
+}
+
+def cljhhh_Etc() {
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'comzotohlabscljc.tardis.etc.climain')
+    arg (value: 'comzotohlabscljc.tardis.etc.wfs')
     arg (value: 'comzotohlabscljc.tardis.etc.cmdline')
     arg (value: 'comzotohlabscljc.tardis.etc.task')
     arg (value: 'comzotohlabscljc.tardis.etc.cli')
