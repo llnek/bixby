@@ -110,7 +110,7 @@ public enum ClientSide {
         options.has("keepalive") && options.get("keep-alive").getAsBoolean() ? "keep-alive" : "close");
     HttpHeaders.setHeader(req, "host", targetUrl.getHost());
     if (cb != null) {
-      cb.call(req);
+      cb.run( new Object[] { req} );
     }
 
     String ct = HttpHeaders.getHeader(req, "content-type");

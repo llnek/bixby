@@ -22,7 +22,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.stream.ChunkedInput;
@@ -54,14 +53,13 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   private RandomAccessFile _file;
   private String _contentType;
-  private HttpRequest _req;
 
-  public HTTPRangeInput(RandomAccessFile file, String cType, HttpRequest req) {
-    initRanges();
+  public HTTPRangeInput(RandomAccessFile file, String cType, String range) {
+    initRanges(range);
   }
 
-  public static boolean accepts(HttpRequest req) {
-    return req.headers().contains("range");
+  public static boolean accepts(String range) {
+    return range != null && range.length() > 0;
   }
 
   public void prepareNettyResponse(HttpResponse rsp) {
@@ -116,12 +114,11 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       }
   }
 
-  private void initRanges() {
+  private void initRanges(String s /* range */) {
     try {
       _clen= _file.length();
       //val ranges = mutable.ArrayBuffer[ (Long,Long) ]()
       // strip off "bytes="
-      String s = nsb(HttpHeaders.getHeader(_req,"range") );
       int pos= s.indexOf("bytes=");
       String[] rvs= (pos == -1) ?  null : s.substring(pos+6).trim().split(",");
       List<Long[]> ranges= new ArrayList<Long[]>();

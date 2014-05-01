@@ -15,7 +15,8 @@
   comzotohlabscljc.tardis.io.http
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [comzotohlabscljc.util.core :only [MubleAPI notnil? juid TryC
+  (:use [comzotohlabscljc.util.core :only [MubleAPI notnil? juid TryC spos?
+                                           ToJavaInt
                                            MakeMMap test-cond Stringify] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.crypto.ssl])
@@ -34,6 +35,7 @@
   (:import (com.zotohlabs.frwk.util NCMap))
   (:import (javax.servlet.http Cookie HttpServletRequest))
   (:import (java.net HttpCookie))
+  (:import (com.google.gson JsonObject))
   (:import (org.eclipse.jetty.continuation Continuation ContinuationSupport))
   (:import (com.zotohlabs.frwk.server Component))
   (:import (com.zotohlabs.frwk.core Versioned Hierarchial
@@ -170,27 +172,52 @@
          bio (:sync cfg)
          tds (:workers cfg)
          pkey (:hhh.pkey cfg)
-         ssl (hgl? file) ]
+         ssl (hgl? file)
+         json (JsonObject.) ]
 
-    (.setAttr! co :port
-               (if (and (number? port)(pos? port)) port (if ssl 443 80)))
-    (.setAttr! co :host (:host cfg))
-    (.setAttr! co :sslType (if (hgl? fv) fv "TLS"))
+    (let [ xxx (if (spos? port) port (if ssl 443 80)) ]
+      (.addProperty json "port" (ToJavaInt port))
+      (.setAttr! co :port port))
+
+    (let [ xxx (nsb (:host cfg)) ]
+      (.addProperty json "host" xxx)
+      (.setAttr! co :host xxx))
+
+    (let [ ^String xxx (if (hgl? fv) fv "TLS") ]
+      (.addProperty json "sslType" xxx)
+      (.setAttr! co :sslType xxx))
 
     (when (hgl? file)
       (test-cond "server-key file url" (.startsWith file "file:"))
-      (.setAttr! co :serverKey (URL. file))
-      (.setAttr! co :pwd (Pwdify ^String (:passwd cfg) pkey)) )
+      (let [ xxx (URL. file) ]
+        (.addProperty json "serverKey" (nsb xxx))
+        (.setAttr! co :serverKey xxx))
+      (let [ xxx (Pwdify ^String (:passwd cfg) pkey) ]
+        (.addProperty json "pwd" (nsb xxx))
+        (.setAttr! co :pwd xxx)))
 
-    (.setAttr! co :sockTimeOut
-               (if (and (number? socto)(pos? socto)) socto 0))
-    (.setAttr! co :async (if (true? bio) false true))
-    (.setAttr! co :workers
-               (if (and (number? tds)(pos? tds)) tds 6))
-    (.setAttr! co :limit
-               (if (and (number? kbs)(pos? kbs)) kbs (* 1024 8))) ;; 8M
-    (.setAttr! co :waitMillis
-               (if (and (number? w)(pos? w)) w 300000)) ;; 5 mins
+    (let [ xxx (if (spos? socto) socto 0) ]
+      (.addProperty json "sockTimeOut" (ToJavaInt xxx))
+      (.setAttr! co :sockTimeOut xxx))
+
+    (let [ xxx (if (true? bio) false true) ]
+      (.addProperty json "async" (true? xxx))
+      (.setAttr! co :async xxx))
+
+    (let [ xxx (if (spos? tds) tds 6) ]
+      (.addProperty json "workers" (ToJavaInt xxx))
+      (.setAttr! co :workers xxx))
+
+    (let [ xxx (if (spos? kbs) kbs (* 1024 1024 8)) ]
+      (.addProperty json "limit" (ToJavaInt xxx))
+      (.setAttr! co :limit xxx))
+
+    ;; 5 mins
+    (let [ xxx (if (spos? w) w 300000) ]
+      (.addProperty json "waitMillis" (ToJavaInt xxx))
+      (.setAttr! co :waitMillis xxx))
+
+    (.setAttr! co :emcfg json)
     co
   ))
 

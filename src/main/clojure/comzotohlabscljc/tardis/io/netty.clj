@@ -286,27 +286,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RouteFilter ""
-
-  ^ChannelHandler
-  ;;[^comzotohlabscljc.hhh.io.core.EmitterAPI co]
-  [^comzotohlabscljc.tardis.core.sys.Element co]
-
-  (proxy [SimpleChannelInboundHandler] []
-    (channelRead0 [c msg]
-      (let [ ^comzotohlabscljc.net.routes.RouteCracker c (.getAttr co :cracker)
-             ^ChannelHandlerContext ctx c
-             ch (.channel ctx) ]
-        (if (instance? HttpRequest msg)
-          (let [ ^HttpRequest req msg
-                 qqq (QueryStringDecoder. (.getUri req)) ]
-            ))
-        (.fireChannelRead ctx msg)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MsgDispatcher ""
+(defn- msgDispatcher ""
 
   ^ChannelHandler
   ;;[^comzotohlabscljc.hhh.core.sys.Element co]
@@ -337,10 +317,9 @@
         (-> pipe
             (.addLast "ssl" (SSLServerHShake/getInstance options))
             (.addLast "codec" (HttpServerCodec.))
-            (.addLast "filter" (RouteFilter co))
             (.addLast "demux" (HttpDemux/getInstance))
             (.addLast "chunker" (ChunkedWriteHandler.))
-            (.addLast "disp" (MsgDispatcher co))
+            (.addLast "disp" (msgDispatcher co))
             (.addLast "error" (ErrorCatcher/getInstance)))
         pipe))
   ))
@@ -352,13 +331,9 @@
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (let [ ^comzotohlabscljc.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
-         cracker (MakeRouteCracker (.getAttr ctr :routes))
-         options (doto (JsonObject.)
-                   (.addProperty "serverkey" (nsb (.getAttr co :serverKey)))
-                   (.addProperty "passwd" (nsb (.getAttr co :passwd))))
+         ^JsonObject options (.getAttr co :emcfg)
          bs (ServerSide/initServerSide (nettyInitor co) options) ]
     (.setAttr! co :netty  { :bootstrap bs })
-    (.setAttr! co :cracker cracker)
     co
   ))
 

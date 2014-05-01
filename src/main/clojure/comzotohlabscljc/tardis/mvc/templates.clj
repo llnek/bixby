@@ -22,7 +22,7 @@
 
   (:import (org.jboss.netty.handler.codec.http HttpMethod HttpHeaders
                                                HttpResponseStatus
-                                               HttpRequest HttpResponse))
+                                               HttpResponse))
   (:import (org.jboss.netty.handler.stream ChunkedFile ChunkedStream ChunkedInput ))
   (:import (org.jboss.netty.channel ChannelFuture ChannelFutureListener Channel))
   (:import [com.zotohlabs.frwk.netty NettyFW])
@@ -30,7 +30,7 @@
   (:import (com.zotohlabs.gallifrey.mvc WebContent WebAsset
                                         HTTPRangeInput AssetCache))
   (:import (java.io RandomAccessFile File))
-  (:import (java.util HashMap)))
+  (:import (java.util Map HashMap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -96,19 +96,18 @@
 ;;
 (defn- fetchAndSetAsset ""
 
-  [^HashMap cache fp ^File file]
+  [^Map cache fp ^File file]
 
-  (let [ wa (if (and (.exists file)
-                    (.canRead file))
-              (make-web-asset file)) ]
-    (if (nil? wa)
-      (do
-        (log/warn "asset-cache: failed to read/find file: " fp)
-        nil)
-      (do
-        (log/debug "asset-cache: cached new file: " fp)
-        (.put cache fp wa)
-        wa))
+  (if-let [ wa (if (and (.exists file)
+                        (.canRead file))
+                   (make-web-asset file)) ]
+    (do
+      (log/debug "asset-cache: cached new file: " fp)
+      (.put cache fp wa)
+      wa)
+    (do
+      (log/warn "asset-cache: failed to read/find file: " fp)
+      nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,21 +133,27 @@
 
   [ ^RandomAccessFile raf
     ^String ct
-    ^HttpRequest req
+    ^JsonObject info
     ^HttpResponse rsp ]
 
-  (if (HTTPRangeInput/accepts req)
-    (let [ inp (HTTPRangeInput. raf ct req) ]
-      (.prepareNettyResponse inp rsp)
-      inp)
-    (ChunkedFile. raf)
+  (let [ ^JsonObject h (.getAsJsonObject info "headers")
+         ^JsonArray r (if (.has h "range")
+                          (.getAsJsonArray h "range")
+                          nil)
+         s (if (or (nil? r)(< (.size r) 1))
+               ""
+               (.get r 0)) ]
+    (if (HTTPRangeInput/accepts s)
+        (doto (HTTPRangeInput. raf ct s)
+              (.prepareNettyResponse rsp))
+        (ChunkedFile. raf))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn replyFileAsset ""
+(defn ReplyFileAsset ""
 
-  [ src ^Channel ch ^HttpRequest req ^HttpResponse rsp ^File file]
+  [ src ^Channel ch ^JsonObject info ^HttpResponse rsp ^File file]
 
   (let [ ^WebAsset asset (if (not (maybeCache file))
                              nil
@@ -159,7 +164,7 @@
           (var-set ct (GuessContentType file "utf-8" "text/plain"))
           (var-set raf (RandomAccessFile. file "r"))
           (var-set clen (.length ^RandomAccessFile @raf))
-          (var-set inp (getFileInput @raf @ct req rsp)))
+          (var-set inp (getFileInput @raf @ct info rsp)))
         (do
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
@@ -168,11 +173,11 @@
       (try
         (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
               (var-set clen 0))
-        (HttpHeaders/setContentLength rsp @clen)
         (HttpHeaders/addHeader rsp "Accept-Ranges" "bytes")
         (HttpHeaders/setHeader rsp "Content-Type" @ct)
+        (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.write ch rsp))
-        (when-not (= (.getMethod req) HttpMethod/HEAD)
+        (when-not (= (-> (.get info "method")(.getAsString)) "HEAD")
                   (var-set wf (.write ch @inp)))
         (.addListener ^ChannelFuture @wf
                       (reify ChannelFutureListener

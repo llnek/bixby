@@ -16,16 +16,18 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.util.core :only [MubleAPI Try! NiceFPath] ])
+  (:use [comzotohlabscljc.util.core :only [ToJavaInt MubleAPI Try! NiceFPath] ])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:use [comzotohlabscljc.tardis.io.http :only [HttpBasicConfig] ])
   (:use [comzotohlabscljc.tardis.io.netty])
   (:use [comzotohlabscljc.tardis.io.core])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.core.constants])
-  (:use [comzotohlabscljc.tardis.mvc.tpls :only [GetLocalFile ReplyFileAsset] ])
+
+  (:use [comzotohlabscljc.tardis.mvc.templates :only [GetLocalFile ReplyFileAsset] ])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
+
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.util Date))
@@ -41,76 +43,97 @@
                                                HttpContentCompressor HttpHeaders HttpVersion
                                                HttpMessage HttpRequest HttpResponse HttpResponseStatus
                                                DefaultHttpResponse HttpMethod))
-  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
+                                     DemuxedMsg
+                                     HttpDemux
+                                     SSLServerSHake ServerLike))
   (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RouteDispatcher ""
+(defn- routeFilter ""
 
   ^ChannelHandler
-  [ ^com.zotohlabs.gallifrey.io.Emitter co ]
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
   (proxy [SimpleChannelInboundHandler] []
-    (channelRead0 [c m]
-      (let [ ^ChannelHandlerContext ctx c
-             ^DemuxedMsg msg m
-             xs (.payload msg)
-             ch (.channel ctx)
-             info (.info msg)
-             ^HTTPEvent evt (IOESReifyEvent co ch info xs)
-             ^comzotohlabscljc.tardis.core.sys.Element
-             ctr (.container co)
-             ^comzotohlabscljc.netty.comms.RouteCracker
-             rcc (.getAttr ^comzotohlabscljc.tardis.core.sys.Element co :rtcObj)
-             [r1 ^comzotohlabscljc.net.rts.RouteInfo r2 r3 r4]
-             (.crack rcc msginfo) ]
-        (cond
-          (and r1 (hgl? r4))
-          (NettyFW/sendRedirect ch false r4)
+    (channelRead0 [c msg]
+      (if (instance? HttpRequest msg)
+        (let [ ^comzotohlabscljc.net.routes.RouteCracker
+               ck (.getAttr co :cracker)
+               ^ChannelHandlerContext ctx c
+               ^HttpRequest req msg
+               ch (.channel ctx)
+               json (doto (JsonObject.)
+                          (.addProperty "method" (NettyFW/getMethod req))
+                          (.addProperty "uri" (NettyFW/getUriPath req)))
+               [r1 r2 r3 r4] (.crack ck json) ]
+          (cond
+            (and r1 (hgl? r4))
+            (NettyFW/sendRedirect ch false ^String r4)
 
+            (= r1 true)
+            (.fireChannelRead ctx msg)
+
+            :else
+            (do
+              (log/debug "failed to match uri: " (.getUri req))
+              (NettyFW/replyXXX ch 404 false)))
+        )))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- msgDispatcher ""
+
+  ^ChannelHandler
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI em
+   ^comzotohlabscljc.hhh.core.sys.Element co]
+
+  (proxy [SimpleChannelInboundHandler] []
+    (channelRead0 [ctx msg]
+      (let [ ^comzotohlabscljc.net.routes.RouteCracker
+             ck (.getAttr co :cracker)
+             ch (.channel ^ChannelHandlerContext ctx)
+             evt (IOESReifyEvent co ch msg)
+             info (.info ^DemuxedMsg msg)
+             [r1 ^comzotohlabscljc.net.routes.RouteInfo r2 r3 r4]
+             (.crack rcc info) ]
+        (cond
           (= r1 true)
           (do
-            (log/debug "matched one route: " (.getPath r2) " , and static = " (.isStatic? r2))
+            (log/debug "matched one route: " (.getPath r2)
+                       " , and static = " (.isStatic? r2))
             (if (.isStatic? r2)
-              (ServeStatic co r2 r3 ch info evt)
-              (ServeRoute co r2 r3 ch evt)))
-
+                (ServeStatic co r2 r3 ch info evt)
+                (ServeRoute co r2 r3 ch evt)))
           :else
           (do
             (log/debug "failed to match uri: " (.getUri evt))
             (ServeError co ch 404)) )))
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- makeRouteDispatcher ""
-  
-  [ co ]
 
-  (fn [^ChannelPipeline pipe options]
-    (.addLast pipe "" (RouteDispatcher. co))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mvcInitor ""
 
-  [co]
+  ^PipelineConfigurator
+  [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ disp (makeRouteDispatcher co) ]
-    (fn [^ChannelPipeline pipe options]
-
-      (-> pipe
-        (AddEnableSSL options)
-        (AddRouteFilter options)
-        (AddExpect100 options)
-        (AddServerCodec options)
-        (AddAuxDecoder options)
-        (AddWriteChunker options)
-        (disp options)
-        (AddExceptionCatcher options)
-
-      ))
+  (proxy [PipelineConfigurator] []
+    (assemble [p o]
+      (let [ ^ChannelPipeline pipe p
+             ^JsonObject options o ]
+        (-> pipe
+            (.addLast "ssl" (SSLServerHShake/getInstance options))
+            (.addLast "codec" (HttpServerCodec.))
+            (.addLast "filter" (routeFilter co))
+            (.addLast "demux" (HttpDemux/getInstance))
+            (.addLast "chunker" (ChunkedWriteHandler.))
+            (.addLast "disp" (msgDispatcher co co))
+            (.addLast "error" (ErrorCatcher/getInstance)))
+        pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,14 +144,12 @@
 
   (let [ ^comzotohlabscljc.tardis.core.sys.Element
          ctr (.parent ^Hierarchial co)
-         rtc (MakeRouteCracker (.getAttr ctr :routes))
-         options { :serverkey (.getAttr co :serverKey)
-                   :passwd (.getAttr co :pwd)
-                   :rtcObj rtc }
-         nes (BootstrapNetty (mvcInitor co) options) ]
-    (log/debug "server-netty - made - success.")
-    (.setAttr! co :rtcObj rtc)
-    (.setAttr! co :netty nes)
+         rts (.getAttr ctr :routes)
+         ^JsonObject options (.getAttr co :emcfg)
+         bs (ServerSide/initServerSide (mvcInitor co)
+                                       options) ]
+    (.setAttr! co :cracker (MakeRouteCracker rts))
+    (.setAttr! co :netty  { :bootstrap bs })
     co
   ))
 
@@ -138,14 +159,34 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
-  (let [ c (nsb (:context cfg)) ]
-    (.setAttr! co :contextPath (strim c))
-    (.setAttr! co :cacheMaxAgeSecs (:cacheMaxAgeSecs cfg))
-    (.setAttr! co :useETags (:useETags cfg))
-    (.setAttr! co :welcomeFiles (:welcomeFiles cfg))
-    (.setAttr! co :router (strim (:handler cfg)))
-    (.setAttr! co :errorRouter (strim (:errorHandler cfg)))
-    (HttpBasicConfig co cfg)
+  (let [ ^JsonObject json (-> (HttpBasicConfig co cfg)
+                              (.getAttr :emcfg))
+         c (nsb (:context cfg)) ]
+
+    ;;(.setAttr! co :welcomeFiles (:welcomeFiles cfg))
+
+    (let [ xxx (strim c) ]
+      (.addProperty json "contextPath" xxx)
+      (.setAttr! co :contextPath xxx))
+
+    (let [ n (:cacheMaxAgeSecs cfg)
+           xxx (if (spos? n) n 3600) ]
+      (.addProperty json "cacheMaxAgeSecs" (ToJavaInt xxx))
+      (.setAttr! co :cacheMaxAgeSecs xxx))
+
+    (let [ xxx (:useETags cfg) ]
+      (.addProperty json "useETags" (true? xxx))
+      (.setAttr! co :useETags xxx))
+
+    (let [ xxx (strim (:handler cfg)) ]
+      (.addProperty json "router" xxx)
+      (.setAttr! co :router xxx))
+
+    (let [ xxx (strim (:errorHandler cfg)) ]
+      (.addProperty json "errorRouter" xxx)
+      (.setAttr! co :errorRouter xxx))
+
+    co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

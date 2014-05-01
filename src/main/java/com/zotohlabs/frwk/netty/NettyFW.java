@@ -193,6 +193,20 @@ public enum NettyFW {
     return pipe;
   }
 
+  public static String getMethod(HttpRequest req) {
+    String mo = HttpHeaders.getHeader( req, "X-HTTP-Method-Override");
+    String mt = req.getMethod().name().toUpperCase();
+    if (mo != null && mo.length() > 0) {
+      return mo;
+    } else {
+     return mt;
+    }
+  }
+
+  public static String getUriPath(HttpRequest req) {
+    return new QueryStringDecoder( req.getUri()).path();
+  }
+
 }
 
 

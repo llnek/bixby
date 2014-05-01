@@ -45,6 +45,7 @@ public class MsgDispatcher extends SimpleChannelInboundHandler<DemuxedMsg> {
   public MsgDispatcher() {
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, DemuxedMsg msg)
       throws Exception {

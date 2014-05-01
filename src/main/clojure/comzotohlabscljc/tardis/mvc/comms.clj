@@ -30,22 +30,22 @@
   (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler
                                         MVCUtils WebAsset WebContent))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (java.util Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io XData))
-  (:import (org.jboss.netty.buffer ChannelBuffers ChannelBuffer))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
-  (:import (org.jboss.netty.channel Channel))
-  (:import (org.jboss.netty.handler.codec.http HttpHeaders$Values HttpHeaders$Names
-                                               HttpContentCompressor
-                                               HttpHeaders HttpVersion
-                                               DefaultHttpRequest HttpResponse
-                                               HttpMessage HttpRequest
-                                               HttpResponseStatus
-                                               DefaultHttpResponse HttpMethod))
-  (:import (com.zotohlabs.frwk.net NetUtils))
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
+                                        CookieDecoder ServerCookieEncoder
+                                        DefaultHttpResponse HttpVersion
+                                        HttpServerCodec
+                                        HttpHeaders LastHttpContent
+                                        HttpHeaders Cookie QueryStringDecoder))
+  (:import (io.netty.buffer Unpooled))
+  (:import (io.netty.channel Channel ChannelHandler
+                             ChannelPipeline ChannelHandlerContext))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,17 +73,18 @@
 
   [ ^comzotohlabscljc.tardis.core.sys.Element src
     ^HTTPEvent evt
-    ^HttpRequest req
+    ^JsonObject info
     ^HttpResponse rsp
     ^File file ]
 
   (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
          lastTm (.lastModified file)
-         eTag  (str "\""  lastTm  "-"  (.hashCode file)  "\"") ]
+         eTag  (str "\""  lastTm  "-"
+                    (.hashCode file)  "\"") ]
     (if (isModified eTag lastTm req)
         (HttpHeaders/setHeader rsp "last-modified"
                   (.format (MVCUtils/getSDF) (Date. lastTm)))
-        (if (= (.getMethod req) HttpMethod/GET)
+        (if (= (-> (.get info "method")(.getAsString)) "GET")
             (.setStatus rsp HttpResponseStatus/NOT_MODIFIED)))
     (HttpHeaders/setHeader rsp "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
@@ -98,7 +99,7 @@
 
   (let [ ctr (.container src)
          appDir (.getAppDir ctr) ]
-    (getLocalFile appDir (str "pages/errors/" code ".html"))
+    (GetLocalFile appDir (str "pages/errors/" code ".html"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,8 +117,8 @@
              cb (if (hgl? h) (MakeObj h) nil)
              ^WebContent
              rc (if (nil? cb)
-                  (reply-error src code)
-                  (.getErrorResponse cb code)) ]
+                    (reply-error src code)
+                    (.getErrorResponse cb code)) ]
         (when-not (nil? rc)
           (HttpHeaders/setHeader ^HttpMessage @rsp "content-type" (.contentType rc))
           (var-set bits (.body rc)))
@@ -125,7 +126,7 @@
                                       (if (nil? @bits) 0 (alength ^bytes @bits)))
         (var-set wf (.write ch @rsp))
         (when-not (nil? @bits)
-          (var-set wf (.write ch (ChannelBuffers/wrappedBuffer ^bytes @bits))))
+          (var-set wf (.write ch (Unpooled/wrappedBuffer ^bytes @bits))))
         (NettyFW/closeCF @wf false))
       (catch Throwable e#
         (NettyFW/closeChannel ch)))
@@ -135,7 +136,7 @@
 ;;
 (defn- handleStatic ""
 
-  [src ^Channel ch req ^HTTPEvent evt ^File file]
+  [src ^Channel ch info ^HTTPEvent evt ^File file]
 
   (let [ rsp (NettyFW/makeHttpReply ) ]
     (try
@@ -143,36 +144,17 @@
               (not (.exists file)))
         (ServeError src ch 404)
         (do
-          (log/debug "serving static file: " (nice-fpath file))
-          (addETag src evt req rsp file)
+          (log/debug "serving static file: " (NiceFPath file))
+          (addETag src evt info rsp file)
           ;; 304 not-modified
           (if (= (-> rsp (.getStatus)(.getCode)) 304)
             (do
               (HttpHeaders/setContentLength rsp 0)
               (NettyFW/closeCF (.write ch rsp) (.isKeepAlive evt) ))
-            (ReplyFileAsset src ch req rsp file))))
+            (ReplyFileAsset src ch info rsp file))))
       (catch Throwable e#
         (log/error "failed to get static resource " (.getUri evt) e#)
         (Try!  (ServeError src ch 500))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- serveWelcomeFile ""
-
-  [^HTTPEvent evt]
-
-  (if (not (.matches (.getUri evt) "/?"))
-    nil
-    (let [ ^Emitter src (.emitter evt)
-           ctr (.container src)
-           appDir (.getAppDir ctr)
-           fs (.getAttr ^comzotohlabscljc.tardis.core.sys.Element src :welcomeFiles) ]
-      (some (fn [^String f]
-              (let [ file (File. appDir (str DN_PUBLIC "/" f)) ]
-                (if (and (.exists file)
-                         (.canRead file)) file nil)))
-            (seq fs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,7 +163,7 @@
 
   [ ^Emitter src
     ^comzotohlabscljc.net.rts.RouteInfo ri
-    ^Matcher mc ^Channel ch req ^HTTPEvent evt]
+    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
   (let [ ^File appDir (-> src (.container)(.getAppDir))
          mpt (nsb (.getf ^comzotohlabscljc.util.core.MubleAPI ri :mountPoint))
@@ -196,8 +178,9 @@
       ;; ONLY serve static assets from *public folder*
       (var-set mp (NiceFPath (File. ^String @mp)))
       (log/debug "request to serve static file: " @mp)
+
       (if (.startsWith ^String @mp ps)
-        (handleStatic src ch req evt (File. ^String @mp))
+        (handleStatic src ch info evt (File. ^String @mp))
         (do
           (log/warn "attempt to access non public file-system: " @mp)
           (ServeError src ch 403))
