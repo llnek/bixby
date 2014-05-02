@@ -34,12 +34,11 @@ public interface SQLr {
   public Object update(Object obj);
   public Object delete(Object obj);
   public Object insert(Object obj);
-  public List<?> select(Object model, String sql, List<?> params);
 
+  public List<?> select(Object model, String sql, List<?> params);
   public List<?> select(String sql, List<?> params);
 
   public Object executeWithOutput(String sql, List<?> params);
-
   public Object execute(String sql, List<?> params);
 
   public int countAll(Object model);

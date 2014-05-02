@@ -41,12 +41,15 @@ import static com.zotohlabs.frwk.io.IOUtils.streamLimit;
 @ChannelHandler.Sharable
 public class FormPostCodec extends RequestCodec {
 
-  protected static final AttributeKey FORMDEC_KEY =AttributeKey.valueOf( "formdecoder");
+  protected static final AttributeKey FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
 
   private static FormPostCodec shared = new FormPostCodec();
-  public static FormPostCodec getInstance() { 
-    return shared; 
+  public static FormPostCodec getInstance() {
+    return shared;
+  }
+
+  public FormPostCodec() {
   }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
@@ -56,22 +59,28 @@ public class FormPostCodec extends RequestCodec {
     delAttr(ctx,FORMITMS_KEY);
     delAttr(ctx,FORMDEC_KEY);
 
-    if (fis != null) fis.destroy();
-    if (dc != null) dc.destroy();
+    if (fis != null) { fis.destroy(); }
+    if (dc != null) { dc.destroy(); }
 
     super.resetAttrs(ctx);
   }
 
   private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req) {
+    JsonObject info = (JsonObject) getAttr(ctx.channel(), MSGINFO_KEY);
+    if (info == null) { info = extractMsgInfo(req); }
+    delAttr(ctx.channel(), MSGINFO_KEY);
+    setAttr(ctx, MSGINFO_KEY, info);
+
     DefaultHttpDataFactory fac= new DefaultHttpDataFactory(streamLimit());
     HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
-    setAttr(ctx ,FORMITMS_KEY, new ULFormItems() );
+    setAttr( ctx , FORMITMS_KEY, new ULFormItems() );
     setAttr( ctx, FORMDEC_KEY, dc);
     setAttr( ctx, XDATA_KEY, new XData() );
     handleFormPostChunk(ctx, req);
   }
 
-  private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) throws IOException {
+  private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) 
+    throws IOException {
     if (data==null) { return; }
     ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
     InterfaceHttpData.HttpDataType dt= data.getHttpDataType();
@@ -89,8 +98,7 @@ public class FormPostCodec extends RequestCodec {
           Object[] fos = IOUtils.newTempFile(true);
           OutputStream os = (OutputStream)fos[1];
           File fp = (File)fos[0];
-          ByteBuf buf = fu.content();
-          slurpByteBuf( buf, os);
+          slurpByteBuf( fu.content() , os);
           org.apache.commons.io.IOUtils.closeQuietly(os);
           fis.add( new ULFileItem( nm , ct, fnm,  new XData( fp)));
         }
@@ -108,7 +116,7 @@ public class FormPostCodec extends RequestCodec {
     }
   }
 
-  private void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc) 
+  private void readHttpDataChunkByChunk(ChannelHandlerContext ctx, HttpPostRequestDecoder dc)
     throws IOException {
     try {
       while (dc.hasNext() ) {

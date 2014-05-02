@@ -18,6 +18,9 @@ package com.zotohlabs.frwk.core;
  */
 public interface Configurable {
 
+  /**
+   * c some configuration object.
+   */
   public void configure( Object c);
 
 }

@@ -1,20 +1,16 @@
 /*??
-*
-* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-*
-* This library is distributed in the hope that it will be useful
-* but without any warranty; without even the implied warranty of
-* merchantability or fitness for a particular purpose.
-*
-* The use and distribution terms for this software are covered by the
-* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-* which can be found in the file epl-v10.html at the root of this distribution.
-*
-* By using this software in any fashion, you are agreeing to be bound by
-* the terms of this license.
-* You must not remove this notice, or any other, from this software.
-*
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
+
 
 package com.zotohlabs.frwk.netty;
 
@@ -42,6 +38,7 @@ import java.net.URL;
 public enum ClientSide {
 ;
 
+  private static final AttributeKey URL_KEY = AttributeKey.valueOf("targetUrl");
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return ClientSide._log; }
 
@@ -56,7 +53,6 @@ public enum ClientSide {
     return bs;
   }
 
-  private static final AttributeKey URL_KEY = AttributeKey.valueOf("targetUrl");
 
   public static Channel connect(Bootstrap bs, URL targetUrl) throws IOException {
     boolean ssl = "https".equals(targetUrl.getProtocol());
@@ -104,14 +100,9 @@ public enum ClientSide {
       mt= mo;
     }
     HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(mt), targetUrl.toString() );
-    //TODO: fix this
-    Callable cb = (Callable) options.get("presend");
     HttpHeaders.setHeader(req, "Connection",
-        options.has("keepalive") && options.get("keep-alive").getAsBoolean() ? "keep-alive" : "close");
+        options.has("keep-alive") && options.get("keep-alive").getAsBoolean() ? "keep-alive" : "close");
     HttpHeaders.setHeader(req, "host", targetUrl.getHost());
-    if (cb != null) {
-      cb.run( new Object[] { req} );
-    }
 
     String ct = HttpHeaders.getHeader(req, "content-type");
     if (clen > 0L && ct == null) {

@@ -1,19 +1,14 @@
 /*??
-*
-* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-*
-* This library is distributed in the hope that it will be useful
-* but without any warranty; without even the implied warranty of
-* merchantability or fitness for a particular purpose.
-*
-* The use and distribution terms for this software are covered by the
-* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-* which can be found in the file epl-v10.html at the root of this distribution.
-*
-* By using this software in any fashion, you are agreeing to be bound by
-* the terms of this license.
-* You must not remove this notice, or any other, from this software.
-*
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
 package com.zotohlabs.frwk.netty;
@@ -83,6 +78,21 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     return ctx.attr(akey).get();
   }
 
+  @SuppressWarnings("unchecked")
+  protected void setAttr( Channel ch, AttributeKey akey,  Object aval) {
+    ch.attr(akey).set(aval);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected void delAttr(Channel ch , AttributeKey akey) {
+    ch.attr(akey).remove();
+  }
+
+  @SuppressWarnings("unchecked")
+  protected Object getAttr( Channel ch, AttributeKey akey) {
+    return ch.attr(akey).get();
+  }
+
   protected void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
     int len = buf==null ? 0 :  buf.readableBytes();
     if (len > 0) {
@@ -99,7 +109,9 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
       for (String s : hdrs.getAll(n)) {
         arr.add( new JsonPrimitive(s));
       }
-      sum.add(n.toLowerCase(), arr);
+      if (arr.size() > 0) {
+        sum.add(n.toLowerCase(), arr);
+      }
     }
     return sum;
   }
@@ -112,7 +124,9 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
       for (String s : en.getValue()) {
         arr.add( new JsonPrimitive(s));
       }
-      sum.add(en.getKey(), arr);
+      if (arr.size() > 0) {
+        sum.add(en.getKey(), arr);
+      }
     }
     return sum;
   }
@@ -166,7 +180,8 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     return rc;
   }
 
-  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) throws IOException {
+  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) 
+    throws IOException {
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
     Object[] fos = IOUtils.newTempFile(true);
     OutputStream os = (OutputStream) fos[1];

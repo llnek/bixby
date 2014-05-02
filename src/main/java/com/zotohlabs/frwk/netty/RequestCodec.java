@@ -59,10 +59,13 @@ public class RequestCodec extends AuxHttpDecoder {
     return shared;
   }
 
+  public RequestCodec() {
+  }
+
   protected void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
-
     if (buf != null) buf.release();
+
     delAttr(ctx,MSGINFO_KEY);
     delAttr(ctx,CBUF_KEY);
     delAttr(ctx,XDATA_KEY);
@@ -125,9 +128,13 @@ public class RequestCodec extends AuxHttpDecoder {
   }
 
   protected void handleInboundMsg(ChannelHandlerContext ctx, HttpMessage msg) throws IOException {
-    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
-    int c;
+    JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
+    if (info == null) { info = extractMsgInfo(msg); }
+    delAttr(ctx.channel(), MSGINFO_KEY);
+    setAttr(ctx, MSGINFO_KEY, info);
+
     boolean good= true;
+    int c;
     setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
     setAttr( ctx, XDATA_KEY, new XData());
     if (msg instanceof HttpResponse) {

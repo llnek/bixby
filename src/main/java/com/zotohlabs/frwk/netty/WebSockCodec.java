@@ -42,8 +42,11 @@ public class  WebSockCodec extends RequestCodec {
   protected static final AttributeKey WSHSK_KEY =AttributeKey.valueOf("wsockhandshaker");
 
   private static final WebSockCodec shared = new WebSockCodec();
-  public static  WebSockCodec getInstance() { 
-    return shared; 
+  public static  WebSockCodec getInstance() {
+    return shared;
+  }
+
+  public WebSockCodec() {
   }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
@@ -65,7 +68,11 @@ public class  WebSockCodec extends RequestCodec {
   }
 
   protected void handleWSock(ChannelHandlerContext ctx , FullHttpRequest req) {
-    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
+    JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
+    if (info == null) { info = extractMsgInfo(req); }
+    delAttr(ctx.channel(), MSGINFO_KEY);
+    setAttr(ctx, MSGINFO_KEY, info);
+
     String prx = maybeSSL(ctx) ?  "wss://" : "ws://";
     String us = prx +  info.get("host").getAsString() + req.getUri();
     WebSocketServerHandshakerFactory wf= new WebSocketServerHandshakerFactory( us, null, false);
@@ -92,8 +99,8 @@ public class  WebSockCodec extends RequestCodec {
 
   protected void readFrame(ChannelHandlerContext ctx, WebSocketFrame frame) throws IOException {
     CompositeByteBuf cbuf = (CompositeByteBuf)  getAttr( ctx, CBUF_KEY);
-    XData xs = (XData) getAttr( ctx, XDATA_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
+    XData xs = (XData) getAttr( ctx, XDATA_KEY);
     if ( !xs.hasContent() &&  tooMuchData( cbuf, frame)) {
       os= switchBufToFile( ctx, cbuf);
     }
@@ -125,14 +132,14 @@ public class  WebSockCodec extends RequestCodec {
     ctx.fireChannelRead( new DemuxedMsg(info, xs) );
   }
 
-  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame) 
+  protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame)
     throws IOException {
     WebSocketServerHandshaker hs = (WebSocketServerHandshaker) getAttr( ctx, WSHSK_KEY);
     Channel ch = ctx.channel();
     tlog().debug( "nio-wsframe: received a " + frame.getClass());
     if (frame instanceof CloseWebSocketFrame) {
-      resetAttrs(ctx);
       hs.close(ch, (CloseWebSocketFrame) frame);
+      resetAttrs(ctx);
       NettyFW.closeChannel(ch);
     }
     else

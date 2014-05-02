@@ -1,19 +1,14 @@
 /*??
-*
-* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-*
-* This library is distributed in the hope that it will be useful
-* but without any warranty; without even the implied warranty of
-* merchantability or fitness for a particular purpose.
-*
-* The use and distribution terms for this software are covered by the
-* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-* which can be found in the file epl-v10.html at the root of this distribution.
-*
-* By using this software in any fashion, you are agreeing to be bound by
-* the terms of this license.
-* You must not remove this notice, or any other, from this software.
-*
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
 package com.zotohlabs.frwk.netty;
@@ -27,6 +22,9 @@ import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpRequest;
 
 import static com.zotohlabs.frwk.util.CoreUtils.nsb;
+import com.zotohlabs.frwk.netty.NettyFW;
+import io.netty.handler.codec.http.HttpResponse;
+
 
 /**
  * @author kenl
@@ -39,32 +37,26 @@ public class HttpDemux extends AuxHttpDecoder {
     return sharedHandler;
   }
 
-  private boolean isFormPost ( HttpMessage req, String method) {
-    String ct = nsb(HttpHeaders.getHeader(req, "content-type")).toLowerCase();
+  private boolean isFormPost ( HttpMessage msg, String method) {
+    String ct = nsb(HttpHeaders.getHeader(msg, "content-type")).toLowerCase();
     // multipart form
     return ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) &&
          ( ct.indexOf("multipart/form-data") >= 0 ||
              ct.indexOf("application/x-www-form-urlencoded") >= 0 );
   }
 
-  private boolean isWSock( HttpMessage req, String method) {
-    String ws = HttpHeaders.getHeader( req ,"upgrade").trim().toLowerCase();
+  private boolean isWSock( HttpMessage msg, String method) {
+    String ws = HttpHeaders.getHeader( msg ,"upgrade").trim().toLowerCase();
     return "GET".equals(method) && "websocket".equals(ws);
   }
 
-  private void doRequest(ChannelHandlerContext ctx, HttpMessage msg) throws Exception {
-    String mo = HttpHeaders.getHeader( msg, "X-HTTP-Method-Override");
-    HttpRequest req = (HttpRequest) msg;
-    String mt = req.getMethod().name().toUpperCase();
+  private void doDemux(ChannelHandlerContext ctx, HttpMessage msg, JsonObject info)
+    throws Exception {
+    String mt = info.get("method").getAsString();
     ChannelPipeline pipe = ctx.pipeline();
     AuxHttpDecoder nxt = null;
-    JsonObject info = extractMsgInfo(msg);
 
-    if (mo != null) {
-      mt = mo.toUpperCase();
-    }
-
-    setAttr(ctx, MSGINFO_KEY, info);
+    setAttr(ctx.channel(), MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
 
     if (isFormPost(msg, mt)) {
@@ -86,8 +78,9 @@ public class HttpDemux extends AuxHttpDecoder {
   }
 
   public void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
-    if (obj instanceof HttpRequest) {
-      doRequest(ctx, (HttpMessage) obj);
+    if (obj instanceof HttpRequest || obj instanceof HttpResponse) {
+      HttpMessage msg = (HttpMessage) obj;
+      doDemux(ctx, msg, extractMsgInfo(msg));
     }
     ctx.fireChannelRead(obj);
   }

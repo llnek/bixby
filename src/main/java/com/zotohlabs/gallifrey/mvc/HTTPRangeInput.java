@@ -1,19 +1,14 @@
 /*??
-*
-* Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-*
-* This library is distributed in the hope that it will be useful
-* but without any warranty; without even the implied warranty of
-* merchantability or fitness for a particular purpose.
-*
-* The use and distribution terms for this software are covered by the
-* Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-* which can be found in the file epl-v10.html at the root of this distribution.
-*
-* By using this software in any fashion, you are agreeing to be bound by
-* the terms of this license.
-* You must not remove this notice, or any other, from this software.
-*
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
 package com.zotohlabs.gallifrey.mvc;
@@ -120,7 +115,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       //val ranges = mutable.ArrayBuffer[ (Long,Long) ]()
       // strip off "bytes="
       int pos= s.indexOf("bytes=");
-      String[] rvs= (pos == -1) ?  null : s.substring(pos+6).trim().split(",");
+      String[] rvs= (pos < 0) ?  null : s.substring(pos+6).trim().split(",");
       List<Long[]> ranges= new ArrayList<Long[]>();
 
       if (rvs != null) for (int n=0; n < rvs.length; ++n) {
@@ -146,7 +141,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       }
       _ranges = bytes.toArray( new ByteRange[0]) ;
       _unsatisfiable = (_ranges.length == 0);
-    } 
+    }
     catch (Throwable e) {
       _unsatisfiable = true;
       tlog().error("", e);
