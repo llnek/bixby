@@ -27,7 +27,6 @@
   (:import (java.util Locale))
   (:import (java.io File)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
@@ -72,7 +71,7 @@
   []
 
  (println (MakeString \= 78))
-  (println "> tardis <commands & options>")
+  (println "> skaro <commands & options>")
   (println "> -----------------")
   (drawHelpLines "> %-35s %s\n" CMDLINE-INFO)
   (println ">")
