@@ -171,7 +171,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn from-gzb64 "Unzip content which is base64 encoded + gziped."
+(defn FromGZB64 "Unzip content which is base64 encoded + gziped."
 
   ^bytes
   [^String gzb64]
@@ -180,7 +180,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn to-gzb64 "Zip content and then base64 encode it."
+(defn ToGZB64 "Zip content and then base64 encode it."
 
   ^String
   [^bytes bits]

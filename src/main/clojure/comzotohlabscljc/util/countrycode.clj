@@ -280,7 +280,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn isUSA? "Returns true if the code is US."
+(defn IsUSA? "Returns true if the code is US."
 
   [^String code]
 

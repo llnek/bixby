@@ -10,26 +10,26 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.tardis.auth)
+(ns
 
-(import '(com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
-(import '(java.io File))
-(import '(com.zotohlabs.frwk.dbio
-  Transactable SQLr MetaCache DBAPI))
+  testcljc.tardis.auth
 
-(require '[comzotohlabscljc.crypto.codec :as CE])
-(require '[comzotohlabscljc.util.core :as CU])
-(use '[comzotohlabscljc.tardis.auth.core])
-(use '[comzotohlabscljc.tardis.auth.dms])
-(use '[comzotohlabscljc.dbio.drivers])
-(use '[comzotohlabscljc.dbio.connect])
-(use '[comzotohlabscljc.dbio.core])
-(use '[comzotohlabscljc.dbio.h2])
-(use '[clojure.test])
+  (:require [comzotohlabscljc.crypto.codec :as CE])
+  (:require [comzotohlabscljc.util.core :as CU])
+  (:use [comzotohlabscljc.tardis.auth.core])
+  (:use [comzotohlabscljc.tardis.auth.dms])
+  (:use [comzotohlabscljc.dbio.drivers])
+  (:use [comzotohlabscljc.dbio.connect])
+  (:use [comzotohlabscljc.dbio.core])
+  (:use [comzotohlabscljc.dbio.h2])
+  (:use [clojure.test])
+  (:import (com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
+  (:import (java.io File))
+  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def METAC (atom (make-MetaCache (comzotohlabscljc.tardis.auth.dms.AuthPluginSchema.))))
+(def METAC (atom (MakeMetaCache (comzotohlabscljc.tardis.auth.dms.AuthPluginSchema.))))
 (def JDBC (atom nil))
 (def DB (atom nil))
 (def ROLES (atom nil))
@@ -37,13 +37,13 @@
 (defn init-test [f]
   (let [ dir (File. (System/getProperty "java.io.tmpdir"))
          db (str "" (System/currentTimeMillis))
-         url (make-h2-db dir db "sa" (CE/pwdify ""))
-        jdbc (make-jdbc (CU/uid)
+         url (MakeH2Db dir db "sa" (CE/Pwdify ""))
+        jdbc (MakeJdbc (CU/juid)
                { :d H2-DRIVER :url url :user "sa" :passwd "" }
-               (CE/pwdify "")) ]
+               (CE/Pwdify "")) ]
     (reset! JDBC jdbc)
-    (apply-authPlugin-ddl jdbc)
-    (reset! DB (dbio-connect jdbc @METAC {})))
+    (ApplyAuthPluginDDL jdbc)
+    (reset! DB (DbioConnect jdbc @METAC {})))
   (if (nil? f) nil (f))
     )
 
@@ -55,10 +55,10 @@
       (.execWith
         sql
         (fn [^SQLr tx]
-          (create-authRole tx "Admin" "???")
-          (create-authRole tx "User" "???")
-          (create-authRole tx "Developer" "???")
-          (create-authRole tx "Tester" "???")))
+          (CreateAuthRole tx "Admin" "???")
+          (CreateAuthRole tx "User" "???")
+          (CreateAuthRole tx "Developer" "???")
+          (CreateAuthRole tx "Tester" "???")))
       (let [ rs (.execWith
                   sql
                   (fn [^SQLr tx]
@@ -85,12 +85,12 @@
            u (.execWith
                sql
                (fn [^SQLr tx]
-                 (create-loginAccount tx "joeb" (CE/pwdify "hi")
+                 (CreateLoginAccount tx "joeb" (CE/Pwdify "hi")
                                       [ (get ros "User") ] )))
            rc (.execWith
                 sql
                 (fn [^SQLr tx]
-                  (dbio-get-m2m {:as :roles :with tx} u))) ]
+                  (DbioGetM2M {:as :roles :with tx} u))) ]
       (== (count rc) 1))))
 
 (defn- load-acct-nouser []
@@ -100,7 +100,7 @@
         (.execWith
           sql
           (fn [^SQLr tx]
-            (get-loginAccount tx "xxxxx" (CE/pwdify "7soiwqhfasfhals"))))
+            (GetLoginAccount tx "xxxxx" (CE/Pwdify "7soiwqhfasfhals"))))
         false
         (catch UnknownUser e#
           true)))))
@@ -112,7 +112,7 @@
         (.execWith
           sql
           (fn [^SQLr tx]
-            (get-loginAccount tx user (CE/pwdify "7soiwqhfasfhals"))))
+            (GetLoginAccount tx user (CE/Pwdify "7soiwqhfasfhals"))))
         false
         (catch AuthError e#
           true)))))
@@ -123,7 +123,7 @@
            u (.execWith
                sql
                (fn [^SQLr tx]
-                 (get-loginAccount tx user (CE/pwdify pwd)))) ]
+                 (GetLoginAccount tx user (CE/Pwdify pwd)))) ]
       (not (nil? u)))))
 
 (deftest testdbio-dbstuff

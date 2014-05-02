@@ -25,7 +25,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IsChild "Returns true if clazz is subclass of this base class."
+(defmulti IsChild? "Returns true if clazz is subclass of this base class."
   (fn [a b]
     (cond
       (instance? Class b)
@@ -36,7 +36,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IsChild :class
+(defmethod IsChild? :class
 
   [^Class basz ^Class cz]
 
@@ -44,11 +44,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IsChild :object
+(defmethod IsChild? :object
 
   [^Class basz ^Object obj]
 
-  (if (or (nil? basz) (nil? obj)) false (IsChild basz (.getClass obj))))
+  (if (or (nil? basz) (nil? obj)) false (IsChild? basz (.getClass obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

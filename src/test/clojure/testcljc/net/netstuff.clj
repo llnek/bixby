@@ -10,16 +10,18 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.net.netstuff)
+(ns testcljc.net.netstuff
 
-(require '[comzotohlabscljc.net.comms :as NU])
-(import '(java.net URL URI))
-(use '[clojure.test])
+  (:require [comzotohlabscljc.net.comms :as NU])
+  (:import (java.net URL URI))
+  (:use [clojure.test]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testnet-netstuff
 
-(is (map? (NU/sync-get (URL. "http://www.google.com"))))
+(is (map? (NU/SyncGet (URL. "http://www.google.com"))))
 
 )
 

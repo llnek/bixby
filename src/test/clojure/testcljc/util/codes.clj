@@ -9,27 +9,29 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
+(ns
 
+  testcljc.util.codes
 
-(ns testcljc.util.codes)
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.util.countrycode :as CC])
+  (:require [comzotohlabscljc.util.usastate :as SC]))
 
-(use '[clojure.test])
-(require '[comzotohlabscljc.util.countrycode :as CC])
-(require '[comzotohlabscljc.util.usastate :as SC])
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-codes
 
-(is (= (CC/find-country "AU") (CC/find-country "au")))
-(is (= "Australia" (CC/find-country "AU")))
-(is (= "AU" (CC/find-code "Australia")))
-(is (false? (CC/usa? "aa")))
-(is (and (CC/usa? "US") (= (CC/usa? "US") (CC/usa? "us"))))
-(is (> (count (CC/list-codes)) 0))
+(is (= (CC/FindCountry "AU") (CC/FindCountry "au")))
+(is (= "Australia" (CC/FindCountry "AU")))
+(is (= "AU" (CC/FindCode "Australia")))
+(is (false? (CC/IsUSA? "aa")))
+(is (and (CC/IsUSA? "US") (= (CC/IsUSA? "US") (CC/IsUSA? "us"))))
+(is (> (count (CC/ListCodes)) 0))
 
-(is (= (SC/find-state "CA") (SC/find-state "ca")))
-(is (= "California" (SC/find-state "ca")))
-(is (= "CA" (SC/find-code "California")))
-(is (> (count (SC/list-codes)) 0))
+(is (= (SC/FindState "CA") (SC/FindState "ca")))
+(is (= "California" (SC/FindState "ca")))
+(is (= "CA" (SC/FindCode "California")))
+(is (> (count (SC/ListCodes)) 0))
 
 )
 

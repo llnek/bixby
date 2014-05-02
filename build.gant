@@ -446,7 +446,7 @@ target (runtestsClj: '') { runtests_Clj() }
 
 target (runTestCode: '') {
   //depends (compileTestCode)
-  depends(runtestsJava,runtestsScala,runtestsClj)
+  depends(runtestsJava,runtestsClj)
   //println 'No test to run.'
 }
 

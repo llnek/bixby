@@ -10,19 +10,23 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.dateutils)
+(ns
 
-(import '(java.util Date))
-(use '[clojure.test])
-(require '[comzotohlabscljc.util.dates :as DU])
+  testcljc.util.dateutils
 
+  (:import (java.util Date))
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.util.dates :as DU]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-dateutils
 
-(is (false? (DU/leap-year? 1999)))
-(is (true? (DU/leap-year? 2000)))
-(is (true? (DU/leap-year? 2020)))
-(is (instance? Date (DU/parse-date "1999/12/12 13:13:13" "yyyy/MM/dd HH:mm:ss")))
-(is (instance? String (DU/fmt-date (Date.) "yyyy/MM/dd HH:mm:ss Z")))
+(is (false? (DU/LeapYear? 1999)))
+(is (true? (DU/LeapYear? 2000)))
+(is (true? (DU/LeapYear? 2020)))
+(is (instance? Date (DU/ParseDate "1999/12/12 13:13:13" "yyyy/MM/dd HH:mm:ss")))
+(is (instance? String (DU/FmtDate (Date.) "yyyy/MM/dd HH:mm:ss Z")))
 
 
 )

@@ -10,26 +10,30 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.procutils)
+(ns
 
-(use '[clojure.test])
-(import '(org.apache.commons.io FileUtils))
-(import '(java.io File))
-(require '[comzotohlabscljc.util.core :as CU])
-(require '[comzotohlabscljc.util.process :as PU])
+  testcljc.util.procutils
+
+  (:use [clojure.test])
+  (:import (org.apache.commons.io FileUtils))
+  (:import (java.io File))
+  (:require [comzotohlabscljc.util.core :as CU])
+  (:require [comzotohlabscljc.util.process :as PU]))
 
 
 (def ^:private CUR_MS (System/currentTimeMillis))
 (def ^:private CUR_FP (File. (str (System/getProperty "java.io.tmpdir") "/" CUR_MS)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-procutils
 
 (is (true? (do
-              (PU/coroutine (fn [] (FileUtils/writeStringToFile ^File CUR_FP "heeloo" "utf-8")))
-              (PU/safe-wait 3500)
+              (PU/Coroutine (fn [] (FileUtils/writeStringToFile ^File CUR_FP "heeloo" "utf-8")))
+              (PU/SafeWait 3500)
               (and (.exists ^File CUR_FP) (>= (.length ^File CUR_FP) 6)))))
 
-(is (> (.length (PU/pid)) 0))
+(is (> (.length (PU/ProcessPid)) 0))
 
 
 )

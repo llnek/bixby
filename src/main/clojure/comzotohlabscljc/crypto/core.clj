@@ -745,7 +745,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; JKS uses SUN and hence needs to use DSA
 ;;
-(defn make-ssv3JKS "Make a SSV3 JKS object."
+(defn MakeSSv3JKS "Make a SSV3 JKS object."
 
   [^String dnStr ^comzotohlabscljc.crypto.codec.Password pwdObj
    ^File out options]

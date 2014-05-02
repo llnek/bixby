@@ -10,36 +10,40 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.fileutils)
+(ns
 
-(use '[clojure.test])
-(import '(org.apache.commons.io FileUtils))
-(import '(com.zotohlabs.frwk.io XData))
-(import '(java.io File))
-(require '[comzotohlabscljc.util.files :as FU])
-(require '[comzotohlabscljc.util.core :as CU])
+  testcljc.util.fileutils
+
+  (:use [clojure.test])
+  (:import (org.apache.commons.io FileUtils))
+  (:import (com.zotohlabs.frwk.io XData))
+  (:import (java.io File))
+  (:require [comzotohlabscljc.util.files :as FU])
+  (:require [comzotohlabscljc.util.core :as CU]))
 
 
 (def ^:private TMP_DIR (File. (System/getProperty "java.io.tmpdir")))
-(def ^:private TMP_FP (File. ^File TMP_DIR (str (CU/uid) ".txt")))
+(def ^:private TMP_FP (File. ^File TMP_DIR (str (CU/juid) ".txt")))
 (eval '(do (FileUtils/writeStringToFile ^File TMP_FP "heeloo")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-fileutils
 
-(is (true? (FU/file-readwrite? TMP_FP)))
-(is (true? (FU/file-read? TMP_FP)))
+(is (true? (FU/FileReadWrite? TMP_FP)))
+(is (true? (FU/FileRead? TMP_FP)))
 
-(is (true? (FU/dir-readwrite? TMP_DIR)))
-(is (true? (FU/dir-read? TMP_DIR)))
+(is (true? (FU/DirReadWrite? TMP_DIR)))
+(is (true? (FU/DirRead? TMP_DIR)))
 
-(is (false? (FU/can-exec? TMP_FP)))
-(is (true? (FU/can-exec? TMP_DIR)))
+(is (false? (FU/CanExec? TMP_FP)))
+(is (true? (FU/CanExec? TMP_DIR)))
 
-(is (= "/tmp/a/b" (FU/parent-path "/tmp/a/b/c")))
-(is (nil?  (FU/parent-path nil)))
+(is (= "/tmp/a/b" (FU/ParentPath "/tmp/a/b/c")))
+(is (nil?  (FU/ParentPath nil)))
 
-(is (= "heeloo" (let [ fp (str (CU/uid) ".txt") ]
-                    (FU/save-file ^File TMP_DIR fp (FU/get-file ^File TMP_DIR (.getName ^File TMP_FP)))
+(is (= "heeloo" (let [ fp (str (CU/juid) ".txt") ]
+                    (FU/SaveFile ^File TMP_DIR fp (FU/GetFile ^File TMP_DIR (.getName ^File TMP_FP)))
                     (FileUtils/readFileToString (File. ^File TMP_DIR fp) "utf-8")) ))
 
 

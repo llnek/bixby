@@ -9,13 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns testcljc.util.win32ini)
-(use '[clojure.test])
-(require '[comzotohlabscljc.util.core :as CU])
-(require '[comzotohlabscljc.util.ini :as WI])
+(ns
 
-(def ^:private INIFILE (WI/parse-inifile (CU/rc-url "com/zotohlabs/frwk/util/sample.ini")))
+  testcljc.util.win32ini
 
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.util.core :as CU])
+  (:require [comzotohlabscljc.util.ini :as WI]))
+
+(def ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlabs/frwk/util/sample.ini")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-wi32ini
 
 (is (= (count (.sectionKeys ^comzotohlabscljc.util.ini.IWin32Conf INIFILE)) 2))

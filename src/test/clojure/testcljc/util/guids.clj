@@ -10,23 +10,27 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.guids)
+(ns
 
-(use '[clojure.test])
-(require '[comzotohlabscljc.util.guids :as GU])
+  testcljc.util.guids
+
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.util.guids :as GU]))
 
 ;;(def ^:private UID_2 (GU/new-uuid))
 ;;(def ^:private UID_1 (GU/new-uuid))
 ;;(def ^:private WID_2 (GU/new-wwid))
 ;;(def ^:private WID_1 (GU/new-wwid))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-guids
 
-(is (not (= (GU/new-wwid) (GU/new-wwid))))
-(is (not (= (GU/new-uuid) (GU/new-uuid))))
+(is (not (= (GU/NewWWid) (GU/NewWWid))))
+(is (not (= (GU/NewUUid) (GU/NewUUid))))
 
-(is (= (.length (GU/new-wwid)) 48))
-(is (= (.length (GU/new-uuid)) 36))
+(is (= (.length (GU/NewWWid)) 48))
+(is (= (.length (GU/NewUUid)) 36))
 
 )
 

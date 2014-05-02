@@ -10,16 +10,19 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.seqnumgen)
+(ns
 
-(use '[clojure.test])
-(require '[comzotohlabscljc.util.seqnum :as SN])
+  testcljc.util.seqnumgen
 
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.util.seqnum :as SN]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-seqnumgen
 
-(is (> (SN/next-long) 0))
-(is (> (SN/next-int) 0))
+(is (> (SN/NextLong) 0))
+(is (> (SN/NextInt) 0))
 
 )
 

@@ -10,36 +10,40 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.mimeutils)
+(ns
 
-(use '[clojure.test])
-(import '(java.io File InputStream))
-(require '[comzotohlabscljc.util.core :as CU])
-(require '[comzotohlabscljc.util.io :as IO])
-(require '[comzotohlabscljc.util.mime :as MU])
+  testcljc.util.mimeutils
+
+  (:use [clojure.test])
+  (:import (java.io File InputStream))
+  (:require [comzotohlabscljc.util.core :as CU])
+  (:require [comzotohlabscljc.util.io :as IO])
+  (:require [comzotohlabscljc.util.mime :as MU]))
 
 
-(eval '(MU/setup-cache (CU/rc-url "com/zotohlabs/frwk/mime/mime.properties")))
+(eval '(MU/SetupCache (CU/ResUrl "com/zotohlabs/frwk/mime/mime.properties")))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-mimeutils
 
-(is (= "utf-16" (MU/get-charset "text/plain; charset=utf-16")))
+(is (= "utf-16" (MU/GetCharset "text/plain; charset=utf-16")))
 
-(is (true? (MU/is-signed? "saljas application/x-pkcs7-mime laslasdf lksalfkla multipart/signed signed-data ")))
-(is (true? (MU/is-encrypted? "saljas laslasdf lksalfkla application/x-pkcs7-mime  enveloped-data ")))
-(is (true? (MU/is-compressed? "saljas laslasdf lksalfkla application/pkcs7-mime compressed-data")))
-(is (true? (MU/is-mdn? "saljas laslasdf lksalfkla multipart/report   disposition-notification    ")))
+(is (true? (MU/IsSigned? "saljas application/x-pkcs7-mime laslasdf lksalfkla multipart/signed signed-data ")))
+(is (true? (MU/IsEncrypted? "saljas laslasdf lksalfkla application/x-pkcs7-mime  enveloped-data ")))
+(is (true? (MU/IsCompressed? "saljas laslasdf lksalfkla application/pkcs7-mime compressed-data")))
+(is (true? (MU/IsMDN? "saljas laslasdf lksalfkla multipart/report   disposition-notification    ")))
 
-(is (instance? InputStream (MU/maybe-stream (IO/streamify (CU/bytesify "hello")))))
-(is (instance? InputStream (MU/maybe-stream (CU/bytesify "hello"))))
-(is (instance? InputStream (MU/maybe-stream "hello")))
-(is (not (instance? InputStream (MU/maybe-stream 3))))
+(is (instance? InputStream (MU/MaybeStream (IO/Streamify (CU/Bytesify "hello")))))
+(is (instance? InputStream (MU/MaybeStream (CU/Bytesify "hello"))))
+(is (instance? InputStream (MU/MaybeStream "hello")))
+(is (not (instance? InputStream (MU/MaybeStream 3))))
 
-(is (= "a b" (MU/url-decode (MU/url-encode "a b"))))
+(is (= "a b" (MU/UrlDecode (MU/UrlEncode "a b"))))
 
-(is (>= (.indexOf (MU/guess-mimetype (File. "/tmp/abc.jpeg")) "image/") 0))
-(is (> (.indexOf (MU/guess-contenttype (File. "/tmp/abc.pdf")) "/pdf") 0))
+(is (>= (.indexOf (MU/GuessMimeType (File. "/tmp/abc.jpeg")) "image/") 0))
+(is (> (.indexOf (MU/GuessContentType (File. "/tmp/abc.pdf")) "/pdf") 0))
 
 
 

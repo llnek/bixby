@@ -10,27 +10,22 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.i18n.i18nstuff)
+(ns
 
-(use '[clojure.test])
-(require '[comzotohlabscljc.i18n.resources :as NU])
-(require '[comzotohlabscljc.util.core :as CU])
+  testcljc.i18n.i18nstuff
+
+  (:use [clojure.test])
+  (:require [comzotohlabscljc.i18n.resources :as NU])
+  (:require [comzotohlabscljc.util.core :as CU]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testi18n-i18nstuff
 
 (is (= "hello joe, how is your dawg"
-       (let [ rs (NU/load-resource (CU/rc-url "com/zotohlabs/frwk/i18n/Resources_en.properties")) ]
-           (NU/get-string rs "test" [ "joe", "dawg" ]))))
-
-
-
-
-
-
-
-
-
+       (let [ rs (NU/LoadResource (CU/ResUrl "com/zotohlabs/frwk/i18n/Resources_en.properties")) ]
+           (NU/GetString rs "test" [ "joe", "dawg" ]))))
 
 )
 

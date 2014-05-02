@@ -9,16 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
+(ns 
+  
+  testcljc.util.coreutils
 
-(ns testcljc.util.coreutils)
-
-(use '[clojure.test])
-(import '(java.util Properties Date Calendar))
-(import '(java.sql Timestamp))
-(import '(java.net URL))
-(import '(java.io FileOutputStream File))
-(import '(java.nio.charset Charset))
-(require '[comzotohlabscljc.util.core :as CU])
+  (:use [clojure.test])
+  (:import (java.util Properties Date Calendar))
+  (:import (java.sql Timestamp))
+  (:import (java.net URL))
+  (:import (java.io FileOutputStream File))
+  (:import (java.nio.charset Charset))
+  (:require [comzotohlabscljc.util.core :as CU]))
 
 
 (def ^:private VAR_USER (System/getProperty "user.name"))
@@ -30,93 +31,94 @@
   (.put ^Properties dummyProperties "1" "hello${user.name}")
   (.put ^Properties dummyProperties "2" "hello${PATH}")
   (.put ^Properties dummyProperties "3" "${user.name}${PATH}")
-  (def ^:private dummyPropertiesResult (CU/subs-props dummyProperties))))
+  (def ^:private dummyPropertiesResult (CU/SubsProps dummyProperties))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutil-coreutils
 
-(is (CU/is-nichts? CU/NICHTS))
-(is (not (CU/is-nichts? "")))
-(is (= (CU/nil-nichts nil) CU/NICHTS))
-(is (= (CU/nil-nichts "") ""))
+(is (CU/IsNichts? CU/NICHTS))
+(is (not (CU/IsNichts? "")))
+(is (= (CU/NilNichts nil) CU/NICHTS))
+(is (= (CU/NilNichts "") ""))
 
-(is (not (CU/match-char? \space #{ \a \b \x })))
-(is (CU/match-char? \x #{ \a \b \x }))
+(is (not (CU/MatchChar? \space #{ \a \b \x })))
+(is (CU/MatchChar? \x #{ \a \b \x }))
 
-(is (not (nil? (CU/sysvar "java.io.tmpdir"))))
-(is (not (nil? (CU/envvar "PATH"))))
+(is (not (nil? (CU/SysVar "java.io.tmpdir"))))
+(is (not (nil? (CU/EnvVar "PATH"))))
 
-(is (not (nil? (CU/uid))))
-(is (< (.indexOf (CU/uid) ":\\-") 0))
+(is (not (nil? (CU/juid))))
+(is (< (.indexOf (CU/juid) ":\\-") 0))
 
-(is (not (nil? (CU/new-random))))
+(is (not (nil? (CU/NewRandom))))
 
-(is (instance? Timestamp (CU/now-jtstamp)))
-(is (instance? Date (CU/now-date)))
-(is (instance? Calendar (CU/now-cal)))
+(is (instance? Timestamp (CU/NowJTstamp)))
+(is (instance? Date (CU/NowDate)))
+(is (instance? Calendar (CU/NowCal)))
 
-(is (instance? Charset (CU/to-charset "utf-16")))
-(is (instance? Charset (CU/to-charset)))
+(is (instance? Charset (CU/ToCharset "utf-16")))
+(is (instance? Charset (CU/ToCharset)))
 
-(is (= "/c:/temp/abc.txt" (CU/nice-fpath (File. "/c:\\temp\\abc.txt"))))
-(is (= "/c:/temp/abc.txt" (CU/nice-fpath "/c:\\temp\\abc.txt")))
+(is (= "/c:/temp/abc.txt" (CU/NiceFPath (File. "/c:\\temp\\abc.txt"))))
+(is (= "/c:/temp/abc.txt" (CU/NiceFPath "/c:\\temp\\abc.txt")))
 
-(is (= (str "hello" VAR_PATH "world" VAR_USER) (CU/subs-var "hello${PATH}world${user.name}")))
-(is (= (str "hello" VAR_PATH) (CU/subs-evar "hello${PATH}")))
-(is (= (str "hello" VAR_USER) (CU/subs-svar "hello${user.name}")))
-
+(is (= (str "hello" VAR_PATH "world" VAR_USER) (CU/SubsVar "hello${PATH}world${user.name}")))
+(is (= (str "hello" VAR_PATH) (CU/SubsEVar "hello${PATH}")))
+(is (= (str "hello" VAR_USER) (CU/SubsSVar "hello${user.name}")))
 
 (is (= (str VAR_USER VAR_PATH) (.getProperty ^Properties dummyPropertiesResult "3")))
 (is (= (str "hello" VAR_USER) (.getProperty ^Properties dummyPropertiesResult "1")))
 (is (= (str "hello" VAR_PATH) (.getProperty ^Properties dummyPropertiesResult "2")))
 
-(is (= "Java Virtual Machine Specification" (CU/sysprop "java.vm.specification.name")))
+(is (= "Java Virtual Machine Specification" (CU/SysProp "java.vm.specification.name")))
 
-(is (= "/tmp/a/b/c" (CU/trim-lastPathSep  "/tmp/a/b/c////")))
-(is (= "c:\\temp" (CU/trim-lastPathSep  "c:\\temp\\\\\\\\")))
+(is (= "/tmp/a/b/c" (CU/TrimLastPathSep  "/tmp/a/b/c////")))
+(is (= "c:\\temp" (CU/TrimLastPathSep  "c:\\temp\\\\\\\\")))
 
-(is (= "heeloo" (CU/deserialize (CU/serialize "heeloo"))))
+(is (= "heeloo" (CU/Deserialize (CU/Serialize "heeloo"))))
 
-(is (= "java.lang.String" (CU/get-classname "")))
+(is (= "java.lang.String" (CU/GetClassname "")))
 
-;;(is (= "/tmp/a/b/c" (CU/file-path (File. "/tmp/a/b/c"))))
+;;(is (= "/tmp/a/b/c" (CU/FilePath (File. "/tmp/a/b/c"))))
 
-;;(is (true? (CU/is-unix?)))
+;;(is (true? (CU/IsUnix?)))
 
-(is (= (double 100) (CU/conv-double  "xxxx" 100.0)))
-(is (= 23.23 (CU/conv-double  "23.23" 100.0)))
-(is (= 100 (CU/conv-long "xxxx" 100)))
-(is (= 23 (CU/conv-long "23" 100)))
+(is (= (double 100) (CU/ConvDouble  "xxxx" 100.0)))
+(is (= 23.23 (CU/ConvDouble  "23.23" 100.0)))
+(is (= 100 (CU/ConvLong "xxxx" 100)))
+(is (= 23 (CU/ConvLong "23" 100)))
 
-(is (true? (CU/conv-bool "true")))
-(is (true? (CU/conv-bool "yes")))
-(is (true? (CU/conv-bool "1")))
-(is (false? (CU/conv-bool "false")))
-(is (false? (CU/conv-bool "no")))
-(is (false? (CU/conv-bool "0")))
+(is (true? (CU/ConvBool "true")))
+(is (true? (CU/ConvBool "yes")))
+(is (true? (CU/ConvBool "1")))
+(is (false? (CU/ConvBool "false")))
+(is (false? (CU/ConvBool "no")))
+(is (false? (CU/ConvBool "0")))
 
 (is (= 3 (.size
-  (let [ fp (File. (str (System/getProperty "java.io.tmpdir") "/" (CU/uid))) ]
+  (let [ fp (File. (str (System/getProperty "java.io.tmpdir") "/" (CU/juid))) ]
     (with-open [ os (FileOutputStream. fp) ] (.store ^Properties dummyProperties os ""))
-    (CU/load-javaprops fp)) )))
+    (CU/LoadJavaProps fp)) )))
 
-(is (= "heeloo" (CU/stringify (CU/bytesify "heeloo"))))
+(is (= "heeloo" (CU/Stringify (CU/Bytesify "heeloo"))))
 
-(is (instance? (class (byte-array 0)) (CU/rc-bytes dummyResourcePath)))
-(is (> (.length (CU/rc-str dummyResourcePath)) 0))
-(is (instance? java.net.URL (CU/rc-url dummyResourcePath)))
+(is (instance? (class (byte-array 0)) (CU/ResBytes dummyResourcePath)))
+(is (> (.length (CU/ResStr dummyResourcePath)) 0))
+(is (instance? java.net.URL (CU/ResUrl dummyResourcePath)))
 
-(is (= "heeloo" (CU/stringify (CU/inflate (CU/deflate (CU/bytesify "heeloo"))))))
+(is (= "heeloo" (CU/Stringify (CU/Inflate (CU/Deflate (CU/Bytesify "heeloo"))))))
 
-(is (= "0x24A0x3cb0x3eZ0x21" (CU/normalize "$A<b>Z!")))
+(is (= "0x24A0x3cb0x3eZ0x21" (CU/Normalize "$A<b>Z!")))
 
-(is (> (CU/now-millis) 0))
+(is (> (CU/NowMillis) 0))
 
-(is (= "/tmp/abc.txt" (CU/get-fpath "file:/tmp/abc.txt")))
+(is (= "/tmp/abc.txt" (CU/GetFPath "file:/tmp/abc.txt")))
 
-(is (instance? URL (CU/fmt-fileurl "/tmp/abc.txt")))
+(is (instance? URL (CU/FmtFileUrl "/tmp/abc.txt")))
 
-(is (and (instance? File (CU/get-tmpdir)) (not (= (CU/make-tmpdir) (CU/get-tmpdir)))))
+(is (and (instance? File (CU/GetTmpDir)) (not (= (CU/MakeTmpDir) (CU/GetTmpDir)))))
 
 (is (true? (do (CU/test-isa "" (Class/forName "java.lang.Long") (Class/forName "java.lang.Number")) true)))
 (is (true? (do (CU/test-isa "" "" (Class/forName "java.lang.Object")) true)))
@@ -136,28 +138,27 @@
 
 (is (false? (CU/notnil? nil)))
 (is (true? (CU/notnil? "")))
-(is (= 3 (count (CU/flatten-nil '(1 2 nil nil 3)))))
-(is (= 3 (count (CU/flatten-nil '(1 2 3)))))
-(is (= 3 (count (CU/flatten-nil [1 nil 2 nil 3]))))
+(is (= 3 (count (CU/FlattenNil '(1 2 nil nil 3)))))
+(is (= 3 (count (CU/FlattenNil '(1 2 3)))))
+(is (= 3 (count (CU/FlattenNil [1 nil 2 nil 3]))))
 (is (= 0.0 (CU/ndz nil)))
 (is (= 0 (CU/nnz nil)))
 (is (false? (CU/nbf nil)))
 
-(is (thrown? IllegalArgumentException (CU/throw-badarg "a")))
+(is (thrown? IllegalArgumentException (CU/ThrowBadArg "a")))
 
-(is (true? (let [ x (IllegalArgumentException. "") ] (identical? x (CU/root-cause x)))))
+(is (true? (let [ x (IllegalArgumentException. "") ] (identical? x (CU/RootCause x)))))
 
-(is (= "java.lang.IllegalArgumentException: heeloo" (CU/root-causemsg (IllegalArgumentException. "heeloo"))))
+(is (= "java.lang.IllegalArgumentException: heeloo" (CU/RootCauseMsg (IllegalArgumentException. "heeloo"))))
 
-(is (= 3 (count (CU/gen-numbers 1 10 3))))
+(is (= 3 (count (CU/GenNumbers 1 10 3))))
 
-(is (= "ACZ" (CU/sort-join [ "Z" "C" "A"])))
+(is (= "ACZ" (CU/SortJoin [ "Z" "C" "A"])))
 
-(is (false? (nil? (:1 (CU/into-map dummyProperties)))))
-(is (= 3 (count (CU/into-map dummyProperties))))
+(is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
+(is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.mm-g (doto ^comzotohlabscljc.util.core.MutableMap (CU/make-mmap) (.mm-s :1 100)) :1)))
-
+(is (= 100 (.getf (doto ^comzotohlabscljc.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
 
 
 )

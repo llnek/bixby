@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn same? "Returns true if these 2 strings are the same."
+(defn Same? "Returns true if these 2 strings are the same."
 
   [^String a ^String b]
 

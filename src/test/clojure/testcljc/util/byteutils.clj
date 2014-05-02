@@ -10,24 +10,27 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns testcljc.util.byteutils)
+(ns 
+  
+  testcljc.util.byteutils
 
-(use '[clojure.test])
-(import '(java.nio.charset Charset))
-(require '[comzotohlabscljc.util.bytes :as BU])
-
+  (:use [clojure.test])
+  (:import (java.nio.charset Charset))
+  (:require [comzotohlabscljc.util.bytes :as BU]))
 
 (def ^:private CS_UTF8 "utf-8")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest testutils-byteutils
 
-(is (= "heeloo" (String. (BU/to-chars (BU/to-bytes (.toCharArray "heeloo") CS_UTF8) CS_UTF8))))
+(is (= "heeloo" (String. (BU/ToChars (BU/ToBytes (.toCharArray "heeloo") CS_UTF8) CS_UTF8))))
 
-(is (= 4 (alength ^bytes (BU/write-bytes (Integer/MAX_VALUE)))))
-(is (= 8 (alength ^bytes (BU/write-bytes (Long/MAX_VALUE)))))
+(is (= 4 (alength ^bytes (BU/WriteBytes (Integer/MAX_VALUE)))))
+(is (= 8 (alength ^bytes (BU/WriteBytes (Long/MAX_VALUE)))))
 
-(is (= (Integer/MAX_VALUE) (BU/read-int (BU/write-bytes (Integer/MAX_VALUE)))))
-(is (= (Long/MAX_VALUE) (BU/read-long (BU/write-bytes (Long/MAX_VALUE)))))
+(is (= (Integer/MAX_VALUE) (BU/ReadInt (BU/WriteBytes (Integer/MAX_VALUE)))))
+(is (= (Long/MAX_VALUE) (BU/ReadLong (BU/WriteBytes (Long/MAX_VALUE)))))
 
 )
 
