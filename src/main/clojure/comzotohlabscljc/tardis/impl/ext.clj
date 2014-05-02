@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:require [clojure.data.json :as json])
-  (:use [comzotohlabscljc.tardis.io.core :rename {Enabled? io-enabled?} ])
+  (:use [comzotohlabscljc.tardis.io.core :rename {enabled? io-enabled?} ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.io.loops])
   (:use [comzotohlabscljc.tardis.io.mails])
@@ -28,7 +28,7 @@
   (:use [comzotohlabscljc.tardis.io.socket])
   (:use [comzotohlabscljc.tardis.mvc.handler])
   (:use [comzotohlabscljc.tardis.impl.defaults
-         :rename {Enabled? blockmeta-enabled?
+         :rename {enabled? blockmeta-enabled?
                   start kernel-start
                   stop kernel-stop } ])
   (:use [comzotohlabscljc.tardis.etc.misc])
@@ -44,7 +44,7 @@
   (:use [ comzotohlabscljc.dbio.connect :only [DbioConnect] ])
   (:use [ comzotohlabscljc.dbio.core
          :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
-  (:use [ comzotohlabscljc.net.rts :only [LoadRoutes] ])
+  (:use [ comzotohlabscljc.net.routes :only [LoadRoutes] ])
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (freemarker.template Configuration Template DefaultObjectWrapper))
@@ -92,7 +92,7 @@
     (with-meta
       (reify
 
-        MuObj
+        MubleAPI
 
         (setf! [_ k v] (.setf! impl k v))
         (clear! [_] (.clear! impl))
@@ -400,7 +400,7 @@
               (throw (ServiceError. (str "No such Service: " svc "."))))
             (make-service-block bk this nm cfg))) )
 
-    { :typeid (keyword "czc.tardis.ext/Container") } i
+    { :typeid (keyword "czc.tardis.ext/Container") }
 
   )) )
 
@@ -578,7 +578,7 @@
                                  sc)
                                (MakeSchema [])) ))
 
-    (when (nichts? mCZ) (warn "no main-class defined."))
+    (when (nichts? mCZ) (log/warn "no main-class defined."))
     ;;(test-nestr "Main-Class" mCZ)
 
     (when (hgl? mCZ)

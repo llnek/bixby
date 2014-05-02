@@ -24,7 +24,7 @@
   (:use [comzotohlabscljc.dbio.sqlserver])
   (:use [comzotohlabscljc.dbio.oracle])
 
-  (:import (com.zotohlabs.frwk.dbio DBIOError JDBCInfo Schema))
+  (:import (com.zotohlabs.frwk.dbio JDBCInfo Schema))
   (:import (java.io File))
   (:import (org.apache.commons.io FileUtils)))
 
@@ -108,7 +108,7 @@
       :h2 H2
       (:sqlserver :mssql) SQLServer
       :oracle Oracle
-      (throw (DBIOError. (str "Unsupported database type: " dbtype))))
+      (DbioError (str "Unsupported database type: " dbtype)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

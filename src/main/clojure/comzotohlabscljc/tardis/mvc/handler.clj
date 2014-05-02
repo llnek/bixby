@@ -14,9 +14,9 @@
 
   comzotohlabscljc.tardis.mvc.handler
 
+  (:use [comzotohlabscljc.util.core :only [spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.util.core :only [ToJavaInt MubleAPI Try! NiceFPath] ])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:use [comzotohlabscljc.tardis.io.http :only [HttpBasicConfig] ])
   (:use [comzotohlabscljc.tardis.io.netty])
@@ -25,28 +25,36 @@
   (:use [comzotohlabscljc.tardis.core.constants])
 
   (:use [comzotohlabscljc.tardis.mvc.templates :only [GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.tardis.mvc.comms])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
+  (:use [comzotohlabscljc.net.routes])
 
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.util Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.google.gson JsonObject))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
   (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
   (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler MVCUtils WebAsset WebContent))
-  (:import (org.jboss.netty.buffer ChannelBuffers ChannelBuffer))
-  (:import (org.jboss.netty.channel Channel))
-  (:import (org.jboss.netty.handler.codec.http HttpHeaders$Values HttpHeaders$Names
-                                               DefaultHttpRequest
-                                               HttpContentCompressor HttpHeaders HttpVersion
-                                               HttpMessage HttpRequest HttpResponse HttpResponseStatus
-                                               DefaultHttpResponse HttpMethod))
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
+                                        CookieDecoder ServerCookieEncoder
+                                        DefaultHttpResponse HttpVersion
+                                        HttpServerCodec
+                                        HttpHeaders LastHttpContent
+                                        HttpHeaders Cookie QueryStringDecoder))
+  (:import (io.netty.bootstrap ServerBootstrap))
+  (:import (io.netty.channel Channel ChannelHandler
+                             SimpleChannelInboundHandler
+                             ChannelPipeline ChannelHandlerContext))
+  (:import (io.netty.handler.stream ChunkedWriteHandler))
+
   (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
-                                     DemuxedMsg
+                                     DemuxedMsg PipelineConfigurator
                                      HttpDemux
-                                     SSLServerSHake ServerLike))
+                                     SSLServerHShake ServerSide))
   (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,14 +96,14 @@
 
   ^ChannelHandler
   [^comzotohlabscljc.tardis.io.core.EmitterAPI em
-   ^comzotohlabscljc.hhh.core.sys.Element co]
+   ^comzotohlabscljc.tardis.core.sys.Element co]
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
       (let [ ^comzotohlabscljc.net.routes.RouteCracker
-             ck (.getAttr co :cracker)
+             rcc (.getAttr co :cracker)
              ch (.channel ^ChannelHandlerContext ctx)
-             evt (IOESReifyEvent co ch msg)
+             ^HTTPEvent evt (IOESReifyEvent co ch msg)
              info (.info ^DemuxedMsg msg)
              [r1 ^comzotohlabscljc.net.routes.RouteInfo r2 r3 r4]
              (.crack rcc info) ]
@@ -159,8 +167,8 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
-  (let [ ^JsonObject json (-> (HttpBasicConfig co cfg)
-                              (.getAttr :emcfg))
+  (HttpBasicConfig co cfg)
+  (let [ ^JsonObject json (.getAttr co :emcfg)
          c (nsb (:context cfg)) ]
 
     ;;(.setAttr! co :welcomeFiles (:welcomeFiles cfg))

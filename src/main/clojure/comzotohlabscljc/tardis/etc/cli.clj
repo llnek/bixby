@@ -11,16 +11,20 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   comzotohlabscljc.tardis.etc.cli
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
   (:require [clojure.data.json :as json])
+  (:require [clojure.string :as cstr])
+
   (:use [comzotohlabscljc.util.files :only [Unzip] ])
   (:use [comzotohlabscljc.util.core :only [juid IsWindows?] ])
   (:use [comzotohlabscljc.util.str :only [strim nsb] ])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
   (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.core.sys])
+
   (:use [comzotohlabscljc.tardis.etc.task])
 
   (:import (org.apache.commons.io.filefilter FileFileFilter FileFilterUtils))
@@ -40,11 +44,11 @@
 
   [^File srcDir ^File destDir ext]
 
-  (FileUtils/copyDirectory
-    srcDir
-    destDir
-    (FileFilterUtils/andFileFilter FileFileFilter/FILE
-                                   (FileFilterUtils/suffixFileFilter (str "." ext)))
+  (FileUtils/copyDirectory srcDir
+                           destDir
+                           (FileFilterUtils/andFileFilter
+                             FileFileFilter/FILE
+                             (FileFilterUtils/suffixFileFilter (str "." ext)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +72,7 @@
          prog (.getCanonicalPath (File. hhhHome "bin/skaro"))
          pj (if (IsWindows?)
                 (MakeExecTask "cmd.exe" hhhHome
-                             [ "/C" "start" "/B" "/MIN" prog2 "start" ])
+                              [ "/C" "start" "/B" "/MIN" prog2 "start" ])
                 (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
     (ExecProj pj)
   ))
@@ -79,8 +83,8 @@
 
   [^File hhhHome appId]
 
-  (let [ srcDir (File. hhhHome (str "apps/" appId))
-         pod (File. hhhHome (str "pods/" appId ".pod"))
+  (let [ pod (File. hhhHome (str "pods/" appId ".pod"))
+         srcDir (File. hhhHome (str "apps/" appId))
          pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
     (ExecProj pj)
   ))
@@ -115,8 +119,8 @@
          dest (File. hhhHome (str "apps/demo-" demoId)) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
-      (.mkdirs dest)
-      (unzip fp dest))
+          (.mkdirs dest)
+          (Unzip fp dest))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,7 +134,7 @@
     (log/debug "Unzipping all samples.")
     (doseq [ ^File f (seq fs) ]
       (when (and (.isFile f) (.endsWith (.getName f) ".pod"))
-        (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
+            (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,8 +143,8 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ appDir (File. hhhHome (str "apps/" appId))
-         h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
+  (let [ h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
+         appDir (File. hhhHome (str "apps/" appId))
          appDomainPath (.replace appDomain "." "/") ]
     (-> (File. h2db) (.mkdirs))
     (with-local-vars [ fp nil ]
@@ -252,12 +256,11 @@
             (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
             (StringUtils/replace "@@APPTYPE@@" flavor)
             (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome))) "utf-8")
-
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn createBasic ""
+(defn CreateBasic ""
 
   [^File hhhHome appId ^String appDomain]
 

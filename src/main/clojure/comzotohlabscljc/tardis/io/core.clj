@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.core.sys])
-  (:use [comzotohlabscljc.util.core :only [ThrowIOE MakeMMap TryC] ])
+  (:use [comzotohlabscljc.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
 
   (:import (com.zotohlabs.frwk.server Component Service))
   (:import (java.util.concurrent ConcurrentHashMap))
@@ -25,6 +25,7 @@
   (:import (com.zotohlabs.frwk.core Versioned Hierarchial
                                     Identifiable Disposable Startable))
   (:import (com.zotohlabs.gallifrey.core Container))
+  (:import (com.google.gson JsonObject JsonArray))
   (:import (com.zotohlabs.gallifrey.io ServletEmitter Emitter))
   (:import (java.util Map)))
 
@@ -68,6 +69,37 @@
   (resumeWithResult [_ res] )
   (resumeWithError [_] )
   (emitter [_] ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasHeader? ""
+
+  ;; boolean
+  [^JsonObject info ^String header]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers")) ]
+    (and (notnil? h)
+         (.has h (cstr/lower-case header)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetHeader ""
+
+  ^String
+  [^JsonObject info ^String header]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers"))
+         hv (cstr/lower-case header)
+         ^JsonArray a (if (and (notnil? h)
+                                (.has h hv))
+                          (.getAsJsonArray h hv)
+                          nil) ]
+    (if (and (notnil? a)
+             (> (.size a) 0))
+        (.get a 0)
+        nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

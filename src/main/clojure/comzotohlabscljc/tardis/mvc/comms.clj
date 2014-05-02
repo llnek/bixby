@@ -36,31 +36,32 @@
   (:import (java.util Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io XData))
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponseStatus HttpResponse
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec
+                                        HttpServerCodec HttpMessage
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.buffer Unpooled))
   (:import (io.netty.channel Channel ChannelHandler
                              ChannelPipeline ChannelHandlerContext))
   (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (com.google.gson JsonObject))
   (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- isModified ""
 
-  [^String eTag lastTm ^HttpRequest req]
+  [^String eTag lastTm ^JsonObject info]
 
   (with-local-vars [ modd true ]
     (cond
-      (.containsHeader req "if-none-match")
-      (var-set modd (not= eTag (HttpHeaders/getHeader req "if-none-match")))
+      (HasHeader? info "if-none-match")
+      (var-set modd (not= eTag (GetHeader info "if-none-match")))
 
-      (.containsHeader req "if-unmodified-since")
-      (if-let [ s (HttpHeaders/getHeader req "if-unmodified-since") ]
+      (HasHeader? info "if-unmodified-since")
+      (if-let [ s (GetHeader info "if-unmodified-since") ]
           (Try! (when (>= (.getTime (.parse (MVCUtils/getSDF) s)) lastTm)
                       (var-set modd false))))
       :else nil)
@@ -81,7 +82,7 @@
          lastTm (.lastModified file)
          eTag  (str "\""  lastTm  "-"
                     (.hashCode file)  "\"") ]
-    (if (isModified eTag lastTm req)
+    (if (isModified eTag lastTm info)
         (HttpHeaders/setHeader rsp "last-modified"
                   (.format (MVCUtils/getSDF) (Date. lastTm)))
         (if (= (-> (.get info "method")(.getAsString)) "GET")
@@ -147,7 +148,7 @@
           (log/debug "serving static file: " (NiceFPath file))
           (addETag src evt info rsp file)
           ;; 304 not-modified
-          (if (= (-> rsp (.getStatus)(.getCode)) 304)
+          (if (= (-> rsp (.getStatus)(.code)) 304)
             (do
               (HttpHeaders/setContentLength rsp 0)
               (NettyFW/closeCF (.write ch rsp) (.isKeepAlive evt) ))
@@ -162,7 +163,7 @@
 (defn ServeStatic ""
 
   [ ^Emitter src
-    ^comzotohlabscljc.net.rts.RouteInfo ri
+    ^comzotohlabscljc.net.routes.RouteInfo ri
     ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
   (let [ ^File appDir (-> src (.container)(.getAppDir))
@@ -192,7 +193,7 @@
 (defn ServeRoute ""
 
   [ ^comzotohlabscljc.tardis.core.sys.Element src
-    ^comzotohlabscljc.net.rts.RouteInfo ri
+    ^comzotohlabscljc.net.routes.RouteInfo ri
     ^Matcher mc
     ^Channel ch
     ^comzotohlabscljc.util.core.MubleAPI evt]

@@ -20,7 +20,7 @@
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.impl.ext])
   (:use [comzotohlabscljc.tardis.impl.defaults
-         :rename {Enabled? blockmeta-enabled?
+         :rename {enabled? blockmeta-enabled?
                   Start kernel-start
                   Stop kernel-stop}])
   (:use [ comzotohlabscljc.util.core

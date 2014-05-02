@@ -19,13 +19,18 @@
   (:use [comzotohlabscljc.util.core :only [Try! notnil? NiceFPath] ])
   (:use [comzotohlabscljc.util.mime :only [GuessContentType] ])
   (:use [comzotohlabscljc.util.io :only [Streamify] ])
-
-  (:import (org.jboss.netty.handler.codec.http HttpMethod HttpHeaders
-                                               HttpResponseStatus
-                                               HttpResponse))
-  (:import (org.jboss.netty.handler.stream ChunkedFile ChunkedStream ChunkedInput ))
-  (:import (org.jboss.netty.channel ChannelFuture ChannelFutureListener Channel))
-  (:import [com.zotohlabs.frwk.netty NettyFW])
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
+                                        CookieDecoder ServerCookieEncoder
+                                        DefaultHttpResponse HttpVersion
+                                        HttpServerCodec HttpMethod
+                                        HttpHeaders LastHttpContent
+                                        HttpHeaders Cookie QueryStringDecoder))
+  (:import (io.netty.channel Channel ChannelHandler
+                             ChannelFutureListener ChannelFuture
+                             ChannelPipeline ChannelHandlerContext))
+  (:import (io.netty.handler.stream ChunkedStream ChunkedFile))
+  (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (com.google.gson JsonObject JsonArray))
   (:import (org.apache.commons.io FileUtils))
   (:import (com.zotohlabs.gallifrey.mvc WebContent WebAsset
                                         HTTPRangeInput AssetCache))
@@ -183,7 +188,7 @@
                       (reify ChannelFutureListener
                         (operationComplete [_ ff]
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                          (when-not (HttpHeaders/isKeepAlive req)
+                          (when-not (-> (.get info "keep-alive")(.getAsBoolean))
                                     (NettyFW/closeChannel ch)))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))

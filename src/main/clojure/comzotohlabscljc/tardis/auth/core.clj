@@ -49,7 +49,7 @@
 
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.wfs])
-  (:use [comzotohlabscljc.tardis.io.ios :only [GetSignupInfo GetLoginInfo Realign!] ])
+  (:use [comzotohlabscljc.tardis.io.webss :only [GetSignupInfo GetLoginInfo Realign!] ])
   (:use [comzotohlabscljc.tardis.auth.dms])
   (:use [comzotohlabscljc.dbio.connect :only [DbioConnect] ])
   (:use [comzotohlabscljc.dbio.core])

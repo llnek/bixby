@@ -72,8 +72,8 @@
    mf]
 
   (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx execv)
-         ^ComponentRegistry apps (.lookup root K_APPS)
          ^ComponentRegistry root (.getf ctx K_COMPS)
+         ^ComponentRegistry apps (.lookup root K_APPS)
          ps (LoadJavaProps mf)
          ver (.getProperty ps "Implementation-Version" "")
          vid (.getProperty ps "Implementation-Vendor-Id")
@@ -103,7 +103,7 @@
 
   [execv ^File des]
 
-  (let [ app (FilenameUtils/getBaseName (nice-fpath des))
+  (let [ app (FilenameUtils/getBaseName (NiceFPath des))
          mf (File. des ^String MN_FILE) ]
     (log/info "About to inspect app: " app)
     (log/info "app-dir: " des)
@@ -296,7 +296,7 @@
   [^URL url]
 
   (let [ impl (MakeMMap) ]
-    (.setf! impl :id (keyword (uid)))
+    (.setf! impl :id (keyword (juid)))
     (.setf! impl K_META url)
     ;; url points to block-meta file
     (with-meta

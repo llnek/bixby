@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.tardis.core.climain :only [StartMain] ])
+  (:use [comzotohlabscljc.tardis.etc.climain :only [StartMain] ])
   (:use [comzotohlabscljc.tardis.etc.cli
          :only [CreateWeb CreateJetty CreateBasic
                 AntBuildApp BundleApp RunAppBg
@@ -28,7 +28,7 @@
   (:use [comzotohlabscljc.util.dates :only [AddMonths MakeCal] ])
   (:use [comzotohlabscljc.util.meta :only [] ])
   (:use [comzotohlabscljc.util.str :only [nsb hgl? strim] ])
-  (:use [comzotohlabscljc.util.cmdline :only [MakeCmdSeqQ CliConverse] ])
+  (:use [comzotohlabscljc.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
   (:use [comzotohlabscljc.crypto.codec :only [CreateStrongPwd Pwdify] ])
   (:use [comzotohlabscljc.crypto.core
          :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
@@ -37,7 +37,7 @@
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
   (:import (org.apache.commons.io FileUtils))
-  (:import (java.util Calendar ResourceBundle Properties Date))
+  (:import (java.util Map Calendar ResourceBundle Properties Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io IOUtils)))
 
@@ -275,7 +275,7 @@
 
   (let [ csr (make-csr-qs *SKARO-RSBUNDLE*)
          k (merge csr (make-key-qs *SKARO-RSBUNDLE*))
-         rc (CliConverse k "cn") ]
+         rc (CLIConverse k "cn") ]
     (when-not (nil? rc)
       (let [ dn (cstr/join "," (FlattenNil (map (fn [k]
                                    (let [ v (get rc k) ]
@@ -304,7 +304,7 @@
   []
 
   (let [ csr (make-csr-qs *SKARO-RSBUNDLE*)
-         rc (CliConverse csr "cn") ]
+         rc (CLIConverse csr "cn") ]
     (when-not (nil? rc)
       (let [ dn (cstr/join "," (FlattenNil (map (fn [k]
                                    (let [ v (get rc k) ]
@@ -333,7 +333,7 @@
 
   (let [ ok (if (> (count args) 1)
               (case (nth args 1)
-                "password" (do (GeneratePassword 12) true)
+                "password" (do (generatePassword 12) true)
                 "serverkey" (do (keyfile) true)
                 "csr" (do (csrfile) true)
                 false)
@@ -464,19 +464,19 @@
     (.mkdirs ec)
     (FileUtils/cleanDirectory ec)
     (FileUtils/writeStringToFile (File. ec ".project")
-      (-> (rc-str (str "com/zotohlabs/gallifrey/eclipse/" lang "/project.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlabs/gallifrey/eclipse/" lang "/project.txt") "utf-8")
           (StringUtils/replace "${APP.NAME}" app)
           (StringUtils/replace (str "${" ulang ".SRC}")
-               (nice-fpath (File. cwd (str "src/main/" lang))))
+               (NiceFPath (File. cwd (str "src/main/" lang))))
           (StringUtils/replace "${TEST.SRC}"
-               (nice-fpath (File. cwd (str "src/test/" lang)))))
+               (NiceFPath (File. cwd (str "src/test/" lang)))))
       "utf-8")
     (scanJars (File. (getHomeDir) ^String DN_DIST) sb)
     (scanJars (File. (getHomeDir) ^String DN_LIB) sb)
     (scanJars (File. cwd ^String POD_CLASSES) sb)
     (scanJars (File. cwd ^String POD_LIB) sb)
     (FileUtils/writeStringToFile (File. ec ".classpath")
-      (-> (rc-str (str "com/zotohlabs/gallifrey/eclipse/" lang "/classpath.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlabs/gallifrey/eclipse/" lang "/classpath.txt") "utf-8")
           (StringUtils/replace "${CLASS.PATH.ENTRIES}" (.toString sb)))
       "utf-8")
   ))
@@ -516,7 +516,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn eval-command ""
+(defn EvalCommand ""
 
   [home rcb & args]
 

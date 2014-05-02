@@ -658,7 +658,7 @@ def compileAndJar() {
     }
   }
 
-  //compile_clj()
+  compile_clj()
   jarit()
 
 }
@@ -675,6 +675,7 @@ def jarAll() {
 
 
 def clj_Util() {
+  println "clj_Util:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -704,6 +705,7 @@ def clj_Util() {
 }
 
 def clj_Crypto() {
+  println "clj_Crypto:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -720,6 +722,7 @@ def clj_Crypto() {
 
 
 def clj_JMX() {
+  println "clj_JMX:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -734,6 +737,7 @@ def clj_JMX() {
 }
 
 def clj_Net() {
+  println "clj_Net:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -750,6 +754,7 @@ def clj_Net() {
 }
 
 def clj_DBIO() {
+  println "clj_DBIO:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -772,6 +777,7 @@ def clj_DBIO() {
 }
 
 def cljhhh_MVC() {
+  println "cljhhh_MVC:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -787,6 +793,7 @@ def cljhhh_MVC() {
 
 
 def cljhhh_Auth() {
+  println "cljhhh_Auth:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -802,6 +809,7 @@ def cljhhh_Auth() {
 }
 
 def cljhhh_IO() {
+  println "cljhhh_IO:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -826,6 +834,7 @@ def cljhhh_IO() {
 }
 
 def cljhhh_Core() {
+  println "cljhhh_Core:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -835,10 +844,12 @@ def cljhhh_Core() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.tardis.core.constants')
     arg (value: 'comzotohlabscljc.tardis.core.sys')
+    arg (value: 'comzotohlabscljc.tardis.core.wfs')
   }
 }
 
 def cljhhh_Etc() {
+  println "cljhhh_Etc:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -847,7 +858,6 @@ def cljhhh_Etc() {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.tardis.etc.climain')
-    arg (value: 'comzotohlabscljc.tardis.etc.wfs')
     arg (value: 'comzotohlabscljc.tardis.etc.cmdline')
     arg (value: 'comzotohlabscljc.tardis.etc.task')
     arg (value: 'comzotohlabscljc.tardis.etc.cli')
@@ -858,6 +868,7 @@ def cljhhh_Etc() {
 }
 
 def cljhhh_Main() {
+  println "cljhhh_Main:"
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,

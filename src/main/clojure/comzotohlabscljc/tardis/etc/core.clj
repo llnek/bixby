@@ -20,7 +20,7 @@
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.etc.cmdline :only [GetCommands EvalCommand] ])
   (:use [comzotohlabscljc.util.core :only [test-cond] ])
-  (::use'[comzotohlabscljc.util.str :only [MakeString] ])
+  (:use [comzotohlabscljc.util.str :only [MakeString] ])
   (:use [comzotohlabscljc.util.files :only [DirRead?] ])
   (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))

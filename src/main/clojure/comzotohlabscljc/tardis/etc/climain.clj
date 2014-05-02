@@ -12,17 +12,18 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  comzotohlabscljc.tardis.core.climain
+  comzotohlabscljc.tardis.etc.climain
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
   (:use [comzotohlabscljc.util.process :only [ProcessPid SafeWait] ])
+  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
   (:use [comzotohlabscljc.util.meta :only [SetCldr GetCldr] ])
   (:use [comzotohlabscljc.util.core
          :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
+  (:use [comzotohlabscljc.netty.discarder :only [MakeDiscardHTTPD] ])
   (:use [comzotohlabscljc.tardis.impl.exec :only [MakeExecvisor] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
@@ -30,7 +31,7 @@
   (:import (com.zotohlabs.gallifrey.loaders AppClassLoader
                                             RootClassLoader ExecClassLoader))
   (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial Startable ))
-  (:import (org.jboss.netty.channel Channel ChannelFuture ChannelFutureListener))
+  (:import (io.netty.channel Channel ChannelFuture ChannelFutureListener))
   (:import (com.zotohlabs.gallifrey.core ConfigError))
   (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
@@ -251,7 +252,7 @@
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
   (let [ fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
-    (FileUtils/writeStringToFile fp (pid) "utf-8")
+    (FileUtils/writeStringToFile fp (ProcessPid) "utf-8")
     (.setf! ctx K_PIDFILE fp)
     (log/info "wrote skaro.pid - OK.")
     ctx
@@ -318,7 +319,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn start-main ""
+(defn StartMain ""
 
   [ & args ]
 
