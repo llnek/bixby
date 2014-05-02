@@ -30,9 +30,10 @@
   (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (org.apache.commons.lang3 StringUtils))
+  (:import (org.apache.http.client.config RequestConfig))
   (:import (org.apache.http.client HttpClient))
   (:import (org.apache.http.client.methods HttpGet HttpPost))
-  (:import (org.apache.http.impl.client DefaultHttpClient))
+  (:import (org.apache.http.impl.client HttpClientBuilder))
   (:import (org.apache.http Header StatusLine HttpEntity HttpResponse))
   (:import (java.io File IOException))
   (:import (org.apache.http.util EntityUtils))
@@ -83,12 +84,14 @@
   ^HttpClient
   []
 
-  (let [ cli (DefaultHttpClient.)
-         pms (.getParams cli) ]
-    (HttpConnectionParams/setConnectionTimeout pms *socket-timeout*)
-    (HttpConnectionParams/setSoTimeout pms *socket-timeout*)
+  (let [ cli (HttpClientBuilder/create)
+         cfg (-> (RequestConfig/custom)
+                 (.setConnectTimeout (int *socket-timeout*))
+                 (.setSocketTimeout (int *socket-timeout*))
+                 (.build)) ]
+    (.setDefaultRequestConfig cli ^RequestConfig cfg)
     (ApacheFW/cfgForRedirect cli)
-    cli
+    (.build cli)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -86,7 +86,8 @@
                sql
                (fn [^SQLr tx]
                  (CreateLoginAccount tx "joeb" (CE/Pwdify "hi")
-                                      [ (get ros "User") ] )))
+                                     {}
+                                     [ (get ros "User") ] )))
            rc (.execWith
                 sql
                 (fn [^SQLr tx]

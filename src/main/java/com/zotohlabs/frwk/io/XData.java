@@ -75,12 +75,17 @@ public class XData implements Serializable {
     if (obj instanceof CharArrayWriter) {
       _data = new String( ((CharArrayWriter) obj).toCharArray() );
     }
+    else
     if (obj instanceof ByteArrayOutputStream) {
       _data = ((ByteArrayOutputStream) obj).toByteArray();
     }
+    else
     if (obj instanceof File[]) {
       File[] ff= (File[]) obj;
       if (ff.length > 0) { _data = ff[0]; }
+    }
+    else {
+      _data=obj;
     }
     setDeleteFile(delIfFile);
     return this;

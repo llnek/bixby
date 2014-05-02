@@ -851,13 +851,13 @@
       []
       (loop [ _end (if (< end Integer/MAX_VALUE) (+ end 1) end )
               r (NewRandom)
-              rc (transient [])
+              rc []
               cnt howMany ]
         (if (<= cnt 0)
-          (persistent! rc)
+          rc
           (let [ n (.nextInt r _end) ]
             (if (and (>= n start) (not (contains? rc n)))
-                (recur _end r (conj! rc n) (dec cnt))
+                (recur _end r (conj rc n) (dec cnt))
                 (recur _end r rc cnt) ))
         ))
   ))

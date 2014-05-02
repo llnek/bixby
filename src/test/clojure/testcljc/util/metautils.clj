@@ -49,8 +49,8 @@
 
 (is (= 1 (count (MU/ListParents (Class/forName "java.lang.String")))))
 
-(is (> (count (MU/ListMethods (Class/forName "java.lang.String"))) 40))
-(is (> (count (MU/ListFields (Class/forName "java.lang.String"))) 5))
+(is (>= (count (MU/ListMethods (Class/forName "java.lang.String"))) 40))
+(is (>= (count (MU/ListFields (Class/forName "java.lang.String"))) 5))
 
 
 )
