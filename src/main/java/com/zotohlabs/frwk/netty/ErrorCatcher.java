@@ -37,5 +37,9 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
     replyXXX( ctx.channel(), 500);
   }
 
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable t) throws Exception {
+    replyXXX( ctx.channel(), 500);
+  }
+
 }
 

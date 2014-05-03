@@ -46,7 +46,7 @@ public class HttpDemux extends AuxHttpDecoder {
   }
 
   private boolean isWSock( HttpMessage msg, String method) {
-    String ws = HttpHeaders.getHeader( msg ,"upgrade").trim().toLowerCase();
+    String ws = nsb(HttpHeaders.getHeader( msg ,"upgrade")).trim().toLowerCase();
     return "GET".equals(method) && "websocket".equals(ws);
   }
 
