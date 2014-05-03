@@ -30,11 +30,9 @@ public class MockContext implements Context {
 
   @Override
   public Object lookup(String name) throws NamingException {
-    switch (name) {
-      case "qcf": return new MockQueueConnFactory();
-      case "tcf": return new MockTopicConnFactory();
-      case "cf": return new MockConnFactory();
-    }
+    if ("qcf".equals(name)) { return new MockQueueConnFactory(); }
+    if ("tcf".equals(name)) { return new MockTopicConnFactory(); }
+    if ("cf".equals(name)) { return new MockConnFactory(); }
     if (name.startsWith("queue.")) return new MockQueue(name);
     if (name.startsWith("topic.")) return new MockTopic(name);
     return null;

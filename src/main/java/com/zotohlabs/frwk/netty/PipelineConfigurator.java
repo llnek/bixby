@@ -25,7 +25,7 @@ public abstract class PipelineConfigurator {
   protected PipelineConfigurator() {
   }
 
-  public ChannelHandler configure(JsonObject options) {
+  public ChannelHandler configure(final JsonObject options) {
     return new ChannelInitializer() {
       public void initChannel(Channel ch) {
         assemble(ch.pipeline(), options);

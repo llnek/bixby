@@ -22,14 +22,10 @@ public enum Auth {
 ;
 
   public static Activity getAuthMtd(String t) {
-
-    switch (t) {
-      case "facebook" : return new PTask(facebook_login);
-      case "google+" : return new PTask(gplus_login);
-      case "openid" : return new PTask(openid_login);
-      default: return new PTask(db_login);
-    }
-
+      if (t.equals("facebook")) {  return new PTask(facebook_login); }
+      if (t.equals("google+")) { return new PTask(gplus_login); }
+      if (t.equals("openid")) {  return new PTask(openid_login); }
+      return new PTask(db_login);
   }
 
   private static Work facebook_login = new Work() {

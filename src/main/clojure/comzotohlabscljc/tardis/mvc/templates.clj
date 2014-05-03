@@ -186,14 +186,13 @@
         (when-not (or (= (-> (.get info "method")(.getAsString)) "HEAD")
                       (= 0 @clen))
                   (var-set wf (.writeAndFlush ch @inp)))
-        (.flush ch)
         (.addListener ^ChannelFuture @wf
                       (reify ChannelFutureListener
                         (operationComplete [_ ff]
                           (log/debug "channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                          (when-not (-> (.get info "keep-alive")(.getAsBoolean))
-                                    (NettyFW/closeChannel ch)))))
+                          (when-not (-> (.get info "keep-alive")(.getAsBoolean)))
+                                    (NettyFW/closeChannel ch))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))
           (log/error e# "")

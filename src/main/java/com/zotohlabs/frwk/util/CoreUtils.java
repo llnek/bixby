@@ -73,7 +73,7 @@ public enum CoreUtils {
   }
 
   public static String shuffle(String s) {
-    List<Character> lst = new ArrayList<>();
+    List<Character> lst = new ArrayList<Character>();
     char[] cs= s.toCharArray();
     for (int n= 0; n < cs.length; ++n) {
       lst.add(cs[n]);

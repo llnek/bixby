@@ -67,7 +67,7 @@ public class  WebSockCodec extends RequestCodec {
     }
   }
 
-  protected void handleWSock(ChannelHandlerContext ctx , FullHttpRequest req) {
+  protected void handleWSock(final ChannelHandlerContext ctx , FullHttpRequest req) {
     JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
     if (info == null) { info = extractMsgInfo(req); }
     delAttr(ctx.channel(), MSGINFO_KEY);

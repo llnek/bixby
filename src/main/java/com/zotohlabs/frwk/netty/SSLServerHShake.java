@@ -63,7 +63,7 @@ public class SSLServerHShake {
       ks.load(inp, pwd);
       t.init(ks);
       k.init(ks, pwd);
-      x.init(k.getKeyManagers(), t.getTrustManagers(), SecureRandom.getInstanceStrong());
+      x.init(k.getKeyManagers(), t.getTrustManagers(), SecureRandom.getInstance("SHA1PRNG"));
       SSLEngine se = x.createSSLEngine();
       se.setUseClientMode(false);
       hh = new SslHandler(se);

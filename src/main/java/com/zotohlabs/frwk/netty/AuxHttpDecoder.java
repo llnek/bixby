@@ -225,7 +225,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
   public void channelReadComplete(ChannelHandlerContext ctx)
       throws Exception                    {
-    tlog().debug("channelRead - complete called().");
+    tlog().debug("{}.channelRead - complete called().", getClass().getSimpleName() );
     super.channelReadComplete(ctx);
   }
 
