@@ -127,7 +127,7 @@
                                       (if (nil? @bits) 0 (alength ^bytes @bits)))
         (var-set wf (.write ch @rsp))
         (when-not (nil? @bits)
-          (var-set wf (.write ch (Unpooled/wrappedBuffer ^bytes @bits))))
+          (var-set wf (.writeAndFlush ch (Unpooled/wrappedBuffer ^bytes @bits))))
         (NettyFW/closeCF @wf false))
       (catch Throwable e#
         (NettyFW/closeChannel ch)))
@@ -151,7 +151,7 @@
           (if (= (-> rsp (.getStatus)(.code)) 304)
             (do
               (HttpHeaders/setContentLength rsp 0)
-              (NettyFW/closeCF (.write ch rsp) (.isKeepAlive evt) ))
+              (NettyFW/closeCF (.writeAndFlush ch rsp) (.isKeepAlive evt) ))
             (ReplyFileAsset src ch info rsp file))))
       (catch Throwable e#
         (log/error "failed to get static resource " (.getUri evt) e#)

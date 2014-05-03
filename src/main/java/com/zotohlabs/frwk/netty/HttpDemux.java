@@ -72,7 +72,7 @@ public class HttpDemux extends AuxHttpDecoder {
       nxt=RequestCodec.getInstance();
     }
 
-    if (nxt != null) {
+    if (nxt != null && pipe.get(nxt.getName()) == null) {
       tlog().debug("Inserting new handler {} after {}", nxt.getName(), getName());
       pipe.addAfter( getName(), nxt.getName(), nxt );
     }

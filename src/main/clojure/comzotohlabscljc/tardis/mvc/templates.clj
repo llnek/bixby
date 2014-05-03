@@ -162,7 +162,8 @@
 
   (let [ ^WebAsset asset (if (not (maybeCache file))
                              nil
-                             (getAsset file)) ]
+                             (getAsset file))
+         fname (.getName file) ]
     (with-local-vars [raf nil clen 0 inp nil ct "" wf nil]
       (if (nil? asset)
         (do
@@ -174,19 +175,22 @@
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
           (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
-      (log/debug "serving file: " (.getName file) " with clen= " @clen ", ctype= " @ct)
+      (log/debug "serving file: " fname " with clen= " @clen ", ctype= " @ct)
       (try
         (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
               (var-set clen 0))
         (HttpHeaders/addHeader rsp "Accept-Ranges" "bytes")
         (HttpHeaders/setHeader rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
-        (var-set wf (.write ch rsp))
-        (when-not (= (-> (.get info "method")(.getAsString)) "HEAD")
-                  (var-set wf (.write ch @inp)))
+        (var-set wf (.writeAndFlush ch rsp))
+        (when-not (or (= (-> (.get info "method")(.getAsString)) "HEAD")
+                      (= 0 @clen))
+                  (var-set wf (.writeAndFlush ch @inp)))
+        (.flush ch)
         (.addListener ^ChannelFuture @wf
                       (reify ChannelFutureListener
                         (operationComplete [_ ff]
+                          (log/debug "channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
                           (when-not (-> (.get info "keep-alive")(.getAsBoolean))
                                     (NettyFW/closeChannel ch)))))

@@ -14,6 +14,8 @@
 
 package com.zotohlabs.frwk.netty;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
@@ -21,6 +23,7 @@ import com.zotohlabs.frwk.io.*;
 import io.netty.channel.*;
 import io.netty.buffer.ByteBuf;
 import java.io.*;
+import java.util.*;
 
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
@@ -122,7 +125,7 @@ public enum NettyFW {
 
     return new ChannelInitializer<SocketChannel>() {
       protected void initChannel(SocketChannel ch) {
-        cfg.assemble(ch.pipeline() , options);
+        cfg.assemble(ch.pipeline(), options);
       }
     };
 
@@ -190,7 +193,7 @@ public enum NettyFW {
   }
 
   public static String getMethod(HttpRequest req) {
-    String mo = HttpHeaders.getHeader( req, "X-HTTP-Method-Override");
+    String mo = HttpHeaders.getHeader(req, "X-HTTP-Method-Override");
     String mt = req.getMethod().name().toUpperCase();
     if (mo != null && mo.length() > 0) {
       return mo;
@@ -201,6 +204,52 @@ public enum NettyFW {
 
   public static String getUriPath(HttpRequest req) {
     return new QueryStringDecoder( req.getUri()).path();
+  }
+
+  public static Set<String> getHeaderNames(JsonObject info) {
+    JsonObject hds = info.getAsJsonObject("headers");
+    Set<String> rc = new HashSet<String>();
+
+    if (hds != null) for (Map.Entry<String,JsonElement> en: hds.entrySet()) {
+      rc.add(en.getKey());
+    }
+
+    return rc;
+  }
+
+  public static List<String> getHeaderValues(JsonObject info, String header) {
+    JsonObject hds = info.getAsJsonObject("headers");
+    JsonArray arr = (hds == null || header ==null) ? null : hds.getAsJsonArray(header.toLowerCase());
+    List<String> rc = new ArrayList<String>();
+
+    if (arr != null) for (JsonElement e : arr) {
+      rc.add(e.getAsString()) ;
+    }
+
+    return rc;
+  }
+
+  public static Set<String> getParameters(JsonObject info) {
+    JsonObject hds = info.getAsJsonObject("params");
+    Set<String> rc = new HashSet<String>();
+
+    if (hds != null) for (Map.Entry<String,JsonElement> en: hds.entrySet()) {
+      rc.add(en.getKey());
+    }
+
+    return rc;
+  }
+
+  public static List<String> getParameterValues(JsonObject info, String pm) {
+    JsonObject hds = info.getAsJsonObject("params");
+    JsonArray arr = (hds == null || pm ==null) ? null : hds.getAsJsonArray(pm);
+    List<String> rc = new ArrayList<String>();
+
+    if (arr != null) for (JsonElement e : arr) {
+      rc.add(e.getAsString()) ;
+    }
+
+    return rc;
   }
 
 }

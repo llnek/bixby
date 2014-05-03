@@ -51,6 +51,7 @@
   (:import (com.zotohlabs.frwk.netty NettyFW
                                      SSLServerHShake
                                      ServerSide
+                                     DemuxedMsg
                                      HttpDemux ErrorCatcher
                                      PipelineConfigurator))
 
@@ -152,9 +153,10 @@
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
 
   (let [ ^HTTPResult res (MakeHttpResult co)
-         ^HttpRequest req (nth args 1)
-         ^XData xdata (nth args 2)
+         ^DemuxedMsg req (nth args 1)
          ^Channel ch (nth args 0)
+         xdata (.payload req)
+         info (.info req)
          ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
          impl (MakeMMap)
@@ -179,14 +181,14 @@
         (getId [_] eeid)
         (emitter [_] co)
         (getCookies [_]
-          (let [ v (nsb (HttpHeaders/getHeader req "Cookie"))
+          (let [ v (nsb (GetHeader info "Cookie"))
                  rc (ArrayList.)
                  cks (if (hgl? v) (CookieDecoder/decode v) []) ]
             (doseq [ ^Cookie c (seq cks) ]
               (.add rc (cookieToJava c)))
             rc))
         (getCookie [_ nm]
-          (let [ v (nsb (HttpHeaders/getHeader req "Cookie"))
+          (let [ v (nsb (GetHeader info "Cookie"))
                  lnm (cstr/lower-case nm)
                  cks (if (hgl? v) (CookieDecoder/decode v) []) ]
             (some (fn [^Cookie c]
@@ -195,68 +197,47 @@
                       nil))
                   (seq cks))))
 
-        (isKeepAlive [_] (HttpHeaders/isKeepAlive req))
+        (isKeepAlive [_] (-> (.get info "keep-alive")(.getAsBoolean)))
 
         (hasData [_] (notnil? xdata))
         (data [_] xdata)
 
-        (contentType [_] (HttpHeaders/getHeader req "content-type"))
-        (contentLength [_] (HttpHeaders/getContentLength req 0))
+        (contentLength [_] (-> (.get info "clen")(.getAsLong)))
+        (contentType [_] (GetHeader info "content-type"))
 
         (encoding [this]  (GetCharset (.contentType this)))
         (contextPath [_] "")
 
-        (getHeaderValues [_ nm] (-> (.headers req) (.getAll nm)))
-        (getHeaders [_] (-> (.headers req) (.names)))
-        (getHeaderValue [_ nm] (HttpHeaders/getHeader req nm))
+        (getHeaderValues [_ nm] (NettyFW/getHeaderValues info nm))
+        (getHeaders [_] (NettyFW/getHeaderNames info))
+        (getHeaderValue [_ nm] (GetHeader info nm))
 
-        (getParameterValues [_ nm]
-          (let [ dc (QueryStringDecoder. (.getUri req))
-                 rc (.get (.parameters dc) nm) ]
-            (if (nil? rc) (ArrayList.) rc)))
-
-        (getParameters [_]
-          (let [ dc (QueryStringDecoder. (.getUri req))
-                 m (.parameters dc) ]
-            (.keySet m)))
-
-        (getParameterValue [_ nm]
-          (let [ dc (QueryStringDecoder. (.getUri req))
-                 ^List rc (.get (.parameters dc) nm) ]
-            (if (and (notnil? rc) (> (.size rc) 0))
-              (.get rc 0)
-              nil)))
+        (getParameterValues [_ nm] (NettyFW/getParameterValues info nm))
+        (getParameterValue [_ nm] (GetParameter info nm))
+        (getParameters [_] (NettyFW/getParameters info))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
         (localHost [_] (.getHostName laddr))
         (localPort [_] (.getPort laddr))
 
-        (protocol [_] (.toString (.getProtocolVersion req)))
-        (method [_] (.toString (.getMethod req)))
+        (protocol [_] (-> (.get info "protocol")(.getAsString)))
+        (method [_] (-> (.get info "method")(.getAsString)))
 
-        (host [_] (HttpHeaders/getHost req))
+        (queryString [_] (-> (.get info "query")(.getAsString)))
+        (host [_] (-> (.get info "host")(.getAsString)))
 
-        (queryString [_]
-          (let [ s (nsb (.getUri req))
-                 pos (.indexOf s "?") ]
-            (if (>= pos 0)
-              (.substring s pos)
-              "")))
-
-        (remotePort [_] (ConvLong (HttpHeaders/getHeader req "REMOTE_PORT") 0))
-        (remoteAddr [_] (nsb (HttpHeaders/getHeader req "REMOTE_ADDR")))
-        (remoteHost [_] (nsb (HttpHeaders/getHeader req "")))
+        (remotePort [_] (ConvLong (GetHeader info "remote_port") 0))
+        (remoteAddr [_] (nsb (GetHeader info "remote_addr")))
+        (remoteHost [_] "")
 
         (scheme [_] (if ssl "https" "http"))
 
-        (serverPort [_] (ConvLong (HttpHeaders/getHeader req "SERVER_PORT") 0))
-        (serverName [_] (nsb (HttpHeaders/getHeader req "SERVER_NAME")))
+        (serverPort [_] (ConvLong (GetHeader info "server_port") 0))
+        (serverName [_] (nsb (GetHeader info "server_name")))
 
         (isSSL [_] ssl)
 
-        (getUri [_]
-          (let [ dc (QueryStringDecoder. (.getUri req)) ]
-            (.path dc)))
+        (getUri [_] (-> (.get info "uri")(.getAsString)))
 
         (getRequestURL [_] (throw (IOException. "not implemented")))
 

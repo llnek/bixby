@@ -138,6 +138,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
     info.addProperty("protocol", msg.getProtocolVersion().toString());
     info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
+    info.addProperty("query", "");
     info.addProperty("uri", "");
     info.addProperty("status", "");
     info.addProperty("code", 0);
@@ -153,6 +154,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     if (msg instanceof HttpRequest) {
       String mo = HttpHeaders.getHeader(msg, "X-HTTP-Method-Override");
       HttpRequest req = (HttpRequest) msg;
+      String uriStr = nsb( req.getUri()  );
       String md = req.getMethod().name();
       String mt;
       if (mo != null && mo.length() > 0) {
@@ -160,10 +162,14 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
       } else {
         mt=md;
       }
-      QueryStringDecoder dc = new QueryStringDecoder(req.getUri());
+      QueryStringDecoder dc = new QueryStringDecoder(uriStr);
       info.addProperty("method", mt.toUpperCase());
       info.add("params", extractParams(dc));
       info.addProperty("uri", dc.path());
+      int pos = uriStr.indexOf('?');
+      if (pos >= 0) {
+        info.addProperty("query", uriStr.substring(pos));
+      }
     }
     return info;
   }
@@ -215,6 +221,12 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
   protected boolean maybeSSL(ChannelHandlerContext ctx) {
     return ctx.pipeline().get(SslHandler.class) != null;
+  }
+
+  public void channelReadComplete(ChannelHandlerContext ctx)
+      throws Exception                    {
+    tlog().debug("channelRead - complete called().");
+    super.channelReadComplete(ctx);
   }
 
 }

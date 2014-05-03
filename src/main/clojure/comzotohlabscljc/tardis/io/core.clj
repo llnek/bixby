@@ -18,6 +18,7 @@
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
+  (:use [comzotohlabscljc.util.str :only [nsb strim ] ])
 
   (:import (com.zotohlabs.frwk.server Component Service))
   (:import (java.util.concurrent ConcurrentHashMap))
@@ -84,13 +85,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn GetParameter ""
+
+  ^String
+  [^JsonObject info ^String pm]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params"))
+         hv (nsb pm)
+         ^JsonArray a (if (and (notnil? h)
+                                (.has h hv))
+                          (.getAsJsonArray h hv)
+                          nil) ]
+    (if (and (notnil? a)
+             (> (.size a) 0))
+        (.get a 0)
+        nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn GetHeader ""
 
   ^String
   [^JsonObject info ^String header]
 
   (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers"))
-         hv (cstr/lower-case header)
+         hv (cstr/lower-case (nsb header))
          ^JsonArray a (if (and (notnil? h)
                                 (.has h hv))
                           (.getAsJsonArray h hv)
