@@ -35,6 +35,7 @@
   (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial Startable ))
   (:import (io.netty.channel Channel ChannelFuture ChannelFutureListener))
   (:import (com.zotohlabs.gallifrey.core ConfigError))
+  (:import (com.google.gson JsonObject))
   (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
   (:import (java.util Locale))
@@ -229,7 +230,8 @@
   (let [ port (ConvLong (System/getProperty "skaro.kill.port") 4444) ]
     (log/info "Enabling remote shutdown...")
     ;;TODO - how to clean this up
-    (MakeDiscardHTTPD "127.0.0.1" port (fn [] (stop-cli ctx)))
+    (MakeDiscardHTTPD "127.0.0.1"
+                      port (JsonObject.) (fn [] (stop-cli ctx)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

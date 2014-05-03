@@ -141,13 +141,13 @@
               (.resumeOnResult wevt res))))
         (emitter [_] co))
 
-      { :typeid :czc.hhh.io/WebSockEvent }
+      { :typeid :czc.tardis.io/WebSockEvent }
 
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.hhh.io/NettyIO
+(defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
 
@@ -268,13 +268,13 @@
               (.resumeOnResult wevt res))))
       )
 
-      { :typeid :czc.hhh.io/HTTPEvent }
+      { :typeid :czc.tardis.io/HTTPEvent }
 
   )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.hhh.io/NettyIO
+(defmethod CompConfigure :czc.tardis.io/NettyIO
 
   [^comzotohlabscljc.tardis.core.sys.Element co cfg]
 
@@ -289,7 +289,7 @@
 (defn- msgDispatcher ""
 
   ^ChannelHandler
-  ;;[^comzotohlabscljc.hhh.core.sys.Element co]
+  ;;[^comzotohlabscljc.tardis.core.sys.Element co]
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co]
 
   (proxy [SimpleChannelInboundHandler] []
@@ -339,7 +339,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStart :czc.hhh.io/NettyIO
+(defmethod IOESStart :czc.tardis.io/NettyIO
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
@@ -354,7 +354,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStop :czc.hhh.io/NettyIO
+(defmethod IOESStop :czc.tardis.io/NettyIO
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
@@ -367,7 +367,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.hhh.io/NettyIO
+(defmethod CompInitialize :czc.tardis.io/NettyIO
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 

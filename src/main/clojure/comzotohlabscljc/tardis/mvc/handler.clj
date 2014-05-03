@@ -132,9 +132,11 @@
   (proxy [PipelineConfigurator] []
     (assemble [p o]
       (let [ ^ChannelPipeline pipe p
-             ^JsonObject options o ]
+             ^JsonObject options o
+             ssl (SSLServerHShake/getInstance options) ]
+        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
         (-> pipe
-            (.addLast "ssl" (SSLServerHShake/getInstance options))
+            ;;(.addLast "ssl" (SSLServerHShake/getInstance options))
             (.addLast "codec" (HttpServerCodec.))
             (.addLast "filter" (routeFilter co))
             (.addLast "demux" (HttpDemux/getInstance))

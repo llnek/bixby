@@ -154,10 +154,11 @@
 
     (getSection
       [_ sectionName]
-      (if (cstr/blank? sectionName)
-          nil
-          (let [ m (.get mapOfSections (name sectionName)) ]
-            (if (nil? m) nil (into {} m)))))
+      (let [ sn (name sectionName) ]
+        (if (cstr/blank? sn)
+            nil
+            (let [ m (.get mapOfSections sn) ]
+              (if (nil? m) nil (into {} m))))))
 
     (sectionKeys
       [_]

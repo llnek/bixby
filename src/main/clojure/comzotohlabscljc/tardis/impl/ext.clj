@@ -17,8 +17,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:require [clojure.data.json :as json])
-  (:use [comzotohlabscljc.tardis.io.core :rename {enabled? io-enabled?} ])
   (:use [comzotohlabscljc.tardis.core.constants])
+  (:use [comzotohlabscljc.tardis.io.core :rename {enabled? io-enabled?} ])
   (:use [comzotohlabscljc.tardis.io.loops])
   (:use [comzotohlabscljc.tardis.io.mails])
   (:use [comzotohlabscljc.tardis.io.files])
@@ -27,6 +27,7 @@
   (:use [comzotohlabscljc.tardis.io.netty])
   (:use [comzotohlabscljc.tardis.io.socket])
   (:use [comzotohlabscljc.tardis.mvc.handler])
+  ;;(:use [comzotohlabscljc.tardis.io.events])
   (:use [comzotohlabscljc.tardis.impl.defaults
          :rename {enabled? blockmeta-enabled?
                   start kernel-start
