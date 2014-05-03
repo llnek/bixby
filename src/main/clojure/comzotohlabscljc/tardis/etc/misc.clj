@@ -40,14 +40,15 @@
 
   [^Pipeline pipe s]
 
-  (let [ ev (.event (.job pipe)) ]
+  (let [ ev (-> pipe (.job)(.event)) ]
     (cond
       (instance? HTTPEvent ev)
       (PTask. (make-work s))
 
       :else
-      (throw (FlowError.
-               (str "Unhandled event-type \"" (:typeid (meta ev))  "\"."))))
+      (throw (FlowError.  (str "Unhandled event-type \""
+                               (:typeid (meta ev))
+                               "\"."))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

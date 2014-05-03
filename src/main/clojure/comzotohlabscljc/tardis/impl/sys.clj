@@ -30,6 +30,7 @@
   (:use [ comzotohlabscljc.util.files :only [Unzip] ])
   (:use [ comzotohlabscljc.util.mime :only [SetupCache] ])
   (:use [ comzotohlabscljc.util.seqnum :only [NextLong] ] )
+
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.frwk.core Disposable Identifiable
@@ -45,7 +46,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Deployer
 (defn MakeDeployer ""
@@ -58,31 +58,37 @@
 
         Element
 
+        (setCtx! [_ x] (.setf! impl :ctx x) )
+        (getCtx [_] (.getf impl :ctx) )
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (setCtx! [_ x] (.setf! impl :ctx x) )
-        (getCtx [_] (.getf impl :ctx) )
 
         Component
+
         (id [_] K_DEPLOYER )
         (version [_] "1.0" )
 
         Hierarchial
+
         (parent [_] nil)
 
         Deployer
 
         (undeploy [this app]
-          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
-                 dir (File. ^File (.getf ctx K_PLAYDIR) ^String app) ]
+          (let [ ^comzotohlabscljc.util.core.MubleAPI
+                 ctx (getCtx this)
+                 dir (File. ^File (.getf ctx K_PLAYDIR)
+                            ^String app) ]
             (when (.exists dir)
                 (FileUtils/deleteDirectory dir))))
 
         (deploy [this src]
           (let [ app (FilenameUtils/getBaseName (NiceFPath src))
-                 ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
-                 des (File. ^File (.getf ctx K_PLAYDIR) ^String app) ]
+                 ^comzotohlabscljc.util.core.MubleAPI
+                 ctx (getCtx this)
+                 des (File. ^File (.getf ctx K_PLAYDIR)
+                            ^String app) ]
             (when-not (.exists des)
               (Unzip src des)))) )
 
@@ -161,35 +167,42 @@
         (getAttr [_ a] (.getf impl a) )
 
         Component
+
         (version [_] "1.0")
         (id [_] K_KERNEL )
 
         Hierarchial
+
         (parent [_] nil)
 
         Kernel
 
         Startable
+
         (start [this]
-          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
-                 ^ComponentRegistry root (.getf ctx K_COMPS)
+          (let [ ^comzotohlabscljc.util.core.MubleAPI
+                 ctx (getCtx this)
                  ^comzotohlabscljc.util.ini.IWin32Conf
                  wc (.getf ctx K_PROPS)
-                 endorsed (strim (.optString wc K_APPS "endorsed" ""))
+                 ^ComponentRegistry
+                 root (.getf ctx K_COMPS)
+                 endorsed (strim (.optString wc K_APPS
+                                             "endorsed" ""))
                  ^comzotohlabscljc.tardis.core.sys.Registry
                  apps (.lookup root K_APPS)
                  cs (if (= "*" endorsed)
-                      #{}
-                      (into #{} (filter (fn [^String s] (> (.length s) 0))
-                                        (map #(strim %)
-                                             (seq (StringUtils/split endorsed ",;"))) ) )) ]
+                        #{}
+                        (into #{} (filter (fn [s] (> (.length ^String s) 0))
+                                  (map #(strim %)
+                                       (seq (StringUtils/split endorsed ",;")))
+                        ))) ]
             ;; need this to prevent deadlocks amongst pods
             ;; when there are dependencies
             ;; TODO: need to handle this better
             (doseq [ [k v] (seq* apps) ]
               (let [ r (-> (NewRandom) (.nextInt 6)) ]
                 (if (maybe-start-pod this cs v)
-                  (SafeWait (* 1000 (Math/max (int 1) r))))))) )
+                    (SafeWait (* 1000 (Math/max (int 1) r))))))) )
 
         (stop [this]
           (let [ cs (.getf impl K_CONTAINERS) ]
@@ -223,12 +236,13 @@
         (getAttr [_ a] (.getf impl a) )
 
         Component
+
         (version [_] ver)
         (id [_] pid )
 
         Hierarchial
-        (parent [_] parObj)
 
+        (parent [_] parObj)
 
         PODMeta
 
@@ -247,7 +261,8 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
+  (let [ ^comzotohlabscljc.util.core.MubleAPI
+         ctx (.getCtx co)
          rcl (.getf ctx K_ROOT_CZLR)
          ^URL url (.srcUrl ^comzotohlabscljc.tardis.impl.defaults.PODMeta co)
          cl  (AppClassLoader. rcl) ]
@@ -275,10 +290,10 @@
     ;;(precondDir (maybeDir ctx K_PODSDIR))
     (PrecondDir (MaybeDir ctx K_PLAYDIR))
     (SetupCache (-> (File. base (str DN_CFG "/app/mime.properties"))
-                      (.toURI)(.toURL )))
+                    (.toURI)
+                    (.toURL )))
     (CompCloneContext co ctx)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

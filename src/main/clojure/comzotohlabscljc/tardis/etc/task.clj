@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -36,13 +35,13 @@
   ^Project
   [^Task taskObj]
 
-  (let [ pj (doto (Project.)
-              (.setName "hhh-project")
-              (.init))
-         lg (doto (TimestampedLogger.)
+  (let [ lg (doto (TimestampedLogger.)
                   (.setOutputPrintStream System/out)
                   (.setErrorPrintStream System/err)
                   (.setMessageOutputLevel Project/MSG_INFO))
+         pj (doto (Project.)
+                  (.setName "hhh-project")
+                  (.init))
          tg (doto (Target.)
                   (.setName "mi6")) ]
     (doto pj

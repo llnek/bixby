@@ -39,7 +39,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private START-TIME (.getTime (Date.)))
@@ -332,15 +331,16 @@
   [^comzotohlabscljc.tardis.impl.defaults.BlockMeta bk]
 
   (let [ ^URL url (.metaUrl bk)
-         ^comzotohlabscljc.util.ini.IWin32Conf cfg (ParseInifile url)
+         ^comzotohlabscljc.util.ini.IWin32Conf
+         cfg (ParseInifile url)
          inf (.getSection cfg "info") ]
     (test-nonil "Invalid block-meta file, no info section." inf)
     (log/info "initializing BlockMeta: " url)
     (let [ cz (strim (.optString cfg "info" "block-type" ""))
            ^comzotohlabscljc.tardis.core.sys.Element co bk  ]
       (when (hgl? cz)
-        (.setAttr! co :id (keyword cz))
-        (.setAttr! co :active true) )
+            (.setAttr! co :id (keyword cz))
+            (.setAttr! co :active true) )
       (.setAttr! co :version (strim (.optString cfg "info" "version" "")))
       (.setAttr! co :name (strim (.optString cfg "info" "name" "")))
       co)

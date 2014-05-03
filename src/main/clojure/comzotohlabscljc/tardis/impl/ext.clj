@@ -148,10 +148,9 @@
             (log/debug "event router = " c1)
             (log/debug "io router = " c0)
             (try
-              (let [ p (Pipeline. job (if (hgl? c1) c1 c0))
-                     q (if (nil? p) (MakeOrphanFlow job) p) ]
+              (let [ p (Pipeline. job (if (hgl? c1) c1 c0)) ]
                 (.setv job EV_OPTS options)
-                (.start ^Pipeline q))
+                (.start p))
               (catch Throwable e#
                 (-> (MakeFatalErrorFlow job) (.start)))))))
 
@@ -204,8 +203,9 @@
   [^String mkey cfg ^String pkey mcache]
 
   (let [ ^Map c (.get (DBIOLocal/getCache))
-         jdbc (MakeJdbc mkey cfg
-                            (Pwdify (:passwd cfg) pkey)) ]
+         jdbc (MakeJdbc mkey
+                        cfg
+                        (Pwdify (:passwd cfg) pkey)) ]
     (when-not (.containsKey c mkey)
       (let [ p (MakeDbPool jdbc {} ) ]
         (.put c mkey p)))
@@ -268,9 +268,11 @@
           (let [ ^comzotohlabscljc.tardis.impl.ext.JobCreator
                  jc (.getAttr this K_JCTOR) ]
             (.update jc evt options)))
+
         (getAppKey [_] (.appKey ^comzotohlabscljc.tardis.impl.defaults.PODMeta pod))
         (getAppDir [this] (.getAttr this K_APPDIR))
         (acquireJdbc [this gid] (maybeGetDBAPI this gid))
+
         (core [this]
           (.getAttr this K_SCHEDULER))
         (hasService [_ serviceId]
@@ -293,13 +295,14 @@
         Startable
 
         (start [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry
+                 srg (.getf impl K_SVCS)
                  main (.getf impl :main-app) ]
             (log/info "container starting all services...")
             (doto ftlCfg
-              (.setDirectoryForTemplateLoading
-                (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
-              (.setObjectWrapper (DefaultObjectWrapper.)))
+                  (.setDirectoryForTemplateLoading
+                    (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
+                  (.setObjectWrapper (DefaultObjectWrapper.)))
             (doseq [ [k v] (seq* srg) ]
               (log/info "service: " k " about to start...")
               (.start ^Startable v))
@@ -312,7 +315,8 @@
               :else nil)))
 
         (stop [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry
+                 srg (.getf impl K_SVCS)
                  pls (.getAttr this K_PLUGINS)
                  main (.getf impl :main-app) ]
             (log/info "container stopping all services...")
@@ -332,7 +336,8 @@
         Disposable
 
         (dispose [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry srg (.getf impl K_SVCS)
+          (let [ ^comzotohlabscljc.tardis.core.sys.Registry
+                 srg (.getf impl K_SVCS)
                  pls (.getAttr this K_PLUGINS)
                  main (.getf impl :main-app) ]
             (doseq [ [k v] (seq* srg) ]
@@ -411,7 +416,8 @@
   [^comzotohlabscljc.tardis.core.sys.Element pod]
 
   (let [ c (make-app-container pod)
-         ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx pod)
+         ^comzotohlabscljc.util.core.MubleAPI
+         ctx (.getCtx pod)
          cl (.getf ctx K_APP_CZLR)
          ^ComponentRegistry root (.getf ctx K_COMPS)
          apps (.lookup root K_APPS)
@@ -422,9 +428,10 @@
     (CompConfigure c ps)
     (if (.enabled? ^comzotohlabscljc.tardis.impl.ext.ContainerAPI c)
       (do (Coroutine (fn []
-                          (do
-                            (CompInitialize c)
-                            (.start ^Startable c))) cl) c)
+                         (CompInitialize c)
+                         (.start ^Startable c))
+                     cl)
+          c)
       nil)
   ))
 
@@ -451,13 +458,13 @@
     ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
     (SynthesizeComponent srg {} )
     (doto co
-      (.setAttr! K_APPDIR appDir)
-      (.setAttr! K_SVCS srg)
-      (.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
-      (.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
-      (.setAttr! K_ENVCONF envConf)
-      (.setAttr! K_APPCONF appConf)
-      (.setAttr! K_MFPROPS mf))
+          (.setAttr! K_APPDIR appDir)
+          (.setAttr! K_SVCS srg)
+          (.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
+          (.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
+          (.setAttr! K_ENVCONF envConf)
+          (.setAttr! K_APPCONF appConf)
+          (.setAttr! K_MFPROPS mf))
     (log/info "container: configured app: " (.id ^Identifiable co))
   ))
 
@@ -560,23 +567,25 @@
 
     ;; handle the plugins
     (.setAttr! co K_PLUGINS
-      (persistent!  (reduce (fn [sum en]
-                              (assoc! sum (keyword (first en))
-                                          (doOnePlugin co (last en) appDir env app)) )
-                            (transient {}) (seq (:plugins app))) ))
+      (persistent! (reduce (fn [sum en]
+                               (assoc! sum (keyword (first en))
+                                           (doOnePlugin co (last en) appDir env app)) )
+                           (transient {})
+                           (seq (:plugins app))) ))
 
     (.setAttr! co K_SCHEDULER sc)
     (.setAttr! co K_JCTOR jc)
 
     ;; build the user data-models or create a default one.
     (log/info "application data-model schema-class: " dmCZ )
-    (.setAttr! co K_MCACHE (MakeMetaCache
-                             (if (hgl? dmCZ)
-                               (let [ sc (MakeObj dmCZ) ]
-                                 (when-not (instance? Schema sc)
-                                   (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
-                                 sc)
-                               (MakeSchema [])) ))
+    (.setAttr! co
+               K_MCACHE
+               (MakeMetaCache (if (hgl? dmCZ)
+                                  (let [ sc (MakeObj dmCZ) ]
+                                       (when-not (instance? Schema sc)
+                                                 (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
+                                       sc)
+                                   (MakeSchema [])) ))
 
     (when (nichts? mCZ) (log/warn "no main-class defined."))
     ;;(test-nestr "Main-Class" mCZ)

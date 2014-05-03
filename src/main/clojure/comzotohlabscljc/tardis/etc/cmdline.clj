@@ -17,16 +17,12 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.etc.climain :only [StartMain] ])
-  (:use [comzotohlabscljc.tardis.etc.cli
-         :only [CreateWeb CreateJetty CreateBasic
-                AntBuildApp BundleApp RunAppBg
-                *SKARO-WEBLANG*
-                CreateSamples CreateDemo] ])
   (:use [comzotohlabscljc.i18n.resources :only [GetString] ])
+  (:use [comzotohlabscljc.tardis.etc.cli])
   (:use [comzotohlabscljc.util.core
-         :only [NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
+         :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
   (:use [comzotohlabscljc.util.dates :only [AddMonths MakeCal] ])
-  (:use [comzotohlabscljc.util.meta :only [] ])
+  (:use [comzotohlabscljc.util.meta])
   (:use [comzotohlabscljc.util.str :only [nsb hgl? strim] ])
   (:use [comzotohlabscljc.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
   (:use [comzotohlabscljc.crypto.codec :only [CreateStrongPwd Pwdify] ])
@@ -34,10 +30,11 @@
          :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
+
+  (:import (java.util Map Calendar ResourceBundle Properties Date))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
   (:import (org.apache.commons.io FileUtils))
-  (:import (java.util Map Calendar ResourceBundle Properties Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io IOUtils)))
 
@@ -56,6 +53,7 @@
   *SKARO-RSBUNDLE*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- getHomeDir ""
 
   ^File
@@ -78,25 +76,33 @@
 
   [ & args]
 
-  (let [ hhh (getHomeDir)
-         hf (ParseInifile (File. hhh (str DN_CONF "/" (name K_PROPS))))
+  (let [ hhh (getHomeDir) hf (ParseInifile (File. hhh
+                                                  (str DN_CONF
+                                                       "/"
+                                                       (name K_PROPS))))
          wlg (.optString hf "webdev" "lang" "js")
-         ;; treat as domain e.g com.acme => app = acme
          app (nth args 2)
          t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
-         id (if (nil? t)
-              nil
-              (if (nil? (last t))
-                (first t)
-                (.substring ^String (last t) 1))) ]
+         ;; treat as domain e.g com.acme => app = acme
+         ;; regex gives ["com.acme" ".acme"]
+         id (when (notnil? t)
+                  (if-let [ tkn (last t) ]
+                          (.substring ^String tkn 1)
+                          (first t))) ]
+
     (binding [ *SKARO-WEBLANG* wlg]
-      (if (nil? id)
-        (throw (CmdHelpError.))
-        (case (nth args 1)
-          ("mvc" "web") (CreateWeb hhh id app)
-          "jetty" (CreateJetty hhh id app)
-          "basic" (CreateBasic hhh id app)
-          (throw (CmdHelpError.)))))
+      (when (nil? id) (throw (CmdHelpError.)))
+      (case (nth args 1)
+        ("mvc" "web")
+        (CreateWeb hhh id app)
+
+        "jetty"
+        (CreateJetty hhh id app)
+
+        "basic"
+        (CreateBasic hhh id app)
+
+        (throw (CmdHelpError.))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,7 +127,6 @@
            taskId (if (> (count args) 2) (nth args 2) "devmode") ]
       (AntBuildApp (getHomeDir) appId taskId))
     (throw (CmdHelpError.))
-
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -266,29 +271,31 @@
 
    } )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- keyfile ""
 
   []
 
-  (let [ csr (make-csr-qs *SKARO-RSBUNDLE*)
-         k (merge csr (make-key-qs *SKARO-RSBUNDLE*))
+  (let [ k (merge (make-csr-qs *SKARO-RSBUNDLE*)
+                  (make-key-qs *SKARO-RSBUNDLE*))
          rc (CLIConverse k "cn") ]
     (when-not (nil? rc)
-      (let [ dn (cstr/join "," (FlattenNil (map (fn [k]
-                                   (let [ v (get rc k) ]
-                                     (if (hgl? v)
-                                      (str (cstr/upper-case (name k)) "=" v)
-                                     nil)))
-                                   [ :c :st :l :o :ou :cn ])) )
+      (let [ ssn (map (fn [k] (let [ v (get rc k) ]
+                                   (if (hgl? v)
+                                       (str (cstr/upper-case (name k))
+                                            "="
+                                            v))))
+                      [ :c :st :l :o :ou :cn ])
+             dn (cstr/join "," (FlattenNil ssn))
              ff (File. ^String (:fn rc))
              now (Date.) ]
         (println (str "DN entered: " dn))
         (MakeSSv1PKCS12
           now
-          (.getTime (AddMonths (MakeCal now) (ConvLong (:months rc) 12)))
+          (-> (MakeCal now)
+              (AddMonths (ConvLong (:months rc) 12))
+              (.getTime))
           dn
           (Pwdify (:pwd rc))
           (ConvLong (:size rc) 1024)
@@ -296,33 +303,31 @@
         (println (str "Wrote file: " ff))))
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- csrfile ""
 
   []
 
-  (let [ csr (make-csr-qs *SKARO-RSBUNDLE*)
-         rc (CLIConverse csr "cn") ]
+  (let [ rc (CLIConverse (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
     (when-not (nil? rc)
-      (let [ dn (cstr/join "," (FlattenNil (map (fn [k]
-                                   (let [ v (get rc k) ]
-                                     (if (hgl? v)
-                                      (str (cstr/upper-case (name k)) "=" v)
-                                     nil)))
-                                   [ :c :st :l :o :ou :cn ])) )
-             [req pkey] (MakeCsrReq
-                          (ConvLong (:size rc) 1024)
-                          dn
-                          PEM_CERT ) ]
+      (let [ ssn (map (fn [k] (let [ v (get rc k) ]
+                                   (if (hgl? v)
+                                       (str (cstr/upper-case (name k))
+                                            "="
+                                            v))))
+                      [ :c :st :l :o :ou :cn ])
+             dn (cstr/join "," (FlattenNil ssn))
+             [req pkey] (MakeCsrReq (ConvLong (:size rc) 1024)
+                                    dn
+                                    PEM_CERT ) ]
         (println (str "DN entered: " dn))
         (let [ ff (File. (str (:fn rc) ".key")) ]
-          (FileUtils/writeByteArrayToFile ff pkey)
-          (println (str "Wrote file: " ff)))
+             (FileUtils/writeByteArrayToFile ff pkey)
+             (println (str "Wrote file: " ff)))
         (let [ ff (File. (str (:fn rc) ".csr")) ]
-          (FileUtils/writeByteArrayToFile ff req)
-          (println (str "Wrote file: " ff))) ))
+             (FileUtils/writeByteArrayToFile ff req)
+             (println (str "Wrote file: " ff))) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -332,12 +337,12 @@
   [ & args]
 
   (let [ ok (if (> (count args) 1)
-              (case (nth args 1)
-                "password" (do (generatePassword 12) true)
-                "serverkey" (do (keyfile) true)
-                "csr" (do (csrfile) true)
-                false)
-              false) ]
+                (case (nth args 1)
+                  "password" (do (generatePassword 12) true)
+                  "serverkey" (do (keyfile) true)
+                  "csr" (do (csrfile) true)
+                  false)
+                false) ]
     (when-not ok
       (throw (CmdHelpError.)))
   ))
@@ -380,7 +385,7 @@
   [ & args]
 
   (if (> (count args) 2)
-    (encrypt  (nth args 1) (nth args 2))
+    (encrypt (nth args 1) (nth args 2))
     (throw (CmdHelpError.))
   ))
 
@@ -456,12 +461,12 @@
   [app]
 
   (let [ cwd (File. (getHomeDir) (str DN_BOXX "/" app))
-         ec (File. cwd "eclipse.projfiles")
          sb (StringBuilder.)
+         ec (doto (File. cwd "eclipse.projfiles")
+                  (.mkdirs))
          ;;lang "scala"
          lang "java"
          ulang (cstr/upper-case lang) ]
-    (.mkdirs ec)
     (FileUtils/cleanDirectory ec)
     (FileUtils/writeStringToFile (File. ec ".project")
       (-> (ResStr (str "com/zotohlabs/gallifrey/eclipse/" lang "/project.txt") "utf-8")
@@ -487,11 +492,10 @@
 
   [ & args]
 
-  (if (> (count args) 2)
-    (case (nth args 1)
-      "eclipse" (genEclipseProj (nth args 2))
-      (throw (CmdHelpError.)))
-    (throw (CmdHelpError.))
+  (if (and (> (count args) 2)
+           (= "eclipse" (nth args 1)))
+      (genEclipseProj (nth args 2))
+      (throw (CmdHelpError.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -536,9 +540,7 @@
 
   (set (keys _ARGS)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private cmdline-eof nil)
-
 

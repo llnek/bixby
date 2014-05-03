@@ -121,7 +121,8 @@
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
   (let [ ^File home (.getf ctx K_BASEDIR)
-         cf (File. home  (str DN_CONF "/" (name K_PROPS) ))
+         cf (File. home  (str DN_CONF
+                              "/" (name K_PROPS) ))
         ^comzotohlabscljc.util.ini.IWin32Conf
          w (ParseInifile cf)
          cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
@@ -130,7 +131,8 @@
     (log/info (str "using locale: " loc))
     (doto ctx
           (.setf! K_PROPS w)
-          (.setf! K_LOCALE loc))) )
+          (.setf! K_LOCALE loc))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,7 +140,8 @@
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (let [ rc (GetResource "comzotohlabscljc/tardis/etc/Resources" (.getf ctx K_LOCALE)) ]
+  (let [ rc (GetResource "comzotohlabscljc/tardis/etc/Resources"
+                         (.getf ctx K_LOCALE)) ]
     (test-nonil "etc/resouces" rc)
     (.setf! ctx K_RCBUNDLE rc)
     (log/info "resource bundle found and loaded.")
@@ -169,13 +172,11 @@
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (do
-    (log/info "about to start Skaro...")
-    (let [ ^Startable exec (.getf ctx K_EXECV) ]
-      (.start exec))
-    (log/info "Skaro started.")
-    ctx
-  ))
+  (log/info "about to start Skaro...")
+  (let [ ^Startable exec (.getf ctx K_EXECV) ]
+    (.start exec))
+  (log/info "Skaro started.")
+  ctx)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -189,15 +190,15 @@
          cli (.getf ctx K_CLISH)
          cz (.optString wc K_COMPS K_EXECV "") ]
     (test-cond "conf file:exec-visor"
-                  (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
+               (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
     (log/info "inside primodial()")
     (let [ ^comzotohlabscljc.util.core.MubleAPI
            execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
       (SynthesizeComponent execv { :ctx ctx } )
       (log/info "Execvisor created and synthesized - OK.")
-      ctx
-  )))
+      ctx)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,16 +209,15 @@
   (let [ ^File pid (.getf ctx K_PIDFILE)
          execv (.getf ctx K_EXECV) ]
     (when-not @STOPCLI
-      (do
-        (reset! STOPCLI true)
-        (when-not (nil? pid) (FileUtils/deleteQuietly pid))
-        (log/info "about to stop Skaro...")
-        (log/info "applications are shutting down...")
-        (when-not (nil? execv)
-          (.stop ^Startable execv))
-        (log/info "Skaro stopped.")
-        (log/info "Tardis says \"Goodbye\".")
-        (deliver CLI-TRIGGER 911)))
+      (reset! STOPCLI true)
+      (when-not (nil? pid) (FileUtils/deleteQuietly pid))
+      (log/info "about to stop Skaro...")
+      (log/info "applications are shutting down...")
+      (when-not (nil? execv)
+        (.stop ^Startable execv))
+      (log/info "Skaro stopped.")
+      (log/info "Tardis says \"Goodbye\".")
+      (deliver CLI-TRIGGER 911))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -239,9 +239,9 @@
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
   (let [ cli (.getf ctx K_CLISH) ]
-    (.addShutdownHook (Runtime/getRuntime)
-          (Thread. (reify Runnable
-                      (run [_] (Try! (stop-cli ctx))))))
+    (-> (Runtime/getRuntime)
+        (.addShutdownHook (Thread. (reify Runnable
+                                     (run [_] (Try! (stop-cli ctx)))))))
     (enableRemoteShutdown ctx)
     (log/info "added shutdown hook.")
     ctx

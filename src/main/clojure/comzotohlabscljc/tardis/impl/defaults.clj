@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -42,7 +41,7 @@
   [d]
 
   (test-cond (str "Directory " d " must be read-writable.")
-                (DirReadWrite? d)))
+                  (DirReadWrite? d)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -51,7 +50,7 @@
   [f]
 
   (test-cond (str "File " f " must be readable.")
-                (FileRead? f)))
+                  (FileRead? f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,23 +127,26 @@
         (getAttr [_ a] (.getf impl a) )
 
         Hierarchial
+
         (parent [_] parObj)
 
         Component
+
         (version [_] ver)
         (id [_] regoId)
 
         ComponentRegistry
+
         (has [this cid]
-            (let [ cache (.getf impl :cache)
-                   c (get cache cid) ]
-              (if (nil? c) false true)) )
+          (let [ cache (.getf impl :cache)
+                 c (get cache cid) ]
+            (if (nil? c) false true)) )
         (lookup [this cid]
-            (let [ cache (.getf impl :cache)
-                   c (get cache cid) ]
-              (if (and (nil? c) (instance? ComponentRegistry parObj))
-                (.lookup ^ComponentRegistry parObj cid)
-                c)) )
+          (let [ cache (.getf impl :cache)
+                 c (get cache cid) ]
+            (if (and (nil? c) (instance? ComponentRegistry parObj))
+              (.lookup ^ComponentRegistry parObj cid)
+              c)) )
 
         (dereg [this c]
           (let [ cid (if (nil? c) nil (.id  ^Identifiable c))
@@ -156,8 +158,9 @@
           (let [ cid (if (nil? c) nil (.id  ^Identifiable c))
                  cache (.getf impl :cache) ]
             (when (.has this cid)
-              (throw (RegistryError.
-                       (str "Component \"" cid "\" already exists" ))))
+              (throw (RegistryError.  (str "Component \""
+                                           cid
+                                           "\" already exists" ))))
             (.setf! impl :cache (assoc cache cid c))))
 
         Registry
@@ -167,7 +170,7 @@
 
       { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) }
 
-  )) )
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -18,11 +18,13 @@
 
   (:require [clojure.tools.logging :as log :only [warn error info debug] ])
   (:require [clojure.string :as cstr])
-  (:use [comzotohlabscljc.tardis.etc.cmdline :only [GetCommands EvalCommand] ])
+  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
   (:use [comzotohlabscljc.util.core :only [test-cond] ])
   (:use [comzotohlabscljc.util.str :only [MakeString] ])
   (:use [comzotohlabscljc.util.files :only [DirRead?] ])
-  (:use [comzotohlabscljc.i18n.resources :only [GetResource] ])
+  (:use [comzotohlabscljc.tardis.etc.cmdline
+         :only [GetCommands EvalCommand] ])
+
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
   (:import (java.util Locale))
   (:import (java.io File)))
@@ -56,12 +58,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- drawHelpLines ""
+(defn- drawHelp ""
 
-  [^String fmt ^clojure.lang.IPersistentCollection arr]
+  [^clojure.lang.IPersistentCollection arr
+   ^String fmt]
 
   (doseq [ [k v] (seq arr) ]
-    (print (String/format fmt (into-array Object [k v]) ))
+    (print (String/format fmt
+                          (into-array Object [k v]) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,10 +74,10 @@
 
   []
 
- (println (MakeString \= 78))
+  (println (MakeString \= 78))
   (println "> skaro <commands & options>")
   (println "> -----------------")
-  (drawHelpLines "> %-35s %s\n" CMDLINE-INFO)
+  (drawHelp CMDLINE-INFO "> %-35s %s\n")
   (println ">")
   (println "> help - show standard commands")
   (println (MakeString \= 78)))
@@ -106,14 +110,14 @@
   ;;(alter-var-root #'*read-eval* (constantly false))
   (let [ rcpath (str "comzotohlabscljc/tardis/etc/Resources")
          rcb (GetResource rcpath (Locale/getDefault)) ]
-    (if (< (count args) 2)
-      (usage)
-      (let [ rc (apply parseArgs rcb args) ]
-        (if (fn? rc)
-          (try (rc) (catch CmdHelpError e# (usage)))
-          (usage))))
+    (try
+      (when (< (count args) 2) (throw (CmdHelpError. "")))
+      (if-let [ rc (apply parseArgs rcb args) ]
+        (rc)
+        (throw (CmdHelpError. "")))
+      (catch CmdHelpError e#
+        (usage)))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

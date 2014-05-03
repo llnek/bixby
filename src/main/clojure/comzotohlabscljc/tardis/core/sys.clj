@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
@@ -45,7 +44,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompContextualize
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element
+          CompContextualize
 
   ""
 
@@ -53,7 +53,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompCompose
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element
+          CompCompose
 
   ""
 
@@ -61,7 +62,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompConfigure
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element
+          CompConfigure
 
   ""
 
@@ -69,7 +71,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^comzotohlabscljc.tardis.core.sys.Element CompInitialize
+(defmulti ^comzotohlabscljc.tardis.core.sys.Element
+          CompInitialize
 
   ""
 
@@ -115,14 +118,12 @@
   [^comzotohlabscljc.tardis.core.sys.Element co
    ^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (do
-    (when-not (nil? ctx)
-      (let [ x (MakeContext) ]
-        (doseq [ [k v] (.seq* ctx) ]
-          (.setf! x k v))
-        (.setCtx! co x)))
-    co
-  ))
+  (when-not (nil? ctx)
+    (let [ x (MakeContext) ]
+      (doseq [ [k v] (.seq* ctx) ]
+        (.setf! x k v))
+      (.setCtx! co x)))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

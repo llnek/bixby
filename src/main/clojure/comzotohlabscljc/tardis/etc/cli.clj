@@ -18,10 +18,10 @@
   (:require [clojure.data.json :as json])
   (:require [clojure.string :as cstr])
 
-  (:use [comzotohlabscljc.util.files :only [Unzip] ])
-  (:use [comzotohlabscljc.util.core :only [juid IsWindows?] ])
+  (:use [comzotohlabscljc.util.core :only [GetUser juid IsWindows?] ])
   (:use [comzotohlabscljc.util.str :only [strim nsb] ])
   (:use [comzotohlabscljc.util.ini :only [ParseInifile] ])
+  (:use [comzotohlabscljc.util.files :only [Unzip Mkdirs] ])
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
 
@@ -29,6 +29,7 @@
 
   (:import (org.apache.commons.io.filefilter FileFileFilter FileFilterUtils))
   (:import (org.apache.commons.lang3 StringUtils))
+  ;;(:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (java.util UUID))
   (:import (java.io File)))
@@ -36,7 +37,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:dynamic *SKARO-WEBCSSLANG* "scss")
-(def ^:dynamic *SKARO-WEBLANG* "coffee")
+;;(def ^:dynamic *SKARO-WEBLANG* "coffee")
+(def ^:dynamic *SKARO-WEBLANG* "js")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -46,9 +48,8 @@
 
   (FileUtils/copyDirectory srcDir
                            destDir
-                           (FileFilterUtils/andFileFilter
-                             FileFileFilter/FILE
-                             (FileFilterUtils/suffixFileFilter (str "." ext)))
+                           (FileFilterUtils/andFileFilter FileFileFilter/FILE
+                                                          (FileFilterUtils/suffixFileFilter (str "." ext)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,10 +69,11 @@
 
   [^File hhhHome bg]
 
-  (let [ prog2 (.getCanonicalPath (File. hhhHome "bin/skaro.bat"))
-         prog (.getCanonicalPath (File. hhhHome "bin/skaro"))
+  (let [ prog2 (-> (File. hhhHome "bin/skaro.bat")(.getCanonicalPath ))
+         prog (-> (File. hhhHome "bin/skaro")(.getCanonicalPath))
          pj (if (IsWindows?)
-                (MakeExecTask "cmd.exe" hhhHome
+                (MakeExecTask "cmd.exe"
+                              hhhHome
                               [ "/C" "start" "/B" "/MIN" prog2 "start" ])
                 (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
     (ExecProj pj)
@@ -107,7 +109,7 @@
 
   (FileUtils/cleanDirectory webzDir)
   (FileUtils/cleanDirectory czDir)
-  (.mkdirs czDir))
+  (Mkdirs czDir))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -119,7 +121,7 @@
          dest (File. hhhHome (str "apps/demo-" demoId)) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
-          (.mkdirs dest)
+          (Mkdirs dest)
           (Unzip fp dest))
   ))
 
@@ -133,9 +135,28 @@
          fs (.listFiles top) ]
     (log/debug "Unzipping all samples.")
     (doseq [ ^File f (seq fs) ]
-      (when (and (.isFile f) (.endsWith (.getName f) ".pod"))
+      (when (and (.isFile f)
+                 (.endsWith (.getName f) ".pod"))
             (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkcljfp ""
+
+  ^File
+  [^File cljd  ^String file]
+
+  (File. cljd file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkcljd ""
+
+  ^File
+  [^File appDir ^String appDomain]
+
+  (File. appDir (str "src/main/clojure/" (.replace appDomain "." "/"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,37 +166,39 @@
 
   (let [ h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
          appDir (File. hhhHome (str "apps/" appId))
-         appDomainPath (.replace appDomain "." "/") ]
-    (-> (File. h2db) (.mkdirs))
+         appDomainPath (.replace appDomain "." "/")
+         cljd (mkcljd appDir appDomain) ]
+    (Mkdirs (File. h2db))
     (with-local-vars [ fp nil ]
-      (var-set fp (File. appDir (str "src/main/clojure/" appDomainPath "/core.clj")))
+      (var-set fp (mkcljfp cljd "core.clj"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
+                                   "utf-8")
 
-      (var-set fp (File. appDir (str "src/main/clojure/" appDomainPath "/pipe.clj")))
+      (var-set fp (mkcljfp cljd "pipe.clj"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
+                                   "utf-8")
 
       (var-set fp (File. appDir "conf/env.conf"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@H2DBPATH@@" (str h2db "/" appId))
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@H2DBPATH@@"
+                                                            (str h2db "/" appId))
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
+                                   "utf-8")
 
       (var-set fp (File. appDir "build.xml"))
-      (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPCLJFILES@@"
-                               (str "<arg value=\""
-                                    appDomain
-                                    ".core\"/>"
-                                    "<arg value=\""
-                                    appDomain
-                                    ".pipe\"/>" ))
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+      (let [ s (str "<arg value=\"" appDomain ".core\"/>"
+                    "<arg value=\"" appDomain ".pipe\"/>" ) ]
+        (FileUtils/writeStringToFile ^File @fp
+                                     (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                         (StringUtils/replace "@@APPCLJFILES@@" s)
+                                         (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+                                         (StringUtils/replace "@@APPID@@" appId))
+                                     "utf-8"))
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,47 +207,46 @@
 
   [^File hhhHome appId ^String appDomain flavor]
 
-  (let [ appDir (doto (File. hhhHome (str "apps/" appId)) (.mkdirs))
-         mfDir (doto (File. appDir "META-INF")(.mkdirs))
+  (let [ appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
+         cfd (File. appDir "conf")
+         mfDir (Mkdirs (File. appDir "META-INF"))
          appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [ fp nil ]
-      (doseq [ s ["classes" "patch" "lib"]]
-        (-> (File. appDir (str "POD-INF/" s)) (.mkdirs)))
 
-      (doseq [ s ["RELEASE-NOTES.txt" "NOTES.txt" "LICENSE.txt" "README.md"]]
+      (doseq [ s ["classes" "patch" "lib"]]
+        (Mkdirs (File. appDir (str "POD-INF/" s))))
+
+      (doseq [ s ["RELEASE-NOTES.txt" "NOTES.txt"
+                  "LICENSE.txt" "README.md"]]
         (FileUtils/touch (File. mfDir ^String s)))
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/build.xml")
                                      (File. hhhHome (str "apps/" appId)))
-
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/MANIFEST.MF")
                                      mfDir)
 
-      (-> (File. appDir "modules")(.mkdirs))
-      (-> (File. appDir "conf")(.mkdirs))
-      (-> (File. appDir "docs")(.mkdirs))
+      (Mkdirs (File. appDir "modules"))
+      (Mkdirs cfd)
+      (Mkdirs (File. appDir "docs"))
 
       (doseq [ s ["app.conf" "env.conf" "shiro.ini"]]
         (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
-                                       (File. appDir "conf")))
+                                       cfd))
 
-      (var-set fp (File. appDir "conf/app.conf"))
+      (var-set fp (File. cfd "app.conf"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@USER@@"
-                               (System/getProperty "user.name")))
-        "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@USER@@" (GetUser)))
+                                   "utf-8")
 
       (doseq [ s [ "java" (str "clojure/" appDomainPath) ]]
-        (-> (File. appDir (str "src/main/" s)) (.mkdirs))
-        (-> (File. appDir (str "src/test/" s)) (.mkdirs)))
+        (Mkdirs (File. appDir (str "src/main/" s)))
+        (Mkdirs (File. appDir (str "src/test/" s))))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/core.clj")
-                                     (File. appDir (str "src/main/clojure/" appDomainPath)))
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/pipe.clj")
-                                     (File. appDir (str "src/main/clojure/" appDomainPath)))
+      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/core.clj") (mkcljd))
+      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/pipe.clj") (mkcljd))
 
-      (-> (File. appDir "src/main/resources") (.mkdirs))
+      (Mkdirs (File. appDir "src/main/resources"))
 
       (doseq [ s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
         (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
@@ -232,30 +254,35 @@
 
       (var-set fp (File. mfDir "MANIFEST.MF"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPKEY@@" (.toString (UUID/randomUUID)))
-            (StringUtils/replace "@@APPMAINCLASS@@"  (str appDomain ".core.MyAppMain")))
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPKEY@@"
+                                                            (nsb (UUID/randomUUID)))
+                                       (StringUtils/replace "@@APPMAINCLASS@@"
+                                                            (str appDomain ".core.MyAppMain")))
                                    "utf-8")
 
       (var-set fp (File. appDir "pom.xml"))
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+                                       (StringUtils/replace "@@APPID@@" appId))
+                                   "utf-8")
 
       (var-set fp (File. appDir "ivy.xml"))
-      (FileUtils/writeStringToFile  ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-            (StringUtils/replace "@@APPID@@" appId)) "utf-8")
+      (FileUtils/writeStringToFile ^File @fp
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain)
+                                       (StringUtils/replace "@@APPID@@" appId))
+                                   "utf-8")
 
       (var-set fp (File. appDir "build.xs"))
-      (FileUtils/writeStringToFile  ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-            (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
-            (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
-            (StringUtils/replace "@@APPTYPE@@" flavor)
-            (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome))) "utf-8")
+      (FileUtils/writeStringToFile ^File @fp
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
+                                       (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
+                                       (StringUtils/replace "@@APPTYPE@@" flavor)
+                                       (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome)))
+                                   "utf-8")
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,30 +300,30 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ) )
+  (let [ wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ))
          wbs (json/read-str (FileUtils/readFileToString wfc "utf-8")
                             :key-fn keyword)
          appDir (File. hhhHome (str "apps/" appId))
-         wlib (doto (File. appDir "public/vendors") (.mkdirs))
+         wlib (Mkdirs (File. appDir "public/vendors"))
          csslg *SKARO-WEBCSSLANG*
          wlg *SKARO-WEBLANG*
          buf (StringBuilder.)
          appDomainPath (.replace appDomain "." "/") ]
 
     (doseq [ s ["pages" "media" "scripts" "styles"]]
-      (-> (File. appDir (str "src/web/main/" s)) (.mkdirs)))
+      (Mkdirs (File. appDir (str "src/web/main/" s))))
 
     (doseq [ s ["pages" "media" "scripts" "styles"]]
-      (-> (File. appDir (str "public/" s)) (.mkdirs)))
+      (Mkdirs (File. appDir (str "public/" s))))
 
+    (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
+                                   (mkcljd))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/cljsc.clj")
                                    (File. appDir "conf"))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/favicon.png")
                                    (File. appDir "src/web/main/media"))
-    (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
-                                   (File. appDir (str "src/main/clojure/" appDomainPath)))
 
-    (-> (File. appDir "src/test/js") (.mkdirs))
+    (Mkdirs (File. appDir "src/test/js"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
     (doseq [ df (:libs wbs) ]
@@ -306,13 +333,14 @@
         (when (.isDirectory dd)
           (FileUtils/copyDirectoryToDirectory dd wlib)
           (when-not (:skip df)
-            (doseq [ f (:js df) ]
-              (-> buf (.append (FileUtils/readFileToString (File. td ^String f) "utf-8"))
+            (doseq [ ^String f (:js df) ]
+              (-> buf
+                  (.append (FileUtils/readFileToString (File. td f) "utf-8"))
                   (.append (str "\n\n/* @@@" f "@@@ */"))
                   (.append "\n\n")))))))
 
     (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.js")
-                                 (.toString buf)
+                                 (nsb buf)
                                  "utf-8")
 
     (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.css")
@@ -331,7 +359,7 @@
     (create-app-common hhhHome appId appDomain "web")
     (create-web-common hhhHome appId appDomain)
     (doseq [ s [ "classes" "lib" ]]
-      (-> (File. appDir (str "WEB-INF/" s)) (.mkdirs)))
+      (Mkdirs (File. appDir (str "WEB-INF/" s))))
     (FileUtils/copyFile (File. hhhHome "etc/jetty/jetty.conf")
                         (File. appDir "conf/env.conf"))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/jetty/web.xml")
@@ -346,32 +374,36 @@
   [^File hhhHome appId ^String appDomain]
 
   (let [ appDir (File. hhhHome (str "apps/" appId))
-         appDomainPath (.replace appDomain "." "/") ]
+         appDomainPath (.replace appDomain "." "/")
+         cfd (File. appDir "conf") ]
     (with-local-vars [fp nil]
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
-      (copy-files (File. hhhHome "etc/netty") (File. appDir "conf") "conf")
+      (copy-files (File. hhhHome "etc/netty") cfd "conf")
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/static-routes.conf")
-                                     (File. appDir "conf"))
+                                     cfd)
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/routes.conf")
-                                     (File. appDir "conf"))
+                                     cfd)
 
       (doseq [ s ["errors" "htmls"]]
-        (-> (File. appDir (str "pages/" s)) (.mkdirs)))
+        (Mkdirs (File. appDir (str "pages/" s))))
 
-      (copy-files (File. hhhHome "etc/netty") (File. appDir "pages/errors") ".err")
-      (copy-files (File. hhhHome "etc/netty") (File. appDir "pages/htmls") "ftl")
+      (doto (File. hhhHome "etc/netty")
+            (copy-files (File. appDir "pages/errors") ".err")
+            (copy-files (File. appDir "pages/htmls") "ftl"))
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/index.html")
                                      (File. appDir "src/web/main/pages"))
 
       (var-set fp (File. appDir "conf/routes.conf"))
+
       (FileUtils/writeStringToFile ^File @fp
-        (-> (FileUtils/readFileToString ^File @fp "utf-8")
-          (StringUtils/replace "@@APPDOMAIN@@" appDomain)) "utf-8")
+                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
+                                   "utf-8")
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/pipe.clj")
-                                   (File. appDir (str "src/main/clojure/" appDomainPath)))
+                                     (mkcljd))
 
       (post-create-app hhhHome appId appDomain)
   )))
