@@ -73,6 +73,7 @@ public class HttpDemux extends AuxHttpDecoder {
     }
 
     if (nxt != null) {
+      tlog().debug("Inserting new handler {} after {}", nxt.getName(), getName());
       pipe.addAfter( getName(), nxt.getName(), nxt );
     }
   }
@@ -82,6 +83,7 @@ public class HttpDemux extends AuxHttpDecoder {
       HttpMessage msg = (HttpMessage) obj;
       doDemux(ctx, msg, extractMsgInfo(msg));
     }
+    tlog().debug("Demux message to the next handler");
     ctx.fireChannelRead(obj);
   }
 

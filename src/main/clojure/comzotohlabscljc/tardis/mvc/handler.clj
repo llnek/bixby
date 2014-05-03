@@ -100,6 +100,7 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
+      (log/debug "mvc netty handler called with message = " (type msg))
       (let [ ^comzotohlabscljc.net.routes.RouteCracker
              rcc (.getAttr co :cracker)
              ch (.channel ^ChannelHandlerContext ctx)
@@ -139,7 +140,7 @@
             ;;(.addLast "ssl" (SSLServerHShake/getInstance options))
             (.addLast "codec" (HttpServerCodec.))
             (.addLast "filter" (routeFilter co))
-            (.addLast "demux" (HttpDemux/getInstance))
+            (.addLast "HttpDemux" (HttpDemux/getInstance))
             (.addLast "chunker" (ChunkedWriteHandler.))
             (.addLast "disp" (msgDispatcher co co))
             (.addLast "error" (ErrorCatcher/getInstance)))

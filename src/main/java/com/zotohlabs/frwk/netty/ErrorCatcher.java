@@ -17,12 +17,17 @@ import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
 public class ErrorCatcher extends SimpleChannelInboundHandler {
+
+  private static Logger _log = LoggerFactory.getLogger(ErrorCatcher.class);
+  public Logger tlog() { return _log; }
 
   private static final ErrorCatcher shared = new ErrorCatcher();
   public static ErrorCatcher getInstance() {
@@ -38,7 +43,8 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
   }
 
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable t) throws Exception {
-    replyXXX( ctx.channel(), 500);
+    tlog().error("", t);
+    replyXXX(ctx.channel(), 500);
   }
 
 }

@@ -151,7 +151,7 @@
 
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
 
-  (let [ ^HTTPResult res (MakeHttpResult)
+  (let [ ^HTTPResult res (MakeHttpResult co)
          ^HttpRequest req (nth args 1)
          ^XData xdata (nth args 2)
          ^Channel ch (nth args 0)

@@ -25,10 +25,7 @@ import com.zotohlabs.frwk.net.ULFormItems;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.handler.codec.http.websocketx.*;
@@ -52,6 +49,7 @@ import static com.zotohlabs.frwk.util.CoreUtils.*;
 /**
  * @author kenl
  */
+@ChannelHandler.Sharable
 public class RequestCodec extends AuxHttpDecoder {
 
   private static final RequestCodec shared = new RequestCodec();
@@ -73,9 +71,10 @@ public class RequestCodec extends AuxHttpDecoder {
   }
 
   protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
-    if (! (msg instanceof LastHttpContent))  {
+    if (msg instanceof LastHttpContent) {} else  {
       return;
     }
+    tlog().debug("Got the final last-http-content chunk, end of message.");
     JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
     OutputStream os = (OutputStream) getAttr( ctx, XOS_KEY);
     ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
@@ -94,7 +93,12 @@ public class RequestCodec extends AuxHttpDecoder {
       tlog().warn("content-length read from headers = " +  olen +  ", new clen = " + clen );
       info.addProperty("clen", clen);
     }
+    finzAndDone(ctx, info, xs);
+  }
+
+  private void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs) {
     resetAttrs(ctx);
+    tlog().debug("fire fully decoded message to the next handler");
     ctx.fireChannelRead( new DemuxedMsg(info, xs));
   }
 
@@ -102,6 +106,7 @@ public class RequestCodec extends AuxHttpDecoder {
     if (msg instanceof HttpContent) {} else {
       return;
     }
+    tlog().debug("Got a valid http-content chunk, part of a message.");
     CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
     XData xs = (XData) getAttr( ctx, XDATA_KEY);
@@ -132,11 +137,18 @@ public class RequestCodec extends AuxHttpDecoder {
     if (info == null) { info = extractMsgInfo(msg); }
     delAttr(ctx.channel(), MSGINFO_KEY);
     setAttr(ctx, MSGINFO_KEY, info);
-
+    tlog().debug( "" + info.toString());
+    boolean isc = info.get("is-chunked").getAsBoolean();
+    String mtd = info.get("method").getAsString();
     boolean good= true;
+    int clen = info.get("clen").getAsInt();
     int c;
     setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
     setAttr( ctx, XDATA_KEY, new XData());
+
+    if (mtd.equals("POST") || mtd.equals("PUT"))
+    {}
+    else
     if (msg instanceof HttpResponse) {
       c = info.get("code").getAsInt();
       if (c >= 200 && c < 300) {
@@ -150,21 +162,36 @@ public class RequestCodec extends AuxHttpDecoder {
         tlog().warn( "received http-response with error code " + c);
       }
     }
+    else
+    if (clen == 0) {
+      finzAndDone(ctx, info, new XData());
+      good=false;
+    }
+
     if (good) {
       handleMsgChunk(ctx,msg);
     }
+
   }
 
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if (msg instanceof HttpRequest || msg instanceof HttpResponse) {
+    tlog().debug("channel read0 called with msg {}", msg.getClass()) ;
+    if (msg instanceof HttpRequest ||
+        msg instanceof HttpResponse) {
+      tlog().debug("handle new inbound msg {}", msg.getClass() );
       HttpMessage m= (HttpMessage) msg;
       handleInboundMsg(ctx, m);
+      tlog().debug("handled inbound msg. OK" );
     }
     else
     if (msg instanceof HttpContent) {
+      tlog().debug("handle inbound msg chunk");
       handleMsgChunk(ctx, msg);
+    }
+    else {
+      tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
     }
   }
 }
