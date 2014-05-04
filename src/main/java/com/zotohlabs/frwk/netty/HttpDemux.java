@@ -32,9 +32,14 @@ import io.netty.handler.codec.http.HttpResponse;
 @ChannelHandler.Sharable
 public class HttpDemux extends AuxHttpDecoder {
 
-  private static final HttpDemux sharedHandler = new HttpDemux();
+  private static final HttpDemux shared = new HttpDemux();
   public static HttpDemux getInstance() {
-    return sharedHandler;
+    return shared;
+  }
+
+  public static ChannelPipeline addLast(ChannelPipeline pipe) {
+    pipe.addLast(HttpDemux.class.getSimpleName(), shared);
+    return pipe;
   }
 
   private boolean isFormPost ( HttpMessage msg, String method) {
@@ -50,6 +55,12 @@ public class HttpDemux extends AuxHttpDecoder {
     return "GET".equals(method) && "websocket".equals(ws);
   }
 
+  private void maybeClear(ChannelPipeline pipe, String nm) {
+    if (pipe.get(nm) != null) {
+      pipe.remove(nm);
+    }
+  }
+
   private void doDemux(ChannelHandlerContext ctx, HttpMessage msg, JsonObject info)
     throws Exception {
     String mt = info.get("method").getAsString();
@@ -58,6 +69,11 @@ public class HttpDemux extends AuxHttpDecoder {
 
     setAttr(ctx.channel(), MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
+
+    // clean out last pass, in case this channel is being reused.
+    maybeClear(pipe, FormPostCodec.class.getSimpleName());
+    maybeClear(pipe, WebSockCodec.class.getSimpleName());
+    maybeClear(pipe, RequestCodec.class.getSimpleName());
 
     if (isFormPost(msg, mt)) {
       nxt = FormPostCodec.getInstance();
@@ -72,7 +88,7 @@ public class HttpDemux extends AuxHttpDecoder {
       nxt=RequestCodec.getInstance();
     }
 
-    if (nxt != null && pipe.get(nxt.getName()) == null) {
+    if (nxt != null ) {
       tlog().debug("Inserting new handler {} after {}", nxt.getName(), getName());
       pipe.addAfter( getName(), nxt.getName(), nxt );
     }

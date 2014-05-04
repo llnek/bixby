@@ -53,7 +53,7 @@
 
   (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
                                      DemuxedMsg PipelineConfigurator
-                                     HttpDemux
+                                     HttpDemux FlashHandler
                                      SSLServerHShake ServerSide))
   (:import (jregex Matcher Pattern)))
 
@@ -138,12 +138,13 @@
         (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
         (-> pipe
             ;;(.addLast "ssl" (SSLServerHShake/getInstance options))
+            (FlashHandler/addLast )
             (.addLast "codec" (HttpServerCodec.))
             (.addLast "filter" (routeFilter co))
-            (.addLast "HttpDemux" (HttpDemux/getInstance))
+            (HttpDemux/addLast )
             (.addLast "chunker" (ChunkedWriteHandler.))
             (.addLast "disp" (msgDispatcher co co))
-            (.addLast "error" (ErrorCatcher/getInstance)))
+            (ErrorCatcher/addLast ))
         pipe))
   ))
 

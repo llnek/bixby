@@ -16,6 +16,7 @@ package com.zotohlabs.frwk.netty;
 import static com.zotohlabs.frwk.netty.NettyFW.replyXXX;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,11 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
   private static final ErrorCatcher shared = new ErrorCatcher();
   public static ErrorCatcher getInstance() {
     return shared;
+  }
+
+  public static ChannelPipeline addLast(ChannelPipeline pipe) {
+    pipe.addLast(ErrorCatcher.class.getSimpleName(), shared);
+    return pipe;
   }
 
   public ErrorCatcher() {
