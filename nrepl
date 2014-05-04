@@ -1,0 +1,61 @@
+#!/bin/bash
+
+splash_crawford() {
+
+echo "  _____ __  _   ____  ____   ___"
+echo " / ___/|  |/ ] /    ||    \ /   \\"
+echo "(   \_ |  ' / |  o  ||  D  )     |"
+echo " \__  ||    \ |     ||    /|  O  |"
+echo " /  \ ||     ||  _  ||    \|     |"
+echo " \    ||  .  ||  |  ||  .  \     |"
+echo "  \___||__|\_||__|__||__|\_|\___/"
+
+}
+
+splash() {
+  echo ""
+  splash_crawford
+  echo ""
+  echo ""
+}
+
+### osx sux, has no proper readlink.
+check_darwin() {
+  SKARO_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
+  SKARO_BIN=$( dirname $SKARO_BIN )
+  SKARO_HOME=$( dirname $SKARO_BIN )
+}
+check_linux() {
+  SKARO_BIN=$(dirname $(readlink -f $0))/../
+  SKARO_HOME=$(readlink -f $SKARO_BIN)
+  SKARO_BIN=$SKARO_HOME/bin
+}
+
+OSTYPE=`uname -s`
+CWD=`pwd`
+
+if [ "$OSTYPE" = "Darwin" ]; then
+  check_darwin
+else
+  check_linux
+fi
+
+
+if [ "$JAVA_HOME" = "" ] ; then
+  echo "Attempt to reference standard java location on system: /usr/bin."
+  #echo "Please set JAVA_HOME"
+  #exit -1
+  JAVA_HOME=/usr
+fi
+
+BCP=/wdrive/dev/builds/skaro/lib/test/*
+JAVA_CMD=$JAVA_HOME/bin/java
+
+VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
+MAINCZ=jline.ConsoleRunner
+VMARGS="-Xms512m -Xmx2048m $VMXRGS"
+
+splash
+$JAVA_CMD $VMARGS -cp "$BCP" $MAINCZ clojure.main $@
+
+exit 0

@@ -393,6 +393,12 @@ path (id: 'testPathId') {
 }
 
   /*
+       clojure console
+       */
+
+target (repl: '') { clj_console() }
+
+  /*
        compile source code
        */
 
@@ -673,6 +679,14 @@ def jarAll() {
   }
 }
 
+def clj_console() {
+  java (classname: 'jline.ConsoleRunner',
+        maxmemory: '2048m',
+        fork: true,
+        classpathref: 'compilePathId') {
+    arg (value: 'clojure.main')
+  }
+}
 
 def clj_Util() {
   println "clj_Util:"
