@@ -13,9 +13,9 @@
   :plugins [[lein-localrepo "0.5.3"]]
 
   :dependencies [
-    ;;[bouncycastle/bcprov-jdk15on "150"]
-    ;;[bouncycastle/bcmail-jdk15on "150"]
-    ;;[bouncycastle/bcpkix-jdk15on "150"]
+    [bouncycastle/bcprov-jdk15on "150"]
+    [bouncycastle/bcmail-jdk15on "150"]
+    [bouncycastle/bcpkix-jdk15on "150"]
     [org.jasypt/jasypt "1.9.2"]
     [org.mindrot/jbcrypt "0.3m"]
 
@@ -44,7 +44,7 @@
     [commons-io/commons-io "2.4"]
 
     [commons-logging/commons-logging "1.1.3"]
-    ;;[commons-email/commons-email "1.3.2"]
+    [commons-email/commons-email "1.3.2"]
     [commons-codec/commons-codec "1.9"]
     [commons-fileupload/commons-fileupload "1.3.1"]
     [commons-dbutils/commons-dbutils "1.5"]
@@ -83,7 +83,7 @@
     [org.codehaus.groovy/groovy-all "2.2.2"]
     [org.scala-lang/scala-library "2.11.0"]
     [org.scala-lang/scala-compiler "2.11.0"]
-    ;;[com.sun.tools/tools "1.7.0"]
+    [com.sun.tools/tools "1.7.0"]
     [javassist/javassist "3.12.1.GA"]
 
     [com.github.spullara.mustache.java/compiler "0.8.14"]
@@ -94,7 +94,7 @@
 
     [javax/geronimo-jms_1.1_spec "1.1.1"]
     [com.h2database/h2 "1.3.175"]
-    ;;[org.postgresql/postgresql "9.3-1101.jdbc41"]
+    [org.postgresql/postgresql "9.3-1101.jdbc41"]
     [net.sf.ehcache/ehcache "2.8.1"]
 
     [org.clojure/math.numeric-tower "0.0.4"]
