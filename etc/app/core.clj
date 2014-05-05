@@ -1,22 +1,34 @@
-(ns @@APPDOMAIN@@.core )
+(ns  ^{
+       :doc ""
+       :author "kenl" }
 
-(use '[clojure.tools.logging :only (info warn error debug)])
+  @@APPDOMAIN@@.core
 
-(deftype MyAppMain [] 
-  comzotohlabscljc.tardis.impl.ext.CljAppMain
+  (:require [clojure.tools.logging :as log :only (info warn error debug)]))
+
+
+(deftype MyAppMain [] comzotohlabscljc.tardis.impl.ext.CljAppMain
+
   (contextualize [_ container]
-    (info "My AppMain contextualized by container " container))
+    (log/info "My AppMain contextualized by container " container))
+
   (configure [_ options]
-    (info "My AppMain configured with options " options))
+    (log/info "My AppMain configured with options " options))
+
   (initialize [_]
-    (info "My AppMain initialized!"))
+    (log/info "My AppMain initialized!"))
+
   (start [_]
-    (info "My AppMain started"))
+    (log/info "My AppMain started"))
+
   (stop [_]
-    (info "My AppMain stopped"))
+    (log/info "My AppMain stopped"))
+
   (dispose [_]
-    (info "My AppMain finz'ed"))
+    (log/info "My AppMain finz'ed"))
 )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private core-eof nil)
 
