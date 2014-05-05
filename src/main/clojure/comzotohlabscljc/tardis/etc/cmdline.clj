@@ -292,14 +292,15 @@
              now (Date.) ]
         (println (str "DN entered: " dn))
         (MakeSSv1PKCS12
-          now
-          (-> (MakeCal now)
-              (AddMonths (ConvLong (:months rc) 12))
-              (.getTime))
           dn
           (Pwdify (:pwd rc))
-          (ConvLong (:size rc) 1024)
-          ff)
+          ff
+          { :keylen (ConvLong (:size rc) 1024)
+            :start now
+            :end (-> (MakeCal now)
+                     (AddMonths (ConvLong (:months rc) 12))
+                     (.getTime))
+          })
         (println (str "Wrote file: " ff))))
   ))
 

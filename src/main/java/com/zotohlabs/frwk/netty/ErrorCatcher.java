@@ -35,6 +35,7 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
     return shared;
   }
 
+
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(ErrorCatcher.class.getSimpleName(), shared);
     return pipe;

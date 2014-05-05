@@ -186,7 +186,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     return rc;
   }
 
-  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf) 
+  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf)
     throws IOException {
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
     Object[] fos = IOUtils.newTempFile(true);
@@ -226,7 +226,8 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
   public void channelReadComplete(ChannelHandlerContext ctx)
       throws Exception                    {
     tlog().debug("{}.channelRead - complete called().", getClass().getSimpleName() );
-    super.channelReadComplete(ctx);
+    //super.channelReadComplete(ctx);
+    ctx.flush();
   }
 
 }

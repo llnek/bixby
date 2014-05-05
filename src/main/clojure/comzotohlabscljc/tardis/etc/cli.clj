@@ -243,8 +243,8 @@
         (Mkdirs (File. appDir (str "src/main/" s)))
         (Mkdirs (File. appDir (str "src/test/" s))))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/core.clj") (mkcljd))
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/pipe.clj") (mkcljd))
+      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/core.clj") (mkcljd appDir appDomain))
+      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/pipe.clj") (mkcljd appDir appDomain))
 
       (Mkdirs (File. appDir "src/main/resources"))
 
@@ -317,7 +317,7 @@
       (Mkdirs (File. appDir (str "public/" s))))
 
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
-                                   (mkcljd))
+                                   (mkcljd appDir appDomain))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/cljsc.clj")
                                    (File. appDir "conf"))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/favicon.png")
@@ -403,7 +403,7 @@
                                    "utf-8")
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/pipe.clj")
-                                     (mkcljd))
+                                     (mkcljd appDir appDomain))
 
       (post-create-app hhhHome appId appDomain)
   )))

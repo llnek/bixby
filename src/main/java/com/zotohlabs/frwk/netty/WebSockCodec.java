@@ -138,13 +138,13 @@ public class  WebSockCodec extends RequestCodec {
     Channel ch = ctx.channel();
     tlog().debug( "nio-wsframe: received a " + frame.getClass());
     if (frame instanceof CloseWebSocketFrame) {
-      hs.close(ch, (CloseWebSocketFrame) frame);
+      hs.close(ch, (CloseWebSocketFrame) frame.retain());
       resetAttrs(ctx);
-      NettyFW.closeChannel(ch);
+      //NettyFW.closeChannel(ch);
     }
     else
     if ( frame instanceof PingWebSocketFrame) {
-      ctx.write( new PongWebSocketFrame( frame.content() ));
+      ctx.write( new PongWebSocketFrame( frame.content().retain() ));
     }
     else
     if ( frame instanceof ContinuationWebSocketFrame ||

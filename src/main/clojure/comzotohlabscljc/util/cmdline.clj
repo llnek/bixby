@@ -135,13 +135,13 @@
 (defn CLIConverse "Prompt a sequence of questions via console."
 
   ;; map
-  [^String question1 cmdQs]
+  [cmdQs question1]
 
   (let [ cout (OutputStreamWriter. (BufferedOutputStream. (System/out)))
          kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
          cin (InputStreamReader. (System/in)) ]
     (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
-    (cycleQ cout cin cmdQs question1 (HashMap.))
+    (cycleQ cout cin cmdQs ^String question1 (HashMap.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

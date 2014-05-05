@@ -24,8 +24,6 @@
     <path refid="compile.path.id" />
   </path>
 
-  <taskdef name="scalac" classname="scala.tools.ant.Scalac" classpathref="skarolibs.id"/>
-  <taskdef resource="net/sf/antcontrib/antlib.xml"/>
 
   <!-- resolve ivy stuff
        ================================= -->
@@ -75,6 +73,7 @@
       <case value="coffee">
         <antcall target="compile-coffee"/>
       </case>
+      <default></default>
     </switch>
     <antcall target="compile-js"/>
     <switch value="${csslang}">
@@ -171,11 +170,6 @@
       <include name="**/*.java"/>
     </javac>
 
-    <scalac srcdir="${src.dir}/scala" destdir="${out.jar.dir}"
-      classpathref="compile.path.id"
-      fork="false" jvmargs="-Xmx5120M -Xms1024M ">
-      <include name="**/*.scala"/>
-    </scalac>
 
     <antcall target="compile-clj"/>
 
@@ -183,9 +177,6 @@
     <copy todir="${out.jar.dir}">
       <fileset dir="${src.dir}/clojure">
         <exclude name="**/*.clj"/>
-      </fileset>
-      <fileset dir="${src.dir}/scala">
-        <exclude name="**/*.scala"/>
       </fileset>
       <fileset dir="${src.dir}/java">
         <exclude name="**/*.java"/>
@@ -204,33 +195,13 @@
     <mkdir dir="${out.test.dir}"/>
     <mkdir dir="${report.dir}"/>
 
-    <scalac srcdir="${test.dir}/scala" destdir="${out.test.dir}" 
-      classpathref="test.path.id" fork="false" jvmargs="-Xmx5120M -Xms1024M">
-      <include name="**/*.scala"/>
-    </scalac>
 
-    <copy todir="${out.test.dir}">
-      <fileset dir="${test.dir}/scala">
-        <exclude name="**/*.scala"/>
-      </fileset>
-    </copy>
 
   </target>
 
   <!-- run test code -->
   <target name="run_test_code" >
 
-    <taskdef name="scalatest" classname="org.scalatest.tools.ScalaTestAntTask">
-      <classpath refid="test.path.id"/>
-    </taskdef>
-
-    <scalatest haltonfailure="true" fork="false" maxmemory="888M">
-      <reporter type="stderr"/>
-      <wildcard package="@@APPDOMAIN@@"/>
-      <runpath>
-        <pathelement path="${out.test.dir}"/>
-      </runpath>
-    </scalatest>
 
   </target>
 
