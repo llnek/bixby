@@ -74,7 +74,7 @@ target (buildr : '') {
         target: test-build
        ================================= */
 
-target ( testBuild : '') { 
+target ( testBuild : '') {
   depends(compileTestCode, runTestCode)
   println "Test called - OK."
 }
@@ -228,7 +228,7 @@ target (packDocs: '') {
     }
   }
   java (classname: 'autodoc.autodoc',
-    fork: true, 
+    fork: true,
     failonerror: true) {
     classpath (refid: 'compilePathId')
     arg (value: '--name=Skaro')
@@ -488,13 +488,13 @@ def createOneDemoApp(dir) {
   final res= "${demoDir}/${appid}/src/main/resources/"
   final pfx= "${demoDir}/${appid}/public/"
   if ("jetty" == "${appid}" || "mvc" == "${appid}") {
-    ["images","scripts","styles"].each { s ->
+    ["pages", "images","scripts","styles"].each { s ->
       new File(pfx + s).mkdirs()
     }
     ant.copy (todir: pfx + "images", file: "${basedir}/etc/web/favicon.ico")
     ant.copy (todir: pfx + "scripts", file: "${demoSrc}/demo/test.js")
     ant.copy (todir: pfx + "styles", file: "${demoSrc}/demo/main.css")
-    ant.mkdir (dir: res + "coffee")
+    //ant.mkdir (dir: res + "coffee")
     ant.mkdir (dir: res + "less")
     ant.mkdir (dir: res + "js")
   }
@@ -845,6 +845,7 @@ def cljhhh_IO() {
     arg (value: 'comzotohlabscljc.tardis.io.servlet')
     arg (value: 'comzotohlabscljc.tardis.io.triggers')
     arg (value: 'comzotohlabscljc.tardis.io.webss')
+    arg (value: 'comzotohlabscljc.tardis.io.basicauth')
   }
 }
 
@@ -993,7 +994,7 @@ def runtests_Scala() {
     classpath (refid: 'testPathId')
   }
   scalatest (haltonfailure: true,
-    fork: true, 
+    fork: true,
     maxmemory: '888M') {
     reporter (type: 'junitxml', directory: "${reportTestDir}")
     wildcard (package: 'testzotohlabs.scala')
@@ -1005,9 +1006,9 @@ def runtests_Scala() {
 
 def runtests_Clj() {
   ant.junit (logfailedtests: true,
-    showoutput: false, 
-    printsummary: true, 
-    fork: true, 
+    showoutput: false,
+    printsummary: true,
+    fork: true,
     haltonfailure: true) {
     classpath (refid: 'testPathId')
     formatter (type: 'plain', usefile: false)

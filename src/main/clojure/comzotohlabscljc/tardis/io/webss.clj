@@ -21,7 +21,6 @@
   (:use [comzotohlabscljc.crypto.core :only [GenMac] ])
   (:use [comzotohlabscljc.util.str :only [nsb hgl? AddDelim!] ])
   (:use [comzotohlabscljc.util.guids :only [NewUUid] ])
-  (:use [comzotohlabscljc.tardis.io.http :only [ScanBasicAuth] ])
   (:use [comzotohlabscljc.net.comms :only [GetFormFields] ])
 
   (:import (com.zotohlabs.gallifrey.runtime AuthError))
@@ -66,72 +65,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetSignupInfo ""
-
-  [^HTTPEvent evt]
-
-  (let [ data (.data evt) ]
-    (with-local-vars [user nil pwd nil email nil]
-      (cond
-        (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (GetFormFields data) ]
-          (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
-          (case (.getFieldName x)
-            "password" (var-set pwd  (.getString x))
-            "user" (var-set user (.getString x))
-            "email" (var-set email (.getString x))
-            nil))
-
-        :else
-        (do
-          (var-set pwd (.getParameterValue evt "password"))
-          (var-set email (.getParameterValue evt "email"))
-          (var-set user (.getParameterValue evt "user"))) )
-
-      { :principal @user :credential @pwd  :email @email }
-  )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetLoginInfo ""
-
-  [^HTTPEvent evt]
-
-  (let [ ba (ScanBasicAuth evt)
-         data (.data evt) ]
-    (with-local-vars [user nil pwd nil]
-      (cond
-        (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (GetFormFields data) ]
-          (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
-          (case (.getFieldName x)
-            "password" (var-set pwd  (.getString x))
-            "user" (var-set user (.getString x))
-            nil))
-
-        (notnil? ba)
-        (do
-          (var-set user (first ba))
-          (var-set pwd (last ba)))
-
-        :else
-        (do
-          (var-set pwd (.getParameterValue evt "password"))
-          (var-set user (.getParameterValue evt "user"))) )
-
-      { :principal @user :credential @pwd }
-
-  )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn Realign! ""
 
   [^HTTPEvent evt acctObj roles]
 
   (let [ ^comzotohlabscljc.tardis.io.webss.WebSession mvs (.getSession evt)
-         ^comzotohlabscljc.tardis.core.sys.Element netty (.emitter evt)
-         idleSecs (.getAttr netty :cacheMaxAgeSecs) ]
+         ^comzotohlabscljc.tardis.core.sys.Element src (.emitter evt)
+         idleSecs (.getAttr src :cacheMaxAgeSecs) ]
     (doto mvs
       (.invalidate )
       (.setAttribute TS_FLAG

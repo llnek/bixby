@@ -27,6 +27,11 @@ public class Expect100 extends SimpleChannelInboundHandler {
     return shared;
   }
 
+  public static ChannelPipeline addLast(ChannelPipeline pipe) {
+    pipe.addLast(Expect100.class.getSimpleName(), shared);
+    return pipe;
+  }
+
   public Expect100() {
   }
 

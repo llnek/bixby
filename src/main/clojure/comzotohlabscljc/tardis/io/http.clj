@@ -26,6 +26,7 @@
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.io.webss])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:import (org.eclipse.jetty.server Server Connector ConnectionFactory))
   (:import (java.util.concurrent ConcurrentHashMap))
@@ -43,11 +44,13 @@
   (:import (org.apache.commons.codec.binary Base64))
   (:import (org.eclipse.jetty.server Connector HttpConfiguration
                                       HttpConnectionFactory SecureRequestCustomizer
-                                      Server ServerConnector
+                                      Server ServerConnector Handler
                                       SslConnectionFactory))
   (:import (org.eclipse.jetty.util.ssl SslContextFactory))
   (:import (org.eclipse.jetty.util.thread QueuedThreadPool))
-  (:import (org.eclipse.jetty.server.handler AbstractHandler ContextHandler))
+  (:import (org.eclipse.jetty.util.resource Resource))
+  (:import (org.eclipse.jetty.server.handler AbstractHandler ContextHandler
+                                             ContextHandlerCollection ResourceHandler))
   (:import (com.zotohlabs.gallifrey.io IOSession ServletEmitter Emitter))
   (:import (org.eclipse.jetty.webapp WebAppContext))
   (:import (javax.servlet.http HttpServletRequest HttpServletResponse))
@@ -300,10 +303,15 @@
 ;;
 (defn- dispREQ ""
 
-  [ ^comzotohlabscljc.tardis.core.sys.Element co ^Continuation ct req rsp]
+  [ ^comzotohlabscljc.tardis.core.sys.Element co
+    ^Continuation ct
+    ^HttpServletRequest req rsp]
 
-  (let [ evt (IOESReifyEvent co req)
+  (let [ ^HTTPEvent evt (IOESReifyEvent co req)
+         ssl (= "https" (.getScheme req))
+         wss (MakeWSSession co ssl)
          wm (.getAttr co :waitMillis) ]
+    (.bindSession evt wss)
     (doto ct
           (.setTimeout wm)
           (.suspend rsp))
@@ -337,16 +345,26 @@
          ctr (.parent ^Hierarchial co)
          ^Server jetty (.getAttr co :jetty)
          ^File app (.getAttr ctr K_APPDIR)
+         ^File rcpath (File. app "public")
+         rcpathStr (-> rcpath (.toURI)(.toURL)(.toString))
          cp (strim (.getAttr co :contextPath))
+         ctxs (ContextHandlerCollection.)
+         c2 (ContextHandler.)
+         c1 (ContextHandler.)
+         r1 (ResourceHandler.)
          myHandler (proxy [AbstractHandler] []
                      (handle [target,baseReq,req,rsp]
                        (serviceJetty co req rsp))) ]
     ;; static resources are based from resBase, regardless of context
-    (.setHandler jetty (doto (ContextHandler.)
-                             (.setContextPath cp)
-                             (.setResourceBase (-> app (.toURI)(.toURL)(.toString)))
-                             (.setClassLoader (.getAttr co K_APP_CZLR))
-                             (.setHandler myHandler)))
+    (-> r1 (.setBaseResource (Resource/newResource rcpathStr)))
+    (.setContextPath c1 "/public")
+    (.setHandler c1 r1)
+
+    (.setClassLoader c2 (.getAttr co K_APP_CZLR))
+    (.setContextPath c2 cp)
+    (.setHandler c2 myHandler)
+    (.setHandlers ctxs (into-array Handler [c1 c2]))
+    (.setHandler jetty ctxs)
     (.start jetty)
     (IOESStarted co)
   ))
@@ -481,6 +499,8 @@
 
   (let [ ^HTTPResult result (MakeHttpResult co)
          ^HttpServletRequest req (first args)
+         ssl (= "https" (.getScheme req))
+         wss (MakeWSSession co ssl)
          impl (MakeMMap)
          eid (NextLong) ]
     (reify

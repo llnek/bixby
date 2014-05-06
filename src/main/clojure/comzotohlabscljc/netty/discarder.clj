@@ -71,13 +71,14 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [p o]
-      (let [ ^ChannelPipeline pipe p ^JsonObject options o]
+      (let [ ^ChannelPipeline pipe p
+             ^JsonObject options o
+             ssl (SSLServerHShake/getInstance options) ]
         (doto pipe
-          (.addLast "ssl" (SSLServerHShake/getInstance options))
           (.addLast "codec" (HttpServerCodec.))
-          (.addLast "e100" (Expect100/getInstance))
+          (Expect100/addLast)
           (.addLast "discarder" (discardHandler callback))
-          (.addLast "error" (ErrorCatcher/getInstance)))))
+          (ErrorCatcher/addLast ))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

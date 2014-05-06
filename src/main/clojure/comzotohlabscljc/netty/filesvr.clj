@@ -113,14 +113,16 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [p o]
-      (let [ ^ChannelPipeline pipe p ^JsonObject options o ]
+      (let [ ^ChannelPipeline pipe p
+             ^JsonObject options o
+             ssl (SSLServerHShake/getInstance options) ]
+        (when-not (nil? ssl)(.addLast pipe "ssl" ssl))
         (doto pipe
-          (.addLast "ssl" (SSLServerHShake/getInstance options))
           (.addLast "codec" (HttpServerCodec.))
-          (.addLast "demux" (HttpDemux/getInstance))
+          (HttpDemux/addLast )
           (.addLast "chunker" (ChunkedWriteHandler.))
           (.addLast "filer" (fileHandler options))
-          (.addLast "error" (ErrorCatcher/getInstance)))))
+          (ErrorCatcher/addLast ))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

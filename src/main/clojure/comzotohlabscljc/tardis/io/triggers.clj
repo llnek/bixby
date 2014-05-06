@@ -70,10 +70,10 @@
   [^HttpCookie c]
 
   (doto (Cookie. (.getName c) (.getValue c))
-        (.setDomain (.getDomain c))
+        (.setDomain (nsb (.getDomain c)))
         (.setHttpOnly (.isHttpOnly c))
         (.setMaxAge (.getMaxAge c))
-        (.setPath (.getPath c))
+        (.setPath (nsb (.getPath c)))
         (.setSecure (.getSecure c))
         (.setVersion (.getVersion c))
   ))
