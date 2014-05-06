@@ -291,17 +291,19 @@
   ^PipelineConfigurator
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
+  (log/debug "tardis netty pipeline initor called with emitter = " (type co))
   (proxy [PipelineConfigurator] []
     (assemble [p o]
       (let [ ^ChannelPipeline pipe p
-             ^JsonObject options o ]
+             ^JsonObject options o
+             ssl (SSLServerHShake/getInstance options) ]
+        (if ssl (.addLast pipe "ssl" ssl))
         (-> pipe
-            (.addLast "ssl" (SSLServerHShake/getInstance options))
             (.addLast "codec" (HttpServerCodec.))
-            (.addLast "demux" (HttpDemux/getInstance))
+            (HttpDemux/addLast )
             (.addLast "chunker" (ChunkedWriteHandler.))
             (.addLast "disp" (msgDispatcher co))
-            (.addLast "error" (ErrorCatcher/getInstance)))
+            (ErrorCatcher/addLast ))
         pipe))
   ))
 

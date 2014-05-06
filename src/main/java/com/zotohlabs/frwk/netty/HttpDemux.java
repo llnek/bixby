@@ -25,21 +25,31 @@ import static com.zotohlabs.frwk.util.CoreUtils.nsb;
 import com.zotohlabs.frwk.netty.NettyFW;
 import io.netty.handler.codec.http.HttpResponse;
 
+import java.io.IOException;
+
 
 /**
  * @author kenl
  */
-@ChannelHandler.Sharable
+//@ChannelHandler.Sharable
 public class HttpDemux extends AuxHttpDecoder {
 
-  private static final HttpDemux shared = new HttpDemux();
-  public static HttpDemux getInstance() {
-    return shared;
-  }
+//  private static final HttpDemux shared = new HttpDemux();
+//  public static HttpDemux getInstance() {
+//    return shared;
+//  }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(HttpDemux.class.getSimpleName(), shared);
+    pipe.addLast(HttpDemux.class.getSimpleName(), new HttpDemux() );
     return pipe;
+  }
+
+  private AuxHttpDecoder myDelegate;
+
+  public HttpDemux() {
+//    formpost= FormPostCodec.getInstance();
+//    wsock = WebSockCodec.getInstance();
+//    basic = RequestCodec.getInstance();
   }
 
   private boolean isFormPost ( HttpMessage msg, String method) {
@@ -55,52 +65,43 @@ public class HttpDemux extends AuxHttpDecoder {
     return "GET".equals(method) && "websocket".equals(ws);
   }
 
-  private void maybeClear(ChannelPipeline pipe, String nm) {
-    if (pipe.get(nm) != null) {
-      pipe.remove(nm);
-    }
-  }
-
-  private void doDemux(ChannelHandlerContext ctx, HttpMessage msg, JsonObject info)
+  private void doDemux(ChannelHandlerContext ctx, Object inboundObject)
     throws Exception {
+    HttpMessage msg = (HttpMessage) inboundObject;
+    JsonObject info = extractMsgInfo(msg);
     String mt = info.get("method").getAsString();
-    ChannelPipeline pipe = ctx.pipeline();
-    AuxHttpDecoder nxt = null;
 
     setAttr(ctx.channel(), MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
 
-    // clean out last pass, in case this channel is being reused.
-    maybeClear(pipe, FormPostCodec.class.getSimpleName());
-    maybeClear(pipe, WebSockCodec.class.getSimpleName());
-    maybeClear(pipe, RequestCodec.class.getSimpleName());
-
     if (isFormPost(msg, mt)) {
-      nxt = FormPostCodec.getInstance();
+      myDelegate = FormPostCodec.getInstance();
       info.addProperty("formpost", true);
     }
     else
     if (isWSock(msg,mt)) {
-      nxt= WebSockCodec.getInstance();
+      myDelegate= WebSockCodec.getInstance();
       info.addProperty("wsock", true);
     }
     else {
-      nxt=RequestCodec.getInstance();
+      myDelegate =RequestCodec.getInstance();
     }
 
-    if (nxt != null ) {
-      tlog().debug("Inserting new handler {} after {}", nxt.getName(), getName());
-      pipe.addAfter( getName(), nxt.getName(), nxt );
-    }
+    myDelegate.channelReadXXX(ctx, msg);
   }
 
   public void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
-    if (obj instanceof HttpRequest || obj instanceof HttpResponse) {
-      HttpMessage msg = (HttpMessage) obj;
-      doDemux(ctx, msg, extractMsgInfo(msg));
+    if (myDelegate != null) {
+      myDelegate.channelReadXXX(ctx, obj);
     }
-    tlog().debug("Demux message to the next handler");
-    ctx.fireChannelRead(obj);
+    else
+    if (obj instanceof HttpRequest ||
+        obj instanceof HttpResponse) {
+        doDemux(ctx, obj);
+    }
+    else {
+      throw new IOException("Fatal error while reading http message.");
+    }
   }
 
 }

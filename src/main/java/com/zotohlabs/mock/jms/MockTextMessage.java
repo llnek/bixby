@@ -130,7 +130,7 @@ public class MockTextMessage implements TextMessage {
 
   @Override
   public String getJMSType() throws JMSException {
-    return null;
+    return _type;
   }
 
   @Override

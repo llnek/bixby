@@ -68,7 +68,7 @@
   ^String
   []
 
-  (NiceFPath (File. (File. (getHomeDir) (str DN_CFG "/app")) "ant.xml")))
+  (NiceFPath (File. (File. (getHomeDir) (str DN_CFG "/app")) "build.xml")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

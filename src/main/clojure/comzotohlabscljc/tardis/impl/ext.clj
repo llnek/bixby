@@ -296,14 +296,16 @@
         Startable
 
         (start [this]
-          (let [ ^comzotohlabscljc.tardis.core.sys.Registry
+          (let [ pub (File. (.getAppDir this) (str DN_PUBLIC))
+                 ^comzotohlabscljc.tardis.core.sys.Registry
                  srg (.getf impl K_SVCS)
                  main (.getf impl :main-app) ]
             (log/info "container starting all services...")
-            (doto ftlCfg
-                  (.setDirectoryForTemplateLoading
-                    (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
-                  (.setObjectWrapper (DefaultObjectWrapper.)))
+            (when (.exists pub)
+              (doto ftlCfg
+                    (.setDirectoryForTemplateLoading
+                      (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
+                    (.setObjectWrapper (DefaultObjectWrapper.))))
             (doseq [ [k v] (seq* srg) ]
               (log/info "service: " k " about to start...")
               (.start ^Startable v))

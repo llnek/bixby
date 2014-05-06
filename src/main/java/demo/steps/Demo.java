@@ -192,7 +192,7 @@ public class Demo implements PipelineDelegate {
   private Activity ErrorUser = new PTask(error_user);
 
   // do a final test to see what sort of response should we send back to the user.
-  private Activity FinalTest = new If( 
+  private Activity FinalTest = new If(
     new BoolExpr() {
       public boolean evaluate(Job j ) {
         // we hard code that all things are well.

@@ -426,6 +426,7 @@ target (cljUtil: '') { clj_Util() }
 
 target (jarit: '') { jarAll() }
 
+target (compileJavaCode: '') { compileJava() }
 target (compileClj: '') { compile_clj() }
 
   /*

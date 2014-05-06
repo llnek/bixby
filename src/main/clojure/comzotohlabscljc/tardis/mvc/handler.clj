@@ -66,6 +66,7 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [c msg]
+      (log/debug "mvc route filter called with message = " (type msg))
       (if (instance? HttpRequest msg)
         (let [ ^comzotohlabscljc.net.routes.RouteCracker
                ck (.getAttr co :cracker)
@@ -81,13 +82,17 @@
             (NettyFW/sendRedirect ch false ^String r4)
 
             (= r1 true)
-            (.fireChannelRead ctx msg)
+            (do
+              (log/debug "mvc route filter MATCHED with uri = " (.getUri req))
+              (.fireChannelRead ctx msg))
 
             :else
             (do
               (log/debug "failed to match uri: " (.getUri req))
               (NettyFW/replyXXX ch 404 false)))
-        )))
+        )
+        ;;else
+        (.fireChannelRead ^ChannelHandlerContext c msg)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,6 +135,7 @@
   ^PipelineConfigurator
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
+  (log/debug "mvc netty pipeline initor called with emitter = " (type co))
   (proxy [PipelineConfigurator] []
     (assemble [p o]
       (let [ ^ChannelPipeline pipe p

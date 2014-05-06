@@ -24,6 +24,7 @@
     <path refid="compile.path.id" />
   </path>
 
+  <taskdef resource="net/sf/antcontrib/antlib.xml"/>
 
   <!-- resolve ivy stuff
        ================================= -->

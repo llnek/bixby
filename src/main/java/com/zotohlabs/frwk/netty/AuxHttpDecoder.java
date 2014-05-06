@@ -49,6 +49,7 @@ import static com.zotohlabs.frwk.io.IOUtils.*;
 /**
  * @author kenl
  */
+@SuppressWarnings("unchecked")
 public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
 
   protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
@@ -223,7 +224,11 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     return ctx.pipeline().get(SslHandler.class) != null;
   }
 
-  public void channelReadComplete(ChannelHandlerContext ctx)
+  public void channelReadXXX(ChannelHandlerContext ctx, Object msg) throws Exception {
+    channelRead0(ctx, msg);
+  }
+
+  public void __channelReadComplete(ChannelHandlerContext ctx)
       throws Exception                    {
     tlog().debug("{}.channelRead - complete called().", getClass().getSimpleName() );
     //super.channelReadComplete(ctx);

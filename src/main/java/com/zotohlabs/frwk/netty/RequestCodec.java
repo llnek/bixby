@@ -162,12 +162,13 @@ public class RequestCodec extends AuxHttpDecoder {
         tlog().warn( "received http-response with error code " + c);
       }
     }
+    /*
     else
     if (clen == 0) {
       finzAndDone(ctx, info, new XData());
       good=false;
     }
-
+*/
     if (good) {
       handleMsgChunk(ctx,msg);
     }
@@ -183,7 +184,7 @@ public class RequestCodec extends AuxHttpDecoder {
       tlog().debug("handle new inbound msg {}", msg.getClass() );
       HttpMessage m= (HttpMessage) msg;
       handleInboundMsg(ctx, m);
-      tlog().debug("handled inbound msg. OK" );
+      //tlog().debug("handled inbound msg. OK" );
     }
     else
     if (msg instanceof HttpContent) {

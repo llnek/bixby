@@ -60,7 +60,9 @@ public class DemoClient implements PipelineDelegate {
           dos.writeInt(bits.length);
           os.write(bits);
           os.flush();
-        } catch (Throwable e) {} finally {
+        } catch (Throwable e) {
+          e.printStackTrace();
+        } finally {
           if(soc != null) try { soc.close(); } catch (Throwable e) {}
         }
         return null;

@@ -79,7 +79,7 @@
     (test-posnum "socket-io port" port)
     (.setAttr! co :timeoutMillis (ConvLong tout 0))
     (.setAttr! co :host (nsb host))
-    (.setAttr! co :port port)
+    (.setAttr! co :port (int port))
     (.setAttr! co :backlog (ConvLong blog 100))
     co
   ))

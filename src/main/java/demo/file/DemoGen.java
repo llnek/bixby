@@ -34,8 +34,8 @@ import com.zotohlabs.wflow.*;
  */
 public class DemoGen implements PipelineDelegate {
 
+  private static AtomicInteger _count= new AtomicInteger(0);
   public int count() { return  _count.incrementAndGet(); }
-  private AtomicInteger _count= new AtomicInteger(0);
 
   public Activity getStartActivity(final Pipeline pipe) {
     return new PTask(new Work() {

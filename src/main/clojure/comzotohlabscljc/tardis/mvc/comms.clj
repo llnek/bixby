@@ -125,7 +125,7 @@
           (var-set bits (.body rc)))
         (HttpHeaders/setContentLength @rsp
                                       (if (nil? @bits) 0 (alength ^bytes @bits)))
-        (var-set wf (.write ch @rsp))
+        (var-set wf (.writeAndFlush ch @rsp))
         (when-not (nil? @bits)
           (var-set wf (.writeAndFlush ch (Unpooled/wrappedBuffer ^bytes @bits))))
         (NettyFW/closeCF @wf false))

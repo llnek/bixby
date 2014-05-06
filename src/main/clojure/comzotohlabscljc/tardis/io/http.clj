@@ -324,7 +324,7 @@
   (let [ c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (TryC
-          (dispREQ co req rsp) ))
+          (dispREQ co c req rsp) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
