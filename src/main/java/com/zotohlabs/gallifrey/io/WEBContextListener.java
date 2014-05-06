@@ -61,6 +61,7 @@ public class WEBContextListener implements ServletContextListener {
 
   private void inizAsJ2EE(ServletContext ctx, String ctxPath) {
     tlog().info("inizAsJ2EE - setting up context-path: {}", ctxPath);
+    _src = ctx.getAttribute("czchhhiojetty") ;
   }
 
 }

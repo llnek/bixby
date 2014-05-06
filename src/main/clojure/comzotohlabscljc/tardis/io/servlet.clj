@@ -16,9 +16,9 @@
   comzotohlabscljc.tardis.io.servlet
 
   (:gen-class
-    :exposes-methods { init superInit  getServletName myName}
+    :extends com.zotohlabs.gallifrey.io.AbstractServlet
+    :exposes-methods { getServletName myName}
     :name comzotohlabscljc.tardis.io.WEBServlet
-    :extends javax.servlet.http.HttpServlet
     :init myInit
     :constructors {[] []}
     :state myState)
@@ -29,10 +29,11 @@
   (:use [comzotohlabscljc.util.core :only [ThrowIOE TryC] ])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:use [comzotohlabscljc.tardis.io.core])
+  (:use [comzotohlabscljc.tardis.io.webss])
 
   (:import (org.eclipse.jetty.continuation ContinuationSupport))
   (:import (org.eclipse.jetty.continuation Continuation))
-  (:import (javax.servlet.http Cookie HttpServletRequest))
+  (:import (javax.servlet.http Cookie HttpServletRequest HttpServletResponse))
   (:import (javax.servlet ServletConfig))
   (:import (java.util ArrayList))
   (:import (java.net HttpCookie))
@@ -51,16 +52,19 @@
 (defn- dispREQ ""
 
   [ ^comzotohlabscljc.tardis.io.WEBServlet c0
-    ^Continuation ct evt req rsp]
+    ^Continuation ct ^HTTPEvent evt req rsp]
 
-  (let [ ^comzotohlabscljc.tardis.core.sys.Element dev @(.myState c0)
+  (let [ ^comzotohlabscljc.tardis.core.sys.Element dev (.emitter evt)
+         ssl (= "https" (.getScheme ^HttpServletRequest req))
+         wss (MakeWSSession dev ssl)
          wm (.getAttr dev :waitMillis) ]
+    (.bindSession evt wss)
     (doto ct
           (.setTimeout wm)
-          (.suspend rsp))
+          (.suspend ^HttpServletResponse rsp))
     (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
            w  (MakeAsyncWaitHolder (MakeServletTrigger req rsp dev) evt)
-          ^comzotohlabscljc.tardis.io.core.EmitterAPI  src @(.myState c0) ]
+          ^comzotohlabscljc.tardis.io.core.EmitterAPI src dev ]
       (.timeoutMillis w wm)
       (.hold src w)
       (.dispatch src evt {}))
@@ -112,23 +116,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -init ""
+(defn -doInit ""
 
-  [ ^comzotohlabscljc.tardis.io.WEBServlet this ^ServletConfig cfg]
+  [ ^comzotohlabscljc.tardis.io.WEBServlet this]
 
-  (do
-    (.superInit this cfg)
-    (let [ ctx (.getServletContext cfg)
-           state (.myState this)
-           src (.getAttribute ctx "czchhhiojetty") ]
-      (reset! state src)
-      (TryC
-        (log/debug
-          "********************************************************************\n"
-          (str "Servlet Container: " (.getServerInfo ctx) "\n")
-          (str "Servlet IO: " src "\n")
-          "********************************************************************\n"
-          (str "Servlet:iniz() - servlet:" (.myName this) "\n" ) )) )
+  (let [ cfg (.getServletConfig this)
+         ctx (.getServletContext cfg)
+         state (.myState this)
+         src (.getAttribute ctx "czchhhiojetty") ]
+    (reset! state src)
+    (TryC
+      (log/debug
+        "********************************************************************\n"
+        (str "Servlet Container: " (.getServerInfo ctx) "\n")
+        (str "Servlet IO: " src "\n")
+        "********************************************************************\n"
+        (str "Servlet:iniz() - servlet:" (.myName this) "\n" ) )) 
   ))
 
 
