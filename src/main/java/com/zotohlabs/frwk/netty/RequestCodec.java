@@ -96,7 +96,8 @@ public class RequestCodec extends AuxHttpDecoder {
     finzAndDone(ctx, info, xs);
   }
 
-  private void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs) {
+  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+  throws IOException {
     resetAttrs(ctx);
     tlog().debug("fire fully decoded message to the next handler");
     ctx.fireChannelRead( new DemuxedMsg(info, xs));

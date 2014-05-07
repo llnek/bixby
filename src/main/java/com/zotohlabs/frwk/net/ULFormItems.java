@@ -14,6 +14,8 @@
 package com.zotohlabs.frwk.net;
 
 import com.zotohlabs.frwk.io.XData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,9 @@ import java.util.ListIterator;
  */
 public class ULFormItems {
 
+  private static final Logger _log= LoggerFactory.getLogger(ULFormItems.class);
+  public Logger tlog() { return _log; }
+
   private List<ULFileItem> _items= new ArrayList<ULFileItem>();
 
   public ULFormItems() {
@@ -31,7 +36,14 @@ public class ULFormItems {
 
   public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
 
-  public void add(ULFileItem x) { _items.add(x); }
+  public void add(ULFileItem x) {
+    tlog().debug("Adding a new ul-file-item {}", x.getFieldName());
+    _items.add(x);
+  }
+
+  public int size() {
+    return _items.size();
+  }
 
   public void reset() { _items.clear(); }
 

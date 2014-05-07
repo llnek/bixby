@@ -71,10 +71,13 @@ public class HttpDemux extends AuxHttpDecoder {
     JsonObject info = extractMsgInfo(msg);
     String mt = info.get("method").getAsString();
 
+    tlog().debug("HttpDemux: first level demux of message {}", inboundObject);
     setAttr(ctx.channel(), MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
 
     tlog().debug( "" + info.toString());
+
+    myDelegate=null;
 
     if (isFormPost(msg, mt)) {
       myDelegate = FormPostCodec.getInstance();
@@ -93,17 +96,19 @@ public class HttpDemux extends AuxHttpDecoder {
   }
 
   public void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {
-    if (myDelegate != null) {
-      myDelegate.channelReadXXX(ctx, obj);
-    }
-    else
+
     if (obj instanceof HttpRequest ||
         obj instanceof HttpResponse) {
         doDemux(ctx, obj);
     }
+    else
+    if (myDelegate != null) {
+      myDelegate.channelReadXXX(ctx, obj);
+    }
     else {
       throw new IOException("Fatal error while reading http message.");
     }
+
   }
 
 }

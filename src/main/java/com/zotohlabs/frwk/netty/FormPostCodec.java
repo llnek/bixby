@@ -18,14 +18,18 @@ import com.zotohlabs.frwk.io.IOUtils;
 import com.zotohlabs.frwk.io.XData;
 import com.zotohlabs.frwk.net.ULFileItem;
 import com.zotohlabs.frwk.net.ULFormItems;
+import static com.zotohlabs.frwk.util.CoreUtils.*;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.AttributeKey;
+import org.apache.shiro.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -65,18 +69,26 @@ public class FormPostCodec extends RequestCodec {
     super.resetAttrs(ctx);
   }
 
-  private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req) {
+  private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req)
+    throws IOException {
     JsonObject info = (JsonObject) getAttr(ctx.channel(), MSGINFO_KEY);
     if (info == null) { info = extractMsgInfo(req); }
     delAttr(ctx.channel(), MSGINFO_KEY);
     setAttr(ctx, MSGINFO_KEY, info);
-
-    DefaultHttpDataFactory fac= new DefaultHttpDataFactory(streamLimit());
-    HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
+    String ctype = nsb(HttpHeaders.getHeader(req, "content-type"));
     setAttr( ctx , FORMITMS_KEY, new ULFormItems() );
-    setAttr( ctx, FORMDEC_KEY, dc);
     setAttr( ctx, XDATA_KEY, new XData() );
-    handleFormPostChunk(ctx, req);
+    if (ctype.indexOf("multipart") < 0) {
+      // nothing to decode.
+      setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
+      handleMsgChunk(ctx,req);
+    }
+    else {
+      DefaultHttpDataFactory fac= new DefaultHttpDataFactory(streamLimit());
+      HttpPostRequestDecoder dc = new HttpPostRequestDecoder( fac, req);
+      setAttr( ctx, FORMDEC_KEY, dc);
+      handleFormPostChunk(ctx, req);
+    }
   }
 
   private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) 
@@ -134,10 +146,54 @@ public class FormPostCodec extends RequestCodec {
     }
   }
 
-  private void handleFormPostChunk(ChannelHandlerContext ctx, Object msg) {
+  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+      throws IOException {
+    resetAttrs(ctx);
+    String s = xs.hasContent() ? new String(xs.javaBytes(), "utf-8") : "";
+    ULFormItems itms =splitBodyParams(s);
+    xs.resetContent(itms);
+    tlog().debug("fire fully decoded message to the next handler");
+    ctx.fireChannelRead( new DemuxedMsg(info, xs));
+  }
+
+  private ULFormItems splitBodyParams(String body) throws IOException {
+    tlog().debug("About to split form body *************************\n" +
+    body + "\n" +
+    "****************************************************************");
+    String[] tkns = StringUtils.split(body, '&');
+    String t, fn, fv;
+    String[] ss;
+    ULFormItems fis= new ULFormItems();
+    if (tkns != null) for (int i=0; i < tkns.length; ++i) {
+      t = nsb(tkns[i]);
+      ss= StringUtils.split(t, '=');
+      if (ss != null && ss.length > 0) {
+        fn = ss[0];
+        fv="";
+        if (ss.length > 1) {
+          fv= ss[1];
+        }
+        fis.add( new ULFileItem(fn,  fv.getBytes("utf-8")) );
+      }
+    }
+    return fis;
+  }
+
+  private void handleFormPostChunk(ChannelHandlerContext ctx, Object msg)
+    throws IOException {
     HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr( ctx, FORMDEC_KEY);
     Throwable err= null;
+    HttpContent hc;
+
+    if (dc == null) {
+      handleMsgChunk(ctx, msg);
+      return;
+    }
+
     if (msg instanceof HttpContent) {
+      hc = (HttpContent) msg;
+      if (hc.content() != null &&
+          hc.content().isReadable())
       try {
         dc.offer( (HttpContent) msg);
         readHttpDataChunkByChunk(ctx, dc);
