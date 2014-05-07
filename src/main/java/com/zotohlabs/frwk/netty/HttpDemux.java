@@ -74,6 +74,8 @@ public class HttpDemux extends AuxHttpDecoder {
     setAttr(ctx.channel(), MSGINFO_KEY, info);
     Expect100.handle100(ctx, msg);
 
+    tlog().debug( "" + info.toString());
+
     if (isFormPost(msg, mt)) {
       myDelegate = FormPostCodec.getInstance();
       info.addProperty("formpost", true);

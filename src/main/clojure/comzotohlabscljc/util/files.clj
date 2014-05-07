@@ -142,6 +142,7 @@
   [^File dir ^String fname ^XData xdata]
 
   (let [ fp (File. dir fname) ]
+    (log/debug "Saving file: " fp)
     (FileUtils/deleteQuietly fp)
     (if (.isDiskFile xdata)
         (FileUtils/moveFile (.fileRef xdata) fp)
@@ -157,6 +158,7 @@
 
   (let [ fp (File. dir fname)
          xs (XData.) ]
+    (log/debug "Getting file: " fp)
     (if (and (.exists fp)
              (.canRead fp))
         (doto xs

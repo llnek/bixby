@@ -150,7 +150,13 @@ public enum NettyFW {
   public static void replyXXX(Channel ch, int status, boolean keepAlive) {
     HttpResponse rsp = makeHttpReply(status);
     HttpHeaders.setContentLength(rsp, 0);
-    closeCF( ch.write(rsp), keepAlive);
+    try {
+      tlog().debug("About to return HTTP status ({}) back to client", status);
+      closeCF( ch.writeAndFlush(rsp), keepAlive);
+    }
+    catch (Throwable e) {
+      tlog().warn("",e);
+    }
   }
 
   public static void replyXXX(Channel ch, int status) {

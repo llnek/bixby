@@ -137,7 +137,7 @@ public class RequestCodec extends AuxHttpDecoder {
     if (info == null) { info = extractMsgInfo(msg); }
     delAttr(ctx.channel(), MSGINFO_KEY);
     setAttr(ctx, MSGINFO_KEY, info);
-    tlog().debug( "" + info.toString());
+
     boolean isc = info.get("is-chunked").getAsBoolean();
     String mtd = info.get("method").getAsString();
     boolean good= true;
