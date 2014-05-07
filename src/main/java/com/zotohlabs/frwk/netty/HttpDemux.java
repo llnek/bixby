@@ -14,6 +14,7 @@
 package com.zotohlabs.frwk.netty;
 
 import com.google.gson.JsonObject;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -69,15 +70,24 @@ public class HttpDemux extends AuxHttpDecoder {
     throws Exception {
     HttpMessage msg = (HttpMessage) inboundObject;
     JsonObject info = extractMsgInfo(msg);
+    Channel ch = ctx.channel();
+
     String mt = info.get("method").getAsString();
+    String uri= info.get("uri").getAsString();
 
     tlog().debug("HttpDemux: first level demux of message {}", inboundObject);
-    setAttr(ctx.channel(), MSGINFO_KEY, info);
-    Expect100.handle100(ctx, msg);
-
     tlog().debug( "" + info.toString());
 
+    setAttr(ch, MSGINFO_KEY, info);
     myDelegate=null;
+
+    if (uri.trim().startsWith("/favicon.")) {
+      // ignore this crap
+      NettyFW.replyXXX(ch, 404);
+      return;
+    }
+
+    Expect100.handle100(ctx, msg);
 
     if (isFormPost(msg, mt)) {
       myDelegate = FormPostCodec.getInstance();
