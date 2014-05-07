@@ -135,10 +135,6 @@ public class RequestCodec extends AuxHttpDecoder {
 
   protected void handleInboundMsg(ChannelHandlerContext ctx, HttpMessage msg) throws IOException {
     JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
-    if (info == null) { info = extractMsgInfo(msg); }
-    delAttr(ctx.channel(), MSGINFO_KEY);
-    setAttr(ctx, MSGINFO_KEY, info);
-
     boolean isc = info.get("is-chunked").getAsBoolean();
     String mtd = info.get("method").getAsString();
     boolean good= true;
@@ -194,6 +190,7 @@ public class RequestCodec extends AuxHttpDecoder {
     }
     else {
       tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
+      ctx.fireChannelRead(msg);
     }
   }
 }

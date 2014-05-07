@@ -9,15 +9,15 @@
      socket = new WebSocket("webSocketLocation");
      socket.onmessage = function(event) {
        var ta = document.getElementById('responseText');
-       ta.value = ta.value  + '\n' +  event.data;
+       ta.value = ta.value  + '\n' +  event.data + '\n';
      };
      socket.onopen = function(event) {
        var ta = document.getElementById('responseText');
-       ta.value = "Web Socket opened!";
+       ta.value = "Web Socket opened!\n";
      };
      socket.onclose = function(event) {
        var ta = document.getElementById('responseText');
-       ta.value = ta.value  "Web Socket closed";
+       ta.value = ta.value + "Web Socket closed\n";
      };
     } else {
      alert("Your browser does not support Web Socket.");

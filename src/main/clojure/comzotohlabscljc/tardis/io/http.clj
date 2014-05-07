@@ -39,6 +39,7 @@
   (:import (com.google.gson JsonObject))
   (:import (org.eclipse.jetty.continuation Continuation ContinuationSupport))
   (:import (com.zotohlabs.frwk.server Component))
+  (:import (com.zotohlabs.frwk.io XData))
   (:import (com.zotohlabs.frwk.core Versioned Hierarchial
                                     Identifiable Disposable Startable))
   (:import (org.apache.commons.codec.binary Base64))
@@ -55,7 +56,7 @@
   (:import (org.eclipse.jetty.webapp WebAppContext))
   (:import (javax.servlet.http HttpServletRequest HttpServletResponse))
 
-  (:import (com.zotohlabs.gallifrey.io HTTPResult HTTPEvent JettyUtils))
+  (:import (com.zotohlabs.gallifrey.io WebSockResult HTTPResult HTTPEvent JettyUtils))
   (:import (com.zotohlabs.gallifrey.core Container)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +78,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; not used, old code
 (defn MakeServletEmitter ""
 
   [^Container parObj]
@@ -410,10 +411,42 @@
     (IOESStopped co)
   ))
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeWSockResult ""
+
+  ^WebSockResult
+  [co]
+
+  (let [ impl (MakeMMap) ]
+    (.setf! impl :binary false)
+    (.setf! impl :data nil)
+    (reify
+
+      MubleAPI
+
+      (setf! [_ k v] (.setf! impl k v) )
+      (seq* [_] (.seq* impl))
+      (getf [_ k] (.getf impl k) )
+      (clrf! [_ k] (.clrf! impl k) )
+      (clear! [_] (.clear! impl))
+
+      WebSockResult
+      (isBinary [_] (true? (.getf impl :binary)))
+      (isText [this] (not (.isBinary this)))
+      (getData [_] (XData. (.getf impl :data)))
+      (emitter [_] co)
+
+  )))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeHttpResult ""
 
+  ^HTTPResult
   [co]
 
   (let [ impl (MakeMMap) ]

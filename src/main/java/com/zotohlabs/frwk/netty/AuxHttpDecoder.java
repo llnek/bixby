@@ -139,7 +139,9 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
     info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
     info.addProperty("protocol", msg.getProtocolVersion().toString());
     info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
+    info.addProperty("uri2", "");
     info.addProperty("query", "");
+    info.addProperty("wsock", false);
     info.addProperty("uri", "");
     info.addProperty("status", "");
     info.addProperty("code", 0);
@@ -167,6 +169,7 @@ public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
       info.addProperty("method", mt.toUpperCase());
       info.add("params", extractParams(dc));
       info.addProperty("uri", dc.path());
+      info.addProperty("uri2", req.getUri());
       int pos = uriStr.indexOf('?');
       if (pos >= 0) {
         info.addProperty("query", uriStr.substring(pos));

@@ -72,9 +72,6 @@ public class FormPostCodec extends RequestCodec {
   private void handleFormPost(ChannelHandlerContext ctx , HttpRequest req)
     throws IOException {
     JsonObject info = (JsonObject) getAttr(ctx.channel(), MSGINFO_KEY);
-    if (info == null) { info = extractMsgInfo(req); }
-    delAttr(ctx.channel(), MSGINFO_KEY);
-    setAttr(ctx, MSGINFO_KEY, info);
     String ctype = nsb(HttpHeaders.getHeader(req, "content-type"));
     setAttr( ctx , FORMITMS_KEY, new ULFormItems() );
     setAttr( ctx, XDATA_KEY, new XData() );
@@ -225,6 +222,7 @@ public class FormPostCodec extends RequestCodec {
       handleFormPostChunk(ctx,c);
     }
     else {
+      tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
       // what is this ? let downstream deal with it
       ctx.fireChannelRead(msg);
     }

@@ -1,18 +1,14 @@
-;;
+;; This library is distributed in  the hope that it will be useful but without
+;; any  warranty; without  even  the  implied  warranty of  merchantability or
+;; fitness for a particular purpose.
+;; The use and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+;; can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any  fashion, you are agreeing to be bound by the
+;; terms of this license. You  must not remove this notice, or any other, from
+;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-;;
-;; This library is distributed in the hope that it will be useful
-;; but without any warranty; without even the implied warranty of
-;; merchantability or fitness for a particular purpose.
-;;
-;; The use and distribution terms for this software are covered by the
-;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
-;; which can be found in the file epl-v10.html at the root of this distribution.
-;;
-;; By using this software in any fashion, you are agreeing to be bound by
-;; the terms of this license.
-;; You must not remove this notice, or any other, from this software.
-;;
+
 
 (ns ^{ :doc ""
        :author "kenl" }
@@ -35,7 +31,7 @@
   (:import (java.util ArrayList List))
   (:import (com.google.gson JsonObject))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent WebSockEvent WebSockResult))
+  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent HTTPResult WebSockEvent WebSockResult))
   (:import (javax.net.ssl SSLContext))
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse
                                         CookieDecoder ServerCookieEncoder
@@ -61,29 +57,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- make-wsock-result ""
-
-  []
-
-  (let [ impl (MakeMMap) ]
-    (.setf! impl :binary false)
-    (.setf! impl :text false)
-    (.setf! impl :data nil)
-    (reify
-      MubleAPI
-      (setf! [_ k v] (.setf! impl k v) )
-      (seq* [_] (.seq* impl))
-      (getf [_ k] (.getf impl k) )
-      (clrf! [_ k] (.clrf! impl k) )
-      (clear! [_] (.clear! impl))
-
-      WebSockResult
-      (isBinary [_] (.getf impl :binary))
-      (isText [_] (.getf impl :text))
-      (getData [_] (XData. (.getf impl :data)))
-  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,15 +75,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-wsock-event ""
+(defn- makeWSockEvent ""
 
   [^comzotohlabscljc.tardis.io.core.EmitterAPI co
    ^Channel ch
-   ^XData xdata]
+   ^XData xdata
+   ^JsonObject info ]
 
   (let [ ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
-         ^WebSockResult res (make-wsock-result)
+         ^WebSockResult res (MakeWSockResult co)
          impl (MakeMMap)
          eeid (NextLong) ]
     (with-meta
@@ -148,15 +122,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.tardis.io/NettyIO
+(defn- makeHttpEvent ""
 
-  [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
+  ^HTTPEvent
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co
+   ^Channel ch
+   ^XData xdata
+   ^JsonObject info ]
 
   (let [ ^HTTPResult res (MakeHttpResult co)
-         ^DemuxedMsg req (nth args 1)
-         ^Channel ch (nth args 0)
-         xdata (.payload req)
-         info (.info req)
          ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
          impl (MakeMMap)
@@ -253,6 +227,21 @@
 
   )) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod IOESReifyEvent :czc.tardis.io/NettyIO
+
+  [^comzotohlabscljc.tardis.io.core.EmitterAPI co & args]
+
+  (let [ ^DemuxedMsg req (nth args 1)
+         ^Channel ch (nth args 0)
+         xdata (.payload req)
+         info (.info req) ]
+    (if (-> (.get info "wsock")(.getAsBoolean))
+        (makeWSockEvent co ch xdata info)
+        (makeHttpEvent co ch xdata info))
+    ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompConfigure :czc.tardis.io/NettyIO
@@ -276,11 +265,14 @@
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
       (let [ ch (.channel ^ChannelHandlerContext ctx)
-             evt (IOESReifyEvent co ch msg)
-             ^comzotohlabscljc.tardis.io.core.WaitEventHolder
-             w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-        (.timeoutMillis w (.getAttr ^comzotohlabscljc.tardis.core.sys.Element co :waitMillis))
-        (.hold co w)
+             ts (.getAttr ^comzotohlabscljc.tardis.core.sys.Element
+                                    co :waitMillis)
+             evt (IOESReifyEvent co ch msg) ]
+        (if (instance? HTTPEvent evt)
+          (let [ ^comzotohlabscljc.tardis.io.core.WaitEventHolder
+                 w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+            (.timeoutMillis w ts)
+            (.hold co w)))
         (.dispatch co evt {})))
   ))
 

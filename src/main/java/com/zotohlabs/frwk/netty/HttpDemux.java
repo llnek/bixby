@@ -75,7 +75,7 @@ public class HttpDemux extends AuxHttpDecoder {
     String mt = info.get("method").getAsString();
     String uri= info.get("uri").getAsString();
 
-    tlog().debug("HttpDemux: first level demux of message {}", inboundObject);
+    tlog().debug("HttpDemux: first level demux of message\n{}", inboundObject);
     tlog().debug( "" + info.toString());
 
     setAttr(ch, MSGINFO_KEY, info);
@@ -102,7 +102,10 @@ public class HttpDemux extends AuxHttpDecoder {
       myDelegate =RequestCodec.getInstance();
     }
 
-    myDelegate.channelReadXXX(ctx, msg);
+    if (myDelegate != null) {
+      myDelegate.channelReadXXX(ctx, msg);
+    }
+
   }
 
   public void channelRead0(ChannelHandlerContext ctx, Object obj) throws Exception {

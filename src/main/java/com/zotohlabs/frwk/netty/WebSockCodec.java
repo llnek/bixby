@@ -18,10 +18,7 @@ import com.zotohlabs.frwk.io.XData;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMessage;
-import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.AttributeKey;
@@ -40,6 +37,7 @@ import java.util.HashMap;
 public class  WebSockCodec extends RequestCodec {
 
   protected static final AttributeKey WSHSK_KEY =AttributeKey.valueOf("wsockhandshaker");
+  protected static final AttributeKey FULLMSG_KEY =AttributeKey.valueOf("fullmsg");
 
   private static final WebSockCodec shared = new WebSockCodec();
   public static  WebSockCodec getInstance() {
@@ -50,7 +48,8 @@ public class  WebSockCodec extends RequestCodec {
   }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {
-    delAttr(ctx,WSHSK_KEY);
+//    delAttr(ctx, FULLMSG_KEY);
+//    delAttr(ctx.channel(),WSHSK_KEY);
     super.resetAttrs(ctx);
   }
 
@@ -67,12 +66,8 @@ public class  WebSockCodec extends RequestCodec {
     }
   }
 
-  protected void handleWSock(final ChannelHandlerContext ctx , FullHttpRequest req) {
+  protected void handleWSock(final ChannelHandlerContext ctx, FullHttpRequest req) {
     JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
-    if (info == null) { info = extractMsgInfo(req); }
-    delAttr(ctx.channel(), MSGINFO_KEY);
-    setAttr(ctx, MSGINFO_KEY, info);
-
     String prx = maybeSSL(ctx) ?  "wss://" : "ws://";
     String us = prx +  info.get("host").getAsString() + req.getUri();
     WebSocketServerHandshakerFactory wf= new WebSocketServerHandshakerFactory( us, null, false);
@@ -80,11 +75,11 @@ public class  WebSockCodec extends RequestCodec {
     Channel ch = ctx.channel();
     if (hs == null) {
       WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ch);
+      resetAttrs(ctx);
       NettyFW.closeChannel(ch);
     } else {
-      setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
-      setAttr( ctx, XDATA_KEY, new XData());
-      setAttr( ctx, WSHSK_KEY, hs);
+      setAttr( ch, MSGINFO_KEY, info);
+      setAttr( ch, WSHSK_KEY, hs);
       hs.handshake(ch, req).addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture ff) {
           if (ff.isSuccess()) {
@@ -117,8 +112,8 @@ public class  WebSockCodec extends RequestCodec {
     if (frame.isFinalFragment()) {} else {
       return;
     }
+    final JsonObject info = (JsonObject) getAttr( ctx.channel(), MSGINFO_KEY);
     CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
-    final JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY);
     OutputStream os= (OutputStream) getAttr( ctx, XOS_KEY);
     final XData xs = (XData) getAttr( ctx, XDATA_KEY);
     if (os != null) {
@@ -134,9 +129,11 @@ public class  WebSockCodec extends RequestCodec {
 
   protected void handleWSockFrame(ChannelHandlerContext ctx, WebSocketFrame frame)
     throws IOException {
-    WebSocketServerHandshaker hs = (WebSocketServerHandshaker) getAttr( ctx, WSHSK_KEY);
-    Channel ch = ctx.channel();
+
     tlog().debug( "nio-wsframe: received a " + frame.getClass());
+    Channel ch = ctx.channel();
+    WebSocketServerHandshaker hs = (WebSocketServerHandshaker) getAttr( ch, WSHSK_KEY);
+
     if (frame instanceof CloseWebSocketFrame) {
       hs.close(ch, (CloseWebSocketFrame) frame.retain());
       resetAttrs(ctx);
@@ -147,9 +144,17 @@ public class  WebSockCodec extends RequestCodec {
       ctx.write( new PongWebSocketFrame( frame.content().retain() ));
     }
     else
-    if ( frame instanceof ContinuationWebSocketFrame ||
-         frame instanceof TextWebSocketFrame ||
-         frame instanceof BinaryWebSocketFrame) {
+    if ( frame instanceof BinaryWebSocketFrame ||
+         frame instanceof TextWebSocketFrame) {
+
+      setAttr( ctx, CBUF_KEY, Unpooled.compositeBuffer(1024));
+      setAttr( ctx, XDATA_KEY, new XData());
+
+      readFrame( ctx, frame);
+      maybeFinzFrame( ctx, frame);
+    }
+    else
+    if ( frame instanceof ContinuationWebSocketFrame) {
       readFrame( ctx, frame);
       maybeFinzFrame( ctx, frame);
     }
@@ -165,9 +170,30 @@ public class  WebSockCodec extends RequestCodec {
       FullHttpRequest req = (FullHttpRequest) msg;
       handleWSock(ctx, req);
     }
+    else if (msg instanceof HttpRequest) {
+      HttpRequest req = (HttpRequest) msg;
+      FullHttpRequest fmsg = new DefaultFullHttpRequest(
+          req.getProtocolVersion(), req.getMethod(), req.getUri(), Unpooled.EMPTY_BUFFER);
+      fmsg.headers().set(req.headers());
+      setAttr(ctx, FULLMSG_KEY, fmsg)  ;
+      // wait for last chunk
+    }
+    else if (msg instanceof HttpContent) {
+      if (msg instanceof LastHttpContent) {
+        FullHttpRequest fmsg = (FullHttpRequest) getAttr(ctx, FULLMSG_KEY) ;
+        LastHttpContent trailer = (LastHttpContent) msg;
+        fmsg.headers().add(trailer.trailingHeaders());
+        handleWSock(ctx, fmsg);
+      }
+    }
     else if (msg instanceof WebSocketFrame) {
       WebSocketFrame frame = (WebSocketFrame) msg;
       handleWSockFrame(ctx, frame);
+    }
+    else {
+      tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
+      // what is this ? let downstream deal with it
+      ctx.fireChannelRead(msg);
     }
   }
 }
