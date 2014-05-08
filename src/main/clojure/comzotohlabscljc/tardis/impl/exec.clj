@@ -329,16 +329,16 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/BlockMeta
 
-  [^comzotohlabscljc.tardis.impl.defaults.BlockMeta bk]
+  [^comzotohlabscljc.tardis.impl.defaults.BlockMeta block]
 
-  (let [ ^URL url (.metaUrl bk)
+  (let [ ^URL url (.metaUrl block)
          ^comzotohlabscljc.util.ini.IWin32Conf
          cfg (ParseInifile url)
          inf (.getSection cfg "info") ]
     (test-nonil "Invalid block-meta file, no info section." inf)
     (log/info "initializing BlockMeta: " url)
     (let [ cz (strim (.optString cfg "info" "block-type" ""))
-           ^comzotohlabscljc.tardis.core.sys.Element co bk  ]
+           ^comzotohlabscljc.tardis.core.sys.Element co block  ]
       (when (hgl? cz)
             (.setAttr! co :id (keyword cz))
             (.setAttr! co :active true) )
@@ -353,7 +353,8 @@
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
 
-  (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
+  (let [ ^comzotohlabscljc.util.core.MubleAPI
+         ctx (.getCtx co)
          bDir (.getf ctx K_BKSDIR)
          fs (IOUtils/listFiles ^File bDir "meta" false) ]
     (doseq [ ^File f (seq fs) ]
