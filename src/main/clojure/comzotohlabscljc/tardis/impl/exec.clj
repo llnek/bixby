@@ -260,7 +260,6 @@
       ;;(precondDir db)
       (PrecondDir bks)
 
-      ;;(doto ^comzotohlabscljc.util.core.MubleAPI (.getCtx co)
       (doto ctx
           (.setf! K_PODSDIR pods)
           (.setf! K_PLAYDIR apps)
@@ -276,14 +275,12 @@
            knl (MakeKernel)
            options { :ctx ctx } ]
 
-      ;;(.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_COMPS root)
       (.setf! ctx K_COMPS root)
       (.reg root deployer)
       (.reg root knl)
       (.reg root apps)
       (.reg root bks)
 
-      ;;(.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_EXECV co)
       (.setf! ctx K_EXECV co)
 
       (SynthesizeComponent root options)
@@ -297,12 +294,11 @@
 ;;
 (defn- make-blockmeta ""
 
+  ;; url points to block-meta file
   [^URL url]
 
   (let [ impl (MakeMMap) ]
     (.setf! impl :id (keyword (juid)))
-    (.setf! impl K_META url)
-    ;; url points to block-meta file
     (with-meta
       (reify
 
@@ -324,7 +320,7 @@
         BlockMeta
 
         (enabled? [_] (true? (.getf impl :active)))
-        (metaUrl [_] (.getf impl K_META)) )
+        (metaUrl [_] url) )
 
       { :typeid (keyword "czc.tardis.impl/BlockMeta") }
   )))
