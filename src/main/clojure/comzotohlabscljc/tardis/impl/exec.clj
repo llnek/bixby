@@ -142,8 +142,9 @@
   (TryC
     (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
            port (ConvLong (nsb (get cfg "port")) 7777)
-           ^String host (nsb (get cfg "host"))
-           ^comzotohlabscljc.jmx.core.JMXServer jmx (MakeJmxServer host) ]
+           host (nsb (get cfg "host"))
+           ^comzotohlabscljc.jmx.core.JMXServer
+           jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
       (.start ^Startable jmx)
       (.reg jmx co "com.zotohlabs" "execvisor" ["root=skaro"])
@@ -171,8 +172,8 @@
 
   [parObj]
 
+  (log/info "creating execvisor, parent = " parObj)
   (let [ impl (MakeMMap) ]
-    (log/info "creating execvisor, parent = " parObj)
     (with-meta
       (reify
 
@@ -197,25 +198,25 @@
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
-        (homeDir [this] (MaybeDir (getCtx this) K_BASEDIR))
-        (confDir [this] (MaybeDir (getCtx this) K_CFGDIR))
-        (podsDir [this] (MaybeDir (getCtx this) K_PODSDIR))
-        (playDir [this] (MaybeDir (getCtx this) K_PLAYDIR))
-        (logDir [this] (MaybeDir (getCtx this) K_LOGDIR))
-        (tmpDir [this] (MaybeDir (getCtx this) K_TMPDIR))
-        (dbDir [this] (MaybeDir (getCtx this) K_DBSDIR))
-        (blocksDir [this] (MaybeDir (getCtx this) K_BKSDIR))
+        (homeDir [this] (MaybeDir (.getCtx this) K_BASEDIR))
+        (confDir [this] (MaybeDir (.getCtx this) K_CFGDIR))
+        (podsDir [this] (MaybeDir (.getCtx this) K_PODSDIR))
+        (playDir [this] (MaybeDir (.getCtx this) K_PLAYDIR))
+        (logDir [this] (MaybeDir (.getCtx this) K_LOGDIR))
+        (tmpDir [this] (MaybeDir (.getCtx this) K_TMPDIR))
+        (dbDir [this] (MaybeDir (.getCtx this) K_DBSDIR))
+        (blocksDir [this] (MaybeDir (.getCtx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
         Startable
         (start [this]
-          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
+          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry root (.getf ctx K_COMPS)
                  ^Startable k (.lookup root K_KERNEL) ]
             (inspect-pods this)
             (.start k)))
         (stop [this]
-          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (getCtx this)
+          (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry
                  root (.getf ctx K_COMPS)
                  ^Startable k (.lookup root K_KERNEL) ]
@@ -246,24 +247,23 @@
     (System/setProperty "file.encoding" "utf-8")
 
     (let [ ^File home (.homeDir ^comzotohlabscljc.tardis.impl.exec.ExecvisorAPI co)
-           sb (doto (File. home ^String DN_BOXX)
-                  (.mkdir))
-           bks (doto (File. home (str DN_CFG "/" DN_BLOCKS))
-                  (.mkdir))
-           tmp (doto (File. home ^String DN_TMP)
-                  (.mkdir))
+           bks (doto (File. home (str DN_CFG "/" DN_BLOCKS)) (.mkdir))
+           apps (doto (File. home ^String DN_BOXX) (.mkdir))
+           tmp (doto (File. home ^String DN_TMP) (.mkdir))
            pods (File. home ^String DN_PODS)
            db (File. home ^String DN_DBS)
            log (doto (File. home ^String DN_LOGS) (.mkdir)) ]
       ;;(precondDir pods)
-      (PrecondDir sb)
+      (PrecondDir apps)
       (PrecondDir log)
       (PrecondDir tmp)
       ;;(precondDir db)
       (PrecondDir bks)
-      (doto ^comzotohlabscljc.util.core.MubleAPI (.getCtx co)
+
+      ;;(doto ^comzotohlabscljc.util.core.MubleAPI (.getCtx co)
+      (doto ctx
           (.setf! K_PODSDIR pods)
-          (.setf! K_PLAYDIR sb)
+          (.setf! K_PLAYDIR apps)
           (.setf! K_LOGDIR log)
           (.setf! K_DBSDIR db)
           (.setf! K_TMPDIR tmp)
@@ -273,19 +273,24 @@
            bks (MakeComponentRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
            apps (MakeComponentRegistry :AppsRegistry K_APPS "1.0" nil)
            deployer (MakeDeployer)
-           knl (MakeKernel) ]
-      (.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_COMPS root)
+           knl (MakeKernel)
+           options { :ctx ctx } ]
+
+      ;;(.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_COMPS root)
+      (.setf! ctx K_COMPS root)
       (.reg root deployer)
       (.reg root knl)
       (.reg root apps)
       (.reg root bks)
-      (.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_EXECV co)
-      (let [ options { :ctx (.getCtx co) } ]
-        (SynthesizeComponent root options)
-        (SynthesizeComponent bks options)
-        (SynthesizeComponent apps options)
-        (SynthesizeComponent deployer options)
-        (SynthesizeComponent knl options)) )
+
+      ;;(.setf! ^comzotohlabscljc.util.core.MubleAPI (.getCtx co) K_EXECV co)
+      (.setf! ctx K_EXECV co)
+
+      (SynthesizeComponent root options)
+      (SynthesizeComponent bks options)
+      (SynthesizeComponent apps options)
+      (SynthesizeComponent deployer options)
+      (SynthesizeComponent knl options))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -35,6 +35,8 @@
   (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial Startable ))
   (:import (io.netty.channel Channel ChannelFuture ChannelFutureListener))
   (:import (com.zotohlabs.gallifrey.core ConfigError))
+  (:import (io.netty.bootstrap ServerBootstrap))
+  (:import (com.zotohlabs.frwk.netty ServerSide))
   (:import (com.google.gson JsonObject))
   (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
   (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
@@ -52,8 +54,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizContext ""
-
+(defn- inizContext
+  "the context object has a set of properties, such as basic dir, which
+  is shared with other key components."
   ^comzotohlabscljc.util.core.MubleAPI
   [^File baseDir]
 
@@ -83,16 +86,19 @@
 ;;
 (defn- setupClassLoaderAsRoot ""
 
-  [^comzotohlabscljc.util.core.MubleAPI ctx]
+  [^comzotohlabscljc.util.core.MubleAPI ctx ^ClassLoader cur]
 
-  (let [ root (RootClassLoader. (GetCldr)) ]
-    (.setf! ctx K_ROOT_CZLR root)
-    ctx
+  (doto ctx
+    (.setf! K_ROOT_CZLR (RootClassLoader. cur))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeInizLoaders ""
+(defn- maybeInizLoaders
+
+  "Prepare class loaders.  The root class loader loads all the core libs.
+  The exec class loader inherits from the root and is the class loader
+  that runs skaro."
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
@@ -109,9 +115,9 @@
         (.setf! ctx K_EXEC_CZLR cz))
 
       :else
-      (setupClassLoader (setupClassLoaderAsRoot ctx)))
+      (setupClassLoader (setupClassLoaderAsRoot ctx cz)))
 
-    (log/info "classloaders configured.  using ExecClassLoader.")
+    (log/info "classloaders configured.  using " (type (GetCldr)))
     ctx
   ))
 
@@ -123,21 +129,23 @@
 
   (let [ ^File home (.getf ctx K_BASEDIR)
          cf (File. home  (str DN_CONF
-                              "/" (name K_PROPS) ))
-        ^comzotohlabscljc.util.ini.IWin32Conf
-         w (ParseInifile cf)
-         cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
-         lg (cstr/lower-case (.optString w K_LOCALE K_LANG "en"))
-         loc (if (hgl? cn) (Locale. lg cn) (Locale. lg)) ]
-    (log/info (str "using locale: " loc))
-    (doto ctx
-          (.setf! K_PROPS w)
-          (.setf! K_LOCALE loc))
+                              "/" (name K_PROPS) )) ]
+    (log/info "About to parse config file " cf)
+    (let [ ^comzotohlabscljc.util.ini.IWin32Conf
+           w (ParseInifile cf)
+           cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
+           lg (cstr/lower-case (.optString w K_LOCALE K_LANG "en"))
+           loc (if (hgl? cn) (Locale. lg cn) (Locale. lg)) ]
+      (log/info (str "using locale: " loc))
+      (doto ctx
+            (.setf! K_LOCALE loc)
+            (.setf! K_PROPS w)
+      ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- setupResources ""
+(defn- setupResources "Look for and load the resource bundle."
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
@@ -151,7 +159,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- pre-parse ""
+(defn- pre-parse "Make sure that the home directory looks ok."
 
   [^comzotohlabscljc.tardis.core.sys.Element cli args]
 
@@ -161,6 +169,8 @@
     ;;(precondDir (File. bh ^String DN_BLOCKS))
     (PrecondDir (File. bh ^String DN_BOXX))
     (PrecondDir (File. bh ^String DN_CFG))
+    ;; a bit of circular referencing here.  the climain object refers to context
+    ;; and the context refers back to the climain object.
     (.setf! ctx K_CLISH cli)
     (.setCtx! cli ctx)
     (log/info "home directory looks ok.")
@@ -169,7 +179,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start-exec ""
+(defn- start-exec "Start the Execvisor!"
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
@@ -190,9 +200,9 @@
          cl (.getf ctx K_EXEC_CZLR)
          cli (.getf ctx K_CLISH)
          cz (.optString wc K_COMPS K_EXECV "") ]
-    (test-cond "conf file:exec-visor"
-               (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
-    (log/info "inside primodial()")
+    ;;(test-cond "conf file:exec-visor" (= cz "comzotohlabscljc.tardis.impl.Execvisor"))
+    (log/info "inside primodial() ---------------------------------------------->")
+    (log/info "execvisor = " cz)
     (let [ ^comzotohlabscljc.util.core.MubleAPI
            execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
@@ -203,12 +213,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stop-cli ""
+(defn- stop-cli "Stop all apps and processors."
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
   (let [ ^File pid (.getf ctx K_PIDFILE)
+         kp (.getf ctx K_KILLPORT)
          execv (.getf ctx K_EXECV) ]
+
+    (ServerSide/stop ^ServerBootstrap (:bootstrap kp) ^Channel (:channel kp))
+    (log/info "Shutting down the http discarder... OK")
+
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (when-not (nil? pid) (FileUtils/deleteQuietly pid))
@@ -217,21 +232,21 @@
       (when-not (nil? execv)
         (.stop ^Startable execv))
       (log/info "Skaro stopped.")
-      (log/info "Tardis says \"Goodbye\".")
+      (log/info "Skaro says \"Goodbye\".")
       (deliver CLI-TRIGGER 911))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- enableRemoteShutdown ""
+(defn- enableRemoteShutdown "Listen on a port for remote kill command"
 
   [^comzotohlabscljc.util.core.MubleAPI ctx]
 
-  (let [ port (ConvLong (System/getProperty "skaro.kill.port") 4444) ]
-    (log/info "Enabling remote shutdown...")
-    ;;TODO - how to clean this up
-    (MakeDiscardHTTPD "127.0.0.1"
-                      port (JsonObject.) (fn [] (stop-cli ctx)))
+  (log/info "Enabling remote shutdown...")
+  (let [ port (ConvLong (System/getProperty "skaro.kill.port") 4444)
+         rc (MakeDiscardHTTPD "127.0.0.1"
+                      port (JsonObject.) (fn [] (stop-cli ctx))) ]
+    (.setf! ctx K_KILLPORT rc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,7 +332,7 @@
 
       (stop [this]
         (let [ ^comzotohlabscljc.util.core.MubleAPI
-               ctx (getCtx this) ]
+               ctx (.getCtx this) ]
           (stop-cli ctx))))
   ))
 

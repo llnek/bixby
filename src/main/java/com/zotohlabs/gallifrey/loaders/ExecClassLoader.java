@@ -30,12 +30,11 @@ public class ExecClassLoader extends AbstractClassLoader {
   }
 
   private void load(String base) {
-    File p= new File(base, "exec");
-
-    if (p.exists() && !_loaded) {
-      findUrls(p);
-    }
-
+//    File p= new File(base, "exec");
+//
+//    if (p.exists() && !_loaded) {
+//      findUrls(p);
+//    }
     _loaded=true;
   }
 

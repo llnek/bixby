@@ -122,8 +122,9 @@
 (def K_ENVCONF_FP :env-conf-file)
 (def K_ENVCONF :env-conf)
 (def K_MFPROPS :mf-props)
-
 (def K_META :meta )
+
+(def K_KILLPORT :discarder)
 
 (def EV_OPTS "____eventoptions")
 (def JS_LAST "____lastresult")

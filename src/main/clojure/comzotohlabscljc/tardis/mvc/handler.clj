@@ -14,7 +14,7 @@
 
   comzotohlabscljc.tardis.mvc.handler
 
-  (:use [comzotohlabscljc.util.core :only [spos? ToJavaInt MubleAPI Try! NiceFPath] ])
+  (:use [comzotohlabscljc.util.core :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.io.triggers])
@@ -50,12 +50,16 @@
                              SimpleChannelInboundHandler
                              ChannelPipeline ChannelHandlerContext))
   (:import (io.netty.handler.stream ChunkedWriteHandler))
-
+  (:import (io.netty.util AttributeKey))
   (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
                                      DemuxedMsg PipelineConfigurator
                                      HttpDemux FlashHandler
                                      SSLServerHShake ServerSide))
   (:import (jregex Matcher Pattern)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private GOOD_FLAG (AttributeKey/valueOf "good-msg"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -67,7 +71,8 @@
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [c msg]
       (log/debug "mvc route filter called with message = " (type msg))
-      (if (instance? HttpRequest msg)
+      (cond
+        (instance? HttpRequest msg)
         (let [ ^comzotohlabscljc.net.routes.RouteCracker
                ck (.getAttr co :cracker)
                ^ChannelHandlerContext ctx c
@@ -77,6 +82,7 @@
                           (.addProperty "method" (NettyFW/getMethod req))
                           (.addProperty "uri" (NettyFW/getUriPath req)))
                [r1 r2 r3 r4] (.crack ck json) ]
+          (-> (.attr ctx GOOD_FLAG)(.remove))
           (cond
             (and r1 (hgl? r4))
             (NettyFW/sendRedirect ch false ^String r4)
@@ -84,6 +90,7 @@
             (= r1 true)
             (do
               (log/debug "mvc route filter MATCHED with uri = " (.getUri req))
+              (-> (.attr ctx GOOD_FLAG)(.set "matched"))
               (.fireChannelRead ctx msg))
 
             :else
@@ -91,8 +98,17 @@
               (log/debug "failed to match uri: " (.getUri req))
               (NettyFW/replyXXX ch 404 false)))
         )
-        ;;else
-        (.fireChannelRead ^ChannelHandlerContext c msg)))
+
+        (instance? HttpResponse msg)
+        (.fireChannelRead ^ChannelHandlerContext c msg)
+
+        :else
+        (let [ ^ChannelHandlerContext ctx c
+               flag (-> (.attr ctx GOOD_FLAG)(.get)) ]
+          (if (notnil? flag)
+              (.fireChannelRead ctx msg)
+              (log/debug "skipping unwanted msg")))
+      ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

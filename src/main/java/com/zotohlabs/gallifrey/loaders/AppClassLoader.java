@@ -36,10 +36,10 @@ public class AppClassLoader extends AbstractClassLoader {
       findUrls(p);
       addUrl(c);
       findUrls(b);
-      if ( new File(appDir, "WEB-INF").exists() ) {
-        addUrl( new File(appDir, "WEB-INF/classes"));
-        findUrls(new File(appDir, "WEB-INF/lib"));
-      }
+//      if ( new File(appDir, "WEB-INF").exists() ) {
+//        addUrl( new File(appDir, "WEB-INF/classes"));
+//        findUrls(new File(appDir, "WEB-INF/lib"));
+//      }
     }
     _loaded=true;
   }
