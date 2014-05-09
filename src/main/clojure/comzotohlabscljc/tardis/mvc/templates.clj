@@ -39,6 +39,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(def ^:private cache-assets-flag (atom true))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetCacheAssetsFlag ""
+
+  [cacheFlag]
+
+  (if cacheFlag
+      (reset! cache-assets-flag true)
+      (do
+        (reset! cache-assets-flag false)
+        (log/info "Web Assets caching is turned - OFF."))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- make-webcontent ""
 
   [^String cType bits]
@@ -69,13 +86,15 @@
 
   [^File fp]
 
-  (let [ ^String fpath (cstr/lower-case (NiceFPath fp)) ]
-    (or (.endsWith fpath ".css")
-        (.endsWith fpath ".gif")
-        (.endsWith fpath ".jpg")
-        (.endsWith fpath ".jpeg")
-        (.endsWith fpath ".png")
-        (.endsWith fpath ".js"))
+  (if @cache-assets-flag
+    (let [ ^String fpath (cstr/lower-case (NiceFPath fp)) ]
+      (or (.endsWith fpath ".css")
+          (.endsWith fpath ".gif")
+          (.endsWith fpath ".jpg")
+          (.endsWith fpath ".jpeg")
+          (.endsWith fpath ".png")
+          (.endsWith fpath ".js")))
+    false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,13 +118,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- fetchAsset ""
+
+  [^File file]
+
+  (if (and (.exists file)
+           (.canRead file))
+      (make-web-asset file)
+      nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- fetchAndSetAsset ""
 
   [^Map cache fp ^File file]
 
-  (if-let [ wa (if (and (.exists file)
-                        (.canRead file))
-                   (make-web-asset file)) ]
+  (if-let [ wa (fetchAsset file) ]
     (do
       (log/debug "asset-cache: cached new file: " fp)
       (.put cache fp wa)
@@ -121,15 +150,18 @@
 
   [^File file]
 
-  (let [ cache (AssetCache/get)
-         fp (NiceFPath file)
-         ^WebAsset wa (.get cache fp)
-         ^File cf (if (nil? wa) nil (.getFile wa)) ]
-    (if (or (nil? cf)
-            (> (.lastModified file)
-               (.getTS wa)))
-      (fetchAndSetAsset cache fp file)
-      wa)
+  (if @cache-assets-flag
+    (let [ cache (AssetCache/get)
+           fp (NiceFPath file)
+           ^WebAsset wa (.get cache fp)
+           ^File cf (if (nil? wa) nil (.getFile wa)) ]
+      (if (or (nil? cf)
+              (> (.lastModified file)
+                 (.getTS wa)))
+        (fetchAndSetAsset cache fp file)
+        wa)
+    )
+    (fetchAsset file)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

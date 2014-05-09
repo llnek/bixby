@@ -24,7 +24,7 @@
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.core.constants])
 
-  (:use [comzotohlabscljc.tardis.mvc.templates :only [GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.tardis.mvc.templates :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ])
   (:use [comzotohlabscljc.tardis.mvc.comms])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
@@ -211,6 +211,11 @@
     (let [ xxx (:useETags cfg) ]
       (.addProperty json "useETags" (true? xxx))
       (.setAttr! co :useETags xxx))
+
+    (let [ xxx (:cacheAssets cfg) ]
+      (.addProperty json "cacheAssets" (not (false? xxx)))
+      (when (false? xxx)(SetCacheAssetsFlag false))
+      (.setAttr! co :cacheAssets xxx))
 
     (let [ xxx (strim (:handler cfg)) ]
       (.addProperty json "router" xxx)
