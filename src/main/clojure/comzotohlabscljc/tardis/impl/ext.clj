@@ -69,6 +69,7 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; An application must implement this protocol.
 ;;
 (defprotocol CljAppMain
 
@@ -125,6 +126,9 @@
   (update [_ event options] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A Job creator has the task of creating a job from an event, and delegates
+;; a new Pipline which will handle the job.  The Pipeline internally will
+;; call out to your application workflow  for the actual handling of the job.
 ;;
 (defn- make-jobcreator ""
 
@@ -171,18 +175,18 @@
   (enabled? [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A Service is an instance of a Block, that is, an instance of an event
+;; emitter.
 ;;
 (defn- make-service-block
 
   [^Identifiable bk container nm cfg]
 
-  (let [ eid (.id bk)
-         ^comzotohlabscljc.tardis.core.sys.Element
-         obj (if (= :czc.tardis.io/JettyIO eid)
-               (MakeServletEmitter container)
-               (MakeEmitter container eid nm))
-         pkey (.getAppKey ^Container container)
+  (let [ pkey (.getAppKey ^Container container)
          hid (:handler cfg)
+         eid (.id bk)
+         ^comzotohlabscljc.tardis.core.sys.Element
+         obj (MakeEmitter container eid nm)
          mm (meta obj) ]
     (log/info "about to synthesize an emitter: " eid)
     (log/info "emitter meta: " mm)
@@ -224,7 +228,7 @@
          env (.getAttr co K_ENVCONF)
          cfg (:jdbc (:databases env))
          dk (if (hgl? gid) gid "_")
-         jj (cfg (keyword dk)) ]
+         jj (get cfg (keyword dk)) ]
     (if (nil? jj)
       nil
       (getDBAPI? dk jj pkey mcache))
@@ -274,11 +278,12 @@
         (getAppDir [this] (.getAttr this K_APPDIR))
         (acquireJdbc [this gid] (maybeGetDBAPI this gid))
 
-        (core [this]
-          (.getAttr this K_SCHEDULER))
         (hasService [_ serviceId]
           (let [ ^ComponentRegistry srg (.getf impl K_SVCS) ]
             (.has srg (keyword serviceId))))
+
+        (core [this]
+          (.getAttr this K_SCHEDULER))
 
         (getService [_ serviceId]
           (let [ ^ComponentRegistry srg (.getf impl K_SVCS) ]
@@ -296,24 +301,23 @@
         Startable
 
         (start [this]
-          (let [ pub (File. (.getAppDir this) (str DN_PUBLIC))
+          (let [ pub (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES))
                  ^comzotohlabscljc.tardis.core.sys.Registry
                  srg (.getf impl K_SVCS)
                  main (.getf impl :main-app) ]
             (log/info "container starting all services...")
             (when (.exists pub)
               (doto ftlCfg
-                    (.setDirectoryForTemplateLoading
-                      (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES)))
+                    (.setDirectoryForTemplateLoading pub)
                     (.setObjectWrapper (DefaultObjectWrapper.))))
             (doseq [ [k v] (seq* srg) ]
               (log/info "service: " k " about to start...")
               (.start ^Startable v))
             (log/info "container starting main app...")
             (cond
-              (satisfies? CljAppMain main)
+              (satisfies? CljAppMain main)    ;; clojure app
               (.start ^comzotohlabscljc.tardis.impl.ext.CljAppMain main)
-              (instance? AppMain main)
+              (instance? AppMain main) ;; java app
               (.start ^AppMain main)
               :else nil)))
 
@@ -363,8 +367,7 @@
                  ts (str (if (.startsWith tpl "/") "" "/") tpl)
                  ^Template tp (.getTemplate ftlCfg ts)
                  out (StringWriter.) ]
-            (when-not (nil? tp)
-              (.process tp ctx out))
+            (when-not (nil? tp) (.process tp ctx out))
             (.flush out)
             [ (XData. (.toString out))
               (cond
@@ -413,6 +416,7 @@
   )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  The runtime container for your application.
 ;;
 (defn MakeContainer ""
 
@@ -461,10 +465,10 @@
     ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
     (SynthesizeComponent srg {} )
     (doto co
-          (.setAttr! K_APPDIR appDir)
-          (.setAttr! K_SVCS srg)
           (.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
           (.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
+          (.setAttr! K_APPDIR appDir)
+          (.setAttr! K_SVCS srg)
           (.setAttr! K_ENVCONF envConf)
           (.setAttr! K_APPCONF appConf)
           (.setAttr! K_MFPROPS mf))
@@ -533,10 +537,10 @@
   ^Plugin
   [co ^String v ^File appDir env app]
 
-  (let [ ^PluginFactory pf (MakeObj v)
+  (let [ pf (MakeObj v)
          ^Plugin p (if (instance? PluginFactory pf)
-             (.createPlugin pf)
-             nil) ]
+                       (.createPlugin ^PluginFactory pf)
+                       nil) ]
     (when (instance? Plugin p)
       (log/info "calling plugin-factory: " v)
       (.contextualize p co)
@@ -590,7 +594,7 @@
                                        sc)
                                    (MakeSchema [])) ))
 
-    (when (nichts? mCZ) (log/warn "no main-class defined."))
+    (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
     ;;(test-nestr "Main-Class" mCZ)
 
     (when (hgl? mCZ)

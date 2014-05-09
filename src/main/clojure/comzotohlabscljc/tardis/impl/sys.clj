@@ -47,7 +47,8 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Deployer
+;; Deployer - deploys all packaged pods.
+;;
 (defn MakeDeployer ""
 
   []
@@ -77,7 +78,7 @@
 
         (undeploy [this app]
           (let [ ^comzotohlabscljc.util.core.MubleAPI
-                 ctx (getCtx this)
+                 ctx (.getCtx this)
                  dir (File. ^File (.getf ctx K_PLAYDIR)
                             ^String app) ]
             (when (.exists dir)
@@ -86,7 +87,7 @@
         (deploy [this src]
           (let [ app (FilenameUtils/getBaseName (NiceFPath src))
                  ^comzotohlabscljc.util.core.MubleAPI
-                 ctx (getCtx this)
+                 ctx (.getCtx this)
                  des (File. ^File (.getf ctx K_PLAYDIR)
                             ^String app) ]
             (when-not (.exists des)
@@ -107,6 +108,8 @@
   (CompCloneContext co ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Scan for pods and deploy them to the /apps directory.  The pod file's
+;; contents are unzipped verbatim to the target subdirectory under /apps.
 ;;
 (defmethod CompInitialize :czc.tardis.impl/Deployer
 
@@ -148,6 +151,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A Kernel manages the set of running apps.
 ;;
 (defn MakeKernel ""
 
@@ -181,7 +185,7 @@
 
         (start [this]
           (let [ ^comzotohlabscljc.util.core.MubleAPI
-                 ctx (getCtx this)
+                 ctx (.getCtx this)
                  ^comzotohlabscljc.util.ini.IWin32Conf
                  wc (.getf ctx K_PROPS)
                  ^ComponentRegistry
@@ -190,6 +194,7 @@
                                              "endorsed" ""))
                  ^comzotohlabscljc.tardis.core.sys.Registry
                  apps (.lookup root K_APPS)
+                 ;; start all apps or only those endorsed.
                  cs (if (= "*" endorsed)
                         #{}
                         (into #{} (filter (fn [s] (> (.length ^String s) 0))

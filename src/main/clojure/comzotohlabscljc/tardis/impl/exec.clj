@@ -74,8 +74,8 @@
          ^ComponentRegistry root (.getf ctx K_COMPS)
          ^ComponentRegistry apps (.lookup root K_APPS)
          ps (LoadJavaProps mf)
+         vid (.getProperty ps "Implementation-Vendor-Id", "???")
          ver (.getProperty ps "Implementation-Version" "")
-         vid (.getProperty ps "Implementation-Vendor-Id")
          cz (.getProperty ps "Main-Class" "") ]
 
     (test-nestr "POD-MainClass" cz)
@@ -88,6 +88,7 @@
     ;;.gets("Implementation-Vendor-URL")
     ;;.gets("Implementation-Vendor")
 
+    ;; synthesize the block meta component and register it as a application.
     (let [ ^comzotohlabscljc.tardis.core.sys.Element
            m (-> (MakePodMeta app ver nil cz vid (-> des (.toURI) (.toURL)))
                  (SynthesizeComponent { :ctx ctx })) ]
@@ -97,6 +98,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the POD file is kosher.
 ;;
 (defn- inspect-pod  ""
 
@@ -119,8 +121,8 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check all pods in the /apps directory to ensure they are kosher.
 ;;
-;; check all apps to ensure they are kosher.
 (defn- inspect-pods ""
 
   [^comzotohlabscljc.tardis.core.sys.Element co]
@@ -133,6 +135,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Basic JMX support.
 ;;
 (defn- start-jmx ""
 
@@ -150,9 +153,10 @@
       (.reg jmx co "com.zotohlabs" "execvisor" ["root=skaro"])
       (.setf! ctx K_JMXSVR jmx)
       (log/info (str "JMXserver listening on: " host " "  port)) )
-  ) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Kill the internal JMX server.
 ;;
 (defn- stop-jmx ""
 
@@ -161,8 +165,7 @@
   (TryC
     (let [ ^comzotohlabscljc.util.core.MubleAPI ctx (.getCtx co)
            ^Startable jmx (.getf ctx K_JMXSVR) ]
-      (when-not (nil? jmx)
-        (.stop jmx))
+      (when-not (nil? jmx) (.stop jmx))
       (.setf! ctx K_JMXSVR nil)))
   (log/info "JMX connection terminated."))
 
@@ -227,6 +230,7 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The Execvisor is the master controller of everthing.
 ;;
 (defmethod CompInitialize :czc.tardis.impl/Execvisor
 
@@ -326,6 +330,7 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Description of a Block.
 ;;
 (defmethod CompInitialize :czc.tardis.impl/BlockMeta
 
@@ -348,6 +353,9 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Blocks are emitters.  each block has a meta data file describing
+;; its functions and features.
+;; This registry loads these meta files and adds them to the registry.
 ;;
 (defmethod CompInitialize :czc.tardis.impl/BlocksRegistry
 
@@ -364,7 +372,6 @@
         (.reg ^ComponentRegistry co b)
         (log/info "added one block: " (.id ^Identifiable b)) ))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

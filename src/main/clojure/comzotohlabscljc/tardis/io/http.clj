@@ -78,7 +78,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; not used, old code
+;; old code
 (defn MakeServletEmitter ""
 
   [^Container parObj]
@@ -354,7 +354,7 @@
          c1 (ContextHandler.)
          r1 (ResourceHandler.)
          myHandler (proxy [AbstractHandler] []
-                     (handle [target,baseReq,req,rsp]
+                     (handle [target baseReq req rsp]
                        (serviceJetty co req rsp))) ]
     ;; static resources are based from resBase, regardless of context
     (-> r1 (.setBaseResource (Resource/newResource rcpathStr)))

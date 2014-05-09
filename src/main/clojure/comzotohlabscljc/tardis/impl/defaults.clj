@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [ comzotohlabscljc.util.core :only [MubleAPI] ] )
+  (:use [ comzotohlabscljc.util.core :only [notnil? MubleAPI] ] )
   (:use [comzotohlabscljc.tardis.core.constants])
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [ comzotohlabscljc.util.files :only [FileRead? DirReadWrite? ] ] )
@@ -35,6 +35,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  Asserts that the directory is readable & writable.
 ;;
 (defn PrecondDir ""
 
@@ -44,6 +45,7 @@
                   (DirReadWrite? d)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Asserts that the file is readable.
 ;;
 (defn PrecondFile ""
 
@@ -105,6 +107,9 @@
 (defprotocol Kernel "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A registry is basically a container holding a bunch of components.
+;; A component itself can be a registry which implies that registeries can
+;; ne nested.
 ;;
 (defn MakeComponentRegistry ""
 
@@ -140,7 +145,8 @@
         (has [this cid]
           (let [ cache (.getf impl :cache)
                  c (get cache cid) ]
-            (if (nil? c) false true)) )
+            (notnil? c)))
+
         (lookup [this cid]
           (let [ cache (.getf impl :cache)
                  c (get cache cid) ]
