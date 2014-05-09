@@ -36,7 +36,8 @@
   (:import (org.apache.shiro.subject Subject))
 
   (:import ( com.zotohlabs.wflow If BoolExpr FlowPoint
-                                 Activity Pipeline PipelineDelegate PTask Work))
+                                 Activity Pipeline
+                                 PipelineDelegate PTask Work))
   (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
   (:import (com.zotohlabs.wflow.core Job))
 
@@ -60,7 +61,8 @@
 ;;
 (defprotocol AuthPlugin
 
-  ""
+  "A Plugin that uses Apache Shiro for authentication and authorization of
+  users."
 
   (getRoles [_ acctObj ] )
   (addAccount [_ options] )
@@ -73,9 +75,9 @@
   ^JDBCInfo
   [^comzotohlabscljc.util.core.MubleAPI impl]
 
-  (let [ cfg (get (.getf impl :cfg) (keyword "_"))
+  (let [ cfg (get (.getf impl :cfg) (keyword DEF_DBID))
          pkey (.getf impl :appKey) ]
-    (MakeJdbc "_" cfg (Pwdify (:passwd cfg) pkey))
+    (MakeJdbc DEF_DBID cfg (Pwdify (:passwd cfg) pkey))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +111,12 @@
   (.execute sql (str "delete from "
                      (ese (:table AuthRole))
                      " where "
-                     (ese (:column (:name (:fields (meta AuthRole)))))
+                     ;;(ese (:column (:name (:fields (meta AuthRole)))))
+                     (->> (meta AuthRole)
+                          (:fields)
+                          (:name)
+                          (:column)
+                          (ese))
                      " = ?")
                 [(nsb role)]
   ))
@@ -124,9 +131,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateLoginAccount  ""
+(defn CreateLoginAccount
 
-  [^SQLr sql ^String user ^comzotohlabscljc.crypto.codec.Password pwdObj options roleObjs]
+  "options : a set of extra properties, such as email address.
+  roleObjs : a list of roles to be assigned to the account."
+
+  [^SQLr sql ^String user
+   ^comzotohlabscljc.crypto.codec.Password pwdObj options roleObjs]
 
   (let [ [p s] (.hashed pwdObj)
          acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
@@ -134,6 +145,9 @@
                               (DbioSetFld :acctid (strim user))
                             ;;(dbio-set-fld :salt s)
                               (DbioSetFld :passwd  p))) ]
+    ;; Currently adding roles to the account is not bound to the
+    ;; previous insert. That is, if we fail to set a role, it's
+    ;; assumed ok for the account to remain inserted.
     (doseq [ r (seq roleObjs) ]
       (DbioSetM2M { :as :roles :with sql } acc r))
     acc
@@ -145,7 +159,8 @@
 
   [^SQLr sql ^String user ^comzotohlabscljc.crypto.codec.Password pwdObj]
 
-  (let [ acct (.findOne sql :czc.tardis.auth/LoginAccount { :acctid (strim user) } ) ]
+  (let [ acct (.findOne sql :czc.tardis.auth/LoginAccount
+                            { :acctid (strim user) }) ]
     (cond
       (nil? acct)
       (throw (UnknownUser. user))
@@ -182,7 +197,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UpdateLoginAccount ""
+(defn UpdateLoginAccount
+
+  "details : a set of properties such as email address."
 
   [^SQLr sql userObj details]
 
@@ -225,7 +242,13 @@
   [^SQLr sql user]
 
   (.execute sql (str "delete from " (ese (:table LoginAccount))
-                     " where " (ese (:column (:acctid (:fields (meta LoginAccount)))))
+                     " where "
+                     ;;(ese (:column (:acctid (:fields (meta LoginAccount)))))
+                     (->> (meta LoginAccount)
+                          (:fields)
+                          (:acctid)
+                          (:column)
+                          (ese))
                      " =?")
                 [ (strim user) ]
   ))
@@ -269,11 +292,12 @@
         (test-nonil "AuthPlugin" pa)
         (with-local-vars [ uid (:email info) ]
           (try
-            (when (hgl? (:principal info))
-              (var-set uid (:principal info)))
+            (when-let [ p (:principal info) ]
+              (if (hgl? p)(var-set uid p)))
             (log/debug "about to add a user account - " @uid)
             (.setLastResult job { :account (.addAccount pa
-                                                        (merge info { :principal @uid } )) })
+                                                        (merge info
+                                                               { :principal @uid } )) })
             (Realign! evt (:account (.getLastResult job)) [])
             true
             (catch Throwable t#
@@ -329,8 +353,9 @@
   []
 
   (DefWFTask (perform [_ fw job arg]
-    (let [^HTTPEvent evt (.event ^Job job)
-          ^comzotohlabscljc.tardis.io.ios.WebSession ss (.getSession evt) ]
+    (let [ ^comzotohlabscljc.tardis.io.webss.WebSession
+          ss (.getSession evt)
+          ^HTTPEvent evt (.event ^Job job) ]
     ))
   ))
 

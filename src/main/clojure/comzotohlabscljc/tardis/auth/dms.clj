@@ -30,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel! "czc.tardis.auth" StdAddress
+(DefModel2 "czc.tardis.auth" StdAddress
   (WithDbFields {
     :addr1 { :size 200 :null false }
     :addr2 { :size 64}
@@ -46,7 +46,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel! "czc.tardis.auth"  AuthRole
+(DefModel2 "czc.tardis.auth"  AuthRole
   (WithDbFields
     { :name { :column "role_name" :null false }
       :desc { :column "description" :null false }
@@ -57,7 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel!  "czc.tardis.auth" LoginAccount
+(DefModel2  "czc.tardis.auth" LoginAccount
   (WithDbFields
     { :acctid { :null false }
       :email { :size 128 }
@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefJoined! "czc.tardis.auth" AccountRole
+(DefJoined2 "czc.tardis.auth" AccountRole
            :czc.tardis.auth/LoginAccount
            :czc.tardis.auth/AuthRole)
 

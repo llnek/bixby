@@ -22,6 +22,7 @@
 
 (def SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
 (def SHUTDOWN_DEVID #"system::kill_9" )
+(def DEF_DBID "_")
 
 (def SHUTDOWN_URI "/kill9")
 (def POD_PROTOCOL  "pod:" )

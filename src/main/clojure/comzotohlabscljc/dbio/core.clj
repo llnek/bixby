@@ -24,7 +24,8 @@
   (:use [comzotohlabscljc.util.meta :only [ForName] ])
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlabs.frwk.dbio MetaCache Schema SQLr JDBCPool JDBCInfo))
-  (:import (java.sql SQLException DatabaseMetaData Connection Driver DriverManager))
+  (:import (java.sql SQLException DatabaseMetaData
+                     Connection Driver DriverManager))
   (:import (java.util GregorianCalendar TimeZone Properties))
   (:import (java.lang Math))
   (:import (com.zotohlabs.frwk.dbio DBIOError))
@@ -57,7 +58,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MergeMeta
+(defn MergeMeta ""
 
   [m1 m2]
 
@@ -65,10 +66,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro eseOID [] `(ese "dbio_rowid"))
-(defmacro eseVID [] `(ese "dbio_verid"))
-(defmacro eseLHS [] `(ese "lhs_rowid"))
-(defmacro eseRHS [] `(ese "rhs_rowid"))
+(defmacro eseOID [] `(ese "DBIO_ROWID"))
+(defmacro eseVID [] `(ese "DBIO_VERID"))
+(defmacro eseLHS [] `(ese "LHS_ROWID"))
+(defmacro eseRHS [] `(ese "RHS_ROWID"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,19 +80,21 @@
 
   ;;(debug "JDBC id= " id ", cfg = " cfg)
   (reify JDBCInfo
-    (getId [_] id)
-    (getDriver [_] (:d cfg))
-    (getUrl [_] (:url cfg))
     (getUser [_] (:user cfg))
-    (getPwd [_] (nsb pwdObj)) ))
+    (getDriver [_] (:d cfg))
+    (getId [_] id)
+    (getUrl [_] (:url cfg))
+    (getPwd [_] (nsb pwdObj))
+
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(def Postgresql :postgresql)
 (def SQLServer :sqlserver)
 (def Oracle :oracle)
 (def MySQL :mysql)
 (def H2 :h2)
-(def Postgresql :postgresql)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -201,43 +204,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefModel!  ""
+(defmacro DefModel2  ""
 
-  [ nsp model-name & body ]
+  [ nsp modelname & body ]
 
-  `(def ~model-name
-     (-> (DbioModel ~nsp ~(name model-name))
+  `(def ~modelname
+     (-> (DbioModel ~nsp ~(name modelname))
                  ~@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro DefModel "Define a data model."
 
-  [model-name & body]
+  [modelname & body]
 
-  `(def ~model-name
-     (-> (DbioModel ~(name model-name))
+  `(def ~modelname
+     (-> (DbioModel ~(name modelname))
                  ~@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefJoined!
+(defmacro DefJoined2 ""
 
-  [nsp model-name lhs rhs]
+  [nsp modelname lhs rhs]
 
-  `(def ~model-name
-      (-> (DbioModel ~nsp ~(name model-name))
+  `(def ~modelname
+      (-> (DbioModel ~nsp ~(name modelname))
                 (WithDbParentModel JOINED-MODEL-MONIKER)
                 (WithDbJoinedModel ~lhs ~rhs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefJoined
+(defmacro DefJoined ""
 
-  [model-name lhs rhs]
+  [modelname lhs rhs]
 
-  `(def ~model-name
-      (-> (DbioModel ~(name model-name))
+  `(def ~modelname
+      (-> (DbioModel ~(name modelname))
                 (WithDbParentModel JOINED-MODEL-MONIKER)
                 (WithDbJoinedModel ~lhs ~rhs))))
 
@@ -398,7 +401,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here.
 ;;
-(DefModel! "czc.dbio.core" dbio-basemodel
+(DefModel2 "czc.dbio.core" dbio-basemodel
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {
@@ -414,7 +417,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel! "czc.dbio.core" dbio-joined-model
+(DefModel2 "czc.dbio.core" dbio-joined-model
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {
