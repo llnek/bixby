@@ -23,6 +23,8 @@ public/pages/
 .lein-plugins
 .lein-repl-history
 
+.nrepl*
+
 ._.DS_Store
 .DS_Store
 .svn

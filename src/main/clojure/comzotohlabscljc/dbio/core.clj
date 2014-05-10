@@ -50,8 +50,14 @@
 (defmacro lc-ent ^String [ent] `(cstr/lower-case (name ~ent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro GetTypeId [model] `(:typeid (meta ~model)))
+;; (meta nil) is fine, so no need to worry
+(defmacro GetTypeId
+
+  [model]
+
+  `(:typeid (meta ~model)))
+
+  ;;`(if-not (nil? ~model) (:typeid (meta ~model))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,8 +184,8 @@
 
   (let [ kw (keyword (cstr/lower-case dbtype)) ]
     (if (nil? (DBTYPES kw))
-         nil
-         kw)
+       nil
+       kw)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -724,9 +730,11 @@
          conn (if (hgl? (.getUser jdbc))
                   (safeGetConn jdbc)
                   (DriverManager/getConnection url)) ]
-    (when (nil? conn) (DbioError (str "Failed to create db connection: " url)))
+    (when (nil? conn)
+          (DbioError (str "Failed to create db connection: " url)))
     (doto conn
-          (.setTransactionIsolation Connection/TRANSACTION_READ_COMMITTED))
+          (.setTransactionIsolation
+            Connection/TRANSACTION_READ_COMMITTED))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1021,7 +1029,8 @@
     (.setAutoCommit conn true)
     (doseq [ ^String line (seq lines) ]
       (let [ ln (StringUtils/strip (strim line) ";") ]
-        (when (and (hgl? ln) (not= (cstr/lower-case ln) "go"))
+        (when (and (hgl? ln)
+                   (not= (cstr/lower-case ln) "go"))
           (try
             (with-open [ stmt (.createStatement conn) ]
               (.executeUpdate stmt ln))
@@ -1092,13 +1101,15 @@
 
   (let [ mc (.getMetas *META-CACHE*)
          zm (mc (GetTypeId lhsObj))
-         ac (DbioGetAssoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc
+                          zm
+                          (:as ctx))
          rt (:cast ctx)
          fid (:fkey ac)
          fv (:rowid (meta lhsObj)) ]
     (if (nil? ac)
         (DbioError "Unknown assoc " (:as ctx))
-        [ (:with ctx) (if (nil? rt) (:rhs ac) rt) { fid fv} ])
+        [ (:with ctx) (ternary rt (:rhs ac)) { fid fv} ])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1109,14 +1120,16 @@
 
   (let [ mc (.getMetas *META-CACHE*)
          zm (mc (GetTypeId lhsObj))
-         ac (DbioGetAssoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc
+                          zm
+                          (:as ctx))
          fv (:rowid (meta lhsObj))
          fid (:fkey ac) ]
     (when (nil? ac) (DbioError "Unknown assoc " (:as ctx)))
     (let [ x (-> (DbioCreateObj (GetTypeId rhsObj))
                  (DbioSetFld fid fv)
                  (vary-meta MergeMeta (Concise rhsObj)))
-         y (.update ^SQLr (:with ctx) x) ]
+           y (.update ^SQLr (:with ctx) x) ]
       [ lhsObj (merge y (dissoc rhsObj fid)) ])
   ))
 
@@ -1162,10 +1175,12 @@
 
   (let [ mc (.getMetas *META-CACHE*)
          zm (mc (GetTypeId lhsObj))
-         ac (DbioGetAssoc mc zm (:as ctx))
+         ac (DbioGetAssoc mc
+                          zm
+                          (:as ctx))
          fv (:rowid (meta lhsObj))
          rt (:cast ctx)
-         rp (if (nil? rt) (:rhs ac) rt)
+         rp (ternary rt (:rhs ac))
          fid (:fkey ac) ]
     (when (nil? ac)(DbioError "Unknown assoc " (:as ctx)))
     (.execute ^SQLr (:with ctx)
@@ -1208,8 +1223,8 @@
          ac (DbioGetAssoc mc
                           zm
                           (:as ctx))
-         ^SQLr sql (:with ctx)
          fv (:rowid (meta lhsObj))
+         ^SQLr sql (:with ctx)
          rt (:cast ctx)
          fid (:fkey ac) ]
     (when (nil? ac)
@@ -1235,8 +1250,8 @@
   (let [ mc (.getMetas *META-CACHE*)
          lid (GetTypeId lhsObj)
          rid (GetTypeId rhsObj)
-         lv (:rowid (meta lhsObj))
          rv (:rowid (meta rhsObj))
+         lv (:rowid (meta lhsObj))
          zm (mc lid)
          ac (DbioGetAssoc mc
                           zm
@@ -1269,8 +1284,8 @@
     (let [ mc (.getMetas *META-CACHE*)
            lid (GetTypeId lhsObj)
            rid (GetTypeId rhsObj)
-           lv (:rowid (meta lhsObj))
            rv (:rowid (meta rhsObj))
+           lv (:rowid (meta lhsObj))
            zm (mc lid)
            ac (DbioGetAssoc mc
                             zm
@@ -1302,38 +1317,6 @@
                  (ese a) " =? and " (ese b) " =?" )
             [ lv (StripNSPath lid)
               rv (StripNSPath rid) ])) )
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn DbioClrM2M ""
-
-  [ctx lhsObj]
-
-  (let [ mc (.getMetas *META-CACHE*)
-         lid (GetTypeId lhsObj)
-         lv (:rowid (meta lhsObj))
-         zm (mc lid)
-         ac (DbioGetAssoc mc
-                          zm
-                          (:as ctx))
-         mm (mc (:joined ac))
-         flds (:fields (meta mm))
-         ml (:rhs (:lhs (:assocs mm)))
-         rl (:rhs (:rhs (:assocs mm)))
-         [x y]
-         (if (= ml lid)
-             [ (:column (:lhs-oid flds)) (:column (:lhs-typeid flds)) ]
-             [ (:column (:rhs-oid flds)) (:column (:rhs-typeid flds)) ]) ]
-    (when (nil? ac) (DbioError "Uknown assoc " (:as ctx)))
-    (.execute
-      ^SQLr (:with ctx)
-      (str "delete from "
-           (ese (:table mm))
-           " where "
-           (ese x) " =? and "
-           (ese y) " =?")
-      [ lv (StripNSPath lid) ] )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

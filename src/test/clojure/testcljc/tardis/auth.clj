@@ -127,7 +127,7 @@
                  (GetLoginAccount tx user (CE/Pwdify pwd)))) ]
       (not (nil? u)))))
 
-(deftest testdbio-dbstuff
+(deftest testtardis-auth
 
   (is (do (init-test nil) true))
 
