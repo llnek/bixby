@@ -177,7 +177,7 @@
   [^String dbtype]
 
   (let [ kw (keyword (cstr/lower-case dbtype)) ]
-    (if (nil? (get DBTYPES kw))
+    (if (nil? (DBTYPES kw))
          nil
          kw)
   ))
@@ -221,13 +221,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefModel2  ""
+(defmacro DefModel2  "Define a data model."
 
   [ nsp modelname & body ]
 
   `(def ~modelname
      (-> (DbioModel ~nsp ~(name modelname))
-                 ~@body)))
+         ~@body)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -237,29 +238,32 @@
 
   `(def ~modelname
      (-> (DbioModel ~(name modelname))
-                 ~@body)))
+         ~@body)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefJoined2 ""
+(defmacro DefJoined2 "Define a joined data model."
 
   [nsp modelname lhs rhs]
 
   `(def ~modelname
       (-> (DbioModel ~nsp ~(name modelname))
-                (WithDbParentModel JOINED-MODEL-MONIKER)
-                (WithDbJoinedModel ~lhs ~rhs))))
+          (WithDbParentModel JOINED-MODEL-MONIKER)
+          (WithDbJoinedModel ~lhs ~rhs))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefJoined ""
+(defmacro DefJoined "Define a joined data model."
 
   [modelname lhs rhs]
 
   `(def ~modelname
       (-> (DbioModel ~(name modelname))
-                (WithDbParentModel JOINED-MODEL-MONIKER)
-                (WithDbJoinedModel ~lhs ~rhs))))
+          (WithDbParentModel JOINED-MODEL-MONIKER)
+          (WithDbJoinedModel ~lhs ~rhs))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -270,6 +274,7 @@
   (assoc pojo :parent par))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; A special model with 2 assocs, left hand side and right hand side.
 ;;
 (defn WithDbJoinedModel ""
 
@@ -358,12 +363,16 @@
 
   [pojo aid adef]
 
-  (let [ dft { :kind nil :rhs nil :fkey "" :cascade false }
-         pid (:id pojo)
-         ad (merge dft adef)
+  (let [ ad (merge { :kind nil
+                     :rhs nil
+                     :fkey nil
+                     :cascade false } adef)
          a2 (case (:kind ad)
-              (:O2O :O2M) (assoc ad :fkey (fmtfkey pid aid))
+              (:O2O :O2M) (assoc ad
+                                 :fkey
+                                 (fmtfkey (:id pojo) aid))
               (:M2M :MXM) ad
+              ;;else
               (DbioError (str "Invalid assoc def " adef))) ]
     (Interject pojo :assocs #(assoc % aid a2))
   ))
@@ -414,15 +423,14 @@
 (DefModel2 "czc.dbio.core" dbio-basemodel
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields {
-    :rowid {:column "DBIO_ROWID" :pkey true :domain :Long
-            :auto true :system true :updatable false}
+  (WithDbFields { :rowid {:column "DBIO_ROWID" :pkey true :domain :Long
+                          :auto true :system true :updatable false}
     :verid {:column "DBIO_VERSION" :domain :Long :system true
             :dft [ 0 ] }
     :last-modify {:column "DBIO_LASTCHANGED" :domain :Timestamp
-               :system true :dft [""] }
+                  :system true :dft [""] }
     :created-on {:column "DBIO_CREATED_ON" :domain :Timestamp
-                  :system true :dft [""] :updatable false}
+                 :system true :dft [""] :updatable false}
     :created-by {:column "DBIO_CREATED_BY" :system true :domain :String } }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -430,8 +438,7 @@
 (DefModel2 "czc.dbio.core" dbio-joined-model
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields {
-    :lhs-typeid {:column "LHS_TYPEID" }
+  (WithDbFields { :lhs-typeid {:column "LHS_TYPEID" }
     :lhs-oid {:column "LHS_ROWID" :domain :Long :null false}
     :rhs-typeid {:column "RHS_TYPEID" }
     :rhs-oid {:column "RHS_ROWID" :domain :Long :null false} }) )
@@ -454,26 +461,26 @@
   [ms]
 
   (let [ fdef { :domain :Long :assoc-key true } ]
-    (with-local-vars [ rc (transient {}) xs (transient {}) ]
+    (with-local-vars [ rc (transient {})
+                       xs (transient {}) ]
       ;; create placeholder maps for each model, to hold new fields from assocs.
       (doseq [ [k m] (seq ms) ] (var-set rc (assoc! @rc k {} )))
       ;; as we find new assoc fields, add them to the placeholder maps.
       (doseq [ [k m] (seq ms) ]
-        (let [ socs (:assocs m) ]
-          (doseq [ [x s] (seq socs) ]
-            (case (:kind s)
-              (:O2O :O2M)
-              (let [ rhs (get @rc (:rhs s))
-                     zm (get @rc k)
-                     fid (:fkey s)
-                     ft (merge (getDftFldObj fid) fdef) ]
-                (var-set rc (assoc! @rc (:rhs s) (assoc rhs fid ft))))
-              nil))))
+        (doseq [ [x s] (seq (:assocs m)) ]
+          (case (:kind s)
+            (:O2O :O2M)
+            (let [ rhs (@rc (:rhs s))
+                   zm (@rc k)
+                   fid (:fkey s)
+                   ft (merge (getDftFldObj fid) fdef) ]
+              (var-set rc (assoc! @rc (:rhs s) (assoc rhs fid ft))))
+            nil)))
       ;; now walk through all the placeholder maps and merge those new
       ;; fields to the actual models.
       (let [ tm (persistent! @rc) ]
         (doseq [ [k v] (seq tm) ]
-          (let [ zm (get ms k)
+          (let [ zm (ms k)
                  fs (:fields zm) ]
             (var-set xs (assoc! @xs k (assoc zm :fields (merge fs v))))))
         (persistent! @xs)))
@@ -490,7 +497,7 @@
   (let [ par (:parent model) ]
     (cond
       (keyword? par)
-      (if (nil? (get ms par))
+      (if (nil? (ms par))
           (DbioError (str "Unknown parent model " par))
           model)
 
@@ -555,7 +562,7 @@
 
   [cache modelid]
 
-  (let [ mm (get cache modelid) ]
+  (let [ mm (cache modelid) ]
     (when (nil? mm) (log/warn "unknown database model id " modelid))
     (CollectDbFields cache mm)
   ))
@@ -582,7 +589,7 @@
 
   [cache modelid]
 
-  (let [ mm (get cache modelid) ]
+  (let [ mm (cache modelid) ]
     (when (nil? mm) (log/warn "unknown model id " modelid))
     (CollectDbIndexes cache mm)
   ))
@@ -609,7 +616,7 @@
 
   [cache modelid]
 
-  (let [ mm (get cache modelid) ]
+  (let [ mm (cache modelid) ]
     (when (nil? mm) (log/warn "unknown model id " modelid))
     (CollectDbUniques cache mm)
   ))
@@ -836,9 +843,11 @@
 
   [^DatabaseMetaData mt ^String catalog ^String schema ^String table]
 
-  (with-local-vars [ pkeys #{} cms {} ]
+  (with-local-vars [ pkeys #{}
+                     cms {} ]
     (with-open [ rs (.getPrimaryKeys mt catalog schema table) ]
-      (loop [ sum (transient #{}) more (.next rs) ]
+      (loop [ sum (transient #{})
+              more (.next rs) ]
         (if (not more)
           (var-set pkeys (persistent! sum))
           (recur
@@ -846,10 +855,12 @@
             (.next rs))
         )))
     (with-open [ rs (.getColumns mt catalog schema table "%") ]
-      (loop [ sum (transient {}) more (.next rs) ]
+      (loop [ sum (transient {})
+              more (.next rs) ]
         (if (not more)
           (var-set cms (persistent! sum))
-          (let [ opt (not= (.getInt rs (int 11)) DatabaseMetaData/columnNoNulls)
+          (let [ opt (not= (.getInt rs (int 11))
+                           DatabaseMetaData/columnNoNulls)
                  cn (cstr/upper-case (.getString rs (int 4)))
                  ctype (.getInt rs (int 5)) ]
             (recur
@@ -951,7 +962,8 @@
             ddl lines
             pos (.indexOf ddl DDL_SEP) ]
       (if (< pos 0)
-        (do (var-set rc (persistent! sum)) (var-set s2 (strim ddl)))
+        (do (var-set rc (persistent! sum))
+            (var-set s2 (strim ddl)))
         (let [ nl (strim (.substring ddl 0 pos))
                d2 (.substring ddl (+ pos @w))
                p2 (.indexOf d2 DDL_SEP) ]
@@ -1003,7 +1015,8 @@
   [^Connection conn ^String ddl]
 
   (log/debug "\n" ddl)
-  (let [ dbn (cstr/lower-case (-> (.getMetaData conn)(.getDatabaseProductName)))
+  (let [ dbn (cstr/lower-case (-> (.getMetaData conn)
+                                  (.getDatabaseProductName)))
          lines (splitLines ddl) ]
     (.setAutoCommit conn true)
     (doseq [ ^String line (seq lines) ]
