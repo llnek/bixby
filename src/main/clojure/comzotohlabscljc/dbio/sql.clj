@@ -22,7 +22,8 @@
   (:use [comzotohlabscljc.util.str :only [AddDelim! nsb strim] ])
   (:use [comzotohlabscljc.util.io :only [ReadChars ReadBytes ] ])
   (:use [comzotohlabscljc.util.dates :only [GmtCal] ])
-  (:require [comzotohlabscljc.dbio.core :as dbcore :only [MergeMeta ese] ])
+  (:require [comzotohlabscljc.dbio.core
+             :as dbcore :only [MergeMeta ese DbioError] ])
   (:import (java.util Calendar GregorianCalendar TimeZone))
   (:import (com.zotohlabs.frwk.dbio MetaCache DBIOError OptLockError))
   (:import (java.math BigDecimal BigInteger))
@@ -47,7 +48,7 @@
 
   ( ^String
     [mid cache]
-    (Tablename (get cache mid))))
+    (:table (cache mid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -59,7 +60,7 @@
 
   ( ^String
     [fid zm]
-    (Colname (get (:fields (meta zm)) fid))))
+    (:column (get (:fields (meta zm)) fid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -68,7 +69,8 @@
   ^String
   [lock zm]
 
-  (str (dbcore/ese (Colname :rowid zm)) "=?"
+  (str (dbcore/ese (Colname :rowid zm))
+       "=?"
        (if lock
            (str " AND " (dbcore/ese (Colname :verid zm)) "=?")
            "")
@@ -96,9 +98,9 @@
                              fld (get flds k)
                              c (if (nil? fld)
                                    k
-                                   (dbcore/ese (:column fld))) ]
+                                   (:column fld)) ]
                         (AddDelim! sum " AND "
-                          (str c (if (nil? (last en))
+                          (str (dbcore/ese c) (if (nil? (last en))
                                      " IS NULL "
                                      " = ? ")))))
                     (StringBuilder.)
@@ -198,10 +200,13 @@
     (instance? Short p) (.setShort ps pos p)
 
     (instance? BigDecimal p) (.setBigDecimal ps pos p)
-    (instance? BigInteger p) (.setBigDecimal ps pos (BigDecimal. ^BigInteger p))
+    (instance? BigInteger p) (.setBigDecimal ps
+                                             pos
+                                             (BigDecimal. ^BigInteger p))
 
     (instance? InputStream p) (.setBinaryStream ps pos p)
     (instance? Reader p) (.setCharacterStream ps pos p)
+
     (instance? Blob p) (.setBlob ps ^long pos ^Blob p)
     (instance? Clob p) (.setClob ps ^long pos ^Clob p)
 
@@ -226,7 +231,7 @@
 ;;
 (defn- mssql-tweak-sqlstr ""
 
-  [^String sqlstr ^String token ^String cmd]
+  [^String sqlstr token ^String cmd]
 
   (loop [ stop false sql sqlstr ]
     (if stop
@@ -269,7 +274,9 @@
 
   (let [ sql sqlstr ;; (jiggleSQL db sqlstr)
          ps (if (insert? sql)
-              (.prepareStatement conn sql Statement/RETURN_GENERATED_KEYS)
+              (.prepareStatement conn
+                                 sql
+                                 Statement/RETURN_GENERATED_KEYS)
               (.prepareStatement conn sql)) ]
     (log/debug "building SQLStmt: {}" sql)
     (doseq [n (seq (range 0 (count params))) ]

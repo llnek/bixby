@@ -47,7 +47,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RegisterJdbcTL ""
+(defn RegisterJdbcTL "Add a thread-local db pool."
 
   [^JDBCInfo jdbc options]
 
@@ -55,7 +55,7 @@
          hc (.getId jdbc)
          ^Map c (.get tloc) ]
     (when-not (.containsKey c hc)
-      (log/debug "no db pool found in thread-local, creating one...")
+      (log/debug "no db pool found in DBIO-thread-local, creating one...")
       (let [ p (dbcore/MakeDbPool jdbc options) ]
         (.put c hc p)))
     (.get c hc)
@@ -67,8 +67,8 @@
 
   [ hc]
 
-  (let [ tloc (DBIOLocal/getCache) ;; a thread local
-         ^Map c (.get tloc) ;; c == java hashmap
+  (let [ tloc (DBIOLocal/getCache)
+         ^Map c (.get tloc)
          p (.get c hc) ]
     (when-not (nil? p)
       (Try! (.shutdown ^JDBCPool p))
@@ -82,7 +82,7 @@
   ^JDBCPool
   [ hc jdbc options]
 
-  (let [ tloc (DBIOLocal/getCache) ;; get the thread local
+  (let [ tloc (DBIOLocal/getCache)
          ^Map c (.get tloc)
          rc (.get c hc) ]
     (if (nil? rc)
@@ -101,10 +101,9 @@
     ;;(log/debug (.getMetas metaCache))
     (reify DBAPI
 
-      (getMetaCache [_] metaCache)
+      (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
 
-      (supportsOptimisticLock [_]
-        (if (false? (:opt-lock options)) false true))
+      (getMetaCache [_] metaCache)
 
       (vendor [_]
         (let [ ^JDBCPool
