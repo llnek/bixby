@@ -919,19 +919,6 @@ def compileTests_Java() {
 }
 
 def compileTests_Scala() {
-  scalac (srcdir: "${testDir}/scala",
-  destdir: "${buildTestDir}",
-  classpathref: 'testPathId',
-    fork: true,
-    jvmargs: '-Xmx5120M -Xms1024M') {
-    include (name: '**/*.scala')
-  }
-  copy (todir: "${buildTestDir}") {
-    fileset (dir: "${testDir}/scala") {
-      exclude (name: '**/*.scala')
-      exclude (name: '**/.svn')
-    }
-  }
 }
 
 def compileTests_Clj() {
@@ -989,19 +976,6 @@ def runtests_Java() {
 }
 
 def runtests_Scala() {
-  ant.taskdef (name: 'scalatest',
-    classname: 'org.scalatest.tools.ScalaTestAntTask') {
-    classpath (refid: 'testPathId')
-  }
-  scalatest (haltonfailure: true,
-    fork: true,
-    maxmemory: '888M') {
-    reporter (type: 'junitxml', directory: "${reportTestDir}")
-    wildcard (package: 'testzotohlabs.scala')
-    runpath () {
-      pathelement (path: "${buildTestDir}")
-    }
-  }
 }
 
 def runtests_Clj() {

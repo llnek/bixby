@@ -353,9 +353,9 @@
   []
 
   (DefWFTask (perform [_ fw job arg]
-    (let [ ^comzotohlabscljc.tardis.io.webss.WebSession
-          ss (.getSession evt)
-          ^HTTPEvent evt (.event ^Job job) ]
+    (let [ ^HTTPEvent evt (.event ^Job job)
+           ;;^comzotohlabscljc.tardis.io.webss.WebSession
+           ss (.getSession evt) ]
     ))
   ))
 
