@@ -77,19 +77,19 @@
 
   [^Writer cout ^Reader cin cmdQ ^java.util.Map props]
 
-  (let [ dft (nsb (:dft cmdQ))
+  (let [ chs (nsb (:choices cmdQ))
+         dft (nsb (:dft cmdQ))
          must (:must cmdQ)
          onResp (:onok cmdQ)
-         q (:qline cmdQ)
-         chs (nsb (:choices cmdQ)) ]
+         q (:qline cmdQ) ]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
     (when-not (cstr/blank? chs)
       (if (Has? chs \n)
-        (do (.write cout (str
+        (.write cout (str
               (if (.startsWith chs "\n") "[" "[\n")  chs
-              (if (.endsWith chs "\n") "]" "\n]" ) )))
-        (do (.write cout (str "[" chs "]")))))
+              (if (.endsWith chs "\n") "]" "\n]" ) ))
+        (.write cout (str "[" chs "]"))))
     ;; defaults ?
     (when-not (cstr/blank? dft)
       (.write cout (str "(" dft ")")) )

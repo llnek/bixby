@@ -16,7 +16,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]])
   (:import (java.nio ByteBuffer CharBuffer))
   (:import (java.nio.charset Charset))
-  (:import (java.io ByteArrayOutputStream ByteArrayInputStream
+  (:import (java.io ByteArrayOutputStream
+                    ByteArrayInputStream
                     DataOutputStream DataInputStream)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

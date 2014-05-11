@@ -51,7 +51,7 @@
 
       (findSome [this model filters] (.findSome this model filters ""))
       (findSome [_ model filters extraSQL]
-        (let [ zm (get metas model)
+        (let [ zm (metas model)
                [wc pms] (dbsql/SqlFilterClause zm filters)
                tbl (dbsql/Tablename zm)
                s (str "SELECT * FROM " (dbcore/ese tbl))

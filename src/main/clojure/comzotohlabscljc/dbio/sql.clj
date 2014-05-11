@@ -333,7 +333,8 @@
       (with-open [ stmt (build-stmt db conn sql pms) ]
         (with-open [ rs (.executeQuery stmt) ]
           (let [ rsmeta (.getMetaData rs) ]
-            (loop [ sum (transient []) ok (.next rs) ]
+            (loop [ sum (transient [])
+                    ok (.next rs) ]
               (if (not ok)
                 (persistent! sum)
                 (recur (conj! sum (postFunc (func rs rsmeta))) (.next rs))))))))
@@ -358,6 +359,7 @@
   (doUpdate [_  conn pojo] ) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Format sql string for insert.
 ;;
 (defn- insert-fields ""
 
@@ -365,12 +367,11 @@
 
   (with-local-vars [ ps (transient []) ]
     (doseq [ [k v] (seq obj) ]
-      (let [ fdef (get flds k)
-             cn (:column fdef) ]
+      (let [ fdef (flds k) ]
         (when (and (notnil? fdef)
-                 (not (:auto fdef))
-                 (not (:system fdef)))
-          (AddDelim! s1 "," (dbcore/ese cn))
+                   (not (:auto fdef))
+                   (not (:system fdef)))
+          (AddDelim! s1 "," (dbcore/ese (Colname fdef)))
           (AddDelim! s2 "," (if (nil? v) "NULL" "?"))
           (when-not (nil? v)
             (var-set ps (conj! @ps v))))))
@@ -379,6 +380,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Format sql string for update.
 ;;
 (defn- update-fields ""
 
@@ -386,13 +388,12 @@
 
   (with-local-vars [ ps (transient []) ]
     (doseq [ [k v] (seq obj) ]
-      (let [ fdef (get flds k)
-             cn (Colname fdef) ]
+      (let [ fdef (flds k) ]
         (when (and (notnil? fdef)
                    (:updatable fdef)
                    (not (:auto fdef)) (not (:system fdef)) )
           (doto sb1
-            (AddDelim! "," (dbcore/ese cn))
+            (AddDelim! "," (dbcore/ese (Colname fdef)))
             (.append (if (nil? v) "=NULL" "=?")))
           (when-not (nil? v)
             (var-set ps (conj! @ps v))))))
@@ -427,7 +428,7 @@
     (reify SQLProcAPI
 
       (doQuery [_ conn sql pms model]
-        (let [ zm (get metas model) ]
+        (let [ zm (metas model) ]
           (when (nil? zm)
                 (dbcore/DbioError (str "Unknown model " model)))
           (let [ px (partial model-injtor metaCache zm)
@@ -457,7 +458,7 @@
 
       (doDelete [this conn obj]
         (let [ info (meta obj) model (:typeid info)
-               zm (get metas model) ]
+               zm (metas model) ]
           (when (nil? zm) (dbcore/DbioError (str "Unknown model " model)))
           (let [ lock (.supportsOptimisticLock db)
                  table (Tablename zm)
@@ -473,7 +474,7 @@
 
       (doInsert [this conn obj]
         (let [ info (meta obj) model (:typeid info)
-               zm (get metas model) ]
+               zm (metas model) ]
           (when (nil? zm) (dbcore/DbioError (str "Unknown model " model)))
           (let [ lock (.supportsOptimisticLock db)
                  flds (:fields (meta zm))
@@ -498,7 +499,7 @@
 
       (doUpdate [this conn obj]
         (let [ info (meta obj) model (:typeid info)
-               zm (get metas model) ]
+               zm (metas model) ]
           (when (nil? zm) (dbcore/DbioError (str "Unknown model " model)))
           (let [ lock (.supportsOptimisticLock db)
                  cver (nnz (:verid info))

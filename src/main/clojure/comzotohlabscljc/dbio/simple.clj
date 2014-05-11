@@ -61,7 +61,7 @@
 
       (findSome [this model filters extraSQL]
         (with-open [ conn (openDB db) ]
-          (let [ zm (get metas model)
+          (let [ zm (metas model)
                  tbl (dbsql/Tablename zm)
                  s (str "SELECT * FROM " (ese tbl))
                  [wc pms] (dbsql/SqlFilterClause zm filters)
