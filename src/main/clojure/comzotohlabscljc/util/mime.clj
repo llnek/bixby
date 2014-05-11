@@ -114,7 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
+(def ^Pattern ^:private _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
 (def ^:private _mime_cache (atom {}))
 (def ^:private _mime_types (atom nil))
 
@@ -141,7 +141,8 @@
   ^String
   [^String cType]
 
-  (let [ pos (-> (nsb cType) (cstr/lower-case ) (.indexOf "charset="))
+  (let [ pos (-> (nsb cType) (cstr/lower-case )
+                 (.indexOf "charset="))
          rc "utf-8" ]
          ;;rc "ISO-8859-1" ]
     (if (> pos 0)
@@ -202,14 +203,14 @@
   [^Object obj]
 
   (cond
-    (instance? String obj)
-    (Streamify (Bytesify obj))
-
     (instance? InputStream obj)
     obj
 
     (instance? (BytesClass) obj)
     (Streamify obj)
+
+    (instance? String obj)
+    (Streamify (Bytesify obj))
 
     :else
     nil))
@@ -246,7 +247,7 @@
 
   (^String
     [^File file ^String dft]
-    (let [ ^Matcher mc (.matcher ^Pattern _extRegex (cstr/lower-case (.getName file)))
+    (let [ ^Matcher mc (.matcher _extRegex (cstr/lower-case (.getName file)))
            ex (if (.matches mc) (.group mc 1) "")
            p (if (hgl? ex) ((keyword ex) (MimeCache))) ]
       (if (hgl? p) p dft))) )
@@ -255,16 +256,14 @@
 ;;
 (defn GuessContentType "Guess the content-type of file."
 
-  (^String
-    [^File file ^String enc ^String dft]
+  (^String [^File file ^String enc ^String dft]
     (let [ mt (GuessMimeType file)
            ct (if (hgl? mt) mt dft) ]
       (if (not (.startsWith ct "text/"))
           ct
           (str ct "; charset=" enc))))
 
-  (^String
-    [^File file]
+  (^String [^File file]
     (GuessContentType file "utf-8" "application/octet-stream" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

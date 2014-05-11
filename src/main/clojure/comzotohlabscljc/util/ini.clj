@@ -14,8 +14,9 @@
 
   comzotohlabscljc.util.ini
 
-  (:use [comzotohlabscljc.util.core :only [ThrowBadData ThrowIOE ConvBool ConvLong ConvDouble] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.util.core
+         :only [ThrowBadData ThrowIOE ConvBool ConvLong ConvDouble] ])
   (:require [clojure.string :as cstr])
   (:use [ comzotohlabscljc.util.files :only [FileRead?] ])
   (:use [ comzotohlabscljc.util.str :only [nsb strim] ])
@@ -110,9 +111,14 @@
 
   (let [ ln (strim line) ]
     (cond
-      (or (cstr/blank? ln) (.startsWith ln "#")) curSec
-      (.matches ln "^\\[.*\\]$") (maybeSection rdr ncmap ln)
-      :else (do (maybeLine rdr ncmap curSec ln) curSec))
+      (or (cstr/blank? ln) (.startsWith ln "#"))
+      curSec
+
+      (.matches ln "^\\[.*\\]$")
+      (maybeSection rdr ncmap ln)
+
+      :else
+      (do (maybeLine rdr ncmap curSec ln) curSec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,7 +128,8 @@
   [^Map m k]
 
   (let [ kn (name k) ]
-    (if (or (nil? kn) (nil? m))
+    (if (or (nil? kn)
+            (nil? m))
         nil
         (.containsKey m kn))
   ))
@@ -152,69 +159,57 @@
 
   (reify IWin32Conf
 
-    (getSection
-      [_ sectionName]
+    (getSection [_ sectionName]
       (let [ sn (name sectionName) ]
         (if (cstr/blank? sn)
             nil
             (let [ m (.get mapOfSections sn) ]
               (if (nil? m) nil (into {} m))))))
 
-    (sectionKeys
-      [_]
-      (.keySet mapOfSections))
+    (sectionKeys [_] (.keySet mapOfSections))
 
-    (getString
-      [this section property]
+    (getString [this section property]
       (nsb (getKV this section property true)))
 
-    (optString
-      [this section property dft]
+    (optString [this section property dft]
       (let [ rc (getKV this section property false) ]
-           (if (nil? rc) dft rc)))
+        (if (nil? rc) dft rc)))
 
-    (getLong
-      [this section property]
+    (getLong [this section property]
       (ConvLong (getKV this section property true) 0))
 
-    (optLong
-      [this section property dft]
+    (optLong [this section property dft]
       (let [ rc (getKV this section property false) ]
-           (if (nil? rc)
-               dft
-               (ConvLong rc 0))))
+        (if (nil? rc)
+            dft
+            (ConvLong rc 0))))
 
-    (getDouble
-      [this section property]
+    (getDouble [this section property]
       (ConvDouble (getKV this section property true) 0.0))
 
-    (optDouble
-      [this section property dft]
+    (optDouble [this section property dft]
       (let [ rc (getKV this section property false) ]
-           (if (nil? rc)
-               dft
-               (ConvDouble rc 0.0))))
+        (if (nil? rc)
+            dft
+            (ConvDouble rc 0.0))))
 
-    (getBool
-      [this section property]
+    (getBool [this section property]
       (ConvBool (getKV this section property true) false))
 
-    (optBool
-      [this section property dft]
+    (optBool [this section property dft]
       (let [ rc (getKV this section property false) ]
-           (if (nil? rc)
-               dft
-               (ConvBool rc false))))
+        (if (nil? rc)
+            dft
+            (ConvBool rc false))))
 
-    (dbgShow
-      [_]
+    (dbgShow [_]
       (let  [ buf (StringBuilder.) ]
-            (doseq [ [k v] (seq mapOfSections) ]
-              (.append buf (str "[" (name k) "]\n"))
-              (doseq [ [x y] (seq v) ]
-                (.append buf (str (name x) "=" y)))
-              (.append buf "\n"))
-            (println buf)))
+        (doseq [ [k v] (seq mapOfSections) ]
+          (.append buf (str "[" (name k) "]\n"))
+          (doseq [ [x y] (seq v) ]
+            (.append buf (str (name x) "=" y)))
+          (.append buf "\n"))
+        (println buf)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,7 +231,8 @@
   ^comzotohlabscljc.util.ini.IWin32Conf
   [^File file]
 
-  (if (or (nil? file) (not (FileRead? file)))
+  (if (or (nil? file)
+          (not (FileRead? file)))
       nil
       (ParseInifile (.toURL (.toURI file)))
   ))
@@ -255,7 +251,8 @@
             line (.readLine rdr)  ]
       (if (nil? line)
           (makeWinini total)
-          (recur rdr total (evalOneLine rdr total line curSec) (.readLine rdr) )
+          (recur rdr total (evalOneLine rdr total line curSec)
+                           (.readLine rdr) )
       ))
   ))
 

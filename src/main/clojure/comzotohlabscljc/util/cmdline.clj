@@ -86,9 +86,13 @@
     ;; choices ?
     (when-not (cstr/blank? chs)
       (if (Has? chs \n)
-        (.write cout (str
-              (if (.startsWith chs "\n") "[" "[\n")  chs
-              (if (.endsWith chs "\n") "]" "\n]" ) ))
+        (.write cout (str (if (.startsWith chs "\n")
+                              "["
+                              "[\n")
+                          chs
+                          (if (.endsWith chs "\n")
+                              "]"
+                              "\n]" ) ))
         (.write cout (str "[" chs "]"))))
     ;; defaults ?
     (when-not (cstr/blank? dft)
@@ -99,7 +103,7 @@
     (let [ rc (readData cout cin) ]
       (if (nil? rc)
         (do (.write cout "\n") nil )
-        (do (onResp (if (cstr/blank? rc) dft rc) props))
+        (onResp (if (cstr/blank? rc) dft rc) props)
       ))
   ))
 
@@ -107,7 +111,7 @@
 ;;
 (defn- popQ ""
 
-  [^Writer cout ^Reader cin cmdQ ^java.util.Map props]
+  [cout cin cmdQ props]
 
   (if (nil? cmdQ)
     ""
@@ -119,14 +123,14 @@
 (defn- cycleQ ""
 
   ;; map
-  [^Writer cout ^Reader cin cmdQNs ^String start ^java.util.Map props]
+  [cout cin cmdQNs start props]
 
   (do
-    (loop [ rc (popQ cout cin (get cmdQNs start) props) ]
+    (loop [ rc (popQ cout cin (cmdQNs start) props) ]
       (cond
         (nil? rc) {}
         (cstr/blank? rc) (IntoMap props)
-        :else (recur (popQ cout cin (get cmdQNs rc) props))
+        :else (recur (popQ cout cin (cmdQNs rc) props))
       ))
   ))
 
@@ -141,7 +145,7 @@
          kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
          cin (InputStreamReader. (System/in)) ]
     (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
-    (cycleQ cout cin cmdQs ^String question1 (HashMap.))
+    (cycleQ cout cin cmdQs question1 (HashMap.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

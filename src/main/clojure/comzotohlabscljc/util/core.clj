@@ -16,14 +16,17 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr ])
+  (:require [clojure.core :as ccore ])
   (:import (com.zotohlabs.frwk.util CrappyDataError))
   (:import (java.security SecureRandom))
   (:import (java.net URL))
   (:import (java.nio.charset Charset))
   (:import (java.io InputStream File FileInputStream
                     ByteArrayInputStream ByteArrayOutputStream))
-  (:import (java.util Properties Date Calendar GregorianCalendar TimeZone))
-  (:import (java.util.zip DataFormatException Deflater Inflater))
+  (:import (java.util Properties Date Calendar
+                      GregorianCalendar TimeZone))
+  (:import (java.util.zip DataFormatException
+                          Deflater Inflater))
   (:import (java.sql Timestamp))
   (:import (java.rmi.server UID))
   (:import (org.apache.commons.lang3.text StrSubstitutor))
@@ -52,19 +55,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro TryC "Catch exception and log it."
+
   [ & exprs ]
+
   `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") nil )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro Try! "Eat all exceptions."
+
   [ & exprs ]
+
   `(try (do ~@exprs) (catch Throwable e# nil )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro notnil? "True is x is not nil."
+
   [x]
+
   `(not (nil? ~x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,6 +82,14 @@
 (def KBS 1024)
 (def MBS (* 1024 1024))
 (def GBS (* 1024 1024 1024))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ternary ""
+
+  [x y]
+
+  (if (nil? x) y x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; local hack
@@ -90,7 +107,7 @@
   (^ClassLoader [] (get-czldr nil) )
 
   (^ClassLoader [^ClassLoader cl]
-    (if (nil? cl) (.getContextClassLoader (Thread/currentThread)) cl)))
+    (ternary cl (.getContextClassLoader (Thread/currentThread)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -99,7 +116,7 @@
   ^Object
   [obj]
 
-  (if (nil? obj) NICHTS obj))
+  (ternary obj NICHTS))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,16 +175,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ternary ""
-
-  [x y]
-
-  (if (nil? x) y x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmacro spos? "Safely test positive number."
+
   [ e ]
+
   `(and (number? ~e)(pos? ~e)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,7 +197,7 @@
   ^double
   [d]
 
-  (if (nil? d) 0.0 d))
+  (ternary d 0.0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -195,7 +206,7 @@
   ^long
   [n]
 
-  (if (nil? n) 0 n))
+  (ternary n 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,7 +215,7 @@
   ;; boolean
   [b]
 
-  (if (nil? b) false b))
+  (ternary b false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -213,7 +224,7 @@
   ;; boolean
   [ch setOfChars]
 
-  (if (nil? setOfChars) false (contains? setOfChars ch)))
+  (if (nil? setOfChars) false (ccore/contains? setOfChars ch)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,7 +251,7 @@
   ^String
   []
 
-  (.replaceAll (.toString (UID.)) "[:\\-]+" ""))
+  (.replaceAll (nsb (UID.)) "[:\\-]+" ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -492,7 +503,7 @@
   ^Boolean
   [^String s]
 
-  (contains? _BOOLS (cstr/lower-case (nsb s))))
+  (ccore/contains? _BOOLS (cstr/lower-case (nsb s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -526,7 +537,9 @@
 
   (^String [^bytes bits] (Stringify bits "utf-8"))
 
-  (^String [^bytes bits ^String encoding] (if (nil? bits) nil (String. bits encoding))))
+  (^String [^bytes bits ^String encoding] (if (nil? bits)
+                                              nil
+                                              (String. bits encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -534,7 +547,9 @@
 
   (^bytes [^String s] (Bytesify s "utf-8"))
 
-  (^bytes [^String s ^String encoding] (if (nil? s) nil (.getBytes s encoding))))
+  (^bytes [^String s ^String encoding] (if (nil? s)
+                                           nil
+                                           (.getBytes s encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -628,7 +643,8 @@
   [^String fname]
 
   (str "" (reduce (fn [^StringBuilder buf ^Character ch]
-                      (if (or (java.lang.Character/isLetterOrDigit ch) (contains? _PUNCS ch))
+                      (if (or (java.lang.Character/isLetterOrDigit ch)
+                              (ccore/contains? _PUNCS ch))
                           (.append buf ch)
                           (.append buf (str "0x" (Integer/toString (int ch) 16)) )))
                   (StringBuilder.)
@@ -674,7 +690,9 @@
   ^File
   [extra]
 
-  (let [ fp (File. (str (SysProp "java.io.tmpdir") "/" extra) ) ]
+  (let [ fp (File. (str (SysProp "java.io.tmpdir")
+                        "/"
+                        extra) ) ]
     (.mkdirs fp)
     fp
   ))
@@ -859,14 +877,17 @@
 
   (if (or (>= start end) (< (- end start) howMany) )
       []
-      (loop [ _end (if (< end Integer/MAX_VALUE) (+ end 1) end )
+      (loop [ _end (if (< end Integer/MAX_VALUE)
+                       (+ end 1)
+                       end )
               r (NewRandom)
               rc []
               cnt howMany ]
         (if (<= cnt 0)
           rc
           (let [ n (.nextInt r _end) ]
-            (if (and (>= n start) (not (contains? rc n)))
+            (if (and (>= n start)
+                     (not (ccore/contains? rc n)))
                 (recur _end r (conj rc n) (dec cnt))
                 (recur _end r rc cnt) ))
         ))

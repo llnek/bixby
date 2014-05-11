@@ -34,8 +34,7 @@
 ;;
 (defn AsyncExec "Run the code (runnable) in a separate daemon thread."
 
-  ([^Runnable runable]
-   (AsyncExec runable (GetCldr)))
+  ([^Runnable runable] (AsyncExec runable (GetCldr)))
 
   ([^Runnable runable ^ClassLoader cl]
    (if (nil? runable)
@@ -49,8 +48,7 @@
 ;;
 (defn Coroutine "Run this function asynchronously."
 
-  ([func]
-   (Coroutine func nil))
+  ([func] (Coroutine func nil))
 
   ([func cl]
    (let [ r (reify Runnable

@@ -94,7 +94,8 @@
   ^Date
   [^String tstr ^String fmt]
 
-  (if (or (cstr/blank? tstr) (cstr/blank? fmt))
+  (if (or (cstr/blank? tstr)
+          (cstr/blank? fmt))
       nil
       (.parse (SimpleDateFormat. fmt) tstr)
   ))

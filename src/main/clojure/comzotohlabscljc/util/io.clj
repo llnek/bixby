@@ -19,9 +19,12 @@
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.util.core :only [Try!] ])
 
-  (:import (java.io ByteArrayInputStream ByteArrayOutputStream DataInputStream
-                    FileInputStream FileOutputStream CharArrayWriter OutputStreamWriter
-                    File InputStream InputStreamReader OutputStream Reader Writer))
+  (:import (java.io ByteArrayInputStream ByteArrayOutputStream
+                    DataInputStream
+                    FileInputStream FileOutputStream
+                    CharArrayWriter OutputStreamWriter
+                    File InputStream InputStreamReader
+                    OutputStream Reader Writer))
   (:import (java.util.zip GZIPInputStream GZIPOutputStream))
   (:import (com.zotohlabs.frwk.io XData XStream))
   (:import (org.apache.commons.codec.binary Base64))
@@ -149,7 +152,7 @@
 
   [^InputStream inp]
 
-  (Try!  (when-not (nil? inp)  (.reset inp)) ))
+  (Try! (when-not (nil? inp) (.reset inp)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
