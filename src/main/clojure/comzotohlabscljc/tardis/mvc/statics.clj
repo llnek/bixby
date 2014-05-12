@@ -24,7 +24,7 @@
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.core.constants])
 
-  (:use [comzotohlabscljc.tardis.mvc.templates :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.tardis.mvc.templates :only [MakeWebAsset] ])
   (:use [comzotohlabscljc.tardis.mvc.comms])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
@@ -63,59 +63,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleStatic ""
+(defn- eTagHelper ""
 
-  [src ^Channel ch info ^HTTPEvent evt ^File file]
+  [^HTTPResult res flag & args]
 
-  (let [ rsp (NettyFW/makeHttpReply ) ]
-    (try
-      (if (or (nil? file)
-              (not (.exists file)))
-        (ServeError src ch 404)
-        (do
-          (log/debug "serving static file: " (NiceFPath file))
-          (addETag src evt info rsp file)
-          ;; 304 not-modified
-          (if (= (-> rsp (.getStatus)(.code)) 304)
-            (do
-              (HttpHeaders/setContentLength rsp 0)
-              (NettyFW/closeCF (.writeAndFlush ch rsp) (.isKeepAlive evt) ))
-            (ReplyFileAsset src ch info rsp file))))
-      (catch Throwable e#
-        (log/error "failed to get static resource " (.getUri evt) e#)
-        (Try!  (ServeError src ch 500))))
+  (case flag
+    :header (.setHeader res (nth args 0) (nth args 1))
+    :status (.setStatus res (nth args 0))
+    nil
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeStatic ""
+(defn- handleStatic2 ""
 
-  [ ^Emitter src
-    ^comzotohlabscljc.net.routes.RouteInfo ri
-    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
+  [src ^JsonObject info ^HTTPEvent evt ^HTTPResult res ^File file]
 
-  (let [ ^File appDir (-> src (.container)(.getAppDir))
-         mpt (nsb (.getf ^comzotohlabscljc.util.core.MubleAPI ri :mountPoint))
-         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
-         uri (.getUri evt)
-         gc (.groupCount mc) ]
-    (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
-      (if (> gc 1)
-        (doseq [ i (range 1 gc) ]
-          (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
-
-      ;; ONLY serve static assets from *public folder*
-      (var-set mp (NiceFPath (File. ^String @mp)))
-      (log/debug "request to serve static file: " @mp)
-
-      (if (.startsWith ^String @mp ps)
-        (handleStatic src ch info evt (File. ^String @mp))
+  (with-local-vars [ crap false ]
+    (try
+      (log/debug "serving static file: " (NiceFPath file))
+      (if (or (nil? file)
+              (not (.exists file)))
+        (.setStatus res 404)
         (do
-          (log/warn "attempt to access non public file-system: " @mp)
-          (ServeError src ch 403))
-      ))
+          (AddETag src info file (partial eTagHelper res))
+          (.setContent res (MakeWebAsset file))
+          (var-set crap true)
+          (.replyResult evt)))
+      (catch Throwable e#
+        (log/error "failed to get static resource "
+                   (nsb (.get info "uri2"))
+                   e#)
+        (when-not @crap
+          (.setStatus res 500)
+          (.replyResult evt))
+        ))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleStatic ""
+
+  [ ^Emitter src ^HTTPEvent evt ^HTTPResult res options ]
+
+  (let [ ^File appDir (-> src (.container)(.getAppDir))
+         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
+         fpath (nsb (:path options))
+         info (:info options) ]
+    (log/debug "request to serve static file: " fpath)
+    (if (.startsWith fpath ps)
+        (handleStatic2 src info evt res (File. fpath))
+        (do
+          (log/warn "attempt to access non public file-system: " fpath)
+          (.setStatus res 403)
+          (.replyResult evt)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -126,10 +128,10 @@
               (perform [_ fw job arg]
                 (let [ ^HTTPEvent evt (.event job)
                        ^HTTPResult res (.getResultObj evt) ]
-                  (.setStatus res 200)
-                  (.setContent res "hello world")
-                  (.setHeader res "content-type" "text/plain")
-                  (.replyResult evt))))))
+                  (handleStatic (.emitter evt)
+                                evt
+                                res
+                                (.getv job EV_OPTS)))))))
 
   (onStop [_ pipe]
     (log/debug "nothing to be done here, just stop please."))

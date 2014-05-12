@@ -57,26 +57,28 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     return range != null && range.length() > 0;
   }
 
-  public void prepareNettyResponse(HttpResponse rsp) {
+  public long prepareNettyResponse(HttpResponse rsp) {
     HttpHeaders.addHeader(rsp,"accept-ranges", "bytes");
     if (_unsatisfiable) {
       rsp.setStatus(HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
       HttpHeaders.setHeader(rsp, "content-range", "bytes " + "0-" + (_clen-1) + "/" + _clen);
       HttpHeaders.setHeader(rsp, "content-length", "0");
-    } else {
-      rsp.setStatus(HttpResponseStatus.PARTIAL_CONTENT);
-      if(_ranges.length == 1) {
-        ByteRange r= _ranges[0];
-        HttpHeaders.setHeader(rsp, "content-range", "bytes " + r.start() + "-" + r.end() + "/" + _clen);
-      } else {
-        HttpHeaders.setHeader(rsp, "content-type", "multipart/byteranges; boundary="+ "DEFAULT_SEPARATOR");
-      }
-      long len=0L;
-      for (int n=0; n < _ranges.length; ++n) {
-        len += _ranges[n].computeTotalLength();
-      }
-      HttpHeaders.setHeader(rsp, "content-length", Long.toString(len));
+      return 0L;
     }
+
+    rsp.setStatus(HttpResponseStatus.PARTIAL_CONTENT);
+    if(_ranges.length == 1) {
+      ByteRange r= _ranges[0];
+      HttpHeaders.setHeader(rsp, "content-range", "bytes " + r.start() + "-" + r.end() + "/" + _clen);
+    } else {
+      HttpHeaders.setHeader(rsp, "content-type", "multipart/byteranges; boundary="+ "DEFAULT_SEPARATOR");
+    }
+    long len=0L;
+    for (int n=0; n < _ranges.length; ++n) {
+      len += _ranges[n].computeTotalLength();
+    }
+    HttpHeaders.setHeader(rsp, "content-length", Long.toString(len));
+    return len;
   }
 
   public ByteBuf readChunk(ChannelHandlerContext ctx) throws IOException {

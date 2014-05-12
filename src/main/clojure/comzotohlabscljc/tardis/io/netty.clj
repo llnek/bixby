@@ -185,10 +185,12 @@
         (getHeaderValues [_ nm] (NettyFW/getHeaderValues info nm))
         (getHeaders [_] (NettyFW/getHeaderNames info))
         (getHeaderValue [_ nm] (GetHeader info nm))
+        (hasHeader [_ nm] (HasHeader? info nm))
 
         (getParameterValues [_ nm] (NettyFW/getParameterValues info nm))
         (getParameterValue [_ nm] (GetParameter info nm))
         (getParameters [_] (NettyFW/getParameters info))
+        (hasParameter [_ nm] (HasParam? info nm))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
         (localHost [_] (.getHostName laddr))

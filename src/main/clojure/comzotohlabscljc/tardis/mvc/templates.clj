@@ -99,21 +99,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-web-asset ""
+(defn MakeWebAsset ""
 
   [^File file]
 
   (let [ ct (GuessContentType file "utf-8" "text/plain")
-         ts (.lastModified file)
-         bits (FileUtils/readFileToByteArray file) ]
+         ts (.lastModified file) ]
     (reify
       WebAsset
 
       (contentType [_] ct)
       (getFile [_] file)
       (getTS [_] ts)
-      (size [_] (alength bits))
-      (getBytes [_] bits) )
+      (size [_] (.length file))
+      (getBytes [_] (FileUtils/readFileToByteArray file)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,7 +123,7 @@
 
   (if (and (.exists file)
            (.canRead file))
-      (make-web-asset file)
+      (MakeWebAsset file)
       nil
   ))
 

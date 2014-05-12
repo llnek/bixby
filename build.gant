@@ -802,6 +802,7 @@ def cljhhh_MVC() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'comzotohlabscljc.tardis.mvc.templates')
     arg (value: 'comzotohlabscljc.tardis.mvc.comms')
+    arg (value: 'comzotohlabscljc.tardis.mvc.statics')
     arg (value: 'comzotohlabscljc.tardis.mvc.handler')
   }
 }

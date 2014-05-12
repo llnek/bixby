@@ -85,6 +85,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn HasParam? ""
+
+  ;; boolean
+  [^JsonObject info ^String param]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params")) ]
+    (and (notnil? h)
+         (.has h param))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn GetParameter ""
 
   ^String

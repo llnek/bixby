@@ -31,9 +31,11 @@
                                         HttpHeaders$Names HttpVersion LastHttpContent
                                         ServerCookieEncoder DefaultHttpResponse))
   (:import (java.nio.channels ClosedChannelException))
+  (:import (com.zotohlabs.gallifrey.mvc WebAsset
+                                        HTTPRangeInput ))
   (:import (java.nio ByteBuffer))
   (:import (java.io OutputStream IOException))
-  (:import (io.netty.handler.stream ChunkedStream))
+  (:import (io.netty.handler.stream ChunkedStream ChunkedFile))
   (:import (java.util List Timer TimerTask))
   (:import (java.net HttpCookie))
   (:import (javax.servlet.http Cookie HttpServletRequest HttpServletResponse))
@@ -41,6 +43,7 @@
   (:import (com.zotohlabs.gallifrey.io WebSockEvent WebSockResult HTTPEvent))
   (:import (org.apache.commons.io IOUtils))
   (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (java.io RandomAccessFile File))
   (:import (com.zotohlabs.frwk.util NCMap))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (com.zotohlabs.frwk.core Identifiable))
@@ -194,6 +197,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- replyOneFile ""
+
+  [ ^RandomAccessFile raf
+    ^HTTPEvent evt
+    ^HttpResponse rsp ]
+
+  (let [ ct (HttpHeaders/getHeader rsp "content-type")
+         rv (.getHeaderValue evt "range") ]
+    (if (cstr/blank? rv)
+      (ChunkedFile. raf)
+      (let [ r (HTTPRangeInput. raf ct rv)
+             n (.prepareNettyResponse r rsp) ]
+        (if (> n 0)
+          r
+          nil)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- netty-reply ""
 
   [^comzotohlabscljc.util.core.MubleAPI res
@@ -204,41 +226,71 @@
   (let [ cks (cookiesToNetty (.getf res :cookies))
          code (.getf res :code)
          rsp (NettyFW/makeHttpReply code)
+         loc (nsb (.getf res :redirect))
          data (.getf res :data)
          hdrs (.getf res :hds) ]
-    (with-local-vars [ clen 0 xd nil ]
+    (with-local-vars [ clen 0 raf nil payload nil ]
       (doseq [[^String nm vs] (seq hdrs)]
         (when-not (= "content-length" (cstr/lower-case  nm))
           (doseq [vv (seq vs)]
             (HttpHeaders/addHeader rsp nm vv))))
       (doseq [s cks]
         (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE cks) )
-      (cond
-        (and (>= code 300)(< code 400))
-        (HttpHeaders/setHeader rsp "Location" (nsb (.getf res :redirect)))
-        :else
-        (let [ ^XData dd (if (nil? data)
-                            (XData.)
-                            (cond
-                              (instance? XData data) data
-                              :else (XData. data))) ]
-          (var-set clen (if (.hasContent dd) (.size dd) 0))
-          (var-set xd dd)
-          ))
+      (when (and (>= code 300)(< code 400))
+        (when-not (cstr/blank? loc)
+          (HttpHeaders/setHeader rsp "Location" loc)))
+      (when (and (>= code 200)
+                 (< code 300)
+                 (not= "HEAD" (.method evt)))
+        (var-set  payload
+                  (cond
+                    (instance? WebAsset data)
+                    (let [ ^WebAsset ws data ]
+                      (HttpHeaders/setHeader rsp "content-type" (.contentType ws))
+                      (var-set raf (RandomAccessFile. (.getFile ws) "r"))
+                      (replyOneFile @raf evt rsp))
+
+                    (instance? File data)
+                    (do
+                      (var-set raf (RandomAccessFile. ^File data "r"))
+                      (replyOneFile @raf evt rsp))
+
+                    (instance? XData data)
+                    (let [ ^XData xs data ]
+                      (var-set clen (.size xs))
+                      (ChunkedStream. (.stream xs)))
+
+                    (notnil? data)
+                    (let [ xs (XData. data) ]
+                      (var-set clen (.size xs))
+                      (ChunkedStream. (.stream xs)))
+
+                    :else
+                    nil))
+        (if (and (notnil? @payload)
+                 (notnil? @raf))
+          (var-set clen (.length ^RandomAccessFile @raf))))
 
       (when (.isKeepAlive evt)
         (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
 
       (HttpHeaders/setContentLength rsp @clen)
+
       (NettyFW/writeOnly ch rsp)
       (log/debug "wrote response headers out to client")
 
-      (when (> @clen 0)
-        (NettyFW/writeOnly ch (ChunkedStream. (.stream ^XData @xd)))
+      (when (and (> @clen 0)
+                 (notnil? @payload))
+        (NettyFW/writeOnly ch @payload)
         (log/debug "wrote response body out to client"))
 
       (let [ wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
         (log/debug "flushed last response content out to client")
+        (.addListener wf
+                      (reify ChannelFutureListener
+                        (operationComplete [_ ff]
+                          (Try! (when (notnil? @raf)
+                                      (.close ^RandomAccessFile @raf))))))
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel.  bye.")
           (.addListener wf ChannelFutureListener/CLOSE)))

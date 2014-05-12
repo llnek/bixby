@@ -70,7 +70,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- addETag ""
+(defn AddETag ""
+
+  [ ^comzotohlabscljc.tardis.core.sys.Element src
+    ^JsonObject info
+    ^File file
+    funcSetter ]
+
+  (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
+         lastTm (.lastModified file)
+         eTag  (str "\""  lastTm  "-" (.hashCode file)  "\"") ]
+    (if (isModified eTag lastTm info)
+        (funcSetter :header "last-modified"
+                    (.format (MVCUtils/getSDF) (Date. lastTm)))
+        (if (= (-> (.get info "method")(.getAsString)) "GET")
+            (funcSetter :status HttpResponseStatus/NOT_MODIFIED)))
+    (funcSetter :header "cache-control"
+                (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
+    (when (.getAttr src :useETag) (funcSetter :header "etag" eTag))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- XXXaddETag ""
 
   [ ^comzotohlabscljc.tardis.core.sys.Element src
     ^HTTPEvent evt
@@ -146,7 +168,7 @@
         (ServeError src ch 404)
         (do
           (log/debug "serving static file: " (NiceFPath file))
-          (addETag src evt info rsp file)
+          (XXXaddETag src evt info rsp file)
           ;; 304 not-modified
           (if (= (-> rsp (.getStatus)(.code)) 304)
             (do
