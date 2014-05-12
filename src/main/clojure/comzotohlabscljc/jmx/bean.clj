@@ -84,8 +84,8 @@
     (.setf! impl :type nil)
     (reify BPropInfo
       (getType [this]
-        (let [ ^Method g (getter this)
-               ^Method s (setter this) ]
+        (let [ ^Method g (.getter this)
+               ^Method s (.setter this) ]
           (if (notnil? g)
               (.getReturnType g)
               (if (nil? s)
@@ -99,11 +99,11 @@
       (setSetter [_ m] (.setf! impl :setr m))
       (setGetter [_ m] (.setf! impl :getr m))
       (isQuery [this]
-        (let [ ^Method g (getter this) ]
+        (let [ ^Method g (.getter this) ]
           (if (nil? g)
             false
             (and (-> g (.getName)(.startsWith "is"))
-                 (IsBoolean? (getType this))))))
+                 (IsBoolean? (.getType this))))))
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,7 +164,8 @@
                      rc (transient []) ]
     (doseq [ ^Class t (seq @ptypes) ]
       (var-set rc
-               (conj! @rc (MBeanParameterInfo. (str "p" @ctr) (.getName t) "")))
+               (conj! @rc (MBeanParameterInfo. (str "p" @ctr)
+                                               (.getName t) "")))
       (var-set ctr (inc @ctr)))
     (persistent! @rc)
   ))
@@ -215,10 +216,10 @@
              rtype (.getReturnType mtd)
              pname (maybeGetPropName mn)
              ^comzotohlabscljc.jmx.bean.BPropInfo
-             methodInfo (get props pname) ]
+             methodInfo (props pname) ]
         (cond
-          (or (.startsWith mn "is")
-              (.startsWith mn "get"))
+          (or (.startsWith mn "get")
+              (.startsWith mn "is"))
           (if (== 0 (count ptypes))
             (if (nil? methodInfo)
               (var-set props
