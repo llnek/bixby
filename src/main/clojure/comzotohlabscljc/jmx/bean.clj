@@ -271,7 +271,7 @@
                        true
                        (and (.startsWith fnm "is")
                             (IsBoolean? (.getType field)))))))))
-    [ (persistent! @rc)(persistent! @flds) ]
+    [ (persistent! @rc) (persistent! @flds) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -280,8 +280,8 @@
 
   [^Class cz mtds]
 
-  (log/info "jmx-bean: processing class: " cz)
   (with-local-vars [ metds (transient {}) rc (transient []) ]
+    (log/info "jmx-bean: processing class: " cz)
     (doseq [ ^Method m (seq mtds) ]
       (let [ ^Class rtype (.getReturnType m)
              ptypes (.getParameterTypes m)
@@ -305,7 +305,7 @@
 
           :else
           (log/info "jmx-skipping " mn) )))
-    [ (persistent! @rc) (persistent! @metds)]
+    [ (persistent! @rc) (persistent! @metds) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,8 +317,8 @@
   (let [ impl (MakeMMap) cz (.getClass obj)
          ms (.getMethods cz)
          ;;[ps propsMap] (handleProps cz ms)
-         ps [] propsMap {}
          ;;[fs fldsMap] (handleFlds cz)
+         ps [] propsMap {}
          fs [] fldsMap {}
          [ms mtdsMap] (handleMethods cz ms)
          bi (MBeanInfo. (.getName cz)
@@ -364,9 +364,9 @@
         (let [ v (.getValue ^Attribute attr)
                an (.getName ^Attribute attr)
                ^comzotohlabscljc.jmx.bean.BPropInfo
-               prop (get propsMap an)
+               prop (propsMap an)
                ^comzotohlabscljc.jmx.bean.BFieldInfo
-               fld (get fldsMap an) ]
+               fld (fldsMap an) ]
           (cond
             (nil? prop)
             (do
@@ -396,7 +396,7 @@
           rcl))
 
       (invoke [_ opName params sig]
-        (let [ ^Method mtd (get mtdsMap (NameParams. opName sig)) ]
+        (let [ ^Method mtd (mtdsMap (NameParams. opName sig)) ]
           (log/debug "jmx-invoking method " opName
             "\n(params) " (seq params)
             "\n(sig) " (seq sig))

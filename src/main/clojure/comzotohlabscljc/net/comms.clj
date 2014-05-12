@@ -48,9 +48,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:dynamic *socket-timeout* 5000)
-(def LOOPBACK "127.0.0.1")
-(def LHOST "localhost")
+(def ^long ^:dynamic *socket-timeout* 5000)
+(def ^String LOOPBACK "127.0.0.1")
+(def ^String LHOST "localhost")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

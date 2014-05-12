@@ -24,8 +24,7 @@
 (defn MakeObjectName "domain: com.acme
                       beanName: mybean
                       paths: [ \"a=b\" \"c=d\" ]"
-  ( ^ObjectName
-    [^String domain ^String beanName paths]
+  (^ObjectName [^String domain ^String beanName paths]
     (let [ sb (StringBuilder.)
            cs (seq paths) ]
       (doto sb
@@ -38,9 +37,7 @@
             (.append beanName))
       (ObjectName. (.toString sb))))
 
-  ( ^ObjectName
-    [domain beanName]
-    (MakeObjectName domain beanName [])) )
+  (^ObjectName [domain beanName] (MakeObjectName domain beanName [])) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
