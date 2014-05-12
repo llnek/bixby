@@ -13,12 +13,12 @@
 
   testcljc.crypto.cryptostuff
 
-  (:require [comzotohlabscljc.crypto.stores :as ST])
-  (:require [comzotohlabscljc.crypto.codec :as RT])
-  (:require [comzotohlabscljc.util.core :as CU])
-  (:require [comzotohlabscljc.util.str :as SU])
-  (:require [comzotohlabscljc.util.io :as IO])
-  (:require [comzotohlabscljc.crypto.core :as RU])
+  (:require [cmzlabsclj.crypto.stores :as ST])
+  (:require [cmzlabsclj.crypto.codec :as RT])
+  (:require [cmzlabsclj.util.core :as CU])
+  (:require [cmzlabsclj.util.str :as SU])
+  (:require [cmzlabsclj.util.io :as IO])
+  (:require [cmzlabsclj.crypto.core :as RU])
   (:use [clojure.test])
   (:import (java.security Policy KeyStore SecureRandom MessageDigest
     KeyStore$PrivateKeyEntry KeyStore$TrustedCertificateEntry))
@@ -68,8 +68,8 @@
 (is (= (.length ^String (.text (RT/CreateStrongPwd 16))) 16))
 (is (= (.length (RT/CreateRandomString 64)) 64))
 
-(is (instance? comzotohlabscljc.crypto.codec.Password (RT/Pwdify "secret-text")))
-(is (.startsWith ^String (.encoded ^comzotohlabscljc.crypto.codec.Password (RT/Pwdify "secret-text")) "CRYPT:"))
+(is (instance? cmzlabsclj.crypto.codec.Password (RT/Pwdify "secret-text")))
+(is (.startsWith ^String (.encoded ^cmzlabsclj.crypto.codec.Password (RT/Pwdify "secret-text")) "CRYPT:"))
 
 
 (is (= "SHA-512" (.getAlgorithm (RU/MakeMsgDigest RU/SHA_512))))
@@ -102,8 +102,8 @@
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^comzotohlabscljc.crypto.stores.CryptoStore ROOTCS
-                           ^String (first (.keyAliases ^comzotohlabscljc.crypto.stores.CryptoStore ROOTCS))
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS
+                           ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS))
                            HELPME)
        fout (IO/MakeTmpfile "" ".p12")
        pk (.getPrivateKey pke)
@@ -112,8 +112,8 @@
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity  ^comzotohlabscljc.crypto.stores.CryptoStore ROOTKS
-                           ^String (first (.keyAliases  ^comzotohlabscljc.crypto.stores.CryptoStore ROOTKS))
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity  ^cmzlabsclj.crypto.stores.CryptoStore ROOTKS
+                           ^String (first (.keyAliases  ^cmzlabsclj.crypto.stores.CryptoStore ROOTKS))
                            HELPME)
        fout (IO/MakeTmpfile "" ".jks")
        pk (.getPrivateKey pke)

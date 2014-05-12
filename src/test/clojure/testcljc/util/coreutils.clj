@@ -19,7 +19,7 @@
   (:import (java.net URL))
   (:import (java.io FileOutputStream File))
   (:import (java.nio.charset Charset))
-  (:require [comzotohlabscljc.util.core :as CU]))
+  (:require [cmzlabsclj.util.core :as CU]))
 
 
 (def ^:private VAR_USER (System/getProperty "user.name"))
@@ -158,7 +158,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getf (doto ^comzotohlabscljc.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
+(is (= 100 (.getf (doto ^cmzlabsclj.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
 
 
 )

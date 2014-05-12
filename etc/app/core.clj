@@ -7,7 +7,7 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)]))
 
 
-(deftype MyAppMain [] comzotohlabscljc.tardis.impl.ext.CljAppMain
+(deftype MyAppMain [] cmzlabsclj.tardis.impl.ext.CljAppMain
 
   (contextualize [_ container]
     (log/info "My AppMain contextualized by container " container))

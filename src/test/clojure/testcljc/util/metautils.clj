@@ -15,7 +15,7 @@
   testcljc.util.metautils
 
   (:use [clojure.test])
-  (:require [comzotohlabscljc.util.meta :as MU]))
+  (:require [cmzlabsclj.util.meta :as MU]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

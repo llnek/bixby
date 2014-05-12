@@ -1,4 +1,4 @@
-(defproject comzotohlabscljc/skaro "0.0.1-SNAPSHOT"
+(defproject cmzlabsclj/skaro "0.0.1-SNAPSHOT"
 
   :description "A full stack server-side application framework."
 
@@ -155,7 +155,7 @@
   :source-paths [ "src/main/clojure"]
   :test-paths [ "src/test/clojure"]
 
-  :main comzotohlabscljc.tardis.etc.core
+  :main cmzlabsclj.tardis.etc.core
 
 
 )

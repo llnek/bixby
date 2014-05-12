@@ -18,8 +18,8 @@
   (:import (org.apache.commons.io FileUtils))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (java.io File))
-  (:require [comzotohlabscljc.util.files :as FU])
-  (:require [comzotohlabscljc.util.core :as CU]))
+  (:require [cmzlabsclj.util.files :as FU])
+  (:require [cmzlabsclj.util.core :as CU]))
 
 
 (def ^:private TMP_DIR (File. (System/getProperty "java.io.tmpdir")))

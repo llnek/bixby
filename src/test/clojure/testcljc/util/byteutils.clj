@@ -16,7 +16,7 @@
 
   (:use [clojure.test])
   (:import (java.nio.charset Charset))
-  (:require [comzotohlabscljc.util.bytes :as BU]))
+  (:require [cmzlabsclj.util.bytes :as BU]))
 
 (def ^:private CS_UTF8 "utf-8")
 

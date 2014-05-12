@@ -13,12 +13,12 @@
 
   testcljc.dbio.dbstuff
 
-  (:require [comzotohlabscljc.crypto.codec :as CE])
-  (:require [comzotohlabscljc.util.core :as CU])
-  (:use [comzotohlabscljc.dbio.drivers])
-  (:use [comzotohlabscljc.dbio.connect])
-  (:use [comzotohlabscljc.dbio.core])
-  (:use [comzotohlabscljc.dbio.h2])
+  (:require [cmzlabsclj.crypto.codec :as CE])
+  (:require [cmzlabsclj.util.core :as CU])
+  (:use [cmzlabsclj.dbio.drivers])
+  (:use [cmzlabsclj.dbio.connect])
+  (:use [cmzlabsclj.dbio.core])
+  (:use [cmzlabsclj.dbio.h2])
   (:use [clojure.test])
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.io File))

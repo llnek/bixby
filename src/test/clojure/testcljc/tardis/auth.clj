@@ -14,14 +14,14 @@
 
   testcljc.tardis.auth
 
-  (:require [comzotohlabscljc.crypto.codec :as CE])
-  (:require [comzotohlabscljc.util.core :as CU])
-  (:use [comzotohlabscljc.tardis.auth.core])
-  (:use [comzotohlabscljc.tardis.auth.dms])
-  (:use [comzotohlabscljc.dbio.drivers])
-  (:use [comzotohlabscljc.dbio.connect])
-  (:use [comzotohlabscljc.dbio.core])
-  (:use [comzotohlabscljc.dbio.h2])
+  (:require [cmzlabsclj.crypto.codec :as CE])
+  (:require [cmzlabsclj.util.core :as CU])
+  (:use [cmzlabsclj.tardis.auth.core])
+  (:use [cmzlabsclj.tardis.auth.dms])
+  (:use [cmzlabsclj.dbio.drivers])
+  (:use [cmzlabsclj.dbio.connect])
+  (:use [cmzlabsclj.dbio.core])
+  (:use [cmzlabsclj.dbio.h2])
   (:use [clojure.test])
   (:import (com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
   (:import (java.io File))
@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def METAC (atom (MakeMetaCache (comzotohlabscljc.tardis.auth.dms.AuthPluginSchema.))))
+(def METAC (atom (MakeMetaCache (cmzlabsclj.tardis.auth.dms.AuthPluginSchema.))))
 (def JDBC (atom nil))
 (def DB (atom nil))
 (def ROLES (atom nil))

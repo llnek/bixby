@@ -88,7 +88,7 @@ BG=false
 
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 CLDR=" -Djava.system.class.loader=com.zotohlabs.gallifrey.loaders.ExecClassLoader"
-MAINCZ=comzotohlabscljc.tardis.etc.core
+MAINCZ=cmzlabsclj.tardis.etc.core
 
 LIBP="-Djava.library.path=$SKARO_HOME/bin"
 #48G
@@ -110,7 +110,7 @@ KILLPORT="-Dskaro.kill.port=$KPORT"
 NETTY=-Dio.netty.eventLoopThreads=16
 
 show_proc() {
-    pid=$( ps -ef | grep comzotohlabscljc.tardis.etc.core | grep -v grep | awk '{print $2}' )
+    pid=$( ps -ef | grep cmzlabsclj.tardis.etc.core | grep -v grep | awk '{print $2}' )
     if [ -n "$pid" ]; then
       echo "Gallifrey is running with process-id: ${pid}."
     else
@@ -118,7 +118,7 @@ show_proc() {
     fi
 }
 stop_proc() {
-    pid=$( ps -ef | grep comzotohlabscljc.tardis.etc.core | grep -v grep | awk '{print $2}' )
+    pid=$( ps -ef | grep cmzlabsclj.tardis.etc.core | grep -v grep | awk '{print $2}' )
     if [ -n "$pid" ]; then
       #kill $pid
       cd /tmp

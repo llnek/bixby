@@ -14,8 +14,8 @@
   testcljc.util.codes
 
   (:use [clojure.test])
-  (:require [comzotohlabscljc.util.countrycode :as CC])
-  (:require [comzotohlabscljc.util.usastate :as SC]))
+  (:require [cmzlabsclj.util.countrycode :as CC])
+  (:require [cmzlabsclj.util.usastate :as SC]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

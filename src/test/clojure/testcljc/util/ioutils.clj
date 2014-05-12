@@ -13,8 +13,8 @@
 
   testcljc.util.ioutils
 
-  (:require [comzotohlabscljc.util.core :as CU])
-  (:require [comzotohlabscljc.util.io :as IO])
+  (:require [cmzlabsclj.util.core :as CU])
+  (:require [cmzlabsclj.util.io :as IO])
   (:use [clojure.test])
   (:import (org.apache.commons.io FileUtils))
   (:import (java.io
