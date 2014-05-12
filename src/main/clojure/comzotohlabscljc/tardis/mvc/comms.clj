@@ -160,7 +160,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeStatic ""
+(defn __ServeStatic ""
 
   [ ^Emitter src
     ^comzotohlabscljc.net.routes.RouteInfo ri
@@ -190,6 +190,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ServeStatic ""
+
+  [ ^Emitter src
+    ri
+    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
+
+  (let [ mpt (nsb (.getf ^comzotohlabscljc.util.core.MubleAPI ri :mountPoint))
+         ^File appDir (-> src (.container)(.getAppDir))
+         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
+         gc (.groupCount mc) ]
+    (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
+      (if (> gc 1)
+        (doseq [ i (range 1 gc) ]
+          (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
+      (var-set mp (NiceFPath (File. ^String @mp)))
+      (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI co src
+             ^comzotohlabscljc.tardis.io.core.WaitEventHolder
+             w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+        (.timeoutMillis w (.getAttr ^comzotohlabscljc.tardis.core.sys.Element
+                            src :waitMillis))
+        (.hold co w)
+        (.dispatch co evt { :info info
+                            :path @mp } )))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ServeRoute ""
 
   [ ^comzotohlabscljc.tardis.core.sys.Element src
@@ -198,15 +225,14 @@
     ^Channel ch
     ^comzotohlabscljc.util.core.MubleAPI evt]
 
-  (let [ wms (.getAttr src :waitMillis)
-         pms (.collect ri mc)
+  (let [ pms (.collect ri mc)
          options { :router (.getHandler ri)
                    :params (merge {} pms)
                    :template (.getTemplate ri) } ]
     (let [ ^comzotohlabscljc.tardis.io.core.EmitterAPI co src
            ^comzotohlabscljc.tardis.io.core.WaitEventHolder
            w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-      (.timeoutMillis w wms)
+      (.timeoutMillis w (.getAttr src :waitMillis))
       (.hold co w)
       (.dispatch co evt options))
   ))

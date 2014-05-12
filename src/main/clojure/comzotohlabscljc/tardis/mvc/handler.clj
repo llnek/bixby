@@ -14,8 +14,9 @@
 
   comzotohlabscljc.tardis.mvc.handler
 
-  (:use [comzotohlabscljc.util.core :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [comzotohlabscljc.util.core
+         :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.string :as cstr])
   (:use [comzotohlabscljc.tardis.io.triggers])
   (:use [comzotohlabscljc.tardis.io.http :only [HttpBasicConfig] ])
@@ -24,7 +25,8 @@
   (:use [comzotohlabscljc.tardis.core.sys])
   (:use [comzotohlabscljc.tardis.core.constants])
 
-  (:use [comzotohlabscljc.tardis.mvc.templates :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ])
+  (:use [comzotohlabscljc.tardis.mvc.templates
+         :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ])
   (:use [comzotohlabscljc.tardis.mvc.comms])
   (:use [comzotohlabscljc.util.str :only [hgl? nsb strim] ])
   (:use [comzotohlabscljc.util.meta :only [MakeObj] ])
