@@ -36,12 +36,11 @@
 ;;
 (defn MakeSslContext "Make a server-side SSLContext."
 
-  ( ^SSLContext
-    [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj]
+  (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj]
     (MakeSslContext keyUrl pwdObj "TLS"))
 
-  ( ^SSLContext
-    [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj ^String flavor]
+  (^SSLContext [^URL keyUrl ^comzotohlabscljc.crypto.codec.Password pwdObj
+                ^String flavor]
     (let [ ks (with-open [ inp (.openStream keyUrl) ]
                 (if (PkcsFile? keyUrl)
                     (GetPkcsStore inp pwdObj)

@@ -96,7 +96,7 @@
 
         (run [this w]
           (let [ ^Runnable r w]
-            (preRun this r)
+            (.preRun this r)
             (.schedule ^TCore (.getf impl :core) r)) )
 
         (postpone [me w delayMillis]

@@ -71,6 +71,7 @@
   (cond
 
     (nil? obj) ""
+
     (keyword? obj) (name obj)
 
     :else
