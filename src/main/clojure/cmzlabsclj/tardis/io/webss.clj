@@ -155,7 +155,7 @@
 (defn MakeSession ""
 
   ^IOSession
-  [co ssl brokenHandler]
+  [co ssl ]
 
   (let [ attrs (MakeMMap)
          impl (MakeMMap)
@@ -219,20 +219,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- basicBrokenHandler ""
-
-  [^HTTPEvent evt]
-
-  (Realign! evt nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn MakeWSSession ""
 
-  [co ssl brokenHandler]
+  [co ssl ]
 
-  (MakeSession co ssl
-               (ternary brokenHandler basicBrokenHandler)))
+  (MakeSession co ssl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

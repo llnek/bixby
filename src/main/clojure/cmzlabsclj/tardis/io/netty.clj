@@ -248,7 +248,7 @@
          xdata (.payload req)
          info (.info req)
          ^IOSession
-         wss (MakeWSSession co ssl nil) ]
+         wss (MakeWSSession co ssl ) ]
     (if (-> (.get info "wsock")(.getAsBoolean))
         (makeWSockEvent co ch xdata info)
         (let [ evt (makeHttpEvent co ch ssl xdata info) ]

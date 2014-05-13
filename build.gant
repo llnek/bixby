@@ -354,6 +354,7 @@ target (preBuild: '') {
   mkdir (dir: "${qaDir}")
   mkdir (dir: "${buildDir}")
   // get rid of debug logging during build!
+  copy (todir: "${buildDir}", file: "${basedir}/log4j.properties")
   copy (todir: "${buildDir}", file: "${basedir}/logback.xml")
 }
 
@@ -647,11 +648,18 @@ def compileAndJar() {
   compileBootJava()
 
   jar (destfile: "${distribDir}/boot/${PID}-spec-${buildVersion}.jar") {
-    fileset (dir: "${buildDir}")
+    fileset (dir: "${buildDir}") {
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+    }
   }
 
   delete (dir: "${buildDir}")
   mkdir (dir: "${buildDir}")
+
+  // get rid of debug logging during build!
+  copy (todir: "${buildDir}", file: "${basedir}/log4j.properties")
+  copy (todir: "${buildDir}", file: "${basedir}/logback.xml")
 
   /* build other java stuff */
 
@@ -843,7 +851,7 @@ def cljhhh_IO() {
     arg (value: 'cmzlabsclj.tardis.io.loops')
     arg (value: 'cmzlabsclj.tardis.io.mails')
     arg (value: 'cmzlabsclj.tardis.io.netty')
-    arg (value: 'cmzlabsclj.tardis.io.servlet')
+    arg (value: 'cmzlabsclj.tardis.io.jetty')
     arg (value: 'cmzlabsclj.tardis.io.triggers')
     arg (value: 'cmzlabsclj.tardis.io.webss')
     arg (value: 'cmzlabsclj.tardis.io.basicauth')
