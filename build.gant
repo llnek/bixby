@@ -841,7 +841,6 @@ def cljhhh_IO() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabsclj.tardis.io.context')
     arg (value: 'cmzlabsclj.tardis.io.core')
     arg (value: 'cmzlabsclj.tardis.io.events')
     arg (value: 'cmzlabsclj.tardis.io.socket')

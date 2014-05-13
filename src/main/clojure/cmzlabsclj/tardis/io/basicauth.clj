@@ -16,26 +16,19 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only
-                                    [MubleAPI ConvLong notnil?  MakeMMap Bytesify] ])
-  (:use [cmzlabsclj.crypto.core :only [GenMac] ])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? AddDelim!] ])
-  (:use [cmzlabsclj.util.guids :only [NewUUid] ])
+  (:use [cmzlabsclj.util.core :only [notnil? ] ])
+  (:use [cmzlabsclj.util.str :only [nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
-  (:use [cmzlabsclj.tardis.io.webss])
   (:use [cmzlabsclj.net.comms :only [GetFormFields] ])
-
-  (:import (com.zotohlabs.gallifrey.runtime AuthError))
-  (:import (org.apache.commons.lang3 StringUtils))
-
-  (:import (com.zotohlabs.frwk.util CoreUtils))
-  (:import (java.net HttpCookie URLDecoder URLEncoder))
-  (:import (com.zotohlabs.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
-  (:import (com.zotohlabs.gallifrey.core Container))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent))
   (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+(def ^String ^:private PWD_PARAM "password")
+(def ^String ^:private EMAIL_PARAM "email")
+(def ^String ^:private USER_PARAM "user")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -43,26 +36,26 @@
 
   [^HTTPEvent evt]
 
-  (let [ data (.data evt) ]
-    (with-local-vars [user nil pwd nil email nil]
-      (cond
-        (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (GetFormFields data) ]
-          (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
-          (case (.getFieldName x)
-            "password" (var-set pwd  (.getString x))
-            "user" (var-set user (.getString x))
-            "email" (var-set email (.getString x))
-            nil))
-
-        :else
+  (with-local-vars [ user nil pwd nil email nil ]
+    (if-let [ data (.data evt) ]
+      (if (instance? ULFormItems data)
+        (doseq [ ^ULFileItem
+                 x (GetFormFields data) ]
+          (let [ fm (.getFieldName x)
+                 fv (.getString x)]
+            (log/debug "Form field: " fm " = " fv)
+            (case fm
+              EMAIL_PARAM (var-set email fv)
+              PWD_PARAM (var-set pwd fv)
+              USER_PARAM (var-set user fv)
+              nil)))
         (do
-          (var-set pwd (.getParameterValue evt "password"))
-          (var-set email (.getParameterValue evt "email"))
-          (var-set user (.getParameterValue evt "user"))) )
+          (var-set email (.getParameterValue evt EMAIL_PARAM))
+          (var-set pwd (.getParameterValue evt PWD_PARAM))
+          (var-set user (.getParameterValue evt USER_PARAM))) ))
 
-      { :principal @user :credential @pwd  :email @email }
-  )))
+    { :principal @user :credential @pwd  :email @email }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,31 +63,28 @@
 
   [^HTTPEvent evt]
 
-  (let [ ba (ScanBasicAuth evt)
-         data (.data evt) ]
-    (with-local-vars [user nil pwd nil]
-      (cond
-        (instance? ULFormItems data)
-        (doseq [ ^ULFileItem x (GetFormFields data) ]
-          (log/debug "Form field: " (.getFieldName x) " = " (.getString x))
-          (case (.getFieldName x)
-            "password" (var-set pwd  (.getString x))
-            "user" (var-set user (.getString x))
-            nil))
-
-        (notnil? ba)
+  (with-local-vars [user nil pwd nil]
+    (let [ ba (ScanBasicAuth evt)
+           data (.data evt) ]
+      (if (notnil? ba)
         (do
           (var-set user (first ba))
           (var-set pwd (last ba)))
-
-        :else
-        (do
-          (var-set pwd (.getParameterValue evt "password"))
-          (var-set user (.getParameterValue evt "user"))) )
-
-      { :principal @user :credential @pwd }
-
-  )))
+        (if (instance? ULFormItems data)
+          (doseq [ ^ULFileItem
+                   x (GetFormFields data) ]
+            (let [ fm (.getFieldName x)
+                   fv (.getString x) ]
+              (log/debug "Form field: " fm " = " fv)
+              (case fm
+                USER_PARAM (var-set user fv)
+                PWD_PARAM (var-set pwd fv)
+                nil)))
+          (do
+            (var-set user (.getParameterValue evt USER_PARAM))
+            (var-set pwd (.getParameterValue evt PWD_PARAM))))))
+    { :principal @user :credential @pwd }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -27,7 +27,7 @@
                                     Identifiable Disposable Startable))
   (:import (com.zotohlabs.gallifrey.core Container))
   (:import (com.google.gson JsonObject JsonArray))
-  (:import (com.zotohlabs.gallifrey.io ServletEmitter Emitter))
+  (:import (com.zotohlabs.gallifrey.io Emitter))
   (:import (java.util Map)))
 
 
@@ -39,6 +39,7 @@
 (defprotocol EmitterAPI
 
   ""
+
   (dispatch [_ evt options] )
 
   (enabled? [_] )
@@ -103,10 +104,9 @@
   [^JsonObject info ^String pm]
 
   (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params"))
-         hv (nsb pm)
          ^JsonArray a (if (and (notnil? h)
-                                (.has h hv))
-                          (.getAsJsonArray h hv)
+                                (.has h pm))
+                          (.getAsJsonArray h pm)
                           nil) ]
     (if (and (notnil? a)
              (> (.size a) 0))
@@ -122,7 +122,7 @@
   [^JsonObject info ^String header]
 
   (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers"))
-         hv (cstr/lower-case (nsb header))
+         hv (cstr/lower-case header)
          ^JsonArray a (if (and (notnil? h)
                                 (.has h hv))
                           (.getAsJsonArray h hv)
@@ -216,8 +216,7 @@
 
   [^Container parObj emId emAlias]
 
-  (let [ impl (MakeMMap)
-         eeid emAlias ]
+  (let [ impl (MakeMMap) ]
     (.setf! impl :backlog (ConcurrentHashMap.))
     (with-meta
       (reify
@@ -233,7 +232,7 @@
         Component
 
         (version [_] "1.0")
-        (id [_] eeid)
+        (id [_] emAlias)
 
         Hierarchial
 
