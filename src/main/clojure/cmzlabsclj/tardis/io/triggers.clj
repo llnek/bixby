@@ -40,7 +40,7 @@
   (:import (java.net HttpCookie))
   (:import (javax.servlet.http Cookie HttpServletRequest HttpServletResponse))
   (:import (io.netty.buffer ByteBuf Unpooled ByteBufHolder))
-  (:import (com.zotohlabs.gallifrey.io WebSockEvent WebSockResult HTTPEvent))
+  (:import (com.zotohlabs.gallifrey.io WebSockEvent WebSockResult HTTPEvent HTTPResult))
   (:import (org.apache.commons.io IOUtils))
   (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (java.io RandomAccessFile File))
@@ -223,12 +223,14 @@
    ^HTTPEvent evt
    src]
 
+  (log/debug "netty-reply called by event with uri: " (.getUri evt))
   (let [ cks (cookiesToNetty (.getf res :cookies))
          code (.getf res :code)
          rsp (NettyFW/makeHttpReply code)
          loc (nsb (.getf res :redirect))
          data (.getf res :data)
          hdrs (.getf res :hds) ]
+    (log/debug "about to reply " (.getStatus ^HTTPResult res))
     (with-local-vars [ clen 0 raf nil payload nil ]
       (doseq [[^String nm vs] (seq hdrs)]
         (when-not (= "content-length" (cstr/lower-case  nm))
@@ -274,15 +276,18 @@
       (when (.isKeepAlive evt)
         (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
 
+      (log/debug "writing out " @clen " bytes back to client");
       (HttpHeaders/setContentLength rsp @clen)
 
       (NettyFW/writeOnly ch rsp)
       (log/debug "wrote response headers out to client")
 
+
       (when (and (> @clen 0)
                  (notnil? @payload))
         (NettyFW/writeOnly ch @payload)
         (log/debug "wrote response body out to client"))
+
 
       (let [ wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
         (log/debug "flushed last response content out to client")

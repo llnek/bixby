@@ -24,13 +24,13 @@
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.mvc.templates
-         :only [GetLocalFile ReplyFileAsset] ])
+         :only [MakeWebAsset GetLocalFile] ])
   (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
   (:use [cmzlabsclj.util.meta :only [MakeObj] ])
   (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler
                                         MVCUtils WebAsset WebContent))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult Emitter))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (java.util Date))
@@ -43,7 +43,7 @@
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.buffer Unpooled))
-  (:import (io.netty.channel Channel ChannelHandler
+  (:import (io.netty.channel Channel ChannelHandler ChannelFuture
                              ChannelPipeline ChannelHandlerContext))
   (:import (com.zotohlabs.frwk.netty NettyFW))
   (:import (com.google.gson JsonObject))
@@ -75,43 +75,67 @@
   [ ^cmzlabsclj.tardis.core.sys.Element src
     ^JsonObject info
     ^File file
-    funcSetter ]
+    ^HTTPResult res ]
 
   (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
          lastTm (.lastModified file)
          eTag  (str "\""  lastTm  "-" (.hashCode file)  "\"") ]
     (if (isModified eTag lastTm info)
-        (funcSetter :header "last-modified"
+        (.setHeader res "last-modified"
                     (.format (MVCUtils/getSDF) (Date. lastTm)))
         (if (= (-> (.get info "method")(.getAsString)) "GET")
-            (funcSetter :status HttpResponseStatus/NOT_MODIFIED)))
-    (funcSetter :header "cache-control"
+            (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
+    (.setHeader res "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (.getAttr src :useETag) (funcSetter :header "etag" eTag))
+    (when (.getAttr src :useETag) (.setHeader res "etag" eTag))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- XXXaddETag ""
+(defn- handleStatic2 ""
 
-  [ ^cmzlabsclj.tardis.core.sys.Element src
-    ^HTTPEvent evt
-    ^JsonObject info
-    ^HttpResponse rsp
-    ^File file ]
+  [src ^JsonObject info ^HTTPEvent evt ^HTTPResult res ^File file]
 
-  (let [ maxAge (.getAttr src :cacheMaxAgeSecs)
-         lastTm (.lastModified file)
-         eTag  (str "\""  lastTm  "-"
-                    (.hashCode file)  "\"") ]
-    (if (isModified eTag lastTm info)
-        (HttpHeaders/setHeader rsp "last-modified"
-                  (.format (MVCUtils/getSDF) (Date. lastTm)))
-        (if (= (-> (.get info "method")(.getAsString)) "GET")
-            (.setStatus rsp HttpResponseStatus/NOT_MODIFIED)))
-    (HttpHeaders/setHeader rsp "cache-control"
-                (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (.getAttr src :useETag) (HttpHeaders/setHeader rsp "etag" eTag))
+  (with-local-vars [ crap false ]
+    (try
+      (log/debug "serving static file: " (NiceFPath file))
+      (if (or (nil? file)
+              (not (.exists file)))
+        (do (.setStatus res 404)
+            (.replyResult evt))
+        (do
+          (.setContent res (MakeWebAsset file))
+          (.setStatus res 200)
+          (AddETag src info file res)
+          (var-set crap true)
+          (.replyResult evt)))
+      (catch Throwable e#
+        (log/error "failed to get static resource "
+                   (nsb (.get info "uri2"))
+                   e#)
+        (when-not @crap
+          (.setStatus res 500)
+          (.replyResult evt))
+        ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HandleStatic ""
+
+  [ ^Emitter src ^HTTPEvent evt ^HTTPResult res options ]
+
+  (let [ ^File appDir (-> src (.container)(.getAppDir))
+         ps (NiceFPath (File. appDir DN_PUBLIC))
+         fpath (nsb (:path options))
+         info (:info options) ]
+    (log/debug "request to serve static file: " fpath)
+    (if (.startsWith fpath ps)
+        (handleStatic2 src info evt res (File. fpath))
+        (do
+          (log/warn "attempt to access non public file-system: " fpath)
+          (.setStatus res 403)
+          (.replyResult evt)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -157,61 +181,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleStatic ""
-
-  [src ^Channel ch info ^HTTPEvent evt ^File file]
-
-  (let [ rsp (NettyFW/makeHttpReply ) ]
-    (try
-      (if (or (nil? file)
-              (not (.exists file)))
-        (ServeError src ch 404)
-        (do
-          (log/debug "serving static file: " (NiceFPath file))
-          (XXXaddETag src evt info rsp file)
-          ;; 304 not-modified
-          (if (= (-> rsp (.getStatus)(.code)) 304)
-            (do
-              (HttpHeaders/setContentLength rsp 0)
-              (NettyFW/closeCF (.writeAndFlush ch rsp) (.isKeepAlive evt) ))
-            (ReplyFileAsset src ch info rsp file))))
-      (catch Throwable e#
-        (log/error "failed to get static resource " (.getUri evt) e#)
-        (Try!  (ServeError src ch 500))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn __ServeStatic ""
-
-  [ ^Emitter src
-    ^cmzlabsclj.net.routes.RouteInfo ri
-    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
-
-  (let [ ^File appDir (-> src (.container)(.getAppDir))
-         mpt (nsb (.getf ^cmzlabsclj.util.core.MubleAPI ri :mountPoint))
-         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
-         uri (.getUri evt)
-         gc (.groupCount mc) ]
-    (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
-      (if (> gc 1)
-        (doseq [ i (range 1 gc) ]
-          (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
-
-      ;; ONLY serve static assets from *public folder*
-      (var-set mp (NiceFPath (File. ^String @mp)))
-      (log/debug "request to serve static file: " @mp)
-
-      (if (.startsWith ^String @mp ps)
-        (handleStatic src ch info evt (File. ^String @mp))
-        (do
-          (log/warn "attempt to access non public file-system: " @mp)
-          (ServeError src ch 403))
-      ))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn ServeStatic ""
 
   [ ^Emitter src
@@ -219,8 +188,8 @@
     ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
   (let [ mpt (nsb (.getf ^cmzlabsclj.util.core.MubleAPI ri :mountPoint))
-         ^File appDir (-> src (.container)(.getAppDir))
-         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
+        ^File appDir (-> src (.container)(.getAppDir))
+         ps (NiceFPath (File. appDir DN_PUBLIC))
          gc (.groupCount mc) ]
     (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
       (if (> gc 1)
@@ -230,10 +199,10 @@
       (let [ ^cmzlabsclj.tardis.io.core.EmitterAPI co src
              ^cmzlabsclj.tardis.io.core.WaitEventHolder
              w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-        (.timeoutMillis w (.getAttr ^cmzlabsclj.tardis.core.sys.Element
-                            src :waitMillis))
+        (.timeoutMillis w (.getAttr ^cmzlabsclj.tardis.core.sys.Element src :waitMillis))
         (.hold co w)
-        (.dispatch co evt { :info info
+        (.dispatch co evt { :router "cmzlabsclj.tardis.mvc.statics.StaticAssetHandler"
+                            :info info
                             :path @mp } )))
   ))
 

@@ -22,6 +22,7 @@
   (:use [cmzlabsclj.tardis.io.core])
   (:use [cmzlabsclj.tardis.io.http])
   (:use [cmzlabsclj.tardis.io.triggers])
+  (:use [cmzlabsclj.tardis.io.webss :only [MakeWSSession] ])
   (:use [cmzlabsclj.util.str :only [hgl? nsb strim nichts?] ])
   (:use [cmzlabsclj.net.routes :only [MakeRouteCracker RouteCracker] ])
   (:use [cmzlabsclj.util.seqnum :only [NextLong] ])
@@ -31,7 +32,9 @@
   (:import (java.util ArrayList List))
   (:import (com.google.gson JsonObject))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent HTTPResult WebSockEvent WebSockResult))
+  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent HTTPResult
+                                       IOSession
+                                       WebSockEvent WebSockResult))
   (:import (javax.net.ssl SSLContext))
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse
                                         CookieDecoder ServerCookieEncoder
@@ -127,11 +130,11 @@
   ^HTTPEvent
   [^cmzlabsclj.tardis.io.core.EmitterAPI co
    ^Channel ch
+   sslFlag
    ^XData xdata
    ^JsonObject info ]
 
   (let [ ^HTTPResult res (MakeHttpResult co)
-         ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
          impl (MakeMMap)
          eeid (NextLong) ]
@@ -206,12 +209,12 @@
         (remoteAddr [_] (nsb (GetHeader info "remote_addr")))
         (remoteHost [_] "")
 
-        (scheme [_] (if ssl "https" "http"))
+        (scheme [_] (if sslFlag "https" "http"))
 
         (serverPort [_] (ConvLong (GetHeader info "server_port") 0))
         (serverName [_] (nsb (GetHeader info "server_name")))
 
-        (isSSL [_] ssl)
+        (isSSL [_] sslFlag)
 
         (getUri [_] (-> (.get info "uri")(.getAsString)))
 
@@ -219,8 +222,13 @@
 
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^cmzlabsclj.tardis.io.core.WaitEventHolder
+          (let [ ^IOSession mvs (.getSession this)
+                 code (.getStatus res)
+                 ^cmzlabsclj.tardis.io.core.WaitEventHolder
                  wevt (.release co this) ]
+            (cond
+              (and (>= code 200)(< code 400)) (.handleResult mvs this res)
+              :else nil)
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
       )
@@ -234,14 +242,19 @@
 (defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
   [^cmzlabsclj.tardis.io.core.EmitterAPI co & args]
-
   (let [ ^DemuxedMsg req (nth args 1)
          ^Channel ch (nth args 0)
+         ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          xdata (.payload req)
-         info (.info req) ]
+         info (.info req)
+         ^IOSession
+         wss (MakeWSSession co ssl nil) ]
     (if (-> (.get info "wsock")(.getAsBoolean))
         (makeWSockEvent co ch xdata info)
-        (makeHttpEvent co ch xdata info))
+        (let [ evt (makeHttpEvent co ch ssl xdata info) ]
+          (.bindSession evt wss)
+          (.handleEvent wss evt)
+          evt))
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

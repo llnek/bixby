@@ -310,9 +310,11 @@
 
   (let [ ^HTTPEvent evt (IOESReifyEvent co req)
          ssl (= "https" (.getScheme req))
-         wss (MakeWSSession co ssl)
+         ^IOSession
+         wss (MakeWSSession co ssl nil)
          wm (.getAttr co :waitMillis) ]
     (.bindSession evt wss)
+    (.handleEvent wss evt)
     (doto ct
           (.setTimeout wm)
           (.suspend rsp))
@@ -533,7 +535,6 @@
   (let [ ^HTTPResult result (MakeHttpResult co)
          ^HttpServletRequest req (first args)
          ssl (= "https" (.getScheme req))
-         wss (MakeWSSession co ssl)
          impl (MakeMMap)
          eid (NextLong) ]
     (reify

@@ -59,7 +59,7 @@ public class FlashHandler extends ChannelInboundHandlerAdapter {
       nn = bbuf.getUnsignedByte(pos++);
       // not flash, go away
       if (nn != '<') {
-        finido(ctx, msg);
+        finito(ctx, msg);
         bbuf=null;
       } else {
         ctx.attr(HINT).set(new Integer(nn));
@@ -73,14 +73,14 @@ public class FlashHandler extends ChannelInboundHandlerAdapter {
     // check 2nd byte
     nn = bbuf.getUnsignedByte(pos++);
     if (nn != 'p') {
-      finido(ctx, msg);
+      finito(ctx, msg);
     } else {
       ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
     }
 
   }
 
-  private void finido(ChannelHandlerContext ctx, Object msg) {
+  private void finito(ChannelHandlerContext ctx, Object msg) {
     ctx.fireChannelRead(msg);
     ctx.pipeline().remove(this);
   }

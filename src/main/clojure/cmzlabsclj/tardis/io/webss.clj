@@ -16,8 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only
-                                    [MubleAPI ConvLong notnil?  MakeMMap Bytesify] ])
+  (:use [cmzlabsclj.util.core
+         :only [MubleAPI ConvLong notnil? ternary MakeMMap Bytesify] ])
   (:use [cmzlabsclj.crypto.core :only [GenMac] ])
   (:use [cmzlabsclj.util.str :only [nsb hgl? AddDelim!] ])
   (:use [cmzlabsclj.util.guids :only [NewUUid] ])
@@ -153,7 +153,8 @@
 ;;
 (defn MakeSession ""
 
-  [co ssl]
+  ^IOSession
+  [co ssl brokenHandler]
 
   (let [ attrs (MakeMMap)
          impl (MakeMMap)
@@ -201,8 +202,15 @@
 
       IOSession
 
-      (handleResult [this evt res] (hibernate evt res))
-      (handleEvent [this evt] (resurrect evt))
+      (handleResult [this evt res]  nil)
+        ;;(hibernate evt res))
+      (handleEvent [this evt] nil)
+;;
+        ;;(try
+          ;;(resurrect evt)
+          ;;(catch Throwable e#
+            ;;(brokenHandler evt))))
+
       (getImpl [_] nil))
 
       { :typeid :czc.tardis.io/WebSession }
@@ -211,11 +219,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- basicBrokenHandler ""
+
+  [^HTTPEvent evt]
+
+  (Realign! evt nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn MakeWSSession ""
 
-  [co ssl]
+  [co ssl brokenHandler]
 
-  (MakeSession co ssl))
+  (MakeSession co ssl
+               (ternary brokenHandler basicBrokenHandler)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

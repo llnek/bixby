@@ -31,7 +31,6 @@
   (:use [cmzlabsclj.net.routes])
 
   (:import ( com.zotohlabs.wflow FlowPoint Activity Pipeline PipelineDelegate PTask Work))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
   (:import (com.zotohlabs.wflow.core Job))
 
   (:import [com.zotohlabs.frwk.netty NettyFW])
@@ -40,84 +39,8 @@
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io XData))
   (:import (com.google.gson JsonObject))
-  (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent Emitter))
-  (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler MVCUtils WebAsset WebContent))
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
-                                        CookieDecoder ServerCookieEncoder
-                                        DefaultHttpResponse HttpVersion
-                                        HttpServerCodec
-                                        HttpHeaders LastHttpContent
-                                        HttpHeaders Cookie QueryStringDecoder))
-  (:import (io.netty.bootstrap ServerBootstrap))
-  (:import (io.netty.channel Channel ChannelHandler
-                             SimpleChannelInboundHandler
-                             ChannelPipeline ChannelHandlerContext))
-  (:import (io.netty.handler.stream ChunkedWriteHandler))
-  (:import (io.netty.util AttributeKey))
-  (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
-                                     DemuxedMsg PipelineConfigurator
-                                     HttpDemux FlashHandler
-                                     SSLServerHShake ServerSide))
-  (:import (jregex Matcher Pattern)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- eTagHelper ""
-
-  [^HTTPResult res flag & args]
-
-  (case flag
-    :header (.setHeader res (nth args 0) (nth args 1))
-    :status (.setStatus res (nth args 0))
-    nil
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- handleStatic2 ""
-
-  [src ^JsonObject info ^HTTPEvent evt ^HTTPResult res ^File file]
-
-  (with-local-vars [ crap false ]
-    (try
-      (log/debug "serving static file: " (NiceFPath file))
-      (if (or (nil? file)
-              (not (.exists file)))
-        (.setStatus res 404)
-        (do
-          (AddETag src info file (partial eTagHelper res))
-          (.setContent res (MakeWebAsset file))
-          (var-set crap true)
-          (.replyResult evt)))
-      (catch Throwable e#
-        (log/error "failed to get static resource "
-                   (nsb (.get info "uri2"))
-                   e#)
-        (when-not @crap
-          (.setStatus res 500)
-          (.replyResult evt))
-        ))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- handleStatic ""
-
-  [ ^Emitter src ^HTTPEvent evt ^HTTPResult res options ]
-
-  (let [ ^File appDir (-> src (.container)(.getAppDir))
-         ps (NiceFPath (File. appDir ^String DN_PUBLIC))
-         fpath (nsb (:path options))
-         info (:info options) ]
-    (log/debug "request to serve static file: " fpath)
-    (if (.startsWith fpath ps)
-        (handleStatic2 src info evt res (File. fpath))
-        (do
-          (log/warn "attempt to access non public file-system: " fpath)
-          (.setStatus res 403)
-          (.replyResult evt)))
-  ))
+  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult Emitter))
+  (:import (io.netty.channel Channel ChannelFuture)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,10 +51,11 @@
               (perform [_ fw job arg]
                 (let [ ^HTTPEvent evt (.event job)
                        ^HTTPResult res (.getResultObj evt) ]
-                  (handleStatic (.emitter evt)
+                  (HandleStatic (.emitter evt)
                                 evt
                                 res
-                                (.getv job EV_OPTS)))))))
+                                (.getv job EV_OPTS))
+                  nil)))))
 
   (onStop [_ pipe]
     (log/debug "nothing to be done here, just stop please."))
