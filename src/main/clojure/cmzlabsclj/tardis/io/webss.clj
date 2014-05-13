@@ -135,8 +135,9 @@
                      ^cmzlabsclj.tardis.core.sys.Element
                      netty :cacheMaxAgeSecs)
            ^cmzlabsclj.tardis.io.webss.WebSession mvs (.getSession evt) ]
-      (doseq [ s (seq ss) ]
-        (let [ [n v] (StringUtils/split ^String s ":") ]
+      (doseq [ ^String s (seq ss) ]
+        (let [ [n v] (StringUtils/split s ":") ]
+          (log/debug "session attribute name:value = " s)
           (.setAttribute mvs (keyword n) v)))
       (let [ ts (ConvLong (nsb (.getAttribute mvs TS_FLAG)) -1) ]
         (if (or (< ts 0)
@@ -202,10 +203,9 @@
 
       IOSession
 
-      (handleResult [this evt res]  nil)
+      (handleResult [this evt res]   nil)
         ;;(hibernate evt res))
       (handleEvent [this evt] nil)
-;;
         ;;(try
           ;;(resurrect evt)
           ;;(catch Throwable e#

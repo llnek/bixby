@@ -35,6 +35,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.util.HashMap;
 
 import static com.zotohlabs.frwk.io.IOUtils.streamLimit;
@@ -165,10 +166,10 @@ public class FormPostCodec extends RequestCodec {
       t = nsb(tkns[i]);
       ss= StringUtils.split(t, '=');
       if (ss != null && ss.length > 0) {
-        fn = ss[0];
+        fn = URLDecoder.decode(ss[0], "utf-8");
         fv="";
         if (ss.length > 1) {
-          fv= ss[1];
+          fv= URLDecoder.decode( ss[1], "utf-8");
         }
         fis.add( new ULFileItem(fn,  fv.getBytes("utf-8")) );
       }

@@ -170,6 +170,7 @@
   [^List cookies]
 
   (persistent! (reduce (fn [sum ^HttpCookie c]
+                         (log/debug "cookies-to-netty: " (.getName c) " = " (.getValue c))
                          (conj! sum
                                 (ServerCookieEncoder/encode
                                   (.getName c)(.getValue c))))
