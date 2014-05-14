@@ -15,8 +15,9 @@
 
   cmzlabsclj.tardis.io.netty
 
-  (:use [cmzlabsclj.util.core :only [ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:use [cmzlabsclj.util.core
+         :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.io.core])
@@ -31,34 +32,222 @@
   (:import (java.net SocketAddress InetAddress))
   (:import (java.util ArrayList List))
   (:import (com.google.gson JsonObject))
-  (:import (java.io IOException))
+  (:import (java.io File IOException RandomAccessFile))
   (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent HTTPResult
                                        IOSession
                                        WebSockEvent WebSockResult))
   (:import (javax.net.ssl SSLContext))
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse
+  (:import (java.nio.channels ClosedChannelException))
+  (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
                                         HttpServerCodec
-                                        HttpHeaders LastHttpContent
+                                        HttpHeaders$Names LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.bootstrap ServerBootstrap))
-  (:import (io.netty.channel Channel ChannelHandler
+  (:import (io.netty.channel Channel ChannelHandler ChannelFuture
+                             ChannelFutureListener
                              SimpleChannelInboundHandler
                              ChannelPipeline ChannelHandlerContext))
-  (:import (io.netty.handler.stream ChunkedWriteHandler))
+  (:import (io.netty.handler.stream ChunkedFile ChunkedStream ChunkedWriteHandler))
+  (:import (com.zotohlabs.gallifrey.mvc WebAsset HTTPRangeInput))
   (:import (com.zotohlabs.frwk.netty NettyFW
                                      SSLServerHShake
                                      ServerSide
                                      DemuxedMsg
                                      HttpDemux ErrorCatcher
                                      PipelineConfigurator))
-
+  (:import (io.netty.handler.codec.http.websocketx WebSocketFrame
+                                                          BinaryWebSocketFrame
+                                                          TextWebSocketFrame))
+  (:import (io.netty.buffer ByteBuf Unpooled))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
   (:import (com.zotohlabs.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeClose ""
+
+  [^HTTPEvent evt ^ChannelFuture cf]
+
+  (when (and (not (.isKeepAlive evt))
+             (notnil? cf))
+    (.addListener cf ChannelFutureListener/CLOSE )
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cookiesToNetty ""
+
+  ^String
+  [^List cookies]
+
+  (persistent! (reduce (fn [sum ^HttpCookie c]
+                         (log/debug "cookies-to-netty: "
+                                    (.getName c)
+                                    " = " (.getValue c))
+                         (conj! sum
+                                (ServerCookieEncoder/encode
+                                  (.getName c)(.getValue c))))
+                       (transient [])
+                       (seq cookies))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- netty-ws-reply ""
+
+  [^WebSockResult res ^Channel ch ^WebSockEvent evt src]
+
+  (let [ ^XData xs (.getData res)
+         bits (.javaBytes xs)
+         ^WebSocketFrame
+         f (cond
+              (.isBinary res)
+              (BinaryWebSocketFrame. (Unpooled/wrappedBuffer bits))
+
+              :else
+              (TextWebSocketFrame. (nsb (Stringify bits)))) ]
+    (NettyFW/writeFlush ch f)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- replyOneFile ""
+
+  [ ^RandomAccessFile raf
+    ^HTTPEvent evt
+    ^HttpResponse rsp ]
+
+  (let [ ct (HttpHeaders/getHeader rsp "content-type")
+         rv (.getHeaderValue evt "range") ]
+    (if (cstr/blank? rv)
+      (ChunkedFile. raf)
+      (let [ r (HTTPRangeInput. raf ct rv)
+             n (.prepareNettyResponse r rsp) ]
+        (if (> n 0)
+          r
+          nil)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- netty-reply ""
+
+  [^cmzlabsclj.util.core.MubleAPI res
+   ^Channel ch
+   ^HTTPEvent evt
+   src]
+
+  (log/debug "netty-reply called by event with uri: " (.getUri evt))
+  (let [ cks (cookiesToNetty (.getf res :cookies))
+         code (.getf res :code)
+         rsp (NettyFW/makeHttpReply code)
+         loc (nsb (.getf res :redirect))
+         data (.getf res :data)
+         hdrs (.getf res :hds) ]
+    (log/debug "about to reply " (.getStatus ^HTTPResult res))
+    (with-local-vars [ clen 0 raf nil payload nil ]
+      (doseq [[^String nm vs] (seq hdrs)]
+        (when-not (= "content-length" (cstr/lower-case  nm))
+          (doseq [vv (seq vs)]
+            (HttpHeaders/addHeader rsp nm vv))))
+      (doseq [s cks]
+        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE cks) )
+      (when (and (>= code 300)(< code 400))
+        (when-not (cstr/blank? loc)
+          (HttpHeaders/setHeader rsp "Location" loc)))
+      (when (and (>= code 200)
+                 (< code 300)
+                 (not= "HEAD" (.method evt)))
+        (var-set  payload
+                  (cond
+                    (instance? WebAsset data)
+                    (let [ ^WebAsset ws data ]
+                      (HttpHeaders/setHeader rsp "content-type" (.contentType ws))
+                      (var-set raf (RandomAccessFile. (.getFile ws) "r"))
+                      (replyOneFile @raf evt rsp))
+
+                    (instance? File data)
+                    (do
+                      (var-set raf (RandomAccessFile. ^File data "r"))
+                      (replyOneFile @raf evt rsp))
+
+                    (instance? XData data)
+                    (let [ ^XData xs data ]
+                      (var-set clen (.size xs))
+                      (ChunkedStream. (.stream xs)))
+
+                    (notnil? data)
+                    (let [ xs (XData. data) ]
+                      (var-set clen (.size xs))
+                      (ChunkedStream. (.stream xs)))
+
+                    :else
+                    nil))
+        (if (and (notnil? @payload)
+                 (notnil? @raf))
+          (var-set clen (.length ^RandomAccessFile @raf))))
+
+      (when (.isKeepAlive evt)
+        (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
+
+      (log/debug "writing out " @clen " bytes back to client");
+      (HttpHeaders/setContentLength rsp @clen)
+
+      (NettyFW/writeOnly ch rsp)
+      (log/debug "wrote response headers out to client")
+
+
+      (when (and (> @clen 0)
+                 (notnil? @payload))
+        (NettyFW/writeOnly ch @payload)
+        (log/debug "wrote response body out to client"))
+
+
+      (let [ wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
+        (log/debug "flushed last response content out to client")
+        (.addListener wf
+                      (reify ChannelFutureListener
+                        (operationComplete [_ ff]
+                          (Try! (when (notnil? @raf)
+                                      (.close ^RandomAccessFile @raf))))))
+        (when-not (.isKeepAlive evt)
+          (log/debug "keep-alive == false, closing channel.  bye.")
+          (.addListener wf ChannelFutureListener/CLOSE)))
+
+    )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeNettyTrigger ""
+
+  [^Channel ch evt src]
+
+  (reify AsyncWaitTrigger
+
+    (resumeWithResult [_ res]
+      (cond
+        (instance? WebSockEvent evt)
+        (Try! (netty-ws-reply res ch evt src) )
+        :else
+        (Try! (netty-reply res ch evt src) ) ))
+
+    (resumeWithError [_]
+      (let [ rsp (NettyFW/makeHttpReply 500) ]
+        (try
+          (maybeClose evt (NettyFW/writeFlush ch rsp))
+          (catch ClosedChannelException e#
+            (log/warn "ClosedChannelException thrown while flushing headers"))
+          (catch Throwable t# (log/error t# "") )) ))
+  ))
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

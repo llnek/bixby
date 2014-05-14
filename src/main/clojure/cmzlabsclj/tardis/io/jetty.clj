@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:use [cmzlabsclj.util.core :only [MubleAPI notnil? juid TryC spos?
-                                           ToJavaInt
+                                           ToJavaInt Try!
                                            MakeMMap test-cond Stringify] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.crypto.ssl])
@@ -32,6 +32,7 @@
   (:import (org.eclipse.jetty.server Server Connector ConnectionFactory))
   (:import (java.util.concurrent ConcurrentHashMap))
   (:import (java.net URL))
+  (:import (org.apache.commons.io IOUtils))
   (:import (java.util List Map HashMap ArrayList))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.util NCMap))
@@ -62,6 +63,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn isServletKeepAlive ""
+
+  [^HttpServletRequest req]
+
+  (let [ v (.getHeader req "connection") ]
+    (= "keep-alive" (cstr/lower-case (nsb v)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cookieToServlet ""
+
+  ^Cookie
+  [^HttpCookie c]
+
+  (doto (Cookie. (.getName c) (.getValue c))
+        (.setDomain (nsb (.getDomain c)))
+        (.setHttpOnly (.isHttpOnly c))
+        (.setMaxAge (.getMaxAge c))
+        (.setPath (nsb (.getPath c)))
+        (.setSecure (.getSecure c))
+        (.setVersion (.getVersion c))
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- replyServlet ""
+
+  [^cmzlabsclj.util.core.MubleAPI res
+   ^HttpServletRequest req
+   ^HttpServletResponse rsp
+   src]
+
+  (let [ ^List cks (.getf res :cookies)
+         ^URL url (.getf res :redirect)
+         ^NCMap hds (.getf res :hds)
+         os (.getOutputStream rsp)
+         code (.getf res :code)
+         data (.getf res :data) ]
+    (try
+      (.setStatus rsp code)
+      (doseq [[^String nm vs] (seq hds)]
+        (when-not (= "content-length" (cstr/lower-case  nm))
+          (doseq [vv (seq vs) ]
+            (.addHeader rsp nm vv))))
+      (doseq [ c (seq cks) ]
+        (.addCookie rsp (cookieToServlet c)))
+      (cond
+        (and (>= code 300)(< code 400))
+        (.sendRedirect rsp (.encodeRedirectURL rsp (nsb url)))
+        :else
+        (let [ ^XData dd (cond
+                            (instance? XData data) data
+                            (notnil? data) (XData. data)
+                            :else nil)
+               clen (if (and (notnil? dd) (.hasContent dd))
+                        (.size dd)
+                        0) ]
+            (.setContentLength rsp clen)
+            (.flushBuffer rsp)
+            (when (> clen 0)
+                  (IOUtils/copyLarge (.stream dd) os 0 clen)
+                  (.flush os) )))
+      (catch Throwable e# (log/error e# ""))
+      (finally
+        (Try! (when-not (isServletKeepAlive req) (.close os)))
+        (-> (ContinuationSupport/getContinuation req)
+          (.complete))) )
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- makeServletTrigger ""
+
+  [^HttpServletRequest req ^HttpServletResponse rsp src]
+
+  (reify AsyncWaitTrigger
+
+    (resumeWithResult [_ res]
+      (replyServlet res req rsp src) )
+
+    (resumeWithError [_]
+        (try
+            (.sendError rsp 500)
+          (catch Throwable e#
+            (log/error e# ""))
+          (finally
+            (-> (ContinuationSupport/getContinuation req)
+              (.complete)))) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,7 +245,7 @@
           (.setTimeout wm)
           (.suspend rsp))
     (let [ ^cmzlabsclj.tardis.io.core.WaitEventHolder
-           w  (MakeAsyncWaitHolder (MakeServletTrigger req rsp co) evt)
+           w  (MakeAsyncWaitHolder (makeServletTrigger req rsp co) evt)
           ^cmzlabsclj.tardis.io.core.EmitterAPI src co ]
       (.timeoutMillis w wm)
       (.hold src w)
