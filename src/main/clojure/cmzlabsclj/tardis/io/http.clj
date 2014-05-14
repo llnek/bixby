@@ -36,7 +36,7 @@
   (:import (com.zotohlabs.frwk.util NCMap))
   (:import (javax.servlet.http Cookie HttpServletRequest))
   (:import (java.net HttpCookie))
-  (:import (com.google.gson JsonObject))
+  (:import (com.google.gson JsonObject JsonArray))
 
   (:import (com.zotohlabs.frwk.server Component))
   (:import (com.zotohlabs.frwk.io XData))
@@ -236,6 +236,68 @@
           (.setf! impl :data data)) )
 
   )) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasHeader? ""
+
+  ;; boolean
+  [^JsonObject info ^String header]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers")) ]
+    (and (notnil? h)
+         (.has h (cstr/lower-case header)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HasParam? ""
+
+  ;; boolean
+  [^JsonObject info ^String param]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params")) ]
+    (and (notnil? h)
+         (.has h param))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetParameter ""
+
+  ^String
+  [^JsonObject info ^String pm]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params"))
+         ^JsonArray a (if (and (notnil? h)
+                                (.has h pm))
+                          (.getAsJsonArray h pm)
+                          nil) ]
+    (if (and (notnil? a)
+             (> (.size a) 0))
+        (.get a 0)
+        nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetHeader ""
+
+  ^String
+  [^JsonObject info ^String header]
+
+  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers"))
+         hv (cstr/lower-case header)
+         ^JsonArray a (if (and (notnil? h)
+                                (.has h hv))
+                          (.getAsJsonArray h hv)
+                          nil) ]
+    (if (and (notnil? a)
+             (> (.size a) 0))
+        (.get a 0)
+        nil)
+  ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

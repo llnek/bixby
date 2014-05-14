@@ -18,7 +18,7 @@
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.util.core :only [MubleAPI Try! NiceFPath] ])
   (:use [cmzlabsclj.tardis.io.triggers])
-  (:use [cmzlabsclj.tardis.io.http :only [HttpBasicConfig] ])
+  (:use [cmzlabsclj.tardis.io.http])
   (:use [cmzlabsclj.tardis.io.netty])
   (:use [cmzlabsclj.tardis.io.core])
   (:use [cmzlabsclj.tardis.core.sys])

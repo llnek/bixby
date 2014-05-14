@@ -16,9 +16,9 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
   (:use [cmzlabsclj.util.str :only [nsb strim ] ])
+  (:use [cmzlabsclj.tardis.core.sys])
 
   (:import (com.zotohlabs.frwk.server Component Service))
   (:import (java.util.concurrent ConcurrentHashMap))
@@ -29,7 +29,6 @@
   (:import (com.google.gson JsonObject JsonArray))
   (:import (com.zotohlabs.gallifrey.io Emitter))
   (:import (java.util Map)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -71,67 +70,6 @@
   (resumeWithResult [_ res] )
   (resumeWithError [_] )
   (emitter [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn HasHeader? ""
-
-  ;; boolean
-  [^JsonObject info ^String header]
-
-  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers")) ]
-    (and (notnil? h)
-         (.has h (cstr/lower-case header)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn HasParam? ""
-
-  ;; boolean
-  [^JsonObject info ^String param]
-
-  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params")) ]
-    (and (notnil? h)
-         (.has h param))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetParameter ""
-
-  ^String
-  [^JsonObject info ^String pm]
-
-  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "params"))
-         ^JsonArray a (if (and (notnil? h)
-                                (.has h pm))
-                          (.getAsJsonArray h pm)
-                          nil) ]
-    (if (and (notnil? a)
-             (> (.size a) 0))
-        (.get a 0)
-        nil)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetHeader ""
-
-  ^String
-  [^JsonObject info ^String header]
-
-  (let [ ^JsonObject h (if (nil? info) nil (.getAsJsonObject info "headers"))
-         hv (cstr/lower-case header)
-         ^JsonArray a (if (and (notnil? h)
-                                (.has h hv))
-                          (.getAsJsonArray h hv)
-                          nil) ]
-    (if (and (notnil? a)
-             (> (.size a) 0))
-        (.get a 0)
-        nil)
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

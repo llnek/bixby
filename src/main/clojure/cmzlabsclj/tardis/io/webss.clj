@@ -48,12 +48,12 @@
 
   ""
 
+  (setMaxInactiveInterval [_ idleSecs] )
   (setAttribute [_ k v] )
   (getAttribute [_ k] )
   (removeAttribute [_ k] )
   (clear [_] )
   (listAttributes [_] )
-  (setMaxInactiveInterval [_ idleSecs] )
   (isNew [_] )
   (isSSL [_] )
   (invalidate [_] )
