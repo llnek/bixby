@@ -283,7 +283,7 @@
   []
 
   (DefPredicate
-    (evaluate [_ job]
+    (fn [^Job job]
       (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
             ^cmzlabsclj.tardis.auth.core.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
@@ -315,7 +315,7 @@
   []
 
   (DefPredicate
-    (evaluate [_ job]
+    (fn [^Job job]
       (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
             ^cmzlabsclj.tardis.auth.core.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
@@ -343,7 +343,7 @@
   ^PTask
   []
 
-  (DefWFTask (perform [_ fw job arg])))
+  (DefWFTask (fn [fw job arg] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -352,12 +352,7 @@
   ^PTask
   []
 
-  (DefWFTask (perform [_ fw job arg]
-    (let [ ^HTTPEvent evt (.event ^Job job)
-           ;;^cmzlabsclj.tardis.io.webss.WebSession
-           ss (.getSession evt) ]
-    ))
-  ))
+  (DefWFTask (fn [fw job arg] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

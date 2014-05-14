@@ -21,11 +21,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefWFTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
+;;(defmacro DefWFTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
+(defn DefWFTask ""
+
+  ^PTask
+  [func]
+
+  (PTask. (reify Work
+            (perform [_ fw job arg] (func fw job arg)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefPredicate [ & exprs ] `(reify BoolExpr ~@exprs))
+;;(defmacro DefPredicate [ & exprs ] `(reify BoolExpr ~@exprs))
+(defn DefPredicate ""
+
+  ^BoolExpr
+  [func]
+
+  (reify BoolExpr (evaluate [_ job] (func job))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

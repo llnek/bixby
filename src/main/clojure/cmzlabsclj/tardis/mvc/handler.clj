@@ -73,7 +73,7 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [c msg]
-      (log/debug "mvc route filter called with message = " (type msg))
+      ;;(log/debug "mvc route filter called with message = " (type msg))
       (cond
         (instance? HttpRequest msg)
         (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker
@@ -92,7 +92,7 @@
 
             (= r1 true)
             (do
-              (log/debug "mvc route filter MATCHED with uri = " (.getUri req))
+              ;;(log/debug "mvc route filter MATCHED with uri = " (.getUri req))
               (-> (.attr ctx GOOD_FLAG)(.set "matched"))
               (.fireChannelRead ctx msg))
 
@@ -124,7 +124,7 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
-      (log/debug "mvc netty handler called with message = " (type msg))
+      ;;(log/debug "mvc netty handler called with message = " (type msg))
       (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker
              rcc (.getAttr co :cracker)
              ch (.channel ^ChannelHandlerContext ctx)
