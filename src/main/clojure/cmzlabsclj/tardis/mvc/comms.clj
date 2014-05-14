@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only [MubleAPI Try! NiceFPath] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI Try! NiceFPath] ])
   (:use [cmzlabsclj.tardis.io.triggers])
   (:use [cmzlabsclj.tardis.io.http])
   (:use [cmzlabsclj.tardis.io.netty])
@@ -25,8 +25,8 @@
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.mvc.templates
          :only [MakeWebAsset GetLocalFile] ])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabsclj.util.meta :only [MakeObj] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim] ])
+  (:use [cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
   (:import (com.zotohlabs.gallifrey.mvc HTTPErrorHandler
                                         MVCUtils WebAsset WebContent))
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
@@ -187,7 +187,7 @@
     ri
     ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
-  (let [ mpt (nsb (.getf ^cmzlabsclj.util.core.MubleAPI ri :mountPoint))
+  (let [ mpt (nsb (.getf ^cmzlabsclj.nucleus.util.core.MubleAPI ri :mountPoint))
         ^File appDir (-> src (.container)(.getAppDir))
          ps (NiceFPath (File. appDir DN_PUBLIC))
          gc (.groupCount mc) ]
@@ -211,10 +211,10 @@
 (defn ServeRoute ""
 
   [ ^cmzlabsclj.tardis.core.sys.Element src
-    ^cmzlabsclj.net.routes.RouteInfo ri
+    ^cmzlabsclj.nucleus.net.routes.RouteInfo ri
     ^Matcher mc
     ^Channel ch
-    ^cmzlabsclj.util.core.MubleAPI evt]
+    ^cmzlabsclj.nucleus.util.core.MubleAPI evt]
 
   (let [ pms (.collect ri mc)
          options { :router (.getHandler ri)

@@ -41,20 +41,20 @@
   (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
   (:import (com.zotohlabs.wflow.core Job))
 
-  (:use [cmzlabsclj.util.core :only [notnil? Stringify
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? Stringify
                                        MakeMMap juid
                                        test-nonil LoadJavaProps] ])
-  (:use [cmzlabsclj.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? strim] ])
-  (:use [cmzlabsclj.net.comms :only [GetFormFields] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? strim] ])
+  (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
 
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.wfs])
   (:use [cmzlabsclj.tardis.io.webss :only [Realign!] ])
   (:use [cmzlabsclj.tardis.io.basicauth])
   (:use [cmzlabsclj.tardis.auth.dms])
-  (:use [cmzlabsclj.dbio.connect :only [DbioConnect] ])
-  (:use [cmzlabsclj.dbio.core])
+  (:use [cmzlabsclj.nucleus.dbio.connect :only [DbioConnect] ])
+  (:use [cmzlabsclj.nucleus.dbio.core])
   (:require [clojure.data.json :as json]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,7 +73,7 @@
 (defn- mkjdbc ""
 
   ^JDBCInfo
-  [^cmzlabsclj.util.core.MubleAPI impl]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI impl]
 
   (let [ cfg (get (.getf impl :cfg) (keyword DEF_DBID))
          pkey (.getf impl :appKey) ]
@@ -85,7 +85,7 @@
 (defn- getSQLr ""
 
   ^SQLr
-  [^cmzlabsclj.util.core.MubleAPI impl]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI impl]
 
   (-> (DbioConnect (mkjdbc impl) AUTH-MCACHE {})
       (.newSimpleSQLr)
@@ -137,7 +137,7 @@
   roleObjs : a list of roles to be assigned to the account."
 
   [^SQLr sql ^String user
-   ^cmzlabsclj.crypto.codec.Password pwdObj options roleObjs]
+   ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj options roleObjs]
 
   (let [ [p s] (.hashed pwdObj)
          acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
@@ -157,7 +157,7 @@
 ;;
 (defn GetLoginAccount  ""
 
-  [^SQLr sql ^String user ^cmzlabsclj.crypto.codec.Password pwdObj]
+  [^SQLr sql ^String user ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj]
 
   (let [ acct (.findOne sql :czc.tardis.auth/LoginAccount
                             { :acctid (strim user) }) ]
@@ -186,7 +186,7 @@
 ;;
 (defn ChangeLoginAccount ""
 
-  [^SQLr sql userObj ^cmzlabsclj.crypto.codec.Password pwdObj ]
+  [^SQLr sql userObj ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj ]
 
   (let [ [p s] (.hashed pwdObj)
          u (-> userObj

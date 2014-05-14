@@ -16,8 +16,8 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
-  (:use [cmzlabsclj.util.str :only [nsb strim ] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb strim ] ])
   (:use [cmzlabsclj.tardis.core.sys])
 
   (:import (com.zotohlabs.frwk.server Component Service))

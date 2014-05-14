@@ -13,12 +13,12 @@
 
   testcljc.crypto.mimestuff
 
-  (:require [cmzlabsclj.crypto.codec :as RT])
-  (:require [cmzlabsclj.crypto.stores :as ST])
-  (:require [cmzlabsclj.util.core :as CU])
-  (:require [cmzlabsclj.util.io :as IO])
-  (:require [cmzlabsclj.util.meta :as MU])
-  (:require [cmzlabsclj.crypto.core :as RU])
+  (:require [cmzlabsclj.nucleus.crypto.codec :as RT])
+  (:require [cmzlabsclj.nucleus.crypto.stores :as ST])
+  (:require [cmzlabsclj.nucleus.util.core :as CU])
+  (:require [cmzlabsclj.nucleus.util.io :as IO])
+  (:require [cmzlabsclj.nucleus.util.meta :as MU])
+  (:require [cmzlabsclj.nucleus.crypto.core :as RU])
   (:use [clojure.test])
   (:import (org.apache.commons.io FileUtils IOUtils))
   (:import (java.security Policy KeyStore KeyStore$PrivateKeyEntry
@@ -51,8 +51,8 @@
                     (not (RU/IsEncrypted? mp)) ))))
 
 (is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
-      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS
-                             ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS))
+      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS
+                             ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS))
                              HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                cs (.getCertificateChain pke)
@@ -61,7 +61,7 @@
         (RU/IsSigned? rc))))
 
 (is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
-      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                mp (.getContent msg)
                cs (.getCertificateChain pke)
@@ -70,7 +70,7 @@
         (RU/IsSigned? rc))))
 
 (is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
-      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                ^Multipart mp (.getContent msg)
                bp (.getBodyPart mp 1)
@@ -80,7 +80,7 @@
         (RU/IsSigned? rc))))
 
 (is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
-      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                cs (.getCertificateChain pke)
                pk (.getPrivateKey pke)
@@ -96,7 +96,7 @@
         (instance? Multipart rc))))
 
 (is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
-      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+      (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                cs (.getCertificateChain pke)
                pk (.getPrivateKey pke)
@@ -113,7 +113,7 @@
           (and (instance? Multipart (nth rc 0)) (instance? (MU/BytesClass) (nth rc 1)))
           false))))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                 s (SDataSource. (CU/Bytesify "hello world") "text/plain")
                 cs (.getCertificateChain pke)
                 pk (.getPrivateKey pke)
@@ -132,7 +132,7 @@
            (and (not (nil? rc))
               (> (.indexOf (CU/Stringify rc) "hello world") 0))))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                 s2 (SDataSource. (CU/Bytesify "what's up dawg") "text/plain")
                 s1 (SDataSource. (CU/Bytesify "hello world") "text/plain")
                 cs (.getCertificateChain pke)
@@ -159,7 +159,7 @@
               (> (.indexOf (CU/Stringify rc) "what's up dawg") 0)
               (> (.indexOf (CU/Stringify rc) "hello world") 0))))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.crypto.stores.CryptoStore ROOTCS)) HELPME)
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
              cs (.getCertificateChain pke)
              pk (.getPrivateKey pke)
              data (XData. "heeloo world")

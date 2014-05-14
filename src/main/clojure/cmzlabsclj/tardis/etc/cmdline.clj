@@ -17,19 +17,19 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.etc.climain :only [StartMain] ])
-  (:use [cmzlabsclj.i18n.resources :only [GetString] ])
+  (:use [cmzlabsclj.nucleus.i18n.resources :only [GetString] ])
   (:use [cmzlabsclj.tardis.etc.cli])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
-  (:use [cmzlabsclj.util.dates :only [AddMonths MakeCal] ])
-  (:use [cmzlabsclj.util.meta])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? strim] ])
-  (:use [cmzlabsclj.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
-  (:use [cmzlabsclj.crypto.codec :only [CreateStrongPwd Pwdify] ])
-  (:use [cmzlabsclj.crypto.core
+  (:use [cmzlabsclj.nucleus.util.dates :only [AddMonths MakeCal] ])
+  (:use [cmzlabsclj.nucleus.util.meta])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? strim] ])
+  (:use [cmzlabsclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ])
+  (:use [cmzlabsclj.nucleus.crypto.core
          :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
   (:use [cmzlabsclj.tardis.core.constants])
-  (:use [cmzlabsclj.util.ini :only [ParseInifile] ])
+  (:use [cmzlabsclj.nucleus.util.ini :only [ParseInifile] ])
 
   (:import (java.util Map Calendar ResourceBundle Properties Date))
   (:import (org.apache.commons.lang3 StringUtils))
@@ -354,7 +354,7 @@
 
   [text]
 
-  (let [ ^cmzlabsclj.crypto.codec.Password p (Pwdify text) ]
+  (let [ ^cmzlabsclj.nucleus.crypto.codec.Password p (Pwdify text) ]
     (println (.hashed p))
   ))
 
@@ -375,7 +375,7 @@
 
   [pkey text]
 
-  (let [ ^cmzlabsclj.crypto.codec.Password p (Pwdify text pkey) ]
+  (let [ ^cmzlabsclj.nucleus.crypto.codec.Password p (Pwdify text pkey) ]
     (println (.encoded p))
   ))
 
@@ -396,7 +396,7 @@
 
   [pkey secret]
 
-  (let [ ^cmzlabsclj.crypto.codec.Password p (Pwdify secret pkey) ]
+  (let [ ^cmzlabsclj.nucleus.crypto.codec.Password p (Pwdify secret pkey) ]
     (println (.text p))
   ))
 

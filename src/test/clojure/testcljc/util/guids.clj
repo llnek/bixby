@@ -15,7 +15,7 @@
   testcljc.util.guids
 
   (:use [clojure.test])
-  (:require [cmzlabsclj.util.guids :as GU]))
+  (:require [cmzlabsclj.nucleus.util.guids :as GU]))
 
 ;;(def ^:private UID_2 (GU/new-uuid))
 ;;(def ^:private UID_1 (GU/new-uuid))

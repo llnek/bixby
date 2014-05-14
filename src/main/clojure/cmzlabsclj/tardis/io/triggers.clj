@@ -21,9 +21,9 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [ThrowIOE MakeMMap Stringify notnil? Try!] ])
-  (:use [cmzlabsclj.util.str :only [nsb] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
   (:use [cmzlabsclj.tardis.io.core])
 
   (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))

@@ -16,14 +16,14 @@
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.process :only [ProcessPid SafeWait] ])
-  (:use [cmzlabsclj.i18n.resources :only [GetResource] ])
-  (:use [cmzlabsclj.util.meta :only [SetCldr GetCldr] ])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.process :only [ProcessPid SafeWait] ])
+  (:use [cmzlabsclj.nucleus.i18n.resources :only [GetResource] ])
+  (:use [cmzlabsclj.nucleus.util.meta :only [SetCldr GetCldr] ])
+  (:use [cmzlabsclj.nucleus.util.core
          :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabsclj.util.ini :only [ParseInifile] ])
-  (:use [cmzlabsclj.netty.discarder :only [MakeDiscardHTTPD] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim] ])
+  (:use [cmzlabsclj.nucleus.util.ini :only [ParseInifile] ])
+  (:use [cmzlabsclj.nucleus.netty.discarder :only [MakeDiscardHTTPD] ])
 
   (:use [cmzlabsclj.tardis.impl.exec :only [MakeExecvisor] ])
   (:use [cmzlabsclj.tardis.core.constants])
@@ -57,7 +57,7 @@
 (defn- inizContext
   "the context object has a set of properties, such as basic dir, which
   is shared with other key components."
-  ^cmzlabsclj.util.core.MubleAPI
+  ^cmzlabsclj.nucleus.util.core.MubleAPI
   [^File baseDir]
 
   (let [ cfg (File. baseDir ^String DN_CFG)
@@ -73,7 +73,7 @@
 ;;
 (defn- setupClassLoader ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ root (.getf ctx K_ROOT_CZLR)
          cl (ExecClassLoader. root) ]
@@ -86,7 +86,7 @@
 ;;
 (defn- setupClassLoaderAsRoot ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx ^ClassLoader cur]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx ^ClassLoader cur]
 
   (doto ctx
     (.setf! K_ROOT_CZLR (RootClassLoader. cur))
@@ -100,7 +100,7 @@
   The exec class loader inherits from the root and is the class loader
   that runs skaro."
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ cz (GetCldr) ]
     (cond
@@ -125,13 +125,13 @@
 ;;
 (defn- loadConf ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ ^File home (.getf ctx K_BASEDIR)
          cf (File. home  (str DN_CONF
                               "/" (name K_PROPS) )) ]
     (log/info "About to parse config file " cf)
-    (let [ ^cmzlabsclj.util.ini.IWin32Conf
+    (let [ ^cmzlabsclj.nucleus.util.ini.IWin32Conf
            w (ParseInifile cf)
            cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
            lg (cstr/lower-case (.optString w K_LOCALE K_LANG "en"))
@@ -147,7 +147,7 @@
 ;;
 (defn- setupResources "Look for and load the resource bundle."
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ rc (GetResource "cmzlabsclj/tardis/etc/Resources"
                          (.getf ctx K_LOCALE)) ]
@@ -181,7 +181,7 @@
 ;;
 (defn- start-exec "Start the Execvisor!"
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (log/info "about to start Skaro...")
   (let [ ^Startable exec (.getf ctx K_EXECV) ]
@@ -193,9 +193,9 @@
 ;;
 (defn- primodial ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
-  (let [ ^cmzlabsclj.util.ini.IWin32Conf
+  (let [ ^cmzlabsclj.nucleus.util.ini.IWin32Conf
          wc (.getf ctx K_PROPS)
          cl (.getf ctx K_EXEC_CZLR)
          cli (.getf ctx K_CLISH)
@@ -203,7 +203,7 @@
     ;;(test-cond "conf file:exec-visor" (= cz "cmzlabsclj.tardis.impl.Execvisor"))
     (log/info "inside primodial() ---------------------------------------------->")
     (log/info "execvisor = " cz)
-    (let [ ^cmzlabsclj.util.core.MubleAPI
+    (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
            execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
       (SynthesizeComponent execv { :ctx ctx } )
@@ -215,7 +215,7 @@
 ;;
 (defn- stop-cli "Stop all apps and processors."
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ ^File pid (.getf ctx K_PIDFILE)
          kp (.getf ctx K_KILLPORT)
@@ -240,7 +240,7 @@
 ;;
 (defn- enableRemoteShutdown "Listen on a port for remote kill command"
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (log/info "Enabling remote shutdown...")
   (let [ port (ConvLong (System/getProperty "skaro.kill.port") 4444)
@@ -253,7 +253,7 @@
 ;;
 (defn- hookShutdown ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ cli (.getf ctx K_CLISH) ]
     (-> (Runtime/getRuntime)
@@ -268,7 +268,7 @@
 ;;
 (defn- writePID ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (let [ fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
     (FileUtils/writeStringToFile fp (ProcessPid) "utf-8")
@@ -281,7 +281,7 @@
 ;;
 (defn- pause-cli ""
 
-  [^cmzlabsclj.util.core.MubleAPI ctx]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (PrintMutableObj ctx)
   (log/info "applications are now running...")
@@ -331,7 +331,7 @@
             (pause-cli)) )
 
       (stop [this]
-        (let [ ^cmzlabsclj.util.core.MubleAPI
+        (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
                ctx (.getCtx this) ]
           (stop-cli ctx))))
   ))

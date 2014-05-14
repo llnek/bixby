@@ -15,14 +15,14 @@
   cmzlabsclj.tardis.io.jetty
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [cmzlabsclj.util.core :only [MubleAPI notnil? juid TryC spos?
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI notnil? juid TryC spos?
                                            ToJavaInt Try!
                                            MakeMMap test-cond Stringify] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.crypto.ssl])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabsclj.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabsclj.util.seqnum :only [NextLong] ])
+  (:use [cmzlabsclj.nucleus.crypto.ssl])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
+  (:use [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.io.core])
@@ -96,7 +96,7 @@
 ;;
 (defn- replyServlet ""
 
-  [^cmzlabsclj.util.core.MubleAPI res
+  [^cmzlabsclj.nucleus.util.core.MubleAPI res
    ^HttpServletRequest req
    ^HttpServletResponse rsp
    src]

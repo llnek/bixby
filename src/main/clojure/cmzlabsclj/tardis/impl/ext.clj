@@ -34,18 +34,18 @@
                   stop kernel-stop } ])
   (:use [cmzlabsclj.tardis.etc.misc])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.util.core :only [MubleAPI MakeMMap] ])
-  (:use [ cmzlabsclj.util.scheduler :only [MakeScheduler] ])
-  (:use [ cmzlabsclj.util.process :only [Coroutine] ])
-  (:use [ cmzlabsclj.util.core :only [LoadJavaProps] ])
-  (:use [ cmzlabsclj.util.seqnum :only [NextLong] ])
-  (:use [ cmzlabsclj.util.str :only [hgl? nsb strim nichts?] ])
-  (:use [ cmzlabsclj.util.meta :only [MakeObj] ])
-  (:use [ cmzlabsclj.crypto.codec :only [Pwdify] ])
-  (:use [ cmzlabsclj.dbio.connect :only [DbioConnect] ])
-  (:use [ cmzlabsclj.dbio.core
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap] ])
+  (:use [ cmzlabsclj.nucleus.util.scheduler :only [MakeScheduler] ])
+  (:use [ cmzlabsclj.nucleus.util.process :only [Coroutine] ])
+  (:use [ cmzlabsclj.nucleus.util.core :only [LoadJavaProps] ])
+  (:use [ cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
+  (:use [ cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ])
+  (:use [ cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
+  (:use [ cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
+  (:use [ cmzlabsclj.nucleus.dbio.connect :only [DbioConnect] ])
+  (:use [ cmzlabsclj.nucleus.dbio.core
          :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
-  (:use [ cmzlabsclj.net.routes :only [LoadRoutes] ])
+  (:use [ cmzlabsclj.nucleus.net.routes :only [LoadRoutes] ])
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (freemarker.template Configuration Template DefaultObjectWrapper))
@@ -403,7 +403,7 @@
                 (.reg srg s)))))
 
         (reifyService [this svc nm cfg]
-          (let [^cmzlabsclj.util.core.MubleAPI ctx (.getCtx this)
+          (let [^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry root (.getf ctx K_COMPS)
                  ^ComponentRegistry bks (.lookup root K_BLOCKS)
                  ^ComponentRegistry bk (.lookup bks (keyword svc)) ]
@@ -423,7 +423,7 @@
   [^cmzlabsclj.tardis.core.sys.Element pod]
 
   (let [ c (make-app-container pod)
-         ^cmzlabsclj.util.core.MubleAPI
+         ^cmzlabsclj.nucleus.util.core.MubleAPI
          ctx (.getCtx pod)
          cl (.getf ctx K_APP_CZLR)
          ^ComponentRegistry root (.getf ctx K_COMPS)
@@ -568,7 +568,7 @@
          mCZ (strim (.get mf "Main-Class"))
          reg (.getAttr co K_SVCS)
          jc (make-jobcreator co)
-         ^cmzlabsclj.util.scheduler.SchedulerAPI
+         ^cmzlabsclj.nucleus.util.scheduler.SchedulerAPI
          sc (MakeScheduler co)
          cfg (:container env) ]
 

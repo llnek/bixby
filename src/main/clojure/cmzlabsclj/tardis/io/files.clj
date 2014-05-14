@@ -20,11 +20,11 @@
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.io.loops
          :only [LoopableSchedule LoopableOneLoop CfgLoopable] ])
-  (:use [cmzlabsclj.util.seqnum :only [NextLong] ])
+  (:use [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
   (:use [cmzlabsclj.tardis.io.core])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [MakeMMap notnil?  test-nestr TryC SubsVar] ])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? nsn] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? nsn] ])
 
   (:import (java.io FileFilter File FilenameFilter IOException))
   (:import (org.apache.commons.lang3 StringUtils))

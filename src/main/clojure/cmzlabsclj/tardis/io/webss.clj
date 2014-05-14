@@ -16,12 +16,12 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [MubleAPI ConvLong notnil? ternary MakeMMap Bytesify] ])
-  (:use [cmzlabsclj.crypto.core :only [GenMac] ])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? AddDelim!] ])
-  (:use [cmzlabsclj.util.guids :only [NewUUid] ])
-  (:use [cmzlabsclj.net.comms :only [GetFormFields] ])
+  (:use [cmzlabsclj.nucleus.crypto.core :only [GenMac] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? AddDelim!] ])
+  (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
+  (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
 
   (:import (com.zotohlabs.gallifrey.runtime ExpiredError AuthError))
   (:import (org.apache.commons.lang3 StringUtils))

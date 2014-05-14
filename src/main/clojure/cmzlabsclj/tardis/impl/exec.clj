@@ -19,14 +19,14 @@
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.impl.defaults])
-  (:use [cmzlabsclj.jmx.core])
+  (:use [cmzlabsclj.nucleus.jmx.core])
   (:use [cmzlabsclj.tardis.impl.sys
          :only [MakeKernel MakePodMeta MakeDeployer] ])
-  (:use [ cmzlabsclj.util.core
+  (:use [ cmzlabsclj.nucleus.util.core
          :only [LoadJavaProps test-nestr NiceFPath TryC
                 ConvLong MakeMMap juid test-nonil] ])
-  (:use [ cmzlabsclj.util.str :only [nsb strim hgl?] ])
-  (:use [ cmzlabsclj.util.ini :only [ParseInifile] ])
+  (:use [ cmzlabsclj.nucleus.util.str :only [nsb strim hgl?] ])
+  (:use [ cmzlabsclj.nucleus.util.ini :only [ParseInifile] ])
   (:import (org.apache.commons.io.filefilter DirectoryFileFilter))
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (java.io File FileFilter))
@@ -70,7 +70,7 @@
    ^File des
    mf]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx execv)
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx execv)
          ^ComponentRegistry root (.getf ctx K_COMPS)
          ^ComponentRegistry apps (.lookup root K_APPS)
          ps (LoadJavaProps mf)
@@ -92,7 +92,7 @@
     (let [ ^cmzlabsclj.tardis.core.sys.Element
            m (-> (MakePodMeta app ver nil cz vid (-> des (.toURI) (.toURL)))
                  (SynthesizeComponent { :ctx ctx })) ]
-      (.setf! ^cmzlabsclj.util.core.MubleAPI (.getCtx m) K_EXECV execv)
+      (.setf! ^cmzlabsclj.nucleus.util.core.MubleAPI (.getCtx m) K_EXECV execv)
       (.reg apps m)
       m)
   ))
@@ -127,7 +127,7 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx co)
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
          ^FileFilter ff DirectoryFileFilter/DIRECTORY
          ^File pd (.getf ctx K_PLAYDIR) ]
     (doseq [ f (seq (.listFiles pd ff)) ]
@@ -143,10 +143,10 @@
 
   (log/info "JMX config " cfg)
   (TryC
-    (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx co)
+    (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
            port (ConvLong (nsb (get cfg "port")) 7777)
            host (nsb (get cfg "host"))
-           ^cmzlabsclj.jmx.core.JMXServer
+           ^cmzlabsclj.nucleus.jmx.core.JMXServer
            jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
       (.start ^Startable jmx)
@@ -163,7 +163,7 @@
   [^cmzlabsclj.tardis.core.sys.Element co]
 
   (TryC
-    (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx co)
+    (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
            ^Startable jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx) (.stop jmx))
       (.setf! ctx K_JMXSVR nil)))
@@ -213,13 +213,13 @@
 
         Startable
         (start [this]
-          (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx this)
+          (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry root (.getf ctx K_COMPS)
                  ^Startable k (.lookup root K_KERNEL) ]
             (inspect-pods this)
             (.start k)))
         (stop [this]
-          (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx this)
+          (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
                  ^ComponentRegistry
                  root (.getf ctx K_COMPS)
                  ^Startable k (.lookup root K_KERNEL) ]
@@ -236,8 +236,8 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx co)
-         ^cmzlabsclj.util.ini.IWin32Conf
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+         ^cmzlabsclj.nucleus.util.ini.IWin32Conf
          cf (.getf ctx K_PROPS)
          comps (.getSection cf K_COMPS)
          regs (.getSection cf K_REGS)
@@ -337,7 +337,7 @@
   [^cmzlabsclj.tardis.impl.defaults.BlockMeta block]
 
   (let [ ^URL url (.metaUrl block)
-         ^cmzlabsclj.util.ini.IWin32Conf
+         ^cmzlabsclj.nucleus.util.ini.IWin32Conf
          cfg (ParseInifile url)
          inf (.getSection cfg "info") ]
     (test-nonil "Invalid block-meta file, no info section." inf)
@@ -361,7 +361,7 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
          ctx (.getCtx co)
          bDir (.getf ctx K_BKSDIR)
          fs (IOUtils/listFiles ^File bDir "meta" false) ]

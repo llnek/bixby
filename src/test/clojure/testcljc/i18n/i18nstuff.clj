@@ -15,8 +15,8 @@
   testcljc.i18n.i18nstuff
 
   (:use [clojure.test])
-  (:require [cmzlabsclj.i18n.resources :as NU])
-  (:require [cmzlabsclj.util.core :as CU]))
+  (:require [cmzlabsclj.nucleus.i18n.resources :as NU])
+  (:require [cmzlabsclj.nucleus.util.core :as CU]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

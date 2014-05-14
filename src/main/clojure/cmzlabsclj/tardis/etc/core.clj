@@ -18,10 +18,10 @@
 
   (:require [clojure.tools.logging :as log :only [warn error info debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.i18n.resources :only [GetResource] ])
-  (:use [cmzlabsclj.util.core :only [test-cond] ])
-  (:use [cmzlabsclj.util.str :only [MakeString] ])
-  (:use [cmzlabsclj.util.files :only [DirRead?] ])
+  (:use [cmzlabsclj.nucleus.i18n.resources :only [GetResource] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [test-cond] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [MakeString] ])
+  (:use [cmzlabsclj.nucleus.util.files :only [DirRead?] ])
   (:use [cmzlabsclj.tardis.etc.cmdline
          :only [GetCommands EvalCommand] ])
 

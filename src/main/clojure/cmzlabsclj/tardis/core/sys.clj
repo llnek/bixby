@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only [MubleAPI MakeMMap] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap] ])
   (:import (com.zotohlabs.frwk.core Hierarchial Identifiable Versioned)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +99,7 @@
 ;;
 (defn MakeContext ""
 
-  ^cmzlabsclj.util.core.MubleAPI
+  ^cmzlabsclj.nucleus.util.core.MubleAPI
   []
 
   (let [ impl (MakeMMap) ]
@@ -116,7 +116,7 @@
 (defn CompCloneContext
 
   [^cmzlabsclj.tardis.core.sys.Element co
-   ^cmzlabsclj.util.core.MubleAPI ctx]
+   ^cmzlabsclj.nucleus.util.core.MubleAPI ctx]
 
   (when-not (nil? ctx)
     (let [ x (MakeContext) ]

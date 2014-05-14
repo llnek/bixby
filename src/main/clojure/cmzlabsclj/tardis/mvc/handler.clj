@@ -15,7 +15,7 @@
   cmzlabsclj.tardis.mvc.handler
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.io.triggers])
@@ -28,9 +28,9 @@
   (:use [cmzlabsclj.tardis.mvc.templates
          :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ])
   (:use [cmzlabsclj.tardis.mvc.comms])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabsclj.util.meta :only [MakeObj] ])
-  (:use [cmzlabsclj.net.routes])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim] ])
+  (:use [cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
+  (:use [cmzlabsclj.nucleus.net.routes])
 
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (org.apache.commons.lang3 StringUtils))
@@ -76,7 +76,7 @@
       (log/debug "mvc route filter called with message = " (type msg))
       (cond
         (instance? HttpRequest msg)
-        (let [ ^cmzlabsclj.net.routes.RouteCracker
+        (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker
                ck (.getAttr co :cracker)
                ^ChannelHandlerContext ctx c
                ^HttpRequest req msg
@@ -125,12 +125,12 @@
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
       (log/debug "mvc netty handler called with message = " (type msg))
-      (let [ ^cmzlabsclj.net.routes.RouteCracker
+      (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker
              rcc (.getAttr co :cracker)
              ch (.channel ^ChannelHandlerContext ctx)
              ^HTTPEvent evt (IOESReifyEvent co ch msg)
              info (.info ^DemuxedMsg msg)
-             [r1 ^cmzlabsclj.net.routes.RouteInfo r2 r3 r4]
+             [r1 ^cmzlabsclj.nucleus.net.routes.RouteInfo r2 r3 r4]
              (.crack rcc info) ]
         (cond
           (= r1 true)

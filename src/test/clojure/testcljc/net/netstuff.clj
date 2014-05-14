@@ -12,7 +12,7 @@
 
 (ns testcljc.net.netstuff
 
-  (:require [cmzlabsclj.net.comms :as NU])
+  (:require [cmzlabsclj.nucleus.net.comms :as NU])
   (:import (java.net URL URI))
   (:use [clojure.test]))
 

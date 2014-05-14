@@ -25,10 +25,10 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.crypto.codec :only [Pwdify] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
   (:use [cmzlabsclj.tardis.auth.core])
-  (:use [cmzlabsclj.dbio.connect])
-  (:use [cmzlabsclj.dbio.core])
+  (:use [cmzlabsclj.nucleus.dbio.connect])
+  (:use [cmzlabsclj.nucleus.dbio.core])
 
   (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken SimpleAccount))
   (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))

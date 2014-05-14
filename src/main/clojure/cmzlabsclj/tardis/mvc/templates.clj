@@ -16,9 +16,9 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only [Try! notnil? NiceFPath] ])
-  (:use [cmzlabsclj.util.mime :only [GuessContentType] ])
-  (:use [cmzlabsclj.util.io :only [Streamify] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [Try! notnil? NiceFPath] ])
+  (:use [cmzlabsclj.nucleus.util.mime :only [GuessContentType] ])
+  (:use [cmzlabsclj.nucleus.util.io :only [Streamify] ])
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion

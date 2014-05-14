@@ -16,10 +16,10 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.util.core :only [notnil? ] ])
-  (:use [cmzlabsclj.util.str :only [nsb hgl? ] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? ] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
-  (:use [cmzlabsclj.net.comms :only [GetFormFields] ])
+  (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
   (:import (com.zotohlabs.gallifrey.io HTTPEvent))
   (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem)))
 

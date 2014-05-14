@@ -26,7 +26,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.io.http  :only [MakeHttpResult] ])
-  (:use [cmzlabsclj.util.core :only [ThrowIOE TryC] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [ThrowIOE TryC] ])
   (:use [cmzlabsclj.tardis.io.triggers])
   (:use [cmzlabsclj.tardis.io.core])
   (:use [cmzlabsclj.tardis.io.webss])

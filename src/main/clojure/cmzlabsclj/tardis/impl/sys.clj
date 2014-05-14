@@ -23,13 +23,13 @@
          :rename {enabled? blockmeta-enabled?
                   Start kernel-start
                   Stop kernel-stop}])
-  (:use [ cmzlabsclj.util.core
+  (:use [ cmzlabsclj.nucleus.util.core
          :only [MakeMMap TryC NiceFPath notnil? NewRandom] ])
-  (:use [ cmzlabsclj.util.str :only [strim] ])
-  (:use [ cmzlabsclj.util.process :only [SafeWait] ])
-  (:use [ cmzlabsclj.util.files :only [Unzip] ])
-  (:use [ cmzlabsclj.util.mime :only [SetupCache] ])
-  (:use [ cmzlabsclj.util.seqnum :only [NextLong] ] )
+  (:use [ cmzlabsclj.nucleus.util.str :only [strim] ])
+  (:use [ cmzlabsclj.nucleus.util.process :only [SafeWait] ])
+  (:use [ cmzlabsclj.nucleus.util.files :only [Unzip] ])
+  (:use [ cmzlabsclj.nucleus.util.mime :only [SetupCache] ])
+  (:use [ cmzlabsclj.nucleus.util.seqnum :only [NextLong] ] )
 
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
@@ -77,7 +77,7 @@
         Deployer
 
         (undeploy [this app]
-          (let [ ^cmzlabsclj.util.core.MubleAPI
+          (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
                  ctx (.getCtx this)
                  dir (File. ^File (.getf ctx K_PLAYDIR)
                             ^String app) ]
@@ -86,7 +86,7 @@
 
         (deploy [this src]
           (let [ app (FilenameUtils/getBaseName (NiceFPath src))
-                 ^cmzlabsclj.util.core.MubleAPI
+                 ^cmzlabsclj.nucleus.util.core.MubleAPI
                  ctx (.getCtx this)
                  des (File. ^File (.getf ctx K_PLAYDIR)
                             ^String app) ]
@@ -115,7 +115,7 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI ctx (.getCtx co)
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
          ^File py (.getf ctx K_PLAYDIR)
          ^File pd (.getf ctx K_PODSDIR) ]
     (when (.isDirectory pd)
@@ -184,9 +184,9 @@
         Startable
 
         (start [this]
-          (let [ ^cmzlabsclj.util.core.MubleAPI
+          (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
                  ctx (.getCtx this)
-                 ^cmzlabsclj.util.ini.IWin32Conf
+                 ^cmzlabsclj.nucleus.util.ini.IWin32Conf
                  wc (.getf ctx K_PROPS)
                  ^ComponentRegistry
                  root (.getf ctx K_COMPS)
@@ -266,7 +266,7 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.util.core.MubleAPI
+  (let [ ^cmzlabsclj.nucleus.util.core.MubleAPI
          ctx (.getCtx co)
          rcl (.getf ctx K_ROOT_CZLR)
          ^URL url (.srcUrl ^cmzlabsclj.tardis.impl.defaults.PODMeta co)

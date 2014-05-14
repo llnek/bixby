@@ -16,7 +16,7 @@
   cmzlabsclj.tardis.io.netty
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [cmzlabsclj.util.core
+  (:use [cmzlabsclj.nucleus.util.core
          :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.core.sys])
@@ -24,10 +24,10 @@
   (:use [cmzlabsclj.tardis.io.http])
   (:use [cmzlabsclj.tardis.io.triggers])
   (:use [cmzlabsclj.tardis.io.webss :only [MakeWSSession] ])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim nichts?] ])
-  (:use [cmzlabsclj.net.routes :only [MakeRouteCracker RouteCracker] ])
-  (:use [cmzlabsclj.util.seqnum :only [NextLong] ])
-  (:use [cmzlabsclj.util.mime :only [GetCharset] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ])
+  (:use [cmzlabsclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ])
+  (:use [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
+  (:use [cmzlabsclj.nucleus.util.mime :only [GetCharset] ])
   (:import (java.net HttpCookie URI URL InetSocketAddress))
   (:import (java.net SocketAddress InetAddress))
   (:import (java.util ArrayList List))
@@ -148,7 +148,7 @@
 ;;
 (defn- netty-reply ""
 
-  [^cmzlabsclj.util.core.MubleAPI res
+  [^cmzlabsclj.nucleus.util.core.MubleAPI res
    ^Channel ch
    ^HTTPEvent evt
    src]

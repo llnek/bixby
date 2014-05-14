@@ -14,7 +14,7 @@
 
   cmzlabsclj.tardis.mvc.statics
 
-  (:use [cmzlabsclj.util.core :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.tardis.io.triggers])
@@ -26,9 +26,9 @@
 
   (:use [cmzlabsclj.tardis.mvc.templates :only [MakeWebAsset] ])
   (:use [cmzlabsclj.tardis.mvc.comms])
-  (:use [cmzlabsclj.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabsclj.util.meta :only [MakeObj] ])
-  (:use [cmzlabsclj.net.routes])
+  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim] ])
+  (:use [cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
+  (:use [cmzlabsclj.nucleus.net.routes])
 
   (:import ( com.zotohlabs.wflow FlowPoint Activity Pipeline PipelineDelegate PTask Work))
   (:import (com.zotohlabs.wflow.core Job))

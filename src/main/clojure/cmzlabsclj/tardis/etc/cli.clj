@@ -18,10 +18,10 @@
   (:require [clojure.data.json :as json])
   (:require [clojure.string :as cstr])
 
-  (:use [cmzlabsclj.util.core :only [GetUser juid IsWindows?] ])
-  (:use [cmzlabsclj.util.str :only [strim nsb] ])
-  (:use [cmzlabsclj.util.ini :only [ParseInifile] ])
-  (:use [cmzlabsclj.util.files :only [Unzip Mkdirs] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [GetUser juid IsWindows?] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [strim nsb] ])
+  (:use [cmzlabsclj.nucleus.util.ini :only [ParseInifile] ])
+  (:use [cmzlabsclj.nucleus.util.files :only [Unzip Mkdirs] ])
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.sys])
 

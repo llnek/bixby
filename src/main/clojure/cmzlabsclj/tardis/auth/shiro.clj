@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.crypto.codec :only [Pwdify] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
   (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
   (:import (org.apache.shiro.authc.credential CredentialsMatcher))
   (:import (org.apache.shiro.realm AuthorizingRealm))

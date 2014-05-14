@@ -17,8 +17,8 @@
   (:use [clojure.test])
   (:import (org.apache.commons.io FileUtils))
   (:import (java.io File))
-  (:require [cmzlabsclj.util.core :as CU])
-  (:require [cmzlabsclj.util.process :as PU]))
+  (:require [cmzlabsclj.nucleus.util.core :as CU])
+  (:require [cmzlabsclj.nucleus.util.process :as PU]))
 
 
 (def ^:private CUR_MS (System/currentTimeMillis))

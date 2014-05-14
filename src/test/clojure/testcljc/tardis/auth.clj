@@ -14,14 +14,14 @@
 
   testcljc.tardis.auth
 
-  (:require [cmzlabsclj.crypto.codec :as CE])
-  (:require [cmzlabsclj.util.core :as CU])
+  (:require [cmzlabsclj.nucleus.crypto.codec :as CE])
+  (:require [cmzlabsclj.nucleus.util.core :as CU])
   (:use [cmzlabsclj.tardis.auth.core])
   (:use [cmzlabsclj.tardis.auth.dms])
-  (:use [cmzlabsclj.dbio.drivers])
-  (:use [cmzlabsclj.dbio.connect])
-  (:use [cmzlabsclj.dbio.core])
-  (:use [cmzlabsclj.dbio.h2])
+  (:use [cmzlabsclj.nucleus.dbio.drivers])
+  (:use [cmzlabsclj.nucleus.dbio.connect])
+  (:use [cmzlabsclj.nucleus.dbio.core])
+  (:use [cmzlabsclj.nucleus.dbio.h2])
   (:use [clojure.test])
   (:import (com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
   (:import (java.io File))

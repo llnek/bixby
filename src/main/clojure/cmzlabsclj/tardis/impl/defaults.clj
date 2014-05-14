@@ -16,11 +16,11 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [ cmzlabsclj.util.core :only [notnil? MubleAPI] ] )
+  (:use [ cmzlabsclj.nucleus.util.core :only [notnil? MubleAPI] ] )
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [ cmzlabsclj.util.files :only [FileRead? DirReadWrite? ] ] )
-  (:use [ cmzlabsclj.util.core :only [test-cond MakeMMap test-nestr] ] )
+  (:use [ cmzlabsclj.nucleus.util.files :only [FileRead? DirReadWrite? ] ] )
+  (:use [ cmzlabsclj.nucleus.util.core :only [test-cond MakeMMap test-nestr] ] )
 
   (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial))
   (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
@@ -59,7 +59,7 @@
 (defn MaybeDir ""
 
   ^File
-  [^cmzlabsclj.util.core.MubleAPI m kn]
+  [^cmzlabsclj.nucleus.util.core.MubleAPI m kn]
 
   (let [ v (.getf m kn) ]
     (cond
