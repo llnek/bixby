@@ -41,7 +41,7 @@
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec
+                                        HttpServerCodec DefaultCookie
                                         HttpHeaders$Names LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.bootstrap ServerBootstrap))
@@ -69,6 +69,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- javaToCookie ""
+
+  ^Cookie
+  [^HttpCookie c]
+
+  (doto (DefaultCookie. (.getName c)(.getValue c))
+        (.setComment (.getComment c))
+        (.setDomain (.getDomain c))
+        (.setMaxAge (.getMaxAge c))
+        (.setPath (.getPath c))
+        (.setVersion (.getVersion c))
+        (.setHttpOnly (.isHttpOnly c))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- maybeClose ""
 
   [^HTTPEvent evt ^ChannelFuture cf]
@@ -82,16 +98,11 @@
 ;;
 (defn- cookiesToNetty ""
 
-  ^String
   [^List cookies]
 
   (persistent! (reduce (fn [sum ^HttpCookie c]
-                         (log/debug "cookies-to-netty: "
-                                    (.getName c)
-                                    " = " (.getValue c))
-                         (conj! sum
-                                (ServerCookieEncoder/encode
-                                  (.getName c)(.getValue c))))
+                           (conj! sum
+                                  (ServerCookieEncoder/encode (javaToCookie c))))
                        (transient [])
                        (seq cookies))
   ))
@@ -142,21 +153,21 @@
    ^HTTPEvent evt
    src]
 
-  (log/debug "netty-reply called by event with uri: " (.getUri evt))
+  ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
   (let [ cks (cookiesToNetty (.getf res :cookies))
          code (.getf res :code)
          rsp (NettyFW/makeHttpReply code)
          loc (nsb (.getf res :redirect))
          data (.getf res :data)
          hdrs (.getf res :hds) ]
-    (log/debug "about to reply " (.getStatus ^HTTPResult res))
+    ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
     (with-local-vars [ clen 0 raf nil payload nil ]
       (doseq [[^String nm vs] (seq hdrs)]
         (when-not (= "content-length" (cstr/lower-case  nm))
           (doseq [vv (seq vs)]
             (HttpHeaders/addHeader rsp nm vv))))
       (doseq [s cks]
-        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE cks) )
+        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE s) )
       (when (and (>= code 300)(< code 400))
         (when-not (cstr/blank? loc)
           (HttpHeaders/setHeader rsp "Location" loc)))
@@ -244,11 +255,6 @@
             (log/warn "ClosedChannelException thrown while flushing headers"))
           (catch Throwable t# (log/error t# "") )) ))
   ))
-
-
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
