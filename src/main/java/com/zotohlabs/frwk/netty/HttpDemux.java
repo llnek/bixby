@@ -46,6 +46,7 @@ public class HttpDemux extends AuxHttpDecoder {
   }
 
   private AuxHttpDecoder myDelegate;
+  private boolean deadMsg=false;
 
   public HttpDemux() {
 //    formpost= FormPostCodec.getInstance();
@@ -85,6 +86,7 @@ public class HttpDemux extends AuxHttpDecoder {
     if (uri.trim().startsWith("/favicon.")) {
       // ignore this crap
       NettyFW.replyXXX(ch, 404);
+      deadMsg=true;
       return;
     }
 
@@ -118,6 +120,9 @@ public class HttpDemux extends AuxHttpDecoder {
     else
     if (myDelegate != null) {
       myDelegate.channelReadXXX(ctx, obj);
+    }
+    else if (deadMsg) {
+      // ignore
     }
     else {
       throw new IOException("Fatal error while reading http message.");
