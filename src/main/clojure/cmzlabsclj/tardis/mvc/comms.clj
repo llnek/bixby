@@ -92,6 +92,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeStripUrlCrap
+
+  "Want to handle case where the url has stuff after the file name.
+   For example:  /public/blab&hhh or /public/blah?ggg"
+
+  ^String
+  [^String path]
+
+  (let [ pos (.lastIndexOf path (int \/)) ]
+    (if (> pos 0)
+      (let [ p1 (.indexOf path (int \?) pos)
+             p2 (.indexOf path (int \&) pos)
+             p3 (cond
+                  (and (> p1 0) (> p2 0)) (Math/min p1 p2)
+                  (> p1 0) p1
+                  (> p2 0) p2
+                  :else -1) ]
+        (if (> p3 0)
+           (.substring path 0 p3)
+           path))
+      path)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- handleStatic2 ""
 
   [src ^JsonObject info ^HTTPEvent evt ^HTTPResult res ^File file]
@@ -131,7 +156,8 @@
          info (:info options) ]
     (log/debug "request to serve static file: " fpath)
     (if (.startsWith fpath ps)
-        (handleStatic2 src info evt res (File. fpath))
+        (handleStatic2 src info evt res
+                       (File. (maybeStripUrlCrap fpath)))
         (do
           (log/warn "attempt to access non public file-system: " fpath)
           (.setStatus res 403)
