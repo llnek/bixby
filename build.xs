@@ -1,6 +1,7 @@
 gantBuildDir=/wdrive/dev/builds/${gantProjectName}
 scalaLibDir=/wdrive/opt/lang/scala/lib
 clojureDir=/wdrive/opt/lang/clojure/lib
+tpclDir=/wdrive/localrepo/tpcl/lib
 ivyLibDir=${gantBuildDir}/lib
 
 ivyRoot=/wdrive/.ivy

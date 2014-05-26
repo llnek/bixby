@@ -39,6 +39,10 @@ path (id: 'clojurePathId') {
   fileset ( dir: "${clojureDir}")
 }
 
+path (id : 'tpclPathId') {
+  fileset ( dir: "${tpclDir}" )
+}
+
 taskdef ( name: 'scalac',
           classname: 'scala.tools.ant.Scalac',
           classpathref: 'scalaPathId')
@@ -393,6 +397,7 @@ path (id: 'testPathId') {
   path (location: "${testDir}/clojure")
 }
 
+
   /*
        clojure console
        */
@@ -574,6 +579,12 @@ target (test: '') {
   depends (testBuild)
 }
 
+target (jslint: '') {
+  new File("${basedir}/src/web/scripts").eachFileRecurse(groovy.io.FileType.FILES, { f ->
+    jslintScripts(f.getCanonicalPath())
+  });
+}
+
   /*
        housekeeping stuff
        */
@@ -589,6 +600,20 @@ setDefaultTarget (release)
 
 //////////////////////
 //
+
+def jslintScripts(filename) {
+  java (classname: 'org.mozilla.javascript.tools.shell.Main',
+        maxmemory: '2048m',
+        fork: true,
+        classpathref: 'compilePathId') {
+    arg (value: '-version')
+    arg (value: '170')
+    arg (value: '-encoding')
+    arg (value: 'utf-8')
+    arg (value: '-strict')
+    arg (value: filename)
+  }
+}
 
 def compile_clj() {
 
