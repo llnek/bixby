@@ -17,9 +17,7 @@ import com.zotohlabs.frwk.io.XData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 /**
  * @author kenl
@@ -35,6 +33,14 @@ public class ULFormItems {
   }
 
   public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
+
+  public Map<String,ULFileItem> asMap() {
+    Map<String,ULFileItem> m = new HashMap<String,ULFileItem>();
+    for (ULFileItem n : _items) {
+      m.put(n.getFieldName(), n);
+    }
+    return m;
+  }
 
   public void add(ULFileItem x) {
     tlog().debug("Adding a new ul-file-item {}", x.getFieldName());
