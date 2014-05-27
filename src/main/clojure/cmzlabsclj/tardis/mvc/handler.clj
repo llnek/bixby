@@ -34,6 +34,7 @@
 
   (:import [com.zotohlabs.frwk.netty NettyFW])
   (:import (org.apache.commons.lang3 StringUtils))
+  (:import (io.netty.util ReferenceCountUtil))
   (:import (java.util Date))
   (:import (java.io File))
   (:import (com.zotohlabs.frwk.io XData))
@@ -53,7 +54,8 @@
                              ChannelPipeline ChannelHandlerContext))
   (:import (io.netty.handler.stream ChunkedWriteHandler))
   (:import (io.netty.util AttributeKey))
-  (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher
+
+  (:import (com.zotohlabs.frwk.netty NettyFW ErrorCatcher SimpleInboundHandler
                                      DemuxedMsg PipelineConfigurator
                                      HttpDemux FlashHandler
                                      SSLServerHShake ServerSide))
@@ -71,7 +73,7 @@
   ^ChannelHandler
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (proxy [SimpleChannelInboundHandler] []
+  (proxy [SimpleInboundHandler] []
     (channelRead0 [c msg]
       ;;(log/debug "mvc route filter called with message = " (type msg))
       (cond
@@ -94,6 +96,7 @@
             (do
               ;;(log/debug "mvc route filter MATCHED with uri = " (.getUri req))
               (-> (.attr ctx GOOD_FLAG)(.set "matched"))
+              (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
 
             :else
@@ -103,13 +106,17 @@
         )
 
         (instance? HttpResponse msg)
-        (.fireChannelRead ^ChannelHandlerContext c msg)
+        (do
+          (ReferenceCountUtil/retain msg)
+          (.fireChannelRead ^ChannelHandlerContext c msg))
 
         :else
         (let [ ^ChannelHandlerContext ctx c
                flag (-> (.attr ctx GOOD_FLAG)(.get)) ]
           (if (notnil? flag)
-              (.fireChannelRead ctx msg)
+              (do
+                (ReferenceCountUtil/retain msg)
+                (.fireChannelRead ctx msg))
               (log/debug "skipping unwanted msg")))
       ))
   ))
@@ -122,7 +129,7 @@
   [^cmzlabsclj.tardis.io.core.EmitterAPI em
    ^cmzlabsclj.tardis.core.sys.Element co]
 
-  (proxy [SimpleChannelInboundHandler] []
+  (proxy [SimpleInboundHandler] []
     (channelRead0 [ctx msg]
       ;;(log/debug "mvc netty handler called with message = " (type msg))
       (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker

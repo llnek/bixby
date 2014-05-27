@@ -24,6 +24,7 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -193,6 +194,7 @@ public class  WebSockCodec extends RequestCodec {
     else {
       tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
       // what is this ? let downstream deal with it
+      ReferenceCountUtil.retain(msg);
       ctx.fireChannelRead(msg);
     }
   }

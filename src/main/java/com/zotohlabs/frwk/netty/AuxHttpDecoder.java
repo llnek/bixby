@@ -50,7 +50,7 @@ import static com.zotohlabs.frwk.io.IOUtils.*;
  * @author kenl
  */
 @SuppressWarnings("unchecked")
-public abstract class AuxHttpDecoder extends SimpleChannelInboundHandler {
+public abstract class AuxHttpDecoder extends SimpleInboundHandler {
 
   protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
   protected static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");

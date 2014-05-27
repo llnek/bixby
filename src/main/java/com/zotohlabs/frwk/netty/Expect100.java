@@ -15,12 +15,13 @@ package com.zotohlabs.frwk.netty;
 
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.util.ReferenceCountUtil;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class Expect100 extends SimpleChannelInboundHandler {
+public class Expect100 extends SimpleInboundHandler {
 
   private static final Expect100 shared = new Expect100();
   public static Expect100 getInstance() {
@@ -52,6 +53,8 @@ public class Expect100 extends SimpleChannelInboundHandler {
     if (msg instanceof HttpMessage) {
       handle100(ctx, (HttpMessage) msg);
     }
+    // simplechannelinboundhandler does a release, so add one here
+    ReferenceCountUtil.retain(msg);
     ctx.fireChannelRead(msg);
   }
 

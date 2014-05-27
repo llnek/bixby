@@ -30,6 +30,8 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.AttributeKey;
 import org.apache.shiro.util.StringUtils;
+import io.netty.util.ReferenceCountUtil;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -89,7 +91,7 @@ public class FormPostCodec extends RequestCodec {
     }
   }
 
-  private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data) 
+  private void writeHttpData(ChannelHandlerContext ctx, InterfaceHttpData data)
     throws IOException {
     if (data==null) { return; }
     ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
@@ -225,6 +227,7 @@ public class FormPostCodec extends RequestCodec {
     else {
       tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
       // what is this ? let downstream deal with it
+      ReferenceCountUtil.retain(msg);
       ctx.fireChannelRead(msg);
     }
   }

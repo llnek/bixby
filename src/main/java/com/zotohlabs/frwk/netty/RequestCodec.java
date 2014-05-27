@@ -43,6 +43,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import io.netty.util.ReferenceCountUtil;
 
 import static com.zotohlabs.frwk.util.CoreUtils.*;
 
@@ -190,6 +191,7 @@ public class RequestCodec extends AuxHttpDecoder {
     }
     else {
       tlog().error("Unexpected message type {}",  msg==null ? "(null)" : msg.getClass());
+      ReferenceCountUtil.retain(msg);
       ctx.fireChannelRead(msg);
     }
   }
