@@ -24,7 +24,7 @@
                 GetPkcsStore MakeSimpleTrustMgr] ])
   (:import (javax.net.ssl X509TrustManager TrustManager))
   (:import (javax.net.ssl SSLEngine SSLContext))
-  (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
+  (:import (com.zotohlab.frwk.net SSLTrustMgrFactory))
   (:import (java.net URL))
   (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory)))
 

@@ -26,8 +26,8 @@
   (:use [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
   (:import (java.net InetAddress ServerSocket Socket))
   (:import (org.apache.commons.io IOUtils))
-  (:import (com.zotohlabs.frwk.core Identifiable))
-  (:import (com.zotohlabs.gallifrey.io SocketEvent)))
+  (:import (com.zotohlab.frwk.core Identifiable))
+  (:import (com.zotohlab.gallifrey.io SocketEvent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

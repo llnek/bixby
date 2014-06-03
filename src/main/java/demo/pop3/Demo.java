@@ -20,13 +20,13 @@ import javax.mail.Message;
 import javax.mail.Multipart;
 import javax.mail.internet.MimeMessage;
 
-import com.zotohlabs.gallifrey.runtime.AppMain;
-import com.zotohlabs.gallifrey.core.Container;
-import com.zotohlabs.gallifrey.io.EmailEvent;
+import com.zotohlab.gallifrey.runtime.AppMain;
+import com.zotohlab.gallifrey.core.Container;
+import com.zotohlab.gallifrey.io.EmailEvent;
 
 
-import com.zotohlabs.wflow.core.Job;
-import com.zotohlabs.wflow.*;
+import com.zotohlab.wflow.core.Job;
+import com.zotohlab.wflow.*;
 
 /**
  * @author kenl

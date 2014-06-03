@@ -23,14 +23,14 @@
   (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
 
-  (:import (com.zotohlabs.gallifrey.runtime ExpiredError AuthError))
+  (:import (com.zotohlab.gallifrey.runtime ExpiredError AuthError))
   (:import (org.apache.commons.lang3 StringUtils))
 
-  (:import (com.zotohlabs.frwk.util CoreUtils))
+  (:import (com.zotohlab.frwk.util CoreUtils))
   (:import (java.net HttpCookie URLDecoder URLEncoder))
-  (:import (com.zotohlabs.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
-  (:import (com.zotohlabs.gallifrey.core Container))
-  (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem)))
+  (:import (com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
+  (:import (com.zotohlab.gallifrey.core Container))
+  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

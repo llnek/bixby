@@ -16,7 +16,7 @@
 
   (:use [clojure.test])
   (:import (org.apache.commons.io FileUtils))
-  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlab.frwk.io XData))
   (:import (java.io File))
   (:require [cmzlabsclj.nucleus.util.files :as FU])
   (:require [cmzlabsclj.nucleus.util.core :as CU]))

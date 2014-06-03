@@ -23,7 +23,7 @@
   (:import (java.util ArrayList))
   (:import (org.apache.commons.io IOUtils FileUtils))
   (:import (java.util.zip ZipFile ZipEntry))
-  (:import (com.zotohlabs.frwk.io XData)))
+  (:import (com.zotohlab.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

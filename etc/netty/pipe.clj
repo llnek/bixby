@@ -1,9 +1,9 @@
 (ns @@APPDOMAIN@@.pipe )
 
-(import '( com.zotohlabs.wflow
+(import '( com.zotohlab.wflow
   FlowPoint Activity Pipeline PipelineDelegate PTask Work))
-(import '(com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
-(import '(com.zotohlabs.wflow.core Job))
+(import '(com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
+(import '(com.zotohlab.wflow.core Job))
 (use '[clojure.tools.logging :only (info warn error debug)])
 
 (deftype Handler [] PipelineDelegate

@@ -20,8 +20,8 @@
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent))
-  (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem)))
+  (:import (com.zotohlab.gallifrey.io HTTPEvent))
+  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

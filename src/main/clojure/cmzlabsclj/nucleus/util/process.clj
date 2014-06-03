@@ -22,7 +22,7 @@
   (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
 
   (:import (java.lang.management ManagementFactory))
-  (:import (com.zotohlabs.frwk.util CoreUtils))
+  (:import (com.zotohlab.frwk.util CoreUtils))
   (:import (java.lang Thread Runnable)))
 
 

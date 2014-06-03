@@ -14,10 +14,10 @@
 
   cmzlabsclj.tardis.core.wfs
 
-  (:import (com.zotohlabs.wflow If BoolExpr FlowPoint Activity
+  (:import (com.zotohlab.wflow If BoolExpr FlowPoint Activity
                                 Pipeline PipelineDelegate PTask Work))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
-  (:import (com.zotohlabs.wflow.core Job)))
+  (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
+  (:import (com.zotohlab.wflow.core Job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

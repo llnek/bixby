@@ -25,8 +25,8 @@
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.io.core])
   (:import (java.util Date Timer TimerTask))
-  (:import (com.zotohlabs.gallifrey.io TimerEvent))
-  (:import (com.zotohlabs.frwk.core Identifiable Startable)))
+  (:import (com.zotohlab.gallifrey.io TimerEvent))
+  (:import (com.zotohlab.frwk.core Identifiable Startable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -34,7 +34,7 @@
   (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
   (:import (org.apache.shiro.subject PrincipalCollection))
   (:import (org.apache.shiro.realm AuthorizingRealm))
-  (:import (com.zotohlabs.frwk.dbio DBAPI))
+  (:import (com.zotohlab.frwk.dbio DBAPI))
   (:import (org.apache.shiro.realm CachingRealm))
   (:import (java.util Collection)))
 

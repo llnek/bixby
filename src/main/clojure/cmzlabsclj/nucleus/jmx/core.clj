@@ -23,7 +23,7 @@
   (:import (java.lang.management ManagementFactory))
   (:import (java.net InetAddress MalformedURLException))
   (:import (java.rmi NoSuchObjectException))
-  (:import (com.zotohlabs.frwk.core Startable))
+  (:import (com.zotohlab.frwk.core Startable))
   (:import (java.rmi.registry LocateRegistry Registry))
   (:import (java.rmi.server UnicastRemoteObject))
   (:import (javax.management DynamicMBean JMException

@@ -29,10 +29,10 @@
                              ChannelFutureListener ChannelFuture
                              ChannelPipeline ChannelHandlerContext))
   (:import (io.netty.handler.stream ChunkedStream ChunkedFile))
-  (:import (com.zotohlabs.frwk.netty NettyFW))
+  (:import (com.zotohlab.frwk.netty NettyFW))
   (:import (com.google.gson JsonObject JsonArray))
   (:import (org.apache.commons.io FileUtils))
-  (:import (com.zotohlabs.gallifrey.mvc WebContent WebAsset
+  (:import (com.zotohlab.gallifrey.mvc WebContent WebAsset
                                         HTTPRangeInput AssetCache))
   (:import (java.io RandomAccessFile File))
   (:import (java.util Map HashMap)))

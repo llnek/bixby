@@ -33,7 +33,7 @@
   (:import (java.util ArrayList List))
   (:import (com.google.gson JsonObject))
   (:import (java.io File IOException RandomAccessFile))
-  (:import (com.zotohlabs.gallifrey.io Emitter HTTPEvent HTTPResult
+  (:import (com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
                                        IOSession
                                        WebSockEvent WebSockResult))
   (:import (javax.net.ssl SSLContext))
@@ -50,8 +50,8 @@
                              SimpleChannelInboundHandler
                              ChannelPipeline ChannelHandlerContext))
   (:import (io.netty.handler.stream ChunkedFile ChunkedStream ChunkedWriteHandler))
-  (:import (com.zotohlabs.gallifrey.mvc WebAsset HTTPRangeInput))
-  (:import (com.zotohlabs.frwk.netty NettyFW
+  (:import (com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput))
+  (:import (com.zotohlab.frwk.netty NettyFW
                                      SSLServerHShake
                                      ServerSide
                                      DemuxedMsg
@@ -61,8 +61,8 @@
                                                           BinaryWebSocketFrame
                                                           TextWebSocketFrame))
   (:import (io.netty.buffer ByteBuf Unpooled))
-  (:import (com.zotohlabs.frwk.core Hierarchial Identifiable))
-  (:import (com.zotohlabs.frwk.io XData)))
+  (:import (com.zotohlab.frwk.core Hierarchial Identifiable))
+  (:import (com.zotohlab.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -590,8 +590,8 @@ target (jslint: '') {
        */
 
 target (clean4Distro: '') {
-  delete (dir: "${ivyLCacheDir}/com.zotohlabs/${gantProjectName}", quiet: true)
-  delete (dir: "${ivyLRepoDir}/com.zotohlabs/${gantProjectName}", quiet: true)
+  delete (dir: "${ivyLCacheDir}/com.zotohlab/${gantProjectName}", quiet: true)
+  delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}", quiet: true)
 }
 
 
@@ -648,7 +648,7 @@ def compileBootJava() {
          debuglevel: 'lines,vars,source',
          classpathref: 'compilePathId') {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
-    include (name: 'com/zotohlabs/gallifrey/loaders/**/*.java')
+    include (name: 'com/zotohlab/gallifrey/loaders/**/*.java')
   }
 }
 
@@ -1018,7 +1018,7 @@ def runtests_Clj() {
     haltonfailure: true) {
     classpath (refid: 'testPathId')
     formatter (type: 'plain', usefile: false)
-    test (name: 'testzotohlabs.java.frwk.util.ClojureJUnit',
+    test (name: 'testzotohlab.java.frwk.util.ClojureJUnit',
     todir: "${reportTestDir}") {
       formatter (type: 'xml')
     }

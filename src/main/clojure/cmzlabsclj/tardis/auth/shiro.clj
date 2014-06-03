@@ -22,7 +22,7 @@
   (:import (org.apache.shiro.realm AuthorizingRealm))
   (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken
                                    AuthenticationInfo SimpleAccount))
-  (:import (com.zotohlabs.frwk.dbio DBAPI)))
+  (:import (com.zotohlab.frwk.dbio DBAPI)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -107,9 +107,9 @@
   (:import (org.apache.commons.codec.binary Hex Base64))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.commons.io FileUtils IOUtils))
-  (:import (com.zotohlabs.frwk.crypto CryptoUtils SDataSource))
-  (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
+  (:import (com.zotohlab.frwk.crypto CryptoUtils SDataSource))
+  (:import (com.zotohlab.frwk.io XData))
+  (:import (com.zotohlab.frwk.net SSLTrustMgrFactory))
   (:import (java.lang Math)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

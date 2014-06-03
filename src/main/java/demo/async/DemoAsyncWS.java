@@ -14,7 +14,7 @@
 
 package demo.async;
 
-import com.zotohlabs.wflow.AsyncCallback;
+import com.zotohlab.wflow.AsyncCallback;
 
 
 /**

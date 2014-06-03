@@ -28,12 +28,12 @@
   (:import (javax.mail Multipart BodyPart))
   (:import (javax.mail.internet MimeBodyPart MimeMessage MimeMultipart))
   (:import (javax.activation DataHandler DataSource))
-  (:import (com.zotohlabs.frwk.crypto SDataSource))
-  (:import (com.zotohlabs.frwk.io XData)))
+  (:import (com.zotohlab.frwk.crypto SDataSource))
+  (:import (com.zotohlab.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ROOTPFX (CU/ResBytes "com/zotohlabs/frwk/crypto/test.pfx"))
+(def ^:private ROOTPFX (CU/ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
 (def ^:private HELPME (RT/Pwdify "helpme"))
 (def ^:private ROOTCS
   (ST/MakeCryptoStore (RU/InitStore! (RU/GetPkcsStore) ROOTPFX HELPME) HELPME))
@@ -42,7 +42,7 @@
 ;;
 (deftest testcrypto-mimestuff
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
         (let [ msg (RU/NewMimeMsg "" "" inp) ^Multipart mp (.getContent msg) ]
                (and (>= (.indexOf (.getContentType msg) "multipart/mixed") 0)
                     (== (.getCount mp) 2)
@@ -50,7 +50,7 @@
                     (not (RU/IsCompressed? mp))
                     (not (RU/IsEncrypted? mp)) ))))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
       (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS
                              ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS))
                              HELPME)
@@ -60,7 +60,7 @@
                rc (RU/SmimeDigSig  pk cs RU/SHA512 msg) ]
         (RU/IsSigned? rc))))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
       (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                mp (.getContent msg)
@@ -69,7 +69,7 @@
                rc (RU/SmimeDigSig  pk cs RU/SHA512 mp) ]
         (RU/IsSigned? rc))))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
       (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                ^Multipart mp (.getContent msg)
@@ -79,7 +79,7 @@
                rc (RU/SmimeDigSig  pk cs RU/SHA512 bp) ]
         (RU/IsSigned? rc))))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
       (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                cs (.getCertificateChain pke)
@@ -95,7 +95,7 @@
                rc (RU/PeekSmimeSignedContent mp3) ]
         (instance? Multipart rc))))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
       (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS ^String (first (.keyAliases ^cmzlabsclj.nucleus.crypto.stores.CryptoStore ROOTCS)) HELPME)
                msg (RU/NewMimeMsg "" "" inp)
                cs (.getCertificateChain pke)
@@ -169,7 +169,7 @@
           true
           false)))
 
-(is (with-open [ inp (CU/ResStream "com/zotohlabs/frwk/mime/mime.eml") ]
+(is (with-open [ inp (CU/ResStream "com/zotohlab/frwk/mime/mime.eml") ]
         (let [ msg (RU/NewMimeMsg "" "" inp)
                bp (RU/SmimeCompress msg)
                ^XData x (RU/SmimeDecompress bp) ]

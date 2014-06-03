@@ -23,7 +23,7 @@
                                        IsInt? IsDouble? IsFloat? IsChar? ] ])
   (:import (java.lang Exception IllegalArgumentException))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.jmx NameParams))
+  (:import (com.zotohlab.frwk.jmx NameParams))
   (:import (java.lang.reflect Field Method))
   (:import (java.util Arrays))
   (:import (javax.management Attribute AttributeList

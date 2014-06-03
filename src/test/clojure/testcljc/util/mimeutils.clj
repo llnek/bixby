@@ -21,7 +21,7 @@
   (:require [cmzlabsclj.nucleus.util.mime :as MU]))
 
 
-(eval '(MU/SetupCache (CU/ResUrl "com/zotohlabs/frwk/mime/mime.properties")))
+(eval '(MU/SetupCache (CU/ResUrl "com/zotohlab/frwk/mime/mime.properties")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

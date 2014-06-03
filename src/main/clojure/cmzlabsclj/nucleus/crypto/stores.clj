@@ -23,7 +23,7 @@
   (:use [cmzlabsclj.nucleus.util.str :only [hgl?] ])
 
   (:import (java.security.cert CertificateFactory X509Certificate Certificate))
-  (:import (com.zotohlabs.frwk.crypto CryptoUtils))
+  (:import (com.zotohlab.frwk.crypto CryptoUtils))
   (:import (java.io File FileInputStream IOException InputStream))
   (:import (java.security KeyStore PrivateKey
                           KeyStore$TrustedCertificateEntry

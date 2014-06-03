@@ -19,7 +19,7 @@
   (:use [cmzlabsclj.nucleus.util.str :only [hgl?] ])
   (:use [cmzlabsclj.nucleus.dbio.core :as dbcore])
   (:use [cmzlabsclj.nucleus.dbio.sql :as dbsql])
-  (:import (com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr))
+  (:import (com.zotohlab.frwk.dbio DBAPI MetaCache SQLr))
   (:import (java.sql Connection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

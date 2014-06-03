@@ -28,11 +28,11 @@
                                         LastHttpContent
                                         HttpServerCodec))
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
-  (:import (com.zotohlabs.frwk.netty ServerSide PipelineConfigurator
+  (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
                                      SSLServerHShake DemuxedMsg
                                      HttpDemux ErrorCatcher))
-  (:import (com.zotohlabs.frwk.netty NettyFW))
-  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlab.frwk.netty NettyFW))
+  (:import (com.zotohlab.frwk.io XData))
   (:import (com.google.gson JsonObject JsonElement)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

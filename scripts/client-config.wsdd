@@ -24,7 +24,7 @@
     -->
     <typeMapping qname="xs:dateTime" xmlns:xs="http://www.w3.org/2001/XMLSchema"
        type="java:java.util.Calendar"
-       deserializer="com.zotohlabs.tpcl.axis.CalDeserializerFactory"
+       deserializer="com.zotohlab.tpcl.axis.CalDeserializerFactory"
        serializer="com.fedex.soapsamples.util.CustomCalendarSerializerFactory"
        encodingStyle=""/>
 

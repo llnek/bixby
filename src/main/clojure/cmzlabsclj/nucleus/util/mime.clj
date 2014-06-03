@@ -29,7 +29,7 @@
   (:import (java.util.regex Pattern Matcher))
   (:import (java.util Properties))
   (:import (javax.mail Message))
-  (:import (com.zotohlabs.frwk.mime MimeFileTypes)))
+  (:import (com.zotohlab.frwk.mime MimeFileTypes)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,7 +44,7 @@
 (def MIME_USER_PROP  "mime.rfc2822.user")
 (def MIME_USER_JAVAMAIL   "javamail")
 (def DEF_USER  "popeye")
-(def MIME_USER_PREFIX   "zotohlabs")
+(def MIME_USER_PREFIX   "zotohlab")
 (def DEF_HOST  "localhost")
 (def MIME_HEADER_MSGID  "Message-ID")
 (def MIME_MULTIPART_BOUNDARY  "boundary")

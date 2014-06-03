@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr ])
   (:require [clojure.core :as ccore ])
-  (:import (com.zotohlabs.frwk.util CrappyDataError))
+  (:import (com.zotohlab.frwk.util CrappyDataError))
   (:import (java.security SecureRandom))
   (:import (java.net URL))
   (:import (java.nio.charset Charset))

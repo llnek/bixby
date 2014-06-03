@@ -4,7 +4,7 @@ version=0.0.1
 name=JMS
 
 [conf]
-contextfactory=com.zotohlabs.blason.mock.jms.MockContextFactory
+contextfactory=com.zotohlab.blason.mock.jms.MockContextFactory
 providerurl=java://aaa
 connfactory=tcf
 destination=topic.abc

@@ -26,12 +26,12 @@
   (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
   (:use [cmzlabsclj.tardis.io.core])
 
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
+  (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
   (:import (java.io OutputStream IOException))
   (:import (java.util List Timer TimerTask))
-  (:import (com.zotohlabs.frwk.netty NettyFW))
-  (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.zotohlabs.frwk.core Identifiable)))
+  (:import (com.zotohlab.frwk.netty NettyFW))
+  (:import (com.zotohlab.frwk.io XData))
+  (:import (com.zotohlab.frwk.core Identifiable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

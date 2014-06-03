@@ -25,7 +25,7 @@
 
   (:import (java.util Hashtable Properties ResourceBundle))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.core Identifiable))
+  (:import (com.zotohlab.frwk.core Identifiable))
   (:import (javax.jms Connection ConnectionFactory Destination Connection
                       Message MessageConsumer MessageListener Queue
                       QueueConnection QueueConnectionFactory QueueReceiver
@@ -33,7 +33,7 @@
                       TopicConnectionFactory TopicSession TopicSubscriber))
   (:import (javax.naming Context InitialContext))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.gallifrey.io JMSEvent)))
+  (:import (com.zotohlab.gallifrey.io JMSEvent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

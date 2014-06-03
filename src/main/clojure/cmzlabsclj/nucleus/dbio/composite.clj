@@ -21,7 +21,7 @@
   (:require  [cmzlabsclj.nucleus.dbio.core :as dbcore :only [ese] ])
   (:require [cmzlabsclj.nucleus.dbio.sql :as dbsql ])
 
-  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI))
+  (:import (com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI))
   (:import (java.sql Connection)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

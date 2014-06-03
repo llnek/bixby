@@ -33,15 +33,15 @@
 
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.core Disposable Identifiable
+  (:import (com.zotohlab.frwk.core Disposable Identifiable
                                     Hierarchial Versioned Startable))
-  (:import (com.zotohlabs.frwk.server Component ComponentRegistry))
-  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
+  (:import (com.zotohlab.frwk.server Component ComponentRegistry))
+  (:import (com.zotohlab.gallifrey.loaders AppClassLoader))
   (:import (java.net URL))
   (:import (java.io File))
   (:import (java.security SecureRandom))
   (:import (java.util.zip ZipFile))
-  (:import (com.zotohlabs.frwk.io IOUtils)))
+  (:import (com.zotohlab.frwk.io IOUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)

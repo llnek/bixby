@@ -25,7 +25,7 @@
   (:use [cmzlabsclj.tardis.etc.cmdline
          :only [GetCommands EvalCommand] ])
 
-  (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
+  (:import (com.zotohlab.gallifrey.etc CmdHelpError))
   (:import (java.util Locale))
   (:import (java.io File)))
 

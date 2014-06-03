@@ -18,7 +18,7 @@
   (:use [cmzlabsclj.nucleus.util.str :only [hgl? AddDelim! nsb] ])
   (:require [clojure.string :as cstr])
   (:require [cmzlabsclj.nucleus.dbio.core :as dbcore])
-  (:import (com.zotohlabs.frwk.dbio MetaCache DBAPI DBIOError))
+  (:import (com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError))
   (:import (java.util Map HashMap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

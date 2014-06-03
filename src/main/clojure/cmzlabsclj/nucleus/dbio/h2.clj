@@ -22,7 +22,7 @@
   (:use [cmzlabsclj.nucleus.dbio.core :as dbcore ])
 
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.dbio DBIOError))
+  (:import (com.zotohlab.frwk.dbio DBIOError))
   (:import (java.io File))
   (:import (java.sql DriverManager Connection Statement)))
 

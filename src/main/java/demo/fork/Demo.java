@@ -13,8 +13,8 @@
 
 package demo.fork;
 
-import com.zotohlabs.wflow.*;
-import com.zotohlabs.wflow.core.Job;
+import com.zotohlab.wflow.*;
+import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl

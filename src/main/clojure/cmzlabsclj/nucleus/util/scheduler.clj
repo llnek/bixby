@@ -19,7 +19,7 @@
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.nucleus.util.core :only [ternary juid MakeMMap] ])
 
-  (:import (com.zotohlabs.frwk.util RunnableWithId Schedulable TCore ))
+  (:import (com.zotohlab.frwk.util RunnableWithId Schedulable TCore ))
   (:import (java.util.concurrent ConcurrentHashMap))
   (:import (java.util Map Properties Timer TimerTask)))
 

@@ -14,9 +14,9 @@
 
 package demo.jms;
 
-import com.zotohlabs.gallifrey.io.JMSEvent;
-import com.zotohlabs.wflow.*;
-import com.zotohlabs.wflow.core.Job;
+import com.zotohlab.gallifrey.io.JMSEvent;
+import com.zotohlab.wflow.*;
+import com.zotohlab.wflow.core.Job;
 
 import javax.jms.TextMessage;
 import java.util.concurrent.atomic.AtomicInteger;

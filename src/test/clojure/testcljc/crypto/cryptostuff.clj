@@ -27,8 +27,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ROOTPFX (CU/ResBytes "com/zotohlabs/frwk/crypto/test.pfx"))
-(def ^:private ROOTJKS (CU/ResBytes "com/zotohlabs/frwk/crypto/test.jks"))
+(def ^:private ROOTPFX (CU/ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
+(def ^:private ROOTJKS (CU/ResBytes "com/zotohlab/frwk/crypto/test.jks"))
 (def ^:private ENDDT (.getTime (GregorianCalendar. 2050 1 1)))
 (def ^:private TESTPWD (RT/Pwdify "secretsecretsecretsecretsecret"))
 (def ^:private HELPME (RT/Pwdify "helpme"))
@@ -123,7 +123,7 @@
               (> (.length fout) 0)))
 
 (is (let [ ^File fout (IO/MakeTmpfile "" ".p7b") ]
-        (RU/ExportPkcs7 (CU/ResUrl "com/zotohlabs/frwk/crypto/test.pfx") HELPME fout)
+        (RU/ExportPkcs7 (CU/ResUrl "com/zotohlab/frwk/crypto/test.pfx") HELPME fout)
           (> (.length fout) 0)))
 
 

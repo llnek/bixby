@@ -20,7 +20,7 @@
   (:import (java.io
     FileReader File InputStream
     OutputStream FileOutputStream))
-  (:import (com.zotohlabs.frwk.io IOUtils XData XStream)))
+  (:import (com.zotohlab.frwk.io IOUtils XData XStream)))
 
 
 (def ^:private TMP_DIR (File. (System/getProperty "java.io.tmpdir")))

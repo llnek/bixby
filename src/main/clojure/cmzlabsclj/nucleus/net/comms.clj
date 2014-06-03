@@ -26,9 +26,9 @@
   (:import (javax.net.ssl SSLContext SSLEngine X509TrustManager
                           TrustManagerFactorySpi TrustManager
                           ManagerFactoryParameters))
-  (:import (com.zotohlabs.frwk.apache ApacheFW ))
-  (:import (com.zotohlabs.frwk.net SSLTrustMgrFactory))
-  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlab.frwk.apache ApacheFW ))
+  (:import (com.zotohlab.frwk.net SSLTrustMgrFactory))
+  (:import (com.zotohlab.frwk.io XData))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.http.client.config RequestConfig))
   (:import (org.apache.http.client HttpClient))
@@ -40,8 +40,8 @@
   (:import (java.net URL URI))
   (:import (org.apache.http.params HttpConnectionParams))
   (:import (org.apache.http.entity InputStreamEntity))
-  (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem))
-  (:import (com.zotohlabs.frwk.io XData)))
+  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem))
+  (:import (com.zotohlab.frwk.io XData)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)

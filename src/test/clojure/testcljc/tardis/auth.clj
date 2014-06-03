@@ -23,9 +23,9 @@
   (:use [cmzlabsclj.nucleus.dbio.core])
   (:use [cmzlabsclj.nucleus.dbio.h2])
   (:use [clojure.test])
-  (:import (com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
+  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser))
   (:import (java.io File))
-  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI)))
+  (:import (com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

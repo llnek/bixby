@@ -25,11 +25,11 @@
   (:require [cmzlabsclj.nucleus.dbio.core
              :as dbcore :only [MergeMeta ese DbioError] ])
   (:import (java.util Calendar GregorianCalendar TimeZone))
-  (:import (com.zotohlabs.frwk.dbio MetaCache DBIOError OptLockError))
+  (:import (com.zotohlab.frwk.dbio MetaCache DBIOError OptLockError))
   (:import (java.math BigDecimal BigInteger))
   (:import (java.io Reader InputStream))
-  (:import (com.zotohlabs.frwk.dbio DBAPI))
-  (:import (com.zotohlabs.frwk.io XData))
+  (:import (com.zotohlab.frwk.dbio DBAPI))
+  (:import (com.zotohlab.frwk.io XData))
   (:import (java.sql ResultSet Types SQLException
                      DatabaseMetaData ResultSetMetaData
                      Date Timestamp Blob Clob

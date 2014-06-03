@@ -17,14 +17,14 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
 
-  (:import (com.zotohlabs.gallifrey.etc PluginFactory Plugin PluginError))
-  (:import (com.zotohlabs.gallifrey.runtime AuthError UnknownUser))
+  (:import (com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError))
+  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser))
 
-  (:import (com.zotohlabs.frwk.net ULFormItems ULFileItem))
+  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem))
   (:import (org.apache.commons.codec.binary Base64))
-  (:import (com.zotohlabs.gallifrey.core Container))
+  (:import (com.zotohlab.gallifrey.core Container))
 
-  (:import (com.zotohlabs.frwk.dbio DBAPI MetaCache SQLr
+  (:import (com.zotohlab.frwk.dbio DBAPI MetaCache SQLr
                                     JDBCPool JDBCInfo))
 
   (:import (org.apache.commons.io FileUtils))
@@ -35,11 +35,11 @@
   (:import (org.apache.shiro SecurityUtils))
   (:import (org.apache.shiro.subject Subject))
 
-  (:import ( com.zotohlabs.wflow If BoolExpr FlowPoint
+  (:import ( com.zotohlab.wflow If BoolExpr FlowPoint
                                  Activity Pipeline
                                  PipelineDelegate PTask Work))
-  (:import (com.zotohlabs.gallifrey.io HTTPEvent HTTPResult))
-  (:import (com.zotohlabs.wflow.core Job))
+  (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
+  (:import (com.zotohlab.wflow.core Job))
 
   (:use [cmzlabsclj.nucleus.util.core :only [notnil? Stringify
                                        MakeMMap juid

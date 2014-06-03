@@ -32,9 +32,9 @@
   (:import (java.io File FileFilter))
   (:import (java.net URL))
   (:import (java.util Date))
-  (:import (com.zotohlabs.frwk.io IOUtils))
-  (:import (com.zotohlabs.frwk.core Startable Versioned Hierarchial Identifiable))
-  (:import (com.zotohlabs.frwk.server Component ComponentRegistry)))
+  (:import (com.zotohlab.frwk.io IOUtils))
+  (:import (com.zotohlab.frwk.core Startable Versioned Hierarchial Identifiable))
+  (:import (com.zotohlab.frwk.server Component ComponentRegistry)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -150,7 +150,7 @@
            jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
       (.start ^Startable jmx)
-      (.reg jmx co "com.zotohlabs" "execvisor" ["root=skaro"])
+      (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
       (.setf! ctx K_JMXSVR jmx)
       (log/info (str "JMXserver listening on: " host " "  port)) )
   ))

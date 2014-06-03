@@ -1,6 +1,6 @@
 <ivy-module version="2.0">
 
-  <info organisation="com.zotohlabs" module="skaro"/>
+  <info organisation="com.zotohlab" module="skaro"/>
 
   <configurations defaultconf="libjar">
     <conf name="libjar"  description="the core jar library"/>

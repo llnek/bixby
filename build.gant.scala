@@ -317,7 +317,7 @@ target (packBin: '') {
        ================================= */
 
 target (packSamples: '') {
-  new File( "${srcDir}/scala/com/zotohlabs/gallifrey/demo").eachDir { dir ->
+  new File( "${srcDir}/scala/com/zotohlab/gallifrey/demo").eachDir { dir ->
     createOneDemoApp(dir)
   }
 }
@@ -475,7 +475,7 @@ target (packAllLics: '') {
        */
 
 def createOneDemoApp(dir) {
-  final demoSrc="${srcDir}/scala/com/zotohlabs/gallifrey"
+  final demoSrc="${srcDir}/scala/com/zotohlab/gallifrey"
   final demoDir="${packDir}/docs/samples"
   final appkey= generateUUID()
   final appid= dir.getName()
@@ -572,8 +572,8 @@ target (test: '') {
        */
 
 target (clean4Distro: '') {
-  delete (dir: "${ivyLCacheDir}/com.zotohlabs/${gantProjectName}", quiet: true)
-  delete (dir: "${ivyLRepoDir}/com.zotohlabs/${gantProjectName}", quiet: true)
+  delete (dir: "${ivyLCacheDir}/com.zotohlab/${gantProjectName}", quiet: true)
+  delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}", quiet: true)
 }
 
 
@@ -627,7 +627,7 @@ def compileAndJar() {
     classpathref: 'compilePathId',
     fork: true,
     jvmargs: '-Xmx5120M -Xms1024M') {
-    include (name: 'com/zotohlabs/gallifrey/loaders/**/*.scala')
+    include (name: 'com/zotohlab/gallifrey/loaders/**/*.scala')
   }
 
   jar (destfile: "${distribDir}/boot/${PID}-spec-${buildVersion}.jar") {
@@ -967,7 +967,7 @@ def runtests_Scala() {
     fork: true, 
     maxmemory: '888M') {
     reporter (type: 'junitxml', directory: "${reportTestDir}")
-    wildcard (package: 'testzotohlabs.scala')
+    wildcard (package: 'testzotohlab.scala')
     runpath () {
       pathelement (path: "${buildTestDir}")
     }
@@ -982,7 +982,7 @@ def runtests_Clj() {
     haltonfailure: true) {
     classpath (refid: 'testPathId')
     formatter (type: 'plain', usefile: false)
-    test (name: 'testzotohlabs.java.frwk.util.ClojureJUnit',
+    test (name: 'testzotohlab.java.frwk.util.ClojureJUnit',
     todir: "${reportTestDir}") {
       formatter (type: 'xml')
     }

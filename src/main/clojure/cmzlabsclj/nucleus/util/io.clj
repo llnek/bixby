@@ -26,7 +26,7 @@
                     File InputStream InputStreamReader
                     OutputStream Reader Writer))
   (:import (java.util.zip GZIPInputStream GZIPOutputStream))
-  (:import (com.zotohlabs.frwk.io XData XStream))
+  (:import (com.zotohlab.frwk.io XData XStream))
   (:import (org.apache.commons.codec.binary Base64))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.commons.io IOUtils))
@@ -53,7 +53,7 @@
     [^String pfx ^String sux]
     (File/createTempFile (if (cstr/blank? pfx) "tmp-" pfx)
                          (if (cstr/blank? sux) ".dat" sux)
-                         (com.zotohlabs.frwk.io.IOUtils/workDir))))
+                         (com.zotohlab.frwk.io.IOUtils/workDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -372,11 +372,11 @@
 
   (^XData
     [^InputStream inp usefile]
-    (slurp-bytes inp (if usefile 1 (com.zotohlabs.frwk.io.IOUtils/streamLimit))))
+    (slurp-bytes inp (if usefile 1 (com.zotohlab.frwk.io.IOUtils/streamLimit))))
 
   (^XData
     [^InputStream inp]
-    (slurp-bytes inp (com.zotohlabs.frwk.io.IOUtils/streamLimit))) )
+    (slurp-bytes inp (com.zotohlab.frwk.io.IOUtils/streamLimit))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -384,11 +384,11 @@
 
   (^XData
     [^Reader rdr]
-    (slurp-chars rdr (com.zotohlabs.frwk.io.IOUtils/streamLimit)))
+    (slurp-chars rdr (com.zotohlab.frwk.io.IOUtils/streamLimit)))
 
   (^XData
     [^Reader rdr usefile]
-    (slurp-chars rdr (if usefile 1 (com.zotohlabs.frwk.io.IOUtils/streamLimit)))))
+    (slurp-chars rdr (if usefile 1 (com.zotohlab.frwk.io.IOUtils/streamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

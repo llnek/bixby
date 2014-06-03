@@ -15,9 +15,9 @@
 package demo.file;
 
 
-import com.zotohlabs.gallifrey.io.FileEvent;
-import com.zotohlabs.wflow.*;
-import com.zotohlabs.wflow.core.Job;
+import com.zotohlab.gallifrey.io.FileEvent;
+import com.zotohlab.wflow.*;
+import com.zotohlab.wflow.core.Job;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

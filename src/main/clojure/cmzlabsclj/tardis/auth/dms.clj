@@ -24,7 +24,7 @@
   (:use [cmzlabsclj.nucleus.dbio.sqlserver])
   (:use [cmzlabsclj.nucleus.dbio.oracle])
 
-  (:import (com.zotohlabs.frwk.dbio JDBCInfo Schema))
+  (:import (com.zotohlab.frwk.dbio JDBCInfo Schema))
   (:import (java.io File))
   (:import (org.apache.commons.io FileUtils)))
 

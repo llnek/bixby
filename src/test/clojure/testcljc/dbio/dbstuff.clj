@@ -23,7 +23,7 @@
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (java.io File))
   (:import (java.util GregorianCalendar Calendar))
-  (:import (com.zotohlabs.frwk.dbio Transactable SQLr MetaCache DBAPI)))
+  (:import (com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

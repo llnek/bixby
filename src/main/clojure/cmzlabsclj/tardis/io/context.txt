@@ -23,8 +23,8 @@
 
   (:import (javax.servlet ServletContextListener ServletContext ServletContextEvent))
   (:import (java.io File))
-  (:import (com.zotohlabs.gallifrey.core Container))
-  (:import (com.zotohlabs.gallifrey.io Emitter))
+  (:import (com.zotohlab.gallifrey.core Container))
+  (:import (com.zotohlab.gallifrey.io Emitter))
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])

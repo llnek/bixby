@@ -17,7 +17,7 @@
   (:require [cmzlabsclj.nucleus.util.core :as CU])
   (:require [cmzlabsclj.nucleus.util.ini :as WI]))
 
-(def ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlabs/frwk/util/sample.ini")))
+(def ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlab/frwk/util/sample.ini")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

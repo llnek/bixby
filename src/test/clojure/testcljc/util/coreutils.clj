@@ -25,7 +25,7 @@
 (def ^:private VAR_USER (System/getProperty "user.name"))
 (def ^:private VAR_PATH (System/getenv "PATH"))
 
-(def ^:private dummyResourcePath "com/zotohlabs/frwk/i18n/Resources_en.properties")
+(def ^:private dummyResourcePath "com/zotohlab/frwk/i18n/Resources_en.properties")
 (def ^:private dummyProperties (Properties.))
 (eval '(do
   (.put ^Properties dummyProperties "1" "hello${user.name}")

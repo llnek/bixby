@@ -5,10 +5,10 @@
   @@APPDOMAIN@@.pipe
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:import ( com.zotohlabs.wflow FlowPoint Activity
+  (:import ( com.zotohlab.wflow FlowPoint Activity
                                  Pipeline PipelineDelegate
                                  PTask Work))
-  (:import (com.zotohlabs.wflow.core Job)))
+  (:import (com.zotohlab.wflow.core Job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

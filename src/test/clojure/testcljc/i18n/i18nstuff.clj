@@ -24,7 +24,7 @@
 (deftest testi18n-i18nstuff
 
 (is (= "hello joe, how is your dawg"
-       (let [ rs (NU/LoadResource (CU/ResUrl "com/zotohlabs/frwk/i18n/Resources_en.properties")) ]
+       (let [ rs (NU/LoadResource (CU/ResUrl "com/zotohlab/frwk/i18n/Resources_en.properties")) ]
            (NU/GetString rs "test" [ "joe", "dawg" ]))))
 
 )

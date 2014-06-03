@@ -28,8 +28,8 @@
   (:import (java.util Properties))
   (:import (javax.mail.internet MimeMessage))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.gallifrey.io EmailEvent))
-  (:import (com.zotohlabs.frwk.core Identifiable)))
+  (:import (com.zotohlab.gallifrey.io EmailEvent))
+  (:import (com.zotohlab.frwk.core Identifiable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

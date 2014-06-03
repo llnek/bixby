@@ -27,7 +27,7 @@
   (:use [cmzlabsclj.nucleus.dbio.oracle])
   (:use [cmzlabsclj.nucleus.dbio.h2])
   (:import (java.util Map HashMap))
-  (:import (com.zotohlabs.frwk.dbio DBAPI JDBCPool JDBCInfo
+  (:import (com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo
                                     DBIOLocal DBIOError OptLockError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

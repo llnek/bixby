@@ -19,13 +19,13 @@ import org.apache.commons.io.IOUtils;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.mail.Message;
 import javax.mail.Multipart;
-import com.zotohlabs.gallifrey.runtime.AppMain;
-import com.zotohlabs.gallifrey.core.Container;
-import com.zotohlabs.gallifrey.io.EmailEvent;
+import com.zotohlab.gallifrey.runtime.AppMain;
+import com.zotohlab.gallifrey.core.Container;
+import com.zotohlab.gallifrey.io.EmailEvent;
 
 
-import com.zotohlabs.wflow.core.Job;
-import com.zotohlabs.wflow.*;
+import com.zotohlab.wflow.core.Job;
+import com.zotohlab.wflow.*;
 
 /**
  * @author kenl
@@ -34,7 +34,7 @@ import com.zotohlabs.wflow.*;
 public class DemoMain implements AppMain {
 
   //private val _PV=new Provider(Provider.Type.STORE, "pop3s", _PS, "test", "1.0.0")
-  private String _PS= "com.zotohlabs.mock.mail.MockPop3Store";
+  private String _PS= "com.zotohlab.mock.mail.MockPop3Store";
 
   public DemoMain() {
     System.setProperty("skaro.demo.pop3", _PS);

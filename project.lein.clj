@@ -2,7 +2,7 @@
 
   :description "A full stack server-side application framework."
 
-  :url "http://zotohlabs.com/skaro"
+  :url "http://zotohlab.com/skaro"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}

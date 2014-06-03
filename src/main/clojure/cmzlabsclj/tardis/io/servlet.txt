@@ -16,7 +16,7 @@
   cmzlabsclj.tardis.io.servlet
 
   (:gen-class
-    :extends com.zotohlabs.gallifrey.io.AbstractServlet
+    :extends com.zotohlab.gallifrey.io.AbstractServlet
     :exposes-methods { getServletName myName}
     :name cmzlabsclj.tardis.io.WEBServlet
     :init myInit
@@ -40,9 +40,9 @@
 
   (:import (org.apache.commons.io IOUtils))
   (:import (java.io IOException))
-  (:import (com.zotohlabs.frwk.io XData))
-  (:import (com.zotohlabs.gallifrey.io IOSession HTTPResult HTTPEvent))
-  (:import (com.zotohlabs.frwk.core Identifiable)))
+  (:import (com.zotohlab.frwk.io XData))
+  (:import (com.zotohlab.gallifrey.io IOSession HTTPResult HTTPEvent))
+  (:import (com.zotohlab.frwk.core Identifiable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -25,13 +25,13 @@
                 ternary notnil? nnz nbf juid] ])
   (:use [cmzlabsclj.nucleus.util.meta :only [ForName] ])
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.frwk.dbio MetaCache Schema
+  (:import (com.zotohlab.frwk.dbio MetaCache Schema
                                     SQLr JDBCPool JDBCInfo))
   (:import (java.sql SQLException DatabaseMetaData
                      Connection Driver DriverManager))
   (:import (java.util GregorianCalendar TimeZone Properties))
   (:import (java.lang Math))
-  (:import (com.zotohlabs.frwk.dbio DBIOError))
+  (:import (com.zotohlab.frwk.dbio DBIOError))
   (:import (com.jolbox.bonecp BoneCP BoneCPConfig))
   (:import (org.apache.commons.lang3 StringUtils)))
 

@@ -8,7 +8,7 @@
   <display-name>WebApp</display-name>
 
     <listener>
-        <listener-class>com.zotohlabs.gallifrey.io.WEBContextListener</listener-class>
+        <listener-class>com.zotohlab.gallifrey.io.WEBContextListener</listener-class>
     </listener>
 
 <servlet>

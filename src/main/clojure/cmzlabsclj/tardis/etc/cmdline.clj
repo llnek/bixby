@@ -33,10 +33,10 @@
 
   (:import (java.util Map Calendar ResourceBundle Properties Date))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlabs.gallifrey.etc CmdHelpError))
+  (:import (com.zotohlab.gallifrey.etc CmdHelpError))
   (:import (org.apache.commons.io FileUtils))
   (:import (java.io File))
-  (:import (com.zotohlabs.frwk.io IOUtils)))
+  (:import (com.zotohlab.frwk.io IOUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -470,7 +470,7 @@
          ulang (cstr/upper-case lang) ]
     (FileUtils/cleanDirectory ec)
     (FileUtils/writeStringToFile (File. ec ".project")
-      (-> (ResStr (str "com/zotohlabs/gallifrey/eclipse/" lang "/project.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/" lang "/project.txt") "utf-8")
           (StringUtils/replace "${APP.NAME}" app)
           (StringUtils/replace (str "${" ulang ".SRC}")
                (NiceFPath (File. cwd (str "src/main/" lang))))
@@ -482,7 +482,7 @@
     (scanJars (File. cwd ^String POD_CLASSES) sb)
     (scanJars (File. cwd ^String POD_LIB) sb)
     (FileUtils/writeStringToFile (File. ec ".classpath")
-      (-> (ResStr (str "com/zotohlabs/gallifrey/eclipse/" lang "/classpath.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/" lang "/classpath.txt") "utf-8")
           (StringUtils/replace "${CLASS.PATH.ENTRIES}" (.toString sb)))
       "utf-8")
   ))

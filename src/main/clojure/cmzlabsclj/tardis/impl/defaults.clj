@@ -22,12 +22,12 @@
   (:use [ cmzlabsclj.nucleus.util.files :only [FileRead? DirReadWrite? ] ] )
   (:use [ cmzlabsclj.nucleus.util.core :only [test-cond MakeMMap test-nestr] ] )
 
-  (:import (com.zotohlabs.frwk.core Versioned Identifiable Hierarchial))
-  (:import (com.zotohlabs.gallifrey.loaders AppClassLoader))
-  (:import (com.zotohlabs.frwk.util CoreUtils))
-  (:import (com.zotohlabs.frwk.server Component ComponentRegistry
+  (:import (com.zotohlab.frwk.core Versioned Identifiable Hierarchial))
+  (:import (com.zotohlab.gallifrey.loaders AppClassLoader))
+  (:import (com.zotohlab.frwk.util CoreUtils))
+  (:import (com.zotohlab.frwk.server Component ComponentRegistry
                                       RegistryError ServiceError ))
-  (:import (com.zotohlabs.gallifrey.core ConfigError))
+  (:import (com.zotohlab.gallifrey.core ConfigError))
   (:import (java.io File)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
