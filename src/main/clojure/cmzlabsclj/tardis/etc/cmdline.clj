@@ -16,8 +16,10 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.tardis.etc.climain :only [StartMain] ])
+
   (:use [cmzlabsclj.nucleus.i18n.resources :only [GetString] ])
+  (:use [cmzlabsclj.tardis.etc.climain :only [StartMain] ])
+  (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
   (:use [cmzlabsclj.tardis.etc.cli])
   (:use [cmzlabsclj.nucleus.util.core
          :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
@@ -198,6 +200,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- genGuid ""
+
+  []
+
+  (println (nsb (NewUUid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- make-csr-qs ""
 
   [^ResourceBundle rcb]
@@ -341,6 +351,7 @@
                 (case (nth args 1)
                   "password" (do (generatePassword 12) true)
                   "serverkey" (do (keyfile) true)
+                  "guid" (do (genGuid) true)
                   "csr" (do (csrfile) true)
                   false)
                 false) ]

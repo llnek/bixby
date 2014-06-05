@@ -48,6 +48,7 @@
   ["generate serverkey" "Create self-signed server key (pkcs12)."]
   ["generate password" "Generate a random password."]
   ["generate csr" "Create a Certificate Signing Request."]
+  ["generate guid" "Generate a RFC4122 compliant UUID."]
   ["encrypt <password> <clear-text>" "e.g. encrypt SomeSecretData"]
   ["decrypt <password> <cipher-text>" "e.g. decrypt Data"]
   ["hash <password>" "e.g. hash SomePassword"]
