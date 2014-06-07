@@ -143,7 +143,7 @@ var merge= function( original, extended ) {
   return original;
 };
 
-SkaroJS.klass.subclass = function (other) {
+SkaroJS.klass.xtends = function (other) {
   var name, parent = this.prototype;
   initing = true;
   var prototype = new this();
@@ -166,7 +166,7 @@ SkaroJS.klass.subclass = function (other) {
       prototype[name] = other[name];
     }
   }
-  function Class() {
+  function Claxx() {
     if ( !initing ) {
       // If this class has a staticInstantiate method, invoke it
       // and check if we got something back. If not, the normal
@@ -182,10 +182,10 @@ SkaroJS.klass.subclass = function (other) {
     return this;
   }
 
-  Class.subclass = SkaroJS.klass.subclass;
-  Class.prototype = prototype;
-  Class.prototype.constructor = Class;
-  return Class;
+  Claxx.xtends = SkaroJS.klass.xtends;
+  Claxx.prototype = prototype;
+  Claxx.prototype.constructor = Claxx;
+  return Claxx;
 };
 
 SkaroJS.klass.patch= inject;
