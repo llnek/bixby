@@ -12,7 +12,6 @@
 (function (undef) { "use strict"; var global= this, _ = global._ ;
 var fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
 var ZEROS= "00000000000000000000000000000000";  //32
-var initing = false;
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
@@ -21,7 +20,85 @@ function _echt (obj) {
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// js inheritance - lifted from impact.js
+//----------------------------------------------------------------------------
 //
+var monkeyPatch = function(prop) {
+  var proto = this.prototype,
+  name,
+  parent = {};
+  for ( name in prop ) {
+    if ( typeof(proto[name]) == "function" &&
+         typeof(prop[name]) == "function" &&
+         fnTest.test(prop[name])) {
+      parent[name] = proto[name]; // save original function
+      proto[name] = (function(name, fn){
+        return function() {
+          var tmp = this._super;
+          this._super = parent[name];
+          var ret = fn.apply(this, arguments);
+          this._super = tmp;
+          return ret;
+        };
+      })( name, prop[name] );
+
+    } else {
+      proto[name] = prop[name];
+    }
+  }
+};
+
+var klass= function() {};
+var initing = false;
+klass.xtends = function (other) {
+  var name, parent = this.prototype;
+  initing = true;
+  var proto = new this();
+  initing = false;
+  for (name in other ) {
+    if ( typeof(parent[name]) === "function" &&
+         typeof(other[name]) === "function" &&
+         fnTest.test(other[name])) {
+      proto[name] = (function(name, fn){
+        return function() {
+          var tmp = this._super;
+          this._super = parent[name];
+          var ret = fn.apply(this, arguments);
+          this._super = tmp;
+          return ret;
+        };
+      })( name, other[name] );
+
+    } else {
+      proto[name] = other[name];
+    }
+  }
+  function Claxx() {
+    if ( !initing ) {
+      // If this class has a staticInstantiate method, invoke it
+      // and check if we got something back. If not, the normal
+      // constructor (ctor) is called.
+      if (_echt(this.staticInstantiate)) {
+        var obj = this.staticInstantiate.apply(this, arguments);
+        if (_echt(obj)) { return obj; }
+      }
+      if (_echt(this.ctor)) {
+        this.ctor.apply(this, arguments);
+      }
+    }
+    return this;
+  }
+
+  Claxx.prototype = proto;
+  Claxx.prototype.constructor = Claxx;
+  Claxx.xtends = klass.xtends;
+  Claxx.inject = monkeyPatch;
+
+  return Claxx;
+};
+
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 var SkaroJS = {
 
   padstr: function(str, len, s) {
@@ -53,7 +130,6 @@ var SkaroJS = {
     return arr;
   },
 
-  klass: function() {},
   echt: _echt,
 
   prettyNumber: function (num, digits) {
@@ -91,105 +167,50 @@ var SkaroJS = {
     }
   },
 
-  logger: global.dbg
-
-};
-
-//----------------------------------------------------------------------------
-// js inheritance - lifted from impact.js
-var inject = function(prop) {
-  var proto = this.prototype,
-  name,
-  parent = {};
-  for ( name in prop ) {
-    if ( typeof(proto[name]) == "function" &&
-         typeof(prop[name]) == "function" &&
-         fnTest.test(prop[name])) {
-      parent[name] = proto[name]; // save original function
-      proto[name] = (function(name, fn){
-        return function() {
-          var tmp = this._super;
-          this._super = parent[name];
-          var ret = fn.apply(this, arguments);
-          this._super = tmp;
-          return ret;
-        };
-      })( name, prop[name] );
-
+  randomSign: function() {
+    if (this.rand(10) % 2 === 0) {
+      return -1;
     } else {
-      proto[name] = prop[name];
+      return 1;
     }
-  }
-};
+  },
 
-var merge= function( original, extended ) {
-  for( var key in extended ) {
-    var ext = extended[key];
-    if(
-      typeof(ext) !== 'object' ||
-      ext instanceof SkaroJS.klass ||
-      ext instanceof HTMLElement ||
-      ext === null
-    ) {
-      original[key] = ext;
-    }
-    else {
-      if( !original[key] || typeof(original[key]) !== 'object' ) {
-        original[key] = (ext instanceof Array) ? [] : {};
-      }
-      merge( original[key], ext );
-    }
-  }
-  return original;
-};
+  randArrayItem: function(arr) {
+    return arr.length === 0 ? null : arr.length === 1 ? arr[0] : arr[ Math.floor(Math.random() * arr.length) ];
+  },
 
-SkaroJS.klass.xtends = function (other) {
-  var name, parent = this.prototype;
-  initing = true;
-  var prototype = new this();
-  initing = false;
-  for (name in other ) {
-    if ( typeof(parent[name]) === "function" &&
-         typeof(other[name]) === "function" &&
-         fnTest.test(other[name])) {
-      prototype[name] = (function(name, fn){
-        return function() {
-          var tmp = this._super;
-          this._super = parent[name];
-          var ret = fn.apply(this, arguments);
-          this._super = tmp;
-          return ret;
-        };
-      })( name, other[name] );
+  randPercentage: function() {
+    var pc = [0.1,0.9,0.3,0.7,0.6,0.5,0.4,0.8,0.2];
+    return this.randArrayItem(pc);
+  },
 
-    } else {
-      prototype[name] = other[name];
-    }
-  }
-  function Claxx() {
-    if ( !initing ) {
-      // If this class has a staticInstantiate method, invoke it
-      // and check if we got something back. If not, the normal
-      // constructor (ctor) is called.
-      if (_echt(this.staticInstantiate)) {
-        var obj = this.staticInstantiate.apply(this, arguments);
-        if (_echt(obj)) { return obj; }
-      }
-      if (_echt(this.ctor)) {
-        this.ctor.apply(this, arguments);
+  rand: function(limit) {
+    return Math.floor(Math.random() * limit);
+  },
+
+  merge: function(original, extended) {
+    for( var key in extended ) {
+      var ext = extended[key];
+      if ( typeof(ext) !== 'object' ||
+           ext instanceof klass ||
+           ext instanceof HTMLElement ||
+           ext === null ) {
+        original[key] = ext;
+      } else {
+        if( !original[key] || typeof(original[key]) !== 'object' ) {
+          original[key] = (ext instanceof Array) ? [] : {};
+        }
+        this.merge( original[key], ext );
       }
     }
-    return this;
-  }
+    return original;
+  },
 
-  Claxx.xtends = SkaroJS.klass.xtends;
-  Claxx.prototype = prototype;
-  Claxx.prototype.constructor = Claxx;
-  return Claxx;
+  logger: global.dbg,
+  loggr: global.dbg,
+  Class : klass
 };
 
-SkaroJS.klass.patch= inject;
-SkaroJS.klass.merge= merge;
 
 /////////////////////////////////////////////////////////
 //// export your stuff
