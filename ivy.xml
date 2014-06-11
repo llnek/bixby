@@ -41,6 +41,7 @@
     <dependency org="org.zeroturnaround" name="zt-zip" rev="1.7" conf="libjar->default"/>
     <dependency org="org.apache.axis" name="axis" rev="1.4" conf="libjar->default"/>
     <dependency org="org.apache.axis" name="axis-jaxrpc" rev="1.4" conf="libjar->default"/>
+    <dependency org="org.jetlang" name="jetlang" rev="0.2.12" conf="libjar->default"/>
 
     <!-- xml, dom -->
     <dependency org="org.jdom" name="jdom2" rev="2.0.5" conf="libjar->default"/>
