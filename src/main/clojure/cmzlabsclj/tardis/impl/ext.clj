@@ -34,7 +34,7 @@
                   stop kernel-stop } ])
   (:use [cmzlabsclj.tardis.etc.misc])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ])
   (:use [ cmzlabsclj.nucleus.util.scheduler :only [MakeScheduler] ])
   (:use [ cmzlabsclj.nucleus.util.process :only [Coroutine] ])
   (:use [ cmzlabsclj.nucleus.util.core :only [LoadJavaProps] ])
@@ -444,6 +444,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- readConf ""
+
+  ^String
+  [^File appDir ^String confile]
+
+  (let [ cfgDir (File. appDir ^String DN_CONF)
+         cs (FileUtils/readFileToString (File. cfgDir confile))
+         rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
+    (log/debug "[" confile "]\n" rc)
+    rc
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod CompConfigure :czc.tardis.ext/Container
 
   [^cmzlabsclj.tardis.core.sys.Element co props]
@@ -452,12 +466,10 @@
          ^File appDir (K_APPDIR props)
          cfgDir (File. appDir ^String DN_CONF)
          mf (LoadJavaProps (File. appDir ^String MN_FILE))
-         envConf (json/read-str (FileUtils/readFileToString
-                                (File. cfgDir "env.conf"))
-                              :key-fn keyword)
-         appConf (json/read-str (FileUtils/readFileToString
-                                (File. cfgDir "app.conf"))
-                              :key-fn keyword) ]
+         envConf (json/read-str (readConf appDir "env.conf")
+                                :key-fn keyword)
+         appConf (json/read-str (readConf appDir "app.conf")
+                                :key-fn keyword) ]
     ;;WebPage.setup(new File(appDir))
     ;;maybeLoadRoutes(cfgDir)
     ;;_ftlCfg = new FTLCfg()
@@ -465,8 +477,8 @@
     ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
     (SynthesizeComponent srg {} )
     (doto co
-          (.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
-          (.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
+          ;;(.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
+          ;;(.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
           (.setAttr! K_APPDIR appDir)
           (.setAttr! K_SVCS srg)
           (.setAttr! K_ENVCONF envConf)
@@ -491,8 +503,9 @@
 
   [^cmzlabsclj.tardis.core.sys.Element ctr ^AppMain obj]
 
-  (let [ ^File cfg (.getAttr ctr K_APPCONF_FP)
-         json (CoreUtils/readJson cfg) ]
+  (let [ ^File appDir (.getAttr ctr K_APPDIR)
+         cs (readConf appDir "app.conf")
+         json (CoreUtils/readJson cs) ]
   (.contextualize obj ctr)
   (.configure obj json)
   (.initialize obj)) )

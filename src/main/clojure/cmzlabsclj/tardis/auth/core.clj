@@ -379,6 +379,7 @@
                       (.getf impl :appKey))))
 
       (start [_]
+        (AssertPluginOK (mkjdbc impl))
         (log/info "AuthPlugin started."))
 
       (stop [_]

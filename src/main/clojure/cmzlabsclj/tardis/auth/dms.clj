@@ -113,6 +113,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AssertPluginOK ""
+
+  [^JDBCInfo jdbc]
+
+  (let [ tbl (:table LoginAccount) ]
+    (when-not (TableExist? jdbc tbl)
+      (DbioError (str "Expected to find table " tbl ", but table is not found.")))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ApplyAuthPluginDDL ""
 
   [^JDBCInfo jdbc]

@@ -798,6 +798,7 @@
   [^Connection conn ^String table]
 
   (with-local-vars [ rc false ]
+    (log/debug "testing the existence of table " table)
     (Try!
       (let [ mt (.getMetaData conn)
              tbl (cond
