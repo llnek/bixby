@@ -783,6 +783,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmethod TableExist? JDBCPool
+
+  [^JDBCPool pool ^String table]
+
+  (with-open [ conn (.nextFree pool) ]
+    (TableExist? conn table)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod TableExist? JDBCInfo
 
   [jdbc ^String table]
@@ -910,7 +920,7 @@
 (defn- makePool ""
 
   ^JDBCPool
-  [jdbc ^BoneCP impl]
+  [^JDBCInfo jdbc ^BoneCP impl]
 
   (let [ dbv (ResolveVendor jdbc) ]
     (reify
@@ -923,6 +933,7 @@
 
       (shutdown [_] (.shutdown impl))
       (vendor [_] dbv)
+      (dbUrl [_] (.getUrl jdbc))
       (nextFree  [_]
         (try
             (.getConnection impl)
@@ -1010,6 +1021,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti UploadDdl (fn [a b] (class a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod UploadDdl JDBCPool
+
+  [^JDBCPool pool ^String ddl]
+
+  (with-open [ conn (.nextFree pool) ]
+     (UploadDdl conn ddl)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

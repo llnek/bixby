@@ -11,7 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlab.gallifrey.etc;
 
 import java.io.File;
@@ -23,7 +22,7 @@ import com.zotohlab.gallifrey.core.Container;
  */
 public interface PluginFactory {
 
-  public Plugin createPlugin ();
+  public Plugin createPlugin (Container c);
 
 }
 

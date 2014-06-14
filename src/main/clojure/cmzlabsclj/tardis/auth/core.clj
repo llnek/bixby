@@ -50,10 +50,12 @@
 
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.wfs])
+  (:use [cmzlabsclj.tardis.core.sys])
+
   (:use [cmzlabsclj.tardis.io.webss :only [Realign!] ])
   (:use [cmzlabsclj.tardis.io.basicauth])
   (:use [cmzlabsclj.tardis.auth.dms])
-  (:use [cmzlabsclj.nucleus.dbio.connect :only [DbioConnect] ])
+  (:use [cmzlabsclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])
   (:use [cmzlabsclj.nucleus.dbio.core])
   (:require [clojure.data.json :as json]))
 
@@ -70,24 +72,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkjdbc ""
-
-  ^JDBCInfo
-  [^cmzlabsclj.nucleus.util.core.MubleAPI impl]
-
-  (let [ cfg (get (.getf impl :cfg) (keyword DEF_DBID))
-         pkey (.getf impl :appKey) ]
-    (MakeJdbc DEF_DBID cfg (Pwdify (:passwd cfg) pkey))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- getSQLr ""
 
   ^SQLr
-  [^cmzlabsclj.nucleus.util.core.MubleAPI impl]
+  [^Container ctr]
 
-  (-> (DbioConnect (mkjdbc impl) AUTH-MCACHE {})
+  (-> (DbioConnectViaPool (.acquireDbPool ctr "") AUTH-MCACHE {})
       (.newSimpleSQLr)
   ))
 
@@ -359,27 +349,23 @@
 (defn- makeAuthPlugin ""
 
   ^Plugin
-  []
+  [^Container ctr]
 
   (let [ impl (MakeMMap) ]
     (reify Plugin
 
-      (contextualize [_ ctr]
-        (.setf! impl :appDir (.getAppDir ^Container ctr))
-        (.setf! impl :appKey (.getAppKey ^Container ctr)))
+      (contextualize [_ c] nil)
 
-      (configure [_ props]
-        (let [ dbs (:databases (:env props)) ]
-          (.setf! impl :cfg (:jdbc dbs)) ))
+      (configure [_ props] nil)
 
       (initialize [_]
         (let []
-          (ApplyAuthPluginDDL (mkjdbc impl))
-          (init-shiro (.getf impl :appDir)
-                      (.getf impl :appKey))))
+          (ApplyAuthPluginDDL (.acquireDbPool ctr ""))
+          (init-shiro (.getAppDir ctr)
+                      (.getAppKey ctr))))
 
       (start [_]
-        (AssertPluginOK (mkjdbc impl))
+        (AssertPluginOK (.acquireDbPool ctr ""))
         (log/info "AuthPlugin started."))
 
       (stop [_]
@@ -391,8 +377,8 @@
       AuthPlugin
 
       (addAccount [_ options]
-        (let [ pkey (.getf impl :appKey)
-               sql (getSQLr impl) ]
+        (let [ pkey (.getAppKey ctr)
+               sql (getSQLr ctr) ]
           (CreateLoginAccount sql
                               (:principal options)
                               (Pwdify (:credential options) pkey)
@@ -400,8 +386,8 @@
                               [])))
 
       (getAccount [_ options]
-        (let [ pkey (.getf impl :appKey)
-               sql (getSQLr impl) ]
+        (let [ pkey (.getAppKey ctr)
+               sql (getSQLr ctr) ]
           (GetLoginAccount sql
                            (:principal options)
                            (Pwdify (:credential options) pkey))))
@@ -415,9 +401,9 @@
 
   PluginFactory
 
-  (createPlugin [_]
+  (createPlugin [_ ctr]
     (require 'cmzlabsclj.tardis.auth.core)
-    (makeAuthPlugin)
+    (makeAuthPlugin ctr)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,9 +417,7 @@
          pkey (.getProperty mf "Implementation-Vendor-Id")
          ^String cmd (nth args 1)
          ^String db (nth args 2)
-         env (json/read-str
-               (FileUtils/readFileToString (File. appDir "conf/env.conf") "utf-8")
-               :key-fn keyword)
+         env (json/read-str (ReadConf appDir "env.conf") :key-fn keyword)
          cfg (get (:jdbc (:databases env)) (keyword db)) ]
     (when-not (nil? cfg)
       (let [ j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))

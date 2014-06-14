@@ -202,14 +202,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeGetDBPool ""
+
+  ^JDBCPool
+  [^cmzlabsclj.tardis.core.sys.Element co ^String gid]
+
+  (let [ dbs (.getAttr co K_DBPS)
+         dk (if (hgl? gid) gid "_") ]
+    (get dbs (keyword dk))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- maybeGetDBAPI ""
 
   [^cmzlabsclj.tardis.core.sys.Element co ^String gid]
 
   (let [ mcache (.getAttr co K_MCACHE)
-         dbs (.getAttr co K_DBPS)
-         dk (if (hgl? gid) gid "_")
-         ^JDBCPool p (get dbs (keyword dk)) ]
+         p (maybeGetDBPool co gid) ]
     (log/debug (str "acquiring from dbpool " p))
     (if (nil? p)
       nil
@@ -261,7 +271,9 @@
 
         (getAppKey [_] (.appKey ^cmzlabsclj.tardis.impl.defaults.PODMeta pod))
         (getAppDir [this] (.getAttr this K_APPDIR))
-        (acquireJdbc [this gid] (maybeGetDBAPI this gid))
+
+        (acquireDbPool [this gid] (maybeGetDBPool this gid))
+        (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
         (hasService [_ serviceId]
           (let [ ^ComponentRegistry srg (.getf impl K_SVCS) ]
@@ -315,8 +327,8 @@
             (doseq [ [k v] (seq* srg) ]
               (.stop ^Startable v))
             (log/info "container stopping all plugins...")
-            (doseq [ p (seq pls) ]
-              (.stop ^Startable p))
+            (doseq [ [k v] (seq pls) ]
+              (.stop ^Plugin v))
             (log/info "container stopping...")
             (cond
               (satisfies? CljAppMain main)
@@ -334,8 +346,8 @@
                  main (.getf impl :main-app) ]
             (doseq [ [k v] (seq* srg) ]
               (.dispose ^Disposable v))
-            (doseq [ p (seq pls) ]
-              (.dispose ^Disposable p))
+            (doseq [ [k v] (seq pls) ]
+              (.dispose ^Disposable v))
             (log/info "container dispose() - main app getting disposed.")
             (cond
               (satisfies? CljAppMain main)
@@ -429,20 +441,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- readConf ""
-
-  ^String
-  [^File appDir ^String confile]
-
-  (let [ cfgDir (File. appDir ^String DN_CONF)
-         cs (FileUtils/readFileToString (File. cfgDir confile))
-         rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
-    (log/debug "[" confile "]\n" rc)
-    rc
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod CompConfigure :czc.tardis.ext/Container
 
   [^cmzlabsclj.tardis.core.sys.Element co props]
@@ -451,9 +449,9 @@
          ^File appDir (K_APPDIR props)
          cfgDir (File. appDir ^String DN_CONF)
          mf (LoadJavaProps (File. appDir ^String MN_FILE))
-         envConf (json/read-str (readConf appDir "env.conf")
+         envConf (json/read-str (ReadConf appDir "env.conf")
                                 :key-fn keyword)
-         appConf (json/read-str (readConf appDir "app.conf")
+         appConf (json/read-str (ReadConf appDir "app.conf")
                                 :key-fn keyword) ]
     ;;WebPage.setup(new File(appDir))
     ;;maybeLoadRoutes(cfgDir)
@@ -489,7 +487,7 @@
   [^cmzlabsclj.tardis.core.sys.Element ctr ^AppMain obj]
 
   (let [ ^File appDir (.getAttr ctr K_APPDIR)
-         cs (readConf appDir "app.conf")
+         cs (ReadConf appDir "app.conf")
          json (CoreUtils/readJson cs) ]
   (.contextualize obj ctr)
   (.configure obj json)
@@ -537,7 +535,7 @@
 
   (let [ pf (MakeObj v)
          ^Plugin p (if (instance? PluginFactory pf)
-                       (.createPlugin ^PluginFactory pf)
+                       (.createPlugin ^PluginFactory pf ^Container co)
                        nil) ]
     (when (instance? Plugin p)
       (log/info "calling plugin-factory: " v)

@@ -13,6 +13,7 @@
 
 package com.zotohlab.gallifrey.core;
 
+import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.gallifrey.io.IOEvent;
 import com.zotohlab.frwk.core.Disposable;
 import java.io.File;
@@ -30,7 +31,8 @@ public interface Container extends ServerLike , Disposable {
 
   public File getAppDir();
 
-  public DBAPI acquireJdbc(String groupid);
+  public JDBCPool acquireDbPool(String groupid);
+  public DBAPI acquireDbAPI(String groupid);
 
 }
 

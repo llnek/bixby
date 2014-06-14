@@ -24,7 +24,8 @@
   (:use [cmzlabsclj.nucleus.dbio.sqlserver])
   (:use [cmzlabsclj.nucleus.dbio.oracle])
 
-  (:import (com.zotohlab.frwk.dbio JDBCInfo Schema))
+  (:import (com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema))
+  (:import (java.sql Connection))
   (:import (java.io File))
   (:import (org.apache.commons.io FileUtils)))
 
@@ -115,22 +116,38 @@
 ;;
 (defn AssertPluginOK ""
 
-  [^JDBCInfo jdbc]
+  [^JDBCPool pool]
 
   (let [ tbl (:table LoginAccount) ]
-    (when-not (TableExist? jdbc tbl)
+    (when-not (TableExist? pool tbl)
       (DbioError (str "Expected to find table " tbl ", but table is not found.")))
   ))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ApplyAuthPluginDDL ""
+(defmulti ApplyAuthPluginDDL class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ApplyAuthPluginDDL JDBCInfo
 
   [^JDBCInfo jdbc]
 
   (let [ dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
-    (UploadDdl jdbc (GenerateAuthPluginDDL dbtype))
-  ) )
+    (with-open [ conn (MakeConnection jdbc) ]
+      (UploadDdl conn (GenerateAuthPluginDDL dbtype)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ApplyAuthPluginDDL JDBCPool
+
+  [^JDBCPool pool]
+
+  (let [ dbtype (MatchJdbcUrl (.dbUrl pool)) ]
+    (UploadDdl pool (GenerateAuthPluginDDL dbtype))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

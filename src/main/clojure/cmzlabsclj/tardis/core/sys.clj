@@ -16,7 +16,11 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ])
+  (:use [cmzlabsclj.tardis.core.constants])
+  (:import (org.apache.commons.io FilenameUtils FileUtils))
+  (:import (java.io File))
+  (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlab.frwk.core Hierarchial Identifiable Versioned)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,6 +113,20 @@
       (getf [_ k] (.getf impl k) )
       (clrf! [_ k] (.clrf! impl k) )
       (clear! [_] (.clear! impl)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReadConf ""
+
+  ^String
+  [^File appDir ^String confile]
+
+  (let [ cfgDir (File. appDir ^String DN_CONF)
+         cs (FileUtils/readFileToString (File. cfgDir confile) "utf-8")
+         rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
+    (log/debug "[" confile "]\n" rc)
+    rc
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

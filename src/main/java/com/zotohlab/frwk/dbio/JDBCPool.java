@@ -27,5 +27,6 @@ public interface JDBCPool {
 
   public Object vendor();
 
+  public String dbUrl();
 }
 
