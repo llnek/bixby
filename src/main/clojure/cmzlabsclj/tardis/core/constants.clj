@@ -100,6 +100,7 @@
 (def K_ROOT_CZLR :root-loader )
 (def K_APP_CZLR :app-loader )
 (def K_EXEC_CZLR :exec-loader )
+(def K_DBPS :db-pools )
 
 (def K_BASEDIR :base-dir )
 (def K_PODSDIR :pods-dir )

@@ -34,7 +34,7 @@
                   stop kernel-stop } ])
   (:use [cmzlabsclj.tardis.etc.misc])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath nnz nbf] ])
   (:use [ cmzlabsclj.nucleus.util.scheduler :only [MakeScheduler] ])
   (:use [ cmzlabsclj.nucleus.util.process :only [Coroutine] ])
   (:use [ cmzlabsclj.nucleus.util.core :only [LoadJavaProps] ])
@@ -42,7 +42,7 @@
   (:use [ cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ])
   (:use [ cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
   (:use [ cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [ cmzlabsclj.nucleus.dbio.connect :only [DbioConnect] ])
+  (:use [ cmzlabsclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])
   (:use [ cmzlabsclj.nucleus.dbio.core
          :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
   (:use [ cmzlabsclj.nucleus.net.routes :only [LoadRoutes] ])
@@ -54,7 +54,7 @@
   (:import (java.io File StringWriter))
   (:import (com.zotohlab.gallifrey.runtime AppMain))
   (:import (com.zotohlab.gallifrey.etc PluginFactory Plugin))
-  (:import (com.zotohlab.frwk.dbio MetaCache Schema DBIOLocal DBAPI))
+  (:import (com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI))
   (:import (com.zotohlab.frwk.core Versioned Hierarchial
                                     Startable Disposable Identifiable ))
   (:import (com.zotohlab.frwk.server ComponentRegistry Component ServiceError ))
@@ -202,37 +202,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getDBAPI?
-
-  ^DBAPI
-  [co ^String mkey cfg ^String pkey mcache]
-
-  (let [ ^Map c (.get (DBIOLocal/getCache))
-         ^Container ctr co
-         jdbc (MakeJdbc mkey
-                        cfg
-                        (Pwdify (:passwd cfg) pkey)) ]
-    (when-not (.containsKey c mkey)
-      (let [ p (MakeDbPool jdbc {} ) ]
-        (.put c mkey p)))
-    (DbioConnect jdbc mcache {})
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- maybeGetDBAPI ""
 
   [^cmzlabsclj.tardis.core.sys.Element co ^String gid]
 
-  (let [ pkey (.getAppKey ^Container co)
-         mcache (.getAttr co K_MCACHE)
-         env (.getAttr co K_ENVCONF)
-         cfg (:jdbc (:databases env))
+  (let [ mcache (.getAttr co K_MCACHE)
+         dbs (.getAttr co K_DBPS)
          dk (if (hgl? gid) gid "_")
-         jj (get cfg (keyword dk)) ]
-    (if (nil? jj)
+         ^JDBCPool p (get dbs (keyword dk)) ]
+    (log/debug (str "acquiring from dbpool " p))
+    (if (nil? p)
       nil
-      (getDBAPI? co dk jj pkey mcache))
+      (DbioConnectViaPool p mcache {}))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,10 +223,13 @@
   [^cmzlabsclj.tardis.core.sys.Element co]
 
   (let [ ^Schedulable sc (.getAttr co K_SCHEDULER)
-         jc (.getAttr co K_JCTOR) ]
+         dbs (.getAttr co K_DBPS) ]
     (log/info "container releasing all system resources.")
     (when-not (nil? sc)
       (.dispose sc))
+    (doseq [ [k v] (seq dbs) ]
+      (log/debug "shutting down dbpool " (name k))
+      (.shutdown ^JDBCPool v))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -570,6 +554,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeInitDBs ""
+
+  [^cmzlabsclj.tardis.core.sys.Element co env app]
+
+  (with-local-vars [ p (transient {}) ]
+    (let [ cfg (->> env (:databases)(:jdbc))
+           ;;mcache (.getAttr co K_MCACHE)
+           pkey (.getAppKey ^Container co) ]
+      (when-not (nil? cfg)
+        (doseq [ [k v] (seq cfg) ]
+          (if (and (not (false? (:status v)))
+                   (> (nnz (:poolsize v)) 0))
+            (var-set p (assoc! @p k (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
+                                                { :max-conns (:poolsize v)
+                                                  :min-conns 1
+                                                  :partitions 4
+                                                  :debug (nbf (:debug v)) })))))
+    ))
+    (persistent! @p)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod CompInitialize :czc.tardis.ext/Container
 
   [^cmzlabsclj.tardis.core.sys.Element co]
@@ -610,6 +617,9 @@
 
     (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
     ;;(test-nestr "Main-Class" mCZ)
+
+    (.setAttr! co K_DBPS (maybeInitDBs co env app))
+    (log/debug "[dbpools]\n" (.getAttr co K_DBPS))
 
     (when (hgl? mCZ)
       (let [ obj (MakeObj mCZ) ]

@@ -948,8 +948,8 @@
             (.setPassword (nsb (.getPwd jdbc)))
             (.setJdbcUrl (.getUrl jdbc))
             (.setUsername (.getUser jdbc))
-            (.setIdleMaxAgeInSeconds (* 60 60 24)) ;; 1 day
-            (.setMaxConnectionsPerPartition (Math/max 2 (nnz (:max-conns options))))
+            (.setIdleMaxAgeInSeconds (* 60 60 2)) ;; 2 hrs
+            (.setMaxConnectionsPerPartition (Math/max 1 (nnz (:max-conns options))))
             (.setMinConnectionsPerPartition (Math/max 1 (nnz (:min-conns options))))
             (.setPoolName (juid))
             (.setAcquireRetryDelayInMs 5000)

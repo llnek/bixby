@@ -128,6 +128,33 @@
         (SimpleSQLr metaCache this)) )
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioConnectViaPool "Connect to a datasource."
+
+  ^DBAPI
+  [^JDBCPool pool metaCache options]
+
+  (let []
+    (reify DBAPI
+
+      (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
+
+      (getMetaCache [_] metaCache)
+
+      (vendor [_] (.vendor pool))
+
+      (finz [_] nil)
+
+      (open [_] (.nextFree pool))
+
+      (newCompositeSQLr [this]
+        (CompositeSQLr metaCache this))
+
+      (newSimpleSQLr [this]
+        (SimpleSQLr metaCache this)) )
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private connect-eof nil)
