@@ -56,7 +56,9 @@
          ^Map c (.get tloc) ]
     (when-not (.containsKey c hc)
       (log/debug "no db pool found in DBIO-thread-local, creating one...")
-      (let [ p (dbcore/MakeDbPool jdbc options) ]
+      (let [ o { :partitions 1 
+                 :max-conns 1 :min-conns 1 }
+             p (dbcore/MakeDbPool jdbc (merge options o)) ]
         (.put c hc p)))
     (.get c hc)
   ))
