@@ -205,9 +205,10 @@
 (defn- getDBAPI?
 
   ^DBAPI
-  [^String mkey cfg ^String pkey mcache]
+  [co ^String mkey cfg ^String pkey mcache]
 
   (let [ ^Map c (.get (DBIOLocal/getCache))
+         ^Container ctr co
          jdbc (MakeJdbc mkey
                         cfg
                         (Pwdify (:passwd cfg) pkey)) ]
@@ -231,7 +232,7 @@
          jj (get cfg (keyword dk)) ]
     (if (nil? jj)
       nil
-      (getDBAPI? dk jj pkey mcache))
+      (getDBAPI? co dk jj pkey mcache))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
