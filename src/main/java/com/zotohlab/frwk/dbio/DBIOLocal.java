@@ -22,13 +22,13 @@ import java.util.Map;
 public enum DBIOLocal {
 ;
 
-  private static ThreadLocal<Map> _cache=new ThreadLocal<Map>() {
-    protected Map initialValue() {
-      return new HashMap<Object,Object>();
+  private static ThreadLocal<Map<Object,JDBCPool>> _cache=new ThreadLocal<Map<Object,JDBCPool>>() {
+    protected Map<Object,JDBCPool> initialValue() {
+      return new HashMap<Object,JDBCPool>();
     }
   };
 
-  public static ThreadLocal<Map> getCache() {
+  public static ThreadLocal<Map<Object,JDBCPool>> getCache() {
     return _cache;
   }
 

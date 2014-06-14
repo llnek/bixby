@@ -34,7 +34,7 @@
                   stop kernel-stop } ])
   (:use [cmzlabsclj.tardis.etc.misc])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath nnz nbf] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath nbf ConvLong] ])
   (:use [ cmzlabsclj.nucleus.util.scheduler :only [MakeScheduler] ])
   (:use [ cmzlabsclj.nucleus.util.process :only [Coroutine] ])
   (:use [ cmzlabsclj.nucleus.util.core :only [LoadJavaProps] ])
@@ -554,23 +554,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- splitPoolSize ""
+  
+  [^String s]
+
+  (let [ pos (.indexOf s (int \:)) ]
+    (if (< pos 0)
+      [ 1 (ConvLong (strim s) 4) ]
+      [ (ConvLong (strim (.substring s 0 pos)) 4)
+        (ConvLong (strim (.substring s (+ pos 1))) 1) ])
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- maybeInitDBs ""
 
   [^cmzlabsclj.tardis.core.sys.Element co env app]
 
   (with-local-vars [ p (transient {}) ]
     (let [ cfg (->> env (:databases)(:jdbc))
-           ;;mcache (.getAttr co K_MCACHE)
            pkey (.getAppKey ^Container co) ]
       (when-not (nil? cfg)
         (doseq [ [k v] (seq cfg) ]
-          (if (and (not (false? (:status v)))
-                   (> (nnz (:poolsize v)) 0))
-            (var-set p (assoc! @p k (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
-                                                { :max-conns (:poolsize v)
+          (when-not (false? (:status v))
+            (let [ [ t c] (splitPoolSize (nsb (:poolsize v))) ]
+              (var-set p (assoc! @p k (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
+                                                { :max-conns c
                                                   :min-conns 1
-                                                  :partitions 4
-                                                  :debug (nbf (:debug v)) })))))
+                                                  :partitions t
+                                                  :debug (nbf (:debug v)) }))))))
     ))
     (persistent! @p)
   ))
@@ -581,17 +593,20 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^File appDir (.getAttr co K_APPDIR)
+  (let [ ^Properties mf (.getAttr co K_MFPROPS)
+         ^File appDir (.getAttr co K_APPDIR)
          env (.getAttr co K_ENVCONF)
          app (.getAttr co K_APPCONF)
-         ^String dmCZ (nsb (:data-model app))
-         ^Properties mf (.getAttr co K_MFPROPS)
+         dmCZ (nsb (:data-model app))
          mCZ (strim (.get mf "Main-Class"))
          reg (.getAttr co K_SVCS)
          jc (make-jobcreator co)
          ^cmzlabsclj.nucleus.util.scheduler.SchedulerAPI
          sc (MakeScheduler co)
          cfg (:container env) ]
+
+    (.setAttr! co K_DBPS (maybeInitDBs co env app))
+    (log/debug "[dbpools]\n" (.getAttr co K_DBPS))
 
     ;; handle the plugins
     (.setAttr! co K_PLUGINS
@@ -613,13 +628,10 @@
                                        (when-not (instance? Schema sc)
                                                  (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
                                        sc)
-                                   (MakeSchema [])) ))
+                                  (MakeSchema [])) ))
 
     (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
     ;;(test-nestr "Main-Class" mCZ)
-
-    (.setAttr! co K_DBPS (maybeInitDBs co env app))
-    (log/debug "[dbpools]\n" (.getAttr co K_DBPS))
 
     (when (hgl? mCZ)
       (let [ obj (MakeObj mCZ) ]

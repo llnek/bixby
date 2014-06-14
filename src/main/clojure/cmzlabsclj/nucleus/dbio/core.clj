@@ -939,8 +939,11 @@
   ([^JDBCInfo jdbc options]
     (let [ ^String dv (.getDriver jdbc)
            bcf (BoneCPConfig.) ]
-      ;;(log/debug "Driver : " dv)
+
       ;;(log/debug "URL : "  (.getUrl jdbc))
+      ;;(log/debug "Driver : " dv)
+      ;;(log/debug "Options : " options)
+
       (when (hgl? dv) (ForName dv))
       (doto bcf
             (.setPartitionCount (Math/max 1 (nnz (:partitions options))))
@@ -956,6 +959,7 @@
             (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
             (.setDefaultAutoCommit false)
             (.setAcquireRetryAttempts 1))
+      (log/debug "[bonecp]\n" (.toString bcf))
       (makePool jdbc (BoneCP. bcf)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
