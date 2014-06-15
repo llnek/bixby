@@ -15,8 +15,8 @@
   cmzlabsclj.nucleus.dbio.connect
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [cmzlabsclj.nucleus.dbio.core :as dbcore :only [MakeDbPool] ])
   (:require [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.dbio.core])
   (:use [cmzlabsclj.nucleus.util.core :only [Try!] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
   (:use [cmzlabsclj.nucleus.dbio.composite])
@@ -27,23 +27,11 @@
   (:use [cmzlabsclj.nucleus.dbio.oracle])
   (:use [cmzlabsclj.nucleus.dbio.h2])
   (:import (java.util Map HashMap))
-  (:import (com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo
+  (:import (com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo 
                                     DBIOLocal DBIOError OptLockError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- hashJdbc ""
-
-  ^long
-  [jdbc]
-
-  (.hashCode
-    (str (:driver jdbc) (:url jdbc)
-         (:user jdbc) (nsb (:pwdObj jdbc)))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,39 +46,11 @@
       (log/debug "no db pool found in DBIO-thread-local, creating one...")
       (let [ o { :partitions 1 
                  :max-conns 1 :min-conns 1 }
-             p (dbcore/MakeDbPool jdbc (merge options o)) ]
+             p (MakeDbPool jdbc (merge options o)) ]
         (.put c hc p)))
     (.get c hc)
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- maybe-finz-pool ""
-
-  [ hc]
-
-  (let [ tloc (DBIOLocal/getCache)
-         ^Map c (.get tloc)
-         p (.get c hc) ]
-    (when-not (nil? p)
-      (Try! (.shutdown ^JDBCPool p))
-      (.remove c hc))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- maybe-get-pool ""
-
-  ^JDBCPool
-  [ hc jdbc options]
-
-  (let [ tloc (DBIOLocal/getCache)
-         ^Map c (.get tloc)
-         rc (.get c hc) ]
-    (if (nil? rc)
-      (RegisterJdbcTL jdbc options)
-      rc)
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -105,23 +65,13 @@
 
       (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
 
-      (getMetaCache [_] metaCache)
+      (vendor [_] (ResolveVendor jdbc))
 
-      (vendor [_]
-        (let [ ^JDBCPool
-               p (maybe-get-pool hc jdbc options) ]
-          (if (nil? p)
-            nil
-            (.vendor p))))
+      (getMetaCache [_] metaCache)
 
       (finz [_] nil)
 
-      (open [_]
-        (let [ ^JDBCPool
-               p (maybe-get-pool hc jdbc options) ]
-          (if (nil? p)
-            nil
-            (.nextFree p))))
+      (open [_] (MakeConnection jdbc))
 
       (newCompositeSQLr [this]
         (CompositeSQLr metaCache this))
