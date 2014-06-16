@@ -12,11 +12,11 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  cmzlabsclj.tardis.auth.rm
+  cmzlabsclj.tardis.auth.realm
 
   (:gen-class
     :extends org.apache.shiro.realm.AuthorizingRealm
-    :name cmzlabsclj.tardis.auth.rm.JdbcRealm
+    :name cmzlabsclj.tardis.auth.realm.JdbcRealm
     :init myInit
     :constructors {[] []}
     :exposes-methods { }
@@ -26,7 +26,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabsclj.tardis.auth.core])
+  (:use [cmzlabsclj.tardis.auth.plugin])
   (:use [cmzlabsclj.nucleus.dbio.connect])
   (:use [cmzlabsclj.nucleus.dbio.core])
 
@@ -50,33 +50,18 @@
 
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [ ^DBAPI db (DbioConnect *JDBC-INFO* *META-CACHE*)
-         pwd (.getCredentials token)
+  (let [ ^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+         ;;pwd (.getCredentials token)
          user (.getPrincipal token)
          sql (.newSimpleSQLr db) ]
     (try
-      (let[ acc (GetLoginAccount sql user (Pwdify pwd))
-            rc (SimpleAccount.  acc (:passwd acc) (.getName this)) ]
-        rc)
-      (catch Throwable e#
-        (throw (AuthenticationException. e#)))
+      (let [ acc (GetLoginAccount sql user) ]
+        (if (nil? acc)
+          nil
+          (SimpleAccount.  acc (:passwd acc) (.getName this))
+        ))
       (finally
         (.finz db)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- getAvailablePrinc ""
-  
-  [^PrincipalCollection princs ^String rname]
-
-  (if (or (nil? princs)
-          (.isEmpty princs))
-    nil
-    (let [ ^Collection ps (.fromRealm princs rname) ]
-      (if (or (nil? ps) (.isEmpty ps))
-        (.getPrimaryPrincipal princs)
-        (-> ps (.iterator)(.next))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,20 +70,17 @@
 
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [ ^DBAPI db (DbioConnect *JDBC-INFO* *META-CACHE*)
-         rname (.getName this)
+  (let [ ^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+         acc (.getPrimaryPrincipal principals)
+         rc (SimpleAccount. acc (:passwd acc) (.getName this))
          sql (.newSimpleSQLr db) ]
     (try
-      (let [ acc (getAvailablePrinc principals rname)
-             rc (SimpleAccount.  ^String acc (:passwd acc) rname)
-             rs (DbioGetM2M {:as :roles :with sql } acc) ]
-          (doseq [ r (seq rs) ]
-            (.addRole rc ^String (:name r)))
-          rc)
-        (catch Throwable e#
-          (throw (AuthorizationException. e#)))
-        (finally
-          (.finz db)))
+      (let [ rs (DbioGetM2M {:as :roles :with sql } acc) ]
+        (doseq [ r (seq rs) ]
+          (.addRole rc ^String (:name r)))
+        rc)
+      (finally
+        (.finz db)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,6 +90,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private rm-eof nil)
+(def ^:private realm-eof nil)
 
 

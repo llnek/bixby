@@ -459,8 +459,8 @@
       (let [ s (BCrypt/gensalt 10) ]
         [ (BCrypt/hashpw pwdStr s) s ] )))
 
-  (validateHash [this pwdTarget]
-    (BCrypt/checkpw (.text this) pwdTarget))
+  (validateHash [this pwdHashed]
+    (BCrypt/checkpw (.text this) pwdHashed))
 
   (encoded [_]
     (if (StringUtils/isEmpty pwdStr)

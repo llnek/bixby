@@ -12,7 +12,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  cmzlabsclj.tardis.auth.core
+  cmzlabsclj.tardis.auth.plugin
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
@@ -34,7 +34,7 @@
   (:import (org.apache.shiro.config IniSecurityManagerFactory))
   (:import (org.apache.shiro SecurityUtils))
   (:import (org.apache.shiro.subject Subject))
-
+  (:import (org.apache.shiro.authc UsernamePasswordToken))
   (:import ( com.zotohlab.wflow If BoolExpr FlowPoint
                                  Activity Pipeline
                                  PipelineDelegate PTask Work))
@@ -54,7 +54,7 @@
 
   (:use [cmzlabsclj.tardis.io.webss :only [Realign!] ])
   (:use [cmzlabsclj.tardis.io.basicauth])
-  (:use [cmzlabsclj.tardis.auth.dms])
+  (:use [cmzlabsclj.tardis.auth.model])
   (:use [cmzlabsclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])
   (:use [cmzlabsclj.nucleus.dbio.core])
   (:require [clojure.data.json :as json]))
@@ -66,9 +66,22 @@
   "A Plugin that uses Apache Shiro for authentication and authorization of
   users."
 
-  (getRoles [_ acctObj ] )
+  (checkAction [_ acctObj action])
   (addAccount [_ options] )
+  (login [_ user pwd] )
+  (getRoles [_ acctObj ] )
   (getAccount [_ options]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AssertPluginOK ""
+
+  [^JDBCPool pool]
+
+  (let [ tbl (:table LoginAccount) ]
+    (when-not (TableExist? pool tbl)
+      (DbioError (str "Expected to find table " tbl ", but table is not found.")))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,9 +158,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn FindLoginAccount  ""
+
+  [^SQLr sql ^String user]
+
+  (.findOne sql :czc.tardis.auth/LoginAccount
+                            { :acctid (strim user) }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn GetLoginAccount  ""
 
-  [^SQLr sql ^String user ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj]
+  [^SQLr sql ^String user ^String pwd]
 
   (let [ acct (.findOne sql :czc.tardis.auth/LoginAccount
                             { :acctid (strim user) }) ]
@@ -155,7 +177,9 @@
       (nil? acct)
       (throw (UnknownUser. user))
 
-      (.validateHash pwdObj (:passwd acct))
+      (.validateHash ^cmzlabsclj.nucleus.crypto.codec.Password
+                     (Pwdify pwd "")
+                     (:passwd acct))
       acct
 
       :else
@@ -275,7 +299,7 @@
   (DefPredicate
     (fn [^Job job]
       (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
-            ^cmzlabsclj.tardis.auth.core.AuthPlugin
+            ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event ^Job job)
             info (GetSignupInfo evt) ]
@@ -307,7 +331,7 @@
   (DefPredicate
     (fn [^Job job]
       (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
-            ^cmzlabsclj.tardis.auth.core.AuthPlugin
+            ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event ^Job job)
             info (GetLoginInfo evt) ]
@@ -376,6 +400,8 @@
 
       AuthPlugin
 
+      (checkAction [_ acctObj action])
+
       (addAccount [_ options]
         (let [ pkey (.getAppKey ctr)
                sql (getSQLr ctr) ]
@@ -385,12 +411,29 @@
                               options
                               [])))
 
+      (login [_ user pwd]
+        (let [ token (UsernamePasswordToken. ^String user ^String pwd)
+               cur (SecurityUtils/getSubject)
+               sss (.getSession cur) ]
+          (log/debug "current user session " sss)
+          (log/debug "current user object " cur)
+          (when-not (.isAuthenticated cur)
+            (try
+              ;;(.setRememberMe token true)
+              (.login cur token)
+              (log/debug "user [" user "] logged in successfully.")
+              (catch Exception e#
+                (log/error e# ""))))
+          (if (.isAuthenticated cur)
+            (.getPrincipal cur)
+            nil)))
+
       (getAccount [_ options]
         (let [ pkey (.getAppKey ctr)
                sql (getSQLr ctr) ]
-          (GetLoginAccount sql
-                           (:principal options)
-                           (Pwdify (:credential options) pkey))))
+          (FindLoginAccount sql
+                           (:principal options))))
+
       (getRoles [_ acct] [])
 
   )))
@@ -402,7 +445,7 @@
   PluginFactory
 
   (createPlugin [_ ctr]
-    (require 'cmzlabsclj.tardis.auth.core)
+    (require 'cmzlabsclj.tardis.auth.plugin)
     (makeAuthPlugin ctr)
   ))
 
@@ -452,6 +495,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private core-eof nil)
+(def ^:private plugin-eof nil)
 
 

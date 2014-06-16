@@ -16,8 +16,8 @@
 
   (:require [cmzlabsclj.nucleus.crypto.codec :as CE])
   (:require [cmzlabsclj.nucleus.util.core :as CU])
-  (:use [cmzlabsclj.tardis.auth.core])
-  (:use [cmzlabsclj.tardis.auth.dms])
+  (:use [cmzlabsclj.tardis.auth.plugin])
+  (:use [cmzlabsclj.tardis.auth.model])
   (:use [cmzlabsclj.nucleus.dbio.drivers])
   (:use [cmzlabsclj.nucleus.dbio.connect])
   (:use [cmzlabsclj.nucleus.dbio.core])
@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def METAC (atom (MakeMetaCache (cmzlabsclj.tardis.auth.dms.AuthPluginSchema.))))
+(def METAC (atom (MakeMetaCache (cmzlabsclj.tardis.auth.model.AuthPluginSchema.))))
 (def JDBC (atom nil))
 (def DB (atom nil))
 (def ROLES (atom nil))

@@ -42,6 +42,7 @@
 (def ^:dynamic *USE_DDL_SEP* true)
 (def ^:dynamic *DDL_BVS* nil)
 (def ^:dynamic *JDBC-INFO* nil)
+(def ^:dynamic *JDBC-POOL* nil)
 (def ^String DDL_SEP "-- :")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

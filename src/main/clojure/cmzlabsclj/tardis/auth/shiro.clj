@@ -32,10 +32,12 @@
     (let [ pwd (.getCredentials ^AuthenticationToken token)
            uid (.getPrincipal ^AuthenticationToken token)
            pc (.getCredentials ^AuthenticationInfo info)
-           pu (-> (.getPrincipals ^AuthenticationInfo info)
-                  (.getPrimaryPrincipal)) ]
-      (and (= pu uid)
-               (= pc (Pwdify pwd ""))) )
+           ^cmzlabsclj.nucleus.crypto.codec.Password
+           tstPwd (Pwdify pwd "")
+           acc (-> (.getPrincipals ^AuthenticationInfo info)
+                   (.getPrimaryPrincipal)) ]
+      (and (= (:acctid acc) uid)
+           (.validateHash tstPwd pc)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

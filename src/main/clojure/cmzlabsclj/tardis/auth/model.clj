@@ -12,7 +12,7 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  cmzlabsclj.tardis.auth.dms
+  cmzlabsclj.tardis.auth.model
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
@@ -112,18 +112,6 @@
       (DbioError (str "Unsupported database type: " dbtype)))
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AssertPluginOK ""
-
-  [^JDBCPool pool]
-
-  (let [ tbl (:table LoginAccount) ]
-    (when-not (TableExist? pool tbl)
-      (DbioError (str "Expected to find table " tbl ", but table is not found.")))
-  ))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ApplyAuthPluginDDL class)
@@ -159,5 +147,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private dms-eof nil)
+(def ^:private model-eof nil)
 

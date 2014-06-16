@@ -850,10 +850,10 @@ def cljhhh_Auth() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabsclj.tardis.auth.dms')
-    arg (value: 'cmzlabsclj.tardis.auth.core')
-    arg (value: 'cmzlabsclj.tardis.auth.rm')
+    arg (value: 'cmzlabsclj.tardis.auth.model')
+    arg (value: 'cmzlabsclj.tardis.auth.realm')
     arg (value: 'cmzlabsclj.tardis.auth.shiro')
+    arg (value: 'cmzlabsclj.tardis.auth.plugin')
   }
 }
 
