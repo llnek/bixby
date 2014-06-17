@@ -43,6 +43,7 @@
   (:import (com.zotohlab.frwk.core Versioned Hierarchial
                                     Identifiable Disposable Startable))
   (:import (org.apache.commons.codec.binary Base64))
+  (:import (org.apache.commons.lang3 StringUtils))
 
   (:import (com.zotohlab.gallifrey.io IOSession ServletEmitter Emitter))
 
@@ -54,18 +55,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^String ^:private AUTH "Authorization")
+(def ^String ^:private BASIC "Basic")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ScanBasicAuth ""
 
   [^HTTPEvent evt]
 
-  (if (.hasHeader evt "authorization")
-    (let [ s (Stringify (Base64/decodeBase64 (.getHeaderValue evt "authorization")))
-           pos (.indexOf s ":") ]
-      (if (pos > 0)
-        [ (.substring s 0 pos) (.substring s (inc pos)) ]
-        []))
+  (if (.hasHeader evt AUTH)
+    (let [ s (StringUtils/split (nsb (.getHeaderValue evt AUTH))) ]
+      (cond
+        (and (= 2 (count s))
+             (= "Basic" (first s))
+             (hgl? (last s)))
+        (let [ rc (StringUtils/split (Stringify (Base64/decodeBase64 ^String (last s)))
+                                     ":"
+                                     1) ]
+          (if (= 2 (count rc))
+            { :principal (first rc) :credential (last rc) }
+            nil))
+        :else
+        nil))
     nil
   ))
 

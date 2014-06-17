@@ -15,12 +15,16 @@
   cmzlabsclj.tardis.io.basicauth
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.data.json :as json])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [notnil? ] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [Stringify notnil? ] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
+  (:import (org.apache.commons.codec.binary Base64))
+  (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlab.gallifrey.io HTTPEvent))
+  (:import (com.zotohlab.frwk.io XData))
   (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,29 +36,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetSignupInfo ""
+(defn- crackFormFields ""
 
   [^HTTPEvent evt]
 
-  (with-local-vars [ user nil pwd nil email nil ]
-    (if-let [ data (.data evt) ]
-      (if (instance? ULFormItems data)
-        (doseq [ ^ULFileItem
-                 x (GetFormFields data) ]
+  (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
+    (with-local-vars [ user nil pwd nil email nil
+                       data (.content xs) ]
+      (when (instance? ULFormItems @data)
+        (doseq [ ^ULFileItem x (GetFormFields @data) ]
           (let [ fm (.getFieldName x)
-                 fv (.getString x)]
-            (log/debug "Form field: " fm " = " fv)
+                 fv (nsb (.getString x)) ]
+            ;;(log/debug "Form field: " fm " = " fv)
             (case fm
               EMAIL_PARAM (var-set email fv)
               PWD_PARAM (var-set pwd fv)
               USER_PARAM (var-set user fv)
               nil)))
-        (do
-          (var-set email (.getParameterValue evt EMAIL_PARAM))
-          (var-set pwd (.getParameterValue evt PWD_PARAM))
-          (var-set user (.getParameterValue evt USER_PARAM))) ))
+        { :principal @user :credential @pwd  :email @email }))
+  ))
 
-    { :principal @user :credential @pwd  :email @email }
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- crackBodyContent ""
+
+  [^HTTPEvent evt]
+
+  (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
+    (let [ data (if (.hasContent xs) (.stringify xs) "")
+           json (json/read-str data) ]
+      (when-not (nil? json)
+        { :principal (nsb (get json USER_PARAM))
+          :credential (nsb (get json PWD_PARAM))
+          :email (nsb (get json EMAIL_PARAM)) }))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- crackUrlParams ""
+
+  [^HTTPEvent evt]
+
+  { :email (nsb (.getParameterValue evt EMAIL_PARAM))
+    :credential (nsb (.getParameterValue evt PWD_PARAM))
+    :principal (nsb (.getParameterValue evt USER_PARAM)) })
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetSignupInfo ""
+
+  [^HTTPEvent evt]
+
+  (let [ ct (.contentType evt) ]
+    (cond
+      (> (.indexOf ct "/json") 0)
+      (crackBodyContent evt)
+
+      (or (> (.indexOf ct "form-urlencoded") 0)
+          (> (.indexOf ct "form-data") 0))
+      (crackFormFields evt)
+
+      :else
+      (crackUrlParams evt))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,28 +106,7 @@
 
   [^HTTPEvent evt]
 
-  (with-local-vars [user nil pwd nil]
-    (let [ ba (ScanBasicAuth evt)
-           data (.data evt) ]
-      (if (notnil? ba)
-        (do
-          (var-set user (first ba))
-          (var-set pwd (last ba)))
-        (if (instance? ULFormItems data)
-          (doseq [ ^ULFileItem
-                   x (GetFormFields data) ]
-            (let [ fm (.getFieldName x)
-                   fv (.getString x) ]
-              (log/debug "Form field: " fm " = " fv)
-              (case fm
-                USER_PARAM (var-set user fv)
-                PWD_PARAM (var-set pwd fv)
-                nil)))
-          (do
-            (var-set user (.getParameterValue evt USER_PARAM))
-            (var-set pwd (.getParameterValue evt PWD_PARAM))))))
-    { :principal @user :credential @pwd }
-  ))
+  (GetSignupInfo evt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
