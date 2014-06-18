@@ -287,7 +287,7 @@
                           nil) ]
     (if (and (notnil? a)
              (> (.size a) 0))
-        (.get a 0)
+        (.getAsString (.get a 0))
         nil)
   ))
 
@@ -306,7 +306,7 @@
                           nil) ]
     (if (and (notnil? a)
              (> (.size a) 0))
-        (.get a 0)
+        (.getAsString (.get a 0))
         nil)
   ))
 

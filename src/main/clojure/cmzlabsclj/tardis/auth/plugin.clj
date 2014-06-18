@@ -18,7 +18,7 @@
   (:require [clojure.string :as cstr])
 
   (:import (com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError))
-  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser))
+  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser))
 
   (:import (com.zotohlab.frwk.net ULFormItems ULFileItem))
   (:import (org.apache.commons.codec.binary Base64))
@@ -42,7 +42,7 @@
   (:import (com.zotohlab.wflow.core Job))
 
   (:use [cmzlabsclj.nucleus.util.core :only [notnil? Stringify
-                                       MakeMMap juid
+                                       MakeMMap juid ternary
                                        test-nonil LoadJavaProps] ])
   (:use [cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? strim] ])
@@ -68,6 +68,7 @@
 
   (checkAction [_ acctObj action])
   (addAccount [_ options] )
+  (hasAccount [_ options] )
   (login [_ user pwd] )
   (getRoles [_ acctObj ] )
   (getAccount [_ options]))
@@ -153,6 +154,10 @@
     ;; assumed ok for the account to remain inserted.
     (doseq [ r (seq roleObjs) ]
       (DbioSetM2M { :as :roles :with sql } acc r))
+    (log/debug "created new account into db: "
+               acc
+               "\nwith meta "
+               (meta acc))
     acc
   ))
 
@@ -298,26 +303,28 @@
 
   (DefPredicate
     (fn [^Job job]
-      (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
+      (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container job)
             ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
-            ^HTTPEvent evt (.event ^Job job)
-            info (GetSignupInfo evt) ]
+            ^HTTPEvent evt (.event job)
+            info (ternary (GetSignupInfo evt) {} ) ]
         (test-nonil "AuthPlugin" pa)
-        (with-local-vars [ uid (:email info) ]
-          (try
-            (when-let [ p (:principal info) ]
-              (if (hgl? p)(var-set uid p)))
-            (log/debug "about to add a user account - " @uid)
-            (.setLastResult job { :account (.addAccount pa
-                                                        (merge info
-                                                               { :principal @uid } )) })
-            (Realign! evt (:account (.getLastResult job)) [])
-            true
-            (catch Throwable t#
-              (log/error t# "")
-              (.setLastResult job { :error t# } )
-              false)))
+        (cond
+          (and (hgl? (:credential info))
+               (hgl? (:principal info))
+               (hgl? (:email info)))
+          (if (.hasAccount pa info)
+            (do
+              (.setLastResult job { :error (DuplicateUser. ^String (:principal info)) })
+              false)
+            (do
+              (.setLastResult job { :account (.addAccount pa info) })
+              true))
+
+          :else
+          (do
+            (.setLastResult job { :error (AuthError. "Bad Request") })
+            false))
       ))
   ))
 
@@ -330,43 +337,26 @@
 
   (DefPredicate
     (fn [^Job job]
-      (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container ^Job job)
+      (let [^cmzlabsclj.tardis.core.sys.Element ctr (.container job)
             ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event ^Job job)
-            info (GetLoginInfo evt) ]
-        (log/debug "about to login user - " (:principal info))
+            info (ternary (GetLoginInfo evt) {} ) ]
         (test-nonil "AuthPlugin" pa)
-        (try
-          (let [ acct (.getAccount pa info)
-                 rs (.getRoles pa acct) ]
-            (Realign! evt acct rs)
-            true)
-          (catch Throwable t#
-            (log/error t# "")
-            (.setLastResult job { :error t# })
-            false))
+        (cond
+          (and (hgl? (:credential info))
+               (hgl? (:principal info)))
+          (do
+            (.setLastResult job {:account (.login pa (:principal info)
+                                                     (:credential info)) })
+            (notnil? (:account (.getLastResult job))))
 
+          :else
+          (do
+            (.setLastResult job {:error (AuthError. "Bad Request") })
+            false))
       ))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- LOGIN-ERROR ""
-
-  ^PTask
-  []
-
-  (DefWFTask (fn [fw job arg] )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- LOGIN-OK ""
-
-  ^PTask
-  []
-
-  (DefWFTask (fn [fw job arg] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -384,12 +374,12 @@
 
       (initialize [_]
         (let []
-          (ApplyAuthPluginDDL (.acquireDbPool ctr ""))
-          (init-shiro (.getAppDir ctr)
-                      (.getAppKey ctr))))
+          (ApplyAuthPluginDDL (.acquireDbPool ctr ""))))
 
       (start [_]
         (AssertPluginOK (.acquireDbPool ctr ""))
+        (init-shiro (.getAppDir ctr)
+                    (.getAppKey ctr))
         (log/info "AuthPlugin started."))
 
       (stop [_]
@@ -412,21 +402,29 @@
                               [])))
 
       (login [_ user pwd]
-        (let [ token (UsernamePasswordToken. ^String user ^String pwd)
-               cur (SecurityUtils/getSubject)
-               sss (.getSession cur) ]
-          (log/debug "current user session " sss)
-          (log/debug "current user object " cur)
-          (when-not (.isAuthenticated cur)
-            (try
-              ;;(.setRememberMe token true)
-              (.login cur token)
-              (log/debug "user [" user "] logged in successfully.")
-              (catch Exception e#
-                (log/error e# ""))))
-          (if (.isAuthenticated cur)
-            (.getPrincipal cur)
-            nil)))
+        (binding [ *JDBC-POOL* (.acquireDbPool ctr "")
+                   *META-CACHE* AUTH-MCACHE ]
+          (let [ token (UsernamePasswordToken. ^String user ^String pwd)
+                 cur (SecurityUtils/getSubject)
+                 sss (.getSession cur) ]
+            (log/debug "current user session " sss)
+            (log/debug "current user object " cur)
+            (when-not (.isAuthenticated cur)
+              (try
+                ;;(.setRememberMe token true)
+                (.login cur token)
+                (log/debug "user [" user "] logged in successfully.")
+                (catch Exception e#
+                  (log/error e# ""))))
+            (if (.isAuthenticated cur)
+              (.getPrincipal cur)
+              nil))))
+
+      (hasAccount [_ options]
+        (let [ pkey (.getAppKey ctr)
+               sql (getSQLr ctr) ]
+          (HasLoginAccount sql
+                           (:principal options))))
 
       (getAccount [_ options]
         (let [ pkey (.getAppKey ctr)

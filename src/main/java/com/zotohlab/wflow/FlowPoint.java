@@ -108,7 +108,7 @@ public abstract class FlowPoint implements  RunnableWithId {
     x.core().dequeue(this);
 
     try {
-      f.job().clrLastResult();
+      //f.job().clrLastResult();
       rc= eval( f.job() );
     } 
     catch (Throwable e) {

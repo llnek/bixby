@@ -18,7 +18,7 @@
   (:require [clojure.data.json :as json])
   (:require [clojure.string :as cstr])
   (:use [cmzlabsclj.nucleus.util.core :only [Stringify notnil? ] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? ] ])
+  (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
   (:import (org.apache.commons.codec.binary Base64))
@@ -30,9 +30,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^String ^:private PWD_PARAM "password")
+(def ^String ^:private PWD_PARAM "credential")
 (def ^String ^:private EMAIL_PARAM "email")
-(def ^String ^:private USER_PARAM "user")
+(def ^String ^:private USER_PARAM "principal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -53,7 +53,7 @@
               PWD_PARAM (var-set pwd fv)
               USER_PARAM (var-set user fv)
               nil)))
-        { :principal @user :credential @pwd  :email @email }))
+        { :principal (strim @user) :credential (strim @pwd)  :email (strim @email) }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,9 +66,9 @@
     (let [ data (if (.hasContent xs) (.stringify xs) "")
            json (json/read-str data) ]
       (when-not (nil? json)
-        { :principal (nsb (get json USER_PARAM))
-          :credential (nsb (get json PWD_PARAM))
-          :email (nsb (get json EMAIL_PARAM)) }))
+        { :principal (strim (get json USER_PARAM))
+          :credential (strim (get json PWD_PARAM))
+          :email (strim (get json EMAIL_PARAM)) }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,9 +77,28 @@
 
   [^HTTPEvent evt]
 
-  { :email (nsb (.getParameterValue evt EMAIL_PARAM))
-    :credential (nsb (.getParameterValue evt PWD_PARAM))
-    :principal (nsb (.getParameterValue evt USER_PARAM)) })
+  { :email (strim (.getParameterValue evt EMAIL_PARAM))
+    :credential (strim (.getParameterValue evt PWD_PARAM))
+    :principal (strim (.getParameterValue evt USER_PARAM)) })
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeGetAuthInfo ""
+
+  [^HTTPEvent evt]
+
+  (let [ ct (.contentType evt) ]
+    (cond
+      (or (> (.indexOf ct "form-urlencoded") 0)
+          (> (.indexOf ct "form-data") 0))
+      (crackFormFields evt)
+
+      (> (.indexOf ct "/json") 0)
+      (crackBodyContent evt)
+
+      :else
+      (crackUrlParams evt))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,17 +106,10 @@
 
   [^HTTPEvent evt]
 
-  (let [ ct (.contentType evt) ]
-    (cond
-      (> (.indexOf ct "/json") 0)
-      (crackBodyContent evt)
-
-      (or (> (.indexOf ct "form-urlencoded") 0)
-          (> (.indexOf ct "form-data") 0))
-      (crackFormFields evt)
-
-      :else
-      (crackUrlParams evt))
+  (let [ info (maybeGetAuthInfo evt) ]
+    (if (nil? info)
+      nil
+      (assoc info :email (:principal info)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,7 +118,7 @@
 
   [^HTTPEvent evt]
 
-  (GetSignupInfo evt))
+  (maybeGetAuthInfo evt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

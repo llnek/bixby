@@ -33,7 +33,10 @@
            uid (.getPrincipal ^AuthenticationToken token)
            pc (.getCredentials ^AuthenticationInfo info)
            ^cmzlabsclj.nucleus.crypto.codec.Password
-           tstPwd (Pwdify pwd "")
+           tstPwd (Pwdify (if (instance? String pwd)
+                              pwd
+                              (String. ^chars pwd))
+                          "")
            acc (-> (.getPrincipals ^AuthenticationInfo info)
                    (.getPrimaryPrincipal)) ]
       (and (= (:acctid acc) uid)

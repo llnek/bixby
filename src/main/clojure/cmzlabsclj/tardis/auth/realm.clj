@@ -55,7 +55,7 @@
          user (.getPrincipal token)
          sql (.newSimpleSQLr db) ]
     (try
-      (let [ acc (GetLoginAccount sql user) ]
+      (let [ acc (FindLoginAccount sql user) ]
         (if (nil? acc)
           nil
           (SimpleAccount.  acc (:passwd acc) (.getName this))

@@ -130,9 +130,9 @@
 (defn strim "Safely trim this string - handles null."
 
   ^String
-  [^String s]
+  [s]
 
-  (if (nil? s) "" (cstr/trim s)))
+  (if (nil? s) "" (cstr/trim (nsb s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
