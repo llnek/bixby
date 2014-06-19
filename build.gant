@@ -368,14 +368,14 @@ target (preBuild: '') {
 
 path (id: 'compilePathId') {
   fileset (dir: "${libDir}/libjar")
-  fileset (dir: "${distribDir}") {
-    include (name: 'boot/*.jar')
-    include (name: 'exec/*.jar')
-  }
   fileset (dir: "${scalaLibDir}")
   fileset (dir: "${clojureDir}")
   path (location: "${buildDir}")
   path (location: "${srcDir}/clojure")
+  fileset (dir: "${distribDir}") {
+    include (name: 'boot/*.jar')
+    include (name: 'exec/*.jar')
+  }
 }
 
 path (id: 'testPathId') {

@@ -281,7 +281,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- jcEncr ""
+(defn- javaEncr ""
 
   ^String
   [pkey ^String text algo]
@@ -301,7 +301,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- jcDecr ""
+(defn- javaDecr ""
 
   ^String
   [pkey ^String encoded algo]
@@ -331,19 +331,19 @@
     (decrypt [this cipherText] (.decrypt this C_KEY cipherText))
     (decrypt [this pkey cipherText]
       (ensureKeySize pkey (.algo this))
-      (jcDecr pkey cipherText (.algo this)))
+      (javaDecr pkey cipherText (.algo this)))
 
     (encrypt [this clearText] (.encrypt this C_KEY clearText))
     (encrypt [this pkey clearText]
       (ensureKeySize pkey (.algo this))
-      (jcEncr pkey clearText (.algo this)))
+      (javaEncr pkey clearText (.algo this)))
 
     (algo [_] T3_DES) ;;PBEWithMD5AndDES
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BC cryptor
-(defn- bcDecr ""
+(defn BcDecr ""
 
   ^String
   [^String pkey ^String text ^String algo]
@@ -366,7 +366,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- bcEncr ""
+(defn BcEncr ""
 
   ^String
   [pkey ^String text algo]
@@ -398,12 +398,12 @@
     (decrypt [this cipherText] (.decrypt this C_KEY cipherText))
     (decrypt [this pkey cipherText]
       (ensureKeySize pkey (.algo this))
-      (bcDecr pkey cipherText (.algo this)))
+      (BcDecr pkey cipherText (.algo this)))
 
     (encrypt [this clearText] (.encrypt this C_KEY clearText))
     (encrypt [this pkey clearText]
       (ensureKeySize pkey (.algo this))
-      (bcEncr pkey clearText (.algo this)))
+      (BcEncr pkey clearText (.algo this)))
 
     (algo [_] T3_DES)
   ))

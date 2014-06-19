@@ -20,10 +20,12 @@
   (:use [cmzlabsclj.nucleus.util.core :only [Stringify notnil? ] ])
   (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [BcDecr] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
   (:import (org.apache.commons.codec.binary Base64))
   (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.gallifrey.io HTTPEvent))
+  (:import (com.zotohlab.gallifrey.io HTTPEvent Emitter))
+  (:import (com.zotohlab.gallifrey.core Container))
   (:import (com.zotohlab.frwk.io XData))
   (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
 
@@ -33,6 +35,8 @@
 (def ^String ^:private PWD_PARAM "credential")
 (def ^String ^:private EMAIL_PARAM "email")
 (def ^String ^:private USER_PARAM "principal")
+(def ^String ^:private NONCE_PARAM "nonce_token")
+(def ^String ^:private CSRF_PARAM "csrf_token")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -42,6 +46,7 @@
 
   (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
     (with-local-vars [ user nil pwd nil email nil
+                       csrf nil nonce false
                        data (.content xs) ]
       (when (instance? ULFormItems @data)
         (doseq [ ^ULFileItem x (GetFormFields @data) ]
@@ -52,8 +57,13 @@
               EMAIL_PARAM (var-set email fv)
               PWD_PARAM (var-set pwd fv)
               USER_PARAM (var-set user fv)
+              CSRF_PARAM (var-set csrf fv)
+              NONCE_PARAM (var-set nonce true)
               nil)))
-        { :principal (strim @user) :credential (strim @pwd)  :email (strim @email) }))
+        { :principal (strim @user) :credential (strim @pwd)
+          :email (strim @email) :csrf (strim @csrf)
+          :nonce @nonce }
+        ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,8 +76,10 @@
     (let [ data (if (.hasContent xs) (.stringify xs) "")
            json (json/read-str data) ]
       (when-not (nil? json)
-        { :principal (strim (get json USER_PARAM))
+        { :nonce (hgl? (strim (get json NONCE_PARAM)))
+          :principal (strim (get json USER_PARAM))
           :credential (strim (get json PWD_PARAM))
+          :csrf (strim (get json CSRF_PARAM))
           :email (strim (get json EMAIL_PARAM)) }))
   ))
 
@@ -77,7 +89,9 @@
 
   [^HTTPEvent evt]
 
-  { :email (strim (.getParameterValue evt EMAIL_PARAM))
+  { :nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
+    :csrf (strim (.getParameterValue evt CSRF_PARAM))
+    :email (strim (.getParameterValue evt EMAIL_PARAM))
     :credential (strim (.getParameterValue evt PWD_PARAM))
     :principal (strim (.getParameterValue evt USER_PARAM)) })
 
@@ -102,11 +116,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeDecodePassword ""
+
+  [info pkey]
+
+  (if (:nonce info)
+      (try
+        (let [ ps (BcDecr pkey (:credential info) "AES") ]
+          (log/debug "info = " info)
+          (log/debug "pwd = " ps)
+          (assoc info :credential ps))
+        (catch Throwable e#
+          (log/error e# "")
+          nil))
+      info
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getAppKey ""
+
+  ^String
+  [^HTTPEvent evt]
+
+  (-> (.emitter evt) (.container) (.getAppKey)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn GetSignupInfo ""
 
   [^HTTPEvent evt]
 
-  (let [ info (maybeGetAuthInfo evt) ]
+  (let [ info (-> (maybeGetAuthInfo evt) 
+                  (maybeDecodePassword (getAppKey evt))) ]
     (if (nil? info)
       nil
       (assoc info :email (:principal info)))
@@ -118,7 +160,8 @@
 
   [^HTTPEvent evt]
 
-  (maybeGetAuthInfo evt))
+  (-> (maybeGetAuthInfo evt) 
+      (maybeDecodePassword (getAppKey evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

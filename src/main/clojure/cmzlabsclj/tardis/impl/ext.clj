@@ -41,7 +41,7 @@
   (:use [ cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
   (:use [ cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ])
   (:use [ cmzlabsclj.nucleus.util.meta :only [MakeObj] ])
-  (:use [ cmzlabsclj.nucleus.crypto.codec :only [Pwdify] ])
+  (:use [ cmzlabsclj.nucleus.crypto.codec :only [Pwdify CreateRandomString] ])
   (:use [ cmzlabsclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])
   (:use [ cmzlabsclj.nucleus.dbio.core
          :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ])
@@ -59,7 +59,7 @@
                                     Startable Disposable Identifiable ))
   (:import (com.zotohlab.frwk.server ComponentRegistry Component ServiceError ))
   (:import (com.zotohlab.gallifrey.core Container ConfigError ))
-  (:import (com.zotohlab.gallifrey.io IOEvent))
+  (:import (com.zotohlab.gallifrey.io Emitter IOEvent))
   (:import (com.zotohlab.frwk.util Schedulable CoreUtils))
   (:import (com.zotohlab.frwk.io XData))
   (:import (com.zotohlab.wflow.core Job))
@@ -81,6 +81,16 @@
   (start [_] )
   (stop [_])
   (dispose [_] ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetAppKeyFromEvent ""
+
+  ^String
+  [^IOEvent evt]
+
+  (-> (.emitter evt) (.container) (.getAppKey)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -172,6 +182,8 @@
   (reifyService [_ svc sid cfg] )
   (reifyServices [_] )
   (loadTemplate [_ tpl ctx] )
+  (generateCsrf [_] )
+  (generateNonce [_] )
   (enabled? [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,6 +389,9 @@
                 :else
                 "text/plain") ] ))
 
+        (generateNonce [_] (CreateRandomString 16))
+        (generateCsrf [_] (CreateRandomString 36))
+
         (enabled? [_]
           (let [ env (.getf impl K_ENVCONF)
                  c (:container env) ]
@@ -553,7 +568,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- splitPoolSize ""
-  
+
   [^String s]
 
   (let [ pos (.indexOf s (int \:)) ]

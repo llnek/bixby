@@ -1453,7 +1453,6 @@
 
   (nth (SSLTrustMgrFactory/getTrustManagers) 0))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private core-eof nil)
