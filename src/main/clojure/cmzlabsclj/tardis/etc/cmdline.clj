@@ -29,7 +29,9 @@
   (:use [cmzlabsclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
   (:use [cmzlabsclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ])
   (:use [cmzlabsclj.nucleus.crypto.core
-         :only [AssertJce PEM_CERT MakeSSv1PKCS12 MakeCsrReq] ])
+         :only [AES256_CBC AssertJce PEM_CERT 
+                DbgProvider MakeKeypair
+                MakeSSv1PKCS12 MakeCsrReq] ])
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.nucleus.util.ini :only [ParseInifile] ])
 
@@ -37,7 +39,9 @@
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (com.zotohlab.gallifrey.etc CmdHelpError))
   (:import (org.apache.commons.io FileUtils))
+  (:import (org.apache.commons.codec.binary Hex))
   (:import (java.io File))
+  (:import (java.security KeyPair))
   (:import (com.zotohlab.frwk.io IOUtils)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,6 +204,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- genKeyPair ""
+
+  [^String lenStr]
+
+  ;;(DbgProvider java.lang.System/out)
+  (let [ kp (MakeKeypair "RSA" (ConvLong lenStr 256))
+         pk (.getEncoded (.getPrivate kp))
+         pu (.getEncoded (.getPublic kp)) ]
+    (println "privatekey-bytes= " (Hex/encodeHexString pk))
+    (println "publickey-bytes = " (Hex/encodeHexString pu))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- genGuid ""
 
   []
@@ -349,6 +367,9 @@
 
   (let [ ok (if (> (count args) 1)
                 (case (nth args 1)
+                  "keypair" (if (> (count args) 2)
+                                (do (genKeyPair (nth args 2)) true)
+                                false)
                   "password" (do (generatePassword 12) true)
                   "serverkey" (do (keyfile) true)
                   "guid" (do (genGuid) true)

@@ -45,6 +45,7 @@
   ["debug" "Start & debug the application."]
   ["start [bg]" "Start the application."]
 
+  ["generate keypair <length>" "Generate a pair of private/public keys."]
   ["generate serverkey" "Create self-signed server key (pkcs12)."]
   ["generate password" "Generate a random password."]
   ["generate csr" "Create a Certificate Signing Request."]
