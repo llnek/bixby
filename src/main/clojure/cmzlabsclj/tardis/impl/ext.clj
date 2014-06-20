@@ -34,7 +34,7 @@
                   stop kernel-stop } ])
   (:use [cmzlabsclj.tardis.etc.misc])
   (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath nbf ConvLong] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath nbf ConvLong Bytesify] ])
   (:use [ cmzlabsclj.nucleus.util.scheduler :only [MakeScheduler] ])
   (:use [ cmzlabsclj.nucleus.util.process :only [Coroutine] ])
   (:use [ cmzlabsclj.nucleus.util.core :only [LoadJavaProps] ])
@@ -282,6 +282,7 @@
             (.update jc evt options)))
 
         (getAppKey [_] (.appKey ^cmzlabsclj.tardis.impl.defaults.PODMeta pod))
+        (getAppKeyBits [this] (Bytesify (.getAppKey this)))
         (getAppDir [this] (.getAttr this K_APPDIR))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))

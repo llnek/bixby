@@ -50,19 +50,19 @@
 (is (= "heeloo" (let [ c (RT/JasyptCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/JasyptCryptor) pkey (SU/nsb SECRET) ]
+(is (= "heeloo" (let [ c (RT/JasyptCryptor) pkey (.toCharArray (SU/nsb SECRET)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
 (is (= "heeloo" (let [ c (RT/JavaCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/JavaCryptor) pkey (SU/nsb TESTPWD) ]
+(is (= "heeloo" (let [ c (RT/JavaCryptor) pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
 (is (= "heeloo" (let [ c (RT/BouncyCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/BouncyCryptor) pkey (SU/nsb TESTPWD) ]
+(is (= "heeloo" (let [ c (RT/BouncyCryptor) pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
 (is (= (.length ^String (.text (RT/CreateStrongPwd 16))) 16))

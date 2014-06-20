@@ -32,7 +32,7 @@
   (:import (org.bouncycastle.crypto.params DESedeParameters KeyParameter))
   (:import (org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher))
   (:import (org.bouncycastle.crypto KeyGenerationParameters))
-  (:import (org.bouncycastle.crypto.engines DESedeEngine))
+  (:import (org.bouncycastle.crypto.engines BlowfishEngine AESEngine RSAEngine DESedeEngine))
   (:import (org.bouncycastle.crypto.generators DESedeKeyGenerator))
   (:import (org.bouncycastle.crypto.modes CBCBlockCipher))
   (:import (org.apache.commons.lang3 StringUtils)))
@@ -41,6 +41,11 @@
 ;; using amap below causes reflection warnings, I can't fix it, so turn checking
 ;; off explicitly for this file.
 ;;(set! *warn-on-reflection* false)
+;; AES (128,256)
+;; DES (8)
+;; DESede (TripleDES - 8 x 3 = 24)
+;; RSA  1024 +
+;; Blowfish
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -60,8 +65,11 @@
 (def ^String ^:private PWD_PFX "CRYPT:" )
 (def ^:private PWD_PFXLEN (.length PWD_PFX))
 
-(def ^String ^:private T3_DES "TripleDES" ) ;; AES/ECB/PKCS5Padding/TripleDES
 (def ^String ^:private C_KEY "ed8xwl2XukYfdgR2aAddrg0lqzQjFhbs" )
+(def ^String ^:private T3_DES "DESede" ) ;; TripleDES
+(def ^chars ^:private C_KEYCS (.toCharArray C_KEY))
+(def ^bytes ^:private C_KEYBS (Bytesify C_KEY))
+
 (def ^String ^:private C_ALGO T3_DES) ;; default javax supports this
 ;;(def ^:private ALPHA_CHS 26)
 
@@ -69,14 +77,17 @@
 ;;
 (defn- ensureKeySize ""
 
-  ^String
-  [^String keystr ^String algo]
+  ^bytes
+  [^bytes keyBits ^String algo]
 
-  (let [ len (alength (Bytesify keystr)) ]
+  (let [ len (alength keyBits) ]
     (when (and (= T3_DES algo)
                (< len 24))
       (ThrowBadArg "Encryption key length must be 24, when using TripleDES"))
-    keystr
+    (when (and (= "AES" algo)
+               (< len 128))
+      (ThrowBadArg "Encryption key length must be 128 or 256, when using AES"))
+    keyBits
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,13 +95,26 @@
 (defn- keyAsBits ""
 
   ^bytes
-  [^String pwd ^String algo]
+  [^bytes pwd ^String algo]
 
-  (let [ bits (Bytesify pwd) ]
-    (if (and (= T3_DES algo)
-             (> (alength bits) 24))
-      (into-array Byte/TYPE (take 24 bits)) ;; only 24 bits wanted
-      bits)
+  (let [ len (alength pwd) ]
+    (cond
+      (= "AES" algo)
+      (cond
+        (> len 256)
+        (into-array Byte/TYPE (take 256 pwd))
+
+        (and (> len 128) (< len 256))
+        (into-array Byte/TYPE (take 128 pwd))
+
+        :else pwd)
+
+      (= T3_DES algo)
+      (if (> len 24)
+          (into-array Byte/TYPE (take 24 pwd))
+          pwd)
+
+      :else pwd)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,11 +123,9 @@
 
   ""
 
-  (decrypt [_ ^String pkey ^String cipherText] [_ ^String cipherText] )
-  (encrypt [_ ^String pkey ^String clearText] [_ ^String clearText] )
+  (decrypt [_ ^bytes pkey ^String cipherText] [_ ^String cipherText] )
+  (encrypt [_ ^bytes pkey ^String text] [_ ^String text] )
   (algo [_] ))
-
-;; BCrypt.checkpw(candidate, hashed)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -230,11 +252,11 @@
 (defn- jaDecr ""
 
   ^String
-  [pkey text]
+  [^chars pkey ^String text]
 
-  (let [ c (StrongTextEncryptor.) ]
-    (.setPassword c ^String pkey)
-    (.decrypt c ^String text)
+  (let [ c (doto (StrongTextEncryptor.)
+                 (.setPasswordCharArray pkey)) ]
+    (.decrypt c text)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,11 +264,11 @@
 (defn- jaEncr ""
 
   ^String
-  [pkey text]
+  [^chars pkey ^String text]
 
-  (let [ c (StrongTextEncryptor.) ]
-    (.setPassword c ^String pkey)
-    (.encrypt c ^String text)
+  (let [ c (doto (StrongTextEncryptor.)
+                 (.setPasswordCharArray pkey)) ]
+    (.encrypt c text)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -258,11 +280,11 @@
 
   (reify BaseCryptor
 
-    (decrypt [this cipherText] (.decrypt this C_KEY cipherText))
+    (decrypt [this cipherText] (.decrypt this C_KEYCS cipherText))
     (decrypt [_ pkey cipherText] (jaDecr pkey cipherText))
 
-    (encrypt [this clearText] (.encrypt this C_KEY clearText))
-    (encrypt [_ pkey clearText] (jaEncr pkey clearText))
+    (encrypt [this text] (.encrypt this C_KEYCS text))
+    (encrypt [_ pkey text] (jaEncr pkey text))
 
     (algo [_] "PBEWithMD5AndTripleDES")
   ))
@@ -272,7 +294,7 @@
 (defn- getCipher ""
 
   ^Cipher
-  [pkey mode ^String algo]
+  [^bytes pkey mode ^String algo]
 
   (let [ spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
     (doto (Cipher/getInstance algo)
@@ -284,11 +306,11 @@
 (defn- javaEncr ""
 
   ^String
-  [pkey ^String text algo]
+  [^bytes pkey ^String text ^String algo]
 
   (if (StringUtils/isEmpty text)
     text
-    (let [ c (getCipher pkey Cipher/ENCRYPT_MODE algo )
+    (let [ c (getCipher pkey Cipher/ENCRYPT_MODE algo)
            p (Bytesify text)
            baos (MakeBitOS)
            out (byte-array (max 4096 (.getOutputSize c (alength p))))
@@ -296,7 +318,7 @@
       (when (> n 0) (.write baos out 0 n))
       (let [ n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
-      (Base64/encodeBase64URLSafeString (.toByteArray baos)))
+      (Base64/encodeBase64String (.toByteArray baos)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,11 +326,11 @@
 (defn- javaDecr ""
 
   ^String
-  [pkey ^String encoded algo]
+  [^bytes pkey ^String encoded ^String algo]
 
   (if (StringUtils/isEmpty encoded)
     encoded
-    (let [ c (getCipher pkey Cipher/DECRYPT_MODE algo )
+    (let [ c (getCipher pkey Cipher/DECRYPT_MODE algo)
            p (Base64/decodeBase64 encoded)
            baos (MakeBitOS)
            out (byte-array (max 4096 (.getOutputSize c (alength p))))
@@ -328,12 +350,12 @@
 
   (reify BaseCryptor
 
-    (decrypt [this cipherText] (.decrypt this C_KEY cipherText))
+    (decrypt [this cipherText] (.decrypt this C_KEYBS cipherText))
     (decrypt [this pkey cipherText]
       (ensureKeySize pkey (.algo this))
       (javaDecr pkey cipherText (.algo this)))
 
-    (encrypt [this clearText] (.encrypt this C_KEY clearText))
+    (encrypt [this clearText] (.encrypt this C_KEYBS clearText))
     (encrypt [this pkey clearText]
       (ensureKeySize pkey (.algo this))
       (javaEncr pkey clearText (.algo this)))
@@ -343,14 +365,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BC cryptor
+(defn- bcXrefCipherEngine ""
+
+  [^String algo]
+
+  (case algo
+    "DESede" (DESedeEngine.)
+    "AES" (AESEngine.)
+    "RAS" (RSAEngine.)
+    "Blowfish" (BlowfishEngine.)
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; BC cryptor
 (defn BcDecr ""
 
   ^String
-  [^String pkey ^String text ^String algo]
+  [^bytes pkey ^String text ^String algo]
 
   (if (StringUtils/isEmpty text)
     text
-    (let [ cipher (doto (-> (DESedeEngine.)
+    (let [ cipher (doto (-> (bcXrefCipherEngine algo)
                             (CBCBlockCipher. )
                             (PaddedBufferedBlockCipher. ))
                         (.init false (KeyParameter. (keyAsBits pkey algo))))
@@ -369,13 +405,13 @@
 (defn BcEncr ""
 
   ^String
-  [pkey ^String text algo]
+  [^bytes pkey ^String text ^String algo]
 
   (if (StringUtils/isEmpty text)
     text
-    (let [ cipher (doto (-> (DESedeEngine.)
-                                (CBCBlockCipher. )
-                                (PaddedBufferedBlockCipher. ))
+    (let [ cipher (doto (-> (bcXrefCipherEngine algo)
+                            (CBCBlockCipher. )
+                            (PaddedBufferedBlockCipher. ))
                         (.init true (KeyParameter. (keyAsBits pkey algo))))
            out (byte-array 4096)
            baos (MakeBitOS)
@@ -395,12 +431,12 @@
   []
 
   (reify BaseCryptor
-    (decrypt [this cipherText] (.decrypt this C_KEY cipherText))
+    (decrypt [this cipherText] (.decrypt this C_KEYBS cipherText))
     (decrypt [this pkey cipherText]
       (ensureKeySize pkey (.algo this))
       (BcDecr pkey cipherText (.algo this)))
 
-    (encrypt [this clearText] (.encrypt this C_KEY clearText))
+    (encrypt [this clearText] (.encrypt this C_KEYBS clearText))
     (encrypt [this pkey clearText]
       (ensureKeySize pkey (.algo this))
       (BcEncr pkey clearText (.algo this)))
@@ -440,7 +476,7 @@
   (equals [this obj] (and (instance? Password obj)
                           (= (.toString this)
                              (.toString ^Object obj))) )
-  (hashCode [this] (.hashCode (nsb (.pwdStr this))))
+  (hashCode [this] (.hashCode (nsb (.text this))))
   (toString [this] (.text this))
 
   PasswordAPI
@@ -465,7 +501,7 @@
   (encoded [_]
     (if (StringUtils/isEmpty pwdStr)
       ""
-      (str PWD_PFX (.encrypt (JasyptCryptor) pkey pwdStr))))
+      (str PWD_PFX (.encrypt (JasyptCryptor) (.toCharArray pkey) pwdStr))))
 
   (text [_] (nsb pwdStr) ))
 
@@ -481,7 +517,8 @@
       (Password. "" pkey)
 
       (.startsWith pwdStr PWD_PFX)
-      (Password. (.decrypt (JasyptCryptor) pkey (.substring pwdStr PWD_PFXLEN)) pkey)
+      (Password. (.decrypt (JasyptCryptor) (.toCharArray pkey)
+                                           (.substring pwdStr PWD_PFXLEN)) pkey)
 
       :else
       (Password. pwdStr pkey)) ))

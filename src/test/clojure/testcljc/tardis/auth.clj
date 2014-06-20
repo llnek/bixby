@@ -101,7 +101,7 @@
         (.execWith
           sql
           (fn [^SQLr tx]
-            (GetLoginAccount tx "xxxxx" (CE/Pwdify "7soiwqhfasfhals"))))
+            (GetLoginAccount tx "xxxxx" "7soiwqhfasfhals")))
         false
         (catch UnknownUser e#
           true)))))
@@ -113,7 +113,7 @@
         (.execWith
           sql
           (fn [^SQLr tx]
-            (GetLoginAccount tx user (CE/Pwdify "7soiwqhfasfhals"))))
+            (GetLoginAccount tx user "7soiwqhfasfhals")))
         false
         (catch AuthError e#
           true)))))
@@ -124,7 +124,7 @@
            u (.execWith
                sql
                (fn [^SQLr tx]
-                 (GetLoginAccount tx user (CE/Pwdify pwd)))) ]
+                 (GetLoginAccount tx user pwd))) ]
       (not (nil? u)))))
 
 (deftest testtardis-auth

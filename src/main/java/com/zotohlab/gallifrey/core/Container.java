@@ -27,6 +27,7 @@ public interface Container extends ServerLike , Disposable {
 
   public void notifyObservers(IOEvent evt, Object options );
 
+  public byte[] getAppKeyBits();
   public String getAppKey();
 
   public File getAppDir();

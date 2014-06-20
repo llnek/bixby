@@ -455,7 +455,7 @@
 
   (let [ appDir (File. ^String (nth args 0))
          ^Properties mf (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
-         pkey (.getProperty mf "Implementation-Vendor-Id")
+         pkey (.toCharArray (.getProperty mf "Implementation-Vendor-Id"))
          ^String cmd (nth args 1)
          ^String db (nth args 2)
          env (json/read-str (ReadConf appDir "env.conf") :key-fn keyword)

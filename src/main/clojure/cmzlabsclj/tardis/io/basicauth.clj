@@ -118,7 +118,7 @@
 ;;
 (defn- maybeDecodePassword ""
 
-  [info pkey]
+  [info ^bytes pkey]
 
   (if (:nonce info)
       (try
@@ -136,10 +136,10 @@
 ;;
 (defn- getAppKey ""
 
-  ^String
+  ^bytes
   [^HTTPEvent evt]
 
-  (-> (.emitter evt) (.container) (.getAppKey)))
+  (-> (.emitter evt) (.container) (.getAppKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
