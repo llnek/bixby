@@ -47,6 +47,7 @@
 
 (is (not (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 709394) 666))))
 (is (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 709394) 709394)))
+(is (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 13) 13)))
 
 (is (= "heeloo" (let [ c (RT/JasyptCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
