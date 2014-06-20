@@ -26,7 +26,8 @@
   (:import (org.jasypt.encryption.pbe StandardPBEStringEncryptor))
   (:import (org.jasypt.util.text StrongTextEncryptor))
   (:import (java.io ByteArrayOutputStream))
-  (:import (java.security SecureRandom))
+  (:import (java.security Key KeyFactory SecureRandom))
+  (:import (java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec))
   (:import (javax.crypto Cipher))
   (:import (org.mindrot.jbcrypt BCrypt))
   (:import (org.bouncycastle.crypto.params DESedeParameters KeyParameter))
@@ -36,6 +37,7 @@
   (:import (org.bouncycastle.crypto.generators DESedeKeyGenerator))
   (:import (org.bouncycastle.crypto.modes CBCBlockCipher))
   (:import (org.apache.commons.lang3 StringUtils)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; using amap below causes reflection warnings, I can't fix it, so turn checking
@@ -80,9 +82,9 @@
   ^bytes
   [^bytes keyBits ^String algo]
 
-  (let [ len (alength keyBits) ]
+  (let [ len (* 8 (alength keyBits)) ]
     (when (and (= T3_DES algo)
-               (< len 24))
+               (< len 192)) ;; 8x 3 = 24 bytes
       (ThrowBadArg "Encryption key length must be 24, when using TripleDES"))
     (when (and (= "AES" algo)
                (< len 128))
@@ -97,20 +99,22 @@
   ^bytes
   [^bytes pwd ^String algo]
 
-  (let [ len (alength pwd) ]
+  (let [ len (* 8 (alength pwd)) ]
+    ;;(println "keyAsBits len of input key = " len)
     (cond
       (= "AES" algo)
       (cond
-        (> len 256)
-        (into-array Byte/TYPE (take 256 pwd))
-
+        (> len 256) ;; 32 bytes
+        (into-array Byte/TYPE (take 32 pwd))
+        ;; 128 => 16 bytes
         (and (> len 128) (< len 256))
-        (into-array Byte/TYPE (take 128 pwd))
+        (into-array Byte/TYPE (take 16 pwd))
 
         :else pwd)
 
       (= T3_DES algo)
-      (if (> len 24)
+      (if (> len 192)
+          ;; 24 bits => 3 bytes
           (into-array Byte/TYPE (take 24 pwd))
           pwd)
 
@@ -372,9 +376,43 @@
   (case algo
     "DESede" (DESedeEngine.)
     "AES" (AESEngine.)
-    "RAS" (RSAEngine.)
+    "RSA" (RSAEngine.)
     "Blowfish" (BlowfishEngine.)
     nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1024 - 2048 bits RSA
+(defn AsymEncr ""
+
+  ^String
+  [^bytes pubKey ^String text]
+
+  (if (StringUtils/isEmpty text)
+    text
+    (let [ ^Key pk (-> (KeyFactory/getInstance "RSA")
+                        (.generatePublic (X509EncodedKeySpec. pubKey)))
+           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
+                        (.init Cipher/ENCRYPT_MODE pk))
+           out (.doFinal cipher (Bytesify text)) ]
+      (Base64/encodeBase64String out))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AsymDecr ""
+
+  ^String
+  [^bytes prvKey ^String cipherText]
+
+  (if (StringUtils/isEmpty cipherText)
+    cipherText
+    (let [ ^Key pk (-> (KeyFactory/getInstance "RSA")
+                        (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
+           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
+                        (.init Cipher/DECRYPT_MODE pk))
+           out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
+      (Base64/encodeBase64String out))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -384,20 +422,23 @@
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (StringUtils/isEmpty text)
-    text
-    (let [ cipher (doto (-> (bcXrefCipherEngine algo)
-                            (CBCBlockCipher. )
-                            (PaddedBufferedBlockCipher. ))
-                        (.init false (KeyParameter. (keyAsBits pkey algo))))
-           p (Base64/decodeBase64 text)
-           out (byte-array 1024)
-           baos (MakeBitOS)
-           c (.processBytes cipher p 0 (alength p) out 0) ]
-      (when (> c 0) (.write baos out 0 c))
-      (let [ c2 (.doFinal cipher out 0) ]
-        (when (> c2 0) (.write baos out 0 c2)))
-      (Stringify (.toByteArray baos)))
+  (if (= "RSA" algo)
+      (AsymDecr pkey text)
+      (if (StringUtils/isEmpty text)
+        text
+        (let [ cipher (doto (-> (bcXrefCipherEngine algo)
+                                (CBCBlockCipher. )
+                                (PaddedBufferedBlockCipher. ))
+                            (.init false (KeyParameter. (keyAsBits pkey algo))))
+               p (Base64/decodeBase64 text)
+               out (byte-array 1024)
+               baos (MakeBitOS)
+               c (.processBytes cipher p 0 (alength p) out 0) ]
+          (when (> c 0) (.write baos out 0 c))
+          (let [ c2 (.doFinal cipher out 0) ]
+            (when (> c2 0) (.write baos out 0 c2)))
+          (Stringify (.toByteArray baos)))
+      )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,22 +448,26 @@
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (StringUtils/isEmpty text)
-    text
-    (let [ cipher (doto (-> (bcXrefCipherEngine algo)
-                            (CBCBlockCipher. )
-                            (PaddedBufferedBlockCipher. ))
-                        (.init true (KeyParameter. (keyAsBits pkey algo))))
-           out (byte-array 4096)
-           baos (MakeBitOS)
-           p (Bytesify text)
-           c (.processBytes cipher p 0 (alength p) out 0) ]
-      (when (> c 0) (.write baos out 0 c))
-      (let [ c2 (.doFinal cipher out 0) ]
-        (when (> c2 0) (.write baos out 0 c2)) )
-      (Base64/encodeBase64String (.toByteArray baos)))
+  (if (= "RSA" algo)
+      (AsymEncr pkey text)
+      (if (StringUtils/isEmpty text)
+        text
+        (let [ cipher (doto (-> (bcXrefCipherEngine algo)
+                                (CBCBlockCipher. )
+                                (PaddedBufferedBlockCipher. ))
+                            (.init true (KeyParameter. (keyAsBits pkey algo))))
+               out (byte-array 4096)
+               baos (MakeBitOS)
+               p (Bytesify text)
+               c (.processBytes cipher p 0 (alength p) out 0) ]
+          (when (> c 0) (.write baos out 0 c))
+          (let [ c2 (.doFinal cipher out 0) ]
+            (when (> c2 0) (.write baos out 0 c2)) )
+          (Base64/encodeBase64String (.toByteArray baos)))
+      )
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn BouncyCryptor  "Make a cryptor using BouncyCastle."

@@ -20,8 +20,9 @@
   (:require [cmzlabsclj.nucleus.util.io :as IO])
   (:require [cmzlabsclj.nucleus.crypto.core :as RU])
   (:use [clojure.test])
-  (:import (java.security Policy KeyStore SecureRandom MessageDigest
+  (:import (java.security KeyPair Policy KeyStore SecureRandom MessageDigest
     KeyStore$PrivateKeyEntry KeyStore$TrustedCertificateEntry))
+  (:import (org.apache.commons.codec.binary Base64))
   (:import (java.util Date GregorianCalendar))
   (:import (java.io File)))
 
@@ -64,6 +65,15 @@
 
 (is (= "heeloo" (let [ c (RT/BouncyCryptor) pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
+
+(is (= "heeloo" (let [ pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
+                      (RT/BcDecr pkey (RT/BcEncr pkey "heeloo" "AES") "AES"))))
+
+(is (= "heeloo" (let [ kp (RU/MakeKeypair "RSA" 1024)
+                       pu (.getEncoded (.getPublic kp))
+                       pv (.getEncoded (.getPrivate kp)) ]
+                      (String. (Base64/decodeBase64 
+                                  (RT/BcDecr pv (RT/BcEncr pu "heeloo" "RSA") "RSA"))))))
 
 (is (= (.length ^String (.text (RT/CreateStrongPwd 16))) 16))
 (is (= (.length (RT/CreateRandomString 64)) 64))
