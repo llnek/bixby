@@ -20,7 +20,7 @@
   (:use [cmzlabsclj.nucleus.util.core :only [Stringify notnil? ] ])
   (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
-  (:use [cmzlabsclj.nucleus.crypto.codec :only [BcDecr] ])
+  (:use [cmzlabsclj.nucleus.crypto.codec :only [CaesarDecrypt] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
   (:import (org.apache.commons.codec.binary Base64))
   (:import (org.apache.commons.lang3 StringUtils))
@@ -116,16 +116,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeDecodePassword ""
+(defn- maybeDecodeField ""
 
-  [info ^bytes pkey]
+  [info fld]
 
   (if (:nonce info)
       (try
-        (let [ ps (BcDecr pkey (:credential info) "AES") ]
+        (let [ decr (CaesarDecrypt (get info fld) 13)
+               bits (Base64/decodeBase64 decr)
+               s (Stringify bits) ]
           (log/debug "info = " info)
-          (log/debug "pwd = " ps)
-          (assoc info :credential ps))
+          (log/debug "decr = " decr)
+          (log/debug "val = " s)
+          (assoc info fld s))
         (catch Throwable e#
           (log/error e# "")
           nil))
@@ -147,8 +150,9 @@
 
   [^HTTPEvent evt]
 
-  (let [ info (-> (maybeGetAuthInfo evt) 
-                  (maybeDecodePassword (getAppKey evt))) ]
+  (let [ info (-> (maybeGetAuthInfo evt)
+                  (maybeDecodeField :principal)
+                  (maybeDecodeField :credential )) ]
     (if (nil? info)
       nil
       (assoc info :email (:principal info)))
@@ -160,8 +164,9 @@
 
   [^HTTPEvent evt]
 
-  (-> (maybeGetAuthInfo evt) 
-      (maybeDecodePassword (getAppKey evt))))
+  (-> (maybeGetAuthInfo evt)
+      (maybeDecodeField :principal )
+      (maybeDecodeField :credential)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
