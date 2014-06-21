@@ -299,7 +299,7 @@
 (defn MaybeSignupTest ""
 
   ^BoolExpr
-  []
+  [^String challengeStr]
 
   (DefPredicate
     (fn [^Job job]
@@ -310,6 +310,12 @@
             info (ternary (GetSignupInfo evt) {} ) ]
         (test-nonil "AuthPlugin" pa)
         (cond
+          (and (hgl? challengeStr)
+               (not= challengeStr (nsb (:captcha info))))
+          (do
+            (.setLastResult job { :error (AuthError. "Broken captcha.") })
+            false)
+
           (and (hgl? (:credential info))
                (hgl? (:principal info))
                (hgl? (:email info)))

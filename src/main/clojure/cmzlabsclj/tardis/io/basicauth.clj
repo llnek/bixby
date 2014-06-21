@@ -32,11 +32,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^String ^:private NONCE_PARAM "nonce_token")
+(def ^String ^:private CSRF_PARAM "csrf_token")
 (def ^String ^:private PWD_PARAM "credential")
 (def ^String ^:private EMAIL_PARAM "email")
 (def ^String ^:private USER_PARAM "principal")
-(def ^String ^:private NONCE_PARAM "nonce_token")
-(def ^String ^:private CSRF_PARAM "csrf_token")
+(def ^String ^:private CAPTCHA_PARAM "captcha")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -46,7 +47,7 @@
 
   (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
     (with-local-vars [ user nil pwd nil email nil
-                       csrf nil nonce false
+                       csrf nil nonce false captcha nil
                        data (.content xs) ]
       (when (instance? ULFormItems @data)
         (doseq [ ^ULFileItem x (GetFormFields @data) ]
@@ -54,6 +55,7 @@
                  fv (nsb (.getString x)) ]
             ;;(log/debug "Form field: " fm " = " fv)
             (case fm
+              CAPTCHA_PARAM (var-set captcha fv)
               EMAIL_PARAM (var-set email fv)
               PWD_PARAM (var-set pwd fv)
               USER_PARAM (var-set user fv)
@@ -62,6 +64,7 @@
               nil)))
         { :principal (strim @user) :credential (strim @pwd)
           :email (strim @email) :csrf (strim @csrf)
+          :captcha (strim @captcha)
           :nonce @nonce }
         ))
   ))
@@ -79,6 +82,7 @@
         { :nonce (hgl? (strim (get json NONCE_PARAM)))
           :principal (strim (get json USER_PARAM))
           :credential (strim (get json PWD_PARAM))
+          :captcha (strim (get json CAPTCHA_PARAM))
           :csrf (strim (get json CSRF_PARAM))
           :email (strim (get json EMAIL_PARAM)) }))
   ))
@@ -92,6 +96,7 @@
   { :nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
     :csrf (strim (.getParameterValue evt CSRF_PARAM))
     :email (strim (.getParameterValue evt EMAIL_PARAM))
+    :captcha (strim (.getParameterValue evt CAPTCHA_PARAM))
     :credential (strim (.getParameterValue evt PWD_PARAM))
     :principal (strim (.getParameterValue evt USER_PARAM)) })
 
