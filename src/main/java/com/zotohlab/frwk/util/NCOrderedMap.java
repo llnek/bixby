@@ -35,12 +35,14 @@ public class NCOrderedMap<T> extends NCMap<T> {
   }
 
   public T put(String key, T value) {
-    _map.put( key.toLowerCase(), value);
+//    _map.put( key.toLowerCase(), value); dont need to be lowercase, right ?
+    _map.put( key, value);
     return super.put(key, value);
   }
 
   public T remove(String key) {
-    _map.remove(key.toLowerCase());
+//    _map.remove(key.toLowerCase());
+    _map.remove(key);
     return super.remove(key);
   }
 

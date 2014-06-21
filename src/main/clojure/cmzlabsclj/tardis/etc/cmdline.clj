@@ -19,7 +19,7 @@
 
   (:use [cmzlabsclj.nucleus.i18n.resources :only [GetString] ])
   (:use [cmzlabsclj.tardis.etc.climain :only [StartMain] ])
-  (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
+  (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid NewWWid] ])
   (:use [cmzlabsclj.tardis.etc.cli])
   (:use [cmzlabsclj.nucleus.util.core
          :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
@@ -218,6 +218,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- genWwid ""
+
+  []
+
+  (println (nsb (NewWWid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- genGuid ""
 
   []
@@ -373,6 +381,7 @@
                   "password" (do (generatePassword 12) true)
                   "serverkey" (do (keyfile) true)
                   "guid" (do (genGuid) true)
+                  "wwid" (do (genWwid) true)
                   "csr" (do (csrfile) true)
                   false)
                 false) ]
