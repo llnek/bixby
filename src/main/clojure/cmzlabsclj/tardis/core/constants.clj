@@ -22,7 +22,7 @@
 
 (def ^String SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
 (def ^String SHUTDOWN_DEVID #"system::kill_9" )
-(def ^String DEF_DBID "_")
+(def ^String DEF_DBID "default")
 
 (def ^String SHUTDOWN_URI "/kill9")
 (def ^String POD_PROTOCOL  "pod:" )

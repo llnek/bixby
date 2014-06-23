@@ -29,7 +29,7 @@
                                     SQLr JDBCPool JDBCInfo))
   (:import (java.sql SQLException DatabaseMetaData
                      Connection Driver DriverManager))
-  (:import (java.util GregorianCalendar TimeZone Properties))
+  (:import (java.util HashMap GregorianCalendar TimeZone Properties))
   (:import (java.lang Math))
   (:import (com.zotohlab.frwk.dbio BoneCPHook DBIOError))
   (:import (com.jolbox.bonecp BoneCP BoneCPConfig))
@@ -926,13 +926,6 @@
   (let [ dbv (ResolveVendor jdbc) ]
     (reify
 
-      Object
-
-      (finalize [this]
-        (Try!
-          (log/debug "DbPool finalize() called.")
-          (.shutdown this)))
-
       JDBCPool
 
       (shutdown [_]
@@ -945,8 +938,17 @@
             (.getConnection impl)
           (catch Throwable e#
             (log/error e# "")
-            (DbioError (str "No free connection."))))) )
-  ))
+            (DbioError (str "No free connection."))))) 
+
+      ;;Object
+      ;;Clojure CLJ-1347
+      ;;finalize won't work *correctly* in reified objects - document
+      ;;(finalize [this]
+        ;;(Try!
+          ;;(log/debug "DbPool finalize() called.")
+          ;;(.shutdown this)))
+
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

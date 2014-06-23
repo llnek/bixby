@@ -130,6 +130,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
+        (dbgShow [_] (.dbg impl))
 
         Hierarchial
 

@@ -220,7 +220,7 @@
   [^cmzlabsclj.tardis.core.sys.Element co ^String gid]
 
   (let [ dbs (.getAttr co K_DBPS)
-         dk (if (hgl? gid) gid "_") ]
+         dk (if (hgl? gid) gid DEF_DBID) ]
     (get dbs (keyword dk))
   ))
 
@@ -273,6 +273,7 @@
         (getAttr [_ a] (.getf impl a) )
         (setCtx! [_ x] (.setf! impl :ctx x) )
         (getCtx [_] (.getf impl :ctx) )
+        (dbgShow [_] (.dbg impl))
 
         Container
 

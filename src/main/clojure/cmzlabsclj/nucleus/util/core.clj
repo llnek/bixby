@@ -921,6 +921,7 @@
 
   (setf! [_ k v] )
   (seq* [_] )
+  (dbg [_])
   (getf [_ k] )
   (clear! [_] )
   (clrf! [_ k] ))
@@ -929,11 +930,14 @@
 ;;
 (deftype MutableMap
 
-  [ ^:unsynchronized-mutable data ]
+  ;;[ ^:volatile-mutable data ]
+[ ^:unsynchronized-mutable data ]
+
   MubleAPI
 
   (setf! [_ k v] (set! data (assoc data k v)))
   (clrf! [_ k] (set! data (dissoc data k)))
+  (dbg [_] (log/debug "mutable-map = " data))
   (seq* [_] (seq data))
   (getf [_ k] (get data k))
   (clear! [_ ] (set! data {} )) )

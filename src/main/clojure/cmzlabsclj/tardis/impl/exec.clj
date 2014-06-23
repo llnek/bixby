@@ -187,6 +187,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
+        (dbgShow [_ ] (.dbg impl))
 
         Versioned
         (version [_] "1.0")
@@ -313,6 +314,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
+        (dbgShow [_ ] (.dbg impl))
 
         Component
         (id [_] (.getf impl :id))
