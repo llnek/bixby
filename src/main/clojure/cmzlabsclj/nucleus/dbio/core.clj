@@ -31,7 +31,7 @@
                      Connection Driver DriverManager))
   (:import (java.util GregorianCalendar TimeZone Properties))
   (:import (java.lang Math))
-  (:import (com.zotohlab.frwk.dbio DBIOError))
+  (:import (com.zotohlab.frwk.dbio BoneCPHook DBIOError))
   (:import (com.jolbox.bonecp BoneCP BoneCPConfig))
   (:import (org.apache.commons.lang3 StringUtils)))
 
@@ -928,17 +928,23 @@
 
       Object
 
-      (finalize [this] (Try! (.shutdown this)))
+      (finalize [this]
+        (Try!
+          (log/debug "DbPool finalize() called.")
+          (.shutdown this)))
 
       JDBCPool
 
-      (shutdown [_] (.shutdown impl))
+      (shutdown [_]
+        (log/debug "about to shut down the pool impl: " impl)
+        (.shutdown impl))
       (vendor [_] dbv)
       (dbUrl [_] (.getUrl jdbc))
       (nextFree  [_]
         (try
             (.getConnection impl)
           (catch Throwable e#
+            (log/error e# "")
             (DbioError (str "No free connection."))))) )
   ))
 
@@ -970,6 +976,7 @@
             (.setAcquireRetryDelayInMs 5000)
             (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
             (.setDefaultAutoCommit false)
+            (.setConnectionHook (BoneCPHook.))
             (.setAcquireRetryAttempts 1))
       (log/debug "[bonecp]\n" (.toString bcf))
       (makePool jdbc (BoneCP. bcf)))))
