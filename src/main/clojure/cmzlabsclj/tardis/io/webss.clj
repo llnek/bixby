@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private SESSION_COOKIE "__ssid" )
+(def ^:private SESSION_COOKIE "__ss001" )
 (def ^:private SSID_FLAG "__f01ec")
 (def ^:private TS_FLAG "__f684f" )
 (def ^:private NV_SEP "\u0000")
@@ -53,7 +53,7 @@
   (getAttribute [_ k] )
   (removeAttribute [_ k] )
   (isEncrypted? [_ ])
-  (clear [_] )
+  (clear! [_] )
   (listAttributes [_] )
   (isNew? [_] )
   (isSSL? [_] )
@@ -207,7 +207,7 @@
 
         (getAttribute [_ k] (.getf attrs k) )
         (removeAttribute [_ k] (.clrf! attrs k) )
-        (clear [_] (.clear! attrs))
+        (clear! [_] (.clear! attrs))
         (listAttributes [_] (.seq* attrs))
 
         (setMaxInactiveInterval [_ idleSecs]

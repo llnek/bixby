@@ -155,13 +155,9 @@
 
   [^HTTPEvent evt]
 
-  (let [ info (-> (maybeGetAuthInfo evt)
-                  (maybeDecodeField :principal)
-                  (maybeDecodeField :credential )) ]
-    (if (nil? info)
-      nil
-      (assoc info :email (:principal info)))
-  ))
+  (-> (maybeGetAuthInfo evt)
+      (maybeDecodeField :principal )
+      (maybeDecodeField :credential)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
