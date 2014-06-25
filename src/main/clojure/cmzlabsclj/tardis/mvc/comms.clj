@@ -215,6 +215,10 @@
     ^Emitter src
     ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
+  (try
+      (-> evt (.getSession)(.handleEvent evt))
+      (catch AuthError e#
+        (ServeError src ch 403)))
   (let [ ^File appDir (-> src (.container)(.getAppDir))
          mpt (nsb (.getf ri :mountPoint))
          ps (NiceFPath (File. appDir DN_PUBLIC))

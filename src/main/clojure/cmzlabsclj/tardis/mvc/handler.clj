@@ -216,11 +216,11 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; session/cookie stuff
     (let [ n (:sessionAgeSecs cfg)
-           xxx (if (spos? n) n 3600) ]
+           xxx (if (nil? n) 3600 n) ]
       (.addProperty json "sessionAgeSecs" (ToJavaInt xxx))
       (.setAttr! co :sessionAgeSecs xxx))
     (let [ n (:maxIdleSecs cfg)
-           xxx (if (spos? n) n 900) ]
+           xxx (if (nil? n) 900 n) ]
       (.addProperty json "maxIdleSecs" (ToJavaInt xxx))
       (.setAttr! co :maxIdleSecs xxx))
     (let [ xxx (nsb (:domainPath cfg)) ]
@@ -239,7 +239,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; caching stuff
     (let [ n (:cacheMaxAgeSecs cfg)
-           xxx (if (spos? n) n 3600) ]
+           xxx (if (nil? n) 3600 n) ]
       (.addProperty json "cacheMaxAgeSecs" (ToJavaInt xxx))
       (.setAttr! co :cacheMaxAgeSecs xxx))
     (let [ xxx (:useETags cfg) ]

@@ -273,7 +273,7 @@
         (getAttr [_ a] (.getf impl a) )
         (setCtx! [_ x] (.setf! impl :ctx x) )
         (getCtx [_] (.getf impl :ctx) )
-        (dbgShow [_] (.dbg impl))
+        (toJson [_] (.toJson impl))
 
         Container
 

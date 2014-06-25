@@ -17,6 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr ])
   (:require [clojure.core :as ccore ])
+  (:require [clojure.data.json :as json])
   (:import (com.zotohlab.frwk.util CrappyDataError))
   (:import (java.security SecureRandom))
   (:import (java.net URL))
@@ -921,7 +922,7 @@
 
   (setf! [_ k v] )
   (seq* [_] )
-  (dbg [_])
+  (toJson [_])
   (getf [_ k] )
   (clear! [_] )
   (clrf! [_ k] ))
@@ -931,13 +932,13 @@
 (deftype MutableMap
 
   ;;[ ^:volatile-mutable data ]
-[ ^:unsynchronized-mutable data ]
+  [ ^:unsynchronized-mutable data ]
 
   MubleAPI
 
   (setf! [_ k v] (set! data (assoc data k v)))
   (clrf! [_ k] (set! data (dissoc data k)))
-  (dbg [_] (log/debug "mutable-map = " data))
+  (toJson [_] (json/write-str data))
   (seq* [_] (seq data))
   (getf [_ k] (get data k))
   (clear! [_ ] (set! data {} )) )

@@ -30,7 +30,7 @@
   (:use [cmzlabsclj.nucleus.util.mime :only [GetCharset] ])
   (:import (java.net HttpCookie URI URL InetSocketAddress))
   (:import (java.net SocketAddress InetAddress))
-  (:import (java.util ArrayList List))
+  (:import (java.util ArrayList List HashMap Map))
   (:import (com.google.gson JsonObject))
   (:import (java.io File IOException RandomAccessFile))
   (:import (com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
@@ -44,6 +44,7 @@
                                         HttpServerCodec DefaultCookie
                                         HttpHeaders$Names LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
+  (:import (org.apache.commons.codec.net URLCodec))
   (:import (io.netty.bootstrap ServerBootstrap))
   (:import (io.netty.channel Channel ChannelHandler ChannelFuture
                              ChannelFutureListener
@@ -72,9 +73,10 @@
 (defn- javaToCookie ""
 
   ^Cookie
-  [^HttpCookie c]
+  [^HttpCookie c ^URLCodec cc]
 
-  (doto (DefaultCookie. (.getName c)(.getValue c))
+  (doto (DefaultCookie. (.getName c)
+                        (.encode cc (nsb (.getValue c))))
         (.setComment (.getComment c))
         (.setDomain (.getDomain c))
         (.setMaxAge (.getMaxAge c))
@@ -101,11 +103,12 @@
 
   [^List cookies]
 
-  (persistent! (reduce (fn [sum ^HttpCookie c]
-                           (conj! sum
-                                  (ServerCookieEncoder/encode (javaToCookie c))))
-                       (transient [])
-                       (seq cookies))
+  (let [ cc (URLCodec. "utf-8") ]
+    (persistent! (reduce (fn [sum ^HttpCookie c]
+                             (conj! sum
+                                    (ServerCookieEncoder/encode (javaToCookie c cc))))
+                         (transient [])
+                         (seq cookies)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,9 +264,10 @@
 ;;
 (defn- cookieToJava ""
 
-  [^Cookie c]
+  [^Cookie c ^URLCodec cc]
 
-  (doto (HttpCookie. (.getName c)(.getValue c))
+  (doto (HttpCookie. (.getName c)
+                     (.decode cc (nsb (.getValue c))))
         (.setComment (.getComment c))
         (.setDomain (.getDomain c))
         (.setMaxAge (.getMaxAge c))
@@ -322,6 +326,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- crackCookies ""
+
+  ^Map
+  [info]
+
+  (let [ v (nsb (GetHeader info "Cookie"))
+         cc (URLCodec. "utf-8")
+         rc (HashMap.)
+         cks (if (hgl? v) (CookieDecoder/decode v) []) ]
+    (doseq [ ^Cookie c (seq cks) ]
+      (.put rc (cstr/lower-case (.getName c))
+                (cookieToJava c cc)))
+    rc
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- makeHttpEvent2 ""
 
   ^HTTPEvent
@@ -331,8 +352,9 @@
    ^XData xdata
    ^JsonObject info wantSecure]
 
-  (let [ ^HTTPResult res (MakeHttpResult co)
-         ^InetSocketAddress laddr (.localAddress ch)
+  (let [ ^InetSocketAddress laddr (.localAddress ch)
+         ^HTTPResult res (MakeHttpResult co)
+         ^Map cookieJar (crackCookies info)
          impl (MakeMMap)
          eeid (NextLong) ]
     (with-meta
@@ -355,22 +377,9 @@
         (getId [_] eeid)
         (emitter [_] co)
         (checkAuthenticity [_] wantSecure)
-        (getCookies [_]
-          (let [ v (nsb (GetHeader info "Cookie"))
-                 rc (ArrayList.)
-                 cks (if (hgl? v) (CookieDecoder/decode v) []) ]
-            (doseq [ ^Cookie c (seq cks) ]
-              (.add rc (cookieToJava c)))
-            rc))
-        (getCookie [_ nm]
-          (let [ v (nsb (GetHeader info "Cookie"))
-                 lnm (cstr/lower-case nm)
-                 cks (if (hgl? v) (CookieDecoder/decode v) []) ]
-            (some (fn [^Cookie c]
-                    (if (= (cstr/lower-case (.getName c)) lnm)
-                      (cookieToJava c)
-                      nil))
-                  (seq cks))))
+
+        (getCookie [_ nm] (.get cookieJar (cstr/lower-case nm)))
+        (getCookies [_] (ArrayList. (.values cookieJar)))
 
         (isKeepAlive [_] (-> (.get info "keep-alive")(.getAsBoolean)))
 

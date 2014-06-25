@@ -18,7 +18,8 @@
   (:require [clojure.string :as cstr])
   (:require [clojure.data.json :as json])
   (:use [cmzlabsclj.nucleus.util.core
-         :only [MubleAPI ConvLong notnil? juid ternary MakeMMap Bytesify] ])
+         :only [MubleAPI ConvLong notnil? juid ternary 
+                MakeMMap Stringify Bytesify] ])
   (:use [cmzlabsclj.nucleus.crypto.core :only [GenMac] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? AddDelim!] ])
   ;;(:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
@@ -27,7 +28,7 @@
   (:import (com.zotohlab.gallifrey.runtime ExpiredError AuthError))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import (org.apache.commons.codec.net URLCodec))
-  (:import (org.apache.commons.codec.binary Hex))
+  (:import (org.apache.commons.codec.binary Base64 Hex))
   (:import (com.zotohlab.frwk.util CoreUtils))
   (:import (java.net HttpCookie URLDecoder URLEncoder))
   (:import (com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
@@ -39,11 +40,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private SESSION_COOKIE "__ss001" )
-(def ^:private SSID_FLAG ":__f01ec")
-(def ^:private CS_FLAG ":__f184f" ) ;; creation time
-(def ^:private LS_FLAG ":__f384f" ) ;; last access time
-(def ^:private ES_FLAG ":__f484f" ) ;; expiry time
+(def ^:private SESSION_COOKIE "__ss003" )
+(def ^:private SSID_FLAG :__f01ec)
+(def ^:private CS_FLAG :__f184f ) ;; creation time
+(def ^:private LS_FLAG :__f384f ) ;; last access time
+(def ^:private ES_FLAG :__f484f ) ;; expiry time
 (def ^:private NV_SEP "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -62,7 +63,7 @@
   (isNull? [_])
   (isSSL? [_] )
   (invalidate! [_] )
-  (setNew! [_ flag] )
+  (setNew! [_ flag maxAge] )
   (getCreationTime [_]  )
   (getExpiryTime [_])
   (getId [_] )
@@ -105,7 +106,8 @@
 
   (let [ ^cmzlabsclj.tardis.io.webss.WebSession
          mvs (.getSession evt) ]
-    (if-not (.isNull? mvs)
+    (when-not (.isNull? mvs)
+      (log/debug "session appears to be kosher, about to set-cookie!")
       (let [ ^cmzlabsclj.tardis.core.sys.Element
              src (.emitter evt)
              ctr (.container ^Emitter src)
@@ -116,13 +118,13 @@
              data (-> (URLCodec. "utf-8")
                       (.encode (maybeMacIt evt ctr (nsb mvs))))
              ck (HttpCookie. SESSION_COOKIE data) ]
-      (doto ck
-            (.setDomain (nsb (.getAttr src :domain)))
-            (.setSecure (.isSSL? mvs))
-            (.setHttpOnly (.getAttr src :hidden))
-            (.setMaxAge (/ (.getExpiryTime mvs) 1000))
-            (.setPath (.getAttr src :domainPath)))
-      (.addCookie res ck)))
+        (doto ck
+              (.setDomain (nsb (.getAttr src :domain)))
+              (.setSecure (.isSSL? mvs))
+              (.setHttpOnly (.getAttr src :hidden))
+              (.setMaxAge (/ (.getExpiryTime mvs) 1000))
+              (.setPath (.getAttr src :domainPath)))
+        (.addCookie res ck)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +134,7 @@
   [^HTTPEvent evt ^Container ctr
    ^String part1 ^String part2 ]
 
-  (if-let [ pkey (if (.checkAuthenticity evt)
+  (when-let [ pkey (if (.checkAuthenticity evt)
                      (.getAppKeyBits ctr)
                      nil) ]
     (when (not= (GenMac pkey part2) part1)
@@ -151,7 +153,9 @@
          ^Emitter netty (.emitter evt)
          ck (.getCookie evt SESSION_COOKIE) ]
     (if (nil? ck)
-      (.invalidate! mvs)
+      (do
+        (log/debug "request contains no session cookie, invalidate the session.")
+        (.invalidate! mvs))
       (let [ ^cmzlabsclj.tardis.core.sys.Element
              src netty
              cookie (nsb (.getValue ck))
@@ -163,21 +167,22 @@
                            [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
         (maybeValidateCookie evt (.container netty) rc1 rc2)
-        (log/debug "session attributes = " rc2)
         (try
-          (doseq [ [k v] (seq (json/read-str rc2 :key-fn keyword)) ]
-            (.setAttribute mvs k v))
+          (let [ js (Stringify (Base64/decodeBase64 ^String rc2)) ]
+            (log/debug "session attributes = " js)
+            (doseq [ [k v] (seq (json/read-str js :key-fn keyword)) ]
+              (.setAttribute mvs k v)))
           (catch Throwable e#
             (throw (ExpiredError. "Corrupted cookie."))))
-        (.setNew! mvs false)
-        (let [ ts (ConvLong (nsb (.getAttribute mvs LS_FLAG)) -1)
-               es (ConvLong (nsb (.getAttribute mvs ES_FLAG)) -1)
+        (.setNew! mvs false 0)
+        (let [ ts (ternary (.getAttribute mvs LS_FLAG) -1)
+               es (ternary (.getAttribute mvs ES_FLAG) -1)
                now (System/currentTimeMillis)
                mi (.getAttr src :maxIdleSecs) ]
           (if (< es now)
             (throw (ExpiredError. "Session has expired.")))
           (if (and (> mi 0)
-                   (< (+ ts mi) now))
+                   (< (+ ts (* 1000 mi)) now))
             (throw (ExpiredError. "Session has been inactive too long.")))
           (.setAttribute mvs LS_FLAG now))
         ))
@@ -215,33 +220,28 @@
           (.clear! attrs)
           (.clear! impl))
 
-        (setNew! [_ flag]
+        (setNew! [this flag maxAge]
           (if flag
             (do
               (.clear! attrs)
               (.clear! impl)
+              (resetFlags this maxAge)
               (.setf! impl :maxIdleSecs 0)
               (.setf! impl :newOne true))
             (.setf! impl :newOne false)))
 
-        (getMaxInactiveInterval [_] (.getf impl :maxIdleSecs))
-        (getCreationTime [_]  (.getf attrs CS_FLAG))
-        (getExpiryTime [_]  (.getf attrs ES_FLAG))
+        (getMaxInactiveInterval [_] (ternary (.getf impl :maxIdleSecs) 0))
+        (getCreationTime [_] (ternary (.getf attrs CS_FLAG) 0))
+        (getExpiryTime [_] (ternary (.getf attrs ES_FLAG) 0))
         (getId [_] (.getf attrs SSID_FLAG))
 
-        (getLastAccessedTime [_] (.getf attrs LS_FLAG))
+        (getLastAccessedTime [_] (ternary (.getf attrs LS_FLAG) 0))
         (getLastError [_] (.getf impl :error))
 
         Object
 
         (toString [this]
-          (nsb (reduce (fn [sum en]
-                           (AddDelim! sum NV_SEP
-                                      (str (name (first en))
-                                           ":"
-                                           (last en))))
-                       (StringBuilder.)
-                       (seq (.listAttributes this)))))
+          (Base64/encodeBase64String (Bytesify (.toJson attrs))))
 
         IOSession
 
