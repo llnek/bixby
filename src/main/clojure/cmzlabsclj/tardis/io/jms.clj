@@ -66,6 +66,7 @@
 
         (bindSession [_ s] (.setf! impl :ios s))
         (getSession [_] (.getf impl :ios))
+        (checkAuthenticity [_] false)
         (getId [_] eeid)
         (emitter [_] co)
         (getMsg [_] msg))

@@ -355,6 +355,7 @@
                     nil))
                 (if (nil? cs) [] (seq cs)))) )
 
+      (checkAuthenticity [_] false)
       (getId [_] eid)
 
       (getCookies [_]

@@ -52,7 +52,7 @@
   (:use [cmzlabsclj.tardis.core.wfs])
   (:use [cmzlabsclj.tardis.core.sys])
 
-  (:use [cmzlabsclj.tardis.io.webss :only [Realign!] ])
+  (:use [cmzlabsclj.tardis.io.webss])
   (:use [cmzlabsclj.tardis.io.basicauth])
   (:use [cmzlabsclj.tardis.auth.model])
   (:use [cmzlabsclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])

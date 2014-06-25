@@ -77,6 +77,7 @@
         (bindSession [_ s] (.setf! impl :ios s))
         (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
+        (checkAuthenticity [_] false)
         (emitter [_] co)
         (getFile [_] f))
 

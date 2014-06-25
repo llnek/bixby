@@ -135,21 +135,21 @@
       (let [ ^cmzlabsclj.nucleus.net.routes.RouteCracker
              rcc (.getAttr co :cracker)
              ch (.channel ^ChannelHandlerContext ctx)
-             ^HTTPEvent evt (IOESReifyEvent co ch msg)
              info (.info ^DemuxedMsg msg)
              [r1 ^cmzlabsclj.nucleus.net.routes.RouteInfo r2 r3 r4]
              (.crack rcc info) ]
         (cond
           (= r1 true)
-          (do
+          (let [ ^HTTPEvent evt (IOESReifyEvent co ch msg r2) ]
             (log/debug "matched one route: " (.getPath r2)
                        " , and static = " (.isStatic? r2))
             (if (.isStatic? r2)
-                (ServeStatic co r2 r3 ch info evt)
-                (ServeRoute co r2 r3 ch evt)))
+                (ServeStatic r2 co r3 ch info evt)
+                (ServeRoute r2 co r3 ch evt)))
           :else
           (do
-            (log/debug "failed to match uri: " (.getUri evt))
+            (log/debug "failed to match uri: " (-> info (.getAsJsonPrimitive "uri")
+                                                        (.getAsString)))
             (ServeError co ch 404)) )))
   ))
 
@@ -213,19 +213,45 @@
       (.addProperty json "contextPath" xxx)
       (.setAttr! co :contextPath xxx))
 
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; session/cookie stuff
+    (let [ n (:sessionAgeSecs cfg)
+           xxx (if (spos? n) n 3600) ]
+      (.addProperty json "sessionAgeSecs" (ToJavaInt xxx))
+      (.setAttr! co :sessionAgeSecs xxx))
+    (let [ n (:maxIdleSecs cfg)
+           xxx (if (spos? n) n 900) ]
+      (.addProperty json "maxIdleSecs" (ToJavaInt xxx))
+      (.setAttr! co :maxIdleSecs xxx))
+    (let [ xxx (nsb (:domainPath cfg)) ]
+      (.addProperty json "domainPath" xxx)
+      (.setAttr! co :domainPath xxx))
+    (let [ xxx (nsb (:domain cfg)) ]
+      (.addProperty json "domain" xxx)
+      (.setAttr! co :domain xxx))
+    (let [ n (:hidden cfg)
+           xxx (if (false? n) false true) ]
+      (.addProperty json "hidden" xxx)
+      (.setAttr! co :hidden xxx))
+    ;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; caching stuff
     (let [ n (:cacheMaxAgeSecs cfg)
            xxx (if (spos? n) n 3600) ]
       (.addProperty json "cacheMaxAgeSecs" (ToJavaInt xxx))
       (.setAttr! co :cacheMaxAgeSecs xxx))
-
     (let [ xxx (:useETags cfg) ]
       (.addProperty json "useETags" (true? xxx))
       (.setAttr! co :useETags xxx))
-
     (let [ xxx (:cacheAssets cfg) ]
       (.addProperty json "cacheAssets" (not (false? xxx)))
       (when (false? xxx)(SetCacheAssetsFlag false))
       (.setAttr! co :cacheAssets xxx))
+  ;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
     (let [ xxx (strim (:handler cfg)) ]
       (.addProperty json "router" xxx)

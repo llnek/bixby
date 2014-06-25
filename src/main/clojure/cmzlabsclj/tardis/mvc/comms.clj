@@ -31,6 +31,7 @@
                                         MVCUtils WebAsset WebContent))
   (:import (com.zotohlab.frwk.core Hierarchial Identifiable))
   (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter))
+  (:import (com.zotohlab.gallifrey.runtime AuthError))
   (:import (org.apache.commons.lang3 StringUtils))
   (:import [com.zotohlab.frwk.netty NettyFW])
   (:import (java.util Date))
@@ -209,12 +210,13 @@
 ;;
 (defn ServeStatic ""
 
-  [ ^Emitter src
+  [ ^cmzlabsclj.nucleus.util.core.MubleAPI
     ri
+    ^Emitter src
     ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
-  (let [ mpt (nsb (.getf ^cmzlabsclj.nucleus.util.core.MubleAPI ri :mountPoint))
-        ^File appDir (-> src (.container)(.getAppDir))
+  (let [ ^File appDir (-> src (.container)(.getAppDir))
+         mpt (nsb (.getf ri :mountPoint))
          ps (NiceFPath (File. appDir DN_PUBLIC))
          gc (.groupCount mc) ]
     (with-local-vars [ mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
@@ -236,12 +238,17 @@
 ;;
 (defn ServeRoute ""
 
-  [ ^cmzlabsclj.tardis.core.sys.Element src
-    ^cmzlabsclj.nucleus.net.routes.RouteInfo ri
+  [ ^cmzlabsclj.nucleus.net.routes.RouteInfo ri
+    ^cmzlabsclj.tardis.core.sys.Element src
     ^Matcher mc
     ^Channel ch
-    ^cmzlabsclj.nucleus.util.core.MubleAPI evt]
+    ^HTTPEvent evt ]
+    ;;^cmzlabsclj.nucleus.util.core.MubleAPI evt]
 
+  (try
+    (-> evt (.getSession)(.handleEvent evt))
+    (catch AuthError e#
+      (ServeError src ch 403)))
   (let [ pms (.collect ri mc)
          options { :router (.getHandler ri)
                    :params (merge {} pms)

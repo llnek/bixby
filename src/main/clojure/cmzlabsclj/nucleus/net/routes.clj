@@ -49,6 +49,7 @@
   (getHandler [_] )
   (getPath [_] )
   (isStatic? [_] )
+  (isSecure? [_] )
   (getVerbs [_] )
   (resemble? [_ mtd path] )
   (collect [_ matcher] ))
@@ -79,6 +80,7 @@
         (getHandler [_] handler)
         (getPath [_] route)
         (getVerbs [_] verbList)
+        (isSecure? [_] (.getf impl :secure))
 
         (resemble? [_ mtd path]
           (let [ rg (.getf impl :regex)
@@ -145,7 +147,8 @@
 
   [stat path ^cmzlabsclj.nucleus.util.ini.IWin32Conf cfile]
 
-  (let [ tpl (.optString cfile path :template "")
+  (let [ secure (cstr/lower-case (.optString cfile path :secure ""))
+         tpl (.optString cfile path :template "")
          verb (.optString cfile path :verb "")
          mpt (.optString cfile path :mount "")
          pipe (.optString cfile path :pipe "")
@@ -154,6 +157,7 @@
               path
               (if (and stat (nichts? verb)) "GET" verb)
               pipe) ]
+    (.setf! rc :secure (= "true" secure))
     (if stat
       (do
         (.setf! rc :mountPoint mpt)

@@ -16,16 +16,18 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.string :as cstr])
+  (:require [clojure.data.json :as json])
   (:use [cmzlabsclj.nucleus.util.core
-         :only [MubleAPI ConvLong notnil? ternary MakeMMap Bytesify] ])
+         :only [MubleAPI ConvLong notnil? juid ternary MakeMMap Bytesify] ])
   (:use [cmzlabsclj.nucleus.crypto.core :only [GenMac] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? AddDelim!] ])
-  (:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
+  ;;(:use [cmzlabsclj.nucleus.util.guids :only [NewUUid] ])
   (:use [cmzlabsclj.nucleus.net.comms :only [GetFormFields] ])
 
   (:import (com.zotohlab.gallifrey.runtime ExpiredError AuthError))
   (:import (org.apache.commons.lang3 StringUtils))
-
+  (:import (org.apache.commons.codec.net URLCodec))
+  (:import (org.apache.commons.codec.binary Hex))
   (:import (com.zotohlab.frwk.util CoreUtils))
   (:import (java.net HttpCookie URLDecoder URLEncoder))
   (:import (com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
@@ -38,8 +40,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private SESSION_COOKIE "__ss001" )
-(def ^:private SSID_FLAG "__f01ec")
-(def ^:private TS_FLAG "__f684f" )
+(def ^:private SSID_FLAG ":__f01ec")
+(def ^:private CS_FLAG ":__f184f" ) ;; creation time
+(def ^:private LS_FLAG ":__f384f" ) ;; last access time
+(def ^:private ES_FLAG ":__f484f" ) ;; expiry time
 (def ^:private NV_SEP "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,83 +56,84 @@
   (setAttribute [_ k v] )
   (getAttribute [_ k] )
   (removeAttribute [_ k] )
-  (isEncrypted? [_ ])
   (clear! [_] )
   (listAttributes [_] )
   (isNew? [_] )
+  (isNull? [_])
   (isSSL? [_] )
-  (invalidate [_] )
-  (yield [_] )
+  (invalidate! [_] )
+  (setNew! [_ flag] )
   (getCreationTime [_]  )
+  (getExpiryTime [_])
   (getId [_] )
   (getLastError [_])
   (getLastAccessedTime [_] )
   (getMaxInactiveInterval [_] ))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Realign! ""
+(defn- resetFlags ""
 
-  [^HTTPEvent evt acctObj roles]
+  [ ^cmzlabsclj.tardis.io.webss.WebSession mvs maxAge]
 
-  (let [ ^cmzlabsclj.tardis.io.webss.WebSession
-         mvs (.getSession evt)
-         ^cmzlabsclj.tardis.core.sys.Element
-         src (.emitter evt)
-         idleSecs (.getAttr src :cacheMaxAgeSecs) ]
-    (doto mvs
-      (.invalidate )
-      (.setAttribute TS_FLAG
-                     (+ (System/currentTimeMillis)
-                        (* idleSecs 1000)))
-      (.setAttribute (keyword SSID_FLAG) (NewUUid))
-      (.yield ))
+  (let [ now (System/currentTimeMillis) ]
+    (.setAttribute mvs SSID_FLAG
+                   (Hex/encodeHexString (Bytesify (juid))))
+    (.setAttribute mvs ES_FLAG (+ now (* maxAge 1000)))
+    (.setAttribute mvs CS_FLAG now)
+    (.setAttribute mvs LS_FLAG now)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeMacIt ""
 
-  [^cmzlabsclj.tardis.io.webss.WebSession mvs
+  [^HTTPEvent evt
    ^Container ctr ^String data]
 
-  (if (.isEncrypted? mvs)
-      (let [ pkey (-> ctr (.getAppKey)(Bytesify)) ]
-        (str (GenMac pkey data) "-" data))
-      data
+  (if (.checkAuthenticity evt)
+    (str (GenMac (.getAppKeyBits ctr) data) "-" data)
+    data
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hibernate ""
+(defn- downstream ""
 
   [ ^HTTPEvent evt ^HTTPResult res ]
 
-  (let [ ctr (.container ^Emitter (.emitter res))
-         ^cmzlabsclj.tardis.io.webss.WebSession
-         mvs (.getSession evt)
-         idleSecs (.getMaxInactiveInterval mvs)
-         s (maybeMacIt mvs ctr (nsb mvs))
-         data (URLEncoder/encode s "utf-8")
-         ck (HttpCookie. SESSION_COOKIE data) ]
-    (doto ck
-          (.setSecure (.isSSL? mvs))
-          (.setHttpOnly true)
-          (.setPath "/"))
-    (when (> idleSecs 0) (.setMaxAge ck idleSecs))
-    (.addCookie res ck)
+  (let [ ^cmzlabsclj.tardis.io.webss.WebSession
+         mvs (.getSession evt) ]
+    (if-not (.isNull? mvs)
+      (let [ ^cmzlabsclj.tardis.core.sys.Element
+             src (.emitter evt)
+             ctr (.container ^Emitter src)
+             du2 (.setMaxInactiveInterval mvs
+                                          (.getAttr src :maxIdleSecs))
+             du1 (if (.isNew? mvs)
+                     (resetFlags mvs (.getAttr src :sessionAgeSecs)))
+             data (-> (URLCodec. "utf-8")
+                      (.encode (maybeMacIt evt ctr (nsb mvs))))
+             ck (HttpCookie. SESSION_COOKIE data) ]
+      (doto ck
+            (.setDomain (nsb (.getAttr src :domain)))
+            (.setSecure (.isSSL? mvs))
+            (.setHttpOnly (.getAttr src :hidden))
+            (.setMaxAge (/ (.getExpiryTime mvs) 1000))
+            (.setPath (.getAttr src :domainPath)))
+      (.addCookie res ck)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeValidateCookie  ""
 
-  [^cmzlabsclj.tardis.io.webss.WebSession mvs
-   ^Container ctr
-   ^String part1 ^String part2]
+  [^HTTPEvent evt ^Container ctr
+   ^String part1 ^String part2 ]
 
-  (if-let [ pkey (if (.isEncrypted? mvs)
-                     (-> ctr (.getAppKey) (Bytesify))
+  (if-let [ pkey (if (.checkAuthenticity evt)
+                     (.getAppKeyBits ctr)
                      nil) ]
     (when (not= (GenMac pkey part2) part1)
       (log/error "Session cookie - broken.")
@@ -137,104 +142,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- resurrect2 ""
+(defn- upstream ""
 
   [ ^HTTPEvent evt ]
 
   (let [ ^cmzlabsclj.tardis.io.webss.WebSession
          mvs (.getSession evt)
-         ck (.getCookie evt SESSION_COOKIE)
-         cookie (nsb (.getValue ck))
-         netty (.emitter evt)
-         pos (.indexOf cookie (int \-))
-         [rc1 rc2] (if (< pos 0)
-                       ["" cookie]
-                       [(.substring cookie 0 pos)
-                        (.substring cookie (+ pos 1) )] ) ]
-    (maybeValidateCookie mvs (.container ^Emitter netty) rc1 rc2)
-    (let [ ss (CoreUtils/splitNull (URLDecoder/decode rc2 "utf-8"))
-           idleSecs (.getAttr
-                     ^cmzlabsclj.tardis.core.sys.Element
-                     netty :cacheMaxAgeSecs) ]
-      (doseq [ ^String s (seq ss) ]
-        (let [ [n v] (StringUtils/split s ":") ]
-          (log/debug "session attribute name:value = " s)
-          (.setAttribute mvs (keyword n) v)))
-      (let [ ts (ConvLong (nsb (.getAttribute mvs TS_FLAG)) -1) ]
-        (if (or (< ts 0)
-                (< ts (System/currentTimeMillis)))
-          (throw (ExpiredError. "Session has expired.")))
-        (.setAttribute mvs
-                       (keyword TS_FLAG)
-                       (+ (System/currentTimeMillis)
-                          (* idleSecs 1000)))
-        (.setAttribute mvs :lastTS (System/currentTimeMillis)))
-  )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- resurrect ""
-
-  [ ^HTTPEvent evt ]
-
-  (let [ ck (.getCookie evt SESSION_COOKIE) ]
+         ^Emitter netty (.emitter evt)
+         ck (.getCookie evt SESSION_COOKIE) ]
     (if (nil? ck)
-        nil
-        (resurrect2 evt))
+      (.invalidate! mvs)
+      (let [ ^cmzlabsclj.tardis.core.sys.Element
+             src netty
+             cookie (nsb (.getValue ck))
+             ;;cookie (-> (URLCodec. "utf-8")
+                        ;;(decode (nsb (.getValue ck))))
+             pos (.indexOf cookie (int \-))
+             [rc1 rc2] (if (< pos 0)
+                           ["" cookie]
+                           [(.substring cookie 0 pos)
+                            (.substring cookie (+ pos 1) )] ) ]
+        (maybeValidateCookie evt (.container netty) rc1 rc2)
+        (log/debug "session attributes = " rc2)
+        (try
+          (doseq [ [k v] (seq (json/read-str rc2 :key-fn keyword)) ]
+            (.setAttribute mvs k v))
+          (catch Throwable e#
+            (throw (ExpiredError. "Corrupted cookie."))))
+        (.setNew! mvs false)
+        (let [ ts (ConvLong (nsb (.getAttribute mvs LS_FLAG)) -1)
+               es (ConvLong (nsb (.getAttribute mvs ES_FLAG)) -1)
+               now (System/currentTimeMillis)
+               mi (.getAttr src :maxIdleSecs) ]
+          (if (< es now)
+            (throw (ExpiredError. "Session has expired.")))
+          (if (and (> mi 0)
+                   (< (+ ts mi) now))
+            (throw (ExpiredError. "Session has been inactive too long.")))
+          (.setAttribute mvs LS_FLAG now))
+        ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSession ""
+(defn MakeWSSession ""
 
   ^IOSession
-  [co ssl encryptFlag]
+  [co ssl]
 
   (let [ attrs (MakeMMap)
-         impl (MakeMMap)
-         fc (fn []
-              (.setf! impl :maxIdleSecs 3600)
-              (.setf! impl :newOne true)
-              (.setf! attrs :createTS  0)
-              (.setf! attrs :lastTS  0)) ]
-    (fc)
+         impl (MakeMMap) ]
+    (.setf! impl :maxIdleSecs 0)
+    (.setf! impl :newOne true)
     (with-meta
       (reify WebSession
 
-        (setAttribute [_ k v]
-          (when (= :lastTS k) (.setf! impl :newOne false))
-          (.setf! attrs k v))
-
+        (setAttribute [_ k v] (.setf! attrs k v))
         (getAttribute [_ k] (.getf attrs k) )
         (removeAttribute [_ k] (.clrf! attrs k) )
         (clear! [_] (.clear! attrs))
         (listAttributes [_] (.seq* attrs))
 
         (setMaxInactiveInterval [_ idleSecs]
-          (when (and (number? idleSecs)
-                     (> idleSecs 0))
+          (when (number? idleSecs)
             (.setf! impl :maxIdleSecs idleSecs)))
 
+        (isNull? [_] (= (count (.seq* impl)) 0))
         (isNew? [_] (.getf impl :newOne))
         (isSSL? [_] ssl)
-        (isEncrypted? [_] encryptFlag)
 
-        (invalidate [_]
+        (invalidate! [_]
           (.clear! attrs)
-          (.clear! impl)
-          (fc))
+          (.clear! impl))
 
-        (yield [_]
-          (.setf! attrs :createTS  (System/currentTimeMillis))
-          (.setf! attrs :lastTS  (System/currentTimeMillis))
-          (.setf! impl :maxIdleSecs 3600)
-          (.setf! impl :newOne true))
+        (setNew! [_ flag]
+          (if flag
+            (do
+              (.clear! attrs)
+              (.clear! impl)
+              (.setf! impl :maxIdleSecs 0)
+              (.setf! impl :newOne true))
+            (.setf! impl :newOne false)))
 
         (getMaxInactiveInterval [_] (.getf impl :maxIdleSecs))
-        (getCreationTime [_]  (.getf attrs :createTS))
+        (getCreationTime [_]  (.getf attrs CS_FLAG))
+        (getExpiryTime [_]  (.getf attrs ES_FLAG))
         (getId [_] (.getf attrs SSID_FLAG))
 
-        (getLastAccessedTime [_] (.getf attrs :lastTS))
+        (getLastAccessedTime [_] (.getf attrs LS_FLAG))
         (getLastError [_] (.getf impl :error))
 
         Object
@@ -250,26 +245,13 @@
 
         IOSession
 
-        (handleResult [this evt res] (hibernate evt res))
-        (handleEvent [this evt]
-          (try
-            (resurrect evt)
-            (catch Throwable e#
-              (.setf! impl :error e#))))
-
+        (handleResult [this evt res] (downstream evt res))
+        (handleEvent [this evt] (upstream evt))
         (getImpl [_] nil))
 
         { :typeid :czc.tardis.io/WebSession }
 
   )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeWSSession ""
-
-  [co ssl ]
-
-  (MakeSession co ssl false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

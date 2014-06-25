@@ -58,6 +58,7 @@
         (bindSession [_ s] nil)
         (getSession [_] nil)
         (getId [_] eeid)
+        (checkAuthenticity [_] false)
         (getSockOut [_] (.getOutputStream soc))
         (getSockIn [_] (.getInputStream soc))
         (emitter [_] co)

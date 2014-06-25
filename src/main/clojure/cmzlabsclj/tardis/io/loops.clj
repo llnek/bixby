@@ -151,6 +151,7 @@
         (bindSession [_ s] nil)
         (getSession [_] nil)
         (getId [_] eeid)
+        (checkAuthenticity [_] false)
         (emitter [_] co)
         (isRepeating [_] true))
 
@@ -224,6 +225,7 @@
         (bindSession [_ s] nil)
         (getSession [_] nil)
         (getId [_] eeid)
+        (checkAuthenticity [_] false)
         (emitter [_] co)
         (isRepeating [_] false))
 

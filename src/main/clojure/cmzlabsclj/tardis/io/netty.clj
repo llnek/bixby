@@ -279,7 +279,7 @@
   [^cmzlabsclj.tardis.io.core.EmitterAPI co
    ^Channel ch
    ^XData xdata
-   ^JsonObject info ]
+   ^JsonObject info wantSecure]
 
   (let [ ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          ^InetSocketAddress laddr (.localAddress ch)
@@ -303,6 +303,7 @@
         (bindSession [_ s] (.setf! impl :ios s))
         (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
+        (checkAuthenticity [_] wantSecure)
         (isSSL [_] ssl)
         (isText [_] (instance? String (.content xdata)))
         (isBinary [this] (not (.isText this)))
@@ -321,14 +322,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeHttpEvent ""
+(defn- makeHttpEvent2 ""
 
   ^HTTPEvent
   [^cmzlabsclj.tardis.io.core.EmitterAPI co
    ^Channel ch
    sslFlag
    ^XData xdata
-   ^JsonObject info ]
+   ^JsonObject info wantSecure]
 
   (let [ ^HTTPResult res (MakeHttpResult co)
          ^InetSocketAddress laddr (.localAddress ch)
@@ -353,6 +354,7 @@
         (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
         (emitter [_] co)
+        (checkAuthenticity [_] wantSecure)
         (getCookies [_]
           (let [ v (nsb (GetHeader info "Cookie"))
                  rc (ArrayList.)
@@ -433,25 +435,38 @@
 
   )) )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- makeHttpEvent ""
+
+  ^HTTPEvent
+  [^cmzlabsclj.tardis.io.core.EmitterAPI co
+   ^Channel ch
+   sslFlag
+   ^XData xdata
+   ^JsonObject info wantSecure]
+
+  (doto (makeHttpEvent2 co ch sslFlag xdata info wantSecure)
+    (.bindSession (MakeWSSession co sslFlag))
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
   [^cmzlabsclj.tardis.io.core.EmitterAPI co & args]
-  (let [ ^DemuxedMsg req (nth args 1)
+  (let [ ^cmzlabsclj.nucleus.net.routes.RouteInfo
+         ri (nth args 2)
+         ^DemuxedMsg req (nth args 1)
          ^Channel ch (nth args 0)
          ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
          xdata (.payload req)
-         info (.info req)
-         ^IOSession
-         wss (MakeWSSession co ssl ) ]
+         sec (.isSecure? ri)
+         info (.info req) ]
     (if (-> (.get info "wsock")(.getAsBoolean))
-        (makeWSockEvent co ch xdata info)
-        (let [ evt (makeHttpEvent co ch ssl xdata info) ]
-          (.bindSession evt wss)
-          (.handleEvent wss evt)
-          evt))
-    ))
+        (makeWSockEvent co ch xdata info sec)
+        (makeHttpEvent co ch ssl xdata info sec))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
