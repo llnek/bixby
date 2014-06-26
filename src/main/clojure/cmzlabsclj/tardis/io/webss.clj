@@ -18,7 +18,7 @@
   (:require [clojure.string :as cstr])
   (:require [clojure.data.json :as json])
   (:use [cmzlabsclj.nucleus.util.core
-         :only [MubleAPI ConvLong notnil? juid ternary 
+         :only [MubleAPI ConvLong notnil? juid ternary
                 MakeMMap Stringify Bytesify] ])
   (:use [cmzlabsclj.nucleus.crypto.core :only [GenMac] ])
   (:use [cmzlabsclj.nucleus.util.str :only [nsb hgl? AddDelim!] ])
@@ -81,7 +81,9 @@
   (let [ now (System/currentTimeMillis) ]
     (.setAttribute mvs SSID_FLAG
                    (Hex/encodeHexString (Bytesify (juid))))
-    (.setAttribute mvs ES_FLAG (+ now (* maxAge 1000)))
+    (.setAttribute mvs ES_FLAG (if (> maxAge 0)
+                                   (+ now (* maxAge 1000))
+                                   maxAge))
     (.setAttribute mvs CS_FLAG now)
     (.setAttribute mvs LS_FLAG now)
   ))
@@ -115,14 +117,15 @@
                                           (.getAttr src :maxIdleSecs))
              du1 (if (.isNew? mvs)
                      (resetFlags mvs (.getAttr src :sessionAgeSecs)))
-             data (-> (URLCodec. "utf-8")
-                      (.encode (maybeMacIt evt ctr (nsb mvs))))
+             data (maybeMacIt evt ctr (nsb mvs))
+             now (System/currentTimeMillis)
+             est (.getExpiryTime mvs)
              ck (HttpCookie. SESSION_COOKIE data) ]
+        (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
         (doto ck
               (.setDomain (nsb (.getAttr src :domain)))
               (.setSecure (.isSSL? mvs))
               (.setHttpOnly (.getAttr src :hidden))
-              (.setMaxAge (/ (.getExpiryTime mvs) 1000))
               (.setPath (.getAttr src :domainPath)))
         (.addCookie res ck)))
   ))

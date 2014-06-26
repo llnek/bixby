@@ -77,12 +77,12 @@
 
   (doto (DefaultCookie. (.getName c)
                         (.encode cc (nsb (.getValue c))))
-        (.setComment (.getComment c))
+        ;;(.setComment (.getComment c))
         (.setDomain (.getDomain c))
         (.setMaxAge (.getMaxAge c))
         (.setPath (.getPath c))
-        (.setDiscard (.getDiscard c))
-        (.setVersion (.getVersion c))
+        ;;(.setDiscard (.getDiscard c))
+        ;;(.setVersion (.getVersion c))
         (.setHttpOnly (.isHttpOnly c))
   ))
 

@@ -33,7 +33,8 @@
   (:import (org.bouncycastle.crypto.params DESedeParameters KeyParameter))
   (:import (org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher))
   (:import (org.bouncycastle.crypto KeyGenerationParameters))
-  (:import (org.bouncycastle.crypto.engines BlowfishEngine AESEngine RSAEngine DESedeEngine))
+  (:import (org.bouncycastle.crypto.engines BlowfishEngine AESEngine
+                                            RSAEngine DESedeEngine))
   (:import (org.bouncycastle.crypto.generators DESedeKeyGenerator))
   (:import (org.bouncycastle.crypto.modes CBCBlockCipher))
   (:import (org.apache.commons.lang3 StringUtils)))
@@ -51,18 +52,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^chars ^:private VISCHS
-  (.toCharArray (str " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*"
-       "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-")))
+(def ^chars ^:private VISCHS (.toCharArray (str " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*"
+                                                "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-")))
 (def ^:private VISCHS_LEN (alength ^chars VISCHS))
 
-;;(def ^:private PCHS "abcdefghijklmnopqrstuvqxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-_~!@#$%^&*()" )
 (def ^String ^:private PCHS "Ha$4Jep8!`g)GYkmrIRN72^cObZ%oXlSPT39qLMD&iC*UxKWhE#F5@qvV6j0f1dyBs-~tAQn(z_u" )
-;;(def ^:private ACHS "abcdefghijklmnopqrstuvqxyz1234567890-_ABCDEFGHIJKLMNOPQRSTUVWXYZ" )
+;;(def ^:private PCHS "abcdefghijklmnopqrstuvqxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-_~!@#$%^&*()" )
 (def ^String ^:private ACHS "nhJ0qrIz6FmtPCduWoS9x8vT2-KMaO7qlgApVX5_keyZDjfE13UsibYRGQ4NcLBH" )
+;;(def ^:private ACHS "abcdefghijklmnopqrstuvqxyz1234567890-_ABCDEFGHIJKLMNOPQRSTUVWXYZ" )
 
-(def ^chars ^:private s_asciiChars (.toCharArray ^String ACHS))
-(def ^chars ^:private s_pwdChars (.toCharArray ^String PCHS))
+(def ^chars ^:private s_asciiChars (.toCharArray ACHS))
+(def ^chars ^:private s_pwdChars (.toCharArray PCHS))
 
 (def ^String ^:private PWD_PFX "CRYPT:" )
 (def ^:private PWD_PFXLEN (.length PWD_PFX))
@@ -85,7 +85,7 @@
   (let [ len (* 8 (alength keyBits)) ]
     (when (and (= T3_DES algo)
                (< len 192)) ;; 8x 3 = 24 bytes
-      (ThrowBadArg "Encryption key length must be 24, when using TripleDES"))
+      (ThrowBadArg "Encryption key length must be 192, when using TripleDES"))
     (when (and (= "AES" algo)
                (< len 128))
       (ThrowBadArg "Encryption key length must be 128 or 256, when using AES"))
