@@ -62,7 +62,7 @@
       (var-set modd (not= eTag (GetHeader info "if-none-match")))
 
       (HasHeader? info "if-unmodified-since")
-      (if-let [ s (GetHeader info "if-unmodified-since") ]
+      (when-let [ s (GetHeader info "if-unmodified-since") ]
           (Try! (when (>= (.getTime (.parse (MVCUtils/getSDF) s)) lastTm)
                       (var-set modd false))))
       :else nil)

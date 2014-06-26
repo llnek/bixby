@@ -152,7 +152,7 @@
       (.connect s host port user (if (hgl? pwd) pwd nil))
       (.setAttr! co :store s)
       (.setAttr! co :folder (.getDefaultFolder s)))
-    (if-let [ ^Folder fd (.getAttr co :folder) ]
+    (when-let [ ^Folder fd (.getAttr co :folder) ]
       (.setAttr! co :folder (.getFolder fd "INBOX")))
     (let [ ^Folder fd (.getAttr co :folder) ]
       (when (or (nil? fd) (not (.exists fd)))

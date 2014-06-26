@@ -45,7 +45,7 @@
                                                    PingWebSocketFrame PongWebSocketFrame))
   (:import (com.zotohlab.frwk.netty NettyFW))
   (:import (com.zotohlab.frwk.io XData))
-  (:use [cmzlabsclj.nucleus.util.core :only [ notnil? Try! TryC] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [ ternary notnil? Try! TryC] ])
   (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ])
   (:use [cmzlabsclj.nucleus.netty.comms])
   (:use [cmzlabsclj.nucleus.util.io :only [NewlyTmpfile MakeBitOS] ]))
@@ -717,7 +717,7 @@
          md (if (> clen 0)
               (if (hgl? mo) "POST")
               (if (hgl? mo) mo "GET"))
-         mt (if-let [mo mo] mo md)
+         mt (ternary mo md)
          req (DefaultHttpRequest. HttpVersion/HTTP_1_1
                                   (HttpMethod/valueOf mt)
                                   (nsb targetUrl))
