@@ -163,6 +163,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn FindLoginAccountViaEmail  ""
+
+  [^SQLr sql ^String email]
+
+  (.findOne sql :czc.tardis.auth/LoginAccount
+                            { :email (strim email) }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn FindLoginAccount  ""
 
   [^SQLr sql ^String user]
@@ -435,8 +444,15 @@
       (getAccount [_ options]
         (let [ pkey (.getAppKey ctr)
                sql (getSQLr ctr) ]
-          (FindLoginAccount sql
-                           (:principal options))))
+          (cond
+            (notnil? (:principal options))
+            (FindLoginAccount sql
+                              (:principal options))
+            (notnil? (:email options))
+            (FindLoginAccountViaEmail sql
+                              (:email options))
+
+            :else nil)))
 
       (getRoles [_ acct] [])
 

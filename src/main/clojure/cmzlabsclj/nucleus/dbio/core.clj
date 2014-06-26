@@ -978,7 +978,7 @@
             (.setAcquireRetryDelayInMs 5000)
             (.setConnectionTimeoutInMs  (Math/max 5000 (nnz (:max-conn-wait options))))
             (.setDefaultAutoCommit false)
-            (.setConnectionHook (BoneCPHook.))
+            ;;(.setConnectionHook (BoneCPHook.))
             (.setAcquireRetryAttempts 1))
       (log/debug "[bonecp]\n" (.toString bcf))
       (makePool jdbc (BoneCP. bcf)))))
