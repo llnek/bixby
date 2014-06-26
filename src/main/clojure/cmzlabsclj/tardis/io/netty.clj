@@ -75,6 +75,10 @@
   ^Cookie
   [^HttpCookie c ^URLCodec cc]
 
+  ;; stick with version 0, Java's HttpCookie defaults to 1 but that
+  ;; screws up the Path attribute on the wire => it's quoted but
+  ;; browser seems to not like it and mis-interpret it.
+  ;; Netty's cookie defaults to 0, which is cool with me.
   (doto (DefaultCookie. (.getName c)
                         (.encode cc (nsb (.getValue c))))
         ;;(.setComment (.getComment c))
