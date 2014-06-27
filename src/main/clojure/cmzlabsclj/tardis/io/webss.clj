@@ -40,12 +40,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private SESSION_COOKIE "__ss003" )
-(def ^:private SSID_FLAG :__f01ec)
-(def ^:private CS_FLAG :__f184f ) ;; creation time
-(def ^:private LS_FLAG :__f384f ) ;; last access time
-(def ^:private ES_FLAG :__f484f ) ;; expiry time
-(def ^:private NV_SEP "\u0000")
+(def ^:private SESSION_COOKIE "__ss004" )
+(def ^:private SSID_FLAG :__f01es)
+(def ^:private CS_FLAG :__f184n ) ;; creation time
+(def ^:private LS_FLAG :__f384n ) ;; last access time
+(def ^:private ES_FLAG :__f484n ) ;; expiry time
+(def ^String ^:private NV_SEP "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,9 +64,11 @@
   (isSSL? [_] )
   (invalidate! [_] )
   (setNew! [_ flag maxAge] )
+  (setXref [_ csrf])
   (getCreationTime [_]  )
   (getExpiryTime [_])
   (getId [_] )
+  (getXref [_] )
   (getLastError [_])
   (getLastAccessedTime [_] )
   (getMaxInactiveInterval [_] ))
@@ -170,11 +172,17 @@
                            [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
         (maybeValidateCookie evt (.container netty) rc1 rc2)
+        (log/debug "session attributes = " rc2)
         (try
-          (let [ js (Stringify (Base64/decodeBase64 ^String rc2)) ]
-            (log/debug "session attributes = " js)
-            (doseq [ [k v] (seq (json/read-str js :key-fn keyword)) ]
-              (.setAttribute mvs k v)))
+          (doseq [ ^String nv (seq (StringUtils/split ^String rc2 NV_SEP)) ]
+            (let [ ss (StringUtils/split nv ":" 2)
+                   ^String s1 (aget ss 0)
+                   ^String s2 (aget ss 1) ]
+              (log/debug "session attr name = " s1 ", value = " s2)
+              (if (and (.startsWith s1 "__f")
+                       (.endsWith s1 "n"))
+                (.setAttribute mvs (keyword s1) (ConvLong s2 0))
+                (.setAttribute mvs (keyword s1) s2))))
           (catch Throwable e#
             (throw (ExpiredError. "Corrupted cookie."))))
         (.setNew! mvs false 0)
@@ -223,6 +231,7 @@
           (.clear! attrs)
           (.clear! impl))
 
+        (setXref [_ csrf] (.setf! attrs :csrf csrf))
         (setNew! [this flag maxAge]
           (if flag
             (do
@@ -236,6 +245,7 @@
         (getMaxInactiveInterval [_] (ternary (.getf impl :maxIdleSecs) 0))
         (getCreationTime [_] (ternary (.getf attrs CS_FLAG) 0))
         (getExpiryTime [_] (ternary (.getf attrs ES_FLAG) 0))
+        (getXref [_] (.getf attrs :csrf))
         (getId [_] (.getf attrs SSID_FLAG))
 
         (getLastAccessedTime [_] (ternary (.getf attrs LS_FLAG) 0))
@@ -244,7 +254,14 @@
         Object
 
         (toString [this]
-          (Base64/encodeBase64String (Bytesify (.toJson attrs))))
+          (nsb (reduce (fn [memo en]
+                    (AddDelim! memo NV_SEP
+                               (str (name (first en))
+                                    ":"
+                                    (last en))))
+                  (StringBuilder.)
+                  (.seq* attrs))))
+          ;;(Base64/encodeBase64String (Bytesify (.toJson attrs))))
 
         IOSession
 

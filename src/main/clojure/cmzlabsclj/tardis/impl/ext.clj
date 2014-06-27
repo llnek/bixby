@@ -48,6 +48,7 @@
   (:use [ cmzlabsclj.nucleus.net.routes :only [LoadRoutes] ])
   (:import (org.apache.commons.io FilenameUtils FileUtils))
   (:import (org.apache.commons.lang3 StringUtils))
+  (:import (org.apache.commons.codec.binary Hex))
   (:import (freemarker.template Configuration Template DefaultObjectWrapper))
   (:import (java.util Map Properties))
   (:import (java.net URL))
@@ -391,8 +392,8 @@
                 :else
                 "text/plain") ] ))
 
-        (generateNonce [_] (CreateRandomString 16))
-        (generateCsrf [_] (CreateRandomString 36))
+        (generateNonce [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
+        (generateCsrf [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
 
         (enabled? [_]
           (let [ env (.getf impl K_ENVCONF)

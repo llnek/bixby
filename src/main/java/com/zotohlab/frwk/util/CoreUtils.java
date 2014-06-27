@@ -15,6 +15,7 @@ package com.zotohlab.frwk.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import org.apache.commons.codec.net.URLCodec;
 import org.slf4j.*;
 
 import java.io.File;
@@ -37,7 +38,13 @@ public enum CoreUtils {
   public static Logger tlog() { return _log; }
 
   public static void main(String[] args) {
-    System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
+    try {
+      //System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
+      URLCodec cc = new URLCodec("utf-8");
+      System.out.println(cc.encode("hello\u0000world"));
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
   }
 
   public static void blockAndWait(Object lock, long waitMillis) {

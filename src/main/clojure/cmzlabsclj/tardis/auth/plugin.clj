@@ -316,13 +316,22 @@
             ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
+            ^cmzlabsclj.tardis.io.webss.WebSession
+            mvs (.getSession evt)
+            csrf (.getXref mvs)
             info (ternary (GetSignupInfo evt) {} ) ]
+        (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
           (and (hgl? challengeStr)
                (not= challengeStr (nsb (:captcha info))))
           (do
             (.setLastResult job { :error (AuthError. "Broken captcha.") })
+            false)
+
+          (not (= csrf (:csrf info)))
+          (do
+            (.setLastResult job { :error (AuthError. "Broken token.") })
             false)
 
           (and (hgl? (:credential info))
@@ -356,9 +365,19 @@
             ^cmzlabsclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event ^Job job)
+            ^cmzlabsclj.tardis.io.webss.WebSession
+            mvs (.getSession evt)
+            csrf (.getXref mvs)
             info (ternary (GetLoginInfo evt) {} ) ]
+        (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
+
+          (not (= csrf (:csrf info)))
+          (do
+            (.setLastResult job { :error (AuthError. "Broken token.") })
+            false)
+
           (and (hgl? (:credential info))
                (hgl? (:principal info)))
           (do
