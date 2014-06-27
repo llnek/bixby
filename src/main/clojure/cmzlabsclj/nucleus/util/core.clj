@@ -981,5 +981,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn NormalizeEmail ""
+
+  ^String
+  [^String email]
+
+  (cond
+
+    (cstr/blank? email)
+    email
+
+    (or (not (> (.indexOf email (int \@)) 0))
+        (not= (.lastIndexOf email (int \@))
+              (.indexOf email (int \@))))
+    (ThrowBadData (str "Bad email address " email))
+
+    :else
+    (let [ ss (StringUtils/split email "@" 2) ]
+      (str (aget ss 0) "@" (cstr/lower-case (aget ss 1))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private core-eof nil)
 

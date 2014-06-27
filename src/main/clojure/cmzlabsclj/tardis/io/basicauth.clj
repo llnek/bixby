@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
   (:require [clojure.data.json :as json])
   (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [Stringify notnil? ] ])
+  (:use [cmzlabsclj.nucleus.util.core :only [NormalizeEmail Stringify notnil? ] ])
   (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl? ] ])
   (:use [cmzlabsclj.tardis.io.http :only [ScanBasicAuth] ])
   (:use [cmzlabsclj.nucleus.crypto.codec :only [CaesarDecrypt] ])
@@ -50,7 +50,7 @@
                        csrf nil nonce false captcha nil
                        data (.content xs) ]
       (when (instance? ULFormItems @data)
-        (doseq [ ^ULFileItem x (GetFormFields @data) ]
+        (doseq [ ^ULFileItem x (seq (GetFormFields @data)) ]
           (let [ fm (.getFieldName x)
                  fv (nsb (.getString x)) ]
             ;;(log/debug "Form field: " fm " = " fv)
@@ -63,7 +63,8 @@
               NONCE_PARAM (var-set nonce true)
               nil)))
         { :principal (strim @user) :credential (strim @pwd)
-          :email (strim @email) :csrf (strim @csrf)
+          :email (NormalizeEmail (strim @email))
+          :csrf (strim @csrf)
           :captcha (strim @captcha)
           :nonce @nonce }
         ))
@@ -84,7 +85,7 @@
           :credential (strim (get json PWD_PARAM))
           :captcha (strim (get json CAPTCHA_PARAM))
           :csrf (strim (get json CSRF_PARAM))
-          :email (strim (get json EMAIL_PARAM)) }))
+          :email (NormalizeEmail (strim (get json EMAIL_PARAM))) }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,14 +96,14 @@
 
   { :nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
     :csrf (strim (.getParameterValue evt CSRF_PARAM))
-    :email (strim (.getParameterValue evt EMAIL_PARAM))
+    :email (NormalizeEmail (strim (.getParameterValue evt EMAIL_PARAM)))
     :captcha (strim (.getParameterValue evt CAPTCHA_PARAM))
     :credential (strim (.getParameterValue evt PWD_PARAM))
     :principal (strim (.getParameterValue evt USER_PARAM)) })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeGetAuthInfo ""
+(defn MaybeGetAuthInfo ""
 
   [^HTTPEvent evt]
 
@@ -155,7 +156,7 @@
 
   [^HTTPEvent evt]
 
-  (-> (maybeGetAuthInfo evt)
+  (-> (MaybeGetAuthInfo evt)
       (maybeDecodeField :principal )
       (maybeDecodeField :credential)))
 
@@ -165,7 +166,7 @@
 
   [^HTTPEvent evt]
 
-  (-> (maybeGetAuthInfo evt)
+  (-> (MaybeGetAuthInfo evt)
       (maybeDecodeField :principal )
       (maybeDecodeField :credential)))
 

@@ -23,6 +23,7 @@
   (:import (com.zotohlab.frwk.net ULFormItems ULFileItem))
   (:import (org.apache.commons.codec.binary Base64))
   (:import (com.zotohlab.gallifrey.core Container))
+  (:import (com.zotohlab.frwk.util CrappyDataError))
 
   (:import (com.zotohlab.frwk.dbio DBAPI MetaCache SQLr
                                     JDBCPool JDBCInfo))
@@ -319,10 +320,16 @@
             ^cmzlabsclj.tardis.io.webss.WebSession
             mvs (.getSession evt)
             csrf (.getXref mvs)
-            info (ternary (GetSignupInfo evt) {} ) ]
+            si (try (GetSignupInfo evt) (catch CrappyDataError e#  { :e e# }))
+            info (ternary si {}) ]
         (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
+          (notnil? (:e info))
+          (do
+            (.setLastResult job { :error (AuthError. (nsb (:e info))) })
+            false)
+
           (and (hgl? challengeStr)
                (not= challengeStr (nsb (:captcha info))))
           (do
@@ -368,10 +375,16 @@
             ^cmzlabsclj.tardis.io.webss.WebSession
             mvs (.getSession evt)
             csrf (.getXref mvs)
-            info (ternary (GetLoginInfo evt) {} ) ]
+            si (try (GetSignupInfo evt) (catch CrappyDataError e#  { :e e# }))
+            info (ternary si {} ) ]
         (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
+
+          (notnil? (:e info))
+          (do
+            (.setLastResult job { :error (AuthError. (nsb (:e info))) })
+            false)
 
           (not (= csrf (:csrf info)))
           (do
