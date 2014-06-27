@@ -188,6 +188,23 @@ var SkaroJS = {
     return Math.floor(Math.random() * limit);
   },
 
+  toBasicAuthHeader: function(user,pwd) {
+    var str='Basic ' + this.base64_encode(""+user+":"+pwd);
+    return [ 'Authorization', str ];
+  },
+
+  toUtf8: function(s) {
+    return CryptoJS.enc.Utf8.stringify( CryptoJS.enc.Utf8.parse(s));
+  },
+
+  base64_encode: function(s) {
+    return CryptoJS.enc.Base64.stringify( CryptoJS.enc.Utf8.parse(s));
+  },
+
+  base64_decode: function(s) {
+    return CryptoJS.enc.Utf8.stringify( CryptoJS.enc.Base64.parse(s));
+  },
+
   merge: function(original, extended) {
     for( var key in extended ) {
       var ext = extended[key];
