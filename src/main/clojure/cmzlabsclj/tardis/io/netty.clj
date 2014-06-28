@@ -546,7 +546,7 @@
 
   (let [ ^cmzlabsclj.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
          ^JsonObject options (.getAttr co :emcfg)
-         bs (ServerSide/initServerSide (nettyInitor co) options) ]
+         bs (ServerSide/initTCPServerSide (nettyInitor co) options) ]
     (.setAttr! co :netty  { :bootstrap bs })
     co
   ))

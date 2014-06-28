@@ -87,7 +87,7 @@
 
   [^String host port ^JsonObject options callback]
 
-  (let [ ^ServerBootstrap bs (ServerSide/initServerSide (discarder callback) options)
+  (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (discarder callback) options)
          ch (ServerSide/start bs host port) ]
     { :bootstrap bs :channel ch }
   ))

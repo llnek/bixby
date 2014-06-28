@@ -141,7 +141,7 @@
   ;; returns netty objects if you want to do clean up
   [^String host port ^JsonObject options]
 
-  (let [ ^ServerBootstrap bs (ServerSide/initServerSide  (fileCfgtor) options)
+  (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide  (fileCfgtor) options)
          ch (ServerSide/start bs host port) ]
     { :bootstrap bs :channel ch }
   ))

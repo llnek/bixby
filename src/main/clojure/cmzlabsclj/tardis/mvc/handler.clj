@@ -190,7 +190,7 @@
          ctr (.parent ^Hierarchial co)
          rts (.getAttr ctr :routes)
          ^JsonObject options (.getAttr co :emcfg)
-         bs (ServerSide/initServerSide (mvcInitor co)
+         bs (ServerSide/initTCPServerSide (mvcInitor co)
                                        options) ]
     (.setAttr! co :cracker (MakeRouteCracker rts))
     (.setAttr! co :netty  { :bootstrap bs })

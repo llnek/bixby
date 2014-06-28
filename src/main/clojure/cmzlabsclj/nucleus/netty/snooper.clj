@@ -208,7 +208,7 @@
 
   [^String host port ^JsonObject options]
 
-  (let [ ^ServerBootstrap bs (ServerSide/initServerSide (snooper) options)
+  (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (snooper) options)
          ch (ServerSide/start bs host port) ]
     { :bootstrap bs :channel ch }
   ))

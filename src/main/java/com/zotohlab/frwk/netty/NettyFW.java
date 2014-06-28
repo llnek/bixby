@@ -123,11 +123,7 @@ public enum NettyFW {
 
   public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg, final JsonObject options) {
 
-    return new ChannelInitializer<SocketChannel>() {
-      protected void initChannel(SocketChannel ch) {
-        cfg.assemble(ch.pipeline(), options);
-      }
-    };
+    return cfg.configure(options);
 
   }
 

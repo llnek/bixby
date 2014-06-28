@@ -15,9 +15,11 @@
 package com.zotohlab.frwk.netty;
 
 import com.google.gson.JsonObject;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import org.slf4j.Logger;
@@ -35,16 +37,26 @@ public enum ServerSide {
   private static Logger _log = LoggerFactory.getLogger(ServerSide.class);
   public static Logger tlog() { return _log; }
 
-  public static ServerBootstrap initServerSide(PipelineConfigurator cfg,
+  public static ServerBootstrap initTCPServerSide(PipelineConfigurator cfg,
                                                JsonObject options) {
     ServerBootstrap bs= new ServerBootstrap();
-    bs.group( new NioEventLoopGroup(), new NioEventLoopGroup() );
+    bs.group( getEventGroup("bossThreads",options), getEventGroup("workerThreads",options) );
     bs.channel(NioServerSocketChannel.class);
     bs.option(ChannelOption.SO_REUSEADDR,true);
     bs.option(ChannelOption.SO_BACKLOG,100);
     bs.childOption(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
     bs.childOption(ChannelOption.TCP_NODELAY,true);
     bs.childHandler( cfg.configure(options));
+    return bs;
+  }
+
+  public static Bootstrap initUDPServerSide(PipelineConfigurator cfg,
+                                               JsonObject options) {
+    Bootstrap bs= new Bootstrap();
+    bs.group( getEventGroup("bossThreads",options) );
+    bs.channel(NioDatagramChannel.class);
+    bs.option(ChannelOption.TCP_NODELAY,true);
+    bs.option(ChannelOption.SO_RCVBUF, 2 * 1024 * 1024);
     return bs;
   }
 
@@ -58,7 +70,16 @@ public enum ServerSide {
     } catch (InterruptedException e) {
       throw new IOException(e);
     }
-    tlog().debug("netty-xxx-server: running on host " + ip +  ", port " + port);
+    tlog().debug("netty-TCP-server: running on host " + ip +  ", port " + port);
+    return ch;
+  }
+
+  public static Channel start(Bootstrap bs, String host, int port) throws IOException {
+    InetAddress ip = (host==null || host.length()==0)
+        ? InetAddress.getLocalHost()
+        : InetAddress.getByName( host);
+    Channel ch = bs.bind( new InetSocketAddress(ip, port)).channel();
+    tlog().debug("netty-UDP-server: running on host " + ip +  ", port " + port);
     return ch;
   }
 
@@ -71,6 +92,23 @@ public enum ServerSide {
         if (gc != null) try { gc.shutdownGracefully(); } catch (Throwable e) {}
       }
     });
+  }
+
+  public static void stop(final Bootstrap bs, Channel ch) {
+    ch.close().addListener(new ChannelFutureListener() {
+      public void operationComplete(ChannelFuture ff) {
+        EventLoopGroup gp = bs.group();
+        if (gp != null) try { gp.shutdownGracefully(); } catch (Throwable e) {}
+      }
+    });
+  }
+
+  private static NioEventLoopGroup getEventGroup(String group, JsonObject options) {
+    if (options.has(group)) {
+      return new NioEventLoopGroup( options.getAsJsonPrimitive(group).getAsInt() );
+    } else {
+      return new NioEventLoopGroup();
+    }
   }
 
 }
