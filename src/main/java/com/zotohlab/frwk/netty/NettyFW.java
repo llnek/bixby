@@ -254,6 +254,94 @@ public enum NettyFW {
     return rc;
   }
 
+  public static String[] readStrings(ByteBuf buffer, int numOfStrings) {
+    return readStrings(buffer, numOfStrings, CharsetUtil.UTF_8);
+  }
+
+  public static String[] readStrings(ByteBuf buffer, int numOfStrings, Charset charset) {
+    String[] strings = new String[numOfStrings];
+    String theStr;
+    for (int i = 0; i < numOfStrings; ++i) {
+      theStr = readString(buffer,charset);
+      if (null == theStr) { break; }
+      strings[i] = theStr;
+    }
+    return strings;
+  }
+
+  public static String readString(ByteBuf buffer) {
+    return readString(buffer, CharsetUtil.UTF_8);
+  }
+
+  public static String readString(ByteBuf buffer, Charset charset) {
+    String rc = null;
+    int len;
+    if (buffer != null && buffer.readableBytes() > 2) {
+      len= buffer.readUnsignedShort();
+      rc = readString(buffer, len, charset);
+    }
+    return rc;
+  }
+
+  public static String readString(ByteBuf buffer, int length) {
+    return readString(buffer, length, CharsetUtil.UTF_8);
+  }
+
+  public static String readString(ByteBuf buffer, int length, Charset charset) {
+    if (charset == null) { charset = CharsetUtil.UTF_8; }
+    String str = null;
+    try {
+      str= buffer.readSlice(length).toString(charset);
+    }
+    catch (Throwable e) {
+      tlog().error( "Error occurred while trying to read string from buffer: {}", e);
+    }
+    return str;
+  }
+
+  public static ByteBuf writeStrings(String[] msgs) {
+    return writeStrings(CharsetUtil.UTF_8, msgs);
+  }
+
+  public static ByteBuf writeStrings(Charset charset, String[] msgs) {
+    ByteBuf theBuffer = null;
+    ByteBuf buffer = null;
+    for (String msg : msgs) {
+      if (null == buffer) {
+        buffer = writeString(msg,charset);
+      } else {
+        theBuffer = writeString(msg,charset);
+        if (theBuffer != null) {
+          buffer = Unpooled.wrappedBuffer(buffer, theBuffer);
+        }
+      }
+    }
+    return buffer;
+  }
+
+  public static ByteBuf writeString(String msg) {
+    return writeString(msg, CharsetUtil.UTF_8);
+  }
+
+  public static ByteBuf writeString(String msg, Charset charset) {
+    ByteBuf lengthBuffer;
+    ByteBuf stringBuffer;
+    int len;
+    ByteBuf buffer = null;
+    try {
+      if (charset == null) { charset = CharsetUtil.UTF_8; }
+      stringBuffer = copiedBuffer(msg, charset);
+      len= stringBuffer.readableBytes();
+      lengthBuffer = Unpooled.buffer(2);
+      lengthBuffer.writeShort(length);
+      buffer = Unpooled.wrappedBuffer(lengthBuffer, stringBuffer);
+    }
+    catch (Throwable e) {
+      tlog().error("Error occurred while trying to write string buffer: {}", e);
+    }
+    return buffer;
+  }
+
 }
 
 
