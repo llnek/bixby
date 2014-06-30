@@ -12,9 +12,11 @@
  ??*/
 
 
-package com.zotoh.odin.network;
+package com.zotohlab.odin.network;
 
-
+/**
+ * @author kenl
+ */
 public interface MessageSender {
 
   public Object sendMessage(Object message);

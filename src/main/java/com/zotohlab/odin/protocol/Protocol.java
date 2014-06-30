@@ -11,29 +11,18 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlab.odin.game;
+package com.zotohlab.odin.protocol;
+
+import com.zotohlab.odin.game.PlayerSession;
 
 /**
  * @author kenl
  */
-public interface GameEvent {
+public interface Protocol {
 
-  public void setPayload(Object payload);
-  public Object getPayload();
+  public String getName();
 
-  public void setPlayerSession(PlayerSession ps);
-  public PlayerSession getPlayerSession();
-
-  public void setOpcode(Object opcode);
-  public Object getOpCode();
-
-  public void setEventType(Object eventType);
-  public Object getEventType();
-
-  public void setEventName(String eventName);
-  public String getEventName();
-
-  public void setTimeStamp(long timeStamp);
-  public long getTimeStamp();
+  public void applyProtocol(PlayerSession playerSession,
+      boolean clearExistingProtocolHandlers);
 
 }

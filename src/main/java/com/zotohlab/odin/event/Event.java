@@ -12,22 +12,24 @@
  ??*/
 
 
-package com.zotoh.odin.event;
+package com.zotohlab.odin.event;
 
-
+/**
+ * @author kenl
+ */
 public interface Event {
 
   public int getType();
 
   public void setType(int type);
 
-  public Object getSource();
+  public Object getData();
 
-  public void setSource(Object source);
+  public void setData(Object d);
 
-  public EventContext getEventContext();
+  public EventContext getContext();
 
-  public void setEventContext(EventContext context);
+  public void setContext(EventContext context);
 
   public long getTimeStamp();
 

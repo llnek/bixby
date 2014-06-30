@@ -11,8 +11,9 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.frwk.netty;
+package com.zotohlab.frwk.netty;
 
+import com.zotohlab.frwk.netty.NettyFW;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -153,7 +154,7 @@ public class NettyMessageBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeByte(byte b) {
+  public com.zotohlab.frwk.netty.MessageBuffer<ByteBuf> writeByte(byte b) {
     buffer.writeByte(b);
     return this;
   }

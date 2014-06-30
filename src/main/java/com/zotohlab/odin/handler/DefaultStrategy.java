@@ -1,6 +1,20 @@
+/*??
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+ ??*/
 
-package com.zotoh.odin.protocols;
 
+package com.zotohlab.odin.handler;
+
+import com.zotohlab.odin.event.Events;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
@@ -13,40 +27,35 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 import java.util.List;
 
-
 /**
- * This is the default protocol of nadron. If incoming event is of type
- * LOG_IN and also has appropriate protocol version as defined in the
- * {@link Events} class, then this protocol will be applied. The 3rd and 4th
- * bytes of the incoming transmission are searched to get this information.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
  */
-public class DefaultProtocol implements ConnectProtocol {
+public class DefaultStrategy implements ConnectStrategy {
 
   private LengthFieldPrepender lengthFieldPrepender;
   private int frameSize = 1024;
   private EventDecoder eventDecoder;
-  private ConnectHandler handler;
+  private ChannelHandler handler;
 
   @Override
-  public boolean applyProtocol( ChannelPipeline pipe, ButeBuf buf) {
+  public boolean applyProtocol( ChannelPipeline pipe, ByteBuf buf) {
     boolean matched = false;
     int opcode = buf.getUnsignedByte(buf.readerIndex() + 2);
     int protocolVersion = buf.getUnsignedByte(buf.readerIndex() + 3);
-    if (isNadProtocol(opcode, protocolVersion)) {
+    if ( isOdinProtocol(opcode, protocolVersion)) {
       pipe.addLast("framer", createLengthBasedFrameDecoder());
       pipe.addLast("eventDecoder", eventDecoder);
-      pipe.addLast(LOGIN_HANDLER_NAME, handler);
+      pipe.addLast(HANDLER_NAME, handler);
       pipe.addLast("lengthFieldPrepender", lengthFieldPrepender);
       matched = true;
     }
     return matched;
   }
 
-  protected boolean isNadProtocol(int magic1, int magic2) {
-    return ((magic1 == LOG_IN || magic1 == RECONNECT) && magic2 == PROTCOL_VERSION);
+  protected boolean isOdinProtocol(int magic1, int magic2) {
+    return ((magic1 == Events.LOG_IN ||
+                magic1 == Events.RECONNECT) &&
+                magic2 == Events.PROTCOL_VERSION);
   }
 
   public ChannelHandler createLengthBasedFrameDecoder() {

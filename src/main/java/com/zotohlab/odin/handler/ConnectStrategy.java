@@ -1,30 +1,30 @@
+/*??
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+ ??*/
 
-package com.zotoh.odin.protocols;
+
+package com.zotohlab.odin.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 
-
 /**
- * Applies a protocol to the incoming pipeline which will handle login.
- * Subsequent protocol may also be manipulated by these login handlers.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
  */
-public interface ConnectProtocol {
+public interface ConnectStrategy {
 
   public static final String HANDLER_NAME = "connect-handler";
 
-  /**
-   * Apply a protocol on the pipeline to handle login. Implementations will
-   * first "search" if the incoming bytes correspond to the implementations
-   * protocol, only if they match, the correspoinding protocol will be
-   * applied.
-   *
-   * @return Returs true if the protocol was applied, else false.
-   */
   public boolean applyProtocol(ChannelPipeline pipeline, ByteBuf buf);
 
 }

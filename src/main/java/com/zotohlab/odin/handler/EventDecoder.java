@@ -8,32 +8,20 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
+package com.zotohlab.odin.handler;
 
-package com.zotohlab.odin.game;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageDecoder;
 
-/**
- * @author kenl
- */
-public interface GameEvent {
+import java.util.List;
 
-  public void setPayload(Object payload);
-  public Object getPayload();
 
-  public void setPlayerSession(PlayerSession ps);
-  public PlayerSession getPlayerSession();
-
-  public void setOpcode(Object opcode);
-  public Object getOpCode();
-
-  public void setEventType(Object eventType);
-  public Object getEventType();
-
-  public void setEventName(String eventName);
-  public String getEventName();
-
-  public void setTimeStamp(long timeStamp);
-  public long getTimeStamp();
+@Sharable
+public abstract class EventDecoder extends MessageToMessageDecoder<ByteBuf> {
 
 }
+

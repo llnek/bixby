@@ -1,38 +1,43 @@
-package com.zotoh.odin.handlers;
+/*??
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+ ??*/
+
+package com.zotohlab.odin.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class can be used to switch login-protocol based on the incoming bytes
- * sent by a client. So, based on the incoming bytes, it is possible to set SSL
- * enabled, normal HTTP, default nadron protocol, or custom user protocol for
- * allowing client to login to nadron. The appropriate protocol searcher needs
- * to be injected to this class. Since this class is a non-singleton, the
- * protocol searchers and other dependencies should actually be injected to
- * {@link ProtocolMultiplexerChannelInitializer} class and then passed in while
- * instantiating this class.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
  */
 public class ProtocolMuxDecoder extends ByteToMessageDecoder {
 
   private static final Logger _log = LoggerFactory.getLogger(ProtocolMuxDecoder.class);
-  private final LoginProtocol loginProtocol;
+  private final ConnectStrategy connectStrategy;
   private final int bytesForProtocolCheck;
 
   public Logger tlog() { return _log; }
 
-  public ProtocolMuxDecoder(int bytesForProtocolCheck, LoginProtocol loginProtocol) {
-    this.loginProtocol = loginProtocol;
+  public ProtocolMuxDecoder(int bytesForProtocolCheck, ConnectStrategy s) {
+    this.connectStrategy = s;
     this.bytesForProtocolCheck = bytesForProtocolCheck;
   }
 
@@ -47,7 +52,7 @@ public class ProtocolMuxDecoder extends ByteToMessageDecoder {
     Channel ch = ctx.channel();
     byte[] bits;
 
-    if (!loginProtocol.applyProtocol(in, pipe)) {
+    if (!connectStrategy.applyProtocol( pipe, in)) {
       bits = new byte[bytesForProtocolCheck];
       in.getBytes(in.readerIndex(), bits, 0, bytesForProtocolCheck);
       tlog().error(
@@ -65,8 +70,8 @@ public class ProtocolMuxDecoder extends ByteToMessageDecoder {
     ctx.close();
   }
 
-  public LoginProtocol getLoginProtocol() {
-    return loginProtocol;
+  public ConnectStrategy getLoginProtocol() {
+    return connectStrategy;
   }
 
   public int getBytesForProtocolCheck() {

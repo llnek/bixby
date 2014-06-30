@@ -11,9 +11,11 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.event;
 
-
+/**
+ * @author kenl
+ */
 public interface NetworkEvent extends Event {
 
   public void setReliable(boolean b);

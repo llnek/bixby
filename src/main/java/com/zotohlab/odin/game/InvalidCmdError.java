@@ -11,11 +11,14 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
+import java.io.Serializable;
 
+/**
+ * @author kenl
+ */
 public class InvalidCmdError extends Exception {
-  private static final long serialVersionUID = -1L;
 
   public InvalidCmdError(String msg) {
     super(msg);

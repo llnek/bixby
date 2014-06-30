@@ -11,11 +11,14 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
 
 import java.util.Properties;
 
+/**
+ * @author kenl
+ */
 public interface GameStartListener {
 
   public void start(boolean isInitialized, Properties properties);

@@ -11,9 +11,13 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.event;
+package com.zotohlab.odin.event;
 
+import com.zotohlab.odin.game.Session;
 
+/**
+ * @author kenl
+ */
 public interface EventContext {
 
   public void setSession(Session session);

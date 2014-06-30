@@ -11,13 +11,18 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
 
+import com.zotohlab.odin.event.Event;
+import com.zotohlab.odin.event.NetworkEvent;
+import com.zotohlab.odin.protocol.Protocol;
 import io.netty.channel.Channel;
 import java.util.Set;
 
-
+/**
+ * @author kenl
+ */
 public interface GameRoom {
 
   public PlayerSession createPlayerSession(Player player);
@@ -38,8 +43,8 @@ public interface GameRoom {
   public void setGame(Game g);
   public Game getGame();
 
-  public void setStateManager(StateManager stateManager);
-  public StateManager getStateManager();
+  public void setStateManager(GameStateManager stateManager);
+  public GameStateManager getStateManager();
 
   public void setProtocol(Protocol p);
   public Protocol getProtocol();

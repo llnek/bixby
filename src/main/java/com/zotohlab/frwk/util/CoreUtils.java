@@ -117,5 +117,11 @@ public enum CoreUtils {
     return StringUtils.split( nsb(s), "\u0000");
   }
 
+  public static void syncExec (Object syncObj, Runnable r) {
+    synchronized(syncObj) {
+      r.run();
+    }
+  }
+
 }
 

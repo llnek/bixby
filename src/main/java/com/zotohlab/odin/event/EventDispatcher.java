@@ -11,17 +11,20 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.event;
+package com.zotohlab.odin.event;
 
 
-import java.util.List;
+import com.zotohlab.odin.game.Session;
+import java.util.Collection;
 
-
+/**
+ * @author kenl
+ */
 public interface EventDispatcher {
 
   public void addHandler( EventHandler eventHandler );
 
-  public List<EventHandler> getHandlers(int eventType);
+  public Collection<EventHandler> getHandlers(int eventType);
 
   public void removeHandler(EventHandler eventHandler);
 

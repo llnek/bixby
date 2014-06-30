@@ -11,29 +11,21 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlab.odin.game;
+
+package com.zotohlab.odin.event;
+
+import com.zotohlab.odin.network.TCPSender;
+import com.zotohlab.odin.network.UDPSender;
 
 /**
  * @author kenl
  */
-public interface GameEvent {
+public interface ConnectEvent extends Event {
 
-  public void setPayload(Object payload);
-  public Object getPayload();
+  public TCPSender getTCPSender();
+  public UDPSender getUDPSender();
 
-  public void setPlayerSession(PlayerSession ps);
-  public PlayerSession getPlayerSession();
-
-  public void setOpcode(Object opcode);
-  public Object getOpCode();
-
-  public void setEventType(Object eventType);
-  public Object getEventType();
-
-  public void setEventName(String eventName);
-  public String getEventName();
-
-  public void setTimeStamp(long timeStamp);
-  public long getTimeStamp();
+  public void setTCPSender(TCPSender s);
+  public void setUDPSender(UDPSender s);
 
 }

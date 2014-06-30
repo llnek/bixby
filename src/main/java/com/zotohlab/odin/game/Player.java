@@ -11,9 +11,11 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
-
+/**
+ * @author kenl
+ */
 public interface Player {
 
   public void setId(Object uniqueKey);

@@ -129,6 +129,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ThrowUOE "Force throw an unsupported operation exception."
+
+  [msg]
+
+  (throw (UnsupportedOperationException. ^String msg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ThrowBadArg "Force throw a bad parameter exception."
 
   [msg]

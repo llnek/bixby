@@ -11,7 +11,7 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.frwk.netty;
+package com.zotohlab.frwk.netty;
 
 
 import io.netty.buffer.ByteBuf;
@@ -184,18 +184,6 @@ public interface MessageBuffer<T> {
   public String readString();
 
   public String[] readStrings(int numOfStrings);
-
-  /**
-   * Reads an object from the underlying buffer and transform the bytes using
-   * the supplied transformer to any desired object. This method provide the
-   * flexibility to decode the bytes to any type of object.
-   *
-   * @param converter
-   *            The converter which will transform the bytes to relevant
-   *            object.
-   * @return The object of type V, or null if the underlying buffer is null or
-   *         empty.
-   */
 
   MessageBuffer<T> writeByte(byte b);
 

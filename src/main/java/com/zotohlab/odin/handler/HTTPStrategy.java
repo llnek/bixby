@@ -1,5 +1,18 @@
+/*??
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+ ??*/
 
-package com.zotoh.odin.protocols;
+
+package com.zotohlab.odin.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -14,16 +27,11 @@ import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import java.util.List;
 
 /**
- * Searches the incoming bytes of a client connection to determine if its an
- * HTTP connection, in which case Websocket or HTTP related handlers will be
- * applied on the piepline.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
  */
-public class HTTPProtocol implements ConnectProtocol {
+public class HTTPStrategy implements ConnectStrategy {
 
-  private WEBSocketHandler handler;
+  private ChannelHandler handler;
 
   @Override
   public boolean applyProtocol( ChannelPipeline pipe, ByteBuf buf) {
@@ -32,10 +40,10 @@ public class HTTPProtocol implements ConnectProtocol {
     boolean matched = false;
     if (isHttp(b1,b2)) {
       pipe.addLast("decoder", new HttpRequestDecoder());
-      pipeline.addLast("aggregator", new HttpObjectAggregator(65536));
-      pipeline.addLast("encoder", new HttpResponseEncoder());
-      pipeline.addLast("handler", new WebSocketServerProtocolHandler("/odinsocket"));
-      pipeline.addLast(LOGIN_HANDLER_NAME, handler);
+      pipe.addLast("aggregator", new HttpObjectAggregator(65536));
+      pipe.addLast("encoder", new HttpResponseEncoder());
+      pipe.addLast("handler", new WebSocketServerProtocolHandler("/odin/websock"));
+      pipe.addLast(HANDLER_NAME, handler);
       matched = true;
     }
     return matched;

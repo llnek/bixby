@@ -11,61 +11,67 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
-
-import java.util.List;
+package com.zotohlab.odin.game;
 
 
+import com.zotohlab.odin.event.Event;
+import com.zotohlab.odin.event.EventDispatcher;
+import com.zotohlab.odin.event.EventHandler;
+import com.zotohlab.odin.network.TCPSender;
+import com.zotohlab.odin.network.UDPSender;
+
+import java.util.Collection;
+
+/**
+ * @author kenl
+ */
 public interface Session {
 
-  enum Status
-  {
-    NOT_CONNECTED, CONNECTING, CONNECTED, CLOSED
-  }
+  enum Status {
+    NOT_CONNECTED,
+    CONNECTING ,
+    CONNETED,
+    CLOSED
+  };
 
-  Object getId();
+  public Object getId();
+  public void setId(Object id);
 
-  void setId(Object id);
+  public void setAttr(Object key, Object value);
+  public Object getAttr(Object key);
+  public void removeAttr(Object key);
 
-  void setAttribute(String key, Object value);
+  public void onEvent(Event event);
+  public EventDispatcher getEventDispatcher();
 
-  Object getAttribute(String key);
+  public boolean isWriteable();
+  public void setWriteable(boolean writeable);
 
-  void removeAttribute(String key);
+  public boolean isUDPEnabled();
+  public void setUDPEnabled(boolean isEnabled);
 
-  void onEvent(Event event);
+  public boolean isShuttingDown();
 
-  EventDispatcher getEventDispatcher();
+  public long getCreationTime();
 
-  boolean isWriteable();
-  void setWriteable(boolean writeable);
+  public long getLastReadWriteTime();
 
-  boolean isUDPEnabled();
-  void setUDPEnabled(boolean isEnabled);
+  public void setStatus(Status status);
+  public Status getStatus();
 
-  boolean isShuttingDown();
+  public boolean isConnected();
 
-  long getCreationTime();
+  public void addHandler(EventHandler eventHandler);
+  public void removeHandler(EventHandler eventHandler);
+  public Collection<EventHandler> getEventHandlers(int eventType);
 
-  long getLastReadWriteTime();
+  public void close();
 
-  void setStatus(Status status);
-  Status getStatus();
+  public void setUDPSender(UDPSender s);
+  public UDPSender getUDPSender();
 
-  boolean isConnected();
+  public void setTCPSender(TCPSender s);
+  public TCPSender getTCPSender();
 
-  void addHandler(EventHandler eventHandler);
-  void removeHandler(EventHandler eventHandler);
-  List<EventHandler> getEventHandlers(int eventType);
-
-  void close();
-
-  public void setUdpSender(Fast udpSender);
-
-  public Fast getUdpSender();
-
-  public void setTcpSender(Reliable tcpSender);
-
-  public Reliable getTcpSender();
 }
 

@@ -11,12 +11,14 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
-
+/**
+ * @author kenl
+ */
 public interface CmdParser {
 
-  public void parse(Object command) throws InvalidCommandError;
+  public void parse(Object command) throws InvalidCmdError;
 
 }
 

@@ -11,9 +11,14 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.game;
+package com.zotohlab.odin.game;
 
+import com.zotohlab.odin.event.Event;
+import com.zotohlab.odin.protocol.Protocol;
 
+/**
+ * @author kenl
+ */
 public interface PlayerSession extends Session {
 
   public Player getPlayer();

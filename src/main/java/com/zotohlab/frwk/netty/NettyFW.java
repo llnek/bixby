@@ -17,16 +17,19 @@ package com.zotohlab.frwk.netty;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import com.zotohlab.frwk.io.*;
 import io.netty.channel.*;
 import io.netty.buffer.ByteBuf;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.CharsetUtil;
 import org.slf4j.*;
 
 
@@ -330,10 +333,10 @@ public enum NettyFW {
     ByteBuf buffer = null;
     try {
       if (charset == null) { charset = CharsetUtil.UTF_8; }
-      stringBuffer = copiedBuffer(msg, charset);
+      stringBuffer = Unpooled.copiedBuffer(msg, charset);
       len= stringBuffer.readableBytes();
       lengthBuffer = Unpooled.buffer(2);
-      lengthBuffer.writeShort(length);
+      lengthBuffer.writeShort(len);
       buffer = Unpooled.wrappedBuffer(lengthBuffer, stringBuffer);
     }
     catch (Throwable e) {

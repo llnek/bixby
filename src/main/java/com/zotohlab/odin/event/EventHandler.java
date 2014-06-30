@@ -11,9 +11,12 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotoh.odin.event;
+package com.zotohlab.odin.event;
 
 
+/**
+ * @author kenl
+ */
 public interface EventHandler {
 
   public void onEvent(Event event);
