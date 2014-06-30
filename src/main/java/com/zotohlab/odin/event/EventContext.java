@@ -23,9 +23,8 @@ public interface EventContext {
   public void setSession(Session session);
   public Session getSession();
 
-
-  public void setTag(Object tag);
-  public Object getTag();
+  public void setAtt(Object att);
+  public Object getAtt();
 
 }
 

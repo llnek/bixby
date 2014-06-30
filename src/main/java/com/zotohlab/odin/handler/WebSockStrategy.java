@@ -11,21 +11,15 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
+package com.zotohlab.odin.handler;
 
-package com.zotohlab.odin.event;
-
-import com.zotohlab.odin.network.TCPSender;
-import com.zotohlab.odin.network.UDPSender;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 /**
  * @author kenl
  */
-public interface ConnectEvent extends Event {
-
-  public TCPSender getTcpSender();
-  public UDPSender getUdpSender();
-
-  public void setTcpSender(TCPSender s);
-  public void setUdpSender(UDPSender s);
-
+@ChannelHandler.Sharable
+public abstract class WebSockStrategy extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 }

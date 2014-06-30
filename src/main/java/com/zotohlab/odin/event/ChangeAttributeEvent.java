@@ -14,18 +14,46 @@
 
 package com.zotohlab.odin.event;
 
-import com.zotohlab.odin.network.TCPSender;
-import com.zotohlab.odin.network.UDPSender;
-
 /**
  * @author kenl
  */
-public interface ConnectEvent extends Event {
+public class ChangeAttributeEvent extends DefaultEvent {
 
-  public TCPSender getTcpSender();
-  public UDPSender getUdpSender();
+  private Object key;
+  private Object value;
 
-  public void setTcpSender(TCPSender s);
-  public void setUdpSender(UDPSender s);
+  public ChangeAttributeEvent(Object key, Object value) {
+    this.key = key;
+    this.value = value;
+  }
+
+  @Override
+  public int getType() {
+    return Events.CHANGE_ATTRIBUTE;
+  }
+
+  public Object getKey() {
+    return key;
+  }
+
+  public void setKey(Object key) {
+    this.key = key;
+  }
+
+  public Object getValue() {
+    return value;
+  }
+
+  public void setValue(Object value) {
+    this.value = value;
+    this.setSource(value);
+  }
+
+  @Override
+  public String toString() {
+    return "ChangeAttributeEvent [key=" + key + ", value=" + value
+        + ", type=" + type + "]";
+  }
 
 }
+

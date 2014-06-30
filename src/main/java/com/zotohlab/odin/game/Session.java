@@ -35,7 +35,7 @@ public interface Session {
   };
 
   public Object getId();
-  public void setId(Object id);
+  //public void setId(Object id);
 
   public void setAttr(Object key, Object value);
   public Object getAttr(Object key);
@@ -47,14 +47,14 @@ public interface Session {
   public boolean isWriteable();
   public void setWriteable(boolean writeable);
 
-  public boolean isUDPEnabled();
-  public void setUDPEnabled(boolean isEnabled);
+  public boolean isUdpEnabled();
+  public void setUdpEnabled(boolean isEnabled);
 
   public boolean isShuttingDown();
 
   public long getCreationTime();
 
-  public long getLastReadWriteTime();
+  public long getLastRWTime();
 
   public void setStatus(Status status);
   public Status getStatus();
@@ -63,15 +63,15 @@ public interface Session {
 
   public void addHandler(EventHandler eventHandler);
   public void removeHandler(EventHandler eventHandler);
-  public Collection<EventHandler> getEventHandlers(int eventType);
+  public Collection<EventHandler> getHandlers(int eventType);
 
   public void close();
 
-  public void setUDPSender(UDPSender s);
-  public UDPSender getUDPSender();
+  public void setUdpSender(UDPSender s);
+  public UDPSender getUdpSender();
 
-  public void setTCPSender(TCPSender s);
-  public TCPSender getTCPSender();
+  public void setTcpSender(TCPSender s);
+  public TCPSender getTcpSender();
 
 }
 

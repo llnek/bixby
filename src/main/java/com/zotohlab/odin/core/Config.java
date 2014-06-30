@@ -12,20 +12,20 @@
  ??*/
 
 
-package com.zotohlab.odin.event;
+package com.zotohlab.odin.core;
 
-import com.zotohlab.odin.network.TCPSender;
-import com.zotohlab.odin.network.UDPSender;
 
-/**
- * @author kenl
- */
-public interface ConnectEvent extends Event {
+public enum NadronConfig {
+;
 
-  public TCPSender getTcpSender();
-  public UDPSender getUdpSender();
+  public static final String RECONNECT_REGISTRY = "RECONNECT_REGISTRY";
+  public static final String RECONNECT_KEY = "RECONNECT_KEY";
 
-  public void setTcpSender(TCPSender s);
-  public void setUdpSender(UDPSender s);
+  /**
+   * By default wait for 3 minutes for remote client to reconnect, before
+   * closing session.
+   */
+  public static final int RECONNECT_DELAY_SECS =  3 * 60;
 
 }
+

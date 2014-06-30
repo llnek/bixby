@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FileUtils;
@@ -117,9 +118,9 @@ public enum CoreUtils {
     return StringUtils.split( nsb(s), "\u0000");
   }
 
-  public static void syncExec (Object syncObj, Runnable r) {
+  public static Object syncExec (Object syncObj, Callable r) throws Exception {
     synchronized(syncObj) {
-      r.run();
+      return r.call();
     }
   }
 

@@ -23,9 +23,9 @@ public interface Event {
 
   public void setType(int type);
 
-  public Object getData();
+  public Object getSource();
 
-  public void setData(Object d);
+  public void setSource(Object d);
 
   public EventContext getContext();
 

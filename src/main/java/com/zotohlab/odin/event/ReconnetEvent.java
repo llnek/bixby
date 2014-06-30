@@ -14,18 +14,22 @@
 
 package com.zotohlab.odin.event;
 
+
 import com.zotohlab.odin.network.TCPSender;
-import com.zotohlab.odin.network.UDPSender;
 
 /**
  * @author kenl
  */
-public interface ConnectEvent extends Event {
+public class ReconnetEvent extends DefaultConnectEvent {
 
-  public TCPSender getTcpSender();
-  public UDPSender getUdpSender();
+  public ReconnetEvent(TCPSender tcp) {
+    super(tcp, null);
+  }
 
-  public void setTcpSender(TCPSender s);
-  public void setUdpSender(UDPSender s);
+  @Override
+  public int getType() {
+    return Events.RECONNECT;
+  }
 
 }
+

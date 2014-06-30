@@ -1,161 +1,80 @@
 (ns ^{
       }
 
-  cmzlabsclj.odin.event.event
+  cmzlabsclj.odin.event.core
 
-  (:import (com.zotoh.odin.event Events EventContext NetworkEvent Event))
+  (:import (com.zotohlab.odin.event Events EventContext 
+                                    NetworkEvent Event))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyEventContext ""
 
-  (^EventContext [] (ReifyEventContext nil nil))
-  (^EventContext [session tag]
-    (let [ impl (MakeMMap) ]
-      (.setf! impl :session session)
-      (.setf! impl :tag tag)
-      (reify EventContext
-        (setSession [_ s] (.setf! impl :session s))
-        (getSession [_] (.getf impl :session))
-        (.setTag [_ obj] (.setf! impl :tag obj))
-        (.getTag [_] (.getf impl :tag)))
-    )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ReifyEvent ""
+;; 
+(defn ReifyContextualEvent ""
 
   ^Event
-  []
+  [^Object source eventType ^EventContext ctx]
 
-  (let [ impl (MakeMMap) ]
-    (reify Event
-      (setType [_ t] (.setf! impl :type t))
-      (getType [_] (.getf impl :type))
-      (setData [_ s] (.setf! impl :data s))
-      (getData [_] (.getf impl :data))
-      (setContext [_ x] (.setf! impl :ctx x))
-      (getContext [_] (.getf impl :ctx))
-      (setTimestamp[_ t] (.setf! impl :ts t))
-      (getTimestamp [_] (.getf impl :ts)))
+  (doto (DefaultEvent.)
+    (.setSource source)
+    (.setType eventType)
+    (.setContext ctx)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; 
+(defn ReifyEvent ""
+
+  (^Event [^Object source eventType] (ReifyEvent source eventType nil))
+  
+  (^Event [^Object source eventType ^Session session]
+          (ReifyContextualEvent source eventType
+                                (if (nil? session)
+                                  nil
+                                  (DefaultEventContext.)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
 (defn ReifyNetworkEvent ""
 
-  (^NetworkEvent [^Event evt reliable?]
-    (let [ ne (ReifyNetworkEvent) ]
-      (.setReliable ne (if reliable? true false))
-      (.setTimestamp ne (.getTimestamp evt))
-      (.setData ne (.getData evt))
-      (.setContext ne (.getContext evt))
-      ne))
-  (^NetworkEvent []
-    (let [ impl (MakeMMap) ]
-      (.setf! impl :type Events/NETWORK_MESSAGE)
-      (.setf! impl :reliable true)
-      (reify
-        NetworkEvent
-        (setReliable [_ r] (.setf! impl :reliable r))
-        (isReliable [_] (.getf impl :reliable))
+  (^NetworkEvent [^Object source] (ReifyNetworkEvent source true))
 
-        Event
-        (setType [_ t] (.setf! impl :type t))
-        (getType [_] (.getf impl :type))
-        (setData [_ s] (.setf! impl :data s))
-        (getData [_] (.getf impl :data))
-        (setContext [_ x] (.setf! impl :ctx x))
-        (getContext [_] (.getf impl :ctx))
-        (setTimestamp[_ t] (.setf! impl :ts t))
-        (getTimestamp [_] (.getf impl :ts)))
-    ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- makeConnectXXXEvent ""
-
-  []
-
-  (let [ impl (MakeMMap) ]
-    [
-    (reify
-      ConnectEvent
-      (setSender [_ s] (.setf! impl :sender s))
-      (getSender [_] (.getf impl :sender))
-
-      Event
-      (setType [_ t] nil) ;; can't do that
-      (getType [_] (.getf impl :type))
-      (setData [_ s] (.setf! impl :data s))
-      (getData [_] (.getf impl :data))
-      (setContext [_ x] (.setf! impl :ctx x))
-      (getContext [_] (.getf impl :ctx))
-      (setTimestamp[_ t] (.setf! impl :ts t))
-      (getTimestamp [_] (.getf impl :ts)))
-    impl
-    ]
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ReifyReconnectEvent ""
-
-  ^ReconnectEvent
-  [sender]
-
-  (let [ [evt impl] (makeConnectXXXEvent) ]
-    (.setf! impl :type Events/RECONNECT)
-    (.setSender evt sender)
-    evt
-  ))
+  (^NetworkEvent [^Object source reliable?]
+    (doto (DefaultNetworkEvent.)
+      (.setReliable reliable?)
+      (.setSource source))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ReifyConnectEvent ""
 
-  ^ConnectEvent
-  []
+  ^ConnectEvent 
+  [^TCPSender tcp ^UDPSender udp]
 
-  (let [ [evt impl] (makeConnectXXXEvent) ]
-    (.setf! impl :type Events/CONNECT)
-    evt
-  ))
+  (DefaultConnectEvent. tcp udp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  
+(defn ReifySessionMessage ""
+
+  ^Event
+  [^Object source]
+
+  (ReifyEvent source Events/SESSION_MESSAGE))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+(defn ReifyChangeAttrEvent ""
+
+  [^Object attr ^Object value]
+
+  (ChangeAttributeEvent. attr value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyChangeAttrEvent ""
-
-  ^ChangeAttrEvent
-  [attr value]
-
-  (let [ impl (MakeMMap) ]
-    (.setf! impl :type Events/CHANGE_ATTRIBUTE)
-    (.setf! impl :attrvalue value)
-    (.setf! impl :attr attr)
-    (reify
-      ChangeAttrEvent
-      (getAttr [_]
-        (if-let [ a (.getf impl :attr) ]
-          [a (.getf impl :attrvalue)]
-          nil))
-      (setAttr [_ k v]
-        (.setf! impl :attrvalue v)
-        (.setf! impl :attr k))
-
-      Event
-      (setType [_ t] (.setf! impl :type t))
-      (getType [_] (.getf impl :type))
-      (setData [_ s] (.setf! impl :data s))
-      (getData [_] (.getf impl :data))
-      (setContext [_ x] (.setf! impl :ctx x))
-      (getContext [_] (.getf impl :ctx))
-      (setTimestamp[_ t] (.setf! impl :ts t))
-      (getTimestamp [_] (.getf impl :ts)))
-  ))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -218,8 +137,8 @@
   (when-not (nil? session)
     (CoreUtils/syncExec
       session
-      (reify Runnable
-        (run [_]
+      (reify Callable
+        (call [_]
           (if-let [ ^SessionRegistry reg (.getAttr Config/RECONNECT_REGISTRY) ]
             (when (not= Session/STATUS_CLOSED (.getStatus session))
               (.removeSession reg (.getAttr session Config/RECONNECT_KEY)))))))
@@ -320,5 +239,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private event-eof nil)
+(def ^:private core-eof nil)
 

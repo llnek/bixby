@@ -11,21 +11,43 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlab.odin.event;
 
-import com.zotohlab.odin.network.TCPSender;
-import com.zotohlab.odin.network.UDPSender;
+
+import com.zotohlab.odin.event.EventContext;
+import com.zotohlab.odin.game.Session;
 
 /**
  * @author kenl
  */
-public interface ConnectEvent extends Event {
+public class DefaultEventContext implements EventContext {
 
-  public TCPSender getTcpSender();
-  public UDPSender getUdpSender();
+  private Object attachement;
+  private Session session;
 
-  public void setTcpSender(TCPSender s);
-  public void setUdpSender(UDPSender s);
+  public DefaultEventContext(Session session, Object attachement) {
+    this.attachement = attachement;
+    this.session = session;
+  }
+
+  public DefaultEventContext() {
+  }
+
+  public Object getAtt() {
+    return attachement;
+  }
+
+  public Session getSession() {
+    return session;
+  }
+
+  public void setAtt(Object attachement) {
+    this.attachement = attachement;
+  }
+
+  public void setSession(Session session) {
+    this.session = session;
+  }
 
 }
+
