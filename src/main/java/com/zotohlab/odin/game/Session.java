@@ -60,6 +60,7 @@ public interface Session {
   public Status getStatus();
 
   public boolean isConnected();
+  public boolean isClosed();
 
   public void addHandler(EventHandler eventHandler);
   public void removeHandler(EventHandler eventHandler);
