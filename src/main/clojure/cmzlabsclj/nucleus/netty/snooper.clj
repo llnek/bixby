@@ -37,6 +37,7 @@
                                      SSLServerHShake DemuxedMsg
                                      Expect100
                                      HttpDemux ErrorCatcher))
+  (:import [io.netty.bootstrap ServerBootstrap])
   (:import (com.zotohlab.frwk.netty NettyFW))
   (:import (com.zotohlab.frwk.io XData))
   (:import (com.google.gson JsonObject JsonElement)))
@@ -209,7 +210,7 @@
   [^String host port ^JsonObject options]
 
   (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (snooper) options)
-         ch (ServerSide/start bs host port) ]
+         ch (ServerSide/start bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 

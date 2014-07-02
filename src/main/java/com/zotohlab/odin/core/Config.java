@@ -15,7 +15,7 @@
 package com.zotohlab.odin.core;
 
 
-public enum NadronConfig {
+public enum Config {
 ;
 
   public static final String RECONNECT_REGISTRY = "RECONNECT_REGISTRY";

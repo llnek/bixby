@@ -27,6 +27,7 @@
   (:import (io.netty.handler.codec.http HttpHeaders HttpMessage HttpResponse
                                         LastHttpContent
                                         HttpServerCodec))
+  (:import [io.netty.bootstrap ServerBootstrap])
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
   (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
                                      SSLServerHShake DemuxedMsg
@@ -142,7 +143,7 @@
   [^String host port ^JsonObject options]
 
   (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide  (fileCfgtor) options)
-         ch (ServerSide/start bs host port) ]
+         ch (ServerSide/start bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 

@@ -32,6 +32,7 @@
                                         HttpRequest QueryStringDecoder
                                         LastHttpContent
                                         HttpResponse HttpServerCodec))
+  (:import [io.netty.bootstrap ServerBootstrap])
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
   (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
                                      SSLServerHShake DemuxedMsg
@@ -88,7 +89,7 @@
   [^String host port ^JsonObject options callback]
 
   (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (discarder callback) options)
-         ch (ServerSide/start bs host port) ]
+         ch (ServerSide/start bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 
