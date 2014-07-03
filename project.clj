@@ -8,8 +8,8 @@
             :distribution :repo
             :comments "same as Clojure"}
 
-  :eval-in-leiningen true
   :min-lein-version "2.0.0"
+  :eval-in :leiningen
 
   :plugins [[lein-localrepo "0.5.3"]
             [lein-depgraph "0.1.0"]
@@ -178,7 +178,6 @@
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
 
   :javac-options ["-target" "1.7" "-source" "1.7" "-Xlint:-options"]
-  :warn-on-reflection true
 
   :global-vars {*warn-on-reflection* true
                 *assert* false}
