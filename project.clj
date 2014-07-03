@@ -8,9 +8,12 @@
             :distribution :repo
             :comments "same as Clojure"}
 
+  :eval-in-leiningen true
   :min-lein-version "2.0.0"
 
-  :plugins [[lein-localrepo "0.5.3"]]
+  :plugins [[lein-localrepo "0.5.3"]
+            [lein-depgraph "0.1.0"]
+            ]
 
   :dependencies [
     [bouncycastle/bcprov-jdk15on "150"]
@@ -27,7 +30,7 @@
 
     [net.sourceforge.jregex/jregex "1.2_01"]
     [net.sf.jopt-simple/jopt-simple "4.6"]
-    [com.google.guava/guava "16.0.1"]
+    [com.google.guava/guava "17.0"]
     [com.google.code.findbugs/jsr305 "2.0.3"]
     [joda-time/joda-time "2.3"]
     [org.zeroturnaround/zt-exec "1.6"]
@@ -39,7 +42,8 @@
 
     [com.google.code.gson/gson "2.2.4"]
 
-    [org.apache.commons/commons-lang3 "3.3"]
+    [org.apache.commons/commons-compress "1.8.1"]
+    [org.apache.commons/commons-lang3 "3.3.2"]
     [commons-net/commons-net "3.3"]
     [commons-io/commons-io "2.4"]
 
@@ -51,72 +55,82 @@
     [com.sun.mail/javax.mail "1.5.1"]
 
     [org.apache.ivy/ivy "2.3.0"]
-    [org.apache.ant/ant "1.9.3"]
-    [org.apache.ant/ant-launcher "1.9.3"]
-    [org.apache.ant/ant-junit4 "1.9.3"]
-    [org.apache.ant/ant-junit "1.9.3"]
-    [org.apache.ant/ant-apache-log4j "1.9.3" :exclusions [ log4j] ]
+    [org.apache.ant/ant "1.9.4"]
+    [org.apache.ant/ant-launcher "1.9.4"]
+    [org.apache.ant/ant-junit4 "1.9.4"]
+    [org.apache.ant/ant-junit "1.9.4"]
+    [org.apache.ant/ant-apache-log4j "1.9.4" :exclusions [ log4j] ]
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ ant] ]
-    [org.codehaus.gant/gant_groovy2.2 "1.9.10"]
+    [org.codehaus.gant/gant_groovy2.3 "1.9.11"]
 
     [com.jolbox/bonecp "0.8.0.RELEASE"]
 
     [org.apache.httpcomponents/httpcore-nio "4.3.2"]
     [org.apache.httpcomponents/httpcore "4.3.2"]
     [org.apache.httpcomponents/httpclient "4.3.3"]
-    [io.netty/netty-all "4.0.19.Final"]
+    [io.netty/netty-all "4.0.21.Final"]
 
-    [org.eclipse.jetty/jetty-xml "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-server "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-continuation "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-servlet "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-server "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-util "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-security "9.1.5.v20140505"]
-    [org.eclipse.jetty/jetty-webapp "9.1.5.v20140505"]
-    [org.eclipse.jetty.websocket/websocket-api "9.1.5.v20140505"]
-    [org.eclipse.jetty.websocket/websocket-common "9.1.5.v20140505"]
-    [org.eclipse.jetty.websocket/websocket-servlet "9.1.5.v20140505"]
-    [org.eclipse.jetty.websocket/websocket-client "9.1.5.v20140505"]
-    [org.eclipse.jetty.websocket/websocket-server "9.1.5.v20140505"]
+    [com.corundumstudio.socketio/netty-socketio "1.6.5"]
 
-    [org.codehaus.groovy/groovy-all "2.3.0"]
-    [org.scala-lang/scala-library "2.11.0"]
-    [org.scala-lang/scala-compiler "2.11.0"]
+    [org.eclipse.jetty/jetty-xml "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-server "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-continuation "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-servlet "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-server "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-util "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-security "9.2.1.v20140609"]
+    [org.eclipse.jetty/jetty-webapp "9.2.1.v20140609"]
+    [org.eclipse.jetty.websocket/websocket-api "9.2.1.v20140609"]
+    [org.eclipse.jetty.websocket/websocket-common "9.2.1.v20140609"]
+    [org.eclipse.jetty.websocket/websocket-servlet "9.2.1.v20140609"]
+    [org.eclipse.jetty.websocket/websocket-client "9.2.1.v20140609"]
+    [org.eclipse.jetty.websocket/websocket-server "9.2.1.v20140609"]
+
+    [org.codehaus.groovy/groovy-all "2.3.3"]
+    [org.scala-lang/scala-library "2.11.1"]
+    [org.scala-lang/scala-compiler "2.11.1"]
     [com.sun.tools/tools "1.7.0"]
     [javassist/javassist "3.12.1.GA"]
 
-    [com.github.spullara.mustache.java/compiler "0.8.14"]
+    [com.github.spullara.mustache.java/compiler "0.8.15"]
     [org.fusesource.scalate/scalate-core_2.10 "1.6.1"]
     [org.freemarker/freemarker "2.3.20"]
 
     [com.yahoo.platform.yui/yuicompressor "2.4.7" :exclusions [rhino] ]
 
     [javax/geronimo-jms_1.1_spec "1.1.1"]
-    [com.h2database/h2 "1.3.175"]
+    [com.h2database/h2 "1.3.176"]
     [org.postgresql/postgresql "9.3-1101.jdbc41"]
-    [net.sf.ehcache/ehcache "2.8.1"]
+    [net.sf.ehcache/ehcache "2.8.3"]
 
     [org.clojure/math.numeric-tower "0.0.4"]
     [org.clojure/math.combinatorics "0.0.7"]
-    [org.clojure/tools.logging "0.2.6"]
+    [org.clojure/tools.logging "0.3.0"]
     [org.clojure/tools.nrepl "0.2.3"]
     [org.clojure/data.codec "0.1.0"]
-    [org.clojure/java.jdbc "0.3.3"]
+    [org.clojure/java.jdbc "0.3.4"]
     [org.clojure/java.data "0.1.1"]
     [org.clojure/java.jmx "0.2.0"]
-    [org.clojure/data.json "0.2.4"]
+    [org.clojure/data.json "0.2.5"]
     [org.clojure/data.xml "0.0.7"]
+    [org.clojure/core.cache "0.6.3"]
+    [org.clojure/tools.cli "0.3.1"]
+    [org.clojure/data.generators "0.1.2"]
+    [org.clojure/core.async "0.1.303.0-886421-alpha"]
+    [potemkin/potemkin "0.3.4"]
+    [lamina/lamina "0.5.2"]
+    [aleph/aleph "0.3.2"]
     [org.clojure/clojure "1.6.0"]
-    [org.clojure/clojurescript "0.0-2197"]
+    [org.clojure/clojurescript "0.0-2261"]
 
     [org.apache.shiro/shiro-core "1.2.3"]
-    [rhino/js "1.7R2"]
-    [jline/jline "0.9.9"]
+    [org.mozilla/rhino "1.7R4"]
+    [jline/jline "2.12"]
 
-    [org.scalatest/scalatest_2.10 "2.1.0"]
+    [org.scalatest/scalatest_2.11 "2.2.0"]
     [net.mikera/cljunit "0.3.0"]
     [junit/junit "4.11"]
+    [com.googlecode.jslint4java/jslint4java "2.0.5"]
 
     ]
 
@@ -163,7 +177,7 @@
                      :injections [(prn (into {} (System/getProperties)))]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
 
-  :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
+  :javac-options ["-target" "1.7" "-source" "1.7" "-Xlint:-options"]
   :warn-on-reflection true
 
   :global-vars {*warn-on-reflection* true

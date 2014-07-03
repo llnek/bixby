@@ -62,8 +62,10 @@
   (:import (jregex Matcher Pattern)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; leiningen compile throws errors, probably compiling twice ???
+(try
 (def ^:private GOOD_FLAG (AttributeKey/valueOf "good-msg"))
+(catch Throwable e#))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
