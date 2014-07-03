@@ -169,9 +169,11 @@
     <dependency org="org.clojure" name="tools.cli" rev="0.3.1" conf="libjar->default"/>
     <dependency org="org.clojure" name="data.generators" rev="0.1.2" conf="libjar->default"/>
     <dependency org="org.clojure" name="core.async" rev="0.1.303.0-886421-alpha" conf="libjar->default"/>
+    <!--
     <dependency org="potemkin" name="potemkin" rev="0.3.4" conf="libjar->default"/>
     <dependency org="lamina" name="lamina" rev="0.5.2" conf="libjar->default"/>
     <dependency org="aleph" name="aleph" rev="0.3.2" conf="libjar->default"/>
+    -->
     <dependency org="org.clojure" name="clojure" rev="1.6.0" conf="libjar->default"/>
     <dependency org="org.clojure" name="clojurescript" rev="0.0-2261" conf="libjar->default">
     </dependency>

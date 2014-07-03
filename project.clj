@@ -117,9 +117,9 @@
     [org.clojure/tools.cli "0.3.1"]
     [org.clojure/data.generators "0.1.2"]
     [org.clojure/core.async "0.1.303.0-886421-alpha"]
-    [potemkin/potemkin "0.3.4"]
-    [lamina/lamina "0.5.2"]
-    [aleph/aleph "0.3.2"]
+    ;;[potemkin/potemkin "0.3.4"]
+    ;;[lamina/lamina "0.5.2"]
+    ;;[aleph/aleph "0.3.2"]
     [org.clojure/clojure "1.6.0"]
     [org.clojure/clojurescript "0.0-2261"]
 
