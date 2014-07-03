@@ -13,31 +13,22 @@
 
 package com.zotohlab.frwk.netty;
 
-import com.zotohlab.frwk.netty.NettyFW;
+import com.zotohlab.frwk.net.MessageBuffer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 /**
- * This class is an implementation of the {@link MessageBuffer} interface. It is a thin
- * wrapper over the the Netty {@link ByteBuf} with some additional methods
- * for string and object read write. It does not expose all methods of the
- * ChannelBuffer, instead it has a method {@link #getNativeBuffer()} which can
- * be used to retrieve the buffer and then call the appropriate method. For
- * writing to the buffer, this class uses {@link ByteBuf}
- * implementation.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
  */
-public class NettyMessageBuffer implements MessageBuffer<ByteBuf> {
+public class MsgBuffer implements MessageBuffer<ByteBuf> {
 
   private final ByteBuf buffer;
 
-  public NettyMessageBuffer() {
+  public MsgBuffer() {
     buffer = Unpooled.buffer();
   }
 
-  public NettyMessageBuffer(ByteBuf buffer) {
+  public MsgBuffer(ByteBuf buffer) {
     this.buffer = buffer;
   }
 
@@ -62,7 +53,7 @@ public class NettyMessageBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public ByteBuf getNativeBuffer() {
+  public ByteBuf getImpl() {
     return buffer;
   }
 
@@ -154,7 +145,7 @@ public class NettyMessageBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public com.zotohlab.frwk.netty.MessageBuffer<ByteBuf> writeByte(byte b) {
+  public MessageBuffer<ByteBuf> writeByte(byte b) {
     buffer.writeByte(b);
     return this;
   }

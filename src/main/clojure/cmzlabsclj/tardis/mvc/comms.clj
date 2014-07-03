@@ -40,7 +40,7 @@
   (:import (io.netty.handler.codec.http HttpRequest HttpResponseStatus HttpResponse
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec HttpMessage
+                                        HttpMessage
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.buffer Unpooled))

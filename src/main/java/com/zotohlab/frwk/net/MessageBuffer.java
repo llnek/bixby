@@ -11,28 +11,16 @@
 // Copyright (c) 2014 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlab.frwk.netty;
+package com.zotohlab.frwk.net;
 
 
-import io.netty.buffer.ByteBuf;
+
 import java.nio.ByteBuffer;
 
 
-
 /**
- * A message buffer can be used for communicating complex messages between
- * server and client or between sessions. It is a read-destroy buffer meaning,
- * that once a value is read off it, it cannot be read again as the internal
- * pointers would have moved to the post-read position. This buffer could hold
- * almost any sort of data in binary form <code>int</code>, <code>String</code>,
- * other native types, <code>byte[]</code> of serialized objects and so on. It
- * contains helper methods for writing and reading back the data. If a Netty
- * implementation is used, then it would be a wrapper over the
- * {@link ByteBuf}. For Java api, it would be probably be wrapper over a
- * nio {@link ByteBuffer}.
- *
- * @author Abraham Menacherry
- *
+ * @author kenl
+ * @param <T>
  */
 public interface MessageBuffer<T> {
 
@@ -289,11 +277,9 @@ public interface MessageBuffer<T> {
    * Returns the actual buffer implementation that is wrapped in this
    * MessageBuffer instance.
    *
-   * @return This method will return the underlying buffer. For Netty that
-   *         would be a {@link ByteBuf}, for a core java implementation
-   *         it could be {@link ByteBuffer}
+   * @return This method will return the underlying buffer.
    */
-  public T getNativeBuffer();
+  public T getImpl();
 
   /**
    * Returns the backing byte array of this buffer.

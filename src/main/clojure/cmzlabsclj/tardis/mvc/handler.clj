@@ -45,7 +45,7 @@
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec
+                                        HttpResponseEncoder HttpRequestDecoder
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.bootstrap ServerBootstrap))
@@ -173,9 +173,10 @@
         (-> pipe
             ;;(.addLast "ssl" (SSLServerHShake/getInstance options))
             (FlashHandler/addLast )
-            (.addLast "codec" (HttpServerCodec.))
+            (.addLast "decoder" (HttpRequestDecoder.))
             (.addLast "filter" (routeFilter co))
             (HttpDemux/addLast )
+            (.addLast "encoder" (HttpResponseEncoder.))
             (.addLast "chunker" (ChunkedWriteHandler.))
             (.addLast "disp" (msgDispatcher co co))
             (ErrorCatcher/addLast ))

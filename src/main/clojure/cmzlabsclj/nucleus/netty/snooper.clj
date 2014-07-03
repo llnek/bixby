@@ -31,7 +31,8 @@
                                         ServerCookieEncoder Cookie
                                         HttpRequest QueryStringDecoder
                                         LastHttpContent
-                                        HttpResponse HttpServerCodec))
+                                        HttpRequestDecoder
+                                        HttpResponse HttpResponseEncoder))
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
   (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
                                      SSLServerHShake DemuxedMsg
@@ -196,8 +197,9 @@
              ssl (SSLServerHShake/getInstance options) ]
         (when-not (nil? ssl)(.addLast pipe "ssl" ssl))
         (doto pipe
-          (.addLast "codec" (HttpServerCodec.))
+          (.addLast "decoder" (HttpRequestDecoder.))
           (Expect100/addLast )
+          (.addLast "encoder" (HttpResponseEncoder.))
           (.addLast "chunker" (ChunkedWriteHandler.))
           (.addLast "snooper" (snooperHandler))
           (ErrorCatcher/addLast))))

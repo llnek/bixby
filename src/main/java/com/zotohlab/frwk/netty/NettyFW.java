@@ -187,11 +187,6 @@ public enum NettyFW {
     writeFlush( ctx.channel(), makeFullHttpReply(100));
   }
 
-  public static ChannelPipeline addServerCodec(ChannelPipeline pipe) {
-    pipe.addLast( "codec", new HttpServerCodec());
-    return pipe;
-  }
-
   public static ChannelPipeline addWriteChunker(ChannelPipeline pipe) {
     pipe.addLast( "ChunkedWriteHandler", new ChunkedWriteHandler() );
     return pipe;

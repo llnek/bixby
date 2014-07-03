@@ -41,7 +41,8 @@
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec DefaultCookie
+                                        HttpRequestDecoder
+                                        HttpResponseEncoder DefaultCookie
                                         HttpHeaders$Names LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (org.apache.commons.codec.net URLCodec))
@@ -530,8 +531,9 @@
              ssl (SSLServerHShake/getInstance options) ]
         (if ssl (.addLast pipe "ssl" ssl))
         (-> pipe
-            (.addLast "codec" (HttpServerCodec.))
+            (.addLast "decoder" (HttpRequestDecoder.))
             (HttpDemux/addLast )
+            (.addLast "encoder" (HttpResponseEncoder.))
             (.addLast "chunker" (ChunkedWriteHandler.))
             (.addLast "disp" (msgDispatcher co))
             (ErrorCatcher/addLast ))

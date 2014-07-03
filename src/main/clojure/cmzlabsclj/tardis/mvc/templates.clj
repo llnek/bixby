@@ -22,7 +22,7 @@
   (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
-                                        HttpServerCodec HttpMethod
+                                        HttpMethod
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder))
   (:import (io.netty.channel Channel ChannelHandler

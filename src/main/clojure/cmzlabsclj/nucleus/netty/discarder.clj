@@ -30,8 +30,8 @@
                                         HttpResponseStatus CookieDecoder
                                         ServerCookieEncoder Cookie
                                         HttpRequest QueryStringDecoder
-                                        LastHttpContent
-                                        HttpResponse HttpServerCodec))
+                                        LastHttpContent HttpRequestDecoder
+                                        HttpResponse HttpResponseEncoder))
   (:import [io.netty.bootstrap ServerBootstrap])
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
   (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
@@ -76,8 +76,9 @@
              ^JsonObject options o
              ssl (SSLServerHShake/getInstance options) ]
         (doto pipe
-          (.addLast "codec" (HttpServerCodec.))
+          (.addLast "decoder" (HttpRequestDecoder.))
           (Expect100/addLast)
+          (.addLast "encoder" (HttpResponseEncoder.))
           (.addLast "discarder" (discardHandler callback))
           (ErrorCatcher/addLast ))))
   ))

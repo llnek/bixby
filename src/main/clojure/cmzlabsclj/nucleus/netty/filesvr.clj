@@ -25,8 +25,8 @@
                              SimpleChannelInboundHandler
                              ChannelFuture ChannelHandler ))
   (:import (io.netty.handler.codec.http HttpHeaders HttpMessage HttpResponse
-                                        LastHttpContent
-                                        HttpServerCodec))
+                                        LastHttpContent HttpRequestDecoder
+                                        HttpResponseEncoder))
   (:import [io.netty.bootstrap ServerBootstrap])
   (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
   (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
@@ -127,8 +127,9 @@
              ssl (SSLServerHShake/getInstance options) ]
         (when-not (nil? ssl)(.addLast pipe "ssl" ssl))
         (doto pipe
-          (.addLast "codec" (HttpServerCodec.))
+          (.addLast "decoder" (HttpRequestDecoder.))
           (HttpDemux/addLast )
+          (.addLast "encoder" (HttpResponseEncoder.))
           (.addLast "chunker" (ChunkedWriteHandler.))
           (.addLast "filer" (fileHandler options))
           (ErrorCatcher/addLast ))))
