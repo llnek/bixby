@@ -43,10 +43,13 @@ import static com.zotohlab.frwk.util.CoreUtils.nsb;
 public enum NettyFW {
 ;
 
+  public static final AttributeKey FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
+  public static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
   public static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
   public static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
   public static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
   public static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
+
 
 
   private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
