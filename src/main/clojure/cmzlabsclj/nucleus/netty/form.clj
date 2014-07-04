@@ -229,6 +229,13 @@
 ;; the decoder is annotated as sharable.  this acts like the singleton.
 (def *HTTP-FORMPOST-DECODER* (reifyFormPostDecoder))
 
+(defn ReifyFormPostDecoderSingleton ""
+
+  ^ChannelHandler
+  []
+
+  *HTTP-FORMPOST-DECODER*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private form-eof nil)

@@ -45,26 +45,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- isFormPost ""
 
   [^HttpMessage msg ^String method]
 
-  (let [ ct (cstr/lower-case (nsb (HttpHeaders/getHeader msg "content-type"))) ]
+  (let [ct (-> (HttpHeaders/getHeader msg "content-type")
+               nsb
+               strim
+               cstr/lower-case) ]
     ;; multipart form
     (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
          (or (>= (.indexOf ct "multipart/form-data") 0)
              (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
   ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- doDemux ""
 
-  [^ChannelHandlerContext ctx ^HttpRequest req impl]
+  [^ChannelHandlerContext ctx
+   ^HttpRequest req
+   ^cmzlabsclj.nucleus.util.core.MutableMap impl]
 
-  (let [ info (NettyFW/extractMsgInfo req)
-         ch (.channel ctx)
-         mt (-> info (.get "method")(.getAsString))
-         uri (-> info (.get "uri")(.getAsString)) ]
+  (let [info (NettyFW/extractMsgInfo req)
+        ch (.channel ctx)
+        mt (-> info (.get "method")(.getAsString))
+        uri (-> info (.get "uri")(.getAsString)) ]
     (log/debug "first level demux of message\n{}" req)
     (log/debug info)
     (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
@@ -78,15 +87,18 @@
         (Expect100/handle100 ctx req)
         (if (isFormPost ctx mt)
           (do
-            (.setf! impl :delegate (FormPostCodec/getInstance))
+            (.setf! impl :delegate (ReifyFormPostSingleton))
             (.addProperty info "formpost" true))
-          (.setf! impl :delegate (RequestCodec/getInstance)))))
+          (.setf! impl :delegate (ReifyRequestDecoderSingleton)))))
     (when-let [ ^AuxHttpDecoder d (.getf impl :delegate) ]
       (.channelReadXXX d ctx req))
   ))
 
-(defn ReifyHttpDemux ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyHttpHandler ""
 
+  ^ChannelHandler
   []
 
   (let [impl (MakeMMap)]
@@ -110,10 +122,55 @@
             (ThrowIOE "Fatal error while reading http message.")))))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- isWEBSock ""
 
+  [^HttpRequest req]
 
+  (let [ws (-> (HttpHeaders/getHeader req "upgrade")
+               nsb
+               strim
+               cstr/lower-case)
+        mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
+               nsb
+               strim) ]
+    (and (= "websocket" ws)
+         (= "GET" (if (StringUtils/isNotEmpty mo)
+                    mo
+                    (-> req (.getMethod)(.name))))))
+  ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- makeDemuxer ""
 
+  ^ChannelHandler
+  [^String uri]
+
+  (proxy [ChannelInboundHandlerAdapter][]
+    (channelRead [ c obj]
+      (let [^ChannelHandlerContext ctx c
+            ^Object msg obj
+            ch (.channel ctx) ]
+        (cond
+          (and (instance? HttpRequest msg)
+               (isWEBSock msg))
+          (do
+            (.addAfter pipe
+                       "HttpResponseEncoder"
+                       "WebSocketServerProtocolHandler"
+                       (WebSocketServerProtocolHandler. uri)))
+
+          :else
+          (do
+            (.addAfter pipe
+                       "HttpDemuxer"
+                       "ReifyHttpHandler"
+                       (reifyHttpHandler))))
+        (.fireChannelRead pipe msg)
+        (.remove pipe this)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,7 +185,7 @@
             ^ChannelPipeline pipe pl]
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxer" (HttpDemuxer. (:uri cfg)))
+          (.addLast "HttpDemuxer" (makeDemuxer (:uri cfg)))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
           (.addLast (:name cfg) (apply (:handler cfg) options))

@@ -88,6 +88,12 @@
 ;; the decoder is annotated as sharable.  this acts like the singleton.
 (def *HTTP-REQ-DECODER* (reifyRequestDecoder))
 
+(defn ReifyRequestDecoderSingleton ""
+
+  ^ChannelHandler
+  []
+  *HTTP-REQ-DECODER*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private request-eof nil)
