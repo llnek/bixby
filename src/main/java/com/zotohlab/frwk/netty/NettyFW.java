@@ -17,6 +17,7 @@ package com.zotohlab.frwk.netty;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
@@ -29,8 +30,11 @@ import java.util.*;
 
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 import org.slf4j.*;
+
+import static com.zotohlab.frwk.util.CoreUtils.nsb;
 
 
 /**
@@ -38,6 +42,12 @@ import org.slf4j.*;
  */
 public enum NettyFW {
 ;
+
+  public static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
+  public static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
+  public static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
+  public static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
+
 
   private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
   public static Logger tlog() {
@@ -51,6 +61,116 @@ public enum NettyFW {
       }
     };
   }
+
+  @SuppressWarnings("unchecked")
+  public static void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
+    ctx.attr(akey).set(aval);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static  void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
+    ctx.attr(akey).remove();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
+    return ctx.attr(akey).get();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static void setAttr( Channel ch, AttributeKey akey,  Object aval) {
+    ch.attr(akey).set(aval);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static void delAttr(Channel ch , AttributeKey akey) {
+    ch.attr(akey).remove();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Object getAttr( Channel ch, AttributeKey akey) {
+    return ch.attr(akey).get();
+  }
+
+
+  public static JsonObject extractHeaders( HttpHeaders hdrs) {
+    JsonObject sum= new JsonObject();
+    JsonArray arr;
+    for (String n : hdrs.names()) {
+      arr= new JsonArray();
+      for (String s : hdrs.getAll(n)) {
+        arr.add( new JsonPrimitive(s));
+      }
+      if (arr.size() > 0) {
+        sum.add(n.toLowerCase(), arr);
+      }
+    }
+    return sum;
+  }
+
+  public static JsonObject extractParams(QueryStringDecoder decr) {
+    JsonObject sum= new JsonObject();
+    JsonArray arr;
+    for (Map.Entry<String,List<String>> en : decr.parameters().entrySet()) {
+      arr= new JsonArray();
+      for (String s : en.getValue()) {
+        arr.add( new JsonPrimitive(s));
+      }
+      if (arr.size() > 0) {
+        sum.add(en.getKey(), arr);
+      }
+    }
+    return sum;
+  }
+
+
+  public static JsonObject extractMsgInfo( HttpMessage msg) {
+    JsonObject info= new JsonObject();
+    info.addProperty("is-chunked", HttpHeaders.isTransferEncodingChunked(msg));
+    info.addProperty("keep-alive", HttpHeaders.isKeepAlive(msg));
+    info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
+    info.addProperty("protocol", msg.getProtocolVersion().toString());
+    info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
+    info.addProperty("uri2", "");
+    info.addProperty("query", "");
+    info.addProperty("wsock", false);
+    info.addProperty("uri", "");
+    info.addProperty("status", "");
+    info.addProperty("code", 0);
+    info.add("params", new JsonObject());
+    info.addProperty("method", "");
+    info.add("headers", extractHeaders(msg.headers() ));
+    if (msg instanceof HttpResponse) {
+      HttpResponseStatus s= ((HttpResponse) msg).getStatus();
+      info.addProperty("status", nsb(s.reasonPhrase()));
+      info.addProperty("code", s.code());
+    }
+    else
+    if (msg instanceof HttpRequest) {
+      String mo = HttpHeaders.getHeader(msg, "X-HTTP-Method-Override");
+      HttpRequest req = (HttpRequest) msg;
+      String uriStr = nsb( req.getUri()  );
+      String md = req.getMethod().name();
+      String mt;
+      if (mo != null && mo.length() > 0) {
+        mt= mo;
+      } else {
+        mt=md;
+      }
+      QueryStringDecoder dc = new QueryStringDecoder(uriStr);
+      info.addProperty("method", mt.toUpperCase());
+      info.add("params", extractParams(dc));
+      info.addProperty("uri", dc.path());
+      info.addProperty("uri2", req.getUri());
+      int pos = uriStr.indexOf('?');
+      if (pos >= 0) {
+        info.addProperty("query", uriStr.substring(pos));
+      }
+    }
+    return info;
+  }
+
+
 
   public static ChannelPipeline getPipeline(ChannelHandlerContext ctx) {
     return ctx.pipeline();

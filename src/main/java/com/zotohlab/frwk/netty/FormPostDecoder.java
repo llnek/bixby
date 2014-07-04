@@ -41,22 +41,18 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 
 import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+import static com.zotohlab.frwk.netty.NettyFW.*;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class FormPostCodec extends RequestCodec {
+public class FormPostDecoder extends AuxHttpDecoder {
 
   protected static final AttributeKey FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
   protected static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
 
-  private static FormPostCodec shared = new FormPostCodec();
-  public static FormPostCodec getInstance() {
-    return shared;
-  }
-
-  public FormPostCodec() {
+  protected FormPostDecoder() {
   }
 
   protected void resetAttrs(ChannelHandlerContext ctx) {

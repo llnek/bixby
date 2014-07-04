@@ -46,52 +46,87 @@ import java.util.Map;
 import static com.zotohlab.frwk.util.CoreUtils.*;
 import static com.zotohlab.frwk.io.IOUtils.*;
 
+import static com.zotohlab.frwk.netty.NettyFW.*;
+
 /**
  * @author kenl
  */
 @SuppressWarnings("unchecked")
 public abstract class AuxHttpDecoder extends SimpleInboundHandler {
 
-  protected static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
-  protected static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
-  protected static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
-  protected static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
-
   private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
   public Logger tlog() { return _log; }
 
+  protected void resetAttrs(ChannelHandlerContext ctx) {
+    ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
+    if (buf != null) buf.release();
+
+    delAttr(ctx,MSGINFO_KEY);
+    delAttr(ctx,CBUF_KEY);
+    delAttr(ctx,XDATA_KEY);
+    delAttr(ctx,XOS_KEY);
+  }
+
+  protected void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+    if (msg instanceof HttpContent) {} else {
+      return;
+    }
+    tlog().debug("Got a valid http-content chunk, part of a message.");
+    CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
+    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
+    XData xs = (XData) getAttr( ctx, XDATA_KEY);
+    HttpContent chk = (HttpContent ) msg;
+    if ( !xs.hasContent() && tooMuchData(cbuf,msg)) {
+      os = switchBufToFile( ctx, cbuf);
+    }
+    if (chk.content().isReadable()) {
+      if (os == null) {
+        chk.retain();
+        cbuf.addComponent( chk.content());
+        cbuf.writerIndex( cbuf.writerIndex() + chk.content().readableBytes() );
+      } else {
+        flushToFile( os, chk);
+      }
+    }
+    maybeFinzMsgChunk( ctx, msg);
+  }
+
+  protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+    if (msg instanceof LastHttpContent) {} else  {
+      return;
+    }
+    tlog().debug("Got the final last-http-content chunk, end of message.");
+    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
+    OutputStream os = (OutputStream) getAttr( ctx, XOS_KEY);
+    ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
+    XData xs = (XData) getAttr( ctx, XDATA_KEY);
+    addMoreHeaders( ctx, ((LastHttpContent ) msg).trailingHeaders());
+    if (os == null) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      slurpByteBuf( cbuf, baos);
+      xs.resetContent(baos);
+    } else {
+      org.apache.commons.io.IOUtils.closeQuietly(os);
+    }
+    long olen = info.get("clen").getAsLong();
+    long clen =  xs.size();
+    if (olen != clen) {
+      tlog().warn("content-length read from headers = " +  olen +  ", new clen = " + clen );
+      info.addProperty("clen", clen);
+    }
+    finzAndDone(ctx, info, xs);
+  }
+
+  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+      throws IOException {
+    resetAttrs(ctx);
+    tlog().debug("fire fully decoded message to the next handler");
+    ctx.fireChannelRead( new DemuxedMsg(info, xs));
+  }
+
+
   public String getName() {
     return this.getClass().getSimpleName();
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
-    ctx.attr(akey).set(aval);
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
-    ctx.attr(akey).remove();
-  }
-
-  @SuppressWarnings("unchecked")
-  protected Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
-    return ctx.attr(akey).get();
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void setAttr( Channel ch, AttributeKey akey,  Object aval) {
-    ch.attr(akey).set(aval);
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void delAttr(Channel ch , AttributeKey akey) {
-    ch.attr(akey).remove();
-  }
-
-  @SuppressWarnings("unchecked")
-  protected Object getAttr( Channel ch, AttributeKey akey) {
-    return ch.attr(akey).get();
   }
 
   protected void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
@@ -100,82 +135,6 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
       buf.readBytes( os, len);
       os.flush();
     }
-  }
-
-  protected JsonObject extractHeaders( HttpHeaders hdrs) {
-    JsonObject sum= new JsonObject();
-    JsonArray arr;
-    for (String n : hdrs.names()) {
-      arr= new JsonArray();
-      for (String s : hdrs.getAll(n)) {
-        arr.add( new JsonPrimitive(s));
-      }
-      if (arr.size() > 0) {
-        sum.add(n.toLowerCase(), arr);
-      }
-    }
-    return sum;
-  }
-
-  protected JsonObject extractParams(QueryStringDecoder decr) {
-    JsonObject sum= new JsonObject();
-    JsonArray arr;
-    for (Map.Entry<String,List<String>> en : decr.parameters().entrySet()) {
-      arr= new JsonArray();
-      for (String s : en.getValue()) {
-        arr.add( new JsonPrimitive(s));
-      }
-      if (arr.size() > 0) {
-        sum.add(en.getKey(), arr);
-      }
-    }
-    return sum;
-  }
-
-  protected JsonObject extractMsgInfo( HttpMessage msg) {
-    JsonObject info= new JsonObject();
-    info.addProperty("is-chunked", HttpHeaders.isTransferEncodingChunked(msg));
-    info.addProperty("keep-alive", HttpHeaders.isKeepAlive(msg));
-    info.addProperty("host", HttpHeaders.getHeader(msg, "Host", ""));
-    info.addProperty("protocol", msg.getProtocolVersion().toString());
-    info.addProperty("clen", HttpHeaders.getContentLength(msg, 0));
-    info.addProperty("uri2", "");
-    info.addProperty("query", "");
-    info.addProperty("wsock", false);
-    info.addProperty("uri", "");
-    info.addProperty("status", "");
-    info.addProperty("code", 0);
-    info.add("params", new JsonObject());
-    info.addProperty("method", "");
-    info.add("headers", extractHeaders(msg.headers() ));
-    if (msg instanceof HttpResponse) {
-      HttpResponseStatus s= ((HttpResponse) msg).getStatus();
-      info.addProperty("status", nsb(s.reasonPhrase()));
-      info.addProperty("code", s.code());
-    }
-    else
-    if (msg instanceof HttpRequest) {
-      String mo = HttpHeaders.getHeader(msg, "X-HTTP-Method-Override");
-      HttpRequest req = (HttpRequest) msg;
-      String uriStr = nsb( req.getUri()  );
-      String md = req.getMethod().name();
-      String mt;
-      if (mo != null && mo.length() > 0) {
-        mt= mo;
-      } else {
-        mt=md;
-      }
-      QueryStringDecoder dc = new QueryStringDecoder(uriStr);
-      info.addProperty("method", mt.toUpperCase());
-      info.add("params", extractParams(dc));
-      info.addProperty("uri", dc.path());
-      info.addProperty("uri2", req.getUri());
-      int pos = uriStr.indexOf('?');
-      if (pos >= 0) {
-        info.addProperty("query", uriStr.substring(pos));
-      }
-    }
-    return info;
   }
 
   protected boolean tooMuchData(ByteBuf content, Object chunc) {
@@ -217,7 +176,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
   protected void addMoreHeaders(ChannelHandlerContext ctx, HttpHeaders hds) {
     JsonObject info = (JsonObject) getAttr(ctx ,MSGINFO_KEY);
     JsonObject old = info.getAsJsonObject("headers");
-    JsonObject nnw= extractHeaders(hds);
+    JsonObject nnw= NettyFW.extractHeaders(hds);
     for (Map.Entry<String,JsonElement> en: nnw.entrySet()) {
       old.add(en.getKey(), en.getValue());
     }

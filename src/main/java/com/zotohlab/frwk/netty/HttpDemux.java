@@ -79,8 +79,8 @@ public class HttpDemux extends AuxHttpDecoder {
     tlog().debug("HttpDemux: first level demux of message\n{}", inboundObject);
     tlog().debug( "" + info.toString());
 
-    setAttr(ctx, MSGINFO_KEY, info);
-    setAttr(ch, MSGINFO_KEY, info);
+//    setAttr(ctx, MSGINFO_KEY, info);
+  //  setAttr(ch, MSGINFO_KEY, info);
     myDelegate=null;
 
     if (uri.trim().startsWith("/favicon.")) {
