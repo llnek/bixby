@@ -111,6 +111,15 @@ public enum NettyFW {
     return sum;
   }
 
+  public static void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
+    int len = buf==null ? 0 :  buf.readableBytes();
+    if (len > 0) {
+      buf.readBytes( os, len);
+      os.flush();
+    }
+  }
+
+
   public static JsonObject extractParams(QueryStringDecoder decr) {
     JsonObject sum= new JsonObject();
     JsonArray arr;

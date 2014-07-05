@@ -14,35 +14,28 @@
 
   cmzlabsclj.nucleus.netty.snooper
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [notnil? Try! TryC] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ])
-  (:import (java.io IOException File))
-  (:import (io.netty.buffer Unpooled))
-  (:import (io.netty.util Attribute AttributeKey CharsetUtil))
-  (:import (java.util Map$Entry))
-  (:import (io.netty.channel ChannelHandlerContext Channel ChannelPipeline
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? ] ]
+        [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ]
+        [cmzlabsclj.nucleus.netty.io])
+  (:import [io.netty.buffer Unpooled]
+           [io.netty.util Attribute AttributeKey CharsetUtil]
+           [java.util Map$Entry]
+           [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
                              SimpleChannelInboundHandler
-                             ChannelFuture ChannelHandler ))
-  (:import (io.netty.handler.codec.http HttpHeaders HttpMessage  HttpVersion
+                             ChannelHandler]
+           [io.netty.handler.codec.http HttpHeaders HttpVersion
                                         HttpContent DefaultFullHttpResponse
                                         HttpResponseStatus CookieDecoder
                                         ServerCookieEncoder Cookie
                                         HttpRequest QueryStringDecoder
-                                        LastHttpContent
-                                        HttpRequestDecoder
-                                        HttpResponse HttpResponseEncoder))
-  (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
-  (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
-                                     SSLServerHShake DemuxedMsg
-                                     Expect100
-                                     HttpDemux ErrorCatcher))
-  (:import [io.netty.bootstrap ServerBootstrap])
-  (:import (com.zotohlab.frwk.netty NettyFW))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (com.google.gson JsonObject JsonElement)))
-
+                                        LastHttpContent]
+           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator]
+           [io.netty.bootstrap ServerBootstrap]
+           [com.zotohlab.frwk.netty NettyFW]
+           [com.zotohlab.frwk.io XData]
+           [com.google.gson JsonObject]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -56,30 +49,28 @@
    ^StringBuilder buf
    ^HttpContent curObj ]
 
-  (let [ ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
-         response (DefaultFullHttpResponse.
-                    (HttpVersion/HTTP_1_1)
-                    (HttpResponseStatus/OK)
-                    (Unpooled/copiedBuffer (nsb buf) (CharsetUtil/UTF_8)))
-         clen (-> response (.content)(.readableBytes)) ]
-
+  (let [ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
+        response (DefaultFullHttpResponse.
+                    HttpVersion/HTTP_1_1
+                    HttpResponseStatus/OK
+                    (Unpooled/copiedBuffer (nsb buf) CharsetUtil/UTF_8))
+        clen (-> response (.content)(.readableBytes)) ]
     (-> response (.headers)(.set "content-type" "text/plain; charset=UTF-8"))
     (-> response (.headers)(.set "content-length" (str clen)))
-
     (when ka (-> response (.headers)(.set "connection" "keep-alive")))
-
-    (let [ cs (CookieDecoder/decode (nsb cookieBuf)) ]
+    (let [cs (CookieDecoder/decode (nsb cookieBuf)) ]
       (if (.isEmpty cs)
         (do
-          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode "key1" "value1")))
-          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode "key2" "value2"))))
-        (doseq [ v (seq cs) ]
-          (-> response (.headers)(.add "set-cookie" (ServerCookieEncoder/encode ^Cookie v))))))
-
+          (-> response (.headers)(.add "set-cookie" 
+                                       (ServerCookieEncoder/encode "key1" "value1")))
+          (-> response (.headers)(.add "set-cookie" 
+                                       (ServerCookieEncoder/encode "key2" "value2"))))
+        (doseq [v (seq cs) ]
+          (-> response (.headers)(.add "set-cookie" 
+                                       (ServerCookieEncoder/encode ^Cookie v))))))
     (.setLength cookieBuf 0)
     (.setLength buf 0)
     (.write ctx response)
-
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,10 +82,10 @@
    ^StringBuilder buf
    ^HttpRequest req ]
 
-  (let [ dc (QueryStringDecoder. (.getUri req))
-         ka (HttpHeaders/isKeepAlive req)
-         headers (.headers req)
-         pms (.parameters dc) ]
+  (let [dc (QueryStringDecoder. (.getUri req))
+        ka (HttpHeaders/isKeepAlive req)
+        headers (.headers req)
+        pms (.parameters dc) ]
     (-> (.attr ctx (AttributeKey. "keepalive"))(.set ka))
     (doto buf
           (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
@@ -141,16 +132,16 @@
    ^StringBuilder buf
    ^HttpContent msg]
 
-  (let [ content (.content msg) ]
+  (let [content (.content msg) ]
     (when (.isReadable content)
       (doto buf
         (.append "CONTENT: ")
-        (.append (.toString content (CharsetUtil/UTF_8)))
+        (.append (.toString content CharsetUtil/UTF_8))
         (.append "\r\n")))
     (when (instance? LastHttpContent msg)
       (.append buf "END OF CONTENT\r\n")
-      (let [ ^LastHttpContent trailer msg
-             thds (.trailingHeaders trailer) ]
+      (let [^LastHttpContent trailer msg
+            thds (.trailingHeaders trailer) ]
         (when-not (.isEmpty thds)
           (.append buf "\r\n")
           (reduce (fn [memo ^String n]
@@ -173,14 +164,19 @@
   ^ChannelHandler
   []
 
-  (let [ cookies (StringBuilder.)
-         buf (StringBuilder.) ]
+  (let [cookies (StringBuilder.)
+        buf (StringBuilder.) ]
     (proxy [SimpleChannelInboundHandler][]
       (channelRead0 [ ctx msg ]
         (cond
-          (instance? HttpRequest msg) (handleReq ctx cookies buf msg)
-          (instance? HttpContent msg) (handlec ctx cookies buf msg)
-          :else nil)))
+          (instance? HttpRequest msg) 
+          (handleReq ctx cookies buf msg)
+
+          (instance? HttpContent msg) 
+          (handlec ctx cookies buf msg)
+
+          :else 
+          nil)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,20 +186,7 @@
   ^PipelineConfigurator
   []
 
-  (proxy [PipelineConfigurator][]
-    (assemble [p o]
-      (let [ ^ChannelPipeline pipe p
-             ^JsonObject options o
-             ssl (SSLServerHShake/getInstance options) ]
-        (when-not (nil? ssl)(.addLast pipe "ssl" ssl))
-        (doto pipe
-          (.addLast "decoder" (HttpRequestDecoder.))
-          (Expect100/addLast )
-          (.addLast "encoder" (HttpResponseEncoder.))
-          (.addLast "chunker" (ChunkedWriteHandler.))
-          (.addLast "snooper" (snooperHandler))
-          (ErrorCatcher/addLast))))
-  ))
+  (ReifyHTTPPipe snooperHandler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Sample Snooper HTTPD
@@ -211,8 +194,8 @@
 
   [^String host port ^JsonObject options]
 
-  (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (snooper) options)
-         ch (ServerSide/start bs host (int port)) ]
+  (let [^ServerBootstrap bs (ServerSide/initTCPServerSide (snooper) options)
+        ch (ServerSide/start bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 

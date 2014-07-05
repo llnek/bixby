@@ -52,7 +52,7 @@ public abstract class FormPostDecoder extends AuxHttpDecoder {
   protected FormPostDecoder() {
   }
 
-  protected abstract void handleFormPost(ChannelHandlerContext ctx , HttpRequest req)
+  protected abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
     throws IOException;
 
   protected abstract void handleFormPostChunk(ChannelHandlerContext ctx, Object msg)

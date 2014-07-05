@@ -129,14 +129,6 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     return this.getClass().getSimpleName();
   }
 
-  protected void slurpByteBuf(ByteBuf buf, OutputStream os) throws IOException {
-    int len = buf==null ? 0 :  buf.readableBytes();
-    if (len > 0) {
-      buf.readBytes( os, len);
-      os.flush();
-    }
-  }
-
   protected boolean tooMuchData(ByteBuf content, Object chunc) {
     ByteBuf buf= null;
     boolean rc=false;

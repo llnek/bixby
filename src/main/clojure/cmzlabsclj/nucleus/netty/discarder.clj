@@ -14,37 +14,31 @@
 
   cmzlabsclj.nucleus.netty.discarder
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [notnil? Try! TryC] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ])
-  (:import (java.io IOException File))
-  (:import (io.netty.buffer Unpooled))
-  (:import (io.netty.util Attribute AttributeKey CharsetUtil))
-  (:import (java.util Map$Entry))
-  (:import (io.netty.channel ChannelHandlerContext Channel ChannelPipeline
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.util.core :only [notnil? Try!] ]
+        [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ]
+        [cmzlabsclj.nucleus.netty.io])
+  (:import [java.io IOException ]
+           [io.netty.buffer Unpooled]
+           [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
                              SimpleChannelInboundHandler
-                             ChannelFuture ChannelHandler ))
-  (:import (io.netty.handler.codec.http HttpHeaders HttpMessage  HttpVersion
-                                        HttpContent DefaultFullHttpResponse
-                                        HttpResponseStatus CookieDecoder
-                                        ServerCookieEncoder Cookie
-                                        HttpRequest QueryStringDecoder
+                             ChannelHandler]
+           [io.netty.handler.codec.http HttpHeaders 
+                                        HttpContent 
+                                        HttpRequest HttpObjectAggregator
                                         LastHttpContent HttpRequestDecoder
-                                        HttpResponse HttpResponseEncoder))
-  (:import [io.netty.bootstrap ServerBootstrap])
-  (:import (io.netty.handler.stream ChunkedStream ChunkedWriteHandler ))
-  (:import (com.zotohlab.frwk.netty ServerSide PipelineConfigurator
-                                     SSLServerHShake DemuxedMsg
-                                     Expect100
-                                     HttpDemux ErrorCatcher))
-  (:import (com.zotohlab.frwk.netty NettyFW))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (com.google.gson JsonObject JsonElement)))
+                                        HttpResponseEncoder]
+           [io.netty.bootstrap ServerBootstrap]
+           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator
+                                    SSLServerHShake ErrorCatcher]
+           [com.zotohlab.frwk.netty NettyFW]
+           [com.google.gson JsonObject]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -72,13 +66,14 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [p o]
-      (let [ ^ChannelPipeline pipe p
-             ^JsonObject options o
-             ssl (SSLServerHShake/getInstance options) ]
+      (let [^ChannelPipeline pipe p
+            ^JsonObject options o
+            ssl (SSLServerHShake/getInstance options) ]
         (doto pipe
-          (.addLast "decoder" (HttpRequestDecoder.))
-          (Expect100/addLast)
-          (.addLast "encoder" (HttpResponseEncoder.))
+          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
+          (.addLast "HttpObjectAggregator"
+                    (HttpObjectAggregator. (int 1048576)))
+          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "discarder" (discardHandler callback))
           (ErrorCatcher/addLast ))))
   ))

@@ -12,35 +12,34 @@
 (ns ^{ :doc ""
        :author "kenl" }
 
-  cmzlabsclj.nucleus.netty.initzers
+  cmzlabsclj.nucleus.netty.io
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [notnil? Try! TryC] ]
-        [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ])
-  (:import [java.io IOException File]
-           [io.netty.buffer Unpooled]
-           [io.netty.util Attribute AttributeKey CharsetUtil]
-           [java.util Map$Entry]
-           [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
-                             SimpleChannelInboundHandler
-                             ChannelFuture ChannelHandler]
-           [io.netty.handler.codec.http HttpHeaders HttpMessage  HttpVersion
-                                        HttpContent DefaultFullHttpResponse
-                                        HttpResponseStatus CookieDecoder
-                                        ServerCookieEncoder Cookie
-                                        HttpRequest QueryStringDecoder
-                                        LastHttpContent HttpRequestDecoder
-                                        HttpResponse HttpResponseEncoder]
+  (:use [cmzlabsclj.nucleus.util.core :only [ThrowIOE MakeMMap notnil? ] ]
+        [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ]
+        [cmzlabsclj.nucleus.netty.request]
+        [cmzlabsclj.nucleus.netty.form])
+  (:import [io.netty.channel ChannelHandlerContext ChannelPipeline
+                             ChannelInboundHandlerAdapter
+                             Channel ChannelHandler]
+           [org.apache.commons.lang3 StringUtils]
+           [io.netty.handler.codec.http HttpHeaders HttpMessage  
+                                        HttpContent 
+                                        HttpRequest 
+                                        HttpRequestDecoder
+                                        HttpResponseEncoder]
           [io.netty.bootstrap ServerBootstrap]
-          [io.netty.handler.stream ChunkedStream ChunkedWriteHandler]
+          [io.netty.util ReferenceCountUtil]
+          [io.netty.handler.codec.http.websocketx WebSocketServerProtocolHandler]
+          [io.netty.handler.stream ChunkedWriteHandler]
           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator
-                                     SSLServerHShake DemuxedMsg
-                                     Expect100
-                                     HttpDemux ErrorCatcher]
+                                     SSLServerHShake RequestDecoder
+                                     Expect100 AuxHttpDecoder
+                                     ErrorCatcher]
           [com.zotohlab.frwk.netty NettyFW]
           [com.zotohlab.frwk.io XData]
-          [com.google.gson JsonObject JsonElement] ))
+          [com.google.gson JsonObject ] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -87,7 +86,7 @@
         (Expect100/handle100 ctx req)
         (if (isFormPost ctx mt)
           (do
-            (.setf! impl :delegate (ReifyFormPostSingleton))
+            (.setf! impl :delegate (ReifyFormPostDecoderSingleton))
             (.addProperty info "formpost" true))
           (.setf! impl :delegate (ReifyRequestDecoderSingleton)))))
     (when-let [ ^AuxHttpDecoder d (.getf impl :delegate) ]
@@ -138,7 +137,7 @@
     (and (= "websocket" ws)
          (= "GET" (if (StringUtils/isNotEmpty mo)
                     mo
-                    (-> req (.getMethod)(.name))))))
+                    (-> req (.getMethod)(.name)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,6 +151,7 @@
     (channelRead [ c obj]
       (let [^ChannelHandlerContext ctx c
             ^Object msg obj
+            pipe (.pipeline ctx)
             ch (.channel ctx) ]
         (cond
           (and (instance? HttpRequest msg)
@@ -169,7 +169,7 @@
                        "ReifyHttpHandler"
                        (reifyHttpHandler))))
         (.fireChannelRead pipe msg)
-        (.remove pipe this)))
+        (.remove pipe ^ChannelHandler this)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -188,7 +188,8 @@
           (.addLast "HttpDemuxer" (makeDemuxer (:uri cfg)))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast (:name cfg) (apply (:handler cfg) options))
+          (.addLast ^String (:name cfg) 
+                    ^ChannelHandler (apply (:handler cfg) options))
           (ErrorCatcher/addLast))))
   ))
 
@@ -212,5 +213,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private initzers-eof nil)
+(def ^:private io-eof nil)
 

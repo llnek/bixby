@@ -58,7 +58,7 @@ public abstract class RequestDecoder extends AuxHttpDecoder {
   }
 
   protected abstract void handleInboundMsg
-      (ChannelHandlerContext ctx, HttpMessage msg)
+      (ChannelHandlerContext ctx, Object msg)
       throws IOException;
 
 }
