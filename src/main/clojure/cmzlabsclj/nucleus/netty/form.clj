@@ -22,26 +22,25 @@
                     ByteArrayOutputStream]
            [io.netty.buffer Unpooled]
            [org.apache.commons.lang3 StringUtils]
-           [io.netty.util Attribute AttributeKey CharsetUtil]
            [java.util Map$Entry]
            [java.net URLDecoder]
            [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
                              SimpleChannelInboundHandler
                              ChannelFuture ChannelHandler]
            [io.netty.handler.codec.http HttpHeaders HttpMessage
-                                        HttpContent 
+                                        HttpContent
                                         HttpRequest
                                         LastHttpContent]
            [io.netty.handler.codec.http.multipart InterfaceHttpData DefaultHttpDataFactory
-                                                  HttpPostRequestDecoder
+                                                  HttpPostRequestDecoder Attribute
                                                   HttpPostRequestDecoder$EndOfDataDecoderException
                                                   FileUpload DiskFileUpload
                                                   InterfaceHttpData$HttpDataType]
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.util ReferenceCountUtil]
-           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator
+           [com.zotohlab.frwk.netty PipelineConfigurator
                                     AuxHttpDecoder FormPostDecoder
-                                    SSLServerHShake DemuxedMsg ]
+                                    DemuxedMsg ]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.net ULFormItems ULFileItem]
            [com.zotohlab.frwk.io XData IOUtils]
@@ -53,15 +52,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- writeHttpData ""
-  
+
   [^ChannelHandlerContext ctx
    ^InterfaceHttpData data
    ^ULFormItems fis ]
-  
+
   (let [dt (.getHttpDataType data)
         nm (.name dt) ]
     (cond
-      (= InterfaceHttpData$HttpDataType/FileUpload dt) 
+      (= InterfaceHttpData$HttpDataType/FileUpload dt)
       (let [^FileUpload fu data
             ct (.getContentType fu)
             fnm (.getFilename fu) ]
@@ -79,7 +78,8 @@
 
       (= InterfaceHttpData$HttpDataType/Attribute dt)
       (let [baos (ByteArrayOutputStream. 4096)
-            ^Attribute attr data ]
+            ^Attribute
+            attr data ]
         (NettyFW/slurpByteBuf (.content attr) baos)
         (.add fis (ULFileItem. nm (.toByteArray baos))))
 
@@ -91,7 +91,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readHttpDataChunkByChunk ""
-  
+
   [ ^ChannelHandlerContext ctx
     ^HttpPostRequestDecoder dc
     ^ULFormItems fis ]
@@ -99,7 +99,7 @@
   (try
     (while (.hasNext dc)
       (if-let [ ^InterfaceHttpData data (.next dc) ]
-        (try 
+        (try
           (writeHttpData ctx data fis)
           (finally
             (.release data)))))
@@ -111,9 +111,9 @@
 ;;
 (defn- splitBodyParams ""
 
-  ^ULFormItems 
+  ^ULFormItems
   [^String body]
-  
+
   (log/debug "about to split form body *************************\n"
   body "\n"
   "****************************************************************")
@@ -125,7 +125,7 @@
               ss (StringUtils/split t \=) ]
           (when (and (notnil? ss)(> (alength ss) 0))
             (let [fi (URLDecoder/decode (aget ss 0) "utf-8")
-                  fv (if (> (.length ss) 1)
+                  fv (if (> (alength ss) 1)
                          (URLDecoder/decode  (aget ss 1) "utf-8")
                          "") ]
               (.add fis (ULFileItem. fi  (Bytesify fv)))))
@@ -145,29 +145,20 @@
     (finzAndDone [ c info data ]
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
-            xxx (.resetAttrs this ctx)
+            xxx (.resetAttrs ^FormPostDecoder this ctx)
             itms (splitBodyParams (if (.hasContent xs)(.stringify xs) "")) ]
         (.resetContent xs itms)
         (log/debug "fire fully decoded message to the next handler")
         (.fireChannelRead ctx (DemuxedMsg. info xs))))
 
-    (resetAttrs [ c ]
-      (let [^ChannelHandlerContext ctx c 
-            ^HttpPostRequestDecoder dc (NettyFW/getAttr ctx NettyFW/FORMDEC_KEY)
-            ^ULFormItems fis (NettyFW/getAttr ctx NettyFW/FORMITMS_KEY) ]
-        (NettyFW/delAttr ctx NettyFW/FORMITMS_KEY)
-        (NettyFW/delAttr ctx NettyFW/FORMDEC_KEY)
-        (when-not (nil? fis) (.destroy fis))
-        (when-not (nil? dc) (.destroy dc))
-        (proxy-super resetAttrs ctx)))
-
-    (handleFormPostChunk [ c obj ]
+    (handleFormChunk [ c obj ]
       (let [^ChannelHandlerContext ctx c
             ^Object msg obj
-            ^HttpPostRequestDecoder dc (NettyFW/getAttr ctx NettyFW/FORMDEC_KEY) 
+            ^HttpPostRequestDecoder dc (NettyFW/getAttr ctx NettyFW/FORMDEC_KEY)
             ^ULFormItems fis (NettyFW/getAttr ctx NettyFW/FORMITMS_KEY) ]
         (if (nil? dc)
-          (proxy-super handleMsgChunk ctx msg)
+          ;;(proxy-super handleMsgChunk ctx msg)
+          (.handleMsgChunk ^FormPostDecoder this ctx msg)
           (with-local-vars [err nil]
             (when (instance? HttpContent msg)
               (let [^HttpContent hc msg
@@ -186,7 +177,7 @@
                     ^XData xs (NettyFW/getAttr ctx NettyFW/XDATA_KEY) ]
                 (NettyFW/delAttr ctx NettyFW/FORMITMS_KEY)
                 (.resetContent xs fis)
-                (.resetAttrs this ctx)
+                (.resetAttrs ^FormPostDecoder this ctx)
                 (.fireChannelRead ctx (DemuxedMsg. info xs))))))))
 
     (handleFormPost [c obj]
@@ -204,11 +195,12 @@
           (do
           ;; nothing to decode.
             (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
-            (proxy-super handleMsgChunk ctx msg))
+            ;;(proxy-super handleMsgChunk ctx msg))
+            (.handleMsgChunk ^FormPostDecoder this ctx msg))
           (let [fac (DefaultHttpDataFactory. (IOUtils/streamLimit))
                 dc (HttpPostRequestDecoder. fac msg) ]
             (NettyFW/setAttr ctx NettyFW/FORMDEC_KEY dc)
-            (.handleFormPostChunk this ctx msg)))))
+            (.handleFormChunk ^FormPostDecoder this ctx msg)))))
 
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
@@ -216,10 +208,10 @@
         (log/debug "channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (.handleFormPost this ctx msg)
+          (.handleFormPost ^FormPostDecoder this ctx msg)
 
           (instance? HttpContent msg)
-          (.handleFormChunk this ctx msg)
+          (.handleFormChunk ^FormPostDecoder this ctx msg)
 
           :else
           (do

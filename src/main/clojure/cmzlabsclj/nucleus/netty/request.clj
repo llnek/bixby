@@ -24,9 +24,8 @@
            [io.netty.handler.codec.http HttpMessage HttpContent HttpRequest]
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.util ReferenceCountUtil]
-           [com.zotohlab.frwk.netty ServerSide AuxHttpDecoder RequestDecoder
-                                    PipelineConfigurator
-                                    SSLServerHShake]
+           [com.zotohlab.frwk.netty AuxHttpDecoder RequestDecoder
+                                    PipelineConfigurator]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.io XData]
            [com.google.gson JsonObject]))
@@ -51,7 +50,7 @@
             clen (-> info (.get "clen")(.getAsInt)) ]
         (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
         (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
-        (proxy-super handleMsgChunk ctx msg)))
+        (.handleMsgChunk ^RequestDecoder this ctx msg)))
 
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
@@ -59,10 +58,10 @@
         (log/debug "channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (.handleInboundMsg this ctx msg)
+          (.handleInboundMsg ^RequestDecoder this ctx msg)
 
           (instance? HttpContent msg)
-          (proxy-super handleMsgChunk ctx msg)
+          (.handleMsgChunk ^RequestDecoder this ctx msg)
 
           :else
           (do

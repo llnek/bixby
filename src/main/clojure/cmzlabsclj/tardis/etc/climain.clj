@@ -29,6 +29,7 @@
   (:use [cmzlabsclj.tardis.core.constants])
   (:use [cmzlabsclj.tardis.core.sys])
   (:use [cmzlabsclj.tardis.impl.defaults])
+  (:use [cmzlabsclj.nucleus.netty.io :only [StopServer] ])
 
   (:import (com.zotohlab.gallifrey.loaders AppClassLoader
                                             RootClassLoader ExecClassLoader))
@@ -36,7 +37,6 @@
   (:import (io.netty.channel Channel ChannelFuture ChannelFutureListener))
   (:import (com.zotohlab.gallifrey.core ConfigError))
   (:import (io.netty.bootstrap ServerBootstrap))
-  (:import (com.zotohlab.frwk.netty ServerSide))
   (:import (com.google.gson JsonObject))
   (:import (com.zotohlab.frwk.server Component ComponentRegistry))
   (:import (com.zotohlab.gallifrey.etc CmdHelpError))
@@ -221,7 +221,7 @@
          kp (.getf ctx K_KILLPORT)
          execv (.getf ctx K_EXECV) ]
 
-    (ServerSide/stop ^ServerBootstrap (:bootstrap kp) ^Channel (:channel kp))
+    (StopServer ^ServerBootstrap (:bootstrap kp) ^Channel (:channel kp))
     (log/info "Shutting down the http discarder... OK")
 
     (when-not @STOPCLI

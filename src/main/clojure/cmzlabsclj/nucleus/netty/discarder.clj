@@ -24,14 +24,14 @@
            [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
                              SimpleChannelInboundHandler
                              ChannelHandler]
-           [io.netty.handler.codec.http HttpHeaders 
-                                        HttpContent 
+           [io.netty.handler.codec.http HttpHeaders
+                                        HttpContent
                                         HttpRequest HttpObjectAggregator
                                         LastHttpContent HttpRequestDecoder
                                         HttpResponseEncoder]
            [io.netty.bootstrap ServerBootstrap]
-           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator
-                                    SSLServerHShake ErrorCatcher]
+           [com.zotohlab.frwk.netty PipelineConfigurator
+                                    ErrorCatcher]
            [com.zotohlab.frwk.netty NettyFW]
            [com.google.gson JsonObject]))
 
@@ -68,7 +68,7 @@
     (assemble [p o]
       (let [^ChannelPipeline pipe p
             ^JsonObject options o
-            ssl (SSLServerHShake/getInstance options) ]
+            ssl (SSLServerHShake options) ]
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
           (.addLast "HttpObjectAggregator"
@@ -84,8 +84,8 @@
 
   [^String host port ^JsonObject options callback]
 
-  (let [ ^ServerBootstrap bs (ServerSide/initTCPServerSide (discarder callback) options)
-         ch (ServerSide/start bs host (int port)) ]
+  (let [ ^ServerBootstrap bs (InitTCPServer (discarder callback) options)
+         ch (StartServer bs host port) ]
     { :bootstrap bs :channel ch }
   ))
 

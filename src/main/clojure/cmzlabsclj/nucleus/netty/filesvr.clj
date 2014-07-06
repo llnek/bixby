@@ -28,9 +28,8 @@
            [io.netty.handler.codec.http HttpHeaders LastHttpContent]
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.handler.stream ChunkedStream]
-           [com.zotohlab.frwk.netty ServerSide 
-                                    PipelineConfigurator
-                                    SSLServerHShake DemuxedMsg]
+           [com.zotohlab.frwk.netty PipelineConfigurator
+                                    DemuxedMsg]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.io XData]
            [com.google.gson JsonObject]))
@@ -106,10 +105,10 @@
             nm (if (cstr/blank? p) (str (juid) ".dat") p) ]
         (log/debug "Method = " mtd ", Uri = " uri ", File = " nm)
         (cond
-          (or (= mtd "POST")(= mtd "PUT")) 
+          (or (= mtd "POST")(= mtd "PUT"))
           (filePutter vdir ch info nm xs)
 
-          (or (= mtd "GET")(= mtd "HEAD")) 
+          (or (= mtd "GET")(= mtd "HEAD"))
           (fileGetter vdir ch info nm)
 
           :else
@@ -133,8 +132,8 @@
   ;; returns netty objects if you want to do clean up
   [^String host port ^JsonObject options]
 
-  (let [^ServerBootstrap bs (ServerSide/initTCPServerSide  (fileCfgtor) options)
-        ch (ServerSide/start bs host (int port)) ]
+  (let [^ServerBootstrap bs (InitTCPServer  (fileCfgtor) options)
+        ch (StartServer bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 

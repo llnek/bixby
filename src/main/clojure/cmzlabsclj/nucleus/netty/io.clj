@@ -16,34 +16,116 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [ThrowIOE MakeMMap notnil? ] ]
+  (:use [cmzlabsclj.nucleus.util.core :only [ThrowIOE MakeMMap notnil? Try!] ]
         [cmzlabsclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabsclj.nucleus.netty.request]
         [cmzlabsclj.nucleus.netty.form])
   (:import [io.netty.channel ChannelHandlerContext ChannelPipeline
-                             ChannelInboundHandlerAdapter
+                             ChannelInboundHandlerAdapter ChannelFuture
+                             ChannelOption ChannelFutureListener
                              Channel ChannelHandler]
+           [io.netty.handler.ssl SslHandler]
+           [io.netty.channel.socket.nio NioDatagramChannel NioServerSocketChannel]
+           [io.netty.channel.nio NioEventLoopGroup]
            [org.apache.commons.lang3 StringUtils]
-           [io.netty.handler.codec.http HttpHeaders HttpMessage  
-                                        HttpContent 
-                                        HttpRequest 
+           [java.net URL InetAddress InetSocketAddress]
+           [java.io InputStream IOException]
+           [io.netty.handler.codec.http HttpHeaders HttpMessage
+                                        HttpContent
+                                        HttpRequest
                                         HttpRequestDecoder
                                         HttpResponseEncoder]
-          [io.netty.bootstrap ServerBootstrap]
+          [io.netty.bootstrap Bootstrap ServerBootstrap]
           [io.netty.util ReferenceCountUtil]
           [io.netty.handler.codec.http.websocketx WebSocketServerProtocolHandler]
           [io.netty.handler.stream ChunkedWriteHandler]
-          [com.zotohlab.frwk.netty ServerSide PipelineConfigurator
-                                     SSLServerHShake RequestDecoder
+          [javax.net.ssl KeyManagerFactory SSLContext SSLEngine TrustManagerFactory]
+          [java.security KeyStore SecureRandom]
+          [com.zotohlab.frwk.netty PipelineConfigurator
+                                     RequestDecoder
                                      Expect100 AuxHttpDecoder
                                      ErrorCatcher]
           [com.zotohlab.frwk.netty NettyFW]
           [com.zotohlab.frwk.io XData]
-          [com.google.gson JsonObject ] ))
+          [com.zotohlab.frwk.net SSLTrustMgrFactory]
+          [com.google.gson JsonObject JsonPrimitive] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+(def ^:private ^String SERVERKEY "serverKey")
+(def ^:private ^String PWD "pwd")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SSLServerHShake ""
+
+  ^ChannelHandler
+  [^JsonObject options]
+
+  (let [ keyUrlStr (if (.has options SERVERKEY)
+                     (-> (.get options SERVERKEY)
+                         (.getAsString))
+                     nil)
+         pwdStr (if (.has options PWD)
+                  (-> (.get options PWD)
+                      (.getAsString))
+                  nil) ]
+    (when (hgl? keyUrlStr)
+      (try
+        (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
+              x (SSLContext/getInstance "TLS")
+              ks (KeyStore/getInstance ^String (if (.endsWith keyUrlStr ".jks")
+                                                 "JKS"
+                                                 "PKCS12"))
+              t (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+              k (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm)) ]
+          (with-open [ inp (-> (URL. keyUrlStr) (.openStream)) ]
+            (.load ks inp pwd)
+            (.init t ks)
+            (.init k ks pwd)
+            (.init x
+                   (.getKeyManagers k)
+                   (.getTrustManagers t)
+                   (SecureRandom/getInstance "SHA1PRNG"))
+            (SslHandler. (doto (.createSSLEngine x)
+                           (.setUseClientMode false)))))
+        (catch Throwable e#
+          (log/error e# ""))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SSLClientHShake ""
+
+  ^ChannelHandler
+  [^JsonObject options]
+
+  (try
+    (let [ ctx (doto (SSLContext/getInstance "TLS")
+                 (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
+      (SslHandler. (doto (.createSSLEngine ctx)
+                     (.setUseClientMode true))))
+    (catch Throwable e#
+      (log/error e# ""))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- demux-server-type ""
+  [a & args]
+  (cond
+    (instance? ServerBootstrap a) :tcp-server
+    (instance? Bootstrap a) :udp-server
+    :else (ThrowIOE "Unknown server type")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^Channel StartServer "" demux-server-type)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ^Channel StopServer "" demux-server-type)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -84,7 +166,7 @@
         (.setf! impl :ignore true))
       (do
         (Expect100/handle100 ctx req)
-        (if (isFormPost ctx mt)
+        (if (isFormPost req mt)
           (do
             (.setf! impl :delegate (ReifyFormPostDecoderSingleton))
             (.addProperty info "formpost" true))
@@ -107,6 +189,7 @@
       (channelRead0 [ctx msg]
         (let [ ^AuxHttpDecoder d (.getf impl :delegate)
                e (.getf impl :ignore) ]
+          (log/debug "HttpDemuxer got msg = " (type msg))
           (cond
             (instance? HttpRequest msg)
             (doDemux ctx msg impl)
@@ -118,7 +201,7 @@
             nil ;; ignore
 
             :else
-            (ThrowIOE "Fatal error while reading http message.")))))
+            (ThrowIOE (str "Fatal error while reading http message. " (type msg)))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,34 +225,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeDemuxer ""
+(defn MakeHttpDemuxer ""
 
   ^ChannelHandler
-  [^String uri]
+  [cfgopts]
 
-  (proxy [ChannelInboundHandlerAdapter][]
-    (channelRead [ c obj]
-      (let [^ChannelHandlerContext ctx c
-            ^Object msg obj
-            pipe (.pipeline ctx)
-            ch (.channel ctx) ]
-        (cond
-          (and (instance? HttpRequest msg)
-               (isWEBSock msg))
-          (do
-            (.addAfter pipe
-                       "HttpResponseEncoder"
-                       "WebSocketServerProtocolHandler"
-                       (WebSocketServerProtocolHandler. uri)))
+  (let [ uri (nsb (:wsockUri cfgopts)) ]
+    (proxy [ChannelInboundHandlerAdapter][]
+      (channelRead [ c obj]
+        (log/debug "HttpDemuxer got this msg " (type obj))
+        (let [^ChannelHandlerContext ctx c
+              ^Object msg obj
+              pipe (.pipeline ctx)
+              ch (.channel ctx) ]
+          (cond
+            (and (instance? HttpRequest msg)
+                 (isWEBSock msg))
+            (do
+              (.addAfter pipe
+                         "HttpResponseEncoder"
+                         "WebSocketServerProtocolHandler"
+                         (WebSocketServerProtocolHandler. uri))
+              (when-let [fc (:onwsock cfgopts) ] (fc ctx)))
 
-          :else
-          (do
-            (.addAfter pipe
-                       "HttpDemuxer"
-                       "ReifyHttpHandler"
-                       (reifyHttpHandler))))
-        (.fireChannelRead pipe msg)
-        (.remove pipe ^ChannelHandler this)))
+            :else
+            (do
+              (.addAfter pipe
+                         "HttpDemuxer"
+                         "ReifyHttpHandler"
+                         (reifyHttpHandler))
+              (log/debug "Added new handler - reifyHttpHandler to the chain")
+              (when-let [fc (:onhttp cfgopts) ] (fc ctx)) ))
+          (.fireChannelRead ctx msg)
+          (.remove pipe "HttpDemuxer"))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,14 +269,15 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [pl options]
-      (let [ssl (SSLServerHShake/getInstance ^JsonObject options)
+      (let [ssl (SSLServerHShake ^JsonObject options)
             ^ChannelPipeline pipe pl]
+        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxer" (makeDemuxer (:uri cfg)))
+          (.addLast "HttpDemuxer" (MakeHttpDemuxer cfg))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast ^String (:name cfg) 
+          (.addLast ^String (:name cfg)
                     ^ChannelHandler (apply (:handler cfg) options))
           (ErrorCatcher/addLast))))
   ))
@@ -200,7 +289,7 @@
   ^PipelineConfigurator
   [^String websockUri ^String yourHandlerName yourHandlerFn]
 
-  (makeHttpPipline { :uri websockUri :name yourHandlerName :handler yourHandlerFn }))
+  (makeHttpPipline { :wsockUri websockUri :name yourHandlerName :handler yourHandlerFn }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -209,7 +298,118 @@
   ^PipelineConfigurator
   [^String yourHandlerName yourHandlerFn]
 
-  (makeHttpPipline { :uri "" :name yourHandlerName :handler yourHandlerFn }))
+  (makeHttpPipline { :wsockUri "" :name yourHandlerName :handler yourHandlerFn }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod StartServer :tcp-server
+
+  ^Channel
+  [^ServerBootstrap bs
+   ^String host
+   port]
+
+  (let [ ip (if (hgl? host) (InetAddress/getByName host)
+              (InetAddress/getLocalHost)) ]
+    (log/debug "netty-TCP-server: running on host " ip ", port " port)
+    (try
+      (-> (.bind bs ip (int port))
+          (.sync)
+          (.channel))
+      (catch InterruptedException e#
+        (throw (IOException. e#))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod StartServer :udp-server
+
+  ^Channel
+  [^Bootstrap bs
+   ^String host
+   port]
+
+  (let [ ip (if (hgl? host) (InetAddress/getByName host)
+              (InetAddress/getLocalHost)) ]
+    (log/debug "netty-UDP-server: running on host " ip ", port " port)
+    (-> (.bind bs ip (int port))
+        (.channel))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod StopServer :tcp-server
+
+  [^ServerBootstrap bs ^Channel ch]
+
+  (-> (.close ch)
+      (.addListener (reify ChannelFutureListener
+                      (operationComplete [_ cff]
+                        (let [ gc (.childGroup bs)
+                               gp (.group bs) ]
+                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
+                          (when-not (nil? gc) (Try! (.shutdownGracefully gc)))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod StopServer :udp-server
+
+  [^Bootstrap bs ^Channel ch]
+
+  (-> (.close ch)
+      (.addListener (reify ChannelFutureListener
+                      (operationComplete [_ cff]
+                        (let [ gp (.group bs) ]
+                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getEventGroup ""
+
+  ^NioEventLoopGroup
+  [^String group ^JsonObject options]
+
+  (if (.has options group)
+    (NioEventLoopGroup. (-> options
+                            (.getAsJsonPrimitive group)
+                            (.getAsInt)))
+    (NioEventLoopGroup.)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn InitTCPServer ""
+
+  ^ServerBootstrap
+  [^PipelineConfigurator cfg
+   ^JsonObject options]
+
+  (doto (ServerBootstrap.)
+    (.group (getEventGroup "bossThreads" options) (getEventGroup "workerThreads" options))
+    (.channel NioServerSocketChannel)
+    (.option ChannelOption/SO_REUSEADDR true)
+    (.option ChannelOption/SO_BACKLOG (int 100))
+    (.childOption ChannelOption/SO_RCVBUF (int (* 2 1024 1024)))
+    (.childOption ChannelOption/TCP_NODELAY true)
+    (.childHandler (.configure cfg options))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn InitUDPServer ""
+
+  ^Bootstrap
+  [^PipelineConfigurator cfg
+   ^JsonObject options]
+
+  (doto (Bootstrap.)
+    (.group (getEventGroup "bossThreads" options))
+    (.channel NioDatagramChannel)
+    (.option ChannelOption/TCP_NODELAY true)
+    (.option ChannelOption/SO_RCVBUF (int (* 2  1024 1024)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

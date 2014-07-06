@@ -7,64 +7,62 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
-
+;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
 (ns ^{ :doc ""
        :author "kenl" }
 
   cmzlabsclj.tardis.io.netty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [cmzlabsclj.nucleus.util.core
-         :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.tardis.core.sys])
-  (:use [cmzlabsclj.tardis.io.core])
-  (:use [cmzlabsclj.tardis.io.http])
-  (:use [cmzlabsclj.tardis.io.triggers])
-  (:use [cmzlabsclj.tardis.io.webss :only [MakeWSSession] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ])
-  (:use [cmzlabsclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ])
-  (:use [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabsclj.nucleus.util.mime :only [GetCharset] ])
-  (:import (java.net HttpCookie URI URL InetSocketAddress))
-  (:import (java.net SocketAddress InetAddress))
-  (:import (java.util ArrayList List HashMap Map))
-  (:import (com.google.gson JsonObject))
-  (:import (java.io File IOException RandomAccessFile))
-  (:import (com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
-                                       IOSession
-                                       WebSockEvent WebSockResult))
-  (:import (javax.net.ssl SSLContext))
-  (:import (java.nio.channels ClosedChannelException))
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
+         :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ]
+        [cmzlabsclj.nucleus.netty.io]
+        [cmzlabsclj.tardis.core.sys]
+        [cmzlabsclj.tardis.io.core]
+        [cmzlabsclj.tardis.io.http]
+        [cmzlabsclj.tardis.io.triggers]
+        [cmzlabsclj.tardis.io.webss :only [MakeWSSession] ]
+        [cmzlabsclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
+        [cmzlabsclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ]
+        [cmzlabsclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabsclj.nucleus.util.mime :only [GetCharset] ])
+  (:import [java.net HttpCookie URI URL InetSocketAddress]
+           [java.net SocketAddress InetAddress]
+           [java.util ArrayList List HashMap Map]
+           [com.google.gson JsonObject]
+           [java.io File IOException RandomAccessFile]
+           [com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
+                                               IOSession
+                                               WebSockEvent WebSockResult]
+           [javax.net.ssl SSLContext]
+           [java.nio.channels ClosedChannelException]
+           [io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                         CookieDecoder ServerCookieEncoder
                                         DefaultHttpResponse HttpVersion
                                         HttpRequestDecoder
                                         HttpResponseEncoder DefaultCookie
                                         HttpHeaders$Names LastHttpContent
-                                        HttpHeaders Cookie QueryStringDecoder))
-  (:import (org.apache.commons.codec.net URLCodec))
-  (:import (io.netty.bootstrap ServerBootstrap))
-  (:import (io.netty.channel Channel ChannelHandler ChannelFuture
-                             ChannelFutureListener
-                             SimpleChannelInboundHandler
-                             ChannelPipeline ChannelHandlerContext))
-  (:import (io.netty.handler.stream ChunkedFile ChunkedStream ChunkedWriteHandler))
-  (:import (com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput))
-  (:import (com.zotohlab.frwk.netty NettyFW
-                                     SSLServerHShake
-                                     ServerSide
-                                     DemuxedMsg
-                                     HttpDemux ErrorCatcher
-                                     PipelineConfigurator))
-  (:import (io.netty.handler.codec.http.websocketx WebSocketFrame
-                                                          BinaryWebSocketFrame
-                                                          TextWebSocketFrame))
-  (:import (io.netty.buffer ByteBuf Unpooled))
-  (:import (com.zotohlab.frwk.core Hierarchial Identifiable))
-  (:import (com.zotohlab.frwk.io XData)))
+                                        HttpHeaders Cookie QueryStringDecoder]
+           [org.apache.commons.codec.net URLCodec]
+           [io.netty.bootstrap ServerBootstrap]
+           [io.netty.channel Channel ChannelHandler ChannelFuture
+                                     ChannelFutureListener
+                                     SimpleChannelInboundHandler
+                                     ChannelPipeline ChannelHandlerContext]
+           [io.netty.handler.stream ChunkedFile ChunkedStream ChunkedWriteHandler]
+           [com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput]
+           [com.zotohlab.frwk.netty NettyFW
+                                    DemuxedMsg
+                                    ErrorCatcher
+                                    PipelineConfigurator]
+           [io.netty.handler.codec.http.websocketx WebSocketFrame
+                                                   BinaryWebSocketFrame
+                                                   TextWebSocketFrame]
+           [io.netty.buffer ByteBuf Unpooled]
+           [com.zotohlab.frwk.core Hierarchial Identifiable]
+           [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -99,7 +97,7 @@
 
   (when (and (not (.isKeepAlive evt))
              (notnil? cf))
-    (.addListener cf ChannelFutureListener/CLOSE )
+    (.addListener cf ChannelFutureListener/CLOSE)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,34 +118,35 @@
 ;;
 (defn- netty-ws-reply ""
 
-  [^WebSockResult res ^Channel ch ^WebSockEvent evt src]
+  [^WebSockResult res
+   ^Channel ch
+   ^WebSockEvent evt src]
 
-  (let [ ^XData xs (.getData res)
-         bits (.javaBytes xs)
-         ^WebSocketFrame
-         f (cond
-              (.isBinary res)
-              (BinaryWebSocketFrame. (Unpooled/wrappedBuffer bits))
-
-              :else
-              (TextWebSocketFrame. (nsb (Stringify bits)))) ]
-    (NettyFW/writeFlush ch f)
+  (let [^XData xs (.getData res)
+        bits (.javaBytes xs)
+        ^WebSocketFrame
+        f (cond
+            (.isBinary res)
+            (BinaryWebSocketFrame. (Unpooled/wrappedBuffer (.javaBytes xs)))
+            :else
+            (TextWebSocketFrame. (.stringify xs))) ]
+    (.writeAndFlush ch f)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- replyOneFile ""
 
-  [ ^RandomAccessFile raf
-    ^HTTPEvent evt
-    ^HttpResponse rsp ]
+  [^RandomAccessFile raf
+   ^HTTPEvent evt
+   ^HttpResponse rsp ]
 
-  (let [ ct (HttpHeaders/getHeader rsp "content-type")
-         rv (.getHeaderValue evt "range") ]
+  (let [ct (HttpHeaders/getHeader rsp "content-type")
+        rv (.getHeaderValue evt "range") ]
     (if (cstr/blank? rv)
       (ChunkedFile. raf)
-      (let [ r (HTTPRangeInput. raf ct rv)
-             n (.prepareNettyResponse r rsp) ]
+      (let [r (HTTPRangeInput. raf ct rv)
+            n (.prepareNettyResponse r rsp) ]
         (if (> n 0)
           r
           nil)))
@@ -163,12 +162,12 @@
    src]
 
   ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
-  (let [ cks (cookiesToNetty (.getf res :cookies))
-         code (.getf res :code)
-         rsp (NettyFW/makeHttpReply code)
-         loc (nsb (.getf res :redirect))
-         data (.getf res :data)
-         hdrs (.getf res :hds) ]
+  (let [cks (cookiesToNetty (.getf res :cookies))
+        code (.getf res :code)
+        rsp (NettyFW/makeHttpReply code)
+        loc (nsb (.getf res :redirect))
+        data (.getf res :data)
+        hdrs (.getf res :hds) ]
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
     (with-local-vars [ clen 0 raf nil payload nil ]
       (doseq [[^String nm vs] (seq hdrs)]
@@ -186,7 +185,7 @@
         (var-set  payload
                   (cond
                     (instance? WebAsset data)
-                    (let [ ^WebAsset ws data ]
+                    (let [^WebAsset ws data ]
                       (HttpHeaders/setHeader rsp "content-type" (.contentType ws))
                       (var-set raf (RandomAccessFile. (.getFile ws) "r"))
                       (replyOneFile @raf evt rsp))
@@ -197,12 +196,12 @@
                       (replyOneFile @raf evt rsp))
 
                     (instance? XData data)
-                    (let [ ^XData xs data ]
+                    (let [^XData xs data ]
                       (var-set clen (.size xs))
                       (ChunkedStream. (.stream xs)))
 
                     (notnil? data)
-                    (let [ xs (XData. data) ]
+                    (let [xs (XData. data) ]
                       (var-set clen (.size xs))
                       (ChunkedStream. (.stream xs)))
 
@@ -218,17 +217,15 @@
       (log/debug "writing out " @clen " bytes back to client");
       (HttpHeaders/setContentLength rsp @clen)
 
-      (NettyFW/writeOnly ch rsp)
+      (.write ch rsp)
       (log/debug "wrote response headers out to client")
-
 
       (when (and (> @clen 0)
                  (notnil? @payload))
-        (NettyFW/writeOnly ch @payload)
+        (.write ch @payload)
         (log/debug "wrote response body out to client"))
 
-
-      (let [ wf (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
+      (let [wf (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
         (log/debug "flushed last response content out to client")
         (.addListener wf
                       (reify ChannelFutureListener
@@ -237,14 +234,14 @@
                                       (.close ^RandomAccessFile @raf))))))
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel.  bye.")
-          (.addListener wf ChannelFutureListener/CLOSE)))
-
-    )))
+          (.addListener wf ChannelFutureListener/CLOSE))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeNettyTrigger ""
 
+  ^cmzlabsclj.tardis.io.core.AsyncWaitTrigger
   [^Channel ch evt src]
 
   (reify AsyncWaitTrigger
@@ -257,9 +254,9 @@
         (Try! (netty-reply res ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [ rsp (NettyFW/makeHttpReply 500) ]
+      (let [rsp (NettyFW/makeHttpReply 500) ]
         (try
-          (maybeClose evt (NettyFW/writeFlush ch rsp))
+          (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException e#
             (log/warn "ClosedChannelException thrown while flushing headers"))
           (catch Throwable t# (log/error t# "") )) ))
@@ -290,11 +287,11 @@
    ^XData xdata
    ^JsonObject info wantSecure]
 
-  (let [ ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
-         ^InetSocketAddress laddr (.localAddress ch)
-         ^WebSockResult res (MakeWSockResult co)
-         impl (MakeMMap)
-         eeid (NextLong) ]
+  (let [ssl (notnil? (.get (.pipeline ch) "ssl"))
+        ;;^InetSocketAddress laddr (.localAddress ch)
+        res (MakeWSockResult co)
+        impl (MakeMMap)
+        eeid (NextLong) ]
     (with-meta
       (reify
         MubleAPI
@@ -319,8 +316,8 @@
         (getData [_] xdata)
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^cmzlabsclj.tardis.io.core.WaitEventHolder
-                 wevt (.release co this) ]
+          (let [^cmzlabsclj.tardis.io.core.WaitEventHolder
+                wevt (.release co this) ]
             (when-not (nil? wevt)
               (.resumeOnResult wevt res))))
         (emitter [_] co))
@@ -336,13 +333,13 @@
   ^Map
   [info]
 
-  (let [ v (nsb (GetHeader info "Cookie"))
-         cc (URLCodec. "utf-8")
-         rc (HashMap.)
-         cks (if (hgl? v) (CookieDecoder/decode v) []) ]
-    (doseq [ ^Cookie c (seq cks) ]
+  (let [v (nsb (GetHeader info "Cookie"))
+        cc (URLCodec. "utf-8")
+        rc (HashMap.)
+        cks (if (hgl? v) (CookieDecoder/decode v) []) ]
+    (doseq [^Cookie c (seq cks) ]
       (.put rc (cstr/lower-case (.getName c))
-                (cookieToJava c cc)))
+               (cookieToJava c cc)))
     rc
   ))
 
@@ -434,10 +431,10 @@
 
         (getResultObj [_] res)
         (replyResult [this]
-          (let [ ^IOSession mvs (.getSession this)
-                 code (.getStatus res)
-                 ^cmzlabsclj.tardis.io.core.WaitEventHolder
-                 wevt (.release co this) ]
+          (let [^IOSession mvs (.getSession this)
+                code (.getStatus res)
+                ^cmzlabsclj.tardis.io.core.WaitEventHolder
+                wevt (.release co this) ]
             (cond
               (and (>= code 200)(< code 400)) (.handleResult mvs this res)
               :else nil)
@@ -473,13 +470,13 @@
          ri (nth args 2)
          ^DemuxedMsg req (nth args 1)
          ^Channel ch (nth args 0)
-         ssl (notnil? (.get (NettyFW/getPipeline ch) "ssl"))
+         ssl (notnil? (.get (.pipeline ch) "ssl"))
          xdata (.payload req)
          sec (.isSecure? ri)
          info (.info req) ]
     (if (-> (.get info "wsock")(.getAsBoolean))
-        (makeWSockEvent co ch xdata info sec)
-        (makeHttpEvent co ch ssl xdata info sec))
+      (makeWSockEvent co ch xdata info sec)
+      (makeHttpEvent co ch ssl xdata info sec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -488,11 +485,10 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co cfg]
 
-  (let [ c (nsb (:context cfg)) ]
+  (let [c (nsb (:context cfg)) ]
     (.setAttr! co :contextPath (strim c))
     (HttpBasicConfig co cfg)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -504,10 +500,9 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
-      (let [ ch (.channel ^ChannelHandlerContext ctx)
-             ts (.getAttr ^cmzlabsclj.tardis.core.sys.Element
-                                    co :waitMillis)
-             evt (IOESReifyEvent co ch msg) ]
+      (let [ch (.channel ^ChannelHandlerContext ctx)
+            ts (.getAttr ^cmzlabsclj.tardis.core.sys.Element co :waitMillis)
+            evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [ ^cmzlabsclj.tardis.io.core.WaitEventHolder
                  w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
@@ -524,21 +519,7 @@
   [^cmzlabsclj.tardis.core.sys.Element co]
 
   (log/debug "tardis netty pipeline initor called with emitter = " (type co))
-  (proxy [PipelineConfigurator] []
-    (assemble [p o]
-      (let [ ^ChannelPipeline pipe p
-             ^JsonObject options o
-             ssl (SSLServerHShake/getInstance options) ]
-        (if ssl (.addLast pipe "ssl" ssl))
-        (-> pipe
-            (.addLast "decoder" (HttpRequestDecoder.))
-            (HttpDemux/addLast )
-            (.addLast "encoder" (HttpResponseEncoder.))
-            (.addLast "chunker" (ChunkedWriteHandler.))
-            (.addLast "disp" (msgDispatcher co))
-            (ErrorCatcher/addLast ))
-        pipe))
-  ))
+  (ReifyHTTPPipe "NettyDispatcher" (fn [ & args ] (msgDispatcher co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -546,9 +527,9 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabsclj.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
-         ^JsonObject options (.getAttr co :emcfg)
-         bs (ServerSide/initTCPServerSide (nettyInitor co) options) ]
+  (let [^cmzlabsclj.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
+        ^JsonObject options (.getAttr co :emcfg)
+        bs (InitTCPServer (nettyInitor co) options) ]
     (.setAttr! co :netty  { :bootstrap bs })
     co
   ))
@@ -559,11 +540,11 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ host (nsb (.getAttr co :host))
-         port (.getAttr co :port)
-         nes (.getAttr co :netty)
-         ^ServerBootstrap bs (:bootstrap nes)
-         ch (ServerSide/start bs host (int port)) ]
+  (let [host (nsb (.getAttr co :host))
+        port (.getAttr co :port)
+        nes (.getAttr co :netty)
+        ^ServerBootstrap bs (:bootstrap nes)
+        ch (StartServer bs host port) ]
     (.setAttr! co :netty (assoc nes :channel ch))
     (IOESStarted co)
   ))
@@ -574,10 +555,10 @@
 
   [^cmzlabsclj.tardis.core.sys.Element co]
 
-  (let [ nes (.getAttr co :netty)
-         ^ServerBootstrap bs (:bootstrap nes)
-         ^Channel ch (:channel nes) ]
-    (ServerSide/stop  bs ch)
+  (let [nes (.getAttr co :netty)
+        ^ServerBootstrap bs (:bootstrap nes)
+        ^Channel ch (:channel nes) ]
+    (StopServer  bs ch)
     (IOESStopped co)
   ))
 

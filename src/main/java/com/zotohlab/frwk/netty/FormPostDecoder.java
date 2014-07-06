@@ -52,11 +52,25 @@ public abstract class FormPostDecoder extends AuxHttpDecoder {
   protected FormPostDecoder() {
   }
 
-  protected abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
+  public abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
     throws IOException;
 
-  protected abstract void handleFormPostChunk(ChannelHandlerContext ctx, Object msg)
+  public abstract void handleFormChunk(ChannelHandlerContext ctx, Object msg)
     throws IOException;
+
+  public void resetAttrs(ChannelHandlerContext ctx) {
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) NettyFW.getAttr(ctx, NettyFW.FORMDEC_KEY);
+    ULFormItems fis = (ULFormItems) NettyFW.getAttr(ctx, NettyFW.FORMITMS_KEY);
+    NettyFW.delAttr( ctx,  NettyFW.FORMITMS_KEY);
+    NettyFW.delAttr(ctx, NettyFW.FORMDEC_KEY);
+    if (fis != null) {
+      fis.destroy();
+    }
+    if (dc != null) {
+      dc.destroy();
+    }
+    super.resetAttrs(ctx);
+  }
 
 }
 

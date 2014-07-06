@@ -57,7 +57,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
   private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
   public Logger tlog() { return _log; }
 
-  protected void resetAttrs(ChannelHandlerContext ctx) {
+  public void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
     if (buf != null) buf.release();
 
@@ -67,7 +67,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     delAttr(ctx,XOS_KEY);
   }
 
-  protected void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+  public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
     if (msg instanceof HttpContent) {} else {
       return;
     }
@@ -117,7 +117,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     finzAndDone(ctx, info, xs);
   }
 
-  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+  public void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
       throws IOException {
     resetAttrs(ctx);
     tlog().debug("fire fully decoded message to the next handler");

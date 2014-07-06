@@ -31,7 +31,7 @@
                                         ServerCookieEncoder Cookie
                                         HttpRequest QueryStringDecoder
                                         LastHttpContent]
-           [com.zotohlab.frwk.netty ServerSide PipelineConfigurator]
+           [com.zotohlab.frwk.netty PipelineConfigurator]
            [io.netty.bootstrap ServerBootstrap]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.io XData]
@@ -194,8 +194,8 @@
 
   [^String host port ^JsonObject options]
 
-  (let [^ServerBootstrap bs (ServerSide/initTCPServerSide (snooper) options)
-        ch (ServerSide/start bs host (int port)) ]
+  (let [^ServerBootstrap bs (InitTCPServer (snooper) options)
+        ch (StartServer bs host (int port)) ]
     { :bootstrap bs :channel ch }
   ))
 
