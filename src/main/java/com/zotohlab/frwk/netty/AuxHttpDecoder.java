@@ -59,8 +59,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
 
   public void resetAttrs(ChannelHandlerContext ctx) {
     ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
-    if (buf != null) buf.release();
-
+    if (buf != null) { buf.release(); }
     delAttr(ctx,MSGINFO_KEY);
     delAttr(ctx,CBUF_KEY);
     delAttr(ctx,XDATA_KEY);
@@ -68,42 +67,45 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
   }
 
   public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
-    if (msg instanceof HttpContent) {} else {
+    if (msg instanceof HttpContent) {
+      tlog().debug("Got a valid http-content chunk, part of a message.");
+    } else {
       return;
     }
-    tlog().debug("Got a valid http-content chunk, part of a message.");
     CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
     XData xs = (XData) getAttr( ctx, XDATA_KEY);
-    HttpContent chk = (HttpContent ) msg;
+    HttpContent chk = (HttpContent) msg;
     if ( !xs.hasContent() && tooMuchData(cbuf,msg)) {
-      os = switchBufToFile( ctx, cbuf);
+      os = switchBufToFile(ctx, cbuf);
     }
-    if (chk.content().isReadable()) {
+    ByteBuf cc= chk.content();
+    if (cc.isReadable()) {
       if (os == null) {
         chk.retain();
-        cbuf.addComponent( chk.content());
-        cbuf.writerIndex( cbuf.writerIndex() + chk.content().readableBytes() );
+        cbuf.addComponent( cc);
+        cbuf.writerIndex( cbuf.writerIndex() + cc.readableBytes() );
       } else {
-        flushToFile( os, chk);
+        flushToFile(os, chk);
       }
     }
-    maybeFinzMsgChunk( ctx, msg);
+    maybeFinzMsgChunk(ctx, msg);
   }
 
   protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
-    if (msg instanceof LastHttpContent) {} else  {
+    if (msg instanceof LastHttpContent) {
+      tlog().debug("Got the final last-http-content chunk, end of message.");
+    } else  {
       return;
     }
-    tlog().debug("Got the final last-http-content chunk, end of message.");
     JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
     OutputStream os = (OutputStream) getAttr( ctx, XOS_KEY);
     ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
     XData xs = (XData) getAttr( ctx, XDATA_KEY);
-    addMoreHeaders( ctx, ((LastHttpContent ) msg).trailingHeaders());
+    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
     if (os == null) {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      slurpByteBuf( cbuf, baos);
+      OutputStream baos = new ByteArrayOutputStream();
+      slurpByteBuf(cbuf, baos);
       xs.resetContent(baos);
     } else {
       org.apache.commons.io.IOUtils.closeQuietly(os);
@@ -117,13 +119,12 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     finzAndDone(ctx, info, xs);
   }
 
-  public void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
       throws IOException {
-    resetAttrs(ctx);
     tlog().debug("fire fully decoded message to the next handler");
+    resetAttrs(ctx);
     ctx.fireChannelRead( new DemuxedMsg(info, xs));
   }
-
 
   public String getName() {
     return this.getClass().getSimpleName();

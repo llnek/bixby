@@ -236,26 +236,6 @@ public enum NettyFW {
     }
   }
 
-  public static ChannelHandler makeInboundAdaptor(final ChannelReader rdr, final JsonObject options) {
-
-    return new ChannelInboundHandlerAdapter() {
-      public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        rdr.handle(ctx, msg, options);
-      }
-    };
-
-  }
-
-  public static ChannelHandler makeInboundHandler(final ChannelReader rdr, final JsonObject options) {
-
-    return new SimpleChannelInboundHandler<Object>() {
-      public void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        rdr.handle(ctx, msg, options);
-      }
-    };
-
-  }
-
   public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg, final JsonObject options) {
 
     return cfg.configure(options);

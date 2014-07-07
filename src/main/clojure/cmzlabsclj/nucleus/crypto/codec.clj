@@ -14,31 +14,30 @@
 
   cmzlabsclj.nucleus.crypto.codec
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:require [clojure.math.numeric-tower :as math])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [clojure.math.numeric-tower :as math])
   (:use [cmzlabsclj.nucleus.util.core
-         :only [NewRandom Bytesify Stringify ThrowBadArg ternary] ])
-  (:use [cmzlabsclj.nucleus.util.io :only [MakeBitOS] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (javax.crypto.spec SecretKeySpec))
-  (:import (org.jasypt.encryption.pbe StandardPBEStringEncryptor))
-  (:import (org.jasypt.util.text StrongTextEncryptor))
-  (:import (java.io ByteArrayOutputStream))
-  (:import (java.security Key KeyFactory SecureRandom))
-  (:import (java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec))
-  (:import (javax.crypto Cipher))
-  (:import (org.mindrot.jbcrypt BCrypt))
-  (:import (org.bouncycastle.crypto.params DESedeParameters KeyParameter))
-  (:import (org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher))
-  (:import (org.bouncycastle.crypto KeyGenerationParameters))
-  (:import (org.bouncycastle.crypto.engines BlowfishEngine AESEngine
-                                            RSAEngine DESedeEngine))
-  (:import (org.bouncycastle.crypto.generators DESedeKeyGenerator))
-  (:import (org.bouncycastle.crypto.modes CBCBlockCipher))
-  (:import (org.apache.commons.lang3 StringUtils)))
-
+         :only [NewRandom Bytesify Stringify ThrowBadArg ternary] ]
+        [cmzlabsclj.nucleus.util.io :only [MakeBitOS] ]
+        [cmzlabsclj.nucleus.util.str :only [nsb] ])
+  (:import  [org.apache.commons.codec.binary Base64]
+            [javax.crypto.spec SecretKeySpec]
+            [org.jasypt.encryption.pbe StandardPBEStringEncryptor]
+            [org.jasypt.util.text StrongTextEncryptor]
+            [java.io ByteArrayOutputStream]
+            [java.security Key KeyFactory SecureRandom]
+            [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
+            [javax.crypto Cipher]
+            [org.mindrot.jbcrypt BCrypt]
+            [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
+            [org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher]
+            [org.bouncycastle.crypto KeyGenerationParameters]
+            [org.bouncycastle.crypto.engines BlowfishEngine AESEngine
+                                                      RSAEngine DESedeEngine]
+            [org.bouncycastle.crypto.generators DESedeKeyGenerator]
+            [org.bouncycastle.crypto.modes CBCBlockCipher]
+            [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; using amap below causes reflection warnings, I can't fix it, so turn checking
@@ -82,7 +81,7 @@
   ^bytes
   [^bytes keyBits ^String algo]
 
-  (let [ len (* 8 (alength keyBits)) ]
+  (let [len (* 8 (alength keyBits)) ]
     (when (and (= T3_DES algo)
                (< len 192)) ;; 8x 3 = 24 bytes
       (ThrowBadArg "Encryption key length must be 192, when using TripleDES"))
@@ -99,7 +98,7 @@
   ^bytes
   [^bytes pwd ^String algo]
 
-  (let [ len (* 8 (alength pwd)) ]
+  (let [len (* 8 (alength pwd)) ]
     ;;(println "keyAsBits len of input key = " len)
     (cond
       (= "AES" algo)
@@ -162,8 +161,8 @@
   ^long
   [^Character ch]
 
-  (let [ idx (some (fn [i] (if (= ch (aget ^chars VISCHS i)) i nil))
-                   (range VISCHS_LEN)) ]
+  (let [idx (some (fn [i] (if (= ch (aget ^chars VISCHS i)) i nil))
+                  (range VISCHS_LEN)) ]
     (ternary idx -1)
   ))
 
@@ -173,8 +172,8 @@
 
   [delta cpos]
 
-  (let [ ptr (+ cpos delta)
-         np (if (>= ptr VISCHS_LEN) (- ptr VISCHS_LEN) ptr) ]
+  (let [ptr (+ cpos delta)
+        np (if (>= ptr VISCHS_LEN) (- ptr VISCHS_LEN) ptr) ]
     (identify-ch np)
   ))
 
@@ -184,8 +183,8 @@
 
   [delta cpos]
 
-  (let [ ptr (- cpos delta)
-         np (if (< ptr 0) (+ VISCHS_LEN ptr) ptr) ]
+  (let [ptr (- cpos delta)
+        np (if (< ptr 0) (+ VISCHS_LEN ptr) ptr) ]
     (identify-ch np)
   ))
 
@@ -220,14 +219,14 @@
 
   (if (or (StringUtils/isEmpty text) (= shiftpos 0))
     text
-    (let [ delta (mod (math/abs shiftpos) VISCHS_LEN)
-           ca (.toCharArray text)
-           out (amap ^chars ca pos ret
-                     (let [ ch (aget ^chars ca pos)
-                            p (locate-ch ch) ]
+    (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
+          ca (.toCharArray text)
+          out (amap ^chars ca pos ret
+                     (let [ch (aget ^chars ca pos)
+                           p (locate-ch ch) ]
                        (if (< p 0)
-                           ch
-                           (shiftenc shiftpos delta p)))) ]
+                         ch
+                         (shiftenc shiftpos delta p)))) ]
       (String. ^chars out))
   ))
 
@@ -240,14 +239,14 @@
 
   (if (or (StringUtils/isEmpty text) (= shiftpos 0))
     text
-    (let [ delta (mod (math/abs shiftpos) VISCHS_LEN)
-           ca (.toCharArray text)
-           out (amap ^chars ca pos ret
-                  (let [ ch (aget ^chars ca pos)
-                         p (locate-ch ch) ]
+    (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
+          ca (.toCharArray text)
+          out (amap ^chars ca pos ret
+                  (let [ch (aget ^chars ca pos)
+                        p (locate-ch ch) ]
                     (if (< p 0)
-                        ch
-                        (shiftdec shiftpos delta p)))) ]
+                      ch
+                      (shiftdec shiftpos delta p)))) ]
       (String. ^chars out))
   ))
 
@@ -258,8 +257,8 @@
   ^String
   [^chars pkey ^String text]
 
-  (let [ c (doto (StrongTextEncryptor.)
-                 (.setPasswordCharArray pkey)) ]
+  (let [c (doto (StrongTextEncryptor.)
+            (.setPasswordCharArray pkey)) ]
     (.decrypt c text)
   ))
 
@@ -270,8 +269,8 @@
   ^String
   [^chars pkey ^String text]
 
-  (let [ c (doto (StrongTextEncryptor.)
-                 (.setPasswordCharArray pkey)) ]
+  (let [c (doto (StrongTextEncryptor.)
+            (.setPasswordCharArray pkey)) ]
     (.encrypt c text)
   ))
 
@@ -300,9 +299,9 @@
   ^Cipher
   [^bytes pkey mode ^String algo]
 
-  (let [ spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
+  (let [spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
     (doto (Cipher/getInstance algo)
-          (.init ^long mode spec))
+      (.init ^long mode spec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,13 +313,13 @@
 
   (if (StringUtils/isEmpty text)
     text
-    (let [ c (getCipher pkey Cipher/ENCRYPT_MODE algo)
-           p (Bytesify text)
-           baos (MakeBitOS)
-           out (byte-array (max 4096 (.getOutputSize c (alength p))))
-           n (.update c p 0 (alength p) out 0) ]
+    (let [c (getCipher pkey Cipher/ENCRYPT_MODE algo)
+          p (Bytesify text)
+          baos (MakeBitOS)
+          out (byte-array (max 4096 (.getOutputSize c (alength p))))
+          n (.update c p 0 (alength p) out 0) ]
       (when (> n 0) (.write baos out 0 n))
-      (let [ n2 (.doFinal c out 0) ]
+      (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
       (Base64/encodeBase64String (.toByteArray baos)))
   ))
@@ -334,13 +333,13 @@
 
   (if (StringUtils/isEmpty encoded)
     encoded
-    (let [ c (getCipher pkey Cipher/DECRYPT_MODE algo)
-           p (Base64/decodeBase64 encoded)
-           baos (MakeBitOS)
-           out (byte-array (max 4096 (.getOutputSize c (alength p))))
-           n (.update c p 0 (alength p) out 0) ]
+    (let [c (getCipher pkey Cipher/DECRYPT_MODE algo)
+          p (Base64/decodeBase64 encoded)
+          baos (MakeBitOS)
+          out (byte-array (max 4096 (.getOutputSize c (alength p))))
+          n (.update c p 0 (alength p) out 0) ]
       (when (> n 0) (.write baos out 0 n))
-      (let [ n2 (.doFinal c out 0) ]
+      (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
       (Stringify (.toByteArray baos)))
   ))

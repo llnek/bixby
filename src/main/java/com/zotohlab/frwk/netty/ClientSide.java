@@ -11,7 +11,6 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlab.frwk.netty;
 
 import static com.zotohlab.frwk.io.IOUtils.*;
@@ -40,8 +39,7 @@ public enum ClientSide {
 
   private static final AttributeKey URL_KEY = AttributeKey.valueOf("targetUrl");
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
-  public static Logger tlog() { return ClientSide._log; }
-
+  public static Logger tlog() { return _log; }
 
   public static Bootstrap initClientSide( PipelineConfigurator cfg, JsonObject options) {
     Bootstrap bs= new Bootstrap();
@@ -75,19 +73,19 @@ public enum ClientSide {
   }
 
   public static void post(Channel c, XData data, JsonObject options) throws IOException {
-     send(c, "POST", data, options);
+    send(c, "POST", data, options);
   }
 
   public static  void post(Channel c, XData data) throws IOException {
-     send(c,"POST", data, new JsonObject() );
+    send(c,"POST", data, new JsonObject() );
   }
 
   public static  void get(Channel c, JsonObject options) throws IOException {
-     send(c, "GET", new XData(), options);
+    send(c, "GET", new XData(), options);
   }
 
   public static  void get(Channel c) throws IOException {
-     send(c,"GET", new XData(), new JsonObject() );
+    send(c,"GET", new XData(), new JsonObject() );
   }
 
   private static ChannelFuture send(Channel ch, String op, XData xdata, JsonObject options)
