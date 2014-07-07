@@ -40,9 +40,7 @@
             [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; using amap below causes reflection warnings, I can't fix it, so turn checking
-;; off explicitly for this file.
-;;(set! *warn-on-reflection* false)
+;;(set! *warn-on-reflection* true)
 ;; AES (128,256)
 ;; DES (8)
 ;; DESede (TripleDES - 8 x 3 = 24)
@@ -76,7 +74,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ensureKeySize ""
+(defn- ensureKeySize "Given an algo, make sure the key has enough bits."
 
   ^bytes
   [^bytes keyBits ^String algo]
@@ -93,7 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- keyAsBits ""
+(defn- keyAsBits "Given the algo, sanitize the key, chop length if necessary."
 
   ^bytes
   [^bytes pwd ^String algo]
@@ -123,7 +121,7 @@
 ;;
 (defprotocol BaseCryptor
 
-  ""
+  "Methods supported by a crypto object."
 
   (decrypt [_ ^bytes pkey ^String cipherText] [_ ^String cipherText] )
   (encrypt [_ ^bytes pkey ^String text] [_ ^String text] )
@@ -133,7 +131,7 @@
 ;;
 (defprotocol PasswordAPI
 
-  ""
+  "Methods supported by a passord like object."
 
   (validateHash [_ pwdTarget] )
   (toCharArray [_] )
@@ -146,7 +144,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; caesar cipher
-(defn- identify-ch ""
+(defn- identify-ch "Lookup a character by the given index."
 
   ^Character
   [pos]
@@ -155,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- locate-ch ""
+(defn- locate-ch "Given a character, return the index."
 
   ^long
   [^Character ch]
@@ -169,6 +167,7 @@
 ;;
 (defn- slide-forward ""
 
+  ^Character
   [delta cpos]
 
   (let [ptr (+ cpos delta)
@@ -180,6 +179,7 @@
 ;;
 (defn- slide-back ""
 
+  ^Character
   [delta cpos]
 
   (let [ptr (- cpos delta)
@@ -191,6 +191,7 @@
 ;;
 (defn- shiftenc ""
 
+  ^Character
   [shiftpos delta cpos]
 
   (if (< shiftpos 0)
@@ -202,11 +203,26 @@
 ;;
 (defn- shiftdec ""
 
+  ^Character
   [shiftpos delta cpos]
 
   (if (< shiftpos 0)
     (slide-back delta cpos)
     (slide-forward delta cpos)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- caesar-amap-expr ""
+
+  ^Character
+  [^chars ca pos shiftFunc]
+
+  (let [ch (aget ca pos)
+        p (locate-ch ch) ]
+    (if (< p 0)
+      ch
+      (shiftFunc p))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,12 +236,9 @@
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
-          out (amap ^chars ca pos ret
-                     (let [ch (aget ^chars ca pos)
-                           p (locate-ch ch) ]
-                       (if (< p 0)
-                         ch
-                         (shiftenc shiftpos delta p)))) ]
+          pf (partial shiftenc shiftpos delta)
+          out (amap ca pos ret
+                    (caesar-amap-expr ca pos pf)) ]
       (String. ^chars out))
   ))
 
@@ -240,18 +253,15 @@
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
-          out (amap ^chars ca pos ret
-                  (let [ch (aget ^chars ca pos)
-                        p (locate-ch ch) ]
-                    (if (< p 0)
-                      ch
-                      (shiftdec shiftpos delta p)))) ]
+          pf (partial shiftdec shiftpos delta)
+          out (amap ca pos ret
+                    (caesar-amap-expr ca pos pf)) ]
       (String. ^chars out))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; jasypt cryptor
-(defn- jaDecr ""
+(defn- jaDecr "Decrypt using Jasypt."
 
   ^String
   [^chars pkey ^String text]
@@ -263,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- jaEncr ""
+(defn- jaEncr "Encrypt using Jasypt."
 
   ^String
   [^chars pkey ^String text]
@@ -293,7 +303,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; java cryptor
-(defn- getCipher ""
+(defn- getCipher "Given an algo, create a Java Cipher instance."
 
   ^Cipher
   [^bytes pkey mode ^String algo]
@@ -305,7 +315,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- javaEncr ""
+(defn- javaEncr "Encrypt using Java.  Returns a base64 encoded string."
 
   ^String
   [^bytes pkey ^String text ^String algo]
@@ -325,7 +335,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- javaDecr ""
+(defn- javaDecr "Decrypt using Java. Input is a base64 encoded cipher."
 
   ^String
   [^bytes pkey ^String encoded ^String algo]
@@ -381,7 +391,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 1024 - 2048 bits RSA
-(defn AsymEncr ""
+(defn AsymEncr "Encrypt using a public key.  Returns a base64 encoded cipher."
 
   ^String
   [^bytes pubKey ^String text]
@@ -398,7 +408,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsymDecr ""
+(defn AsymDecr "Decrypt using a private key.  Input is a base64 encoded cipher."
 
   ^String
   [^bytes prvKey ^String cipherText]
@@ -410,57 +420,55 @@
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
                    (.init Cipher/DECRYPT_MODE pk))
           out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
-      (Base64/encodeBase64String out))
+      (Stringify out))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BC cryptor
-(defn BcDecr ""
+(defn BcDecr "Decrypt using BouncyCastle."
 
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (= "RSA" algo)
-    (AsymDecr pkey text)
-    (if (StringUtils/isEmpty text)
-      text
-      (let [cipher (doto (-> (bcXrefCipherEngine algo)
-                             (CBCBlockCipher. )
-                             (PaddedBufferedBlockCipher. ))
-                     (.init false (KeyParameter. (keyAsBits pkey algo))))
-            p (Base64/decodeBase64 text)
-            out (byte-array 1024)
-            baos (MakeBitOS)
-            c (.processBytes cipher p 0 (alength p) out 0) ]
-        (when (> c 0) (.write baos out 0 c))
-        (let [c2 (.doFinal cipher out 0) ]
-          (when (> c2 0) (.write baos out 0 c2)))
-        (Stringify (.toByteArray baos))))
+  (if (StringUtils/isEmpty text)
+    text
+    (let [cipher (doto (-> (bcXrefCipherEngine algo)
+                           (CBCBlockCipher. )
+                           (PaddedBufferedBlockCipher. ))
+                   (.init false
+                          (KeyParameter. (keyAsBits pkey algo))))
+          p (Base64/decodeBase64 text)
+          out (byte-array 1024)
+          baos (MakeBitOS)
+          c (.processBytes cipher p 0 (alength p) out 0) ]
+      (when (> c 0) (.write baos out 0 c))
+      (let [c2 (.doFinal cipher out 0) ]
+        (when (> c2 0) (.write baos out 0 c2)))
+      (Stringify (.toByteArray baos)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BcEncr ""
+(defn BcEncr "Encrypt using BouncyCastle.  Returning a base64 encoded cipher."
 
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (= "RSA" algo)
-    (AsymEncr pkey text)
-    (if (StringUtils/isEmpty text)
-      text
-      (let [cipher (doto (-> (bcXrefCipherEngine algo)
-                             (CBCBlockCipher. )
-                             (PaddedBufferedBlockCipher. ))
-                     (.init true (KeyParameter. (keyAsBits pkey algo))))
-            out (byte-array 4096)
-            baos (MakeBitOS)
-            p (Bytesify text)
-            c (.processBytes cipher p 0 (alength p) out 0) ]
-        (when (> c 0) (.write baos out 0 c))
-        (let [c2 (.doFinal cipher out 0) ]
-          (when (> c2 0) (.write baos out 0 c2)) )
-        (Base64/encodeBase64String (.toByteArray baos))))
+  (if (StringUtils/isEmpty text)
+    text
+    (let [cipher (doto (-> (bcXrefCipherEngine algo)
+                           (CBCBlockCipher. )
+                           (PaddedBufferedBlockCipher. ))
+                   (.init true
+                          (KeyParameter. (keyAsBits pkey algo))))
+          out (byte-array 4096)
+          baos (MakeBitOS)
+          p (Bytesify text)
+          c (.processBytes cipher p 0 (alength p) out 0) ]
+      (when (> c 0) (.write baos out 0 c))
+      (let [c2 (.doFinal cipher out 0) ]
+        (when (> c2 0) (.write baos out 0 c2)) )
+      (Base64/encodeBase64String (.toByteArray baos)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

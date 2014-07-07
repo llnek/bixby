@@ -142,7 +142,7 @@
   [^String product]
 
   (let [lp (cstr/lower-case product)
-        fc (fn [a b] (Embed? b a)) ]
+        fc (fn [a b] (Embeds? b a)) ]
     (condp fc lp
       "microsoft" :sqlserver
       "postgres" :postgresql
