@@ -14,21 +14,21 @@
 
   cmzlabsclj.nucleus.dbio.connect
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.dbio.core])
-  (:use [cmzlabsclj.nucleus.util.core :only [Try!] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
-  (:use [cmzlabsclj.nucleus.dbio.composite])
-  (:use [cmzlabsclj.nucleus.dbio.simple])
-  (:use [cmzlabsclj.nucleus.dbio.sqlserver])
-  (:use [cmzlabsclj.nucleus.dbio.postgresql])
-  (:use [cmzlabsclj.nucleus.dbio.mysql])
-  (:use [cmzlabsclj.nucleus.dbio.oracle])
-  (:use [cmzlabsclj.nucleus.dbio.h2])
-  (:import (java.util Map HashMap))
-  (:import (com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo 
-                                    DBIOLocal DBIOError OptLockError)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.dbio.core]
+        [cmzlabsclj.nucleus.util.core :only [Try!] ]
+        [cmzlabsclj.nucleus.util.str :only [nsb] ]
+        [cmzlabsclj.nucleus.dbio.composite]
+        [cmzlabsclj.nucleus.dbio.simple]
+        [cmzlabsclj.nucleus.dbio.sqlserver]
+        [cmzlabsclj.nucleus.dbio.postgresql]
+        [cmzlabsclj.nucleus.dbio.mysql]
+        [cmzlabsclj.nucleus.dbio.oracle]
+        [cmzlabsclj.nucleus.dbio.h2])
+  (:import  [java.util Map HashMap]
+            [com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo
+                                    DBIOLocal DBIOError OptLockError]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -39,18 +39,17 @@
 
   [^JDBCInfo jdbc options]
 
-  (let [ tloc (DBIOLocal/getCache)
-         hc (.getId jdbc)
-         ^Map c (.get tloc) ]
+  (let [tloc (DBIOLocal/getCache)
+        hc (.getId jdbc)
+        ^Map c (.get tloc) ]
     (when-not (.containsKey c hc)
       (log/debug "no db pool found in DBIO-thread-local, creating one...")
-      (let [ o { :partitions 1 
-                 :max-conns 1 :min-conns 1 }
-             p (MakeDbPool jdbc (merge options o)) ]
+      (let [o { :partitions 1
+                :max-conns 1 :min-conns 1 }
+            p (MakeDbPool jdbc (merge options o)) ]
         (.put c hc p)))
     (.get c hc)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -59,7 +58,7 @@
   ^DBAPI
   [^JDBCInfo jdbc metaCache options]
 
-  (let [ hc (.getId jdbc) ]
+  (let [hc (.getId jdbc) ]
     ;;(log/debug (.getMetas metaCache))
     (reify DBAPI
 
@@ -73,11 +72,8 @@
 
       (open [_] (MakeConnection jdbc))
 
-      (newCompositeSQLr [this]
-        (CompositeSQLr metaCache this))
-
-      (newSimpleSQLr [this]
-        (SimpleSQLr metaCache this)) )
+      (newCompositeSQLr [this] (CompositeSQLr metaCache this))
+      (newSimpleSQLr [this] (SimpleSQLr metaCache this)) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,25 +83,17 @@
   ^DBAPI
   [^JDBCPool pool metaCache options]
 
-  (let []
-    (reify DBAPI
+  (reify DBAPI
 
-      (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
+    (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
+    (getMetaCache [_] metaCache)
 
-      (getMetaCache [_] metaCache)
+    (vendor [_] (.vendor pool))
+    (finz [_] nil)
+    (open [_] (.nextFree pool))
 
-      (vendor [_] (.vendor pool))
-
-      (finz [_] nil)
-
-      (open [_] (.nextFree pool))
-
-      (newCompositeSQLr [this]
-        (CompositeSQLr metaCache this))
-
-      (newSimpleSQLr [this]
-        (SimpleSQLr metaCache this)) )
-  ))
+    (newCompositeSQLr [this] (CompositeSQLr metaCache this))
+    (newSimpleSQLr [this] (SimpleSQLr metaCache this)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

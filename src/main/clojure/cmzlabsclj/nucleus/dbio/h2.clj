@@ -14,18 +14,19 @@
 
   cmzlabsclj.nucleus.dbio.h2
 
-  (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.util.core :only [test-nonil test-nestr] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [nsb] ])
-  (:use [cmzlabsclj.nucleus.dbio.drivers])
-  (:use [cmzlabsclj.nucleus.dbio.core :as dbcore ])
+  (:require [clojure.tools.logging :as log :only (info warn error debug)]
+            [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.util.core :only [test-nonil test-nestr] ]
+        [cmzlabsclj.nucleus.util.str :only [nsb] ]
+        [cmzlabsclj.nucleus.dbio.drivers]
+        [cmzlabsclj.nucleus.dbio.core :as dbcore ])
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.frwk.dbio DBIOError]
+            [java.io File]
+            [java.sql DriverManager Connection Statement]))
 
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.frwk.dbio DBIOError))
-  (:import (java.io File))
-  (:import (java.sql DriverManager Connection Statement)))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def H2-SERVER-URL "jdbc:h2:tcp://host/path/db" )
 (def H2-DRIVER "org.h2.Driver" )
 
@@ -93,18 +94,18 @@
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
-  (let [ url (File. dbFileDir dbid)
-         u (.getCanonicalPath url)
-         pwd (nsb pwdObj)
-         dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
+  (let [url (File. dbFileDir dbid)
+        u (.getCanonicalPath url)
+        pwd (nsb pwdObj)
+        dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
     (log/debug "Creating H2: " dbUrl)
     (.mkdir dbFileDir)
-    (with-open [ c1 (DriverManager/getConnection dbUrl user pwd) ]
+    (with-open [c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
-      (with-open [ s (.createStatement c1) ]
+      (with-open [s (.createStatement c1) ]
         ;;(.execute s (str "CREATE USER " user " PASSWORD \"" pwd "\" ADMIN"))
         (.execute s "SET DEFAULT_TABLE_TYPE CACHED"))
-      (with-open [ s (.createStatement c1) ]
+      (with-open [s (.createStatement c1) ]
         (.execute s "SHUTDOWN")))
     dbUrl
   ))
@@ -118,14 +119,14 @@
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
-  (let [ url (File. dbFileDir dbid)
-         u (.getCanonicalPath url)
-         pwd (nsb pwdObj)
-         dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
+  (let [url (File. dbFileDir dbid)
+        u (.getCanonicalPath url)
+        pwd (nsb pwdObj)
+        dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
     (log/debug "Closing H2: " dbUrl)
-    (with-open [ c1 (DriverManager/getConnection dbUrl user pwd) ]
+    (with-open [c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
-      (with-open [ s (.createStatement c1) ]
+      (with-open [s (.createStatement c1) ]
         (.execute s "SHUTDOWN")) )
   ))
 

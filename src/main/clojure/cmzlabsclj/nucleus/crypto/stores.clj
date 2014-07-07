@@ -14,24 +14,23 @@
 
   cmzlabsclj.nucleus.crypto.stores
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:require [clojure.math.numeric-tower :as math])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [clojure.math.numeric-tower :as math])
   (:use [cmzlabsclj.nucleus.crypto.core
-         :only [NewAlias CertAliases PKeyAliases GetPkcsStore GetJksStore] ])
-  (:use [cmzlabsclj.nucleus.util.core :only [ThrowBadArg] ])
-  (:use [cmzlabsclj.nucleus.util.str :only [hgl?] ])
-
-  (:import (java.security.cert CertificateFactory X509Certificate Certificate))
-  (:import (com.zotohlab.frwk.crypto CryptoUtils))
-  (:import (java.io File FileInputStream IOException InputStream))
-  (:import (java.security KeyStore PrivateKey
+         :only [NewAlias CertAliases PKeyAliases GetPkcsStore GetJksStore] ]
+        [cmzlabsclj.nucleus.util.core :only [ThrowBadArg] ]
+        [cmzlabsclj.nucleus.util.str :only [nsb hgl?] ])
+  (:import  [java.security.cert CertificateFactory X509Certificate Certificate]
+            [com.zotohlab.frwk.crypto CryptoUtils]
+            [java.io File FileInputStream IOException InputStream]
+            [java.security KeyStore PrivateKey
                           KeyStore$TrustedCertificateEntry
                           KeyStore$ProtectionParameter
                           KeyStore$PasswordProtection
-                          KeyStore$PrivateKeyEntry))
-  (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory))
-  (:import (javax.security.auth.x500 X500Principal)))
+                          KeyStore$PrivateKeyEntry]
+            [javax.net.ssl KeyManagerFactory TrustManagerFactory]
+            [javax.security.auth.x500 X500Principal]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -40,13 +39,13 @@
 ;;
 (defn- onNewKey ""
 
-  [ ^KeyStore keystore
-    ^String nm
-    ^KeyStore$PrivateKeyEntry pkey
-    ^chars pwd ]
+  [^KeyStore keystore
+   ^String nm
+   ^KeyStore$PrivateKeyEntry pkey
+   ^chars pwd ]
 
-  (let [ cc (.getCertificateChain pkey) ]
-    (doseq [ ^Certificate c (seq cc) ]
+  (let [cc (.getCertificateChain pkey) ]
+    (doseq [^Certificate c (seq cc) ]
       (.setCertificateEntry keystore (NewAlias) c))
     (.setEntry keystore nm pkey (KeyStore$PasswordProtection. pwd))
   ))
@@ -57,16 +56,16 @@
 
   [^KeyStore keystore tca root]
 
-  (loop [ en (.aliases keystore)
-          rc (transient []) ]
+  (loop [en (.aliases keystore)
+         rc (transient []) ]
     (if (not (.hasMoreElements en))
       (persistent! rc)
-      (if-let [ ce (CryptoUtils/getCert keystore
-                                        ^String (.nextElement en)) ]
-        (let [ cert (.getTrustedCertificate ce)
-               issuer (.getIssuerX500Principal ^X509Certificate cert)
-               subj (.getSubjectX500Principal ^X509Certificate cert)
-               matched (and (not (nil? issuer)) (= issuer subj)) ]
+      (if-let [ce (CryptoUtils/getCert keystore
+                                       ^String (.nextElement en)) ]
+        (let [cert (.getTrustedCertificate ce)
+              issuer (.getIssuerX500Principal ^X509Certificate cert)
+              subj (.getSubjectX500Principal ^X509Certificate cert)
+              matched (and (not (nil? issuer)) (= issuer subj)) ]
           (if (or (and root (not matched)) (and tca matched))
             (recur en rc)
             (recur en (conj! rc cert))))
@@ -118,15 +117,15 @@
     (addKeyEntity [this bits pwdObj]
       ;; we load the p12 content into an empty keystore, then extract the entry
       ;; and insert it into the current one.
-      (let [ ch (.toCharArray ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj)
-             tmp (doto (mkStore keystore) (.load bits ch))
-             pkey (CryptoUtils/getPKey tmp ^String (-> (.aliases tmp)
-                                                       (.nextElement)) ch) ]
+      (let [ch (.toCharArray ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj)
+            tmp (doto (mkStore keystore) (.load bits ch))
+            pkey (CryptoUtils/getPKey tmp ^String (-> (.aliases tmp)
+                                                      (.nextElement)) ch) ]
         (onNewKey this (NewAlias) pkey ch)))
 
     (addCertEntity [_ bits]
-      (let [ fac (CertificateFactory/getInstance "X.509")
-             ^X509Certificate c (.generateCertificate fac bits) ]
+      (let [fac (CertificateFactory/getInstance "X.509")
+            ^X509Certificate c (.generateCertificate fac bits) ]
         (.setCertificateEntry keystore (NewAlias) c)))
 
     (trustManagerFactory [_]
@@ -141,7 +140,7 @@
     (keyAliases [_] (PKeyAliases keystore))
 
     (keyEntity [_ nm pwdObj]
-      (let [ ca (.toCharArray ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj) ]
+      (let [ca (.toCharArray ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj) ]
         (CryptoUtils/getPKey keystore ^String nm ca)))
 
     (certEntity [_ nm]
@@ -155,19 +154,16 @@
     (rootCAs [_] (getCAs keystore false true))
 
     (trustedCerts [me]
-      (map (fn [^String nm]
-             (let [ ^KeyStore$TrustedCertificateEntry tc (.certEntity me nm) ]
-                (.getTrustedCertificate tc)))
+      (map #(let [^KeyStore$TrustedCertificateEntry tc (.certEntity me (nsb %1)) ]
+              (.getTrustedCertificate tc))
            (.certAliases me)))
 
     (addPKCS7Entity [_ bits]
-      (let [ fac (CertificateFactory/getInstance "X.509")
-             certs (.generateCertificates fac bits) ]
-        (doseq [ ^X509Certificate c (seq certs) ]
+      (let [fac (CertificateFactory/getInstance "X.509")
+            certs (.generateCertificates fac bits) ]
+        (doseq [^X509Certificate c (seq certs) ]
           (.setCertificateEntry keystore (NewAlias) c))))
-
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -9,25 +9,23 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc ""
        :author "kenl" }
 
   cmzlabsclj.nucleus.crypto.ssl
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabsclj.nucleus.crypto.stores :only [MakeCryptoStore] ])
-  (:use [cmzlabsclj.nucleus.util.core :only [NewRandom] ])
-  (:use [cmzlabsclj.nucleus.crypto.core
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabsclj.nucleus.crypto.stores :only [MakeCryptoStore] ]
+        [cmzlabsclj.nucleus.util.core :only [NewRandom] ]
+        [cmzlabsclj.nucleus.crypto.core
          :only [PkcsFile? GetJksStore
                 GetPkcsStore MakeSimpleTrustMgr] ])
-  (:import (javax.net.ssl X509TrustManager TrustManager))
-  (:import (javax.net.ssl SSLEngine SSLContext))
-  (:import (com.zotohlab.frwk.net SSLTrustMgrFactory))
-  (:import (java.net URL))
-  (:import (javax.net.ssl KeyManagerFactory TrustManagerFactory)))
-
+  (:import  [javax.net.ssl X509TrustManager TrustManager]
+            [javax.net.ssl SSLEngine SSLContext]
+            [com.zotohlab.frwk.net SSLTrustMgrFactory]
+            [java.net URL]
+            [javax.net.ssl KeyManagerFactory TrustManagerFactory]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -36,19 +34,22 @@
 ;;
 (defn MakeSslContext "Make a server-side SSLContext."
 
-  (^SSLContext [^URL keyUrl ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj]
+  (^SSLContext
+    [^URL keyUrl ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj]
     (MakeSslContext keyUrl pwdObj "TLS"))
 
-  (^SSLContext [^URL keyUrl ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj
-                ^String flavor]
-    (let [ ks (with-open [ inp (.openStream keyUrl) ]
-                (if (PkcsFile? keyUrl)
-                    (GetPkcsStore inp pwdObj)
-                    (GetJksStore inp pwdObj)))
-           cs (MakeCryptoStore ks pwdObj)
-           tmf (.trustManagerFactory cs)
-           kmf (.keyManagerFactory cs)
-           ctx (SSLContext/getInstance flavor) ]
+  (^SSLContext
+    [^URL keyUrl
+     ^cmzlabsclj.nucleus.crypto.codec.Password pwdObj
+     ^String flavor]
+    (let [ks (with-open [inp (.openStream keyUrl) ]
+               (if (PkcsFile? keyUrl)
+                 (GetPkcsStore inp pwdObj)
+                 (GetJksStore inp pwdObj)))
+          cs (MakeCryptoStore ks pwdObj)
+          tmf (.trustManagerFactory cs)
+          kmf (.keyManagerFactory cs)
+          ctx (SSLContext/getInstance flavor) ]
       (.init ctx
              (.getKeyManagers ^KeyManagerFactory kmf)
              (.getTrustManagers ^TrustManagerFactory tmf)
@@ -63,9 +64,9 @@
   [ssl]
 
   (if (not ssl)
-      nil
-      (doto (SSLContext/getInstance "TLS")
-            (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
+    nil
+    (doto (SSLContext/getInstance "TLS")
+      (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

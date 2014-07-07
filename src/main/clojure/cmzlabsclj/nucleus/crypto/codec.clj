@@ -108,14 +108,13 @@
         ;; 128 => 16 bytes
         (and (> len 128) (< len 256))
         (into-array Byte/TYPE (take 16 pwd))
-
         :else pwd)
 
       (= T3_DES algo)
       (if (> len 192)
-          ;; 24 bits => 3 bytes
-          (into-array Byte/TYPE (take 24 pwd))
-          pwd)
+        ;; 24 bits => 3 bytes
+        (into-array Byte/TYPE (take 24 pwd))
+        pwd)
 
       :else pwd)
   ))
@@ -161,7 +160,7 @@
   ^long
   [^Character ch]
 
-  (let [idx (some (fn [i] (if (= ch (aget ^chars VISCHS i)) i nil))
+  (let [idx (some #(if (= ch (aget ^chars VISCHS %1)) %1 nil)
                   (range VISCHS_LEN)) ]
     (ternary idx -1)
   ))
@@ -301,7 +300,7 @@
 
   (let [spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
     (doto (Cipher/getInstance algo)
-      (.init ^long mode spec))
+      (.init (int mode) spec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -389,11 +388,11 @@
 
   (if (StringUtils/isEmpty text)
     text
-    (let [ ^Key pk (-> (KeyFactory/getInstance "RSA")
-                        (.generatePublic (X509EncodedKeySpec. pubKey)))
-           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
-                        (.init Cipher/ENCRYPT_MODE pk))
-           out (.doFinal cipher (Bytesify text)) ]
+    (let [^Key pk (-> (KeyFactory/getInstance "RSA")
+                      (.generatePublic (X509EncodedKeySpec. pubKey)))
+          cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
+                   (.init Cipher/ENCRYPT_MODE pk))
+          out (.doFinal cipher (Bytesify text)) ]
       (Base64/encodeBase64String out))
   ))
 
@@ -406,11 +405,11 @@
 
   (if (StringUtils/isEmpty cipherText)
     cipherText
-    (let [ ^Key pk (-> (KeyFactory/getInstance "RSA")
-                        (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
-           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
-                        (.init Cipher/DECRYPT_MODE pk))
-           out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
+    (let [^Key pk (-> (KeyFactory/getInstance "RSA")
+                      (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
+          cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
+                   (.init Cipher/DECRYPT_MODE pk))
+          out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
       (Base64/encodeBase64String out))
   ))
 
@@ -422,22 +421,21 @@
   [^bytes pkey ^String text ^String algo]
 
   (if (= "RSA" algo)
-      (AsymDecr pkey text)
-      (if (StringUtils/isEmpty text)
-        text
-        (let [ cipher (doto (-> (bcXrefCipherEngine algo)
-                                (CBCBlockCipher. )
-                                (PaddedBufferedBlockCipher. ))
-                            (.init false (KeyParameter. (keyAsBits pkey algo))))
-               p (Base64/decodeBase64 text)
-               out (byte-array 1024)
-               baos (MakeBitOS)
-               c (.processBytes cipher p 0 (alength p) out 0) ]
-          (when (> c 0) (.write baos out 0 c))
-          (let [ c2 (.doFinal cipher out 0) ]
-            (when (> c2 0) (.write baos out 0 c2)))
-          (Stringify (.toByteArray baos)))
-      )
+    (AsymDecr pkey text)
+    (if (StringUtils/isEmpty text)
+      text
+      (let [cipher (doto (-> (bcXrefCipherEngine algo)
+                             (CBCBlockCipher. )
+                             (PaddedBufferedBlockCipher. ))
+                     (.init false (KeyParameter. (keyAsBits pkey algo))))
+            p (Base64/decodeBase64 text)
+            out (byte-array 1024)
+            baos (MakeBitOS)
+            c (.processBytes cipher p 0 (alength p) out 0) ]
+        (when (> c 0) (.write baos out 0 c))
+        (let [c2 (.doFinal cipher out 0) ]
+          (when (> c2 0) (.write baos out 0 c2)))
+        (Stringify (.toByteArray baos))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -448,25 +446,23 @@
   [^bytes pkey ^String text ^String algo]
 
   (if (= "RSA" algo)
-      (AsymEncr pkey text)
-      (if (StringUtils/isEmpty text)
-        text
-        (let [ cipher (doto (-> (bcXrefCipherEngine algo)
-                                (CBCBlockCipher. )
-                                (PaddedBufferedBlockCipher. ))
-                            (.init true (KeyParameter. (keyAsBits pkey algo))))
-               out (byte-array 4096)
-               baos (MakeBitOS)
-               p (Bytesify text)
-               c (.processBytes cipher p 0 (alength p) out 0) ]
-          (when (> c 0) (.write baos out 0 c))
-          (let [ c2 (.doFinal cipher out 0) ]
-            (when (> c2 0) (.write baos out 0 c2)) )
-          (Base64/encodeBase64String (.toByteArray baos)))
-      )
+    (AsymEncr pkey text)
+    (if (StringUtils/isEmpty text)
+      text
+      (let [cipher (doto (-> (bcXrefCipherEngine algo)
+                             (CBCBlockCipher. )
+                             (PaddedBufferedBlockCipher. ))
+                     (.init true (KeyParameter. (keyAsBits pkey algo))))
+            out (byte-array 4096)
+            baos (MakeBitOS)
+            p (Bytesify text)
+            c (.processBytes cipher p 0 (alength p) out 0) ]
+        (when (> c 0) (.write baos out 0 c))
+        (let [c2 (.doFinal cipher out 0) ]
+          (when (> c2 0) (.write baos out 0 c2)) )
+        (Base64/encodeBase64String (.toByteArray baos))))
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn BouncyCryptor  "Make a cryptor using BouncyCastle."
@@ -492,7 +488,7 @@
 ;; passwords
 (defn- createXXX ""
 
-  [ len ^chars chArray]
+  [len ^chars chArray]
 
   (cond
     (< len 0)
@@ -502,11 +498,11 @@
     ""
 
     :else
-    (let [ ostr (char-array len)
-           cl (alength chArray)
-           r (NewRandom)
-           rc (amap ^chars ostr pos ret
-                    (let [ n (mod (.nextInt r Integer/MAX_VALUE) cl) ]
+    (let [ostr (char-array len)
+          cl (alength chArray)
+          r (NewRandom)
+          rc (amap ^chars ostr pos ret
+                    (let [n (mod (.nextInt r Integer/MAX_VALUE) cl) ]
                       (aget chArray n))) ]
       (String. ^chars rc))
   ))
@@ -519,7 +515,7 @@
 
   (equals [this obj] (and (instance? Password obj)
                           (= (.toString this)
-                             (.toString ^Object obj))) )
+                             (nsb obj))) )
   (hashCode [this] (.hashCode (nsb (.text this))))
   (toString [this] (.text this))
 
@@ -529,14 +525,14 @@
 
   (stronglyHashed [_]
     (if (nil? pwdStr)
-      [ ""  "" ]
-      (let [ s (BCrypt/gensalt 12) ]
+      [""  ""]
+      (let [s (BCrypt/gensalt 12) ]
         [ (BCrypt/hashpw pwdStr s) s ] )))
 
   (hashed [_]
     (if (nil? pwdStr)
-      [ "" "" ]
-      (let [ s (BCrypt/gensalt 10) ]
+      ["" ""]
+      (let [s (BCrypt/gensalt 10) ]
         [ (BCrypt/hashpw pwdStr s) s ] )))
 
   (validateHash [this pwdHashed]

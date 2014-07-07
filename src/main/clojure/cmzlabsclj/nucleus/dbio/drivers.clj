@@ -14,12 +14,12 @@
 
   cmzlabsclj.nucleus.dbio.drivers
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [cmzlabsclj.nucleus.dbio.core :as dbcore])
   (:use [cmzlabsclj.nucleus.util.str :only [hgl? AddDelim! nsb] ])
-  (:require [clojure.string :as cstr])
-  (:require [cmzlabsclj.nucleus.dbio.core :as dbcore])
-  (:import (com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError))
-  (:import (java.util Map HashMap)))
+  (:import  [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]
+            [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -31,7 +31,7 @@
   ^String
   [flds fid]
 
-  (let [ ^String c (:column (get flds fid)) ]
+  (let [^String c (:column (get flds fid)) ]
     (if (hgl? c) (cstr/upper-case c) c)
   ))
 
@@ -182,8 +182,10 @@
   ^String
   [db ^String col ty opt? dft]
 
-  (str (GetPad db) (cstr/upper-case col)
-       " " ty " " (nullClause db opt?)
+  (str (GetPad db)
+       (cstr/upper-case col)
+       " " ty " "
+       (nullClause db opt?)
        (if (nil? dft) "" (str " DEFAULT " dft))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,10 +214,13 @@
 
   [db fld]
 
-  (GenColDef  db (:column fld)
-    (str (GetStringKeyword db) "(" (:size fld) ")")
-    (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (str (GetStringKeyword db)
+                  "("
+                  (:size fld) ")")
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -224,8 +229,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetIntKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (GetIntKeyword db)
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,8 +250,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetDoubleKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (GetDoubleKeyword db)
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,8 +263,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetFloatKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (GetFloatKeyword db)
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,8 +276,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetLongKeyword db) (:null fld)
-    (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (GetLongKeyword db)
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,8 +305,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetTSKeyword db) (:null fld)
-    (if (:dft fld) (GetTSDefault db) nil)
+  (GenColDef db
+             (:column fld)
+             (GetTSKeyword db)
+             (:null fld)
+             (if (:dft fld) (GetTSDefault db) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -298,8 +318,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetDateKeyword db) (:null fld)
-    (if (:dft fld) (GetTSDefault db) nil)
+  (GenColDef db
+             (:column fld)
+             (GetDateKeyword db)
+             (:null fld)
+             (if (:dft fld) (GetTSDefault db) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,8 +339,11 @@
 
   [db fld]
 
-  (GenColDef db (:column fld) (GetBoolKeyword db) (:null fld)
-      (if (:dft fld) (first (:dft fld)) nil)
+  (GenColDef db
+             (:column fld)
+             (GetBoolKeyword db)
+             (:null fld)
+             (if (:dft fld) (first (:dft fld)) nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -327,16 +353,19 @@
   ^String
   [db cache table flds zm]
 
-  (let [ m (dbcore/CollectDbIndexes cache zm)
-         bf (StringBuilder.) ]
-    (doseq [ [nm nv] (seq m) ]
-      (let [ cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols) 
-              (dbcore/DbioError (str "Cannot have empty index: " nm)))
+  (let [m (dbcore/CollectDbIndexes cache zm)
+        bf (StringBuilder.) ]
+    (doseq [[nm nv] (seq m) ]
+      (let [cols (map #(getcolname flds %) nv) ]
+        (when (empty? cols)
+          (dbcore/DbioError (str "Cannot have empty index: " nm)))
         (.append bf (str "CREATE INDEX "
                          (cstr/lower-case (str table "_" (name nm)))
                          " ON " table
-                    " ( " (cstr/join "," cols) " )" (GenExec db) "\n\n" ))))
+                         " ( "
+                         (cstr/join "," cols)
+                         " )"
+                         (GenExec db) "\n\n" ))))
     (.toString bf)
   ))
 
@@ -346,12 +375,12 @@
 
   [db cache flds zm]
 
-  (let [ m (dbcore/CollectDbUniques cache zm)
-         bf (StringBuilder.) ]
-    (doseq [ [nm nv] (seq m) ]
-      (let [ cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols) 
-              (dbcore/DbioError (str "Illegal empty unique: " (name nm))))
+  (let [m (dbcore/CollectDbUniques cache zm)
+        bf (StringBuilder.) ]
+    (doseq [[nm nv] (seq m) ]
+      (let [cols (map #(getcolname flds %) nv) ]
+        (when (empty? cols)
+          (dbcore/DbioError (str "Illegal empty unique: " (name nm))))
         (AddDelim! bf ",\n"
             (str (GetPad db) "UNIQUE(" (cstr/join "," cols) ")"))))
     (.toString bf)
@@ -363,7 +392,8 @@
 
   [db zm pks]
 
-  (str (GetPad db) "PRIMARY KEY("
+  (str (GetPad db)
+       "PRIMARY KEY("
        (cstr/upper-case (nsb (cstr/join "," pks)) )
        ")"
   ))
@@ -374,15 +404,15 @@
 
   [db cache table zm]
 
-  (let [ flds (dbcore/CollectDbFields cache zm)
-         inx (StringBuilder.)
-         bf (StringBuilder.) ]
-    (with-local-vars [ pkeys (transient #{}) ]
+  (let [flds (dbcore/CollectDbFields cache zm)
+        inx (StringBuilder.)
+        bf (StringBuilder.) ]
+    (with-local-vars [pkeys (transient #{}) ]
       ;; 1st do the columns
-      (doseq [ [fid fld] (seq flds) ]
-        (let [ cn (cstr/upper-case ^String (:column fld))
-               dt (:domain fld)
-               col (case dt
+      (doseq [[fid fld] (seq flds) ]
+        (let [cn (cstr/upper-case ^String (:column fld))
+              dt (:domain fld)
+              col (case dt
                     :Boolean (GenBool db fld)
                     :Timestamp (GenTimestamp db fld)
                     :Date (GenDate db fld)
@@ -405,12 +435,11 @@
       (-> inx (.append (genExIndexes db cache table flds zm)))
       ;; now uniques, primary keys and done.
       (when (> (.length bf) 0)
-        (when (> (count @pkeys) 0)
-              (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
-        (let [ s (genUniques db cache flds zm) ]
+        (when (> (count @pkeys) 0) 
+          (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
+        (let [s (genUniques db cache flds zm) ]
           (when (hgl? s)
             (.append bf (str ",\n" s)))))
-
     [ (.toString bf) (.toString inx) ] )
   ))
 
@@ -420,12 +449,12 @@
 
   [db ms zm]
 
-  (let [ table (cstr/upper-case ^String (:table zm))
-         b (GenBegin db table)
-         d (genBody db ms table zm)
-         e (GenEnd db table)
-         s1 (str b (first d) e)
-         inx (last d) ]
+  (let [table (cstr/upper-case ^String (:table zm))
+        b (GenBegin db table)
+        d (genBody db ms table zm)
+        e (GenEnd db table)
+        s1 (str b (first d) e)
+        inx (last d) ]
     (str s1 (if (hgl? inx) inx "") (GenGrant db table))
   ))
 
@@ -434,14 +463,14 @@
 (defn GetDDL  ""
 
   ^String
-  [ ^MetaCache metaCache db ]
+  [^MetaCache metaCache db ]
 
-  (binding [ dbcore/*DDL_BVS* (HashMap.) ]
-    (let [ ms (.getMetas metaCache)
-           drops (StringBuilder.)
-           body (StringBuilder.) ]
-      (doseq [ [id tdef] (seq ms) ]
-        (let [ ^String tbl (:table tdef) ]
+  (binding [dbcore/*DDL_BVS* (HashMap.) ]
+    (let [ms (.getMetas metaCache)
+          drops (StringBuilder.)
+          body (StringBuilder.) ]
+      (doseq [[id tdef] (seq ms) ]
+        (let [^String tbl (:table tdef) ]
           (when (and (not (:abstract tdef)) (hgl? tbl))
             (log/debug "model id: " (name id) " table: " tbl)
             (-> drops (.append (GenDrop db (cstr/upper-case tbl) )))
