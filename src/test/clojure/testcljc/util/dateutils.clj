@@ -16,7 +16,7 @@
 
   (:import (java.util Date))
   (:use [clojure.test])
-  (:require [cmzlabsclj.nucleus.util.dates :as DU]))
+  (:require [cmzlabclj.nucleus.util.dates :as DU]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

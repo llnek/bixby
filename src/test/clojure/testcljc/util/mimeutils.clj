@@ -16,9 +16,9 @@
 
   (:use [clojure.test])
   (:import (java.io File InputStream))
-  (:require [cmzlabsclj.nucleus.util.core :as CU])
-  (:require [cmzlabsclj.nucleus.util.io :as IO])
-  (:require [cmzlabsclj.nucleus.util.mime :as MU]))
+  (:require [cmzlabclj.nucleus.util.core :as CU])
+  (:require [cmzlabclj.nucleus.util.io :as IO])
+  (:require [cmzlabclj.nucleus.util.mime :as MU]))
 
 
 (eval '(MU/SetupCache (CU/ResUrl "com/zotohlab/frwk/mime/mime.properties")))
