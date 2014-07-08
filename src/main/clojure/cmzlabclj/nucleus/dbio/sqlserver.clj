@@ -11,11 +11,12 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   cmzlabclj.nucleus.dbio.sqlserver
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.core :as dbcore]))
+  (:use [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.core]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

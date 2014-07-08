@@ -15,10 +15,10 @@
   cmzlabclj.nucleus.dbio.composite
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
-            [clojure.string :as cstr]
-            [cmzlabclj.nucleus.dbio.core :as dbcore :only [ese] ]
-            [cmzlabclj.nucleus.dbio.sql :as dbsql ])
+            [clojure.string :as cstr])
   (:use [cmzlabclj.nucleus.util.core :only [test-nonil notnil? Try!] ]
+        [cmzlabclj.nucleus.dbio.core]
+        [cmzlabclj.nucleus.dbio.sql]
         [cmzlabclj.nucleus.util.str :only [hgl?] ])
   (:import  [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]
             [java.sql Connection]))
@@ -28,7 +28,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mk-tx ""
+(defn- doExtraSQL ""
+
+  ^String
+  [^String sql extra]
+
+  sql)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mk-tx "Make a transactable-sql object."
 
   ^SQLr
   [^cmzlabclj.nucleus.dbio.sql.SQLProcAPI proc
@@ -40,22 +49,24 @@
     (reify SQLr
 
       (findAll [this model extra] (.findSome this model {} extra))
-      (findAll [this model] (.findAll this model ""))
+      (findAll [this model] (.findAll this model {}))
 
       (findOne [this model filters]
-        (let [rset (.findSome this model filters "") ]
+        (let [rset (.findSome this model filters {}) ]
           (if (empty? rset) nil (first rset))))
 
-      (findSome [this model filters] (.findSome this model filters ""))
+      (findSome [this model filters] (.findSome this model filters {}))
       (findSome [_ model filters extraSQL]
         (let [zm (metas model)
-              [wc pms] (dbsql/SqlFilterClause zm filters)
-              tbl (dbsql/Tablename zm)
-              s (str "SELECT * FROM " (dbcore/ese tbl))
-              extra (if (hgl? extraSQL) extraSQL "") ]
+              [wc pms]
+              (SqlFilterClause zm filters)
+              tbl (Tablename zm)
+              s (str "SELECT * FROM " (ese tbl)) ]
           (if (hgl? wc)
-            (.doQuery proc conn (str s " WHERE " wc " " extra) pms model)
-            (.doQuery proc conn (str s " " extra) [] model))) )
+            (.doQuery proc conn
+                      (doExtraSQL (str s " WHERE " wc))
+                      pms model)
+            (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) )
 
       (select [_ model sql params] (.doQuery proc conn sql params model) )
       (select [_ sql params] (.doQuery proc conn sql params) )
@@ -77,12 +88,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CompositeSQLr ""
+(defn CompositeSQLr "A composite supports transactions."
 
   ^Transactable
   [^MetaCache metaCache ^DBAPI db ]
 
-  (let [proc (dbsql/MakeProc metaCache db) ]
+  (let [proc (MakeProc metaCache db) ]
     (test-nonil "meta-cache" metaCache)
     (test-nonil "sql-proc!" proc)
     (test-nonil "dbapi" db)
@@ -99,13 +110,16 @@
                 (.commit this conn)
                 @rc)
               (catch Throwable e#
-                (do (.rollback this conn) (log/warn e# "") (throw e#))) ))))
+                (do
+                  (.rollback this conn)
+                  (log/warn e# "")
+                  (throw e#))) ))))
 
       (rollback [_ conn] (Try! (.rollback ^Connection conn)))
       (commit [_ conn] (.commit ^Connection conn))
 
       (begin [_]
-        (let [^Connection conn (.open db) ]
+        (let [conn (.open db) ]
           (.setAutoCommit conn false)
           ;;(.setTransactionIsolation conn Connection/TRANSACTION_READ_COMMITTED)
           (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)

@@ -11,12 +11,13 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   cmzlabclj.nucleus.dbio.postgresql
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:require [cmzlabclj.nucleus.dbio.core :as dbcore]))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [cmzlabclj.nucleus.dbio.core :as dbcore])
+  (:use [cmzlabclj.nucleus.dbio.drivers]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

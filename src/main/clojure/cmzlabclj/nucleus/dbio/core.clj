@@ -26,12 +26,13 @@
         [cmzlabclj.nucleus.util.meta :only [ForName] ])
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.dbio MetaCache Schema
+                                    BoneCPHook DBIOError
                                     SQLr JDBCPool JDBCInfo]
             [java.sql SQLException DatabaseMetaData
                      Connection Driver DriverManager]
             [java.util HashMap GregorianCalendar TimeZone Properties]
             [java.lang Math]
-            [com.zotohlab.frwk.dbio BoneCPHook DBIOError]
+            [com.zotohlab.frwk.crypto PasswordAPI]
             [com.jolbox.bonecp BoneCP BoneCPConfig]
             [org.apache.commons.lang3 StringUtils]))
 
@@ -89,9 +90,8 @@
 (defn MakeJdbc "Make a JDBCInfo record."
 
   ^JDBCInfo
-  [^String id cfg pwdObj]
+  [^String id cfg ^PasswordAPI pwdObj]
 
-   ;;^cmzlabclj.nucleus.crypto.codec.Password
   ;;(debug "JDBC id= " id ", cfg = " cfg)
   (reify JDBCInfo
     (getUser [_] (:user cfg))
@@ -121,7 +121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioError ""
+(defn DbioError "Throw a DBIOError execption."
 
   [^String msg]
 
@@ -129,7 +129,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioScopeType ""
+(defn DbioScopeType "Scope a type id."
 
   [t]
 
@@ -137,12 +137,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeGetVendor ""
+(defn- maybeGetVendor "Try to detect the database vendor."
 
   [^String product]
 
   (let [lp (cstr/lower-case product)
-        fc (fn [a b] (Embeds? b a)) ]
+        fc #(Embeds? %2 %1) ]
     (condp fc lp
       "microsoft" :sqlserver
       "postgres" :postgresql
@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Concise ""
+(defn Concise "Extra key attributes from this object."
 
   [obj]
 
@@ -171,7 +171,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MatchDbType ""
+(defn MatchDbType "Ensure the database type is supported."
 
   [^String dbtype]
 
@@ -183,7 +183,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MatchJdbcUrl ""
+(defn MatchJdbcUrl "From the jdbc url, get the database type."
 
   [^String url]
 
@@ -201,7 +201,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioModel
+(defn DbioModel "Define a generic database model."
 
   ([^String nm] (DbioModel *ns* nm))
 
@@ -220,7 +220,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefModel2  "Define a data model."
+(defmacro DefModel2  "Define a data model. (with namespace)"
 
   [nsp modelname & body]
 
@@ -266,23 +266,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbParentModel ""
+(defn WithDbParentModel "Give a parent to the model."
 
   [pojo par]
 
   (assoc pojo :parent par))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A special model with 2 assocs, left hand side and right hand side.
 ;;
-(defn WithDbJoinedModel ""
+(defn WithDbJoinedModel "A special model with 2 assocs,
+                        left hand side and right hand side."
 
   [pojo lhs rhs]
 
   (let [a1 { :kind :MXM :rhs lhs :fkey :lhs_rowid }
         a2 { :kind :MXM :rhs rhs :fkey :rhs_rowid }
         am (:assocs pojo)
-        m2 (-> am (assoc :lhs a1) (assoc :rhs a2)) ]
+        m2 (-> am
+               (assoc :lhs a1)
+               (assoc :rhs a2)) ]
     (-> pojo
         (assoc :assocs m2)
         (assoc :mxm true))
@@ -290,7 +292,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbTablename ""
+(defn WithDbTablename "Set the table name."
 
   [pojo tablename]
 
@@ -298,7 +300,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbIndexes ""
+(defn WithDbIndexes "Set indexes to the model."
 
   [pojo indices]
 
@@ -306,7 +308,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbUniques ""
+(defn WithDbUniques "Set uniques to the model."
 
   [pojo uniqs]
 
@@ -314,7 +316,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getDftFldObj ""
+(defn- getDftFldObj "The base field structure."
 
   [fid]
 
@@ -333,7 +335,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbField ""
+(defn WithDbField "Create a new field."
 
   [pojo fid fdef]
 
@@ -344,7 +346,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbFields ""
+(defn WithDbFields "Create a batch of fields."
 
   [pojo flddefs]
 
@@ -356,31 +358,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbAssoc ""
+(defn WithDbAssoc "Set an association."
 
   [pojo aid adef]
 
-  (let [ad (merge { :kind nil
-                    :rhs nil
-                    :fkey nil
-                    :cascade false } adef)
+  (let [ad (merge { :kind nil :rhs nil
+                    :fkey nil :cascade false } adef)
         a2 (case (:kind ad)
-              (:O2O :O2M) (assoc ad
-                                 :fkey
-                                 (fmtfkey (:id pojo) aid))
-              (:M2M :MXM) ad
-              ;;else
-              (DbioError (str "Invalid assoc def " adef))) ]
+             (:O2O :O2M)
+             (assoc ad :fkey (fmtfkey (:id pojo) aid))
+             (:M2M :MXM) ad
+             ;;else
+             (DbioError (str "Invalid assoc def " adef))) ]
     (Interject pojo :assocs #(assoc % aid a2))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbAssocs ""
+(defn WithDbAssocs "Set a batch of associations."
 
   [pojo assocs]
 
-  (with-local-vars [ rcmap pojo ]
+  (with-local-vars [rcmap pojo ]
     (doseq [[k v] (seq assocs) ]
       (var-set rcmap (WithDbAssoc @rcmap k v)))
     @rcmap
@@ -388,7 +387,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WithDbAbstract ""
+(defn WithDbAbstract "Set the model as abstract."
 
   [pojo]
 
@@ -396,7 +395,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- WithDbSystem ""
+(defn- WithDbSystem "This is a built-in system level model."
 
   [pojo]
 
@@ -404,7 +403,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- nested-merge ""
+(defn- nested-merge "Merge either a set or map."
 
   [src des]
 
@@ -442,7 +441,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSchema ""
+(defn MakeSchema "A schema holds the set of models."
 
   ^Schema
   [theModels]
@@ -460,7 +459,8 @@
   (let [fdef { :domain :Long :assoc-key true } ]
     (with-local-vars [rc (transient {})
                       xs (transient {}) ]
-      ;; create placeholder maps for each model, to hold new fields from assocs.
+      ;; create placeholder maps for each model,
+      ;; to hold new fields from assocs.
       (doseq [[k m] (seq ms) ] (var-set rc (assoc! @rc k {} )))
       ;; as we find new assoc fields, add them to the placeholder maps.
       (doseq [[k m] (seq ms) ]
@@ -484,10 +484,9 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Ensure that all user defined models are all derived from the system base
-;; model.
 ;;
-(defn- resolve-parent ""
+(defn- resolve-parent "Ensure that all user defined models are
+                      all derived from the system base model."
 
   [ms model]
 
@@ -521,9 +520,9 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Turn the list of models into a map of models, keyed by the model id.
 ;;
-(defn- mapize-models ""
+(defn- mapize-models "Turn the list of models into a map of models,
+                     keyed by the model id."
 
   [ms]
 
@@ -559,9 +558,9 @@
 
   [cache modelid]
 
-  (let [mm (cache modelid) ]
-    (when (nil? mm) (log/warn "unknown database model id " modelid))
+  (if-let [mm (cache modelid) ]
     (CollectDbFields cache mm)
+    (log/warn "unknown database model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -570,10 +569,10 @@
 
   [cache zm]
 
-  (let [par (:parent zm) ]
-    (if (nil? par)
-      (merge {} (:fields zm))
-      (merge {} (CollectDbFields cache par)(:fields zm)))
+  (if-let [par (:parent zm) ]
+    (merge {} (CollectDbFields cache par)
+              (:fields zm))
+    (merge {} (:fields zm))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -586,9 +585,9 @@
 
   [cache modelid]
 
-  (let [mm (cache modelid) ]
-    (when (nil? mm) (log/warn "unknown model id " modelid))
+  (if-let [mm (cache modelid) ]
     (CollectDbIndexes cache mm)
+    (log/warn "unknown model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -597,10 +596,10 @@
 
   [cache zm]
 
-  (let [par (:parent zm) ]
-    (if (nil? par)
-      (merge {} (:indexes zm))
-      (merge {} (CollectDbIndexes cache par) (:indexes zm)))
+  (if-let [par (:parent zm) ]
+    (merge {} (CollectDbIndexes cache par)
+              (:indexes zm))
+    (merge {} (:indexes zm))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,9 +612,9 @@
 
   [cache modelid]
 
-  (let [mm (cache modelid) ]
-    (when (nil? mm) (log/warn "unknown model id " modelid))
+  (if-let [mm (cache modelid) ]
     (CollectDbUniques cache mm)
+    (log/warn "unknown model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -624,10 +623,10 @@
 
   [cache zm]
 
-  (let [par (:parent zm) ]
-    (if (nil? par)
-      (merge {} (:uniques zm))
-      (merge {} (CollectDbUniques cache par) (:uniques zm)))
+  (if-let [par (:parent zm) ]
+    (merge {} (CollectDbUniques cache par)
+              (:uniques zm))
+    (merge {} (:uniques zm))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -666,7 +665,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeMetaCache ""
+(defn MakeMetaCache "A cache storing meta-data for all models."
 
   ^MetaCache
   [^Schema schema]
@@ -687,7 +686,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- safeGetConn ""
+(defn- safeGetConn "Safely connect to database referred by this jdbc."
 
   ^Connection
   [^JDBCInfo jdbc]
@@ -711,7 +710,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeConnection ""
+(defn MakeConnection "Connect to database referred by this jdbc."
 
   ^Connection
   [^JDBCInfo jdbc]
@@ -847,7 +846,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- load-columns
+(defn- load-columns "Read each column's metadata."
 
   [^DatabaseMetaData mt ^String catalog ^String schema ^String table]
 
@@ -1062,10 +1061,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioCreateObj
-
-  "Creates a blank object of the given type.
-  model : keyword, the model type id."
+(defn DbioCreateObj "Creates a blank object of the given type.
+                    model : keyword, the model type id."
 
   [model]
 
@@ -1073,7 +1070,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioSetFld ""
+(defn DbioSetFld "Set value to a field."
 
   [pojo fld value]
 
@@ -1081,7 +1078,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioClrFld ""
+(defn DbioClrFld "Remove a field."
 
   [pojo fld]
 
@@ -1089,7 +1086,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioGetFld ""
+(defn DbioGetFld "Get value of a field."
 
   [pojo fld]
 
@@ -1097,12 +1094,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioGetAssoc
-
-  "Get the assoc definition.
-  mc : meta cache.
-  zm : the model.
-  id : assoc id."
+(defn DbioGetAssoc "Get the assoc definition.
+                   mc : meta cache.
+                   zm : the model.
+                   id : assoc id."
 
   [mc zm id]
 
@@ -1158,7 +1153,7 @@
   [ctx lhsObj]
 
   (let [[sql rt pms] (dbio-get-o2x ctx lhsObj) ]
-    (if (notnil? rt)
+    (if-not (nil? rt)
       (.findSome ^SQLr sql rt pms))
   ))
 

@@ -29,6 +29,7 @@
             [java.security Key KeyFactory SecureRandom]
             [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
             [javax.crypto Cipher]
+            [com.zotohlab.frwk.crypto PasswordAPI]
             [org.mindrot.jbcrypt BCrypt]
             [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
             [org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher]
@@ -126,19 +127,6 @@
   (decrypt [_ ^bytes pkey ^String cipherText] [_ ^String cipherText] )
   (encrypt [_ ^bytes pkey ^String text] [_ ^String text] )
   (algo [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol PasswordAPI
-
-  "Methods supported by a passord like object."
-
-  (validateHash [_ pwdTarget] )
-  (toCharArray [_] )
-  (encoded [_] )
-  (stronglyHashed [_] )
-  (hashed [_] )
-  (text [_] ) )
 
 (declare Pwdify)
 
@@ -557,19 +545,20 @@
 ;;
 (defn Pwdify "Create a password object."
 
-  ([^String pwdStr] (Pwdify pwdStr C_KEY))
+  (^PasswordAPI [^String pwdStr] (Pwdify pwdStr C_KEY))
 
-  ([^String pwdStr  ^String pkey]
-   (cond
-      (StringUtils/isEmpty pwdStr)
-      (Password. "" pkey)
+  (^PasswordAPI [^String pwdStr  ^String pkey]
+                (cond
+                  (StringUtils/isEmpty pwdStr)
+                  (Password. "" pkey)
 
-      (.startsWith pwdStr PWD_PFX)
-      (Password. (.decrypt (JasyptCryptor) (.toCharArray pkey)
-                                           (.substring pwdStr PWD_PFXLEN)) pkey)
+                  (.startsWith pwdStr PWD_PFX)
+                  (Password. (.decrypt (JasyptCryptor)
+                                       (.toCharArray pkey)
+                                       (.substring pwdStr PWD_PFXLEN)) pkey)
 
-      :else
-      (Password. pwdStr pkey)) ))
+                  :else
+                  (Password. pwdStr pkey)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -584,7 +573,7 @@
 ;;
 (defn CreateStrongPwd "Generate a strong password."
 
-  ^cmzlabclj.nucleus.crypto.codec.Password
+  ^PasswordAPI
   [len]
 
   (Pwdify (createXXX len s_pwdChars)))

@@ -22,7 +22,7 @@
         [cmzlabclj.nucleus.util.core :only [ThrowBadArg] ]
         [cmzlabclj.nucleus.util.str :only [nsb hgl?] ])
   (:import  [java.security.cert CertificateFactory X509Certificate Certificate]
-            [com.zotohlab.frwk.crypto CryptoUtils]
+            [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI CryptoUtils]
             [java.io File FileInputStream IOException InputStream]
             [java.security KeyStore PrivateKey
                           KeyStore$TrustedCertificateEntry
@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onNewKey ""
+(defn- onNewKey "Insert private key & certs into this keystore."
 
   [^KeyStore keystore
    ^String nm
@@ -61,36 +61,16 @@
     (if (not (.hasMoreElements en))
       (persistent! rc)
       (if-let [ce (CryptoUtils/getCert keystore
-                                       ^String (.nextElement en)) ]
-        (let [cert (.getTrustedCertificate ce)
-              issuer (.getIssuerX500Principal ^X509Certificate cert)
-              subj (.getSubjectX500Principal ^X509Certificate cert)
+                                       (nsb (.nextElement en))) ]
+        (let [^X509Certificate cert (.getTrustedCertificate ce)
+              issuer (.getIssuerX500Principal cert)
+              subj (.getSubjectX500Principal cert)
               matched (and (not (nil? issuer)) (= issuer subj)) ]
           (if (or (and root (not matched)) (and tca matched))
             (recur en rc)
             (recur en (conj! rc cert))))
         (recur en rc)))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol CryptoStore
-
-  ""
-
-  (addKeyEntity [_ ^bytes bits ^cmzlabclj.nucleus.crypto.codec.Password pwdObj] )
-  (addCertEntity [_ ^bytes bits] )
-  (trustManagerFactory [_] )
-  (keyManagerFactory [_] )
-  (certAliases [_] )
-  (keyAliases [_] )
-  (keyEntity [_ ^String nm ^cmzlabclj.nucleus.crypto.codec.Password pwdObj] )
-  (certEntity [_ ^String nm] )
-  (removeEntity [_ ^String nm] )
-  (intermediateCAs [_] )
-  (rootCAs [_] )
-  (trustedCerts [_] )
-  (addPKCS7Entity [_ ^bytes bits] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,20 +87,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeCryptoStore ""
+(defn MakeCryptoStore "Create a crypto store."
 
-  ^cmzlabclj.nucleus.crypto.stores.CryptoStore
-  [^KeyStore keystore ^cmzlabclj.nucleus.crypto.codec.Password passwdObj]
+  ^CryptoStoreAPI
+  [^KeyStore keystore ^PasswordAPI passwdObj]
 
-  (reify CryptoStore
+  (reify CryptoStoreAPI
 
     (addKeyEntity [this bits pwdObj]
       ;; we load the p12 content into an empty keystore, then extract the entry
       ;; and insert it into the current one.
-      (let [ch (.toCharArray ^cmzlabclj.nucleus.crypto.codec.Password pwdObj)
+      (let [ch (.toCharArray ^PasswordAPI pwdObj)
             tmp (doto (mkStore keystore) (.load bits ch))
-            pkey (CryptoUtils/getPKey tmp ^String (-> (.aliases tmp)
-                                                      (.nextElement)) ch) ]
+            pkey (CryptoUtils/getPKey tmp ^String
+                                      (-> (.aliases tmp)
+                                          (.nextElement)) ch) ]
         (onNewKey this (NewAlias) pkey ch)))
 
     (addCertEntity [_ bits]
@@ -140,7 +121,7 @@
     (keyAliases [_] (PKeyAliases keystore))
 
     (keyEntity [_ nm pwdObj]
-      (let [ca (.toCharArray ^cmzlabclj.nucleus.crypto.codec.Password pwdObj) ]
+      (let [ca (.toCharArray ^PasswordAPI pwdObj) ]
         (CryptoUtils/getPKey keystore ^String nm ca)))
 
     (certEntity [_ nm]
@@ -148,13 +129,14 @@
 
     (removeEntity [_ nm]
       (when (.containsAlias keystore ^String nm)
-            (.deleteEntry keystore ^String nm)))
+        (.deleteEntry keystore ^String nm)))
 
     (intermediateCAs [_] (getCAs keystore true false))
     (rootCAs [_] (getCAs keystore false true))
 
     (trustedCerts [me]
-      (map #(let [^KeyStore$TrustedCertificateEntry tc (.certEntity me (nsb %1)) ]
+      (map #(let [^KeyStore$TrustedCertificateEntry
+                  tc (.certEntity me (nsb %1)) ]
               (.getTrustedCertificate tc))
            (.certAliases me)))
 

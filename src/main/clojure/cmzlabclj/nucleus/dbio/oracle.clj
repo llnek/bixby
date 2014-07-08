@@ -14,16 +14,16 @@
   cmzlabclj.nucleus.dbio.oracle
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:import (java.util Map HashMap))
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.core :as dbcore]))
+  (:use [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.core])
+  (:import [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- create_sequence_trigger
+(defn- createSequenceTrigger
 
   [db table col]
 
@@ -38,7 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- create_sequence
+(defn- createSequence
 
   [db table]
 
@@ -78,12 +78,14 @@
 
   [db]
 
-  (let [ m (into {} *DDL_BVS*)
-         bf (StringBuilder.) ]
-    (doseq [ en (seq m) ]
+  (let [m (into {} *DDL_BVS*)
+        bf (StringBuilder.) ]
+    (doseq [en (seq m) ]
       (doto bf
-        (.append (create_sequence db (first en)))
-        (.append (create_sequence_trigger db (first en) (last en)))))
+        (.append (createSequence db (first en)))
+        (.append (createSequenceTrigger db
+                                        (first en)
+                                        (last en)))))
     (.toString bf)
   ))
 

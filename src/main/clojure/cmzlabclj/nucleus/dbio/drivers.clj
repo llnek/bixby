@@ -15,9 +15,9 @@
   cmzlabclj.nucleus.dbio.drivers
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
-            [clojure.string :as cstr]
-            [cmzlabclj.nucleus.dbio.core :as dbcore])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl? AddDelim! nsb] ])
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.str :only [hgl? AddDelim! nsb] ]
+        [cmzlabclj.nucleus.dbio.core])
   (:import  [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]
             [java.util Map HashMap]))
 
@@ -77,7 +77,7 @@
   ^String
   [db]
 
-  (if dbcore/*USE_DDL_SEP* dbcore/DDL_SEP ""))
+  (if *USE_DDL_SEP* DDL_SEP ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -353,12 +353,12 @@
   ^String
   [db cache table flds zm]
 
-  (let [m (dbcore/CollectDbIndexes cache zm)
+  (let [m (CollectDbIndexes cache zm)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
         (when (empty? cols)
-          (dbcore/DbioError (str "Cannot have empty index: " nm)))
+          (DbioError (str "Cannot have empty index: " nm)))
         (.append bf (str "CREATE INDEX "
                          (cstr/lower-case (str table "_" (name nm)))
                          " ON " table
@@ -375,12 +375,12 @@
 
   [db cache flds zm]
 
-  (let [m (dbcore/CollectDbUniques cache zm)
+  (let [m (CollectDbUniques cache zm)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
         (when (empty? cols)
-          (dbcore/DbioError (str "Illegal empty unique: " (name nm))))
+          (DbioError (str "Illegal empty unique: " (name nm))))
         (AddDelim! bf ",\n"
             (str (GetPad db) "UNIQUE(" (cstr/join "," cols) ")"))))
     (.toString bf)
@@ -404,9 +404,9 @@
 
   [db cache table zm]
 
-  (let [flds (dbcore/CollectDbFields cache zm)
-        inx (StringBuilder.)
-        bf (StringBuilder.) ]
+  (let [flds (CollectDbFields cache zm)
+        bf (StringBuilder.)
+        inx (StringBuilder.) ]
     (with-local-vars [pkeys (transient #{}) ]
       ;; 1st do the columns
       (doseq [[fid fld] (seq flds) ]
@@ -427,7 +427,7 @@
                     :Float (GenFloat db fld)
                     (:Password :String) (GenString db fld)
                     :Bytes (GenBytes db fld)
-                    (dbcore/DbioError (str "Unsupported domain type " dt))) ]
+                    (DbioError (str "Unsupported domain type " dt))) ]
           (when (:pkey fld) (var-set pkeys (conj! @pkeys cn)))
           (AddDelim! bf ",\n" col)))
       ;; now do the assocs
@@ -465,7 +465,7 @@
   ^String
   [^MetaCache metaCache db ]
 
-  (binding [dbcore/*DDL_BVS* (HashMap.) ]
+  (binding [*DDL_BVS* (HashMap.) ]
     (let [ms (.getMetas metaCache)
           drops (StringBuilder.)
           body (StringBuilder.) ]

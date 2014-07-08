@@ -14,20 +14,20 @@
 
   cmzlabclj.nucleus.dbio.simple
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl?] ])
-  (:use [cmzlabclj.nucleus.dbio.core :as dbcore])
-  (:use [cmzlabclj.nucleus.dbio.sql :as dbsql])
-  (:import (com.zotohlab.frwk.dbio DBAPI MetaCache SQLr))
-  (:import (java.sql Connection)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.str :only [hgl?] ]
+        [cmzlabclj.nucleus.dbio.core]
+        [cmzlabclj.nucleus.dbio.sql])
+  (:import  [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr]
+            [java.sql Connection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- openDB ""
+(defn- openDB "Connect to a database."
 
   ^Connection
   [^DBAPI db]
@@ -40,70 +40,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SimpleSQLr ""
+(defn- doExtraSQL ""
+
+  ^String
+  [^String sql extra]
+
+  sql)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SimpleSQLr "Non transactional SQL object."
 
   ^SQLr
-  [ ^MetaCache metaCache ^DBAPI db ]
+  [^MetaCache metaCache ^DBAPI db ]
 
-  (let [ ^cmzlabclj.nucleus.dbio.sql.SQLProcAPI
-         proc (dbsql/MakeProc metaCache db)
-         metas (.getMetas metaCache) ]
+  (let [^cmzlabclj.nucleus.dbio.sql.SQLProcAPI
+        proc (MakeProc metaCache db)
+        metas (.getMetas metaCache) ]
     (reify SQLr
 
       (findAll [this model extra] (.findSome this model {} extra))
-      (findAll [this model] (.findAll this model ""))
+      (findAll [this model] (.findAll this model {}))
 
       (findOne [this model filters]
-        (let [ rset (.findSome this model filters "") ]
+        (let [rset (.findSome this model filters {})]
           (if (empty? rset) nil (first rset))))
 
-      (findSome [this  model filters] (.findSome this model filters ""))
+      (findSome [this  model filters] (.findSome this model filters {} ))
 
       (findSome [this model filters extraSQL]
-        (with-open [ conn (openDB db) ]
-          (let [ zm (metas model)
-                 tbl (dbsql/Tablename zm)
-                 s (str "SELECT * FROM " (ese tbl))
-                 [wc pms] (dbsql/SqlFilterClause zm filters)
-                 extra (if (hgl? extraSQL) extraSQL "") ]
+        (with-open [conn (openDB db) ]
+          (let [zm (metas model)
+                tbl (Tablename zm)
+                s (str "SELECT * FROM " (ese tbl))
+                [wc pms]
+                (SqlFilterClause zm filters) ]
             (if (hgl? wc)
-              (.doQuery proc conn (str s " WHERE " wc " " extra) pms model)
-              (.doQuery proc conn (str s " " extra) [] model))) ))
+              (.doQuery proc conn (doExtraSQL (str s " WHERE " wc)
+                                              extraSQL)
+                                  pms model)
+              (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) ))
 
       (update [this obj]
         (with-open [ conn (openDB db) ]
           (.doUpdate proc conn obj) ))
 
       (delete [this obj]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doDelete proc conn obj) ))
 
       (insert [this obj]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doInsert proc conn obj) ))
 
       (select [this model sql params]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doQuery proc conn sql params model) ))
 
       (select [this sql params]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doQuery proc conn sql params) ))
 
       (executeWithOutput [this sql pms]
-        (with-open [ conn (openDB db) ]
-          (.doExecuteWithOutput proc conn sql pms { :pkey "DBIO_ROWID" } )))
+        (with-open [conn (openDB db) ]
+          (.doExecuteWithOutput proc conn
+                                sql pms { :pkey "DBIO_ROWID" } )))
 
       (execute [this sql pms]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (doExecute proc conn sql pms) ))
 
       (countAll [this model]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doCount proc conn model) ))
 
       (purge [this model]
-        (with-open [ conn (openDB db) ]
+        (with-open [conn (openDB db) ]
           (.doPurge proc conn model) ))
   )))
 

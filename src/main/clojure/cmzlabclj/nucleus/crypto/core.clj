@@ -663,7 +663,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSSV3Cert "Make a SS V3 server key."
+(defn- mkSSV3Cert "Make a SSV3 server key."
 
   [^Provider pv ^KeyPair kp  issuerObjs options ]
 
@@ -696,7 +696,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSSV3 "Make a SS V3 server key."
+(defn- mkSSV3 "Make a SSV3 server key."
 
   [^KeyStore ks ^cmzlabclj.nucleus.crypto.codec.Password pwdObj
    issuerObjs options ]
@@ -759,7 +759,9 @@
   (make-ssv3XXX dnStr
                 pwdObj
                 out
-                (-> options (assoc :hack { :algo "SHA1withDSA" :ks (GetJksStore) } ))
+                (-> options
+                    (assoc :hack {:algo "SHA1withDSA"
+                                  :ks (GetJksStore) } ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -895,7 +897,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeSignerGentor
+(defn- makeSignerGentor "Create a SignedGenerator."
 
   ^SMIMESignedGenerator
   [^PrivateKey pkey certs ^String algo]
@@ -980,7 +982,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- smimeDec
+(defn- smimeDec "SMIME decryption."
 
   ^CMSTypedStream
   [^PrivateKey pkey ^SMIMEEnveloped env]
@@ -1014,7 +1016,7 @@
   ^bytes
   [pkeys ^SMIMEEnveloped ev]
 
-  (let [rc (some #(if-let [ cms (smimeDec ^PrivateKey %1 ev) ]
+  (let [rc (some #(if-let [cms (smimeDec ^PrivateKey %1 ev) ]
                      (IOUtils/toByteArray (.getContentStream cms))
                      false)
                  pkeys) ]
@@ -1175,7 +1177,7 @@
   [^Certificate cert ^String algo ^Multipart mp]
 
   (let [gen (SMIMEEnvelopedGenerator.) ]
-    (.addRecipientInfoGenerator gen 
+    (.addRecipientInfoGenerator gen
                                 (-> (JceKeyTransRecipientInfoGenerator. ^X509Certificate cert)
                                     (.setProvider _BCProvider)))
     (.generate gen
@@ -1191,7 +1193,7 @@
 
   (^MimeBodyPart [^String cType ^XData xs]
                  ()
-                 (let [ds (if (.isDiskFile xs) 
+                 (let [ds (if (.isDiskFile xs)
                             (SDataSource. (.fileRef xs) cType)
                             (SDataSource. (.javaBytes xs) cType))
                        bp (MimeBodyPart.) ]

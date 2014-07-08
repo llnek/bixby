@@ -11,18 +11,20 @@
 
 (ns ^{ :doc ""
        :author "kenl" }
+
   cmzlabclj.nucleus.dbio.mysql
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.core :only [MySQL] ]))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.core]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 (def MYSQL-DRIVER "com.mysql.jdbc.Driver")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MySQL
 (defmethod GetBlobKeyword MySQL [db] "LONGBLOB")
 (defmethod GetTSKeyword MySQL [db] "TIMESTAMP")

@@ -19,9 +19,10 @@
   (:use [cmzlabclj.nucleus.util.core :only [test-nonil test-nestr] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
         [cmzlabclj.nucleus.dbio.drivers]
-        [cmzlabclj.nucleus.dbio.core :as dbcore ])
+        [cmzlabclj.nucleus.dbio.core])
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.dbio DBIOError]
+            [com.zotohlab.frwk.crypto PasswordAPI]
             [java.io File]
             [java.sql DriverManager Connection Statement]))
 
@@ -87,9 +88,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeH2Db ""
+(defn MakeH2Db "Create a H2 database."
 
-  [^File dbFileDir ^String dbid ^String user pwdObj]
+  [^File dbFileDir ^String dbid
+   ^String user
+   ^PasswordAPI pwdObj]
 
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
@@ -112,9 +115,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CloseH2Db ""
+(defn CloseH2Db "Close an existing H2 database."
 
-  [^File dbFileDir ^String dbid ^String user pwdObj]
+  [^File dbFileDir ^String dbid
+   ^String user
+   ^PasswordAPI pwdObj]
 
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
