@@ -14,30 +14,34 @@
 
   cmzlabclj.nucleus.jmx.names
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (javax.management ObjectName)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [javax.management ObjectName]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeObjectName "domain: com.acme
                       beanName: mybean
                       paths: [ \"a=b\" \"c=d\" ]"
-  (^ObjectName [^String domain ^String beanName paths]
-    (let [ sb (StringBuilder.)
-           cs (seq paths) ]
-      (doto sb
-            (.append domain)
-            (.append ":")
-            (.append (cstr/join "," cs)))
-      (when-not (empty? cs) (.append sb ","))
-      (doto sb
-            (.append "name=")
-            (.append beanName))
-      (ObjectName. (.toString sb))))
+  (^ObjectName [^String domain
+                ^String beanName
+                paths]
+               (let [sb (StringBuilder.)
+                     cs (seq paths) ]
+                 (doto sb
+                   (.append domain)
+                   (.append ":")
+                   (.append (cstr/join "," cs)))
+                 (when-not (empty? cs) (.append sb ","))
+                 (doto sb
+                   (.append "name=")
+                   (.append beanName))
+                 (ObjectName. (.toString sb))))
 
-  (^ObjectName [domain beanName] (MakeObjectName domain beanName [])) )
+  (^ObjectName [^String domain
+                ^String beanName]
+               (MakeObjectName domain beanName [])) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

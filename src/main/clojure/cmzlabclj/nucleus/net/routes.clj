@@ -14,17 +14,16 @@
 
   cmzlabclj.nucleus.net.routes
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap test-nestr] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb nichts? hgl?] ])
-  (:use [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
-
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.google.gson JsonObject))
-  (:import (java.io File))
-  (:import (jregex Matcher Pattern))
-  (:import (java.util StringTokenizer)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap test-nestr] ]
+        [cmzlabclj.nucleus.util.str :only [nsb nichts? hgl?] ]
+        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [com.google.gson JsonObject]
+            [java.io File]
+            [jregex Matcher Pattern]
+            [java.util StringTokenizer]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -60,8 +59,8 @@
 
   [route ^String verb handler]
 
-  (let [ verbList (cstr/upper-case verb)
-         impl (MakeMMap) ]
+  (let [verbList (cstr/upper-case verb)
+        impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -83,21 +82,21 @@
         (isSecure? [_] (.getf impl :secure))
 
         (resemble? [_ mtd path]
-          (let [ rg (.getf impl :regex)
-                 m (.matcher ^Pattern rg path) ]
+          (let [^Pattern rg (.getf impl :regex)
+                um (cstr/upper-case mtd)
+                m (.matcher rg path) ]
             (if (and (.matches m)
                      (or (= "*" verbList)
-                         (>= (.indexOf verbList
-                                       (cstr/upper-case ^String mtd)) 0)))
+                         (>= (.indexOf verbList um) 0)))
               m
               nil)))
 
         (collect [_ mc]
-          (let [ ph (.getf impl :placeHolders)
-                 ^Matcher mmc mc
-                 gc (.groupCount mmc) ]
-            (with-local-vars [ rc (transient {}) r2 "" ]
-              (doseq [ h (seq ph) ]
+          (let [ph (.getf impl :placeHolders)
+                ^Matcher mmc mc
+                gc (.groupCount mmc) ]
+            (with-local-vars [rc (transient {}) r2 "" ]
+              (doseq [h (seq ph) ]
                 (var-set r2 (last h))
                 (var-set rc
                          (assoc! rc
@@ -115,8 +114,8 @@
   [^cmzlabclj.nucleus.util.core.MubleAPI rc
    ^String path]
 
-  (let [ tknz (StringTokenizer. path "/" true)
-         buff (StringBuilder.) ]
+  (let [tknz (StringTokenizer. path "/" true)
+        buff (StringBuilder.) ]
     (with-local-vars [ cg 0 gn "" ts "" phs (transient []) ]
       (while (.hasMoreTokens tknz)
         (var-set ts (.nextToken tknz))
@@ -129,11 +128,11 @@
                 (var-set cg (inc @cg))
                 (var-set phs (conj! @phs [ @cg @gn ] ))
                 (var-set ts  (str "({" @gn "}[^/]+)")))
-              (let [ c (StringUtils/countMatches @ts "(") ]
+              (let [c (StringUtils/countMatches @ts "(") ]
                 (if (> c 0)
                   (var-set cg (+ @cg c)))))
             (.append buff @ts))))
-      (let [ pp (.toString buff) ]
+      (let [pp (.toString buff) ]
         (log/info "route added: " path " \ncanonicalized to: " pp)
         (.setf! rc :regex (Pattern. pp))
         (.setf! rc :path pp))
@@ -147,17 +146,19 @@
 
   [stat path ^cmzlabclj.nucleus.util.ini.IWin32Conf cfile]
 
-  (let [ secure (cstr/lower-case (.optString cfile path :secure ""))
-         tpl (.optString cfile path :template "")
-         verb (.optString cfile path :verb "")
-         mpt (.optString cfile path :mount "")
-         pipe (.optString cfile path :pipe "")
-         ^cmzlabclj.nucleus.util.core.MubleAPI
-         rc (make-route-info
-              path
-              (if (and stat (nichts? verb)) "GET" verb)
-              pipe) ]
-    (.setf! rc :secure (= "true" secure))
+  (let [secure (.optString cfile path :secure "")
+        tpl (.optString cfile path :template "")
+        verb (.optString cfile path :verb "")
+        mpt (.optString cfile path :mount "")
+        pipe (.optString cfile path :pipe "")
+        ^cmzlabclj.nucleus.util.core.MubleAPI
+        rc (make-route-info path
+                            (if (and stat
+                                     (nichts? verb))
+                              "GET"
+                              verb)
+                            pipe) ]
+    (.setf! rc :secure (= "true" (cstr/lower-case secure)))
     (if stat
       (do
         (.setf! rc :mountPoint mpt)
@@ -180,10 +181,10 @@
 
   [^File file]
 
-  (let [ stat (-> file (.getName)(.startsWith "static-"))
-         cf (ParseInifile file) ]
+  (let [stat (-> file (.getName)(.startsWith "static-"))
+        cf (ParseInifile file) ]
     (with-local-vars [rc (transient []) ]
-      (doseq [ s (seq (.sectionKeys cf)) ]
+      (doseq [s (seq (.sectionKeys cf)) ]
         ;;(log/debug "route key === " s)
         (var-set rc (conj! @rc (mkRoute stat s cf))))
       (persistent! @rc)
