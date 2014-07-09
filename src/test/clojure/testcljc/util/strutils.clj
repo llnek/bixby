@@ -13,9 +13,9 @@
 
   testcljc.util.strutils
 
-  (:use [clojure.test])
-  (:require [cmzlabclj.nucleus.util.str :as SU]))
+  (:require [cmzlabclj.nucleus.util.str :as SU])
 
+  (:use [clojure.test]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

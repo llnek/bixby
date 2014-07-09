@@ -13,128 +13,127 @@
 
   testcljc.crypto.cryptostuff
 
-  (:require [cmzlabclj.nucleus.crypto.stores :as ST])
-  (:require [cmzlabclj.nucleus.crypto.codec :as RT])
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:require [cmzlabclj.nucleus.util.str :as SU])
-  (:require [cmzlabclj.nucleus.util.io :as IO])
-  (:require [cmzlabclj.nucleus.crypto.core :as RU])
-  (:use [clojure.test])
-  (:import (java.security KeyPair Policy KeyStore SecureRandom MessageDigest
-    KeyStore$PrivateKeyEntry KeyStore$TrustedCertificateEntry))
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (java.util Date GregorianCalendar))
-  (:import (java.io File)))
+  (:use [cmzlabclj.nucleus.crypto.stores]
+        [cmzlabclj.nucleus.crypto.codec]
+        [cmzlabclj.nucleus.util.core]
+        [cmzlabclj.nucleus.util.str]
+        [cmzlabclj.nucleus.util.io]
+        [clojure.test]
+        [cmzlabclj.nucleus.crypto.core])
+
+  (:import  [java.security KeyPair Policy KeyStore SecureRandom MessageDigest
+                           KeyStore$PrivateKeyEntry KeyStore$TrustedCertificateEntry]
+            [org.apache.commons.codec.binary Base64]
+            [com.zotohlab.frwk.crypto CryptoStoreAPI PasswordAPI]
+            [java.util Date GregorianCalendar]
+            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ROOTPFX (CU/ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
-(def ^:private ROOTJKS (CU/ResBytes "com/zotohlab/frwk/crypto/test.jks"))
+(def ^:private ROOTPFX (ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
+(def ^:private ROOTJKS (ResBytes "com/zotohlab/frwk/crypto/test.jks"))
 (def ^:private ENDDT (.getTime (GregorianCalendar. 2050 1 1)))
-(def ^:private TESTPWD (RT/Pwdify "secretsecretsecretsecretsecret"))
-(def ^:private HELPME (RT/Pwdify "helpme"))
-(def ^:private SECRET (RT/Pwdify "secret"))
+(def ^:private TESTPWD (Pwdify "secretsecretsecretsecretsecret"))
+(def ^:private HELPME (Pwdify "helpme"))
+(def ^:private SECRET (Pwdify "secret"))
 
-(def ^:private ROOTCS
-  (ST/MakeCryptoStore (RU/InitStore! (RU/GetPkcsStore) ROOTPFX HELPME) HELPME))
+(def ^CryptoStoreAPI ^:private ROOTCS (MakeCryptoStore (InitStore! (GetPkcsStore) ROOTPFX HELPME) HELPME))
 
-(def ^:private ROOTKS
-  (ST/MakeCryptoStore (RU/InitStore! (RU/GetJksStore) ROOTJKS HELPME) HELPME))
+(def ^CryptoStoreAPI ^:private ROOTKS (MakeCryptoStore (InitStore! (GetJksStore) ROOTJKS HELPME) HELPME))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftest testcrypto-cryptostuff
 
-(is (not (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 709394) 666))))
-(is (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 709394) 709394)))
-(is (= "heeloo, how are you?" (RT/CaesarDecrypt (RT/CaesarEncrypt "heeloo, how are you?" 13) 13)))
+(is (not (= "heeloo, how are you?" (CaesarDecrypt (CaesarEncrypt "heeloo, how are you?" 709394) 666))))
+(is (= "heeloo, how are you?" (CaesarDecrypt (CaesarEncrypt "heeloo, how are you?" 709394) 709394)))
+(is (= "heeloo, how are you?" (CaesarDecrypt (CaesarEncrypt "heeloo, how are you?" 13) 13)))
 
-(is (= "heeloo" (let [ c (RT/JasyptCryptor) ]
+(is (= "heeloo" (let [ c (JasyptCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/JasyptCryptor) pkey (.toCharArray (SU/nsb SECRET)) ]
+(is (= "heeloo" (let [ c (JasyptCryptor) pkey (.toCharArray (nsb SECRET)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/JavaCryptor) ]
+(is (= "heeloo" (let [ c (JavaCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/JavaCryptor) pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
+(is (= "heeloo" (let [ c (JavaCryptor) pkey (Bytesify (nsb TESTPWD)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/BouncyCryptor) ]
+(is (= "heeloo" (let [ c (BouncyCryptor) ]
                       (.decrypt c (.encrypt c "heeloo")))))
 
-(is (= "heeloo" (let [ c (RT/BouncyCryptor) pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
+(is (= "heeloo" (let [ c (BouncyCryptor) pkey (Bytesify (nsb TESTPWD)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
-(is (= "heeloo" (let [ pkey (CU/Bytesify (SU/nsb TESTPWD)) ]
-                      (RT/BcDecr pkey (RT/BcEncr pkey "heeloo" "AES") "AES"))))
+(is (= "heeloo" (let [ pkey (Bytesify (nsb TESTPWD)) ]
+                      (BcDecr pkey (BcEncr pkey "heeloo" "AES") "AES"))))
 
-(is (= "heeloo" (let [ kp (RU/MakeKeypair "RSA" 1024)
+(is (= "heeloo" (let [ kp (MakeKeypair "RSA" 1024)
                        pu (.getEncoded (.getPublic kp))
                        pv (.getEncoded (.getPrivate kp)) ]
-                      (String. (Base64/decodeBase64 
-                                  (RT/BcDecr pv (RT/BcEncr pu "heeloo" "RSA") "RSA"))))))
+                      (Stringify (AsymDecr pv (AsymEncr pu (Bytesify "heeloo")))))))
 
-(is (= (.length ^String (.text (RT/CreateStrongPwd 16))) 16))
-(is (= (.length (RT/CreateRandomString 64)) 64))
+(is (= (.length ^String (.text (CreateStrongPwd 16))) 16))
+(is (= (.length (CreateRandomString 64)) 64))
 
-(is (instance? cmzlabclj.nucleus.crypto.codec.Password (RT/Pwdify "secret-text")))
-(is (.startsWith ^String (.encoded ^cmzlabclj.nucleus.crypto.codec.Password (RT/Pwdify "secret-text")) "CRYPT:"))
+(is (instance? PasswordAPI (Pwdify "secret-text")))
+(is (.startsWith ^String (.encoded ^PasswordAPI (Pwdify "secret-text")) "CRYPT:"))
 
 
-(is (= "SHA-512" (.getAlgorithm (RU/MakeMsgDigest RU/SHA_512))))
-(is (= "MD5" (.getAlgorithm (RU/MakeMsgDigest RU/MD_5))))
+(is (= "SHA-512" (.getAlgorithm (MakeMsgDigest SHA_512))))
+(is (= "MD5" (.getAlgorithm (MakeMsgDigest MD_5))))
 
-(is (> (RU/NextSerial) 0))
+(is (> (NextSerial) 0))
 
-(is (> (.length (RU/NewAlias)) 0))
+(is (> (.length (NewAlias)) 0))
 
-(is (= "PKCS12" (.getType (RU/GetPkcsStore))))
-(is (= "JKS" (.getType (RU/GetJksStore))))
+(is (= "PKCS12" (.getType (GetPkcsStore))))
+(is (= "JKS" (.getType (GetJksStore))))
 
-(is (instance? Policy (RU/MakeEasyPolicy)))
+(is (instance? Policy (MakeEasyPolicy)))
 
-(is (> (.length (RU/GenMac (CU/Bytesify "secret") "heeloo world")) 0))
-(is (> (.length (RU/GenHash "heeloo world")) 0))
+(is (> (.length (GenMac (Bytesify "secret") "heeloo world")) 0))
+(is (> (.length (GenHash "heeloo world")) 0))
 
-(is (not (nil? (RU/MakeKeypair "RSA" 1024))))
+(is (not (nil? (MakeKeypair "RSA" 1024))))
 
-(is (let [ v (RU/MakeCsrReq 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
+(is (let [ v (MakeCsrReq 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
           (and (= (count v) 2) (> (alength ^bytes (first v)) 0) (> (alength ^bytes (nth v 1)) 0))) )
 
-(is (let [ fout (IO/MakeTmpfile "kenl" ".p12")]
-      (RU/MakeSSv1PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" HELPME fout
+(is (let [ fout (MakeTmpfile "kenl" ".p12")]
+      (MakeSSv1PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" HELPME fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
       (> (.length fout) 0)))
 
-(is (let [ fout (IO/MakeTmpfile "" ".jks") ]
-      (RU/MakeSSv1JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+(is (let [ fout (MakeTmpfile "" ".jks") ]
+      (MakeSSv1JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ^cmzlabclj.nucleus.crypto.stores.CryptoStore ROOTCS
-                           ^String (first (.keyAliases ^cmzlabclj.nucleus.crypto.stores.CryptoStore ROOTCS))
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTCS
+                           ^String (first (.keyAliases ROOTCS))
                            HELPME)
-       fout (IO/MakeTmpfile "" ".p12")
+       fout (MakeTmpfile "" ".p12")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
-            (RU/MakeSSv3PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+            (MakeSSv3PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity  ^cmzlabclj.nucleus.crypto.stores.CryptoStore ROOTKS
-                           ^String (first (.keyAliases  ^cmzlabclj.nucleus.crypto.stores.CryptoStore ROOTKS))
+(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTKS
+                           ^String (first (.keyAliases ROOTKS))
                            HELPME)
-       fout (IO/MakeTmpfile "" ".jks")
+       fout (MakeTmpfile "" ".jks")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
-            (RU/MakeSSv3JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+            (MakeSSv3JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
-(is (let [ ^File fout (IO/MakeTmpfile "" ".p7b") ]
-        (RU/ExportPkcs7 (CU/ResUrl "com/zotohlab/frwk/crypto/test.pfx") HELPME fout)
+(is (let [ ^File fout (MakeTmpfile "" ".p7b") ]
+        (ExportPkcs7 (ResUrl "com/zotohlab/frwk/crypto/test.pfx") HELPME fout)
           (> (.length fout) 0)))
 
 

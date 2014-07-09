@@ -12,16 +12,16 @@
 
 (ns testcljc.net.netstuff
 
-  (:require [cmzlabclj.nucleus.net.comms :as NU])
-  (:import (java.net URL URI))
-  (:use [clojure.test]))
+  (:use [cmzlabclj.nucleus.net.comms]
+        [clojure.test])
 
+  (:import  [java.net URL URI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftest testnet-netstuff
 
-(is (map? (NU/SyncGet (URL. "http://www.google.com"))))
+(is (map? (SyncGet (URL. "http://www.google.com"))))
 
 )
 

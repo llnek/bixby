@@ -379,6 +379,7 @@ path (id: 'compilePathId') {
 }
 
 path (id: 'testPathId') {
+
   fileset (dir: "${libDir}/test") {
     include (name: '*.jar')
   }
@@ -388,13 +389,13 @@ path (id: 'testPathId') {
   fileset (dir: "${clojureDir}") {
     include (name: '*.jar')
   }
+  path (location: "${buildDir}")
+  path (location: "${buildTestDir}")
+  path (location: "${testDir}/clojure")
   fileset (dir: "${distribDir}") {
     include (name: 'boot/*.jar')
     include (name: 'exec/*.jar')
   }
-  path (location: "${buildDir}")
-  path (location: "${buildTestDir}")
-  path (location: "${testDir}/clojure")
 }
 
 

@@ -201,9 +201,9 @@
   [^Object obj]
 
   (condp instance? obj
-    InputStream obj
-    BytesClass (Streamify obj)
     String (Streamify (Bytesify obj))
+    InputStream obj
+    (BytesClass) (Streamify obj)
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

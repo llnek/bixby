@@ -14,9 +14,11 @@
 
   testcljc.util.dateutils
 
-  (:import (java.util Date))
+  (:require [cmzlabclj.nucleus.util.dates :as DU])
+
   (:use [clojure.test])
-  (:require [cmzlabclj.nucleus.util.dates :as DU]))
+
+  (:import  [java.util Date]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

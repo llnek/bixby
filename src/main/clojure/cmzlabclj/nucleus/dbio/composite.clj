@@ -64,7 +64,7 @@
               s (str "SELECT * FROM " (ese tbl)) ]
           (if (hgl? wc)
             (.doQuery proc conn
-                      (doExtraSQL (str s " WHERE " wc))
+                      (doExtraSQL (str s " WHERE " wc) extraSQL)
                       pms model)
             (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) )
 

@@ -9,19 +9,23 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns 
-  
+(ns
+
   testcljc.util.coreutils
 
+  (:require [cmzlabclj.nucleus.util.core :as CU])
+
   (:use [clojure.test])
-  (:import (java.util Properties Date Calendar))
-  (:import (java.sql Timestamp))
-  (:import (java.net URL))
-  (:import (java.io FileOutputStream File))
-  (:import (java.nio.charset Charset))
-  (:require [cmzlabclj.nucleus.util.core :as CU]))
+
+  (:import  [java.util Properties Date Calendar]
+            [java.sql Timestamp]
+            [java.net URL]
+            [java.io FileOutputStream File]
+            [java.nio.charset Charset]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private VAR_USER (System/getProperty "user.name"))
 (def ^:private VAR_PATH (System/getenv "PATH"))
 

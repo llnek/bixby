@@ -382,15 +382,15 @@
 (defn AsymEncr "Encrypt using a public key.  Returns a base64 encoded cipher."
 
   ^String
-  [^bytes pubKey ^String text]
+  [^bytes pubKey ^bytes data]
 
-  (if (StringUtils/isEmpty text)
-    text
+  (if (nil? data)
+    data
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePublic (X509EncodedKeySpec. pubKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
                    (.init Cipher/ENCRYPT_MODE pk))
-          out (.doFinal cipher (Bytesify text)) ]
+          out (.doFinal cipher data) ]
       (Base64/encodeBase64String out))
   ))
 
@@ -398,17 +398,17 @@
 ;;
 (defn AsymDecr "Decrypt using a private key.  Input is a base64 encoded cipher."
 
-  ^String
+  ^bytes
   [^bytes prvKey ^String cipherText]
 
   (if (StringUtils/isEmpty cipherText)
-    cipherText
+    nil
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
                    (.init Cipher/DECRYPT_MODE pk))
           out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
-      (Stringify out))
+      out)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

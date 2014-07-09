@@ -14,9 +14,9 @@
 
   testcljc.i18n.i18nstuff
 
-  (:use [clojure.test])
-  (:require [cmzlabclj.nucleus.i18n.resources :as NU])
-  (:require [cmzlabclj.nucleus.util.core :as CU]))
+  (:use [cmzlabclj.nucleus.i18n.resources]
+        [cmzlabclj.nucleus.util.core]
+        [clojure.test]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,8 +24,8 @@
 (deftest testi18n-i18nstuff
 
 (is (= "hello joe, how is your dawg"
-       (let [ rs (NU/LoadResource (CU/ResUrl "com/zotohlab/frwk/i18n/Resources_en.properties")) ]
-           (NU/GetString rs "test" [ "joe", "dawg" ]))))
+       (let [ rs (LoadResource (ResUrl "com/zotohlab/frwk/i18n/Resources_en.properties")) ]
+           (GetString rs "test" [ "joe", "dawg" ]))))
 
 )
 

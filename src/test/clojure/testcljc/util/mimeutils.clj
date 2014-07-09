@@ -14,13 +14,17 @@
 
   testcljc.util.mimeutils
 
+  (:require [cmzlabclj.nucleus.util.core :as CU]
+            [cmzlabclj.nucleus.util.io :as IO]
+            [cmzlabclj.nucleus.util.mime :as MU])
+
   (:use [clojure.test])
-  (:import (java.io File InputStream))
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:require [cmzlabclj.nucleus.util.io :as IO])
-  (:require [cmzlabclj.nucleus.util.mime :as MU]))
+
+  (:import  [java.io File InputStream]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (eval '(MU/SetupCache (CU/ResUrl "com/zotohlab/frwk/mime/mime.properties")))
 
 

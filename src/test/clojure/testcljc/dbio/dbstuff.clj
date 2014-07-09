@@ -13,17 +13,19 @@
 
   testcljc.dbio.dbstuff
 
-  (:require [cmzlabclj.nucleus.crypto.codec :as CE])
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.connect])
-  (:use [cmzlabclj.nucleus.dbio.core])
-  (:use [cmzlabclj.nucleus.dbio.h2])
-  (:use [clojure.test])
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.io File))
-  (:import (java.util GregorianCalendar Calendar))
-  (:import (com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI)))
+  (:use [cmzlabclj.nucleus.crypto.codec]
+        [cmzlabclj.nucleus.util.core]
+        [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.connect]
+        [cmzlabclj.nucleus.dbio.core]
+        [cmzlabclj.nucleus.dbio.h2]
+        [clojure.test])
+
+  (:import [org.apache.commons.lang3 StringUtils]
+           [com.zotohlab.frwk.crypto PasswordAPI]
+           [java.io File]
+           [java.util GregorianCalendar Calendar]
+           [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,10 +113,10 @@
                       [Address Person EmpDepts Employee Department Company])))
   (let [ dir (File. (System/getProperty "java.io.tmpdir"))
          db (str "" (System/currentTimeMillis))
-         url (MakeH2Db dir db "sa" (CE/Pwdify ""))
-        jdbc (MakeJdbc (CU/juid)
+         url (MakeH2Db dir db "sa" (Pwdify ""))
+        jdbc (MakeJdbc (juid)
                { :d H2-DRIVER :url url :user "sa" :passwd "" }
-               (CE/Pwdify "")) ]
+               (Pwdify "")) ]
     (reset! JDBC jdbc)
     (UploadDdl jdbc (GetDDL @METAC :h2))
     (reset! DB (DbioConnect jdbc @METAC {})))

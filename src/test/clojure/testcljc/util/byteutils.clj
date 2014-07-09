@@ -10,14 +10,17 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns 
-  
+(ns
+
   testcljc.util.byteutils
 
+  (:require [cmzlabclj.nucleus.util.bytes :as BU])
   (:use [clojure.test])
-  (:import (java.nio.charset Charset))
-  (:require [cmzlabclj.nucleus.util.bytes :as BU]))
+  (:import  [java.nio.charset Charset]))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private CS_UTF8 "utf-8")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

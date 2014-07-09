@@ -14,14 +14,17 @@
 
   testcljc.util.fileutils
 
+  (:require [cmzlabclj.nucleus.util.files :as FU]
+            [cmzlabclj.nucleus.util.core :as CU])
+
   (:use [clojure.test])
-  (:import (org.apache.commons.io FileUtils))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (java.io File))
-  (:require [cmzlabclj.nucleus.util.files :as FU])
-  (:require [cmzlabclj.nucleus.util.core :as CU]))
 
+  (:import  [org.apache.commons.io FileUtils]
+            [com.zotohlab.frwk.io XData]
+            [java.io File]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private TMP_DIR (File. (System/getProperty "java.io.tmpdir")))
 (def ^:private TMP_FP (File. ^File TMP_DIR (str (CU/juid) ".txt")))
 (eval '(do (FileUtils/writeStringToFile ^File TMP_FP "heeloo")))

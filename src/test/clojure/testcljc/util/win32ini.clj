@@ -13,24 +13,29 @@
 
   testcljc.util.win32ini
 
-  (:use [clojure.test])
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:require [cmzlabclj.nucleus.util.ini :as WI]))
+  (:require [cmzlabclj.nucleus.util.core :as CU]
+            [cmzlabclj.nucleus.util.ini :as WI])
 
-(def ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlab/frwk/util/sample.ini")))
+  (:use [clojure.test])
+
+  (:import  [com.zotohlab.frwk.util IWin32Conf]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^IWin32Conf ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlab/frwk/util/sample.ini")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftest testutil-wi32ini
 
-(is (= (count (.sectionKeys ^cmzlabclj.nucleus.util.ini.IWin32Conf INIFILE)) 2))
+(is (= (count (.sectionKeys INIFILE)) 2))
 
-(is (map? (.getSection ^cmzlabclj.nucleus.util.ini.IWin32Conf  INIFILE "operating systems")))
-(is (map? (.getSection ^cmzlabclj.nucleus.util.ini.IWin32Conf  INIFILE "boot loader")))
+(is (map? (.getSection INIFILE "operating systems")))
+(is (map? (.getSection INIFILE "boot loader")))
 
-(is (true? (.endsWith ^String (.getString ^cmzlabclj.nucleus.util.ini.IWin32Conf  INIFILE "boot loader" "default") "WINDOWS")))
+(is (true? (.endsWith ^String (.getString INIFILE "boot loader" "default") "WINDOWS")))
 
-(is (true? (= (.getLong ^cmzlabclj.nucleus.util.ini.IWin32Conf  INIFILE "boot loader" "timeout") 30)))
+(is (true? (= (.getLong INIFILE "boot loader" "timeout") 30)))
 
 
 

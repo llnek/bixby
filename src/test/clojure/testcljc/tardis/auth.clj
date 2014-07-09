@@ -14,18 +14,20 @@
 
   testcljc.tardis.auth
 
-  (:require [cmzlabclj.nucleus.crypto.codec :as CE])
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:use [cmzlabclj.tardis.auth.plugin])
-  (:use [cmzlabclj.tardis.auth.model])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.connect])
-  (:use [cmzlabclj.nucleus.dbio.core])
-  (:use [cmzlabclj.nucleus.dbio.h2])
-  (:use [clojure.test])
-  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser))
-  (:import (java.io File))
-  (:import (com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI)))
+  (:use [cmzlabclj.tardis.auth.plugin]
+        [cmzlabclj.tardis.auth.model]
+        [cmzlabclj.nucleus.crypto.codec]
+        [cmzlabclj.nucleus.util.core]
+        [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.connect]
+        [cmzlabclj.nucleus.dbio.core]
+        [cmzlabclj.nucleus.dbio.h2]
+        [clojure.test])
+
+  (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser]
+            [java.io File]
+            [com.zotohlab.frwk.crypto PasswordAPI]
+            [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,10 +39,10 @@
 (defn init-test [f]
   (let [ dir (File. (System/getProperty "java.io.tmpdir"))
          db (str "" (System/currentTimeMillis))
-         url (MakeH2Db dir db "sa" (CE/Pwdify ""))
-        jdbc (MakeJdbc (CU/juid)
+         url (MakeH2Db dir db "sa" (Pwdify ""))
+        jdbc (MakeJdbc (juid)
                { :d H2-DRIVER :url url :user "sa" :passwd "" }
-               (CE/Pwdify "")) ]
+               (Pwdify "")) ]
     (reset! JDBC jdbc)
     (ApplyAuthPluginDDL jdbc)
     (reset! DB (DbioConnect jdbc @METAC {})))
@@ -85,7 +87,7 @@
            u (.execWith
                sql
                (fn [^SQLr tx]
-                 (CreateLoginAccount tx "joeb" (CE/Pwdify "hi")
+                 (CreateLoginAccount tx "joeb" (Pwdify "hi")
                                      {}
                                      [ (get ros "User") ] )))
            rc (.execWith

@@ -14,13 +14,17 @@
 
   testcljc.util.procutils
 
+  (:require [cmzlabclj.nucleus.util.core :as CU]
+            [cmzlabclj.nucleus.util.process :as PU])
+
   (:use [clojure.test])
-  (:import (org.apache.commons.io FileUtils))
-  (:import (java.io File))
-  (:require [cmzlabclj.nucleus.util.core :as CU])
-  (:require [cmzlabclj.nucleus.util.process :as PU]))
+
+  (:import  [org.apache.commons.io FileUtils]
+            [java.io File]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private CUR_MS (System/currentTimeMillis))
 (def ^:private CUR_FP (File. (str (System/getProperty "java.io.tmpdir") "/" CUR_MS)))
 
