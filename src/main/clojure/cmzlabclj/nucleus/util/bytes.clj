@@ -11,14 +11,15 @@
 
 (ns ^{ :doc "Utililties for handling byte[] conversions to/from numbers."
        :author "kenl" }
+
   cmzlabclj.nucleus.util.bytes
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]])
-  (:import (java.nio ByteBuffer CharBuffer))
-  (:import (java.nio.charset Charset))
-  (:import (java.io ByteArrayOutputStream
+  (:import  [java.nio ByteBuffer CharBuffer]
+            [java.nio.charset Charset]
+            [java.io ByteArrayOutputStream
                     ByteArrayInputStream
-                    DataOutputStream DataInputStream)))
+                    DataOutputStream DataInputStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -70,7 +71,7 @@
   ^bytes
   [nnum]
 
-  (with-open [ baos (ByteArrayOutputStream. (int 4096)) ]
+  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
     (doto (DataOutputStream. baos)
       (.writeInt (int nnum))
       (.flush))
@@ -84,7 +85,7 @@
   ^bytes
   [nnum]
 
-  (with-open [ baos (ByteArrayOutputStream. (int 4096)) ]
+  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
     (doto (DataOutputStream. baos)
       (.writeLong ^long nnum)
       (.flush))

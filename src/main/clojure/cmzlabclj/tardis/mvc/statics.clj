@@ -14,33 +14,34 @@
 
   cmzlabclj.tardis.mvc.statics
 
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ])
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.tardis.io.triggers])
-  (:use [cmzlabclj.tardis.io.http :only [HttpBasicConfig] ])
-  (:use [cmzlabclj.tardis.io.netty])
-  (:use [cmzlabclj.tardis.io.core])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.core.constants])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:use [cmzlabclj.tardis.mvc.templates :only [MakeWebAsset] ])
-  (:use [cmzlabclj.tardis.mvc.comms])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabclj.nucleus.util.meta :only [MakeObj] ])
-  (:use [cmzlabclj.nucleus.net.routes])
+  (:use [cmzlabclj.nucleus.util.core
+         :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ]
+        [cmzlabclj.tardis.io.triggers]
+        [cmzlabclj.tardis.io.http :only [HttpBasicConfig] ]
+        [cmzlabclj.tardis.io.netty]
+        [cmzlabclj.tardis.io.core]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.tardis.mvc.templates :only [MakeWebAsset] ]
+        [cmzlabclj.tardis.mvc.comms]
+        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
+        [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
+        [cmzlabclj.nucleus.net.routes])
 
-  (:import ( com.zotohlab.wflow FlowPoint Activity Pipeline PipelineDelegate PTask Work))
-  (:import (com.zotohlab.wflow.core Job))
-
-  (:import [com.zotohlab.frwk.netty NettyFW])
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.util Date))
-  (:import (java.io File))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (com.google.gson JsonObject))
-  (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter))
-  (:import (io.netty.channel Channel ChannelFuture)))
+  (:import  [com.zotohlab.wflow FlowPoint Activity Pipeline
+                                PipelineDelegate PTask Work]
+            [com.zotohlab.wflow.core Job]
+            [com.zotohlab.frwk.netty NettyFW]
+            [org.apache.commons.lang3 StringUtils]
+            [java.util Date]
+            [java.io File]
+            [com.zotohlab.frwk.io XData]
+            [com.google.gson JsonObject]
+            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
+            [io.netty.channel Channel ChannelFuture]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -49,8 +50,8 @@
   (getStartActivity [_  pipe]
     (PTask. (reify Work
               (perform [_ fw job arg]
-                (let [ ^HTTPEvent evt (.event job)
-                       ^HTTPResult res (.getResultObj evt) ]
+                (let [^HTTPEvent evt (.event job)
+                      ^HTTPResult res (.getResultObj evt) ]
                   (HandleStatic (.emitter evt)
                                 evt
                                 res

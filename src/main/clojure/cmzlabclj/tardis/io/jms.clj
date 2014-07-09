@@ -14,26 +14,27 @@
 
   cmzlabclj.tardis.io.jms
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE MubleAPI MakeMMap juid TryC] ])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl? nsb] ])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.io.core])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (java.util Hashtable Properties ResourceBundle))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.frwk.core Identifiable))
-  (:import (javax.jms Connection ConnectionFactory Destination Connection
-                      Message MessageConsumer MessageListener Queue
-                      QueueConnection QueueConnectionFactory QueueReceiver
-                      QueueSession Session Topic TopicConnection
-                      TopicConnectionFactory TopicSession TopicSubscriber))
-  (:import (javax.naming Context InitialContext))
-  (:import (java.io IOException))
-  (:import (com.zotohlab.gallifrey.io JMSEvent)))
+  (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE MubleAPI MakeMMap juid TryC] ]
+        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.nucleus.util.str :only [hgl? nsb] ]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.io.core])
+
+  (:import  [java.util Hashtable Properties ResourceBundle]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.frwk.core Identifiable]
+            [javax.jms Connection ConnectionFactory Destination Connection
+                       Message MessageConsumer MessageListener Queue
+                       QueueConnection QueueConnectionFactory QueueReceiver
+                       QueueSession Session Topic TopicConnection
+                       TopicConnectionFactory TopicSession TopicSubscriber]
+            [javax.naming Context InitialContext]
+            [java.io IOException]
+            [com.zotohlab.gallifrey.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -52,9 +53,9 @@
 
   [co & args]
 
-  (let [ eeid (NextLong)
-         impl (MakeMMap)
-         msg (first args) ]
+  (let [eeid (NextLong)
+        impl (MakeMMap)
+        msg (first args) ]
     (with-meta
       (reify
 
@@ -90,17 +91,17 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ pkey (:hhh.pkey cfg) ]
-    (.setAttr! co :contextFactory (:contextfactory cfg))
-    (.setAttr! co :connFactory (:connfactory cfg))
-    (.setAttr! co :jndiUser (:jndiuser cfg))
-    (.setAttr! co :jndiPwd (Pwdify (:jndipwd cfg) pkey))
-    (.setAttr! co :jmsUser (:jmsuser cfg))
-    (.setAttr! co :jmsPwd (Pwdify (:jmspwd cfg) pkey))
-    (.setAttr! co :durable (:durable cfg))
-    (.setAttr! co :providerUrl (:providerurl cfg))
-    (.setAttr! co :destination (:destination cfg))
-    co
+  (let [pkey (:hhh.pkey cfg) ]
+    (doto co
+      (.setAttr! :contextFactory (:contextfactory cfg))
+      (.setAttr! :connFactory (:connfactory cfg))
+      (.setAttr! :jndiUser (:jndiuser cfg))
+      (.setAttr! :jndiPwd (Pwdify (:jndipwd cfg) pkey))
+      (.setAttr! :jmsUser (:jmsuser cfg))
+      (.setAttr! :jmsPwd (Pwdify (:jmspwd cfg) pkey))
+      (.setAttr! :durable (:durable cfg))
+      (.setAttr! :providerUrl (:providerurl cfg))
+      (.setAttr! :destination (:destination cfg)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,13 +114,14 @@
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [ ^String des (.getAttr co :destination)
-         jp (nsb (.getAttr co :jmsPwd))
-         ju (.getAttr co :jmsUser)
-         c (.lookup ctx des)
-         ^Connection conn (if (hgl? ju)
-                              (.createConnection cf ju (if (hgl? jp) jp nil))
-                              (.createConnection cf)) ]
+  (let [^String des (.getAttr co :destination)
+        jp (nsb (.getAttr co :jmsPwd))
+        ju (.getAttr co :jmsUser)
+        c (.lookup ctx des)
+        ^Connection
+        conn (if (hgl? ju)
+               (.createConnection cf ju (if (hgl? jp) jp nil))
+               (.createConnection cf)) ]
     (if (instance? Destination c)
       ;;TODO ? ack always ?
       (-> (.createSession conn false Session/CLIENT_ACKNOWLEDGE)
@@ -140,20 +142,19 @@
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [ ^String des (.getAttr co :destination)
-         ^String ju (.getAttr co :jmsUser)
-         jp (nsb (.getAttr co :jmsPwd))
-         conn (if (hgl? ju)
-                  (.createTopicConnection cf ju (if (hgl? jp) jp nil))
-                  (.createTopicConnection cf))
-         s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
-         t (.lookup ctx des) ]
-
-    (when-not (instance? Topic t) (ThrowIOE "Object not of Topic type."))
-
+  (let [^String des (.getAttr co :destination)
+        ^String ju (.getAttr co :jmsUser)
+        jp (nsb (.getAttr co :jmsPwd))
+        conn (if (hgl? ju)
+               (.createTopicConnection cf ju (if (hgl? jp) jp nil))
+               (.createTopicConnection cf))
+        s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
+        t (.lookup ctx des) ]
+    (when-not (instance? Topic t)
+      (ThrowIOE "Object not of Topic type."))
     (-> (if (.getAttr co :durable)
-            (.createDurableSubscriber s t (juid))
-            (.createSubscriber s t))
+          (.createDurableSubscriber s t (juid))
+          (.createSubscriber s t))
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m))) ))
     conn
@@ -168,16 +169,16 @@
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [ ^String des (.getAttr co :destination)
-         ^String ju (.getAttr co :jmsUser)
-         jp (nsb (.getAttr co :jmsPwd))
-         conn (if (hgl? ju)
-                  (.createQueueConnection cf ju (if (hgl? jp) jp nil))
-                  (.createQueueConnection cf))
-         s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
-         q (.lookup ctx des) ]
-
-    (when-not (instance? Queue q) (ThrowIOE "Object not of Queue type."))
+  (let [^String des (.getAttr co :destination)
+        ^String ju (.getAttr co :jmsUser)
+        jp (nsb (.getAttr co :jmsPwd))
+        conn (if (hgl? ju)
+               (.createQueueConnection cf ju (if (hgl? jp) jp nil))
+               (.createQueueConnection cf))
+        s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
+        q (.lookup ctx des) ]
+    (when-not (instance? Queue q)
+      (ThrowIOE "Object not of Queue type."))
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m)))))
@@ -190,11 +191,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^String cf (.getAttr co :contextFactory)
-         ^String ju (.getAttr co :jndiUser)
-         jp (nsb (.getAttr co :jndiPwd))
-         pl (.getAttr co :providerUrl)
-         vars (Hashtable.) ]
+  (let [^String cf (.getAttr co :contextFactory)
+        ^String ju (.getAttr co :jndiUser)
+        jp (nsb (.getAttr co :jndiPwd))
+        pl (.getAttr co :providerUrl)
+        vars (Hashtable.) ]
 
     (when (hgl? cf)
       (.put vars Context/INITIAL_CONTEXT_FACTORY cf))
@@ -207,21 +208,15 @@
       (when (hgl? jp)
         (.put vars "jndi.password" jp)))
 
-    (let [ ctx (InitialContext. vars)
-           obj (.lookup ctx ^String (.getAttr co :connFactory))
-           c (cond
-               (instance? QueueConnectionFactory obj)
-               (inizQueue co ctx obj)
-
-               (instance? TopicConnectionFactory obj)
-               (inizTopic co ctx obj)
-
-               (instance? ConnectionFactory obj)
-               (inizFac co ctx obj)
-
-               :else
-               nil) ]
-      (when (nil? c) (ThrowIOE "Unsupported JMS Connection Factory"))
+    (let [ctx (InitialContext. vars)
+          obj (.lookup ctx ^String (.getAttr co :connFactory))
+          c (condp instance? obj
+              QueueConnectionFactory (inizQueue co ctx obj)
+              TopicConnectionFactory (inizTopic co ctx obj)
+              ConnectionFactory (inizFac co ctx obj)
+              nil) ]
+      (when (nil? c)
+        (ThrowIOE "Unsupported JMS Connection Factory"))
       (.setAttr! co :conn c)
       (.start c)
       (IOESStarted co))
@@ -233,7 +228,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Connection c (.getAttr co :conn) ]
+  (let [^Connection c (.getAttr co :conn) ]
     (when-not (nil? c)
       (TryC (.close c)))
     (.setAttr! co :conn nil)

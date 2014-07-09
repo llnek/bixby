@@ -15,14 +15,12 @@
 
   cmzlabclj.nucleus.util.scheduler
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [cmzlabclj.nucleus.util.core :only [ternary juid MakeMMap] ])
-
-  (:import (com.zotohlab.frwk.util RunnableWithId Schedulable TCore ))
-  (:import (java.util.concurrent ConcurrentHashMap))
-  (:import (java.util Map Properties Timer TimerTask)))
-
+  (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
+            [java.util.concurrent ConcurrentHashMap]
+            [java.util Map Properties Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -35,8 +33,8 @@
   [runable]
 
   (if (instance? RunnableWithId runable)
-      (.getId ^RunnableWithId runable)
-      nil
+    (.getId ^RunnableWithId runable)
+    nil
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,14 +54,14 @@
 
   [parObj]
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (with-meta
       (reify SchedulerAPI
 
         (activate [_ options]
-          (let [ ^long t (ternary (:threads options) 4)
-                 jid (juid)
-                 c (TCore. jid t) ]
+          (let [^long t (ternary (:threads options) 4)
+                jid (juid)
+                c (TCore. jid t) ]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))
               (.setf! :runQ (ConcurrentHashMap.))
@@ -72,7 +70,7 @@
             (.start c)))
 
         (preRun [_ w]
-          (let [ pid (xrefPID w) ]
+          (let [pid (xrefPID w) ]
             (when-not (nil? pid)
               (.remove ^Map (.getf impl :holdQ) pid)
               (.put ^Map (.getf impl :runQ) pid w))))
@@ -84,18 +82,20 @@
           (.stop ^TCore (.getf impl :core)))
 
         (addTimer [_ task dely]
-          (.schedule ^Timer (.getf impl :timer) ^TimerTask task ^long dely))
+          (.schedule ^Timer (.getf impl :timer)
+                     ^TimerTask task
+                     ^long dely))
 
         Schedulable
 
         ;; called by a *running* task to remove itself from the running queue
         (dequeue [_ w]
-          (let [ pid (xrefPID w) ]
+          (let [pid (xrefPID w) ]
             (when-not (nil? pid)
               (.remove ^Map (.getf impl :runQ) pid))) )
 
         (run [this w]
-          (let [ ^Runnable r w]
+          (let [^Runnable r w]
             (.preRun this r)
             (.schedule ^TCore (.getf impl :core) r)) )
 
@@ -131,7 +131,7 @@
             (.run this w)))
 
         (dispose [_]
-          (let [ ^TCore c (.getf impl :core) ]
+          (let [^TCore c (.getf impl :core) ]
             (when-not (nil? c) (.dispose c)))) )
 
       { :typeid (keyword "czc.frwk.util/Scheduler") }

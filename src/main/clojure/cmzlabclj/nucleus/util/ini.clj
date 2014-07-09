@@ -14,43 +14,26 @@
 
   cmzlabclj.nucleus.util.ini
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [cmzlabclj.nucleus.util.core
-         :only [ThrowBadData ThrowIOE ConvBool ConvLong ConvDouble] ])
-  (:require [clojure.string :as cstr])
-  (:use [ cmzlabclj.nucleus.util.files :only [FileRead?] ])
-  (:use [ cmzlabclj.nucleus.util.str :only [nsb strim] ])
-  (:import (com.zotohlab.frwk.util NCOrderedMap))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.net URL))
-  (:import (java.io File IOException InputStreamReader
-                    LineNumberReader PrintStream))
-  (:import (java.util Map)))
+         :only [ThrowBadData ThrowIOE ConvBool ConvInt ConvLong ConvDouble] ]
+        [cmzlabclj.nucleus.util.files :only [FileRead?] ]
+        [cmzlabclj.nucleus.util.str :only [nsb strim] ])
+  (:import  [com.zotohlab.frwk.util NCOrderedMap]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.frwk.util IWin32Conf]
+            [java.net URL]
+            [java.io File IOException InputStreamReader
+                    LineNumberReader PrintStream]
+            [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol IWin32Conf
-
-  "A Windows INI file object."
-
-  (getSection [_ sectionName] )
-  (sectionKeys [_ ] )
-  (dbgShow [_])
-  (getString [_ sectionName property] )
-  (getLong [_ sectionName property] )
-  (getBool [_ sectionName property] )
-  (getDouble [_ sectionName property] )
-  (optString [_ sectionName property dft] )
-  (optLong [_ sectionName property dft] )
-  (optBool [_ sectionName property dft] )
-  (optDouble [_ sectionName property dft] ) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti ^cmzlabclj.nucleus.util.ini.IWin32Conf ParseInifile "Parse a INI config file." class)
+(defmulti ^IWin32Conf ParseInifile "Parse a INI config file." class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -80,11 +63,15 @@
 ;;
 (defn- maybeSection
 
-  [^LineNumberReader rdr ^Map ncmap ^String line]
+  [^LineNumberReader rdr
+   ^Map ncmap
+   ^String line]
 
-  (let [ s (strim (StringUtils/strip line "[]")) ]
-    (when (cstr/blank? s) (throwBadIni rdr))
-    (when-not (.containsKey ncmap s) (.put ncmap s (NCOrderedMap.)))
+  (let [s (strim (StringUtils/strip line "[]")) ]
+    (when (cstr/blank? s)
+      (throwBadIni rdr))
+    (when-not (.containsKey ncmap s)
+      (.put ncmap s (NCOrderedMap.)))
     s
   ))
 
@@ -92,12 +79,18 @@
 ;;
 (defn- maybeLine
 
-  [^LineNumberReader rdr ^Map ncmap ^Map section ^String line]
+  [^LineNumberReader rdr
+   ^Map ncmap
+   ^Map section
+   ^String line]
 
-  (let [ ^Map kvs (.get ncmap section) ]
-    (when (nil? kvs) (throwBadIni rdr))
-    (let [ pos (.indexOf line (int \=))
-           nm (if (> pos 0) (strim (.substring line 0 pos)) "" ) ]
+  (let [^Map kvs (.get ncmap section) ]
+    (when (nil? kvs)
+      (throwBadIni rdr))
+    (let [pos (.indexOf line (int \=))
+          nm (if (> pos 0)
+               (strim (.substring line 0 pos))
+               "" ) ]
       (when (cstr/blank? nm) (throwBadIni rdr))
       (.put kvs nm (strim (.substring line (+ pos 1)))) )
   ))
@@ -107,9 +100,12 @@
 (defn- evalOneLine
 
   ^String
-  [^LineNumberReader rdr ^Map ncmap ^String line ^String curSec]
+  [^LineNumberReader rdr
+   ^Map ncmap
+   ^String line
+   ^String curSec]
 
-  (let [ ln (strim line) ]
+  (let [ln (strim line) ]
     (cond
       (or (cstr/blank? ln) (.startsWith ln "#"))
       curSec
@@ -118,7 +114,9 @@
       (maybeSection rdr ncmap ln)
 
       :else
-      (do (maybeLine rdr ncmap curSec ln) curSec))
+      (do
+        (maybeLine rdr ncmap curSec ln)
+        curSec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -127,11 +125,11 @@
 
   [^Map m k]
 
-  (let [ kn (name k) ]
+  (let [kn (name k) ]
     (if (or (nil? kn)
             (nil? m))
-        nil
-        (.containsKey m kn))
+      nil
+      (.containsKey m kn))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,11 +137,11 @@
 (defn- getKV ""
 
   ^String
-  [^cmzlabclj.nucleus.util.ini.IWin32Conf cf s k err]
+  [^IWin32Conf cf s k err]
 
-  (let [ kn (name k)
-         sn (name s)
-         ^Map mp (.getSection cf sn) ]
+  (let [kn (name k)
+        sn (name s)
+        ^Map mp (.getSection cf sn) ]
     (cond
       (nil? mp) (if err (throwBadMap sn) nil)
       (nil? k) (if err (throwBadKey "") nil)
@@ -160,53 +158,62 @@
   (reify IWin32Conf
 
     (getSection [_ sectionName]
-      (let [ sn (name sectionName) ]
+      (let [sn (name sectionName) ]
         (if (cstr/blank? sn)
-            nil
-            (let [ m (.get mapOfSections sn) ]
-              (if (nil? m) nil (into {} m))))))
+          nil
+          (let [m (.get mapOfSections sn) ]
+            (if (nil? m)
+              nil
+              (into {} m))))))
 
-    (sectionKeys [_] (.keySet mapOfSections))
+    (sectionKeys [_]
+      (.keySet mapOfSections))
 
     (getString [this section property]
       (nsb (getKV this section property true)))
 
     (optString [this section property dft]
-      (let [ rc (getKV this section property false) ]
-        (if (nil? rc) dft rc)))
+      (if-let [rc (getKV this section property false) ]
+        rc
+        dft))
 
     (getLong [this section property]
       (ConvLong (getKV this section property true) 0))
 
+    (getInt [this section property]
+      (ConvInt (getKV this section property true) 0))
+
     (optLong [this section property dft]
-      (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-            dft
-            (ConvLong rc 0))))
+      (if-let [rc (getKV this section property false) ]
+        (ConvLong rc 0)
+        dft))
+
+    (optInt [this section property dft]
+      (if-let [rc (getKV this section property false) ]
+        (ConvInt rc 0)
+        dft))
 
     (getDouble [this section property]
       (ConvDouble (getKV this section property true) 0.0))
 
     (optDouble [this section property dft]
-      (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-            dft
-            (ConvDouble rc 0.0))))
+      (if-let [rc (getKV this section property false) ]
+        (ConvDouble rc 0.0)
+        dft))
 
     (getBool [this section property]
       (ConvBool (getKV this section property true) false))
 
     (optBool [this section property dft]
-      (let [ rc (getKV this section property false) ]
-        (if (nil? rc)
-            dft
-            (ConvBool rc false))))
+      (if-let [rc (getKV this section property false) ]
+        (ConvBool rc false)
+        dft))
 
     (dbgShow [_]
-      (let  [ buf (StringBuilder.) ]
-        (doseq [ [k v] (seq mapOfSections) ]
+      (let [buf (StringBuilder.) ]
+        (doseq [[k v] (seq mapOfSections) ]
           (.append buf (str "[" (name k) "]\n"))
-          (doseq [ [x y] (seq v) ]
+          (doseq [[x y] (seq v) ]
             (.append buf (str (name x) "=" y)))
           (.append buf "\n"))
         (println buf)))
@@ -216,43 +223,44 @@
 ;;
 (defmethod ParseInifile String
 
-  ^cmzlabclj.nucleus.util.ini.IWin32Conf
+  ^IWin32Conf
   [^String fpath]
 
   (if (nil? fpath)
-      nil
-      (ParseInifile (File. fpath))
+    nil
+    (ParseInifile (File. fpath))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ParseInifile File
 
-  ^cmzlabclj.nucleus.util.ini.IWin32Conf
+  ^IWin32Conf
   [^File file]
 
   (if (or (nil? file)
           (not (FileRead? file)))
-      nil
-      (ParseInifile (.toURL (.toURI file)))
+    nil
+    (ParseInifile (.toURL (.toURI file)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- parseFile
 
-  ^cmzlabclj.nucleus.util.ini.IWin32Conf
+  ^IWin32Conf
   [^URL fUrl]
 
-  (with-open [ inp (.openStream fUrl) ]
-    (loop [ rdr (LineNumberReader. (InputStreamReader. inp "utf-8"))
-            total (NCOrderedMap.)
-            curSec ""
-            line (.readLine rdr)  ]
+  (with-open [inp (.openStream fUrl) ]
+    (loop [rdr (LineNumberReader. (InputStreamReader. inp "utf-8"))
+           total (NCOrderedMap.)
+           curSec ""
+           line (.readLine rdr)  ]
       (if (nil? line)
-          (makeWinini total)
-          (recur rdr total (evalOneLine rdr total line curSec)
-                           (.readLine rdr) )
+        (makeWinini total)
+        (recur rdr total
+               (evalOneLine rdr total line curSec)
+               (.readLine rdr) )
       ))
   ))
 
@@ -260,12 +268,12 @@
 ;;
 (defmethod ParseInifile URL
 
-  ^cmzlabclj.nucleus.util.ini.IWin32Conf
+  ^IWin32Conf
   [^URL fileUrl]
 
   (if (nil? fileUrl)
-      nil
-      (parseFile fileUrl)
+    nil
+    (parseFile fileUrl)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

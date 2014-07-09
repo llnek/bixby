@@ -16,18 +16,19 @@
 
   (:gen-class)
 
-  (:require [clojure.tools.logging :as log :only [warn error info debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.i18n.resources :only [GetResource] ])
-  (:use [cmzlabclj.nucleus.util.core :only [test-cond] ])
-  (:use [cmzlabclj.nucleus.util.str :only [MakeString] ])
-  (:use [cmzlabclj.nucleus.util.files :only [DirRead?] ])
-  (:use [cmzlabclj.tardis.etc.cmdline
+  (:require [clojure.tools.logging :as log :only [warn error info debug] ]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
+        [cmzlabclj.nucleus.util.core :only [test-cond] ]
+        [cmzlabclj.nucleus.util.str :only [MakeString] ]
+        [cmzlabclj.nucleus.util.files :only [DirRead?] ]
+        [cmzlabclj.tardis.etc.cmdline
          :only [GetCommands EvalCommand] ])
 
-  (:import (com.zotohlab.gallifrey.etc CmdHelpError))
-  (:import (java.util Locale))
-  (:import (java.io File)))
+  (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
+            [java.util Locale]
+            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -65,7 +66,7 @@
   [^clojure.lang.IPersistentCollection arr
    ^String fmt]
 
-  (doseq [ [k v] (seq arr) ]
+  (doseq [[k v] (seq arr) ]
     (print (String/format fmt
                           (into-array Object [k v]) ))
   ))
@@ -94,11 +95,11 @@
 
   [rcb & args]
 
-  (let [ h (File. ^String (first args)) ]
+  (let [h (File. ^String (first args)) ]
     (test-cond (str "Cannot access Skaro home " h) (DirRead? h))
-      (if (not (contains? (GetCommands) (keyword (nth args 1))))
-        false
-        (fn [] (apply EvalCommand h rcb (drop 1 args))))
+    (if (not (contains? (GetCommands) (keyword (nth args 1))))
+      false
+      #(apply EvalCommand h rcb (drop 1 args)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,15 +111,14 @@
   ;;(debug "Skaro: Main Entry")
   ;; for security, don't just eval stuff
   ;;(alter-var-root #'*read-eval* (constantly false))
-  (let [ rcpath (str "cmzlabclj/tardis/etc/Resources")
-         rcb (GetResource rcpath (Locale/getDefault)) ]
+  (let [rcpath (str "cmzlabclj/tardis/etc/Resources")
+        rcb (GetResource rcpath (Locale/getDefault)) ]
     (try
       (when (< (count args) 2) (throw (CmdHelpError. "")))
-      (if-let [ rc (apply parseArgs rcb args) ]
+      (if-let [rc (apply parseArgs rcb args) ]
         (rc)
         (throw (CmdHelpError. "")))
-      (catch CmdHelpError e#
-        (usage)))
+      (catch CmdHelpError e# (usage)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

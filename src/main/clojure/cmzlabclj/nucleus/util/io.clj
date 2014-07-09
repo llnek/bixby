@@ -9,30 +9,28 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
 (ns ^{ :doc "Util functions related to stream/io."
        :author "kenl" }
 
   cmzlabclj.nucleus.util.io
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [cmzlabclj.nucleus.util.core :only [Try!] ])
 
-  (:import (java.io ByteArrayInputStream ByteArrayOutputStream
-                    DataInputStream
-                    FileInputStream FileOutputStream
-                    CharArrayWriter OutputStreamWriter
-                    File InputStream InputStreamReader
-                    OutputStream Reader Writer))
-  (:import (java.util.zip GZIPInputStream GZIPOutputStream))
-  (:import (com.zotohlab.frwk.io XData XStream))
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (org.apache.commons.io IOUtils))
-  (:import (org.xml.sax InputSource))
-  (:import (java.nio.charset Charset)))
-
+  (:import  [java.io ByteArrayInputStream ByteArrayOutputStream
+                     DataInputStream
+                     FileInputStream FileOutputStream
+                     CharArrayWriter OutputStreamWriter
+                     File InputStream InputStreamReader
+                     OutputStream Reader Writer]
+            [java.util.zip GZIPInputStream GZIPOutputStream]
+            [com.zotohlab.frwk.io XData XStream]
+            [org.apache.commons.codec.binary Base64]
+            [org.apache.commons.lang3 StringUtils]
+            [org.apache.commons.io IOUtils]
+            [org.xml.sax InputSource]
+            [java.nio.charset Charset]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -63,8 +61,10 @@
    (NewlyTmpfile false))
 
   ([open]
-   (let [ f (MakeTmpfile) ]
-     (if open [ f (FileOutputStream. f) ] [ f nil ]))) )
+   (let [f (MakeTmpfile) ]
+     (if open
+       [f (FileOutputStream. f) ]
+       [ f nil ]))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,8 +74,8 @@
   [bits]
 
   (if (nil? bits)
-      nil
-      (ByteArrayInputStream. ^bytes bits)
+    nil
+    (ByteArrayInputStream. ^bytes bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,14 +94,16 @@
   ^chars
   [^bytes bits]
 
-  (let [ len (* 2 (if (nil? bits) 0 (alength bits)))
-         out (char-array len) ]
-    (loop [ k 0 pos 0 ]
+  (let [len (* 2 (if (nil? bits) 0 (alength bits)))
+        out (char-array len) ]
+    (loop [k 0 pos 0 ]
       (if (>= pos len)
         nil
-        (let [ n (bit-and (aget ^bytes bits k) 0xff) ]
-          (aset-char out pos (aget ^chars HEX_CHS (bit-shift-right n 4))) ;; high 4 bits
-          (aset-char out (+ pos 1) (aget ^chars HEX_CHS (bit-and n 0xf))) ;; low 4 bits
+        (let [n (bit-and (aget ^bytes bits k) 0xff) ]
+          (aset-char out pos
+                     (aget ^chars HEX_CHS (bit-shift-right n 4))) ;; high 4 bits
+          (aset-char out (+ pos 1)
+                     (aget ^chars HEX_CHS (bit-and n 0xf))) ;; low 4 bits
           (recur (inc k) (+ 2 pos)) )))
     out
   ))
@@ -113,7 +115,9 @@
   ^String
   [^bytes bits]
 
-  (if (nil? bits) nil (String. (HexifyChars bits))) )
+  (if (nil? bits)
+    nil
+    (String. (HexifyChars bits))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,8 +132,8 @@
 
   (if (nil? bits)
     nil
-    (let [ baos (MakeBitOS) ]
-      (with-open [ g (GZIPOutputStream. baos) ]
+    (let [baos (MakeBitOS) ]
+      (with-open [g (GZIPOutputStream. baos) ]
         (.write g bits, 0, (alength bits)))
       (.toByteArray baos))
   ))
@@ -161,7 +165,9 @@
   ^XStream
   [ ^String fp]
 
-  (if (nil? fp) nil (XStream. (File. fp))))
+  (if (nil? fp)
+    nil
+    (XStream. (File. fp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -170,7 +176,9 @@
   ^XStream
   [^File f]
 
-  (if (nil? f) nil (XStream. f)))
+  (if (nil? f)
+    nil
+    (XStream. f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,7 +187,9 @@
   ^bytes
   [^String gzb64]
 
-  (if (nil? gzb64) nil (Gunzip (Base64/decodeBase64 gzb64))) )
+  (if (nil? gzb64)
+    nil
+    (Gunzip (Base64/decodeBase64 gzb64))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -188,7 +198,9 @@
   ^String
   [^bytes bits]
 
-  (if (nil? bits) nil (Base64/encodeBase64String (Gzip bits))) )
+  (if (nil? bits)
+    nil
+    (Base64/encodeBase64String (Gzip bits))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -197,7 +209,9 @@
   ;; int
   [^InputStream inp]
 
-  (if (nil? inp) 0 (.available inp)) )
+  (if (nil? inp)
+    0
+    (.available inp)) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -206,8 +220,8 @@
   ^File
   [^InputStream inp]
 
-  (let [ [^File fp ^OutputStream os]
-         (NewlyTmpfile true) ]
+  (let [[^File fp ^OutputStream os]
+        (NewlyTmpfile true) ]
     (try
       (IOUtils/copy inp os)
       (finally
@@ -231,23 +245,22 @@
   [^InputSource inpsrc]
 
   (when-not (nil? inpsrc)
-    (let [ rdr (.getCharacterStream inpsrc)
-           ism (.getByteStream inpsrc) ]
-      (Try!  (when-not (nil? ism) (.reset ism)) )
-      (Try!  (when-not (nil? rdr) (.reset rdr)) ))
+    (let [rdr (.getCharacterStream inpsrc)
+          ism (.getByteStream inpsrc) ]
+      (Try! (when-not (nil? ism) (.reset ism)) )
+      (Try! (when-not (nil? rdr) (.reset rdr)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeXData "Return a newly created XData."
 
-  (^XData
-    []
-    (MakeXData false))
+  (^XData [] (MakeXData false))
 
-  (^XData
-    [usefile]
-    (if usefile (XData. (MakeTmpfile)) (XData.)) ))
+  (^XData [usefile]
+          (if usefile
+            (XData. (MakeTmpfile))
+            (XData.)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -255,9 +268,11 @@
 
   [^ByteArrayOutputStream baos]
 
-  (let [ [^File fp ^OutputStream os]
-         (NewlyTmpfile true) ]
-    (doto os (.write (.toByteArray baos)) (.flush))
+  (let [[^File fp ^OutputStream os]
+        (NewlyTmpfile true) ]
+    (doto os
+      (.write (.toByteArray baos))
+      (.flush))
     (.close baos)
     [fp os]
   ))
@@ -268,17 +283,18 @@
 
   [^InputStream inp ^ByteArrayOutputStream baos]
 
-  (let [ [^File fp ^OutputStream os]
-         (swap-bytes baos)
-         bits (byte-array 4096) ]
+  (let [[^File fp ^OutputStream os]
+        (swap-bytes baos)
+        bits (byte-array 4096) ]
     (try
-      (loop [ c (.read inp bits) ]
+      (loop [c (.read inp bits) ]
         (if (< c 0)
           (XData. fp)
           (if (= c 0)
             (recur (.read inp bits))
-            (do (.write os bits 0 c)
-                (recur (.read inp bits))))))
+            (do
+              (.write os bits 0 c)
+              (recur (.read inp bits))))))
       (finally
         (IOUtils/closeQuietly os)))
   ))
@@ -290,10 +306,10 @@
   ^XData
   [^InputStream inp lmt]
 
-  (let [ bits (byte-array 4096)
-         baos (MakeBitOS) ]
-    (loop [ c (.read inp bits)
-            cnt 0 ]
+  (let [bits (byte-array 4096)
+        baos (MakeBitOS) ]
+    (loop [c (.read inp bits)
+           cnt 0 ]
       (if (< c 0)
         (XData. baos)
         (if (= c 0)
@@ -312,11 +328,13 @@
 
   [^CharArrayWriter wtr]
 
-  (let [ [^File fp ^OutputStream out]
-         (NewlyTmpfile true)
-         bits (.toCharArray wtr)
-         os (OutputStreamWriter. out "utf-8") ]
-    (doto os (.write bits) (.flush))
+  (let [[^File fp ^OutputStream out]
+        (NewlyTmpfile true)
+        bits (.toCharArray wtr)
+        os (OutputStreamWriter. out "utf-8") ]
+    (doto os
+      (.write bits)
+      (.flush))
     (IOUtils/closeQuietly wtr)
     [fp os]
   ))
@@ -328,17 +346,18 @@
   ^XData
   [^Reader inp ^CharArrayWriter wtr]
 
-  (let [ [^File fp ^Writer os]
-         (swap-chars wtr)
-         bits (char-array 4096) ]
+  (let [[^File fp ^Writer os]
+        (swap-chars wtr)
+        bits (char-array 4096) ]
     (try
-      (loop [ c (.read inp bits) ]
+      (loop [c (.read inp bits) ]
         (if (< c 0)
           (XData. fp)
           (if (= c 0)
             (recur (.read inp bits))
-            (do (.write os bits 0 c)
-                (recur (.read inp bits))))
+            (do
+              (.write os bits 0 c)
+              (recur (.read inp bits))))
         ))
       (finally
         (IOUtils/closeQuietly os)))
@@ -351,9 +370,9 @@
   ^XData
   [^Reader inp lmt]
 
-  (let [ wtr (CharArrayWriter. (int 10000))
-         bits (char-array 4096) ]
-    (loop [ c (.read inp bits) cnt 0 ]
+  (let [wtr (CharArrayWriter. (int 10000))
+        bits (char-array 4096) ]
+    (loop [c (.read inp bits) cnt 0 ]
       (if (< c 0)
         (XData. wtr)
         (if (= c 0)
@@ -372,7 +391,9 @@
 
   (^XData
     [^InputStream inp usefile]
-    (slurp-bytes inp (if usefile 1 (com.zotohlab.frwk.io.IOUtils/streamLimit))))
+    (slurp-bytes inp (if usefile
+                       1
+                       (com.zotohlab.frwk.io.IOUtils/streamLimit))))
 
   (^XData
     [^InputStream inp]
@@ -384,11 +405,14 @@
 
   (^XData
     [^Reader rdr]
-    (slurp-chars rdr (com.zotohlab.frwk.io.IOUtils/streamLimit)))
+    (slurp-chars rdr
+                 (com.zotohlab.frwk.io.IOUtils/streamLimit)))
 
   (^XData
     [^Reader rdr usefile]
-    (slurp-chars rdr (if usefile 1 (com.zotohlab.frwk.io.IOUtils/streamLimit)))))
+    (slurp-chars rdr (if usefile
+                       1
+                       (com.zotohlab.frwk.io.IOUtils/streamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

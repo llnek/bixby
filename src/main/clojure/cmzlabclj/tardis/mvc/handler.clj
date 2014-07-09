@@ -16,6 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core
          :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ]
         [cmzlabclj.nucleus.netty.io]
@@ -31,6 +32,7 @@
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
         [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
         [cmzlabclj.nucleus.net.routes])
+
   (:import [org.apache.commons.lang3 StringUtils]
            [io.netty.util ReferenceCountUtil]
            [java.util Date]
@@ -81,9 +83,10 @@
               ^HttpRequest req msg
               ch (.channel ctx)
               json (doto (JsonObject.)
-                         (.addProperty "method" (NettyFW/getMethod req))
-                         (.addProperty "uri" (NettyFW/getUriPath req)))
-               [r1 r2 r3 r4] (.crack ck json) ]
+                     (.addProperty "method" (NettyFW/getMethod req))
+                     (.addProperty "uri" (NettyFW/getUriPath req)))
+              [r1 r2 r3 r4]
+              (.crack ck json) ]
           (-> (.attr ctx GOOD_FLAG)(.remove))
           (cond
             (and r1 (hgl? r4))
@@ -99,8 +102,7 @@
             :else
             (do
               (log/debug "failed to match uri: " (.getUri req))
-              (NettyFW/replyXXX ch 404 false)))
-        )
+              (NettyFW/replyXXX ch 404 false))))
 
         (instance? HttpResponse msg)
         (do
@@ -111,10 +113,10 @@
         (let [^ChannelHandlerContext ctx c
               flag (-> (.attr ctx GOOD_FLAG)(.get)) ]
           (if (notnil? flag)
-              (do
-                (ReferenceCountUtil/retain msg)
-                (.fireChannelRead ctx msg))
-              (log/debug "skipping unwanted msg")))
+            (do
+              (ReferenceCountUtil/retain msg)
+              (.fireChannelRead ctx msg))
+            (log/debug "skipping unwanted msg")))
       ))
   ))
 
@@ -137,12 +139,12 @@
             (.crack rcc info) ]
         (cond
           (= r1 true)
-          (let [ ^HTTPEvent evt (IOESReifyEvent co ch msg r2) ]
+          (let [^HTTPEvent evt (IOESReifyEvent co ch msg r2) ]
             (log/debug "matched one route: " (.getPath r2)
                        " , and static = " (.isStatic? r2))
             (if (.isStatic? r2)
-                (ServeStatic r2 co r3 ch info evt)
-                (ServeRoute r2 co r3 ch evt)))
+              (ServeStatic r2 co r3 ch info evt)
+              (ServeRoute r2 co r3 ch evt)))
           :else
           (do
             (log/debug "failed to match uri: " (-> info (.getAsJsonPrimitive "uri")
@@ -164,14 +166,14 @@
   ^PipelineConfigurator
   [^cmzlabclj.tardis.core.sys.Element co options1]
 
-  (let [cfgopts { :wsockUri (:wsock options1)
-                  :onwsock mvcInitorOnWS } ]
+  (let [cfgopts {:wsockUri (:wsock options1)
+                 :onwsock mvcInitorOnWS } ]
     (log/debug "mvc netty pipeline initor called with emitter = " (type co))
     (proxy [PipelineConfigurator] []
       (assemble [p o]
-        (let [ ^ChannelPipeline pipe p
-               ^JsonObject options o
-               ssl (SSLServerHShake options) ]
+        (let [^ChannelPipeline pipe p
+              ^JsonObject options o
+              ssl (SSLServerHShake options) ]
           (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
           (doto pipe
             (FlashHandler/addLast )

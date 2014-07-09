@@ -15,17 +15,17 @@
 
   cmzlabclj.nucleus.util.guids
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [cmzlabclj.nucleus.util.str :as zstr :only [Left Right] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [NowMillis TryC NewRandom] ])
-  (:use [cmzlabclj.nucleus.util.bytes :only [ReadInt ReadLong] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextInt] ])
-  (:import (java.lang StringBuilder) )
-  (:import (java.net InetAddress) )
-  (:import (java.lang Math) )
-  (:import (java.security SecureRandom)))
-
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.core :only [NowMillis TryC NewRandom] ]
+        [cmzlabclj.nucleus.util.str :only [nsb Left Right] ]
+        [cmzlabclj.nucleus.util.bytes :only [ReadInt ReadLong] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextInt] ])
+  (:import  [java.lang StringBuilder]
+            [java.net InetAddress]
+            [java.util UUID]
+            [java.lang Math]
+            [java.security SecureRandom]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -50,11 +50,11 @@
   ^String
   [^String pad ^String mask]
 
-  (let [ mlen (.length mask)
-         plen (.length pad) ]
+  (let [mlen (.length mask)
+        plen (.length pad) ]
     (if (>= mlen plen)
-        (.substring mask 0 plen)
-        (.toString (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
+      (.substring mask 0 plen)
+      (nsb (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,10 +81,10 @@
 
   []
 
-  (let [ s (fmtLong (NowMillis))
-         n (.length s) ]
-    [ (zstr/Left s (/ n 2))
-      (zstr/Right s (max 0 (- n (/ n 2 )) )) ]
+  (let [s (fmtLong (NowMillis))
+        n (.length s) ]
+    [ (Left s (/ n 2))
+      (Right s (max 0 (- n (/ n 2 )) )) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,11 +95,13 @@
   []
 
   (TryC
-    (let [ neta (InetAddress/getLocalHost)
-           b (.getAddress neta) ]
+    (let [neta (InetAddress/getLocalHost)
+          b (.getAddress neta) ]
       (if (.isLoopbackAddress neta )
         (.nextLong (NewRandom))
-        (if (= 4 (alength b)) (long (ReadInt b)) (ReadLong b) )
+        (if (= 4 (alength b))
+          (long (ReadInt b))
+          (ReadLong b) )
       ))
   ))
 
@@ -111,20 +113,32 @@
 ;;
 (defn NewUUid "RFC4122, version 4 form."
 
+  ^String[]
+
+  (nsb (UUID/randomUUID)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MyOwnNewUUid "RFC4122, version 4 form."
+
   ^String
   []
 
   ;; At i==19 set the high bits of clock sequence as per rfc4122, sec. 4.1.5
-  (let [ rc (char-array _UUIDLEN)
-         rnd (NewRandom) ]
-    (dotimes [ n (alength rc) ]
-      (aset-char rc n (case n
-        (8 13 18 23) \-
-        (14) \4
-        (let [ d (Double. (* (.nextDouble rnd) 16))
-               r (bit-or 0 (.intValue d))
-               pos (if (= n 19) (bit-or (bit-and r 0x3) 0x8) (bit-and r 0xf) ) ]
-          (aget ^chars _CHARS pos))) ))
+  (let [rc (char-array _UUIDLEN)
+        rnd (NewRandom) ]
+    (dotimes [n (alength rc) ]
+      (aset-char rc 
+                 n 
+                 (case n 
+                   (8 13 18 23) \-
+                   (14) \4
+                   (let [d (Double. (* (.nextDouble rnd) 16))
+                         r (bit-or 0 (.intValue d))
+                         pos (if (= n 19) 
+                               (bit-or (bit-and r 0x3) 0x8) 
+                               (bit-and r 0xf)) ]
+                     (aget ^chars _CHARS pos))) ))
     (String. rc)
   ))
 
@@ -135,8 +149,8 @@
   ^String
   []
 
-  (let [ seed (.nextInt (NewRandom) (Integer/MAX_VALUE))
-         ts (splitTime) ]
+  (let [seed (.nextInt (NewRandom) (Integer/MAX_VALUE))
+        ts (splitTime) ]
     (str (nth ts 0)
          (fmtLong _IP)
          (fmtInt seed)

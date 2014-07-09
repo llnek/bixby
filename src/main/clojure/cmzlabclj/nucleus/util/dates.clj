@@ -14,21 +14,22 @@
 
   cmzlabclj.nucleus.util.dates
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [cmzlabclj.nucleus.util.constants :as CS ])
-  (:require [clojure.string :as cstr])
-  (:use [ cmzlabclj.nucleus.util.str :only [Has? HasAny? nichts?] ])
-  (:use [ cmzlabclj.nucleus.util.core :only [Try!] ])
-
-  (:import (java.text ParsePosition SimpleDateFormat))
-  (:import (java.util Locale TimeZone SimpleTimeZone
-                      Date Calendar GregorianCalendar))
-  (:import (java.sql Timestamp))
-  (:import (org.apache.commons.lang3 StringUtils)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [cmzlabclj.nucleus.util.constants :as CS ]
+            [clojure.string :as cstr])
+  (:use [ cmzlabclj.nucleus.util.str :only [Has? HasAny? nichts? nsb] ]
+        [ cmzlabclj.nucleus.util.core :only [Try!] ])
+  (:import  [java.text ParsePosition SimpleDateFormat]
+            [java.util Locale TimeZone SimpleTimeZone
+                      Date Calendar GregorianCalendar]
+            [java.sql Timestamp]
+            [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn LeapYear? "Return true if this is a leap year."
 
   [year]
@@ -45,8 +46,10 @@
 
   [^String s]
 
-  (let [ pos (StringUtils/indexOf s ",; \t\r\n\f")
-         ss (if (> pos 0) (.substring s (inc pos)) "") ]
+  (let [pos (StringUtils/indexOf s ",; \t\r\n\f")
+        ss (if (> pos 0)
+             (.substring s (inc pos))
+             "") ]
     (or (HasAny? ss ["+" "-"])
         (.matches ss "\\s*[a-zA-Z]+\\s*"))
   ))
@@ -57,10 +60,10 @@
 
   [^String dateStr]
 
-  (let [ p1 (.lastIndexOf dateStr (int \.))
-         p2 (.lastIndexOf dateStr (int \:))
-         p3 (.lastIndexOf dateStr (int \-))
-         p4 (.lastIndexOf dateStr (int \/)) ]
+  (let [p1 (.lastIndexOf dateStr (int \.))
+        p2 (.lastIndexOf dateStr (int \:))
+        p3 (.lastIndexOf dateStr (int \-))
+        p4 (.lastIndexOf dateStr (int \/)) ]
     (cond
       (> p1 0)
       (hastzpart? (.substring dateStr (inc p1)))
@@ -96,8 +99,8 @@
 
   (if (or (cstr/blank? tstr)
           (cstr/blank? fmt))
-      nil
-      (.parse (SimpleDateFormat. fmt) tstr)
+    nil
+    (.parse (SimpleDateFormat. fmt) tstr)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,11 +111,13 @@
   [^String tstr]
 
   (if (nichts? tstr)
-      nil
-      (let [ fmt (if (Has? tstr \:)
-                     (if (Has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
-                     CS/DATE_FMT ) ]
-        (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))
+    nil
+    (let [fmt (if (Has? tstr \:)
+                (if (Has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
+                CS/DATE_FMT ) ]
+      (ParseDate tstr (if (hastz? tstr)
+                        (str fmt "Z")
+                        fmt)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,27 +127,27 @@
   ^String
   [^Timestamp ts]
 
-  (if (nil? ts) "" (.toString ts)))
+  (nsb ts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn FmtDate "Convert Date into string value."
 
-  ( ^String
+  (^String
     [^Date dt]
     (FmtDate dt CS/DT_FMT_MICRO nil))
 
-  ( ^String
+  (^String
     [^Date dt fmt]
     (FmtDate dt fmt nil))
 
-  ( ^String
+  (^String
     [^Date dt fmt ^TimeZone tz]
     (if (or (nil? dt) (cstr/blank? fmt))
-        ""
-        (let [ df (SimpleDateFormat. fmt) ]
-          (when-not (nil? tz) (.setTimeZone df tz))
-          (.format df dt)))))
+      ""
+      (let [df (SimpleDateFormat. fmt) ]
+        (when-not (nil? tz) (.setTimeZone df tz))
+        (.format df dt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -163,8 +168,8 @@
   (if (nil? cal)
     nil
     (doto (GregorianCalendar. (.getTimeZone cal))
-          (.setTime (.getTime cal))
-          (.add (int calendarField) ^long amount))
+      (.setTime (.getTime cal))
+      (.add (int calendarField) ^long amount))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -210,7 +215,7 @@
   ^Date
   [months]
 
-  (let [ now (MakeCal (Date.)) ]
+  (let [now (MakeCal (Date.)) ]
     (-> (AddMonths now months)
         (.getTime))
   ))
@@ -222,7 +227,7 @@
   ^Date
   [years]
 
-  (let [ now (MakeCal (Date.)) ]
+  (let [now (MakeCal (Date.)) ]
     (-> (AddYears now years)
         (.getTime))
   ))
@@ -234,7 +239,7 @@
   ^Date
   [days]
 
-  (let [ now (MakeCal (Date.)) ]
+  (let [now (MakeCal (Date.)) ]
     (-> (AddDays now days)
         (.getTime))
   ))
@@ -248,13 +253,13 @@
 
   (java.lang.String/format (Locale/getDefault)
                            "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
-                           (into-array Object [
-                                (.get cal Calendar/YEAR)
-                                (+ 1 (.get cal Calendar/MONTH))
-                                (.get cal Calendar/DAY_OF_MONTH)
-                                (.get cal Calendar/HOUR_OF_DAY)
-                                (.get cal Calendar/MINUTE)
-                                (.get cal Calendar/SECOND) ] )
+                           (into-array Object
+                                       [(.get cal Calendar/YEAR)
+                                        (+ 1 (.get cal Calendar/MONTH))
+                                        (.get cal Calendar/DAY_OF_MONTH)
+                                        (.get cal Calendar/HOUR_OF_DAY)
+                                        (.get cal Calendar/MINUTE)
+                                        (.get cal Calendar/SECOND) ] )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -273,11 +278,11 @@
   ^String
   [^Calendar cal]
 
-  (cstr/join  ""
-              [ "{" (.. cal (getTimeZone) (getDisplayName) )  "} "
-                "{" (.. cal (getTimeZone) (getID)) "} "
-                "[" (.getTimeInMillis cal) "] "
-                (FmtCal cal) ]
+  (cstr/join ""
+             ["{" (.. cal (getTimeZone) (getDisplayName) )  "} "
+              "{" (.. cal (getTimeZone) (getID)) "} "
+              "[" (.getTimeInMillis cal) "] "
+              (FmtCal cal) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

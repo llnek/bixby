@@ -14,20 +14,21 @@
 
   cmzlabclj.tardis.io.socket
 
-  (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.tardis.io.core])
-  (:use [cmzlabclj.tardis.core.sys])
+  (:require [clojure.tools.logging :as log :only (info warn error debug)]
+            [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.process :only [Coroutine] ])
-  (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ])
-  (:use [cmzlabclj.nucleus.util.core :only [test-posnum ConvLong] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl?] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:import (java.net InetAddress ServerSocket Socket))
-  (:import (org.apache.commons.io IOUtils))
-  (:import (com.zotohlab.frwk.core Identifiable))
-  (:import (com.zotohlab.gallifrey.io SocketEvent)))
+  (:use [cmzlabclj.tardis.io.core]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.nucleus.util.process :only [Coroutine] ]
+        [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
+        [cmzlabclj.nucleus.util.core :only [test-posnum ConvLong] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl?] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
+
+  (:import  [java.net InetAddress ServerSocket Socket]
+            [org.apache.commons.io IOUtils]
+            [com.zotohlab.frwk.core Identifiable]
+            [com.zotohlab.gallifrey.io SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,8 +47,8 @@
 
   [co & args]
 
-  (let [ ^Socket soc (first args)
-         eeid (NextLong) ]
+  (let [^Socket soc (first args)
+        eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -73,16 +74,16 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ tout (:sock-timeout-millis cfg)
-         host (:host cfg)
-         port (:port cfg)
-         blog (:backlog cfg) ]
+  (let [tout (:sock-timeout-millis cfg)
+        host (:host cfg)
+        port (:port cfg)
+        blog (:backlog cfg) ]
     (test-posnum "socket-io port" port)
-    (.setAttr! co :timeoutMillis (ConvLong tout 0))
-    (.setAttr! co :host (nsb host))
-    (.setAttr! co :port (int port))
-    (.setAttr! co :backlog (ConvLong blog 100))
-    co
+    (doto co
+      (.setAttr! :timeoutMillis (ConvLong tout 0))
+      (.setAttr! :host (nsb host))
+      (.setAttr! :port (int port))
+      (.setAttr! :backlog (ConvLong blog 100)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,13 +92,13 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ backlog (.getAttr co :backlog)
-         host (.getAttr co :host)
-         port (.getAttr co :port)
-         ip (if (hgl? host)
-                (InetAddress/getByName host)
-                (InetAddress/getLocalHost))
-         soc (ServerSocket. port backlog ip) ]
+  (let [backlog (.getAttr co :backlog)
+        host (.getAttr co :host)
+        port (.getAttr co :port)
+        ip (if (hgl? host)
+             (InetAddress/getByName host)
+             (InetAddress/getLocalHost))
+        soc (ServerSocket. port backlog ip) ]
     (log/info "opened Server Socket " soc  " (bound?) " (.isBound soc))
     (doto soc (.setReuseAddress true))
     (.setAttr! co :ssocket soc)
@@ -117,17 +118,16 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^ServerSocket ssoc (.getAttr co :ssocket)
-         cl (GetCldr) ]
+  (let [^ServerSocket ssoc (.getAttr co :ssocket)
+        cl (GetCldr) ]
     (when-not (nil? ssoc)
-      (Coroutine (fn []
-                   (while (.isBound ssoc)
-                     (try
-                       (sockItDown co (.accept ssoc))
-                       (catch Throwable e#
-                         (log/warn e# "")
-                         (IOUtils/closeQuietly ssoc)
-                         (.setAttr! co :ssocket nil)))))
+      (Coroutine #(while (.isBound ssoc)
+                    (try
+                      (sockItDown co (.accept ssoc))
+                      (catch Throwable e#
+                        (log/warn e# "")
+                        (IOUtils/closeQuietly ssoc)
+                        (.setAttr! co :ssocket nil))))
                  cl))
     (IOESStarted co)
   ))
@@ -138,7 +138,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^ServerSocket ssoc (.getAttr co :ssocket) ]
+  (let [^ServerSocket ssoc (.getAttr co :ssocket) ]
     (IOUtils/closeQuietly ssoc)
     (.setAttr! co :ssocket nil)
     (IOESStopped co)

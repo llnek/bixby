@@ -14,38 +14,40 @@
 
   cmzlabclj.nucleus.util.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr ])
-  (:require [clojure.core :as ccore ])
-  (:require [clojure.data.json :as json])
-  (:import (com.zotohlab.frwk.util CrappyDataError))
-  (:import (java.security SecureRandom))
-  (:import (java.net URL))
-  (:import (java.nio.charset Charset))
-  (:import (java.io InputStream File FileInputStream
-                    ByteArrayInputStream ByteArrayOutputStream))
-  (:import (java.util Properties Date Calendar
-                      GregorianCalendar TimeZone))
-  (:import (java.util.zip DataFormatException
-                          Deflater Inflater))
-  (:import (java.sql Timestamp))
-  (:import (java.rmi.server UID))
-  (:import (org.apache.commons.lang3.text StrSubstitutor))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (org.apache.commons.io IOUtils FilenameUtils))
-  (:import (org.apache.commons.lang3 SerializationUtils)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr ]
+            [clojure.core :as ccore ]
+            [clojure.data.json :as json])
+  (:import  [com.zotohlab.frwk.util CrappyDataError]
+            [java.security SecureRandom]
+            [java.net URL]
+            [java.nio.charset Charset]
+            [java.io InputStream File FileInputStream
+                    ByteArrayInputStream ByteArrayOutputStream]
+            [java.util Properties Date Calendar
+                      GregorianCalendar TimeZone]
+            [java.util.zip DataFormatException
+                          Deflater Inflater]
+            [java.sql Timestamp]
+            [java.rmi.server UID]
+            [org.apache.commons.lang3.text StrSubstitutor]
+            [org.apache.commons.lang3 StringUtils]
+            [org.apache.commons.io IOUtils FilenameUtils]
+            [org.apache.commons.lang3 SerializationUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^String NiceFPath "Convert the path into nice format (no) backslash." class)
+(defmulti ^String NiceFPath
+  "Convert the path into nice format (no) backslash." class)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Properties LoadJavaProps "Load java properties from input-stream." class)
+(defmulti ^Properties LoadJavaProps
+  "Load java properties from input-stream." class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -57,7 +59,7 @@
 ;;
 (defmacro TryC "Catch exception and log it."
 
-  [ & exprs ]
+  [& exprs]
 
   `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") nil )) )
 
@@ -65,7 +67,7 @@
 ;;
 (defmacro Try! "Eat all exceptions."
 
-  [ & exprs ]
+  [& exprs]
 
   `(try (do ~@exprs) (catch Throwable e# nil )) )
 
@@ -131,33 +133,33 @@
 ;;
 (defn ThrowUOE "Force throw an unsupported operation exception."
 
-  [msg]
+  [^String msg]
 
-  (throw (UnsupportedOperationException. ^String msg)))
+  (throw (UnsupportedOperationException. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ThrowBadArg "Force throw a bad parameter exception."
 
-  [msg]
+  [^String msg]
 
-  (throw (IllegalArgumentException. ^String msg)))
+  (throw (IllegalArgumentException. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ThrowIOE "Throw an IO Exception."
 
-  [msg]
+  [^String msg]
 
-  (throw (java.io.IOException. ^String msg)))
+  (throw (java.io.IOException. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ThrowBadData "Throw an Bad Data Exception."
 
-  [msg]
+  [^String msg]
 
-  (throw (CrappyDataError. ^String msg)))
+  (throw (CrappyDataError. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,7 +180,7 @@
 
   [pojo field func]
 
-  (let [ nv (apply func [ (get pojo field) ]) ]
+  (let [nv (apply func [ (get pojo field) ])]
     (assoc pojo field nv)
   ))
 
@@ -186,7 +188,7 @@
 ;;
 (defmacro spos? "Safely test positive number."
 
-  [ e ]
+  [e]
 
   `(and (number? ~e)(pos? ~e)))
 
@@ -197,7 +199,7 @@
   ^java.lang.Integer
   [n]
 
-  (Integer. (int n)))
+  (int n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -242,7 +244,10 @@
   ^String
   [^String propname]
 
-  (if (cstr/blank? propname) nil (System/getProperty propname)))
+  (if (cstr/blank? propname)
+    nil
+    (System/getProperty propname)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -251,7 +256,10 @@
   ^String
   [^String envname]
 
-  (if (cstr/blank? envname) nil (System/getenv envname)))
+  (if (cstr/blank? envname)
+    nil
+    (System/getenv envname)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -325,7 +333,10 @@
   ^String
   [^File aFile]
 
-  (if (nil? aFile) "" (NiceFPath (.getCanonicalPath aFile)) ))
+  (if (nil? aFile)
+    ""
+    (NiceFPath (.getCanonicalPath aFile))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -335,9 +346,9 @@
   [^String value]
 
   (if (nil? value)
-      ""
-      (.replace (StrSubstitutor. (System/getenv))
-                (StrSubstitutor/replaceSystemProperties value))
+    ""
+    (.replace (StrSubstitutor. (System/getenv))
+              (StrSubstitutor/replaceSystemProperties value))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -348,8 +359,8 @@
   [^String value]
 
   (if (nil? value)
-      ""
-      (StrSubstitutor/replaceSystemProperties value)
+    ""
+    (StrSubstitutor/replaceSystemProperties value)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -360,8 +371,8 @@
   [^String value]
 
   (if (nil? value)
-      ""
-      (.replace (StrSubstitutor. (System/getenv)) value)
+    ""
+    (.replace (StrSubstitutor. (System/getenv)) value)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -372,8 +383,8 @@
   [^Properties props]
 
   (reduce (fn [^Properties memo k]
-              (.put memo k (SubsVar (.get props k)))
-              memo )
+            (.put memo k (SubsVar (.get props k)))
+            memo )
           (Properties.)
           (.keySet props)
   ))
@@ -431,8 +442,8 @@
   [obj]
 
   (if (nil? obj)
-      nil
-      (SerializationUtils/serialize obj)
+    nil
+    (SerializationUtils/serialize obj)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -443,8 +454,8 @@
   [^bytes bits]
 
   (if (nil? bits)
-      nil
-      (SerializationUtils/deserialize bits)
+    nil
+    (SerializationUtils/deserialize bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -452,11 +463,11 @@
 (defn GetClassname "Get the object's class name."
 
   ^String
-  [obj]
+  [^Object obj]
 
   (if (nil? obj)
-      "null"
-      (.getName (.getClass ^Object obj))
+    "null"
+    (.getName (.getClass obj))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -467,8 +478,8 @@
   [aFile]
 
   (if (nil? aFile)
-      ""
-      (NiceFPath ^File aFile)
+    ""
+    (NiceFPath ^File aFile)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -477,7 +488,8 @@
 
   []
 
-  (>= (.indexOf (cstr/lower-case (SysProp "os.name")) "windows") 0 ))
+  (>= (.indexOf (cstr/lower-case (SysProp "os.name"))
+                "windows") 0 ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -494,7 +506,22 @@
   ^long
   [^String s dftLongVal]
 
-  (try (Long/parseLong s) (catch Throwable e# dftLongVal)))
+  (try
+    (Long/parseLong s)
+    (catch Throwable e# dftLongVal)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ConvInt "Parse string as an int value."
+
+  ^java.lang.Integer
+  [^String s dftIntVal]
+
+  (try
+    (Integer/parseInt s)
+    (catch Throwable e# (int dftIntVal))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -503,7 +530,10 @@
   ^double
   [^String s dftDblVal]
 
-  (try (Double/parseDouble s) (catch Throwable e# dftDblVal)))
+  (try
+    (Double/parseDouble s)
+    (catch Throwable e# dftDblVal)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -536,7 +566,7 @@
 
   [^URL aFile]
 
-  (with-open [ inp (.openStream aFile) ]
+  (with-open [inp (.openStream aFile) ]
     (LoadJavaProps inp)
   ))
 
@@ -544,61 +574,85 @@
 ;;
 (defn Stringify "Make a string from bytes."
 
-  (^String [^bytes bits] (Stringify bits "utf-8"))
+  (^String [^bytes bits]
+           (Stringify bits "utf-8"))
 
-  (^String [^bytes bits ^String encoding] (if (nil? bits)
-                                              nil
-                                              (String. bits encoding))))
+  (^String [^bytes bits
+            ^String encoding]
+           (if (nil? bits)
+             nil
+             (String. bits encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn Bytesify "Get bytes with the right encoding."
 
-  (^bytes [^String s] (Bytesify s "utf-8"))
+  (^bytes [^String s]
+          (Bytesify s "utf-8"))
 
-  (^bytes [^String s ^String encoding] (if (nil? s)
-                                           nil
-                                           (.getBytes s encoding))))
+  (^bytes [^String s
+           ^String encoding]
+          (if (nil? s)
+            nil
+            (.getBytes s encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ResStream "Load the resource as stream."
 
-  (^InputStream [^String rcPath] (ResStream rcPath nil))
+  (^InputStream [^String rcPath]
+                (ResStream rcPath nil))
 
-  (^InputStream [^String rcPath ^ClassLoader czLoader]
-    (if (nil? rcPath) nil (.getResourceAsStream (get-czldr czLoader) rcPath))) )
+  (^InputStream [^String rcPath
+                 ^ClassLoader czLoader]
+                (if (nil? rcPath)
+                  nil
+                  (.getResourceAsStream (get-czldr czLoader)
+                                        rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ResUrl "Load the resource as URL."
 
-  (^URL [^String rcPath] (ResUrl rcPath nil))
+  (^URL [^String rcPath]
+        (ResUrl rcPath nil))
 
-  (^URL [^String rcPath ^ClassLoader czLoader]
-    (if (nil? rcPath) nil (.getResource (get-czldr czLoader) rcPath))) )
+  (^URL [^String rcPath
+         ^ClassLoader czLoader]
+        (if (nil? rcPath)
+          nil
+          (.getResource (get-czldr czLoader)
+                        rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ResStr "Load the resource as string."
 
-  (^String [^String rcPath ^String encoding] (ResStr rcPath encoding nil))
+  (^String [^String rcPath
+            ^String encoding]
+           (ResStr rcPath encoding nil))
 
-  (^String [^String rcPath] (ResStr rcPath "utf-8" nil))
+  (^String [^String rcPath]
+           (ResStr rcPath "utf-8" nil))
 
-  (^String [^String rcPath ^String encoding ^ClassLoader czLoader]
-    (with-open [ inp (ResStream rcPath czLoader) ]
-      (Stringify (IOUtils/toByteArray inp) encoding ))) )
+  (^String [^String rcPath
+            ^String encoding
+            ^ClassLoader czLoader]
+           (with-open [inp (ResStream rcPath czLoader) ]
+             (Stringify (IOUtils/toByteArray inp)
+                        encoding ))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ResBytes "Load the resource as byte[]."
 
-  (^bytes [^String rcPath] (ResBytes rcPath nil))
+  (^bytes [^String rcPath]
+          (ResBytes rcPath nil))
 
-  (^bytes [^String rcPath ^ClassLoader czLoader]
-    (with-open [ inp (ResStream rcPath czLoader) ]
-      (IOUtils/toByteArray inp))) )
+  (^bytes [^String rcPath
+           ^ClassLoader czLoader]
+          (with-open [inp (ResStream rcPath czLoader) ]
+            (IOUtils/toByteArray inp))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -609,18 +663,22 @@
 
   (if (nil? bits)
     nil
-    (let [ buf (byte-array 1024)
-           cpz (Deflater.) ]
+    (let [buf (byte-array 1024)
+          cpz (Deflater.) ]
       (doto cpz
         (.setLevel (Deflater/BEST_COMPRESSION))
         (.setInput bits)
         (.finish))
-      (with-open [ baos (ByteArrayOutputStream. (alength bits)) ]
+      (with-open [baos (ByteArrayOutputStream. (alength bits)) ]
         (loop []
           (if (.finished cpz)
             (.toByteArray baos)
-            (do (.write baos buf 0 (.deflate cpz buf)) (recur))
-          ))
+            (do
+              (.write baos
+                      buf
+                      0
+                      (.deflate cpz buf))
+              (recur))))
       ))
   ))
 
@@ -633,14 +691,19 @@
 
   (if (nil? bits)
     nil
-    (let [ buf (byte-array 1024)
-           decr (Inflater.)
-           baos (ByteArrayOutputStream. (alength bits)) ]
+    (let [buf (byte-array 1024)
+          decr (Inflater.)
+          baos (ByteArrayOutputStream. (alength bits)) ]
       (.setInput decr bits)
       (loop []
         (if (.finished decr)
-            (.toByteArray baos)
-            (do (.write baos buf 0 (.inflate decr buf)) (recur)))
+          (.toByteArray baos)
+          (do
+            (.write baos
+                    buf
+                    0
+                    (.inflate decr buf))
+            (recur)))
       ))
   ))
 
@@ -651,13 +714,15 @@
   ^String
   [^String fname]
 
-  (str "" (reduce (fn [^StringBuilder buf ^Character ch]
-                      (if (or (java.lang.Character/isLetterOrDigit ch)
-                              (ccore/contains? _PUNCS ch))
-                          (.append buf ch)
-                          (.append buf (str "0x" (Integer/toString (int ch) 16)) )))
-                  (StringBuilder.)
-                  (seq fname))
+  (str ""
+       (reduce (fn [^StringBuilder buf ^Character ch]
+                 (if (or (java.lang.Character/isLetterOrDigit ch)
+                         (ccore/contains? _PUNCS ch))
+                   (.append buf ch)
+                   (.append buf (str "0x"
+                                     (Integer/toString (int ch) 16)))))
+               (StringBuilder.)
+               (seq fname))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -677,8 +742,8 @@
   [^String fileUrlPath]
 
   (if (nil? fileUrlPath)
-      ""
-      (.getPath (URL. fileUrlPath))) )
+    ""
+    (.getPath (URL. fileUrlPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -688,8 +753,8 @@
   [^String path]
 
   (if (cstr/blank? path)
-      nil
-      (.toURL (.toURI (File. path)))
+    nil
+    (.toURL (.toURI (File. path)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,11 +764,10 @@
   ^File
   [extra]
 
-  (let [ fp (File. (str (SysProp "java.io.tmpdir")
-                        "/"
-                        extra) ) ]
-    (.mkdirs fp)
-    fp
+  (doto (File. (str (SysProp "java.io.tmpdir")
+                    "/"
+                    extra))
+    (.mkdirs )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -730,7 +794,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti test-isa "Tests if object is subclass of parent."
-  (fn [a b c] (cond (instance? Class b) :class :else :object)))
+  (fn [a b c]
+    (cond
+      (instance? Class b) :class
+      :else :object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -786,23 +853,23 @@
 ;;
 (defmulti test-nonegnum "Assert number is not negative."
   (fn [a b]
-    (cond
-      (instance? Double b) :double
-      (instance? Long b) :long
-      (instance? Float b) :double
-      (instance? Integer b) :long
-      :else (ThrowBadArg "allow numbers only"))))
+    (condp instance? b
+      Double  :double
+      Long  :long
+      Float  :double
+      Integer  :long
+      (ThrowBadArg "allow numbers only"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti test-posnum "Assert number is positive."
   (fn [a b]
-    (cond
-      (instance? Double b) :double
-      (instance? Long b) :long
-      (instance? Float b) :double
-      (instance? Integer b) :long
-      :else (ThrowBadArg "allow numbers only"))))
+    (condp instance? b
+      Double  :double
+      Long  :long
+      Float  :double
+      Integer  :long
+      (ThrowBadArg "allow numbers only"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -874,7 +941,9 @@
   [root]
 
   (let [ e (RootCause root) ]
-    (if (nil? e) "" (str (.getName (.getClass e)) ": " (.getMessage e)))
+    (if (nil? e)
+      ""
+      (str (.getName (.getClass e)) ": " (.getMessage e)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -885,30 +954,34 @@
   [start end howMany]
 
   (if (or (>= start end) (< (- end start) howMany) )
-      []
-      (loop [ _end (if (< end Integer/MAX_VALUE)
-                       (+ end 1)
-                       end )
-              r (NewRandom)
-              rc []
-              cnt howMany ]
-        (if (<= cnt 0)
-          rc
-          (let [ n (.nextInt r _end) ]
-            (if (and (>= n start)
-                     (not (ccore/contains? rc n)))
-                (recur _end r (conj rc n) (dec cnt))
-                (recur _end r rc cnt) ))
-        ))
+    []
+    (loop [_end (if (< end Integer/MAX_VALUE)
+                  (+ end 1)
+                  end)
+           r (NewRandom)
+           rc []
+           cnt howMany ]
+      (if (<= cnt 0)
+        rc
+        (let [n (.nextInt r _end) ]
+          (if (and (>= n start)
+                   (not (ccore/contains? rc n)))
+            (recur _end r (conj rc n) (dec cnt))
+            (recur _end r rc cnt) ))
+      ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SortJoin "Sort a list of strings and then concatenate them."
 
-  ([ss] (SortJoin "" ss))
+  ([ss]
+   (SortJoin "" ss))
 
-  ([sep ss] (if (nil? ss) "" (cstr/join sep (sort ss)))))
+  ([sep ss]
+   (if (nil? ss)
+     ""
+     (cstr/join sep (sort ss)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -917,7 +990,7 @@
   [^java.util.Map props]
 
   (persistent! (reduce (fn [sum k]
-                           (assoc! sum (keyword k) (.get props k)))
+                         (assoc! sum (keyword k) (.get props k)))
                        (transient {})
                        (seq (.keySet props)))
   ))
@@ -964,15 +1037,16 @@
 ;;
 (defn PrintMutableObj ""
 
-  ([ ^cmzlabclj.nucleus.util.core.MubleAPI ctx dbg ]
-    (let [ buf (StringBuilder.) ]
-      (doseq [ [k v] (.seq* ctx) ]
-        (.append buf (str k " = " v "\n")))
-      (.append buf "\n")
-      (when-let [ s (str buf) ]
-        (if dbg (log/debug s)(log/info s)))))
+  ([^cmzlabclj.nucleus.util.core.MubleAPI ctx dbg ]
+   (let [buf (StringBuilder.) ]
+     (doseq [[k v] (.seq* ctx) ]
+       (.append buf (str k " = " v "\n")))
+     (.append buf "\n")
+     (when-let [s (str buf) ]
+       (if dbg (log/debug s)(log/info s)))))
 
-  ([ ctx ] (PrintMutableObj ctx false)))
+  ([ctx]
+   (PrintMutableObj ctx false)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -981,10 +1055,10 @@
   ^String
   [path]
 
-  (let [ s (str path) ]
+  (let [s (str path) ]
     (if (.startsWith s ":")
-        (.substring s 1)
-        s)
+      (.substring s 1)
+      s)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1005,7 +1079,7 @@
     (ThrowBadData (str "Bad email address " email))
 
     :else
-    (let [ ss (StringUtils/split email "@" 2) ]
+    (let [ss (StringUtils/split email "@" 2) ]
       (str (aget ss 0) "@" (cstr/lower-case (aget ss 1))))
   ))
 

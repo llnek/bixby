@@ -15,16 +15,14 @@
 
   cmzlabclj.nucleus.util.process
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ])
-  (:use [cmzlabclj.nucleus.util.core :only [Try!] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb] ])
-
-  (:import (java.lang.management ManagementFactory))
-  (:import (com.zotohlab.frwk.util CoreUtils))
-  (:import (java.lang Thread Runnable)))
-
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
+        [cmzlabclj.nucleus.util.core :only [Try!] ]
+        [cmzlabclj.nucleus.util.str :only [nsb] ])
+  (:import  [java.lang.management ManagementFactory]
+            [com.zotohlab.frwk.util CoreUtils]
+            [java.lang Thread Runnable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -38,11 +36,11 @@
 
   ([^Runnable runable ^ClassLoader cl]
    (if (nil? runable)
-       nil
-       (doto (Thread. runable)
-         (.setContextClassLoader cl)
-         (.setDaemon true)
-         (.start))) ))
+     nil
+     (doto (Thread. runable)
+       (.setContextClassLoader cl)
+       (.setDaemon true)
+       (.start))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -51,8 +49,8 @@
   ([func] (Coroutine func nil))
 
   ([func cl]
-   (let [ r (reify Runnable
-              (run [_] (when (fn? func) (func)))) ]
+   (let [r (reify Runnable
+             (run [_] (when (fn? func) (func)))) ]
       (AsyncExec r cl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +59,8 @@
 
   [millisecs]
 
-  (Try!  (when (> millisecs 0) (Thread/sleep millisecs))))
+  (Try! (when (> millisecs 0)
+          (Thread/sleep millisecs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,8 +69,11 @@
   ^String
   []
 
-  (let [ ss (.split (nsb (.getName (ManagementFactory/getRuntimeMXBean))) "@") ]
-    (if (or (nil? ss) (empty ss)) "" (first ss))
+  (let [ss (-> (nsb (.getName (ManagementFactory/getRuntimeMXBean)))
+               (.split "@")) ]
+    (if (or (nil? ss) (empty ss))
+      ""
+      (first ss))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

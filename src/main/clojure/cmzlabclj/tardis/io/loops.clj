@@ -14,19 +14,21 @@
 
   cmzlabclj.tardis.io.loops
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI TryC] ])
-  (:use [cmzlabclj.nucleus.util.process :only [Coroutine SafeWait] ])
-  (:use [cmzlabclj.nucleus.util.dates :only [ParseDate] ])
-  (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.io.core])
-  (:import (java.util Date Timer TimerTask))
-  (:import (com.zotohlab.gallifrey.io TimerEvent))
-  (:import (com.zotohlab.frwk.core Identifiable Startable)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI TryC] ]
+        [cmzlabclj.nucleus.util.process :only [Coroutine SafeWait] ]
+        [cmzlabclj.nucleus.util.dates :only [ParseDate] ]
+        [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.io.core])
+
+  (:import  [java.util Date Timer TimerTask]
+            [com.zotohlab.gallifrey.io TimerEvent]
+            [com.zotohlab.frwk.core Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -43,10 +45,10 @@
 
   [^Timer tm delays intv func]
 
-  (let [ tt (proxy [TimerTask][]
+  (let [tt (proxy [TimerTask][]
               (run []
                 (TryC (when (fn? func) (func)))))
-         [^Date dw ^long ds] delays ]
+        [^Date dw ^long ds] delays ]
     (when (instance? Date dw)
       (.schedule tm tt dw ^long intv) )
     (when (number? ds)
@@ -59,10 +61,10 @@
 
   [^Timer tm delays func]
 
-  (let [ tt (proxy [TimerTask][]
+  (let [tt (proxy [TimerTask][]
               (run []
                 (when (fn? func) (func))))
-         [^Date dw ^long ds] delays]
+        [^Date dw ^long ds] delays]
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)
@@ -75,11 +77,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ intv (.getAttr co :intervalMillis)
-         t (.getAttr co :timer)
-         ds (.getAttr co :delayMillis)
-         dw (.getAttr co :delayWhen)
-         func (fn [] (LoopableWakeup co)) ]
+  (let [intv (.getAttr co :intervalMillis)
+        t (.getAttr co :timer)
+        ds (.getAttr co :delayMillis)
+        dw (.getAttr co :delayWhen)
+        func (fn [] (LoopableWakeup co)) ]
     (if (number? intv)
       (config-repeat-timer t [dw ds] intv func)
       (config-timer t [dw ds] func))
@@ -92,9 +94,9 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ intv (:interval-secs cfg)
-         ds (:delay-secs cfg)
-         dw (nsb (:delay-when cfg)) ]
+  (let [intv (:interval-secs cfg)
+        ds (:delay-secs cfg)
+        dw (nsb (:delay-when cfg)) ]
     (if (hgl? dw)
       (.setAttr! co :delayWhen (ParseDate (strim dw) "yyyy-MM-ddTHH:mm:ss"))
       (do
@@ -121,7 +123,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Timer t (.getAttr co :timer) ]
+  (let [^Timer t (.getAttr co :timer) ]
     (TryC
         (when-not (nil? t) (.cancel t)) )
   ))
@@ -140,7 +142,7 @@
 
   [co & args]
 
-  (let [ eeid (NextLong) ]
+  (let [eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -214,7 +216,7 @@
 
   [co & args]
 
-  (let [ eeid (NextLong) ]
+  (let [eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -279,15 +281,12 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ intv (.getAttr co :intervalMillis)
-         loopy (atom true)
-         cl (GetCldr)
-         func (fn [] (Coroutine (fn []
-                                  (while @loopy
-                                    (LoopableWakeup co intv))) cl)) ]
-    (.setAttr! co :loopy loopy)
+  (let [intv (.getAttr co :intervalMillis)
+        loopy (atom true)
+        cl (GetCldr) ]
     (log/info "threaded one timer - interval = " intv)
-    (func)
+    (.setAttr! co :loopy loopy)
+    (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -305,16 +304,16 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ intv (.getAttr co :intervalMillis)
-         ds (.getAttr co :delayMillis)
-         dw (.getAttr co :delayWhen)
-         loopy (atom true)
-         cl (GetCldr)
-         func (fn [] (LoopableSchedule co)) ]
+  (let [intv (.getAttr co :intervalMillis)
+        ds (.getAttr co :delayMillis)
+        dw (.getAttr co :delayWhen)
+        loopy (atom true)
+        cl (GetCldr)
+        func #(LoopableSchedule co) ]
     (.setAttr! co :loopy loopy)
     (if (or (number? ds) (instance? Date dw))
-        (config-timer (Timer.) [dw ds] func)
-        (func))
+      (config-timer (Timer.) [dw ds] func)
+      (func))
     (IOESStarted co)
   ))
 
@@ -324,7 +323,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ loopy (.getAttr co :loopy) ]
+  (let [loopy (.getAttr co :loopy) ]
     (reset! loopy false)
     (IOESStopped co)
   ))

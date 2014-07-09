@@ -14,14 +14,16 @@
 
   cmzlabclj.tardis.core.sys
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ])
-  (:use [cmzlabclj.tardis.core.constants])
-  (:import (org.apache.commons.io FilenameUtils FileUtils))
-  (:import (java.io File))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.frwk.core Hierarchial Identifiable Versioned)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ]
+        [cmzlabclj.tardis.core.constants])
+
+  (:import  [org.apache.commons.io FilenameUtils FileUtils]
+            [java.io File]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.frwk.core Hierarchial Identifiable Versioned]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -90,9 +92,9 @@
   ^cmzlabclj.tardis.core.sys.Element
   [c options]
 
-  (let [ rego (:rego options)
-         ctx (:ctx options)
-         props (:props options) ]
+  (let [rego (:rego options)
+        ctx (:ctx options)
+        props (:props options) ]
    (when-not (nil? rego) (CompCompose c rego))
    (when-not (nil? ctx) (CompContextualize c ctx))
    (when-not (nil? props) (CompConfigure c props))
@@ -107,7 +109,7 @@
   ^cmzlabclj.nucleus.util.core.MubleAPI
   []
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (reify MubleAPI
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))
@@ -123,9 +125,9 @@
   ^String
   [^File appDir ^String confile]
 
-  (let [ cfgDir (File. appDir ^String DN_CONF)
-         cs (FileUtils/readFileToString (File. cfgDir confile) "utf-8")
-         rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
+  (let [cfgDir (File. appDir ^String DN_CONF)
+        cs (FileUtils/readFileToString (File. cfgDir confile) "utf-8")
+        rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
     (log/debug "[" confile "]\n" rc)
     rc
   ))
@@ -134,12 +136,14 @@
 ;;
 (defn CompCloneContext
 
-  [^cmzlabclj.tardis.core.sys.Element co
-   ^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.tardis.core.sys.Element
+   co
+   ^cmzlabclj.nucleus.util.core.MubleAPI
+   ctx]
 
   (when-not (nil? ctx)
-    (let [ x (MakeContext) ]
-      (doseq [ [k v] (.seq* ctx) ]
+    (let [x (MakeContext) ]
+      (doseq [[k v] (.seq* ctx) ]
         (.setf! x k v))
       (.setCtx! co x)))
   co)

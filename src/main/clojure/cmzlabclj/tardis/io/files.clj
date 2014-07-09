@@ -14,30 +14,31 @@
 
   cmzlabclj.tardis.io.files
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:use [cmzlabclj.tardis.core.sys :rename { seq* rego-seq*
-                                                    has? rego-has? } ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.tardis.io.loops
-         :only [LoopableSchedule LoopableOneLoop CfgLoopable] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabclj.tardis.io.core])
-  (:use [cmzlabclj.nucleus.util.core
-         :only [MakeMMap notnil?  test-nestr TryC SubsVar] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl? nsn] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (java.io FileFilter File FilenameFilter IOException))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.util Properties ResourceBundle))
-  (:import (org.apache.commons.io.filefilter SuffixFileFilter PrefixFileFilter
-                                             RegexFileFilter FileFileFilter))
-  (:import (org.apache.commons.io FileUtils))
-  (:import (org.apache.commons.io.monitor FileAlterationListener
-                                          FileAlterationListenerAdaptor
-                                          FileAlterationMonitor
-                                          FileAlterationObserver))
-  (:import (com.zotohlab.gallifrey.io FileEvent))
-  (:import (com.zotohlab.frwk.core Identifiable)))
+  (:use [cmzlabclj.tardis.core.sys :rename { seq* rego-seq*
+                                                    has? rego-has? } ]
+        [cmzlabclj.tardis.io.loops
+         :only [LoopableSchedule LoopableOneLoop CfgLoopable] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.tardis.io.core]
+        [cmzlabclj.nucleus.util.core
+         :only [MakeMMap notnil?  test-nestr TryC SubsVar] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl? nsn] ])
+
+  (:import  [java.io FileFilter File FilenameFilter IOException]
+            [org.apache.commons.lang3 StringUtils]
+            [java.util Properties ResourceBundle]
+            [org.apache.commons.io.filefilter SuffixFileFilter PrefixFileFilter
+                                             RegexFileFilter FileFileFilter]
+            [org.apache.commons.io FileUtils]
+            [org.apache.commons.io.monitor FileAlterationListener
+                                           FileAlterationListenerAdaptor
+                                           FileAlterationMonitor
+                                           FileAlterationObserver]
+            [com.zotohlab.gallifrey.io FileEvent]
+            [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -62,9 +63,9 @@
 
   [co & args]
 
-  (let [ ^File f (nth args 1)
-         eeid (NextLong)
-         impl (MakeMMap) ]
+  (let [^File f (nth args 1)
+        eeid (NextLong)
+        impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -88,19 +89,21 @@
 ;;
 (defn- postPoll ""
 
-  [^cmzlabclj.tardis.core.sys.Element co ^File f action]
+  [^cmzlabclj.tardis.core.sys.Element
+   co
+   ^File f action]
 
-  (let [ ^cmzlabclj.tardis.io.core.EmitterAPI src co
-         ^File des (.getAttr co :dest)
-         fname (.getName f)
-         cf (cond
-              (= action :FP-CREATED)
-              (if (notnil? des)
-                (TryC
-                  (FileUtils/moveFileToDirectory f des false)
-                  (File. des fname) )
-                f)
-              :else nil) ]
+  (let [^cmzlabclj.tardis.io.core.EmitterAPI src co
+        ^File des (.getAttr co :dest)
+        fname (.getName f)
+        cf (cond
+             (= action :FP-CREATED)
+             (if (notnil? des)
+               (TryC
+                 (FileUtils/moveFileToDirectory f des false)
+                 (File. des fname) )
+               f)
+             :else nil) ]
     (when-not (nil? cf)
       (.dispatch src (IOESReifyEvent co fname cf action) {} ))
   ))
@@ -111,27 +114,31 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ ^String root (SubsVar (nsb (:target-folder cfg)))
-         ^String dest (SubsVar (nsb (:recv-folder cfg)))
-         ^String mask (nsb (:fmask cfg)) ]
+  (let [^String root (SubsVar (nsb (:target-folder cfg)))
+        ^String dest (SubsVar (nsb (:recv-folder cfg)))
+        ^String mask (nsb (:fmask cfg)) ]
     (test-nestr "file-root-folder" root)
     (CfgLoopable co cfg)
     (.setAttr! co :target (doto (File. root) (.mkdirs)))
     (.setAttr! co :mask
-      (cond
-        (.startsWith mask "*.")
-        (SuffixFileFilter. (.substring mask 1))
+               (cond
+                 (.startsWith mask "*.")
+                 (SuffixFileFilter. (.substring mask 1))
 
-        (.endsWith mask "*")
-        (PrefixFileFilter. (.substring mask 0 (dec (.length mask))))
+                 (.endsWith mask "*")
+                 (PrefixFileFilter. (.substring mask 0
+                                                (dec (.length mask))))
 
-        (> (.length mask) 0)
-        (RegexFileFilter. mask) ;;WildcardFileFilter(mask)
+                 (> (.length mask) 0)
+                 (RegexFileFilter. mask) ;;WildcardFileFilter(mask)
 
-        :else
-        FileFileFilter/FILE ) )
+                 :else
+                 FileFileFilter/FILE ) )
     (when (hgl? dest)
-      (.setAttr! co :dest (doto (File. dest) (.mkdirs))))
+      (.setAttr! co :dest
+                 (doto
+                   (File. dest)
+                   (.mkdirs))))
 
     (log/info "Monitoring folder: " root)
     (log/info "Recv folder: " (nsn dest))
@@ -144,17 +151,17 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ obs (FileAlterationObserver.  ^File (.getAttr co :target)
-                                       ^FileFilter (.getAttr co :mask))
-         ^long intv (.getAttr co :intervalMillis)
-         mon (FileAlterationMonitor. intv)
-         lnr (proxy [FileAlterationListenerAdaptor][]
-               (onFileCreate [f]
-                 (postPoll co f :FP-CREATED))
-               (onFileChange [f]
-                 (postPoll co f :FP-CHANGED))
-               (onFileDelete [f]
-                 (postPoll co f :FP-DELETED))) ]
+  (let [obs (FileAlterationObserver. ^File (.getAttr co :target)
+                                     ^FileFilter (.getAttr co :mask))
+        ^long intv (.getAttr co :intervalMillis)
+        mon (FileAlterationMonitor. intv)
+        lnr (proxy [FileAlterationListenerAdaptor][]
+              (onFileCreate [f]
+                (postPoll co f :FP-CREATED))
+              (onFileChange [f]
+                (postPoll co f :FP-CHANGED))
+              (onFileDelete [f]
+                (postPoll co f :FP-DELETED))) ]
     (.addListener obs lnr)
     (.addObserver mon obs)
     (.setAttr! co :monitor mon)
@@ -168,7 +175,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^FileAlterationMonitor mon (.getAttr co :monitor) ]
+  (let [^FileAlterationMonitor mon (.getAttr co :monitor) ]
     (log/info "FilePicker's apache io monitor starting...")
     (.start mon)
   ))

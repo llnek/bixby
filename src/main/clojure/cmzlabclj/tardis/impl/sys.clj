@@ -14,34 +14,36 @@
 
   cmzlabclj.tardis.impl.sys
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.tardis.core.constants])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.impl.ext])
-  (:use [cmzlabclj.tardis.impl.defaults
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.impl.ext]
+        [cmzlabclj.tardis.impl.defaults
          :rename {enabled? blockmeta-enabled?
                   Start kernel-start
-                  Stop kernel-stop}])
-  (:use [ cmzlabclj.nucleus.util.core
-         :only [MakeMMap TryC NiceFPath notnil? NewRandom] ])
-  (:use [ cmzlabclj.nucleus.util.str :only [strim] ])
-  (:use [ cmzlabclj.nucleus.util.process :only [SafeWait] ])
-  (:use [ cmzlabclj.nucleus.util.files :only [Unzip] ])
-  (:use [ cmzlabclj.nucleus.util.mime :only [SetupCache] ])
-  (:use [ cmzlabclj.nucleus.util.seqnum :only [NextLong] ] )
+                  Stop kernel-stop}]
+        [cmzlabclj.nucleus.util.core
+         :only [MakeMMap TryC NiceFPath notnil? NewRandom] ]
+        [cmzlabclj.nucleus.util.str :only [strim] ]
+        [cmzlabclj.nucleus.util.process :only [SafeWait] ]
+        [cmzlabclj.nucleus.util.files :only [Unzip] ]
+        [cmzlabclj.nucleus.util.mime :only [SetupCache] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
 
-  (:import (org.apache.commons.io FilenameUtils FileUtils))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.frwk.core Disposable Identifiable
-                                    Hierarchial Versioned Startable))
-  (:import (com.zotohlab.frwk.server Component ComponentRegistry))
-  (:import (com.zotohlab.gallifrey.loaders AppClassLoader))
-  (:import (java.net URL))
-  (:import (java.io File))
-  (:import (java.security SecureRandom))
-  (:import (java.util.zip ZipFile))
-  (:import (com.zotohlab.frwk.io IOUtils)))
+  (:import  [org.apache.commons.io FilenameUtils FileUtils]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.frwk.core Disposable Identifiable
+                                    Hierarchial Versioned Startable]
+            [com.zotohlab.frwk.util IWin32Conf]
+            [com.zotohlab.frwk.server Component ComponentRegistry]
+            [com.zotohlab.gallifrey.loaders AppClassLoader]
+            [java.net URL]
+            [java.io File]
+            [java.security SecureRandom]
+            [java.util.zip ZipFile]
+            [com.zotohlab.frwk.io IOUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -53,7 +55,7 @@
 
   []
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -78,19 +80,19 @@
         Deployer
 
         (undeploy [this app]
-          (let [ ^cmzlabclj.nucleus.util.core.MubleAPI
-                 ctx (.getCtx this)
-                 dir (File. ^File (.getf ctx K_PLAYDIR)
-                            ^String app) ]
+          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+                ctx (.getCtx this)
+                dir (File. ^File (.getf ctx K_PLAYDIR)
+                           ^String app) ]
             (when (.exists dir)
-                (FileUtils/deleteDirectory dir))))
+              (FileUtils/deleteDirectory dir))))
 
         (deploy [this src]
-          (let [ app (FilenameUtils/getBaseName (NiceFPath src))
-                 ^cmzlabclj.nucleus.util.core.MubleAPI
-                 ctx (.getCtx this)
-                 des (File. ^File (.getf ctx K_PLAYDIR)
-                            ^String app) ]
+          (let [app (FilenameUtils/getBaseName (NiceFPath src))
+                ^cmzlabclj.nucleus.util.core.MubleAPI
+                ctx (.getCtx this)
+                des (File. ^File (.getf ctx K_PLAYDIR)
+                           ^String app) ]
             (when-not (.exists des)
               (Unzip src des)))) )
 
@@ -116,11 +118,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
-         ^File py (.getf ctx K_PLAYDIR)
-         ^File pd (.getf ctx K_PODSDIR) ]
+  (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+        ^File py (.getf ctx K_PLAYDIR)
+        ^File pd (.getf ctx K_PODSDIR) ]
     (when (.isDirectory pd)
-      (doseq [ ^File f (seq (IOUtils/listFiles pd "pod" false)) ]
+      (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
         (.deploy ^cmzlabclj.tardis.impl.defaults.Deployer co f)))
   ))
 
@@ -133,13 +135,13 @@
    ^cmzlabclj.tardis.core.sys.Element pod]
 
   (TryC
-    (let [ cache (.getAttr knl K_CONTAINERS)
-           cid (.id ^Identifiable pod)
-           app (.moniker ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
-           ctr (if (and (not (empty? cset))
-                        (not (contains? cset app)))
-                 nil
-                 (MakeContainer pod)) ]
+    (let [cache (.getAttr knl K_CONTAINERS)
+          cid (.id ^Identifiable pod)
+          app (.moniker ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
+          ctr (if (and (not (empty? cset))
+                       (not (contains? cset app)))
+                nil
+                (MakeContainer pod)) ]
       (log/debug "start-pod? cid = " cid ", app = " app " !! cset = " cset)
       (if (notnil? ctr)
         (do
@@ -158,7 +160,7 @@
 
   []
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (.setf! impl K_CONTAINERS {} )
     (with-meta
       (reify
@@ -186,36 +188,36 @@
         Startable
 
         (start [this]
-          (let [ ^cmzlabclj.nucleus.util.core.MubleAPI
-                 ctx (.getCtx this)
-                 ^cmzlabclj.nucleus.util.ini.IWin32Conf
-                 wc (.getf ctx K_PROPS)
-                 ^ComponentRegistry
-                 root (.getf ctx K_COMPS)
-                 endorsed (strim (.optString wc K_APPS
+          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+                ctx (.getCtx this)
+                ^IWin32Conf
+                wc (.getf ctx K_PROPS)
+                ^ComponentRegistry
+                root (.getf ctx K_COMPS)
+                endorsed (strim (.optString wc K_APPS
                                              "endorsed" ""))
-                 ^cmzlabclj.tardis.core.sys.Registry
-                 apps (.lookup root K_APPS)
+                ^cmzlabclj.tardis.core.sys.Registry
+                apps (.lookup root K_APPS)
                  ;; start all apps or only those endorsed.
-                 cs (if (= "*" endorsed)
-                        #{}
-                        (into #{} (filter (fn [s] (> (.length ^String s) 0))
-                                  (map #(strim %)
-                                       (seq (StringUtils/split endorsed ",;")))
-                        ))) ]
+                cs (if (= "*" endorsed)
+                     #{}
+                     (into #{}
+                           (filter #(> (.length ^String %) 0)
+                                   (map #(strim %)
+                                        (seq (StringUtils/split endorsed ",;")))))) ]
             ;; need this to prevent deadlocks amongst pods
             ;; when there are dependencies
             ;; TODO: need to handle this better
-            (doseq [ [k v] (seq* apps) ]
-              (let [ r (-> (NewRandom) (.nextInt 6)) ]
+            (doseq [[k v] (seq* apps) ]
+              (let [r (-> (NewRandom) (.nextInt 6)) ]
                 (if (maybe-start-pod this cs v)
-                    (SafeWait (* 1000 (Math/max (int 1) r))))))) )
+                  (SafeWait (* 1000 (Math/max (int 1) r))))))) )
 
         (stop [this]
-          (let [ cs (.getf impl K_CONTAINERS) ]
-            (doseq [ [k v] (seq cs) ]
+          (let [cs (.getf impl K_CONTAINERS) ]
+            (doseq [[k v] (seq cs) ]
               (.stop ^Startable v))
-            (doseq [ [k v] (seq cs) ]
+            (doseq [[k v] (seq cs) ]
               (.dispose ^Disposable v))
             (.setf! impl K_CONTAINERS {}))) )
 
@@ -228,8 +230,8 @@
 
   [app ver parObj podType appid pathToPOD]
 
-  (let [ pid (str podType "#" (NextLong))
-         impl (MakeMMap) ]
+  (let [pid (str podType "#" (NextLong))
+        impl (MakeMMap) ]
     (log/info "PODMeta: " app ", " ver ", " podType ", " appid ", " pathToPOD )
     (with-meta
       (reify
@@ -269,11 +271,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabclj.nucleus.util.core.MubleAPI
-         ctx (.getCtx co)
-         rcl (.getf ctx K_ROOT_CZLR)
-         ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta co)
-         cl  (AppClassLoader. rcl) ]
+  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+        ctx (.getCtx co)
+        rcl (.getf ctx K_ROOT_CZLR)
+        ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta co)
+        cl  (AppClassLoader. rcl) ]
     (.configure cl (NiceFPath (File. (.toURI  url))) )
     (.setf! ctx K_APP_CZLR cl)
   ))
@@ -293,7 +295,7 @@
 
   [co ctx]
 
-  (let [ base (MaybeDir ctx K_BASEDIR) ]
+  (let [base (MaybeDir ctx K_BASEDIR) ]
     (PrecondDir base)
     ;;(precondDir (maybeDir ctx K_PODSDIR))
     (PrecondDir (MaybeDir ctx K_PLAYDIR))

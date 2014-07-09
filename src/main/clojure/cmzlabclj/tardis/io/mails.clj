@@ -14,22 +14,25 @@
 
   cmzlabclj.tardis.io.mails
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE TryC notnil?] ])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl? nsb] ])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.io.loops ])
-  (:use [cmzlabclj.tardis.io.core ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (javax.mail Flags Flags$Flag Store Folder Session Provider Provider$Type))
-  (:import (java.util Properties))
-  (:import (javax.mail.internet MimeMessage))
-  (:import (java.io IOException))
-  (:import (com.zotohlab.gallifrey.io EmailEvent))
-  (:import (com.zotohlab.frwk.core Identifiable)))
+  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.nucleus.util.core :only [ThrowIOE TryC notnil?] ]
+        [cmzlabclj.nucleus.util.str :only [hgl? nsb] ]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.io.loops ]
+        [cmzlabclj.tardis.io.core ])
+
+  (:import  [javax.mail Flags Flags$Flag
+                        Store Folder
+                        Session Provider Provider$Type]
+            [java.util Properties]
+            [javax.mail.internet MimeMessage]
+            [java.io IOException]
+            [com.zotohlab.gallifrey.io EmailEvent]
+            [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -51,8 +54,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Store conn (.getAttr co :store)
-         ^Folder fd (.getAttr co :folder) ]
+  (let [^Store conn (.getAttr co :store)
+        ^Folder fd (.getAttr co :folder) ]
     (closeFolder fd)
     (TryC
       (when-not (nil? conn) (.close conn)) )
@@ -68,17 +71,21 @@
    protos
    ^String demo ^String mock]
 
-  (let [ [^String pkey ^String sn]  protos
-         props (doto (Properties.)
-                     (.put  "mail.store.protocol" sn) )
-         session (Session/getInstance props nil)
-         ps (.getProviders session) ]
+  (let [[^String pkey ^String sn]  protos
+        props (doto (Properties.)
+                (.put  "mail.store.protocol" sn) )
+        session (Session/getInstance props nil)
+        ps (.getProviders session) ]
     (with-local-vars [proto sn sun nil]
-      (var-set sun (some (fn [^Provider x] (if (= pkey (.getClassName x)) x nil)) (seq ps)))
+      (var-set sun (some (fn [^Provider x]
+                           (if (= pkey (.getClassName x))
+                             x
+                             nil))
+                         (seq ps)))
       (when (nil? @sun)
         (ThrowIOE (str "Failed to find store: " pkey) ))
       (when (hgl? demo)
-        (var-set sun  (Provider. Provider$Type/STORE mock demo "test" "1.0.0"))
+        (var-set sun (Provider. Provider$Type/STORE mock demo "test" "1.0.0"))
         (log/debug "using demo store " mock " !!!")
         (var-set proto mock) )
 
@@ -93,7 +100,7 @@
 
   [co msg]
 
-  (let [ eeid (NextLong) ]
+  (let [eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -141,20 +148,22 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Session session (.getAttr co :session)
-         pwd (nsb (.getAttr co :pwd))
-         user (.getAttr co :user)
-         ^String host (.getAttr co :host)
-         ^long port (.getAttr co :port)
-         ^String proto (.getAttr co :proto)
-         s (.getStore session proto) ]
+  (let [^Session session (.getAttr co :session)
+        pwd (nsb (.getAttr co :pwd))
+        user (.getAttr co :user)
+        ^String host (.getAttr co :host)
+        ^long port (.getAttr co :port)
+        ^String proto (.getAttr co :proto)
+        s (.getStore session proto) ]
     (when-not (nil? s)
-      (.connect s host port user (if (hgl? pwd) pwd nil))
+      (.connect s host port user (if (hgl? pwd)
+                                   pwd
+                                   nil))
       (.setAttr! co :store s)
       (.setAttr! co :folder (.getDefaultFolder s)))
     (when-let [ ^Folder fd (.getAttr co :folder) ]
       (.setAttr! co :folder (.getFolder fd "INBOX")))
-    (let [ ^Folder fd (.getAttr co :folder) ]
+    (let [^Folder fd (.getAttr co :folder) ]
       (when (or (nil? fd) (not (.exists fd)))
         (ThrowIOE "cannot find inbox.")) )
   ))
@@ -166,10 +175,10 @@
   [^cmzlabclj.tardis.io.core.EmitterAPI co msgs]
 
   (let [^cmzlabclj.tardis.core.sys.Element src co]
-    (doseq [ ^MimeMessage mm (seq msgs) ]
+    (doseq [^MimeMessage mm (seq msgs) ]
       (try
-          (doto mm (.getAllHeaders)(.getContent))
-          (.dispatch co (IOESReifyEvent co mm) {} )
+        (doto mm (.getAllHeaders)(.getContent))
+        (.dispatch co (IOESReifyEvent co mm) {} )
         (finally
           (when (.getAttr src :deleteMsg)
             (.setFlag mm Flags$Flag/DELETED true)))))
@@ -181,12 +190,12 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Folder fd (.getAttr co :folder)
-         ^Store s (.getAttr co :store) ]
+  (let [^Folder fd (.getAttr co :folder)
+        ^Store s (.getAttr co :store) ]
     (when (and (notnil? fd) (not (.isOpen fd)))
       (.open fd Folder/READ_WRITE) )
     (when (.isOpen fd)
-      (let [ cnt (.getMessageCount fd) ]
+      (let [cnt (.getMessageCount fd) ]
         (log/debug "Count of new mail-messages: " cnt)
         (when (> cnt 0)
           (read-pop3 co (.getMessages fd)))))
@@ -199,8 +208,8 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (try
-      (connect-pop3 co)
-      (scan-pop3 co)
+    (connect-pop3 co)
+    (scan-pop3 co)
     (catch Throwable e#
       (log/warn e# ""))
     (finally
@@ -213,18 +222,18 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ intv (:interval-secs cfg)
-         port (:port cfg)
-         pkey (:hhh.pkey cfg)
-         pwd (:passwd cfg) ]
-    (.setAttr! co :intervalMillis (* 1000 (if (number? intv) intv 300)))
-    (.setAttr! co :ssl (if (false? (:ssl cfg)) false true))
-    (.setAttr! co :deleteMsg (true? (:deletemsg cfg)))
-    (.setAttr! co :host (:host cfg))
-    (.setAttr! co :port (if (number? port) port 995))
-    (.setAttr! co :user (:username cfg))
-    (.setAttr! co :pwd (Pwdify (if (hgl? pwd) pwd "") pkey) )
-    co
+  (let [intv (:interval-secs cfg)
+        port (:port cfg)
+        pkey (:hhh.pkey cfg)
+        pwd (:passwd cfg) ]
+    (doto co
+      (.setAttr! :intervalMillis (* 1000 (if (number? intv) intv 300)))
+      (.setAttr! :ssl (if (false? (:ssl cfg)) false true))
+      (.setAttr! :deleteMsg (true? (:deletemsg cfg)))
+      (.setAttr! :host (:host cfg))
+      (.setAttr! :port (if (number? port) port 995))
+      (.setAttr! :user (:username cfg))
+      (.setAttr! :pwd (Pwdify (if (hgl? pwd) pwd "") pkey) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -233,13 +242,14 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ demo (System/getProperty "skaro.demo.pop3" "") ]
+  (let [demo (System/getProperty "skaro.demo.pop3" "") ]
     (std-config co cfg)
     (resolve-provider co
                       (if (.getAttr co :ssl)
-                          [ST_POP3S POP3S]
-                          [ST_POP3 POP3C])
-                      demo POP3_MOCK)
+                        [ST_POP3S POP3S]
+                        [ST_POP3 POP3C])
+                      demo
+                      POP3_MOCK)
     co
   ))
 
@@ -298,13 +308,13 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (try
-      (connect-imap co)
-      (scan-imap co)
+    (connect-imap co)
+    (scan-imap co)
     (catch Throwable e#
       (log/warn e# ""))
     (finally
       (closeStore co))
-  ) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -312,13 +322,14 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ demo (System/getProperty "skaro.demo.imap" "") ]
+  (let [demo (System/getProperty "skaro.demo.imap" "") ]
     (std-config co cfg)
     (resolve-provider co
                       (if (.getAttr co :ssl)
-                          [ST_IMAPS IMAPS]
-                          [ST_IMAP IMAP])
-                      demo IMAP_MOCK)
+                        [ST_IMAPS IMAPS]
+                        [ST_IMAP IMAP])
+                      demo
+                      IMAP_MOCK)
     co
   ))
 

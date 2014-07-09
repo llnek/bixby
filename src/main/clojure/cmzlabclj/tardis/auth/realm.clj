@@ -23,26 +23,25 @@
     :state myState
   )
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabclj.tardis.auth.plugin])
-  (:use [cmzlabclj.nucleus.dbio.connect])
-  (:use [cmzlabclj.nucleus.dbio.core])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken SimpleAccount))
-  (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
-  (:import (org.apache.shiro.subject PrincipalCollection))
-  (:import (org.apache.shiro.realm AuthorizingRealm))
-  (:import (com.zotohlab.frwk.dbio DBAPI))
-  (:import (org.apache.shiro.realm CachingRealm))
-  (:import (java.util Collection)))
+  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+        [cmzlabclj.tardis.auth.plugin]
+        [cmzlabclj.nucleus.dbio.connect]
+        [cmzlabclj.nucleus.dbio.core])
+
+  (:import  [org.apache.shiro.authc AuthenticationException AuthenticationToken SimpleAccount]
+            [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+            [org.apache.shiro.subject PrincipalCollection]
+            [org.apache.shiro.realm AuthorizingRealm]
+            [com.zotohlab.frwk.dbio DBAPI]
+            [org.apache.shiro.realm CachingRealm]
+            [java.util Collection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -myInit []
-  [ []
-    (atom nil) ] )
+(defn -myInit [] [ [] (atom nil) ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -50,12 +49,12 @@
 
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [ ^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+  (let [^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
          ;;pwd (.getCredentials token)
-         user (.getPrincipal token)
-         sql (.newSimpleSQLr db) ]
+        user (.getPrincipal token)
+        sql (.newSimpleSQLr db) ]
     (try
-      (let [ acc (FindLoginAccount sql user) ]
+      (let [acc (FindLoginAccount sql user) ]
         (if (nil? acc)
           nil
           (SimpleAccount.  acc (:passwd acc) (.getName this))
@@ -70,13 +69,13 @@
 
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [ ^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
-         acc (.getPrimaryPrincipal principals)
-         rc (SimpleAccount. acc (:passwd acc) (.getName this))
-         sql (.newSimpleSQLr db) ]
+  (let [^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+        acc (.getPrimaryPrincipal principals)
+        rc (SimpleAccount. acc (:passwd acc) (.getName this))
+        sql (.newSimpleSQLr db) ]
     (try
-      (let [ rs (DbioGetM2M {:as :roles :with sql } acc) ]
-        (doseq [ r (seq rs) ]
+      (let [rs (DbioGetM2M {:as :roles :with sql } acc) ]
+        (doseq [r (seq rs) ]
           (.addRole rc ^String (:name r)))
         rc)
       (finally

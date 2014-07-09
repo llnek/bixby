@@ -14,11 +14,11 @@
 
   cmzlabclj.tardis.etc.task
 
-  (:import (org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac))
-  (:import (org.apache.tools.ant.listener TimestampedLogger))
-  (:import (org.apache.tools.ant.types FileSet Path DirSet))
-  (:import (org.apache.tools.ant Project Target Task))
-  (:import (java.io File)))
+  (:import  [org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac]
+            [org.apache.tools.ant.listener TimestampedLogger]
+            [org.apache.tools.ant.types FileSet Path DirSet]
+            [org.apache.tools.ant Project Target Task]
+            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -35,21 +35,21 @@
   ^Project
   [^Task taskObj]
 
-  (let [ lg (doto (TimestampedLogger.)
-                  (.setOutputPrintStream System/out)
-                  (.setErrorPrintStream System/err)
-                  (.setMessageOutputLevel Project/MSG_INFO))
-         pj (doto (Project.)
-                  (.setName "hhh-project")
-                  (.init))
-         tg (doto (Target.)
-                  (.setName "mi6")) ]
+  (let [lg (doto (TimestampedLogger.)
+             (.setOutputPrintStream System/out)
+             (.setErrorPrintStream System/err)
+             (.setMessageOutputLevel Project/MSG_INFO))
+        pj (doto (Project.)
+             (.setName "hhh-project")
+             (.init))
+        tg (doto (Target.)
+             (.setName "mi6")) ]
     (doto pj
-          (.addTarget tg)
-          (.addBuildListener lg))
+      (.addTarget tg)
+      (.addBuildListener lg))
     (doto taskObj
-          (.setProject pj)
-          (.setOwningTarget tg))
+      (.setProject pj)
+      (.setOwningTarget tg))
     (.addTask tg taskObj)
     pj
   ))
@@ -60,15 +60,15 @@
 
   [^File hhhHome appId taskId]
 
-  (let [ tk (Ant.)
-         pj (ProjAntTask tk) ]
+  (let [tk (Ant.)
+        pj (ProjAntTask tk) ]
     (doto tk
-          (.setDir (File. hhhHome (str "apps/" appId)))
-          (.setAntfile "build.xml")
-          (.setTarget taskId)
+      (.setDir (File. hhhHome (str "apps/" appId)))
+      (.setAntfile "build.xml")
+      (.setTarget taskId)
           ;;(.setOutput "/tmp/out.txt")
-          (.setUseNativeBasedir true)
-          (.setInheritAll false))
+      (.setUseNativeBasedir true)
+      (.setInheritAll false))
     pj
   ))
 
@@ -78,13 +78,13 @@
 
   [^String execProg ^File workDir args]
 
-  (let [ tk (ExecTask.)
-         pj (ProjAntTask tk) ]
+  (let [tk (ExecTask.)
+        pj (ProjAntTask tk) ]
     (doto tk
-          (.setTaskName "hhh-exec-task")
-          (.setExecutable execProg)
-          (.setDir workDir))
-    (doseq [ v (seq args) ]
+      (.setTaskName "hhh-exec-task")
+      (.setExecutable execProg)
+      (.setDir workDir))
+    (doseq [v (seq args) ]
       (-> (.createArg tk)(.setValue v)))
     pj
   ))
@@ -95,17 +95,17 @@
 
   [^File srcDir ^File zipFile includes excludes]
 
-  (let [ tk (Zip.)
-         pj (ProjAntTask tk)
-         fs (doto (FileSet.)
-                  (.setDir srcDir)) ]
-    (doseq [ s (seq excludes) ]
+  (let [tk (Zip.)
+        pj (ProjAntTask tk)
+        fs (doto (FileSet.)
+             (.setDir srcDir)) ]
+    (doseq [s (seq excludes) ]
       (-> (.createExclude fs) (.setName s)))
-    (doseq [ s (seq includes) ]
+    (doseq [s (seq includes) ]
       (-> (.createInclude fs) (.setName s)))
     (doto tk
-          (.add fs)
-          (.setDestFile zipFile))
+      (.add fs)
+      (.setDestFile zipFile))
     pj
   ))
 
@@ -115,17 +115,17 @@
 
   [^File srcPath ^File destDir]
 
-  (let [ ct (Javac.)
-         pj (ProjAntTask ct) ]
+  (let [ct (Javac.)
+        pj (ProjAntTask ct) ]
     (doto ct
-          (.setTaskName "compile")
-          (.setFork true)
-          (.setDestdir destDir))
+      (.setTaskName "compile")
+      (.setFork true)
+      (.setDestdir destDir))
 
     ;;(.setClassPath ct (Path. pj))
 
     (-> (.createSrc ct)
-      (.addDirset (doto (DirSet.) (.setDir srcPath))))
+        (.addDirset (doto (DirSet.) (.setDir srcPath))))
 
     pj
   ))

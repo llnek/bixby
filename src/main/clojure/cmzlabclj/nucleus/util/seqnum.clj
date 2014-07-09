@@ -15,7 +15,7 @@
 
   cmzlabclj.nucleus.util.seqnum
 
-  (:import (java.util.concurrent.atomic AtomicLong AtomicInteger) ))
+  (:import  [java.util.concurrent.atomic AtomicLong AtomicInteger]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

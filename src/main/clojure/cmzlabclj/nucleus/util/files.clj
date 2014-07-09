@@ -14,16 +14,16 @@
 
   cmzlabclj.nucleus.util.files
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [ cmzlabclj.nucleus.util.core :only [notnil?] ])
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.io File FileInputStream FileOutputStream
-                    InputStream OutputStream ))
-  (:import (java.util ArrayList))
-  (:import (org.apache.commons.io IOUtils FileUtils))
-  (:import (java.util.zip ZipFile ZipEntry))
-  (:import (com.zotohlab.frwk.io XData)))
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [java.io File FileInputStream FileOutputStream
+                    InputStream OutputStream]
+            [java.util ArrayList]
+            [org.apache.commons.io IOUtils FileUtils]
+            [java.util.zip ZipFile ZipEntry]
+            [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -92,8 +92,8 @@
   [^String path]
 
   (if (cstr/blank? path)
-      path
-      (.getParent (File. path))
+    path
+    (.getParent (File. path))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,15 +111,15 @@
 
   [^ZipFile src ^File des ^ZipEntry en]
 
-  (let [ f (File. des (jiggleZipEntryName en) ) ]
+  (let [f (File. des (jiggleZipEntryName en) ) ]
     (if (.isDirectory en)
-        (.mkdirs f)
-        (do
-          (.mkdirs (.getParentFile f))
-          (with-open [ inp (.getInputStream src en) ]
-            (with-open [ os (FileOutputStream. f) ]
-              (IOUtils/copy inp os)))
-        ))
+      (.mkdirs f)
+      (do
+        (.mkdirs (.getParentFile f))
+        (with-open [inp (.getInputStream src en) 
+                    os (FileOutputStream. f) ]
+          (IOUtils/copy inp os))
+      ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,11 +128,11 @@
 
   [^File src ^File des]
 
-  (let [ fpz (ZipFile. src)
-         ents (.entries fpz) ]
+  (let [fpz (ZipFile. src)
+        ents (.entries fpz) ]
     (.mkdirs des)
     (while (.hasMoreElements ents)
-           (doOneEntry fpz des (.nextElement ents)))
+      (doOneEntry fpz des (.nextElement ents)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,12 +141,12 @@
 
   [^File dir ^String fname ^XData xdata]
 
-  (let [ fp (File. dir fname) ]
+  (let [fp (File. dir fname) ]
     (log/debug "Saving file: " fp)
     (FileUtils/deleteQuietly fp)
     (if (.isDiskFile xdata)
-        (FileUtils/moveFile (.fileRef xdata) fp)
-        (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
+      (FileUtils/moveFile (.fileRef xdata) fp)
+      (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -156,15 +156,15 @@
   ^XData
   [^File dir ^String fname]
 
-  (let [ fp (File. dir fname)
-         xs (XData.) ]
+  (let [fp (File. dir fname)
+        xs (XData.) ]
     (log/debug "Getting file: " fp)
     (if (and (.exists fp)
              (.canRead fp))
-        (doto xs
-              (.setDeleteFile false)
-              (.resetContent fp))
-        nil)
+      (doto xs
+        (.setDeleteFile false)
+        (.resetContent fp))
+      nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

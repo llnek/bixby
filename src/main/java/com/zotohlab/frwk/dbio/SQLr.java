@@ -21,11 +21,11 @@ import java.util.*;
  */
 public interface SQLr {
 
-  public List<?> findSome(Object model, Map<String,Object> filters, String ordering);
+  public List<?> findSome(Object model, Map<String,Object> filters, Object extras);
 
   public List<?> findSome(Object model, Map<String,Object> filters);
 
-  public List<?> findAll(Object model, String ordering);
+  public List<?> findAll(Object model, Object extras);
 
   public List<?> findAll(Object model);
 

@@ -15,10 +15,10 @@
 
   cmzlabclj.tardis.etc.misc
 
-  (:import (com.zotohlab.wflow.core FlowError))
-  (:import (com.zotohlab.wflow Pipeline PipelineDelegate PTask Work))
-  (:import (com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult))
-  (:import (com.zotohlab.frwk.core Startable)))
+  (:import  [com.zotohlab.wflow.core FlowError]
+            [com.zotohlab.wflow Pipeline PipelineDelegate PTask Work]
+            [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
+            [com.zotohlab.frwk.core Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal flows
@@ -27,11 +27,11 @@
   [s]
 
   (reify Work
-     (perform [_ cur job arg]
-       (let [ ^HTTPEvent evt (.event job)
-              ^HTTPResult res (.getResultObj evt) ]
-         (.setStatus res s)
-         (.replyResult evt)))
+    (perform [_ cur job arg]
+      (let [^HTTPEvent evt (.event job)
+            ^HTTPResult res (.getResultObj evt) ]
+        (.setStatus res s)
+        (.replyResult evt)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,15 +40,12 @@
 
   [^Pipeline pipe s]
 
-  (let [ ev (-> pipe (.job)(.event)) ]
-    (cond
-      (instance? HTTPEvent ev)
-      (PTask. (make-work s))
-
-      :else
-      (throw (FlowError.  (str "Unhandled event-type \""
-                               (:typeid (meta ev))
-                               "\"."))))
+  (let [evt (-> pipe (.job)(.event)) ]
+    (condp instance? evt
+      HTTPEvent (PTask. (make-work s))
+      (throw (FlowError. (str "Unhandled event-type \""
+                              (:typeid (meta evt))
+                              "\"."))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

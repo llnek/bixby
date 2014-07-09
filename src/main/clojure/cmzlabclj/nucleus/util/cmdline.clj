@@ -14,15 +14,15 @@
 
   cmzlabclj.nucleus.util.cmdline
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]])
-  (:require [ clojure.string :as cstr ])
-  (:use [ cmzlabclj.nucleus.util.core :only [IntoMap IsWindows?] ])
-  (:use [ cmzlabclj.nucleus.util.str :only [strim nsb Has?] ])
-  (:import (java.io BufferedOutputStream InputStreamReader
-                    OutputStreamWriter))
-  (:import (java.io Reader Writer))
-  (:import (java.util Map HashMap))
-  (:import (org.apache.commons.lang3 StringUtils)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+            [ clojure.string :as cstr ])
+  (:use [ cmzlabclj.nucleus.util.core :only [IntoMap IsWindows?] ]
+        [ cmzlabclj.nucleus.util.str :only [strim nsb Has?] ])
+  (:import  [java.io BufferedOutputStream InputStreamReader
+                    OutputStreamWriter]
+            [java.io Reader Writer]
+            [java.util Map HashMap]
+            [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -33,20 +33,19 @@
 ;;
 (defn MakeCmdSeqQ "Make a command line question."
 
-  [ ^String questionId
-    ^String questionLine
-    ^String choices
-    ^String defaultValue
-    mandatory
-    fnOK ]
+  [^String questionId
+   ^String questionLine
+   ^String choices
+   ^String defaultValue
+   mandatory
+   fnOK ]
 
-  {
-    :choices choices
-    :qline questionLine
-    :qid questionId
-    :dft defaultValue
-    :must mandatory
-    :onok fnOK } )
+  {:choices choices
+   :qline questionLine
+   :qid questionId
+   :dft defaultValue
+   :must mandatory
+   :onok fnOK } )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -57,42 +56,51 @@
 
   ;; windows has '\r\n' linux has '\n'
 
-  (let [ buf (StringBuilder.)
-         ms (loop [ c (.read cin) ]
-              (let [ m (cond
-                         (or (= c -1)(= c 4)) #{ :quit :break }
-                         (= c (int \newline)) #{ :break }
-                         (or (= c (int \return))
-                             (= c (int \backspace)) (= c 27)) #{}
-                         :else (do (.append buf (char c)) #{})) ]
-                (if (contains? m :break)
-                  m
-                  (recur (.read cin))))) ]
-    (if (contains? ms :quit) nil (strim (.toString buf)))
+  (let [buf (StringBuilder.)
+        ms (loop [c (.read cin) ]
+             (let [m (cond
+                       (or (= c -1)(= c 4)) #{ :quit :break }
+                       (= c (int \newline)) #{ :break }
+                       (or (= c (int \return))
+                           (= c (int \backspace)) (= c 27))
+                       #{}
+                       :else
+                       (do
+                         (.append buf (char c))
+                         #{})) ]
+               (if (contains? m :break)
+                 m
+                 (recur (.read cin))))) ]
+    (if (contains? ms :quit)
+      nil
+      (strim buf))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- popQQ ""
 
-  [^Writer cout ^Reader cin cmdQ ^java.util.Map props]
+  [^Writer cout
+   ^Reader cin
+   cmdQ
+   ^java.util.Map props]
 
-  (let [ chs (nsb (:choices cmdQ))
-         dft (nsb (:dft cmdQ))
-         must (:must cmdQ)
-         onResp (:onok cmdQ)
-         q (:qline cmdQ) ]
+  (let [chs (nsb (:choices cmdQ))
+        dft (nsb (:dft cmdQ))
+        must (:must cmdQ)
+        onResp (:onok cmdQ)
+        q (:qline cmdQ) ]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
     (when-not (cstr/blank? chs)
       (if (Has? chs \n)
         (.write cout (str (if (.startsWith chs "\n")
-                              "["
-                              "[\n")
+                            "["
+                            "[\n")
                           chs
                           (if (.endsWith chs "\n")
-                              "]"
-                              "\n]" ) ))
+                            "]"
+                            "\n]" ) ))
         (.write cout (str "[" chs "]"))))
     ;; defaults ?
     (when-not (cstr/blank? dft)
@@ -100,7 +108,7 @@
     (doto cout (.write " ")(.flush))
     ;; get the input from user
     ;; point to next question, blank ends it
-    (let [ rc (readData cout cin) ]
+    (let [rc (readData cout cin) ]
       (if (nil? rc)
         (do (.write cout "\n") nil )
         (onResp (if (cstr/blank? rc) dft rc) props)
@@ -126,7 +134,7 @@
   [cout cin cmdQNs start props]
 
   (do
-    (loop [ rc (popQ cout cin (cmdQNs start) props) ]
+    (loop [rc (popQ cout cin (cmdQNs start) props) ]
       (cond
         (nil? rc) {}
         (cstr/blank? rc) (IntoMap props)
@@ -141,9 +149,9 @@
   ;; map
   [cmdQs question1]
 
-  (let [ cout (OutputStreamWriter. (BufferedOutputStream. (System/out)))
-         kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
-         cin (InputStreamReader. (System/in)) ]
+  (let [cout (OutputStreamWriter. (BufferedOutputStream. (System/out)))
+        kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
+        cin (InputStreamReader. (System/in)) ]
     (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
     (cycleQ cout cin cmdQs question1 (HashMap.))
   ))

@@ -14,28 +14,30 @@
 
   cmzlabclj.tardis.mvc.templates
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [Try! notnil? NiceFPath] ])
-  (:use [cmzlabclj.nucleus.util.mime :only [GuessContentType] ])
-  (:use [cmzlabclj.nucleus.util.io :only [Streamify] ])
-  (:import (io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
-                                        CookieDecoder ServerCookieEncoder
-                                        DefaultHttpResponse HttpVersion
-                                        HttpMethod
-                                        HttpHeaders LastHttpContent
-                                        HttpHeaders Cookie QueryStringDecoder))
-  (:import (io.netty.channel Channel ChannelHandler
-                             ChannelFutureListener ChannelFuture
-                             ChannelPipeline ChannelHandlerContext))
-  (:import (io.netty.handler.stream ChunkedStream ChunkedFile))
-  (:import (com.zotohlab.frwk.netty NettyFW))
-  (:import (com.google.gson JsonObject JsonArray))
-  (:import (org.apache.commons.io FileUtils))
-  (:import (com.zotohlab.gallifrey.mvc WebContent WebAsset
-                                        HTTPRangeInput AssetCache))
-  (:import (java.io RandomAccessFile File))
-  (:import (java.util Map HashMap)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.nucleus.util.core :only [Try! notnil? NiceFPath] ]
+        [cmzlabclj.nucleus.util.mime :only [GuessContentType] ]
+        [cmzlabclj.nucleus.util.io :only [Streamify] ])
+
+  (:import  [io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
+                                         CookieDecoder ServerCookieEncoder
+                                         DefaultHttpResponse HttpVersion
+                                         HttpMethod
+                                         HttpHeaders LastHttpContent
+                                         HttpHeaders Cookie QueryStringDecoder]
+            [io.netty.channel Channel ChannelHandler
+                              ChannelFutureListener ChannelFuture
+                              ChannelPipeline ChannelHandlerContext]
+            [io.netty.handler.stream ChunkedStream ChunkedFile]
+            [com.zotohlab.frwk.netty NettyFW]
+            [com.google.gson JsonObject JsonArray]
+            [org.apache.commons.io FileUtils]
+            [com.zotohlab.gallifrey.mvc WebContent WebAsset
+                                        HTTPRangeInput AssetCache]
+            [java.io RandomAccessFile File]
+            [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -48,10 +50,10 @@
   [cacheFlag]
 
   (if cacheFlag
-      (reset! cache-assets-flag true)
-      (do
-        (reset! cache-assets-flag false)
-        (log/info "Web Assets caching is turned - OFF."))
+    (reset! cache-assets-flag true)
+    (do
+      (reset! cache-assets-flag false)
+      (log/info "Web Assets caching is turned - OFF."))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,7 +74,7 @@
 
   [^File appDir ^String fname]
 
-  (let [ f (File. appDir fname) ]
+  (let [f (File. appDir fname) ]
     (if (.canRead f)
       (make-webcontent
         (GuessContentType f "utf-8")
@@ -87,7 +89,7 @@
   [^File fp]
 
   (if @cache-assets-flag
-    (let [ ^String fpath (cstr/lower-case (NiceFPath fp)) ]
+    (let [^String fpath (cstr/lower-case (NiceFPath fp)) ]
       (or (.endsWith fpath ".css")
           (.endsWith fpath ".gif")
           (.endsWith fpath ".jpg")
@@ -103,8 +105,8 @@
 
   [^File file]
 
-  (let [ ct (GuessContentType file "utf-8" "text/plain")
-         ts (.lastModified file) ]
+  (let [ct (GuessContentType file "utf-8" "text/plain")
+        ts (.lastModified file) ]
     (reify
       WebAsset
 
@@ -123,8 +125,8 @@
 
   (if (and (.exists file)
            (.canRead file))
-      (MakeWebAsset file)
-      nil
+    (MakeWebAsset file)
+    nil
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +135,7 @@
 
   [^Map cache fp ^File file]
 
-  (if-let [ wa (fetchAsset file) ]
+  (if-let [wa (fetchAsset file) ]
     (do
       (log/debug "asset-cache: cached new file: " fp)
       (.put cache fp wa)
@@ -150,10 +152,10 @@
   [^File file]
 
   (if @cache-assets-flag
-    (let [ cache (AssetCache/get)
-           fp (NiceFPath file)
-           ^WebAsset wa (.get cache fp)
-           ^File cf (if (nil? wa) nil (.getFile wa)) ]
+    (let [cache (AssetCache/get)
+          fp (NiceFPath file)
+          ^WebAsset wa (.get cache fp)
+          ^File cf (if (nil? wa) nil (.getFile wa)) ]
       (if (or (nil? cf)
               (> (.lastModified file)
                  (.getTS wa)))
@@ -167,34 +169,34 @@
 ;;
 (defn- getFileInput ""
 
-  [ ^RandomAccessFile raf
-    ^String ct
-    ^JsonObject info
-    ^HttpResponse rsp ]
+  [^RandomAccessFile raf
+   ^String ct
+   ^JsonObject info
+   ^HttpResponse rsp ]
 
-  (let [ ^JsonObject h (.getAsJsonObject info "headers")
-         ^JsonArray r (if (.has h "range")
-                          (.getAsJsonArray h "range")
-                          nil)
-         s (if (or (nil? r)(< (.size r) 1))
-               ""
-               (.get r 0)) ]
+  (let [^JsonObject h (.getAsJsonObject info "headers")
+        ^JsonArray r (if (.has h "range")
+                       (.getAsJsonArray h "range")
+                       nil)
+        s (if (or (nil? r)(< (.size r) 1))
+            ""
+            (.get r 0)) ]
     (if (HTTPRangeInput/accepts s)
-        (doto (HTTPRangeInput. raf ct s)
-              (.prepareNettyResponse rsp))
-        (ChunkedFile. raf))
+      (doto (HTTPRangeInput. raf ct s)
+        (.prepareNettyResponse rsp))
+      (ChunkedFile. raf))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ReplyFileAsset ""
 
-  [ src ^Channel ch ^JsonObject info ^HttpResponse rsp ^File file]
+  [src ^Channel ch ^JsonObject info ^HttpResponse rsp ^File file]
 
-  (let [ ^WebAsset asset (if (not (maybeCache file))
-                             nil
-                             (getAsset file))
-         fname (.getName file) ]
+  (let [^WebAsset asset (if (not (maybeCache file))
+                          nil
+                          (getAsset file))
+        fname (.getName file) ]
     (with-local-vars [raf nil clen 0 inp nil ct "" wf nil]
       (if (nil? asset)
         (do
@@ -222,8 +224,8 @@
                         (operationComplete [_ ff]
                           (log/debug "channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                          (when-not (-> (.get info "keep-alive")(.getAsBoolean)))
-                                    (NettyFW/closeChannel ch))))
+                          (when-not (-> (.get info "keep-alive")(.getAsBoolean))
+                            (NettyFW/closeChannel ch)))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))
           (log/error e# "")

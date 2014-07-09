@@ -80,13 +80,13 @@
   ;; Netty's cookie defaults to 0, which is cool with me.
   (doto (DefaultCookie. (.getName c)
                         (.encode cc (nsb (.getValue c))))
-        ;;(.setComment (.getComment c))
-        (.setDomain (.getDomain c))
-        (.setMaxAge (.getMaxAge c))
-        (.setPath (.getPath c))
-        ;;(.setDiscard (.getDiscard c))
-        ;;(.setVersion (.getVersion c))
-        (.setHttpOnly (.isHttpOnly c))
+    ;;(.setComment (.getComment c))
+    (.setDomain (.getDomain c))
+    (.setMaxAge (.getMaxAge c))
+    (.setPath (.getPath c))
+    ;;(.setDiscard (.getDiscard c))
+    ;;(.setVersion (.getVersion c))
+    (.setHttpOnly (.isHttpOnly c))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,10 +106,9 @@
 
   [^List cookies]
 
-  (let [ cc (URLCodec. "utf-8") ]
-    (persistent! (reduce (fn [sum ^HttpCookie c]
-                             (conj! sum
-                                    (ServerCookieEncoder/encode (javaToCookie c cc))))
+  (let [cc (URLCodec. "utf-8") ]
+    (persistent! (reduce #(conj! %1
+                                 (ServerCookieEncoder/encode (javaToCookie %2 cc)))
                          (transient [])
                          (seq cookies)))
   ))
@@ -183,30 +182,30 @@
                  (< code 300)
                  (not= "HEAD" (.method evt)))
         (var-set  payload
-                  (cond
-                    (instance? WebAsset data)
-                    (let [^WebAsset ws data ]
-                      (HttpHeaders/setHeader rsp "content-type" (.contentType ws))
-                      (var-set raf (RandomAccessFile. (.getFile ws) "r"))
-                      (replyOneFile @raf evt rsp))
+                  (condp instance? data
+                    WebAsset (let [^WebAsset ws data ]
+                               (HttpHeaders/setHeader rsp
+                                                      "content-type"
+                                                      (.contentType ws))
+                               (var-set raf
+                                        (RandomAccessFile. (.getFile ws) "r"))
+                               (replyOneFile @raf evt rsp))
 
-                    (instance? File data)
-                    (do
-                      (var-set raf (RandomAccessFile. ^File data "r"))
-                      (replyOneFile @raf evt rsp))
+                    File (do
+                           (var-set raf 
+                                    (RandomAccessFile. ^File data "r"))
+                           (replyOneFile @raf evt rsp))
 
-                    (instance? XData data)
-                    (let [^XData xs data ]
-                      (var-set clen (.size xs))
-                      (ChunkedStream. (.stream xs)))
+                    XData (let [^XData xs data ] 
+                            (var-set clen (.size xs))
+                            (ChunkedStream. (.stream xs)))
 
-                    (notnil? data)
-                    (let [xs (XData. data) ]
-                      (var-set clen (.size xs))
-                      (ChunkedStream. (.stream xs)))
+                    (if (notnil? data)
+                      (let [xs (XData. data) ]
+                        (var-set clen (.size xs))
+                        (ChunkedStream. (.stream xs)))
+                      nil)))
 
-                    :else
-                    nil))
         (if (and (notnil? @payload)
                  (notnil? @raf))
           (var-set clen (.length ^RandomAccessFile @raf))))
@@ -247,10 +246,8 @@
   (reify AsyncWaitTrigger
 
     (resumeWithResult [_ res]
-      (cond
-        (instance? WebSockEvent evt)
+      (if (instance? WebSockEvent evt)
         (Try! (netty-ws-reply res ch evt src) )
-        :else
         (Try! (netty-reply res ch evt src) ) ))
 
     (resumeWithError [_]
@@ -270,12 +267,12 @@
 
   (doto (HttpCookie. (.getName c)
                      (.decode cc (nsb (.getValue c))))
-        (.setComment (.getComment c))
-        (.setDomain (.getDomain c))
-        (.setMaxAge (.getMaxAge c))
-        (.setPath (.getPath c))
-        (.setVersion (.getVersion c))
-        (.setHttpOnly (.isHttpOnly c))
+    (.setComment (.getComment c))
+    (.setDomain (.getDomain c))
+    (.setMaxAge (.getMaxAge c))
+    (.setPath (.getPath c))
+    (.setVersion (.getVersion c))
+    (.setHttpOnly (.isHttpOnly c))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -354,11 +351,11 @@
    ^XData xdata
    ^JsonObject info wantSecure]
 
-  (let [ ^InetSocketAddress laddr (.localAddress ch)
-         ^HTTPResult res (MakeHttpResult co)
-         ^Map cookieJar (crackCookies info)
-         impl (MakeMMap)
-         eeid (NextLong) ]
+  (let [^InetSocketAddress laddr (.localAddress ch)
+        ^HTTPResult res (MakeHttpResult co)
+        ^Map cookieJar (crackCookies info)
+        impl (MakeMMap)
+        eeid (NextLong) ]
     (with-meta
       (reify
 
@@ -466,14 +463,14 @@
 (defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
   [^cmzlabclj.tardis.io.core.EmitterAPI co & args]
-  (let [ ^cmzlabclj.nucleus.net.routes.RouteInfo
-         ri (nth args 2)
-         ^DemuxedMsg req (nth args 1)
-         ^Channel ch (nth args 0)
-         ssl (notnil? (.get (.pipeline ch) "ssl"))
-         xdata (.payload req)
-         sec (.isSecure? ri)
-         info (.info req) ]
+  (let [^cmzlabclj.nucleus.net.routes.RouteInfo
+        ri (nth args 2)
+        ^DemuxedMsg req (nth args 1)
+        ^Channel ch (nth args 0)
+        ssl (notnil? (.get (.pipeline ch) "ssl"))
+        xdata (.payload req)
+        sec (.isSecure? ri)
+        info (.info req) ]
     (if (-> (.get info "wsock")(.getAsBoolean))
       (makeWSockEvent co ch xdata info sec)
       (makeHttpEvent co ch ssl xdata info sec))
@@ -504,8 +501,8 @@
             ts (.getAttr ^cmzlabclj.tardis.core.sys.Element co :waitMillis)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
-          (let [ ^cmzlabclj.tardis.io.core.WaitEventHolder
-                 w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+          (let [^cmzlabclj.tardis.io.core.WaitEventHolder
+                w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
             (.timeoutMillis w ts)
             (.hold co w)))
         (.dispatch co evt {})))

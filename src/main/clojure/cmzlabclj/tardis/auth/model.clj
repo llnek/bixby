@@ -14,20 +14,21 @@
 
   cmzlabclj.tardis.auth.model
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.dbio.drivers])
-  (:use [cmzlabclj.nucleus.dbio.core])
-  (:use [cmzlabclj.nucleus.dbio.postgresql])
-  (:use [cmzlabclj.nucleus.dbio.h2])
-  (:use [cmzlabclj.nucleus.dbio.mysql])
-  (:use [cmzlabclj.nucleus.dbio.sqlserver])
-  (:use [cmzlabclj.nucleus.dbio.oracle])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema))
-  (:import (java.sql Connection))
-  (:import (java.io File))
-  (:import (org.apache.commons.io FileUtils)))
+  (:use [cmzlabclj.nucleus.dbio.drivers]
+        [cmzlabclj.nucleus.dbio.core]
+        [cmzlabclj.nucleus.dbio.postgresql]
+        [cmzlabclj.nucleus.dbio.h2]
+        [cmzlabclj.nucleus.dbio.mysql]
+        [cmzlabclj.nucleus.dbio.sqlserver]
+        [cmzlabclj.nucleus.dbio.oracle])
+
+  (:import  [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
+            [java.sql Connection]
+            [java.io File]
+            [org.apache.commons.io FileUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -122,8 +123,8 @@
 
   [^JDBCInfo jdbc]
 
-  (let [ dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
-    (with-open [ conn (MakeConnection jdbc) ]
+  (let [dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
+    (with-open [conn (MakeConnection jdbc) ]
       (UploadDdl conn (GenerateAuthPluginDDL dbtype)))
   ))
 
@@ -133,7 +134,7 @@
 
   [^JDBCPool pool]
 
-  (let [ dbtype (MatchJdbcUrl (.dbUrl pool)) ]
+  (let [dbtype (MatchJdbcUrl (.dbUrl pool)) ]
     (UploadDdl pool (GenerateAuthPluginDDL dbtype))
   ))
 

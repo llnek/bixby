@@ -15,22 +15,20 @@
 
   cmzlabclj.nucleus.util.mime
 
-  (:require [clojure.tools.logging :as log  :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [Bytesify Try! IntoMap] ])
-  (:use [cmzlabclj.nucleus.util.meta :only [BytesClass] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl?] ])
-  (:use [cmzlabclj.nucleus.util.io :only [Streamify] ])
-
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.net URLDecoder URLEncoder))
-  (:import (java.io IOException InputStream File))
-  (:import (java.net URL))
-  (:import (java.util.regex Pattern Matcher))
-  (:import (java.util Properties))
-  (:import (javax.mail Message))
-  (:import (com.zotohlab.frwk.mime MimeFileTypes)))
-
+  (:require [clojure.tools.logging :as log  :only [info warn error debug] ]
+            [clojure.string :as cstr])
+  (:use [cmzlabclj.nucleus.util.core :only [Bytesify Try! IntoMap] ]
+        [cmzlabclj.nucleus.util.meta :only [BytesClass] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl?] ]
+        [cmzlabclj.nucleus.util.io :only [Streamify] ])
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [java.io IOException InputStream File]
+            [java.net URL]
+            [org.apache.commons.codec.net URLCodec]
+            [java.util.regex Pattern Matcher]
+            [java.util Properties]
+            [javax.mail Message]
+            [com.zotohlab.frwk.mime MimeFileTypes]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -141,15 +139,15 @@
   ^String
   [^String cType]
 
-  (let [ pos (-> (nsb cType) (cstr/lower-case )
-                 (.indexOf "charset="))
-         rc "utf-8" ]
+  (let [pos (-> (nsb cType) (cstr/lower-case )
+                (.indexOf "charset="))
+        rc "utf-8" ]
          ;;rc "ISO-8859-1" ]
     (if (> pos 0)
-        (let [ s (.substring cType (+ pos 8))
-               p (StringUtils/indexOfAny s "; \t\r\n") ]
-          (if (> p 0) (.substring s 0 p) s))
-        rc)
+      (let [s (.substring cType (+ pos 8))
+            p (StringUtils/indexOfAny s "; \t\r\n") ]
+        (if (> p 0) (.substring s 0 p) s))
+      rc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,7 +156,7 @@
 
   [^String cType]
 
-  (let [ ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (cstr/lower-case (nsb cType)) ]
     (or (>= (.indexOf ct "multipart/signed") 0)
         (and (is-pkcs7mime? ct) (>= (.indexOf ct "signed-data") 0)))
   ))
@@ -169,7 +167,7 @@
 
   [^String cType]
 
-  (let [ ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (cstr/lower-case (nsb cType)) ]
     (and (is-pkcs7mime? ct) (>= (.indexOf ct "enveloped-data") 0))
   ))
 
@@ -179,7 +177,7 @@
 
   [^String cType]
 
-  (let [ ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (cstr/lower-case (nsb cType)) ]
     (and (>= (.indexOf ct "application/pkcs7-mime") 0)
          (>= (.indexOf ct "compressed-data") 0))
   ))
@@ -190,7 +188,7 @@
 
   [^String cType]
 
-  (let [ ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (cstr/lower-case (nsb cType)) ]
     (and (>= (.indexOf ct "multipart/report") 0)
          (>= (.indexOf ct "disposition-notification") 0))
   ))
@@ -202,69 +200,71 @@
   ^InputStream
   [^Object obj]
 
-  (cond
-    (instance? InputStream obj)
-    obj
-
-    (instance? (BytesClass) obj)
-    (Streamify obj)
-
-    (instance? String obj)
-    (Streamify (Bytesify obj))
-
-    :else
+  (condp instance? obj
+    InputStream obj
+    BytesClass (Streamify obj)
+    String (Streamify (Bytesify obj))
     nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn UrlDecode "URL decode this string."
 
-  [^String u]
+  ^String
+  [u]
 
   (if (nil? u)
-      nil
-      (Try!  (URLDecoder/decode u "utf-8") )
+    nil
+    (Try! (-> (URLCodec. "utf-8")(.decode ^String u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn UrlEncode "URL encode this string."
 
-  [^String u]
+  ^String
+  [u]
 
   (if (nil? u)
-      nil
-      (Try!  (URLEncoder/encode u "utf-8") )
+    nil
+    (Try! (-> (URLCodec. "utf-8")(.encode ^String u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GuessMimeType "Guess the MIME type of file."
 
-  (^String
-    [^File file]
-    (GuessMimeType file ""))
+  (^String [^File file]
+           (GuessMimeType file ""))
 
-  (^String
-    [^File file ^String dft]
-    (let [ ^Matcher mc (.matcher _extRegex (cstr/lower-case (.getName file)))
-           ex (if (.matches mc) (.group mc 1) "")
-           p (if (hgl? ex) ((keyword ex) (MimeCache))) ]
-      (if (hgl? p) p dft))) )
+  (^String [^File file
+            ^String dft]
+           (let [^Matcher
+                 mc (.matcher _extRegex
+                              (cstr/lower-case (.getName file)))
+                 ex (if (.matches mc)
+                      (.group mc 1)
+                      "")
+                 p (if (hgl? ex)
+                     ((keyword ex) (MimeCache))) ]
+             (if (hgl? p) p dft))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GuessContentType "Guess the content-type of file."
 
-  (^String [^File file ^String enc ^String dft]
-    (let [ mt (GuessMimeType file)
-           ct (if (hgl? mt) mt dft) ]
-      (if (not (.startsWith ct "text/"))
-          ct
-          (str ct "; charset=" enc))))
+  (^String [^File file
+            ^String enc
+            ^String dft]
+           (let [mt (GuessMimeType file)
+                 ct (if (hgl? mt) mt dft) ]
+             (if (not (.startsWith ct "text/"))
+               ct
+               (str ct "; charset=" enc))))
 
   (^String [^File file]
-    (GuessContentType file "utf-8" "application/octet-stream" )))
+           (GuessContentType file
+                             "utf-8" "application/octet-stream" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -272,8 +272,8 @@
 
   [^URL fileUrl]
 
-  (with-open [ inp (.openStream fileUrl) ]
-    (let [ ps (Properties.) ]
+  (with-open [inp (.openStream fileUrl) ]
+    (let [ps (Properties.) ]
       (.load ps inp)
       (reset! _mime_types (MimeFileTypes/makeMimeFileTypes ps))
       (reset! _mime_cache (IntoMap ps)))

@@ -14,26 +14,27 @@
 
   cmzlabclj.tardis.io.webss
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:require [clojure.data.json :as json])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [clojure.data.json :as json])
+
   (:use [cmzlabclj.nucleus.util.core
          :only [MubleAPI ConvLong notnil? juid ternary
-                MakeMMap Stringify Bytesify] ])
-  (:use [cmzlabclj.nucleus.crypto.core :only [GenMac] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl? AddDelim!] ])
-  ;;(:use [cmzlabclj.nucleus.util.guids :only [NewUUid] ])
-  (:use [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
+                MakeMMap Stringify Bytesify] ]
+        [cmzlabclj.nucleus.crypto.core :only [GenMac] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl? AddDelim!] ]
+        ;;[cmzlabclj.nucleus.util.guids :only [NewUUid] ]
+        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
 
-  (:import (com.zotohlab.gallifrey.runtime ExpiredError AuthError))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (org.apache.commons.codec.net URLCodec))
-  (:import (org.apache.commons.codec.binary Base64 Hex))
-  (:import (com.zotohlab.frwk.util CoreUtils))
-  (:import (java.net HttpCookie URLDecoder URLEncoder))
-  (:import (com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter))
-  (:import (com.zotohlab.gallifrey.core Container))
-  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
+  (:import  [com.zotohlab.gallifrey.runtime ExpiredError AuthError]
+            [org.apache.commons.lang3 StringUtils]
+            [org.apache.commons.codec.net URLCodec]
+            [org.apache.commons.codec.binary Base64 Hex]
+            [com.zotohlab.frwk.util CoreUtils]
+            [java.net HttpCookie URLDecoder URLEncoder]
+            [com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter]
+            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -78,9 +79,9 @@
 ;;
 (defn- resetFlags ""
 
-  [ ^cmzlabclj.tardis.io.webss.WebSession mvs maxAge]
+  [^cmzlabclj.tardis.io.webss.WebSession mvs maxAge]
 
-  (let [ now (System/currentTimeMillis) ]
+  (let [now (System/currentTimeMillis) ]
     (.setAttribute mvs SSID_FLAG
                    (Hex/encodeHexString (Bytesify (juid))))
     (.setAttribute mvs ES_FLAG (if (> maxAge 0)
@@ -106,29 +107,29 @@
 ;;
 (defn- downstream ""
 
-  [ ^HTTPEvent evt ^HTTPResult res ]
+  [^HTTPEvent evt ^HTTPResult res ]
 
-  (let [ ^cmzlabclj.tardis.io.webss.WebSession
-         mvs (.getSession evt) ]
+  (let [^cmzlabclj.tardis.io.webss.WebSession
+        mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
       (log/debug "session appears to be kosher, about to set-cookie!")
-      (let [ ^cmzlabclj.tardis.core.sys.Element
-             src (.emitter evt)
-             ctr (.container ^Emitter src)
-             du2 (.setMaxInactiveInterval mvs
-                                          (.getAttr src :maxIdleSecs))
-             du1 (if (.isNew? mvs)
-                     (resetFlags mvs (.getAttr src :sessionAgeSecs)))
-             data (maybeMacIt evt ctr (nsb mvs))
-             now (System/currentTimeMillis)
-             est (.getExpiryTime mvs)
-             ck (HttpCookie. SESSION_COOKIE data) ]
+      (let [^cmzlabclj.tardis.core.sys.Element
+            src (.emitter evt)
+            ctr (.container ^Emitter src)
+            du2 (.setMaxInactiveInterval mvs
+                                         (.getAttr src :maxIdleSecs))
+            du1 (if (.isNew? mvs)
+                  (resetFlags mvs (.getAttr src :sessionAgeSecs)))
+            data (maybeMacIt evt ctr (nsb mvs))
+            now (System/currentTimeMillis)
+            est (.getExpiryTime mvs)
+            ck (HttpCookie. SESSION_COOKIE data) ]
         (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
         (doto ck
-              (.setDomain (nsb (.getAttr src :domain)))
-              (.setSecure (.isSSL? mvs))
-              (.setHttpOnly (.getAttr src :hidden))
-              (.setPath (.getAttr src :domainPath)))
+          (.setDomain (nsb (.getAttr src :domain)))
+          (.setSecure (.isSSL? mvs))
+          (.setHttpOnly (.getAttr src :hidden))
+          (.setPath (.getAttr src :domainPath)))
         (.addCookie res ck)))
   ))
 
@@ -139,9 +140,9 @@
   [^HTTPEvent evt ^Container ctr
    ^String part1 ^String part2 ]
 
-  (when-let [ pkey (if (.checkAuthenticity evt)
-                     (.getAppKeyBits ctr)
-                     nil) ]
+  (when-let [pkey (if (.checkAuthenticity evt)
+                    (.getAppKeyBits ctr)
+                    nil) ]
     (when (not= (GenMac pkey part2) part1)
       (log/error "Session cookie - broken.")
       (throw (AuthError. "Bad Session Cookie.")))
@@ -151,33 +152,33 @@
 ;;
 (defn- upstream ""
 
-  [ ^HTTPEvent evt ]
+  [^HTTPEvent evt ]
 
-  (let [ ^cmzlabclj.tardis.io.webss.WebSession
-         mvs (.getSession evt)
-         ^Emitter netty (.emitter evt)
-         ck (.getCookie evt SESSION_COOKIE) ]
+  (let [^cmzlabclj.tardis.io.webss.WebSession
+        mvs (.getSession evt)
+        ^Emitter netty (.emitter evt)
+        ck (.getCookie evt SESSION_COOKIE) ]
     (if (nil? ck)
       (do
         (log/debug "request contains no session cookie, invalidate the session.")
         (.invalidate! mvs))
-      (let [ ^cmzlabclj.tardis.core.sys.Element
-             src netty
-             cookie (nsb (.getValue ck))
+      (let [^cmzlabclj.tardis.core.sys.Element
+            src netty
+            cookie (nsb (.getValue ck))
              ;;cookie (-> (URLCodec. "utf-8")
                         ;;(decode (nsb (.getValue ck))))
-             pos (.indexOf cookie (int \-))
-             [rc1 rc2] (if (< pos 0)
-                           ["" cookie]
-                           [(.substring cookie 0 pos)
+            pos (.indexOf cookie (int \-))
+            [rc1 rc2] (if (< pos 0)
+                        ["" cookie]
+                        [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
         (maybeValidateCookie evt (.container netty) rc1 rc2)
         (log/debug "session attributes = " rc2)
         (try
-          (doseq [ ^String nv (seq (StringUtils/split ^String rc2 NV_SEP)) ]
-            (let [ ss (StringUtils/split nv ":" 2)
-                   ^String s1 (aget ss 0)
-                   ^String s2 (aget ss 1) ]
+          (doseq [^String nv (seq (StringUtils/split ^String rc2 NV_SEP)) ]
+            (let [ss (StringUtils/split nv ":" 2)
+                  ^String s1 (aget ss 0)
+                  ^String s2 (aget ss 1) ]
               (log/debug "session attr name = " s1 ", value = " s2)
               (if (and (.startsWith s1 "__f")
                        (.endsWith s1 "n"))
@@ -186,10 +187,10 @@
           (catch Throwable e#
             (throw (ExpiredError. "Corrupted cookie."))))
         (.setNew! mvs false 0)
-        (let [ ts (ternary (.getAttribute mvs LS_FLAG) -1)
-               es (ternary (.getAttribute mvs ES_FLAG) -1)
-               now (System/currentTimeMillis)
-               mi (.getAttr src :maxIdleSecs) ]
+        (let [ts (ternary (.getAttribute mvs LS_FLAG) -1)
+              es (ternary (.getAttribute mvs ES_FLAG) -1)
+              now (System/currentTimeMillis)
+              mi (.getAttr src :maxIdleSecs) ]
           (if (< es now)
             (throw (ExpiredError. "Session has expired.")))
           (if (and (> mi 0)
@@ -206,8 +207,8 @@
   ^IOSession
   [co ssl]
 
-  (let [ attrs (MakeMMap)
-         impl (MakeMMap) ]
+  (let [attrs (MakeMMap)
+        impl (MakeMMap) ]
     (.setf! impl :maxIdleSecs 0)
     (.setf! impl :newOne true)
     (with-meta
@@ -254,13 +255,12 @@
         Object
 
         (toString [this]
-          (nsb (reduce (fn [memo en]
-                    (AddDelim! memo NV_SEP
-                               (str (name (first en))
-                                    ":"
-                                    (last en))))
-                  (StringBuilder.)
-                  (.seq* attrs))))
+          (nsb (reduce #(AddDelim! %1 NV_SEP
+                                   (str (name (first %2))
+                                        ":"
+                                        (last %2)))
+                       (StringBuilder.)
+                       (.seq* attrs))))
           ;;(Base64/encodeBase64String (Bytesify (.toJson attrs))))
 
         IOSession

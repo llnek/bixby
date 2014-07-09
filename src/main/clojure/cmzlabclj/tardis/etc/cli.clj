@@ -14,25 +14,23 @@
 
   cmzlabclj.tardis.etc.cli
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.data.json :as json])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.data.json :as json]
+            [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [GetUser juid IsWindows?] ])
-  (:use [cmzlabclj.nucleus.util.str :only [strim nsb] ])
-  (:use [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
-  (:use [cmzlabclj.nucleus.util.files :only [Unzip Mkdirs] ])
-  (:use [cmzlabclj.tardis.core.constants])
-  (:use [cmzlabclj.tardis.core.sys])
+  (:use [cmzlabclj.nucleus.util.core :only [GetUser juid IsWindows?] ]
+        [cmzlabclj.nucleus.util.str :only [strim nsb] ]
+        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
+        [cmzlabclj.nucleus.util.files :only [Unzip Mkdirs] ]
+        [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.etc.task])
 
-  (:use [cmzlabclj.tardis.etc.task])
-
-  (:import (org.apache.commons.io.filefilter FileFileFilter FileFilterUtils))
-  (:import (org.apache.commons.lang3 StringUtils))
-  ;;(:import (org.apache.commons.io FilenameUtils FileUtils))
-  (:import (org.apache.commons.io FilenameUtils FileUtils))
-  (:import (java.util UUID))
-  (:import (java.io File)))
+  (:import  [org.apache.commons.io.filefilter FileFileFilter FileFilterUtils]
+            [org.apache.commons.lang3 StringUtils]
+            [org.apache.commons.io FilenameUtils FileUtils]
+            [java.util UUID]
+            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -69,13 +67,13 @@
 
   [^File hhhHome bg]
 
-  (let [ prog2 (-> (File. hhhHome "bin/skaro.bat")(.getCanonicalPath ))
-         prog (-> (File. hhhHome "bin/skaro")(.getCanonicalPath))
-         pj (if (IsWindows?)
-                (MakeExecTask "cmd.exe"
-                              hhhHome
-                              [ "/C" "start" "/B" "/MIN" prog2 "start" ])
-                (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
+  (let [prog2 (-> (File. hhhHome "bin/skaro.bat")(.getCanonicalPath ))
+        prog (-> (File. hhhHome "bin/skaro")(.getCanonicalPath))
+        pj (if (IsWindows?)
+             (MakeExecTask "cmd.exe"
+                           hhhHome
+                           [ "/C" "start" "/B" "/MIN" prog2 "start" ])
+             (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
     (ExecProj pj)
   ))
 
@@ -85,9 +83,9 @@
 
   [^File hhhHome appId]
 
-  (let [ pod (File. hhhHome (str "pods/" appId ".pod"))
-         srcDir (File. hhhHome (str "apps/" appId))
-         pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
+  (let [pod (File. hhhHome (str "pods/" appId ".pod"))
+        srcDir (File. hhhHome (str "apps/" appId))
+        pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
     (ExecProj pj)
   ))
 
@@ -97,7 +95,7 @@
 
   [^File hhhHome appId antTarget]
 
-  (let [ pj (MakeAntTask hhhHome appId antTarget) ]
+  (let [pj (MakeAntTask hhhHome appId antTarget) ]
     (ExecProj pj)
   ))
 
@@ -117,12 +115,12 @@
 
   [^File hhhHome demoId]
 
-  (let [ fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
-         dest (File. hhhHome (str "apps/demo-" demoId)) ]
+  (let [fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
+        dest (File. hhhHome (str "apps/demo-" demoId)) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
-          (Mkdirs dest)
-          (Unzip fp dest))
+      (Mkdirs dest)
+      (Unzip fp dest))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,13 +129,13 @@
 
   [^File hhhHome]
 
-  (let [ top (File. hhhHome (str "docs/samples"))
-         fs (.listFiles top) ]
+  (let [top (File. hhhHome (str "docs/samples"))
+        fs (.listFiles top) ]
     (log/debug "Unzipping all samples.")
-    (doseq [ ^File f (seq fs) ]
+    (doseq [^File f (seq fs) ]
       (when (and (.isFile f)
                  (.endsWith (.getName f) ".pod"))
-            (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
+        (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,12 +162,12 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
-         appDir (File. hhhHome (str "apps/" appId))
-         appDomainPath (.replace appDomain "." "/")
-         cljd (mkcljd appDir appDomain) ]
+  (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
+        appDir (File. hhhHome (str "apps/" appId))
+        appDomainPath (.replace appDomain "." "/")
+        cljd (mkcljd appDir appDomain) ]
     (Mkdirs (File. h2db))
-    (with-local-vars [ fp nil ]
+    (with-local-vars [fp nil ]
       (var-set fp (mkcljfp cljd "core.clj"))
       (FileUtils/writeStringToFile ^File @fp
                                    (-> (FileUtils/readFileToString ^File @fp "utf-8")
@@ -207,17 +205,17 @@
 
   [^File hhhHome appId ^String appDomain flavor]
 
-  (let [ appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
-         cfd (File. appDir "conf")
-         mfDir (Mkdirs (File. appDir "META-INF"))
-         appDomainPath (.replace appDomain "." "/") ]
-    (with-local-vars [ fp nil ]
+  (let [appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
+        cfd (File. appDir "conf")
+        mfDir (Mkdirs (File. appDir "META-INF"))
+        appDomainPath (.replace appDomain "." "/") ]
+    (with-local-vars [fp nil ]
 
-      (doseq [ s ["classes" "patch" "lib"]]
+      (doseq [s ["classes" "patch" "lib"]]
         (Mkdirs (File. appDir (str "POD-INF/" s))))
 
-      (doseq [ s ["RELEASE-NOTES.txt" "NOTES.txt"
-                  "LICENSE.txt" "README.md"]]
+      (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
+                 "LICENSE.txt" "README.md"]]
         (FileUtils/touch (File. mfDir ^String s)))
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/build.xml")
@@ -229,7 +227,7 @@
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
 
-      (doseq [ s ["app.conf" "env.conf" "shiro.ini"]]
+      (doseq [s ["app.conf" "env.conf" "shiro.ini"]]
         (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
                                        cfd))
 
@@ -239,7 +237,7 @@
                                        (StringUtils/replace "@@USER@@" (GetUser)))
                                    "utf-8")
 
-      (doseq [ s [ "java" (str "clojure/" appDomainPath) ]]
+      (doseq [s [ "java" (str "clojure/" appDomainPath) ]]
         (Mkdirs (File. appDir (str "src/main/" s)))
         (Mkdirs (File. appDir (str "src/test/" s))))
 
@@ -248,7 +246,7 @@
 
       (Mkdirs (File. appDir "src/main/resources"))
 
-      (doseq [ s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
+      (doseq [s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
         (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
                                        appDir))
 
@@ -300,20 +298,20 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ))
-         wbs (json/read-str (FileUtils/readFileToString wfc "utf-8")
+  (let [wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ))
+        wbs (json/read-str (FileUtils/readFileToString wfc "utf-8")
                             :key-fn keyword)
-         appDir (File. hhhHome (str "apps/" appId))
-         wlib (Mkdirs (File. appDir "public/vendors"))
-         csslg *SKARO-WEBCSSLANG*
-         wlg *SKARO-WEBLANG*
-         buf (StringBuilder.)
-         appDomainPath (.replace appDomain "." "/") ]
+        appDir (File. hhhHome (str "apps/" appId))
+        wlib (Mkdirs (File. appDir "public/vendors"))
+        csslg *SKARO-WEBCSSLANG*
+        wlg *SKARO-WEBLANG*
+        buf (StringBuilder.)
+        appDomainPath (.replace appDomain "." "/") ]
 
-    (doseq [ s ["pages" "media" "scripts" "styles"]]
+    (doseq [s ["pages" "media" "scripts" "styles"]]
       (Mkdirs (File. appDir (str "src/web/main/" s))))
 
-    (doseq [ s ["pages" "media" "scripts" "styles"]]
+    (doseq [s ["pages" "media" "scripts" "styles"]]
       (Mkdirs (File. appDir (str "public/" s))))
 
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
@@ -326,14 +324,14 @@
     (Mkdirs (File. appDir "src/test/js"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
-    (doseq [ df (:libs wbs) ]
-      (let [ dn (:dir df)
-             dd (File. hhhHome (str "etc/weblibs/" dn))
-             td (File. wlib ^String dn) ]
+    (doseq [df (:libs wbs) ]
+      (let [dn (:dir df)
+            dd (File. hhhHome (str "etc/weblibs/" dn))
+            td (File. wlib ^String dn) ]
         (when (.isDirectory dd)
           (FileUtils/copyDirectoryToDirectory dd wlib)
           (when-not (:skip df)
-            (doseq [ ^String f (:js df) ]
+            (doseq [^String f (:js df) ]
               (-> buf
                   (.append (FileUtils/readFileToString (File. td f) "utf-8"))
                   (.append (str "\n\n/* @@@" f "@@@ */"))
@@ -358,7 +356,7 @@
   (let [ appDir (File. hhhHome (str "apps/" appId)) ]
     (create-app-common hhhHome appId appDomain "web")
     (create-web-common hhhHome appId appDomain)
-    (doseq [ s [ "classes" "lib" ]]
+    (doseq [s [ "classes" "lib" ]]
       (Mkdirs (File. appDir (str "WEB-INF/" s))))
     (FileUtils/copyFile (File. hhhHome "etc/jetty/jetty.conf")
                         (File. appDir "conf/env.conf"))
@@ -373,9 +371,9 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ appDir (File. hhhHome (str "apps/" appId))
-         appDomainPath (.replace appDomain "." "/")
-         cfd (File. appDir "conf") ]
+  (let [appDir (File. hhhHome (str "apps/" appId))
+        appDomainPath (.replace appDomain "." "/")
+        cfd (File. appDir "conf") ]
     (with-local-vars [fp nil]
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
@@ -385,12 +383,12 @@
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/routes.conf")
                                      cfd)
 
-      (doseq [ s ["errors" "htmls"]]
+      (doseq [s ["errors" "htmls"]]
         (Mkdirs (File. appDir (str "pages/" s))))
 
       (doto (File. hhhHome "etc/netty")
-            (copy-files (File. appDir "pages/errors") ".err")
-            (copy-files (File. appDir "pages/htmls") "ftl"))
+        (copy-files (File. appDir "pages/errors") ".err")
+        (copy-files (File. appDir "pages/htmls") "ftl"))
 
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/index.html")
                                      (File. appDir "src/web/main/pages"))

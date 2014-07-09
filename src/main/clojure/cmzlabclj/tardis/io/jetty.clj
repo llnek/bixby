@@ -14,52 +14,56 @@
 
   cmzlabclj.tardis.io.jetty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [MubleAPI notnil? juid TryC spos?
                                            ToJavaInt Try!
-                                           MakeMMap test-cond Stringify] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.crypto.ssl])
-  (:use [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
-  (:use [cmzlabclj.tardis.core.constants])
-  (:use [cmzlabclj.tardis.core.sys])
-  (:use [cmzlabclj.tardis.io.core])
-  (:use [cmzlabclj.tardis.io.http])
-  (:use [cmzlabclj.tardis.io.webss])
-  (:use [cmzlabclj.tardis.io.triggers])
-  (:import (org.eclipse.jetty.server Server Connector ConnectionFactory))
-  (:import (java.util.concurrent ConcurrentHashMap))
-  (:import (java.net URL))
-  (:import (org.apache.commons.io IOUtils))
-  (:import (java.util List Map HashMap ArrayList))
-  (:import (java.io File))
-  (:import (com.zotohlab.frwk.util NCMap))
-  (:import (javax.servlet.http Cookie HttpServletRequest))
-  (:import (java.net HttpCookie))
-  (:import (com.google.gson JsonObject))
-  (:import (org.eclipse.jetty.continuation Continuation ContinuationSupport))
-  (:import (com.zotohlab.frwk.server Component))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (com.zotohlab.frwk.core Versioned Hierarchial
-                                    Identifiable Disposable Startable))
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (org.eclipse.jetty.server Connector HttpConfiguration
+                                           MakeMMap test-cond Stringify] ]
+        [cmzlabclj.nucleus.crypto.ssl]
+        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
+        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.io.core]
+        [cmzlabclj.tardis.io.http]
+        [cmzlabclj.tardis.io.webss]
+        [cmzlabclj.tardis.io.triggers])
+
+  (:import  [org.eclipse.jetty.server Server Connector ConnectionFactory]
+            [java.util.concurrent ConcurrentHashMap]
+            [java.net URL]
+            [org.apache.commons.io IOUtils]
+            [java.util List Map HashMap ArrayList]
+            [java.io File]
+            [com.zotohlab.frwk.util NCMap]
+            [javax.servlet.http Cookie HttpServletRequest]
+            [java.net HttpCookie]
+            [com.google.gson JsonObject]
+            [org.eclipse.jetty.continuation Continuation ContinuationSupport]
+            [com.zotohlab.frwk.server Component]
+            [com.zotohlab.frwk.io XData]
+            [com.zotohlab.frwk.core Versioned Hierarchial
+                                    Identifiable Disposable Startable]
+            [org.apache.commons.codec.binary Base64]
+            [org.eclipse.jetty.server Connector HttpConfiguration
                                       HttpConnectionFactory SecureRequestCustomizer
                                       Server ServerConnector Handler
-                                      SslConnectionFactory))
-  (:import (org.eclipse.jetty.util.ssl SslContextFactory))
-  (:import (org.eclipse.jetty.util.thread QueuedThreadPool))
-  (:import (org.eclipse.jetty.util.resource Resource))
-  (:import (org.eclipse.jetty.server.handler AbstractHandler ContextHandler
-                                             ContextHandlerCollection ResourceHandler))
-  (:import (com.zotohlab.gallifrey.io IOSession ServletEmitter Emitter))
-  (:import (org.eclipse.jetty.webapp WebAppContext))
-  (:import (javax.servlet.http HttpServletRequest HttpServletResponse))
-
-  (:import (com.zotohlab.gallifrey.io WebSockResult HTTPResult HTTPEvent JettyUtils))
-  (:import (com.zotohlab.gallifrey.core Container)))
+                                      SslConnectionFactory]
+            [org.eclipse.jetty.util.ssl SslContextFactory]
+            [org.eclipse.jetty.util.thread QueuedThreadPool]
+            [org.eclipse.jetty.util.resource Resource]
+            [org.eclipse.jetty.server.handler AbstractHandler ContextHandler
+                                              ContextHandlerCollection
+                                              ResourceHandler]
+            [com.zotohlab.gallifrey.io IOSession ServletEmitter Emitter]
+            [org.eclipse.jetty.webapp WebAppContext]
+            [javax.servlet.http HttpServletRequest HttpServletResponse]
+            [com.zotohlab.gallifrey.io WebSockResult
+                                       HTTPResult
+                                       HTTPEvent JettyUtils]
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -71,7 +75,7 @@
 
   [^HttpServletRequest req]
 
-  (let [ v (.getHeader req "connection") ]
+  (let [v (.getHeader req "connection") ]
     (= "keep-alive" (cstr/lower-case (nsb v)))
   ))
 
@@ -83,14 +87,13 @@
   [^HttpCookie c]
 
   (doto (Cookie. (.getName c) (.getValue c))
-        (.setDomain (nsb (.getDomain c)))
-        (.setHttpOnly (.isHttpOnly c))
-        (.setMaxAge (.getMaxAge c))
-        (.setPath (nsb (.getPath c)))
-        (.setSecure (.getSecure c))
-        (.setVersion (.getVersion c))
+    (.setDomain (nsb (.getDomain c)))
+    (.setHttpOnly (.isHttpOnly c))
+    (.setMaxAge (.getMaxAge c))
+    (.setPath (nsb (.getPath c)))
+    (.setSecure (.getSecure c))
+    (.setVersion (.getVersion c))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -101,43 +104,44 @@
    ^HttpServletResponse rsp
    src]
 
-  (let [ ^List cks (.getf res :cookies)
-         ^URL url (.getf res :redirect)
-         ^NCMap hds (.getf res :hds)
-         os (.getOutputStream rsp)
-         code (.getf res :code)
-         data (.getf res :data) ]
+  (let [^List cks (.getf res :cookies)
+        ^URL url (.getf res :redirect)
+        ^NCMap hds (.getf res :hds)
+        os (.getOutputStream rsp)
+        code (.getf res :code)
+        data (.getf res :data) ]
     (try
       (.setStatus rsp code)
       (doseq [[^String nm vs] (seq hds)]
         (when-not (= "content-length" (cstr/lower-case  nm))
           (doseq [vv (seq vs) ]
             (.addHeader rsp nm vv))))
-      (doseq [ c (seq cks) ]
+      (doseq [c (seq cks) ]
         (.addCookie rsp (cookieToServlet c)))
       (cond
         (and (>= code 300)(< code 400))
-        (.sendRedirect rsp (.encodeRedirectURL rsp (nsb url)))
+        (.sendRedirect rsp
+                       (.encodeRedirectURL rsp (nsb url)))
         :else
-        (let [ ^XData dd (cond
-                            (instance? XData data) data
-                            (notnil? data) (XData. data)
-                            :else nil)
-               clen (if (and (notnil? dd) (.hasContent dd))
-                        (.size dd)
-                        0) ]
+        (let [^XData dd (cond
+                          (instance? XData data) data
+                          (notnil? data) (XData. data)
+                          :else nil)
+              clen (if (and (notnil? dd) (.hasContent dd))
+                     (.size dd)
+                     0) ]
             (.setContentLength rsp clen)
             (.flushBuffer rsp)
             (when (> clen 0)
-                  (IOUtils/copyLarge (.stream dd) os 0 clen)
-                  (.flush os) )))
-      (catch Throwable e# (log/error e# ""))
+              (IOUtils/copyLarge (.stream dd) os 0 clen)
+              (.flush os) )))
+      (catch Throwable e#
+        (log/error e# ""))
       (finally
         (Try! (when-not (isServletKeepAlive req) (.close os)))
         (-> (ContinuationSupport/getContinuation req)
-          (.complete))) )
+            (.complete))) )
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,12 +155,12 @@
       (replyServlet res req rsp src) )
 
     (resumeWithError [_]
-        (try
-            (.sendError rsp 500)
-          (catch Throwable e#
-            (log/error e# ""))
-          (finally
-            (-> (ContinuationSupport/getContinuation req)
+      (try
+        (.sendError rsp 500)
+        (catch Throwable e#
+          (log/error e# ""))
+        (finally
+          (-> (ContinuationSupport/getContinuation req)
               (.complete)))) )
   ))
 
@@ -166,7 +170,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [ c (nsb (:context cfg)) ]
+  (let [c (nsb (:context cfg)) ]
     (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR))
     (.setAttr! co :contextPath (strim c))
     (HttpBasicConfig co cfg)
@@ -177,23 +181,23 @@
 (defn- cfgHTTPS ""
 
   ^ServerConnector
-  [^Server server port ^URL keyfile ^String pwd conf]
+  [^Server server port
+   ^URL keyfile ^String pwd conf]
 
   ;; SSL Context Factory for HTTPS and SPDY
-  (let [ sslxf (doto (SslContextFactory.)
-                     (.setKeyStorePath (-> keyfile (.toURI)(.toURL)(.toString)))
-                     (.setKeyStorePassword pwd)
-                     (.setKeyManagerPassword pwd))
-         config (doto (HttpConfiguration. conf)
-                      (.addCustomizer (SecureRequestCustomizer.)))
-         https (doto (ServerConnector. server)
-                     (.addConnectionFactory (SslConnectionFactory. sslxf "HTTP/1.1"))
-                     (.addConnectionFactory (HttpConnectionFactory. config))) ]
+  (let [sslxf (doto (SslContextFactory.)
+                (.setKeyStorePath (-> keyfile (.toURI)(.toURL)(.toString)))
+                (.setKeyStorePassword pwd)
+                (.setKeyManagerPassword pwd))
+        config (doto (HttpConfiguration. conf)
+                 (.addCustomizer (SecureRequestCustomizer.)))
+        https (doto (ServerConnector. server)
+                (.addConnectionFactory (SslConnectionFactory. sslxf "HTTP/1.1"))
+                (.addConnectionFactory (HttpConnectionFactory. config))) ]
     (doto https
-          (.setPort port)
-          (.setIdleTimeout (int 500000)))
+      (.setPort port)
+      (.setIdleTimeout (int 500000)))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -201,25 +205,24 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ conf (doto (HttpConfiguration.)
-                    (.setRequestHeaderSize 8192)  ;; from jetty examples
-                    (.setOutputBufferSize (int 32768)))
-         keyfile (.getAttr co :serverKey)
-         ^String host (.getAttr co :host)
-         port (.getAttr co :port)
-         pwdObj (.getAttr co :pwd)
-         ws (.getAttr co :workers)
+  (let [conf (doto (HttpConfiguration.)
+               (.setRequestHeaderSize 8192)  ;; from jetty examples
+               (.setOutputBufferSize (int 32768)))
+        keyfile (.getAttr co :serverKey)
+        ^String host (.getAttr co :host)
+        port (.getAttr co :port)
+        pwdObj (.getAttr co :pwd)
+        ws (.getAttr co :workers)
          ;;q (QueuedThreadPool. (if (pos? ws) ws 8))
-         svr (Server.)
-         cc  (if (nil? keyfile)
-               (doto (JettyUtils/makeConnector svr conf)
-                     (.setPort port)
-                     (.setIdleTimeout (int 30000)))
-               (cfgHTTPS svr port keyfile (nsb pwdObj)
-                         (doto conf
-                               (.setSecureScheme "https")
-                               (.setSecurePort port)))) ]
-
+        svr (Server.)
+        cc  (if (nil? keyfile)
+              (doto (JettyUtils/makeConnector svr conf)
+                (.setPort port)
+                (.setIdleTimeout (int 30000)))
+              (cfgHTTPS svr port keyfile (nsb pwdObj)
+                        (doto conf
+                          (.setSecureScheme "https")
+                          (.setSecurePort port)))) ]
     (when (hgl? host) (.setHost cc host))
     (.setName cc (juid))
     (doto svr
@@ -232,20 +235,22 @@
 ;;
 (defn- dispREQ ""
 
-  [ ^cmzlabclj.tardis.core.sys.Element co
-    ^Continuation ct
-    ^HttpServletRequest req rsp]
+  [^cmzlabclj.tardis.core.sys.Element co
+   ^Continuation ct
+   ^HttpServletRequest req rsp]
 
-  (let [ ^HTTPEvent evt (IOESReifyEvent co req)
-         ssl (= "https" (.getScheme req))
-         wss (MakeWSSession co ssl)
-         wm (.getAttr co :waitMillis) ]
+  (let [^HTTPEvent evt (IOESReifyEvent co req)
+        ssl (= "https" (.getScheme req))
+        wss (MakeWSSession co ssl)
+        wm (.getAttr co :waitMillis) ]
     (.bindSession evt wss)
     (doto ct
-          (.setTimeout wm)
-          (.suspend rsp))
-    (let [ ^cmzlabclj.tardis.io.core.WaitEventHolder
-           w  (MakeAsyncWaitHolder (makeServletTrigger req rsp co) evt)
+      (.setTimeout wm)
+      (.suspend rsp))
+    (let [^cmzlabclj.tardis.io.core.WaitEventHolder
+          w (MakeAsyncWaitHolder (makeServletTrigger req
+                                                     rsp co)
+                                 evt)
           ^cmzlabclj.tardis.io.core.EmitterAPI src co ]
       (.timeoutMillis w wm)
       (.hold src w)
@@ -256,9 +261,9 @@
 ;;
 (defn- serviceJetty ""
 
-  [ co ^HttpServletRequest req ^HttpServletResponse rsp]
+  [co ^HttpServletRequest req ^HttpServletResponse rsp]
 
-  (let [ c (ContinuationSupport/getContinuation req) ]
+  (let [c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (TryC
           (dispREQ co c req rsp) ))
@@ -270,27 +275,28 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^cmzlabclj.tardis.core.sys.Element
-         ctr (.parent ^Hierarchial co)
-         ^Server jetty (.getAttr co :jetty)
-         ^File app (.getAttr ctr K_APPDIR)
-         ^File rcpath (File. app DN_PUBLIC)
-         rcpathStr (-> rcpath (.toURI)
-                              (.toURL)
-                              (.toString))
-         cp (strim (.getAttr co :contextPath))
-         ctxs (ContextHandlerCollection.)
-         c2 (ContextHandler.)
-         c1 (ContextHandler.)
-         r1 (ResourceHandler.)
-         myHandler (proxy [AbstractHandler] []
-                     (handle [target baseReq req rsp]
-                       (serviceJetty co req rsp))) ]
+  (let [^cmzlabclj.tardis.core.sys.Element
+        ctr (.parent ^Hierarchial co)
+        ^Server jetty (.getAttr co :jetty)
+        ^File app (.getAttr ctr K_APPDIR)
+        ^File rcpath (File. app DN_PUBLIC)
+        rcpathStr (-> rcpath
+                      (.toURI)
+                      (.toURL)
+                      (.toString))
+        cp (strim (.getAttr co :contextPath))
+        ctxs (ContextHandlerCollection.)
+        c2 (ContextHandler.)
+        c1 (ContextHandler.)
+        r1 (ResourceHandler.)
+        myHandler (proxy [AbstractHandler] []
+                    (handle [target baseReq req rsp]
+                      (serviceJetty co req rsp))) ]
     ;; static resources are based from resBase, regardless of context
-    (-> r1 (.setBaseResource (Resource/newResource rcpathStr)))
+    (-> r1
+        (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
-
     (.setClassLoader c2 (.getAttr co K_APP_CZLR))
     (.setContextPath c2 cp)
     (.setHandler c2 myHandler)
@@ -306,7 +312,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [ ^Server svr (.getAttr co :jetty) ]
+  (let [^Server svr (.getAttr co :jetty) ]
     (when-not (nil? svr)
       (TryC
           (.stop svr) ))
@@ -320,12 +326,12 @@
   [^Cookie c]
 
   (doto (HttpCookie. (.getName c) (.getValue c))
-        (.setDomain (.getDomain c))
-        (.setHttpOnly (.isHttpOnly c))
-        (.setMaxAge (.getMaxAge c))
-        (.setPath (.getPath c))
-        (.setSecure (.getSecure c))
-        (.setVersion (.getVersion c))
+    (.setDomain (.getDomain c))
+    (.setHttpOnly (.isHttpOnly c))
+    (.setMaxAge (.getMaxAge c))
+    (.setPath (.getPath c))
+    (.setSecure (.getSecure c))
+    (.setVersion (.getVersion c))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -334,11 +340,11 @@
 
   [co & args]
 
-  (let [ ^HTTPResult result (MakeHttpResult co)
-         ^HttpServletRequest req (first args)
-         ssl (= "https" (.getScheme req))
-         impl (MakeMMap)
-         eid (NextLong) ]
+  (let [^HTTPResult result (MakeHttpResult co)
+        ^HttpServletRequest req (first args)
+        ssl (= "https" (.getScheme req))
+        impl (MakeMMap)
+        eid (NextLong) ]
     (reify
 
       Identifiable
@@ -347,22 +353,21 @@
       HTTPEvent
 
       (getCookie [_ nm]
-        (let [ lnm (cstr/lower-case nm)
-               cs (.getCookies req) ]
-          (some (fn [^Cookie c]
-                  (if (= lnm (cstr/lower-case (.getName c)))
-                    (cookie-to-javaCookie c)
-                    nil))
+        (let [lnm (cstr/lower-case nm)
+              cs (.getCookies req) ]
+          (some #(if (= lnm (cstr/lower-case (.getName ^Cookie %)))
+                   (cookie-to-javaCookie %)
+                   nil)
                 (if (nil? cs) [] (seq cs)))) )
 
       (checkAuthenticity [_] false)
       (getId [_] eid)
 
       (getCookies [_]
-        (let [ rc (ArrayList.)
-               cs (.getCookies req) ]
+        (let [rc (ArrayList.)
+              cs (.getCookies req) ]
           (if-not (nil? cs)
-            (doseq [ c (seq cs) ]
+            (doseq [c (seq cs) ]
               (.add rc (cookie-to-javaCookie c))))
           rc))
 
@@ -372,7 +377,8 @@
 
       (getSession [_] (.getf impl :ios))
       (emitter [_] co)
-      (isKeepAlive [_] (= (cstr/lower-case (nsb (.getHeader req "connection"))) "keep-alive"))
+      (isKeepAlive [_] (= (cstr/lower-case (nsb (.getHeader req "connection")))
+                          "keep-alive"))
       (data [_] nil)
       (hasData [_] false)
       (contentLength [_] (.getContentLength req))
@@ -383,13 +389,13 @@
       (hasHeader [_ nm] (notnil? (.getHeader req nm)))
       (getHeaderValue [_ nm] (.getHeader req nm))
       (getHeaderValues [_ nm]
-        (let [ rc (ArrayList.) ]
-          (doseq [ s (seq (.getHeaders req nm)) ]
+        (let [rc (ArrayList.) ]
+          (doseq [s (seq (.getHeaders req nm)) ]
             (.add rc s))))
 
       (getHeaders [_]
-        (let [ rc (ArrayList.) ]
-          (doseq [ ^String s (seq (.getHeaderNames req)) ]
+        (let [rc (ArrayList.) ]
+          (doseq [^String s (seq (.getHeaderNames req)) ]
             (.add rc s))) )
 
       (getParameterValue [_ nm] (.getParameter req nm))
@@ -397,13 +403,13 @@
         (.containsKey (.getParameterMap req) nm))
 
       (getParameterValues [_ nm]
-        (let [ rc (ArrayList.) ]
-          (doseq [ s (seq (.getParameterValues req nm)) ]
+        (let [rc (ArrayList.) ]
+          (doseq [s (seq (.getParameterValues req nm)) ]
             (.add rc s))))
 
       (getParameters [_]
-        (let [ rc (ArrayList.) ]
-          (doseq [ ^String s (seq (.getParameterNames req)) ]
+        (let [rc (ArrayList.) ]
+          (doseq [^String s (seq (.getParameterNames req)) ]
             (.add rc s))) )
 
       (localAddr [_] (.getLocalAddr req))
@@ -433,16 +439,15 @@
 
       (getResultObj [_] result)
       (replyResult [this]
-        (let [ ^IOSession mvs (.getSession this)
-               code (.getStatus result)
-               ^cmzlabclj.tardis.io.core.WaitEventHolder
-               wevt (.release ^cmzlabclj.tardis.io.core.EmitterAPI co this) ]
+        (let [^IOSession mvs (.getSession this)
+              code (.getStatus result)
+              ^cmzlabclj.tardis.io.core.WaitEventHolder
+              wevt (.release ^cmzlabclj.tardis.io.core.EmitterAPI co this) ]
           (cond
             (and (>= code 200)(< code 400)) (.handleResult mvs this result)
             :else nil)
           (when-not (nil? wevt)
             (.resumeOnResult wevt result))))
-
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

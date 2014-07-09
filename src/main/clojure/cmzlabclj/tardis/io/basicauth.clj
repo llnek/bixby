@@ -14,20 +14,22 @@
 
   cmzlabclj.tardis.io.basicauth
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.data.json :as json])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [NormalizeEmail Stringify notnil? ] ])
-  (:use [cmzlabclj.nucleus.util.str :only [strim nsb hgl? ] ])
-  (:use [cmzlabclj.tardis.io.http :only [ScanBasicAuth] ])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [CaesarDecrypt] ])
-  (:use [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.gallifrey.io HTTPEvent Emitter))
-  (:import (com.zotohlab.gallifrey.core Container))
-  (:import (com.zotohlab.frwk.io XData))
-  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem)))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.data.json :as json]
+            [clojure.string :as cstr])
+
+  (:use [cmzlabclj.nucleus.util.core :only [NormalizeEmail Stringify notnil? ] ]
+        [cmzlabclj.nucleus.util.str :only [strim nsb hgl? ] ]
+        [cmzlabclj.tardis.io.http :only [ScanBasicAuth] ]
+        [cmzlabclj.nucleus.crypto.codec :only [CaesarDecrypt] ]
+        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
+
+  (:import  [org.apache.commons.codec.binary Base64]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.gallifrey.io HTTPEvent Emitter]
+            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.frwk.io XData]
+            [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,13 +48,13 @@
   [^HTTPEvent evt]
 
   (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
-    (with-local-vars [ user nil pwd nil email nil
-                       csrf nil nonce false captcha nil
-                       data (.content xs) ]
+    (with-local-vars [csrf nil nonce false captcha nil
+                      user nil pwd nil email nil
+                      data (.content xs) ]
       (when (instance? ULFormItems @data)
-        (doseq [ ^ULFileItem x (seq (GetFormFields @data)) ]
-          (let [ fm (.getFieldName x)
-                 fv (nsb (.getString x)) ]
+        (doseq [^ULFileItem x (seq (GetFormFields @data)) ]
+          (let [fm (.getFieldName x)
+                fv (nsb (.getString x)) ]
             ;;(log/debug "Form field: " fm " = " fv)
             (case fm
               CAPTCHA_PARAM (var-set captcha fv)
@@ -62,11 +64,11 @@
               CSRF_PARAM (var-set csrf fv)
               NONCE_PARAM (var-set nonce true)
               nil)))
-        { :principal (strim @user) :credential (strim @pwd)
-          :email (NormalizeEmail (strim @email))
-          :csrf (strim @csrf)
-          :captcha (strim @captcha)
-          :nonce @nonce }
+        {:principal (strim @user) :credential (strim @pwd)
+         :email (NormalizeEmail (strim @email))
+         :csrf (strim @csrf)
+         :captcha (strim @captcha)
+         :nonce @nonce }
         ))
   ))
 
@@ -77,15 +79,15 @@
   [^HTTPEvent evt]
 
   (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
-    (let [ data (if (.hasContent xs) (.stringify xs) "")
-           json (json/read-str data) ]
+    (let [data (if (.hasContent xs) (.stringify xs) "")
+          json (json/read-str data) ]
       (when-not (nil? json)
-        { :nonce (hgl? (strim (get json NONCE_PARAM)))
-          :principal (strim (get json USER_PARAM))
-          :credential (strim (get json PWD_PARAM))
-          :captcha (strim (get json CAPTCHA_PARAM))
-          :csrf (strim (get json CSRF_PARAM))
-          :email (NormalizeEmail (strim (get json EMAIL_PARAM))) }))
+        {:nonce (hgl? (strim (get json NONCE_PARAM)))
+         :principal (strim (get json USER_PARAM))
+         :credential (strim (get json PWD_PARAM))
+         :captcha (strim (get json CAPTCHA_PARAM))
+         :csrf (strim (get json CSRF_PARAM))
+         :email (NormalizeEmail (strim (get json EMAIL_PARAM))) }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,12 +96,12 @@
 
   [^HTTPEvent evt]
 
-  { :nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
-    :csrf (strim (.getParameterValue evt CSRF_PARAM))
-    :email (NormalizeEmail (strim (.getParameterValue evt EMAIL_PARAM)))
-    :captcha (strim (.getParameterValue evt CAPTCHA_PARAM))
-    :credential (strim (.getParameterValue evt PWD_PARAM))
-    :principal (strim (.getParameterValue evt USER_PARAM)) })
+  {:nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
+   :csrf (strim (.getParameterValue evt CSRF_PARAM))
+   :email (NormalizeEmail (strim (.getParameterValue evt EMAIL_PARAM)))
+   :captcha (strim (.getParameterValue evt CAPTCHA_PARAM))
+   :credential (strim (.getParameterValue evt PWD_PARAM))
+   :principal (strim (.getParameterValue evt USER_PARAM)) })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,7 +109,7 @@
 
   [^HTTPEvent evt]
 
-  (let [ ct (.contentType evt) ]
+  (let [ct (.contentType evt) ]
     (cond
       (or (> (.indexOf ct "form-urlencoded") 0)
           (> (.indexOf ct "form-data") 0))
@@ -127,18 +129,18 @@
   [info fld]
 
   (if (:nonce info)
-      (try
-        (let [ decr (CaesarDecrypt (get info fld) 13)
-               bits (Base64/decodeBase64 decr)
-               s (Stringify bits) ]
-          (log/debug "info = " info)
-          (log/debug "decr = " decr)
-          (log/debug "val = " s)
-          (assoc info fld s))
-        (catch Throwable e#
-          (log/error e# "")
-          nil))
-      info
+    (try
+      (let [decr (CaesarDecrypt (get info fld) 13)
+            bits (Base64/decodeBase64 decr)
+            s (Stringify bits) ]
+        (log/debug "info = " info)
+        (log/debug "decr = " decr)
+        (log/debug "val = " s)
+        (assoc info fld s))
+      (catch Throwable e#
+        (log/error e# "")
+        nil))
+    info
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

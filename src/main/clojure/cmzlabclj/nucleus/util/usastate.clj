@@ -15,9 +15,8 @@
 
   cmzlabclj.nucleus.util.usastate
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr]))
-
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -103,8 +102,10 @@
   ^String
   [^String state]
 
-  (let [ rs (filter #(= (nth % 1) state) _CCODESEQ) ]
-    (if (nil? rs) nil (nth (first rs) 0))
+  (let [rs (filter #(= (nth % 1) state) _CCODESEQ) ]
+    (if (nil? rs)
+      nil
+      (nth (first rs) 0))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -24,6 +24,7 @@
   (:import  [javax.net.ssl X509TrustManager TrustManager]
             [javax.net.ssl SSLEngine SSLContext]
             [com.zotohlab.frwk.net SSLTrustMgrFactory]
+            [com.zotohlab.frwk.crypto CryptoStoreAPI]
             [java.net URL]
             [javax.net.ssl KeyManagerFactory TrustManagerFactory]))
 

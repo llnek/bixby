@@ -9,13 +9,13 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "A class that maps country-codes to the country-names." 
+(ns ^{ :doc "A class that maps country-codes to the country-names."
        :author "kenl" }
 
   cmzlabclj.nucleus.util.countrycode
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr ]))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -293,8 +293,10 @@
   ^String
   [^String country]
 
-  (let [ rs (filter #(= (nth % 1) country) _CCODESEQ) ]
-    (if (nil? rs) nil (nth (first rs) 0))
+  (let [rs (filter #(= (nth % 1) country) _CCODESEQ) ]
+    (if (nil? rs)
+      nil
+      (nth (first rs) 0))
   ))
 
 

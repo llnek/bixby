@@ -14,35 +14,36 @@
 
   cmzlabclj.tardis.etc.cmdline
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.i18n.resources :only [GetString] ])
-  (:use [cmzlabclj.tardis.etc.climain :only [StartMain] ])
-  (:use [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid] ])
-  (:use [cmzlabclj.tardis.etc.cli])
-  (:use [cmzlabclj.nucleus.util.core
-         :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ])
-  (:use [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal] ])
-  (:use [cmzlabclj.nucleus.util.meta])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ])
-  (:use [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ])
-  (:use [cmzlabclj.nucleus.crypto.core
-         :only [AES256_CBC AssertJce PEM_CERT 
+  (:use [cmzlabclj.nucleus.i18n.resources :only [GetString] ]
+        [cmzlabclj.tardis.etc.climain :only [StartMain] ]
+        [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid] ]
+        [cmzlabclj.tardis.etc.cli]
+        [cmzlabclj.nucleus.util.core
+         :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ]
+        [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal] ]
+        [cmzlabclj.nucleus.util.meta]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
+        [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ]
+        [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ]
+        [cmzlabclj.nucleus.crypto.core
+         :only [AES256_CBC AssertJce PEM_CERT
                 DbgProvider MakeKeypair
-                MakeSSv1PKCS12 MakeCsrReq] ])
-  (:use [cmzlabclj.tardis.core.constants])
-  (:use [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
+                MakeSSv1PKCS12 MakeCsrReq] ]
+        [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
 
-  (:import (java.util Map Calendar ResourceBundle Properties Date))
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (com.zotohlab.gallifrey.etc CmdHelpError))
-  (:import (org.apache.commons.io FileUtils))
-  (:import (org.apache.commons.codec.binary Hex))
-  (:import (java.io File))
-  (:import (java.security KeyPair))
-  (:import (com.zotohlab.frwk.io IOUtils)))
+  (:import  [java.util Map Calendar ResourceBundle Properties Date]
+            [org.apache.commons.lang3 StringUtils]
+            [com.zotohlab.gallifrey.etc CmdHelpError]
+            [com.zotohlab.frwk.crypto PasswordAPI]
+            [org.apache.commons.io FileUtils]
+            [org.apache.commons.codec.binary Hex]
+            [java.io File]
+            [java.security KeyPair]
+            [com.zotohlab.frwk.io IOUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,29 +75,30 @@
   ^String
   []
 
-  (NiceFPath (File. (File. (getHomeDir) (str DN_CFG "/app")) "build.xml")))
+  (NiceFPath (File. (File. (getHomeDir)
+                           (str DN_CFG "/app"))
+                    "build.xml")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onCreateApp ""
 
-  [ & args]
+  [& args]
 
-  (let [ hhh (getHomeDir) hf (ParseInifile (File. hhh
+  (let [hhh (getHomeDir) hf (ParseInifile (File. hhh
                                                   (str DN_CONF
                                                        "/"
                                                        (name K_PROPS))))
-         wlg (.optString hf "webdev" "lang" "js")
-         app (nth args 2)
-         t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
+        wlg (.optString hf "webdev" "lang" "js")
+        app (nth args 2)
+        t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
          ;; treat as domain e.g com.acme => app = acme
          ;; regex gives ["com.acme" ".acme"]
-         id (when (notnil? t)
-                  (if-let [ tkn (last t) ]
-                          (.substring ^String tkn 1)
-                          (first t))) ]
-
-    (binding [ *SKARO-WEBLANG* wlg]
+        id (when (notnil? t)
+             (if-let [tkn (last t) ]
+               (.substring ^String tkn 1)
+               (first t))) ]
+    (binding [*SKARO-WEBLANG* wlg]
       (when (nil? id) (throw (CmdHelpError.)))
       (case (nth args 1)
         ("mvc" "web")
@@ -115,7 +117,7 @@
 ;;
 (defn- onCreate ""
 
-  [ & args]
+  [& args]
 
   (if (< (count args) 3)
     (throw (CmdHelpError.))
@@ -126,11 +128,13 @@
 ;;
 (defn- onBuild ""
 
-  [ & args]
+  [& args]
 
   (if (>= (count args) 2)
-    (let [ appId (nth args 1)
-           taskId (if (> (count args) 2) (nth args 2) "devmode") ]
+    (let [appId (nth args 1)
+          taskId (if (> (count args) 2)
+                   (nth args 2)
+                   "devmode") ]
       (AntBuildApp (getHomeDir) appId taskId))
     (throw (CmdHelpError.))
   ))
@@ -139,7 +143,7 @@
 ;;
 (defn- onPodify ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 1)
     (BundleApp (getHomeDir) (nth args 1))
@@ -150,7 +154,7 @@
 ;;
 (defn- onTest ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 1)
     (AntBuildApp (getHomeDir) (nth args 1) "test")
@@ -161,9 +165,9 @@
 ;;
 (defn- onStart ""
 
-  [ & args]
+  [& args]
 
-  (let [ s2 (if (> (count args) 1) (nth args 1) "") ]
+  (let [s2 (if (> (count args) 1) (nth args 1) "") ]
     (cond
       (and (= s2 "bg") (IsWindows?))
       (RunAppBg (getHomeDir) true)
@@ -176,7 +180,7 @@
 ;;
 (defn- onDebug ""
 
-  [ & args]
+  [& args]
 
   (onStart args))
 
@@ -184,10 +188,10 @@
 ;;
 (defn- onDemo ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 1)
-    (let [ s (nth args 1) h (getHomeDir) ]
+    (let [s (nth args 1) h (getHomeDir) ]
       (if (= "samples" s)
         (CreateSamples h)
         (CreateDemo h s)))
@@ -209,9 +213,9 @@
   [^String lenStr]
 
   ;;(DbgProvider java.lang.System/out)
-  (let [ kp (MakeKeypair "RSA" (ConvLong lenStr 256))
-         pk (.getEncoded (.getPrivate kp))
-         pu (.getEncoded (.getPublic kp)) ]
+  (let [kp (MakeKeypair "RSA" (ConvLong lenStr 256))
+        pk (.getEncoded (.getPrivate kp))
+        pu (.getEncoded (.getPublic kp)) ]
     (println "privatekey-bytes= " (Hex/encodeHexString pk))
     (println "publickey-bytes = " (Hex/encodeHexString pu))
   ))
@@ -313,16 +317,16 @@
 
   []
 
-  (let [ k (merge (make-csr-qs *SKARO-RSBUNDLE*)
+  (let [k (merge (make-csr-qs *SKARO-RSBUNDLE*)
                   (make-key-qs *SKARO-RSBUNDLE*))
-         rc (CLIConverse k "cn") ]
+        rc (CLIConverse k "cn") ]
     (when-not (nil? rc)
-      (let [ ssn (map (fn [k] (let [ v (get rc k) ]
-                                   (if (hgl? v)
-                                       (str (cstr/upper-case (name k))
-                                            "="
-                                            v))))
-                      [ :c :st :l :o :ou :cn ])
+      (let [ssn (map #(let [v (get rc %) ]
+                        (if (hgl? v)
+                          (str (cstr/upper-case (name %))
+                               "="
+                               v)))
+                     [ :c :st :l :o :ou :cn ])
              dn (cstr/join "," (FlattenNil ssn))
              ff (File. ^String (:fn rc))
              now (Date.) ]
@@ -331,11 +335,11 @@
           dn
           (Pwdify (:pwd rc))
           ff
-          { :keylen (ConvLong (:size rc) 1024)
-            :start now
-            :end (-> (MakeCal now)
-                     (AddMonths (ConvLong (:months rc) 12))
-                     (.getTime))
+          {:keylen (ConvLong (:size rc) 1024)
+           :start now
+           :end (-> (MakeCal now)
+                    (AddMonths (ConvLong (:months rc) 12))
+                    (.getTime))
           })
         (println (str "Wrote file: " ff))))
   ))
@@ -346,47 +350,46 @@
 
   []
 
-  (let [ rc (CLIConverse (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
+  (let [rc (CLIConverse (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
     (when-not (nil? rc)
-      (let [ ssn (map (fn [k] (let [ v (get rc k) ]
-                                   (if (hgl? v)
-                                       (str (cstr/upper-case (name k))
-                                            "="
-                                            v))))
-                      [ :c :st :l :o :ou :cn ])
-             dn (cstr/join "," (FlattenNil ssn))
-             [req pkey] (MakeCsrReq (ConvLong (:size rc) 1024)
-                                    dn
-                                    PEM_CERT ) ]
+      (let [ssn (map #(let [v (get rc %) ]
+                        (if (hgl? v)
+                          (str (cstr/upper-case (name %))
+                               "=" v)))
+                     [ :c :st :l :o :ou :cn ])
+            dn (cstr/join "," (FlattenNil ssn))
+            [req pkey]
+            (MakeCsrReq (ConvLong (:size rc) 1024)
+                        dn
+                        PEM_CERT) ]
         (println (str "DN entered: " dn))
-        (let [ ff (File. (str (:fn rc) ".key")) ]
-             (FileUtils/writeByteArrayToFile ff pkey)
-             (println (str "Wrote file: " ff)))
-        (let [ ff (File. (str (:fn rc) ".csr")) ]
-             (FileUtils/writeByteArrayToFile ff req)
-             (println (str "Wrote file: " ff))) ))
+        (let [ff (File. (str (:fn rc) ".key")) ]
+          (FileUtils/writeByteArrayToFile ff pkey)
+          (println (str "Wrote file: " ff)))
+        (let [ff (File. (str (:fn rc) ".csr")) ]
+          (FileUtils/writeByteArrayToFile ff req)
+          (println (str "Wrote file: " ff))) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onGenerate ""
 
-  [ & args]
+  [& args]
 
-  (let [ ok (if (> (count args) 1)
-                (case (nth args 1)
-                  "keypair" (if (> (count args) 2)
-                                (do (genKeyPair (nth args 2)) true)
-                                false)
-                  "password" (do (generatePassword 12) true)
-                  "serverkey" (do (keyfile) true)
-                  "guid" (do (genGuid) true)
-                  "wwid" (do (genWwid) true)
-                  "csr" (do (csrfile) true)
-                  false)
-                false) ]
-    (when-not ok
-      (throw (CmdHelpError.)))
+  (when-not (if (> (count args) 1)
+              (case (nth args 1)
+                "keypair" (if (> (count args) 2)
+                            (do (genKeyPair (nth args 2)) true)
+                            false)
+                "password" (do (generatePassword 12) true)
+                "serverkey" (do (keyfile) true)
+                "guid" (do (genGuid) true)
+                "wwid" (do (genWwid) true)
+                "csr" (do (csrfile) true)
+                false)
+              false)
+    (throw (CmdHelpError.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,7 +398,7 @@
 
   [text]
 
-  (let [ ^cmzlabclj.nucleus.crypto.codec.Password p (Pwdify text) ]
+  (let [^PasswordAPI p (Pwdify text) ]
     (println (.hashed p))
   ))
 
@@ -403,7 +406,7 @@
 ;;
 (defn- onHash ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 1)
     (genHash (nth args 1))
@@ -416,7 +419,7 @@
 
   [pkey text]
 
-  (let [ ^cmzlabclj.nucleus.crypto.codec.Password p (Pwdify text pkey) ]
+  (let [^PasswordAPI p (Pwdify text pkey) ]
     (println (.encoded p))
   ))
 
@@ -424,7 +427,7 @@
 ;;
 (defn- onEncrypt ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 2)
     (encrypt (nth args 1) (nth args 2))
@@ -437,7 +440,7 @@
 
   [pkey secret]
 
-  (let [ ^cmzlabclj.nucleus.crypto.codec.Password p (Pwdify secret pkey) ]
+  (let [^PasswordAPI p (Pwdify secret pkey) ]
     (println (.text p))
   ))
 
@@ -445,7 +448,7 @@
 ;;
 (defn- onDecrypt ""
 
-  [ & args]
+  [& args]
 
   (if (> (count args) 2)
     (decrypt (nth args 1) (nth args 2))
@@ -456,7 +459,7 @@
 ;;
 (defn- onTestJCE ""
 
-  [ & args]
+  [& args]
 
   (AssertJce)
   (println "JCE is OK."))
@@ -465,9 +468,9 @@
 ;;
 (defn- onVersion ""
 
-  [ & args]
+  [& args]
 
-  (let [ s (FileUtils/readFileToString (File. (getHomeDir) "VERSION") "utf-8") ]
+  (let [s (FileUtils/readFileToString (File. (getHomeDir) "VERSION") "utf-8") ]
     (if (hgl? s)
       (println s)
       (println "Unknown version."))
@@ -477,7 +480,7 @@
 ;;
 (defn- onHelp ""
 
-  [ & args]
+  [& args]
 
   (throw (CmdHelpError.)))
 
@@ -487,12 +490,13 @@
 
   [^File dir ^StringBuilder out]
 
-  (let [ sep (System/getProperty "line.separator")
-         fs (IOUtils/listFiles dir "jar" false) ]
-    (doseq [ f (seq fs) ]
+  (let [sep (System/getProperty "line.separator")
+        fs (IOUtils/listFiles dir "jar" false) ]
+    (doseq [f (seq fs) ]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""
-                      (NiceFPath f) "\"/>" ))
+                      (NiceFPath f)
+                      "\"/>" ))
         (.append sep)))
   ))
 
@@ -502,28 +506,33 @@
 
   [app]
 
-  (let [ cwd (File. (getHomeDir) (str DN_BOXX "/" app))
-         sb (StringBuilder.)
-         ec (doto (File. cwd "eclipse.projfiles")
-                  (.mkdirs))
+  (let [cwd (File. (getHomeDir) (str DN_BOXX "/" app))
+        sb (StringBuilder.)
+        ec (doto (File. cwd "eclipse.projfiles")
+             (.mkdirs))
          ;;lang "scala"
-         lang "java"
-         ulang (cstr/upper-case lang) ]
+        lang "java"
+        ulang (cstr/upper-case lang) ]
     (FileUtils/cleanDirectory ec)
     (FileUtils/writeStringToFile (File. ec ".project")
       (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/" lang "/project.txt") "utf-8")
           (StringUtils/replace "${APP.NAME}" app)
           (StringUtils/replace (str "${" ulang ".SRC}")
-               (NiceFPath (File. cwd (str "src/main/" lang))))
+                               (NiceFPath (File. cwd
+                                                 (str "src/main/" lang))))
           (StringUtils/replace "${TEST.SRC}"
-               (NiceFPath (File. cwd (str "src/test/" lang)))))
+                               (NiceFPath (File. cwd
+                                                 (str "src/test/" lang)))))
       "utf-8")
     (scanJars (File. (getHomeDir) ^String DN_DIST) sb)
     (scanJars (File. (getHomeDir) ^String DN_LIB) sb)
     (scanJars (File. cwd ^String POD_CLASSES) sb)
     (scanJars (File. cwd ^String POD_LIB) sb)
     (FileUtils/writeStringToFile (File. ec ".classpath")
-      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/" lang "/classpath.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
+                       lang
+                       "/classpath.txt")
+                  "utf-8")
           (StringUtils/replace "${CLASS.PATH.ENTRIES}" (.toString sb)))
       "utf-8")
   ))
@@ -532,33 +541,31 @@
 ;;
 (defn- onIDE ""
 
-  [ & args]
+  [& args]
 
   (if (and (> (count args) 2)
            (= "eclipse" (nth args 1)))
-      (genEclipseProj (nth args 2))
-      (throw (CmdHelpError.))
+    (genEclipseProj (nth args 2))
+    (throw (CmdHelpError.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private _ARGS {
-  :new #'onCreate
-  :ide #'onIDE
-  :build #'onBuild
-  :podify #'onPodify
-  :test #'onTest
-  :debug #'onDebug
-  :start #'onStart
-  :demo #'onDemo
-  :generate #'onGenerate
-  :encrypt #'onEncrypt
-  :decrypt #'onDecrypt
-  :hash #'onHash
-  :testjce #'onTestJCE
-  :version #'onVersion
-  :help #'onHelp
-  })
+(def ^:private _ARGS {:new #'onCreate
+                      :ide #'onIDE
+                      :build #'onBuild
+                      :podify #'onPodify
+                      :test #'onTest
+                      :debug #'onDebug
+                      :start #'onStart
+                      :demo #'onDemo
+                      :generate #'onGenerate
+                      :encrypt #'onEncrypt
+                      :decrypt #'onDecrypt
+                      :hash #'onHash
+                      :testjce #'onTestJCE
+                      :version #'onVersion
+                      :help #'onHelp})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -566,11 +573,11 @@
 
   [home rcb & args]
 
-  (let [ v (get _ARGS (keyword (first args))) ]
+  (let [v (get _ARGS (keyword (first args))) ]
     (when (nil? v)
       (throw (CmdHelpError.)))
-    (binding [ *SKARO-HOME-DIR* home
-               *SKARO-RSBUNDLE* rcb]
+    (binding [*SKARO-HOME-DIR* home
+              *SKARO-RSBUNDLE* rcb]
       (apply v args))
   ))
 

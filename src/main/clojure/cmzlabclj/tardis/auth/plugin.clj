@@ -14,51 +14,46 @@
 
   cmzlabclj.tardis.auth.plugin
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-
-  (:import (com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError))
-  (:import (com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser))
-
-  (:import (com.zotohlab.frwk.net ULFormItems ULFileItem))
-  (:import (org.apache.commons.codec.binary Base64))
-  (:import (com.zotohlab.gallifrey.core Container))
-  (:import (com.zotohlab.frwk.util CrappyDataError))
-
-  (:import (com.zotohlab.frwk.dbio DBAPI MetaCache SQLr
-                                    JDBCPool JDBCInfo))
-
-  (:import (org.apache.commons.io FileUtils))
-  (:import (java.io File IOException))
-  (:import (java.util Properties))
-
-  (:import (org.apache.shiro.config IniSecurityManagerFactory))
-  (:import (org.apache.shiro SecurityUtils))
-  (:import (org.apache.shiro.subject Subject))
-  (:import (org.apache.shiro.authc UsernamePasswordToken))
-  (:import ( com.zotohlab.wflow If BoolExpr FlowPoint
-                                 Activity Pipeline
-                                 PipelineDelegate PTask Work))
-  (:import (com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
-  (:import (com.zotohlab.wflow.core Job))
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr]
+            [clojure.data.json :as json])
 
   (:use [cmzlabclj.nucleus.util.core :only [notnil? Stringify
                                        MakeMMap juid ternary
-                                       test-nonil LoadJavaProps] ])
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ])
-  (:use [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
+                                       test-nonil LoadJavaProps] ]
+        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
+        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ]
+        [cmzlabclj.tardis.core.constants]
+        [cmzlabclj.tardis.core.wfs]
+        [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.io.webss]
+        [cmzlabclj.tardis.io.basicauth]
+        [cmzlabclj.tardis.auth.model]
+        [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
+        [cmzlabclj.nucleus.dbio.core])
 
-  (:use [cmzlabclj.tardis.core.constants])
-  (:use [cmzlabclj.tardis.core.wfs])
-  (:use [cmzlabclj.tardis.core.sys])
-
-  (:use [cmzlabclj.tardis.io.webss])
-  (:use [cmzlabclj.tardis.io.basicauth])
-  (:use [cmzlabclj.tardis.auth.model])
-  (:use [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ])
-  (:use [cmzlabclj.nucleus.dbio.core])
-  (:require [clojure.data.json :as json]))
+  (:import  [com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError]
+            [com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser]
+            [com.zotohlab.frwk.net ULFormItems ULFileItem]
+            [org.apache.commons.codec.binary Base64]
+            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.frwk.util CrappyDataError]
+            [com.zotohlab.frwk.crypto PasswordAPI]
+            [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr
+                                    JDBCPool JDBCInfo]
+            [org.apache.commons.io FileUtils]
+            [java.io File IOException]
+            [java.util Properties]
+            [org.apache.shiro.config IniSecurityManagerFactory]
+            [org.apache.shiro SecurityUtils]
+            [org.apache.shiro.subject Subject]
+            [org.apache.shiro.authc UsernamePasswordToken]
+            [com.zotohlab.wflow If BoolExpr FlowPoint
+                                Activity Pipeline
+                                PipelineDelegate PTask Work]
+            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+            [com.zotohlab.wflow.core Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -80,9 +75,11 @@
 
   [^JDBCPool pool]
 
-  (let [ tbl (:table LoginAccount) ]
+  (let [tbl (:table LoginAccount) ]
     (when-not (TableExist? pool tbl)
-      (DbioError (str "Expected to find table " tbl ", but table is not found.")))
+      (DbioError (str "Expected to find table "
+                      tbl
+                      ", but table is not found.")))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,18 +139,18 @@
   roleObjs : a list of roles to be assigned to the account."
 
   [^SQLr sql ^String user
-   ^cmzlabclj.nucleus.crypto.codec.Password pwdObj options roleObjs]
+   ^PasswordAPI pwdObj options roleObjs]
 
-  (let [ [p s] (.hashed pwdObj)
-         acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
-                              (DbioSetFld :email (strim (:email options)))
-                              (DbioSetFld :acctid (strim user))
+  (let [[p s] (.hashed pwdObj)
+        acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
+                             (DbioSetFld :email (strim (:email options)))
+                             (DbioSetFld :acctid (strim user))
                             ;;(dbio-set-fld :salt s)
-                              (DbioSetFld :passwd  p))) ]
+                             (DbioSetFld :passwd  p))) ]
     ;; Currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
     ;; assumed ok for the account to remain inserted.
-    (doseq [ r (seq roleObjs) ]
+    (doseq [r (seq roleObjs) ]
       (DbioSetM2M { :as :roles :with sql } acc r))
     (log/debug "created new account into db: "
                acc
@@ -168,8 +165,9 @@
 
   [^SQLr sql ^String email]
 
-  (.findOne sql :czc.tardis.auth/LoginAccount
-                            { :email (strim email) }))
+  (.findOne sql
+            :czc.tardis.auth/LoginAccount
+            { :email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,8 +175,9 @@
 
   [^SQLr sql ^String user]
 
-  (.findOne sql :czc.tardis.auth/LoginAccount
-                            { :acctid (strim user) }))
+  (.findOne sql
+            :czc.tardis.auth/LoginAccount
+            { :acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -186,13 +185,14 @@
 
   [^SQLr sql ^String user ^String pwd]
 
-  (let [ acct (.findOne sql :czc.tardis.auth/LoginAccount
-                            { :acctid (strim user) }) ]
+  (let [acct (.findOne sql
+                       :czc.tardis.auth/LoginAccount
+                       { :acctid (strim user) }) ]
     (cond
       (nil? acct)
       (throw (UnknownUser. user))
 
-      (.validateHash ^cmzlabclj.nucleus.crypto.codec.Password
+      (.validateHash ^PasswordAPI
                      (Pwdify pwd "")
                      (:passwd acct))
       acct
@@ -207,20 +207,21 @@
 
   [^SQLr sql ^String user]
 
-  (notnil? (.findOne sql :czc.tardis.auth/LoginAccount
-                        { :acctid (strim user) } )
+  (notnil? (.findOne sql
+                     :czc.tardis.auth/LoginAccount
+                     { :acctid (strim user) } )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ChangeLoginAccount ""
 
-  [^SQLr sql userObj ^cmzlabclj.nucleus.crypto.codec.Password pwdObj ]
+  [^SQLr sql userObj ^PasswordAPI pwdObj ]
 
-  (let [ [p s] (.hashed pwdObj)
-         u (-> userObj
-               (DbioSetFld :passwd p)
-               (DbioSetFld :salt s)) ]
+  (let [[p s] (.hashed pwdObj)
+        u (-> userObj
+              (DbioSetFld :passwd p)
+              (DbioSetFld :salt s)) ]
     (.update sql u)
   ))
 
@@ -234,8 +235,8 @@
 
   (if (empty? details)
     userObj
-    (with-local-vars [ u userObj ]
-      (doseq [ [f v] (seq details) ]
+    (with-local-vars [u userObj ]
+      (doseq [[f v] (seq details) ]
         (var-set u (DbioSetFld @u f v)))
       (.update sql @u))
   ))
@@ -320,7 +321,8 @@
             ^cmzlabclj.tardis.io.webss.WebSession
             mvs (.getSession evt)
             csrf (.getXref mvs)
-            si (try (GetSignupInfo evt) (catch CrappyDataError e#  { :e e# }))
+            si (try (GetSignupInfo evt)
+                    (catch CrappyDataError e# { :e e# }))
             info (ternary si {}) ]
         (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
@@ -371,11 +373,12 @@
       (let [^cmzlabclj.tardis.core.sys.Element ctr (.container job)
             ^cmzlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
-            ^HTTPEvent evt (.event ^Job job)
+            ^HTTPEvent evt (.event job)
             ^cmzlabclj.tardis.io.webss.WebSession
             mvs (.getSession evt)
             csrf (.getXref mvs)
-            si (try (GetSignupInfo evt) (catch CrappyDataError e#  { :e e# }))
+            si (try (GetSignupInfo evt)
+                    (catch CrappyDataError e#  { :e e# }))
             info (ternary si {} ) ]
         (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
@@ -412,16 +415,14 @@
   ^Plugin
   [^Container ctr]
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (reify Plugin
 
       (contextualize [_ c] nil)
 
       (configure [_ props] nil)
 
-      (initialize [_]
-        (let []
-          (ApplyAuthPluginDDL (.acquireDbPool ctr ""))))
+      (initialize [_] (ApplyAuthPluginDDL (.acquireDbPool ctr "")))
 
       (start [_]
         (AssertPluginOK (.acquireDbPool ctr ""))
@@ -440,8 +441,8 @@
       (checkAction [_ acctObj action])
 
       (addAccount [_ options]
-        (let [ pkey (.getAppKey ctr)
-               sql (getSQLr ctr) ]
+        (let [pkey (.getAppKey ctr)
+              sql (getSQLr ctr) ]
           (CreateLoginAccount sql
                               (:principal options)
                               (Pwdify (:credential options) pkey)
@@ -449,11 +450,11 @@
                               [])))
 
       (login [_ user pwd]
-        (binding [ *JDBC-POOL* (.acquireDbPool ctr "")
-                   *META-CACHE* AUTH-MCACHE ]
-          (let [ token (UsernamePasswordToken. ^String user ^String pwd)
-                 cur (SecurityUtils/getSubject)
-                 sss (.getSession cur) ]
+        (binding [*JDBC-POOL* (.acquireDbPool ctr "")
+                  *META-CACHE* AUTH-MCACHE ]
+          (let [token (UsernamePasswordToken. ^String user ^String pwd)
+                cur (SecurityUtils/getSubject)
+                sss (.getSession cur) ]
             (log/debug "current user session " sss)
             (log/debug "current user object " cur)
             (when-not (.isAuthenticated cur)
@@ -468,14 +469,14 @@
               nil))))
 
       (hasAccount [_ options]
-        (let [ pkey (.getAppKey ctr)
-               sql (getSQLr ctr) ]
+        (let [pkey (.getAppKey ctr)
+              sql (getSQLr ctr) ]
           (HasLoginAccount sql
                            (:principal options))))
 
       (getAccount [_ options]
-        (let [ pkey (.getAppKey ctr)
-               sql (getSQLr ctr) ]
+        (let [pkey (.getAppKey ctr)
+              sql (getSQLr ctr) ]
           (cond
             (notnil? (:principal options))
             (FindLoginAccount sql
@@ -483,7 +484,6 @@
             (notnil? (:email options))
             (FindLoginAccountViaEmail sql
                               (:email options))
-
             :else nil)))
 
       (getRoles [_ acct] [])
@@ -507,24 +507,26 @@
 
   [& args]
 
-  (let [ appDir (File. ^String (nth args 0))
-         ^Properties mf (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
-         pkey (.toCharArray (.getProperty mf "Implementation-Vendor-Id"))
-         ^String cmd (nth args 1)
-         ^String db (nth args 2)
-         env (json/read-str (ReadConf appDir "env.conf") :key-fn keyword)
-         cfg (get (:jdbc (:databases env)) (keyword db)) ]
+  (let [appDir (File. ^String (nth args 0))
+        ^Properties mf (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
+        pkey (.toCharArray (.getProperty mf "Implementation-Vendor-Id"))
+        ^String cmd (nth args 1)
+        ^String db (nth args 2)
+        env (json/read-str (ReadConf appDir "env.conf")
+                           :key-fn keyword)
+        cfg (get (:jdbc (:databases env))
+                 (keyword db)) ]
     (when-not (nil? cfg)
-      (let [ j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
-             t (MatchJdbcUrl (nsb (:url cfg))) ]
+      (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
+            t (MatchJdbcUrl (nsb (:url cfg))) ]
         (cond
           (= "init-db" cmd)
-          (let []
-            (ApplyAuthPluginDDL j))
+          (ApplyAuthPluginDDL j)
 
           (= "gen-sql" cmd)
           (if (> (count args) 3)
-            (ExportAuthPluginDDL t (File. ^String (nth args 3))))
+            (ExportAuthPluginDDL t
+                                 (File. ^String (nth args 3))))
 
           :else
           nil)) )

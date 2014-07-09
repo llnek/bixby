@@ -14,21 +14,24 @@
 
   cmzlabclj.tardis.io.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? ThrowIOE MakeMMap TryC] ])
-  (:use [cmzlabclj.nucleus.util.str :only [nsb strim ] ])
-  (:use [cmzlabclj.tardis.core.sys])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
 
-  (:import (com.zotohlab.frwk.server Component Service))
-  (:import (java.util.concurrent ConcurrentHashMap))
 
-  (:import (com.zotohlab.frwk.core Versioned Hierarchial
-                                    Identifiable Disposable Startable))
-  (:import (com.zotohlab.gallifrey.core Container))
-  (:import (com.google.gson JsonObject JsonArray))
-  (:import (com.zotohlab.gallifrey.io Emitter))
-  (:import (java.util Map)))
+  (:use [cmzlabclj.nucleus.util.core :only [notnil? ThrowIOE MakeMMap TryC] ]
+        [cmzlabclj.nucleus.util.str :only [nsb strim ] ]
+        [cmzlabclj.tardis.core.sys])
+
+
+  (:import  [com.zotohlab.frwk.server Component Service]
+            [java.util.concurrent ConcurrentHashMap]
+
+            [com.zotohlab.frwk.core Versioned Hierarchial
+                                    Identifiable Disposable Startable]
+            [com.zotohlab.gallifrey.core Container]
+            [com.google.gson JsonObject JsonArray]
+            [com.zotohlab.gallifrey.io Emitter]
+            [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -154,7 +157,7 @@
 
   [^Container parObj emId emAlias]
 
-  (let [ impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (.setf! impl :backlog (ConcurrentHashMap.))
     (with-meta
       (reify
@@ -209,15 +212,15 @@
 
         (release [_ wevt]
           (when-not (nil? wevt)
-            (let [ wid (.id ^Identifiable wevt)
-                   b (.getf impl :backlog) ]
+            (let [wid (.id ^Identifiable wevt)
+                  b (.getf impl :backlog) ]
               (log/debug "emitter releasing an event with id: " wid)
               (.remove ^Map b wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
-            (let [ wid (.id ^Identifiable wevt)
-                   b (.getf impl :backlog) ]
+            (let [wid (.id ^Identifiable wevt)
+                  b (.getf impl :backlog) ]
               (log/debug "emitter holding an event with id: " wid)
               (.put ^Map b wid wevt)))) )
 
@@ -231,7 +234,7 @@
 
   [co ctx]
 
-  (let [ ^cmzlabclj.tardis.core.sys.Element c ctx ]
+  (let [^cmzlabclj.tardis.core.sys.Element c ctx ]
     (CompCloneContext co (.getCtx c))
   ))
 
@@ -242,8 +245,7 @@
 
 (derive :czc.tardis.io/JettyIO :czc.tardis.io/HTTP)
 (derive :czc.tardis.io/NettyIO :czc.tardis.io/HTTP)
-
-(derive :czc.tardis.io/WebSockIO :czc.tardis.io/NettyIO)
+;;(derive :czc.tardis.io/WebSockIO :czc.tardis.io/NettyIO)
 (derive :czc.tardis.io/NettyMVC :czc.tardis.io/NettyIO)
 
 (derive :czc.tardis.io/RepeatingTimer :czc.tardis.io/Emitter)

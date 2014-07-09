@@ -14,31 +14,34 @@
 
   cmzlabclj.tardis.auth.shiro
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
-  (:import (org.apache.shiro.authz AuthorizationException AuthorizationInfo))
-  (:import (org.apache.shiro.authc.credential CredentialsMatcher))
-  (:import (org.apache.shiro.realm AuthorizingRealm))
-  (:import (org.apache.shiro.authc AuthenticationException AuthenticationToken
-                                   AuthenticationInfo SimpleAccount))
-  (:import (com.zotohlab.frwk.dbio DBAPI)))
+
+  (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+            [org.apache.shiro.authc.credential CredentialsMatcher]
+            [org.apache.shiro.realm AuthorizingRealm]
+            [org.apache.shiro.authc AuthenticationException AuthenticationToken
+                                   AuthenticationInfo SimpleAccount]
+            [com.zotohlab.frwk.crypto PasswordAPI]
+            [com.zotohlab.frwk.dbio DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype PwdMatcher [] CredentialsMatcher
 
   (doCredentialsMatch [_ token info]
-    (let [ pwd (.getCredentials ^AuthenticationToken token)
-           uid (.getPrincipal ^AuthenticationToken token)
-           pc (.getCredentials ^AuthenticationInfo info)
-           ^cmzlabclj.nucleus.crypto.codec.Password
-           tstPwd (Pwdify (if (instance? String pwd)
-                              pwd
-                              (String. ^chars pwd))
-                          "")
-           acc (-> (.getPrincipals ^AuthenticationInfo info)
-                   (.getPrimaryPrincipal)) ]
+    (let [pwd (.getCredentials ^AuthenticationToken token)
+          uid (.getPrincipal ^AuthenticationToken token)
+          pc (.getCredentials ^AuthenticationInfo info)
+          ^PasswordAPI
+          tstPwd (Pwdify (if (instance? String pwd)
+                           pwd
+                           (String. ^chars pwd))
+                         "")
+          acc (-> (.getPrincipals ^AuthenticationInfo info)
+                  (.getPrimaryPrincipal)) ]
       (and (= (:acctid acc) uid)
            (.validateHash tstPwd pc)))
   ))

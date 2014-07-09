@@ -15,19 +15,19 @@
 
   cmzlabclj.nucleus.util.str
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ])
-  (:require [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.string :as cstr])
   (:use [cmzlabclj.nucleus.util.core :only [notnil?] ])
 
-  (:import (org.apache.commons.lang3 StringUtils))
-  (:import (java.io CharArrayWriter
-                    File
-                    OutputStream
-                    OutputStreamWriter
-                    Reader Writer))
-  (:import (java.util Arrays Collection
-                      Iterator StringTokenizer))
-  (:import (java.lang StringBuilder)))
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [java.io CharArrayWriter
+                     File
+                     OutputStream
+                     OutputStreamWriter
+                     Reader Writer]
+            [java.util Arrays Collection
+                       Iterator StringTokenizer]
+            [java.lang StringBuilder]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -154,15 +154,15 @@
   [^String largeString chunkLength]
 
   (if (nil? largeString)
-      []
-      (loop [ ret (transient [])
-              src largeString ]
-        (if (<= (.length src) chunkLength)
-          (persistent! (if (> (.length src) 0)
-                           (conj! ret src)
-                           ret) )
-          (recur (conj! ret (.substring src 0 chunkLength))
-                 (.substring src chunkLength))
+    []
+    (loop [ret (transient [])
+           src largeString ]
+      (if (<= (.length src) chunkLength)
+        (persistent! (if (> (.length src) 0)
+                       (conj! ret src)
+                       ret) )
+        (recur (conj! ret (.substring src 0 chunkLength))
+               (.substring src chunkLength))
       ))
   ))
 
@@ -173,8 +173,8 @@
   [^String src substrs]
 
   (if (nil? src)
-      false
-      (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
+    false
+    (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,8 +184,8 @@
   [^String src substrs]
 
   (if (nil? src)
-      false
-      (if (some (fn [^String s] (>= (.indexOf src s) 0)) substrs) true false)
+    false
+    (if (some #(>= (.indexOf src ^String %) 0) substrs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -195,8 +195,8 @@
   [^String src pfxs]
 
   (if (nil? src)
-      false
-      (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
+    false
+    (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,8 +206,8 @@
   [^String src pfxs]
 
   (if (nil? src)
-      false
-      (if (some #(.startsWith src %) pfxs) true false)
+    false
+    (if (some #(.startsWith src %) pfxs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -217,8 +217,8 @@
   [^String src strs]
 
   (if (nil? src)
-      false
-      (if (some #(.equalsIgnoreCase src %) strs) true false)
+    false
+    (if (some #(.equalsIgnoreCase src %) strs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -228,8 +228,8 @@
   [^String src strs]
 
   (if (nil? src)
-      false
-      (if (some #(.equals src %) strs) true false)
+    false
+    (if (some #(.equals src %) strs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,10 +237,10 @@
 (defn MakeString "Make a string of contain length."
 
   ^String
-  [ ch  cnt]
+  [ch  cnt]
 
-  (let [ buf (StringBuilder.) ]
-    (dotimes [ n cnt ]
+  (let [buf (StringBuilder.) ]
+    (dotimes [n cnt ]
       (.append buf ^Character ch))
     (.toString buf)
   ))
@@ -253,8 +253,8 @@
   [^String src len]
 
   (if (nil? src)
-      ""
-      (StringUtils/right src ^long len)
+    ""
+    (StringUtils/right src ^long len)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,10 +265,9 @@
   [^String src len]
 
   (if (nil? src)
-      ""
-      (StringUtils/left src ^long len)
+    ""
+    (StringUtils/left src ^long len)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

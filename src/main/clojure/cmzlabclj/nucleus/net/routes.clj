@@ -21,6 +21,7 @@
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.google.gson JsonObject]
+            [com.zotohlab.frwk.util IWin32Conf]
             [java.io File]
             [jregex Matcher Pattern]
             [java.util StringTokenizer]))
@@ -144,7 +145,7 @@
 ;;
 (defn- mkRoute ""
 
-  [stat path ^cmzlabclj.nucleus.util.ini.IWin32Conf cfile]
+  [stat path ^IWin32Conf cfile]
 
   (let [secure (.optString cfile path :secure "")
         tpl (.optString cfile path :template "")
