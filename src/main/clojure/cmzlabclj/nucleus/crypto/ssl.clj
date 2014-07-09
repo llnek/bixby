@@ -24,7 +24,7 @@
   (:import  [javax.net.ssl X509TrustManager TrustManager]
             [javax.net.ssl SSLEngine SSLContext]
             [com.zotohlab.frwk.net SSLTrustMgrFactory]
-            [com.zotohlab.frwk.crypto CryptoStoreAPI]
+            [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI]
             [java.net URL]
             [javax.net.ssl KeyManagerFactory TrustManagerFactory]))
 
@@ -36,12 +36,12 @@
 (defn MakeSslContext "Make a server-side SSLContext."
 
   (^SSLContext
-    [^URL keyUrl ^cmzlabclj.nucleus.crypto.codec.Password pwdObj]
+    [^URL keyUrl ^PasswordAPI pwdObj]
     (MakeSslContext keyUrl pwdObj "TLS"))
 
   (^SSLContext
     [^URL keyUrl
-     ^cmzlabclj.nucleus.crypto.codec.Password pwdObj
+     ^PasswordAPI pwdObj
      ^String flavor]
     (let [ks (with-open [inp (.openStream keyUrl) ]
                (if (PkcsFile? keyUrl)

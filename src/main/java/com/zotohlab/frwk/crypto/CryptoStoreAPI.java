@@ -29,12 +29,12 @@ public interface CryptoStoreAPI {
   public KeyManagerFactory keyManagerFactory();
   public Object certAliases();
   public Object keyAliases();
-  public void keyEntity(String nm, PasswordAPI pwdObj);
-  public void certEntity(String nm);
+  public Object keyEntity(String nm, PasswordAPI pwdObj);
+  public Object certEntity(String nm);
   public void removeEntity(String nm);
-  public void intermediateCAs();
-  public void rootCAs();
-  public void trustedCerts();
+  public Object intermediateCAs();
+  public Object rootCAs();
+  public Object trustedCerts();
   public void addPKCS7Entity(byte[] bits);
 
 }

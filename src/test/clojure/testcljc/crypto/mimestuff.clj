@@ -27,7 +27,7 @@
             [java.util Date GregorianCalendar]
             [java.io File InputStream ByteArrayOutputStream]
             [javax.mail Multipart BodyPart]
-            [com.zotohlab.frwk.crypto CryptoStoreAPI]
+            [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI]
             [javax.mail.internet MimeBodyPart MimeMessage MimeMultipart]
             [javax.activation DataHandler DataSource]
             [com.zotohlab.frwk.crypto SDataSource]
@@ -36,7 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private ROOTPFX (ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
-(def ^:private HELPME (Pwdify "helpme"))
+(def ^PasswordAPI ^:private HELPME (Pwdify "helpme"))
 (def ^CryptoStoreAPI ^:private ROOTCS (MakeCryptoStore
                                         (InitStore! (GetPkcsStore)
                                                     ROOTPFX HELPME) HELPME))
