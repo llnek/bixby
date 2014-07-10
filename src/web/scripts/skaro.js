@@ -223,6 +223,16 @@ var SkaroJS = {
     return original;
   },
 
+  removeFromArray: function(arr, item) {
+    if (_.isArray(arr)) {
+      var index = arr.indexOf(item);
+      while (index !== -1) {
+        arr.splice(index,1);
+        index = arr.indexOf(item);
+      }
+    }
+  },
+
   logger: global.dbg,
   loggr: global.dbg,
   Class : klass
