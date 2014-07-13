@@ -493,7 +493,8 @@
 
   ^ChannelHandler
   ;;[^cmzlabclj.tardis.core.sys.Element co]
-  [^cmzlabclj.tardis.io.core.EmitterAPI co]
+  [^cmzlabclj.tardis.io.core.EmitterAPI co
+   options]
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
@@ -516,7 +517,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (log/debug "tardis netty pipeline initor called with emitter = " (type co))
-  (ReifyHTTPPipe "NettyDispatcher" (fn [ & args ] (msgDispatcher co))))
+  (ReifyHTTPPipe "NettyDispatcher" (fn [options] (msgDispatcher co options))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -122,7 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- msgDispatcher ""
+(defn- mvcDispatcher ""
 
   ^ChannelHandler
   [^cmzlabclj.tardis.io.core.EmitterAPI em
@@ -152,22 +152,51 @@
             (ServeError co ch 404)) )))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- wsockDispatcher ""
+
+  ^ChannelHandler
+  [^cmzlabclj.tardis.io.core.EmitterAPI em
+   ^cmzlabclj.tardis.core.sys.Element co
+   ^JsonObject options]
+
+  (let [handlerFn (-> options 
+                      (.getAsJsonObject "wsock")
+                      (.getAsJsonPrimitive "handler")
+                      (.getAsString)) ]
+    (proxy [SimpleInboundHandler] []
+        (channelRead0 [ctx msg]
+          (let [ch (.channel ^ChannelHandlerContext ctx)
+                opts {:router handlerFn}
+                ^WebSockEvent
+                evt (IOESReifyEvent co ch msg) ]
+            (log/debug "reified one websocket event")
+            (.dispatch em evt opts))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mvcInitorOnWS ""
 
-  [^ChannelHandlerContext ctx]
-  (let [^ChannelPipeline pipe (.pipeline ctx) ]
-    (.remove pipe "RouteFilter")))
+  [^ChannelHandlerContext ctx hack options]
 
+  (let [^ChannelPipeline pipe (.pipeline ctx)
+        co (:emitter hack) ]
+    (.addBefore pipe "ErrorCatcher" "WSOCKDispatcher" (wsockDispatcher co co options))
+    (.remove pipe "MVCDispatcher")
+    (.remove pipe "RouteFilter")
+    (.remove pipe "ErrorCatcher")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
   [^cmzlabclj.tardis.core.sys.Element co options1]
 
-  (let [cfgopts {:wsockUri (:wsock options1)
-                 :onwsock mvcInitorOnWS } ]
+  (let [hack {:onwsock mvcInitorOnWS
+              :emitter co} ]
     (log/debug "mvc netty pipeline initor called with emitter = " (type co))
     (proxy [PipelineConfigurator] []
       (assemble [p o]
@@ -179,10 +208,10 @@
             (FlashHandler/addLast )
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
             (.addLast "RouteFilter" (routeFilter co))
-            (.addLast "HttpDemuxer" (MakeHttpDemuxer cfgopts))
+            (.addLast "HttpDemuxer" (MakeHttpDemuxer options1 hack))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
             (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-            (.addLast "NettyDispatcher" (msgDispatcher co co))
+            (.addLast "MVCDispatcher" (mvcDispatcher co co))
             (ErrorCatcher/addLast ))
           pipe)))
     ))

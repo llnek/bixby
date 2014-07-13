@@ -162,7 +162,7 @@
 (defn- snooperHandler ""
 
   ^ChannelHandler
-  []
+  [options]
 
   (let [cookies (StringBuilder.)
         buf (StringBuilder.) ]

@@ -228,9 +228,16 @@
 (defn MakeHttpDemuxer ""
 
   ^ChannelHandler
-  [cfgopts]
+  [^JsonObject options hack]
 
-  (let [ uri (nsb (:wsockUri cfgopts)) ]
+  (let [ws (if (.has options "wsock")
+             (.getAsJsonObject options "wsock")
+             nil)
+        uri (if-not (nil? ws)
+              (-> ws
+                  (.getAsJsonPrimitive "uri")
+                  (.getAsString))
+              "") ]
     (proxy [ChannelInboundHandlerAdapter][]
       (channelRead [ c obj]
         (log/debug "HttpDemuxer got this msg " (type obj))
@@ -246,7 +253,7 @@
                          "HttpResponseEncoder"
                          "WebSocketServerProtocolHandler"
                          (WebSocketServerProtocolHandler. uri))
-              (when-let [fc (:onwsock cfgopts) ] (fc ctx)))
+              (when-let [fc (:onwsock hack) ] (fc ctx hack options)))
 
             :else
             (do
@@ -255,41 +262,10 @@
                          "ReifyHttpHandler"
                          (reifyHttpHandler))
               (log/debug "Added new handler - reifyHttpHandler to the chain")
-              (when-let [fc (:onhttp cfgopts) ] (fc ctx)) ))
+              (when-let [fc (:onhttp hack) ] (fc ctx hack options)) ))
           (.fireChannelRead ctx msg)
           (.remove pipe "HttpDemuxer"))))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- makeHttpPipline ""
-
-  ^PipelineConfigurator
-  [cfg]
-
-  (proxy [PipelineConfigurator][]
-    (assemble [pl options]
-      (let [ssl (SSLServerHShake ^JsonObject options)
-            ^ChannelPipeline pipe pl]
-        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
-        (doto pipe
-          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxer" (MakeHttpDemuxer cfg))
-          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast ^String (:name cfg)
-                    ^ChannelHandler (apply (:handler cfg) options))
-          (ErrorCatcher/addLast))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ReifyWEBSockPipe ""
-
-  ^PipelineConfigurator
-  [^String websockUri ^String yourHandlerName yourHandlerFn]
-
-  (makeHttpPipline { :wsockUri websockUri :name yourHandlerName :handler yourHandlerFn }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -298,7 +274,20 @@
   ^PipelineConfigurator
   [^String yourHandlerName yourHandlerFn]
 
-  (makeHttpPipline { :wsockUri "" :name yourHandlerName :handler yourHandlerFn }))
+  (proxy [PipelineConfigurator][]
+    (assemble [pl options]
+      (let [ssl (SSLServerHShake ^JsonObject options)
+            ^ChannelPipeline pipe pl]
+        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
+        (doto pipe
+          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
+          (.addLast "HttpDemuxer" (MakeHttpDemuxer options {}))
+          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
+          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
+          (.addLast yourHandlerName
+                    ^ChannelHandler (yourHandlerFn options))
+          (ErrorCatcher/addLast))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
