@@ -189,7 +189,8 @@
       (channelRead0 [ctx msg]
         (let [ ^AuxHttpDecoder d (.getf impl :delegate)
                e (.getf impl :ignore) ]
-          (log/debug "HttpDemuxer got msg = " (type msg))
+          (log/debug "HttpHandler got msg = " (type msg))
+          (log/debug "HttpHandler delegate = " d)
           (cond
             (instance? HttpRequest msg)
             (doDemux ctx msg impl)
@@ -249,6 +250,8 @@
             (and (instance? HttpRequest msg)
                  (isWEBSock msg))
             (do
+              (log/debug "got a wsock upgrade request for uri " uri ", swapping to netty's websock handler.")
+              (.remove pipe "HttpDemuxer")
               (.addAfter pipe
                          "HttpResponseEncoder"
                          "WebSocketServerProtocolHandler"
@@ -257,14 +260,15 @@
 
             :else
             (do
+              (log/debug "standard http request - swap in our own http handler.")
               (.addAfter pipe
                          "HttpDemuxer"
                          "ReifyHttpHandler"
                          (reifyHttpHandler))
-              (log/debug "Added new handler - reifyHttpHandler to the chain")
-              (when-let [fc (:onhttp hack) ] (fc ctx hack options)) ))
-          (.fireChannelRead ctx msg)
-          (.remove pipe "HttpDemuxer"))))
+              (.remove pipe "HttpDemuxer")
+              (when-let [fc (:onhttp hack) ] (fc ctx hack options))
+              (log/debug "Added new handler - reifyHttpHandler to the chain")))
+          (.fireChannelRead ctx msg))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
