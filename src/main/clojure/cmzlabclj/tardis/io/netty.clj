@@ -311,6 +311,7 @@
         WebSockEvent
         (bindSession [_ s] (.setf! impl :ios s))
         (getSession [_] (.getf impl :ios))
+        (getSocket [_] ch)
         (getId [_] eeid)
         (checkAuthenticity [_] false)
         (isSSL [_] ssl)

@@ -18,6 +18,8 @@ package com.zotohlab.gallifrey.io;
  */
 public interface WebSockEvent  extends IOEvent {
 
+  public Object getSocket();
+
   public boolean isBinary();
 
   public boolean isText();
@@ -25,6 +27,7 @@ public interface WebSockEvent  extends IOEvent {
   public Object getData();
 
   public boolean isSSL();
+
 
   //------------
 
