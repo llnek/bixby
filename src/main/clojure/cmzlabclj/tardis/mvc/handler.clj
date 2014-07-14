@@ -178,6 +178,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- mvcInitorOnHttp ""
+
+  [^ChannelHandlerContext ctx hack options]
+
+  (let [^ChannelPipeline pipe (.pipeline ctx)
+        co (:emitter hack) ]
+    (.addAfter pipe
+               "HttpResponseEncoder"
+               "ChunkedWriteHandler" (ChunkedWriteHandler.))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- mvcInitorOnWS ""
 
   [^ChannelHandlerContext ctx hack options]
@@ -187,8 +200,10 @@
     (.addBefore pipe "ErrorCatcher" "WSOCKDispatcher" (wsockDispatcher co co options))
     (-> (.attr ctx ErrorCatcher/MSGTYPE)
         (.set "wsock"))
+    ;;(.remove pipe "ChunkedWriteHandler")
     (.remove pipe "MVCDispatcher")
-    (.remove pipe "RouteFilter")))
+    (.remove pipe "RouteFilter")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -197,7 +212,8 @@
   ^PipelineConfigurator
   [^cmzlabclj.tardis.core.sys.Element co options1]
 
-  (let [hack {:onwsock mvcInitorOnWS
+  (let [hack {:onhttp mvcInitorOnHttp
+              :onwsock mvcInitorOnWS
               :emitter co} ]
     (log/debug "mvc netty pipeline initor called with emitter = " (type co))
     (proxy [PipelineConfigurator] []
@@ -212,7 +228,7 @@
             (.addLast "RouteFilter" (routeFilter co))
             (.addLast "HttpDemuxer" (MakeHttpDemuxer options1 hack))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-            (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
+            ;;(.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
             (.addLast "MVCDispatcher" (mvcDispatcher co co))
             (ErrorCatcher/addLast ))
           pipe)))
