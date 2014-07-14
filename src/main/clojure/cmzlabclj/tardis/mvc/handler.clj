@@ -272,6 +272,15 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; websocket stuff
+    (when-let [w (:wsock cfg) ]
+      (let [ws (JsonObject.)]
+        (.addProperty ws "handler" (nsb (:handler w)))
+        (.addProperty ws "uri" (nsb (:uri w)))
+        (.add json "wsock" ws)
+        (.setAttr! co :wsock w)))
+
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; caching stuff
     (let [n (:cacheMaxAgeSecs cfg)
           xxx (if (nil? n) 3600 n) ]

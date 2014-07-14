@@ -30,9 +30,9 @@
            [org.apache.commons.lang3 StringUtils]
            [java.net URL InetAddress InetSocketAddress]
            [java.io InputStream IOException]
-           [io.netty.handler.codec.http HttpHeaders HttpMessage
-                                        HttpContent
-                                        HttpRequest
+           [io.netty.handler.codec.http HttpHeaders HttpMessage LastHttpContent
+                                        DefaultFullHttpRequest HttpContent
+                                        HttpRequest FullHttpRequest
                                         HttpRequestDecoder
                                         HttpResponseEncoder]
           [io.netty.bootstrap Bootstrap ServerBootstrap]
@@ -55,6 +55,21 @@
 
 (def ^:private ^String SERVERKEY "serverKey")
 (def ^:private ^String PWD "pwd")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FakeFullHttpRequest ""
+
+  [^HttpRequest req]
+
+  (let [rc (DefaultFullHttpRequest. (.getProtocolVersion req)
+                                    (.getMethod req)
+                                    (.getUri req)) ]
+    (-> (.headers rc)
+        (.set (.headers req)))
+    ;;(-> (.trailingHeaders rc) (.set (.trailingHeaders req)))
+    rc
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -226,6 +241,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- exitHttpDemuxer ""
+
+  [^ChannelHandlerContext ctx msg]
+
+  (do
+    (.fireChannelRead ctx msg)
+    (.remove (.pipeline ctx) "HttpDemuxer")
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn MakeHttpDemuxer ""
 
   ^ChannelHandler
@@ -238,7 +264,8 @@
               (-> ws
                   (.getAsJsonPrimitive "uri")
                   (.getAsString))
-              "") ]
+              "")
+        tmp (MakeMMap) ]
     (proxy [ChannelInboundHandlerAdapter][]
       (channelRead [ c obj]
         (log/debug "HttpDemuxer got this msg " (type obj))
@@ -250,13 +277,25 @@
             (and (instance? HttpRequest msg)
                  (isWEBSock msg))
             (do
-              (log/debug "got a wsock upgrade request for uri " uri ", swapping to netty's websock handler.")
-              (.remove pipe "HttpDemuxer")
+              ;; wait for full request
+              (log/debug "got a websock req - let's wait for full msg.")
+              (.setf! tmp :reqforwsock (FakeFullHttpRequest msg))
+              (.setf! tmp :wait4wsock true)
+              (ReferenceCountUtil/release msg))
+
+            (and (true? (.getf tmp :wait4wsock))
+                 (instance? LastHttpContent msg))
+            (do
+              (log/debug "got a wsock upgrade request for uri "
+                         uri
+                         ", swapping to netty's websock handler.")
               (.addAfter pipe
                          "HttpResponseEncoder"
                          "WebSocketServerProtocolHandler"
                          (WebSocketServerProtocolHandler. uri))
-              (when-let [fc (:onwsock hack) ] (fc ctx hack options)))
+              (when-let [fc (:onwsock hack) ] (fc ctx hack options))
+              (ReferenceCountUtil/release msg)
+              (exitHttpDemuxer ctx (.getf tmp :reqforwsock)))
 
             :else
             (do
@@ -265,10 +304,9 @@
                          "HttpDemuxer"
                          "ReifyHttpHandler"
                          (reifyHttpHandler))
-              (.remove pipe "HttpDemuxer")
               (when-let [fc (:onhttp hack) ] (fc ctx hack options))
-              (log/debug "Added new handler - reifyHttpHandler to the chain")))
-          (.fireChannelRead ctx msg))))
+              (log/debug "Added new handler - reifyHttpHandler to the chain")
+              (exitHttpDemuxer ctx msg))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
