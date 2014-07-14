@@ -119,6 +119,11 @@ public enum NettyFW {
     }
   }
 
+  public static byte[] slurpByteBuf(ByteBuf buf) throws IOException {
+    ByteArrayOutputStream baos= new ByteArrayOutputStream(4096);
+    slurpByteBuf(buf,baos);
+    return baos.toByteArray();
+  }
 
   public static JsonObject extractParams(QueryStringDecoder decr) {
     JsonObject sum= new JsonObject();

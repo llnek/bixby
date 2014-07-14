@@ -161,16 +161,17 @@
    ^cmzlabclj.tardis.core.sys.Element co
    ^JsonObject options]
 
-  (let [handlerFn (-> options 
+  (let [handlerFn (-> options
                       (.getAsJsonObject "wsock")
                       (.getAsJsonPrimitive "handler")
                       (.getAsString)) ]
+    (log/debug "wsockDispatcher has user function: " handlerFn)
     (proxy [SimpleInboundHandler] []
         (channelRead0 [ctx msg]
           (let [ch (.channel ^ChannelHandlerContext ctx)
                 opts {:router handlerFn}
                 ^WebSockEvent
-                evt (IOESReifyEvent co ch msg) ]
+                evt (IOESReifyEvent co ch msg nil) ]
             (log/debug "reified one websocket event")
             (.dispatch em evt opts))))
   ))
@@ -184,9 +185,10 @@
   (let [^ChannelPipeline pipe (.pipeline ctx)
         co (:emitter hack) ]
     (.addBefore pipe "ErrorCatcher" "WSOCKDispatcher" (wsockDispatcher co co options))
+    (-> (.attr ctx ErrorCatcher/MSGTYPE)
+        (.set "wsock"))
     (.remove pipe "MVCDispatcher")
-    (.remove pipe "RouteFilter")
-    (.remove pipe "ErrorCatcher")))
+    (.remove pipe "RouteFilter")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

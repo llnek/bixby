@@ -18,6 +18,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,8 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
 
   private static Logger _log = LoggerFactory.getLogger(ErrorCatcher.class);
   public Logger tlog() { return _log; }
+
+  public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
 
   private static final ErrorCatcher shared = new ErrorCatcher();
   public static ErrorCatcher getInstance() {
@@ -46,12 +49,19 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-    replyXXX( ctx.channel(), 500);
+    maybeHandleError(ctx);
   }
 
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable t) throws Exception {
     tlog().error("", t);
-    replyXXX(ctx.channel(), 500);
+    maybeHandleError(ctx);
+  }
+
+  private void maybeHandleError(ChannelHandlerContext ctx) throws Exception {
+    Object obj = ctx.attr(MSGTYPE).get();
+    if (obj != null && "wsock".equals(obj.toString())) {} else {
+      replyXXX(ctx.channel(), 500);
+    }
   }
 
 }

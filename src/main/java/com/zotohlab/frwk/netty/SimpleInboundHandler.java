@@ -33,11 +33,15 @@ public abstract class SimpleInboundHandler<I> extends SimpleChannelInboundHandle
       super.channelRead(ctx, obj);
       if (obj instanceof ReferenceCounted) {
         ReferenceCounted c = (ReferenceCounted) obj ;
-        tlog().debug("Object " + c + " : after channelRead() has ref-count = " + c.refCnt());
+        String os = "???";
+        try {
+          os= c.toString();
+        } catch (Throwable t) {}
+        tlog().debug("Object " + os + " : after channelRead() has ref-count = " + c.refCnt());
       }
     }
     catch (Exception e) {
-      tlog().error("Oh No! contexthandler=" + ctx.name() + "\n" + obj.toString() + "\n", e);
+      tlog().error("Oh No! contexthandler=" + ctx.name() + "\n", e);
       throw e;
     }
   }

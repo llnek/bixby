@@ -192,11 +192,11 @@
                                (replyOneFile @raf evt rsp))
 
                     File (do
-                           (var-set raf 
+                           (var-set raf
                                     (RandomAccessFile. ^File data "r"))
                            (replyOneFile @raf evt rsp))
 
-                    XData (let [^XData xs data ] 
+                    XData (let [^XData xs data ]
                             (var-set clen (.size xs))
                             (ChunkedStream. (.stream xs)))
 
@@ -277,18 +277,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeWSockEvent ""
+(defn- makeWEBSockEvent ""
 
   [^cmzlabclj.tardis.io.core.EmitterAPI co
    ^Channel ch
-   ^XData xdata
-   ^JsonObject info wantSecure]
+   ssl
+   ^WebSocketFrame msg]
 
-  (let [ssl (notnil? (.get (.pipeline ch) "ssl"))
-        ;;^InetSocketAddress laddr (.localAddress ch)
-        res (MakeWSockResult co)
+  (let [textF (instance? TextWebSocketFrame msg)
         impl (MakeMMap)
+        xdata (XData.)
         eeid (NextLong) ]
+    (.resetContent xdata
+                   (cond
+                     textF
+                     (.text ^TextWebSocketFrame msg)
+                     (instance? BinaryWebSocketFrame msg)
+                     (NettyFW/slurpByteBuf (.content ^BinaryWebSocketFrame msg))
+                     :else nil))
     (with-meta
       (reify
         MubleAPI
@@ -306,17 +312,13 @@
         (bindSession [_ s] (.setf! impl :ios s))
         (getSession [_] (.getf impl :ios))
         (getId [_] eeid)
-        (checkAuthenticity [_] wantSecure)
+        (checkAuthenticity [_] false)
         (isSSL [_] ssl)
-        (isText [_] (instance? String (.content xdata)))
-        (isBinary [this] (not (.isText this)))
+        (isBinary [this] (not textF))
+        (isText [_] textF)
         (getData [_] xdata)
-        (getResultObj [_] res)
-        (replyResult [this]
-          (let [^cmzlabclj.tardis.io.core.WaitEventHolder
-                wevt (.release co this) ]
-            (when-not (nil? wevt)
-              (.resumeOnResult wevt res))))
+        (getResultObj [_] nil)
+        (replyResult [this] nil)
         (emitter [_] co))
 
       { :typeid :czc.tardis.io/WebSockEvent }
@@ -463,17 +465,22 @@
 (defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
   [^cmzlabclj.tardis.io.core.EmitterAPI co & args]
-  (let [^cmzlabclj.nucleus.net.routes.RouteInfo
-        ri (nth args 2)
-        ^DemuxedMsg req (nth args 1)
-        ^Channel ch (nth args 0)
-        ssl (notnil? (.get (.pipeline ch) "ssl"))
-        xdata (.payload req)
-        sec (.isSecure? ri)
-        info (.info req) ]
-    (if (-> (.get info "wsock")(.getAsBoolean))
-      (makeWSockEvent co ch xdata info sec)
-      (makeHttpEvent co ch ssl xdata info sec))
+
+  (let [^Channel ch (nth args 0)
+        ssl (notnil? (.get (.pipeline ch)
+                           "ssl"))
+        msg (nth args 1) ]
+    (cond
+      (instance? WebSocketFrame msg)
+      (makeWEBSockEvent co ch ssl msg)
+      :else
+      (let [^cmzlabclj.nucleus.net.routes.RouteInfo
+            ri (nth args 2)
+            ^DemuxedMsg req msg ]
+        (makeHttpEvent co ch ssl
+                       (.payload req)
+                       (.info req)
+                       (.isSecure? ri))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
