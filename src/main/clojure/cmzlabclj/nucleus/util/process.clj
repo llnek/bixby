@@ -17,16 +17,31 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
         [cmzlabclj.nucleus.util.core :only [Try!] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ])
+
   (:import  [java.lang.management ManagementFactory]
+            [java.util.concurrent Callable]
             [com.zotohlab.frwk.util CoreUtils]
             [java.lang Thread Runnable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SyncBlockExec ""
+
+  [^Object lock func & args]
+
+  (CoreUtils/syncExec lock
+                      (reify Callable
+                        (call [_]
+                          (apply func args)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
