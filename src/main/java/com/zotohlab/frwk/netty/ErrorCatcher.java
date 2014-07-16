@@ -14,10 +14,8 @@
 package com.zotohlab.frwk.netty;
 
 import static com.zotohlab.frwk.netty.NettyFW.replyXXX;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
+
+import io.netty.channel.*;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +56,10 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
   }
 
   private void maybeHandleError(ChannelHandlerContext ctx) throws Exception {
-    Object obj = ctx.attr(MSGTYPE).get();
+    Channel ch = ctx.channel();
+    Object obj = ch.attr(MSGTYPE).get();
     if (obj != null && "wsock".equals(obj.toString())) {} else {
-      replyXXX(ctx.channel(), 500);
+      replyXXX(ch, 500);
     }
   }
 
