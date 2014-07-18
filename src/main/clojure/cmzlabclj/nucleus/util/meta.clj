@@ -208,9 +208,37 @@
             nil
             (.loadClass (GetCldr cl) clazzName))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ctorObj ""
+(defmulti ^Object MakeObjArg1 class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod MakeObjArg1 Class
+
+  [^Class cz ^Object arg1]
+
+  (test-nonil "java-class" cz)
+  (let [cargs (make-array Object 1)
+        ca (make-array Class 1) ]
+    (aset #^"[Ljava.lang.Object;" cargs 0 arg1)
+    (aset #^"[Ljava.lang.Class;" ca 0 Object)
+    (.newInstance (.getDeclaredConstructor cz ca)
+                  cargs)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod MakeObjArg1 String
+
+  [^String cz ^Object arg1]
+
+  (MakeObjArg1 (LoadClass cz) arg1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CtorObj ""
 
   ^Object
   [^Class cz]
@@ -230,7 +258,7 @@
             ^ClassLoader cl]
            (if (not (hgl? clazzName))
              nil
-             (ctorObj (LoadClass clazzName cl)))) )
+             (CtorObj (LoadClass clazzName cl)))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

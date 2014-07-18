@@ -230,10 +230,15 @@
                nsb
                strim
                cstr/lower-case)
+        cn (-> (HttpHeaders/getHeader req "connection")
+               nsb
+               strim
+               cstr/lower-case)
         mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
                nsb
                strim) ]
     (and (= "websocket" ws)
+         (= "upgrade" cn)
          (= "GET" (if (StringUtils/isNotEmpty mo)
                     mo
                     (-> req (.getMethod)(.name)))))
