@@ -237,8 +237,8 @@
         mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
                nsb
                strim) ]
-    (and (= "websocket" ws)
-         (= "upgrade" cn)
+    (and (>= (.indexOf ^String cn "upgrade") 0)
+         (= "websocket" ws)
          (= "GET" (if (StringUtils/isNotEmpty mo)
                     mo
                     (-> req (.getMethod)(.name)))))
