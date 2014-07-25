@@ -211,30 +211,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Object MakeObjArg1 (fn [a b] (class a)))
+(defmulti ^Object MakeObjArgN (fn [a & args] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod MakeObjArg1 Class
+(defmethod MakeObjArgN Class
 
-  [^Class cz ^Object arg1]
+  [^Class cz & args ]
 
   (test-nonil "java-class" cz)
-  (let [cargs (make-array Object 1)
-        ca (make-array Class 1) ]
-    (aset #^"[Ljava.lang.Object;" cargs 0 arg1)
-    (aset #^"[Ljava.lang.Class;" ca 0 Object)
+  (let [len (count args)
+        cargs (make-array Object len)
+        ca (make-array Class len) ]
+    (doseq [n (range len)]
+      (aset #^"[Ljava.lang.Object;" cargs n (nth args n))
+      (aset #^"[Ljava.lang.Class;" ca n Object))
     (.newInstance (.getDeclaredConstructor cz ca)
                   cargs)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod MakeObjArg1 String
+(defmethod MakeObjArgN String
 
-  [^String cz ^Object arg1]
+  [^String cz & args ]
 
-  (MakeObjArg1 (LoadClass cz) arg1))
+  (apply MakeObjArgN (LoadClass cz) args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
