@@ -13,25 +13,19 @@
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.zotohlab.frwk.io.IOUtils;
 import com.zotohlab.frwk.io.XData;
-import com.zotohlab.frwk.net.ULFileItem;
-import com.zotohlab.frwk.net.ULFormItems;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.http.multipart.*;
-import io.netty.handler.codec.http.websocketx.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,31 +33,31 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static com.zotohlab.frwk.util.CoreUtils.*;
-import static com.zotohlab.frwk.io.IOUtils.*;
-
+import static com.zotohlab.frwk.io.IOUtils.streamLimit;
 import static com.zotohlab.frwk.netty.NettyFW.*;
 
 /**
  * @author kenl
  */
-@SuppressWarnings("unchecked")
-public abstract class AuxHttpDecoder extends SimpleInboundHandler {
+public abstract class AuxHttpFilter<T> extends SimpleInboundFilter<T> {
 
-  private static Logger _log = LoggerFactory.getLogger(AuxHttpDecoder.class);
+  private static Logger _log = LoggerFactory.getLogger(AuxHttpFilter.class);
   public Logger tlog() { return _log; }
 
+  /** Clean up any attached attributes.
+   */
   public void resetAttrs(ChannelHandlerContext ctx) {
-    ByteBuf buf = (ByteBuf) getAttr(ctx, CBUF_KEY);
-    if (buf != null) { buf.release(); }
+    // always stick attributes to the channel,, not ctx.
+    Channel ch = ctx.channel();
+    ByteBuf buf;
     delAttr(ctx,MSGINFO_KEY);
     delAttr(ctx,CBUF_KEY);
     delAttr(ctx,XDATA_KEY);
     delAttr(ctx,XOS_KEY);
+    buf = (ByteBuf) getAttr(ch, CBUF_KEY);
+    if (buf != null) { buf.release(); }
   }
 
   public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
@@ -72,11 +66,12 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     } else {
       return;
     }
-    CompositeByteBuf cbuf = (CompositeByteBuf) getAttr( ctx, CBUF_KEY);
+    CompositeByteBuf cbuf = (CompositeByteBuf) getAttr(ctx, CBUF_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
-    XData xs = (XData) getAttr( ctx, XDATA_KEY);
+    XData xs = (XData) getAttr(ctx, XDATA_KEY);
     HttpContent chk = (HttpContent) msg;
-    if ( !xs.hasContent() && tooMuchData(cbuf,msg)) {
+    // if we have not done already, may be see if we need to switch to file.
+    if ( !xs.hasContent() && tooMuchData(cbuf, msg)) {
       os = switchBufToFile(ctx, cbuf);
     }
     ByteBuf cc= chk.content();
@@ -89,6 +84,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
         flushToFile(os, chk);
       }
     }
+    // is this the last chunk?
     maybeFinzMsgChunk(ctx, msg);
   }
 
@@ -98,24 +94,26 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     } else  {
       return;
     }
-    JsonObject info = (JsonObject) getAttr( ctx, MSGINFO_KEY) ;
-    OutputStream os = (OutputStream) getAttr( ctx, XOS_KEY);
-    ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
-    XData xs = (XData) getAttr( ctx, XDATA_KEY);
     addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
+    JsonObject info = (JsonObject) getAttr(ctx, MSGINFO_KEY) ;
+    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
+    ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
+    XData xs = (XData) getAttr(ctx, XDATA_KEY);
     if (os == null) {
       OutputStream baos = new ByteArrayOutputStream();
       slurpByteBuf(cbuf, baos);
       xs.resetContent(baos);
     } else {
       org.apache.commons.io.IOUtils.closeQuietly(os);
+      os=null;
     }
     long olen = info.get("clen").getAsLong();
-    long clen =  xs.size();
+    long clen = xs.size();
     if (olen != clen) {
       tlog().warn("content-length read from headers = " +  olen +  ", new clen = " + clen );
       info.addProperty("clen", clen);
     }
+    // all done.
     finzAndDone(ctx, info, xs);
   }
 
@@ -151,7 +149,7 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     slurpByteBuf(bbuf, os);
     os.flush();
     xs.resetContent(fp);
-    setAttr( ctx, XOS_KEY, os);
+    setAttr(ctx, XOS_KEY, os);
     return os;
   }
 
@@ -179,11 +177,11 @@ public abstract class AuxHttpDecoder extends SimpleInboundHandler {
     return ctx.pipeline().get(SslHandler.class) != null;
   }
 
-  public void channelReadXXX(ChannelHandlerContext ctx, Object msg) throws Exception {
+  public void channelReadXXX(ChannelHandlerContext ctx, T msg) throws Exception {
     channelRead0(ctx, msg);
   }
 
-  public void __channelReadComplete(ChannelHandlerContext ctx)
+  public void XXXchannelReadComplete(ChannelHandlerContext ctx)
       throws Exception                    {
     tlog().debug("{}.channelRead - complete called().", getClass().getSimpleName() );
     //super.channelReadComplete(ctx);

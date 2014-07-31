@@ -22,9 +22,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @author kenl
  */
-public abstract class SimpleInboundHandler<I> extends SimpleChannelInboundHandler<I> {
+public abstract class SimpleInboundFilter<I> extends SimpleChannelInboundHandler<I> {
 
-  private static Logger _log = LoggerFactory.getLogger(SimpleInboundHandler.class);
+  private static Logger _log = LoggerFactory.getLogger(SimpleInboundFilter.class);
   public Logger tlog() { return _log; }
 
   @Override
@@ -41,7 +41,7 @@ public abstract class SimpleInboundHandler<I> extends SimpleChannelInboundHandle
       }
     }
     catch (Exception e) {
-      tlog().error("Oh No! contexthandler=" + ctx.name() + "\n", e);
+      //tlog().error("Oh No! contexthandler=" + ctx.name() + "\n", e);
       throw e;
     }
   }

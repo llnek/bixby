@@ -25,7 +25,7 @@ public interface DBAPI {
 
   public MetaCache getMetaCache();
 
-  public Object vendor();
+  public Map<?,?> vendor();
 
   public void finz();
 

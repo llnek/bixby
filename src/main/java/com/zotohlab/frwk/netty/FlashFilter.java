@@ -25,22 +25,30 @@ import io.netty.util.CharsetUtil;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class FlashHandler extends ChannelInboundHandlerAdapter {
+public class FlashFilter extends ChannelInboundHandlerAdapter {
 
-  private static final String XML = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
+  private static final String _XML = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
+  private static final String XML= "<?xml version=\"1.0\"?>\r\n"
+      + "<!DOCTYPE cross-domain-policy SYSTEM \"/xml/dtds/cross-domain-policy.dtd\">\r\n"
+      + "<cross-domain-policy>\r\n"
+      + "  <site-control permitted-cross-domain-policies=\"master-only\"/>\r\n"
+      + "  <allow-access-from domain=\"*\" to-ports=\"" + "*" + "\" />\r\n"
+      + "</cross-domain-policy>\r\n";
+
+  private static final String FLASH_POLICY_REQ = "<policy-file-request/>\0";
   private static final AttributeKey HINT = AttributeKey.valueOf("FlashHint");
 
-  private static final FlashHandler shared = new FlashHandler();
-  public static FlashHandler getInstance() {
+  private static final FlashFilter shared = new FlashFilter();
+  public static FlashFilter getInstance() {
     return shared;
   }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(FlashHandler.class.getSimpleName(), shared);
+    pipe.addLast(FlashFilter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public FlashHandler() {
+  public FlashFilter() {
   }
 
   @SuppressWarnings("unchecked")
@@ -50,34 +58,45 @@ public class FlashHandler extends ChannelInboundHandlerAdapter {
     if (bbuf == null || !bbuf.isReadable()) {
       return;
     }
+
     Integer b1 = (Integer) ctx.attr(HINT).get();
+    int num= bbuf.readableBytes();
     int pos = bbuf.readerIndex();
     int nn;
 
-    // check first byte
-    if (b1==null) {
+    if (num > 0) {
       nn = bbuf.getUnsignedByte(pos++);
-      // not flash, go away
-      if (nn != '<') {
-        finito(ctx, msg);
-        bbuf=null;
+      --num;
+      if (b1 == null) {
+        // first byte
+        if (nn != '<') {
+          finito(ctx, msg);
+          bbuf=null;
+        } else {
+          b1= new Integer(nn);
+          ctx.attr(HINT).set(b1);
+        }
       } else {
-        ctx.attr(HINT).set(new Integer(nn));
+        // check 2nd byte
+        if (nn != 'p') {
+          finito(ctx, msg);
+        } else {
+          ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
+        }
       }
     }
-
-    if (bbuf==null || ! bbuf.isReadable()) {
-      return;
+    if (num > 0) {
+      nn = bbuf.getUnsignedByte(pos++);
+      --num;
+      if (b1 != null) {
+        // check 2nd byte
+        if (nn != 'p') {
+          finito(ctx, msg);
+        } else {
+          ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
+        }
+      }
     }
-
-    // check 2nd byte
-    nn = bbuf.getUnsignedByte(pos++);
-    if (nn != 'p') {
-      finito(ctx, msg);
-    } else {
-      ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
-    }
-
   }
 
   private void finito(ChannelHandlerContext ctx, Object msg) {

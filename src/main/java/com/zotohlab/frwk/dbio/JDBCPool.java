@@ -25,7 +25,7 @@ public interface JDBCPool {
 
   public void shutdown();
 
-  public Object vendor();
+  public Map<?,?> vendor();
 
   public String dbUrl();
 }

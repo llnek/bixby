@@ -11,29 +11,27 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package com.zotohlab.frwk.dbio;
 
-import java.util.HashMap;
-import java.util.Map;
+package com.zotohlab.frwk.netty;
+
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+
+import java.io.IOException;
 
 /**
  * @author kenl
  */
-public enum DBIOLocal {
-;
+@ChannelHandler.Sharable
+public abstract class RequestFilter<T> extends AuxHttpFilter<T> {
 
-  /**
-  * A cache of { database1 -> connection pool , database2 -> connection pool , ... }
-  */
-  private static ThreadLocal<Map<Object,JDBCPool>> _cache=new ThreadLocal<Map<Object,JDBCPool>>() {
-    protected Map<Object,JDBCPool> initialValue() {
-      return new HashMap<Object,JDBCPool>();
-    }
-  };
-
-  public static ThreadLocal<Map<Object,JDBCPool>> getCache() {
-    return _cache;
+  protected RequestFilter() {
   }
 
+  public abstract void handleInboundMsg
+      (ChannelHandlerContext ctx, Object msg)
+      throws IOException;
+
 }
+
 

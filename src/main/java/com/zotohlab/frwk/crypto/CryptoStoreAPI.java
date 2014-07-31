@@ -13,8 +13,11 @@
 
 package com.zotohlab.frwk.crypto;
 
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.KeyManagerFactory;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
+import java.util.List;
 
 /**
  *
@@ -23,18 +26,24 @@ import javax.net.ssl.TrustManagerFactory;
  */
 public interface CryptoStoreAPI {
 
-  public void addKeyEntity(byte[] bits, PasswordAPI pwdObj);
-  public void addCertEntity(byte[] bits);
+  public void addKeyEntity(byte[] keyBits, PasswordAPI pwdObj);
+  public void addCertEntity(byte[] certBits);
+
   public TrustManagerFactory trustManagerFactory();
   public KeyManagerFactory keyManagerFactory();
-  public Object certAliases();
-  public Object keyAliases();
-  public Object keyEntity(String nm, PasswordAPI pwdObj);
-  public Object certEntity(String nm);
+
+  public List<String> certAliases();
+  public List<String> keyAliases();
+
+  public KeyStore.PrivateKeyEntry keyEntity(String nm, PasswordAPI pwdObj);
+  public KeyStore.TrustedCertificateEntry certEntity(String nm);
   public void removeEntity(String nm);
-  public Object intermediateCAs();
-  public Object rootCAs();
-  public Object trustedCerts();
-  public void addPKCS7Entity(byte[] bits);
+
+  public List<X509Certificate> intermediateCAs();
+  public List<X509Certificate> rootCAs();
+  public List<X509Certificate> trustedCerts();
+
+  public void addPKCS7Entity(byte[] pkcs7Bits);
 
 }
+

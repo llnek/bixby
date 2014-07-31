@@ -12,20 +12,24 @@
  ??*/
 
 package com.zotohlab.frwk.util;
+import java.util.*;
 
 /**
  * @author kenl
  */
 public interface IWin32Conf {
 
-  public Object getSection(Object sectionName);
-  public Object sectionKeys();
+  public Map<?,?> getSection(Object sectionName);
+  public Set<?> sectionKeys();
+
   public void dbgShow();
+
   public String getString(Object sectionName, Object property);
   public long getLong(Object sectionName, Object property);
   public int getInt(Object sectionName, Object property);
   public boolean getBool(Object sectionName, Object property);
   public double getDouble(Object sectionName, Object property);
+
   public String optString(Object sectionName, Object property, String dft);
   public long optLong(Object sectionName, Object property, long dft);
   public int optInt(Object sectionName, Object property, int dft);

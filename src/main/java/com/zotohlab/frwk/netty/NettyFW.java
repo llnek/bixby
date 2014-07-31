@@ -18,21 +18,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.*;
-import com.zotohlab.frwk.io.*;
-import io.netty.channel.*;
+import com.zotohlab.frwk.io.IOUtils;
+import com.zotohlab.frwk.io.XData;
 import io.netty.buffer.ByteBuf;
-import java.io.*;
-import java.nio.charset.Charset;
-import java.util.*;
-
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.util.*;
 
 import static com.zotohlab.frwk.util.CoreUtils.nsb;
 

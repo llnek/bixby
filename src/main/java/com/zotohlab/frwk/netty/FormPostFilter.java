@@ -13,43 +13,20 @@
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonObject;
-import com.zotohlab.frwk.io.IOUtils;
-import com.zotohlab.frwk.io.XData;
-import com.zotohlab.frwk.net.ULFileItem;
 import com.zotohlab.frwk.net.ULFormItems;
-import static com.zotohlab.frwk.util.CoreUtils.*;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.multipart.*;
-import io.netty.util.AttributeKey;
-import org.apache.shiro.util.StringUtils;
-import io.netty.util.ReferenceCountUtil;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URLDecoder;
-import java.util.HashMap;
-
-import static com.zotohlab.frwk.io.IOUtils.streamLimit;
-import static com.zotohlab.frwk.netty.NettyFW.*;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
-public abstract class FormPostDecoder extends AuxHttpDecoder {
+public abstract class FormPostFilter<T> extends AuxHttpFilter<T> {
 
-  protected FormPostDecoder() {
+  protected FormPostFilter() {
   }
 
   public abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)

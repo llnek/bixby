@@ -21,7 +21,10 @@ import java.util.*;
  */
 public interface MetaCache {
 
-  public Object getMetas();
+  /**
+   * Returns a map of { type -> model-def , type -> model-def, ... }
+   */
+  public Map<?,?> getMetas();
 
 }
 

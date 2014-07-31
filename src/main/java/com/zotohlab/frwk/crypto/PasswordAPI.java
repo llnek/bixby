@@ -13,22 +13,30 @@
 
 package com.zotohlab.frwk.crypto;
 
+import java.util.List;
+
 /**
- * 
+ *
  * @author kenl
  *
  */
 public interface PasswordAPI {
 
+  /**
+   * Does this password hashed to match the target?
+   */
   public boolean validateHash(String targetHashed);
   public char[] toCharArray();
 
-  public Object stronglyHashed();
-  public Object hashed();
+  /**
+   * A tuple(2) ['hashed value' 'salt']
+   */
+  public List<String> stronglyHashed();
+  public List<String> hashed();
 
   public String encoded();
   public String text();
-  
+
 }
 
 

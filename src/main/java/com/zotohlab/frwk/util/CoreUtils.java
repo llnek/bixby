@@ -58,8 +58,9 @@ public enum CoreUtils {
         }
       }
     }
-    catch (Throwable e)
-    {}
+    catch (Throwable e) {
+      tlog().error("", e);
+    }
   }
 
   public static void unblock(Object lock) {
@@ -68,8 +69,9 @@ public enum CoreUtils {
         lock.notifyAll();
       }
     }
-    catch (Throwable e)
-    {}
+    catch (Throwable e) {
+      tlog().error("", e);
+    }
   }
 
   public static Object asJObj(Object a) {
@@ -94,11 +96,18 @@ public enum CoreUtils {
   }
 
   public static void blockForever() {
+    try {
+      Thread.currentThread().join();
+    } catch (Throwable e) {
+      tlog().error("", e);
+    }
+    /*
     while (true) try {
       Thread.sleep(8000);
     }
     catch (Throwable e)
     {}
+    */
   }
 
   public static JsonElement readJson(File f) {

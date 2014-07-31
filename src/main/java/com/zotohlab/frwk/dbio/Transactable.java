@@ -21,6 +21,10 @@ import java.util.*;
  */
 public interface  Transactable {
 
+  /**
+   * param fn  Acts like a closure.  The fn is executed within the context of a
+   *           transaction.
+   */
   public Object execWith(Object fn) ;
 
   public Connection begin();

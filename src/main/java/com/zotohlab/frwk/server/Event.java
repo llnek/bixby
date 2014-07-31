@@ -15,14 +15,11 @@
 
 package com.zotohlab.frwk.server;
 
-import com.zotohlab.gallifrey.io.Emitter;
 
 /**
  * @author kenl
  */
 public interface Event {
-
-  public Emitter emitter();
 
   public Object getId();
 

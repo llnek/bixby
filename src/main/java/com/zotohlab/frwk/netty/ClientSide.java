@@ -13,19 +13,18 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.io.IOUtils.*;
 import com.google.gson.JsonObject;
-import com.zotohlab.frwk.core.Callable;
 import com.zotohlab.frwk.io.XData;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.util.AttributeKey;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +32,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 
-@SuppressWarnings("unchecked")
+import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+
+/**
+ * @author kenl
+ */
 public enum ClientSide {
 ;
 
@@ -41,7 +44,9 @@ public enum ClientSide {
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return _log; }
 
-  public static Bootstrap initClientSide( PipelineConfigurator cfg, JsonObject options) {
+  /**
+   */
+  public static Bootstrap initClientSide(PipelineConfigurator cfg, JsonObject options) {
     Bootstrap bs= new Bootstrap();
     bs.group( new NioEventLoopGroup() );
     bs.channel(NioSocketChannel.class);
@@ -51,13 +56,14 @@ public enum ClientSide {
     return bs;
   }
 
-
+  /**
+   */
   public static Channel connect(Bootstrap bs, URL targetUrl) throws IOException {
     boolean ssl = "https".equals(targetUrl.getProtocol());
     int pnum = targetUrl.getPort();
     int port = (pnum < 0) ? (ssl ?  443 : 80) : pnum;
     String host = targetUrl.getHost();
-    InetSocketAddress sock = new InetSocketAddress( host, port);
+    InetSocketAddress sock = new InetSocketAddress(host, port);
     ChannelFuture cf = null;
     try {
       cf = bs.connect(sock).sync();
@@ -76,7 +82,7 @@ public enum ClientSide {
     send(c, "POST", data, options);
   }
 
-  public static  void post(Channel c, XData data) throws IOException {
+  public static void post(Channel c, XData data) throws IOException {
     send(c,"POST", data, new JsonObject() );
   }
 
@@ -93,13 +99,12 @@ public enum ClientSide {
     long clen = (xdata == null) ?  0L : xdata.size();
     URL targetUrl = (URL) ch.attr(URL_KEY).get();
     String mo = options.has("override") ? options.get("override").getAsString() : null;
-    String mt = op;
-    if (mo != null) {
-      mt= mo;
-    }
-    HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(mt), targetUrl.toString() );
+    HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(op),
+                                             targetUrl.toString() );
     HttpHeaders.setHeader(req, "Connection",
-        options.has("keep-alive") && options.get("keep-alive").getAsBoolean() ? "keep-alive" : "close");
+                               options.has("keep-alive") && options.get("keep-alive").getAsBoolean()
+                               ? "keep-alive" : "close");
+
     HttpHeaders.setHeader(req, "host", targetUrl.getHost());
 
     String ct = HttpHeaders.getHeader(req, "content-type");
@@ -107,6 +112,7 @@ public enum ClientSide {
       HttpHeaders.setHeader(req, "content-type",  "application/octet-stream");
     }
 
+    if (mo != null) { HttpHeaders.setHeader(req, "X-HTTP-Method-Override", mo); }
     HttpHeaders.setContentLength(req, clen);
 
     tlog().debug("Netty client: about to flush out request (headers)");

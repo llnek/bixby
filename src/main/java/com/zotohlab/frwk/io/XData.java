@@ -45,7 +45,7 @@ public class XData implements Serializable {
   }
 
   public XData() {
-      this(null);
+    this(null);
   }
 
   public void setEncoding(String enc) { _encoding=enc; }
@@ -119,7 +119,7 @@ public class XData implements Serializable {
   }
 
   public String filePath() throws IOException {
-      return _data instanceof File ? ((File) _data).getCanonicalPath() : "";
+    return _data instanceof File ? ((File) _data).getCanonicalPath() : "";
   }
 
   public long size() {

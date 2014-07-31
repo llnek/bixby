@@ -14,11 +14,12 @@
 package com.zotohlab.frwk.io;
 
 import  org.apache.commons.lang3.StringUtils;
+import org.apache.commons.io.FileUtils;
 import java.io.*;
 import java.util.Collection;
 
 import org.slf4j.*;
-import org.apache.commons.io.FileUtils;
+
 
 /**
  * @author kenl
@@ -26,9 +27,11 @@ import org.apache.commons.io.FileUtils;
 public class IOUtils {
 
   private static File _wd = new File( System.getProperty("java.io.tmpdir"));
-  private static long _DFT= 1L * 1024 * 1024 * 10; // 10M
+  private static long _DFT= 2L * 1024 * 1024; // 2M
   private static long _streamLimit= _DFT;
 
+  /** beyond this limit, data will be swapped out to disk (temp file)
+   */
   public static long streamLimit() { return _streamLimit; }
 
   public static void setStreamLimit(long n) {
@@ -42,6 +45,8 @@ public class IOUtils {
     _wd= fpDir;
   }
 
+  /** Returns a Tuple(2) [ File, OutputStream? ]
+   */
   public static Object[] newTempFile(boolean open) throws IOException { // (File,OutputStream)
     Object[] objs= new Object[2];
     File fp = mkTempFile("","");
@@ -59,8 +64,16 @@ public class IOUtils {
                                 StringUtils.isEmpty(sux) ? ".dat" : sux, _wd);
   }
 
+  /** Look for files with certain extension, such as "java", "xml"
+   */
   public static Collection<File> listFiles(File dir, String ext, boolean recurse) {
     return FileUtils.listFiles(dir, new String[]{ ext},recurse);
+  }
+
+  /** Look for any files with certain extension, such as "java", "xml"
+   */
+  public static Collection<File> listAnyFiles(File dir, String[] exts, boolean recurse) {
+    return FileUtils.listFiles(dir, exts, recurse);
   }
 
 }

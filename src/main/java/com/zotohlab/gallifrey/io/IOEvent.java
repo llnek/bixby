@@ -25,6 +25,9 @@ public interface IOEvent extends Event {
   public IOSession getSession();
 
   public boolean checkAuthenticity();
+
+  public Emitter emitter();
+
 }
 
 

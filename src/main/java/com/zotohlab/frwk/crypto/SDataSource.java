@@ -32,7 +32,7 @@ public class SDataSource implements DataSource {
    * @param content
    * @param contentType
    */
-  public SDataSource( File content, String contentType) {
+  public SDataSource(File content, String contentType) {
     _ctype= nsb(contentType);
     _fn= content;
   }
@@ -41,7 +41,7 @@ public class SDataSource implements DataSource {
    * @param content
    * @param contentType
    */
-  public SDataSource( byte[] content, String contentType) {
+  public SDataSource(byte[] content, String contentType) {
     _ctype= nsb(contentType);
     _bits= content;
   }
@@ -49,14 +49,14 @@ public class SDataSource implements DataSource {
   /**
    * @param content
    */
-  public SDataSource( File content) {
+  public SDataSource(File content) {
     this(content, "");
   }
 
   /**
    * @param content
    */
-  public SDataSource( byte[] content) {
+  public SDataSource(byte[] content) {
     this(content, "");
   }
 

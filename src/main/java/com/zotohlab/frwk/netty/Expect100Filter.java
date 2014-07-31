@@ -21,22 +21,22 @@ import io.netty.util.ReferenceCountUtil;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class Expect100 extends SimpleInboundHandler {
+public class Expect100Filter<T> extends SimpleInboundFilter<T> {
 
-  private static final Expect100 shared = new Expect100();
-  public static Expect100 getInstance() {
+  private static final Expect100Filter shared = new Expect100Filter();
+  public static Expect100Filter getInstance() {
     return shared;
   }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(Expect100.class.getSimpleName(), shared);
+    pipe.addLast(Expect100Filter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public Expect100() {
+  public Expect100Filter() {
   }
 
-  public static void handle100( final ChannelHandlerContext ctx, HttpMessage msg) {
+  public static void handle100(final ChannelHandlerContext ctx, HttpMessage msg) {
     if (HttpHeaders.is100ContinueExpected(msg)) {
       ctx.writeAndFlush( c100_rsp() ).addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture f) {
@@ -49,7 +49,7 @@ public class Expect100 extends SimpleInboundHandler {
   }
 
   @Override
-  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+  protected void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
     if (msg instanceof HttpMessage) {
       handle100(ctx, (HttpMessage) msg);
     }
@@ -62,6 +62,7 @@ public class Expect100 extends SimpleInboundHandler {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                                                   HttpResponseStatus.CONTINUE);
   }
+
 }
 
 

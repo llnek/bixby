@@ -26,10 +26,14 @@ public class BoneCPHook extends AbstractConnectionHook {
   private static final Logger _log= LoggerFactory.getLogger(BoneCPHook.class);
   public static Logger tlog() { return _log; }
 
+  /**
+   */
   public void onCheckOut(ConnectionHandle h) {
     tlog().debug("BoneCP: checking out a connection =======================> {}", h);
   }
 
+  /**
+   */
   public void onCheckIn(ConnectionHandle h) {
     tlog().debug("BoneCP: checking in a connection   =======================> {}", h);
   }

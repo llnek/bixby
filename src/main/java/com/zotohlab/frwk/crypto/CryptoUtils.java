@@ -24,21 +24,21 @@ import java.security.UnrecoverableEntryException;
 public enum CryptoUtils {
 ;
 
+  /**
+   */
   public static KeyStore.PrivateKeyEntry getPKey(KeyStore ks, String n, char[] pwd)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
     Object obj = ks.getEntry(n, new KeyStore.PasswordProtection(pwd));
     return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
   }
 
+  /**
+   */
   public static KeyStore.TrustedCertificateEntry getCert(KeyStore ks, String n)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
     Object obj = ks.getEntry(n, null);
     return obj instanceof KeyStore.TrustedCertificateEntry ? (KeyStore.TrustedCertificateEntry) obj : null;
   }
 
-  public static void main(String[] args) {
-  }
-
-
-
 }
+

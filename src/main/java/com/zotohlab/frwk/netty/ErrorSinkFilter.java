@@ -13,40 +13,40 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.netty.NettyFW.replyXXX;
-
+import static com.zotohlab.frwk.util.CoreUtils.*;
 import io.netty.channel.*;
 import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.zotohlab.frwk.netty.NettyFW.*;
+
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class ErrorCatcher extends SimpleChannelInboundHandler {
+public class ErrorSinkFilter<T> extends SimpleChannelInboundHandler<T> {
 
-  private static Logger _log = LoggerFactory.getLogger(ErrorCatcher.class);
+  private static Logger _log = LoggerFactory.getLogger(ErrorSinkFilter.class);
   public Logger tlog() { return _log; }
 
   public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
 
-  private static final ErrorCatcher shared = new ErrorCatcher();
-  public static ErrorCatcher getInstance() {
+  private static final ErrorSinkFilter shared = new ErrorSinkFilter();
+  public static ErrorSinkFilter getInstance() {
     return shared;
   }
 
-
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(ErrorCatcher.class.getSimpleName(), shared);
+    pipe.addLast(ErrorSinkFilter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public ErrorCatcher() {
+  public ErrorSinkFilter() {
   }
 
   @Override
-  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
+  protected void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
     maybeHandleError(ctx);
   }
 
@@ -56,10 +56,11 @@ public class ErrorCatcher extends SimpleChannelInboundHandler {
   }
 
   private void maybeHandleError(ChannelHandlerContext ctx) throws Exception {
-    Channel ch = ctx.channel();
-    Object obj = ch.attr(MSGTYPE).get();
-    if (obj != null && "wsock".equals(obj.toString())) {} else {
-      replyXXX(ch, 500);
+    Object obj = NettyFW.getAttr(ctx, MSGTYPE);
+    if ("wsock".equals( nsb(obj)))
+    {}
+    else {
+      replyXXX(ctx.channel(), 500);
     }
   }
 

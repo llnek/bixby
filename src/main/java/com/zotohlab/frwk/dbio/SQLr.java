@@ -21,29 +21,29 @@ import java.util.*;
  */
 public interface SQLr {
 
-  public List<?> findSome(Object model, Map<String,Object> filters, Object extras);
+  public List<?> findSome(Object modeldef, Map<String,Object> filters, Map<?,?> extras);
 
-  public List<?> findSome(Object model, Map<String,Object> filters);
+  public List<?> findSome(Object modeldef, Map<String,Object> filters);
 
-  public List<?> findAll(Object model, Object extras);
+  public List<?> findAll(Object modeldef, Map<?,?> extras);
 
-  public List<?> findAll(Object model);
+  public List<?> findAll(Object modeldef);
 
-  public Object findOne(Object model, Map<String,Object> filters);
+  public Object findOne(Object modeldef, Map<String,Object> filters);
 
   public Object update(Object obj);
   public Object delete(Object obj);
   public Object insert(Object obj);
 
-  public List<?> select(Object model, String sql, List<?> params);
+  public List<?> select(Object modeldef, String sql, List<?> params);
   public List<?> select(String sql, List<?> params);
 
   public Object executeWithOutput(String sql, List<?> params);
   public Object execute(String sql, List<?> params);
 
-  public int countAll(Object model);
+  public int countAll(Object modeldef);
 
-  public void purge(Object model);
+  public void purge(Object modeldef);
 
   public MetaCache getMetaCache();
 

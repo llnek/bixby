@@ -21,7 +21,7 @@ import java.util.*;
  */
 public interface Schema {
 
-  public Object getModels();
+  public List<?> getModels();
 
 }
 
