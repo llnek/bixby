@@ -25,28 +25,24 @@ import static com.zotohlab.frwk.netty.NettyFW.*;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class ErrorSinkFilter<T> extends SimpleChannelInboundHandler<T> {
+public class ErrorSinkFilter extends SimpleChannelInboundHandler {
 
   private static Logger _log = LoggerFactory.getLogger(ErrorSinkFilter.class);
   public Logger tlog() { return _log; }
 
   public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
-
   private static final ErrorSinkFilter shared = new ErrorSinkFilter();
-  public static ErrorSinkFilter getInstance() {
-    return shared;
-  }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(ErrorSinkFilter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public ErrorSinkFilter() {
+  protected ErrorSinkFilter() {
   }
 
   @Override
-  protected void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
     maybeHandleError(ctx);
   }
 
@@ -56,7 +52,7 @@ public class ErrorSinkFilter<T> extends SimpleChannelInboundHandler<T> {
   }
 
   private void maybeHandleError(ChannelHandlerContext ctx) throws Exception {
-    Object obj = NettyFW.getAttr(ctx, MSGTYPE);
+    Object obj = getAttr(ctx, MSGTYPE);
     if ("wsock".equals( nsb(obj)))
     {}
     else {

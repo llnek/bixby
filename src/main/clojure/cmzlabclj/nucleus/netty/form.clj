@@ -16,8 +16,10 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE notnil? Bytesify] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ])
+
   (:import [java.io OutputStream IOException File
                     ByteArrayOutputStream]
            [io.netty.buffer Unpooled]
@@ -39,8 +41,8 @@
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.util ReferenceCountUtil]
            [com.zotohlab.frwk.netty PipelineConfigurator
-                                    AuxHttpDecoder FormPostDecoder
-                                    DemuxedMsg ]
+                                    AuxHttpFilter FormPostFilter
+                                    DemuxedMsg]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.net ULFormItems ULFileItem]
            [com.zotohlab.frwk.io XData IOUtils]
@@ -98,7 +100,7 @@
 
   (try
     (while (.hasNext dc)
-      (if-let [ ^InterfaceHttpData data (.next dc) ]
+      (if-let [^InterfaceHttpData data (.next dc) ]
         (try
           (writeHttpData ctx data fis)
           (finally
@@ -137,15 +139,15 @@
 ;;(defn reifyFormPostDecoder
 (defn- reifyFormPostDecoder
 
-  ^AuxHttpDecoder
+  ^AuxHttpFilter
   []
 
-  (proxy [FormPostDecoder][]
+  (proxy [FormPostFilter][]
 
     (finzAndDone [ c info data ]
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
-            xxx (.resetAttrs ^FormPostDecoder this ctx)
+            xxx (.resetAttrs ^FormPostFilter this ctx)
             itms (splitBodyParams (if (.hasContent xs)(.stringify xs) "")) ]
         (.resetContent xs itms)
         (log/debug "fire fully decoded message to the next handler")
@@ -158,7 +160,7 @@
             ^ULFormItems fis (NettyFW/getAttr ctx NettyFW/FORMITMS_KEY) ]
         (if (nil? dc)
           ;;(proxy-super handleMsgChunk ctx msg)
-          (.handleMsgChunk ^FormPostDecoder this ctx msg)
+          (.handleMsgChunk ^FormPostFilter this ctx msg)
           (with-local-vars [err nil]
             (when (instance? HttpContent msg)
               (let [^HttpContent hc msg
@@ -177,7 +179,7 @@
                     ^XData xs (NettyFW/getAttr ctx NettyFW/XDATA_KEY) ]
                 (NettyFW/delAttr ctx NettyFW/FORMITMS_KEY)
                 (.resetContent xs fis)
-                (.resetAttrs ^FormPostDecoder this ctx)
+                (.resetAttrs ^FormPostFilter this ctx)
                 (.fireChannelRead ctx (DemuxedMsg. info xs))))))))
 
     (handleFormPost [c obj]
@@ -196,11 +198,11 @@
           ;; nothing to decode.
             (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
             ;;(proxy-super handleMsgChunk ctx msg))
-            (.handleMsgChunk ^FormPostDecoder this ctx msg))
+            (.handleMsgChunk ^FormPostFilter this ctx msg))
           (let [fac (DefaultHttpDataFactory. (IOUtils/streamLimit))
                 dc (HttpPostRequestDecoder. fac msg) ]
             (NettyFW/setAttr ctx NettyFW/FORMDEC_KEY dc)
-            (.handleFormChunk ^FormPostDecoder this ctx msg)))))
+            (.handleFormChunk ^FormPostFilter this ctx msg)))))
 
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
@@ -208,10 +210,10 @@
         (log/debug "channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (.handleFormPost ^FormPostDecoder this ctx msg)
+          (.handleFormPost ^FormPostFilter this ctx msg)
 
           (instance? HttpContent msg)
-          (.handleFormChunk ^FormPostDecoder this ctx msg)
+          (.handleFormChunk ^FormPostFilter this ctx msg)
 
           :else
           (do
@@ -223,14 +225,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; the decoder is annotated as sharable.  this acts like the singleton.
-(def ^:private HTTP-FORMPOST-DECODER (reifyFormPostDecoder))
+(def ^:private HTTP-FORMPOST-FILTER (reifyFormPostDecoder))
 
-(defn ReifyFormPostDecoderSingleton ""
+(defn ReifyFormPostFilterSingleton ""
 
   ^ChannelHandler
   []
 
-  HTTP-FORMPOST-DECODER)
+  HTTP-FORMPOST-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

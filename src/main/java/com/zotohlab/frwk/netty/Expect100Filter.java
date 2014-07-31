@@ -21,19 +21,16 @@ import io.netty.util.ReferenceCountUtil;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class Expect100Filter<T> extends SimpleInboundFilter<T> {
+public class Expect100Filter extends SimpleInboundFilter {
 
   private static final Expect100Filter shared = new Expect100Filter();
-  public static Expect100Filter getInstance() {
-    return shared;
-  }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(Expect100Filter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public Expect100Filter() {
+  protected Expect100Filter() {
   }
 
   public static void handle100(final ChannelHandlerContext ctx, HttpMessage msg) {
@@ -49,7 +46,7 @@ public class Expect100Filter<T> extends SimpleInboundFilter<T> {
   }
 
   @Override
-  protected void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
     if (msg instanceof HttpMessage) {
       handle100(ctx, (HttpMessage) msg);
     }

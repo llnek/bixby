@@ -30,7 +30,7 @@ public abstract class AbstractServlet extends HttpServlet implements Serializabl
   private static final long serialVersionUID= -3862652820921092885L;
   public Logger tlog() { return _log; }
 
-  public AbstractServlet() {
+  protected AbstractServlet() {
   }
 
   public void destroy() {

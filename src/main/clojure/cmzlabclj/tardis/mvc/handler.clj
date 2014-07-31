@@ -54,9 +54,9 @@
                              ChannelPipeline ChannelHandlerContext]
            [io.netty.handler.stream ChunkedWriteHandler]
            [io.netty.util AttributeKey]
-           [com.zotohlab.frwk.netty NettyFW ErrorCatcher SimpleInboundHandler
+           [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter SimpleInboundFilter
                                      DemuxedMsg PipelineConfigurator
-                                     FlashHandler]
+                                     FlashFilter]
            [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,7 +72,7 @@
   ^ChannelHandler
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (proxy [SimpleInboundHandler] []
+  (proxy [SimpleInboundFilter] []
     (channelRead0 [c msg]
       ;;(log/debug "mvc route filter called with message = " (type msg))
       (cond
@@ -128,7 +128,7 @@
   [^cmzlabclj.tardis.io.core.EmitterAPI em
    ^cmzlabclj.tardis.core.sys.Element co]
 
-  (proxy [SimpleInboundHandler] []
+  (proxy [SimpleInboundFilter] []
     (channelRead0 [ctx msg]
       ;;(log/debug "mvc netty handler called with message = " (type msg))
       (let [^cmzlabclj.nucleus.net.routes.RouteCracker
@@ -166,7 +166,7 @@
                       (.getAsJsonPrimitive "handler")
                       (.getAsString)) ]
     (log/debug "wsockDispatcher has user function: " handlerFn)
-    (proxy [SimpleInboundHandler] []
+    (proxy [SimpleInboundFilter] []
         (channelRead0 [ctx msg]
           (let [ch (.channel ^ChannelHandlerContext ctx)
                 opts {:router handlerFn}
@@ -198,7 +198,7 @@
   (let [^ChannelPipeline pipe (.pipeline ctx)
         co (:emitter hack) ]
     (.addBefore pipe "ErrorCatcher" "WSOCKDispatcher" (wsockDispatcher co co options))
-    (-> (.attr ctx ErrorCatcher/MSGTYPE)
+    (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
         (.set "wsock"))
     ;;(.remove pipe "ChunkedWriteHandler")
     (.remove pipe "MVCDispatcher")
@@ -223,14 +223,14 @@
               ssl (SSLServerHShake options) ]
           (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
           (doto pipe
-            (FlashHandler/addLast )
+            (FlashFilter/addLast )
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
             (.addLast "RouteFilter" (routeFilter co))
             (.addLast "HttpDemuxer" (MakeHttpDemuxer options1 hack))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
             ;;(.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
             (.addLast "MVCDispatcher" (mvcDispatcher co co))
-            (ErrorCatcher/addLast ))
+            (ErrorSinkFilter/addLast ))
           pipe)))
     ))
 

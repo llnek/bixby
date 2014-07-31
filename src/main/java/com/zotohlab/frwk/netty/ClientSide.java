@@ -37,6 +37,7 @@ import static com.zotohlab.frwk.io.IOUtils.streamLimit;
 /**
  * @author kenl
  */
+@SuppressWarnings("unchecked")
 public enum ClientSide {
 ;
 

@@ -16,10 +16,12 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE MakeMMap notnil? Try!] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.netty.request]
         [cmzlabclj.nucleus.netty.form])
+
   (:import [io.netty.channel ChannelHandlerContext ChannelPipeline
                              ChannelInboundHandlerAdapter ChannelFuture
                              ChannelOption ChannelFutureListener
@@ -42,9 +44,9 @@
           [javax.net.ssl KeyManagerFactory SSLContext SSLEngine TrustManagerFactory]
           [java.security KeyStore SecureRandom]
           [com.zotohlab.frwk.netty PipelineConfigurator
-                                     RequestDecoder
-                                     Expect100 AuxHttpDecoder
-                                     ErrorCatcher]
+                                   RequestFilter
+                                   Expect100Filter AuxHttpFilter
+                                   ErrorSinkFilter]
           [com.zotohlab.frwk.netty NettyFW]
           [com.zotohlab.frwk.io XData]
           [com.zotohlab.frwk.net SSLTrustMgrFactory]
@@ -180,13 +182,13 @@
         (NettyFW/replyXXX ch 404)
         (.setf! impl :ignore true))
       (do
-        (Expect100/handle100 ctx req)
+        (Expect100Filter/handle100 ctx req)
         (if (isFormPost req mt)
           (do
-            (.setf! impl :delegate (ReifyFormPostDecoderSingleton))
+            (.setf! impl :delegate (ReifyFormPostFilterSingleton))
             (.addProperty info "formpost" true))
-          (.setf! impl :delegate (ReifyRequestDecoderSingleton)))))
-    (when-let [ ^AuxHttpDecoder d (.getf impl :delegate) ]
+          (.setf! impl :delegate (ReifyRequestFilterSingleton)))))
+    (when-let [ ^AuxHttpFilter d (.getf impl :delegate) ]
       (.channelReadXXX d ctx req))
   ))
 
@@ -200,9 +202,9 @@
   (let [impl (MakeMMap)]
     (.setf! impl :delegate nil)
     (.setf! impl :ignore false)
-    (proxy [AuxHttpDecoder][]
+    (proxy [AuxHttpFilter][]
       (channelRead0 [ctx msg]
-        (let [ ^AuxHttpDecoder d (.getf impl :delegate)
+        (let [ ^AuxHttpFilter d (.getf impl :delegate)
                e (.getf impl :ignore) ]
           (log/debug "HttpHandler got msg = " (type msg))
           (log/debug "HttpHandler delegate = " d)
@@ -333,7 +335,7 @@
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
           (.addLast yourHandlerName
                     ^ChannelHandler (yourHandlerFn options))
-          (ErrorCatcher/addLast))))
+          (ErrorSinkFilter/addLast))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -13,18 +13,18 @@
 
 package com.zotohlab.frwk.netty;
 
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import com.zotohlab.frwk.net.ULFormItems;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-
 import java.io.IOException;
+import static com.zotohlab.frwk.netty.NettyFW.*;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
-public abstract class FormPostFilter<T> extends AuxHttpFilter<T> {
+public abstract class FormPostFilter extends AuxHttpFilter {
 
   protected FormPostFilter() {
   }
@@ -36,10 +36,10 @@ public abstract class FormPostFilter<T> extends AuxHttpFilter<T> {
     throws IOException;
 
   public void resetAttrs(ChannelHandlerContext ctx) {
-    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) NettyFW.getAttr(ctx, NettyFW.FORMDEC_KEY);
-    ULFormItems fis = (ULFormItems) NettyFW.getAttr(ctx, NettyFW.FORMITMS_KEY);
-    NettyFW.delAttr( ctx,  NettyFW.FORMITMS_KEY);
-    NettyFW.delAttr(ctx, NettyFW.FORMDEC_KEY);
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr(ctx, FORMDEC_KEY);
+    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
+    delAttr(ctx, FORMITMS_KEY);
+    delAttr(ctx, FORMDEC_KEY);
     if (fis != null) {
       fis.destroy();
     }

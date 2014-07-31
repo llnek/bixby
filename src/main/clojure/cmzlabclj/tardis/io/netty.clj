@@ -16,6 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core
          :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ]
         [cmzlabclj.nucleus.netty.io]
@@ -28,6 +29,7 @@
         [cmzlabclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.nucleus.util.mime :only [GetCharset] ])
+
   (:import [java.net HttpCookie URI URL InetSocketAddress]
            [java.net SocketAddress InetAddress]
            [java.util ArrayList List HashMap Map]
@@ -55,7 +57,7 @@
            [com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput]
            [com.zotohlab.frwk.netty NettyFW
                                     DemuxedMsg
-                                    ErrorCatcher
+                                    ErrorSinkFilter
                                     PipelineConfigurator]
            [io.netty.handler.codec.http.websocketx WebSocketFrame
                                                    BinaryWebSocketFrame

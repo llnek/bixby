@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author kenl
  */
-public abstract class SimpleInboundFilter<I> extends SimpleChannelInboundHandler<I> {
+public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
 
   private static Logger _log = LoggerFactory.getLogger(SimpleInboundFilter.class);
   public Logger tlog() { return _log; }

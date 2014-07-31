@@ -54,7 +54,6 @@ public enum NettyFW {
   public static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
 
 
-
   private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
   public static Logger tlog() {
     return _log;
@@ -69,22 +68,22 @@ public enum NettyFW {
   }
 
   @SuppressWarnings("unchecked")
-  public static void setAttr( ChannelHandlerContext ctx, AttributeKey akey,  Object aval) {
-    ctx.attr(akey).set(aval);
+  public static void setAttr(ChannelHandlerContext ctx, AttributeKey akey, Object aval) {
+    ctx.channel().attr(akey).set(aval);
   }
 
   @SuppressWarnings("unchecked")
   public static  void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
-    ctx.attr(akey).remove();
+    ctx.channel().attr(akey).remove();
   }
 
   @SuppressWarnings("unchecked")
-  public static Object getAttr( ChannelHandlerContext ctx, AttributeKey akey) {
-    return ctx.attr(akey).get();
+  public static Object getAttr(ChannelHandlerContext ctx, AttributeKey akey) {
+    return ctx.channel().attr(akey).get();
   }
 
   @SuppressWarnings("unchecked")
-  public static void setAttr( Channel ch, AttributeKey akey,  Object aval) {
+  public static void setAttr(Channel ch, AttributeKey akey,  Object aval) {
     ch.attr(akey).set(aval);
   }
 
@@ -94,12 +93,11 @@ public enum NettyFW {
   }
 
   @SuppressWarnings("unchecked")
-  public static Object getAttr( Channel ch, AttributeKey akey) {
+  public static Object getAttr(Channel ch, AttributeKey akey) {
     return ch.attr(akey).get();
   }
 
-
-  public static JsonObject extractHeaders( HttpHeaders hdrs) {
+  public static JsonObject extractHeaders(HttpHeaders hdrs) {
     JsonObject sum= new JsonObject();
     JsonArray arr;
     for (String n : hdrs.names()) {
@@ -143,8 +141,7 @@ public enum NettyFW {
     return sum;
   }
 
-
-  public static JsonObject extractMsgInfo( HttpMessage msg) {
+  public static JsonObject extractMsgInfo(HttpMessage msg) {
     JsonObject info= new JsonObject();
     info.addProperty("is-chunked", HttpHeaders.isTransferEncodingChunked(msg));
     info.addProperty("keep-alive", HttpHeaders.isKeepAlive(msg));
@@ -181,7 +178,7 @@ public enum NettyFW {
       info.addProperty("method", mt.toUpperCase());
       info.add("params", extractParams(dc));
       info.addProperty("uri", dc.path());
-      info.addProperty("uri2", req.getUri());
+      info.addProperty("uri2", uriStr);
       int pos = uriStr.indexOf('?');
       if (pos >= 0) {
         info.addProperty("query", uriStr.substring(pos));
@@ -189,8 +186,6 @@ public enum NettyFW {
     }
     return info;
   }
-
-
 
   public static ChannelPipeline getPipeline(ChannelHandlerContext ctx) {
     return ctx.pipeline();
@@ -289,9 +284,11 @@ public enum NettyFW {
   public static HttpResponse makeFullHttpReply(int status, ByteBuf payload) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status), payload);
   }
+
   public static HttpResponse makeFullHttpReply(int status) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status));
   }
+
   public static HttpResponse makeFullHttpReply() {
     return makeFullHttpReply(200);
   }

@@ -41,7 +41,7 @@ import static com.zotohlab.frwk.netty.NettyFW.*;
 /**
  * @author kenl
  */
-public abstract class AuxHttpFilter<T> extends SimpleInboundFilter<T> {
+public abstract class AuxHttpFilter extends SimpleInboundFilter {
 
   private static Logger _log = LoggerFactory.getLogger(AuxHttpFilter.class);
   public Logger tlog() { return _log; }
@@ -49,15 +49,14 @@ public abstract class AuxHttpFilter<T> extends SimpleInboundFilter<T> {
   /** Clean up any attached attributes.
    */
   public void resetAttrs(ChannelHandlerContext ctx) {
-    // always stick attributes to the channel,, not ctx.
-    Channel ch = ctx.channel();
-    ByteBuf buf;
+
+    ByteBuf buf= (ByteBuf) getAttr(ctx, CBUF_KEY);
+    if (buf != null) { buf.release(); }
+
     delAttr(ctx,MSGINFO_KEY);
     delAttr(ctx,CBUF_KEY);
     delAttr(ctx,XDATA_KEY);
     delAttr(ctx,XOS_KEY);
-    buf = (ByteBuf) getAttr(ch, CBUF_KEY);
-    if (buf != null) { buf.release(); }
   }
 
   public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
@@ -167,7 +166,7 @@ public abstract class AuxHttpFilter<T> extends SimpleInboundFilter<T> {
   protected void addMoreHeaders(ChannelHandlerContext ctx, HttpHeaders hds) {
     JsonObject info = (JsonObject) getAttr(ctx ,MSGINFO_KEY);
     JsonObject old = info.getAsJsonObject("headers");
-    JsonObject nnw= NettyFW.extractHeaders(hds);
+    JsonObject nnw= extractHeaders(hds);
     for (Map.Entry<String,JsonElement> en: nnw.entrySet()) {
       old.add(en.getKey(), en.getValue());
     }
@@ -177,7 +176,8 @@ public abstract class AuxHttpFilter<T> extends SimpleInboundFilter<T> {
     return ctx.pipeline().get(SslHandler.class) != null;
   }
 
-  public void channelReadXXX(ChannelHandlerContext ctx, T msg) throws Exception {
+  @SuppressWarnings("unchecked")
+  public void channelReadXXX(ChannelHandlerContext ctx, Object msg) throws Exception {
     channelRead0(ctx, msg);
   }
 

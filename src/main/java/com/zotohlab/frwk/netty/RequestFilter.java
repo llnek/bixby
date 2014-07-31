@@ -23,7 +23,7 @@ import java.io.IOException;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public abstract class RequestFilter<T> extends AuxHttpFilter<T> {
+public abstract class RequestFilter extends AuxHttpFilter {
 
   protected RequestFilter() {
   }

@@ -13,6 +13,8 @@
 
 package com.zotohlab.frwk.netty;
 
+import static com.zotohlab.frwk.netty.NettyFW.*;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -35,23 +37,22 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
       + "  <allow-access-from domain=\"*\" to-ports=\"" + "*" + "\" />\r\n"
       + "</cross-domain-policy>\r\n";
 
-  private static final String FLASH_POLICY_REQ = "<policy-file-request/>\0";
-  private static final AttributeKey HINT = AttributeKey.valueOf("FlashHint");
+  private static final String FLASH_POLICY_REQ_WITH_NULL = "<policy-file-request/>\0";
+  private static final String FLASH_POLICY_REQ = "<policy-file-request/>";
+  private static final char[] FLASH_CHS = FLASH_POLICY_REQ.toCharArray();
+  private static final int FLASH_LEN = FLASH_CHS.length;
 
+  private static final AttributeKey<Integer> HINT = AttributeKey.valueOf("flash-hint");
   private static final FlashFilter shared = new FlashFilter();
-  public static FlashFilter getInstance() {
-    return shared;
-  }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(FlashFilter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  public FlashFilter() {
+  protected FlashFilter() {
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     ByteBuf bbuf = (msg instanceof ByteBuf) ? (ByteBuf)msg : null;
@@ -59,49 +60,57 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
       return;
     }
 
-    Integer b1 = (Integer) ctx.attr(HINT).get();
+    Integer hint = (Integer) getAttr(ctx,HINT);
+    if (hint==null) {
+      hint= new Integer(0);
+    }
     int num= bbuf.readableBytes();
     int pos = bbuf.readerIndex();
-    int nn;
+    int state= -1;
+    int c, nn;
 
-    if (num > 0) {
-      nn = bbuf.getUnsignedByte(pos++);
-      --num;
-      if (b1 == null) {
-        // first byte
-        if (nn != '<') {
-          finito(ctx, msg);
-          bbuf=null;
-        } else {
-          b1= new Integer(nn);
-          ctx.attr(HINT).set(b1);
+    for (int i =0; i < num; ++i) {
+      nn = bbuf.getUnsignedByte(pos+ i);
+      c= (int) FLASH_CHS[hint];
+      if (c == nn) {
+        hint += 1;
+        if (hint == FLASH_LEN) {
+          //matched!
+          finito(ctx, msg, true);
+          state= 1;
+          break;
         }
       } else {
-        // check 2nd byte
-        if (nn != 'p') {
-          finito(ctx, msg);
-        } else {
-          ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
-        }
+        finito(ctx,msg,false);
+        state= 0;
+        break;
       }
     }
-    if (num > 0) {
-      nn = bbuf.getUnsignedByte(pos++);
-      --num;
-      if (b1 != null) {
-        // check 2nd byte
-        if (nn != 'p') {
-          finito(ctx, msg);
-        } else {
-          ctx.writeAndFlush(Unpooled.copiedBuffer(XML, CharsetUtil.UTF_8)).addListener(ChannelFutureListener.CLOSE);
-        }
+
+    if (state < 0) {
+      // not done testing yet...
+      if (hint < FLASH_LEN) {
+        setAttr(ctx, HINT, hint);
       }
     }
+
   }
 
-  private void finito(ChannelHandlerContext ctx, Object msg) {
-    ctx.fireChannelRead(msg);
-    ctx.pipeline().remove(this);
+  private void finito(ChannelHandlerContext ctx, Object msg, boolean success) {
+
+    delAttr(ctx, HINT);
+
+    if (success) {
+
+      ctx.writeAndFlush(Unpooled.copiedBuffer(XML,
+            CharsetUtil.US_ASCII)).addListener(ChannelFutureListener.CLOSE);
+
+    } else {
+
+      ctx.fireChannelRead(msg);
+      ctx.pipeline().remove(this);
+    }
+
   }
 
 }

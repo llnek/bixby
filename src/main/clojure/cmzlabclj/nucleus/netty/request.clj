@@ -16,15 +16,17 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [notnil? Try! TryC] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ])
+
   (:import [io.netty.buffer Unpooled]
            [io.netty.channel ChannelHandlerContext ChannelPipeline
                              Channel ChannelHandler]
            [io.netty.handler.codec.http HttpMessage HttpContent HttpRequest]
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.util ReferenceCountUtil]
-           [com.zotohlab.frwk.netty AuxHttpDecoder RequestDecoder
+           [com.zotohlab.frwk.netty AuxHttpFilter RequestFilter
                                     PipelineConfigurator]
            [com.zotohlab.frwk.netty NettyFW]
            [com.zotohlab.frwk.io XData]
@@ -33,13 +35,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-;;(defn reifyRequestDecoder
-(defn- reifyRequestDecoder
+;;(defn reifyRequestFilter
+(defn- reifyRequestFilter
 
-  ^AuxHttpDecoder
+  ^AuxHttpFilter
   []
 
-  (proxy [RequestDecoder][]
+  (proxy [RequestFilter][]
     (handleInboundMsg [c obj]
       (let [^ChannelHandlerContext ctx c
             ^HttpMessage msg obj
@@ -50,7 +52,7 @@
             clen (-> info (.get "clen")(.getAsInt)) ]
         (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
         (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
-        (.handleMsgChunk ^RequestDecoder this ctx msg)))
+        (.handleMsgChunk ^RequestFilter this ctx msg)))
 
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
@@ -58,10 +60,10 @@
         (log/debug "channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (.handleInboundMsg ^RequestDecoder this ctx msg)
+          (.handleInboundMsg ^RequestFilter this ctx msg)
 
           (instance? HttpContent msg)
-          (.handleMsgChunk ^RequestDecoder this ctx msg)
+          (.handleMsgChunk ^RequestFilter this ctx msg)
 
           :else
           (do
@@ -72,14 +74,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; the decoder is annotated as sharable.  this acts like the singleton.
-(def ^:private HTTP-REQ-DECODER (reifyRequestDecoder))
+(def ^:private HTTP-REQ-FILTER (reifyRequestFilter))
 
-(defn ReifyRequestDecoderSingleton ""
+(defn ReifyRequestFilterSingleton ""
 
   ^ChannelHandler
   []
 
-  HTTP-REQ-DECODER)
+  HTTP-REQ-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

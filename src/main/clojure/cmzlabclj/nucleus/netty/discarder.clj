@@ -16,9 +16,11 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [notnil? Try!] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.netty.io])
+
   (:import [java.io IOException ]
            [io.netty.buffer Unpooled]
            [io.netty.channel ChannelHandlerContext Channel ChannelPipeline
@@ -31,7 +33,7 @@
                                         HttpResponseEncoder]
            [io.netty.bootstrap ServerBootstrap]
            [com.zotohlab.frwk.netty PipelineConfigurator
-                                    ErrorCatcher]
+                                    ErrorSinkFilter]
            [com.zotohlab.frwk.netty NettyFW]
            [com.google.gson JsonObject]))
 
@@ -75,7 +77,7 @@
                     (HttpObjectAggregator. (int 1048576)))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "discarder" (discardHandler callback))
-          (ErrorCatcher/addLast ))))
+          (ErrorSinkFilter/addLast ))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
