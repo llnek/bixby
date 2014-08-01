@@ -49,11 +49,13 @@
                                         HttpHeaders LastHttpContent
                                         HttpHeaders Cookie QueryStringDecoder]
            [io.netty.bootstrap ServerBootstrap]
-           [io.netty.channel Channel ChannelHandler
+           [io.netty.channel Channel ChannelHandler ChannelDuplexHandler
                              SimpleChannelInboundHandler
                              ChannelPipeline ChannelHandlerContext]
            [io.netty.handler.stream ChunkedWriteHandler]
            [io.netty.util AttributeKey]
+           [io.netty.handler.timeout IdleState IdleStateEvent
+                                     IdleStateHandler]
            [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter SimpleInboundFilter
                                      DemuxedMsg PipelineConfigurator
                                      FlashFilter]
@@ -157,6 +159,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- reifyIdleStateFilter ""
+
+  ^ChannelHandler
+  []
+
+  (proxy [ChannelDuplexHandler][]
+    (userEventTriggered[ctx msg]
+      (when-let [^IdleStateEvent
+                 evt (if (instance? IdleStateEvent msg)
+                       msg
+                       nil) ]
+        (condp == (.state evt)
+          IdleState/READER_IDLE
+          (-> (.channel ^ChannelHandlerContext ctx)
+              (.close))
+          IdleState/WRITER_IDLE
+          nil ;; (.writeAndFlush ch (PingMessage.))
+          (log/warn ""))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- wsockDispatcher ""
 
   ^ChannelHandler
@@ -229,6 +253,7 @@
           (when-not (nil? ssl)
             (.addLast pipe "ssl" ssl))
           (doto pipe
+            ;;(.addLast "IdleStateHandler" (IdleStateHandler. 100 100 100))
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
             (.addLast "RouteFilter" (routeFilter co))
             (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options1 hack))
