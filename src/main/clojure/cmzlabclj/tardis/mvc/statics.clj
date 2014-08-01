@@ -43,6 +43,10 @@
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
             [io.netty.channel Channel ChannelFuture]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;(set! *warn-on-reflection* true)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype StaticAssetHandler [] PipelineDelegate

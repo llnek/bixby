@@ -19,6 +19,10 @@
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow.core Job]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;(set! *warn-on-reflection* true)
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;(defmacro DefWFTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
