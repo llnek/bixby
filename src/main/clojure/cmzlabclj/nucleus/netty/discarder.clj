@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.discarder
 
@@ -37,7 +37,6 @@
            [com.zotohlab.frwk.netty NettyFW]
            [com.google.gson JsonObject]))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
@@ -50,7 +49,7 @@
   [callback]
 
   (proxy [SimpleChannelInboundHandler][]
-    (channelRead0 [ c msg ]
+    (channelRead0 [c msg]
       (let [^ChannelHandlerContext ctx c
             ch (.channel ctx) ]
         (when (instance? LastHttpContent msg)
@@ -76,7 +75,7 @@
           (.addLast "HttpObjectAggregator"
                     (HttpObjectAggregator. (int 1048576)))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "discarder" (discardHandler callback))
+          (.addLast "Discarder" (discardHandler callback))
           (ErrorSinkFilter/addLast ))))
   ))
 
@@ -86,9 +85,9 @@
 
   [^String host port ^JsonObject options callback]
 
-  (let [ ^ServerBootstrap bs (InitTCPServer (discarder callback) options)
-         ch (StartServer bs host port) ]
-    { :bootstrap bs :channel ch }
+  (let [^ServerBootstrap bs (InitTCPServer (discarder callback) options)
+        ch (StartServer bs host port) ]
+    {:bootstrap bs :channel ch}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

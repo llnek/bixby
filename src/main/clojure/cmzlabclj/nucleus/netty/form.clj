@@ -51,6 +51,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- writeHttpData ""
@@ -80,8 +81,7 @@
 
       (= InterfaceHttpData$HttpDataType/Attribute dt)
       (let [baos (ByteArrayOutputStream. 4096)
-            ^Attribute
-            attr data ]
+            ^Attribute attr data ]
         (NettyFW/slurpByteBuf (.content attr) baos)
         (.add fis (ULFileItem. nm (.toByteArray baos))))
 
@@ -89,14 +89,13 @@
       (ThrowIOE "Bad POST: unknown http data."))
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readHttpDataChunkByChunk ""
 
-  [ ^ChannelHandlerContext ctx
-    ^HttpPostRequestDecoder dc
-    ^ULFormItems fis ]
+  [^ChannelHandlerContext ctx
+   ^HttpPostRequestDecoder dc
+   ^ULFormItems fis ]
 
   (try
     (while (.hasNext dc)
@@ -136,15 +135,15 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(defn reifyFormPostDecoder
-(defn- reifyFormPostDecoder
+;;
+(defn- reifyFormPostFilter
 
   ^AuxHttpFilter
   []
 
   (proxy [FormPostFilter][]
 
-    (finzAndDone [ c info data ]
+    (finzAndDone [c info data ]
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
             xxx (.resetAttrs ^FormPostFilter this ctx)
@@ -153,7 +152,7 @@
         (log/debug "fire fully decoded message to the next handler")
         (.fireChannelRead ctx (DemuxedMsg. info xs))))
 
-    (handleFormChunk [ c obj ]
+    (handleFormChunk [c obj ]
       (let [^ChannelHandlerContext ctx c
             ^Object msg obj
             ^HttpPostRequestDecoder dc (NettyFW/getAttr ctx NettyFW/FORMDEC_KEY)
@@ -225,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; the decoder is annotated as sharable.  this acts like the singleton.
-(def ^:private HTTP-FORMPOST-FILTER (reifyFormPostDecoder))
+(def ^:private HTTP-FORMPOST-FILTER (reifyFormPostFilter))
 
 (defn ReifyFormPostFilterSingleton ""
 

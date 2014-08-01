@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.snooper
 
@@ -52,10 +52,10 @@
    ^HttpContent curObj ]
 
   (let [ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
-        response (DefaultFullHttpResponse.
-                    HttpVersion/HTTP_1_1
-                    HttpResponseStatus/OK
-                    (Unpooled/copiedBuffer (nsb buf) CharsetUtil/UTF_8))
+        response (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
+                                           HttpResponseStatus/OK
+                                           (Unpooled/copiedBuffer (nsb buf)
+                                                                  CharsetUtil/UTF_8))
         clen (-> response (.content)(.readableBytes)) ]
     (-> response (.headers)(.set "content-type" "text/plain; charset=UTF-8"))
     (-> response (.headers)(.set "content-length" (str clen)))
@@ -63,12 +63,12 @@
     (let [cs (CookieDecoder/decode (nsb cookieBuf)) ]
       (if (.isEmpty cs)
         (do
-          (-> response (.headers)(.add "set-cookie" 
+          (-> response (.headers)(.add "set-cookie"
                                        (ServerCookieEncoder/encode "key1" "value1")))
-          (-> response (.headers)(.add "set-cookie" 
+          (-> response (.headers)(.add "set-cookie"
                                        (ServerCookieEncoder/encode "key2" "value2"))))
         (doseq [v (seq cs) ]
-          (-> response (.headers)(.add "set-cookie" 
+          (-> response (.headers)(.add "set-cookie"
                                        (ServerCookieEncoder/encode ^Cookie v))))))
     (.setLength cookieBuf 0)
     (.setLength buf 0)
@@ -171,13 +171,13 @@
     (proxy [SimpleChannelInboundHandler][]
       (channelRead0 [ ctx msg ]
         (cond
-          (instance? HttpRequest msg) 
+          (instance? HttpRequest msg)
           (handleReq ctx cookies buf msg)
 
-          (instance? HttpContent msg) 
+          (instance? HttpContent msg)
           (handlec ctx cookies buf msg)
 
-          :else 
+          :else
           nil)))
   ))
 
@@ -191,14 +191,14 @@
   (ReifyHTTPPipe snooperHandler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Sample Snooper HTTPD
-(defn MakeSnoopHTTPD ""
+;;
+(defn MakeSnoopHTTPD "Sample Snooper HTTPD."
 
   [^String host port ^JsonObject options]
 
   (let [^ServerBootstrap bs (InitTCPServer (snooper) options)
         ch (StartServer bs host (int port)) ]
-    { :bootstrap bs :channel ch }
+    {:bootstrap bs :channel ch}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

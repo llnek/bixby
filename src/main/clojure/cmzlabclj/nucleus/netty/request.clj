@@ -17,7 +17,9 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? Try! TryC] ]
+  (:use [cmzlabclj.nucleus.util.core 
+         :only [notnil? Try! TryC
+                SafeGetJsonString SafeGetJsonBool SafeGetJsonInt] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ])
 
   (:import [io.netty.buffer Unpooled]
@@ -35,7 +37,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-;;(defn reifyRequestFilter
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- reifyRequestFilter
 
   ^AuxHttpFilter
@@ -46,10 +50,10 @@
       (let [^ChannelHandlerContext ctx c
             ^HttpMessage msg obj
             ch (.channel ctx)
-            ^JsonObject info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
-            isc (-> info (.get "is-chunked")(.getAsBoolean))
-            mtd (-> info (.get "method")(.getAsString))
-            clen (-> info (.get "clen")(.getAsInt)) ]
+            info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
+            isc (SafeGetJsonBool info "is-chunked")
+            mtd (SafeGetJsonString info "method")
+            clen (SafeGetJsonInt info "clen") ]
         (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
         (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
         (.handleMsgChunk ^RequestFilter this ctx msg)))

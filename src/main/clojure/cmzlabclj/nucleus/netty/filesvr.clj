@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.filesvr
 
@@ -20,7 +20,9 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.files :only [SaveFile GetFile] ]
-        [cmzlabclj.nucleus.util.core :only [juid notnil? ] ]
+        [cmzlabclj.nucleus.util.core
+         :only [SafeGetJsonBool SafeGetJsonString
+                juid notnil? ] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.netty.io])
 
@@ -47,7 +49,7 @@
   [^Channel ch ^JsonObject info ^XData xdata]
 
   (let [kalive (and (notnil? info)
-                    (-> info (.get "keep-alive")(.getAsBoolean)))
+                    (SafeGetJsonBool info "keep-alive"))
         res (NettyFW/makeHttpReply 200)
         clen (.size xdata) ]
     (HttpHeaders/setHeader res "connection" (if kalive "keep-alive" "close"))
@@ -95,14 +97,14 @@
 
   (proxy [SimpleChannelInboundHandler][]
     (channelRead0 [c m]
-      (let [vdir (File. (-> options (.get "vdir")(.getAsString)))
+      (let [vdir (File. (SafeGetJsonString options "vdir"))
             ^ChannelHandlerContext ctx c
             ^DemuxedMsg msg m
             xs (.payload msg)
             info (.info msg)
             ch (.channel ctx)
-            mtd (-> info (.get "method")(.getAsString))
-            uri (-> info (.get "uri")(.getAsString))
+            mtd (SafeGetJsonString info "method")
+            uri (SafeGetJsonString info "uri")
             pos (.lastIndexOf uri (int \/))
             p (if (< pos 0) uri (.substring uri (inc pos)))
             nm (if (cstr/blank? p) (str (juid) ".dat") p) ]
@@ -137,14 +139,14 @@
 
   (let [^ServerBootstrap bs (InitTCPServer  (fileCfgtor) options)
         ch (StartServer bs host (int port)) ]
-    { :bootstrap bs :channel ch }
+    {:bootstrap bs :channel ch}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filesvr host port vdir
 (defn -main ""
 
-  [ & args ]
+  [& args]
 
   (let [opts (JsonObject.) ]
     (cond
