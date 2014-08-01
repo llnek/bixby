@@ -18,8 +18,10 @@
             [clojure.string :as cstr ]
             [clojure.core :as ccore ]
             [clojure.data.json :as json])
+
   (:import  [com.zotohlab.frwk.util CrappyDataError]
             [java.security SecureRandom]
+            [com.google.gson JsonObject JsonElement]
             [java.net URL]
             [java.nio.charset Charset]
             [java.io InputStream File FileInputStream
@@ -227,6 +229,68 @@
   [b]
 
   (ternary b false))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SafeGetJsonObject ""
+
+  ^JsonObject
+  [^JsonObject json ^String field]
+
+  (if (.has json field)
+    (-> (.get json field)
+        (.getAsJsonObject))
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SafeGetJsonString ""
+
+  ^String
+  [^JsonObject json ^String field]
+
+  (if (.has json field)
+    (-> (.get json field)
+        (.getAsString))
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SafeGetJsonDouble ""
+
+  [^JsonObject json ^String field]
+
+  (if (.has json field)
+    (-> (.get json field)
+        (.getAsDouble))
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SafeGetJsonInt ""
+
+  [^JsonObject json ^String field]
+
+  (if (.has json field)
+    (-> (.get json field)
+        (.getAsInt))
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SafeGetJsonBool ""
+
+  [^JsonObject json ^String field]
+
+  (if (.has json field)
+    (-> (.get json field)
+        (.getAsBoolean))
+    nil
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

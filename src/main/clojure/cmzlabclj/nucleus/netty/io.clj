@@ -17,8 +17,12 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE MakeMMap notnil? Try!] ]
-        [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
+  (:use [cmzlabclj.nucleus.util.core
+         :only [ThrowIOE MakeMMap notnil?
+                Try! SafeGetJsonObject SafeGetJsonInt
+                SafeGetJsonString] ]
+        [cmzlabclj.nucleus.util.str
+         :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.netty.request]
         [cmzlabclj.nucleus.netty.form])
 
@@ -60,8 +64,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FakeFullHttpRequest ""
+(defn FakeFullHttpRequest "Sometimes we need to fake a fully built request."
 
+  ^FullHttpRequest
   [^HttpRequest req]
 
   (let [rc (DefaultFullHttpRequest. (.getProtocolVersion req)
@@ -80,14 +85,8 @@
   ^ChannelHandler
   [^JsonObject options]
 
-  (let [ keyUrlStr (if (.has options SERVERKEY)
-                     (-> (.get options SERVERKEY)
-                         (.getAsString))
-                     nil)
-         pwdStr (if (.has options PWD)
-                  (-> (.get options PWD)
-                      (.getAsString))
-                  nil) ]
+  (let [keyUrlStr (SafeGetJsonString options SERVERKEY)
+        pwdStr (SafeGetJsonString options PWD) ]
     (when (hgl? keyUrlStr)
       (try
         (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
@@ -119,8 +118,8 @@
   [^JsonObject options]
 
   (try
-    (let [ ctx (doto (SSLContext/getInstance "TLS")
-                 (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
+    (let [ctx (doto (SSLContext/getInstance "TLS")
+                (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
       (SslHandler. (doto (.createSSLEngine ctx)
                      (.setUseClientMode true))))
     (catch Throwable e#
@@ -130,11 +129,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- demux-server-type ""
+
   [a & args]
+
   (cond
-    (instance? ServerBootstrap a) :tcp-server
-    (instance? Bootstrap a) :udp-server
-    :else (ThrowIOE "Unknown server type")))
+    (instance? ServerBootstrap a)
+    :tcp-server
+    (instance? Bootstrap a)
+    :udp-server
+    :else
+    (ThrowIOE "Unknown server type")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -146,7 +150,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- isFormPost ""
+(defn- isFormPost "Determine if this request is a http form post."
 
   [^HttpMessage msg ^String method]
 
@@ -162,7 +166,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doDemux ""
+(defn- doDemux "Detect and handle a FORM post differently versus a normal request."
 
   [^ChannelHandlerContext ctx
    ^HttpRequest req
@@ -170,12 +174,10 @@
 
   (let [info (NettyFW/extractMsgInfo req)
         ch (.channel ctx)
-        mt (-> info (.get "method")(.getAsString))
-        uri (-> info (.get "uri")(.getAsString)) ]
-    (log/debug "first level demux of message\n{}" req)
-    (log/debug info)
+        mt (SafeGetJsonString info "method")
+        uri (SafeGetJsonString info "uri") ]
+    (log/debug "first level demux of message\n{}\n\n{}" req info)
     (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
-    (NettyFW/setAttr ch NettyFW/MSGINFO_KEY info)
     (.setf! impl :delegate nil)
     (if (.startsWith uri "/favicon.") ;; ignore this crap
       (do
@@ -183,18 +185,20 @@
         (.setf! impl :ignore true))
       (do
         (Expect100Filter/handle100 ctx req)
-        (if (isFormPost req mt)
-          (do
-            (.setf! impl :delegate (ReifyFormPostFilterSingleton))
-            (.addProperty info "formpost" true))
-          (.setf! impl :delegate (ReifyRequestFilterSingleton)))))
-    (when-let [ ^AuxHttpFilter d (.getf impl :delegate) ]
+        (.setf! impl
+                :delegate
+                (if (isFormPost req mt)
+                  (do
+                    (.addProperty info "formpost" true)
+                    (ReifyFormPostFilterSingleton))
+                  (ReifyRequestFilterSingleton)))))
+    (when-let [^AuxHttpFilter d (.getf impl :delegate) ]
       (.channelReadXXX d ctx req))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyHttpHandler ""
+(defn- reifyHttpFilter ""
 
   ^ChannelHandler
   []
@@ -204,8 +208,8 @@
     (.setf! impl :ignore false)
     (proxy [AuxHttpFilter][]
       (channelRead0 [ctx msg]
-        (let [ ^AuxHttpFilter d (.getf impl :delegate)
-               e (.getf impl :ignore) ]
+        (let [^AuxHttpFilter d (.getf impl :delegate)
+              e (.getf impl :ignore) ]
           (log/debug "HttpHandler got msg = " (type msg))
           (log/debug "HttpHandler delegate = " d)
           (cond
@@ -224,23 +228,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- isWEBSock ""
+(defn- isWEBSock "Detect if request is a websocket request."
 
   [^HttpRequest req]
 
-  (let [ws (-> (HttpHeaders/getHeader req "upgrade")
-               nsb
-               strim
-               cstr/lower-case)
-        cn (-> (HttpHeaders/getHeader req "connection")
-               nsb
-               strim
-               cstr/lower-case)
-        mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
-               nsb
-               strim) ]
-    (and (>= (.indexOf ^String cn "upgrade") 0)
-         (= "websocket" ws)
+  (let [^String ws (-> (HttpHeaders/getHeader req "upgrade")
+                       nsb
+                       strim
+                       cstr/lower-case)
+        ^String cn (-> (HttpHeaders/getHeader req "connection")
+                       nsb
+                       strim
+                       cstr/lower-case)
+        ^String mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
+                       nsb
+                       strim) ]
+    (and (>= (.indexOf ws "websocket") 0)
+         (>= (.indexOf cn "upgrade") 0)
          (= "GET" (if (StringUtils/isNotEmpty mo)
                     mo
                     (-> req (.getMethod)(.name)))))
@@ -248,34 +252,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- exitHttpDemuxer ""
+(defn- exitHttpDemuxFilter ""
 
   [^ChannelHandlerContext ctx msg]
 
   (do
     (.fireChannelRead ctx msg)
-    (.remove (.pipeline ctx) "HttpDemuxer")
+    (.remove (.pipeline ctx) "HttpDemuxFilter")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeHttpDemuxer ""
+(defn MakeHttpDemuxFilter "Detect websock or normal http."
 
   ^ChannelHandler
   [^JsonObject options hack]
 
-  (let [ws (if (.has options "wsock")
-             (.getAsJsonObject options "wsock")
-             nil)
+  (let [ws (SafeGetJsonObject options "wsock")
         uri (if-not (nil? ws)
-              (-> ws
-                  (.getAsJsonPrimitive "uri")
-                  (.getAsString))
+              (SafeGetJsonString ws "uri")
               "")
         tmp (MakeMMap) ]
     (proxy [ChannelInboundHandlerAdapter][]
-      (channelRead [ c obj]
-        (log/debug "HttpDemuxer got this msg " (type obj))
+      (channelRead [c obj]
+        (log/debug "HttpDemuxFilter got this msg " (type obj))
         (let [^ChannelHandlerContext ctx c
               ^Object msg obj
               pipe (.pipeline ctx)
@@ -300,20 +300,23 @@
                          "HttpResponseEncoder"
                          "WebSocketServerProtocolHandler"
                          (WebSocketServerProtocolHandler. uri))
+              ;; maybe do something extra when wsock? caller decide...
               (when-let [fc (:onwsock hack) ] (fc ctx hack options))
               (ReferenceCountUtil/release msg)
-              (exitHttpDemuxer ctx (.getf tmp :reqforwsock)))
+              ;; send the full httprequest upstream
+              (exitHttpDemuxFilter ctx (.getf tmp :reqforwsock)))
 
             :else
             (do
               (log/debug "standard http request - swap in our own http handler.")
               (.addAfter pipe
-                         "HttpDemuxer"
-                         "ReifyHttpHandler"
-                         (reifyHttpHandler))
+                         "HttpDemuxFilter"
+                         "ReifyHttpFilter"
+                         (reifyHttpFilter))
+              ;; maybe do something extra? caller decide...
               (when-let [fc (:onhttp hack) ] (fc ctx hack options))
-              (log/debug "Added new handler - reifyHttpHandler to the chain")
-              (exitHttpDemuxer ctx msg))))))
+              (log/debug "Added new handler - reifyHttpFilter to the chain")
+              (exitHttpDemuxFilter ctx msg))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -330,7 +333,7 @@
         (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxer" (MakeHttpDemuxer options {}))
+          (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options {}))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
           (.addLast yourHandlerName
@@ -347,8 +350,9 @@
    ^String host
    port]
 
-  (let [ ip (if (hgl? host) (InetAddress/getByName host)
-              (InetAddress/getLocalHost)) ]
+  (let [ip (if (hgl? host)
+             (InetAddress/getByName host)
+             (InetAddress/getLocalHost)) ]
     (log/debug "netty-TCP-server: running on host " ip ", port " port)
     (try
       (-> (.bind bs ip (int port))
@@ -367,8 +371,9 @@
    ^String host
    port]
 
-  (let [ ip (if (hgl? host) (InetAddress/getByName host)
-              (InetAddress/getLocalHost)) ]
+  (let [ip (if (hgl? host)
+             (InetAddress/getByName host)
+             (InetAddress/getLocalHost)) ]
     (log/debug "netty-UDP-server: running on host " ip ", port " port)
     (-> (.bind bs ip (int port))
         (.channel))
@@ -410,9 +415,7 @@
   [^String group ^JsonObject options]
 
   (if (.has options group)
-    (NioEventLoopGroup. (-> options
-                            (.getAsJsonPrimitive group)
-                            (.getAsInt)))
+    (NioEventLoopGroup. (SafeGetJsonInt options group))
     (NioEventLoopGroup.)
   ))
 
@@ -425,7 +428,8 @@
    ^JsonObject options]
 
   (doto (ServerBootstrap.)
-    (.group (getEventGroup "bossThreads" options) (getEventGroup "workerThreads" options))
+    (.group (getEventGroup "bossThreads" options)
+            (getEventGroup "workerThreads" options))
     (.channel NioServerSocketChannel)
     (.option ChannelOption/SO_REUSEADDR true)
     (.option ChannelOption/SO_BACKLOG (int 100))

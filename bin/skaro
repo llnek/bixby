@@ -59,21 +59,29 @@ echo "        ;_.-'.___.'-.;"
 }
 
 
+txtred=$(tput setaf 1) #Red
+txtgrn=$(tput setaf 2) # Green
+txtylw=$(tput setaf 3) # Yellow
+txtblu=$(tput setaf 4) # Blue
+txtpur=$(tput setaf 5) # Purple
+txtcyn=$(tput setaf 6) # Cyan
+txtwht=$(tput setaf 7) # White
+txtrst=$(tput sgr0) # Text reset.
+
 splash_cool() {
 
-echo "    o--------------------------------- D>=G==='   '."
-echo "    |                                       |======|"
-echo "    |                                       |======|"
-echo "  __v__ __  _   ____  ____   ___        )--/]IIIIII]"
-echo " / ___/|  |/ ] /    ||    \ /   \\          |_______|"
-echo "(   \_ |  ' / |  o  ||  D  )     |         C O O O D"
-echo " \__  ||    \ |     ||    /|  O  |        C O  O  O D"
-echo " /  \ ||     ||  _  ||    \|     |       C  O  O  O  D"
-echo " \    ||  .  ||  |  ||  .  \     |       C__O__O__O__D"
-echo "  \___||__|\_||__|__||__|\_|\___/       [_____________]"
-
+echo "${txtylw}    o--------------------------------- D>=G==='   '."
+echo "${txtylw}    |                                       |======|"
+echo "${txtylw}    |                                       |======|"
+echo "${txtylw}  __v__ __  _   ____  ____   ___        )--/]IIIIII]"
+echo "${txtylw} / ___/|  |/ ] /    ||    \ /   \\          |_______|"
+echo "${txtylw}(   \_ |  ' / |  o  ||  D  )     |         C O O O D"
+echo "${txtylw} \__  ||    \ |     ||    /|  O  |        C O  O  O D"
+echo "${txtylw} /  \ ||     ||  _  ||    \|     |       C  O  O  O  D"
+echo "${txtylw} \    ||  .  ||  |  ||  .  \     |       C__O__O__O__D"
+echo "${txtylw}  \___||__|\_||__|__||__|\_|\___/       [_____________]"
+echo "${txtcyn}"
 }
-
 
 splash() {
   echo ""

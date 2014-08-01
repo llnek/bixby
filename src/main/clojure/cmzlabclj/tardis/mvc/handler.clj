@@ -197,7 +197,7 @@
 
   (let [^ChannelPipeline pipe (.pipeline ctx)
         co (:emitter hack) ]
-    (.addBefore pipe "ErrorCatcher" "WSOCKDispatcher" (wsockDispatcher co co options))
+    (.addBefore pipe "ErrorSinkFilter" "WSOCKDispatcher" (wsockDispatcher co co options))
     (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
         (.set "wsock"))
     ;;(.remove pipe "ChunkedWriteHandler")
@@ -221,12 +221,14 @@
         (let [^ChannelPipeline pipe p
               ^JsonObject options o
               ssl (SSLServerHShake options) ]
-          (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
+          ;; should flash go before ssl, probably...
+          (FlashFilter/addLast pipe)
+          (when-not (nil? ssl)
+            (.addLast pipe "ssl" ssl))
           (doto pipe
-            (FlashFilter/addLast )
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
             (.addLast "RouteFilter" (routeFilter co))
-            (.addLast "HttpDemuxer" (MakeHttpDemuxer options1 hack))
+            (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options1 hack))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
             ;;(.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
             (.addLast "MVCDispatcher" (mvcDispatcher co co))
