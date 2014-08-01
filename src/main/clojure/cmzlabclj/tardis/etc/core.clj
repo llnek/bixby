@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.etc.core
 
@@ -27,7 +27,7 @@
          :only [GetCommands EvalCommand] ])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
-            [java.util Locale]
+            [java.util List Locale]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,11 +63,10 @@
 ;;
 (defn- drawHelp ""
 
-  [^clojure.lang.IPersistentCollection arr
-   ^String fmt]
+  [fmt arr]
 
   (doseq [[k v] (seq arr) ]
-    (print (String/format fmt
+    (print (String/format ^String fmt
                           (into-array Object [k v]) ))
   ))
 
@@ -80,7 +79,7 @@
   (println (MakeString \= 78))
   (println "> skaro <commands & options>")
   (println "> -----------------")
-  (drawHelp CMDLINE-INFO "> %-35s %s\n")
+  (drawHelp "> %-35s %s\n" CMDLINE-INFO )
   (println ">")
   (println "> help - show standard commands")
   (println (MakeString \= 78)))
@@ -111,8 +110,8 @@
   ;;(debug "Skaro: Main Entry")
   ;; for security, don't just eval stuff
   ;;(alter-var-root #'*read-eval* (constantly false))
-  (let [rcpath (str "cmzlabclj/tardis/etc/Resources")
-        rcb (GetResource rcpath (Locale/getDefault)) ]
+  (let [rcb (GetResource "cmzlabclj/tardis/etc/Resources"
+                         (Locale/getDefault)) ]
     (try
       (when (< (count args) 2) (throw (CmdHelpError. "")))
       (if-let [rc (apply parseArgs rcb args) ]

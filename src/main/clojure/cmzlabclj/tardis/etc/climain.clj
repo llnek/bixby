@@ -15,13 +15,15 @@
   cmzlabclj.tardis.etc.climain
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
+            [clojure.edn :as edn]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.process :only [ProcessPid SafeWait] ]
         [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
         [cmzlabclj.nucleus.util.meta :only [SetCldr GetCldr] ]
         [cmzlabclj.nucleus.util.core
-               :only [test-nonil test-cond ConvLong Try! PrintMutableObj MakeMMap] ]
+               :only [ternary test-nonil test-cond ConvLong
+                      Try! PrintMutableObj MakeMMap] ]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
         [cmzlabclj.nucleus.netty.discarder :only [MakeDiscardHTTPD] ]
@@ -131,9 +133,9 @@
         cf (File. home  (str DN_CONF
                              "/" (name K_PROPS) )) ]
     (log/info "About to parse config file " cf)
-    (let [w (ParseInifile cf)
-          cn (cstr/lower-case (.optString w K_LOCALE K_COUNTRY ""))
-          lg (cstr/lower-case (.optString w K_LOCALE K_LANG "en"))
+    (let [w (edn/read-string (ReadOneFile cf))
+          cn (cstr/lower-case (ternary (K_COUNTRY (K_LOCALE w)) ""))
+          lg (cstr/lower-case (ternary (K_LANG (K_LOCALE w)) "en"))
           loc (if (hgl? cn)
                 (Locale. lg cn)
                 (Locale. lg)) ]
@@ -196,10 +198,10 @@
 
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
-  (let [^IWin32Conf wc (.getf ctx K_PROPS)
-        cl (.getf ctx K_EXEC_CZLR)
+  (let [cl (.getf ctx K_EXEC_CZLR)
         cli (.getf ctx K_CLISH)
-        cz (.optString wc K_COMPS K_EXECV "") ]
+        wc (.getf ctx K_PROPS)
+        cz (ternary (K_EXECV (K_COMPS wc)) "") ]
     ;;(test-cond "conf file:exec-visor" (= cz "cmzlabclj.tardis.impl.Execvisor"))
     (log/info "inside primodial() ---------------------------------------------->")
     (log/info "execvisor = " cz)

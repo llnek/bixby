@@ -25,6 +25,7 @@
                :only [MakeKernel MakePodMeta MakeDeployer] ]
         [cmzlabclj.nucleus.util.core
                :only [LoadJavaProps test-nestr NiceFPath TryC
+                      ternary
                       ConvLong MakeMMap juid test-nonil] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim hgl?] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
@@ -148,8 +149,8 @@
   (log/info "JMX config " cfg)
   (TryC
     (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
-          port (ConvLong (nsb (get cfg "port")) 7777)
-          host (nsb (get cfg "host"))
+          port (ConvLong (nsb (:port cfg)) 7777)
+          host (nsb (:host cfg))
           ^cmzlabclj.nucleus.jmx.core.JMXServer
           jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
@@ -242,11 +243,10 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
-        ^IWin32Conf
         cf (.getf ctx K_PROPS)
-        comps (.getSection cf K_COMPS)
-        regs (.getSection cf K_REGS)
-        jmx  (.getSection cf K_JMXMGM) ]
+        comps (K_COMPS cf)
+        regs (K_REGS cf)
+        jmx  (K_JMXMGM cf) ]
 
     (log/info "initializing component: Execvisor: " co)
     (test-nonil "conf file: components" comps)

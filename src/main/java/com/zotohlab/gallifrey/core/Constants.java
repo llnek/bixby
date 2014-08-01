@@ -54,6 +54,8 @@ public class Constants {
   public static String DN_STYLES="styles";
   public static String DN_PUBLIC="public";
 
+  public static String ENV_CF =  "env.conf.edn";
+  public static String APP_CF = "app.conf.edn";
 
   public static String MN_FILE= META_INF + "/" + "MANIFEST.MF";
   public static String POD_CLASSES = POD_INF + "/"+ DN_CLASSES;
@@ -70,8 +72,8 @@ public class Constants {
   public static String MN_NOTES= META_INF + "/" + "NOTES.txt";
   public static String MN_LIC= META_INF + "/" + "LICENSE.txt";
 
-  public static String CFG_ENV_CF = DN_CONF + "/" + "env.conf";
-  public static String CFG_APP_CF = DN_CONF + "/" + "app.conf";
+  public static String CFG_ENV_CF = DN_CONF + "/" + ENV_CF;
+  public static String CFG_APP_CF = DN_CONF + "/" + APP_CF;
 
 
   public static String PF_SKARO_APPDOMAIN="skaro.app.domain";
@@ -80,7 +82,7 @@ public class Constants {
 
   public static String PF_JMXMGM="jmx-management";
   public static String PF_HOMEDIR="skaro.home";
-  public static String PF_PROPS="skaro.conf";
+  public static String PF_PROPS="skaro.conf.edn";
   public static String PF_ROUTE_INFO="route.info";
   public static String PF_CLISH="cli-shell";
   public static String PF_COMPS="components";

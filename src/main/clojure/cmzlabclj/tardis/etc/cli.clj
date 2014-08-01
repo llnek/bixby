@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.etc.cli
 
@@ -184,7 +184,7 @@
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain))
                                    "utf-8")
 
-      (var-set fp (File. appDir "conf/env.conf"))
+      (var-set fp (File. appDir CFG_ENV_CF))
       (FileUtils/writeStringToFile ^File @fp
                                    (-> (FileUtils/readFileToString ^File @fp "utf-8")
                                        (StringUtils/replace "@@H2DBPATH@@"
@@ -231,11 +231,11 @@
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
 
-      (doseq [s ["app.conf" "env.conf" "shiro.ini"]]
+      (doseq [s [APP_CF ENV_CF "shiro.ini"]]
         (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
                                        cfd))
 
-      (var-set fp (File. cfd "app.conf"))
+      (var-set fp (File. cfd APP_CF))
       (FileUtils/writeStringToFile ^File @fp
                                    (-> (FileUtils/readFileToString ^File @fp "utf-8")
                                        (StringUtils/replace "@@USER@@" (GetUser)))
@@ -363,7 +363,7 @@
     (doseq [s [ "classes" "lib" ]]
       (Mkdirs (File. appDir (str "WEB-INF/" s))))
     (FileUtils/copyFile (File. hhhHome "etc/jetty/jetty.conf")
-                        (File. appDir "conf/env.conf"))
+                        (File. appDir CFG_ENV_CF))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/jetty/web.xml")
                                    (File. appDir "WEB-INF"))
     (post-create-app hhhHome appId appDomain)

@@ -56,6 +56,9 @@
 (def ^String DN_STYLES "styles" )
 (def ^String DN_PUBLIC "public" )
 
+(def ^String ENV_CF  "env.conf.edn" )
+(def ^String APP_CF  "app.conf.edn" )
+
 (def ^String MN_FILE (str META_INF "/" "MANIFEST.MF"))
 (def ^String POD_CLASSES  (str POD_INF "/" DN_CLASSES))
 (def ^String POD_PATCH  (str POD_INF "/" DN_PATCH))
@@ -71,8 +74,8 @@
 (def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
 (def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
 
-(def ^String CFG_ENV_CF  (str DN_CONF  "/"  "env.conf" ))
-(def ^String CFG_APP_CF  (str DN_CONF  "/"  "app.conf" ))
+(def ^String CFG_ENV_CF  (str DN_CONF  "/"  ENV_CF ))
+(def ^String CFG_APP_CF  (str DN_CONF  "/"  APP_CF ))
 
 
 (def K_SKARO_APPDOMAIN :skaro-app-domain )
@@ -80,7 +83,7 @@
 (def K_SKARO_APPTASK :skaro-app-task )
 (def K_JMXMGM :jmx-management )
 (def K_HOMEDIR :skaro-home )
-(def K_PROPS :skaro.conf )
+(def K_PROPS :skaro.conf.edn )
 (def K_ROUTE_INFO :route-info )
 (def K_CLISH :cli-shell )
 (def K_COMPS :components )

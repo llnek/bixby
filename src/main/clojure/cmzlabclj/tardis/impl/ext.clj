@@ -16,6 +16,7 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]
+            [clojure.edn :as edn]
             [clojure.data.json :as json])
 
   (:use [cmzlabclj.tardis.core.constants]
@@ -469,10 +470,8 @@
         ^File appDir (K_APPDIR props)
         cfgDir (File. appDir ^String DN_CONF)
         mf (LoadJavaProps (File. appDir ^String MN_FILE))
-        envConf (json/read-str (ReadConf appDir "env.conf")
-                               :key-fn keyword)
-        appConf (json/read-str (ReadConf appDir "app.conf")
-                               :key-fn keyword) ]
+        envConf (edn/read-string (ReadConf appDir ENV_CF))
+        appConf (edn/read-string (ReadConf appDir APP_CF)) ]
     ;;WebPage.setup(new File(appDir))
     ;;maybeLoadRoutes(cfgDir)
     ;;_ftlCfg = new FTLCfg()
@@ -480,8 +479,6 @@
     ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
     (SynthesizeComponent srg {} )
     (doto co
-          ;;(.setAttr! K_ENVCONF_FP (File. cfgDir "env.conf"))
-          ;;(.setAttr! K_APPCONF_FP (File. cfgDir "app.conf"))
       (.setAttr! K_APPDIR appDir)
       (.setAttr! K_SVCS srg)
       (.setAttr! K_ENVCONF envConf)

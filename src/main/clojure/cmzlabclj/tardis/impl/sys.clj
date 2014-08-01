@@ -25,7 +25,7 @@
                   Start kernel-start
                   Stop kernel-stop}]
         [cmzlabclj.nucleus.util.core
-         :only [MakeMMap TryC NiceFPath notnil? NewRandom] ]
+         :only [MakeMMap TryC NiceFPath notnil? ternary NewRandom] ]
         [cmzlabclj.nucleus.util.str :only [strim] ]
         [cmzlabclj.nucleus.util.process :only [SafeWait] ]
         [cmzlabclj.nucleus.util.files :only [Unzip] ]
@@ -190,12 +190,12 @@
         (start [this]
           (let [^cmzlabclj.nucleus.util.core.MubleAPI
                 ctx (.getCtx this)
-                ^IWin32Conf
-                wc (.getf ctx K_PROPS)
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
-                endorsed (strim (.optString wc K_APPS
-                                             "endorsed" ""))
+                wc (.getf ctx K_PROPS)
+                endorsed (-> (:endorsed (K_APPS wc))
+                             (ternary "")
+                             strim)
                 ^cmzlabclj.tardis.core.sys.Registry
                 apps (.lookup root K_APPS)
                  ;; start all apps or only those endorsed.

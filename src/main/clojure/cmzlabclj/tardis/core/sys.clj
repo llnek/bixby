@@ -120,13 +120,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ReadOneFile ""
+
+  ^String
+  [^File fp]
+
+  (FileUtils/readFileToString fp "utf-8"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ReadConf ""
 
   ^String
   [^File appDir ^String confile]
 
   (let [cfgDir (File. appDir ^String DN_CONF)
-        cs (FileUtils/readFileToString (File. cfgDir confile) "utf-8")
+        cs (ReadOneFile (File. cfgDir confile))
         rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
     (log/debug "[" confile "]\n" rc)
     rc
