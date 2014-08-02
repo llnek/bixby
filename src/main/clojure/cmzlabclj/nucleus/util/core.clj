@@ -1091,7 +1091,7 @@
 
   (setf! [_ k v] (set! data (assoc data k v)))
   (clrf! [_ k] (set! data (dissoc data k)))
-  (toEDN [_] (edn/write-string data))
+  (toEDN [_] (pr-str data))
   (seq* [_] (seq data))
   (getf [_ k] (get data k))
   (clear! [_ ] (set! data {} )) )

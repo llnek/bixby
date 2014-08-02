@@ -43,6 +43,7 @@
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
         [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
+        [cmzlabclj.nucleus.util.files :only [ReadEdn] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify CreateRandomString] ]
         [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
         [cmzlabclj.nucleus.dbio.core
@@ -472,14 +473,11 @@
         ^File appDir (K_APPDIR props)
         cfgDir (File. appDir ^String DN_CONF)
         mf (LoadJavaProps (File. appDir ^String MN_FILE))
-        envConf (edn/read-string (ReadConf appDir ENV_CF))
-        appConf (edn/read-string (ReadConf appDir APP_CF)) ]
-    ;;WebPage.setup(new File(appDir))
-    ;;maybeLoadRoutes(cfgDir)
-    ;;_ftlCfg = new FTLCfg()
-    ;;_ftlCfg.setDirectoryForTemplateLoading( new File(_appDir, DN_PAGES+"/"+DN_TEMPLATES))
-    ;;_ftlCfg.setObjectWrapper(new DefaultObjectWrapper())
+        envConf (ReadEdn (File. appDir CFG_ENV_CF))
+        appConf (ReadEdn (File. appDir CFG_APP_CF)) ]
+    ;; make registry to store services
     (SynthesizeComponent srg {} )
+    ;; store references to key attributes
     (doto co
       (.setAttr! K_APPDIR appDir)
       (.setAttr! K_SVCS srg)
@@ -505,9 +503,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element ctr ^AppMain obj]
 
+  ;; if java, pass in the conf properties as json, not edn.
   (let [^File appDir (.getAttr ctr K_APPDIR)
-        cs (ReadConf appDir "app.conf")
-        json (CoreUtils/readJson cs) ]
+        cs (ReadEdn (File. appDir
+                           (str DN_CONF "/" "app.conf")))
+        json (CoreUtils/readJson (json/write-str cs)) ]
   (.contextualize obj ctr)
   (.configure obj json)
   (.initialize obj)) )
@@ -553,14 +553,15 @@
 
   (let [pf (MakeObj v)
         ^Plugin p (if (instance? PluginFactory pf)
-                    (.createPlugin ^PluginFactory pf ^Container co)
+                    (.createPlugin ^PluginFactory pf
+                                   ^Container co)
                     nil) ]
     (when (instance? Plugin p)
-      (log/info "calling plugin-factory: " v)
+      (log/info "Calling plugin-factory: " v)
       (.contextualize p co)
       (.configure p { :env env :app app })
       (if (plugin-inited? v appDir)
-        (log/info "plugin " v " already initialized.")
+        (log/info "Plugin " v " already initialized.")
         (do
           (.initialize p)
           (post-init-plugin v appDir)))
@@ -623,7 +624,7 @@
         cfg (:container env) ]
 
     (.setAttr! co K_DBPS (maybeInitDBs co env app))
-    (log/debug "[dbpools]\n" (.getAttr co K_DBPS))
+    (log/debug "DB [dbpools]\n" (.getAttr co K_DBPS))
 
     ;; handle the plugins
     (.setAttr! co K_PLUGINS
@@ -638,7 +639,7 @@
     (.setAttr! co K_JCTOR jc)
 
     ;; build the user data-models or create a default one.
-    (log/info "application data-model schema-class: " dmCZ )
+    (log/info "Application data-model schema-class: " dmCZ )
     (.setAttr! co
                K_MCACHE
                (MakeMetaCache (if (hgl? dmCZ)
@@ -661,7 +662,7 @@
           (doJavaApp co obj)
           :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
         (.setAttr! co :main-app obj)
-        (log/info "application main-class " mCZ " created and invoked")))
+        (log/info "Application main-class " mCZ " created and invoked")))
 
     (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
           rf (File. appDir (str DN_CONF "/routes.conf")) ]

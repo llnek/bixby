@@ -61,6 +61,16 @@ public class ULFormItems {
     _items.clear();
   }
 
+  public String toString() {
+    StringBuilder b= new StringBuilder(1024);
+    for (ULFileItem n : _items) {
+      if (b.length() > 0) { b.append("\n"); }
+      b.append("name=" + n.getFieldName());
+      b.append(", data=" + (n.isFormField() ? n.toString() : n.getName()));
+    }
+    return b.toString();
+  }
+
 }
 
 

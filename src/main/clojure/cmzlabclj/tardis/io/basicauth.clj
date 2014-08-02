@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.basicauth
 
@@ -42,7 +42,7 @@
 (def ^String ^:private CAPTCHA_PARAM "captcha")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Parse a standard login-like form with userid,password,email
 (defn- crackFormFields ""
 
   [^HTTPEvent evt]
@@ -53,9 +53,8 @@
                       data (.content xs) ]
       (when (instance? ULFormItems @data)
         (doseq [^ULFileItem x (seq (GetFormFields @data)) ]
-          (let [fm (.getFieldName x)
+          (let [fm (cstr/lower-case (.getFieldName x))
                 fv (nsb (.getString x)) ]
-            ;;(log/debug "Form field: " fm " = " fv)
             (case fm
               CAPTCHA_PARAM (var-set captcha fv)
               EMAIL_PARAM (var-set email fv)
@@ -64,8 +63,9 @@
               CSRF_PARAM (var-set csrf fv)
               NONCE_PARAM (var-set nonce true)
               nil)))
-        {:principal (strim @user) :credential (strim @pwd)
-         :email (NormalizeEmail (strim @email))
+        {:email (NormalizeEmail (strim @email))
+         :principal (strim @user)
+         :credential (strim @pwd)
          :csrf (strim @csrf)
          :captcha (strim @captcha)
          :nonce @nonce }

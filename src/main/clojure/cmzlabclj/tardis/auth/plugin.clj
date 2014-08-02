@@ -23,6 +23,7 @@
                                        test-nonil LoadJavaProps] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
         [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
+        [cmzlabclj.nucleus.util.files :only [ReadEdn] ]
         [cmzlabclj.nucleus.net.comms :only [GetFormFields] ]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.wfs]
@@ -516,10 +517,8 @@
         pkey (.toCharArray (.getProperty mf "Implementation-Vendor-Id"))
         ^String cmd (nth args 1)
         ^String db (nth args 2)
-        env (json/read-str (ReadConf appDir "env.conf")
-                           :key-fn keyword)
-        cfg (get (:jdbc (:databases env))
-                 (keyword db)) ]
+        env (ReadEdn (File. appDir CFG_ENV_CF))
+        cfg (get (:jdbc (:databases env)) (keyword db)) ]
     (when-not (nil? cfg)
       (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
             t (MatchJdbcUrl (nsb (:url cfg))) ]
