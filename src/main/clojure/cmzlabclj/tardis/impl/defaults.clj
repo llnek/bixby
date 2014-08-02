@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.impl.defaults
 
@@ -128,7 +128,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_] (.toJson impl))
+        (toEDN [_] (.toEDN impl))
 
         Hierarchial
 
@@ -154,13 +154,17 @@
               c)) )
 
         (dereg [this c]
-          (let [cid (if (nil? c) nil (.id  ^Identifiable c))
+          (let [cid (if (nil? c)
+                      nil
+                      (.id  ^Identifiable c))
                 cache (.getf impl :cache) ]
             (when (.has this cid)
               (.setf! impl :cache (dissoc cache cid)))))
 
         (reg [this c]
-          (let [cid (if (nil? c) nil (.id  ^Identifiable c))
+          (let [cid (if (nil? c)
+                      nil
+                      (.id  ^Identifiable c))
                 cache (.getf impl :cache) ]
             (when (.has this cid)
               (throw (RegistryError.  (str "Component \""

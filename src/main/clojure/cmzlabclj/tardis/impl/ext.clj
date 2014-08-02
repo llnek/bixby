@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.impl.ext
 
@@ -86,7 +86,6 @@
   (stop [_])
   (dispose [_] ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetAppKeyFromEvent ""
@@ -113,6 +112,7 @@
         (setf! [_ k v] (.setf! impl k v))
         (clear! [_] (.clear! impl))
         (seq* [_] (.seq* impl))
+        (toEDN [_] (.toEDN impl))
         (getf [_ k] (.getf impl k))
         (clrf! [_ k] (.clrf! impl k))
 
@@ -276,7 +276,7 @@
         (getAttr [_ a] (.getf impl a) )
         (setCtx! [_ x] (.setf! impl :ctx x) )
         (getCtx [_] (.getf impl :ctx) )
-        (toJson [_] (.toJson impl))
+        (toEDN [_] (.toEDN impl))
 
         Container
 
@@ -361,17 +361,19 @@
                 srg (.getf impl K_SVCS)
                 pls (.getAttr this K_PLUGINS)
                 main (.getf impl :main-app) ]
+            (log/info "Container dispose(): all services.")
             (doseq [[k v] (seq* srg) ]
               (.dispose ^Disposable v))
+            (log/info "Container dispose(): all plugins.")
             (doseq [[k v] (seq pls) ]
               (.dispose ^Disposable v))
-            (log/info "container dispose() - main app getting disposed.")
             (cond
               (satisfies? CljAppMain main)
               (.dispose ^cmzlabclj.tardis.impl.ext.CljAppMain main)
               (instance? AppMain main)
               (.dispose ^AppMain main)
               :else nil)
+            (log/info "Container dispose() - main app disposed.")
             (releaseSysResources this) ))
 
         ContainerAPI

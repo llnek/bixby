@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.impl.sys
 
@@ -66,7 +66,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_] (.toJson impl))
+        (toEDN [_] (.toEDN impl))
 
         Component
 
@@ -118,7 +118,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+        ctx (.getCtx co)
         ^File py (.getf ctx K_PLAYDIR)
         ^File pd (.getf ctx K_PODSDIR) ]
     (when (.isDirectory pd)
@@ -172,7 +173,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_ ] (.toJson impl))
+        (toEDN [_ ] (.toEDN impl))
 
         Component
 
@@ -243,7 +244,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_ ] (.toJson impl))
+        (toEDN [_ ] (.toEDN impl))
 
         Component
 

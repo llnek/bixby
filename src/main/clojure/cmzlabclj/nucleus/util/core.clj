@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr ]
             [clojure.core :as ccore ]
-            [clojure.data.json :as json])
+            [clojure.edn :as edn])
 
   (:import  [com.zotohlab.frwk.util CrappyDataError]
             [java.security SecureRandom]
@@ -1075,7 +1075,7 @@
 
   (setf! [_ k v] )
   (seq* [_] )
-  (toJson [_])
+  (toEDN [_])
   (getf [_ k] )
   (clear! [_] )
   (clrf! [_ k] ))
@@ -1091,7 +1091,7 @@
 
   (setf! [_ k v] (set! data (assoc data k v)))
   (clrf! [_ k] (set! data (dissoc data k)))
-  (toJson [_] (json/write-str data))
+  (toEDN [_] (edn/write-string data))
   (seq* [_] (seq data))
   (getf [_ k] (get data k))
   (clear! [_ ] (set! data {} )) )

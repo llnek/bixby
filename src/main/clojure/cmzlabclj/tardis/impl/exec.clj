@@ -9,13 +9,12 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.impl.exec
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
-            [clojure.edn :as edn]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.tardis.core.constants]
@@ -29,8 +28,8 @@
                       ternary
                       ConvLong MakeMMap juid test-nonil] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim hgl?] ]
-        [cmzlabclj.nucleus.util.files :only [ReadOneUrl] ]
-        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
+        [cmzlabclj.nucleus.util.files
+         :only [ReadOneUrl ReadEdn] ])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -76,9 +75,12 @@
    ^File des
    mf]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx execv)
-        ^ComponentRegistry root (.getf ctx K_COMPS)
-        ^ComponentRegistry apps (.lookup root K_APPS)
+  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+        ctx (.getCtx execv)
+        ^ComponentRegistry
+        root (.getf ctx K_COMPS)
+        ^ComponentRegistry
+        apps (.lookup root K_APPS)
         ps (LoadJavaProps mf)
         vid (.getProperty ps "Implementation-Vendor-Id", "???")
         ver (.getProperty ps "Implementation-Version" "")
@@ -97,9 +99,13 @@
 
     ;; synthesize the block meta component and register it as a application.
     (let [^cmzlabclj.tardis.core.sys.Element
-          m (-> (MakePodMeta app ver nil cz vid (-> des (.toURI) (.toURL)))
-                (SynthesizeComponent { :ctx ctx })) ]
-      (.setf! ^cmzlabclj.nucleus.util.core.MubleAPI (.getCtx m) K_EXECV execv)
+          m (-> (MakePodMeta app ver nil
+                             cz vid
+                             (-> des (.toURI) (.toURL)))
+                (SynthesizeComponent { :ctx ctx }))
+          ^cmzlabclj.nucleus.util.core.MubleAPI
+          cx (.getCtx m) ]
+      (.setf! cx K_EXECV execv)
       (.reg apps m)
       m)
   ))
@@ -134,8 +140,9 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
-        ^FileFilter ff DirectoryFileFilter/DIRECTORY
+  (let [^FileFilter ff DirectoryFileFilter/DIRECTORY
+        ^cmzlabclj.nucleus.util.core.MubleAPI
+        ctx (.getCtx co)
         ^File pd (.getf ctx K_PLAYDIR) ]
     (doseq [f (seq (.listFiles pd ff)) ]
       (inspect-pod co f))
@@ -150,7 +157,8 @@
 
   (log/info "JMX config " cfg)
   (TryC
-    (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+    (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          ctx (.getCtx co)
           port (ternary (:port cfg) 7777)
           host (nsb (:host cfg))
           ^cmzlabclj.nucleus.jmx.core.JMXServer
@@ -170,7 +178,8 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (TryC
-    (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+    (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          ctx (.getCtx co)
           ^Startable jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx) (.stop jmx))
       (.setf! ctx K_JMXSVR nil)))
@@ -194,7 +203,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_ ] (.toJson impl))
+        (toEDN [_ ] (.toEDN impl))
 
         Versioned
         (version [_] "1.0")
@@ -221,13 +230,16 @@
 
         Startable
         (start [this]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
-                ^ComponentRegistry root (.getf ctx K_COMPS)
+          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+                ctx (.getCtx this)
+                ^ComponentRegistry
+                root (.getf ctx K_COMPS)
                 ^Startable k (.lookup root K_KERNEL) ]
             (inspect-pods this)
             (.start k)))
         (stop [this]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
+          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+                ctx (.getCtx this)
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
                 ^Startable k (.lookup root K_KERNEL) ]
@@ -244,7 +256,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
+  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+        ctx (.getCtx co)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
         regs (K_REGS cf)
@@ -278,8 +291,11 @@
         (.setf! K_DBSDIR db)
         (.setf! K_TMPDIR tmp)
         (.setf! K_BKSDIR bks)))
+
     (start-jmx co jmx)
-    (let [^ComponentRegistry root (MakeComponentRegistry :SystemRegistry K_COMPS "1.0" co)
+
+    (let [^ComponentRegistry
+          root (MakeComponentRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeComponentRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeComponentRegistry :AppsRegistry K_APPS "1.0" nil)
           deployer (MakeDeployer)
@@ -320,7 +336,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_ ] (.toJson impl))
+        (toEDN [_ ] (.toEDN impl))
 
         Component
         (id [_] (.getf impl :id))
@@ -345,7 +361,7 @@
   [^cmzlabclj.tardis.impl.defaults.BlockMeta block]
 
   (let [url (.metaUrl block)
-        cfg (edn/read-string (ReadOneUrl url))
+        cfg (ReadEdn url)
         info (:info cfg) ]
     (test-nonil "Invalid block-meta file, no info section." info)
     (log/info "initializing BlockMeta: " url)
@@ -377,7 +393,7 @@
             b (-> (make-blockmeta (-> f (.toURI)(.toURL)))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
-        (log/info "added one block: " (.id ^Identifiable b)) ))
+        (log/info "Added one block: " (.id ^Identifiable b)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

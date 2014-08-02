@@ -120,7 +120,7 @@
       (.mkdirs f)
       (do
         (.mkdirs (.getParentFile f))
-        (with-open [inp (.getInputStream src en) 
+        (with-open [inp (.getInputStream src en)
                     os (FileOutputStream. f) ]
           (IOUtils/copy inp os))
       ))
@@ -156,6 +156,16 @@
 
   (^String [^URL url ^String encoding]
     (IOUtils/toString url encoding)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WriteEdnString ""
+
+  ^String
+  [obj]
+
+  (if-not (nil? obj)
+    (pr-str obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -9,19 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.etc.climain
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
-            [clojure.edn :as edn]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.process :only [ProcessPid SafeWait] ]
         [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
         [cmzlabclj.nucleus.util.meta :only [SetCldr GetCldr] ]
-        [cmzlabclj.nucleus.util.files :only [ReadOneFile] ]
+        [cmzlabclj.nucleus.util.files :only [ReadOneFile ReadEdn] ]
         [cmzlabclj.nucleus.util.core
                :only [ternary test-nonil test-cond ConvLong
                       Try! PrintMutableObj MakeMMap] ]
@@ -60,8 +59,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- inizContext
+
   "the context object has a set of properties, such as basic dir, which
   is shared with other key components."
+
   ^cmzlabclj.nucleus.util.core.MubleAPI
   [^File baseDir]
 
@@ -80,7 +81,7 @@
 
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
-  (let [root (.getf ctx K_ROOT_CZLR)
+  (let [^ClassLoader root (.getf ctx K_ROOT_CZLR)
         cl (ExecClassLoader. root) ]
     (SetCldr cl)
     (.setf! ctx K_EXEC_CZLR cl)
@@ -110,13 +111,15 @@
 
   (let [cz (GetCldr) ]
     (condp instance? cz
-      RootClassLoader (do
-                        (.setf! ctx K_ROOT_CZLR cz)
-                        (setupClassLoader ctx))
+      RootClassLoader
+      (do
+        (.setf! ctx K_ROOT_CZLR cz)
+        (setupClassLoader ctx))
 
-      ExecClassLoader (do
-                        (.setf! ctx K_ROOT_CZLR (.getParent cz))
-                        (.setf! ctx K_EXEC_CZLR cz))
+      ExecClassLoader
+      (do
+        (.setf! ctx K_ROOT_CZLR (.getParent cz))
+        (.setf! ctx K_EXEC_CZLR cz))
 
       (setupClassLoader (setupClassLoaderAsRoot ctx cz)))
 
@@ -134,7 +137,7 @@
         cf (File. home  (str DN_CONF
                              "/" (name K_PROPS) )) ]
     (log/info "About to parse config file " cf)
-    (let [w (edn/read-string (ReadOneFile cf))
+    (let [w (ReadEdn cf)
           cn (cstr/lower-case (ternary (K_COUNTRY (K_LOCALE w)) ""))
           lg (cstr/lower-case (ternary (K_LANG (K_LOCALE w)) "en"))
           loc (if (hgl? cn)
@@ -167,12 +170,12 @@
 
   [^cmzlabclj.tardis.core.sys.Element cli args]
 
-  (let [bh (File. ^String (first args))
-        ctx (inizContext bh) ]
+  (let [home (File. ^String (first args))
+        ctx (inizContext home) ]
     (log/info "inside pre-parse()")
-    ;;(precondDir (File. bh ^String DN_BLOCKS))
-    (PrecondDir (File. bh ^String DN_BOXX))
-    (PrecondDir (File. bh ^String DN_CFG))
+    ;;(precondDir (File. home ^String DN_BLOCKS))
+    (PrecondDir (File. home ^String DN_BOXX))
+    (PrecondDir (File. home ^String DN_CFG))
     ;; a bit of circular referencing here.  the climain object refers to context
     ;; and the context refers back to the climain object.
     (.setf! ctx K_CLISH cli)
@@ -224,14 +227,16 @@
         kp (.getf ctx K_KILLPORT)
         execv (.getf ctx K_EXECV) ]
 
-    (StopServer ^ServerBootstrap (:bootstrap kp) ^Channel (:channel kp))
-    (log/info "Shutting down the http discarder... OK")
+    (log/info "Shutting down the http discarder...")
+    (StopServer ^ServerBootstrap (:bootstrap kp)
+                ^Channel (:channel kp))
+    (log/info "Http discarder closed. OK")
 
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (when-not (nil? pid) (FileUtils/deleteQuietly pid))
-      (log/info "about to stop Skaro...")
-      (log/info "applications are shutting down...")
+      (log/info "About to stop Skaro...")
+      (log/info "Applications are shutting down...")
       (when-not (nil? execv)
         (.stop ^Startable execv))
       (log/info "Skaro stopped.")
@@ -248,7 +253,8 @@
   (log/info "Enabling remote shutdown...")
   (let [port (ConvLong (System/getProperty "skaro.kill.port") 4444)
         rc (MakeDiscardHTTPD "127.0.0.1"
-                      port (JsonObject.) (fn [] (stop-cli ctx))) ]
+                             port {}
+                             #(stop-cli ctx)) ]
     (.setf! ctx K_KILLPORT rc)
   ))
 
@@ -263,7 +269,7 @@
         (.addShutdownHook (Thread. (reify Runnable
                                      (run [_] (Try! (stop-cli ctx)))))))
     (enableRemoteShutdown ctx)
-    (log/info "added shutdown hook.")
+    (log/info "Added shutdown hook.")
     ctx
   ))
 
@@ -276,7 +282,7 @@
   (let [fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
     (FileUtils/writeStringToFile fp (ProcessPid) "utf-8")
     (.setf! ctx K_PIDFILE fp)
-    (log/info "wrote skaro.pid - OK.")
+    (log/info "Wrote skaro.pid - OK.")
     ctx
   ))
 
@@ -287,10 +293,10 @@
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
   (PrintMutableObj ctx)
-  (log/info "applications are now running...")
-  (log/info "system thread paused on promise - awaits delivery.")
+  (log/info "Applications are now running...")
+  (log/info "System thread paused on promise - awaits delivery.")
   (deref CLI-TRIGGER) ;; pause here
-  (log/info "promise delivered!")
+  (log/info "Promise delivered!")
   (SafeWait 5000) ;; give some time for stuff to wind-down.
   (System/exit 0))
 
@@ -310,7 +316,7 @@
       (setAttr! [_ a v] (.setf! impl a v) )
       (clrAttr! [_ a] (.clrf! impl a) )
       (getAttr [_ a] (.getf impl a) )
-      (toJson [_ ] (.toJson impl))
+      (toEDN [_ ] (.toEDN impl))
 
       Hierarchial
       (parent [_] nil)
@@ -344,12 +350,12 @@
 ;;
 (defn StartMain ""
 
-  [ & args ]
+  [& args]
 
   (when (< (count args) 1)
     (throw (CmdHelpError. "Skaro Home not defined.")))
 
-  (log/info "set skaro-home= " (first args))
+  (log/info "SET skaro-home= " (first args))
   (.start ^Startable (apply make-climain args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

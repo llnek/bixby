@@ -9,9 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.etc.misc
 
@@ -33,7 +32,8 @@
   (reify Work
     (perform [_ cur job arg]
       (let [^HTTPEvent evt (.event job)
-            ^HTTPResult res (.getResultObj evt) ]
+            ^HTTPResult
+            res (.getResultObj evt) ]
         (.setStatus res s)
         (.replyResult evt)))
   ))

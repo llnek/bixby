@@ -15,13 +15,14 @@
   cmzlabclj.tardis.etc.cli
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
-            [clojure.data.json :as json]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core :only [GetUser juid IsWindows?] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
-        [cmzlabclj.nucleus.util.files :only [Unzip Mkdirs] ]
+        [cmzlabclj.nucleus.util.guids :only [NewUUid] ]
+        [cmzlabclj.nucleus.util.files
+         :only [ReadOneFile Unzip Mkdirs ReadEdn] ]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.etc.task])
@@ -60,7 +61,7 @@
 
   [appDomain]
 
-  (-> appDomain
+  (-> (nsb appDomain)
       (StringUtils/stripStart ".")
       (StringUtils/stripEnd ".")
   ))
@@ -99,9 +100,7 @@
 
   [^File hhhHome appId antTarget]
 
-  (let [pj (MakeAntTask hhhHome appId antTarget) ]
-    (ExecProj pj)
-  ))
+  (ExecProj (MakeAntTask hhhHome appId antTarget)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,19 +173,19 @@
     (with-local-vars [fp nil ]
       (var-set fp (mkcljfp cljd "core.clj"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain))
                                    "utf-8")
 
       (var-set fp (mkcljfp cljd "pipe.clj"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain))
                                    "utf-8")
 
       (var-set fp (File. appDir CFG_ENV_CF))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@H2DBPATH@@"
                                                             (str h2db "/" appId))
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain))
@@ -196,7 +195,7 @@
       (let [ s (str "<arg value=\"" appDomain ".core\"/>"
                     "<arg value=\"" appDomain ".pipe\"/>" ) ]
         (FileUtils/writeStringToFile ^File @fp
-                                     (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                     (-> (ReadOneFile @fp)
                                          (StringUtils/replace "@@APPCLJFILES@@" s)
                                          (StringUtils/replace "@@APPDOMAIN@@" appDomain)
                                          (StringUtils/replace "@@APPID@@" appId))
@@ -210,7 +209,7 @@
   [^File hhhHome appId ^String appDomain flavor]
 
   (let [appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
-        cfd (File. appDir "conf")
+        cfd (File. appDir DN_CONF)
         mfDir (Mkdirs (File. appDir "META-INF"))
         appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [fp nil ]
@@ -237,7 +236,7 @@
 
       (var-set fp (File. cfd APP_CF))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@USER@@" (GetUser)))
                                    "utf-8")
 
@@ -256,30 +255,29 @@
 
       (var-set fp (File. mfDir "MANIFEST.MF"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
-                                       (StringUtils/replace "@@APPKEY@@"
-                                                            (nsb (UUID/randomUUID)))
+                                   (-> (ReadOneFile @fp)
+                                       (StringUtils/replace "@@APPKEY@@" (NewUUid))
                                        (StringUtils/replace "@@APPMAINCLASS@@"
                                                             (str appDomain ".core.MyAppMain")))
                                    "utf-8")
 
       (var-set fp (File. appDir "pom.xml"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain)
                                        (StringUtils/replace "@@APPID@@" appId))
                                    "utf-8")
 
       (var-set fp (File. appDir "ivy.xml"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain)
                                        (StringUtils/replace "@@APPID@@" appId))
                                    "utf-8")
 
       (var-set fp (File. appDir "build.xs"))
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
                                        (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
                                        (StringUtils/replace "@@APPTYPE@@" flavor)
@@ -303,46 +301,42 @@
   [^File hhhHome appId ^String appDomain]
 
   (let [wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ))
-        wbs (json/read-str (FileUtils/readFileToString wfc "utf-8")
-                            :key-fn keyword)
         appDir (File. hhhHome (str "apps/" appId))
         wlib (Mkdirs (File. appDir "public/vendors"))
+        wbs (ReadEdn wfc)
         csslg *SKARO-WEBCSSLANG*
         wlg *SKARO-WEBLANG*
         buf (StringBuilder.)
         appDomainPath (.replace appDomain "." "/") ]
 
     (doseq [s ["pages" "media" "scripts" "styles"]]
-      (Mkdirs (File. appDir (str "src/web/main/" s))))
-
-    (doseq [s ["pages" "media" "scripts" "styles"]]
+      (Mkdirs (File. appDir (str "src/web/main/" s)))
       (Mkdirs (File. appDir (str "public/" s))))
 
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
                                    (mkcljd appDir appDomain))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/cljsc.clj")
-                                   (File. appDir "conf"))
+                                   (File. appDir DN_CONF))
     (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/favicon.png")
                                    (File. appDir "src/web/main/media"))
 
-    (Mkdirs (File. appDir "src/test/js"))
-
     (FileUtils/copyFile wfc (File. wlib ".list"))
+    (Mkdirs (File. appDir "src/test/js"))
     (doseq [df (:libs wbs) ]
-      (let [dn (:dir df)
+      (let [^String dn (:dir df)
             dd (File. hhhHome (str "etc/weblibs/" dn))
-            td (File. wlib ^String dn) ]
+            td (File. wlib dn) ]
         (when (.isDirectory dd)
           (FileUtils/copyDirectoryToDirectory dd wlib)
           (when-not (:skip df)
             (doseq [^String f (:js df) ]
               (-> buf
-                  (.append (FileUtils/readFileToString (File. td f) "utf-8"))
+                  (.append (ReadOneFile (File. td f)))
                   (.append (str "\n\n/* @@@" f "@@@ */"))
                   (.append "\n\n")))))))
 
     (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.js")
-                                 (nsb buf)
+                                 (.toString buf)
                                  "utf-8")
 
     (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.css")
@@ -357,7 +351,7 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [ appDir (File. hhhHome (str "apps/" appId)) ]
+  (let [appDir (File. hhhHome (str "apps/" appId)) ]
     (create-app-common hhhHome appId appDomain "web")
     (create-web-common hhhHome appId appDomain)
     (doseq [s [ "classes" "lib" ]]
@@ -377,11 +371,11 @@
 
   (let [appDir (File. hhhHome (str "apps/" appId))
         appDomainPath (.replace appDomain "." "/")
-        cfd (File. appDir "conf") ]
+        cfd (File. appDir DN_CONF) ]
     (with-local-vars [fp nil]
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
-      (copy-files (File. hhhHome "etc/netty") cfd "conf")
+      (copy-files (File. hhhHome "etc/netty") cfd DN_CONF)
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/static-routes.conf")
                                      cfd)
       (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/routes.conf")
@@ -400,7 +394,7 @@
       (var-set fp (File. appDir "conf/routes.conf"))
 
       (FileUtils/writeStringToFile ^File @fp
-                                   (-> (FileUtils/readFileToString ^File @fp "utf-8")
+                                   (-> (ReadOneFile @fp)
                                        (StringUtils/replace "@@APPDOMAIN@@" appDomain))
                                    "utf-8")
 

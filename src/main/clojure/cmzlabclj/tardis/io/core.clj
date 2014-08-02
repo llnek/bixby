@@ -169,7 +169,7 @@
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
         (getAttr [_ a] (.getf impl a) )
-        (toJson [_ ] (.toJson impl))
+        (toEDN [_ ] (.toEDN impl))
 
         Component
 

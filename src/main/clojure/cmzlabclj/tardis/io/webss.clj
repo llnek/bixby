@@ -261,7 +261,7 @@
                                         (last %2)))
                        (StringBuilder.)
                        (.seq* attrs))))
-          ;;(Base64/encodeBase64String (Bytesify (.toJson attrs))))
+          ;;(Base64/encodeBase64String (Bytesify (.toEDN attrs))))
 
         IOSession
 
