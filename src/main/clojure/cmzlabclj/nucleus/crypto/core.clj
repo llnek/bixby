@@ -503,7 +503,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExportPKey "Export Private Key."
+(defn ExportPrivateKey "Export Private Key."
 
   ^bytes
   [^PrivateKey pkey ^clojure.lang.Keyword fmt]
@@ -512,6 +512,21 @@
     (if (= fmt PEM_CERT)
       (fmtPEM "-----BEGIN RSA PRIVATE KEY-----\n"
               "\n-----END RSA PRIVATE KEY-----\n"
+              bits)
+      bits)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExportPublicKey "Export Public Key."
+
+  ^bytes
+  [^PublicKey pkey ^clojure.lang.Keyword fmt]
+
+  (let [bits (.getEncoded pkey) ]
+    (if (= fmt PEM_CERT)
+      (fmtPEM "-----BEGIN RSA PUBLIC KEY-----\n"
+              "\n-----END RSA PUBLIC KEY-----\n"
               bits)
       bits)
   ))
@@ -552,7 +567,7 @@
               "\n-----END CERTIFICATE REQUEST-----\n"
               bits)
       bits)
-     (ExportPKey k fmt)
+     (ExportPrivateKey k fmt)
     ]
   ))
 

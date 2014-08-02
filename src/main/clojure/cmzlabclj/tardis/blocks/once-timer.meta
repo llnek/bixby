@@ -1,9 +1,18 @@
-[info]
-block-type=czc.tardis.io/OnceTimer
-version=0.0.1
-name=OnceTimer
+{
 
-[conf]
-delay-secs=0
-handler=
+  :info {
 
+    :block-type "czc.tardis.io/OnceTimer"
+    :version "0.0.1"
+    :name "OnceTimer"
+
+  }
+
+  :conf {
+
+    :delay-secs 0
+    :handler ""
+
+  }
+
+}

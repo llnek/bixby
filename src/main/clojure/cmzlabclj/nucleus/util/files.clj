@@ -9,18 +9,22 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "General file related utilities."
-       :author "kenl" }
+(ns ^{:doc "General file related utilities."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.files
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.edn :as edn]
             [clojure.string :as cstr])
+
   (:use [ cmzlabclj.nucleus.util.core :only [notnil?] ])
+
   (:import  [org.apache.commons.lang3 StringUtils]
             [java.io File FileInputStream FileOutputStream
                     InputStream OutputStream]
             [java.util ArrayList]
+            [java.net URL URI]
             [org.apache.commons.io IOUtils FileUtils]
             [java.util.zip ZipFile ZipEntry]
             [com.zotohlab.frwk.io XData]))
@@ -134,6 +138,52 @@
     (while (.hasMoreElements ents)
       (doOneEntry fpz des (.nextElement ents)))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReadOneFile ""
+
+  (^String [^File fp] (ReadOneFile fp "utf-8"))
+
+  (^String [^File fp ^String encoding]
+    (FileUtils/readFileToString fp encoding)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReadOneUrl ""
+
+  (^String [^URL url] (ReadOneUrl url "utf-8"))
+
+  (^String [^URL url ^String encoding]
+    (IOUtils/toString url encoding)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ReadEdn (fn [a] (class a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn File
+
+  [^File fp]
+
+  (ReadEdn (.toURL fp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn String
+
+  [^String s]
+
+  (edn/read-string s))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn URL
+
+  [^URL url]
+
+  (edn/read-string (ReadOneUrl url)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

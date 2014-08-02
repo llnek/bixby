@@ -18,6 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ]
+        [cmzlabclj.nucleus.util.files :only [ReadOneFile ReadOneUrl] ]
         [cmzlabclj.tardis.core.constants])
 
   (:import  [org.apache.commons.io FilenameUtils FileUtils]
@@ -117,15 +118,6 @@
       (clrf! [_ k] (.clrf! impl k) )
       (clear! [_] (.clear! impl)))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ReadOneFile ""
-
-  ^String
-  [^File fp]
-
-  (FileUtils/readFileToString fp "utf-8"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

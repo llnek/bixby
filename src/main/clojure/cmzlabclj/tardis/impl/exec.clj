@@ -15,6 +15,7 @@
   cmzlabclj.tardis.impl.exec
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.edn :as edn]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.tardis.core.constants]
@@ -28,6 +29,7 @@
                       ternary
                       ConvLong MakeMMap juid test-nonil] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim hgl?] ]
+        [cmzlabclj.nucleus.util.files :only [ReadOneUrl] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
@@ -149,7 +151,7 @@
   (log/info "JMX config " cfg)
   (TryC
     (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx co)
-          port (ConvLong (nsb (:port cfg)) 7777)
+          port (ternary (:port cfg) 7777)
           host (nsb (:host cfg))
           ^cmzlabclj.nucleus.jmx.core.JMXServer
           jmx (MakeJmxServer host) ]
@@ -342,18 +344,18 @@
 
   [^cmzlabclj.tardis.impl.defaults.BlockMeta block]
 
-  (let [^URL url (.metaUrl block)
-        cfg (ParseInifile url)
-        inf (.getSection cfg "info") ]
-    (test-nonil "Invalid block-meta file, no info section." inf)
+  (let [url (.metaUrl block)
+        cfg (edn/read-string (ReadOneUrl url))
+        info (:info cfg) ]
+    (test-nonil "Invalid block-meta file, no info section." info)
     (log/info "initializing BlockMeta: " url)
-    (let [cz (strim (.optString cfg "info" "block-type" ""))
+    (let [cz (strim (:block-type info))
           ^cmzlabclj.tardis.core.sys.Element co block  ]
       (when (hgl? cz)
         (.setAttr! co :id (keyword cz))
         (.setAttr! co :active true) )
-      (.setAttr! co :version (strim (.optString cfg "info" "version" "")))
-      (.setAttr! co :name (strim (.optString cfg "info" "name" "")))
+      (.setAttr! co :version (strim (:version info)))
+      (.setAttr! co :name (strim (:name info)))
       co)
   ))
 

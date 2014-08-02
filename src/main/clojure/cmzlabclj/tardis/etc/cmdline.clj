@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.etc.cmdline
 
@@ -22,18 +22,20 @@
         [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid] ]
         [cmzlabclj.tardis.etc.cli]
         [cmzlabclj.nucleus.util.core
-         :only [notnil? NiceFPath IsWindows? FlattenNil ConvLong ResStr] ]
+         :only [notnil? NiceFPath IsWindows? Stringify
+                ternary FlattenNil ConvLong ResStr] ]
         [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal] ]
         [cmzlabclj.nucleus.util.meta]
+        [cmzlabclj.nucleus.util.files :only [ReadEdn ReadOneFile] ]
         [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
         [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ]
         [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ]
         [cmzlabclj.nucleus.crypto.core
          :only [AES256_CBC AssertJce PEM_CERT
+                ExportPublicKey ExportPrivateKey
                 DbgProvider MakeKeypair
                 MakeSSv1PKCS12 MakeCsrReq] ]
-        [cmzlabclj.tardis.core.constants]
-        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
+        [cmzlabclj.tardis.core.constants])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
             [org.apache.commons.lang3 StringUtils]
@@ -42,7 +44,7 @@
             [org.apache.commons.io FileUtils]
             [org.apache.commons.codec.binary Hex]
             [java.io File]
-            [java.security KeyPair]
+            [java.security KeyPair PublicKey PrivateKey]
             [com.zotohlab.frwk.io IOUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,16 +86,15 @@
                     "build.xml")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Create a new app template.
 (defn- onCreateApp ""
 
   [& args]
 
-  (let [hhh (getHomeDir) hf (ParseInifile (File. hhh
-                                                  (str DN_CONF
-                                                       "/"
-                                                       (name K_PROPS))))
-        wlg (.optString hf "webdev" "lang" "js")
+  (let [hhh (getHomeDir)
+        hf (ReadEdn (File. hhh
+                           (str DN_CONF "/" (name K_PROPS))))
+        wlg (ternary (:lang (:webdev hf)) "js")
         app (nth args 2)
         t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
          ;; treat as domain e.g com.acme => app = acme
@@ -118,7 +119,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe create a new app?
 (defn- onCreate ""
 
   [& args]
@@ -129,7 +130,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe build an app?
 (defn- onBuild ""
 
   [& args]
@@ -144,7 +145,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe compress and package an app?
 (defn- onPodify ""
 
   [& args]
@@ -155,7 +156,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe run tests on an app?
 (defn- onTest ""
 
   [& args]
@@ -166,13 +167,14 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe start the server?
 (defn- onStart ""
 
   [& args]
 
   (let [s2 (if (> (count args) 1) (nth args 1) "") ]
     (cond
+      ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
       (RunAppBg (getHomeDir) true)
 
@@ -181,7 +183,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe run in debug mode?
 (defn- onDebug ""
 
   [& args]
@@ -189,7 +191,7 @@
   (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Maybe generate some demo apps?
 (defn- onDemo ""
 
   [& args]
@@ -204,7 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- generatePassword ""
+(defn- generatePassword "Generate a random password."
 
   [len]
 
@@ -212,16 +214,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genKeyPair ""
+(defn- genKeyPair "Generate a keypair."
 
   [^String lenStr]
 
   ;;(DbgProvider java.lang.System/out)
   (let [kp (MakeKeypair "RSA" (ConvLong lenStr 256))
-        pk (.getEncoded (.getPrivate kp))
-        pu (.getEncoded (.getPublic kp)) ]
-    (println "privatekey-bytes= " (Hex/encodeHexString pk))
-    (println "publickey-bytes = " (Hex/encodeHexString pu))
+        pvk (.getPrivate kp)
+        puk (.getPublic kp)
+        pk (.getEncoded pvk)
+        pu (.getEncoded puk) ]
+    ;;(println "privatekey-bytes= " (Hex/encodeHexString pk))
+    ;;(println "publickey-bytes = " (Hex/encodeHexString pu))
+    (println "privatekey=\n" (ExportPrivateKey pvk PEM_CERT))
+    (println "publickey=\n" (ExportPublicKey puk PEM_CERT))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,134 +248,136 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-csr-qs ""
+(defn- make-csr-qs "Set of questions to capture the DN information."
 
   [^ResourceBundle rcb]
 
   { "fname"
     (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
-                   "" "csr-req" true
-                   (fn [a ^Map ps] (do (.put ps "fn" a) "")))
+                 "" "csr-req" true
+                 #(do (.put ^Map %2 "fn" %1) ""))
 
     "size"
     (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
-                   "" "1024" true
-                   (fn [a ^Map ps] (do (.put ps "size" a) "fname")))
+                 "" "1024" true
+                 #(do (.put ^Map %2 "size" %1) "fname"))
+
     "c"
     (MakeCmdSeqQ "c" (GetString rcb "cmd.dn.c")
-                   "" "US" true
-                   (fn [a ^Map ps] (do (.put ps "c" a) "size")))
+                 "" "US" true
+                 #(do (.put ^Map %2 "c" %1) "size"))
 
     "st"
     (MakeCmdSeqQ "st" (GetString rcb "cmd.dn.st")
-                   "" "" true
-                   (fn [a ^Map ps] (do (.put ps "st" a) "c")))
+                 "" "" true
+                 #(do (.put ^Map %2 "st" %1) "c"))
 
     "loc"
     (MakeCmdSeqQ "loc" (GetString rcb "cmd.dn.loc")
-                   "" "" true
-                   (fn [a ^Map ps] (do (.put ps "l" a) "st")))
+                 "" "" true
+                 #(do (.put ^Map %2 "l" %1) "st"))
 
     "o"
     (MakeCmdSeqQ "o" (GetString rcb "cmd.dn.org")
-                   "" "" true
-                   (fn [a ^Map ps] (do (.put ps "o" a) "loc")))
+                 "" "" true
+                 #(do (.put ^Map %2 "o" %1) "loc"))
 
     "ou"
     (MakeCmdSeqQ "ou" (GetString rcb "cmd.dn.ou")
-                   "" "" true
-                   (fn [a ^Map ps] (do (.put ps "ou" a) "o")))
+                 "" "" true
+                 #(do (.put ^Map %2 "ou" %1) "o"))
 
     "cn"
     (MakeCmdSeqQ "cn" (GetString rcb "cmd.dn.cn")
-                   "" "" true
-                   (fn [a ^Map ps] (do (.put ps "cn" a) "ou")))
-  } )
+                 "" "" true
+                 #(do (.put ^Map %2 "cn" %1) "ou"))
+  })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-key-qs ""
+(defn- make-key-qs "Set of questions to save info to file."
 
   [^ResourceBundle rcb]
 
   {
     "fname"
     (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
-                     "" "test.p12" true
-                     (fn [a ^Map ps] (do (.put ps "fn" a) "")))
+                 "" "test.p12" true
+                 #(do (.put ^Map %2 "fn" %1) ""))
 
     "pwd"
     (MakeCmdSeqQ "pwd" (GetString rcb "cmd.key.pwd")
-                     "" "" true
-                     (fn [a ^Map ps] (do (.put ps "pwd" a) "fname")))
+                 "" "" true
+                 #(do (.put ^Map %2 "pwd" %1) "fname"))
 
     "duration"
     (MakeCmdSeqQ "duration" (GetString rcb "cmd.key.duration")
-                     "" "12" true
-                     (fn [a ^Map ps] (do (.put ps "months" a) "pwd")))
+                 "" "12" true
+                 #(do (.put ^Map %2 "months" %1) "pwd"))
 
     "size"
     (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
-                   "" "1024" true
-                   (fn [a ^Map ps] (do (.put ps "size" a) "duration")))
+                 "" "1024" true
+                 #(do (.put ^Map %2 "size" %1) "duration"))
 
-   } )
+   })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- keyfile ""
+(defn- promptQuestions ""
 
-  []
+  [questions start]
 
-  (let [k (merge (make-csr-qs *SKARO-RSBUNDLE*)
-                  (make-key-qs *SKARO-RSBUNDLE*))
-        rc (CLIConverse k "cn") ]
-    (when-not (nil? rc)
-      (let [ssn (map #(let [v (get rc %) ]
-                        (if (hgl? v)
-                          (str (cstr/upper-case (name %))
-                               "="
-                               v)))
-                     [ :c :st :l :o :ou :cn ])
-             dn (cstr/join "," (FlattenNil ssn))
-             ff (File. ^String (:fn rc))
-             now (Date.) ]
-        (println (str "DN entered: " dn))
-        (MakeSSv1PKCS12
-          dn
-          (Pwdify (:pwd rc))
-          ff
-          {:keylen (ConvLong (:size rc) 1024)
-           :start now
-           :end (-> (MakeCal now)
-                    (AddMonths (ConvLong (:months rc) 12))
-                    (.getTime))
-          })
-        (println (str "Wrote file: " ff))))
+  (when-let [rc (CLIConverse questions start)]
+    (let [ssn (map #(let [v (get rc %) ]
+                      (if (hgl? v)
+                        (str (cstr/upper-case (name %)) "=" v)))
+                   [ :c :st :l :o :ou :cn ]) ]
+      [(cstr/join "," (FlattenNil ssn)) rc])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- csrfile ""
+(defn- keyfile "Maybe generate a server key file?"
 
   []
 
-  (let [rc (CLIConverse (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
-    (when-not (nil? rc)
-      (let [ssn (map #(let [v (get rc %) ]
-                        (if (hgl? v)
-                          (str (cstr/upper-case (name %))
-                               "=" v)))
-                     [ :c :st :l :o :ou :cn ])
-            dn (cstr/join "," (FlattenNil ssn))
-            [req pkey]
-            (MakeCsrReq (ConvLong (:size rc) 1024)
-                        dn
-                        PEM_CERT) ]
-        (println (str "DN entered: " dn))
-        (let [ff (File. (str (:fn rc) ".key")) ]
-          (FileUtils/writeByteArrayToFile ff pkey)
-          (println (str "Wrote file: " ff)))
+  (if-let [res (promptQuestions (merge (make-csr-qs *SKARO-RSBUNDLE*)
+                                       (make-key-qs *SKARO-RSBUNDLE*))
+                                "cn") ]
+    (let [^String dn (first res)
+          rc (last res)
+          ff (File. ^String (:fn rc))
+          now (Date.) ]
+      (println (str "DN entered: " dn))
+      (MakeSSv1PKCS12 dn
+                      (Pwdify (:pwd rc))
+                      ff
+                      {:keylen (ConvLong (:size rc) 1024)
+                      :start now
+                      :end (-> (MakeCal now)
+                               (AddMonths (ConvLong (:months rc) 12))
+                               (.getTime)) })
+      (println (str "Wrote file: " ff)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- csrfile "Maybe generate a CSR?"
+
+  []
+
+  (if-let [res (promptQuestions (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
+    (let [^String dn (first res)
+          rc (last res)
+          [req pkey]
+          (MakeCsrReq (ConvLong (:size rc) 1024)
+                      dn
+                      PEM_CERT) ]
+      (println (str "DN entered: " dn))
+      (let [ff (File. (str (:fn rc) ".key")) ]
+        (FileUtils/writeByteArrayToFile ff pkey)
+        (println (str "Wrote file: " ff))
         (let [ff (File. (str (:fn rc) ".csr")) ]
           (FileUtils/writeByteArrayToFile ff req)
           (println (str "Wrote file: " ff))) ))
@@ -474,7 +482,7 @@
 
   [& args]
 
-  (let [s (FileUtils/readFileToString (File. (getHomeDir) "VERSION") "utf-8") ]
+  (let [s (ReadOneFile (File. (getHomeDir) "VERSION")) ]
     (if (hgl? s)
       (println s)
       (println "Unknown version."))
@@ -508,7 +516,7 @@
 ;;
 (defn- genEclipseProj ""
 
-  [app]
+  [^String app]
 
   (let [cwd (File. (getHomeDir) (str DN_BOXX "/" app))
         sb (StringBuilder.)
@@ -519,7 +527,10 @@
         ulang (cstr/upper-case lang) ]
     (FileUtils/cleanDirectory ec)
     (FileUtils/writeStringToFile (File. ec ".project")
-      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/" lang "/project.txt") "utf-8")
+      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
+                       lang
+                       "/project.txt")
+                  "utf-8")
           (StringUtils/replace "${APP.NAME}" app)
           (StringUtils/replace (str "${" ulang ".SRC}")
                                (NiceFPath (File. cwd
@@ -554,7 +565,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Like a map of function pointers.
 (def ^:private _ARGS {:new #'onCreate
                       :ide #'onIDE
                       :build #'onBuild
@@ -577,12 +588,13 @@
 
   [home rcb & args]
 
-  (let [v (get _ARGS (keyword (first args))) ]
-    (when (nil? v)
-      (throw (CmdHelpError.)))
+  (if-let [v (get _ARGS (keyword (first args))) ]
+    ;; set the global values for skaro-home and system resource bundle
+    ;; for messages.
     (binding [*SKARO-HOME-DIR* home
               *SKARO-RSBUNDLE* rcb]
       (apply v args))
+    (throw (CmdHelpError.))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

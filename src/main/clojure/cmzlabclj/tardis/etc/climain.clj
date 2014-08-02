@@ -21,6 +21,7 @@
   (:use [cmzlabclj.nucleus.util.process :only [ProcessPid SafeWait] ]
         [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
         [cmzlabclj.nucleus.util.meta :only [SetCldr GetCldr] ]
+        [cmzlabclj.nucleus.util.files :only [ReadOneFile] ]
         [cmzlabclj.nucleus.util.core
                :only [ternary test-nonil test-cond ConvLong
                       Try! PrintMutableObj MakeMMap] ]
