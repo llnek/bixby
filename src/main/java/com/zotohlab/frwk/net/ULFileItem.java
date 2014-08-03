@@ -95,7 +95,9 @@ public class ULFileItem implements FileItem , Serializable {
 
   public byte[] get() { return null; }
 
-  public String getFieldName() { return  _field; }
+
+  public String getFieldNameLC() { return  nsb(_field).toLowerCase(); }
+  public String getFieldName() { return  nsb(_field); }
 
   public InputStream getInputStream() { return null; }
 

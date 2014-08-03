@@ -507,7 +507,8 @@
   (let [^File appDir (.getAttr ctr K_APPDIR)
         cs (ReadEdn (File. appDir
                            (str DN_CONF "/" "app.conf")))
-        json (CoreUtils/readJson (json/write-str cs)) ]
+        json (CoreUtils/readJson ^String
+                                 (json/write-str cs)) ]
   (.contextualize obj ctr)
   (.configure obj json)
   (.initialize obj)) )

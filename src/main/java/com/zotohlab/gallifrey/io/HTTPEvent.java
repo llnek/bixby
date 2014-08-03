@@ -14,6 +14,8 @@
 package com.zotohlab.gallifrey.io;
 
 
+import com.zotohlab.frwk.io.XData;
+
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
@@ -30,7 +32,7 @@ public interface HTTPEvent  extends IOEvent {
 
   public boolean isKeepAlive();
 
-  public Object data();
+  public XData data();
 
   public boolean hasData();
 

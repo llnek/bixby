@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.jetty
 
@@ -75,8 +75,10 @@
 
   [^HttpServletRequest req]
 
-  (let [v (.getHeader req "connection") ]
-    (= "keep-alive" (cstr/lower-case (nsb v)))
+  (if-let [v (.getHeader req "connection") ]
+    (>= (.indexOf (cstr/lower-case v)
+                  "keep-alive") 0)
+    false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,30 +106,36 @@
    ^HttpServletResponse rsp
    src]
 
-  (let [^List cks (.getf res :cookies)
-        ^URL url (.getf res :redirect)
+  (let [^URL url (.getf res :redirect)
         ^NCMap hds (.getf res :hds)
+        cks (.getf res :cookies)
         os (.getOutputStream rsp)
         code (.getf res :code)
         data (.getf res :data) ]
     (try
       (.setStatus rsp code)
-      (doseq [[^String nm vs] (seq hds)]
-        (when-not (= "content-length" (cstr/lower-case  nm))
+      (doseq [[nm vs] (seq hds)]
+        (when-not (= (cstr/lower-case  nm)
+                     "content-length")
           (doseq [vv (seq vs) ]
-            (.addHeader rsp nm vv))))
+            (.addHeader rsp ^String nm vv))))
       (doseq [c (seq cks) ]
         (.addCookie rsp (cookieToServlet c)))
       (cond
-        (and (>= code 300)(< code 400))
+        (and (>= code 300)
+             (< code 400))
         (.sendRedirect rsp
-                       (.encodeRedirectURL rsp (nsb url)))
+                       (.encodeRedirectURL rsp
+                                           (nsb url)))
         :else
         (let [^XData dd (cond
-                          (instance? XData data) data
-                          (notnil? data) (XData. data)
+                          (instance? XData data)
+                          data
+                          (notnil? data)
+                          (XData. data)
                           :else nil)
-              clen (if (and (notnil? dd) (.hasContent dd))
+              clen (if (and (notnil? dd)
+                            (.hasContent dd))
                      (.size dd)
                      0) ]
             (.setContentLength rsp clen)
@@ -170,11 +178,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [c (nsb (:context cfg)) ]
-    (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR))
-    (.setAttr! co :contextPath (strim c))
-    (HttpBasicConfig co cfg)
-  ))
+  (HttpBasicConfig co (dissoc cfg K_APP_CZLR))
+  (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -186,7 +191,10 @@
 
   ;; SSL Context Factory for HTTPS and SPDY
   (let [sslxf (doto (SslContextFactory.)
-                (.setKeyStorePath (-> keyfile (.toURI)(.toURL)(.toString)))
+                (.setKeyStorePath (-> keyfile
+                                      (.toURI)
+                                      (.toURL)
+                                      nsb))
                 (.setKeyStorePassword pwd)
                 (.setKeyManagerPassword pwd))
         config (doto (HttpConfiguration. conf)
@@ -208,18 +216,20 @@
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
-        keyfile (.getAttr co :serverKey)
-        ^String host (.getAttr co :host)
-        port (.getAttr co :port)
-        pwdObj (.getAttr co :pwd)
-        ws (.getAttr co :workers)
+        cfg (.getAttr co :emcfg)
+        keyfile (:serverKey cfg)
+        ^String host (:host cfg)
+        port (:port cfg)
+        pwdObj (:passwd cfg)
+        ws (:workers cfg)
          ;;q (QueuedThreadPool. (if (pos? ws) ws 8))
         svr (Server.)
         cc  (if (nil? keyfile)
               (doto (JettyUtils/makeConnector svr conf)
                 (.setPort port)
                 (.setIdleTimeout (int 30000)))
-              (cfgHTTPS svr port keyfile (nsb pwdObj)
+              (cfgHTTPS svr port keyfile
+                        (if (nil? pwdObj) nil (nsb pwdObj))
                         (doto conf
                           (.setSecureScheme "https")
                           (.setSecurePort port)))) ]
@@ -240,9 +250,10 @@
    ^HttpServletRequest req rsp]
 
   (let [^HTTPEvent evt (IOESReifyEvent co req)
+        cfg (.getAttr co :emcfg)
         ssl (= "https" (.getScheme req))
         wss (MakeWSSession co ssl)
-        wm (.getAttr co :waitMillis) ]
+        wm (:waitMillis cfg) ]
     (.bindSession evt wss)
     (doto ct
       (.setTimeout wm)
@@ -283,8 +294,9 @@
         rcpathStr (-> rcpath
                       (.toURI)
                       (.toURL)
-                      (.toString))
-        cp (strim (.getAttr co :contextPath))
+                      nsb)
+        cfg (.getAttr co :emcfg)
+        cp (:contextPath cfg)
         ctxs (ContextHandlerCollection.)
         c2 (ContextHandler.)
         c1 (ContextHandler.)
@@ -298,7 +310,7 @@
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
     (.setClassLoader c2 (.getAttr co K_APP_CZLR))
-    (.setContextPath c2 cp)
+    (.setContextPath c2 (strim cp))
     (.setHandler c2 myHandler)
     (.setHandlers ctxs (into-array Handler [c1 c2]))
     (.setHandler jetty ctxs)
@@ -336,6 +348,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- maybeGetCookies ""
+
+  [^HttpServletRequest req]
+
+  (with-local-vars [rc (transient {})]
+    (if-let [cs (.getCookies req) ]
+      (doseq [^Cookie c (seq cs) ]
+        (var-set rc (assoc! @rc
+                            (.getName c)
+                            (cookie-to-javaCookie c)))))
+    (persistent! @rc)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod IOESReifyEvent :czc.tardis.io/JettyIO
 
   [co & args]
@@ -345,6 +372,7 @@
         ssl (= "https" (.getScheme req))
         impl (MakeMMap)
         eid (NextLong) ]
+    (.setf! impl :cookies (maybeGetCookies req))
     (reify
 
       Identifiable
@@ -352,65 +380,44 @@
 
       HTTPEvent
 
+      (getCookies [_] (.getf impl :cookies))
       (getCookie [_ nm]
-        (let [lnm (cstr/lower-case nm)
-              cs (.getCookies req) ]
-          (some #(if (= lnm (cstr/lower-case (.getName ^Cookie %)))
-                   (cookie-to-javaCookie %)
-                   nil)
-                (if (nil? cs) [] (seq cs)))) )
+        (let [cs (.getf impl :cookies)]
+          (get cs nm)))
 
       (checkAuthenticity [_] false)
       (getId [_] eid)
-
-      (getCookies [_]
-        (let [rc (ArrayList.)
-              cs (.getCookies req) ]
-          (if-not (nil? cs)
-            (doseq [c (seq cs) ]
-              (.add rc (cookie-to-javaCookie c))))
-          rc))
 
       (bindSession [this s]
         (.setf! impl :ios s)
         (.handleEvent ^IOSession s this))
 
+      (isKeepAlive [_] (isServletKeepAlive req))
       (getSession [_] (.getf impl :ios))
       (emitter [_] co)
-      (isKeepAlive [_] (= (cstr/lower-case (nsb (.getHeader req "connection")))
-                          "keep-alive"))
-      (data [_] nil)
+
       (hasData [_] false)
+      (data [_] nil)
+
       (contentLength [_] (.getContentLength req))
       (contentType [_] (.getContentType req))
       (encoding [_] (.getCharacterEncoding req))
       (contextPath [_] (.getContextPath req))
 
+      (getHeaderValues [_ nm] (vec (seq (.getHeaders req nm))))
       (hasHeader [_ nm] (notnil? (.getHeader req nm)))
       (getHeaderValue [_ nm] (.getHeader req nm))
-      (getHeaderValues [_ nm]
-        (let [rc (ArrayList.) ]
-          (doseq [s (seq (.getHeaders req nm)) ]
-            (.add rc s))))
-
-      (getHeaders [_]
-        (let [rc (ArrayList.) ]
-          (doseq [^String s (seq (.getHeaderNames req)) ]
-            (.add rc s))) )
+      (getHeaders [_] (vec (seq (.getHeaderNames req))))
 
       (getParameterValue [_ nm] (.getParameter req nm))
       (hasParameter [_ nm]
         (.containsKey (.getParameterMap req) nm))
 
       (getParameterValues [_ nm]
-        (let [rc (ArrayList.) ]
-          (doseq [s (seq (.getParameterValues req nm)) ]
-            (.add rc s))))
+        (vec (seq (.getParameterValues req nm))))
 
       (getParameters [_]
-        (let [rc (ArrayList.) ]
-          (doseq [^String s (seq (.getParameterNames req)) ]
-            (.add rc s))) )
+        (vec (seq (.getParameterNames req))))
 
       (localAddr [_] (.getLocalAddr req))
       (localHost [_] (.getLocalName req))
@@ -439,12 +446,14 @@
 
       (getResultObj [_] result)
       (replyResult [this]
-        (let [^IOSession mvs (.getSession this)
-              code (.getStatus result)
-              ^cmzlabclj.tardis.io.core.WaitEventHolder
-              wevt (.release ^cmzlabclj.tardis.io.core.EmitterAPI co this) ]
+        (let [^cmzlabclj.tardis.io.core.WaitEventHolder
+              wevt (.release ^cmzlabclj.tardis.io.core.EmitterAPI co this)
+              ^IOSession mvs (.getSession this)
+              code (.getStatus result) ]
           (cond
-            (and (>= code 200)(< code 400)) (.handleResult mvs this result)
+            (and (>= code 200)
+                 (< code 400))
+            (.handleResult mvs this result)
             :else nil)
           (when-not (nil? wevt)
             (.resumeOnResult wevt result))))

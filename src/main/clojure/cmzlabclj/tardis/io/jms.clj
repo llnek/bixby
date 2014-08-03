@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.jms
 
@@ -91,17 +91,14 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [pkey (:hhh.pkey cfg) ]
-    (doto co
-      (.setAttr! :contextFactory (:contextfactory cfg))
-      (.setAttr! :connFactory (:connfactory cfg))
-      (.setAttr! :jndiUser (:jndiuser cfg))
-      (.setAttr! :jndiPwd (Pwdify (:jndipwd cfg) pkey))
-      (.setAttr! :jmsUser (:jmsuser cfg))
-      (.setAttr! :jmsPwd (Pwdify (:jmspwd cfg) pkey))
-      (.setAttr! :durable (:durable cfg))
-      (.setAttr! :providerUrl (:providerurl cfg))
-      (.setAttr! :destination (:destination cfg)))
+  (let [pkey (:hhh.pkey cfg)
+        p1 (:jndiPwd cfg)
+        p2 (:jmsPwd cfg) ]
+    (.setAttr! co :emcfg
+    (-> cfg
+        (assoc :jndiPwd (Pwdify p1 pkey))
+        (assoc :jmsPwd (Pwdify p2 pkey))))
+    co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -114,9 +111,10 @@
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [^String des (.getAttr co :destination)
-        jp (nsb (.getAttr co :jmsPwd))
-        ju (.getAttr co :jmsUser)
+  (let [cfg (.getAttr co :emcfg)
+        ^String des (:destination cfg)
+        jp (nsb (:jmsPwd cfg))
+        ^String ju (:jmsUser cfg)
         c (.lookup ctx des)
         ^Connection
         conn (if (hgl? ju)
@@ -142,9 +140,10 @@
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [^String des (.getAttr co :destination)
-        ^String ju (.getAttr co :jmsUser)
-        jp (nsb (.getAttr co :jmsPwd))
+  (let [cfg (.getAttr co :emcfg)
+        ^String des (:destination cfg)
+        ^String ju (:jmsUser cfg)
+        jp (nsb (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createTopicConnection cf ju (if (hgl? jp) jp nil))
                (.createTopicConnection cf))
@@ -152,7 +151,7 @@
         t (.lookup ctx des) ]
     (when-not (instance? Topic t)
       (ThrowIOE "Object not of Topic type."))
-    (-> (if (.getAttr co :durable)
+    (-> (if (:durable cfg)
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
         (.setMessageListener (reify MessageListener
@@ -169,9 +168,10 @@
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [^String des (.getAttr co :destination)
-        ^String ju (.getAttr co :jmsUser)
-        jp (nsb (.getAttr co :jmsPwd))
+  (let [cfg (.getAttr co :emcfg)
+        ^String des (:destination cfg)
+        ^String ju (:jmsUser cfg)
+        jp (nsb (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createQueueConnection cf ju (if (hgl? jp) jp nil))
                (.createQueueConnection cf))
@@ -191,10 +191,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^String cf (.getAttr co :contextFactory)
-        ^String ju (.getAttr co :jndiUser)
-        jp (nsb (.getAttr co :jndiPwd))
-        pl (.getAttr co :providerUrl)
+  (let [cfg (.getAttr co :emcfg)
+        ^String cf (:contextFactory cfg)
+        ^String ju (:jndiUser cfg)
+        jp (nsb (:jndiPwd cfg))
+        pl (:providerUrl cfg)
         vars (Hashtable.) ]
 
     (when (hgl? cf)
@@ -209,7 +210,7 @@
         (.put vars "jndi.password" jp)))
 
     (let [ctx (InitialContext. vars)
-          obj (.lookup ctx ^String (.getAttr co :connFactory))
+          obj (.lookup ctx ^String (:connFactory cfg))
           c (condp instance? obj
               QueueConnectionFactory (inizQueue co ctx obj)
               TopicConnectionFactory (inizTopic co ctx obj)

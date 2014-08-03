@@ -66,7 +66,7 @@ public class ULFormItems {
     for (ULFileItem n : _items) {
       if (b.length() > 0) { b.append("\n"); }
       b.append("name=" + n.getFieldName());
-      b.append(", data=" + (n.isFormField() ? n.toString() : n.getName()));
+      b.append(" ,data=" + (n.isFormField() ? n.toString() : n.getName()));
     }
     return b.toString();
   }

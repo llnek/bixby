@@ -9,23 +9,20 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-
   (:use [cmzlabclj.nucleus.util.core :only [notnil? ThrowIOE MakeMMap TryC] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim ] ]
         [cmzlabclj.tardis.core.sys])
 
-
   (:import  [com.zotohlab.frwk.server Component Service]
             [java.util.concurrent ConcurrentHashMap]
-
             [com.zotohlab.frwk.core Versioned Hierarchial
                                     Identifiable Disposable Startable]
             [com.zotohlab.gallifrey.core Container]

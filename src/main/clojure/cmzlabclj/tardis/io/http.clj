@@ -9,16 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.http
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+            [clojure.core :as ccore]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core :only [MubleAPI notnil? juid TryC spos?
-                                           ToJavaInt
+                                           ToJavaInt SubsVar
                                            MakeMMap test-cond Stringify] ]
         [cmzlabclj.nucleus.crypto.ssl]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
@@ -90,61 +91,56 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [^String file (:server-key cfg)
-        ^String fv (:flavor cfg)
-        socto (:soctoutmillis cfg)
-        kbs (:threshold-kb cfg)
-        w (:wait-millis cfg)
+  (let [^String kfile (SubsVar (nsb (:serverKey cfg)))
+        ^String fv (:sslType cfg)
+        socto (:sockTimeOut cfg)
+        cp (:contextPath cfg)
+        kbs (:limitKB cfg)
+        w (:waitMillis cfg)
         port (:port cfg)
-        bio (:sync cfg)
+        host (:host cfg)
         tds (:workers cfg)
         pkey (:hhh.pkey cfg)
-        ssl (hgl? file)
-        json (JsonObject.) ]
+        ssl (hgl? kfile) ]
+    (with-local-vars [cpy (transient cfg)]
+      (when (nil? fv)
+        (var-set cpy (assoc! @cpy :sslType "TLS")))
+      (when-not (spos? port)
+        (var-set cpy (assoc! @cpy
+                             :port
+                             (if ssl 443 80))))
+      (when (nil? host)
+        (var-set cpy (assoc! @cpy :host "")))
+      (when-not (hgl? cp)
+        (var-set cpy (assoc! @cpy :contextPath "")))
+      (when (hgl? kfile)
+        (test-cond "server-key file url"
+                   (.startsWith kfile "file:"))
+        (var-set cpy (assoc! @cpy
+                             :serverKey (URL. kfile)))
+        (var-set cpy (assoc! @cpy
+                             :passwd
+                             (Pwdify ^String (:passwd cfg) pkey))))
+      (when-not (spos? socto)
+        (var-set cpy (assoc! @cpy
+                             :sockTimeOut 0)))
+      ;; always async *NIO*
+      (var-set cpy (assoc! @cpy :async true))
 
-    (let [ xxx (if (spos? port) port (if ssl 443 80)) ]
-      (.addProperty json "port" (ToJavaInt port))
-      (.setAttr! co :port port))
-
-    (let [ xxx (nsb (:host cfg)) ]
-      (.addProperty json "host" xxx)
-      (.setAttr! co :host xxx))
-
-    (let [ ^String xxx (if (hgl? fv) fv "TLS") ]
-      (.addProperty json "sslType" xxx)
-      (.setAttr! co :sslType xxx))
-
-    (when (hgl? file)
-      (test-cond "server-key file url" (.startsWith file "file:"))
-      (let [ xxx (URL. file) ]
-        (.addProperty json "serverKey" (nsb xxx))
-        (.setAttr! co :serverKey xxx))
-      (let [ xxx (Pwdify ^String (:passwd cfg) pkey) ]
-        (.addProperty json "pwd" (nsb xxx))
-        (.setAttr! co :pwd xxx)))
-
-    (let [ xxx (if (spos? socto) socto 0) ]
-      (.addProperty json "sockTimeOut" (ToJavaInt xxx))
-      (.setAttr! co :sockTimeOut xxx))
-
-    (let [ xxx (if (true? bio) false true) ]
-      (.addProperty json "async" (true? xxx))
-      (.setAttr! co :async xxx))
-
-    (let [ xxx (if (spos? tds) tds 6) ]
-      (.addProperty json "workers" (ToJavaInt xxx))
-      (.setAttr! co :workers xxx))
-
-    (let [ xxx (if (spos? kbs) kbs (* 1024 1024 8)) ]
-      (.addProperty json "limit" (ToJavaInt xxx))
-      (.setAttr! co :limit xxx))
-
-    ;; 5 mins
-    (let [ xxx (if (spos? w) w 300000) ]
-      (.addProperty json "waitMillis" (ToJavaInt xxx))
-      (.setAttr! co :waitMillis xxx))
-
-    (.setAttr! co :emcfg json)
+      (when-not (spos? tds)
+        (var-set cpy (assoc! @cpy
+                             :workers 2)))
+      ;; 4Meg threshold for payload in memory
+      (when-not (spos? kbs)
+        (var-set cpy (assoc! @cpy
+                             :limitKB
+                             (* 1024 4))))
+      ;; 5 mins
+      (when-not (spos? w)
+        (var-set cpy (assoc! @cpy
+                             :waitMillis
+                             (* 1000 300)))))
+    (.setAttr! co :emcfg (persistent! @cpy))
     co
   ))
 
@@ -192,10 +188,10 @@
   [co]
 
   (let [impl (MakeMMap) ]
-    (.setf! impl :cookies (ArrayList.))
+    (.setf! impl :version "HTTP/1.1" )
+    (.setf! impl :cookies [])
     (.setf! impl :code -1)
     (.setf! impl :hds (NCMap.))
-    (.setf! impl :version "HTTP/1.1" )
     (reify
 
       MubleAPI
@@ -204,20 +200,22 @@
       (seq* [_] (.seq* impl))
       (getf [_ k] (.getf impl k) )
       (clrf! [_ k] (.clrf! impl k) )
+      (toEDN [_] (.toEDN impl))
       (clear! [_] (.clear! impl))
 
       HTTPResult
-      (setRedirect [_ url] (.setf! impl :redirect url))
 
       (setProtocolVersion [_ ver]  (.setf! impl :version ver))
       (setStatus [_ code] (.setf! impl :code code))
       (getStatus [_] (.getf impl :code))
       (emitter [_] co)
 
+      (setRedirect [_ url] (.setf! impl :redirect url))
+
       (addCookie [_ c]
-        (let [a (.getf impl :cookies) ]
-          (when-not (nil? c)
-            (.add ^List a c))))
+        (when-not (nil? c)
+          (let [a (.getf impl :cookies) ]
+            (.setf! impl :cookies (conj a c)))))
 
       (containsHeader [_ nm]
         (let [m (.getf impl :hds) ]
@@ -257,13 +255,11 @@
 (defn HasHeader? ""
 
   ;; boolean
-  [^JsonObject info ^String header]
+  [info ^String header]
 
-  (let [^JsonObject h (if (nil? info)
-                        nil
-                        (.getAsJsonObject info "headers")) ]
-    (and (notnil? h)
-         (.has h (cstr/lower-case header)))
+  (if-let [h (:headers info) ]
+    (ccore/contains? h (cstr/lower-case header))
+    false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,13 +267,11 @@
 (defn HasParam? ""
 
   ;; boolean
-  [^JsonObject info ^String param]
+  [info ^String param]
 
-  (let [^JsonObject h (if (nil? info)
-                        nil
-                        (.getAsJsonObject info "params")) ]
-    (and (notnil? h)
-         (.has h param))
+  (if-let [p (:params info) ]
+    (ccore/contains? p param)
+    false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,19 +279,14 @@
 (defn GetParameter ""
 
   ^String
-  [^JsonObject info ^String pm]
+  [info ^String param]
 
-  (let [^JsonObject h (if (nil? info)
-                        nil
-                        (.getAsJsonObject info "params"))
-        ^JsonArray a (if (and (notnil? h)
-                                (.has h pm))
-                       (.getAsJsonArray h pm)
-                       nil) ]
-    (if (and (notnil? a)
-             (> (.size a) 0))
-        (.getAsString (.get a 0))
-        nil)
+  (if-let [arr (if (HasParam? info param)
+                 ((:params info) param)
+                 nil) ]
+    (if (> (count arr) 0)
+      (first arr)
+      nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -305,22 +294,15 @@
 (defn GetHeader ""
 
   ^String
-  [^JsonObject info ^String header]
+  [info ^String header]
 
-  (let [^JsonObject h (if (nil? info)
-                        nil
-                        (.getAsJsonObject info "headers"))
-        hv (cstr/lower-case header)
-        ^JsonArray a (if (and (notnil? h)
-                                (.has h hv))
-                       (.getAsJsonArray h hv)
-                       nil) ]
-    (if (and (notnil? a)
-             (> (.size a) 0))
-      (.getAsString (.get a 0))
+  (if-let [arr (if (HasHeader? info header)
+                 ((:headers info) (cstr/lower-case header))
+                 nil) ]
+    (if (> (count arr) 0)
+      (first arr)
       nil)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

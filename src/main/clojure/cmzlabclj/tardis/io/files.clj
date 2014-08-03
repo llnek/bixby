@@ -9,16 +9,16 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.files
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.tardis.core.sys :rename { seq* rego-seq*
-                                                    has? rego-has? } ]
+  (:use [cmzlabclj.tardis.core.sys :rename {seq* rego-seq*
+                                            has? rego-has? } ]
         [cmzlabclj.tardis.io.loops
          :only [LoopableSchedule LoopableOneLoop CfgLoopable] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
@@ -94,7 +94,8 @@
    ^File f action]
 
   (let [^cmzlabclj.tardis.io.core.EmitterAPI src co
-        ^File des (.getAttr co :dest)
+        cfg (.getAttr co :emcfg)
+        ^File des (:recv-folder cfg)
         fname (.getName f)
         cf (cond
              (= action :FP-CREATED)
@@ -116,32 +117,29 @@
 
   (let [^String root (SubsVar (nsb (:target-folder cfg)))
         ^String dest (SubsVar (nsb (:recv-folder cfg)))
-        ^String mask (nsb (:fmask cfg)) ]
+        ^String mask (nsb (:fmask cfg))
+        c2 (CfgLoopable co cfg) ]
     (test-nestr "file-root-folder" root)
-    (CfgLoopable co cfg)
-    (.setAttr! co :target (doto (File. root) (.mkdirs)))
-    (.setAttr! co :mask
+    (log/info "Monitoring folder: " root)
+    (log/info "Rcv folder: " (nsn dest))
+    (.setAttr co :emcfg
+    (-> c2
+        (assoc :target-folder (doto (File. root) (.mkdirs)))
+        (assoc :fmask
                (cond
                  (.startsWith mask "*.")
                  (SuffixFileFilter. (.substring mask 1))
-
                  (.endsWith mask "*")
                  (PrefixFileFilter. (.substring mask 0
                                                 (dec (.length mask))))
-
                  (> (.length mask) 0)
                  (RegexFileFilter. mask) ;;WildcardFileFilter(mask)
-
                  :else
-                 FileFileFilter/FILE ) )
-    (when (hgl? dest)
-      (.setAttr! co :dest
-                 (doto
-                   (File. dest)
-                   (.mkdirs))))
-
-    (log/info "Monitoring folder: " root)
-    (log/info "Recv folder: " (nsn dest))
+                 FileFileFilter/FILE))
+        (assoc :recv-folder
+               (if (hgl? dest)
+                 (doto (File. dest) (.mkdirs))
+                 nil))))
     co
   ))
 
@@ -151,9 +149,10 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [obs (FileAlterationObserver. ^File (.getAttr co :target)
-                                     ^FileFilter (.getAttr co :mask))
-        ^long intv (.getAttr co :intervalMillis)
+  (let [cfg (.getAttr co :emcfg)
+        obs (FileAlterationObserver. ^File (:target-folder cfg)
+                                     ^FileFilter (:fmask cfg))
+        intv (:intervalMillis cfg)
         mon (FileAlterationMonitor. intv)
         lnr (proxy [FileAlterationListenerAdaptor][]
               (onFileCreate [f]

@@ -41,35 +41,31 @@
 (def ^String ^:private USER_PARAM "principal")
 (def ^String ^:private CAPTCHA_PARAM "captcha")
 
+(def ^:private PMS {EMAIL_PARAM [ :email #(NormalizeEmail %) ]
+                    CAPTCHA_PARAM [ :captcha #(strim %) ]
+                    USER_PARAM [ :principal #(strim %) ]
+                    PWD_PARAM [ :credential #(strim %) ]
+                    CSRF_PARAM [ :csrf #(strim %) ]
+                    NONCE_PARAM [ :nonce #(notnil? %) ] })
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parse a standard login-like form with userid,password,email
 (defn- crackFormFields ""
 
   [^HTTPEvent evt]
 
-  (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
-    (with-local-vars [csrf nil nonce false captcha nil
-                      user nil pwd nil email nil
-                      data (.content xs) ]
-      (when (instance? ULFormItems @data)
-        (doseq [^ULFileItem x (seq (GetFormFields @data)) ]
-          (let [fm (cstr/lower-case (.getFieldName x))
+  (let [data (if (.hasData evt) (.content (.data evt)) nil) ]
+    (cond
+      (instance? ULFormItems data)
+      (with-local-vars [rc (transient {})]
+        (doseq [^ULFileItem x (seq (GetFormFields data)) ]
+          (let [fm (.getFieldNameLC x)
                 fv (nsb (.getString x)) ]
-            (case fm
-              CAPTCHA_PARAM (var-set captcha fv)
-              EMAIL_PARAM (var-set email fv)
-              PWD_PARAM (var-set pwd fv)
-              USER_PARAM (var-set user fv)
-              CSRF_PARAM (var-set csrf fv)
-              NONCE_PARAM (var-set nonce true)
-              nil)))
-        {:email (NormalizeEmail (strim @email))
-         :principal (strim @user)
-         :credential (strim @pwd)
-         :csrf (strim @csrf)
-         :captcha (strim @captcha)
-         :nonce @nonce }
-        ))
+            (when-let [v (get PMS fm) ]
+              (var-set rc (assoc! @rc (first v)
+                                  (apply (last v) fv))))))
+        (persistent! @rc))
+      :else nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,15 +75,17 @@
   [^HTTPEvent evt]
 
   (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
-    (let [data (if (.hasContent xs) (.stringify xs) "")
-          json (json/read-str data) ]
-      (when-not (nil? json)
-        {:nonce (hgl? (strim (get json NONCE_PARAM)))
-         :principal (strim (get json USER_PARAM))
-         :credential (strim (get json PWD_PARAM))
-         :captcha (strim (get json CAPTCHA_PARAM))
-         :csrf (strim (get json CSRF_PARAM))
-         :email (NormalizeEmail (strim (get json EMAIL_PARAM))) }))
+    (when-let [json (json/read-str (if (.hasContent xs)
+                                     (.stringify xs)
+                                     "{}")
+                                   :key-fn #(cstr/lower-case %)) ]
+      (with-local-vars [rc (transient {})]
+        (doseq [[k v] (seq PMS)]
+          (when-let [fv (get json k) ]
+            (var-set rc (assoc! @rc
+                                (first v)
+                                (apply (last v) fv)))))
+        (persistent! @rc)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,12 +94,15 @@
 
   [^HTTPEvent evt]
 
-  {:nonce (hgl? (strim (.getParameterValue evt NONCE_PARAM)))
-   :csrf (strim (.getParameterValue evt CSRF_PARAM))
-   :email (NormalizeEmail (strim (.getParameterValue evt EMAIL_PARAM)))
-   :captcha (strim (.getParameterValue evt CAPTCHA_PARAM))
-   :credential (strim (.getParameterValue evt PWD_PARAM))
-   :principal (strim (.getParameterValue evt USER_PARAM)) })
+  (with-local-vars [rc (transient {})]
+    (doseq [[k v] (seq PMS)]
+      (when (.hasParameter evt k)
+        (var-set rc (assoc! @rc
+                            (first v)
+                            (apply (last v)
+                                   (.getParameterValue evt k))))))
+    (persistent! @rc)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

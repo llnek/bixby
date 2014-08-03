@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.loops
 
@@ -50,9 +50,9 @@
                 (TryC (when (fn? func) (func)))))
         [^Date dw ^long ds] delays ]
     (when (instance? Date dw)
-      (.schedule tm tt dw ^long intv) )
+      (.schedule tm tt dw (long intv)))
     (when (number? ds)
-      (.schedule tm tt ds ^long intv))
+      (.schedule tm tt ds (long intv)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,11 +77,12 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [intv (.getAttr co :intervalMillis)
-        t (.getAttr co :timer)
-        ds (.getAttr co :delayMillis)
-        dw (.getAttr co :delayWhen)
-        func (fn [] (LoopableWakeup co)) ]
+  (let [cfg (.getAttr co :emcfg)
+        intv (:intervalMillis cfg)
+        t (:timer cfg)
+        ds (:delayMillis cfg)
+        dw (:delayWhen cfg)
+        func #(LoopableWakeup co) ]
     (if (number? intv)
       (config-repeat-timer t [dw ds] intv func)
       (config-timer t [dw ds] func))
@@ -94,11 +95,12 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [intv (:interval-secs cfg)
-        ds (:delay-secs cfg)
-        dw (nsb (:delay-when cfg)) ]
-    (if (hgl? dw)
-      (.setAttr! co :delayWhen (ParseDate (strim dw) "yyyy-MM-ddTHH:mm:ss"))
+  (let [intv (:intervalSecs cfg)
+        ds (:delaySecs cfg)
+        dw (:delayWhen cfg) ]
+    (with-local-vars [cpy (transient cfg)]
+      (if (instance? Date dw)
+        (var-set cpy (assoc! :delayWhen (ParseDate dw "yyyy-MM-ddTHH:mm:ss")))
       (do
         (.setAttr! co :delayMillis
                    (* 1000 (Math/min (int 3)
