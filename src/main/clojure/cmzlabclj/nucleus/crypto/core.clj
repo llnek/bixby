@@ -17,17 +17,16 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]
             [cmzlabclj.nucleus.util.mime
-                       :as mime
-                       :only [MaybeStream IsCompressed? IsEncrypted? IsSigned? ] ]
+             :as mime
+             :only [MaybeStream IsCompressed? IsEncrypted? IsSigned? ] ]
             [clojure.math.numeric-tower :as math])
 
   (:use [cmzlabclj.nucleus.util.io :only [Streamify MakeBitOS ResetStream!] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextInt] ]
         [cmzlabclj.nucleus.util.dates :only [PlusMonths] ]
         [cmzlabclj.nucleus.util.core
-         :only
-         [ThrowIOE ThrowBadArg ternary NewRandom
-          Bytesify TryC Try! notnil? juid GetClassname] ]
+         :only [ThrowIOE ThrowBadArg ternary NewRandom
+                Bytesify TryC Try! notnil? juid GetClassname] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ])
 
   (:import  [java.io PrintStream File InputStream IOException
@@ -161,8 +160,8 @@
 (def ^String RSA  "RSA")
 (def ^String DSA  "DSA")
 
-(def ^String ^:private DEF_ALGO "SHA1WithRSAEncryption")
-(def ^String ^:private DEF_MAC "HmacSHA512")
+(def ^:private ^String DEF_ALGO "SHA1WithRSAEncryption")
+(def ^:private ^String DEF_MAC "HmacSHA512")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -210,9 +209,9 @@
 
   [^URL keyUrl]
 
-  (not (-> keyUrl
-           (.getFile)
-           (cstr/lower-case ) (.endsWith ".jks"))))
+  (not (-> (.getFile keyUrl)
+           cstr/lower-case
+           (.endsWith ".jks"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -258,7 +257,7 @@
   ^String
   []
 
-  (str "" (System/currentTimeMillis) (NextInt)))
+  (str "" (System/currentTimeMillis) ";" (NextInt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -266,8 +265,7 @@
 
   [^KeyStore ks predicate]
 
-  (loop [en (.aliases ks)
-         rc (transient []) ]
+  (loop [en (.aliases ks) rc (transient []) ]
     (if (.hasMoreElements en)
       (let [n (.nextElement en) ]
         (if (predicate ks n)
@@ -498,12 +496,13 @@
         bb (byte-array 1) ]
     (.write baos (Bytesify top))
     (loop [pos 0]
-      (if (= pos len)
+      (if (== pos len)
         (do
           (.write baos (Bytesify end))
           (.toByteArray baos))
         (do
-          (when (and (> pos 0) (= (mod pos 64) 0)) (.write baos nl))
+          (when (and (> pos 0)
+                     (== (mod pos 64) 0)) (.write baos nl))
           (aset bb 0 (aget bs pos))
           (.write baos bb)
           (recur (inc pos)))
@@ -608,7 +607,9 @@
                  (.getCertificate (.build bdr cs))) ]
     (.checkValidity cert (Date.))
     (.verify cert pub)
-    (log/debug "MkSSV1Cert: dn= " dnStr ", algo= " algo ", start=" start ", end=" end )
+    (log/debug "MkSSV1Cert: dn= " dnStr
+               ", algo= " algo
+               ", start=" start ", end=" end )
     [cert prv]
   ))
 
@@ -635,7 +636,8 @@
 ;;
 (defn MakePkcs12 "Make a PKCS12 object from key and cert."
 
-  [^bytes keyPEM ^bytes certPEM
+  [^bytes keyPEM 
+   ^bytes certPEM
    ^PasswordAPI pwdObj ^File out]
 
   (let [ct (.getTrustedCertificate (ConvCert certPEM))
@@ -645,7 +647,10 @@
         baos (MakeBitOS)
         ss (GetPkcsStore)
         ^KeyPair kp (.readObject (PEMParser. rdr)) ]
-    (.setKeyEntry ss (juid) (.getPrivate kp) ca (into-array Certificate [ct]))
+    (.setKeyEntry ss 
+                  (juid)
+                  (.getPrivate kp) 
+                  ca (into-array Certificate [ct]))
     (.store ss baos ca)
     (FileUtils/writeByteArrayToFile out (.toByteArray baos))
   ))
@@ -657,14 +662,15 @@
   [^String dnStr ^PasswordAPI pwdObj
    ^File out options]
 
-  (let [dft { :keylen 1024 :start (Date.) :end (PlusMonths 12) :algo DEF_ALGO }
+  (let [dft {:keylen 1024 :start (Date.)
+             :end (PlusMonths 12)
+             :algo DEF_ALGO }
         opts (assoc (merge dft options) :dnStr dnStr)
-        keylen (:keylen opts) ]
-    (FileUtils/writeByteArrayToFile out
-                                    (mkSSV1 (GetPkcsStore)
-                                            (MakeKeypair (nsb RSA) keylen)
-                                            pwdObj
-                                            opts))
+        keylen (:keylen opts) 
+        ssv1 (mkSSV1 (GetPkcsStore) 
+                     (MakeKeypair (nsb RSA) keylen)
+                     pwdObj opts) ]
+    (FileUtils/writeByteArrayToFile out ssv1)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,14 +680,15 @@
   [^String dnStr ^PasswordAPI pwdObj
    ^File out options]
 
-  (let [dft { :keylen 1024 :start (Date.) :end (PlusMonths 12) :algo "SHA1withDSA" }
+  (let [dft {:keylen 1024 :start (Date.)
+             :end (PlusMonths 12)
+             :algo "SHA1withDSA" }
         opts (assoc (merge dft options) :dnStr dnStr)
-        keylen (:keylen opts) ]
-    (FileUtils/writeByteArrayToFile out
-                                    (mkSSV1 (GetJksStore)
-                                            (MakeKeypair (nsb DSA) keylen)
-                                            pwdObj
-                                            opts))
+        keylen (:keylen opts) 
+        jks (mkSSV1 (GetJksStore) 
+                    (MakeKeypair (nsb DSA) keylen)
+                    pwdObj opts) ]
+    (FileUtils/writeByteArrayToFile out jks)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -748,7 +755,9 @@
   [^String dnStr ^PasswordAPI pwdObj
    ^File out options]
 
-  (let [dft {:keylen 1024 :start (Date.) :end (PlusMonths 12) }
+  (let [dft {:keylen 1024 
+             :start (Date.) 
+             :end (PlusMonths 12) }
         hack (:hack options)
         issuerObjs [(:issuerCerts options)
                     (:issuerKey options) ]

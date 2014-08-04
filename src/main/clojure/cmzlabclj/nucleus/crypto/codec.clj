@@ -17,17 +17,20 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]
             [clojure.math.numeric-tower :as math])
+
   (:use [cmzlabclj.nucleus.util.core
          :only [NewRandom Bytesify Stringify ThrowBadArg ternary] ]
         [cmzlabclj.nucleus.util.io :only [MakeBitOS] ]
-        [cmzlabclj.nucleus.util.str :only [nsb] ])
+        [cmzlabclj.nucleus.util.str :only [nichts? nsb] ])
+
   (:import  [org.apache.commons.codec.binary Base64]
             [javax.crypto.spec SecretKeySpec]
             [org.jasypt.encryption.pbe StandardPBEStringEncryptor]
             [org.jasypt.util.text StrongTextEncryptor]
             [java.io ByteArrayOutputStream]
             [java.security Key KeyFactory SecureRandom]
-            [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
+            [java.security.spec PKCS8EncodedKeySpec
+                                X509EncodedKeySpec]
             [javax.crypto Cipher]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [org.mindrot.jbcrypt BCrypt]
@@ -35,7 +38,7 @@
             [org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher]
             [org.bouncycastle.crypto KeyGenerationParameters]
             [org.bouncycastle.crypto.engines BlowfishEngine AESEngine
-                                                      RSAEngine DESedeEngine]
+                                             RSAEngine DESedeEngine]
             [org.bouncycastle.crypto.generators DESedeKeyGenerator]
             [org.bouncycastle.crypto.modes CBCBlockCipher]
             [org.apache.commons.lang3 StringUtils]))
@@ -50,27 +53,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^chars ^:private VISCHS (.toCharArray (str " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*"
+(def ^:private ^chars VISCHS (.toCharArray (str " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*"
                                                 "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-")))
 (def ^:private VISCHS_LEN (alength ^chars VISCHS))
 
-(def ^String ^:private PCHS "Ha$4Jep8!`g)GYkmrIRN72^cObZ%oXlSPT39qLMD&iC*UxKWhE#F5@qvV6j0f1dyBs-~tAQn(z_u" )
+(def ^:private ^String PCHS "Ha$4Jep8!`g)GYkmrIRN72^cObZ%oXlSPT39qLMD&iC*UxKWhE#F5@qvV6j0f1dyBs-~tAQn(z_u" )
 ;;(def ^:private PCHS "abcdefghijklmnopqrstuvqxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-_~!@#$%^&*()" )
-(def ^String ^:private ACHS "nhJ0qrIz6FmtPCduWoS9x8vT2-KMaO7qlgApVX5_keyZDjfE13UsibYRGQ4NcLBH" )
+(def ^:private ^String ACHS "nhJ0qrIz6FmtPCduWoS9x8vT2-KMaO7qlgApVX5_keyZDjfE13UsibYRGQ4NcLBH" )
 ;;(def ^:private ACHS "abcdefghijklmnopqrstuvqxyz1234567890-_ABCDEFGHIJKLMNOPQRSTUVWXYZ" )
 
-(def ^chars ^:private s_asciiChars (.toCharArray ACHS))
-(def ^chars ^:private s_pwdChars (.toCharArray PCHS))
+(def ^:private ^chars s_asciiChars (.toCharArray ACHS))
+(def ^:private ^chars s_pwdChars (.toCharArray PCHS))
 
-(def ^String ^:private PWD_PFX "CRYPT:" )
+(def ^:private ^String PWD_PFX "CRYPT:" )
 (def ^:private PWD_PFXLEN (.length PWD_PFX))
 
-(def ^String ^:private C_KEY "ed8xwl2XukYfdgR2aAddrg0lqzQjFhbs" )
-(def ^String ^:private T3_DES "DESede" ) ;; TripleDES
-(def ^chars ^:private C_KEYCS (.toCharArray C_KEY))
-(def ^bytes ^:private C_KEYBS (Bytesify C_KEY))
+(def ^:private ^String C_KEY "ed8xwl2XukYfdgR2aAddrg0lqzQjFhbs" )
+(def ^:private ^String T3_DES "DESede" ) ;; TripleDES
+(def ^:private ^chars C_KEYCS (.toCharArray C_KEY))
+(def ^:private ^bytes C_KEYBS (Bytesify C_KEY))
 
-(def ^String ^:private C_ALGO T3_DES) ;; default javax supports this
+(def ^:private ^String C_ALGO T3_DES) ;; default javax supports this
 ;;(def ^:private ALPHA_CHS 26)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,8 +223,8 @@
   ^String
   [^String text shiftpos]
 
-  (if (or (StringUtils/isEmpty text)
-          (= shiftpos 0))
+  (if (or (== shiftpos 0)
+          (nichts? text))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -238,8 +241,8 @@
   ^String
   [^String text shiftpos]
 
-  (if (or (StringUtils/isEmpty text)
-          (= shiftpos 0))
+  (if (or (== shiftpos 0)
+          (nichts? text))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -310,13 +313,14 @@
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (StringUtils/isEmpty text)
+  (if (nichts? text)
     text
     (let [c (getCipher pkey Cipher/ENCRYPT_MODE algo)
           p (Bytesify text)
+          plen (alength p)
           baos (MakeBitOS)
-          out (byte-array (max 4096 (.getOutputSize c (alength p))))
-          n (.update c p 0 (alength p) out 0) ]
+          out (byte-array (max 4096 (.getOutputSize c plen)))
+          n (.update c p 0 plen out 0) ]
       (when (> n 0) (.write baos out 0 n))
       (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
@@ -330,13 +334,14 @@
   ^String
   [^bytes pkey ^String encoded ^String algo]
 
-  (if (StringUtils/isEmpty encoded)
+  (if (nichts? encoded)
     encoded
     (let [c (getCipher pkey Cipher/DECRYPT_MODE algo)
           p (Base64/decodeBase64 encoded)
+          plen (alength p)
           baos (MakeBitOS)
-          out (byte-array (max 4096 (.getOutputSize c (alength p))))
-          n (.update c p 0 (alength p) out 0) ]
+          out (byte-array (max 4096 (.getOutputSize c plen)))
+          n (.update c p 0 plen out 0) ]
       (when (> n 0) (.write baos out 0 n))
       (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
@@ -403,7 +408,7 @@
   ^bytes
   [^bytes prvKey ^String cipherText]
 
-  (if (StringUtils/isEmpty cipherText)
+  (if (nichts? cipherText)
     nil
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
@@ -420,7 +425,7 @@
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (StringUtils/isEmpty text)
+  (if (nichts? text)
     text
     (let [cipher (doto (-> (bcXrefCipherEngine algo)
                            (CBCBlockCipher. )
@@ -444,7 +449,7 @@
   ^String
   [^bytes pkey ^String text ^String algo]
 
-  (if (StringUtils/isEmpty text)
+  (if (nichts? text)
     text
     (let [cipher (doto (-> (bcXrefCipherEngine algo)
                            (CBCBlockCipher. )
@@ -489,11 +494,11 @@
   [len ^chars chArray]
 
   (cond
+    (== len 0)
+    ""
+
     (< len 0)
     nil
-
-    (= len 0)
-    ""
 
     :else
     (let [ostr (char-array len)
@@ -519,7 +524,9 @@
 
   PasswordAPI
 
-  (toCharArray [_] (if (nil? pwdStr) (char-array 0) (.toCharArray pwdStr)))
+  (toCharArray [_] (if (nil? pwdStr) 
+                     (char-array 0) 
+                     (.toCharArray pwdStr)))
 
   (stronglyHashed [_]
     (if (nil? pwdStr)
@@ -537,12 +544,21 @@
     (BCrypt/checkpw (.text this) pwdHashed))
 
   (encoded [_]
-    (if (StringUtils/isEmpty pwdStr)
-      ""
-      (str PWD_PFX (.encrypt (JasyptCryptor)
-                             (.toCharArray pkey) pwdStr))))
+    (cond 
+      (nil? pwdStr)
+      nil
 
-  (text [_] (nsb pwdStr) ))
+      (nichts? pwdStr)
+      ""
+
+      :else
+      (str PWD_PFX (.encrypt (JasyptCryptor)
+                             (.toCharArray pkey) 
+                             pwdStr))))
+
+  (text [_] (if (nil? pwdStr) 
+              nil 
+              (nsb pwdStr) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -550,12 +566,9 @@
 
   (^PasswordAPI [^String pwdStr] (Pwdify pwdStr C_KEY))
 
-  (^PasswordAPI [^String pwdStr  ^String pkey]
+  (^PasswordAPI [^String pwdStr ^String pkey]
                 (cond
-                  (StringUtils/isEmpty pwdStr)
-                  (Password. "" pkey)
-
-                  (.startsWith pwdStr PWD_PFX)
+                  (.startsWith (nsb pwdStr) PWD_PFX)
                   (Password. (.decrypt (JasyptCryptor)
                                        (.toCharArray pkey)
                                        (.substring pwdStr PWD_PFXLEN)) pkey)
