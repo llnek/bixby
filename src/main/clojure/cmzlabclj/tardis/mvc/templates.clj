@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.mvc.templates
 
@@ -175,16 +175,14 @@
 
   [^RandomAccessFile raf
    ^String ct
-   ^JsonObject info
+   info
    ^HttpResponse rsp ]
 
-  (let [^JsonObject h (.getAsJsonObject info "headers")
-        ^JsonArray r (if (.has h "range")
-                       (.getAsJsonArray h "range")
-                       nil)
-        s (if (or (nil? r)(< (.size r) 1))
+  (let [h (:headers info)
+        r (:range h)
+        s (if (or (nil? r)(< (count r) 1))
             ""
-            (.get r 0)) ]
+            (first r)) ]
     (if (HTTPRangeInput/accepts s)
       (doto (HTTPRangeInput. raf ct s)
         (.prepareNettyResponse rsp))
@@ -195,7 +193,7 @@
 ;;
 (defn ReplyFileAsset ""
 
-  [src ^Channel ch ^JsonObject info ^HttpResponse rsp ^File file]
+  [src ^Channel ch info ^HttpResponse rsp ^File file]
 
   (let [^WebAsset asset (if (not (maybeCache file))
                           nil
@@ -212,7 +210,7 @@
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
           (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
-      (log/debug "serving file: " fname " with clen= " @clen ", ctype= " @ct)
+      (log/debug "Serving file: " fname " with clen= " @clen ", ctype= " @ct)
       (try
         (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
               (var-set clen 0))
@@ -220,15 +218,15 @@
         (HttpHeaders/setHeader rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.writeAndFlush ch rsp))
-        (when-not (or (= (-> (.get info "method")(.getAsString)) "HEAD")
+        (when-not (or (= (:method info) "HEAD")
                       (= 0 @clen))
                   (var-set wf (.writeAndFlush ch @inp)))
         (.addListener ^ChannelFuture @wf
                       (reify ChannelFutureListener
                         (operationComplete [_ ff]
-                          (log/debug "channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
+                          (log/debug "Channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
                           (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                          (when-not (-> (.get info "keep-alive")(.getAsBoolean))
+                          (when-not (:keepAlive info)
                             (NettyFW/closeChannel ch)))))
         (catch Throwable e#
           (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))

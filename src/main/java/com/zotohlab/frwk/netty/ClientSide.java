@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.Map;
 
 import static com.zotohlab.frwk.io.IOUtils.streamLimit;
 
@@ -47,7 +48,7 @@ public enum ClientSide {
 
   /**
    */
-  public static Bootstrap initClientSide(PipelineConfigurator cfg, JsonObject options) {
+  public static Bootstrap initClientSide(PipelineConfigurator cfg, Map<?,?> options) {
     Bootstrap bs= new Bootstrap();
     bs.group( new NioEventLoopGroup() );
     bs.channel(NioSocketChannel.class);

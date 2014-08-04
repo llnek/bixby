@@ -240,7 +240,8 @@ public enum NettyFW {
     }
   }
 
-  public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg, final JsonObject options) {
+  public static ChannelHandler makeChannelInitor(final PipelineConfigurator cfg,
+                                                 final Map<?,?> options) {
 
     return cfg.configure(options);
 

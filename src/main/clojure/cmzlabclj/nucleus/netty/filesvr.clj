@@ -46,10 +46,10 @@
 ; file handlers
 (defn- replyGetVFile ""
 
-  [^Channel ch ^JsonObject info ^XData xdata]
+  [^Channel ch info ^XData xdata]
 
   (let [kalive (and (notnil? info)
-                    (SafeGetJsonBool info "keep-alive"))
+                    (:keepAlive info))
         res (NettyFW/makeHttpReply 200)
         clen (.size xdata) ]
     (HttpHeaders/setHeader res "connection" (if kalive "keep-alive" "close"))
@@ -66,7 +66,7 @@
 ;;
 (defn- filePutter ""
 
-  [^File vdir ^Channel ch ^JsonObject info ^String fname ^XData xdata]
+  [^File vdir ^Channel ch info ^String fname ^XData xdata]
 
   (try
     (SaveFile vdir fname xdata)
@@ -80,7 +80,7 @@
 ;;
 (defn- fileGetter ""
 
-  [^File vdir ^Channel ch ^JsonObject info ^String fname]
+  [^File vdir ^Channel ch info ^String fname]
 
   (let [xdata (GetFile vdir fname) ]
     (if (.hasContent xdata)
@@ -93,18 +93,18 @@
 (defn- fileHandler ""
 
   ^ChannelHandler
-  [^JsonObject options]
+  [options]
 
   (proxy [SimpleChannelInboundHandler][]
     (channelRead0 [c m]
-      (let [vdir (File. (SafeGetJsonString options "vdir"))
+      (let [vdir (File. ^String (:vdir options))
             ^ChannelHandlerContext ctx c
             ^DemuxedMsg msg m
             xs (.payload msg)
             info (.info msg)
             ch (.channel ctx)
-            mtd (SafeGetJsonString info "method")
-            uri (SafeGetJsonString info "uri")
+            ^String mtd (:method info)
+            ^String uri (:uri info)
             pos (.lastIndexOf uri (int \/))
             p (if (< pos 0) uri (.substring uri (inc pos)))
             nm (if (cstr/blank? p) (str (juid) ".dat") p) ]
@@ -135,7 +135,7 @@
 (defn MakeMemFileServer "A file server which can get/put files."
 
   ;; returns netty objects if you want to do clean up
-  [^String host port ^JsonObject options]
+  [^String host port options]
 
   (let [^ServerBootstrap bs (InitTCPServer  (fileCfgtor) options)
         ch (StartServer bs host (int port)) ]
@@ -148,15 +148,16 @@
 
   [& args]
 
-  (let [opts (JsonObject.) ]
+  (with-local-vars [opts (transient {})]
     (cond
       (< (count args) 3)
       (println "usage: filesvr host port <rootdir>")
 
       :else
-      (.addProperty opts "vdir" (str (nth args 2))))
+      (var-set opts (assoc! @opts :vdir (str (nth args 2)))))
     (MakeMemFileServer (nth args 0)
-                       (Integer/parseInt (nth args 1)) opts)
+                       (Integer/parseInt (nth args 1))
+                       (persistent! @opts))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -66,9 +66,8 @@
   [callback]
 
   (proxy [PipelineConfigurator][]
-    (assemble [p o]
+    (assemble [p options]
       (let [^ChannelPipeline pipe p
-            ^JsonObject options o
             ssl (SSLServerHShake options) ]
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
@@ -83,7 +82,7 @@
 ;;
 (defn MakeDiscardHTTPD "Just returns 200 OK"
 
-  [^String host port ^JsonObject options callback]
+  [^String host port options callback]
 
   (let [^ServerBootstrap bs (InitTCPServer (discarder callback) options)
         ch (StartServer bs host port) ]

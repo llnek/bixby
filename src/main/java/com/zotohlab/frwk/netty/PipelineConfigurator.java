@@ -20,6 +20,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 
+import java.util.Map;
+
 /**
  * @author kenl
  */
@@ -28,7 +30,7 @@ public abstract class PipelineConfigurator {
   protected PipelineConfigurator() {
   }
 
-  public ChannelHandler configure(final JsonObject options) {
+  public ChannelHandler configure(final Map<?,?> options) {
     return new ChannelInitializer() {
       public void initChannel(Channel ch) {
         assemble(ch.pipeline(), options);
@@ -36,7 +38,7 @@ public abstract class PipelineConfigurator {
     };
   }
 
-  protected abstract void assemble(ChannelPipeline pipe, JsonObject options);
+  protected abstract void assemble(ChannelPipeline pipe, Map<?,?> options);
 
 }
 

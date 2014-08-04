@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.request
 
@@ -50,10 +50,10 @@
       (let [^ChannelHandlerContext ctx c
             ^HttpMessage msg obj
             ch (.channel ctx)
-            info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
-            isc (SafeGetJsonBool info "is-chunked")
-            mtd (SafeGetJsonString info "method")
-            clen (SafeGetJsonInt info "clen") ]
+            info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
+            isc (:is-chunked info)
+            mtd (:method info)
+            clen (:clen info) ]
         (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
         (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
         (.handleMsgChunk ^RequestFilter this ctx msg)))
@@ -61,7 +61,7 @@
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
             ^Object msg obj ]
-        (log/debug "channel-read0 called with msg " (type msg))
+        (log/debug "Channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
           (.handleInboundMsg ^RequestFilter this ctx msg)
@@ -71,7 +71,7 @@
 
           :else
           (do
-            (log/error "unexpected message type " (type msg))
+            (log/error "Unexpected message type " (type msg))
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))
   ))

@@ -194,7 +194,7 @@
 ;;
 (defn MakeSnoopHTTPD "Sample Snooper HTTPD."
 
-  [^String host port ^JsonObject options]
+  [^String host port options]
 
   (let [^ServerBootstrap bs (InitTCPServer (snooper) options)
         ch (StartServer bs host (int port)) ]

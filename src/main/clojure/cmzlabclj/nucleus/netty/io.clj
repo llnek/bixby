@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.io
 
@@ -62,8 +62,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-(def ^:private ^String SERVERKEY "serverKey")
-(def ^:private ^String PWD "pwd")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,7 +146,7 @@
   (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
         olen (:clen info) ]
     (when-not (== olen clen)
-      (log/warn "Content-length read from headers = "  olen ", new clen = "  clen)
+      (log/warn "Content-length read from headers = " olen ", new clen = " clen)
       (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY (assoc info :clen clen)))
   ))
 
@@ -164,7 +162,9 @@
         nnw (ExtractHeaders hds) ]
     (NettyFW/setAttr ctx
                      NettyFW/MSGINFO_KEY
-                     (assoc info :headers (merge old nnw)))
+                     (assoc info
+                            :headers
+                            (merge {} old nnw)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,10 +205,10 @@
 (defn SSLServerHShake ""
 
   ^ChannelHandler
-  [^JsonObject options]
+  [options]
 
-  (let [keyUrlStr (SafeGetJsonString options SERVERKEY)
-        pwdStr (SafeGetJsonString options PWD) ]
+  (let [^String keyUrlStr (:serverKey options)
+        ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
       (try
         (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
@@ -218,7 +218,8 @@
                                                  "PKCS12"))
               t (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
               k (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm)) ]
-          (with-open [ inp (-> (URL. keyUrlStr) (.openStream)) ]
+          (with-open [inp (-> (URL. keyUrlStr)
+                              (.openStream)) ]
             (.load ks inp pwd)
             (.init t ks)
             (.init k ks pwd)
@@ -237,7 +238,7 @@
 (defn SSLClientHShake ""
 
   ^ChannelHandler
-  [^JsonObject options]
+  [options]
 
   (try
     (let [ctx (doto (SSLContext/getInstance "TLS")
@@ -295,10 +296,10 @@
    ^cmzlabclj.nucleus.util.core.MutableMap impl]
 
   (let [info (ExtractMsgInfo req)
-        ch (.channel ctx)
         ^String mt (:method info)
-        ^String uri (:uri info) ]
-    (log/debug "first level demux of message\n{}\n\n{}" req info)
+        ^String uri (:uri info)
+        ch (.channel ctx) ]
+    (log/debug "First level demux of message\n{}\n\n{}" req info)
     (NettyFW/setAttr ctx NettyFW/MSGFUNC_KEY (reifyMsgFunc))
     (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
     (.setf! impl :delegate nil)
@@ -391,11 +392,11 @@
 (defn MakeHttpDemuxFilter "Detect websock or normal http."
 
   ^ChannelHandler
-  [^JsonObject options hack]
+  [options hack]
 
-  (let [ws (SafeGetJsonObject options "wsock")
+  (let [ws (:wsock options)
         uri (if-not (nil? ws)
-              (SafeGetJsonString ws "uri")
+              (:uri ws)
               "")
         tmp (MakeMMap) ]
     (proxy [ChannelInboundHandlerAdapter][]
@@ -410,7 +411,7 @@
                  (isWEBSock msg))
             (do
               ;; wait for full request
-              (log/debug "got a websock req - let's wait for full msg.")
+              (log/debug "Got a websock req - let's wait for full msg.")
               (.setf! tmp :reqforwsock (FakeFullHttpRequest msg))
               (.setf! tmp :wait4wsock true)
               (ReferenceCountUtil/release msg))
@@ -418,7 +419,7 @@
             (and (true? (.getf tmp :wait4wsock))
                  (instance? LastHttpContent msg))
             (do
-              (log/debug "got a wsock upgrade request for uri "
+              (log/debug "Got a wsock upgrade request for uri "
                          uri
                          ", swapping to netty's websock handler.")
               (.addAfter pipe
@@ -433,7 +434,7 @@
 
             :else
             (do
-              (log/debug "standard http request - swap in our own http handler.")
+              (log/debug "Standard http request - swap in our own http handler.")
               (.addAfter pipe
                          "HttpDemuxFilter"
                          "ReifyHttpFilter"
@@ -453,7 +454,7 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [pl options]
-      (let [ssl (SSLServerHShake ^JsonObject options)
+      (let [ssl (SSLServerHShake options)
             ^ChannelPipeline pipe pl]
         (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
         (doto pipe
@@ -478,7 +479,7 @@
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
-    (log/debug "netty-TCP-server: running on host " ip ", port " port)
+    (log/debug "Netty-TCP-server: running on host " ip ", port " port)
     (try
       (-> (.bind bs ip (int port))
           (.sync)
@@ -499,7 +500,7 @@
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
-    (log/debug "netty-UDP-server: running on host " ip ", port " port)
+    (log/debug "Netty-UDP-server: running on host " ip ", port " port)
     (-> (.bind bs ip (int port))
         (.channel))
   ))
@@ -508,13 +509,14 @@
 ;;
 (defmethod StopServer :tcp-server
 
-  [^ServerBootstrap bs ^Channel ch]
+  [^ServerBootstrap bs
+   ^Channel ch]
 
   (-> (.close ch)
       (.addListener (reify ChannelFutureListener
                       (operationComplete [_ cff]
-                        (let [ gc (.childGroup bs)
-                               gp (.group bs) ]
+                        (let [gc (.childGroup bs)
+                              gp (.group bs) ]
                           (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
                           (when-not (nil? gc) (Try! (.shutdownGracefully gc)))))))
   ))
@@ -523,12 +525,13 @@
 ;;
 (defmethod StopServer :udp-server
 
-  [^Bootstrap bs ^Channel ch]
+  [^Bootstrap bs
+   ^Channel ch]
 
   (-> (.close ch)
       (.addListener (reify ChannelFutureListener
                       (operationComplete [_ cff]
-                        (let [ gp (.group bs) ]
+                        (let [gp (.group bs) ]
                           (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
   ))
 
@@ -537,10 +540,10 @@
 (defn- getEventGroup ""
 
   ^NioEventLoopGroup
-  [^String group ^JsonObject options]
+  [group options]
 
-  (if (.has options group)
-    (NioEventLoopGroup. (SafeGetJsonInt options group))
+  (if-not (nil? (get options group))
+    (NioEventLoopGroup. (get options group))
     (NioEventLoopGroup.)
   ))
 
@@ -550,11 +553,11 @@
 
   ^ServerBootstrap
   [^PipelineConfigurator cfg
-   ^JsonObject options]
+   options]
 
   (doto (ServerBootstrap.)
-    (.group (getEventGroup "bossThreads" options)
-            (getEventGroup "workerThreads" options))
+    (.group (getEventGroup :bossThreads options)
+            (getEventGroup :workerThreads options))
     (.channel NioServerSocketChannel)
     (.option ChannelOption/SO_REUSEADDR true)
     (.option ChannelOption/SO_BACKLOG (int 100))
@@ -569,10 +572,10 @@
 
   ^Bootstrap
   [^PipelineConfigurator cfg
-   ^JsonObject options]
+   options]
 
   (doto (Bootstrap.)
-    (.group (getEventGroup "bossThreads" options))
+    (.group (getEventGroup :bossThreads options))
     (.channel NioDatagramChannel)
     (.option ChannelOption/TCP_NODELAY true)
     (.option ChannelOption/SO_RCVBUF (int (* 2  1024 1024)))

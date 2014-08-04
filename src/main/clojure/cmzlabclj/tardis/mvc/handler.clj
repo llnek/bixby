@@ -184,12 +184,10 @@
   ^ChannelHandler
   [^cmzlabclj.tardis.io.core.EmitterAPI em
    ^cmzlabclj.tardis.core.sys.Element co
-   ^JsonObject options]
+   options]
 
-  (let [handlerFn (-> options
-                      (.getAsJsonObject "wsock")
-                      (.getAsJsonPrimitive "handler")
-                      (.getAsString)) ]
+  (let [handlerFn (-> (:wsock options)
+                      (:handler )) ]
     (log/debug "wsockDispatcher has user function: " handlerFn)
     (proxy [SimpleInboundFilter] []
         (channelRead0 [ctx msg]
@@ -197,7 +195,7 @@
                 opts {:router handlerFn}
                 ^WebSockEvent
                 evt (IOESReifyEvent co ch msg nil) ]
-            (log/debug "reified one websocket event")
+            (log/debug "Reified one websocket event")
             (.dispatch em evt opts))))
   ))
 
@@ -222,7 +220,10 @@
 
   (let [^ChannelPipeline pipe (.pipeline ctx)
         co (:emitter hack) ]
-    (.addBefore pipe "ErrorSinkFilter" "WSOCKDispatcher" (wsockDispatcher co co options))
+    (.addBefore pipe
+                "ErrorSinkFilter"
+                "WSOCKDispatcher"
+                (wsockDispatcher co co options))
     (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
         (.set "wsock"))
     ;;(.remove pipe "ChunkedWriteHandler")
@@ -240,11 +241,10 @@
   (let [hack {:onhttp mvcInitorOnHttp
               :onwsock mvcInitorOnWS
               :emitter co} ]
-    (log/debug "mvc netty pipeline initor called with emitter = " (type co))
+    (log/debug "MVC netty pipeline initor called with emitter = " (type co))
     (proxy [PipelineConfigurator] []
-      (assemble [p o]
+      (assemble [p options]
         (let [^ChannelPipeline pipe p
-              ^JsonObject options o
               ssl (SSLServerHShake options) ]
           ;; should flash go before ssl, probably...
           (FlashFilter/addLast pipe)
@@ -254,7 +254,7 @@
             ;;(.addLast "IdleStateHandler" (IdleStateHandler. 100 100 100))
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
             (.addLast "RouteFilter" (routeFilter co))
-            (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options1 hack))
+            (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options hack))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
             ;;(.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
             (.addLast "MVCDispatcher" (mvcDispatcher co co))
@@ -271,7 +271,7 @@
   (let [^cmzlabclj.tardis.core.sys.Element
         ctr (.parent ^Hierarchial co)
         rts (.getAttr ctr :routes)
-        ^JsonObject options (.getAttr co :emcfg)
+        options (.getAttr co :emcfg)
         bs (InitTCPServer (mvcInitor co options) options) ]
     (.setAttr! co :cracker (MakeRouteCracker rts))
     (.setAttr! co :netty  { :bootstrap bs })
@@ -284,75 +284,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (HttpBasicConfig co cfg)
-  (let [^JsonObject json (.getAttr co :emcfg)
-        c (nsb (:context cfg)) ]
-
-    ;;(.setAttr! co :welcomeFiles (:welcomeFiles cfg))
-
-    (let [xxx (strim c) ]
-      (.addProperty json "contextPath" xxx)
-      (.setAttr! co :contextPath xxx))
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; session/cookie stuff
-    (let [n (:sessionAgeSecs cfg)
-          xxx (if (nil? n) 3600 n) ]
-      (.addProperty json "sessionAgeSecs" (ToJavaInt xxx))
-      (.setAttr! co :sessionAgeSecs xxx))
-    (let [n (:maxIdleSecs cfg)
-          xxx (if (nil? n) 900 n) ]
-      (.addProperty json "maxIdleSecs" (ToJavaInt xxx))
-      (.setAttr! co :maxIdleSecs xxx))
-    (let [xxx (nsb (:domainPath cfg)) ]
-      (.addProperty json "domainPath" xxx)
-      (.setAttr! co :domainPath xxx))
-    (let [xxx (nsb (:domain cfg)) ]
-      (.addProperty json "domain" xxx)
-      (.setAttr! co :domain xxx))
-    (let [n (:hidden cfg)
-          xxx (if (false? n) false true) ]
-      (.addProperty json "hidden" xxx)
-      (.setAttr! co :hidden xxx))
-    ;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; websocket stuff
-    (when-let [w (:wsock cfg) ]
-      (let [ws (JsonObject.)]
-        (.addProperty ws "handler" (nsb (:handler w)))
-        (.addProperty ws "uri" (nsb (:uri w)))
-        (.add json "wsock" ws)
-        (.setAttr! co :wsock w)))
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; caching stuff
-    (let [n (:cacheMaxAgeSecs cfg)
-          xxx (if (nil? n) 3600 n) ]
-      (.addProperty json "cacheMaxAgeSecs" (ToJavaInt xxx))
-      (.setAttr! co :cacheMaxAgeSecs xxx))
-    (let [xxx (:useETags cfg) ]
-      (.addProperty json "useETags" (true? xxx))
-      (.setAttr! co :useETags xxx))
-    (let [xxx (:cacheAssets cfg) ]
-      (.addProperty json "cacheAssets" (not (false? xxx)))
-      (when (false? xxx)(SetCacheAssetsFlag false))
-      (.setAttr! co :cacheAssets xxx))
-  ;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-    (let [xxx (strim (:handler cfg)) ]
-      (.addProperty json "router" xxx)
-      (.setAttr! co :router xxx))
-
-    (let [xxx (strim (:errorHandler cfg)) ]
-      (.addProperty json "errorRouter" xxx)
-      (.setAttr! co :errorRouter xxx))
-
-    co
-  ))
+  (.setAttr! co :emcfg (HttpBasicConfig co cfg))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

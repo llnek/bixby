@@ -9,16 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.net.routes
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap test-nestr] ]
         [cmzlabclj.nucleus.util.str :only [nsb nichts? hgl?] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ])
+
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.util IWin32Conf]
@@ -71,6 +73,7 @@
         (seq* [_] (.seq* impl))
         (getf [_ k] (.getf impl k) )
         (clrf! [_ k] (.clrf! impl k) )
+        (toEDN [_] (.toEDN impl))
         (clear! [_] (.clear! impl))
 
         RouteInfo
@@ -96,7 +99,8 @@
           (let [ph (.getf impl :placeHolders)
                 ^Matcher mmc mc
                 gc (.groupCount mmc) ]
-            (with-local-vars [rc (transient {}) r2 "" ]
+            (with-local-vars [rc (transient {})
+                              r2 "" ]
               (doseq [h (seq ph) ]
                 (var-set r2 (last h))
                 (var-set rc
@@ -117,7 +121,9 @@
 
   (let [tknz (StringTokenizer. path "/" true)
         buff (StringBuilder.) ]
-    (with-local-vars [ cg 0 gn "" ts "" phs (transient []) ]
+    (with-local-vars [cg 0 gn ""
+                      ts ""
+                      phs (transient []) ]
       (while (.hasMoreTokens tknz)
         (var-set ts (.nextToken tknz))
         (if (= @ts "/")
@@ -134,7 +140,7 @@
                   (var-set cg (+ @cg c)))))
             (.append buff @ts))))
       (let [pp (.toString buff) ]
-        (log/info "route added: " path " \ncanonicalized to: " pp)
+        (log/info "Route added: " path " \nCanonicalized to: " pp)
         (.setf! rc :regex (Pattern. pp))
         (.setf! rc :path pp))
       (.setf! rc :placeHolders (persistent! @phs))
@@ -193,13 +199,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; [ri mc] routeinfo matcher
-(defn- seek-route ""
+(defn- seek-route "Returns [routeinfo, matcher]."
 
   [mtd uri rts]
 
   (if-not (nil? rts)
     (some (fn [^cmzlabclj.nucleus.net.routes.RouteInfo ri]
-            (let [ m (.resemble? ri mtd uri) ]
+            (let [m (.resemble? ri mtd uri) ]
               (if (nil? m) nil [ri m])))
           (seq rts))
   ))
@@ -222,7 +228,7 @@
             rt (if (nil? rc)
                   [false nil nil ""]
                   [true (first rc)(last rc) ""] ) ]
-        (if (and (false? (nth rt 0))
+        (if (and (false? (first rt))
                  (not (.endsWith uri "/"))
                  (seek-route mtd (str uri "/") routes))
           [true nil nil (str uri "/")]

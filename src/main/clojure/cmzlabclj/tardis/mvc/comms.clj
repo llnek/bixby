@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.mvc.comms
 
@@ -59,7 +59,7 @@
 ;;
 (defn- isModified ""
 
-  [^String eTag lastTm ^JsonObject info]
+  [^String eTag lastTm info]
 
   (with-local-vars [modd true ]
     (cond
@@ -79,7 +79,7 @@
 (defn AddETag ""
 
   [^cmzlabclj.tardis.core.sys.Element src
-   ^JsonObject info
+   info
    ^File file
    ^HTTPResult res ]
 
@@ -89,7 +89,7 @@
     (if (isModified eTag lastTm info)
       (.setHeader res "last-modified"
                   (.format (MVCUtils/getSDF) (Date. lastTm)))
-      (if (= (-> (.get info "method")(.getAsString)) "GET")
+      (if (= (:method info) "GET")
         (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
     (.setHeader res "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
@@ -125,11 +125,11 @@
 ;;
 (defn- handleStatic2 ""
 
-  [src ^JsonObject info ^HTTPEvent evt ^HTTPResult res ^File file]
+  [src info ^HTTPEvent evt ^HTTPResult res ^File file]
 
   (with-local-vars [crap false ]
     (try
-      (log/debug "serving static file: " (NiceFPath file))
+      (log/debug "Serving static file: " (NiceFPath file))
       (if (or (nil? file)
               (not (.exists file)))
         (do
@@ -143,7 +143,7 @@
           (.replyResult evt)))
       (catch Throwable e#
         (log/error "failed to get static resource "
-                   (nsb (.get info "uri2"))
+                   (nsb (:uri2 info))
                    e#)
         (when-not @crap
           (.setStatus res 500)
@@ -161,12 +161,12 @@
         ps (NiceFPath (File. appDir DN_PUBLIC))
         fpath (nsb (:path options))
         info (:info options) ]
-    (log/debug "request to serve static file: " fpath)
+    (log/debug "Request to serve static file: " fpath)
     (if (.startsWith fpath ps)
       (handleStatic2 src info evt res
                      (File. (maybeStripUrlCrap fpath)))
       (do
-        (log/warn "attempt to access non public file-system: " fpath)
+        (log/warn "Attempt to access non public file-system: " fpath)
         (.setStatus res 403)
         (.replyResult evt)))
   ))

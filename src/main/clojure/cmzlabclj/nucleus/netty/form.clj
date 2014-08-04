@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.netty.form
 
@@ -69,7 +69,8 @@
             fnm (.getFilename fu) ]
         (when (.isCompleted fu)
           (if (instance? DiskFileUpload fu)
-            (let [^File fp  (-> (IOUtils/newTempFile false) (aget 0)) ]
+            (let [^File fp  (-> (IOUtils/newTempFile false)
+                                (aget 0)) ]
               (.renameTo ^DiskFileUpload fu fp)
               (.add fis (ULFileItem. nm  ct fnm  (XData. fp))))
             (let [fos (IOUtils/newTempFile true)
@@ -115,7 +116,7 @@
   ^ULFormItems
   [^String body]
 
-  (log/debug "about to split form body *************************\n"
+  (log/debug "About to split form body *************************\n"
   body "\n"
   "****************************************************************")
   (let [tkns (StringUtils/split body \&)
@@ -149,7 +150,7 @@
             xxx (.resetAttrs ^FormPostFilter this ctx)
             itms (splitBodyParams (if (.hasContent xs)(.stringify xs) "")) ]
         (.resetContent xs itms)
-        (log/debug "fire fully decoded message to the next handler")
+        (log/debug "Fire fully decoded message to the next handler")
         (.fireChannelRead ctx (DemuxedMsg. info xs))))
 
     (handleFormChunk [c obj ]
@@ -206,7 +207,7 @@
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
             ^Object msg obj ]
-        (log/debug "channel-read0 called with msg " (type msg))
+        (log/debug "Channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
           (.handleFormPost ^FormPostFilter this ctx msg)
@@ -216,7 +217,7 @@
 
           :else
           (do
-            (log/error "unexpected message type " (type msg))
+            (log/error "Unexpected message type " (type msg))
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))
   ))
