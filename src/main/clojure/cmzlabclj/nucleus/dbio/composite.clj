@@ -9,17 +9,19 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.composite
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [test-nonil notnil? Try!] ]
         [cmzlabclj.nucleus.dbio.core]
         [cmzlabclj.nucleus.dbio.sql]
         [cmzlabclj.nucleus.util.str :only [hgl?] ])
+
   (:import  [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]
             [java.sql Connection]))
 

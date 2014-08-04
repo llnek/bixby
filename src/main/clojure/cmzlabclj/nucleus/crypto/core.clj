@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.crypto.core
 
@@ -20,6 +20,7 @@
                        :as mime
                        :only [MaybeStream IsCompressed? IsEncrypted? IsSigned? ] ]
             [clojure.math.numeric-tower :as math])
+
   (:use [cmzlabclj.nucleus.util.io :only [Streamify MakeBitOS ResetStream!] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextInt] ]
         [cmzlabclj.nucleus.util.dates :only [PlusMonths] ]
@@ -28,6 +29,7 @@
          [ThrowIOE ThrowBadArg ternary NewRandom
           Bytesify TryC Try! notnil? juid GetClassname] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ])
+
   (:import  [java.io PrintStream File InputStream IOException
                      ByteArrayOutputStream ByteArrayInputStream
                      FileInputStream InputStreamReader]
@@ -208,7 +210,9 @@
 
   [^URL keyUrl]
 
-  (not (-> keyUrl (.getFile) (cstr/lower-case ) (.endsWith ".jks"))))
+  (not (-> keyUrl
+           (.getFile)
+           (cstr/lower-case ) (.endsWith ".jks"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -236,7 +240,7 @@
 
   [^PrintStream os]
 
-  (Try!  (.list _BCProvider os)))
+  (Try! (.list _BCProvider os)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -278,7 +282,8 @@
 
   [^KeyStore keystore]
 
-  (findAliases keystore #(.isCertificateEntry ^KeyStore %1 (nsb %2))))
+  (findAliases keystore
+               #(.isCertificateEntry ^KeyStore %1 (nsb %2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -286,7 +291,8 @@
 
   [^KeyStore keystore]
 
-  (findAliases keystore #(.isKeyEntry ^KeyStore %1 (nsb %2))))
+  (findAliases keystore
+               #(.isKeyEntry ^KeyStore %1 (nsb %2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -353,7 +359,9 @@
    ^InputStream inp
    ^PasswordAPI pwdObj]
 
-  (doto store (.load inp (if (nil? pwdObj) nil (.toCharArray pwdObj)))
+  (doto store (.load inp (if (nil? pwdObj)
+                           nil
+                           (.toCharArray pwdObj)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -442,6 +450,7 @@
 (defn GenHash "Generate a Message Digest."
 
   (^String [^String data] (GenHash data SHA_512))
+
   (^String [^String data ^String algo]
            (let [dig (MessageDigest/getInstance algo)
                  b (.digest dig (Bytesify data)) ]
@@ -456,7 +465,7 @@
 
   (let [kpg (doto (KeyPairGenerator/getInstance algo _BCProvider)
               (.initialize (int keylen) (NewRandom))) ]
-    (log/debug "generating keypair for algo " algo ", length " keylen)
+    (log/debug "Generating keypair for algo " algo ", length " keylen)
     (.generateKeyPair kpg)
   ))
 
@@ -552,7 +561,7 @@
 
   [keylen ^String dnStr ^clojure.lang.Keyword fmt]
 
-  (log/debug "make-csrreq: dnStr= " dnStr ", key-len= " keylen)
+  (log/debug "Make-csrreq: dnStr= " dnStr ", key-len= " keylen)
   (let [csb (JcaContentSignerBuilder. (nsb DEF_ALGO))
         kp (MakeKeypair (nsb RSA) keylen)
         rbr (JcaPKCS10CertificationRequestBuilder. (X500Principal. dnStr)
@@ -599,7 +608,7 @@
                  (.getCertificate (.build bdr cs))) ]
     (.checkValidity cert (Date.))
     (.verify cert pub)
-    (log/debug "mkSSV1Cert: dn= " dnStr ", algo= " algo ", start=" start ", end=" end )
+    (log/debug "MkSSV1Cert: dn= " dnStr ", algo= " algo ", start=" start ", end=" end )
     [cert prv]
   ))
 
@@ -739,12 +748,19 @@
   [^String dnStr ^PasswordAPI pwdObj
    ^File out options]
 
-  (let [dft { :keylen 1024 :start (Date.) :end (PlusMonths 12) }
+  (let [dft {:keylen 1024 :start (Date.) :end (PlusMonths 12) }
         hack (:hack options)
-        issuerObjs [ (:issuerCerts options) (:issuerKey options) ]
-        opts (assoc (merge dft { :algo (:algo hack) } options) :dnStr dnStr)
+        issuerObjs [(:issuerCerts options)
+                    (:issuerKey options) ]
+        opts (assoc (merge dft
+                           {:algo (:algo hack) }
+                           options)
+                    :dnStr dnStr)
         ks (:ks hack)
-        opts2 (-> opts (dissoc hack) (dissoc :issuerCerts) (dissoc :issuerKey)) ]
+        opts2 (-> opts
+                  (dissoc hack)
+                  (dissoc :issuerCerts)
+                  (dissoc :issuerKey)) ]
     (FileUtils/writeByteArrayToFile out (mkSSV3 ks pwdObj issuerObjs opts2))
   ))
 
@@ -758,8 +774,9 @@
   (make-ssv3XXX dnStr
                 pwdObj
                 out
-                (-> options
-                    (assoc :hack { :algo DEF_ALGO :ks (GetPkcsStore) } ))
+                (-> options (assoc :hack
+                                   {:algo DEF_ALGO
+                                    :ks (GetPkcsStore) } ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -774,8 +791,9 @@
                 pwdObj
                 out
                 (-> options
-                    (assoc :hack {:algo "SHA1withDSA"
-                                  :ks (GetJksStore) } ))
+                    (assoc :hack
+                           {:algo "SHA1withDSA"
+                            :ks (GetJksStore) } ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -799,7 +817,8 @@
     (.addSignerInfoGenerator gen (.build bdr cs x509))
     (.addCertificates gen (JcaCertStore. cl))
     (let [dummy (CMSProcessableByteArray. (Bytesify "Hello")) ]
-      (FileUtils/writeByteArrayToFile fileOut (-> (.generate gen dummy)(.getEncoded)) ))
+      (FileUtils/writeByteArrayToFile fileOut (-> (.generate gen dummy)
+                                                  (.getEncoded)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1206,7 +1225,6 @@
 (defn SmimeCompress "Generates a MimeBodyPart."
 
   (^MimeBodyPart [^String cType ^XData xs]
-                 ()
                  (let [ds (if (.isDiskFile xs)
                             (SDataSource. (.fileRef xs) cType)
                             (SDataSource. (.javaBytes xs) cType))

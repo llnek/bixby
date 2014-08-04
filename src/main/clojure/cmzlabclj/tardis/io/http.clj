@@ -139,18 +139,19 @@
       (when-not (spos? w)
         (var-set cpy (assoc! @cpy
                              :waitMillis
-                             (* 1000 300)))))
-    (.setAttr! co :emcfg (persistent! @cpy))
-    co
+                             (* 1000 300))))
+      (persistent! @cpy))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompConfigure :czc.tardis.io/HTTP
 
-  [co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (HttpBasicConfig co cfg))
+  (let [c2 (HttpBasicConfig co cfg) ]
+    (.setAttr! co :emcfg c2)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

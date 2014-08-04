@@ -48,6 +48,7 @@ public enum NettyFW {
 
   public static final AttributeKey FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
   public static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
+  public static final AttributeKey MSGFUNC_KEY= AttributeKey.valueOf("msgfunc");
   public static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
   public static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
   public static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
@@ -126,7 +127,7 @@ public enum NettyFW {
     return baos.toByteArray();
   }
 
-  public static JsonObject extractParams(QueryStringDecoder decr) {
+  private static JsonObject extractParams(QueryStringDecoder decr) {
     JsonObject sum= new JsonObject();
     JsonArray arr;
     for (Map.Entry<String,List<String>> en : decr.parameters().entrySet()) {

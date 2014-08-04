@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.socket
 
@@ -21,8 +21,8 @@
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.nucleus.util.process :only [Coroutine] ]
         [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
-        [cmzlabclj.nucleus.util.core :only [test-posnum ConvLong] ]
-        [cmzlabclj.nucleus.util.str :only [nsb hgl?] ]
+        [cmzlabclj.nucleus.util.core :only [test-posnum ConvLong spos?] ]
+        [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
 
   (:import  [java.net InetAddress ServerSocket Socket]
@@ -74,16 +74,18 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [tout (:sock-timeout-millis cfg)
-        host (:host cfg)
-        port (:port cfg)
+  (test-posnum "socket-io port" (:port cfg))
+  (let [tout (:timeoutMillis cfg)
         blog (:backlog cfg) ]
-    (test-posnum "socket-io port" port)
-    (doto co
-      (.setAttr! :timeoutMillis (ConvLong tout 0))
-      (.setAttr! :host (nsb host))
-      (.setAttr! :port (int port))
-      (.setAttr! :backlog (ConvLong blog 100)))
+    (with-local-vars [cpy (transient cfg)]
+      (var-set cpy (assoc! @cpy :backlog
+                           (if (spos? blog) blog 100)))
+      (var-set cpy (assoc! @cpy
+                           :host (strim (:host cfg))))
+      (var-set cpy (assoc! @cpy
+                           :timeoutMillis
+                           (if (spos? tout) tout 0)))
+      (.setAttr! co :emcfg (persistent! @cpy)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,9 +94,10 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [backlog (.getAttr co :backlog)
-        host (.getAttr co :host)
-        port (.getAttr co :port)
+  (let [cfg (.getAttr co :emcfg)
+        backlog (:backlog cfg)
+        host (:host cfg)
+        port (:port cfg)
         ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost))

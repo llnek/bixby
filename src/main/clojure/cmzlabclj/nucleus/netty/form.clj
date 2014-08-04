@@ -174,8 +174,8 @@
                       (.fireExceptionCaught ctx e#))))))
             (when (and (nil? @err)
                        (instance? LastHttpContent msg))
-              (let [^JsonObject info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-                    ^XData xs (NettyFW/getAttr ctx NettyFW/XDATA_KEY) ]
+              (let [^XData xs (NettyFW/getAttr ctx NettyFW/XDATA_KEY)
+                    info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY) ]
                 (NettyFW/delAttr ctx NettyFW/FORMITMS_KEY)
                 (.resetContent xs fis)
                 (.resetAttrs ^FormPostFilter this ctx)
@@ -185,7 +185,7 @@
       (let [^ChannelHandlerContext ctx c
             ^HttpMessage msg obj
             ch (.channel ctx)
-            ^JsonObject info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
+            info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
             ctype (-> (HttpHeaders/getHeader msg "content-type")
                       nsb
                       strim

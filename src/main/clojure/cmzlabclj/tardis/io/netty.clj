@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.netty
 
@@ -106,7 +106,7 @@
 ;;
 (defn- cookiesToNetty ""
 
-  [^List cookies]
+  [cookies]
 
   (let [cc (URLCodec. "utf-8") ]
     (persistent! (reduce #(conj! %1
@@ -332,17 +332,19 @@
 ;;
 (defn- crackCookies ""
 
-  ^Map
   [info]
 
   (let [v (nsb (GetHeader info "Cookie"))
         cc (URLCodec. "utf-8")
-        rc (HashMap.)
-        cks (if (hgl? v) (CookieDecoder/decode v) []) ]
-    (doseq [^Cookie c (seq cks) ]
-      (.put rc (cstr/lower-case (.getName c))
-               (cookieToJava c cc)))
-    rc
+        cks (if (hgl? v)
+              (CookieDecoder/decode v)
+              []) ]
+    (with-local-vars [rc (transient {})]
+      (doseq [^Cookie c (seq cks) ]
+        (var-set rc (assoc! @rc
+                            (.getName c)
+                            (cookieToJava c cc))))
+      (persistent! @rc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -354,11 +356,11 @@
    ^Channel ch
    sslFlag
    ^XData xdata
-   ^JsonObject info wantSecure]
+   info wantSecure]
 
   (let [^InetSocketAddress laddr (.localAddress ch)
         ^HTTPResult res (MakeHttpResult co)
-        ^Map cookieJar (crackCookies info)
+        cookieJar (crackCookies info)
         impl (MakeMMap)
         eeid (NextLong) ]
     (with-meta
@@ -370,6 +372,7 @@
         (seq* [_] (.seq* impl))
         (getf [_ k] (.getf impl k) )
         (clrf! [_ k] (.clrf! impl k) )
+        (toEDN [_] (.toEDN impl))
         (clear! [_] (.clear! impl))
 
         Identifiable
@@ -382,16 +385,16 @@
         (emitter [_] co)
         (checkAuthenticity [_] wantSecure)
 
-        (getCookie [_ nm] (.get cookieJar (cstr/lower-case nm)))
-        (getCookies [_] (ArrayList. (.values cookieJar)))
+        (getCookie [_ nm] (get cookieJar nm))
+        (getCookies [_] (vals cookieJar))
 
-        (isKeepAlive [_] (-> (.get info "keep-alive")(.getAsBoolean)))
+        (isKeepAlive [_] (true? (info "keep-alive")))
 
         (hasData [_] (notnil? xdata))
         (data [_] xdata)
 
-        (contentLength [_] (-> (.get info "clen")(.getAsLong)))
         (contentType [_] (GetHeader info "content-type"))
+        (contentLength [_] (info "clen"))
 
         (encoding [this]  (GetCharset (.contentType this)))
         (contextPath [_] "")
@@ -410,11 +413,11 @@
         (localHost [_] (.getHostName laddr))
         (localPort [_] (.getPort laddr))
 
-        (protocol [_] (-> (.get info "protocol")(.getAsString)))
-        (method [_] (-> (.get info "method")(.getAsString)))
+        (protocol [_] (:protocol info))
+        (method [_] (:method info))
 
-        (queryString [_] (-> (.get info "query")(.getAsString)))
-        (host [_] (-> (.get info "host")(.getAsString)))
+        (queryString [_] (:query info))
+        (host [_] (:host info))
 
         (remotePort [_] (ConvLong (GetHeader info "remote_port") 0))
         (remoteAddr [_] (nsb (GetHeader info "remote_addr")))
@@ -427,7 +430,7 @@
 
         (isSSL [_] sslFlag)
 
-        (getUri [_] (-> (.get info "uri")(.getAsString)))
+        (getUri [_] (:uri info))
 
         (getRequestURL [_] (throw (IOException. "not implemented")))
 
@@ -457,7 +460,7 @@
    ^Channel ch
    sslFlag
    ^XData xdata
-   ^JsonObject info wantSecure]
+   info wantSecure]
 
   (doto (makeHttpEvent2 co ch sslFlag xdata info wantSecure)
     (.bindSession (MakeWSSession co sslFlag))
@@ -492,9 +495,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [c (nsb (:context cfg)) ]
-    (.setAttr! co :contextPath (strim c))
-    (HttpBasicConfig co cfg)
+  (let [c2 (HttpBasicConfig co cfg) ]
+    (.setAttr! co :emcfg c2)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -508,8 +510,9 @@
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
-      (let [ch (.channel ^ChannelHandlerContext ctx)
-            ts (.getAttr ^cmzlabclj.tardis.core.sys.Element co :waitMillis)
+      (let [cfg (.getAttr ^cmzlabclj.tardis.core.sys.Element co :emcfg)
+            ch (.channel ^ChannelHandlerContext ctx)
+            ts (:waitMillis cfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [^cmzlabclj.tardis.io.core.WaitEventHolder
@@ -527,7 +530,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (log/debug "tardis netty pipeline initor called with emitter = " (type co))
-  (ReifyHTTPPipe "NettyDispatcher" (fn [options] (msgDispatcher co options))))
+  (ReifyHTTPPipe "NettyDispatcher" #(msgDispatcher co %)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -535,8 +538,9 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.tardis.core.sys.Element ctr (.parent ^Hierarchial co)
-        ^JsonObject options (.getAttr co :emcfg)
+  (let [^cmzlabclj.tardis.core.sys.Element
+        ctr (.parent ^Hierarchial co)
+        options (.getAttr co :emcfg)
         bs (InitTCPServer (nettyInitor co) options) ]
     (.setAttr! co :netty  { :bootstrap bs })
     co
@@ -548,8 +552,9 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [host (nsb (.getAttr co :host))
-        port (.getAttr co :port)
+  (let [cfg (.getAttr co :emcfg)
+        host (nsb (:host cfg))
+        port (:port cfg)
         nes (.getAttr co :netty)
         ^ServerBootstrap bs (:bootstrap nes)
         ch (StartServer bs host port) ]

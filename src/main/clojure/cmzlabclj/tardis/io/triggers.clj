@@ -14,8 +14,8 @@
 ;; You must not remove this notice, or any other, from this software.
 ;;
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.triggers
 

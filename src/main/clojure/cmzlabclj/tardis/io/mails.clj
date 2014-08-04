@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.io.mails
 
@@ -19,7 +19,7 @@
 
   (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.util.core :only [ThrowIOE TryC notnil?] ]
+        [cmzlabclj.nucleus.util.core :only [spos? ThrowIOE TryC notnil?] ]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb] ]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.loops ]
@@ -222,18 +222,24 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [intv (:interval-secs cfg)
+  (let [intv (:intervalSecs cfg)
         port (:port cfg)
         pkey (:hhh.pkey cfg)
         pwd (:passwd cfg) ]
-    (doto co
-      (.setAttr! :intervalMillis (* 1000 (if (number? intv) intv 300)))
-      (.setAttr! :ssl (if (false? (:ssl cfg)) false true))
-      (.setAttr! :deleteMsg (true? (:deletemsg cfg)))
-      (.setAttr! :host (:host cfg))
-      (.setAttr! :port (if (number? port) port 995))
-      (.setAttr! :user (:username cfg))
-      (.setAttr! :pwd (Pwdify (if (hgl? pwd) pwd "") pkey) ))
+    (with-local-vars [cpy (transient cfg)]
+      (var-set cpy (assoc! @cpy :intervalMillis
+                           (* 1000 (if (spos? intv) intv 300))))
+      (var-set cpy (assoc! @cpy :ssl
+                           (if (false? (:ssl cfg)) false true)))
+      (var-set cpy (assoc! @cpy :deleteMsg
+                           (true? (:deleteMsg cfg))))
+      (var-set cpy (assoc! @cpy :host (nsb (:host cfg))))
+      (var-set cpy (assoc! @cpy :port (if (spos? port) port 995)))
+      (var-set cpy (assoc! @cpy :user (nsb (:user cfg))))
+      (var-set cpy (assoc! @cpy :passwd
+                           (Pwdify (if (nil? pwd) nil pwd) pkey) ))
+      (-> (persistent! @cpy)
+          (dissoc :intervalSecs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,10 +248,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [demo (System/getProperty "skaro.demo.pop3" "") ]
-    (std-config co cfg)
+  (let [demo (System/getProperty "skaro.demo.pop3" "")
+        c2 (std-config co cfg) ]
+    (.setAttr! co :emcfg c2)
     (resolve-provider co
-                      (if (.getAttr co :ssl)
+                      (if (:ssl c2)
                         [ST_POP3S POP3S]
                         [ST_POP3 POP3C])
                       demo
@@ -322,10 +329,11 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [demo (System/getProperty "skaro.demo.imap" "") ]
-    (std-config co cfg)
+  (let [demo (System/getProperty "skaro.demo.imap" "")
+        c2 (std-config co cfg) ]
+    (.setAttr! co :emcfg c2)
     (resolve-provider co
-                      (if (.getAttr co :ssl)
+                      (if (:ssl c2)
                         [ST_IMAPS IMAPS]
                         [ST_IMAP IMAP])
                       demo

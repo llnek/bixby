@@ -13,13 +13,11 @@
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.zotohlab.frwk.core.CallableWithArgs;
 import com.zotohlab.frwk.io.IOUtils;
 import com.zotohlab.frwk.io.XData;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -53,6 +51,7 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
     ByteBuf buf= (ByteBuf) getAttr(ctx, CBUF_KEY);
     if (buf != null) { buf.release(); }
 
+    delAttr(ctx,MSGFUNC_KEY);
     delAttr(ctx,MSGINFO_KEY);
     delAttr(ctx,CBUF_KEY);
     delAttr(ctx,XDATA_KEY);
@@ -93,9 +92,9 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
     } else  {
       return;
     }
-    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
-    JsonObject info = (JsonObject) getAttr(ctx, MSGINFO_KEY) ;
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
+    CallableWithArgs func= (CallableWithArgs) getAttr(ctx, MSGFUNC_KEY) ;
+    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
     ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
     if (os == null) {
@@ -106,19 +105,15 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
       org.apache.commons.io.IOUtils.closeQuietly(os);
       os=null;
     }
-    long olen = info.get("clen").getAsLong();
-    long clen = xs.size();
-    if (olen != clen) {
-      tlog().warn("content-length read from headers = " +  olen +  ", new clen = " + clen );
-      info.addProperty("clen", clen);
-    }
+    func.run(new Object[]{ ctx, "setContentLength", xs.size() });
     // all done.
-    finzAndDone(ctx, info, xs);
+    finzAndDone(ctx, xs);
   }
 
-  protected void finzAndDone(ChannelHandlerContext ctx, JsonObject info, XData xs)
+  protected void finzAndDone(ChannelHandlerContext ctx, XData xs)
       throws IOException {
     tlog().debug("fire fully decoded message to the next handler");
+    Map<?,?> info = (Map<?,?>) getAttr(ctx, MSGINFO_KEY);
     resetAttrs(ctx);
     ctx.fireChannelRead( new DemuxedMsg(info, xs));
   }
@@ -164,12 +159,8 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   }
 
   protected void addMoreHeaders(ChannelHandlerContext ctx, HttpHeaders hds) {
-    JsonObject info = (JsonObject) getAttr(ctx ,MSGINFO_KEY);
-    JsonObject old = info.getAsJsonObject("headers");
-    JsonObject nnw= extractHeaders(hds);
-    for (Map.Entry<String,JsonElement> en: nnw.entrySet()) {
-      old.add(en.getKey(), en.getValue());
-    }
+    CallableWithArgs func= (CallableWithArgs) getAttr(ctx, MSGFUNC_KEY) ;
+    func.run(new Object[]{ ctx, "appendHeaders", hds });
   }
 
   protected boolean maybeSSL(ChannelHandlerContext ctx) {

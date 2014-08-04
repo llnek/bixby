@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.mvc.handler
 
@@ -87,11 +87,10 @@
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
-              json (doto (JsonObject.)
-                     (.addProperty "method" (NettyFW/getMethod req))
-                     (.addProperty "uri" (NettyFW/getUriPath req)))
+              cfg {"method" (NettyFW/getMethod req)
+                   "uri" (NettyFW/getUriPath req)}
               [r1 r2 r3 r4]
-              (.crack ck json) ]
+              (.crack ck cfg) ]
           (-> (.attr ctx GOOD_FLAG)(.remove))
           (cond
             (and r1 (hgl? r4))
@@ -152,8 +151,7 @@
               (ServeRoute r2 co r3 ch evt)))
           :else
           (do
-            (log/debug "failed to match uri: " (-> info (.getAsJsonPrimitive "uri")
-                                                        (.getAsString)))
+            (log/debug "failed to match uri: " (:uri info))
             (ServeError co ch 404)) )))
   ))
 

@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI TryC] ]
+  (:use [cmzlabclj.nucleus.util.core :only [ternary spos? MubleAPI TryC] ]
         [cmzlabclj.nucleus.util.process :only [Coroutine SafeWait] ]
         [cmzlabclj.nucleus.util.dates :only [ParseDate] ]
         [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
@@ -100,14 +100,13 @@
         dw (:delayWhen cfg) ]
     (with-local-vars [cpy (transient cfg)]
       (if (instance? Date dw)
-        (var-set cpy (assoc! :delayWhen (ParseDate dw "yyyy-MM-ddTHH:mm:ss")))
-      (do
-        (.setAttr! co :delayMillis
-                   (* 1000 (Math/min (int 3)
-                                     (int (if (number? ds) ds 3)))))))
-    (when (number? intv)
-      (.setAttr! co :intervalMillis (* 1000 intv)))
-    co
+        (var-set cpy (assoc! :delayWhen dw))
+        (var-set cpy (assoc! :delayMillis (* 1000 (if (spos? ds) ds 3)))))
+      (when (spos? intv)
+        (var-set cpy (assoc! :intervalMillis (* 1000 intv))))
+      (-> (persistent! @cpy)
+          (dissoc :delaySecs)
+          (dissoc :intervalSecs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,9 +165,11 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/RepeatingTimer
 
-  [co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (CfgLoopable co cfg))
+  (let [c2 (CfgLoopable co cfg)]
+    (.setAttr! co :emcfg c2)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,10 +241,12 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/OnceTimer
 
-  [co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg]
 
   ;; get rid of interval millis field, if any
-  (CfgLoopable co (dissoc cfg :interval-secs)))
+  (let [c2 (CfgLoopable co cfg) ]
+    (.setAttr! co :emcfg (dissoc c2 :intervalMillis))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -283,7 +286,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [intv (.getAttr co :intervalMillis)
+  (let [cfg (.getAttr co :emcfg)
+        intv (:intervalMillis cfg)
         loopy (atom true)
         cl (GetCldr) ]
     (log/info "threaded one timer - interval = " intv)
@@ -306,9 +310,10 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [intv (.getAttr co :intervalMillis)
-        ds (.getAttr co :delayMillis)
-        dw (.getAttr co :delayWhen)
+  (let [cfg (.getAttr co :emcfg)
+        intv (:intervalMillis cfg)
+        ds (:delayMillis cfg)
+        dw (:delayWhen cfg)
         loopy (atom true)
         cl (GetCldr)
         func #(LoopableSchedule co) ]

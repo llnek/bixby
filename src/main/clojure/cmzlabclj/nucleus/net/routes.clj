@@ -214,13 +214,12 @@
   (reify RouteCracker
     (routable? [this msgInfo] (first (crack this msgInfo)))
     (hasRoutes? [_] (> (count routes) 0))
-    ;; msgInfo is a json object of http headers...etc
+
     (crack [_ msgInfo]
-      (let [ ^JsonObject info msgInfo
-             mtd (-> info (.get "method")(.getAsString))
-             uri (-> info (.get "uri")(.getAsString))
-             rc (seek-route mtd uri routes)
-             rt (if (nil? rc)
+      (let [^String mtd (:method msgInfo)
+            ^String uri (:uri msgInfo)
+            rc (seek-route mtd uri routes)
+            rt (if (nil? rc)
                   [false nil nil ""]
                   [true (first rc)(last rc) ""] ) ]
         (if (and (false? (nth rt 0))

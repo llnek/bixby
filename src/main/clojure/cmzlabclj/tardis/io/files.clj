@@ -122,7 +122,7 @@
     (test-nestr "file-root-folder" root)
     (log/info "Monitoring folder: " root)
     (log/info "Rcv folder: " (nsn dest))
-    (.setAttr co :emcfg
+    (.setAttr! co :emcfg
     (-> c2
         (assoc :target-folder (doto (File. root) (.mkdirs)))
         (assoc :fmask

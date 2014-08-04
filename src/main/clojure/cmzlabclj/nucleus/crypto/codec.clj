@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.crypto.codec
 
@@ -99,8 +99,8 @@
 
   (let [len (* 8 (alength pwd)) ]
     ;;(println "keyAsBits len of input key = " len)
-    (cond
-      (= "AES" algo)
+    (case algo
+      "AES"
       (cond
         (> len 256) ;; 32 bytes
         (into-array Byte/TYPE (take 32 pwd))
@@ -109,13 +109,13 @@
         (into-array Byte/TYPE (take 16 pwd))
         :else pwd)
 
-      (= T3_DES algo)
+      T3_DES
       (if (> len 192)
         ;; 24 bits => 3 bytes
         (into-array Byte/TYPE (take 24 pwd))
         pwd)
 
-      :else pwd)
+      pwd)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,7 +220,8 @@
   ^String
   [^String text shiftpos]
 
-  (if (or (StringUtils/isEmpty text) (= shiftpos 0))
+  (if (or (StringUtils/isEmpty text)
+          (= shiftpos 0))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -237,7 +238,8 @@
   ^String
   [^String text shiftpos]
 
-  (if (or (StringUtils/isEmpty text) (= shiftpos 0))
+  (if (or (StringUtils/isEmpty text)
+          (= shiftpos 0))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -537,7 +539,8 @@
   (encoded [_]
     (if (StringUtils/isEmpty pwdStr)
       ""
-      (str PWD_PFX (.encrypt (JasyptCryptor) (.toCharArray pkey) pwdStr))))
+      (str PWD_PFX (.encrypt (JasyptCryptor)
+                             (.toCharArray pkey) pwdStr))))
 
   (text [_] (nsb pwdStr) ))
 

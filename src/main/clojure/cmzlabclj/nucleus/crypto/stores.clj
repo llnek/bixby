@@ -9,18 +9,20 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.crypto.stores
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]
             [clojure.math.numeric-tower :as math])
+
   (:use [cmzlabclj.nucleus.crypto.core
          :only [NewAlias CertAliases PKeyAliases GetPkcsStore GetJksStore] ]
         [cmzlabclj.nucleus.util.core :only [ThrowBadArg] ]
         [cmzlabclj.nucleus.util.str :only [nsb hgl?] ])
+
   (:import  [java.security.cert CertificateFactory X509Certificate Certificate]
             [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI CryptoUtils]
             [java.io File FileInputStream IOException InputStream]

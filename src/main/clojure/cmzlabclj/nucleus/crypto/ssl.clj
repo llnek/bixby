@@ -9,18 +9,20 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.crypto.ssl
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.crypto.stores :only [MakeCryptoStore] ]
         [cmzlabclj.nucleus.util.core :only [NewRandom] ]
         [cmzlabclj.nucleus.crypto.core
          :only [PkcsFile? GetJksStore
                 GetPkcsStore MakeSimpleTrustMgr] ])
+
   (:import  [javax.net.ssl X509TrustManager TrustManager]
             [javax.net.ssl SSLEngine SSLContext]
             [com.zotohlab.frwk.net SSLTrustMgrFactory]

@@ -16,23 +16,25 @@ package com.zotohlab.frwk.netty;
 import com.google.gson.JsonObject;
 import com.zotohlab.frwk.io.XData;
 
+import java.util.Map;
+
 
 /**
  * @author kenl
  */
 public class DemuxedMsg {
 
-  private JsonObject _info;
   private XData _payload;
+  private Map<?,?> _info;
 
-  public DemuxedMsg( JsonObject info, XData payload) {
+  public DemuxedMsg( Map<?,?> info, XData payload) {
     _payload = payload;
     _info = info;
   }
 
   public XData payload() { return _payload; }
 
-  public JsonObject info() { return _info; }
+  public Map<?,?> info() { return _info; }
 
 }
 

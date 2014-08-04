@@ -36,9 +36,11 @@
            [org.apache.commons.lang3 StringUtils]
            [java.net URL InetAddress InetSocketAddress]
            [java.io InputStream IOException]
+           [java.util Map Map$Entry]
            [io.netty.handler.codec.http HttpHeaders HttpMessage LastHttpContent
                                         DefaultFullHttpRequest HttpContent
-                                        HttpRequest FullHttpRequest
+                                        HttpRequest HttpResponse FullHttpRequest
+                                        QueryStringDecoder
                                         HttpRequestDecoder
                                         HttpResponseEncoder]
           [io.netty.bootstrap Bootstrap ServerBootstrap]
@@ -52,6 +54,7 @@
                                    Expect100Filter AuxHttpFilter
                                    ErrorSinkFilter]
           [com.zotohlab.frwk.netty NettyFW]
+          [com.zotohlab.frwk.core CallableWithArgs]
           [com.zotohlab.frwk.io XData]
           [com.zotohlab.frwk.net SSLTrustMgrFactory]
           [com.google.gson JsonObject JsonPrimitive] ))
@@ -61,6 +64,125 @@
 
 (def ^:private ^String SERVERKEY "serverKey")
 (def ^:private ^String PWD "pwd")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExtractHeaders ""
+
+  [^HttpHeaders hdrs]
+
+  (with-local-vars [rc (transient {})]
+    (doseq [^String n (seq (.names hdrs)) ]
+      (var-set rc (assoc! @rc
+                          (.toLowerCase n)
+                          (vec (.getAll hdrs n)))))
+    (persistent! @rc)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExtractParams ""
+
+  [^QueryStringDecoder decr]
+
+  (with-local-vars [rc (transient {})]
+    (doseq [^Map$Entry en (seq (-> decr (.parameters)(.entrySet))) ]
+      (var-set rc (assoc! @rc
+                          (.getKey en)
+                          (vec (.getValue en)))))
+    (persistent! @rc)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExtractMsgInfo ""
+
+  [^HttpMessage msg]
+
+  (with-local-vars [rc (transient {})]
+    (var-set rc (assoc! @rc :is-chunked (HttpHeaders/isTransferEncodingChunked msg)))
+    (var-set rc (assoc! @rc :keep-alive (HttpHeaders/isKeepAlive msg)))
+    (var-set rc (assoc! @rc :host (HttpHeaders/getHeader msg "Host" "")))
+    (var-set rc (assoc! @rc :protocol (nsb (.getProtocolVersion msg))))
+    (var-set rc (assoc! @rc :clen (HttpHeaders/getContentLength msg  0)))
+    (var-set rc (assoc! @rc :uri2 ""))
+    (var-set rc (assoc! @rc :uri ""))
+    (var-set rc (assoc! @rc :status ""))
+    (var-set rc (assoc! @rc :method ""))
+    (var-set rc (assoc! @rc :query ""))
+    (var-set rc (assoc! @rc :wsock false))
+    (var-set rc (assoc! @rc :code 0))
+    (var-set rc (assoc! @rc :params {}))
+    (var-set rc (assoc! @rc :headers (ExtractHeaders (.headers msg))))
+    (cond
+      (instance? HttpResponse msg)
+      (let [s (.getStatus ^HttpResponse msg) ]
+        (var-set rc (assoc! @rc :status (nsb (.reasonPhrase s))))
+        (var-set rc (assoc! @rc :code (.code s))))
+
+      (instance? HttpRequest msg)
+      (let [mo (HttpHeaders/getHeader msg "X-HTTP-Method-Override")
+            ^HttpRequest req  msg
+            uriStr (nsb (.getUri req))
+            pos (.indexOf uriStr (int \?))
+            md (-> req (.getMethod)(.name))
+            mt (if (hgl? mo) mo md)
+            dc (QueryStringDecoder. uriStr) ]
+        (var-set rc (assoc! @rc :method (cstr/upper-case mt)))
+        (var-set rc (assoc! @rc :params (ExtractParams dc)))
+        (var-set rc (assoc! @rc :uri (.path dc)))
+        (var-set rc (assoc! @rc :uri2 uriStr))
+        (when (>= pos 0)
+          (var-set rc (assoc! @rc :query (.substring uriStr pos)))))
+
+      :else nil)
+    (persistent! @rc)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setContentLength ""
+
+  [^ChannelHandlerContext ctx clen]
+
+  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
+        olen (:clen info) ]
+    (when-not (== olen clen)
+      (log/warn "Content-length read from headers = "  olen ", new clen = "  clen)
+      (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY (assoc info :clen clen)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- appendHeaders ""
+
+  [^ChannelHandlerContext ctx
+   ^HttpHeaders hds]
+
+  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
+        old (:headers info)
+        nnw (ExtractHeaders hds) ]
+    (NettyFW/setAttr ctx
+                     NettyFW/MSGINFO_KEY
+                     (assoc info :headers (merge old nnw)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyMsgFunc ""
+
+  ^CallableWithArgs
+  []
+
+  (reify CallableWithArgs
+    (run [_ args]
+      (let [^ChannelHandlerContext ctx (aget args 0)
+            ^String op (aget args 1) ]
+        (case op
+          "setContentLength" (setContentLength ctx (aget args 2))
+          "appendHeaders" (appendHeaders ctx (aget args 2))
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -172,11 +294,12 @@
    ^HttpRequest req
    ^cmzlabclj.nucleus.util.core.MutableMap impl]
 
-  (let [info (NettyFW/extractMsgInfo req)
+  (let [info (ExtractMsgInfo req)
         ch (.channel ctx)
-        mt (SafeGetJsonString info "method")
-        uri (SafeGetJsonString info "uri") ]
+        ^String mt (:method info)
+        ^String uri (:uri info) ]
     (log/debug "first level demux of message\n{}\n\n{}" req info)
+    (NettyFW/setAttr ctx NettyFW/MSGFUNC_KEY (reifyMsgFunc))
     (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
     (.setf! impl :delegate nil)
     (if (.startsWith uri "/favicon.") ;; ignore this crap
@@ -189,7 +312,9 @@
                 :delegate
                 (if (isFormPost req mt)
                   (do
-                    (.addProperty info "formpost" true)
+                    (NettyFW/setAttr ctx
+                                     NettyFW/MSGINFO_KEY
+                                     (assoc info :formpost true))
                     (ReifyFormPostFilterSingleton))
                   (ReifyRequestFilterSingleton)))))
     (when-let [^AuxHttpFilter d (.getf impl :delegate) ]

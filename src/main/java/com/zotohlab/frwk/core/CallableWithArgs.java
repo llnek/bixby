@@ -16,7 +16,7 @@ package com.zotohlab.frwk.core;
 /**
  * @author kenl
  */
-public interface Callable {
+public interface CallableWithArgs {
 
   public Object run( Object[] args);
 
