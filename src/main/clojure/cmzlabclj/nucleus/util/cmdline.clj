@@ -9,15 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{  :doc "Functions to enable console questions."
-        :author "kenl" }
+(ns ^{:doc "Functions to enable console questions."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.cmdline
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [ clojure.string :as cstr ])
+
   (:use [ cmzlabclj.nucleus.util.core :only [IntoMap IsWindows?] ]
         [ cmzlabclj.nucleus.util.str :only [strim nsb Has?] ])
+
   (:import  [java.io BufferedOutputStream InputStreamReader
                     OutputStreamWriter]
             [java.io Reader Writer]

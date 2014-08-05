@@ -333,8 +333,8 @@
               ^PasswordAPI pwdObj]
     (let [^chars ca (if-not (nil? pwdObj)
                       (.toCharArray pwdObj))
-          ks (doto (KeyStore/getInstance "JKS"
-                                         (Security/getProvider "SUN"))
+          pv (Security/getProvider "SUN")
+          ks (doto (KeyStore/getInstance "JKS" pv)
                (.load inp ca)) ]
       (when-not (nil? inp) (regoCerts ks pwdObj))
       ks))
@@ -636,7 +636,7 @@
 ;;
 (defn MakePkcs12 "Make a PKCS12 object from key and cert."
 
-  [^bytes keyPEM 
+  [^bytes keyPEM
    ^bytes certPEM
    ^PasswordAPI pwdObj ^File out]
 
@@ -647,9 +647,9 @@
         baos (MakeBitOS)
         ss (GetPkcsStore)
         ^KeyPair kp (.readObject (PEMParser. rdr)) ]
-    (.setKeyEntry ss 
+    (.setKeyEntry ss
                   (juid)
-                  (.getPrivate kp) 
+                  (.getPrivate kp)
                   ca (into-array Certificate [ct]))
     (.store ss baos ca)
     (FileUtils/writeByteArrayToFile out (.toByteArray baos))
@@ -666,8 +666,8 @@
              :end (PlusMonths 12)
              :algo DEF_ALGO }
         opts (assoc (merge dft options) :dnStr dnStr)
-        keylen (:keylen opts) 
-        ssv1 (mkSSV1 (GetPkcsStore) 
+        keylen (:keylen opts)
+        ssv1 (mkSSV1 (GetPkcsStore)
                      (MakeKeypair (nsb RSA) keylen)
                      pwdObj opts) ]
     (FileUtils/writeByteArrayToFile out ssv1)
@@ -684,8 +684,8 @@
              :end (PlusMonths 12)
              :algo "SHA1withDSA" }
         opts (assoc (merge dft options) :dnStr dnStr)
-        keylen (:keylen opts) 
-        jks (mkSSV1 (GetJksStore) 
+        keylen (:keylen opts)
+        jks (mkSSV1 (GetJksStore)
                     (MakeKeypair (nsb DSA) keylen)
                     pwdObj opts) ]
     (FileUtils/writeByteArrayToFile out jks)
@@ -755,8 +755,7 @@
   [^String dnStr ^PasswordAPI pwdObj
    ^File out options]
 
-  (let [dft {:keylen 1024 
-             :start (Date.) 
+  (let [dft {:keylen 1024 :start (Date.)
              :end (PlusMonths 12) }
         hack (:hack options)
         issuerObjs [(:issuerCerts options)
@@ -770,7 +769,8 @@
                   (dissoc hack)
                   (dissoc :issuerCerts)
                   (dissoc :issuerKey)) ]
-    (FileUtils/writeByteArrayToFile out (mkSSV3 ks pwdObj issuerObjs opts2))
+    (FileUtils/writeByteArrayToFile out
+                                    (mkSSV3 ks pwdObj issuerObjs opts2))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -826,8 +826,9 @@
     (.addSignerInfoGenerator gen (.build bdr cs x509))
     (.addCertificates gen (JcaCertStore. cl))
     (let [dummy (CMSProcessableByteArray. (Bytesify "Hello")) ]
-      (FileUtils/writeByteArrayToFile fileOut (-> (.generate gen dummy)
-                                                  (.getEncoded)) ))
+      (FileUtils/writeByteArrayToFile fileOut
+                                      (-> (.generate gen dummy)
+                                          (.getEncoded)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -942,7 +943,9 @@
 (defn- makeSignerGentor "Create a SignedGenerator."
 
   ^SMIMESignedGenerator
-  [^PrivateKey pkey certs ^String algo]
+  [^PrivateKey pkey
+   certs  ;; list of certs
+   ^String algo]
 
   (let [gen (SMIMESignedGenerator. "base64")
         lst (vec certs)
@@ -952,17 +955,17 @@
                    (.addCapability SMIMECapability/dES_CBC) )
         signedAttrs (doto (ASN1EncodableVector.)
                       (.add (SMIMECapabilitiesAttribute. caps)))
-        ^X509Certificate x0 (first lst)
+        ^X509Certificate subj (first lst)
         ^X509Certificate issuer (if (> (count lst) 1)
                                   (nth lst 1)
-                                  x0)
+                                  subj)
         issuerDN (.getSubjectX500Principal issuer)
          ;;
          ;; add an encryption key preference for encrypted responses -
          ;; normally this would be different from the signing certificate...
          ;;
         issAndSer (IssuerAndSerialNumber. (X500Name/getInstance (.getEncoded issuerDN))
-                                          (.getSerialNumber x0))
+                                          (.getSerialNumber subj))
         dm1 (.add signedAttrs (SMIMEEncryptionKeyPreferenceAttribute. issAndSer))
         bdr (doto (JcaSignerInfoGeneratorBuilder. (-> (JcaDigestCalculatorProviderBuilder.)
                                                       (.setProvider _BCProvider)
@@ -973,7 +976,7 @@
                (.build pkey)) ]
     (-> bdr (.setSignedAttributeGenerator (DefaultSignedAttributeTableGenerator.
                                           (AttributeTable. signedAttrs))))
-    (.addSignerInfoGenerator gen (.build bdr cs x0))
+    (.addSignerInfoGenerator gen (.build bdr cs subj))
     (.addCertificates gen (JcaCertStore. lst))
     gen
   ))
@@ -992,34 +995,43 @@
 ;;
 (defmethod SmimeDigSig :mimemessage
 
-  [^PrivateKey pkey certs ^String algo ^MimeMessage mmsg]
+  [^PrivateKey pkey
+   certs ;; list of certs
+   ^String algo
+   ^MimeMessage mmsg]
 
-  ;; force internal processing, just in case
-  (.getContent mmsg)
-  (-> (makeSignerGentor pkey certs algo)
-      (.generate mmsg )))
+  (let [g (makeSignerGentor pkey certs algo) ]
+    ;; force internal processing, just in case
+    (.getContent mmsg)
+    (.generate g mmsg)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod SmimeDigSig :multipart
 
-  [^PrivateKey pkey certs ^String algo ^Multipart mp]
+  [^PrivateKey pkey
+   certs  ;; list of certs
+   ^String algo
+   ^Multipart mp]
 
-  (let [mm (NewMimeMsg) ]
+  (let [g (makeSignerGentor pkey certs algo)
+        mm (NewMimeMsg) ]
     (.setContent mm mp)
-    (-> (makeSignerGentor pkey certs algo)
-        (.generate mm ))
+    (.generate g mm)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod SmimeDigSig :bodypart
 
-  [^PrivateKey pkey certs ^String algo ^BodyPart bp]
+  [^PrivateKey pkey
+   certs  ;; list of certs
+   ^String algo
+   ^BodyPart bp]
 
-  (let [^MimeBodyPart mbp bp ]
-    (-> (makeSignerGentor pkey certs algo)
-        (.generate mbp ))
+  (-> (makeSignerGentor pkey certs algo)
+      (.generate ^MimeBodyPart bp )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1428,7 +1440,7 @@
 
   [^bytes keyBits ^PasswordAPI pwdObj]
 
-  (if-let [ pkey (ConvPKey keyBits pwdObj) ]
+  (if-let [pkey (ConvPKey keyBits pwdObj) ]
     (ValidCertificate? (.getCertificate pkey))
     false
   ))
@@ -1439,7 +1451,7 @@
 
   [^bytes certBits]
 
-  (if-let [ cert (ConvCert certBits) ]
+  (if-let [cert (ConvCert certBits) ]
     (ValidCertificate? (.getTrustedCertificate cert))
     false
   ))

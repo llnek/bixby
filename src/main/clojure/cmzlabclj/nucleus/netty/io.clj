@@ -18,11 +18,11 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core
-         :only [ThrowIOE MakeMMap notnil?
-                Try! SafeGetJsonObject SafeGetJsonInt
+         :only [ThrowIOE MakeMMap notnil? spos?
+                Try! SafeGetJsonObject
+                SafeGetJsonInt
                 SafeGetJsonString] ]
-        [cmzlabclj.nucleus.util.str
-         :only [strim nsb hgl?] ]
+        [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
         [cmzlabclj.nucleus.netty.request]
         [cmzlabclj.nucleus.netty.form])
 
@@ -98,8 +98,8 @@
   [^HttpMessage msg]
 
   (with-local-vars [rc (transient {})]
-    (var-set rc (assoc! @rc :is-chunked (HttpHeaders/isTransferEncodingChunked msg)))
-    (var-set rc (assoc! @rc :keep-alive (HttpHeaders/isKeepAlive msg)))
+    (var-set rc (assoc! @rc :isChunked (HttpHeaders/isTransferEncodingChunked msg)))
+    (var-set rc (assoc! @rc :keepAlive (HttpHeaders/isKeepAlive msg)))
     (var-set rc (assoc! @rc :host (HttpHeaders/getHeader msg "Host" "")))
     (var-set rc (assoc! @rc :protocol (nsb (.getProtocolVersion msg))))
     (var-set rc (assoc! @rc :clen (HttpHeaders/getContentLength msg  0)))
@@ -213,9 +213,10 @@
       (try
         (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
               x (SSLContext/getInstance "TLS")
-              ks (KeyStore/getInstance ^String (if (.endsWith keyUrlStr ".jks")
-                                                 "JKS"
-                                                 "PKCS12"))
+              ks (KeyStore/getInstance ^String
+                                       (if (.endsWith keyUrlStr ".jks")
+                                         "JKS"
+                                         "PKCS12"))
               t (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
               k (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm)) ]
           (with-open [inp (-> (URL. keyUrlStr)
@@ -371,9 +372,9 @@
                        strim) ]
     (and (>= (.indexOf ws "websocket") 0)
          (>= (.indexOf cn "upgrade") 0)
-         (= "GET" (if (StringUtils/isNotEmpty mo)
-                    mo
-                    (-> req (.getMethod)(.name)))))
+         (= "GET" (if-not (hgl? mo)
+                    (-> req (.getMethod)(.name))
+                    mo)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -540,10 +541,10 @@
 (defn- getEventGroup ""
 
   ^NioEventLoopGroup
-  [group options]
+  [thds]
 
-  (if-not (nil? (get options group))
-    (NioEventLoopGroup. (get options group))
+  (if (spos? thds)
+    (NioEventLoopGroup. thds)
     (NioEventLoopGroup.)
   ))
 
@@ -556,8 +557,8 @@
    options]
 
   (doto (ServerBootstrap.)
-    (.group (getEventGroup :bossThreads options)
-            (getEventGroup :workerThreads options))
+    (.group (getEventGroup (:bossThreads options))
+            (getEventGroup (:workerThreads options)))
     (.channel NioServerSocketChannel)
     (.option ChannelOption/SO_REUSEADDR true)
     (.option ChannelOption/SO_BACKLOG (int 100))
@@ -575,7 +576,7 @@
    options]
 
   (doto (Bootstrap.)
-    (.group (getEventGroup :bossThreads options))
+    (.group (getEventGroup (:bossThreads options)))
     (.channel NioDatagramChannel)
     (.option ChannelOption/TCP_NODELAY true)
     (.option ChannelOption/SO_RCVBUF (int (* 2  1024 1024)))

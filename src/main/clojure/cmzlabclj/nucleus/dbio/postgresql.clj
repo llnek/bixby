@@ -9,14 +9,15 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.postgresql
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]
             [cmzlabclj.nucleus.dbio.core :as dbcore])
+
   (:use [cmzlabclj.nucleus.dbio.drivers]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,7 +27,6 @@
 ;;
 (def POSTGRESQL-URL "jdbc:postgresql://{{host}}:{{port}}/{{db}}" )
 (def POSTGRESQL-DRIVER "org.postgresql.Driver")
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

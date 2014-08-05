@@ -9,16 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "Date related utilities."
-       :author "kenl" }
+(ns ^{:doc "Date related utilities."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.dates
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [cmzlabclj.nucleus.util.constants :as CS ]
             [clojure.string :as cstr])
+
   (:use [ cmzlabclj.nucleus.util.str :only [Has? HasAny? nichts? nsb] ]
         [ cmzlabclj.nucleus.util.core :only [Try!] ])
+
   (:import  [java.text ParsePosition SimpleDateFormat]
             [java.util Locale TimeZone SimpleTimeZone
                       Date Calendar GregorianCalendar]

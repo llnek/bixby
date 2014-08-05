@@ -9,13 +9,14 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.net.comms
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.str :only [strim Embeds? HasNocase?] ]
         [cmzlabclj.nucleus.util.core :only [ThrowIOE Try!] ]
         [cmzlabclj.nucleus.util.mime :only [GetCharset] ])
@@ -128,10 +129,10 @@
         cv (if (nil? ct) "" (strim (.getValue ct)))
         cl (cstr/lower-case cv) ]
     (Try!
-      (log/debug "http-response: content-encoding: "
+      (log/debug "Http-response: content-encoding: "
                  (.getContentEncoding ent)
                  "\n"
-                 "content-type: " cv))
+                 "Content-type: " cv))
     (let [bits (get-bits ent)
           clen (if (nil? bits) 0 (alength bits)) ]
       {:encoding (GetCharset cv)
@@ -309,7 +310,7 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    { :browser :silk :browser-version bv :device-type :mobile :device-moniker "kindle" }
+    {:browser :silk :browser-version bv :device-type :mobile :device-moniker "kindle"}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -324,7 +325,7 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    { :browser :chrome :browser-version bv :device-type :mobile :device-moniker "android" }
+   {:browser :chrome :browser-version bv :device-type :mobile :device-moniker "android" }
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -339,7 +340,7 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    { :browser :firefox :browser-version bv :device-type :pc }
+    {:browser :firefox :browser-version bv :device-type :pc}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -354,12 +355,12 @@
                     (> (count m1) 2)) 
              (clean-str (nth m1 2))
              "")
-        rc { :browser :safari :browser-version bv :device-type :pc } ]
+        rc {:browser :safari :browser-version bv :device-type :pc} ]
     (cond
-      (HasNocase? line "mobile/") (merge rc { :device-type :mobile })
-      (HasNocase? line "iphone") (merge rc { :device-type :phone :device-moniker "iphone" } )
-      (HasNocase? line "ipad") (merge rc { :device-type :mobile :device-moniker "ipad" } )
-      (HasNocase? line "ipod") (merge rc { :device-type :mobile :device-moniker "ipod" } )
+      (HasNocase? line "mobile/") (merge rc {:device-type :mobile })
+      (HasNocase? line "iphone") (merge rc {:device-type :phone :device-moniker "iphone" } )
+      (HasNocase? line "ipad") (merge rc {:device-type :mobile :device-moniker "ipad" } )
+      (HasNocase? line "ipod") (merge rc {:device-type :mobile :device-moniker "ipod" } )
       :else rc )
   ))
 

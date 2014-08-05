@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "General utilties."
-       :author "kenl" }
+(ns ^{:doc "General utilties."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.core
 

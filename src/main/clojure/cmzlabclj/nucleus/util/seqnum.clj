@@ -10,8 +10,8 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "Generate some sequence numbers."
-       :author "kenl" }
+(ns ^{:doc "Generate some sequence numbers."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.seqnum
 

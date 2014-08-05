@@ -9,15 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{  :doc "Utility functions for class related or reflection related operations."
-        :author "kenl" }
+(ns ^{:doc "Utility functions for class related or reflection related operations."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.meta
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.str :only [EqAny? hgl?] ]
         [cmzlabclj.nucleus.util.core :only [test-nonil] ])
+
   (:import  [java.lang.reflect Member Field Method Modifier]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

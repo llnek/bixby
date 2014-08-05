@@ -10,17 +10,19 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "This is a utility class that provides various MIME related functionality."
-       :author "kenl" }
+(ns ^{:doc "This is a utility class that provides various MIME related functionality."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.mime
 
   (:require [clojure.tools.logging :as log  :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [Bytesify Try! IntoMap] ]
         [cmzlabclj.nucleus.util.meta :only [BytesClass] ]
         [cmzlabclj.nucleus.util.str :only [nsb hgl?] ]
         [cmzlabclj.nucleus.util.io :only [Streamify] ])
+
   (:import  [org.apache.commons.lang3 StringUtils]
             [java.io IOException InputStream File]
             [java.net URL]

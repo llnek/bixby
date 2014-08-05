@@ -10,17 +10,19 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "Ways to generate an unique id."
-       :author "kenl" }
+(ns ^{:doc "Ways to generate an unique id."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.guids
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [NowMillis TryC NewRandom] ]
         [cmzlabclj.nucleus.util.str :only [nsb Left Right] ]
         [cmzlabclj.nucleus.util.bytes :only [ReadInt ReadLong] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextInt] ])
+
   (:import  [java.lang StringBuilder]
             [java.net InetAddress]
             [java.util UUID]
@@ -33,13 +35,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;(def ^:private  _CHARS (.toCharArray "0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"))
-(def ^:private  _CHARS (.toCharArray "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW"))
+(def ^:private ^chars  _CHARS (.toCharArray "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW"))
 (def ^:private  _UUIDLEN 36)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private LONG_MASK "0000000000")
-(def ^:private INT_MASK "00000")
+(def ^:private ^String LONG_MASK "0000000000")
+(def ^:private ^String INT_MASK "00000")
 ;;(def ^:private LONG_MASK "0000000000000000")
 ;;(def ^:private INT_MASK "00000000")
 
@@ -128,15 +130,15 @@
   (let [rc (char-array _UUIDLEN)
         rnd (NewRandom) ]
     (dotimes [n (alength rc) ]
-      (aset-char rc 
-                 n 
-                 (case n 
+      (aset-char rc
+                 n
+                 (case n
                    (8 13 18 23) \-
                    (14) \4
                    (let [d (Double. (* (.nextDouble rnd) 16))
                          r (bit-or 0 (.intValue d))
-                         pos (if (= n 19) 
-                               (bit-or (bit-and r 0x3) 0x8) 
+                         pos (if (= n 19)
+                               (bit-or (bit-and r 0x3) 0x8)
                                (bit-and r 0xf)) ]
                      (aget ^chars _CHARS pos))) ))
     (String. rc)

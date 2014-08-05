@@ -9,16 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.simple
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.str :only [hgl?] ]
         [cmzlabclj.nucleus.dbio.core]
         [cmzlabclj.nucleus.dbio.sql])
+
   (:import  [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr]
             [java.sql Connection]))
 
@@ -104,7 +106,7 @@
       (executeWithOutput [this sql pms]
         (with-open [conn (openDB db) ]
           (.doExecuteWithOutput proc conn
-                                sql pms { :pkey "DBIO_ROWID" } )))
+                                sql pms {:pkey "DBIO_ROWID"} )))
 
       (execute [this sql pms]
         (with-open [conn (openDB db) ]

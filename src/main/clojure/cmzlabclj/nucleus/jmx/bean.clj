@@ -9,18 +9,20 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.jmx.bean
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [ThrowBadArg MakeMMap notnil? TryC] ]
         [cmzlabclj.nucleus.util.str :only [HasAny?] ]
         [cmzlabclj.nucleus.util.meta :only [IsBoolean? IsVoid? IsObject?
                                        IsString? IsShort? IsLong?
                                        IsInt? IsDouble? IsFloat? IsChar? ] ])
+
   (:import  [java.lang Exception IllegalArgumentException]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.jmx NameParams]
@@ -103,12 +105,11 @@
       (setSetter [_ m] (.setf! impl :setr m))
       (setGetter [_ m] (.setf! impl :getr m))
       (isQuery [this]
-        (let [^Method g (.getter this) ]
-          (if (nil? g)
-            false
-            (and (-> g (.getName)(.startsWith "is"))
-                 (IsBoolean? (.getType this))))))
-  )))
+        (if-let [^Method g (.getter this) ]
+          (and (-> g (.getName)(.startsWith "is"))
+               (IsBoolean? (.getType this)))
+          false)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -203,7 +204,7 @@
   [^Class rtype ptypes]
 
   (if (and (not (empty? ptypes))
-           (true? (some #(if (testJmxType %) false true) 
+           (true? (some #(if (testJmxType %) false true)
                         (seq ptypes))) )
     false
     (testJmxType rtype)
@@ -289,23 +290,23 @@
 
   (with-local-vars [metds (transient {})
                     rc (transient []) ]
-    (log/info "jmx-bean: processing class: " cz)
+    (log/info "JMX-bean: processing class: " cz)
     (doseq [^Method m (seq mtds) ]
       (let [^Class rtype (.getReturnType m)
             ptypes (.getParameterTypes m)
             mn (.getName m) ]
         (cond
           (HasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
-          (log/info "jmx-skipping " mn)
+          (log/info "JMX-skipping " mn)
 
           (testJmxTypes rtype ptypes)
           (let [pns (map #(.getName ^Class %) (seq ptypes))
                 nameParams (NameParams. mn (into-array String pns))
                 pmInfos (mkParameterInfo m) ]
             (var-set metds (assoc! @metds nameParams m))
-            (log/info "jmx-adding method " mn)
+            (log/info "JMX-adding method " mn)
             (var-set rc
-                     (conj! @rc 
+                     (conj! @rc
                             (MBeanOperationInfo. mn
                                                  (str mn " operation")
                                                  (into-array MBeanParameterInfo pmInfos)
@@ -313,7 +314,7 @@
                                                  MBeanOperationInfo/ACTION_INFO ))))
 
           :else
-          (log/info "jmx-skipping " mn) )))
+          (log/info "JMX-skipping " mn) )))
     [ (persistent! @rc) (persistent! @metds) ]
   ))
 
@@ -407,7 +408,7 @@
 
       (invoke [_ opName params sig]
         (let [^Method mtd (mtdsMap (NameParams. opName sig)) ]
-          (log/debug "jmx-invoking method " opName 
+          (log/debug "JMX-invoking method " opName
                      "\n(params) " (seq params)
                      "\n(sig) " (seq sig))
           (when (nil? mtd)

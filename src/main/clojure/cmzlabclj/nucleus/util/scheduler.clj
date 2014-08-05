@@ -10,14 +10,16 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.scheduler
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [ternary juid MakeMMap] ])
+
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
             [java.util.concurrent ConcurrentHashMap]
             [java.util Map Properties Timer TimerTask]))

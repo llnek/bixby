@@ -9,13 +9,16 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
+
   cmzlabclj.nucleus.dbio.oracle
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ])
+
   (:use [cmzlabclj.nucleus.dbio.drivers]
         [cmzlabclj.nucleus.dbio.core])
+
   (:import [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

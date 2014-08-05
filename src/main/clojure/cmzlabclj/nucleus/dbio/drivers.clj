@@ -9,15 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.drivers
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.str :only [hgl? AddDelim! nsb] ]
         [cmzlabclj.nucleus.dbio.core])
+
   (:import  [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]
             [java.util Map HashMap]))
 
@@ -435,7 +437,7 @@
       (-> inx (.append (genExIndexes db cache table flds zm)))
       ;; now uniques, primary keys and done.
       (when (> (.length bf) 0)
-        (when (> (count @pkeys) 0) 
+        (when (> (count @pkeys) 0)
           (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
         (let [s (genUniques db cache flds zm) ]
           (when (hgl? s)
@@ -472,7 +474,7 @@
       (doseq [[id tdef] (seq ms) ]
         (let [^String tbl (:table tdef) ]
           (when (and (not (:abstract tdef)) (hgl? tbl))
-            (log/debug "model id: " (name id) " table: " tbl)
+            (log/debug "Model Id: " (name id) " table: " tbl)
             (-> drops (.append (GenDrop db (cstr/upper-case tbl) )))
             (-> body (.append (genOneTable db ms tdef))))))
       (str "" drops body (GenEndSQL db)))

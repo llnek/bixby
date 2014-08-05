@@ -10,19 +10,21 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.sql
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [FlattenNil notnil? NowJTstamp nnz] ]
         [cmzlabclj.nucleus.dbio.core]
         [cmzlabclj.nucleus.util.meta :only [BytesClass CharsClass] ]
         [cmzlabclj.nucleus.util.str :only [AddDelim! nsb strim] ]
         [cmzlabclj.nucleus.util.io :only [ReadChars ReadBytes ] ]
         [cmzlabclj.nucleus.util.dates :only [GmtCal] ])
+
   (:import  [java.util Calendar GregorianCalendar TimeZone]
             [com.zotohlab.frwk.dbio MetaCache DBIOError OptLockError]
             [java.math BigDecimal BigInteger]
@@ -81,7 +83,7 @@
 
   [^String opcode cnt ^String table rowID]
 
-  (when (= cnt 0)
+  (when (== cnt 0)
     (throw (OptLockError. opcode table rowID))
   ))
 
@@ -92,17 +94,16 @@
   [zm filters]
 
   (let [flds (:fields (meta zm))
-        wc (reduce (fn [^StringBuilder sum en]
-                     (let [k (first en)
-                           fld (get flds k)
-                           c (if (nil? fld)
-                               k
-                               (:column fld)) ]
-                       (AddDelim! sum " AND "
-                         (str (ese c)
-                              (if (nil? (last en))
-                                " IS NULL "
-                                " = ? ")))))
+        wc (reduce #(let [k (first %2)
+                          fld (get flds k)
+                          c (if (nil? fld)
+                              k
+                              (:column fld)) ]
+                      (AddDelim! %1 " AND "
+                                 (str (ese c)
+                                      (if (nil? (last %2))
+                                        " IS NULL "
+                                        " = ? "))))
                    (StringBuilder.)
                    (seq filters)) ]
     [ (nsb wc) (FlattenNil (vals filters)) ]
@@ -172,7 +173,7 @@
 
   [finj ^ResultSet rs ^ResultSetMetaData rsmeta]
 
-  (with-local-vars [ row (transient {}) ]
+  (with-local-vars [row (transient {}) ]
     (doseq [pos (range 1 (+ (.getColumnCount rsmeta) 1)) ]
       (let [cn (.getColumnName rsmeta (int pos))
             ct (.getColumnType rsmeta (int pos))
@@ -234,7 +235,8 @@
             pos (.indexOf lcs (name token))
             rc (if (< pos 0)
                  []
-                 [(.substring sql 0 pos) (.substring sql pos)]) ]
+                 [(.substring sql 0 pos)
+                  (.substring sql pos)]) ]
         (if (empty? rc)
           (recur true sql)
           (recur false (str (first rc) " WITH (" cmd ") " (last rc)) ))
@@ -275,7 +277,7 @@
                                 sql
                                 Statement/RETURN_GENERATED_KEYS)
              (.prepareStatement conn sql)) ]
-    (log/debug "building SQLStmt: {}" sql)
+    (log/debug "Building SQLStmt: {}" sql)
     (doseq [n (seq (range 0 (count params))) ]
       (setBindVar ps (inc n) (nth params n)))
     ps
@@ -287,10 +289,10 @@
 
   [^ResultSet rs cnt options]
 
-  (let [rc (if (= cnt 1)
+  (let [rc (if (== cnt 1)
              (.getObject rs 1)
              (.getLong rs (nsb (:pkey options)))) ]
-    { :1 rc }
+    {:1 rc}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,7 +320,8 @@
                         0
                         (-> (.getMetaData rs)
                             (.getColumnCount))) ]
-              (if (and (> cnt 0) (.next rs))
+              (if (and (> cnt 0)
+                       (.next rs))
                 (handleGKeys rs cnt options)
                 {}
                 ))))))
@@ -326,7 +329,7 @@
     (sql-select [this sql pms ]
       (sql-select this sql pms
                   (partial row2obj std-injtor)
-                  (fn [a] a)))
+                  identity))
 
     (sql-select [this sql pms func postFunc]
       (with-open [stmt (build-stmt db conn sql pms)
@@ -365,7 +368,7 @@
 
   [flds obj s1 s2]
 
-  (with-local-vars [ ps (transient []) ]
+  (with-local-vars [ps (transient []) ]
     (doseq [[k v] (seq obj) ]
       (let [fdef (flds k) ]
         (when (and (notnil? fdef)
@@ -384,7 +387,7 @@
 
   [flds obj ^StringBuilder sb1]
 
-  (with-local-vars [ ps (transient []) ]
+  (with-local-vars [ps (transient []) ]
     (doseq [[k v] (seq obj) ]
       (let [fdef (flds k) ]
         (when (and (notnil? fdef)
@@ -432,7 +435,7 @@
                 (DbioError (str "Unknown model " model)))
           (let [px (partial model-injtor metaCache zm)
                 pf (partial row2obj px)
-                f2 (fn [obj] (postFmtModelRow model obj)) ]
+                f2 #(postFmtModelRow model %) ]
             (-> (make-sql metaCache db conn)
                 (.sql-select sql pms pf f2)))))
 
@@ -500,7 +503,7 @@
                                              {:pkey (Colname :rowid zm)} ) ]
                 (if (empty? out)
                   (DbioError (str "Insert requires row-id to be returned."))
-                  (log/debug "exec-with-out " out))
+                  (log/debug "Exec-with-out " out))
                 (let [wm {:rowid (:1 out) :verid 0} ]
                   (when-not (number? (:rowid wm))
                     (DbioError (str "RowID data-type must be Long.")))

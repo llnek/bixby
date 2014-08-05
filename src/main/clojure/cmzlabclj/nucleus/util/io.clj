@@ -9,13 +9,14 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "Util functions related to stream/io."
-       :author "kenl" }
+(ns ^{:doc "Util functions related to stream/io."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.io
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [Try!] ])
 
   (:import  [java.io ByteArrayInputStream ByteArrayOutputStream
@@ -36,7 +37,7 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;(def ^:private HEX_CHS [ \0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \A \B \C \D \E \F ])
-(def ^:private HEX_CHS (.toCharArray "0123456789ABCDEF"))
+(def ^:private ^chars HEX_CHS (.toCharArray "0123456789ABCDEF"))
 (def ^:private SZ_10MEG (* 1024 1024 10))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

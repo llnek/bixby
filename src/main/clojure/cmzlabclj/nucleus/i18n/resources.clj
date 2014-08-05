@@ -9,15 +9,17 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "Locale resources."
-       :author "kenl" }
+(ns ^{:doc "Locale resources."
+      :author "kenl" }
 
   cmzlabclj.nucleus.i18n.resources
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ])
+
   (:import  [java.util PropertyResourceBundle ResourceBundle Locale]
             [org.apache.commons.lang3 StringUtils]
             [java.io File FileInputStream]
@@ -60,9 +62,11 @@
   (^ResourceBundle [^String baseName
                     ^Locale locale
                     ^ClassLoader cl]
-                   (if (or (nil? baseName)(nil? locale))
+                   (if (or (nil? baseName)
+                           (nil? locale))
                      nil
-                     (ResourceBundle/getBundle baseName locale (GetCldr cl))) ))
+                     (ResourceBundle/getBundle baseName
+                                               locale (GetCldr cl))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

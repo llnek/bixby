@@ -10,8 +10,8 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "A class that maps the state-code to the state-name."
-       :author "kenl" }
+(ns ^{:doc "A class that maps the state-code to the state-name."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.usastate
 
@@ -102,10 +102,8 @@
   ^String
   [^String state]
 
-  (let [rs (filter #(= (nth % 1) state) _CCODESEQ) ]
-    (if (nil? rs)
-      nil
-      (nth (first rs) 0))
+  (when-let [rs (filter #(= (nth % 1) state) _CCODESEQ) ]
+    (nth (first rs) 0)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

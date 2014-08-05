@@ -100,7 +100,8 @@
 
   (try
     (while (.hasNext dc)
-      (if-let [^InterfaceHttpData data (.next dc) ]
+      (if-let [^InterfaceHttpData
+               data (.next dc) ]
         (try
           (writeHttpData ctx data fis)
           (finally
@@ -148,7 +149,9 @@
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
             xxx (.resetAttrs ^FormPostFilter this ctx)
-            itms (splitBodyParams (if (.hasContent xs)(.stringify xs) "")) ]
+            itms (splitBodyParams (if (.hasContent xs)
+                                    (.stringify xs)
+                                    "")) ]
         (.resetContent xs itms)
         (log/debug "Fire fully decoded message to the next handler")
         (.fireChannelRead ctx (DemuxedMsg. info xs))))

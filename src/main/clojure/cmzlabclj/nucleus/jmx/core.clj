@@ -9,17 +9,19 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.jmx.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core :only [MakeMMap Try! TryC] ]
         [cmzlabclj.nucleus.util.str :only [hgl? ] ]
         [cmzlabclj.nucleus.jmx.names]
         [cmzlabclj.nucleus.jmx.bean])
+
   (:import  [java.lang.management ManagementFactory]
             [java.net InetAddress MalformedURLException]
             [java.rmi NoSuchObjectException]
@@ -103,7 +105,7 @@
     (.registerMBean svr mbean objName)
     (catch Throwable e#
       (mkJMXrror (str "Failed to register bean: " objName) e#)))
-  (log/info "registered jmx-bean: " objName)
+  (log/info "Registered jmx-bean: " objName)
   objName)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

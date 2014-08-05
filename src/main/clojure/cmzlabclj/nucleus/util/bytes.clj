@@ -9,12 +9,13 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "Utililties for handling byte[] conversions to/from numbers."
-       :author "kenl" }
+(ns ^{:doc "Utililties for handling byte[] conversions to/from numbers."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.bytes
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]])
+
   (:import  [java.nio ByteBuffer CharBuffer]
             [java.nio.charset Charset]
             [java.io ByteArrayOutputStream

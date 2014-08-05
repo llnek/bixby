@@ -9,13 +9,14 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.connect
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.dbio.core]
         [cmzlabclj.nucleus.util.core :only [Try!] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
@@ -26,6 +27,7 @@
         [cmzlabclj.nucleus.dbio.mysql]
         [cmzlabclj.nucleus.dbio.oracle]
         [cmzlabclj.nucleus.dbio.h2])
+
   (:import  [java.util Map HashMap]
             [com.zotohlab.frwk.dbio DBAPI JDBCPool JDBCInfo
                                     DBIOLocal DBIOError OptLockError]))
@@ -43,9 +45,9 @@
         hc (.getId jdbc)
         ^Map c (.get tloc) ]
     (when-not (.containsKey c hc)
-      (log/debug "no db pool found in DBIO-thread-local, creating one...")
-      (let [o { :partitions 1
-                :max-conns 1 :min-conns 1 }
+      (log/debug "No db pool found in DBIO-thread-local, creating one...")
+      (let [o {:partitions 1
+               :max-conns 1 :min-conns 1 }
             p (MakeDbPool jdbc (merge options o)) ]
         (.put c hc p)))
     (.get c hc)

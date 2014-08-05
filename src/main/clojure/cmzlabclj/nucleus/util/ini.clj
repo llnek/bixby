@@ -9,17 +9,19 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc "Functions to load and query a .ini file."
-       :author "kenl" }
+(ns ^{:doc "Functions to load and query a .ini file."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.ini
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
+
   (:use [cmzlabclj.nucleus.util.core
          :only [ThrowBadData ThrowIOE ConvBool ConvInt ConvLong ConvDouble] ]
         [cmzlabclj.nucleus.util.files :only [FileRead?] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim] ])
+
   (:import  [com.zotohlab.frwk.util NCOrderedMap]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.util IWin32Conf]

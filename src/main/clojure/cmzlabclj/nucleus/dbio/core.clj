@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.nucleus.dbio.core
 
@@ -18,12 +18,14 @@
             [clojure.string :as cstr]
             [clojure.set :as cset]
             [cmzlabclj.nucleus.crypto.codec :as codec ])
+
   (:use [cmzlabclj.nucleus.util.str
          :only [strim Embeds? nsb HasNocase? hgl?] ]
         [cmzlabclj.nucleus.util.core
          :only [TryC Try! RootCause StripNSPath Interject
                 ternary notnil? nnz nbf juid] ]
         [cmzlabclj.nucleus.util.meta :only [ForName] ])
+
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.dbio MetaCache Schema
                                     BoneCPHook DBIOError
@@ -39,7 +41,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^MetaCache ^:dynamic *META-CACHE* nil)
+(def ^:dynamic ^MetaCache *META-CACHE* nil)
 (def ^:dynamic *USE_DDL_SEP* true)
 (def ^:dynamic *DDL_BVS* nil)
 (def ^:dynamic *JDBC-INFO* nil)
@@ -158,8 +160,8 @@
 
   [obj]
 
-  { :rowid (:rowid (meta obj))
-    :verid (:verid (meta obj)) } )
+  {:rowid (:rowid (meta obj))
+   :verid (:verid (meta obj)) } )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -225,7 +227,8 @@
   [nsp modelname & body]
 
   `(def ~modelname
-     (-> (DbioModel ~nsp ~(name modelname))
+     (-> (DbioModel ~nsp
+                    ~(name modelname))
          ~@body)
   ))
 
@@ -279,8 +282,8 @@
 
   [pojo lhs rhs]
 
-  (let [a1 { :kind :MXM :rhs lhs :fkey :lhs_rowid }
-        a2 { :kind :MXM :rhs rhs :fkey :rhs_rowid }
+  (let [a1 {:kind :MXM :rhs lhs :fkey :lhs_rowid}
+        a2 {:kind :MXM :rhs rhs :fkey :rhs_rowid}
         am (:assocs pojo)
         m2 (-> am
                (assoc :lhs a1)
@@ -320,18 +323,18 @@
 
   [fid]
 
-  { :column (cstr/upper-case (name fid))
-    :size 255
-    :id fid
-    :domain :String
-    :assoc-key false
-    :pkey false
-    :null true
-    :auto false
-    :dft nil
-    :updatable true
-    :system false
-    :index "" } )
+  {:column (cstr/upper-case (name fid))
+   :domain :String
+   :size 255
+   :id fid
+   :assoc-key false
+   :pkey false
+   :null true
+   :auto false
+   :dft nil
+   :updatable true
+   :system false
+   :index "" } )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -362,8 +365,8 @@
 
   [pojo aid adef]
 
-  (let [ad (merge { :kind nil :rhs nil
-                    :fkey nil :cascade false } adef)
+  (let [ad (merge {:kind nil :rhs nil
+                   :fkey nil :cascade false} adef)
         a2 (case (:kind ad)
              (:O2O :O2M)
              (assoc ad :fkey (fmtfkey (:id pojo) aid))
@@ -419,8 +422,8 @@
 (DefModel2 "czc.dbio.core" dbio-basemodel
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields { :rowid {:column "DBIO_ROWID" :pkey true :domain :Long
-                          :auto true :system true :updatable false}
+  (WithDbFields {:rowid {:column "DBIO_ROWID" :pkey true :domain :Long
+                         :auto true :system true :updatable false}
     :verid {:column "DBIO_VERSION" :domain :Long :system true
             :dft [ 0 ] }
     :last-modify {:column "DBIO_LASTCHANGED" :domain :Timestamp
@@ -434,7 +437,7 @@
 (DefModel2 "czc.dbio.core" dbio-joined-model
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields { :lhs-typeid {:column "LHS_TYPEID" }
+  (WithDbFields {:lhs-typeid {:column "LHS_TYPEID" }
     :lhs-oid {:column "LHS_ROWID" :domain :Long :null false}
     :rhs-typeid {:column "RHS_TYPEID" }
     :rhs-oid {:column "RHS_ROWID" :domain :Long :null false} }) )
@@ -456,7 +459,7 @@
 
   [ms]
 
-  (let [fdef { :domain :Long :assoc-key true } ]
+  (let [fdef {:domain :Long :assoc-key true } ]
     (with-local-vars [rc (transient {})
                       xs (transient {}) ]
       ;; create placeholder maps for each model,
@@ -512,9 +515,8 @@
 
   [ms]
 
-  (persistent! (reduce (fn [sum en]
-                          (let [rc (resolve-parent ms (last en)) ]
-                            (assoc! sum (:id rc) rc)))
+  (persistent! (reduce #(let [rc (resolve-parent ms (last %2)) ]
+                          (assoc! %1 (:id rc) rc))
                        (transient {})
                        (seq ms))
   ))
@@ -526,7 +528,7 @@
 
   [ms]
 
-  (persistent! (reduce (fn [sum n] (assoc! sum (:id n) n))
+  (persistent! (reduce #(assoc! %1 (:id %2) %2)
                        (transient {})
                        (seq ms))
   ))
@@ -560,7 +562,7 @@
 
   (if-let [mm (cache modelid) ]
     (CollectDbFields cache mm)
-    (log/warn "unknown database model id " modelid)
+    (log/warn "Unknown database model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -587,7 +589,7 @@
 
   (if-let [mm (cache modelid) ]
     (CollectDbIndexes cache mm)
-    (log/warn "unknown model id " modelid)
+    (log/warn "Unknown model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -614,7 +616,7 @@
 
   (if-let [mm (cache modelid) ]
     (CollectDbUniques cache mm)
-    (log/warn "unknown model id " modelid)
+    (log/warn "Unknown model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -658,8 +660,8 @@
         (var-set sum
                  (assoc! @sum k
                          (with-meta m
-                                    { :columns cols
-                                      :fields flds } ) ))))
+                                    {:columns cols
+                                     :fields flds } ) ))))
     (persistent! @sum)
   ))
 
@@ -755,7 +757,7 @@
   [^Connection conn]
 
   (let [md (.getMetaData conn) ]
-    (-> { :id (maybeGetVendor (.getDatabaseProductName md)) }
+    (-> {:id (maybeGetVendor (.getDatabaseProductName md)) }
         (assoc :version (.getDatabaseProductVersion md))
         (assoc :name (.getDatabaseProductName md))
         (assoc :quote-string (.getIdentifierQuoteString md))
@@ -797,7 +799,7 @@
   [^Connection conn ^String table]
 
   (with-local-vars [rc false ]
-    (log/debug "testing the existence of table " table)
+    (log/debug "Testing the existence of table " table)
     (Try!
       (let [mt (.getMetaData conn)
             tbl (cond
@@ -848,7 +850,8 @@
 ;;
 (defn- load-columns "Read each column's metadata."
 
-  [^DatabaseMetaData mt ^String catalog ^String schema ^String table]
+  [^DatabaseMetaData mt ^String catalog
+   ^String schema ^String table]
 
   (with-local-vars [pkeys #{} cms {} ]
     (with-open [rs (.getPrimaryKeys mt catalog schema table) ]
@@ -871,14 +874,14 @@
                 ctype (.getInt rs (int 5)) ]
             (recur
               (assoc! sum (keyword cn)
-                  { :column cn :sql-type ctype :null opt
-                    :pkey (clojure.core/contains? @pkeys cn) })
+                  {:column cn :sql-type ctype :null opt
+                   :pkey (clojure.core/contains? @pkeys cn) })
               (.next rs)))
         )))
-    (with-meta @cms { :supportsGetGeneratedKeys
-                      (.supportsGetGeneratedKeys mt)
-                      :supportsTransactions
-                      (.supportsTransactions mt) } )
+    (with-meta @cms {:supportsGetGeneratedKeys
+                     (.supportsGetGeneratedKeys mt)
+                     :supportsTransactions
+                     (.supportsTransactions mt) })
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -915,11 +918,13 @@
       JDBCPool
 
       (shutdown [_]
-        (log/debug "about to shut down the pool impl: " impl)
+        (log/debug "About to shut down the pool impl: " impl)
         (.shutdown impl))
-      (vendor [_] dbv)
+
       (dbUrl [_] (.getUrl jdbc))
-      (nextFree  [_]
+      (vendor [_] dbv)
+
+      (nextFree [_]
         (try
             (.getConnection impl)
           (catch Throwable e#
@@ -1006,7 +1011,9 @@
     (if (nil? ec)
       (throw e)
       (cond
-        (and oracle (= 942 ec)(= 1418 ec)(= 2289 ec)(= 0 ec))
+        (and oracle (= 942 ec)
+             (= 1418 ec)
+             (= 2289 ec)(= 0 ec))
         true
         :else
         (throw e)))
@@ -1123,7 +1130,7 @@
         fv (:rowid (meta lhsObj)) ]
     (if (nil? ac)
       (DbioError "Unknown assoc " (:as ctx))
-      [ (:with ctx) (ternary rt (:rhs ac)) { fid fv} ])
+      [ (:with ctx) (ternary rt (:rhs ac)) {fid fv} ])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

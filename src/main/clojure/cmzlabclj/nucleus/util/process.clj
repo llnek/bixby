@@ -10,8 +10,8 @@
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
 
-(ns ^{ :doc "OS Process related utilities."
-       :author "kenl" }
+(ns ^{:doc "OS Process related utilities."
+      :author "kenl" }
 
   cmzlabclj.nucleus.util.process
 
