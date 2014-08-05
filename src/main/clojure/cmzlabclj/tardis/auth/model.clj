@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.auth.model
 
@@ -38,13 +38,12 @@
 ;;
 (DefModel2 "czc.tardis.auth" StdAddress
   (WithDbFields {
-    :addr1 { :size 200 :null false }
-    :addr2 { :size 64}
+    :addr1 { :size 255 :null false }
+    :addr2 { }
     :city { :null false}
     :state {:null false}
     :zip {:null false}
-    :country {:null false}
-                   })
+    :country {:null false} })
   (WithDbIndexes { :i1 #{ :city :state :country }
     :i2 #{ :zip :country }
     :state #{ :state }
@@ -55,11 +54,9 @@
 (DefModel2 "czc.tardis.auth"  AuthRole
   (WithDbFields
     { :name { :column "role_name" :null false }
-      :desc { :column "description" :null false }
-     })
+      :desc { :column "description" :null false } })
   (WithDbUniques
-    { :u1 #{ :name }
-     }) )
+    { :u1 #{ :name } }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -68,18 +65,15 @@
     { :acctid { :null false }
       :email { :size 128 }
       ;;:salt { :size 128 }
-      :passwd { :null false :domain :Password }
-     })
+      :passwd { :null false :domain :Password } })
   (WithDbAssocs
     { :roles { :kind :M2M
                :joined :czc.tardis.auth/AccountRole }
       :addr { :kind :O2O
               :cascade true
-              :rhs :czc.tardis.auth/StdAddress }
-     })
+              :rhs :czc.tardis.auth/StdAddress } })
   (WithDbUniques
-    { :u2 #{ :acctid }
-     }) )
+    { :u2 #{ :acctid } }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,7 +88,6 @@
   Schema
 
   (getModels [_] [ StdAddress AuthRole LoginAccount AccountRole] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

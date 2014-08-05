@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.auth.plugin
 
@@ -116,7 +116,7 @@
   [^SQLr sql role]
 
   (.execute sql (str "delete from "
-                     (ese (:table AuthRole))
+                     (GTable AuthRole)
                      " where "
                      ;;(ese (:column (:name (:fields (meta AuthRole)))))
                      (->> (meta AuthRole)
@@ -157,7 +157,7 @@
     ;; assumed ok for the account to remain inserted.
     (doseq [r (seq roleObjs) ]
       (DbioSetM2M { :as :roles :with sql } acc r))
-    (log/debug "created new account into db: "
+    (log/debug "Created new account into db: "
                acc
                "\nwith meta "
                (meta acc))
@@ -190,20 +190,14 @@
 
   [^SQLr sql ^String user ^String pwd]
 
-  (let [acct (.findOne sql
+  (if-let [acct (.findOne sql
                        :czc.tardis.auth/LoginAccount
                        { :acctid (strim user) }) ]
-    (cond
-      (nil? acct)
-      (throw (UnknownUser. user))
-
-      (.validateHash ^PasswordAPI
-                     (Pwdify pwd "")
-                     (:passwd acct))
+    (if (.validateHash (Pwdify pwd "")
+                       (:passwd acct))
       acct
-
-      :else
       (throw (AuthError. "Incorrect password")))
+    (throw (UnknownUser. user))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,7 +270,7 @@
 
   [^SQLr sql user]
 
-  (.execute sql (str "delete from " (ese (:table LoginAccount))
+  (.execute sql (str "delete from " (GTable LoginAccount)
                      " where "
                      ;;(ese (:column (:acctid (:fields (meta LoginAccount)))))
                      (->> (meta LoginAccount)
@@ -302,11 +296,13 @@
 
   [^File appDir ^String appKey]
 
-  (let [ ini (File. appDir "conf/shiro.ini")
-         sm (-> (IniSecurityManagerFactory. (-> ini (.toURI)(.toURL)(.toString)))
+  (let [ini (File. appDir "conf/shiro.ini")
+        sm (-> (IniSecurityManagerFactory. (-> ini
+                                               (.toURI)
+                                               (.toURL)(.toString)))
                 (.getInstance)) ]
     (SecurityUtils/setSecurityManager sm)
-    (log/info "created shiro security manager: " sm)
+    (log/info "Created shiro security manager: " sm)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -329,7 +325,7 @@
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e# { :e e# }))
             info (ternary si {}) ]
-        (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
+        (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
           (notnil? (:e info))
@@ -343,7 +339,7 @@
             (.setLastResult job { :error (AuthError. "Broken captcha.") })
             false)
 
-          (not (= csrf (:csrf info)))
+          (not= csrf (nsb (:csrf info)))
           (do
             (.setLastResult job { :error (AuthError. "Broken token.") })
             false)
@@ -385,7 +381,7 @@
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e#  { :e e# }))
             info (ternary si {} ) ]
-        (log/debug "session csrf = " csrf ", and form token = " (:csrf info))
+        (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
 
@@ -394,7 +390,7 @@
             (.setLastResult job { :error (AuthError. (nsb (:e info))) })
             false)
 
-          (not (= csrf (:csrf info)))
+          (not= csrf (nsb (:csrf info)))
           (do
             (.setLastResult job { :error (AuthError. "Broken token.") })
             false)
@@ -460,13 +456,13 @@
           (let [token (UsernamePasswordToken. ^String user ^String pwd)
                 cur (SecurityUtils/getSubject)
                 sss (.getSession cur) ]
-            (log/debug "current user session " sss)
-            (log/debug "current user object " cur)
+            (log/debug "Current user session " sss)
+            (log/debug "Current user object " cur)
             (when-not (.isAuthenticated cur)
               (try
                 ;;(.setRememberMe token true)
                 (.login cur token)
-                (log/debug "user [" user "] logged in successfully.")
+                (log/debug "User [" user "] logged in successfully.")
                 (catch Exception e#
                   (log/error e# ""))))
             (if (.isAuthenticated cur)

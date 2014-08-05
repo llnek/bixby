@@ -72,6 +72,15 @@
   (^String [ch ent] (str ch (uc-ent ent) ch)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GTable ""
+
+  ^String
+  [model]
+
+  (ese (:table model)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; have to be function , not macro as this is passed into another higher
 ;; function - merge.
 (defn MergeMeta ""
