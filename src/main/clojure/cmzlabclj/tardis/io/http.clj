@@ -196,7 +196,7 @@
     (.setf! impl :version "HTTP/1.1" )
     (.setf! impl :cookies [])
     (.setf! impl :code -1)
-    (.setf! impl :hds (NCMap.))
+    (.setf! impl :hds {})
     (reify
 
       MubleAPI

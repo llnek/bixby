@@ -1111,6 +1111,7 @@
 
   ([^cmzlabclj.nucleus.util.core.MubleAPI ctx dbg ]
    (let [buf (StringBuilder.) ]
+     (.append buf "\n")
      (doseq [[k v] (.seq* ctx) ]
        (.append buf (str k " = " v "\n")))
      (.append buf "\n")

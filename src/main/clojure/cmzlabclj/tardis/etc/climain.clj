@@ -237,8 +237,8 @@
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (when-not (nil? pid) (FileUtils/deleteQuietly pid))
-      (log/info "About to stop Skaro...")
       (log/info "Applications are shutting down...")
+      (log/info "About to stop Skaro...")
       (when-not (nil? execv)
         (.stop ^Startable execv))
       (log/info "Execvisor stopped.")

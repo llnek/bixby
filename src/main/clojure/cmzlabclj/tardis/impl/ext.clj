@@ -209,7 +209,7 @@
     (log/info "Emitter meta: " mm)
     (log/info "Is emitter = " (isa? (:typeid mm)
                                     :czc.tardis.io/Emitter))
-    (log/info "Config params = " cfg)
+    (log/info "Config params =\n" cfg)
     (SynthesizeComponent obj
                          {:ctx container
                           :props (assoc cfg :app.pkey pkey) })
