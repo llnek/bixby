@@ -91,7 +91,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [pkey (:hhh.pkey cfg)
+  (let [pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
         p2 (:jmsPwd cfg) ]
     (.setAttr! co :emcfg

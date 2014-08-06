@@ -21,7 +21,7 @@
                                            ToJavaInt Try!
                                            MakeMMap test-cond Stringify] ]
         [cmzlabclj.nucleus.crypto.ssl]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
+        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.tardis.core.constants]
@@ -76,7 +76,7 @@
   [^HttpServletRequest req]
 
   (if-let [v (.getHeader req "connection") ]
-    (>= (.indexOf (cstr/lower-case v)
+    (>= (.indexOf (lcase v)
                   "keep-alive") 0)
     false
   ))
@@ -107,18 +107,18 @@
    src]
 
   (let [^URL url (.getf res :redirect)
-        ^NCMap hds (.getf res :hds)
-        cks (.getf res :cookies)
         os (.getOutputStream rsp)
+        cks (.getf res :cookies)
+        hds (.getf res :hds)
         code (.getf res :code)
         data (.getf res :data) ]
     (try
       (.setStatus rsp code)
-      (doseq [[nm vs] (seq hds)]
-        (when-not (= (cstr/lower-case  nm)
-                     "content-length")
-          (doseq [vv (seq vs) ]
-            (.addHeader rsp ^String nm vv))))
+      (doseq [[^String nm vs] (seq hds)]
+        (when (not= "content-length"
+                    (lcase nm))
+          (doseq [^String vv (seq vs) ]
+            (.addHeader rsp nm vv))))
       (doseq [c (seq cks) ]
         (.addCookie rsp (cookieToServlet c)))
       (cond
@@ -178,7 +178,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (HttpBasicConfig co (dissoc cfg K_APP_CZLR))
+  (.setAttr! co :emcfg
+             (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
   (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -309,7 +310,7 @@
         (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
-    (.setClassLoader c2 (.getAttr co K_APP_CZLR))
+    (.setClassLoader c2 ^ClassLoader (.getAttr co K_APP_CZLR))
     (.setContextPath c2 (strim cp))
     (.setHandler c2 myHandler)
     (.setHandlers ctxs (into-array Handler [c1 c2]))
@@ -380,7 +381,7 @@
 
       HTTPEvent
 
-      (getCookies [_] (.getf impl :cookies))
+      (getCookies [_] (vals (.getf impl :cookies)))
       (getCookie [_ nm]
         (let [cs (.getf impl :cookies)]
           (get cs nm)))
@@ -404,7 +405,11 @@
       (encoding [_] (.getCharacterEncoding req))
       (contextPath [_] (.getContextPath req))
 
-      (getHeaderValues [_ nm] (vec (seq (.getHeaders req nm))))
+      (getHeaderValues [this nm]
+        (if (.hasHeader this nm)
+          (vec (seq (.getHeaders req nm)))
+          []))
+
       (hasHeader [_ nm] (notnil? (.getHeader req nm)))
       (getHeaderValue [_ nm] (.getHeader req nm))
       (getHeaders [_] (vec (seq (.getHeaderNames req))))
@@ -413,8 +418,10 @@
       (hasParameter [_ nm]
         (.containsKey (.getParameterMap req) nm))
 
-      (getParameterValues [_ nm]
-        (vec (seq (.getParameterValues req nm))))
+      (getParameterValues [this nm]
+        (if (.hasParameter this nm)
+          (vec (seq (.getParameterValues req nm)))
+          []))
 
       (getParameters [_]
         (vec (seq (.getParameterNames req))))

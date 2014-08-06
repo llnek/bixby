@@ -70,6 +70,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ThreadFunc ""
+
+  (^Thread
+    [func start ^ClassLoader cl]
+    (let [t (Thread. (reify Runnable
+                       (run [_] (apply func [])))) ]
+      (when-not (nil? cl)
+        (.setContextClassLoader t cl))
+      (.setDaemon t true)
+      (when start (.start t))
+      t))
+
+  (^Thread [func start] (ThreadFunc func start nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn SafeWait "Block current thread for some millisecs."
 
   [millisecs]

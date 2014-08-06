@@ -43,7 +43,7 @@
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
         [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
-        [cmzlabclj.nucleus.util.files :only [ReadEdn] ]
+        [cmzlabclj.nucleus.util.files :only [ReadEdn WriteOneFile] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify CreateRandomString] ]
         [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
         [cmzlabclj.nucleus.dbio.core
@@ -151,7 +151,7 @@
   [parObj]
 
   (let [impl (MakeMMap) ]
-    (log/info "about to synthesize a job-creator...")
+    (log/info "About to synthesize a job-creator...")
     (with-meta
       (reify
 
@@ -163,10 +163,10 @@
                 c0 (.getAttr src :router)
                 c1 (:router options)
                 job (make-job parObj evt) ]
-            (log/debug "event type = " (type evt))
-            (log/debug "event options = " options)
-            (log/debug "event router = " c1)
-            (log/debug "io router = " c0)
+            (log/debug "Event type = " (type evt))
+            (log/debug "Event options = " options)
+            (log/debug "Event router = " c1)
+            (log/debug "IO router = " c0)
             (try
               (let [p (Pipeline. job (if (hgl? c1) c1 c0)) ]
                 (.setv job EV_OPTS options)
@@ -200,20 +200,21 @@
   [^Identifiable bk container nm cfg]
 
   (let [pkey (.getAppKey ^Container container)
-        hid (:handler cfg)
+        hid (:router cfg)
         eid (.id bk)
         ^cmzlabclj.tardis.core.sys.Element
         obj (MakeEmitter container eid nm)
         mm (meta obj) ]
-    (log/info "about to synthesize an emitter: " eid)
-    (log/info "emitter meta: " mm)
-    (log/info "is emitter = " (isa?  (:typeid mm) :czc.tardis.io/Emitter))
-    (log/info "config params = " cfg)
+    (log/info "About to synthesize an emitter: " eid)
+    (log/info "Emitter meta: " mm)
+    (log/info "Is emitter = " (isa? (:typeid mm)
+                                    :czc.tardis.io/Emitter))
+    (log/info "Config params = " cfg)
     (SynthesizeComponent obj
                          {:ctx container
-                          :props (assoc cfg :hhh.pkey pkey) })
-    (.setAttr! obj :router hid)
-    (log/info "emitter synthesized - OK. handler => " hid)
+                          :props (assoc cfg :app.pkey pkey) })
+    ;;(.setAttr! obj :app.pkey pkey)
+    (log/info "Emitter synthesized - OK. handler => " hid)
     obj
   ))
 
@@ -237,7 +238,7 @@
 
   (let [mcache (.getAttr co K_MCACHE)
         p (maybeGetDBPool co gid) ]
-    (log/debug (str "acquiring from dbpool " p))
+    (log/debug (str "Acquiring from dbpool " p))
     (if (nil? p)
       nil
       (DbioConnectViaPool p mcache {}))
@@ -251,10 +252,10 @@
 
   (let [^Schedulable sc (.getAttr co K_SCHEDULER)
         dbs (.getAttr co K_DBPS) ]
-    (log/info "container releasing all system resources.")
+    (log/info "Container releasing all system resources.")
     (when-not (nil? sc) (.dispose sc))
     (doseq [[k v] (seq dbs) ]
-      (log/debug "shutting down dbpool " (name k))
+      (log/debug "Shutting down dbpool " (name k))
       (.shutdown ^JDBCPool v))
   ))
 
@@ -266,7 +267,7 @@
 
   (let [ftlCfg (Configuration.)
         impl (MakeMMap) ]
-    (log/info "about to create an app-container...")
+    (log/info "About to create an app-container...")
     (with-meta
       (reify
 
@@ -316,19 +317,20 @@
         Startable
 
         (start [this]
-          (let [pub (File. (.getAppDir this) (str DN_PUBLIC "/" DN_PAGES))
+          (let [pub (File. (.getAppDir this)
+                           (str DN_PUBLIC "/" DN_PAGES))
                 ^cmzlabclj.tardis.core.sys.Registry
                 srg (.getf impl K_SVCS)
                 main (.getf impl :main-app) ]
-            (log/info "container starting all services...")
+            (log/info "Container starting all services...")
             (when (.exists pub)
               (doto ftlCfg
                 (.setDirectoryForTemplateLoading pub)
                 (.setObjectWrapper (DefaultObjectWrapper.))))
             (doseq [[k v] (seq* srg) ]
-              (log/info "service: " k " about to start...")
+              (log/info "Service: " k " about to start...")
               (.start ^Startable v))
-            (log/info "container starting main app...")
+            (log/info "Container starting main app...")
             (cond
               (satisfies? CljAppMain main)    ;; clojure app
               (.start ^cmzlabclj.tardis.impl.ext.CljAppMain main)
@@ -341,13 +343,13 @@
                 srg (.getf impl K_SVCS)
                 pls (.getAttr this K_PLUGINS)
                 main (.getf impl :main-app) ]
-            (log/info "container stopping all services...")
+            (log/info "Container stopping all services...")
             (doseq [[k v] (seq* srg) ]
               (.stop ^Startable v))
-            (log/info "container stopping all plugins...")
+            (log/info "Container stopping all plugins...")
             (doseq [[k v] (seq pls) ]
               (.stop ^Plugin v))
-            (log/info "container stopping...")
+            (log/info "Container stopping...")
             (cond
               (satisfies? CljAppMain main)
               (.stop ^cmzlabclj.tardis.impl.ext.CljAppMain main)
@@ -449,7 +451,8 @@
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
         ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
-        ps { K_APPDIR (File. (.toURI  url)) K_APP_CZLR cl } ]
+        ps {K_APPDIR (File. (.toURI  url))
+            K_APP_CZLR cl } ]
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)
@@ -469,10 +472,10 @@
 
   [^cmzlabclj.tardis.core.sys.Element co props]
 
-  (let [srg (MakeComponentRegistry :EventSources K_SVCS "1.0" co)
+  (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
         ^File appDir (K_APPDIR props)
-        cfgDir (File. appDir ^String DN_CONF)
-        mf (LoadJavaProps (File. appDir ^String MN_FILE))
+        cfgDir (File. appDir DN_CONF)
+        mf (LoadJavaProps (File. appDir MN_FILE))
         envConf (ReadEdn (File. appDir CFG_ENV_CF))
         appConf (ReadEdn (File. appDir CFG_APP_CF)) ]
     ;; make registry to store services
@@ -484,7 +487,7 @@
       (.setAttr! K_ENVCONF envConf)
       (.setAttr! K_APPCONF appConf)
       (.setAttr! K_MFPROPS mf))
-    (log/info "container: configured app: " (.id ^Identifiable co))
+    (log/info "Container: configured app: " (.id ^Identifiable co))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -520,9 +523,9 @@
   ^File
   [^String v ^File appDir]
 
-  (let [fnn (StringUtils/replace v "." "") ]
-    (File. appDir (str "modules/" fnn))
-  ))
+  (File. appDir (str "modules/"
+                     (.replace v "." ""))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -530,9 +533,7 @@
 
   [^String v ^File appDir]
 
-  (let [pfile (fmtPluginFname v appDir) ]
-    (.exists pfile)
-  ))
+  (.exists (fmtPluginFname v appDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -541,8 +542,8 @@
   [^String v ^File appDir]
 
   (let [pfile (fmtPluginFname v appDir) ]
-    (FileUtils/writeStringToFile pfile "ok" "utf-8")
-    (log/info "initialized plugin: " v)
+    (WriteOneFile pfile "ok")
+    (log/info "Initialized plugin: " v)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -566,8 +567,10 @@
         (do
           (.initialize p)
           (post-init-plugin v appDir)))
-      (.start p))
-    p
+      (log/info "Plugin " v " starting...")
+      (.start p)
+      (log/info "Plugin " v " started.")
+      p)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -587,7 +590,8 @@
 ;;
 (defn- maybeInitDBs ""
 
-  [^cmzlabclj.tardis.core.sys.Element co env app]
+  [^cmzlabclj.tardis.core.sys.Element co
+   env app]
 
   (with-local-vars [p (transient {}) ]
     (let [cfg (->> env (:databases)(:jdbc))
@@ -595,13 +599,14 @@
       (when-not (nil? cfg)
         (doseq [[k v] (seq cfg) ]
           (when-not (false? (:status v))
-            (let [[ t c] (splitPoolSize (nsb (:poolsize v))) ]
-              (var-set p (assoc! @p k
-                                 (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
-                                             {:max-conns c
-                                              :min-conns 1
-                                              :partitions t
-                                              :debug (nbf (:debug v)) }))))))
+            (let [[t c] (splitPoolSize (nsb (:poolsize v))) ]
+              (var-set p
+                       (assoc! @p k
+                               (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
+                                           {:max-conns c
+                                            :min-conns 1
+                                            :partitions t
+                                            :debug (nbf (:debug v)) }))))))
     ))
     (persistent! @p)
   ))

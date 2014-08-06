@@ -17,14 +17,16 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.process :only [ProcessPid SafeWait] ]
+  (:use [cmzlabclj.nucleus.util.process
+         :only [ProcessPid SafeWait ThreadFunc] ]
         [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
         [cmzlabclj.nucleus.util.meta :only [SetCldr GetCldr] ]
-        [cmzlabclj.nucleus.util.files :only [ReadOneFile ReadEdn] ]
+        [cmzlabclj.nucleus.util.files
+         :only [ReadOneFile WriteOneFile ReadEdn] ]
         [cmzlabclj.nucleus.util.core
                :only [ternary test-nonil test-cond ConvLong
                       Try! PrintMutableObj MakeMMap] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
+        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
         [cmzlabclj.nucleus.netty.discarder :only [MakeDiscardHTTPD] ]
 
@@ -123,12 +125,12 @@
 
       (setupClassLoader (setupClassLoaderAsRoot ctx cz)))
 
-    (log/info "classloaders configured.  using " (type (GetCldr)))
+    (log/info "Classloaders configured. using " (type (GetCldr)))
     ctx
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Parse skaro.conf
 (defn- loadConf ""
 
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
@@ -138,12 +140,12 @@
                              "/" (name K_PROPS) )) ]
     (log/info "About to parse config file " cf)
     (let [w (ReadEdn cf)
-          cn (cstr/lower-case (ternary (K_COUNTRY (K_LOCALE w)) ""))
-          lg (cstr/lower-case (ternary (K_LANG (K_LOCALE w)) "en"))
+          cn (lcase (ternary (K_COUNTRY (K_LOCALE w)) ""))
+          lg (lcase (ternary (K_LANG (K_LOCALE w)) "en"))
           loc (if (hgl? cn)
                 (Locale. lg cn)
                 (Locale. lg)) ]
-      (log/info (str "using locale: " loc))
+      (log/info (str "Using locale: " loc))
       (doto ctx
         (.setf! K_LOCALE loc)
         (.setf! K_PROPS w)
@@ -160,7 +162,7 @@
                         (.getf ctx K_LOCALE)) ]
     (test-nonil "etc/resouces" rc)
     (.setf! ctx K_RCBUNDLE rc)
-    (log/info "resource bundle found and loaded.")
+    (log/info "Resource bundle found and loaded.")
     ctx
   ))
 
@@ -172,7 +174,7 @@
 
   (let [home (File. ^String (first args))
         ctx (inizContext home) ]
-    (log/info "inside pre-parse()")
+    (log/info "Inside pre-parse()")
     ;;(precondDir (File. home ^String DN_BLOCKS))
     (PrecondDir (File. home ^String DN_BOXX))
     (PrecondDir (File. home ^String DN_CFG))
@@ -180,7 +182,7 @@
     ;; and the context refers back to the climain object.
     (.setf! ctx K_CLISH cli)
     (.setCtx! cli ctx)
-    (log/info "home directory looks ok.")
+    (log/info "Home directory looks ok.")
     ctx
   ))
 
@@ -190,14 +192,14 @@
 
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
-  (log/info "about to start Skaro...")
+  (log/info "About to start Skaro...")
   (let [^Startable exec (.getf ctx K_EXECV) ]
     (.start exec))
   (log/info "Skaro started.")
   ctx)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Create and synthesize Execvisor.
 (defn- primodial ""
 
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
@@ -207,8 +209,8 @@
         wc (.getf ctx K_PROPS)
         cz (ternary (K_EXECV (K_COMPS wc)) "") ]
     ;;(test-cond "conf file:exec-visor" (= cz "cmzlabclj.tardis.impl.Execvisor"))
-    (log/info "inside primodial() ---------------------------------------------->")
-    (log/info "execvisor = " cz)
+    (log/info "Inside primodial() ---------------------------------------------->")
+    (log/info "Execvisor = " cz)
     (let [^cmzlabclj.nucleus.util.core.MubleAPI
           execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
@@ -239,8 +241,8 @@
       (log/info "Applications are shutting down...")
       (when-not (nil? execv)
         (.stop ^Startable execv))
-      (log/info "Skaro stopped.")
-      (log/info "Skaro says \"Goodbye\".")
+      (log/info "Execvisor stopped.")
+      (log/info "Time to say \"Goodbye\".")
       (deliver CLI-TRIGGER 911))
   ))
 
@@ -265,9 +267,8 @@
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
   (let [cli (.getf ctx K_CLISH) ]
-    (-> (Runtime/getRuntime)
-        (.addShutdownHook (Thread. (reify Runnable
-                                     (run [_] (Try! (stop-cli ctx)))))))
+    (.addShutdownHook (Runtime/getRuntime)
+                      (ThreadFunc #(stop-cli ctx) false))
     (enableRemoteShutdown ctx)
     (log/info "Added shutdown hook.")
     ctx
@@ -280,7 +281,7 @@
   [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
 
   (let [fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
-    (FileUtils/writeStringToFile fp (ProcessPid) "utf-8")
+    (WriteOneFile fp (ProcessPid))
     (.setf! ctx K_PIDFILE fp)
     (log/info "Wrote skaro.pid - OK.")
     ctx
@@ -296,7 +297,7 @@
   (log/info "Applications are now running...")
   (log/info "System thread paused on promise - awaits delivery.")
   (deref CLI-TRIGGER) ;; pause here
-  (log/info "Promise delivered!")
+  (log/info "Promise delivered! Done.")
   (SafeWait 5000) ;; give some time for stuff to wind-down.
   (System/exit 0))
 
@@ -340,10 +341,7 @@
             (hookShutdown)
             (pause-cli)) )
 
-      (stop [this]
-        (let [^cmzlabclj.nucleus.util.core.MubleAPI
-              ctx (.getCtx this) ]
-          (stop-cli ctx))))
+      (stop [this] (stop-cli (.getCtx this))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

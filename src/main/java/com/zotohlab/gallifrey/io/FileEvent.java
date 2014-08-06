@@ -20,6 +20,7 @@ import java.io.File;
  */
 public interface FileEvent  extends IOEvent {
 
+  public String getOriginalFileName();
   public File getFile();
 
 }

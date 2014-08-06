@@ -18,11 +18,12 @@
             [clojure.core :as ccore]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI notnil? juid TryC spos?
-                                           ToJavaInt SubsVar
-                                           MakeMMap test-cond Stringify] ]
+  (:use [cmzlabclj.nucleus.util.core
+         :only [MubleAPI notnil? juid TryC spos?
+                ToJavaInt SubsVar ternary
+                MakeMMap test-cond Stringify] ]
         [cmzlabclj.nucleus.crypto.ssl]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
+        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.tardis.core.constants]
@@ -59,8 +60,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^String ^:private AUTH "Authorization")
-(def ^String ^:private BASIC "Basic")
+(def ^:private ^String AUTH "Authorization")
+(def ^:private ^String BASIC "Basic")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,14 +72,14 @@
   (if (.hasHeader evt AUTH)
     (let [s (StringUtils/split (nsb (.getHeaderValue evt AUTH))) ]
       (cond
-        (and (= 2 (count s))
+        (and (== 2 (count s))
              (= "Basic" (first s))
              (hgl? (last s)))
-        (let [rc (StringUtils/split (Stringify (Base64/decodeBase64 ^String (last s)))
-                                    ":"
-                                    1) ]
-          (if (= 2 (count rc))
-            { :principal (first rc) :credential (last rc) }
+        (let [tail (Base64/decodeBase64 ^String (last s))
+              rc (StringUtils/split tail ":" 1) ]
+          (if (== 2 (count rc))
+            {:principal (first rc)
+             :credential (last rc) }
             nil))
         :else
         nil))
@@ -91,16 +92,16 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [^String kfile (SubsVar (nsb (:serverKey cfg)))
-        ^String fv (:sslType cfg)
+  (let [kfile (SubsVar (nsb (:serverKey cfg)))
         socto (:sockTimeOut cfg)
+        fv (:sslType cfg)
         cp (:contextPath cfg)
         kbs (:limitKB cfg)
         w (:waitMillis cfg)
         port (:port cfg)
         host (:host cfg)
         tds (:workers cfg)
-        pkey (:hhh.pkey cfg)
+        pkey (:app.pkey cfg)
         ssl (hgl? kfile) ]
     (with-local-vars [cpy (transient cfg)]
       (when (nil? fv)
@@ -120,7 +121,7 @@
                              :serverKey (URL. kfile)))
         (var-set cpy (assoc! @cpy
                              :passwd
-                             (Pwdify ^String (:passwd cfg) pkey))))
+                             (Pwdify (:passwd cfg) pkey))))
       (when-not (spos? socto)
         (var-set cpy (assoc! @cpy
                              :sockTimeOut 0)))
@@ -130,6 +131,7 @@
       (when-not (spos? tds)
         (var-set cpy (assoc! @cpy
                              :workers 2)))
+
       ;; 4Meg threshold for payload in memory
       (when-not (spos? kbs)
         (var-set cpy (assoc! @cpy
@@ -151,6 +153,7 @@
 
   (let [c2 (HttpBasicConfig co cfg) ]
     (.setAttr! co :emcfg c2)
+    co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,6 +172,7 @@
 
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))
+      (toEDN [_] (.toEDN impl))
       (getf [_ k] (.getf impl k) )
       (clrf! [_ k] (.clrf! impl k) )
       (clear! [_] (.clear! impl))
@@ -219,29 +223,31 @@
             (.setf! impl :cookies (conj a c)))))
 
       (containsHeader [_ nm]
-        (let [m (.getf impl :hds) ]
-          (.containsKey ^Map m nm)))
+        (let [m (.getf impl :hds)
+              a (get m (lcase nm)) ]
+          (and (notnil? a)
+               (> (count a) 0))))
 
       (removeHeader [_ nm]
-        (let [m (.getf impl :hds) ]
-          (.remove ^Map m nm)))
+        (let [m (.getf impl :hds)]
+          (.setf! impl :hds (dissoc m (lcase nm)))))
 
       (clearHeaders [_]
-        (let [m (.getf impl :hds) ]
-          (.clear ^Map m)))
+        (.setf! impl :hds {}))
 
       (addHeader [_ nm v]
-        (let [^Map m (.getf impl :hds)
-              ^List a (.get m nm) ]
-          (if (nil? a)
-            (.put m nm (doto (ArrayList.) (.add v)))
-            (.add a v))))
+        (let [m (.getf impl :hds)
+              a (ternary (get m (lcase nm))
+                         []) ]
+          (.setf! impl
+                  :hds
+                  (assoc m (lcase nm) (conj a v)))))
 
       (setHeader [_ nm v]
-        (let [^Map m (.getf impl :hds)
-              a (ArrayList.) ]
-          (.add a v)
-          (.put m nm a)))
+        (let [m (.getf impl :hds) ]
+          (.setf! impl
+                  :hds
+                  (assoc m (lcase nm) [v]))))
 
       (setChunked [_ b] (.setf! impl :chunked b))
 
@@ -259,7 +265,8 @@
   [info ^String header]
 
   (if-let [h (:headers info) ]
-    (ccore/contains? h (cstr/lower-case header))
+    (and (> (count h) 0)
+         (notnil? (get h (lcase header))))
     false
   ))
 
@@ -271,7 +278,8 @@
   [info ^String param]
 
   (if-let [p (:params info) ]
-    (ccore/contains? p param)
+    (and (> (count p) 0)
+         (notnil? (get p param)))
     false
   ))
 
@@ -298,7 +306,7 @@
   [info ^String header]
 
   (if-let [arr (if (HasHeader? info header)
-                 ((:headers info) (cstr/lower-case header))
+                 ((:headers info) (lcase header))
                  nil) ]
     (if (> (count arr) 0)
       (first arr)

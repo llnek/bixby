@@ -112,24 +112,25 @@
   (let [^cmzlabclj.tardis.io.webss.WebSession
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
-      (log/debug "session appears to be kosher, about to set-cookie!")
+      (log/debug "Session appears to be kosher, about to set-cookie!")
       (let [^cmzlabclj.tardis.core.sys.Element
             src (.emitter evt)
+            cfg (.getAttr src :emcfg)
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
-                                         (.getAttr src :maxIdleSecs))
+                                         (:maxIdleSecs cfg))
             du1 (if (.isNew? mvs)
-                  (resetFlags mvs (.getAttr src :sessionAgeSecs)))
+                  (resetFlags mvs (:sessionAgeSecs cfg)))
             data (maybeMacIt evt ctr (nsb mvs))
             now (System/currentTimeMillis)
             est (.getExpiryTime mvs)
             ck (HttpCookie. SESSION_COOKIE data) ]
         (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
         (doto ck
-          (.setDomain (nsb (.getAttr src :domain)))
+          (.setDomain (nsb (:domain cfg)))
           (.setSecure (.isSSL? mvs))
-          (.setHttpOnly (.getAttr src :hidden))
-          (.setPath (.getAttr src :domainPath)))
+          (.setHttpOnly (true? (:hidden cfg)))
+          (.setPath (nsb (:domainPath cfg))))
         (.addCookie res ck)))
   ))
 
@@ -160,10 +161,11 @@
         ck (.getCookie evt SESSION_COOKIE) ]
     (if (nil? ck)
       (do
-        (log/debug "request contains no session cookie, invalidate the session.")
+        (log/debug "Request contains no session cookie, invalidate the session.")
         (.invalidate! mvs))
       (let [^cmzlabclj.tardis.core.sys.Element
             src netty
+            cfg (.getAttr src :emcfg)
             cookie (nsb (.getValue ck))
              ;;cookie (-> (URLCodec. "utf-8")
                         ;;(decode (nsb (.getValue ck))))
@@ -173,13 +175,13 @@
                         [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
         (maybeValidateCookie evt (.container netty) rc1 rc2)
-        (log/debug "session attributes = " rc2)
+        (log/debug "Session attributes = " rc2)
         (try
-          (doseq [^String nv (seq (StringUtils/split ^String rc2 NV_SEP)) ]
+          (doseq [^String nv (seq (.split ^String rc2 NV_SEP)) ]
             (let [ss (StringUtils/split nv ":" 2)
                   ^String s1 (aget ss 0)
                   ^String s2 (aget ss 1) ]
-              (log/debug "session attr name = " s1 ", value = " s2)
+              (log/debug "Session attr name = " s1 ", value = " s2)
               (if (and (.startsWith s1 "__f")
                        (.endsWith s1 "n"))
                 (.setAttribute mvs (keyword s1) (ConvLong s2 0))
@@ -190,7 +192,7 @@
         (let [ts (ternary (.getAttribute mvs LS_FLAG) -1)
               es (ternary (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
-              mi (.getAttr src :maxIdleSecs) ]
+              mi (:maxIdleSecs cfg) ]
           (if (< es now)
             (throw (ExpiredError. "Session has expired.")))
           (if (and (> mi 0)

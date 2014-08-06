@@ -109,7 +109,7 @@
 ;; A component itself can be a registry which implies that registeries can
 ;; ne nested.
 ;;
-(defn MakeComponentRegistry ""
+(defn MakeRegistry ""
 
   [regoType regoId ver parObj]
 
@@ -149,7 +149,8 @@
         (lookup [this cid]
           (let [cache (.getf impl :cache)
                 c (get cache cid) ]
-            (if (and (nil? c) (instance? ComponentRegistry parObj))
+            (if (and (nil? c)
+                     (instance? ComponentRegistry parObj))
               (.lookup ^ComponentRegistry parObj cid)
               c)) )
 

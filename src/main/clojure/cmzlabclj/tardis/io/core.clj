@@ -155,6 +155,7 @@
   [^Container parObj emId emAlias]
 
   (let [impl (MakeMMap) ]
+    ;; holds all the events from this source.
     (.setf! impl :backlog (ConcurrentHashMap.))
     (with-meta
       (reify
@@ -211,14 +212,14 @@
           (when-not (nil? wevt)
             (let [wid (.id ^Identifiable wevt)
                   b (.getf impl :backlog) ]
-              (log/debug "emitter releasing an event with id: " wid)
+              (log/debug "Emitter releasing an event with id: " wid)
               (.remove ^Map b wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
             (let [wid (.id ^Identifiable wevt)
                   b (.getf impl :backlog) ]
-              (log/debug "emitter holding an event with id: " wid)
+              (log/debug "Emitter holding an event with id: " wid)
               (.put ^Map b wid wevt)))) )
 
       { :typeid emId }
@@ -237,7 +238,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Map of emitter hierarchy.
 (derive :czc.tardis.io/HTTP :czc.tardis.io/Emitter)
 
 (derive :czc.tardis.io/JettyIO :czc.tardis.io/HTTP)

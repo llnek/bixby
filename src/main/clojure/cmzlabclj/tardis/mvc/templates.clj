@@ -19,7 +19,10 @@
 
   (:use [cmzlabclj.nucleus.util.core :only [Try! notnil? NiceFPath] ]
         [cmzlabclj.nucleus.util.mime :only [GuessContentType] ]
-        [cmzlabclj.nucleus.util.io :only [Streamify] ])
+        [cmzlabclj.nucleus.util.str :only [lcase nsb] ]
+        [cmzlabclj.nucleus.netty.io]
+        [cmzlabclj.nucleus.util.io :only [Streamify] ]
+        [cmzlabclj.tardis.io.http])
 
   (:import  [io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
                                          CookieDecoder ServerCookieEncoder
@@ -36,7 +39,7 @@
             [org.apache.commons.io FileUtils]
             [com.zotohlab.gallifrey.mvc WebContent WebAsset
                                         HTTPRangeInput AssetCache]
-            [java.io RandomAccessFile File]
+            [java.io Closeable RandomAccessFile File]
             [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +96,7 @@
   [^File fp]
 
   (if @cache-assets-flag
-    (let [^String fpath (cstr/lower-case (NiceFPath fp)) ]
+    (let [^String fpath (lcase (NiceFPath fp)) ]
       (or (.endsWith fpath ".css")
           (.endsWith fpath ".gif")
           (.endsWith fpath ".jpg")
@@ -141,11 +144,11 @@
 
   (if-let [wa (fetchAsset file) ]
     (do
-      (log/debug "asset-cache: cached new file: " fp)
+      (log/debug "Asset-cache: cached new file: " fp)
       (.put cache fp wa)
       wa)
     (do
-      (log/warn "asset-cache: failed to read/find file: " fp)
+      (log/warn "Asset-cache: failed to read/find file: " fp)
       nil)
   ))
 
@@ -178,11 +181,7 @@
    info
    ^HttpResponse rsp ]
 
-  (let [h (:headers info)
-        r (:range h)
-        s (if (or (nil? r)(< (count r) 1))
-            ""
-            (first r)) ]
+  (let [s (nsb (GetHeader info "range"))]
     (if (HTTPRangeInput/accepts s)
       (doto (HTTPRangeInput. raf ct s)
         (.prepareNettyResponse rsp))
@@ -219,20 +218,18 @@
         (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.writeAndFlush ch rsp))
         (when-not (or (= (:method info) "HEAD")
-                      (= 0 @clen))
+                      (== 0 @clen))
                   (var-set wf (.writeAndFlush ch @inp)))
-        (.addListener ^ChannelFuture @wf
-                      (reify ChannelFutureListener
-                        (operationComplete [_ ff]
-                          (log/debug "Channel-future-op-cmp: " (.isSuccess ff) " , file = " fname)
-                          (Try! (when (notnil? @raf) (.close ^RandomAccessFile @raf)))
-                          (when-not (:keepAlive info)
-                            (NettyFW/closeChannel ch)))))
+        (FutureCB @wf #(do
+                        (log/debug "Channel-future-op-cmp: " % " , file = " fname)
+                        (Try! (when (notnil? @raf) (.close ^Closeable @raf)))
+                        (when-not (:keepAlive info)
+                          (NettyFW/closeChannel ch))))
         (catch Throwable e#
-          (Try! (when (notnil? @raf)(.close ^RandomAccessFile @raf)))
+          (Try! (when-not (nil? @raf)(.close ^Closeable @raf)))
           (log/error e# "")
-          (Try! (NettyFW/closeChannel ch))) )
-  )))
+          (Try! (NettyFW/closeChannel ch))) ))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

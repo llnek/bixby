@@ -67,7 +67,7 @@
   (getUpTimeInMillis [_] ) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Check the app's manifest file.
 (defn- chkManifest
 
   [^cmzlabclj.tardis.core.sys.Element execv
@@ -77,10 +77,8 @@
 
   (let [^cmzlabclj.nucleus.util.core.MubleAPI
         ctx (.getCtx execv)
-        ^ComponentRegistry
-        root (.getf ctx K_COMPS)
-        ^ComponentRegistry
-        apps (.lookup root K_APPS)
+        ^ComponentRegistry root (.getf ctx K_COMPS)
+        ^ComponentRegistry apps (.lookup root K_APPS)
         ps (LoadJavaProps mf)
         vid (.getProperty ps "Implementation-Vendor-Id", "???")
         ver (.getProperty ps "Implementation-Version" "")
@@ -89,7 +87,7 @@
     (test-nestr "POD-MainClass" cz)
     (test-nestr "POD-Version" ver)
 
-    (log/info "checking manifest for app: " app
+    (log/info "Checking manifest for app: " app
               ", version: " ver ", main-class: " cz)
 
     ;;ps.gets("Manifest-Version")
@@ -118,17 +116,17 @@
   [execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (NiceFPath des))
-        mf (File. des ^String MN_FILE) ]
+        mf (File. des MN_FILE) ]
     (log/info "About to inspect app: " app)
     (log/info "app-dir: " des)
     (TryC
-      (PrecondDir (File. des ^String POD_INF))
-      (PrecondDir (File. des ^String POD_CLASSES))
-      (PrecondDir (File. des ^String POD_LIB))
-      (PrecondDir (File. des ^String META_INF))
-      (PrecondFile (File. des ^String CFG_APP_CF))
-      (PrecondFile (File. des ^String CFG_ENV_CF))
-      (PrecondDir (File. des ^String DN_CONF))
+      (PrecondDir (File. des POD_INF))
+      (PrecondDir (File. des POD_CLASSES))
+      (PrecondDir (File. des POD_LIB))
+      (PrecondDir (File. des META_INF))
+      (PrecondFile (File. des CFG_APP_CF))
+      (PrecondFile (File. des CFG_ENV_CF))
+      (PrecondDir (File. des DN_CONF))
       (PrecondFile mf)
       (chkManifest execv app des mf) )
   ))
@@ -191,7 +189,7 @@
 
   [parObj]
 
-  (log/info "creating execvisor, parent = " parObj)
+  (log/info "Creating execvisor, parent = " parObj)
   (let [impl (MakeMMap) ]
     (with-meta
       (reify
@@ -237,6 +235,7 @@
                 ^Startable k (.lookup root K_KERNEL) ]
             (inspect-pods this)
             (.start k)))
+
         (stop [this]
           (let [^cmzlabclj.nucleus.util.core.MubleAPI
                 ctx (.getCtx this)
@@ -263,7 +262,7 @@
         regs (K_REGS cf)
         jmx  (K_JMXMGM cf) ]
 
-    (log/info "initializing component: Execvisor: " co)
+    (log/info "Initializing component: Execvisor: " co)
     (test-nonil "conf file: components" comps)
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
@@ -271,12 +270,17 @@
     (System/setProperty "file.encoding" "utf-8")
 
     (let [^File home (.homeDir ^cmzlabclj.tardis.impl.exec.ExecvisorAPI co)
-          bks (doto (File. home (str DN_CFG "/" DN_BLOCKS)) (.mkdir))
-          apps (doto (File. home ^String DN_BOXX) (.mkdir))
-          tmp (doto (File. home ^String DN_TMP) (.mkdir))
+          bks (doto (File. home
+                           (str DN_CFG "/" DN_BLOCKS))
+                (.mkdir))
+          apps (doto (File. home ^String DN_BOXX)
+                 (.mkdir))
+          tmp (doto (File. home ^String DN_TMP)
+                (.mkdir))
           pods (File. home ^String DN_PODS)
           db (File. home ^String DN_DBS)
-          log (doto (File. home ^String DN_LOGS) (.mkdir)) ]
+          log (doto (File. home ^String DN_LOGS)
+                (.mkdir)) ]
       ;;(precondDir pods)
       (PrecondDir apps)
       (PrecondDir log)
@@ -295,9 +299,9 @@
     (start-jmx co jmx)
 
     (let [^ComponentRegistry
-          root (MakeComponentRegistry :SystemRegistry K_COMPS "1.0" co)
-          bks (MakeComponentRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
-          apps (MakeComponentRegistry :AppsRegistry K_APPS "1.0" nil)
+          root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
+          bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
+          apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
           deployer (MakeDeployer)
           knl (MakeKernel)
           options { :ctx ctx } ]
@@ -364,7 +368,7 @@
         cfg (ReadEdn url)
         info (:info cfg) ]
     (test-nonil "Invalid block-meta file, no info section." info)
-    (log/info "initializing BlockMeta: " url)
+    (log/info "Initializing BlockMeta: " url)
     (let [cz (strim (:block-type info))
           ^cmzlabclj.tardis.core.sys.Element co block  ]
       (when (hgl? cz)

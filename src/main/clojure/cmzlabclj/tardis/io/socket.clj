@@ -102,7 +102,7 @@
              (InetAddress/getByName host)
              (InetAddress/getLocalHost))
         soc (ServerSocket. port backlog ip) ]
-    (log/info "opened Server Socket " soc  " (bound?) " (.isBound soc))
+    (log/info "Opened Server Socket " soc  " (bound?) " (.isBound soc))
     (doto soc (.setReuseAddress true))
     (.setAttr! co :ssocket soc)
   ))

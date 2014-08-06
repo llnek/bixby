@@ -43,16 +43,18 @@
 ;;
 (defn- config-repeat-timer ""
 
-  [^Timer tm delays intv func]
+  [^Timer tm delays
+   ^long intv
+   func]
 
-  (let [tt (proxy [TimerTask][]
-              (run []
-                (TryC (when (fn? func) (func)))))
-        [^Date dw ^long ds] delays ]
+  (let [tt (proxy [TimerTask][] (run []
+                                  (TryC (apply func []))))
+        [^Date dw ^long ds]
+        delays]
     (when (instance? Date dw)
-      (.schedule tm tt dw (long intv)))
+      (.schedule tm tt dw intv))
     (when (number? ds)
-      (.schedule tm tt ds (long intv)))
+      (.schedule tm tt ds intv))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,10 +63,10 @@
 
   [^Timer tm delays func]
 
-  (let [tt (proxy [TimerTask][]
-              (run []
-                (when (fn? func) (func))))
-        [^Date dw ^long ds] delays]
+  (let [tt (proxy [TimerTask][] (run []
+                                  (apply func [])))
+        [^Date dw ^long ds]
+        delays]
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)
@@ -79,7 +81,7 @@
 
   (let [cfg (.getAttr co :emcfg)
         intv (:intervalMillis cfg)
-        t (:timer cfg)
+        t (.getAttr co :timer)
         ds (:delayMillis cfg)
         dw (:delayWhen cfg)
         func #(LoopableWakeup co) ]
@@ -101,7 +103,8 @@
     (with-local-vars [cpy (transient cfg)]
       (if (instance? Date dw)
         (var-set cpy (assoc! :delayWhen dw))
-        (var-set cpy (assoc! :delayMillis (* 1000 (if (spos? ds) ds 3)))))
+        (var-set cpy (assoc! :delayMillis (* 1000
+                                             (if (spos? ds) ds 3)))))
       (when (spos? intv)
         (var-set cpy (assoc! :intervalMillis (* 1000 intv))))
       (-> (persistent! @cpy)
@@ -290,7 +293,7 @@
         intv (:intervalMillis cfg)
         loopy (atom true)
         cl (GetCldr) ]
-    (log/info "threaded one timer - interval = " intv)
+    (log/info "Threaded one timer - interval = " intv)
     (.setAttr! co :loopy loopy)
     (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
   ))
@@ -318,9 +321,10 @@
         cl (GetCldr)
         func #(LoopableSchedule co) ]
     (.setAttr! co :loopy loopy)
-    (if (or (number? ds) (instance? Date dw))
+    (if (or (number? ds)
+            (instance? Date dw))
       (config-timer (Timer.) [dw ds] func)
-      (func))
+      (apply func []))
     (IOESStarted co)
   ))
 

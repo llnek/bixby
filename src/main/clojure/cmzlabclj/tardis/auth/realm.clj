@@ -9,18 +9,18 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.auth.realm
 
   (:gen-class
-    :extends org.apache.shiro.realm.AuthorizingRealm
-    :name cmzlabclj.tardis.auth.realm.JdbcRealm
-    :init myInit
-    :constructors {[] []}
-    :exposes-methods { }
-    :state myState
+   :extends org.apache.shiro.realm.AuthorizingRealm
+   :name cmzlabclj.tardis.auth.realm.JdbcRealm
+   :init myInit
+   :constructors {[] []}
+   :exposes-methods { }
+   :state myState
   )
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
@@ -53,16 +53,16 @@
 
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+  (let [db (DbioConnectViaPool *JDBC-POOL*
+                               *META-CACHE* {})
          ;;pwd (.getCredentials token)
         user (.getPrincipal token)
         sql (.newSimpleSQLr db) ]
     (try
-      (let [acc (FindLoginAccount sql user) ]
-        (if (nil? acc)
-          nil
-          (SimpleAccount.  acc (:passwd acc) (.getName this))
-        ))
+      (when-let [acc (FindLoginAccount sql user) ]
+        (SimpleAccount. acc
+                        (:passwd acc)
+                        (.getName this)))
       (finally
         (.finz db)))
   ))
@@ -73,9 +73,12 @@
 
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [^DBAPI db (DbioConnectViaPool *JDBC-POOL* *META-CACHE* {})
+  (let [db (DbioConnectViaPool *JDBC-POOL*
+                               *META-CACHE* {})
         acc (.getPrimaryPrincipal principals)
-        rc (SimpleAccount. acc (:passwd acc) (.getName this))
+        rc (SimpleAccount. acc
+                           (:passwd acc)
+                           (.getName this))
         sql (.newSimpleSQLr db) ]
     (try
       (let [rs (DbioGetM2M {:as :roles :with sql } acc) ]

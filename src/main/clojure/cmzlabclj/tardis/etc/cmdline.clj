@@ -26,8 +26,9 @@
                 ternary FlattenNil ConvLong ResStr] ]
         [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal] ]
         [cmzlabclj.nucleus.util.meta]
-        [cmzlabclj.nucleus.util.files :only [ReadEdn ReadOneFile] ]
-        [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
+        [cmzlabclj.nucleus.util.files
+         :only [ReadEdn ReadOneFile WriteOneFile] ]
+        [cmzlabclj.nucleus.util.str :only [ucase nsb hgl? strim] ]
         [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ]
         [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ]
         [cmzlabclj.nucleus.crypto.core
@@ -93,7 +94,8 @@
 
   (let [hhh (getHomeDir)
         hf (ReadEdn (File. hhh
-                           (str DN_CONF "/" (name K_PROPS))))
+                           (str DN_CONF
+                                "/" (name K_PROPS))))
         wlg (ternary (:lang (:webdev hf)) "js")
         app (nth args 2)
         t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
@@ -219,7 +221,7 @@
   [^String lenStr]
 
   ;;(DbgProvider java.lang.System/out)
-  (let [kp (MakeKeypair "RSA" (ConvLong lenStr 256))
+  (let [kp (MakeKeypair "RSA" (ConvLong lenStr 1024))
         pvk (.getPrivate kp)
         puk (.getPublic kp)
         pk (.getEncoded pvk)
@@ -331,7 +333,7 @@
   (when-let [rc (CLIConverse questions start)]
     (let [ssn (map #(let [v (get rc %) ]
                       (if (hgl? v)
-                        (str (cstr/upper-case (name %)) "=" v)))
+                        (str (ucase (name %)) "=" v)))
                    [ :c :st :l :o :ou :cn ]) ]
       [(cstr/join "," (FlattenNil ssn)) rc])
   ))
@@ -375,12 +377,12 @@
                       dn
                       PEM_CERT) ]
       (println (str "DN entered: " dn))
-      (let [ff (File. (str (:fn rc) ".key")) ]
-        (FileUtils/writeByteArrayToFile ff pkey)
-        (println (str "Wrote file: " ff))
-        (let [ff (File. (str (:fn rc) ".csr")) ]
-          (FileUtils/writeByteArrayToFile ff req)
-          (println (str "Wrote file: " ff))) ))
+      (let [f1 (File. (str (:fn rc) ".key"))
+            f2 (File. (str (:fn rc) ".csr")) ]
+        (WriteOneFile f1 pkey)
+        (println (str "Wrote file: " f1))
+        (WriteOneFile f2 req)
+        (println (str "Wrote file: " f2))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -524,32 +526,30 @@
              (.mkdirs))
          ;;lang "scala"
         lang "java"
-        ulang (cstr/upper-case lang) ]
+        ulang (ucase lang) ]
     (FileUtils/cleanDirectory ec)
-    (FileUtils/writeStringToFile (File. ec ".project")
+    (WriteOneFile (File. ec ".project")
       (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
                        lang
                        "/project.txt")
                   "utf-8")
-          (StringUtils/replace "${APP.NAME}" app)
-          (StringUtils/replace (str "${" ulang ".SRC}")
-                               (NiceFPath (File. cwd
-                                                 (str "src/main/" lang))))
-          (StringUtils/replace "${TEST.SRC}"
-                               (NiceFPath (File. cwd
-                                                 (str "src/test/" lang)))))
-      "utf-8")
-    (scanJars (File. (getHomeDir) ^String DN_DIST) sb)
-    (scanJars (File. (getHomeDir) ^String DN_LIB) sb)
-    (scanJars (File. cwd ^String POD_CLASSES) sb)
-    (scanJars (File. cwd ^String POD_LIB) sb)
-    (FileUtils/writeStringToFile (File. ec ".classpath")
+          (.replace "${APP.NAME}" app)
+          (.replace (str "${" ulang ".SRC}")
+                    (NiceFPath (File. cwd
+                                      (str "src/main/" lang))))
+          (.replace "${TEST.SRC}"
+                    (NiceFPath (File. cwd
+                                      (str "src/test/" lang))))))
+    (scanJars (File. (getHomeDir) DN_DIST) sb)
+    (scanJars (File. (getHomeDir) DN_LIB) sb)
+    (scanJars (File. cwd POD_CLASSES) sb)
+    (scanJars (File. cwd POD_LIB) sb)
+    (WriteOneFile (File. ec ".classpath")
       (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
                        lang
                        "/classpath.txt")
                   "utf-8")
-          (StringUtils/replace "${CLASS.PATH.ENTRIES}" (.toString sb)))
-      "utf-8")
+          (.replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

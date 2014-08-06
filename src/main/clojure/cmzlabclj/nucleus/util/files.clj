@@ -18,8 +18,9 @@
             [clojure.edn :as edn]
             [clojure.string :as cstr])
 
-  (:use [ cmzlabclj.nucleus.util.core :only [notnil?] ])
-
+  (:use [cmzlabclj.nucleus.util.core :only [notnil?] ]
+        [cmzlabclj.nucleus.util.str :only [nsb] ]
+        [cmzlabclj.nucleus.util.meta :only [IsBytes?] ])
   (:import  [org.apache.commons.lang3 StringUtils]
             [java.io File FileInputStream FileOutputStream
                     InputStream OutputStream]
@@ -138,6 +139,47 @@
     (while (.hasMoreElements ents)
       (doOneEntry fpz des (.nextElement ents)))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CopyFileToDir ""
+
+  [^File fp ^File dir]
+
+  (FileUtils/copyFileToDirectory fp dir))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CopyFile ""
+
+  [^File fp ^File target]
+
+  (FileUtils/copyFile fp target))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CopyDir ""
+
+  [^File dir ^File targetDir]
+
+  (FileUtils/copyDirectoryToDirectory dir targetDir))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WriteOneFile ""
+
+  ([^File fout ^Object data ^String enc]
+   (cond
+     (nil? data)
+     nil
+
+     (IsBytes? data)
+     (FileUtils/writeByteArrayToFile fout ^bytes data)
+
+     :else
+     (FileUtils/writeStringToFile fout (nsb data) enc)))
+
+  ([^File fout ^Object data] (WriteOneFile fout data "utf-8")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

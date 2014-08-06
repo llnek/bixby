@@ -44,7 +44,7 @@
              (.setErrorPrintStream System/err)
              (.setMessageOutputLevel Project/MSG_INFO))
         pj (doto (Project.)
-             (.setName "hhh-project")
+             (.setName "skaro-project")
              (.init))
         tg (doto (Target.)
              (.setName "mi6")) ]
@@ -85,7 +85,7 @@
   (let [tk (ExecTask.)
         pj (ProjAntTask tk) ]
     (doto tk
-      (.setTaskName "hhh-exec-task")
+      (.setTaskName "skaro-exec-task")
       (.setExecutable execProg)
       (.setDir workDir))
     (doseq [v (seq args) ]

@@ -25,7 +25,7 @@
         [cmzlabclj.tardis.io.http]
         [cmzlabclj.tardis.io.triggers]
         [cmzlabclj.tardis.io.webss :only [MakeWSSession] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
+        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim nichts?] ]
         [cmzlabclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.nucleus.util.mime :only [GetCharset] ])
@@ -34,7 +34,7 @@
            [java.net SocketAddress InetAddress]
            [java.util ArrayList List HashMap Map]
            [com.google.gson JsonObject]
-           [java.io File IOException RandomAccessFile]
+           [java.io Closeable File IOException RandomAccessFile]
            [com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
                                                IOSession
                                                WebSockEvent WebSockResult]
@@ -87,7 +87,7 @@
     (.setMaxAge (.getMaxAge c))
     (.setPath (.getPath c))
     ;;(.setDiscard (.getDiscard c))
-    ;;(.setVersion (.getVersion c))
+    (.setVersion 0)
     (.setHttpOnly (.isHttpOnly c))
   ))
 
@@ -119,8 +119,7 @@
 ;;
 (defn- netty-ws-reply ""
 
-  [^WebSockResult res
-   ^Channel ch
+  [^WebSockResult res ^Channel ch
    ^WebSockEvent evt src]
 
   (let [^XData xs (.getData res)
@@ -158,9 +157,7 @@
 (defn- netty-reply ""
 
   [^cmzlabclj.nucleus.util.core.MubleAPI res
-   ^Channel ch
-   ^HTTPEvent evt
-   src]
+   ^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
   (let [cks (cookiesToNetty (.getf res :cookies))
@@ -170,14 +167,16 @@
         data (.getf res :data)
         hdrs (.getf res :hds) ]
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
-    (with-local-vars [ clen 0 raf nil payload nil ]
+    (with-local-vars [clen 0 raf nil payload nil]
       (doseq [[^String nm vs] (seq hdrs)]
-        (when-not (= "content-length" (cstr/lower-case  nm))
-          (doseq [vv (seq vs)]
+        (when-not (= "content-length" (lcase nm))
+          (doseq [^String vv (seq vs)]
             (HttpHeaders/addHeader rsp nm vv))))
       (doseq [s cks]
-        (HttpHeaders/addHeader rsp HttpHeaders$Names/SET_COOKIE s) )
-      (when (and (>= code 300)(< code 400))
+        (HttpHeaders/addHeader rsp
+                               HttpHeaders$Names/SET_COOKIE s) )
+      (when (and (>= code 300)
+                 (< code 400))
         (when-not (cstr/blank? loc)
           (HttpHeaders/setHeader rsp "Location" loc)))
       (when (and (>= code 200)
@@ -185,25 +184,30 @@
                  (not= "HEAD" (.method evt)))
         (var-set  payload
                   (condp instance? data
-                    WebAsset (let [^WebAsset ws data ]
-                               (HttpHeaders/setHeader rsp
-                                                      "content-type"
-                                                      (.contentType ws))
-                               (var-set raf
-                                        (RandomAccessFile. (.getFile ws) "r"))
-                               (replyOneFile @raf evt rsp))
+                    WebAsset
+                    (let [^WebAsset ws data]
+                      (HttpHeaders/setHeader rsp
+                                             "content-type"
+                                             (.contentType ws))
+                      (var-set raf
+                               (RandomAccessFile. (.getFile ws)
+                                                  "r"))
+                      (replyOneFile @raf evt rsp))
 
-                    File (do
-                           (var-set raf
-                                    (RandomAccessFile. ^File data "r"))
-                           (replyOneFile @raf evt rsp))
+                    File
+                    (do
+                      (var-set raf
+                               (RandomAccessFile. ^File data "r"))
+                      (replyOneFile @raf evt rsp))
 
-                    XData (let [^XData xs data ]
-                            (var-set clen (.size xs))
-                            (ChunkedStream. (.stream xs)))
+                    XData
+                    (let [^XData xs data ]
+                      (var-set clen (.size xs))
+                      (ChunkedStream. (.stream xs)))
 
-                    (if (notnil? data)
-                      (let [xs (XData. data) ]
+                    ;;else
+                    (if-not (nil? data)
+                      (let [xs (XData. data)]
                         (var-set clen (.size xs))
                         (ChunkedStream. (.stream xs)))
                       nil)))
@@ -215,27 +219,23 @@
       (when (.isKeepAlive evt)
         (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
 
-      (log/debug "writing out " @clen " bytes back to client");
+      (log/debug "Writing out " @clen " bytes back to client");
       (HttpHeaders/setContentLength rsp @clen)
 
       (.write ch rsp)
-      (log/debug "wrote response headers out to client")
+      (log/debug "Wrote response headers out to client")
 
       (when (and (> @clen 0)
                  (notnil? @payload))
         (.write ch @payload)
-        (log/debug "wrote response body out to client"))
+        (log/debug "Wrote response body out to client."))
 
-      (let [wf (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT) ]
-        (log/debug "flushed last response content out to client")
-        (.addListener wf
-                      (reify ChannelFutureListener
-                        (operationComplete [_ ff]
-                          (Try! (when (notnil? @raf)
-                                      (.close ^RandomAccessFile @raf))))))
+      (let [wf (WriteLastContent ch true) ]
+        (FutureCB wf #(when (notnil? @raf)
+                        (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
-          (log/debug "keep-alive == false, closing channel.  bye.")
-          (.addListener wf ChannelFutureListener/CLOSE))))
+          (log/debug "Keep-alive == false, closing channel.  bye.")
+          (CloseFuture wf))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,6 +304,7 @@
         (setf! [_ k v] (.setf! impl k v) )
         (seq* [_] (.seq* impl))
         (getf [_ k] (.getf impl k) )
+        (toEDN [_] (.toEDN impl))
         (clrf! [_ k] (.clrf! impl k) )
         (clear! [_] (.clear! impl))
 
@@ -388,7 +389,7 @@
         (getCookie [_ nm] (get cookieJar nm))
         (getCookies [_] (vals cookieJar))
 
-        (isKeepAlive [_] (true? (info "keep-alive")))
+        (isKeepAlive [_] (true? (info "keepAlive")))
 
         (hasData [_] (notnil? xdata))
         (data [_] xdata)
@@ -399,14 +400,22 @@
         (encoding [this]  (GetCharset (.contentType this)))
         (contextPath [_] "")
 
-        (getHeaderValues [_ nm] (NettyFW/getHeaderValues info nm))
-        (getHeaders [_] (NettyFW/getHeaderNames info))
+        (getHeaders [_] (vec (keys (:headers info))))
+        (getHeaderValues [this nm]
+          (if (.hasHeader this nm)
+            (get (:headers info) (lcase nm))
+            []))
+
         (getHeaderValue [_ nm] (GetHeader info nm))
         (hasHeader [_ nm] (HasHeader? info nm))
 
-        (getParameterValues [_ nm] (NettyFW/getParameterValues info nm))
+        (getParameterValues [this nm]
+          (if (.hasParameter this nm)
+            (get (:params info) nm)
+            []))
+
         (getParameterValue [_ nm] (GetParameter info nm))
-        (getParameters [_] (NettyFW/getParameters info))
+        (getParameters [_] (vec (keys (:params info))))
         (hasParameter [_ nm] (HasParam? info nm))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
@@ -504,14 +513,14 @@
 (defn- msgDispatcher ""
 
   ^ChannelHandler
-  ;;[^cmzlabclj.tardis.core.sys.Element co]
   [^cmzlabclj.tardis.io.core.EmitterAPI co
+   ^cmzlabclj.tardis.core.sys.Element src
    options]
 
   (proxy [SimpleChannelInboundHandler] []
     (channelRead0 [ctx msg]
-      (let [cfg (.getAttr ^cmzlabclj.tardis.core.sys.Element co :emcfg)
-            ch (.channel ^ChannelHandlerContext ctx)
+      (let [ch (.channel ^ChannelHandlerContext ctx)
+            cfg (.getAttr src :emcfg)
             ts (:waitMillis cfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
@@ -530,7 +539,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (log/debug "tardis netty pipeline initor called with emitter = " (type co))
-  (ReifyHTTPPipe "NettyDispatcher" #(msgDispatcher co %)))
+  (ReifyHTTPPipe "NettyDispatcher" #(msgDispatcher co co %)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -35,8 +35,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro  lcs [s] `(cstr/lower-case ~s))
-(defmacro  ucs [s] `(cstr/upper-case ~s))
+(defmacro  lcase [s] `(cstr/lower-case ~s))
+(defmacro  ucase [s] `(cstr/upper-case ~s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -44,7 +44,7 @@
 
   [^String aStr s]
 
-  (>= (.indexOf (lcs aStr) (lcs s)) 0))
+  (>= (.indexOf (lcase aStr) (lcase s)) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -175,7 +175,7 @@
 
   (if (nil? src)
     false
-    (if (some #(>= (.indexOf (lcs src) (lcs %)) 0) substrs) true false)
+    (if (some #(>= (.indexOf (lcase src) (lcase %)) 0) substrs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -197,7 +197,7 @@
 
   (if (nil? src)
     false
-    (if (some #(.startsWith (lcs src) (lcs %)) pfxs) true false)
+    (if (some #(.startsWith (lcase src) (lcase %)) pfxs) true false)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -269,6 +269,8 @@
     ""
     (StringUtils/left src ^long len)
   ))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

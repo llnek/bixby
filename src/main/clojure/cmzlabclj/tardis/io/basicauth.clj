@@ -19,7 +19,7 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core :only [NormalizeEmail Stringify notnil? ] ]
-        [cmzlabclj.nucleus.util.str :only [strim nsb hgl? ] ]
+        [cmzlabclj.nucleus.util.str :only [lcase strim nsb hgl? ] ]
         [cmzlabclj.tardis.io.http :only [ScanBasicAuth] ]
         [cmzlabclj.nucleus.crypto.codec :only [CaesarDecrypt] ]
         [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
@@ -34,12 +34,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^String ^:private NONCE_PARAM "nonce_token")
-(def ^String ^:private CSRF_PARAM "csrf_token")
-(def ^String ^:private PWD_PARAM "credential")
-(def ^String ^:private EMAIL_PARAM "email")
-(def ^String ^:private USER_PARAM "principal")
-(def ^String ^:private CAPTCHA_PARAM "captcha")
+(def ^:private ^String NONCE_PARAM "nonce_token")
+(def ^:private ^String CSRF_PARAM "csrf_token")
+(def ^:private ^String PWD_PARAM "credential")
+(def ^:private ^String EMAIL_PARAM "email")
+(def ^:private ^String USER_PARAM "principal")
+(def ^:private ^String CAPTCHA_PARAM "captcha")
+
+;; hard code the shift position, the encrypt code
+;; should match this value.
+(def ^:private CAESAR_SHIFT 13)
 
 (def ^:private PMS {EMAIL_PARAM [ :email #(NormalizeEmail %) ]
                     CAPTCHA_PARAM [ :captcha #(strim %) ]
@@ -63,7 +67,7 @@
                 fv (nsb (.getString x)) ]
             (when-let [v (get PMS fm) ]
               (var-set rc (assoc! @rc (first v)
-                                  (apply (last v) fv))))))
+                                  (apply (last v) [fv]))))))
         (persistent! @rc))
       :else nil)
   ))
@@ -78,13 +82,13 @@
     (when-let [json (json/read-str (if (.hasContent xs)
                                      (.stringify xs)
                                      "{}")
-                                   :key-fn #(cstr/lower-case %)) ]
+                                   :key-fn #(lcase %)) ]
       (with-local-vars [rc (transient {})]
         (doseq [[k v] (seq PMS)]
           (when-let [fv (get json k) ]
             (var-set rc (assoc! @rc
                                 (first v)
-                                (apply (last v) fv)))))
+                                (apply (last v) [fv])))))
         (persistent! @rc)))
   ))
 
@@ -100,7 +104,7 @@
         (var-set rc (assoc! @rc
                             (first v)
                             (apply (last v)
-                                   (.getParameterValue evt k))))))
+                                   [(.getParameterValue evt k)])))))
     (persistent! @rc)
   ))
 
@@ -127,11 +131,11 @@
 ;;
 (defn- maybeDecodeField ""
 
-  [info fld]
+  [info fld shiftCount]
 
   (if (:nonce info)
     (try
-      (let [decr (CaesarDecrypt (get info fld) 13)
+      (let [decr (CaesarDecrypt (get info fld) shiftCount)
             bits (Base64/decodeBase64 decr)
             s (Stringify bits) ]
         (log/debug "info = " info)
@@ -160,8 +164,8 @@
   [^HTTPEvent evt]
 
   (-> (MaybeGetAuthInfo evt)
-      (maybeDecodeField :principal )
-      (maybeDecodeField :credential)))
+      (maybeDecodeField :principal CAESAR_SHIFT)
+      (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -170,8 +174,8 @@
   [^HTTPEvent evt]
 
   (-> (MaybeGetAuthInfo evt)
-      (maybeDecodeField :principal )
-      (maybeDecodeField :credential)))
+      (maybeDecodeField :principal CAESAR_SHIFT)
+      (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

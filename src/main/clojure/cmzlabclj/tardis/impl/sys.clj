@@ -143,14 +143,14 @@
                        (not (contains? cset app)))
                 nil
                 (MakeContainer pod)) ]
-      (log/debug "start-pod? cid = " cid ", app = " app " !! cset = " cset)
+      (log/debug "Start pod? cid = " cid ", app = " app " !! cset = " cset)
       (if (notnil? ctr)
         (do
           (.setAttr! knl K_CONTAINERS (assoc cache cid ctr))
         ;;_jmx.register(ctr,"", c.name)
           true)
         (do
-          (log/info "kernel: container " cid " disabled.")
+          (log/info "Kernel: container " cid " disabled.")
           false) ) )
   ))
 

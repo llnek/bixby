@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.auth.shiro
 
@@ -39,7 +39,6 @@
     (let [pwd (.getCredentials ^AuthenticationToken token)
           uid (.getPrincipal ^AuthenticationToken token)
           pc (.getCredentials ^AuthenticationInfo info)
-          ^PasswordAPI
           tstPwd (Pwdify (if (instance? String pwd)
                            pwd
                            (String. ^chars pwd))

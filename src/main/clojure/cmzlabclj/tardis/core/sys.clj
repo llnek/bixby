@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.core.sys
 
@@ -93,9 +93,9 @@
   ^cmzlabclj.tardis.core.sys.Element
   [c options]
 
-  (let [rego (:rego options)
-        ctx (:ctx options)
-        props (:props options) ]
+  (let [props (:props options)
+        rego (:rego options)
+        ctx (:ctx options) ]
    (when-not (nil? rego) (CompCompose c rego))
    (when-not (nil? ctx) (CompContextualize c ctx))
    (when-not (nil? props) (CompConfigure c props))
@@ -114,6 +114,7 @@
     (reify MubleAPI
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))
+      (toEDN [_] (.toEDN impl))
       (getf [_ k] (.getf impl k) )
       (clrf! [_ k] (.clrf! impl k) )
       (clear! [_] (.clear! impl)))
@@ -126,9 +127,10 @@
   ^String
   [^File appDir ^String confile]
 
-  (let [cfgDir (File. appDir ^String DN_CONF)
-        cs (ReadOneFile (File. cfgDir confile))
-        rc (StringUtils/replace cs "${appdir}" (NiceFPath appDir)) ]
+  (let [cs (ReadOneFile (File. appDir (str DN_CONF "/" confile)))
+        rc (StringUtils/replace cs
+                                "${appdir}"
+                                (NiceFPath appDir)) ]
     (log/debug "[" confile "]\n" rc)
     rc
   ))

@@ -9,8 +9,8 @@
 ;; this software.
 ;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
 
-(ns ^{ :doc ""
-       :author "kenl" }
+(ns ^{:doc ""
+      :author "kenl" }
 
   cmzlabclj.tardis.mvc.statics
 
@@ -63,7 +63,7 @@
                   nil)))))
 
   (onStop [_ pipe]
-    (log/debug "nothing to be done here, just stop please."))
+    (log/debug "Nothing to be done here, just stop please."))
 
   (onError [ _ err curPt]
     (log/error "Oops, I got an error!")))

@@ -58,12 +58,13 @@
   (MakeEmitter container :czc.tardis.io/FilePicker))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; Order of args must match.
 (defmethod IOESReifyEvent :czc.tardis.io/FilePicker
 
   [co & args]
 
   (let [^File f (nth args 1)
+        fnm (first args)
         eeid (NextLong)
         impl (MakeMMap) ]
     (with-meta
@@ -80,6 +81,7 @@
         (getId [_] eeid)
         (checkAuthenticity [_] false)
         (emitter [_] co)
+        (getOriginalFileName [_] fnm)
         (getFile [_] f))
 
       { :typeid :czc.tardis.io/FileEvent }
@@ -95,7 +97,8 @@
 
   (let [^cmzlabclj.tardis.io.core.EmitterAPI src co
         cfg (.getAttr co :emcfg)
-        ^File des (:recv-folder cfg)
+        ^File des (:recvFolder cfg)
+        ;; original file name
         fname (.getName f)
         cf (cond
              (= action :FP-CREATED)
@@ -115,8 +118,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co cfg]
 
-  (let [^String root (SubsVar (nsb (:target-folder cfg)))
-        ^String dest (SubsVar (nsb (:recv-folder cfg)))
+  (let [^String root (SubsVar (nsb (:targetFolder cfg)))
+        ^String dest (SubsVar (nsb (:recvFolder cfg)))
         ^String mask (nsb (:fmask cfg))
         c2 (CfgLoopable co cfg) ]
     (test-nestr "file-root-folder" root)
@@ -124,7 +127,7 @@
     (log/info "Rcv folder: " (nsn dest))
     (.setAttr! co :emcfg
     (-> c2
-        (assoc :target-folder (doto (File. root) (.mkdirs)))
+        (assoc :targetFolder (doto (File. root) (.mkdirs)))
         (assoc :fmask
                (cond
                  (.startsWith mask "*.")
@@ -136,7 +139,7 @@
                  (RegexFileFilter. mask) ;;WildcardFileFilter(mask)
                  :else
                  FileFileFilter/FILE))
-        (assoc :recv-folder
+        (assoc :recvFolder
                (if (hgl? dest)
                  (doto (File. dest) (.mkdirs))
                  nil))))
@@ -150,7 +153,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (let [cfg (.getAttr co :emcfg)
-        obs (FileAlterationObserver. ^File (:target-folder cfg)
+        obs (FileAlterationObserver. ^File (:targetFolder cfg)
                                      ^FileFilter (:fmask cfg))
         intv (:intervalMillis cfg)
         mon (FileAlterationMonitor. intv)

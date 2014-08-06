@@ -37,7 +37,8 @@
            [java.net URL InetAddress InetSocketAddress]
            [java.io InputStream IOException]
            [java.util Map Map$Entry]
-           [io.netty.handler.codec.http HttpHeaders HttpMessage LastHttpContent
+           [io.netty.handler.codec.http HttpHeaders HttpMessage
+            LastHttpContent
                                         DefaultFullHttpRequest HttpContent
                                         HttpRequest HttpResponse FullHttpRequest
                                         QueryStringDecoder
@@ -62,6 +63,37 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FutureCB ""
+
+  [^ChannelFuture cf func]
+
+  (.addListener cf (reify ChannelFutureListener
+                     (operationComplete [_ ff]
+                       (Try! (apply func [ (.isSuccess ^ChannelFuture ff)]))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseFuture
+
+  [^ChannelFuture cf]
+
+  (.addListener cf ChannelFutureListener/CLOSE))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WriteLastContent ""
+
+  ^ChannelFuture
+  [^Channel ch flush?]
+
+  (log/debug "Writing last http-content out to client.")
+  (if flush?
+    (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
+    (.write ch LastHttpContent/EMPTY_LAST_CONTENT)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

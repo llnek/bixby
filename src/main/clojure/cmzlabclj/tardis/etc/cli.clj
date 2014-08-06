@@ -17,19 +17,24 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [GetUser juid IsWindows?] ]
+  (:use [cmzlabclj.nucleus.util.core
+         :only [GetUser juid IsWindows?
+                NiceFPath] ]
         [cmzlabclj.nucleus.util.str :only [strim nsb] ]
         [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
         [cmzlabclj.nucleus.util.guids :only [NewUUid] ]
         [cmzlabclj.nucleus.util.files
-         :only [ReadOneFile Unzip Mkdirs ReadEdn] ]
+         :only [ReadOneFile WriteOneFile CopyFileToDir
+                CopyFile CopyDir
+                Unzip Mkdirs ReadEdn] ]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.etc.task])
 
-  (:import  [org.apache.commons.io.filefilter FileFileFilter FileFilterUtils]
-            [org.apache.commons.lang3 StringUtils]
+  (:import  [org.apache.commons.io.filefilter FileFileFilter
+                                              FileFilterUtils]
             [org.apache.commons.io FilenameUtils FileUtils]
+            [org.apache.commons.lang3 StringUtils]
             [java.util UUID]
             [java.io File]))
 
@@ -72,12 +77,12 @@
 
   [^File hhhHome bg]
 
-  (let [prog2 (-> (File. hhhHome "bin/skaro.bat")(.getCanonicalPath ))
-        prog (-> (File. hhhHome "bin/skaro")(.getCanonicalPath))
+  (let [progW (NiceFPath (File. hhhHome "bin/skaro.bat"))
+        prog (NiceFPath (File. hhhHome "bin/skaro"))
         pj (if (IsWindows?)
              (MakeExecTask "cmd.exe"
                            hhhHome
-                           [ "/C" "start" "/B" "/MIN" prog2 "start" ])
+                           [ "/C" "start" "/B" "/MIN" progW "start" ])
              (MakeExecTask prog hhhHome [ "start" "bg" ])) ]
     (ExecProj pj)
   ))
@@ -163,7 +168,7 @@
 ;;
 (defn- post-create-app ""
 
-  [^File hhhHome appId ^String appDomain]
+  [^File hhhHome ^String appId ^String appDomain]
 
   (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
         appDir (File. hhhHome (str "apps/" appId))
@@ -172,41 +177,39 @@
     (Mkdirs (File. h2db))
     (with-local-vars [fp nil ]
       (var-set fp (mkcljfp cljd "core.clj"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPDOMAIN@@" appDomain)))
 
       (var-set fp (mkcljfp cljd "pipe.clj"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPDOMAIN@@"
+                                             appDomain)))
 
       (var-set fp (File. appDir CFG_ENV_CF))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@H2DBPATH@@"
-                                                            (str h2db "/" appId))
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@H2DBPATH@@"
+                                             (str h2db "/" appId))
+                        (.replace "@@APPDOMAIN@@"
+                                             appDomain)))
 
       (var-set fp (File. appDir "build.xml"))
-      (let [ s (str "<arg value=\"" appDomain ".core\"/>"
-                    "<arg value=\"" appDomain ".pipe\"/>" ) ]
-        (FileUtils/writeStringToFile ^File @fp
-                                     (-> (ReadOneFile @fp)
-                                         (StringUtils/replace "@@APPCLJFILES@@" s)
-                                         (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-                                         (StringUtils/replace "@@APPID@@" appId))
-                                     "utf-8"))
-  )))
+      (let [s (str "<arg value=\"" appDomain ".core\"/>"
+                   "<arg value=\"" appDomain ".pipe\"/>" ) ]
+        (WriteOneFile @fp
+                      (-> (ReadOneFile @fp)
+                          (.replace "@@APPCLJFILES@@" s)
+                          (.replace "@@APPDOMAIN@@" appDomain)
+                          (.replace "@@APPID@@" appId)))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- create-app-common ""
 
-  [^File hhhHome appId ^String appDomain flavor]
+  [^File hhhHome ^String appId ^String appDomain ^String flavor]
 
   (let [appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
         cfd (File. appDir DN_CONF)
@@ -221,69 +224,62 @@
                  "LICENSE.txt" "README.md"]]
         (FileUtils/touch (File. mfDir ^String s)))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/build.xml")
-                                     (File. hhhHome (str "apps/" appId)))
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/MANIFEST.MF")
-                                     mfDir)
+      (CopyFileToDir (File. hhhHome "etc/app/MANIFEST.MF") mfDir)
+      (CopyFileToDir (File. hhhHome "etc/app/build.xml") appDir)
 
       (Mkdirs (File. appDir "modules"))
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
 
       (doseq [s [APP_CF ENV_CF "shiro.ini"]]
-        (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
-                                       cfd))
+        (CopyFileToDir (File. hhhHome (str "etc/app/" s)) cfd))
 
       (var-set fp (File. cfd APP_CF))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@USER@@" (GetUser)))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@USER@@" (GetUser))))
 
       (doseq [s [ "java" (str "clojure/" appDomainPath) ]]
         (Mkdirs (File. appDir (str "src/main/" s)))
         (Mkdirs (File. appDir (str "src/test/" s))))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/core.clj") (mkcljd appDir appDomain))
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/app/pipe.clj") (mkcljd appDir appDomain))
+      (CopyFileToDir (File. hhhHome "etc/app/core.clj")
+                     (mkcljd appDir appDomain))
+      (CopyFileToDir (File. hhhHome "etc/app/pipe.clj")
+                     (mkcljd appDir appDomain))
 
       (Mkdirs (File. appDir "src/main/resources"))
 
       (doseq [s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
-        (FileUtils/copyFileToDirectory (File. hhhHome (str "etc/app/" s))
-                                       appDir))
+        (CopyFileToDir (File. hhhHome (str "etc/app/" s)) appDir))
 
       (var-set fp (File. mfDir "MANIFEST.MF"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPKEY@@" (NewUUid))
-                                       (StringUtils/replace "@@APPMAINCLASS@@"
-                                                            (str appDomain ".core.MyAppMain")))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPKEY@@" (NewUUid))
+                        (.replace "@@APPMAINCLASS@@"
+                                             (str appDomain ".core.MyAppMain"))))
 
       (var-set fp (File. appDir "pom.xml"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-                                       (StringUtils/replace "@@APPID@@" appId))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPDOMAIN@@" appDomain)
+                        (.replace "@@APPID@@" appId)))
 
       (var-set fp (File. appDir "ivy.xml"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain)
-                                       (StringUtils/replace "@@APPID@@" appId))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPDOMAIN@@" appDomain)
+                        (.replace "@@APPID@@" appId)))
 
       (var-set fp (File. appDir "build.xs"))
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@WEBCSSLANG@@" *SKARO-WEBCSSLANG*)
-                                       (StringUtils/replace "@@WEBLANG@@" *SKARO-WEBLANG*)
-                                       (StringUtils/replace "@@APPTYPE@@" flavor)
-                                       (StringUtils/replace "@@SKAROHOME@@" (.getCanonicalPath hhhHome)))
-                                   "utf-8")
-  )))
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@WEBCSSLANG@@" ^String *SKARO-WEBCSSLANG*)
+                        (.replace "@@WEBLANG@@" ^String *SKARO-WEBLANG*)
+                        (.replace "@@APPTYPE@@" flavor)
+                        (.replace "@@SKAROHOME@@" (NiceFPath hhhHome)))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -313,21 +309,22 @@
       (Mkdirs (File. appDir (str "src/web/main/" s)))
       (Mkdirs (File. appDir (str "public/" s))))
 
-    (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/pipe.clj")
-                                   (mkcljd appDir appDomain))
-    (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/cljsc.clj")
-                                   (File. appDir DN_CONF))
-    (FileUtils/copyFileToDirectory (File. hhhHome "etc/web/favicon.png")
-                                   (File. appDir "src/web/main/media"))
+    (CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
+                   (mkcljd appDir appDomain))
+    (CopyFileToDir (File. hhhHome "etc/web/cljsc.clj")
+                   (File. appDir DN_CONF))
+    (CopyFileToDir (File. hhhHome "etc/web/favicon.png")
+                   (File. appDir "src/web/main/media"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
     (Mkdirs (File. appDir "src/test/js"))
+
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)
             dd (File. hhhHome (str "etc/weblibs/" dn))
             td (File. wlib dn) ]
         (when (.isDirectory dd)
-          (FileUtils/copyDirectoryToDirectory dd wlib)
+          (CopyDir dd wlib)
           (when-not (:skip df)
             (doseq [^String f (:js df) ]
               (-> buf
@@ -335,13 +332,8 @@
                   (.append (str "\n\n/* @@@" f "@@@ */"))
                   (.append "\n\n")))))))
 
-    (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.js")
-                                 (.toString buf)
-                                 "utf-8")
-
-    (FileUtils/writeStringToFile (File. appDir "public/c/webcommon.css")
-                                 ""
-                                 "utf-8")
+    (WriteOneFile (File. appDir "public/c/webcommon.css") "")
+    (WriteOneFile (File. appDir "public/c/webcommon.js") buf)
 
   ))
 
@@ -356,10 +348,10 @@
     (create-web-common hhhHome appId appDomain)
     (doseq [s [ "classes" "lib" ]]
       (Mkdirs (File. appDir (str "WEB-INF/" s))))
-    (FileUtils/copyFile (File. hhhHome "etc/jetty/jetty.conf")
-                        (File. appDir CFG_ENV_CF))
-    (FileUtils/copyFileToDirectory (File. hhhHome "etc/jetty/web.xml")
-                                   (File. appDir "WEB-INF"))
+    (CopyFile (File. hhhHome "etc/jetty/jetty.conf")
+              (File. appDir CFG_ENV_CF))
+    (CopyFile (File. hhhHome "etc/jetty/web.xml")
+              (File. appDir "WEB-INF"))
     (post-create-app hhhHome appId appDomain)
   ))
 
@@ -376,10 +368,10 @@
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
       (copy-files (File. hhhHome "etc/netty") cfd DN_CONF)
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/static-routes.conf")
-                                     cfd)
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/routes.conf")
-                                     cfd)
+      (CopyFileToDir (File. hhhHome "etc/netty/static-routes.conf")
+                     cfd)
+      (CopyFileToDir (File. hhhHome "etc/netty/routes.conf")
+                     cfd)
 
       (doseq [s ["errors" "htmls"]]
         (Mkdirs (File. appDir (str "pages/" s))))
@@ -388,21 +380,20 @@
         (copy-files (File. appDir "pages/errors") ".err")
         (copy-files (File. appDir "pages/htmls") "ftl"))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/index.html")
-                                     (File. appDir "src/web/main/pages"))
+      (CopyFileToDir (File. hhhHome "etc/netty/index.html")
+                     (File. appDir "src/web/main/pages"))
 
-      (var-set fp (File. appDir "conf/routes.conf"))
+      (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
 
-      (FileUtils/writeStringToFile ^File @fp
-                                   (-> (ReadOneFile @fp)
-                                       (StringUtils/replace "@@APPDOMAIN@@" appDomain))
-                                   "utf-8")
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@APPDOMAIN@@" appDomain)))
 
-      (FileUtils/copyFileToDirectory (File. hhhHome "etc/netty/pipe.clj")
-                                     (mkcljd appDir appDomain))
+      (CopyFileToDir (File. hhhHome "etc/netty/pipe.clj")
+                     (mkcljd appDir appDomain))
 
-      (post-create-app hhhHome appId appDomain)
-  )))
+      (post-create-app hhhHome appId appDomain))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

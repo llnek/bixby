@@ -77,16 +77,16 @@
         session (Session/getInstance props nil)
         ps (.getProviders session) ]
     (with-local-vars [proto sn sun nil]
-      (var-set sun (some (fn [^Provider x]
-                           (if (= pkey (.getClassName x))
-                             x
-                             nil))
+      (var-set sun (some #(if (= pkey (.getClassName ^Provider %))
+                             %
+                             nil)
                          (seq ps)))
       (when (nil? @sun)
         (ThrowIOE (str "Failed to find store: " pkey) ))
       (when (hgl? demo)
-        (var-set sun (Provider. Provider$Type/STORE mock demo "test" "1.0.0"))
-        (log/debug "using demo store " mock " !!!")
+        (var-set sun (Provider. Provider$Type/STORE
+                                mock demo "test" "1.0.0"))
+        (log/debug "Using demo store " mock " !!!")
         (var-set proto mock) )
 
       (.setProvider session @sun)
@@ -161,10 +161,11 @@
                                    nil))
       (.setAttr! co :store s)
       (.setAttr! co :folder (.getDefaultFolder s)))
-    (when-let [ ^Folder fd (.getAttr co :folder) ]
+    (when-let [^Folder fd (.getAttr co :folder) ]
       (.setAttr! co :folder (.getFolder fd "INBOX")))
     (let [^Folder fd (.getAttr co :folder) ]
-      (when (or (nil? fd) (not (.exists fd)))
+      (when (or (nil? fd)
+                (not (.exists fd)))
         (ThrowIOE "cannot find inbox.")) )
   ))
 
@@ -192,7 +193,8 @@
 
   (let [^Folder fd (.getAttr co :folder)
         ^Store s (.getAttr co :store) ]
-    (when (and (notnil? fd) (not (.isOpen fd)))
+    (when (and (notnil? fd)
+               (not (.isOpen fd)))
       (.open fd Folder/READ_WRITE) )
     (when (.isOpen fd)
       (let [cnt (.getMessageCount fd) ]
@@ -224,7 +226,7 @@
 
   (let [intv (:intervalSecs cfg)
         port (:port cfg)
-        pkey (:hhh.pkey cfg)
+        pkey (:app.pkey cfg)
         pwd (:passwd cfg) ]
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy (assoc! @cpy :intervalMillis

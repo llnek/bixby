@@ -83,7 +83,8 @@
    ^File file
    ^HTTPResult res ]
 
-  (let [maxAge (.getAttr src :cacheMaxAgeSecs)
+  (let [cfg (.getAttr src :emcfg)
+        maxAge (:cacheMaxAgeSecs cfg)
         lastTm (.lastModified file)
         eTag  (str "\""  lastTm  "-" (.hashCode file)  "\"") ]
     (if (isModified eTag lastTm info)
@@ -93,7 +94,7 @@
         (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
     (.setHeader res "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (.getAttr src :useETag) (.setHeader res "etag" eTag))
+    (when (:useETag cfg) (.setHeader res "etag" eTag))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,7 +143,7 @@
           (var-set crap true)
           (.replyResult evt)))
       (catch Throwable e#
-        (log/error "failed to get static resource "
+        (log/error "Failed to get static resource "
                    (nsb (:uri2 info))
                    e#)
         (when-not @crap
@@ -192,7 +193,8 @@
 
   (with-local-vars [rsp (NettyFW/makeHttpReply code) bits nil wf nil]
     (try
-      (let [h (.getAttr src :errorHandler)
+      (let [cfg (.getAttr src :emcfg)
+            h (:errorHandler cfg)
             ^HTTPErrorHandler
             cb (if (hgl? h) (MakeObj h) nil)
             ^WebContent
@@ -203,10 +205,13 @@
           (HttpHeaders/setHeader ^HttpMessage @rsp "content-type" (.contentType rc))
           (var-set bits (.body rc)))
         (HttpHeaders/setContentLength @rsp
-                                      (if (nil? @bits) 0 (alength ^bytes @bits)))
+                                      (if (nil? @bits)
+                                        0
+                                        (alength ^bytes @bits)))
         (var-set wf (.writeAndFlush ch @rsp))
         (when-not (nil? @bits)
-          (var-set wf (.writeAndFlush ch (Unpooled/wrappedBuffer ^bytes @bits))))
+          (var-set wf (.writeAndFlush ch
+                                      (Unpooled/wrappedBuffer ^bytes @bits))))
         (NettyFW/closeCF @wf false))
       (catch Throwable e#
         (NettyFW/closeChannel ch)))
@@ -260,13 +265,14 @@
     (catch AuthError e#
       (ServeError src ch 403)))
   (let [pms (.collect ri mc)
+        cfg (.getAttr src :emcfg)
         options {:router (.getHandler ri)
                  :params (merge {} pms)
                  :template (.getTemplate ri) } ]
     (let [^cmzlabclj.tardis.io.core.EmitterAPI co src
           ^cmzlabclj.tardis.io.core.WaitEventHolder
           w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-      (.timeoutMillis w (.getAttr src :waitMillis))
+      (.timeoutMillis w (:waitMillis cfg))
       (.hold co w)
       (.dispatch co evt options))
   ))

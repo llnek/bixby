@@ -87,8 +87,8 @@
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
-              cfg {"method" (NettyFW/getMethod req)
-                   "uri" (NettyFW/getUriPath req)}
+              cfg {:method (NettyFW/getMethod req)
+                   :uri (NettyFW/getUriPath req)}
               [r1 r2 r3 r4]
               (.crack ck cfg) ]
           (-> (.attr ctx GOOD_FLAG)(.remove))
@@ -105,7 +105,7 @@
 
             :else
             (do
-              (log/debug "failed to match uri: " (.getUri req))
+              (log/debug "Failed to match uri: " (.getUri req))
               (NettyFW/replyXXX ch 404 false))))
 
         (instance? HttpResponse msg)
@@ -120,7 +120,7 @@
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "skipping unwanted msg")))
+            (log/debug "Skipping unwanted msg")))
       ))
   ))
 
@@ -144,14 +144,14 @@
         (cond
           (= r1 true)
           (let [^HTTPEvent evt (IOESReifyEvent co ch msg r2) ]
-            (log/debug "matched one route: " (.getPath r2)
+            (log/debug "Matched one route: " (.getPath r2)
                        " , and static = " (.isStatic? r2))
             (if (.isStatic? r2)
               (ServeStatic r2 co r3 ch info evt)
               (ServeRoute r2 co r3 ch evt)))
           :else
           (do
-            (log/debug "failed to match uri: " (:uri info))
+            (log/debug "Failed to match uri: " (:uri info))
             (ServeError co ch 404)) )))
   ))
 
@@ -174,7 +174,7 @@
               (.close))
           IdleState/WRITER_IDLE
           nil ;; (.writeAndFlush ch (PingMessage.))
-          (log/warn ""))))
+          (log/warn "Not sure what is going on here?"))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
