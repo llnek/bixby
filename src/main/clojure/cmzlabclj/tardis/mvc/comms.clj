@@ -234,15 +234,16 @@
         mpt (nsb (.getf ri :mountPoint))
         ps (NiceFPath (File. appDir DN_PUBLIC))
         gc (.groupCount mc) ]
-    (with-local-vars [mp (StringUtils/replace mpt "${app.dir}" (NiceFPath appDir)) ]
+    (with-local-vars [mp (.replace mpt "${app.dir}" (NiceFPath appDir)) ]
       (if (> gc 1)
         (doseq [i (range 1 gc) ]
           (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
       (var-set mp (NiceFPath (File. ^String @mp)))
       (let [^cmzlabclj.tardis.io.core.EmitterAPI co src
+            cfg (.getAttr ^cmzlabclj.tardis.core.sys.Element src :emcfg)
             ^cmzlabclj.tardis.io.core.WaitEventHolder
             w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-        (.timeoutMillis w (.getAttr ^cmzlabclj.tardis.core.sys.Element src :waitMillis))
+        (.timeoutMillis w (:waitMillis cfg))
         (.hold co w)
         (.dispatch co evt {:router "cmzlabclj.tardis.mvc.statics.StaticAssetHandler"
                            :info info

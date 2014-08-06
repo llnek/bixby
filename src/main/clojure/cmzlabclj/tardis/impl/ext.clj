@@ -39,11 +39,11 @@
          :only [MubleAPI MakeMMap NiceFPath nbf ConvLong Bytesify] ]
         [cmzlabclj.nucleus.util.scheduler :only [MakeScheduler] ]
         [cmzlabclj.nucleus.util.process :only [Coroutine] ]
-        [cmzlabclj.nucleus.util.core :only [LoadJavaProps] ]
+        [cmzlabclj.nucleus.util.core :only [LoadJavaProps SubsVar] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
         [cmzlabclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
         [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
-        [cmzlabclj.nucleus.util.files :only [ReadEdn WriteOneFile] ]
+        [cmzlabclj.nucleus.util.files :only [ReadEdn ReadOneFile WriteOneFile] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify CreateRandomString] ]
         [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
         [cmzlabclj.nucleus.dbio.core
@@ -468,6 +468,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- parseConfile ""
+
+  [^File appDir ^String conf]
+
+  (-> (ReadOneFile (File. appDir conf))
+      (SubsVar)
+      (.replace "${appdir}" (NiceFPath appDir))
+      (ReadEdn)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod CompConfigure :czc.tardis.ext/Container
 
   [^cmzlabclj.tardis.core.sys.Element co props]
@@ -476,8 +488,8 @@
         ^File appDir (K_APPDIR props)
         cfgDir (File. appDir DN_CONF)
         mf (LoadJavaProps (File. appDir MN_FILE))
-        envConf (ReadEdn (File. appDir CFG_ENV_CF))
-        appConf (ReadEdn (File. appDir CFG_APP_CF)) ]
+        envConf (parseConfile appDir CFG_ENV_CF)
+        appConf (parseConfile appDir CFG_APP_CF) ]
     ;; make registry to store services
     (SynthesizeComponent srg {} )
     ;; store references to key attributes

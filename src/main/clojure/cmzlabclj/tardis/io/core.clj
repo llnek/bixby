@@ -111,9 +111,12 @@
 ;;
 (defmethod IOESStarted :default
 
-  [co]
+  [^cmzlabclj.tardis.core.sys.Element co]
 
-  (log/info "Emitter " (:typeid (meta co)) " started - OK"))
+  (let [cfg (.getAttr co :emcfg)]
+    (log/info "Emitter config:\n" (pr-str cfg))
+    (log/info "Emitter " (:typeid (meta co)) " started - OK")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
