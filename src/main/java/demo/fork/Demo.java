@@ -13,6 +13,7 @@
 
 package demo.fork;
 
+import static com.zotohlab.wflow.PTask.*;
 import static java.lang.System.out;
 import com.zotohlab.wflow.*;
 import com.zotohlab.wflow.core.Job;
@@ -35,56 +36,54 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
 
-    return PTask.wrap( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
-        out.println("I am the *Parent*");
-        out.println("I am programmed to fork off a parallel child process, and continue my business.");
+    Activity a0= PTaskWrapper( (cur,job,arg) -> {
+      out.println("I am the *Parent*");
+      out.println("I am programmed to fork off a parallel child process, " +
+        "and continue my business.");
+      return null;
+    });
+    Activity a1= Split.fork( PTaskWrapper( (cur,job,arg) -> {
+      out.println("*Child*: will create my own child (blocking)");
+      job.setv("rhs", 60);
+      job.setv("lhs", 5);
+
+      Split s1= Split.applyAnd(PTaskWrapper( (c,j,a) -> {
+        out.println("*Child*: the result for (5 * 60) according to my own child is = "  +
+                    j.getv("result"));
+        out.println("*Child*: done.");
         return null;
-      }
-    }).chain(Split.wrap().split(new PTask(new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
-        out.println("*Child*: will create my own child (blocking)");
-        job.setv("rhs", 60);
-        job.setv("lhs", 5);
-        Activity p2= new PTask( new Work() {
-          public Object perform(FlowPoint cur, Job job, Object arg) {
-            System.out.println("*Child*: the result for (5 * 60) according to my own child is = "  +
-                        job.getv("result"));
-            System.out.println("*Child*: done.");
-            return null;
+      }));
+
+      // split & wait
+      return s1.include(PTaskWrapper( (c, j, a) -> {
+        out.println("*Child->child*: taking some time to do this task... ( ~ 6secs)");
+        for (int i= 1; i < 7; ++i) {
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
           }
-        });
-                  // split & wait
-        return new Split( new And(p2)).addSplit(new PTask(new Work() {
-          public Object perform(FlowPoint cur, Job job, Object arg) {
-            System.out.println("*Child->child*: taking some time to do this task... ( ~ 6secs)");
-            for (int i= 1; i < 7; ++i) {
-              try {
-                Thread.sleep(1000);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-              System.out.print("...");
-            }
-            System.out.println("");
-            System.out.println("*Child->child*: returning result back to *Child*.");
-            job.setv("result",  (Integer) job.getv("rhs") * (Integer) job.getv("lhs"));
-            System.out.println("*Child->child*: done.");
-            return null;
-          }
-        }));
-      }
-    }) )).chain(new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
-        System.out.println("*Parent*: after fork, continue to calculate fib(6)...");
-        StringBuilder b=new StringBuilder("*Parent*: ");
-        for (int i=1; i < 7; ++i) {
-          b.append( fib(i) + " ");
+          out.print("...");
         }
-        System.out.println(b.toString()  + "\n" + "*Parent*: done.");
+        out.println("");
+        out.println("*Child->child*: returning result back to *Child*.");
+        job.setv("result",  (Integer) j.getv("rhs") * (Integer) j.getv("lhs"));
+        out.println("*Child->child*: done.");
         return null;
-      }
+      }));
     }));
+
+    Activity a2= PTaskWrapper( (cur,job,arg) -> {
+      out.println("*Parent*: after fork, continue to calculate fib(6)...");
+      StringBuilder b=new StringBuilder("*Parent*: ");
+      for (int i=1; i < 7; ++i) {
+        b.append( fib(i) + " ");
+      }
+      out.println(b.toString()  + "\n" + "*Parent*: done.");
+      return null;
+    });
+
+    return a0.chain(a1).chain(a2);
   }
 
   public void onStop(Pipeline p) {}

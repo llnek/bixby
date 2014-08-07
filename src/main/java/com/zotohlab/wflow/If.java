@@ -19,6 +19,10 @@ package com.zotohlab.wflow;
  */
 public class If extends Conditional {
 
+  public static If apply(BoolExpr expr,Activity thenCode, Activity elseCode) {
+    return new If(expr,thenCode,elseCode);
+  }
+
   private Activity _thenCode;
   private Activity _elseCode;
 

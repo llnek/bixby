@@ -186,7 +186,7 @@
 
         (container [this] (.parent this))
         (getConfig [_]
-          (let [cfg (.getAttr impl :emcfg)]
+          (let [cfg (.getf impl :emcfg)]
             (ConvToJava cfg)))
 
         Disposable

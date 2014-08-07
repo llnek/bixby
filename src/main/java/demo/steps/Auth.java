@@ -14,47 +14,43 @@
 
 package demo.steps;
 
-
+import static com.zotohlab.wflow.PTask.*;
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
+import static java.lang.System.out;
 
 public enum Auth {
 ;
 
   public static Activity getAuthMtd(String t) {
-      if (t.equals("facebook")) {  return new PTask(facebook_login); }
-      if (t.equals("google+")) { return new PTask(gplus_login); }
-      if (t.equals("openid")) {  return new PTask(openid_login); }
-      return new PTask(db_login);
+
+    if (t.equals("facebook")) {
+      return PTaskWrapper( (p,j,a) -> {
+        out.println("-> using facebook to login.\n");
+        return null;
+      });
+    }
+
+    if (t.equals("google+")) {
+      return PTaskWrapper( (p,j,a) -> {
+        out.println("-> using google+ to login.\n");
+        return null;
+      });
+    }
+
+    if (t.equals("openid")) {
+      return PTaskWrapper( (p,j,a) -> {
+        out.println("-> using open-id to login.\n");
+        return null;
+      });
+    }
+
+    return PTaskWrapper( (p,j,a) -> {
+      out.println("-> using internal db to login.\n");
+      return null;
+    });
+
   }
-
-  private static Work facebook_login = new Work() {
-    public Object perform(FlowPoint p, Job job, Object arg) {
-      System.out.println("-> using facebook to login.\n");
-      return null;
-    }
-  };
-
-  private static Work gplus_login = new Work() {
-    public Object perform(FlowPoint p, Job job, Object arg) {
-      System.out.println("-> using google+ to login.\n");
-      return null;
-    }
-  };
-
-  private static Work openid_login = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
-      System.out.println("-> using open-id to login.\n");
-      return null;
-    }
-  };
-
-  private static Work db_login = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
-      System.out.println("-> using internal db to login.\n");
-      return null;
-    }
-  };
 
 }
 

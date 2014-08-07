@@ -26,7 +26,8 @@ public class For extends While {
   private ForLoopCountExpr _loopCntr;
 
   public For(ForLoopCountExpr loopCount, Activity body) {
-    super(body);
+    // put a dummy bool-expr, not used.
+    super((j) -> { return false; }, body);
     _loopCntr = loopCount;
   }
 

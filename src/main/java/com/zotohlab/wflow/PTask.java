@@ -21,7 +21,7 @@ import com.zotohlab.wflow.core.Job;
  */
 public class PTask extends Activity {
 
-  public static PTask wrap(Work w) {
+  public static PTask PTaskWrapper(Work w) {
     return new PTask(w);
   }
 

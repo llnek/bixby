@@ -18,6 +18,7 @@ import com.zotohlab.wflow.core.Job;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface ForLoopCountExpr {
 
   public int getCount(Job job);

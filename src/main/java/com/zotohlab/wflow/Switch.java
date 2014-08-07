@@ -22,6 +22,10 @@ import java.util.Map;
  */
 public class Switch extends Activity {
 
+  public static Switch apply(SwitchChoiceExpr e) {
+    return new Switch(e);
+  }
+
   public Switch(SwitchChoiceExpr expr) {
     _expr= expr;
   }
@@ -35,7 +39,7 @@ public class Switch extends Activity {
     return this;
   }
 
-  public Switch withDef(Activity a) {
+  public Switch withDft(Activity a) {
     _def=a;
     return this;
   }

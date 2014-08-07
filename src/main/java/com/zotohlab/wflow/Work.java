@@ -19,6 +19,7 @@ import com.zotohlab.wflow.core.Job;
  * @author kenl
  *
  */
+@FunctionalInterface
 public interface Work {
 
   public Object perform(FlowPoint cur, Job job, Object arg);

@@ -126,7 +126,7 @@
     <dependency org="org.codehaus.groovy" name="groovy-all" rev="2.3.6"  conf="libjar->default"/>
     <dependency org="org.scala-lang" name="scala-library" rev="2.11.2"  conf="libjar->default"/>
     <dependency org="org.scala-lang" name="scala-compiler" rev="2.11.2"  conf="libjar->default"/>
-    <dependency org="com.sun.tools" name="tools" rev="1.7.0"  conf="libjar->default"/>
+    <dependency org="com.sun.tools" name="tools" rev="1.8.0"  conf="libjar->default"/>
     <dependency org="javassist" name="javassist" rev="3.12.1.GA"  conf="libjar->default"/>
 
     <!-- templates -->

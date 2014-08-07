@@ -22,11 +22,23 @@ import com.zotohlab.wflow.core.Job;
  */
 public class Split extends Composite {
 
-  public static Split wrap(Join j) {
+  public static Split fork(Activity a) {
+    return new Split().include(a);
+  }
+
+  public static Split applyAnd(Activity andBody)  {
+    return new Split(new And(andBody));
+  }
+
+  public static Split applyOr(Activity orBody)  {
+    return new Split(new Or(orBody));
+  }
+
+  public static Split apply(Join j) {
     return new Split(j);
   }
 
-  public static Split wrap() {
+  public static Split apply() {
     return new Split();
   }
 
@@ -40,7 +52,14 @@ public class Split extends Composite {
     this(null);
   }
 
-  public Split split(Activity a) {
+  public Split includeMany(Activity... acts) {
+    for (Activity a : acts) {
+      add(a);
+    }
+    return this;
+  }
+
+  public Split include(Activity a) {
     add(a);
     return this;
   }

@@ -21,19 +21,23 @@ import com.zotohlab.wflow.core.Job;
  */
 public class While extends Conditional {
 
+  public static While apply(BoolExpr b, Activity body) {
+    return new While(b,body);
+  }
+
   private Activity _body;
 
-  public While(Activity b,BoolExpr expr) {
+  public While(BoolExpr expr, Activity b) {
     super(expr);
     _body=b;
   }
 
-  public While(Activity body) {
-    this(body, new BoolExpr () {
-      public boolean evaluate(Job j) { return false; }
-    });
-  }
-
+//  public While(Activity body) {
+//    this(body, new BoolExpr () {
+//      public boolean evaluate(Job j) { return false; }
+//    });
+//  }
+//
   public FlowPoint reifyPoint(FlowPoint cur) { return new WhilePoint(cur, this); }
 
   public void realize(FlowPoint fp) {

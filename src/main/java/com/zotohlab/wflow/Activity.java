@@ -28,6 +28,7 @@ public abstract class Activity {
   private static Logger _log = LoggerFactory.getLogger(Activity.class);
   public Logger tlog() { return _log; }
 
+
   /**
    * Connect up another activity to make up a chain.
    *

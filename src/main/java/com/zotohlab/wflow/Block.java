@@ -21,11 +21,22 @@ package com.zotohlab.wflow;
  */
 public class Block extends Composite {
 
+  public static Block apply(Activity a) {
+    return new Block(a);
+  }
+
   public Block(Activity a) {
     add(a);
   }
 
   public Block() {}
+
+  public Activity chainMany(Activity... acts) {
+    for (Activity a: acts) {
+      add(a);
+    }
+    return this;
+  }
 
   public Activity chain(Activity a) {
     add(a);

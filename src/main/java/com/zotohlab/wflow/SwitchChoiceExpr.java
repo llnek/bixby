@@ -18,6 +18,7 @@ import com.zotohlab.wflow.core.Job;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface SwitchChoiceExpr {
 
   public Object getChoice(Job job);
