@@ -160,13 +160,14 @@
         (update [_  evt options]
           (let [^cmzlabclj.tardis.core.sys.Element
                 src (.emitter ^IOEvent evt)
-                c0 (.getAttr src :router)
+                cfg (.getAttr src :emcfg)
+                c0 (:handler cfg)
                 c1 (:router options)
                 job (make-job parObj evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
-            (log/debug "IO router = " c0)
+            (log/debug "IO handler = " c0)
             (try
               (let [p (Pipeline. job (if (hgl? c1) c1 c0)) ]
                 (.setv job EV_OPTS options)
@@ -200,7 +201,7 @@
   [^Identifiable bk container nm cfg]
 
   (let [pkey (.getAppKey ^Container container)
-        hid (:router cfg)
+        hid (:handler cfg)
         eid (.id bk)
         ^cmzlabclj.tardis.core.sys.Element
         obj (MakeEmitter container eid nm)
