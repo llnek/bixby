@@ -19,8 +19,6 @@ import java.io.*;
 import java.util.Date;
 
 import static com.zotohlab.frwk.util.CoreUtils.*;
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
@@ -36,7 +34,7 @@ public class DemoClient implements PipelineDelegate {
 
   private String _textMsg= "Hello World, time is ${TS} !";
 
-  public Activity onError(Throwable e, FlowPoint f) { return null; }
+  public Activity onError(Throwable e, FlowNode f) { return null; }
 
   public void onStop(Pipeline p) {
   }
@@ -45,7 +43,7 @@ public class DemoClient implements PipelineDelegate {
     // opens a socket and write something back to parent process
 
     return new Delay(2000).chain( new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         Service tcp= (Service) pipe.container().getService("default-sample");
         String s= StringUtils.replace(_textMsg,"${TS}", new Date().toString() );
         System.out.println("TCP Client: about to send message" + s );

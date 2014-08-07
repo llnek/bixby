@@ -11,53 +11,58 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-
 package com.zotohlab.wflow;
 
-import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.core.Job;
-import com.zotohlab.frwk.server.ServerLike;
 
 /**
  * @author kenl
  *
  */
-public class SplitPoint extends CompositePoint {
+public class WhileNode extends ConditionalNode {
 
-  public SplitPoint(FlowPoint s, Split a) {
+  public WhileNode(FlowNode s, While a) {
     super(s,a);
   }
 
-  private boolean _fallThru=false;
+  private FlowNode _body = null;
 
-  public FlowPoint eval(Job j) {
-    ServerLike x = flow().container();
-    Schedulable core = x.core();
+  public FlowNode eval(Job j) {
     Object c= getClosureArg();
-    FlowPoint rc= null;
+    FlowNode f,rc = this;
 
-    while ( !_inner.isEmpty() ) {
-      rc = _inner.next();
-      rc.attachClosureArg(c);
-      core.run(rc);
+    if ( ! test(j)) {
+      //tlog().debug("WhileNode: test-condition == false")
+      rc= nextPoint();
+      if (rc != null) { rc.attachClosureArg(c); }
+      realize();
+    } else {
+      //tlog().debug("WhileNode: looping - eval body")
+      _body.attachClosureArg(c);
+      f= _body.eval(j);
+      if (f instanceof AsyncWaitNode) {
+        ((AsyncWaitNode) f).forceNext(rc);
+        rc=f;
+      }
+      else
+      if (f instanceof DelayNode) {
+        ((DelayNode) f).forceNext(rc);
+        rc=f;
+      }
+      else
+      if (f != null) {
+        if (f == this) {} else { _body = f; }
+      }
     }
 
-    realize();
-
-    // should we also pass the closure to the next step ? not for now
-    return _fallThru ? nextPoint() : null;
+    return rc;
   }
 
-  public SplitPoint withBranches(Iter w) {
-    _inner=w;
-    return this;
-  }
-
-  public SplitPoint fallThrough() {
-    _fallThru=true;
+  public WhileNode withBody(FlowNode b) {
+    _body=b;
     return this;
   }
 
 }
+
 

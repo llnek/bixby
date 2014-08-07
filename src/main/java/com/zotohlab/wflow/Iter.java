@@ -24,13 +24,13 @@ import java.util.ListIterator;
 public class Iter {
 
   private List<Activity> _acts= new ArrayList<Activity>();
-  private FlowPoint _outer;
+  private FlowNode _outer;
 
-  public Iter(FlowPoint outer) {
+  public Iter(FlowNode outer) {
     _outer= outer;
   }
 
-  public Iter(FlowPoint c, ListIterator<Activity> a) {
+  public Iter(FlowNode c, ListIterator<Activity> a) {
     this(c);
     while (a.hasNext()) {
       _acts.add(a.next());
@@ -39,7 +39,7 @@ public class Iter {
 
   public boolean isEmpty() { return  _acts.size() == 0; }
 
-  public FlowPoint next() {
+  public FlowNode next() {
     return (_acts.size() > 0) ? _acts.remove(0).reify(_outer) : null;
   }
 

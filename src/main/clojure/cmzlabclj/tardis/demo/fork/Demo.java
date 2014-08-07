@@ -34,18 +34,18 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         System.out.println("I am the *Parent*");
         System.out.println("I am programmed to fork off a parallel child process, and continue my business.");
         return null;
       }
     }).chain( new Split().addSplit(new PTask(new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         System.out.println("*Child*: will create my own child (blocking)");
         job.setv("rhs", 60);
         job.setv("lhs", 5);
         Activity p2= new PTask( new Work() {
-          public Object perform(FlowPoint cur, Job job, Object arg) {
+          public Object perform(FlowNode cur, Job job, Object arg) {
             System.out.println("*Child*: the result for (5 * 60) according to my own child is = "  +
                         job.getv("result"));
             System.out.println("*Child*: done.");
@@ -54,7 +54,7 @@ public class Demo implements PipelineDelegate {
         });
                   // split & wait
         return new Split( new And(p2)).addSplit(new PTask(new Work() {
-          public Object perform(FlowPoint cur, Job job, Object arg) {
+          public Object perform(FlowNode cur, Job job, Object arg) {
             System.out.println("*Child->child*: taking some time to do this task... ( ~ 6secs)");
             for (int i= 1; i < 7; ++i) {
               try {
@@ -73,7 +73,7 @@ public class Demo implements PipelineDelegate {
         }));
       }
     }) )).chain(new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         System.out.println("*Parent*: after fork, continue to calculate fib(6)...");
         StringBuilder b=new StringBuilder("*Parent*: ");
         for (int i=1; i < 7; ++i) {
@@ -86,7 +86,7 @@ public class Demo implements PipelineDelegate {
   }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
   private int fib(int n) {
     return (n <3) ? 1 : fib(n-2) + fib(n-1);

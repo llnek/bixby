@@ -13,8 +13,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
-
 /**
  * @author kenl
  *
@@ -31,10 +29,10 @@ public class PTask extends Activity {
     _work=w;
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new PTaskPoint(cur, this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new PTaskNode(cur, this); }
 
-  public void realize(FlowPoint fp) {
-    PTaskPoint s= (PTaskPoint) fp;
+  public void realize(FlowNode fp) {
+    PTaskNode s= (PTaskNode) fp;
     s.withWork(_work);
   }
 

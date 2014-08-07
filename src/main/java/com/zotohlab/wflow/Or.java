@@ -24,10 +24,10 @@ public class Or extends Join {
     super(b);
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new OrPoint(cur, this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new OrNode(cur, this); }
 
-  public void realize(FlowPoint fp) {
-    OrPoint  s= (OrPoint) fp;
+  public void realize(FlowNode fp) {
+    OrNode s= (OrNode) fp;
     if (_body != null) {
       s.withBody( _body.reify(s.nextPoint() ));
     }

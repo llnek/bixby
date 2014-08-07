@@ -14,13 +14,7 @@
 
 package demo.mvc;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.gallifrey.io.*;
-
-import com.zotohlab.frwk.server.Service;
 
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
@@ -44,7 +38,7 @@ public class Demo implements PipelineDelegate {
   }
 
   private Work task1= new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
 
       HTTPEvent ev= (HTTPEvent) job.event();
       HTTPResult res= ev.getResultObj();
@@ -71,7 +65,7 @@ public class Demo implements PipelineDelegate {
   public Activity getStartActivity(Pipeline p) { return  new PTask(task1); }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
 }
 

@@ -13,36 +13,25 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
+import java.util.ListIterator;
 
 /**
  * @author kenl
  *
  */
-public class BlockPoint extends CompositePoint {
+public abstract class CompositeNode extends FlowNode {
 
-  public BlockPoint (FlowPoint s, Block a) {
-    super(s,a);
+  protected CompositeNode(FlowNode cur, Activity a) {
+    super(cur,a);
   }
 
-  public FlowPoint eval(Job j) {
-    Object c= getClosureArg();   // data pass back from previous async call?
-    FlowPoint rc= null;
+  protected Iter _inner = null;
 
-    if ( ! _inner.isEmpty()) {
-      //tlog.debug("BlockPoint: {} element(s.)",  _inner.size )
-      FlowPoint n=_inner.next();
-      n.attachClosureArg(c);
-      rc = n.eval(j);
-    } else {
-      //tlog.debug("BlockPoint: no more elements.")
-      rc=nextPoint();
-      if (rc != null) {  rc.attachClosureArg(c); }
-      realize();
-    }
-
-    return rc;
+  public void reifyInner( ListIterator<Activity> children) {
+    _inner=new Iter(this,children);
   }
+
+  public Iter inner() { return _inner; }
 
 }
 

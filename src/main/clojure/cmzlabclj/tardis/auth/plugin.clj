@@ -13,6 +13,7 @@
       :author "kenl" }
 
   cmzlabclj.tardis.auth.plugin
+  (:import [com.zotohlab.wflow FlowNode])
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr]

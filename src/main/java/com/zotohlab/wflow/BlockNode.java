@@ -13,16 +13,36 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.wflow.core.Job;
+
 /**
  * @author kenl
  *
  */
-public class ForPoint extends WhilePoint {
+public class BlockNode extends CompositeNode {
 
-  public ForPoint(FlowPoint s, For a) {
+  public BlockNode(FlowNode s, Block a) {
     super(s,a);
   }
 
-}
+  public FlowNode eval(Job j) {
+    Object c= getClosureArg();   // data pass back from previous async call?
+    FlowNode rc= null;
 
+    if ( ! _inner.isEmpty()) {
+      //tlog.debug("BlockNode: {} element(s.)",  _inner.size )
+      FlowNode n=_inner.next();
+      n.attachClosureArg(c);
+      rc = n.eval(j);
+    } else {
+      //tlog.debug("BlockNode: no more elements.")
+      rc=nextPoint();
+      if (rc != null) {  rc.attachClosureArg(c); }
+      realize();
+    }
+
+    return rc;
+  }
+
+}
 

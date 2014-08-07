@@ -16,7 +16,6 @@ package demo.fork;
 import static com.zotohlab.wflow.PTask.*;
 import static java.lang.System.out;
 import com.zotohlab.wflow.*;
-import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl
@@ -87,7 +86,7 @@ public class Demo implements PipelineDelegate {
   }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
   private int fib(int n) {
     return (n <3) ? 1 : fib(n-2) + fib(n-1);

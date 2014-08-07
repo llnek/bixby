@@ -31,10 +31,10 @@ public class For extends While {
     _loopCntr = loopCount;
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new ForPoint(cur,this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new ForNode(cur,this); }
 
-  public void realize(FlowPoint fp) {
-    ForPoint p= (ForPoint) fp;
+  public void realize(FlowNode fp) {
+    ForNode p= (ForNode) fp;
     super.realize(fp);
     p.withTest( new ForLoopExpr(p, _loopCntr));
   }
@@ -47,13 +47,13 @@ public class For extends While {
  */
 class ForLoopExpr implements BoolExpr {
 
-  public ForLoopExpr(FlowPoint pt, ForLoopCountExpr cnt) {
+  public ForLoopExpr(FlowNode pt, ForLoopCountExpr cnt) {
     _point = pt;
     _cnt= cnt;
   }
 
   private ForLoopCountExpr _cnt;
-  private FlowPoint _point;
+  private FlowNode _point;
 
   private boolean _started=false;
   private int _loop=0;

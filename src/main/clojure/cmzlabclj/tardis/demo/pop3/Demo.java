@@ -20,8 +20,6 @@ import javax.mail.Message;
 import javax.mail.Multipart;
 import javax.mail.internet.MimeMessage;
 
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.gallifrey.io.EmailEvent;
 
 
@@ -39,7 +37,7 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask(new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         EmailEvent ev= (EmailEvent) job.event();
         MimeMessage msg= ev.getMsg();
         System.out.println("######################## (" + count() + ")" );
@@ -58,7 +56,7 @@ public class Demo implements PipelineDelegate {
   }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable err, FlowPoint p) { return null; }
+  public Activity onError(Throwable err, FlowNode p) { return null; }
 
 }
 

@@ -22,10 +22,10 @@ package com.zotohlab.wflow;
  */
 public abstract class FAsyncResumeToken {
 
-  protected FAsyncResumeToken(FlowPoint p) {
+  protected FAsyncResumeToken(FlowNode p) {
     _proc=p;
   }
-  protected FlowPoint _proc;
+  protected FlowNode _proc;
 
   public abstract void resume(Object resultArg);
 

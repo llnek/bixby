@@ -16,21 +16,18 @@ package com.zotohlab.wflow;
 import com.zotohlab.wflow.core.Job;
 
 /**
- * A nothing, nada Step.
- * 
  * @author kenl
  *
  */
-public class NihilPoint extends FlowPoint {
+public class AsyncWaitNode extends FlowNode {
 
-  public NihilPoint(Pipeline f) {
-    super(f);
+  public AsyncWaitNode(FlowNode cur, AsyncWait a) {
+    super(cur,a);
   }
 
-  public FlowPoint nextPoint() { return this; }
-
-  public FlowPoint eval(Job j) { return this; }
+  public FlowNode eval(Job j) { return this; }
 
 }
+
 
 

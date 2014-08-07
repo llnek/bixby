@@ -19,12 +19,12 @@ package com.zotohlab.wflow;
  */
 public class AsyncResumeToken extends FAsyncResumeToken {
 
-  public AsyncResumeToken(FlowPoint p) {
+  public AsyncResumeToken(FlowNode p) {
     super(p);
   }
 
   public void resume(Object resultArg) {
-    FlowPoint p = (_proc != null) ? _proc.nextPoint() : null;
+    FlowNode p = (_proc != null) ? _proc.nextPoint() : null;
     if (p != null) {
       p.attachClosureArg(resultArg);
       p.rerun();

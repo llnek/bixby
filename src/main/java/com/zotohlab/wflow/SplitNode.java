@@ -11,32 +11,53 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+
+
 package com.zotohlab.wflow;
 
+import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.core.Job;
+import com.zotohlab.frwk.server.ServerLike;
 
 /**
  * @author kenl
  *
  */
-public class DelayPoint  extends FlowPoint {
+public class SplitNode extends CompositeNode {
 
-  public DelayPoint(FlowPoint cur, Delay a) {
-    super(cur,a);
+  public SplitNode(FlowNode s, Split a) {
+    super(s,a);
   }
 
-  private long _delayMillis= 0L;
+  private boolean _fallThru=false;
 
-  public FlowPoint eval(Job j) { return this; }
+  public FlowNode eval(Job j) {
+    ServerLike x = flow().container();
+    Schedulable core = x.core();
+    Object c= getClosureArg();
+    FlowNode rc= null;
 
-  public long delayMillis() { return _delayMillis; }
+    while ( !_inner.isEmpty() ) {
+      rc = _inner.next();
+      rc.attachClosureArg(c);
+      core.run(rc);
+    }
 
-  public FlowPoint withDelay(long millis) {
-    _delayMillis=millis;
+    realize();
+
+    // should we also pass the closure to the next step ? not for now
+    return _fallThru ? nextPoint() : null;
+  }
+
+  public SplitNode withBranches(Iter w) {
+    _inner=w;
     return this;
   }
 
+  public SplitNode fallThrough() {
+    _fallThru=true;
+    return this;
+  }
 
 }
-
 

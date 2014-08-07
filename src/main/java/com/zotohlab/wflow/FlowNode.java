@@ -24,21 +24,21 @@ import com.zotohlab.frwk.util.RunnableWithId;
  * @author kenl
  *
  */
-public abstract class FlowPoint implements  RunnableWithId {
+public abstract class FlowNode implements  RunnableWithId {
 
-  protected FlowPoint (Pipeline p) {
+  protected FlowNode(Pipeline p) {
     _parent=p;
   }
 
-  private static Logger _log = LoggerFactory.getLogger(FlowPoint.class);
-  public Logger tlog() { return FlowPoint._log; }
+  private static Logger _log = LoggerFactory.getLogger(FlowNode.class);
+  public Logger tlog() { return FlowNode._log; }
 
   private AtomicLong _sn= new AtomicLong(0);
   protected Pipeline _parent;
 
   private long nextID() { return _sn.incrementAndGet(); }
 
-  private FlowPoint _nextPtr= null;
+  private FlowNode _nextPtr= null;
   private Activity _defn= null;
   private Object _closure= null;
   private long _pid=nextID();
@@ -47,17 +47,17 @@ public abstract class FlowPoint implements  RunnableWithId {
    * @param s
    * @param a
    */
-  protected FlowPoint(FlowPoint s, Activity a) {
+  protected FlowNode(FlowNode s, Activity a) {
     this(s.flow() );
     _nextPtr=s;
     _defn=a;
   }
 
-  public abstract FlowPoint eval(Job j);
+  public abstract FlowNode eval(Job j);
 
   public Object getId() { return _pid; }
 
-  public FlowPoint nextPoint() { return _nextPtr; }
+  public FlowNode nextPoint() { return _nextPtr; }
 
   public Activity getDef() { return _defn; }
 
@@ -65,7 +65,7 @@ public abstract class FlowPoint implements  RunnableWithId {
     _closure=c;
   }
 
-  public FlowPoint realize() {
+  public FlowNode realize() {
     getDef().realize(this);
     clsClosure();
     postRealize();
@@ -88,7 +88,7 @@ public abstract class FlowPoint implements  RunnableWithId {
     }
   }
 
-  public void forceNext(FlowPoint n) {
+  public void forceNext(FlowNode n) {
     _nextPtr=n;
   }
 
@@ -100,7 +100,7 @@ public abstract class FlowPoint implements  RunnableWithId {
   }
 
   public void run() {
-    FlowPoint rc= null;
+    FlowNode rc= null;
     Activity err= null;
     Pipeline f= flow();
 
@@ -115,9 +115,9 @@ public abstract class FlowPoint implements  RunnableWithId {
       err= f.onError(e, this);
     }
 
-    if (err != null) { rc= err.reify( new NihilPoint(f) );  }
+    if (err != null) { rc= err.reify( new NihilNode(f) );  }
     if (rc==null) {
-      tlog().debug("FlowPoint: rc==null => skip.");
+      tlog().debug("FlowNode: rc==null => skip.");
       // indicate skip, happens with joins
     } else {
       runAfter(f,rc);
@@ -125,20 +125,20 @@ public abstract class FlowPoint implements  RunnableWithId {
 
   }
 
-  private void runAfter(Pipeline f, FlowPoint rc) {
+  private void runAfter(Pipeline f, FlowNode rc) {
     ServerLike x = (ServerLike) f.container();
-    FlowPoint np= rc.nextPoint();
+    FlowNode np= rc.nextPoint();
     Schedulable ct= x.core();
 
-    if (rc instanceof DelayPoint) {
-      ct.postpone( np, ((DelayPoint) rc).delayMillis() );
+    if (rc instanceof DelayNode) {
+      ct.postpone( np, ((DelayNode) rc).delayMillis() );
     }
     else
-    if (rc instanceof AsyncWaitPoint) {
+    if (rc instanceof AsyncWaitNode) {
       ct.hold( np);
     }
     else
-    if (rc instanceof NihilPoint) {
+    if (rc instanceof NihilNode) {
       f.stop();
     }
     else {
@@ -148,7 +148,7 @@ public abstract class FlowPoint implements  RunnableWithId {
 
   public void finalize() throws Throwable {
     super.finalize();
-    tlog().debug("=========================> FlowPoint: " + getClass().getName() + " finz'ed");
+    tlog().debug("=========================> FlowNode: " + getClass().getName() + " finz'ed");
   }
 
 }

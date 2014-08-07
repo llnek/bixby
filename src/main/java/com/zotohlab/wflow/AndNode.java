@@ -16,51 +16,32 @@ package com.zotohlab.wflow;
 import com.zotohlab.wflow.core.Job;
 
 /**
+ * A "AND" join enforces that all bound activities must return before Join continues.
+ *
  * @author kenl
  *
  */
-public class WhilePoint extends ConditionalPoint {
+public class AndNode extends JoinNode {
 
-  public WhilePoint(FlowPoint s, While a) {
+  public AndNode(FlowNode s, And a) {
     super(s,a);
   }
 
-  private FlowPoint _body = null;
-
-  public FlowPoint eval(Job j) {
+  public FlowNode eval(Job j) {
+    int nv= _cntr.incrementAndGet();
     Object c= getClosureArg();
-    FlowPoint f,rc = this;
+    FlowNode rc= null;
 
-    if ( ! test(j)) {
-      //tlog().debug("WhilePoint: test-condition == false")
-      rc= nextPoint();
+    tlog().debug("AndNode: size={}, cntr={}, join={}", size(),  nv, this);
+
+    // all branches have returned, proceed...
+    if (nv == size() ) {
+      rc= (_body == null) ? nextPoint() : _body;
       if (rc != null) { rc.attachClosureArg(c); }
       realize();
-    } else {
-      //tlog().debug("WhilePoint: looping - eval body")
-      _body.attachClosureArg(c);
-      f= _body.eval(j);
-      if (f instanceof AsyncWaitPoint) {
-        ((AsyncWaitPoint) f).forceNext(rc);
-        rc=f;
-      }
-      else
-      if (f instanceof DelayPoint) {
-        ((DelayPoint) f).forceNext(rc);
-        rc=f;
-      }
-      else
-      if (f != null) {
-        if (f == this) {} else { _body = f; }
-      }
     }
 
     return rc;
-  }
-
-  public WhilePoint withBody(FlowPoint b) {
-    _body=b;
-    return this;
   }
 
 }

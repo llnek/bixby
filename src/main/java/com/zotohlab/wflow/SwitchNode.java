@@ -22,39 +22,39 @@ import java.util.Map;
  * @author kenl
  *
  */
-public class SwitchPoint extends FlowPoint {
+public class SwitchNode extends FlowNode {
 
-  public SwitchPoint(FlowPoint s, Activity a ) {
+  public SwitchNode(FlowNode s, Activity a) {
     super(s,a);
   }
 
-  private Map<Object,FlowPoint> _cs = new HashMap<Object,FlowPoint>();
+  private Map<Object,FlowNode> _cs = new HashMap<Object,FlowNode>();
   private SwitchChoiceExpr _expr= null;
-  private FlowPoint _def = null;
+  private FlowNode _def = null;
 
-  public SwitchPoint withChoices(Map<Object,FlowPoint> cs) {
+  public SwitchNode withChoices(Map<Object,FlowNode> cs) {
     _cs.putAll(cs);
     return this;
   }
 
-  public SwitchPoint withDef(FlowPoint s) {
+  public SwitchNode withDef(FlowNode s) {
     _def=s;
     return this;
   }
 
-  public SwitchPoint withExpr(SwitchChoiceExpr e) {
+  public SwitchNode withExpr(SwitchChoiceExpr e) {
     _expr=e;
     return this;
   }
 
-  public Map<Object,FlowPoint> choices() { return  _cs; }
+  public Map<Object,FlowNode> choices() { return  _cs; }
 
-  public FlowPoint defn() { return  _def; }
+  public FlowNode defn() { return  _def; }
 
-  public FlowPoint eval(Job j) {
+  public FlowNode eval(Job j) {
     Object m= _expr.getChoice(j);
     Object c= popClosureArg();
-    FlowPoint a= null;
+    FlowNode a= null;
     if (m != null) {
       a = _cs.get(m);
     }

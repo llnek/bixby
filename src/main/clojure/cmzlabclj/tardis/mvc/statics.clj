@@ -13,6 +13,7 @@
       :author "kenl" }
 
   cmzlabclj.tardis.mvc.statics
+  (:import [com.zotohlab.wflow FlowNode])
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])

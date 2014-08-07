@@ -18,9 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.*;
 import java.io.File;
 import org.apache.commons.io.FileUtils;
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
-import com.zotohlab.gallifrey.io.FileEvent;
 
 import com.zotohlab.frwk.server.Service;
 
@@ -39,7 +36,7 @@ public class DemoGen implements PipelineDelegate {
 
   public Activity getStartActivity(final Pipeline pipe) {
     return new PTask(new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         String s= "Current time is " + new Date();
         Service p = pipe.container().getService("default-sample");
         try {
@@ -55,7 +52,7 @@ public class DemoGen implements PipelineDelegate {
 
   public void onStop(Pipeline p) {}
 
-  public Activity onError(Throwable e, FlowPoint c) { return null; }
+  public Activity onError(Throwable e, FlowNode c) { return null; }
 
 }
 

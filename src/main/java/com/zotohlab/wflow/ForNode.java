@@ -13,36 +13,14 @@
 
 package com.zotohlab.wflow;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * @author kenl
  *
  */
-public abstract class JoinPoint extends FlowPoint {
+public class ForNode extends WhileNode {
 
-  protected JoinPoint (FlowPoint s, Join a) {
+  public ForNode(FlowNode s, For a) {
     super(s,a);
-  }
-
-  protected AtomicInteger _cntr=new AtomicInteger(0);
-  protected FlowPoint _body = null;
-  private int _branches= 0;
-
-  public JoinPoint withBody(FlowPoint body) {
-    _body=body;
-    return this;
-  }
-
-  public JoinPoint withBranches(int n) {
-    _branches=n;
-    return this;
-  }
-
-  public int size() { return  _branches; }
-
-  public void postRealize() {
-    _cntr.set(0);
   }
 
 }

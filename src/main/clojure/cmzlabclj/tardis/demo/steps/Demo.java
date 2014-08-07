@@ -14,9 +14,6 @@
 
 package demo.steps;
 
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
-
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
 
@@ -36,7 +33,7 @@ import static demo.steps.Auth.*;
  */
 public class Demo implements PipelineDelegate {
 
-  public Activity onError(Throwable err, FlowPoint p) { return null; }
+  public Activity onError(Throwable err, FlowNode p) { return null; }
   public void onStop(Pipeline p) {
     System.out.println("Finally, workflow is done.!");
   }
@@ -58,7 +55,7 @@ public class Demo implements PipelineDelegate {
 
   // step2.
   private Work get_profile = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("Step(2): Get user profile\n-> user is superuser.\n");
       return null;
     }
@@ -70,7 +67,7 @@ public class Demo implements PipelineDelegate {
   // issues encountered with EC2 while trying to grant permission.
   // so here , we are using a while() to do that.
   private Work perm_ami = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       Object obj = job.getv("ami_count");
       if (obj instanceof Integer) {
         int n= (Integer)obj;
@@ -103,7 +100,7 @@ public class Demo implements PipelineDelegate {
   // issues encountered with EC2 while trying to grant volume permission.
   // so here , we are using a while() to do that.
   private Work perm_vol = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       Object jv= job.getv("vol_count");
       if (jv instanceof Integer) {
         int n= (Integer)jv;
@@ -136,7 +133,7 @@ public class Demo implements PipelineDelegate {
   // where the db write fails a couple of times.
   // so again , we are using a while() to do that.
   private Work write_db = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       Object jv = job.getv("wdb_count");
       if (jv instanceof Integer) {
         int n= (Integer)jv;
@@ -174,7 +171,7 @@ public class Demo implements PipelineDelegate {
   // this is the final step, after all the work are done, reply back to the caller.
   // like, returning a 200-OK.
   private Work reply_user = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("Step(5): We'd probably return a 200 OK back to caller here.\n");
       return null;
     }
@@ -183,7 +180,7 @@ public class Demo implements PipelineDelegate {
   private Activity ReplyUser = new PTask(reply_user);
 
   private Work error_user = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("Step(5): We'd probably return a 200 OK but with errors.\n");
       return null;
     }

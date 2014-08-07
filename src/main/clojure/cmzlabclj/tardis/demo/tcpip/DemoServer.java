@@ -15,8 +15,7 @@
 package demo.tcpip;
 
 import java.io.*;
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
+
 import com.zotohlab.gallifrey.io.*;
 
 import com.zotohlab.wflow.core.Job;
@@ -25,14 +24,14 @@ import com.zotohlab.wflow.*;
 
 public class DemoServer implements PipelineDelegate {
 
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
   public void onStop(Pipeline p) {
   }
 
   private String _clientMsg="";
 
   private Work task1= new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       SocketEvent ev= (SocketEvent) job.event();
       try {
         int clen=new DataInputStream(ev.getSockIn() ).readInt();
@@ -48,7 +47,7 @@ public class DemoServer implements PipelineDelegate {
   };
 
   private Work task2= new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("Socket Server Received: " + _clientMsg );
       return null;
     }

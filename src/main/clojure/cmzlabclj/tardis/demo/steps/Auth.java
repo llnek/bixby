@@ -29,28 +29,28 @@ public enum Auth {
   }
 
   private static Work facebook_login = new Work() {
-    public Object perform(FlowPoint p, Job job, Object arg) {
+    public Object perform(FlowNode p, Job job, Object arg) {
       System.out.println("-> using facebook to login.\n");
       return null;
     }
   };
 
   private static Work gplus_login = new Work() {
-    public Object perform(FlowPoint p, Job job, Object arg) {
+    public Object perform(FlowNode p, Job job, Object arg) {
       System.out.println("-> using google+ to login.\n");
       return null;
     }
   };
 
   private static Work openid_login = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("-> using open-id to login.\n");
       return null;
     }
   };
 
   private static Work db_login = new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       System.out.println("-> using internal db to login.\n");
       return null;
     }

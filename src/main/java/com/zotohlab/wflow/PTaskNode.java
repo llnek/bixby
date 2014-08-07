@@ -11,6 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
+
 package com.zotohlab.wflow;
 
 import com.zotohlab.wflow.core.Job;
@@ -19,34 +20,40 @@ import com.zotohlab.wflow.core.Job;
  * @author kenl
  *
  */
-public class OrPoint  extends JoinPoint {
+public class PTaskNode extends FlowNode {
 
-  public OrPoint(FlowPoint s, Or a) {
+  public PTaskNode(FlowNode s, PTask a) {
     super(s,a);
   }
 
-  public FlowPoint eval(Job j) {
-    int nv= _cntr.incrementAndGet();
-    FlowPoint rc= this;
-    Object c= getClosureArg();
-    FlowPoint np=nextPoint();
+  private Work _work= null;
 
-    if (size() == 0) {
-      rc= np;
-      realize();
+  public PTaskNode withWork(Work w) {
+    _work=w;
+    return this;
+  }
+
+  public FlowNode eval(Job j) {
+    //tlog.debug("PTaskNode: {} about to perform work.", this.id )
+    Object a= _work.perform(this, j, popClosureArg());
+    FlowNode rc= nextPoint();
+
+    if (a instanceof Nihil) {
+      rc = new NihilNode(flow() );
     }
-    else if (nv==1) {
-      rc= (_body== null) ? np : _body;
-    }
-    else if ( nv==size() ) {
-      rc=null;
-      realize();
+    else
+    if (a instanceof Activity) {
+      rc = ((Activity) a).reify(rc);
+    } 
+    else {
+      if (rc != null) {
+        rc.attachClosureArg(a);
+      }
     }
 
-    if (rc != null) { rc.attachClosureArg(c); }
     return rc;
   }
 
-}
 
+}
 

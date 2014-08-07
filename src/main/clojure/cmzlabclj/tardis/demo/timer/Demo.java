@@ -18,8 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Date;
 
 
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.gallifrey.io.TimerEvent;
 
 import com.zotohlab.wflow.core.Job;
@@ -33,7 +31,7 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         TimerEvent ev= (TimerEvent) job.event();
         if ( ev.isRepeating() ) {
           System.out.println("-----> (" + count() +  ") repeating-update: " + new Date());
@@ -47,7 +45,7 @@ public class Demo implements PipelineDelegate {
 
   public void onStop(Pipeline p) {}
 
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
 }
 

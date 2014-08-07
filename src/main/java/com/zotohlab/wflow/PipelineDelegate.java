@@ -13,14 +13,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.frwk.util.CoreUtils.*;
-import org.slf4j.*;
-import com.zotohlab.frwk.util.Schedulable;
-import java.util.concurrent.atomic.AtomicLong;
-import com.zotohlab.wflow.core.Job;
-import com.zotohlab.frwk.core.Startable;
-import com.zotohlab.frwk.server.ServerLike;
-
 /**
  * @author kenl
  */
@@ -30,7 +22,7 @@ public interface PipelineDelegate {
 
   public void onStop(Pipeline p);
 
-  public Activity onError(Throwable e, FlowPoint cur);
+  public Activity onError(Throwable e, FlowNode cur);
 
 }
 

@@ -32,7 +32,7 @@ public class DemoPick implements PipelineDelegate    {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask(new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         FileEvent ev= (FileEvent) job.event();
         File f=ev.getFile();
         System.out.println("Picked up new file: " + f);
@@ -48,7 +48,7 @@ public class DemoPick implements PipelineDelegate    {
   }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
 }
 

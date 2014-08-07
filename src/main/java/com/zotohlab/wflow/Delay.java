@@ -29,10 +29,10 @@ public class Delay extends Activity {
     this(0L);
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new DelayPoint(cur,this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new DelayNode(cur,this); }
 
-  public void realize(FlowPoint fp) {
-    DelayPoint p= (DelayPoint) fp;
+  public void realize(FlowNode fp) {
+    DelayNode p= (DelayNode) fp;
     p.withDelay(_delayMillis);
   }
 

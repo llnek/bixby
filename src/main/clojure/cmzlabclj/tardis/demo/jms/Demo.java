@@ -31,7 +31,7 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask( new Work() {
-      public Object perform(FlowPoint cur, Job job, Object arg) {
+      public Object perform(FlowNode cur, Job job, Object arg) {
         JMSEvent  ev= (JMSEvent) job.event();
         TextMessage msg= (TextMessage) ev.getMsg();
         try {
@@ -47,7 +47,7 @@ public class Demo implements PipelineDelegate {
 
   public void onStop(Pipeline pipe) {}
 
-  public Activity onError(Throwable err, FlowPoint p) { return null; }
+  public Activity onError(Throwable err, FlowNode p) { return null; }
 
 }
 

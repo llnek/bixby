@@ -25,12 +25,12 @@ public class And extends Join {
     super(body);
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) {
-    return new AndPoint(cur, this);
+  public FlowNode reifyPoint(FlowNode cur) {
+    return new AndNode(cur, this);
   }
 
-  public void realize(FlowPoint fp) {
-    AndPoint s = (AndPoint)fp;
+  public void realize(FlowNode fp) {
+    AndNode s = (AndNode)fp;
     if (_body != null) {
       s.withBody( _body.reify( s.nextPoint()));
     }

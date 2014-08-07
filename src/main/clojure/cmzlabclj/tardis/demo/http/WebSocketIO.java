@@ -15,16 +15,10 @@
 package demo.http;
 
 import com.zotohlab.frwk.io.XData;
-import com.zotohlab.frwk.net.ULFileItem;
-import com.zotohlab.frwk.net.ULFormItems;
-import com.zotohlab.gallifrey.io.HTTPEvent;
-import com.zotohlab.gallifrey.io.HTTPResult;
 import com.zotohlab.gallifrey.io.WebSockEvent;
 import com.zotohlab.gallifrey.io.WebSockResult;
 import com.zotohlab.wflow.*;
 import com.zotohlab.wflow.core.Job;
-
-import java.util.ListIterator;
 
 /**
  * @author kenl
@@ -33,7 +27,7 @@ import java.util.ListIterator;
 public class WebSocketIO implements PipelineDelegate {
 
   private Work task1= new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
       WebSockEvent ev= (WebSockEvent) job.event();
       WebSockResult res= ev.getResultObj();
       XData data = (XData) ev.getData();
@@ -60,7 +54,7 @@ public class WebSocketIO implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline p) { return new PTask(task1); }
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e , FlowPoint c) { return null; }
+  public Activity onError(Throwable e , FlowNode c) { return null; }
 
 }
 

@@ -15,25 +15,37 @@ package com.zotohlab.wflow;
 
 import com.zotohlab.wflow.core.Job;
 
-
 /**
  * @author kenl
  *
  */
-public abstract class ConditionalPoint extends FlowPoint {
+public class OrNode extends JoinNode {
 
-  protected ConditionalPoint(FlowPoint s, Conditional a) {
+  public OrNode(FlowNode s, Or a) {
     super(s,a);
   }
 
-  private BoolExpr _expr;
+  public FlowNode eval(Job j) {
+    int nv= _cntr.incrementAndGet();
+    FlowNode rc= this;
+    Object c= getClosureArg();
+    FlowNode np=nextPoint();
 
-  public FlowPoint withTest(BoolExpr expr) {
-    _expr=expr;
-    return this;
+    if (size() == 0) {
+      rc= np;
+      realize();
+    }
+    else if (nv==1) {
+      rc= (_body== null) ? np : _body;
+    }
+    else if ( nv==size() ) {
+      rc=null;
+      realize();
+    }
+
+    if (rc != null) { rc.attachClosureArg(c); }
+    return rc;
   }
-
-  protected boolean test(Job j) { return _expr.evaluate(j); }
 
 }
 

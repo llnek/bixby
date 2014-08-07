@@ -64,10 +64,10 @@ public class Split extends Composite {
     return this;
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new SplitPoint(cur, this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new SplitNode(cur, this); }
 
-  public  void realize(FlowPoint fp) {
-    SplitPoint  p= (SplitPoint) fp;
+  public  void realize(FlowNode fp) {
+    SplitNode p= (SplitNode) fp;
 
     if ( _theJoin != null) {
       _theJoin.withBranches( size() );
@@ -75,7 +75,7 @@ public class Split extends Composite {
       _theJoin= new NullJoin();
     }
 
-    FlowPoint s = _theJoin.reify(p.nextPoint() );
+    FlowNode s = _theJoin.reify(p.nextPoint() );
     // note: get all *children* to come back to the join
     p.withBranches( new Iter(s, listChildren() ) );
 
@@ -97,9 +97,9 @@ class NullJoin extends Join {
     super(null);
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new NullJoinPoint(cur, this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new NullJoinNode(cur, this); }
 
-  public void realize(FlowPoint cur) {}
+  public void realize(FlowNode cur) {}
 
 }
 
@@ -107,13 +107,13 @@ class NullJoin extends Join {
  * @author kenl
  *
  */
-class NullJoinPoint extends JoinPoint {
+class NullJoinNode extends JoinNode {
 
-  public NullJoinPoint(FlowPoint s, Join a) {
+  public NullJoinNode(FlowNode s, Join a) {
     super(s,a);
   }
 
-  public FlowPoint eval(Job j) { return null; }
+  public FlowNode eval(Job j) { return null; }
 
 }
 

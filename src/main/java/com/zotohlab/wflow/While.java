@@ -13,8 +13,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
-
 /**
  * @author kenl
  *
@@ -38,10 +36,10 @@ public class While extends Conditional {
 //    });
 //  }
 //
-  public FlowPoint reifyPoint(FlowPoint cur) { return new WhilePoint(cur, this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new WhileNode(cur, this); }
 
-  public void realize(FlowPoint fp) {
-    WhilePoint p= (WhilePoint) fp;
+  public void realize(FlowNode fp) {
+    WhileNode p= (WhileNode) fp;
     if (_body != null) {
       p.withBody(_body.reify(p));
     }

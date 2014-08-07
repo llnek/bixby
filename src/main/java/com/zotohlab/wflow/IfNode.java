@@ -19,30 +19,30 @@ import com.zotohlab.wflow.core.Job;
  * @author kenl
  *
  */
-public class IfPoint extends ConditionalPoint {
+public class IfNode extends ConditionalNode {
 
-  public IfPoint(FlowPoint s, If a) {
+  public IfNode(FlowNode s, If a) {
     super(s,a);
   }
 
-  private FlowPoint _then= null;
-  private FlowPoint _else= null;
+  private FlowNode _then= null;
+  private FlowNode _else= null;
 
-  public IfPoint withElse(FlowPoint s ) {
+  public IfNode withElse(FlowNode s ) {
     _else=s;
     return this;
   }
 
-  public IfPoint withThen(FlowPoint s ) {
+  public IfNode withThen(FlowNode s ) {
     _then=s;
     return this;
   }
 
-  public FlowPoint eval(Job j) {
+  public FlowNode eval(Job j) {
     Object c= getClosureArg() ;  // data pass back from previous async call?
     boolean b = test(j);
     tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
-    FlowPoint rc = b ? _then : _else;
+    FlowNode rc = b ? _then : _else;
     if (rc != null) {
       rc.attachClosureArg(c);
     }

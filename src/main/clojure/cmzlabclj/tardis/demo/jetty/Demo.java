@@ -14,12 +14,7 @@
 
 package demo.jetty;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import com.zotohlab.gallifrey.io.*;
-import com.zotohlab.frwk.io.XData;
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 
 
 import com.zotohlab.wflow.core.Job;
@@ -44,10 +39,10 @@ public class Demo implements PipelineDelegate {
   }
 
   public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowPoint p) { return null; }
+  public Activity onError(Throwable e, FlowNode p) { return null; }
 
   private Work task1= new Work() {
-    public Object perform(FlowPoint cur, Job job, Object arg) {
+    public Object perform(FlowNode cur, Job job, Object arg) {
 
       HTTPEvent ev= (HTTPEvent) job.event();
       HTTPResult res= ev.getResultObj();

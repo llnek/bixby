@@ -21,11 +21,11 @@ package com.zotohlab.wflow;
  */
 public class AsyncWait extends Activity {
 
-  public FlowPoint reifyPoint(FlowPoint cur) {
-    return new AsyncWaitPoint(cur,this);
+  public FlowNode reifyPoint(FlowNode cur) {
+    return new AsyncWaitNode(cur,this);
   }
 
-  public void realize(FlowPoint p) {
+  public void realize(FlowNode p) {
   }
 
 }

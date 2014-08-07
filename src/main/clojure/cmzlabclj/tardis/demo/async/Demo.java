@@ -13,8 +13,6 @@
 
 package demo.async;
 
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.wflow.*;
 import com.zotohlab.wflow.core.Job;
 
@@ -29,7 +27,7 @@ public class Demo implements PipelineDelegate {
 
   public Activity getStartActivity(Pipeline pipe) {
     return new PTask( new Work() {
-      public Activity perform(FlowPoint cur, Job job, Object arg) {
+      public Activity perform(FlowNode cur, Job job, Object arg) {
         final AsyncResumeToken t= new AsyncResumeToken( cur );
         System.out.println("/* Calling a mock-webservice which takes a long time (10secs),");
         System.out.println("- since the call is *async*, event loop is not blocked.");
@@ -57,7 +55,7 @@ public class Demo implements PipelineDelegate {
         return new AsyncWait();
       }
     }).chain( new PTask(new Work() {
-      public Activity perform(FlowPoint cur, Job job, Object arg) {
+      public Activity perform(FlowNode cur, Job job, Object arg) {
         System.out.println("-> The result from WS is: " + arg);
         return null;
       }
@@ -66,7 +64,7 @@ public class Demo implements PipelineDelegate {
 
   public void onStop(Pipeline pipe) {}
 
-  public Activity onError(Throwable err, FlowPoint cp) { return null; }
+  public Activity onError(Throwable err, FlowNode cp) { return null; }
 
 }
 

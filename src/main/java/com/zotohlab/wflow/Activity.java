@@ -44,18 +44,18 @@ public abstract class Activity {
    * @param cur current step.
    * @return a *live* version of this Activity.
    */
-  public FlowPoint reify(FlowPoint cur) {
+  public FlowNode reify(FlowNode cur) {
     return reifyPoint(cur).realize();
   }
 
-  protected abstract FlowPoint reifyPoint(FlowPoint cur) ;
+  protected abstract FlowNode reifyPoint(FlowNode cur) ;
 
   /**
    * Configure the *live* version of this Activity.
    *
    *
    */
-  protected abstract void realize(FlowPoint p);
+  protected abstract void realize(FlowNode p);
 
   public void finalize() throws Throwable {
     super.finalize();

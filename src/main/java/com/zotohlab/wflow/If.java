@@ -36,11 +36,11 @@ public class If extends Conditional {
     this(expr, thenCode, null );
   }
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new IfPoint(cur,this); }
+  public FlowNode reifyPoint(FlowNode cur) { return new IfNode(cur,this); }
 
-  public void realize(FlowPoint fp) {
-    IfPoint s= (IfPoint) fp;
-    FlowPoint np= s.nextPoint();
+  public void realize(FlowNode fp) {
+    IfNode s= (IfNode) fp;
+    FlowNode np= s.nextPoint();
     s.withElse( (_elseCode ==null) ? np : _elseCode.reify(np) );
     s.withThen( _thenCode.reify(np));
     s.withTest( expr());

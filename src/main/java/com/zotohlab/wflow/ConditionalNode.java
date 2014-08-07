@@ -11,49 +11,30 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
 package com.zotohlab.wflow;
 
 import com.zotohlab.wflow.core.Job;
+
 
 /**
  * @author kenl
  *
  */
-public class PTaskPoint extends FlowPoint {
+public abstract class ConditionalNode extends FlowNode {
 
-  public PTaskPoint(FlowPoint s, PTask a ) {
+  protected ConditionalNode(FlowNode s, Conditional a) {
     super(s,a);
   }
 
-  private Work _work= null;
+  private BoolExpr _expr;
 
-  public PTaskPoint withWork(Work w) {
-    _work=w;
+  public FlowNode withTest(BoolExpr expr) {
+    _expr=expr;
     return this;
   }
 
-  public FlowPoint eval(Job j) {
-    //tlog.debug("PTaskPoint: {} about to perform work.", this.id )
-    Object a= _work.perform(this, j, popClosureArg());
-    FlowPoint rc= nextPoint();
-
-    if (a instanceof Nihil) {
-      rc = new NihilPoint(flow() );
-    }
-    else
-    if (a instanceof Activity) {
-      rc = ((Activity) a).reify(rc);
-    } 
-    else {
-      if (rc != null) {
-        rc.attachClosureArg(a);
-      }
-    }
-
-    return rc;
-  }
-
+  protected boolean test(Job j) { return _expr.evaluate(j); }
 
 }
+
 

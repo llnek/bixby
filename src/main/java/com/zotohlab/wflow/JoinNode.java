@@ -13,36 +13,36 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.frwk.util.CoreUtils.*;
-import com.zotohlab.wflow.core.Job;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A "AND" join enforces that all bound activities must return before Join continues.
- *
  * @author kenl
  *
  */
-public class AndPoint extends JoinPoint {
+public abstract class JoinNode extends FlowNode {
 
-  public AndPoint(FlowPoint s,And a) {
+  protected JoinNode(FlowNode s, Join a) {
     super(s,a);
   }
 
-  public FlowPoint eval(Job j) {
-    int nv= _cntr.incrementAndGet();
-    Object c= getClosureArg();
-    FlowPoint rc= null;
+  protected AtomicInteger _cntr=new AtomicInteger(0);
+  protected FlowNode _body = null;
+  private int _branches= 0;
 
-    tlog().debug("AndPoint: size={}, cntr={}, join={}", size(),  nv, this);
+  public JoinNode withBody(FlowNode body) {
+    _body=body;
+    return this;
+  }
 
-    // all branches have returned, proceed...
-    if (nv == size() ) {
-      rc= (_body == null) ? nextPoint() : _body;
-      if (rc != null) { rc.attachClosureArg(c); }
-      realize();
-    }
+  public JoinNode withBranches(int n) {
+    _branches=n;
+    return this;
+  }
 
-    return rc;
+  public int size() { return  _branches; }
+
+  public void postRealize() {
+    _cntr.set(0);
   }
 
 }

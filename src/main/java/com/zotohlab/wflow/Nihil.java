@@ -23,9 +23,9 @@ public class Nihil  extends Activity {
 
   public Nihil() {}
 
-  public FlowPoint reifyPoint(FlowPoint cur) { return new NihilPoint(cur.flow() ); }
+  public FlowNode reifyPoint(FlowNode cur) { return new NihilNode(cur.flow() ); }
 
-  public void realize(FlowPoint p) {}
+  public void realize(FlowNode p) {}
 
 }
 

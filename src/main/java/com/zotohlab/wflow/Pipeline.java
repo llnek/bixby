@@ -17,7 +17,6 @@ import static com.zotohlab.frwk.util.CoreUtils.*;
 import org.slf4j.*;
 import com.zotohlab.frwk.util.Schedulable;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicLong;
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.frwk.core.Startable;
@@ -78,7 +77,7 @@ public class Pipeline implements Startable {
     _delegate.onStop(this);
   }
 
-  protected Activity onError(Throwable e, FlowPoint cur) {
+  protected Activity onError(Throwable e, FlowNode cur) {
     tlog().error("", e);
     Activity a= _delegate.onError(e,cur) ;
     return (a==null) ? new Nihil() : a;
@@ -92,7 +91,7 @@ public class Pipeline implements Startable {
   public void start() {
     tlog().debug("{}: {} => pid : {} => starting" , "Pipeline", _delegateClass , _pid);
     try {
-      FlowPoint f1= onStart().reify( new NihilPoint(this));
+      FlowNode f1= onStart().reify( new NihilNode(this));
       _active=true;
       core().run(f1);
     }

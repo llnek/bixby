@@ -13,12 +13,10 @@
 
 package demo.steps;
 
-import com.zotohlab.gallifrey.runtime.AppMain;
-import com.zotohlab.gallifrey.core.Container;
 import static java.lang.System.out;
 
 import static com.zotohlab.wflow.PTask.*;
-import com.zotohlab.wflow.core.Job;
+
 import com.zotohlab.wflow.*;
 
 import static demo.steps.Auth.*;
@@ -38,7 +36,7 @@ import static demo.steps.Auth.*;
  */
 public class Demo implements PipelineDelegate {
 
-  public Activity onError(Throwable err, FlowPoint p) { return null; }
+  public Activity onError(Throwable err, FlowNode p) { return null; }
 
   public void onStop(Pipeline p) {
     out.println("Finally, workflow is done.!");

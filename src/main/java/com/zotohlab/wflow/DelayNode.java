@@ -13,25 +13,30 @@
 
 package com.zotohlab.wflow;
 
-import java.util.ListIterator;
+import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
-public abstract class CompositePoint extends FlowPoint {
+public class DelayNode extends FlowNode {
 
-  protected CompositePoint(FlowPoint cur,Activity a) {
+  public DelayNode(FlowNode cur, Delay a) {
     super(cur,a);
   }
 
-  protected Iter _inner = null;
+  private long _delayMillis= 0L;
 
-  public void reifyInner( ListIterator<Activity> children) {
-    _inner=new Iter(this,children);
+  public FlowNode eval(Job j) { return this; }
+
+  public long delayMillis() { return _delayMillis; }
+
+  public FlowNode withDelay(long millis) {
+    _delayMillis=millis;
+    return this;
   }
 
-  public Iter inner() { return _inner; }
 
 }
+
 
