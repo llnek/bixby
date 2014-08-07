@@ -1340,7 +1340,7 @@
 
   [algo]
 
-  (case algo
+  (condp = algo
     "SHA-512" SMIMESignedGenerator/DIGEST_SHA512
     "SHA-1" SMIMESignedGenerator/DIGEST_SHA1
     "MD5" SMIMESignedGenerator/DIGEST_MD5

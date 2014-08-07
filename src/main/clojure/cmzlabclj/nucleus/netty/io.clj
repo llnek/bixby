@@ -210,7 +210,7 @@
     (run [_ args]
       (let [^ChannelHandlerContext ctx (aget args 0)
             ^String op (aget args 1) ]
-        (case op
+        (condp = op
           "setContentLength" (setContentLength ctx (aget args 2))
           "appendHeaders" (appendHeaders ctx (aget args 2))
           nil)))

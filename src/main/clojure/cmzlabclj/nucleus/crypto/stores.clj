@@ -81,7 +81,7 @@
   ^KeyStore
   [^KeyStore keystore]
 
-  (case (.getType keystore)
+  (condp = (.getType keystore)
     "PKCS12" (GetPkcsStore)
     "JKS" (GetJksStore)
     (ThrowBadArg "wrong keystore type.")

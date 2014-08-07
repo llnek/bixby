@@ -36,7 +36,8 @@
         [cmzlabclj.tardis.etc.misc]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.nucleus.util.core
-         :only [MubleAPI MakeMMap NiceFPath nbf ConvLong Bytesify] ]
+         :only [MubleAPI MakeMMap NiceFPath
+                ConvToJava nbf ConvLong Bytesify] ]
         [cmzlabclj.nucleus.util.scheduler :only [MakeScheduler] ]
         [cmzlabclj.nucleus.util.process :only [Coroutine] ]
         [cmzlabclj.nucleus.util.core :only [LoadJavaProps SubsVar] ]
@@ -305,6 +306,14 @@
         (getService [_ serviceId]
           (let [^ComponentRegistry srg (.getf impl K_SVCS) ]
             (.lookup srg (keyword serviceId))))
+
+        (getEnvConfig [_]
+          (let [env (.getf impl K_ENVCONF)]
+            (ConvToJava env)))
+
+        (getAppConfig [_]
+          (let [app (.getf impl K_APPCONF)]
+            (ConvToJava app)))
 
         Component
 

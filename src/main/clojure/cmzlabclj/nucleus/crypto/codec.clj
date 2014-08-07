@@ -47,7 +47,7 @@
 ;;(set! *warn-on-reflection* true)
 ;; AES (128,256)
 ;; DES (8)
-;; DESede (TripleDES - 8 x 3 = 24)
+;; DESede (TripleDES - 8 x 3 = 24bytes -> 192 bits)
 ;; RSA  1024 +
 ;; Blowfish
 
@@ -100,9 +100,9 @@
   ^bytes
   [^bytes pwd ^String algo]
 
-  (let [len (* 8 (alength pwd)) ]
-    ;;(println "keyAsBits len of input key = " len)
-    (case algo
+  (let [blen (alength pwd)
+        len (* 8 blen) ]
+    (condp = algo
       "AES"
       (cond
         (> len 256) ;; 32 bytes
@@ -113,8 +113,8 @@
         :else pwd)
 
       T3_DES
-      (if (> len 192)
-        ;; 24 bits => 3 bytes
+      (if (> blen 24)
+        ;; 24 bytes
         (into-array Byte/TYPE (take 24 pwd))
         pwd)
 
@@ -376,7 +376,7 @@
 
   [^String algo]
 
-  (case algo
+  (condp = algo
     "DESede" (DESedeEngine.)
     "AES" (AESEngine.)
     "RSA" (RSAEngine.)

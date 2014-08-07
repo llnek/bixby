@@ -392,7 +392,7 @@
   [& args]
 
   (when-not (if (> (count args) 1)
-              (case (nth args 1)
+              (condp = (nth args 1)
                 "keypair" (if (> (count args) 2)
                             (do (genKeyPair (nth args 2)) true)
                             false)

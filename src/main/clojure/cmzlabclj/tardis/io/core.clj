@@ -17,7 +17,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? ThrowIOE MakeMMap TryC] ]
+  (:use [cmzlabclj.nucleus.util.core
+         :only [notnil? ThrowIOE MakeMMap ConvToJava TryC] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim ] ]
         [cmzlabclj.tardis.core.sys])
 
@@ -184,6 +185,9 @@
         Emitter
 
         (container [this] (.parent this))
+        (getConfig [_]
+          (let [cfg (.getAttr impl :emcfg)]
+            (ConvToJava cfg)))
 
         Disposable
 

@@ -17,6 +17,8 @@ import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.gallifrey.io.IOEvent;
 import com.zotohlab.frwk.core.Disposable;
 import java.io.File;
+import java.util.Map;
+
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.dbio.DBAPI;
 
@@ -25,15 +27,18 @@ import com.zotohlab.frwk.dbio.DBAPI;
  */
 public interface Container extends ServerLike , Disposable {
 
-  public void notifyObservers(IOEvent evt, Object options );
+  public void notifyObservers(IOEvent evt, Map<?,?> options );
+
+  public Map<String,?> getEnvConfig();
+  public Map<String,?> getAppConfig();
 
   public byte[] getAppKeyBits();
   public String getAppKey();
 
   public File getAppDir();
 
-  public JDBCPool acquireDbPool(String groupid);
-  public DBAPI acquireDbAPI(String groupid);
+  public JDBCPool acquireDbPool(Object groupid);
+  public DBAPI acquireDbAPI(Object groupid);
 
 }
 

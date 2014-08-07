@@ -139,7 +139,7 @@
 
   [sqlType pos ^ResultSet rset]
 
-  (case sqlType
+  (condp == (int sqlType)
     Types/TIMESTAMP (.getTimestamp rset (int pos) (GmtCal))
     Types/DATE (.getDate rset (int pos) (GmtCal))
     (readCol sqlType pos rset)

@@ -17,12 +17,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import com.zotohlab.gallifrey.core.Container;
 
+import java.util.Map;
+
 /**
  * @author kenl
  *
  */
 public interface Emitter {
 
+  public Map<String,?> getConfig();
   public Container container();
 
 }

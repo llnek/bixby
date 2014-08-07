@@ -26,8 +26,9 @@
             [java.nio.charset Charset]
             [java.io InputStream File FileInputStream
                     ByteArrayInputStream ByteArrayOutputStream]
-            [java.util Properties Date Calendar
-                      GregorianCalendar TimeZone]
+            [java.util Map Properties Date Calendar
+                       HashMap HashSet ArrayList
+                       GregorianCalendar TimeZone]
             [java.util.zip DataFormatException
                           Deflater Inflater]
             [java.sql Timestamp]
@@ -1155,6 +1156,77 @@
     (let [ss (StringUtils/split email "@" 2) ]
       (str (aget ss 0) "@" (cstr/lower-case (aget ss 1))))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(declare toJava)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- convList ""
+
+  [obj]
+
+  (let [rc (ArrayList.)]
+    (doseq [v (seq obj)]
+      (.add rc (toJava v)))
+    rc
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- convSet ""
+
+  [obj]
+
+  (let [rc (HashSet.)]
+    (doseq [v (seq obj)]
+      (.add rc (toJava v)))
+    rc
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- convMap ""
+
+  [obj]
+
+  (let [rc (HashMap.)]
+    (doseq [[k v] (seq obj)]
+      (.put rc (name k) (toJava v)))
+    rc
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- toJava ""
+
+  ^Object
+  [obj]
+
+  (cond
+    (map? obj)
+    (convMap obj)
+
+    (set? obj)
+    (convSet obj)
+
+    (or (vector? obj)
+        (list? obj))
+    (convList obj)
+
+    :else
+    obj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ConvToJava ""
+
+  ^Map
+  [obj]
+
+  (toJava obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

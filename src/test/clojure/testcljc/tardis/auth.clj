@@ -66,7 +66,9 @@
                   (fn [^SQLr tx]
                     (.findAll tx
                               :czc.tardis.auth/AuthRole
-                              "order by role_name desc"))) ]
+                              {}))) ]
+                              ;;TODO
+                              ;;"order by role_name desc"))) ]
         (== (count rs) 4)))))
 
 (defn- fetch-roles []
