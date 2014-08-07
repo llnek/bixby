@@ -13,6 +13,7 @@
 
 package com.zotohlab.frwk.util;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import org.apache.commons.codec.net.URLCodec;
@@ -20,10 +21,7 @@ import org.slf4j.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.lang3.StringUtils;
@@ -41,8 +39,19 @@ public enum CoreUtils {
   public static void main(String[] args) {
     try {
       //System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
-      URLCodec cc = new URLCodec("utf-8");
-      System.out.println(cc.encode("hello\u0000world"));
+//      URLCodec cc = new URLCodec("utf-8");
+//      System.out.println(cc.encode("hello\u0000world"));
+      Gson g= new Gson();
+      Map m= new HashMap();
+      List arr=new ArrayList() {{
+        add("1"); add("2");
+      }};
+      m.put("a", arr);
+      m.put("b", new HashMap(){{
+        put("x", 1); put("y",5);
+      }});
+      String s= java.util.Objects.toString(m);
+      System.out.println(s);
     } catch (Throwable t) {
       t.printStackTrace();
     }

@@ -13,11 +13,17 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.wflow.core.Job;
+
 /**
  * @author kenl
  *
  */
 public class PTask extends Activity {
+
+  public static PTask wrap(Work w) {
+    return new PTask(w);
+  }
 
   private Work _work;
 

@@ -13,7 +13,6 @@
 
 package demo.fork;
 
-import static java.lang.System.out;
 import com.zotohlab.wflow.*;
 import com.zotohlab.wflow.core.Job;
 
@@ -34,16 +33,15 @@ public class Demo implements PipelineDelegate {
     // parent continues;
 
   public Activity getStartActivity(Pipeline pipe) {
-
-    return PTask.wrap( new Work() {
+    return new PTask( new Work() {
       public Object perform(FlowPoint cur, Job job, Object arg) {
-        out.println("I am the *Parent*");
-        out.println("I am programmed to fork off a parallel child process, and continue my business.");
+        System.out.println("I am the *Parent*");
+        System.out.println("I am programmed to fork off a parallel child process, and continue my business.");
         return null;
       }
-    }).chain(Split.wrap().split(new PTask(new Work() {
+    }).chain( new Split().addSplit(new PTask(new Work() {
       public Object perform(FlowPoint cur, Job job, Object arg) {
-        out.println("*Child*: will create my own child (blocking)");
+        System.out.println("*Child*: will create my own child (blocking)");
         job.setv("rhs", 60);
         job.setv("lhs", 5);
         Activity p2= new PTask( new Work() {

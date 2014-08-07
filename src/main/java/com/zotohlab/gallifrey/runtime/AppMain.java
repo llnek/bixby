@@ -18,12 +18,14 @@ import com.google.gson.JsonObject;
 import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.frwk.core.*;
 
+import java.util.Map;
+
 /**
  * @author kenl
  */
 public interface AppMain extends Disposable , Initializable , Startable {
 
-  public void configure(JsonObject options);
+  public void configure(Map<String,?> options);
 
   public void contextualize(Container c);
 

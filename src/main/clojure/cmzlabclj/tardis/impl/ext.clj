@@ -526,16 +526,15 @@
 ;;
 (defn- doJavaApp ""
 
-  [^cmzlabclj.tardis.core.sys.Element ctr ^AppMain obj]
+  [^cmzlabclj.tardis.core.sys.Element ctr
+   ^AppMain obj]
 
-  ;; if java, pass in the conf properties as json, not edn.
-  (let [^File appDir (.getAttr ctr K_APPDIR)
-        cs (ReadEdn (File. appDir
-                           (str DN_CONF "/" "app.conf")))
-        json (CoreUtils/readJson ^String
-                                 (json/write-str cs)) ]
+  ;; if java, pass in the conf properties as json,
+  ;; not edn.
+  (let [cfg (.getAttr ctr K_APPCONF)
+        m (ConvToJava cfg) ]
   (.contextualize obj ctr)
-  (.configure obj json)
+  (.configure obj m)
   (.initialize obj)) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

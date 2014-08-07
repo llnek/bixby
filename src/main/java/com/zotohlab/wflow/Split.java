@@ -22,6 +22,14 @@ import com.zotohlab.wflow.core.Job;
  */
 public class Split extends Composite {
 
+  public static Split wrap(Join j) {
+    return new Split(j);
+  }
+
+  public static Split wrap() {
+    return new Split();
+  }
+
   protected Join _theJoin;
 
   public Split(Join j) {
@@ -32,7 +40,7 @@ public class Split extends Composite {
     this(null);
   }
 
-  public Split addSplit(Activity a) {
+  public Split split(Activity a) {
     add(a);
     return this;
   }

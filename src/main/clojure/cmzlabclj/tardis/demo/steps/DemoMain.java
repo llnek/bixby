@@ -21,9 +21,6 @@ import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
 
-import java.util.Map;
-
-import java.util.Objects;
 
 /**
  * @author kenl
@@ -36,10 +33,10 @@ public class DemoMain implements AppMain {
     Object b= c.getEnvConfig();
 
     System.out.println("configure: env config=");
-    System.out.println(Objects.toString(b));
+    System.out.println(java.util.Objects.toString(b));
 
     System.out.println("configure: app config=");
-    System.out.println(Objects.toString(a));
+    System.out.println(java.util.Objects.toString(a));
   }
 
   public void initialize() {
@@ -48,7 +45,7 @@ public class DemoMain implements AppMain {
 
   public void configure(Map<String,?> j) {
     System.out.println("configure: config=");
-    System.out.println(Objects.toString(j));
+    System.out.println(java.util.Objects.toString(j));
   }
 
   public void start() {}

@@ -11,8 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-
-package demo.steps;
+package demo.fork;
 
 import com.google.gson.JsonObject;
 import com.zotohlab.gallifrey.runtime.AppMain;
@@ -21,43 +20,23 @@ import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.wflow.core.Job;
 import com.zotohlab.wflow.*;
 
-import java.util.Map;
-
-import java.util.Objects;
 
 /**
  * @author kenl
  */
-
 public class DemoMain implements AppMain {
 
   public void contextualize(Container c) {
-    Object a= c.getAppConfig();
-    Object b= c.getEnvConfig();
-
-    System.out.println("configure: env config=");
-    System.out.println(Objects.toString(b));
-
-    System.out.println("configure: app config=");
-    System.out.println(Objects.toString(a));
   }
-
   public void initialize() {
-    System.out.println("Demo a set of workflow control features..." );
+    System.out.println("Demo fork(split)/join of tasks..." );
   }
-
-  public void configure(Map<String,?> j) {
-    System.out.println("configure: config=");
-    System.out.println(Objects.toString(j));
+  public void configure(JsonObject json) {
   }
-
   public void start() {}
-
   public void stop() {
   }
-
   public void dispose() {
   }
-
 }
 
