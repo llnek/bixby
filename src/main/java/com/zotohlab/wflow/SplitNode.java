@@ -46,7 +46,7 @@ public class SplitNode extends CompositeNode {
     realize();
 
     // should we also pass the closure to the next step ? not for now
-    return _fallThru ? nextPoint() : null;
+    return _fallThru ? nextNode() : null;
   }
 
   public SplitNode withBranches(Iter w) {

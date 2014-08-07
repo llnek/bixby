@@ -33,7 +33,7 @@ public class WhileNode extends ConditionalNode {
 
     if ( ! test(j)) {
       //tlog().debug("WhileNode: test-condition == false")
-      rc= nextPoint();
+      rc= nextNode();
       if (rc != null) { rc.attachClosureArg(c); }
       realize();
     } else {

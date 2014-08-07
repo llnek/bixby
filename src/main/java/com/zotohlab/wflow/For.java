@@ -23,6 +23,10 @@ import com.zotohlab.wflow.core.Job;
  */
 public class For extends While {
 
+  public static For apply(ForLoopCountExpr loopCount, Activity body) {
+    return new For(loopCount, body);
+  }
+
   private ForLoopCountExpr _loopCntr;
 
   public For(ForLoopCountExpr loopCount, Activity body) {

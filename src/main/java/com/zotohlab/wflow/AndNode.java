@@ -36,7 +36,7 @@ public class AndNode extends JoinNode {
 
     // all branches have returned, proceed...
     if (nv == size() ) {
-      rc= (_body == null) ? nextPoint() : _body;
+      rc= (_body == null) ? nextNode() : _body;
       if (rc != null) { rc.attachClosureArg(c); }
       realize();
     }

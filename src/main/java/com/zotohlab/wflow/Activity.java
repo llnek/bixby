@@ -59,7 +59,7 @@ public abstract class Activity {
 
   public void finalize() throws Throwable {
     super.finalize();
-    tlog().debug("=========================> Activity: " + getClass().getName() + " finz'ed");
+    //tlog().debug("=========================> Activity: " + getClass().getName() + " finz'ed");
   }
 
 }

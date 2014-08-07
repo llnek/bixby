@@ -23,6 +23,10 @@ public class PTask extends Activity {
     return new PTask(w);
   }
 
+  public static PTask apply(Work w) {
+    return new PTask(w);
+  }
+
   private Work _work;
 
   public PTask(Work w) {

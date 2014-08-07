@@ -19,6 +19,10 @@ package com.zotohlab.wflow;
  */
 public class Delay extends Activity {
 
+  public static Delay apply(long delay) {
+    return new Delay(delay);
+  }
+
   private long _delayMillis;
 
   public Delay(long delay) {

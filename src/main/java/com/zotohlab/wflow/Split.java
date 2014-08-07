@@ -75,7 +75,7 @@ public class Split extends Composite {
       _theJoin= new NullJoin();
     }
 
-    FlowNode s = _theJoin.reify(p.nextPoint() );
+    FlowNode s = _theJoin.reify(p.nextNode() );
     // note: get all *children* to come back to the join
     p.withBranches( new Iter(s, listChildren() ) );
 

@@ -21,6 +21,10 @@ package com.zotohlab.wflow;
  */
 public class Nihil  extends Activity {
 
+  public static Nihil apply() {
+    return new Nihil();
+  }
+
   public Nihil() {}
 
   public FlowNode reifyNode(FlowNode cur) { return new NihilNode(cur.flow() ); }

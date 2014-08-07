@@ -29,7 +29,7 @@ public class OrNode extends JoinNode {
     int nv= _cntr.incrementAndGet();
     FlowNode rc= this;
     Object c= getClosureArg();
-    FlowNode np=nextPoint();
+    FlowNode np= nextNode();
 
     if (size() == 0) {
       rc= np;

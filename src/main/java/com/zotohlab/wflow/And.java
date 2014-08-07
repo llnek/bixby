@@ -32,7 +32,7 @@ public class And extends Join {
   public void realize(FlowNode fp) {
     AndNode s = (AndNode)fp;
     if (_body != null) {
-      s.withBody( _body.reify( s.nextPoint()));
+      s.withBody( _body.reify( s.nextNode()));
     }
     s.withBranches(_branches);
   }

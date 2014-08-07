@@ -36,7 +36,7 @@ public class BlockNode extends CompositeNode {
       rc = n.eval(j);
     } else {
       //tlog.debug("BlockNode: no more elements.")
-      rc=nextPoint();
+      rc= nextNode();
       if (rc != null) {  rc.attachClosureArg(c); }
       realize();
     }

@@ -40,7 +40,7 @@ public class If extends Conditional {
 
   public void realize(FlowNode fp) {
     IfNode s= (IfNode) fp;
-    FlowNode np= s.nextPoint();
+    FlowNode np= s.nextNode();
     s.withElse( (_elseCode ==null) ? np : _elseCode.reify(np) );
     s.withThen( _thenCode.reify(np));
     s.withTest( expr());

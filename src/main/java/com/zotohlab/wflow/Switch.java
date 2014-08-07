@@ -49,7 +49,7 @@ public class Switch extends Activity {
   public void realize(FlowNode fp) {
     Map<Object,FlowNode> t= new HashMap<Object,FlowNode>();
     SwitchNode p= (SwitchNode) fp;
-    FlowNode nxt= p.nextPoint();
+    FlowNode nxt= p.nextNode();
 
     for (Map.Entry<Object,Activity> en: _choices.entrySet()) {
       t.put(en.getKey(), en.getValue().reify(nxt) );

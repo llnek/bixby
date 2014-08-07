@@ -29,7 +29,7 @@ public class Or extends Join {
   public void realize(FlowNode fp) {
     OrNode s= (OrNode) fp;
     if (_body != null) {
-      s.withBody( _body.reify(s.nextPoint() ));
+      s.withBody( _body.reify(s.nextNode() ));
     }
     s.withBranches(_branches);
   }

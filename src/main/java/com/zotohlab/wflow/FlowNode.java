@@ -57,7 +57,7 @@ public abstract class FlowNode implements  RunnableWithId {
 
   public Object getId() { return _pid; }
 
-  public FlowNode nextPoint() { return _nextPtr; }
+  public FlowNode nextNode() { return _nextPtr; }
 
   public Activity getDef() { return _defn; }
 
@@ -127,7 +127,7 @@ public abstract class FlowNode implements  RunnableWithId {
 
   private void runAfter(Pipeline f, FlowNode rc) {
     ServerLike x = (ServerLike) f.container();
-    FlowNode np= rc.nextPoint();
+    FlowNode np= rc.nextNode();
     Schedulable ct= x.core();
 
     if (rc instanceof DelayNode) {
