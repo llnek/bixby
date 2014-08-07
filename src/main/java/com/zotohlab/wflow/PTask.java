@@ -29,7 +29,7 @@ public class PTask extends Activity {
     _work=w;
   }
 
-  public FlowNode reifyPoint(FlowNode cur) { return new PTaskNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { return new PTaskNode(cur, this); }
 
   public void realize(FlowNode fp) {
     PTaskNode s= (PTaskNode) fp;

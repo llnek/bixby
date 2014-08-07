@@ -25,7 +25,7 @@ public class And extends Join {
     super(body);
   }
 
-  public FlowNode reifyPoint(FlowNode cur) {
+  public FlowNode reifyNode(FlowNode cur) {
     return new AndNode(cur, this);
   }
 

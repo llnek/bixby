@@ -45,10 +45,10 @@ public abstract class Activity {
    * @return a *live* version of this Activity.
    */
   public FlowNode reify(FlowNode cur) {
-    return reifyPoint(cur).realize();
+    return reifyNode(cur).realize();
   }
 
-  protected abstract FlowNode reifyPoint(FlowNode cur) ;
+  protected abstract FlowNode reifyNode(FlowNode cur) ;
 
   /**
    * Configure the *live* version of this Activity.

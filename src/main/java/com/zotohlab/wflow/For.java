@@ -31,7 +31,7 @@ public class For extends While {
     _loopCntr = loopCount;
   }
 
-  public FlowNode reifyPoint(FlowNode cur) { return new ForNode(cur,this); }
+  public FlowNode reifyNode(FlowNode cur) { return new ForNode(cur,this); }
 
   public void realize(FlowNode fp) {
     ForNode p= (ForNode) fp;

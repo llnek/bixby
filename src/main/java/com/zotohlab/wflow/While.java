@@ -36,7 +36,7 @@ public class While extends Conditional {
 //    });
 //  }
 //
-  public FlowNode reifyPoint(FlowNode cur) { return new WhileNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { return new WhileNode(cur, this); }
 
   public void realize(FlowNode fp) {
     WhileNode p= (WhileNode) fp;

@@ -24,7 +24,7 @@ public class Or extends Join {
     super(b);
   }
 
-  public FlowNode reifyPoint(FlowNode cur) { return new OrNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { return new OrNode(cur, this); }
 
   public void realize(FlowNode fp) {
     OrNode s= (OrNode) fp;

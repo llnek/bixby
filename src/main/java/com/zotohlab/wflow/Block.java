@@ -43,7 +43,7 @@ public class Block extends Composite {
     return this;
   }
 
-  public FlowNode reifyPoint(FlowNode cur) {
+  public FlowNode reifyNode(FlowNode cur) {
     return new BlockNode(cur,this);
   }
 

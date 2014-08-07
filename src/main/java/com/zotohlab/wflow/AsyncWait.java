@@ -21,7 +21,7 @@ package com.zotohlab.wflow;
  */
 public class AsyncWait extends Activity {
 
-  public FlowNode reifyPoint(FlowNode cur) {
+  public FlowNode reifyNode(FlowNode cur) {
     return new AsyncWaitNode(cur,this);
   }
 

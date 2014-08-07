@@ -64,7 +64,7 @@ public class Split extends Composite {
     return this;
   }
 
-  public FlowNode reifyPoint(FlowNode cur) { return new SplitNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { return new SplitNode(cur, this); }
 
   public  void realize(FlowNode fp) {
     SplitNode p= (SplitNode) fp;
@@ -97,7 +97,7 @@ class NullJoin extends Join {
     super(null);
   }
 
-  public FlowNode reifyPoint(FlowNode cur) { return new NullJoinNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { return new NullJoinNode(cur, this); }
 
   public void realize(FlowNode cur) {}
 
