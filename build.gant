@@ -318,6 +318,9 @@ target (packBin: '') {
        ================================= */
 
 target (packSamples: '') {
+  new File( "${srcDir}/clojure/demo").eachDir { dir ->
+    createOneDemoApp(dir)
+  }
   new File( "${srcDir}/java/demo").eachDir { dir ->
     createOneDemoApp(dir)
   }

@@ -48,7 +48,8 @@
                ;; use the token to tell framework to restart the idled process
                (.resume t result))
              (onError [_ err] (.resume t err))
-             (onTimeout [this] (.onError this (Exception. "time out")))) ]
+             (onTimeout [this] (.onError this
+                                         (Exception. "time out")))) ]
     (DelayExec #(.onSuccess cb "hello world after 10 seconds.")
                10000)
   ))
@@ -86,7 +87,7 @@
 
   (contextualize [_ c] )
 
-  (initialize [_] 
+  (initialize [_]
     (println "Demo calling an async java-api & resuming."))
 
   (configure [_ cfg] )
