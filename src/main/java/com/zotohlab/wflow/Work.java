@@ -22,7 +22,7 @@ import com.zotohlab.wflow.core.Job;
 @FunctionalInterface
 public interface Work {
 
-  public Object perform(FlowNode cur, Job job, Object arg);
+  public Object exec(FlowNode cur, Job job, Object arg);
 
 }
 

@@ -34,8 +34,8 @@ public class PTaskNode extends FlowNode {
   }
 
   public FlowNode eval(Job j) {
-    //tlog.debug("PTaskNode: {} about to perform work.", this.id )
-    Object a= _work.perform(this, j, popClosureArg());
+    //tlog.debug("PTaskNode: {} about to exec work.", this.id )
+    Object a= _work.exec(this, j, popClosureArg());
     FlowNode rc= nextNode();
 
     if (a instanceof Nihil) {

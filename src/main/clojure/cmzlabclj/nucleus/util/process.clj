@@ -24,6 +24,7 @@
 
   (:import  [java.lang.management ManagementFactory]
             [java.util.concurrent Callable]
+            [java.util TimerTask Timer]
             [com.zotohlab.frwk.util CoreUtils]
             [java.lang Thread Runnable]))
 
@@ -106,6 +107,18 @@
       ""
       (first ss))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DelayExec ""
+
+  [func delayMillis]
+
+  (-> (Timer. true)
+      (.schedule (proxy TimerTask []
+                   (run []
+                     (apply func [])))
+                 delayMillis)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

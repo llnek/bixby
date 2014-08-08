@@ -33,7 +33,7 @@
   [func]
 
   (PTask. (reify Work
-            (perform [_ fw job arg]
+            (exec [_ fw job arg]
               (func fw job arg)))
   ))
 
