@@ -22,7 +22,6 @@
         [cmzlabclj.nucleus.util.str :only [nsb] ]
         [cmzlabclj.tardis.core.sys :only [DefWFTask]])
 
-
   (:import  [com.zotohlab.wflow FlowNode PTask Work AsyncWait
                                 PipelineDelegate
                                 AsyncCallback AsyncResumeToken]
@@ -61,19 +60,19 @@
   (getStartActivity [_ pipe]
     (require 'cmzlabclj.tardis.demo.async.core)
     (let [a1 (DefWFTask
-               (fn [cur job arg]
+               #(do
                  (println "/* Calling a mock-webservice which takes a long time (10secs),")
                  (println "- since the call is *async*, event loop is not blocked.")
                  (println "- When we get a *call-back*, the normal processing will continue */")
-                 (doLongAsyncCall cur)
+                 (doLongAsyncCall %1)
                  (println "\n\n")
                  (println "+ Just called the webservice, the process will be *idle* until")
                  (println "+ the websevice is done.")
                  (println "\n\n")
                  (AsyncWait.)))
           a2 (DefWFTask
-               (fn [cur job arg]
-                 (println "-> The result from WS is: " arg)
+               #(do
+                 (println "-> The result from WS is: " %3)
                  nil)) ]
       (.chain a1 a2)))
 
@@ -87,7 +86,8 @@
 
   (contextualize [_ c] )
 
-  (initialize [_] (println "Demo calling an async java-api & resuming."))
+  (initialize [_] 
+    (println "Demo calling an async java-api & resuming."))
 
   (configure [_ cfg] )
 

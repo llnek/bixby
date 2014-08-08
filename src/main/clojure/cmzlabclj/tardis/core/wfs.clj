@@ -16,6 +16,8 @@
   (:import [com.zotohlab.wflow FlowNode])
 
   (:import  [com.zotohlab.wflow If BoolExpr FlowPoint Activity
+                                ForLoopCountExpr BoolExpr
+                                SwitchChoiceExpr
                                 Pipeline PipelineDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow.core Job]))
@@ -40,13 +42,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;(defmacro DefPredicate [ & exprs ] `(reify BoolExpr ~@exprs))
-(defn DefPredicate ""
+(defn DefBoolExpr
 
   ^BoolExpr
   [func]
 
   (reify BoolExpr (evaluate [_ job] (func job))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DefChoiceExpr
+
+  ^SwitchChoiceExpr
+  [func]
+
+  (reify SwitchChoiceExpr (getChoice [_ job] (func job))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DefFLCountExpr
+
+  ^ForLoopCountExpr 
+  [func]
+
+  (reify ForLoopCountExpr (getCount [_ job] (func job))
+  ))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
