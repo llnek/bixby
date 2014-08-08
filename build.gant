@@ -319,10 +319,10 @@ target (packBin: '') {
 
 target (packSamples: '') {
   new File( "${srcDir}/clojure/demo").eachDir { dir ->
-    createOneDemoApp(dir)
+    createOneDemoApp(dir, "clojure")
   }
   new File( "${srcDir}/java/demo").eachDir { dir ->
-    createOneDemoApp(dir)
+    createOneDemoApp(dir, "java")
   }
 }
 
@@ -490,9 +490,9 @@ target (packAllLics: '') {
        pack samples and/or demos
        */
 
-def createOneDemoApp(dir) {
+def createOneDemoApp(dir, lang) {
   final demoDir="${packDir}/docs/samples"
-  final demoSrc="${srcDir}/java"
+  final demoSrc="${srcDir}/" + lang
   final appkey= generateUUID()
   final appid= dir.getName()
   final res= "${demoDir}/${appid}/src/main/resources/"
@@ -533,7 +533,7 @@ def createOneDemoApp(dir) {
   }
   copy (todir: "${demoDir}/${appid}/conf", file: "${basedir}/etc/app/app.conf")
   replace (file: "${demoDir}/${appid}/conf/app.conf", token: "@@USER@@", value: 'test')
-  ant.copy (todir: "${demoDir}/${appid}/src/main/java/demo/${appid}") {
+  ant.copy (todir: "${demoDir}/${appid}/src/main/" + lang + "/demo/${appid}") {
     fileset (dir: "${demoSrc}/demo/${appid}") {
       exclude (name: '**/env.conf')
     }
