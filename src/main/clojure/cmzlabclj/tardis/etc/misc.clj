@@ -14,7 +14,9 @@
 
   cmzlabclj.tardis.etc.misc
 
-  (:import  [com.zotohlab.wflow.core FlowError]
+  (:use [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
+
+  (:import  [com.zotohlab.wflow.core Job FlowError]
             [com.zotohlab.wflow Pipeline PipelineDelegate PTask Work]
             [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
             [com.zotohlab.frwk.core Startable]))
@@ -29,13 +31,14 @@
 
   [s]
 
-  (reify Work
-    (perform [_ cur job arg]
+  (DefWFTask
+    (fn [cur ^Job job arg]
       (let [^HTTPEvent evt (.event job)
             ^HTTPResult
             res (.getResultObj evt) ]
         (.setStatus res s)
-        (.replyResult evt)))
+        (.replyResult evt)
+        nil))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,8 +48,8 @@
   [^Pipeline pipe s]
 
   (let [evt (-> pipe (.job)(.event)) ]
-    (condp instance? evt
-      HTTPEvent (PTask. (make-work s))
+    (if (instance? HTTPEvent evt)
+      (make-work s)
       (throw (FlowError. (str "Unhandled event-type \""
                               (:typeid (meta evt))
                               "\"."))))

@@ -12,20 +12,19 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.tcpip.core
-
+  demo.tcpip.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
-        [cmzlabclj.nucleus.util.core :only [notnil?] ]
+        [cmzlabclj.nucleus.util.core :only [Try! notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask
+  (:import  [com.zotohlab.wflow FlowNode PTask Delay
                                 PipelineDelegate]
-            [java.io DataInputStream BufferedInputStream]
+            [java.io DataOutputStream DataInputStream BufferedInputStream]
             [com.zotohlab.gallifrey.io SocketEvent]
             [com.zotohlab.gallifrey.core Container]
             [java.net Socket]
@@ -47,6 +46,7 @@
 (deftype DemoClient [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
         (.chain
@@ -61,8 +61,8 @@
                 (try
                   (let [bits (.getBytes ^String @s "utf-8")
                         port (.getv ^Service @tcp :port)
-                        host (.getv ^Service @tcp :host)
-                        soc (Socket. host port)
+                        ^String host (.getv ^Service @tcp :host)
+                        soc (Socket. host (int port))
                         os (.getOutputStream soc) ]
                     (var-set ssoc soc)
                     (-> (DataOutputStream. os)
@@ -84,6 +84,7 @@
 (deftype DemoServer [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.tcpip.core)
     (-> (DefWFTask
           (fn [cur ^Job job arg]
             (let [^SocketEvent ev (.event job)

@@ -13,9 +13,8 @@
       :author "kenl" }
 
   cmzlabclj.tardis.core.wfs
-  (:import [com.zotohlab.wflow FlowNode])
 
-  (:import  [com.zotohlab.wflow If BoolExpr FlowPoint Activity
+  (:import  [com.zotohlab.wflow If BoolExpr FlowNode Activity
                                 ForLoopCountExpr BoolExpr
                                 SwitchChoiceExpr
                                 Pipeline PipelineDelegate PTask Work]

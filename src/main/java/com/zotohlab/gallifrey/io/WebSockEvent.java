@@ -13,6 +13,8 @@
 
 package com.zotohlab.gallifrey.io;
 
+import com.zotohlab.frwk.io.XData;
+
 /**
  * @author kenl
  */
@@ -24,7 +26,7 @@ public interface WebSockEvent  extends IOEvent {
 
   public boolean isText();
 
-  public Object getData();
+  public XData getData();
 
   public boolean isSSL();
 

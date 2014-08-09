@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.http.core
+  demo.http.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -20,7 +20,7 @@
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
         [cmzlabclj.nucleus.util.core :only [Try!] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask
@@ -48,8 +48,9 @@
 (deftype Demo [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.http.core)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev) ]
           ;; construct a simple html page back to caller

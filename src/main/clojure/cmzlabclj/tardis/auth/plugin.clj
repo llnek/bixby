@@ -51,7 +51,7 @@
             [org.apache.shiro SecurityUtils]
             [org.apache.shiro.subject Subject]
             [org.apache.shiro.authc UsernamePasswordToken]
-            [com.zotohlab.wflow If BoolExpr FlowPoint
+            [com.zotohlab.wflow If BoolExpr FlowNode
                                 Activity Pipeline
                                 PipelineDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
@@ -314,7 +314,7 @@
   ^BoolExpr
   [^String challengeStr]
 
-  (DefPredicate
+  (DefBoolExpr
     (fn [^Job job]
       (let [^cmzlabclj.tardis.core.sys.Element ctr (.container job)
             ^cmzlabclj.tardis.auth.plugin.AuthPlugin
@@ -370,7 +370,7 @@
   ^BoolExpr
   []
 
-  (DefPredicate
+  (DefBoolExpr
     (fn [^Job job]
       (let [^cmzlabclj.tardis.core.sys.Element ctr (.container job)
             ^cmzlabclj.tardis.auth.plugin.AuthPlugin

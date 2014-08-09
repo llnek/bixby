@@ -12,16 +12,15 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.http.formpost
-
+  demo.http.formpost
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
-        [cmzlabclj.nucleus.util.core :only [Try! notnil?] ]
+        [cmzlabclj.nucleus.util.core :only [notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask
@@ -44,26 +43,26 @@
 (deftype Demo [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.http.formpost)
     (DefWFTask
       (fn [cur job arg]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev)
-              ^XData data (.data ev)
+              data (.data ev)
               stuff (if (and (notnil? data)
                              (.hasContent data))
                       (.content data)
                       nil) ]
           (cond
             (instance? ULFormItems stuff)
-            (let [^ULFormItems itms stuff]
-              (doseq [^ULFileItem fi (seq (.getAll itms))]
+            (doseq [^ULFileItem fi (seq (.getAll ^ULFormItems stuff))]
                 (println "Fieldname : " (.getFieldName fi))
                 (println "Name : " (.getName fi))
                 (println "Formfield : " (.isFormField fi))
                 (if (.isFormField fi)
                   (println "Field value: " (.getString fi))
-                  (when-let [^XData xs (.fileData fi)]
-                    (println "Field file = " (.filePath xs))))))
+                  (when-let [xs (.fileData fi)]
+                    (println "Field file = " (.filePath xs)))))
             :else
             (println "Error: data is not ULFormItems."))
           (.setStatus res 200)

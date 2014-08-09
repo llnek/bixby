@@ -13,7 +13,7 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.file.core
+  demo.file.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -21,18 +21,17 @@
   (:use [cmzlabclj.nucleus.util.process :only [ThreadFunc] ]
         [cmzlabclj.nucleus.util.core :only [Try!] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Work AsyncWait
-                               PipelineDelegate
-                               AsyncCallback AsyncResumeToken]
-            [com.zotohlab.gallifrey.runtime AppMain]
+  (:import  [com.zotohlab.wflow FlowNode PTask
+                                PipelineDelegate]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.gallifrey.io FileEvent]
             [com.zotohlab.frwk.server Service]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]
             [java.util Date]
+            [java.lang StringBuilder]
             [java.io File IOException]
             [com.zotohlab.wflow.core Job]))
 
@@ -57,13 +56,13 @@
 (deftype DemoGen [] PipelineDelegate
 
   (getStartActivity [_ pipe]
-    (require 'cmzlabclj.tardis.demo.file.core)
+    (require 'demo.file.core)
     (DefWFTask
       (fn [cur job arg]
         (let [s (str "Current time is " (Date.))
               ^Service p (-> (.container pipe)
                              (.getService :default-sample)) ]
-          (FileUtils/writeStringToFile (File. (nsb (.getv p :target))
+          (FileUtils/writeStringToFile (File. (nsb (.getv p :targetFolder))
                                               (str "ts-" (ncount) ".txt"))
                                        s
                                        "utf-8")
@@ -78,8 +77,9 @@
 (deftype DemoPick [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.file.core)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^FileEvent ev (.event job)
               f (.getFile ev) ]
           (println "Picked up new file: " f)
@@ -88,7 +88,6 @@
 
   (onStop [_ p] )
   (onError [_ err c] nil))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

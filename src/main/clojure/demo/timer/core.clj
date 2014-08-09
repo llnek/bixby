@@ -12,8 +12,7 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.timer.core
-
+  demo.timer.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -21,7 +20,7 @@
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
         [cmzlabclj.nucleus.util.core :only [notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask
@@ -55,6 +54,7 @@
 (deftype Demo [] PipelineDelegate 
 
   (getStartActivity [_ pipe]
+    (require 'demo.timer.core)
     (DefWFTask
       (fn [cur ^Job job arg]
         (let [^TimerEvent ev (.event job) ] 

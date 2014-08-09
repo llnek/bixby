@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.jms.core
+  demo.jms.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -20,7 +20,7 @@
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
         [cmzlabclj.nucleus.util.core :only [notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask
                                 PipelineDelegate]
@@ -50,8 +50,9 @@
 (deftype Demo [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.jms.core)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^JMSEvent ev (.event job)
               ^TextMessage msg (.getMsg ev) ]
           (println "-> Correlation ID= " (.getJMSCorrelationID msg))

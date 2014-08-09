@@ -12,16 +12,16 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.http.websock
-
+  demo.http.websock
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
-        [cmzlabclj.nucleus.util.core :only [Try!] ]
+        [cmzlabclj.nucleus.util.core :only [notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.nucleus.util.meta :only [IsBytes?] ]
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask
@@ -42,11 +42,12 @@
 (deftype Demo [] PipelineDelegate
 
   (getStartActivity [_ pipe]
+    (require 'demo.http.websock)
     (DefWFTask
       (fn [cur job arg]
         (let [^WebSockEvent ev (.event job)
               res (.getResultObj ev)
-              ^XData data (.getData ev)
+              data (.getData ev)
               stuff (if (and (notnil? data)
                              (.hasContent data))
                       (.content data)
@@ -55,11 +56,11 @@
             (instance? String stuff)
             (println "Got poked by websocket-text: " stuff)
 
-            (notnil? stuff)
-            (println "Got poked by websocket-bin: " stuff)
+            (IsBytes? (class stuff))
+            (println "Got poked by websocket-bin: len = " (alength stuff))
 
             :else
-            (println "No data from websocket????"))
+            (println "Funky data from websocket????"))
           nil))))
 
   (onStop [_ p] )

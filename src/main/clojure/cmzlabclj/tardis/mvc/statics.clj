@@ -13,7 +13,6 @@
       :author "kenl" }
 
   cmzlabclj.tardis.mvc.statics
-  (:import [com.zotohlab.wflow FlowNode])
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -25,6 +24,7 @@
         [cmzlabclj.tardis.io.netty]
         [cmzlabclj.tardis.io.core]
         [cmzlabclj.tardis.core.sys]
+        [cmzlabclj.tardis.core.wfs]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.mvc.templates :only [MakeWebAsset] ]
         [cmzlabclj.tardis.mvc.comms]
@@ -32,7 +32,7 @@
         [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
         [cmzlabclj.nucleus.net.routes])
 
-  (:import  [com.zotohlab.wflow FlowPoint Activity Pipeline
+  (:import  [com.zotohlab.wflow FlowNode Activity Pipeline
                                 PipelineDelegate PTask Work]
             [com.zotohlab.wflow.core Job]
             [com.zotohlab.frwk.netty NettyFW]
@@ -53,15 +53,15 @@
 (deftype StaticAssetHandler [] PipelineDelegate
 
   (getStartActivity [_  pipe]
-    (PTask. (reify Work
-              (perform [_ fw job arg]
-                (let [^HTTPEvent evt (.event job)
-                      ^HTTPResult res (.getResultObj evt) ]
-                  (HandleStatic (.emitter evt)
-                                evt
-                                res
-                                (.getv job EV_OPTS))
-                  nil)))))
+    (DefWFTask
+      (fn [cur ^Job job arg]
+        (let [^HTTPEvent evt (.event job)
+              res (.getResultObj evt) ] 
+          (HandleStatic (.emitter evt)
+                        evt
+                        res
+                        (.getv job EV_OPTS)) 
+          nil))))
 
   (onStop [_ pipe]
     (log/debug "Nothing to be done here, just stop please."))

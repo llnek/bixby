@@ -115,10 +115,10 @@
   [func delayMillis]
 
   (-> (Timer. true)
-      (.schedule (proxy TimerTask []
+      (.schedule (proxy [TimerTask][]
                    (run []
                      (apply func [])))
-                 delayMillis)))
+                 (long delayMillis))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

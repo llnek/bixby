@@ -412,6 +412,8 @@ target (repl: '') { clj_console() }
        compile source code
        */
 
+target (cljhhhDemo: '') { cljhhh_Demo() }
+
 target (cljhhhMain: '') { cljhhh_Main() }
 
 target (cljhhhCore: '') { cljhhh_Core() }
@@ -544,7 +546,14 @@ def createOneDemoApp(dir, lang) {
   ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/build.xs")
   ant.replace (file: "${demoDir}/${appid}/build.xs", token: "@@SKAROHOME@@", value: "${basedir}/../..")
   ant.replace (file: "${demoDir}/${appid}/build.xml", token: "@@APPID@@", value: "${appid}")
-  ant.replace (file: "${demoDir}/${appid}/build.xml", token: "@@APPCLJFILES@@", value: '')
+  if (lang == "clojure") {
+    ant.replace (file: "${demoDir}/${appid}/build.xml",
+    token: "@@APPCLJFILES@@",
+    value: "<arg value=\"demo.${appid}.core\"/>")
+  } else {
+    ant.replace (file: "${demoDir}/${appid}/build.xml",
+    token: "@@APPCLJFILES@@", value: '')
+  }
   ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/ivy.config.xml")
   ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/ivy.xml")
   ant.replace (file: "${demoDir}/${appid}/ivy.xml", token: "@@APPDOMAIN@@", value: 'demoware')
@@ -632,6 +641,9 @@ def compile_clj() {
   cljhhh_Auth()
   cljhhh_MVC()
   cljhhh_Main()
+
+  // demo apps
+  cljhhh_Demo()
 
   copy (todir: "${buildDir}") {
     fileset (dir: "${srcDir}/clojure") {
@@ -936,6 +948,29 @@ def cljhhh_Main() {
     arg (value: 'cmzlabclj.tardis.impl.ext')
     arg (value: 'cmzlabclj.tardis.impl.sys')
     arg (value: 'cmzlabclj.tardis.impl.exec')
+  }
+}
+
+def cljhhh_Demo() {
+  println "cljhhh_Demo:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'demo.async.core')
+    arg (value: 'demo.file.core')
+    arg (value: 'demo.fork.core')
+    arg (value: 'demo.http.core')
+    arg (value: 'demo.jetty.core')
+    arg (value: 'demo.jms.core')
+    arg (value: 'demo.mvc.core')
+    arg (value: 'demo.pop3.core')
+    arg (value: 'demo.steps.core')
+    arg (value: 'demo.tcpip.core')
+    arg (value: 'demo.timer.core')
   }
 }
 

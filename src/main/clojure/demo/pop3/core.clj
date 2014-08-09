@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.pop3.core
+  demo.pop3.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
@@ -20,7 +20,7 @@
   (:use [cmzlabclj.nucleus.util.process :only [DelayExec] ]
         [cmzlabclj.nucleus.util.core :only [notnil?] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask
@@ -60,16 +60,16 @@
 (deftype Demo [] PipelineDelegate
 
   (getStartActivity [_ pipe]
-    (require 'cmzlabclj.tardis.demo.pop3.core)
+    (require 'demo.pop3.core)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^EmailEvent ev (.event job)
               ^MimeMessage msg (.getMsg ev)
               ^Multipart p (.getContent msg) ]
           (println "######################## (" (ncount) ")" )
           (print "Subj:" (.getSubject msg) "\r\n")
-          (print "Fr:" (aget (.getFrom msg) 0) "\r\n")
-          (print "To:" (first (.getRecipients msg)))
+          (print "Fr:" (first (.getFrom msg)) "\r\n")
+          (print "To:" (.getRecipients msg 0))
           (print "\r\n")
           (println (IOUtils/toString (-> (.getBodyPart p 0)
                                         (.getInputStream))

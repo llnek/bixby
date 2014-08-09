@@ -12,19 +12,19 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  cmzlabclj.tardis.demo.fork.core
+  demo.fork.core
 
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core :only [Try!] ]
         [cmzlabclj.nucleus.util.str :only [nsb] ]
-        [cmzlabclj.tardis.core.sys :only [DefWFTask]])
+        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask Split
                                PipelineDelegate]
-            [java.util StringBuilder]
+            [java.lang StringBuilder]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.wflow.core Job]))
 
@@ -61,29 +61,29 @@
     ;; parent continues;
 
   (getStartActivity [_ pipe]
-    (require 'cmzlabclj.tardis.demo.fork.core)
+    (require 'demo.fork.core)
     (let [a1 (DefWFTask
-               (fn [cur job arg]
+               #(do
                  (println "I am the *Parent*")
                  (println "I am programmed to fork off a parallel child process, "
                           "and continue my business.")
                  nil))
           a2 (Split/fork (DefWFTask
-                           (fn [cur job arg]
+                           (fn [cur ^Job job arg]
                              (println "*Child*: will create my own child (blocking)")
                              (.setv job "rhs" 60)
                              (.setv job "lhs" 5)
                              (-> (Split/applyAnd
                                    (DefWFTask
-                                     (fn [cur job arg]
+                                     (fn [cur ^Job j arg]
                                        (println "*Child*: the result for (5 * 60) according to "
                                                 "my own child is = "
-                                                (.getv job "result"))
+                                                (.getv j "result"))
                                        (println "*Child*: done.")
                                        nil)))
                                  (.include
                                    (DefWFTask
-                                     (fn [cur job arg]
+                                     (fn [cur ^Job j arg]
                                        (println "*Child->child*: taking some time to do "
                                                 "this task... ( ~ 6secs)")
                                        (dotimes [n 7]
@@ -91,9 +91,9 @@
                                          (print "..."))
                                        (println "")
                                        (println "*Child->child*: returning result back to *Child*.")
-                                       (.setv job "result"
-                                              (* (.getv job "rhs")
-                                                 (.getv job "lhs")))
+                                       (.setv j "result"
+                                              (* (.getv j "rhs")
+                                                 (.getv j "lhs")))
                                        (println "*Child->child*: done.")
                                        nil))))))) ]
       (-> (.chain a1 a2)
@@ -102,7 +102,7 @@
                       (let [b (StringBuilder. "*Parent*: ")]
                         (println "*Parent*: after fork, continue to calculate fib(6)...")
                         (dotimes [n 7]
-                          (.append b (str (fib i) " "))A)
+                          (.append b (str (fib n) " ")))
                         (println b "\n" "*Parent*: done.")
                         nil)))))))
 
