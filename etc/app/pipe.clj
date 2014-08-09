@@ -1,11 +1,13 @@
-(ns ^{
-      :doc ""
+(ns ^{:doc ""
       :author kenl }
 
   @@APPDOMAIN@@.pipe
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:import ( com.zotohlab.wflow FlowPoint Activity
+
+  (:use [cmzlabclj.tardis.core.wfs])
+
+  (:import ( com.zotohlab.wflow FlowNode Activity
                                  Pipeline PipelineDelegate
                                  PTask Work))
   (:import (com.zotohlab.wflow.core Job)))
@@ -15,9 +17,9 @@
 (deftype Handler [] PipelineDelegate
 
   (getStartActivity [_  pipe]
-    (PTask. (reify Work
-              (perform [_ fw job arg]
-                (log/info "I  just handled a job!")))))
+    (DefWFTask
+      (fn [cur job arg]
+        (log/info "I  just handled a job!"))))
 
   (onStop [_ pipe]
     (log/info "nothing to be done here, just stop please."))

@@ -1,21 +1,32 @@
-(ns @@APPDOMAIN@@.pipe )
+(ns ^{:doc ""
+      :author "kenl"}
 
-(import '( com.zotohlab.wflow
-  FlowPoint Activity Pipeline PipelineDelegate PTask Work))
-(import '(com.zotohlab.gallifrey.io HTTPEvent HTTPResult))
-(import '(com.zotohlab.wflow.core Job))
-(use '[clojure.tools.logging :only (info warn error debug)])
+  @@APPDOMAIN@@.pipe
 
+  (:require [clojure.tools.logging :as log :only (info warn error debug)])
+
+  (:use [cmzlabclj.tardis.core.wfs])
+
+  (:import [com.zotohlab.wflow FlowNode Activity 
+            Pipeline PipelineDelegate PTask Work]
+           [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+           [com.zotohlab.wflow.core Job]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftype Handler [] PipelineDelegate
+
   (getStartActivity [_  pipe]
-    (PTask. (reify Work
-              (perform [_ fw job arg]
-                (let [ ^HTTPEvent evt (.event job)
-                       ^HTTPResult res (.getResultObj evt) ]
-                  (.setStatus res 200)
-                  (.setContent res "hello world")
-                  (.setHeader res "content-type" "text/plain")
-                  (.replyResult evt))))))
+    (DefWFTask
+      (fn [cur Job job arg]
+        (let [^HTTPEvent evt (.event job)
+              res (.getResultObj evt) ]
+          (doto res
+            (.setStatus 200)
+            (.setContent "hello world")
+            (.setHeader "content-type" "text/plain"))
+          (.replyResult evt)
+          nil))))
 
   (onStop [_ pipe]
     (info "nothing to be done here, just stop please."))
@@ -23,9 +34,8 @@
   (onError [ _ err curPt]
     (info "Oops, I got an error!")))
 
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private pipe-eof nil)
 
 

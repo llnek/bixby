@@ -1,5 +1,4 @@
-(ns  ^{
-       :doc ""
+(ns  ^{:doc ""
        :author "kenl" }
 
   @@APPDOMAIN@@.core
