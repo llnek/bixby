@@ -28,7 +28,7 @@
 
             [org.apache.commons.io IOUtils]
             [java.util.concurrent.atomic AtomicInteger]
-            [javax.mail Message Multipart]
+            [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
             [com.zotohlab.gallifrey.io EmailEvent]
             [com.zotohlab.gallifrey.core Container]
@@ -37,9 +37,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-(System/setProperty "skaro.demo.pop3"
-                    "com.zotohlab.mock.mail.MockPop3Store")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,7 +66,8 @@
           (println "######################## (" (ncount) ")" )
           (print "Subj:" (.getSubject msg) "\r\n")
           (print "Fr:" (first (.getFrom msg)) "\r\n")
-          (print "To:" (.getRecipients msg 0))
+          (print "To:" (first (.getRecipients msg
+                                       Message$RecipientType/TO)))
           (print "\r\n")
           (println (IOUtils/toString (-> (.getBodyPart p 0)
                                         (.getInputStream))
@@ -88,7 +86,9 @@
   (initialize [_]
     (println "Demo receiving POP3 emails..." ))
 
-  (configure [_ cfg] )
+  (configure [_ cfg]
+    (System/setProperty "skaro.demo.pop3"
+                        "com.zotohlab.mock.mail.MockPop3Store"))
 
   (start [_] )
 

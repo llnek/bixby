@@ -44,7 +44,7 @@
   (getStartActivity [_ pipe]
     (require 'demo.http.websock)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^WebSockEvent ev (.event job)
               res (.getResultObj ev)
               data (.getData ev)

@@ -96,7 +96,7 @@
     ;; step1. choose a method to authenticate the user
     ;; here, we'll use a switch() to pick which method
     (let [AuthUser (-> (Switch/apply (DefChoiceExpr
-                                       #(do
+                                       (fn [j]
                                          ;; hard code to use facebook in this example, but you
                                          ;; could check some data from the job, such as URI/Query params
                                          ;; and decide on which mth-value to switch() on.
@@ -107,8 +107,8 @@
                        (.withChoice "openid" (getAuthMtd "openid"))
                        (.withDft (getAuthMtd "db")))
     ;; step2.
-          GetProfile (DefWFTask #(println "Step(2): Get user profile\n"
-                                          "-> user is superuser.\n"))
+          GetProfile (DefWFTask (fn [c j a] (println "Step(2): Get user profile\n"
+                                          "-> user is superuser.\n")))
     ;; step3. we are going to dummy up a retry of 2 times to simulate network/operation
     ;; issues encountered with EC2 while trying to grant permission.
     ;; so here , we are using a while() to do that.
@@ -150,13 +150,13 @@
 
           ;; do a final test to see what sort of response should we send back to the user.
           FinalTest (If/apply
-                      (DefBoolExpr #(RandomBoolValue))
+                      (DefBoolExpr (fn [j] (RandomBoolValue)))
                       (DefWFTask
-                        #(println "Step(5): We'd probably return a 200 OK "
-                                  "back to caller here.\n"))
+                        (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
+                                  "back to caller here.\n")))
                       (DefWFTask
-                        #(println "Step(5): We'd probably return a 200 OK "
-                                  "but with errors.\n"))) ]
+                        (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
+                                  "but with errors.\n")))) ]
       ;;
       ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
       ;; a split, which forks off more steps in parallel.

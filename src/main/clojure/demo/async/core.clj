@@ -61,19 +61,19 @@
   (getStartActivity [_ pipe]
     (require 'demo.async.core)
     (let [a1 (DefWFTask
-               #(do
+               (fn [cur job arg]
                  (println "/* Calling a mock-webservice which takes a long time (10secs),")
                  (println "- since the call is *async*, event loop is not blocked.")
                  (println "- When we get a *call-back*, the normal processing will continue */")
-                 (doLongAsyncCall %1)
+                 (doLongAsyncCall cur)
                  (println "\n\n")
                  (println "+ Just called the webservice, the process will be *idle* until")
                  (println "+ the websevice is done.")
                  (println "\n\n")
                  (AsyncWait.)))
           a2 (DefWFTask
-               #(do
-                 (println "-> The result from WS is: " %3)
+               (fn [cur job arg]
+                 (println "-> The result from WS is: " arg)
                  nil)) ]
       (.chain a1 a2)))
 

@@ -63,7 +63,7 @@
   (getStartActivity [_ pipe]
     (require 'demo.fork.core)
     (let [a1 (DefWFTask
-               #(do
+               (fn [c j a]
                  (println "I am the *Parent*")
                  (println "I am programmed to fork off a parallel child process, "
                           "and continue my business.")
@@ -103,7 +103,7 @@
                         (println "*Parent*: after fork, continue to calculate fib(6)...")
                         (dotimes [n 7]
                           (.append b (str (fib n) " ")))
-                        (println b "\n" "*Parent*: done.")
+                        (println (.toString b) "\n" "*Parent*: done.")
                         nil)))))))
 
   (onStop [_ p] )

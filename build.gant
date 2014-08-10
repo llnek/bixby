@@ -527,7 +527,7 @@ def createOneDemoApp(dir, lang) {
   ant.echo (message: '', file: "${demoDir}/${appid}/META-INF/README.md")
   ant.copy (todir: "${demoDir}/${appid}/META-INF", file: "${basedir}/etc/app/MANIFEST.MF")
   ant.replace (file: "${demoDir}/${appid}/META-INF/MANIFEST.MF", token: "@@APPKEY@@", value: "${appkey}")
-  ant.replace (file: "${demoDir}/${appid}/META-INF/MANIFEST.MF", token: "@@APPMAINCLASS@@", value: "demo.${appid}.DemoMain")
+  ant.replace (file: "${demoDir}/${appid}/META-INF/MANIFEST.MF", token: "@@APPMAINCLASS@@", value: "demo.${appid}.core.DemoMain")
   ant.copy (todir: "${demoDir}/${appid}/conf") {
     fileset (dir: "${demoSrc}/demo/${appid}") {
       include (name: '*.conf')

@@ -102,11 +102,11 @@
         dw (:delayWhen cfg) ]
     (with-local-vars [cpy (transient cfg)]
       (if (instance? Date dw)
-        (var-set cpy (assoc! :delayWhen dw))
-        (var-set cpy (assoc! :delayMillis (* 1000
+        (var-set cpy (assoc! @cpy :delayWhen dw))
+        (var-set cpy (assoc! @cpy :delayMillis (* 1000
                                              (if (spos? ds) ds 3)))))
       (when (spos? intv)
-        (var-set cpy (assoc! :intervalMillis (* 1000 intv))))
+        (var-set cpy (assoc! @cpy :intervalMillis (* 1000 intv))))
       (-> (persistent! @cpy)
           (dissoc :delaySecs)
           (dissoc :intervalSecs)))

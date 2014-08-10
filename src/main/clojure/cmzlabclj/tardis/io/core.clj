@@ -18,7 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.core
-         :only [notnil? ThrowIOE MakeMMap ConvToJava TryC] ]
+         :only [notnil? ThrowIOE MakeMMap ternary ConvToJava TryC] ]
         [cmzlabclj.nucleus.util.str :only [nsb strim ] ]
         [cmzlabclj.tardis.core.sys])
 
@@ -201,7 +201,11 @@
         Service
 
         (setv [_ k v] (.setf! impl (keyword k) v))
-        (getv [_ k] (.getf impl (keyword k)))
+        (getv [_ k]
+          (let [cfg (.getf impl :emcfg)
+                kw (keyword k)
+                v (.getf impl kw) ]
+            (ternary v (get cfg kw))))
 
         EmitterAPI
 

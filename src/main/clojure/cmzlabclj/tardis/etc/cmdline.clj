@@ -228,8 +228,8 @@
         pu (.getEncoded puk) ]
     ;;(println "privatekey-bytes= " (Hex/encodeHexString pk))
     ;;(println "publickey-bytes = " (Hex/encodeHexString pu))
-    (println "privatekey=\n" (ExportPrivateKey pvk PEM_CERT))
-    (println "publickey=\n" (ExportPublicKey puk PEM_CERT))
+    (println "privatekey=\n" (Stringify (ExportPrivateKey pvk PEM_CERT)))
+    (println "publickey=\n" (Stringify (ExportPublicKey puk PEM_CERT)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -413,7 +413,7 @@
   [text]
 
   (let [^PasswordAPI p (Pwdify text) ]
-    (println (.hashed p))
+    (println (first (.hashed p)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

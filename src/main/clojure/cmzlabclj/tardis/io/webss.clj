@@ -81,12 +81,13 @@
 
   [^cmzlabclj.tardis.io.webss.WebSession mvs maxAge]
 
-  (let [now (System/currentTimeMillis) ]
+  (let [now (System/currentTimeMillis)
+        mage (ternary maxAge 0) ]
     (.setAttribute mvs SSID_FLAG
                    (Hex/encodeHexString (Bytesify (juid))))
-    (.setAttribute mvs ES_FLAG (if (> maxAge 0)
-                                   (+ now (* maxAge 1000))
-                                   maxAge))
+    (.setAttribute mvs ES_FLAG (if (> mage 0)
+                                   (+ now (* mage 1000))
+                                   mage))
     (.setAttribute mvs CS_FLAG now)
     (.setAttribute mvs LS_FLAG now)
   ))

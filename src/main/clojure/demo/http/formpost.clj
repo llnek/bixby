@@ -45,7 +45,7 @@
   (getStartActivity [_ pipe]
     (require 'demo.http.formpost)
     (DefWFTask
-      (fn [cur job arg]
+      (fn [cur ^Job job arg]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev)
               data (.data ev)

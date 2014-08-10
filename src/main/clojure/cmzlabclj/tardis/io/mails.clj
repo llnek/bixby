@@ -149,10 +149,11 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (let [^Session session (.getAttr co :session)
-        pwd (nsb (.getAttr co :pwd))
-        user (.getAttr co :user)
-        ^String host (.getAttr co :host)
-        ^long port (.getAttr co :port)
+        cfg (.getAttr co :emcfg)
+        pwd (nsb (:passwd cfg))
+        user (:user cfg)
+        ^String host (:host cfg)
+        ^long port (:port cfg)
         ^String proto (.getAttr co :proto)
         s (.getStore session proto) ]
     (when-not (nil? s)

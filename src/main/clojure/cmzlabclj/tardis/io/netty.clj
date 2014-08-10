@@ -490,12 +490,14 @@
       (makeWEBSockEvent co ch ssl msg)
       :else
       (let [^cmzlabclj.nucleus.net.routes.RouteInfo
-            ri (nth args 2)
+            ri (if (> (count args) 2)
+                 (nth args 2)
+                 nil)
             ^DemuxedMsg req msg ]
         (makeHttpEvent co ch ssl
                        (.payload req)
                        (.info req)
-                       (.isSecure? ri))))
+                       (if (nil? ri) false (.isSecure? ri)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

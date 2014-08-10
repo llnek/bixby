@@ -35,7 +35,7 @@
 
   (PTask. (reify Work
             (exec [_ fw job arg]
-              (func fw job arg)))
+              (apply func [fw job arg])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -46,7 +46,7 @@
   ^BoolExpr
   [func]
 
-  (reify BoolExpr (evaluate [_ job] (func job))
+  (reify BoolExpr (evaluate [_ job] (apply func [job]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,7 +56,7 @@
   ^SwitchChoiceExpr
   [func]
 
-  (reify SwitchChoiceExpr (getChoice [_ job] (func job))
+  (reify SwitchChoiceExpr (getChoice [_ job] (apply func [job]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,7 +66,7 @@
   ^ForLoopCountExpr 
   [func]
 
-  (reify ForLoopCountExpr (getCount [_ job] (func job))
+  (reify ForLoopCountExpr (getCount [_ job] (apply func [job]))
   ))
 
 
