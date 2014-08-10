@@ -12,7 +12,7 @@
  ??*/
 
 
-package demo.steps;
+package demo.flows.core;
 
 import com.google.gson.JsonObject;
 import com.zotohlab.gallifrey.runtime.AppMain;

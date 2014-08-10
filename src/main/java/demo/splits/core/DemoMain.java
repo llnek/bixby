@@ -11,7 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package demo.fork;
+package demo.splits.core;
 
 import com.google.gson.JsonObject;
 import com.zotohlab.gallifrey.runtime.AppMain;

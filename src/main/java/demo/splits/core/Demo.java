@@ -11,7 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package demo.fork;
+package demo.splits.core;
 
 import static com.zotohlab.wflow.PTask.*;
 import static java.lang.System.out;

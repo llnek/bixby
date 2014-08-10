@@ -27,6 +27,7 @@
         [cmzlabclj.tardis.io.jms]
         [cmzlabclj.tardis.io.http]
         [cmzlabclj.tardis.io.netty]
+        [cmzlabclj.tardis.io.jetty]
         [cmzlabclj.tardis.io.socket]
         [cmzlabclj.tardis.mvc.handler]
         [cmzlabclj.tardis.impl.defaults

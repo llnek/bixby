@@ -500,10 +500,10 @@ def createOneDemoApp(dir, lang) {
   final res= "${demoDir}/${appid}/src/main/resources/"
   final pfx= "${demoDir}/${appid}/public/"
   if ("jetty" == "${appid}" || "mvc" == "${appid}") {
-    ["pages", "images","scripts","styles"].each { s ->
+    ["pages", "media","scripts","styles"].each { s ->
       new File(pfx + s).mkdirs()
     }
-    ant.copy (todir: pfx + "images", file: "${basedir}/etc/web/favicon.ico")
+    ant.copy (todir: pfx + "media", file: "${basedir}/etc/web/favicon.ico")
     ant.copy (todir: pfx + "scripts", file: "${demoSrc}/demo/test.js")
     ant.copy (todir: pfx + "styles", file: "${demoSrc}/demo/main.css")
     //ant.mkdir (dir: res + "coffee")

@@ -11,7 +11,7 @@
 // Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
  ??*/
 
-package demo.steps;
+package demo.flows.core;
 
 import static java.lang.System.out;
 
@@ -19,7 +19,7 @@ import static com.zotohlab.wflow.PTask.*;
 
 import com.zotohlab.wflow.*;
 
-import static demo.steps.Auth.*;
+import static demo.flows.core.Auth.*;
 
 
 /**

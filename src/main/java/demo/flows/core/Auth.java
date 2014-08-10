@@ -12,7 +12,7 @@
  ??*/
 
 
-package demo.steps;
+package demo.flows.core;
 
 import static com.zotohlab.wflow.PTask.*;
 import com.zotohlab.wflow.core.Job;

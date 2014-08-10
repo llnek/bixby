@@ -112,7 +112,9 @@
       <fileset erroronmissingdir="false" dir="${build.dir}" includes="**/*"/>
       <fileset erroronmissingdir="false" dir="${lib.dir}" includes="**/*.jar"/>
     </delete>
+    <!--
     <antcall target="clean-public"/>
+    -->
   </target>
 
   <target name="clean-public">

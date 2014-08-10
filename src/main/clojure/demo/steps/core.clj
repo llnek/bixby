@@ -42,15 +42,15 @@
 
   (condp = t
     "facebook"
-    (DefWFTask #(println "-> using facebook to login.\n"))
+    (DefWFTask (fn [c j a] (println "-> using facebook to login.\n")))
 
     "google+"
-    (DefWFTask #(println "-> using google+ to login.\n"))
+    (DefWFTask (fn [c j a] (println "-> using google+ to login.\n")))
 
     "openid"
-    (DefWFTask #(println "-> using open-id to login.\n"))
+    (DefWFTask (fn [c j a] (println "-> using open-id to login.\n")))
 
-    (DefWFTask #(println "-> using internal db to login.\n"))))
+    (DefWFTask (fn [c j a] (println "-> using internal db to login.\n")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
