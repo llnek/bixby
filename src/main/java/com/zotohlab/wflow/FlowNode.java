@@ -28,6 +28,7 @@ public abstract class FlowNode implements  RunnableWithId {
 
   protected FlowNode(Pipeline p) {
     _parent=p;
+    _defn= new Nihil();
   }
 
   private static Logger _log = LoggerFactory.getLogger(FlowNode.class);

@@ -306,7 +306,7 @@
         appDomainPath (.replace appDomain "." "/") ]
 
     (doseq [s ["pages" "media" "scripts" "styles"]]
-      (Mkdirs (File. appDir (str "src/web/main/" s)))
+      (Mkdirs (File. appDir (str "src/web/site/" s)))
       (Mkdirs (File. appDir (str "public/" s))))
 
     (CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
@@ -314,7 +314,7 @@
     (CopyFileToDir (File. hhhHome "etc/web/cljsc.clj")
                    (File. appDir DN_CONF))
     (CopyFileToDir (File. hhhHome "etc/web/favicon.png")
-                   (File. appDir "src/web/main/media"))
+                   (File. appDir "src/web/site/media"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
     (Mkdirs (File. appDir "src/test/js"))
@@ -346,12 +346,12 @@
   (let [appDir (File. hhhHome (str "apps/" appId)) ]
     (create-app-common hhhHome appId appDomain "web")
     (create-web-common hhhHome appId appDomain)
-    (doseq [s [ "classes" "lib" ]]
-      (Mkdirs (File. appDir (str "WEB-INF/" s))))
+    ;;(doseq [s [ "classes" "lib" ]]
+      ;;(Mkdirs (File. appDir (str "WEB-INF/" s))))
     (CopyFile (File. hhhHome "etc/jetty/jetty.conf")
               (File. appDir CFG_ENV_CF))
-    (CopyFile (File. hhhHome "etc/jetty/web.xml")
-              (File. appDir "WEB-INF"))
+    ;;(CopyFileToDir (File. hhhHome "etc/jetty/web.xml")
+                   ;;(File. appDir "WEB-INF"))
     (post-create-app hhhHome appId appDomain)
   ))
 
@@ -381,7 +381,7 @@
         (copy-files (File. appDir "pages/htmls") "ftl"))
 
       (CopyFileToDir (File. hhhHome "etc/netty/index.html")
-                     (File. appDir "src/web/main/pages"))
+                     (File. appDir "src/web/site/pages"))
 
       (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
 

@@ -18,21 +18,21 @@
 
   (getStartActivity [_  pipe]
     (DefWFTask
-      (fn [cur Job job arg]
+      (fn [cur ^Job job arg]
         (let [^HTTPEvent evt (.event job)
               res (.getResultObj evt) ]
           (doto res
             (.setStatus 200)
-            (.setContent "hello world")
+            (.setContent "Bonjour Skaro!")
             (.setHeader "content-type" "text/plain"))
           (.replyResult evt)
           nil))))
 
   (onStop [_ pipe]
-    (info "nothing to be done here, just stop please."))
+    (log/info "nothing to be done here, just stop please."))
 
   (onError [ _ err curPt]
-    (info "Oops, I got an error!")))
+    (log/info "Oops, I got an error!")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

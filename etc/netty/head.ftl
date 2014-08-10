@@ -5,10 +5,10 @@
 <meta name="description" content="${meta.desc!""}"/>
 <#if meta.author??><meta name="author" content="${meta.author}"/></#if>
 
-<link rel="shortcut icon" type="image/png" href="/public/media/main/favicon.png"/>
+<link rel="shortcut icon" type="image/png" href="/public/media/site/favicon.png"/>
 
 <link rel="stylesheet" href="/public/bootstrap/css/bootstrap.min.css"/>
-<link rel="stylesheet" href="/public/styles/main/main.min.css"/>
+<link rel="stylesheet" href="/public/styles/site/main.min.css"/>
 
 <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
 <!--[if lt IE 9]>

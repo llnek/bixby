@@ -23,7 +23,7 @@
               res (.getResultObj evt) ]
           (doto res
             (.setStatus 200)
-            (.setContent "hello world")
+            (.setContent "Bonjour Skaro!")
             (.setHeader "content-type" "text/plain"))
           (.replyResult evt)
           nil))))
