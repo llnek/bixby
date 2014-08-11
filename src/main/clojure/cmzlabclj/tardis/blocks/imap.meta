@@ -1,7 +1,7 @@
 {
   :info {
 
-    :block-type "czc.tardis.io/IMAP"
+    :blockType "czc.tardis.io/IMAP"
     :version "0.0.1"
     :name "IMAP"
 
@@ -14,8 +14,8 @@
     :deletemsg false
     :username "joe"
     :passwd "secret"
-    :interval-secs 300
-    :delay-secs 0
+    :intervalSecs 300
+    :delaySecs 0
     :handler ""
 
   }

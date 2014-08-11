@@ -1,19 +1,19 @@
 {
   :info {
 
-    :block-type "czc.tardis.io/FilePicker"
+    :blockType "czc.tardis.io/FilePicker"
     :version "0.0.1"
     :name "FILEPicker"
   }
 
   :conf {
-    :target-folder "/home/dropbox"
-    :recv-folder "/home/joe"
+    :targetFolder "/home/dropbox"
+    :recvFolder "/home/joe"
     ;; reg-ex, blank => all
     :fmask ""
     ;; 5mins
-    :interval-secs 300
-    :delay-secs 0
+    :intervalSecs 300
+    :delaySecs 0
     :handler ""
   }
 

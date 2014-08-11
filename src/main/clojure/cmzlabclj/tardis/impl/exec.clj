@@ -364,19 +364,16 @@
 
   [^cmzlabclj.tardis.impl.defaults.BlockMeta block]
 
-  (let [url (.metaUrl block)
+  (let [^cmzlabclj.tardis.core.sys.Element co block 
+        url (.metaUrl block)
         cfg (ReadEdn url)
-        info (:info cfg) ]
+        info (:info cfg)
+        conf (:conf cfg)]
     (test-nonil "Invalid block-meta file, no info section." info)
+    (test-nonil "Invalid block-meta file, no conf section." conf)
     (log/info "Initializing BlockMeta: " url)
-    (let [cz (strim (:block-type info))
-          ^cmzlabclj.tardis.core.sys.Element co block  ]
-      (when (hgl? cz)
-        (.setAttr! co :id (keyword cz))
-        (.setAttr! co :active true) )
-      (.setAttr! co :version (strim (:version info)))
-      (.setAttr! co :name (strim (:name info)))
-      co)
+    (.setAttr! co :config cfg)
+    co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -2,7 +2,7 @@
 
   :info {
 
-    :block-type "czc.tardis.io/NettyMVC"
+    :blockType "czc.tardis.io/NettyMVC"
     :version "0.0.1"
     :name "NettyMVC"
 
@@ -12,8 +12,8 @@
 
     :host "localhost"
     :port 8080
-    :serverkey-file "/home/secret/x.p12"
-    :keypasswd "secret"
+    :serverKey ""
+    :passwd ""
     :handler ""
 
   }

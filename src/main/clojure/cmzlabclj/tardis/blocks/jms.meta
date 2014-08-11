@@ -2,7 +2,7 @@
 
   :info {
 
-    :block-type "czc.tardis.io/JMS"
+    :blockType "czc.tardis.io/JMS"
     :version "0.0.1"
     :name "JMS"
 
@@ -10,15 +10,15 @@
 
   :conf {
 
-    :contextfactory "com.zotohlab.blason.mock.jms.MockContextFactory"
-    :providerurl "java://aaa"
-    :connfactory "tcf"
+    :contextFactory "com.zotohlab.blason.mock.jms.MockContextFactory"
+    :providerUrl "java://aaa"
+    :connFactory "tcf"
     :destination "topic.abc"
-    :jndiuser "root"
-    :jndipwd "root"
-    :jmsuser "anonymous"
-    :jmspwd "anonymous"
-    :interval-secs 5
+    :jndiUser "root"
+    :jndiPwd "root"
+    :jmsUser "anonymous"
+    :jmsPwd "anonymous"
+    :intervalSecs 5
     :handler ""
 
   }

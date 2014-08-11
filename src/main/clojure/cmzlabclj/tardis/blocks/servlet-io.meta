@@ -2,7 +2,7 @@
 
   :info {
 
-    :block-type "czc.tardis.io/JettyIO"
+    :blockType "czc.tardis.io/JettyIO"
     :version "0.0.1"
     :name "JettyIO"
 
@@ -12,8 +12,8 @@
 
     :host "localhost"
     :port 8080
-    :server-keyfile ""
-    :keypasswd ""
+    :serverKey ""
+    :passwd ""
     :handler ""
 
   }

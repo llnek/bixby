@@ -2,7 +2,7 @@
 
   :info {
 
-    :block-type "czc.tardis.io/SocketIO"
+    :blockType "czc.tardis.io/SocketIO"
     :version "0.0.1"
     :name "SocketIO"
 

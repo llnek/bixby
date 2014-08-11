@@ -2,7 +2,7 @@
 
   :info {
 
-    :block-type "czc.tardis.io/POP3"
+    :blockType "czc.tardis.io/POP3"
     :version "0.0.1"
     :name "POP3"
 
@@ -15,8 +15,8 @@
     :deletemsg false
     :username "joe"
     :passwd "secret"
-    :interval-secs 300
-    :delay-secs 0
+    :intervalSecs 300
+    :delaySecs 0
     :handler ""
 
   }
