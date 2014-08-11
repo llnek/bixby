@@ -501,20 +501,22 @@ def createOneDemoApp(dir, lang) {
   final pfx= "${demoDir}/${appid}/public/"
   if ("jetty" == "${appid}" || "mvc" == "${appid}") {
     ["pages", "media","scripts","styles"].each { s ->
-      new File(pfx + s).mkdirs()
+      new File(pfx + s + "/site").mkdirs()
     }
-    ant.copy (todir: pfx + "media", file: "${basedir}/etc/web/favicon.ico")
-    ant.copy (todir: pfx + "scripts", file: "${demoSrc}/demo/test.js")
-    ant.copy (todir: pfx + "styles", file: "${demoSrc}/demo/main.css")
+    ant.copy (todir: pfx + "media/site", file: "${basedir}/etc/web/favicon.ico")
+    ant.copy (todir: pfx + "scripts/site", file: "${demoSrc}/demo/test.js")
+    ant.copy (todir: pfx + "styles/site", file: "${demoSrc}/demo/main.css")
     //ant.mkdir (dir: res + "coffee")
     ant.mkdir (dir: res + "less")
     ant.mkdir (dir: res + "js")
   }
   ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/build.xml")
   if ("jetty" == "${appid}") {
+    /*
     ant.mkdir (dir: "${demoDir}/${appid}/WEB-INF/classes")
     ant.mkdir (dir: "${demoDir}/${appid}/WEB-INF/lib")
     ant.copy (todir: "${demoDir}/${appid}/WEB-INF", file: "${basedir}/etc/jetty/web.xml")
+    */
   }
   ["classes", "patch", "lib" ].each { s ->
     new File("${demoDir}/${appid}/POD-INF/" + s).mkdirs()

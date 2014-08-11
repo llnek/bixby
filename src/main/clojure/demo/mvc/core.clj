@@ -36,9 +36,9 @@
 (def ^:private ^String FMTHtml
   (str "  <html><head>"
        "<title>Skaro: Test Web</title>"
-       "<link rel=\"shortcut icon\" href=\"/public/media/favicon.ico\"/>"
-       "<link type=\"text/css\" rel=\"stylesheet\" href=\"/public/styles/main.css\"/>"
-       "<script type=\"text/javascript\" src=\"/public/scripts/test.js\"></script>"
+       "<link rel=\"shortcut icon\" href=\"/public/media/site/favicon.ico\"/>"
+       "<link type=\"text/css\" rel=\"stylesheet\" href=\"/public/styles/site/main.css\"/>"
+       "<script type=\"text/javascript\" src=\"/public/scripts/site/test.js\"></script>"
        "</head>"
        "<body><h1>Bonjour!</h1><br/>"
        "<button type=\"button\" onclick=\"pop();\">Click Me!</button>"
