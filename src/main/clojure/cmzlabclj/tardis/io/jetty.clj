@@ -265,9 +265,9 @@
         cfg {:method (ucase (.getMethod req))
              :uri (.getRequestURI req)}
         [r1 r2 r3 r4]
-        (.crack ck cfg)] 
-    (cond 
-      (and r1 
+        (.crack ck cfg)]
+    (cond
+      (and r1
            (hgl? r4))
       (JettyUtils/replyRedirect req rsp r4)
 
@@ -281,18 +281,16 @@
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
         (.bindSession evt wss)
-        (doto ct 
-          (.setTimeout wm)
-          (.suspend rsp))
+        ;;(.setTimeout ct wm)
         (let [^cmzlabclj.tardis.io.core.WaitEventHolder
               w (MakeAsyncWaitHolder (makeServletTrigger req
                                                          rsp co)
                                      evt)
-              ^cmzlabclj.tardis.io.core.EmitterAPI src co] 
+              ^cmzlabclj.tardis.io.core.EmitterAPI src co]
           (.timeoutMillis w wm)
           (.hold src w)
-          (.dispatch src evt {:router (.getHandler ri) 
-                              :params (merge {} pms) 
+          (.dispatch src evt {:router (.getHandler ri)
+                              :params (merge {} pms)
                               :template (.getTemplate ri) })))
 
       :else
@@ -310,7 +308,8 @@
   (let [c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (TryC
-          (dispREQ co c req rsp) ))
+        (.suspend c rsp)
+        (dispREQ co c req rsp) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
