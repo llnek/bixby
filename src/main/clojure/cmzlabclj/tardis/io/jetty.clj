@@ -21,9 +21,10 @@
                                            ToJavaInt Try!
                                            MakeMMap test-cond Stringify] ]
         [cmzlabclj.nucleus.crypto.ssl]
-        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
+        [cmzlabclj.nucleus.util.str :only [lcase ucase hgl? nsb strim] ]
         [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
         [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+        [cmzlabclj.nucleus.net.routes]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.core]
@@ -34,6 +35,7 @@
   (:import  [org.eclipse.jetty.server Server Connector ConnectionFactory]
             [java.util.concurrent ConcurrentHashMap]
             [java.net URL]
+            [jregex Matcher Pattern]
             [org.apache.commons.io IOUtils]
             [java.util List Map HashMap ArrayList]
             [java.io File]
@@ -219,6 +221,11 @@
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
+
+        ^cmzlabclj.tardis.core.sys.Element
+        ctr (.parent ^Hierarchial co)
+        rts (.getAttr ctr :routes)
+
         cfg (.getAttr co :emcfg)
         keyfile (:serverKey cfg)
         ^String host (:host cfg)
@@ -241,6 +248,7 @@
     (doto svr
       (.setConnectors (into-array Connector [cc])))
     (.setAttr! co :jetty svr)
+    (.setAttr! co :cracker (MakeRouteCracker rts))
     co
   ))
 
@@ -252,23 +260,45 @@
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
-  (let [^HTTPEvent evt (IOESReifyEvent co req)
-        cfg (.getAttr co :emcfg)
-        ssl (= "https" (.getScheme req))
-        wss (MakeWSSession co ssl)
-        wm (:waitMillis cfg) ]
-    (.bindSession evt wss)
-    (doto ct
-      (.setTimeout wm)
-      (.suspend rsp))
-    (let [^cmzlabclj.tardis.io.core.WaitEventHolder
-          w (MakeAsyncWaitHolder (makeServletTrigger req
-                                                     rsp co)
-                                 evt)
-          ^cmzlabclj.tardis.io.core.EmitterAPI src co ]
-      (.timeoutMillis w wm)
-      (.hold src w)
-      (.dispatch src evt {}))
+  (let [^cmzlabclj.nucleus.net.routes.RouteCracker
+        ck (.getAttr co :cracker)
+        cfg {:method (ucase (.getMethod req))
+             :uri (.getRequestURI req)}
+        [r1 r2 r3 r4]
+        (.crack ck cfg)] 
+    (cond 
+      (and r1 
+           (hgl? r4))
+      (JettyUtils/replyRedirect req rsp r4)
+
+      (= r1 true)
+      (let [^cmzlabclj.nucleus.net.routes.RouteInfo ri r2
+            ^HTTPEvent evt (IOESReifyEvent co req)
+            ssl (= "https" (.getScheme req))
+            wss (MakeWSSession co ssl)
+            cfg (.getAttr co :emcfg)
+            wm (:waitMillis cfg)
+            pms (.collect ri ^Matcher r3) ]
+        ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
+        (.bindSession evt wss)
+        (doto ct 
+          (.setTimeout wm)
+          (.suspend rsp))
+        (let [^cmzlabclj.tardis.io.core.WaitEventHolder
+              w (MakeAsyncWaitHolder (makeServletTrigger req
+                                                         rsp co)
+                                     evt)
+              ^cmzlabclj.tardis.io.core.EmitterAPI src co] 
+          (.timeoutMillis w wm)
+          (.hold src w)
+          (.dispatch src evt {:router (.getHandler ri) 
+                              :params (merge {} pms) 
+                              :template (.getTemplate ri) })))
+
+      :else
+      (do
+        (log/debug "Failed to match uri: " (.getRequestURI req))
+        (JettyUtils/replyXXX req rsp 404)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -13,12 +13,16 @@
 
 package com.zotohlab.gallifrey.io;
 
+import org.eclipse.jetty.continuation.Continuation;
+import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 
@@ -29,6 +33,27 @@ public class JettyUtils {
 
   public static ServerConnector makeConnector(Server svr, HttpConfiguration conf) {
     return new ServerConnector( svr , new HttpConnectionFactory(conf)) ;
+  }
+
+  public static void replyRedirect(HttpServletRequest req,
+                                       HttpServletResponse rsp, String path) throws IOException {
+    try {
+      rsp.sendRedirect(path);
+    }
+    finally {
+      ContinuationSupport.getContinuation(req).complete();
+    }
+
+  }
+
+  public static void replyXXX(HttpServletRequest req, HttpServletResponse rsp, int code) throws IOException {
+    try {
+      rsp.setStatus(code);
+      rsp.setContentLength(0);
+      rsp.flushBuffer();
+    } finally {
+      ContinuationSupport.getContinuation(req).complete();
+    }
   }
 
   public static WebAppContext newWebAppContext( final File warPath, final String ctxPath, final String attr, final Object obj) throws IOException {

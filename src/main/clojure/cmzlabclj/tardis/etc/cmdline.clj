@@ -109,7 +109,7 @@
       (when (nil? id) (throw (CmdHelpError.)))
       (case (nth args 1)
         ("mvc" "web")
-        (CreateWeb hhh id app)
+        (CreateNetty hhh id app)
 
         "jetty"
         (CreateJetty hhh id app)

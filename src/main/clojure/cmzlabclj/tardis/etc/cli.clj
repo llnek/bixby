@@ -315,8 +315,11 @@
       (copy-files src des "ftl")
       (copy-files src des "html"))
 
-    (CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
+    ;;(CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
+                   ;;(mkcljd appDir appDomain))
+    (CopyFileToDir (File. hhhHome "etc/netty/pipe.clj")
                    (mkcljd appDir appDomain))
+
 
     (CopyFileToDir (File. hhhHome "etc/web/main.scss")
                    (File. appDir (str "src/web/site/styles")))
@@ -351,27 +354,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateJetty ""
+(defn- create-mvc-web ""
 
-  [^File hhhHome appId ^String appDomain]
-
-  (let [appDir (File. hhhHome (str "apps/" appId)) ]
-    (create-app-common hhhHome appId appDomain "web")
-    (create-web-common hhhHome appId appDomain)
-    ;;(doseq [s [ "classes" "lib" ]]
-      ;;(Mkdirs (File. appDir (str "WEB-INF/" s))))
-    (CopyFile (File. hhhHome "etc/jetty/jetty.conf")
-              (File. appDir CFG_ENV_CF))
-    ;;(CopyFileToDir (File. hhhHome "etc/jetty/web.xml")
-                   ;;(File. appDir "WEB-INF"))
-    (post-create-app hhhHome appId appDomain)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn CreateWeb ""
-
-  [^File hhhHome appId ^String appDomain]
+  [^File hhhHome 
+   appId 
+   ^String appDomain
+   ^String emType
+   ]
 
   (let [appDir (File. hhhHome (str "apps/" appId))
         appDomainPath (.replace appDomain "." "/")
@@ -380,21 +369,39 @@
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
       (copy-files (File. hhhHome "etc/netty") cfd DN_CONF)
+
       (CopyFileToDir (File. hhhHome "etc/netty/static-routes.conf")
                      cfd)
       (CopyFileToDir (File. hhhHome "etc/netty/routes.conf")
                      cfd)
-      (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
 
+      (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPDOMAIN@@" appDomain)))
 
-      (CopyFileToDir (File. hhhHome "etc/netty/pipe.clj")
-                     (mkcljd appDir appDomain))
+      (var-set fp (File. cfd ENV_CF))
+      (WriteOneFile @fp
+                    (-> (ReadOneFile @fp)
+                        (.replace "@@EMTYPE@@" emType)))
 
       (post-create-app hhhHome appId appDomain))
   ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateJetty ""
+
+  [^File hhhHome appId ^String appDomain]
+
+  (create-mvc-web hhhHome appId appDomain "czc.tardis.io/JettyIO"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CreateNetty ""
+
+  [^File hhhHome appId ^String appDomain]
+
+  (create-mvc-web hhhHome appId appDomain "czc.tardis.io/NettyMVC"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
