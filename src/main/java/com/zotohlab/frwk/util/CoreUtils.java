@@ -38,6 +38,12 @@ public enum CoreUtils {
 
   public static void main(String[] args) {
     try {
+//      String script = "(fn [_] {:a 1} )";
+//      IFn fn = (IFn)RT.var("clojure.core", "eval").invoke(RT.var("clojure.core","read-string").invoke(script));
+//      Object obj = fn.invoke("Hello");
+//      Map<?,?> m= (Map<?,?>)obj;
+//      Keyword k= Keyword.intern("a");
+//      System.out.println("obj= " + m.get(k));
       //System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
 //      URLCodec cc = new URLCodec("utf-8");
 //      System.out.println(cc.encode("hello\u0000world"));

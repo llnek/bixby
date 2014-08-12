@@ -189,10 +189,8 @@
   (reifyOneService [_ sid cfg] )
   (reifyService [_ svc sid cfg] )
   (reifyServices [_] )
-  (loadTemplate [_ tpl ctx] )
-  (generateCsrf [_] )
   (generateNonce [_] )
-  (enabled? [_] ))
+  (generateCsrf [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Service is an instance of a Block, that is, an instance of an event
@@ -266,6 +264,7 @@
 ;;
 (defn- make-app-container ""
 
+  ^Container
   [pod]
 
   (let [ftlCfg (Configuration.)
@@ -296,6 +295,31 @@
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
+
+        (loadTemplate [_ tpath ctx]
+          (let [tpl (nsb tpath)
+                ts (str (if (.startsWith tpl "/") "" "/") tpl)
+                ^Template tp (.getTemplate ftlCfg ts)
+                out (StringWriter.) ]
+            (when-not (nil? tp) (.process tp ctx out))
+            (.flush out)
+            [ (XData. (.toString out))
+              (cond
+                (.endsWith tpl ".html")
+                "text/html"
+                (.endsWith tpl ".json")
+                "application/json"
+                (.endsWith tpl ".xml")
+                "application/xml"
+                :else
+                "text/plain") ] ))
+
+        (isEnabled [_]
+          (let [env (.getf impl K_ENVCONF)
+                c (:container env) ]
+            (if (false? (:enabled c))
+              false
+              true)))
 
         (hasService [_ serviceId]
           (let [^ComponentRegistry srg (.getf impl K_SVCS) ]
@@ -392,33 +416,8 @@
 
         ContainerAPI
 
-        (loadTemplate [_ tpath ctx]
-          (let [tpl (nsb tpath)
-                ts (str (if (.startsWith tpl "/") "" "/") tpl)
-                ^Template tp (.getTemplate ftlCfg ts)
-                out (StringWriter.) ]
-            (when-not (nil? tp) (.process tp ctx out))
-            (.flush out)
-            [ (XData. (.toString out))
-              (cond
-                (.endsWith tpl ".html")
-                "text/html"
-                (.endsWith tpl ".json")
-                "application/json"
-                (.endsWith tpl ".xml")
-                "application/xml"
-                :else
-                "text/plain") ] ))
-
         (generateNonce [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
         (generateCsrf [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
-
-        (enabled? [_]
-          (let [env (.getf impl K_ENVCONF)
-                c (:container env) ]
-            (if (false? (:enabled c))
-              false
-              true)))
 
         (reifyServices [this]
           (let [env (.getf impl K_ENVCONF)
@@ -467,7 +466,7 @@
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)
-    (if (.enabled? ^cmzlabclj.tardis.impl.ext.ContainerAPI c)
+    (if (.isEnabled c)
       (do
         (Coroutine #(do
                       (CompInitialize c)

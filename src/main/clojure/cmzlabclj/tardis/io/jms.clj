@@ -89,9 +89,10 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/JMS
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (let [pkey (:app.pkey cfg)
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
         p2 (:jmsPwd cfg) ]
     (.setAttr! co :emcfg

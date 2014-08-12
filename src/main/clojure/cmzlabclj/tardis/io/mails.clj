@@ -249,9 +249,10 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/POP3
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
   (let [demo (System/getProperty "skaro.demo.pop3" "")
+        cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (std-config co cfg) ]
     (.setAttr! co :emcfg c2)
     (resolve-provider co
@@ -330,9 +331,10 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/IMAP
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
   (let [demo (System/getProperty "skaro.demo.imap" "")
+        cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (std-config co cfg) ]
     (.setAttr! co :emcfg c2)
     (resolve-provider co

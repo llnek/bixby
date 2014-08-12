@@ -17,6 +17,7 @@ import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.gallifrey.io.IOEvent;
 import com.zotohlab.frwk.core.Disposable;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 import com.zotohlab.frwk.server.ServerLike;
@@ -39,6 +40,9 @@ public interface Container extends ServerLike , Disposable {
 
   public JDBCPool acquireDbPool(Object groupid);
   public DBAPI acquireDbAPI(Object groupid);
+
+  public List<?> loadTemplate (String tpl, Map<?,?> ctx);
+  public boolean isEnabled();
 
 }
 

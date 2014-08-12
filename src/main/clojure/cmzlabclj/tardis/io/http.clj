@@ -149,9 +149,10 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/HTTP
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (let [c2 (HttpBasicConfig co cfg) ]
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        c2 (HttpBasicConfig co cfg) ]
     (.setAttr! co :emcfg c2)
     co
   ))

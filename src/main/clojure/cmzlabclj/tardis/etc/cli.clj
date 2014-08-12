@@ -309,6 +309,14 @@
       (Mkdirs (File. appDir (str "src/web/site/" s)))
       (Mkdirs (File. appDir (str "public/" s))))
 
+    (let [src (File. hhhHome "etc/netty")
+          des (File. appDir (str "src/web/site/pages"))
+          sts (File. appDir (str "src/web/site/styles"))]
+      (copy-files src sts "scss")
+      (copy-files src des "ftl")
+      (copy-files src des "err")
+      (copy-files src des "html"))
+
     (CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
                    (mkcljd appDir appDomain))
     (CopyFileToDir (File. hhhHome "etc/web/cljsc.clj")
@@ -372,17 +380,6 @@
                      cfd)
       (CopyFileToDir (File. hhhHome "etc/netty/routes.conf")
                      cfd)
-
-      (doseq [s ["errors" "htmls"]]
-        (Mkdirs (File. appDir (str "pages/" s))))
-
-      (doto (File. hhhHome "etc/netty")
-        (copy-files (File. appDir "pages/errors") ".err")
-        (copy-files (File. appDir "pages/htmls") "ftl"))
-
-      (CopyFileToDir (File. hhhHome "etc/netty/index.html")
-                     (File. appDir "src/web/site/pages"))
-
       (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
 
       (WriteOneFile @fp

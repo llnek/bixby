@@ -329,7 +329,7 @@
   [^URL url]
 
   (let [impl (MakeMMap) ]
-    (.setf! impl :id (keyword (juid)))
+    ;;(.setf! impl :id (keyword (juid)))
     (with-meta
       (reify
 
@@ -343,15 +343,21 @@
         (toEDN [_ ] (.toEDN impl))
 
         Component
-        (id [_] (.getf impl :id))
-        (version [_] "1.0")
+        (id [_] (-> (.getf impl :metaInfo)
+                    (:blockType)
+                    (keyword)))
+        (version [_] (-> (.getf impl :metaInfo)
+                         (:version)))
 
         Hierarchial
         (parent [_] nil)
 
         BlockMeta
 
-        (enabled? [_] (true? (.getf impl :active)))
+        (enabled? [_] (not (false? (-> (.getf impl :metaInfo)
+                                       (:enabled)))))
+        (getName [_] (-> (.getf impl :metaInfo)
+                         (:name)))
         (metaUrl [_] url) )
 
       { :typeid (keyword "czc.tardis.impl/BlockMeta") }
@@ -364,7 +370,7 @@
 
   [^cmzlabclj.tardis.impl.defaults.BlockMeta block]
 
-  (let [^cmzlabclj.tardis.core.sys.Element co block 
+  (let [^cmzlabclj.tardis.core.sys.Element co block
         url (.metaUrl block)
         cfg (ReadEdn url)
         info (:info cfg)
@@ -372,7 +378,8 @@
     (test-nonil "Invalid block-meta file, no info section." info)
     (test-nonil "Invalid block-meta file, no conf section." conf)
     (log/info "Initializing BlockMeta: " url)
-    (.setAttr! co :config cfg)
+    (.setAttr! co :metaInfo info)
+    (.setAttr! co :dftOptions conf)
     co
   ))
 

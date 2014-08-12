@@ -116,11 +116,12 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/FilePicker
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (let [^String root (SubsVar (nsb (:targetFolder cfg)))
-        ^String dest (SubsVar (nsb (:recvFolder cfg)))
-        ^String mask (nsb (:fmask cfg))
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        root (SubsVar (nsb (:targetFolder cfg)))
+        dest (SubsVar (nsb (:recvFolder cfg)))
+        mask (nsb (:fmask cfg))
         c2 (CfgLoopable co cfg) ]
     (test-nestr "file-root-folder" root)
     (log/info "Monitoring folder: " root)

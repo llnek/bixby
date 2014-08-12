@@ -168,9 +168,10 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/RepeatingTimer
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (let [c2 (CfgLoopable co cfg)]
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        c2 (CfgLoopable co cfg)]
     (.setAttr! co :emcfg c2)
   ))
 
@@ -244,10 +245,11 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/OnceTimer
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
   ;; get rid of interval millis field, if any
-  (let [c2 (CfgLoopable co cfg) ]
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        c2 (CfgLoopable co cfg) ]
     (.setAttr! co :emcfg (dissoc c2 :intervalMillis))
   ))
 

@@ -72,10 +72,11 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/SocketIO
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (test-posnum "socket-io port" (:port cfg))
-  (let [tout (:timeoutMillis cfg)
+  (test-posnum "socket-io port" (:port cfg0))
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+        tout (:timeoutMillis cfg)
         blog (:backlog cfg) ]
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy (assoc! @cpy :backlog

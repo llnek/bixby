@@ -176,11 +176,13 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/JettyIO
 
-  [^cmzlabclj.tardis.core.sys.Element co cfg]
+  [^cmzlabclj.tardis.core.sys.Element co cfg0]
 
-  (.setAttr! co :emcfg
-             (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
-  (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR)))
+  (let [cfg (merge (.getAttr co :dftOptions) cfg0)]
+    (.setAttr! co :emcfg
+               (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
+    (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
