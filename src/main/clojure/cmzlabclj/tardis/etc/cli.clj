@@ -231,7 +231,8 @@
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
 
-      (doseq [s [APP_CF ENV_CF "shiro.ini"]]
+      ;;(doseq [s [APP_CF ENV_CF "shiro.ini"]]
+      (doseq [s [APP_CF ENV_CF ]]
         (CopyFileToDir (File. hhhHome (str "etc/app/" s)) cfd))
 
       (var-set fp (File. cfd APP_CF))
@@ -310,18 +311,21 @@
       (Mkdirs (File. appDir (str "public/" s))))
 
     (let [src (File. hhhHome "etc/netty")
-          des (File. appDir (str "src/web/site/pages"))
-          sts (File. appDir (str "src/web/site/styles"))]
-      (copy-files src sts "scss")
+          des (File. appDir (str "src/web/site/pages")) ]
       (copy-files src des "ftl")
-      (copy-files src des "err")
       (copy-files src des "html"))
 
     (CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
                    (mkcljd appDir appDomain))
-    (CopyFileToDir (File. hhhHome "etc/web/cljsc.clj")
-                   (File. appDir DN_CONF))
+
+    (CopyFileToDir (File. hhhHome "etc/web/main.scss")
+                   (File. appDir (str "src/web/site/styles")))
+    (CopyFileToDir (File. hhhHome "etc/web/main.js")
+                   (File. appDir (str "src/web/site/scripts")))
+
     (CopyFileToDir (File. hhhHome "etc/web/favicon.png")
+                   (File. appDir "src/web/site/media"))
+    (CopyFileToDir (File. hhhHome "etc/web/body.jpg")
                    (File. appDir "src/web/site/media"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
