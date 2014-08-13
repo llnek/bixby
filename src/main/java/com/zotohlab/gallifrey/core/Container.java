@@ -13,6 +13,7 @@
 
 package com.zotohlab.gallifrey.core;
 
+import com.zotohlab.frwk.core.Named;
 import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.gallifrey.io.IOEvent;
 import com.zotohlab.frwk.core.Disposable;
@@ -26,7 +27,7 @@ import com.zotohlab.frwk.dbio.DBAPI;
 /**
  * @author kenl
  */
-public interface Container extends ServerLike , Disposable {
+public interface Container extends ServerLike , Named, Disposable {
 
   public void notifyObservers(IOEvent evt, Map<?,?> options );
 
@@ -36,6 +37,7 @@ public interface Container extends ServerLike , Disposable {
   public byte[] getAppKeyBits();
   public String getAppKey();
 
+  public String getName();
   public File getAppDir();
 
   public JDBCPool acquireDbPool(Object groupid);

@@ -289,6 +289,7 @@
                 jc (.getAttr this K_JCTOR) ]
             (.update jc evt options)))
 
+        (getName [_] (.moniker ^cmzlabclj.tardis.impl.defaults.PODMeta pod))
         (getAppKey [_] (.appKey ^cmzlabclj.tardis.impl.defaults.PODMeta pod))
         (getAppKeyBits [this] (Bytesify (.getAppKey this)))
         (getAppDir [this] (.getAttr this K_APPDIR))
@@ -461,7 +462,6 @@
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
         ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
-        app (.moniker ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
         ps {K_APPDIR (File. (.toURI  url))
             K_APP_CZLR cl } ]
     (CompCompose c apps)
@@ -473,7 +473,7 @@
                       (CompInitialize c)
                       (.start ^Startable c))
                    {:classLoader cl
-                    :name app})
+                    :name (.getName c)})
         c)
       nil)
   ))

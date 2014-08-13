@@ -22,6 +22,7 @@
         [cmzlabclj.nucleus.util.str :only [Format]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
+            [com.zotohlab.frwk.core Named]
             [java.util.concurrent ConcurrentHashMap]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Map Properties Timer TimerTask]))
@@ -65,9 +66,11 @@
 
         (activate [_ options]
           (let [^long t (ternary (:threads options) 4)
-                jid (Format "skaro-%04d"
-                            (.incrementAndGet SEQNUM))
-                c (TCore. jid t) ]
+                jid (if (instance? Named parObj)
+                      (str (.getName ^Named parObj) "#core")
+                      (Format "skaro#core-%03d"
+                              (.incrementAndGet SEQNUM)))
+                c (TCore. jid t)]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))
               (.setf! :runQ (ConcurrentHashMap.))
