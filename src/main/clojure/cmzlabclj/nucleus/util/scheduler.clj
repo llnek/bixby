@@ -18,15 +18,18 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug] ]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [ternary juid MakeMMap] ])
+  (:use [cmzlabclj.nucleus.util.core :only [ternary juid MakeMMap] ]
+        [cmzlabclj.nucleus.util.str :only [Format]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
             [java.util.concurrent ConcurrentHashMap]
+            [java.util.concurrent.atomic AtomicInteger]
             [java.util Map Properties Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^:private ^AtomicInteger SEQNUM (AtomicInteger.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -62,7 +65,8 @@
 
         (activate [_ options]
           (let [^long t (ternary (:threads options) 4)
-                jid (juid)
+                jid (Format "skaro-%04d"
+                            (.incrementAndGet SEQNUM))
                 c (TCore. jid t) ]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))

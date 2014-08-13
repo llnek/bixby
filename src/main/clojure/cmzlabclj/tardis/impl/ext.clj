@@ -461,6 +461,7 @@
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
         ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
+        app (.moniker ^cmzlabclj.tardis.impl.defaults.PODMeta pod)
         ps {K_APPDIR (File. (.toURI  url))
             K_APP_CZLR cl } ]
     (CompCompose c apps)
@@ -471,7 +472,8 @@
         (Coroutine #(do
                       (CompInitialize c)
                       (.start ^Startable c))
-                   cl)
+                   {:classLoader cl
+                    :name app})
         c)
       nil)
   ))

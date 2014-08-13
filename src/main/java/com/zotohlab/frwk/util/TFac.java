@@ -53,7 +53,7 @@ public class TFac implements ThreadFactory {
     return t;
   }
 
-  private String mkTname() { return _pfx + _seq.incrementAndGet(); }
+  private String mkTname() { return _pfx + "-" + _seq.incrementAndGet(); }
 
 }
 

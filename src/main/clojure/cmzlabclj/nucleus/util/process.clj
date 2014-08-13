@@ -19,8 +19,8 @@
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
-        [cmzlabclj.nucleus.util.core :only [Try!] ]
-        [cmzlabclj.nucleus.util.str :only [nsb] ])
+        [cmzlabclj.nucleus.util.core :only [ternary Try!] ]
+        [cmzlabclj.nucleus.util.str :only [nsb hgl?] ])
 
   (:import  [java.lang.management ManagementFactory]
             [java.util.concurrent Callable]
@@ -46,17 +46,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- asyncExecThread ""
+
+  [^Runnable r options]
+
+  (when-not (nil? r)
+    (let [c (ternary (:classLoader options)
+                     (GetCldr))
+          n (:name options)
+          t (Thread. r) ]
+      (.setContextClassLoader t ^ClassLoader c)
+      (.setDaemon t true)
+      (when (hgl? n)
+        (.setName t (str "(" n ") " (.getName t))))
+      (.start t))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn AsyncExec "Run the code (runnable) in a separate daemon thread."
 
   ([^Runnable runable] (AsyncExec runable (GetCldr)))
 
-  ([^Runnable runable ^ClassLoader cl]
-   (if (nil? runable)
-     nil
-     (doto (Thread. runable)
-       (.setContextClassLoader cl)
-       (.setDaemon true)
-       (.start))) ))
+  ([^Runnable runable arg]
+   (asyncExecThread runable (if (instance? ClassLoader arg)
+                              {:classLoader arg}
+                              arg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
