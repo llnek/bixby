@@ -117,7 +117,7 @@ public class Pipeline implements Startable {
 
   public void finalize() throws Throwable {
     super.finalize();
-    System.out.println("=========================> Pipeline: " + getClass().getName() + " finz'ed");
+    //tlog().debug("=========================> Pipeline: " + getClass().getName() + " finz'ed");
   }
 
 }
