@@ -71,7 +71,7 @@
   ([^Runnable runable arg]
    (asyncExecThread runable (if (instance? ClassLoader arg)
                               {:classLoader arg}
-                              arg))))
+                              (if (map? arg) arg {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
