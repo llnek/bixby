@@ -81,7 +81,7 @@
 
   ([func cl]
    (let [r (reify Runnable
-             (run [_] (when (fn? func) (func)))) ]
+             (run [_] (Try! (when (fn? func) (func))))) ]
       (AsyncExec r cl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
