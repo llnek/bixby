@@ -81,8 +81,10 @@
 
   ([func cl]
    (let [r (reify Runnable
-             (run [_] (Try! (when (fn? func) (func))))) ]
-      (AsyncExec r cl))))
+             (run [_]
+               (Try! (when (fn? func) (func)))
+               (log/debug "Coroutine thread:(run) is done."))) ]
+     (AsyncExec r cl))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
