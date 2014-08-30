@@ -27,6 +27,25 @@
 
   <taskdef resource="net/sf/antcontrib/antlib.xml"/>
 
+  <scriptdef name="genuuid" language="javascript">
+    <attribute name="property" />
+    <![CDATA[
+      load("nashorn:mozilla_compat.js");
+      importClass( java.util.UUID );
+      project.setProperty( attributes.get( "property" ), UUID.randomUUID() );
+    ]]>
+  </scriptdef>
+
+  <scriptdef name="generateguid" language="javascript">
+    <attribute name="property" />
+    <![CDATA[
+    project.setProperty( attributes.get( "property" ),
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            return v.toString(16); }) );
+    ]]>
+  </scriptdef>
+
   <!-- resolve ivy stuff
        ================================= -->
   <target name="resolve">
