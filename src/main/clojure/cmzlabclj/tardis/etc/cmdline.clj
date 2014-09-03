@@ -19,6 +19,7 @@
 
   (:use [cmzlabclj.nucleus.i18n.resources :only [GetString] ]
         [cmzlabclj.tardis.etc.climain :only [StartMain] ]
+        [cmzlabclj.tardis.etc.gant]
         [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid] ]
         [cmzlabclj.tardis.etc.cli]
         [cmzlabclj.nucleus.util.core
@@ -142,7 +143,8 @@
           taskId (if (> (count args) 2)
                    (nth args 2)
                    "devmode") ]
-      (AntBuildApp (getHomeDir) appId taskId))
+      ;;(AntBuildApp (getHomeDir) appId taskId))
+      (ExecGantScript (getHomeDir) appId taskId))
     (throw (CmdHelpError.))
   ))
 

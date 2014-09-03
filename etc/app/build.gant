@@ -1,0 +1,493 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
+
+//////////////////////////////////////////////////////////////////////////////
+// external tools
+//////////////////////////////////////////////////////////////////////////////
+import java.util.UUID
+
+includeTool << gant.tools.Ivy
+
+//////////////////////////////////////////////////////////////////////////////
+// global properties
+//////////////////////////////////////////////////////////////////////////////
+
+property( name: 'gantProjectName' , value: '@@APPID@@')
+property( name: "PID", value: "${gantProjectName}")
+property( name: 'PID_DISTRO', value: "${PID}-distro")
+property( environment: "env" )
+property( name: 'ivySettingsDir', value: "${basedir}")
+loadproperties (srcFile: "${basedir}/build.xs")
+
+//////////////////////////////////////////////////////////////////////////////
+// language compilers
+//////////////////////////////////////////////////////////////////////////////
+
+ant.path (id: 'compile.path.id') {
+  path (location: "${srcDir}/clojure")
+  path (location: "${outJarDir}")
+  path (location: "${buildDir}")
+  fileset (dir: "${libDir}")
+  fileset (dir: "${skaroHome}/dist")
+  fileset (dir: "${skaroHome}/lib")
+}
+
+ant.path (id: 'test.path.id') {
+  path (location: "${testDir}/clojure")
+  path (location: "${outTestDir}")
+  path (refid: "compile.path.id")
+}
+
+  /* =================================
+        target: ivy stuff
+       ================================= */
+
+ivy.settings( file: "${ivySettingsDir}/ivy.config.xml" )
+
+target (resolve: '') {
+  // conf="*" will copie artifacts defined for each conf in a dir matching conf name
+  ivy.retrieve( pattern: "${ivyLibDir}/[conf]/[artifact]-[revision].[ext]" )
+}
+
+target (report: '') {
+  depends (resolve)
+  ivy.report (todir: "${buildDir}")
+}
+
+target (cleanPublic: '') {
+  doCleanPublic()
+}
+
+target (clean: '') {
+  doClean()
+}
+
+target (clean_cache: '') {
+  ivy.cleancache()
+}
+
+target (clean_local: '') {
+  println "${ivyLRepoDir}"
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// (called by skaro)
+target (buildr: '') {
+  depends (clean,resolve,preBuild)
+  println "#############################################"
+  println "# building: ${gantProjectName}"
+  println "#############################################"
+  doCompileAndJar()
+  doBuildWebApps()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+target (preBuild: '') {
+  mkdir (dir: "${basedir}/POD-INF/classes")
+  mkdir (dir: "${basedir}/POD-INF/lib")
+  mkdir (dir: "${basedir}/POD-INF/patch")
+  mkdir (dir: "${buildDir}")
+  mkdir (dir: "${buildDir}/web_scripts")
+  mkdir (dir: "${buildDir}/web_styles")
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// compile server-side source code
+target (compileJava: '') {
+  doCompileJava()
+}
+
+target (compileClj: '') {
+  doCompileClj()
+}
+
+target (compileAndJar: '') {
+  doCompileAndJar()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileAndJar() {
+  doCompileJava()
+  doCompileClj()
+  //-- copy over other resources
+  copy (todir: "${outJarDir}") {
+    fileset (dir: "${srcDir}/clojure") {
+      exclude (name: '**/*.clj')
+    }
+    fileset (dir: "${srcDir}/java") {
+      exclude (name: '**/*.java')
+    }
+  }
+  jar (destfile: "${libDir}/${PID}-${buildVersion}.jar") {
+    fileset (dir: "${outJarDir}")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+target (testBuild: '') {
+  depends(buildr)
+  doCompileTestCode()
+  doRunTesTCode()
+  println "Test called - OK"
+}
+
+target (compileTestCode: '') {
+  doCompileTestCode()
+}
+
+target (runTestCode: '') {
+  doRunTestCode()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileTestCode() {
+  mkdir (dir: "${outTestDir}")
+  mkdir (dir: "${reportDir}")
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doRunTestCode() {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileJava() {
+  javac (
+         sourcepath: '',
+         srcdir: "${srcDir}/java",
+         destdir: "${outJarDir}",
+         includeantruntime: 'false',
+         excludes: '',
+         target: '1.8',
+         debug: "${buildDebug}",
+         debuglevel: "lines,vars,source",
+         classpathref: 'compile.path.id') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    include (name: '**/*.java')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileClj() {
+  java (
+        classname: 'clojure.lang.Compile',
+        fork: 'true',
+        failonerror: 'true',
+        maxmemory: '2048m',
+        classpathref: 'compile.path.id') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: 'true')
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    @@APPCLJFILES@@
+  }
+  copy (todir: "${outJarDir}") {
+    fileset (dir: "${buildDir}")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doClean() {
+  delete (includeemptydirs: 'true') {
+    fileset (erroronmissingdir: 'false', dir: "${outJarDir}",  includes: '**/*')
+    fileset (erroronmissingdir: 'false', dir: "${buildDir}", includes: '**/*')
+    fileset (erroronmissingdir: 'false', dir: "${libDir}", includes: '**/*.jar')
+  }
+  doCleanPublic()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCleanPublic() {
+  delete (includeemptydirs: 'true') {
+    fileset (erroronmissingdir: 'false', dir: "${basedir}/public/scripts", includes: '**/*')
+    fileset (erroronmissingdir: 'false', dir: "${basedir}/public/styles", includes: '**/*')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doBuildWebApps() {
+  if ("web" == "${buildType}") {
+    new File("${webDir}").eachDir( { f ->
+      doBuildOneWebApp(f)
+    });
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doBuildOneWebApp (dir) {
+  final wappid= dir.getName()
+
+  mkdir (dir: "${buildDir}/web_scripts/${wappid}")
+  mkdir (dir: "${buildDir}/web_styles/${wappid}")
+  if ("clojurescript" == "${jslang}") {
+    doCompileCljScript(wappid)
+  }
+  if ("typescript" == "${jslang}") {
+    doCompileTypeScript(wappid)
+  }
+  if ("coffee" == "${jslang}") {
+    doCompileCoffeeScript(wappid)
+  }
+  doCompileJS(wappid)
+  if ("less" == "${csslang}") {
+    doCompileLESS(wappid)
+  }
+  if ("scss" == "${csslang}") {
+    doCompileSCSS(wappid)
+  }
+  doCompileMedia(wappid)
+  doCompilePages(wappid)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileCljScript(wappid) {
+  final sdir= "${webDir}/${wappid}/scripts"
+  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+    fileset (dir: "${sdir}") {
+      include (name: '**/*.cljs')
+    }
+  }
+  java (
+        classname: 'clojure.main',
+        fork: 'true',
+        failonerror: 'true',
+        maxmemory: '2048m',
+        classpathref: 'compile.path.id') {
+    arg (value: "${basedir}/conf/cljsc.clj")
+    arg (value: "${sdir}")
+    arg (value: 'true')
+    // advanced none whitespace simple
+    arg (value: 'none')
+    arg (value: "${buildDir}/web_scripts/${wappid}")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doFinzBuild() {
+  delete (file: "${basedir}/public/c/webcommon.js", quiet: 'true')
+  concat (destfile: "${basedir}/public/c/webcommon.js", append: 'true') {
+    fileset (file: "${basedir}/public/vendors/underscore/underscore-min.js")
+    fileset (file: "${basedir}/public/vendors/jquery/jquery-2.1.1.min.js")
+    fileset (file: "${basedir}/public/vendors/l10njs/l10n.min.js")
+    fileset (file: "${basedir}/public/vendors/mustache/mustache.js")
+    fileset (file: "${basedir}/public/vendors/helpers/dbg.js")
+    fileset (file: "${basedir}/public/vendors/cherimoia/skaro.js")
+    fileset (file: "${basedir}/public/vendors/cherimoia/caesar.js")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileTypeScript(wappid) {
+  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/scripts") {
+      include (name: '**/*.ts')
+    }
+  }
+  exec (executable: 'tsc', dir: "${buildDir}/web_scripts/${wappid}") {
+    arg (value: '--outDir')
+    arg (value: '--output')
+    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: '**/*.ts')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileCoffeeScript(wappid) {
+  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/scripts") {
+      include (name: '**/*.coffee')
+    }
+  }
+  exec (executable: 'coffee') {
+    arg (value: '--bare')
+    arg (value: '--output')
+    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: '--compile')
+    arg (value: "${buildDir}/web_scripts/${wappid}")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileJS(wappid) {
+  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/scripts")
+  }
+  mkdir (dir: "${basedir}/public/scripts")
+  copy (todir: "${basedir}/public/scripts") {
+    fileset (dir: "${buildDir}/web_scripts/${wappid}")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileLESS(wappid) {
+  copy (todir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/styles") {
+      include (name: '**/*.less')
+    }
+  }
+  apply (executable: "lessc", parallel: 'false') {
+    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+      include (name: '**/*.less')
+    }
+    srcfile ()
+    chainedmapper () {
+      mapper (type: 'glob', from: '*.less', to: '*.css')
+      globmapper (from: '*', to: "${buildDir}/web_styles/${wappid}/*")
+    }
+    targetfile ()
+  }
+  copy (todir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/styles") {
+      include (name: '**/*.css')
+    }
+  }
+  mkdir (dir: "${basedir}/public/styles/${wappid}")
+  copy (todir: "${basedir}/public/styles/${wappid}") {
+    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+      include (name: '**/*.css')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileSCSS(wappid) {
+  copy (todir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/styles"){
+      include (name: '**/*.scss')
+    }
+  }
+  apply (executable: 'sass', parallel: 'false') {
+    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+      include (name: '**/*.scss')
+    }
+    srcfile ()
+    chainedmapper() {
+      mapper (type: 'glob', from: '*.scss', to: '*.css')
+      globmapper (from: '*', to: "${buildDir}/web_styles/${wappid}/*")
+    }
+    targetfile ()
+  }
+  copy (todir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/styles") {
+      include (name: '**/*.css')
+    }
+  }
+  mkdir (dir: "${basedir}/public/styles/${wappid}")
+  copy (todir: "${basedir}/public/styles/${wappid}") {
+    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+      include (name: '**/*.css')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileMedia(wappid) {
+  mkdir (dir: "${basedir}/public/media/${wappid}")
+  copy (todir: "${basedir}/public/media/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/media") {
+      include (name: '**/*')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompilePages(wappid) {
+  mkdir (dir: "${basedir}/public/pages/${wappid}")
+  copy (todir: "${basedir}/public/pages/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/pages") {
+      include (name: '**/*')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doYuiCSS() {
+  apply (executable: 'java', parallel: 'false') {
+    fileset (dir: "${basedir}/public/styles") {
+      exclude (name: '**/*.min.css')
+      include (name: '**/*.css')
+    }
+    arg (line: '-jar')
+    arg (path: "${skaroHome}/lib/yuicompressor-2.4.7.jar")
+    srcfile ()
+    arg (line: '-o')
+    chainedmapper () {
+      mapper (type: 'glob', from: '*.css', to: '*.min.css')
+      globmapper (from: '*', to: "${basedir}/public/styles/*")
+    }
+    targetfile ()
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doYuiJS() {
+  apply (executable: 'java', parallel: 'false') {
+    fileset (dir: "${basedir}/public/scripts") {
+      exclude (name: '**/*.min.js')
+      include (name: '**/*.js')
+    }
+    arg (line: '-jar')
+    arg (path: "${skaroHome}/lib/yuicompressor-2.4.7.jar")
+    srcfile ()
+    arg (line: '-o')
+    chainedmapper () {
+      mapper (type: 'glob', from: '*.js', to: '*.min.js')
+      globmapper (from: '*', to: "${basedir}/public/scripts/*")
+    }
+    targetfile ()
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+  /*
+       public TARGETS
+       */
+
+target (release: '') {
+  depends (buildr)
+  doYuiCSS()
+  doYuiJS()
+  doFinzBuild()
+}
+
+target (devmode: '') {
+  depends (buildr)
+  doFinzBuild()
+}
+
+target (test: '') {
+  depends(testBuild)
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// EOF
+

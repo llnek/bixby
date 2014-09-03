@@ -195,9 +195,9 @@
                         (.replace "@@APPDOMAIN@@"
                                              appDomain)))
 
-      (var-set fp (File. appDir "build.xml"))
-      (let [s (str "<arg value=\"" appDomain ".core\"/>"
-                   "<arg value=\"" appDomain ".pipe\"/>" ) ]
+      (var-set fp (File. appDir "build.gant"))
+      (let [s (str "arg (value: \"" appDomain ".core\")"
+                   "arg (value: \"" appDomain ".pipe\")" ) ]
         (WriteOneFile @fp
                       (-> (ReadOneFile @fp)
                           (.replace "@@APPCLJFILES@@" s)
@@ -225,7 +225,7 @@
         (FileUtils/touch (File. mfDir ^String s)))
 
       (CopyFileToDir (File. hhhHome "etc/app/MANIFEST.MF") mfDir)
-      (CopyFileToDir (File. hhhHome "etc/app/build.xml") appDir)
+      (CopyFileToDir (File. hhhHome "etc/app/build.gant") appDir)
 
       (Mkdirs (File. appDir "modules"))
       (Mkdirs cfd)
