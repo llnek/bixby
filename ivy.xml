@@ -98,7 +98,7 @@
     <dependency org="org.apache.httpcomponents" name="httpcore-nio" rev="4.3.2" conf="libjar->default"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="4.3.2" conf="libjar->default"/>
     <dependency org="org.apache.httpcomponents" name="httpclient" rev="4.3.4" conf="libjar->default"/>
-    <dependency org="io.netty" name="netty-all" rev="4.0.21.Final" conf="libjar->default"/>
+    <dependency org="io.netty" name="netty-all" rev="4.0.23.Final" conf="libjar->default"/>
 
     <dependency org="com.corundumstudio.socketio" name="netty-socketio" rev="1.7.1" conf="libjar->default"/>
 
