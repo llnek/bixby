@@ -76,6 +76,12 @@ public class IOUtils {
     return FileUtils.listFiles(dir, exts, recurse);
   }
 
+  /** List directories.
+   */
+  public static Collection<File> listDirs(File dir) {
+    return FileUtils.listFiles(dir, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY, null);
+  }
+
 }
 
 
