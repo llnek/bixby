@@ -13,6 +13,10 @@
 
 package com.zotohlab.frwk.io;
 
+import org.apache.commons.io.filefilter.FalseFileFilter;
+import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.io.filefilter.NotFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import  org.apache.commons.lang3.StringUtils;
 import org.apache.commons.io.FileUtils;
 import java.io.*;
@@ -78,10 +82,24 @@ public class IOUtils {
 
   /** List directories.
    */
-  public static Collection<File> listDirs(File dir) {
-    return FileUtils.listFiles(dir, org.apache.commons.io.filefilter.DirectoryFileFilter.DIRECTORY, null);
+  public static File[] listDirs(File dir) {
+    return dir.listFiles(new FileFilter() {
+      @Override
+      public boolean accept(File f) {
+        return f.isDirectory();
+      }
+    });
   }
 
+  public static void main(String[] args) {
+    try {
+           for (File f : listDirs(new File("/private/tmp"))) {
+                        System.out.println("f = " + f);
+           }
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
 }
 
 
