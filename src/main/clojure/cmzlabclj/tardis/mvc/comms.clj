@@ -160,10 +160,15 @@
 
   (let [^File appDir (-> src (.container)(.getAppDir))
         ps (NiceFPath (File. appDir DN_PUBLIC))
+        cfg (.getAttr ^cmzlabclj.tardis.core.sys.Element
+                      src
+                      :emcfg)
+        ckAccess (:fileAccessCheck cfg)
         fpath (nsb (:path options))
         info (:info options) ]
     (log/debug "Request to serve static file: " fpath)
-    (if (.startsWith fpath ps)
+    (if (or (.startsWith fpath ps)
+            (false? ckAccess))
       (handleStatic2 src info evt res
                      (File. (maybeStripUrlCrap fpath)))
       (do
