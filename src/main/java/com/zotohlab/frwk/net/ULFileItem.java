@@ -8,10 +8,13 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+// Copyright (c) 2013 Ken Leung. All rights reserved.
  ??*/
 
 package com.zotohlab.frwk.net;
+
+import static com.zotohlab.frwk.io.IOUtils.newTempFile;
+import static com.zotohlab.frwk.util.CoreUtils.nsb;
 
 import com.zotohlab.frwk.io.XData;
 import org.apache.commons.fileupload.FileItem;
@@ -21,9 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-
-import static com.zotohlab.frwk.io.IOUtils.newTempFile;
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
 
 
 /**

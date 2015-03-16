@@ -8,7 +8,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+// Copyright (c) 2013 Ken Leung. All rights reserved.
  ??*/
 
 package com.zotohlab.frwk.io;
@@ -71,7 +71,7 @@ public class IOUtils {
   /** Look for files with certain extension, such as "java", "xml"
    */
   public static Collection<File> listFiles(File dir, String ext, boolean recurse) {
-    return FileUtils.listFiles(dir, new String[]{ ext},recurse);
+    return FileUtils.listFiles(dir, new String[]{ ext}, recurse);
   }
 
   /** Look for any files with certain extension, such as "java", "xml"

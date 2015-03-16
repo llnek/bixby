@@ -8,20 +8,20 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+// Copyright (c) 2013 Ken Leung. All rights reserved.
  ??*/
 
 package com.zotohlab.frwk.io;
+
+import  org.apache.commons.lang3.StringUtils;
+import  org.apache.commons.io.FileUtils;
+import  org.apache.commons.io.IOUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.MalformedURLException;
-
-import  org.apache.commons.lang3.StringUtils;
-import  org.apache.commons.io.FileUtils;
-import  org.apache.commons.io.IOUtils;
 
 /**
  * Wrapper structure to abstract a piece of data which can be a file
@@ -128,14 +128,15 @@ public class XData implements Serializable {
       len= ((File) _data).length();
     }
     else
-    if (_data instanceof String) {
-      len = ((String) _data).length();
-    }
-    else
     if (_data instanceof byte[]) {
       len = ((byte[]) _data).length;
     }
     else {
+      if (_data instanceof String) try {
+        len = ((String) _data).getBytes(_encoding).length;
+      } catch (Exception e) {
+        tlog().error("", e);
+      }
     }
     return len;
   }

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2013 Cherimoia, LLC. All rights reserved.
+;; Copyright (c) 2013 Ken Leung. All rights reserved.
 ;;
 ;; This library is distributed in the hope that it will be useful
 ;; but without any warranty; without even the implied warranty of
