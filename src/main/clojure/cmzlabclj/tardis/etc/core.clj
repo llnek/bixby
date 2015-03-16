@@ -23,8 +23,7 @@
         [cmzlabclj.nucleus.util.core :only [test-cond] ]
         [cmzlabclj.nucleus.util.str :only [MakeString] ]
         [cmzlabclj.nucleus.util.files :only [DirRead?] ]
-        [cmzlabclj.tardis.etc.cmdline
-         :only [GetCommands EvalCommand] ])
+        [cmzlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand] ])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
             [java.util List Locale]
