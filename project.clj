@@ -198,5 +198,108 @@
   :jar-exclusions [#"(?:^|/).svn/"]
   :uberjar-exclusions [#"META-INF/DUMMY.SF"]
 
+  :XXXaot[
+    cmzlabclj.nucleus.util.bytes
+    cmzlabclj.nucleus.util.cmdline
+    cmzlabclj.nucleus.util.constants
+    cmzlabclj.nucleus.util.countrycode
+    cmzlabclj.nucleus.util.dates
+    cmzlabclj.nucleus.util.files
+    cmzlabclj.nucleus.util.guids
+    cmzlabclj.nucleus.util.io
+    cmzlabclj.nucleus.util.meta
+    cmzlabclj.nucleus.util.mime
+    cmzlabclj.nucleus.util.process
+    cmzlabclj.nucleus.util.seqnum
+    cmzlabclj.nucleus.util.str
+    cmzlabclj.nucleus.util.usastate
+    cmzlabclj.nucleus.util.ini
+    cmzlabclj.nucleus.util.scheduler
+    cmzlabclj.nucleus.i18n.resources
+
+    cmzlabclj.nucleus.crypto.codec
+    cmzlabclj.nucleus.crypto.core
+    cmzlabclj.nucleus.crypto.stores
+    cmzlabclj.nucleus.crypto.ssl
+
+    cmzlabclj.nucleus.net.comms
+    cmzlabclj.nucleus.net.routes
+    cmzlabclj.nucleus.netty.request
+    cmzlabclj.nucleus.netty.form
+    cmzlabclj.nucleus.netty.io
+    cmzlabclj.nucleus.netty.filesvr
+    cmzlabclj.nucleus.netty.discarder
+    cmzlabclj.nucleus.netty.snooper
+
+    cmzlabclj.nucleus.jmx.names
+    cmzlabclj.nucleus.jmx.bean
+    cmzlabclj.nucleus.jmx.core
+
+    cmzlabclj.nucleus.dbio.core
+    cmzlabclj.nucleus.dbio.sql
+    cmzlabclj.nucleus.dbio.simple
+    cmzlabclj.nucleus.dbio.composite
+    cmzlabclj.nucleus.dbio.connect
+    cmzlabclj.nucleus.dbio.drivers
+    cmzlabclj.nucleus.dbio.sqlserver
+    cmzlabclj.nucleus.dbio.h2
+    cmzlabclj.nucleus.dbio.oracle
+    cmzlabclj.nucleus.dbio.mysql
+    cmzlabclj.nucleus.dbio.postgresql
+
+    cmzlabclj.tardis.core.constants
+    cmzlabclj.tardis.core.sys
+    cmzlabclj.tardis.core.wfs
+
+    cmzlabclj.tardis.io.core
+    cmzlabclj.tardis.io.socket
+    cmzlabclj.tardis.io.files
+    cmzlabclj.tardis.io.http
+    cmzlabclj.tardis.io.jms
+    cmzlabclj.tardis.io.loops
+    cmzlabclj.tardis.io.mails
+    cmzlabclj.tardis.io.netty
+    cmzlabclj.tardis.io.jetty
+    cmzlabclj.tardis.io.triggers
+    cmzlabclj.tardis.io.webss
+    cmzlabclj.tardis.io.basicauth
+
+    cmzlabclj.tardis.etc.climain
+    cmzlabclj.tardis.etc.cmdline
+    cmzlabclj.tardis.etc.task
+    cmzlabclj.tardis.etc.gant
+    cmzlabclj.tardis.etc.cli
+    cmzlabclj.tardis.etc.core
+    cmzlabclj.tardis.etc.misc
+    cmzlabclj.tardis.impl.defaults
+
+    cmzlabclj.tardis.auth.model
+    cmzlabclj.tardis.auth.realm
+    cmzlabclj.tardis.auth.shiro
+    cmzlabclj.tardis.auth.plugin
+
+    cmzlabclj.tardis.mvc.templates
+    cmzlabclj.tardis.mvc.comms
+    cmzlabclj.tardis.mvc.statics
+    cmzlabclj.tardis.mvc.handler
+
+    cmzlabclj.tardis.impl.ext
+    cmzlabclj.tardis.impl.sys
+    cmzlabclj.tardis.impl.exec
+
+    demo.async.core
+    demo.file.core
+    demo.fork.core
+    demo.http.core
+    demo.jetty.core
+    demo.jms.core
+    demo.mvc.core
+    demo.pop3.core
+    demo.steps.core
+    demo.tcpip.core
+    demo.timer.core
+
+  ]
+
   :deploy-branches ["master"])
 
