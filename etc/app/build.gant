@@ -21,11 +21,13 @@ includeTool << gant.tools.Ivy
 //////////////////////////////////////////////////////////////////////////////
 
 property( name: 'gantProjectName' , value: '@@APPID@@')
-property( name: "PID", value: "${gantProjectName}")
-property( name: 'PID_DISTRO', value: "${PID}-distro")
-property( environment: "env" )
 property( name: 'ivySettingsDir', value: "${basedir}")
+property( name: "PID", value: "${gantProjectName}")
+property( name: 'DISTRO', value: "${PID}-distro")
 loadproperties (srcFile: "${basedir}/build.xs")
+property( name: 'websrc', value: "${buildDir}/webscripts")
+property( name: 'webcss', value: "${buildDir}/webstyles")
+property( environment: "env" )
 
 //////////////////////////////////////////////////////////////////////////////
 // language compilers
@@ -74,9 +76,10 @@ target (clean_local: '') {
 // (called by skaro)
 
 target (buildr: '') {
-  depends (clean,resolve,preBuild)
+  depends (clean, resolve, preBuild)
   println "#############################################"
   println "# building: ${gantProjectName}"
+  println "# type: ${buildType}"
   println "#############################################"
   doCompileAndJar()
   if ("web" == "${buildType}") {
@@ -92,8 +95,8 @@ target (preBuild: '') {
   mkdir (dir: "${basedir}/POD-INF/patch")
   mkdir (dir: "${buildDir}")
   if ("web" == "${buildType}") {
-    mkdir (dir: "${buildDir}/web_scripts")
-    mkdir (dir: "${buildDir}/web_styles")
+    mkdir (dir: "${websrc}")
+    mkdir (dir: "${webcss}")
   }
 }
 
@@ -231,8 +234,9 @@ def doBuildWebApps() {
 def doBuildOneWebApp (dir) {
   final wappid= dir.getName()
 
-  mkdir (dir: "${buildDir}/web_scripts/${wappid}")
-  mkdir (dir: "${buildDir}/web_styles/${wappid}")
+  mkdir (dir: "${websrc}/${wappid}")
+  mkdir (dir: "${webcss}/${wappid}")
+
   if ("clojurescript" == "${jslang}") {
     doCompileCljScript(wappid)
   }
@@ -257,7 +261,7 @@ def doBuildOneWebApp (dir) {
 //
 def doCompileCljScript(wappid) {
   final sdir= "${webDir}/${wappid}/scripts"
-  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+  copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${sdir}") {
       include (name: '**/*.cljs')
     }
@@ -273,27 +277,22 @@ def doCompileCljScript(wappid) {
     arg (value: 'true')
     // advanced none whitespace simple
     arg (value: 'none')
-    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: "${websrc}/${wappid}")
   }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//
-def doFinzBuild() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileTypeScript(wappid) {
-  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+  copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/scripts") {
       include (name: '**/*.ts')
     }
   }
-  exec (executable: 'tsc', dir: "${buildDir}/web_scripts/${wappid}") {
+  exec (executable: 'tsc', dir: "${websrc}/${wappid}") {
     arg (value: '--outDir')
     arg (value: '--output')
-    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: "${websrc}/${wappid}")
     arg (value: '**/*.ts')
   }
 }
@@ -301,7 +300,7 @@ def doCompileTypeScript(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileCoffeeScript(wappid) {
-  copy (todir: "${buildDir}/web_scripts/${wappid}") {
+  copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/scripts") {
       include (name: '**/*.coffee')
     }
@@ -309,51 +308,53 @@ def doCompileCoffeeScript(wappid) {
   exec (executable: 'coffee') {
     arg (value: '--bare')
     arg (value: '--output')
-    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: "${websrc}/${wappid}")
     arg (value: '--compile')
-    arg (value: "${buildDir}/web_scripts/${wappid}")
+    arg (value: "${websrc}/${wappid}")
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileJS(wappid) {
-  copy (todir: "${buildDir}/web_scripts/${wappid}") {
-    fileset (dir: "${webDir}/${wappid}/scripts")
+  copy (todir: "${websrc}/${wappid}") {
+    fileset (dir: "${webDir}/${wappid}/scripts") {
+      include (name: '**/*.js')
+    }
   }
-  mkdir (dir: "${basedir}/public/scripts")
-  copy (todir: "${basedir}/public/scripts") {
-    fileset (dir: "${buildDir}/web_scripts/${wappid}")
+  mkdir (dir: "${basedir}/public/scripts/${wappid}")
+  copy (todir: "${basedir}/public/scripts/${wappid}") {
+    fileset (dir: "${websrc}/${wappid}")
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileLESS(wappid) {
-  copy (todir: "${buildDir}/web_styles/${wappid}") {
+  copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.less')
     }
   }
   apply (executable: "lessc", parallel: 'false') {
-    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.less')
     }
     srcfile ()
     chainedmapper () {
       mapper (type: 'glob', from: '*.less', to: '*.css')
-      globmapper (from: '*', to: "${buildDir}/web_styles/${wappid}/*")
+      globmapper (from: '*', to: "${webcss}/${wappid}/*")
     }
     targetfile ()
   }
-  copy (todir: "${buildDir}/web_styles/${wappid}") {
+  copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.css')
     }
   }
   mkdir (dir: "${basedir}/public/styles/${wappid}")
   copy (todir: "${basedir}/public/styles/${wappid}") {
-    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.css')
     }
   }
@@ -362,31 +363,31 @@ def doCompileLESS(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileSCSS(wappid) {
-  copy (todir: "${buildDir}/web_styles/${wappid}") {
+  copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles"){
       include (name: '**/*.scss')
     }
   }
   apply (executable: 'sass', parallel: 'false') {
-    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.scss')
     }
     arg (value: '--sourcemap=none')
     srcfile ()
     chainedmapper() {
       mapper (type: 'glob', from: '*.scss', to: '*.css')
-      globmapper (from: '*', to: "${buildDir}/web_styles/${wappid}/*")
+      globmapper (from: '*', to: "${webcss}/${wappid}/*")
     }
     targetfile ()
   }
-  copy (todir: "${buildDir}/web_styles/${wappid}") {
+  copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.css')
     }
   }
   mkdir (dir: "${basedir}/public/styles/${wappid}")
   copy (todir: "${basedir}/public/styles/${wappid}") {
-    fileset (dir: "${buildDir}/web_styles/${wappid}") {
+    fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.css')
     }
   }
@@ -452,6 +453,11 @@ def doYuiJS() {
     }
     targetfile ()
   }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doFinzBuild() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
