@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013 Ken Leung. All rights reserved.
+;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -16,14 +16,14 @@
 
   (:gen-class)
 
-  (:require [clojure.tools.logging :as log :only [warn error info debug] ]
+  (:require [clojure.tools.logging :as log :only [warn error info debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
-        [cmzlabclj.nucleus.util.core :only [test-cond] ]
-        [cmzlabclj.nucleus.util.str :only [MakeString] ]
-        [cmzlabclj.nucleus.util.files :only [DirRead?] ]
-        [cmzlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand] ])
+  (:use [cmzlabclj.nucleus.i18n.resources :only [GetResource GetString]]
+        [cmzlabclj.nucleus.util.core :only [test-cond]]
+        [cmzlabclj.nucleus.util.str :only [MakeString]]
+        [cmzlabclj.nucleus.util.files :only [DirRead?]]
+        [cmzlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand]])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
             [java.util List Locale]
@@ -56,7 +56,7 @@
   ["testjce" "Check JCE  Policy Files."]
 
   ["demo samples" "Generate a set of samples."]
-  ["version" "Show version info."] ])
+  ["version" "Show version info."]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,7 +94,7 @@
   [rcb & args]
 
   (let [h (File. ^String (first args)) ]
-    (test-cond (str "Cannot access Skaro home " h) (DirRead? h))
+    (test-cond (GetString rcb "skaro.home.none" [h]) (DirRead? h))
     (if (not (contains? (GetCommands) (keyword (nth args 1))))
       false
       #(apply EvalCommand h rcb (drop 1 args)))

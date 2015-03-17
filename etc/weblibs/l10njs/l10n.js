@@ -1,10 +1,10 @@
 /*
  * l10n.js
- * 2013-04-18
+ * 2014-05-02
  * 
  * By Eli Grey, http://eligrey.com
  * Licensed under the X11/MIT License
- *   See LICENSE.md
+ *   See https://github.com/eligrey/l10n.js/blob/master/LICENSE.md
  */
 
 /*global XMLHttpRequest, setTimeout, document, navigator, ActiveXObject*/
@@ -50,13 +50,19 @@ var
 	return -1;
 }
 , request_JSON = function (uri) {
-	var req = new XHR();
+	var req  = new XHR(),
+		data = {};
 	
 	// sadly, this has to be blocking to allow for a graceful degrading API
 	req.open("GET", uri, FALSE);
 	req.send(null);
 	
-	if (req.status !== 200) {
+	// Status codes can be inconsistent across browsers so we simply try to parse
+	// the response text and catch any errors. This deals with failed requests as
+	// well as malformed json files.
+	try {
+		data = JSON.parse(req.responseText);
+	} catch(e) {
 		// warn about error without stopping execution
 		setTimeout(function () {
 			// Error messages are not localized as not to cause an infinite loop
@@ -64,11 +70,9 @@ var
 			l10n_err.name = "Localization Error";
 			throw l10n_err;
 		}, 0);
-		
-		return {};
-	} else {
-		return JSON.parse(req.responseText);
 	}
+
+	return data;
 }
 , load = String_ctr[$to_locale_string] = function (data) {
 	// don't handle function.toLocaleString(indentationAmount:Number)
@@ -139,10 +143,6 @@ var
 }
 , use_default
 , localize = String_ctr.prototype[$to_locale_string] = function () {
-	if (typeof this === undef_type) {
-		return this;
-	}
-	
 	var
 	  using_default = use_default
 	, current_locale = String_ctr[using_default ? $default_locale : $locale]

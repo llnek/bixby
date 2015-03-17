@@ -7,36 +7,56 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013 Ken Leung. All rights reserved.
+;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   cmzlabclj.tardis.etc.cmdline
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.i18n.resources :only [GetString] ]
-        [cmzlabclj.tardis.etc.climain :only [StartMain] ]
+  (:use [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
+        [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify]]
+        [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid]]
+        [cmzlabclj.nucleus.i18n.resources :only [GetString]]
+        [cmzlabclj.tardis.etc.climain :only [StartMain]]
+        [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal]]
+        [cmzlabclj.nucleus.util.str :only [ucase nsb hgl? strim]]
         [cmzlabclj.tardis.etc.gant]
-        [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid] ]
         [cmzlabclj.tardis.etc.cli]
-        [cmzlabclj.nucleus.util.core
-         :only [notnil? NiceFPath IsWindows? Stringify
-                ternary FlattenNil ConvLong ResStr] ]
-        [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal] ]
         [cmzlabclj.nucleus.util.meta]
+
+        [cmzlabclj.nucleus.util.core
+        :only
+        [notnil?
+         NiceFPath
+         IsWindows?
+         Stringify
+         ternary
+         FlattenNil
+         ConvLong
+         ResStr]]
+
         [cmzlabclj.nucleus.util.files
-         :only [ReadEdn ReadOneFile WriteOneFile] ]
-        [cmzlabclj.nucleus.util.str :only [ucase nsb hgl? strim] ]
-        [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse] ]
-        [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify] ]
+        :only
+        [ReadEdn
+         ReadOneFile
+         WriteOneFile]]
+
         [cmzlabclj.nucleus.crypto.core
-         :only [AES256_CBC AssertJce PEM_CERT
-                ExportPublicKey ExportPrivateKey
-                DbgProvider MakeKeypair
-                MakeSSv1PKCS12 MakeCsrReq] ]
+        :only
+        [AES256_CBC
+         AssertJce
+         PEM_CERT
+         ExportPublicKey
+         ExportPrivateKey
+         DbgProvider
+         MakeKeypair
+         MakeSSv1PKCS12
+         MakeCsrReq]]
+
         [cmzlabclj.tardis.core.constants])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
@@ -100,8 +120,8 @@
         wlg (ternary (:lang (:webdev hf)) "js")
         app (nth args 2)
         t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
-         ;; treat as domain e.g com.acme => app = acme
-         ;; regex gives ["com.acme" ".acme"]
+        ;; treat as domain e.g com.acme => app = acme
+        ;; regex gives ["com.acme" ".acme"]
         id (when (notnil? t)
              (if-let [tkn (last t) ]
                (.substring ^String tkn 1)
@@ -166,7 +186,8 @@
   [& args]
 
   (if (> (count args) 1)
-    (AntBuildApp (getHomeDir) (nth args 1) "test")
+    ;;(AntBuildApp (getHomeDir) (nth args 1) "test")
+    (ExecGantScript (getHomeDir) (nth args 1) "test")
     (throw (CmdHelpError.))
   ))
 
@@ -590,7 +611,7 @@
 
   [home rcb & args]
 
-  (if-let [v (get _ARGS (keyword (first args))) ]
+  (if-let [v ((keyword (first args)) _ARGS) ]
     ;; set the global values for skaro-home and system resource bundle
     ;; for messages.
     (binding [*SKARO-HOME-DIR* home

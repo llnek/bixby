@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013-2014 Cherimoia, LLC. All rights reserved.
+// Copyright (c) 2013-2014, Ken Leung. All rights reserved.
 
 //////////////////////////////////////////////////////////////////////////////
 // external tools
@@ -46,9 +46,9 @@ ant.path (id: 'test.path.id') {
   path (refid: "compile.path.id")
 }
 
-  /* =================================
-        target: ivy stuff
-       ================================= */
+//////////////////////////////////////////////////////////////////////////////
+// ivy stuff
+//////////////////////////////////////////////////////////////////////////////
 
 ivy.settings( file: "${ivySettingsDir}/ivy.config.xml" )
 
@@ -62,14 +62,6 @@ target (report: '') {
   ivy.report (todir: "${buildDir}")
 }
 
-target (cleanPublic: '') {
-  doCleanPublic()
-}
-
-target (clean: '') {
-  doClean()
-}
-
 target (clean_cache: '') {
   ivy.cleancache()
 }
@@ -80,13 +72,16 @@ target (clean_local: '') {
 
 //////////////////////////////////////////////////////////////////////////////
 // (called by skaro)
+
 target (buildr: '') {
   depends (clean,resolve,preBuild)
   println "#############################################"
   println "# building: ${gantProjectName}"
   println "#############################################"
   doCompileAndJar()
-  doBuildWebApps()
+  if ("web" == "${buildType}") {
+    doBuildWebApps()
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -96,12 +91,15 @@ target (preBuild: '') {
   mkdir (dir: "${basedir}/POD-INF/lib")
   mkdir (dir: "${basedir}/POD-INF/patch")
   mkdir (dir: "${buildDir}")
-  mkdir (dir: "${buildDir}/web_scripts")
-  mkdir (dir: "${buildDir}/web_styles")
+  if ("web" == "${buildType}") {
+    mkdir (dir: "${buildDir}/web_scripts")
+    mkdir (dir: "${buildDir}/web_styles")
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // compile server-side source code
+
 target (compileJava: '') {
   doCompileJava()
 }
@@ -206,7 +204,9 @@ def doClean() {
     fileset (erroronmissingdir: 'false', dir: "${buildDir}", includes: '**/*')
     fileset (erroronmissingdir: 'false', dir: "${libDir}", includes: '**/*.jar')
   }
-  doCleanPublic()
+  if ("web" == "${buildType}") {
+    doCleanPublic()
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -221,11 +221,9 @@ def doCleanPublic() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doBuildWebApps() {
-  if ("web" == "${buildType}") {
-    new File("${webDir}").eachDir( { f ->
-      doBuildOneWebApp(f)
-    });
-  }
+  new File("${webDir}").eachDir( { f ->
+    doBuildOneWebApp(f)
+  });
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -282,16 +280,6 @@ def doCompileCljScript(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doFinzBuild() {
-  delete (file: "${basedir}/public/c/webcommon.js", quiet: 'true')
-  concat (destfile: "${basedir}/public/c/webcommon.js", append: 'true') {
-    fileset (file: "${basedir}/public/vendors/underscore/underscore-min.js")
-    fileset (file: "${basedir}/public/vendors/jquery/jquery-2.1.1.min.js")
-    fileset (file: "${basedir}/public/vendors/l10njs/l10n.min.js")
-    fileset (file: "${basedir}/public/vendors/mustache/mustache.js")
-    fileset (file: "${basedir}/public/vendors/helpers/dbg.js")
-    fileset (file: "${basedir}/public/vendors/cherimoia/skaro.js")
-    fileset (file: "${basedir}/public/vendors/cherimoia/caesar.js")
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -383,6 +371,7 @@ def doCompileSCSS(wappid) {
     fileset (dir: "${buildDir}/web_styles/${wappid}") {
       include (name: '**/*.scss')
     }
+    arg (value: '--sourcemap=none')
     srcfile ()
     chainedmapper() {
       mapper (type: 'glob', from: '*.scss', to: '*.css')
@@ -434,7 +423,7 @@ def doYuiCSS() {
       include (name: '**/*.css')
     }
     arg (line: '-jar')
-    arg (path: "${skaroHome}/lib/yuicompressor-2.4.7.jar")
+    arg (path: "${skaroHome}/lib/yuicompressor-2.4.8.jar")
     srcfile ()
     arg (line: '-o')
     chainedmapper () {
@@ -454,7 +443,7 @@ def doYuiJS() {
       include (name: '**/*.js')
     }
     arg (line: '-jar')
-    arg (path: "${skaroHome}/lib/yuicompressor-2.4.7.jar")
+    arg (path: "${skaroHome}/lib/yuicompressor-2.4.8.jar")
     srcfile ()
     arg (line: '-o')
     chainedmapper () {
@@ -473,8 +462,10 @@ def doYuiJS() {
 
 target (release: '') {
   depends (buildr)
-  doYuiCSS()
-  doYuiJS()
+  if ("web" == "${buildType}") {
+    doYuiCSS()
+    doYuiJS()
+  }
   doFinzBuild()
 }
 
@@ -487,6 +478,13 @@ target (test: '') {
   depends(testBuild)
 }
 
+target (clean: '') {
+  doClean()
+}
+
+target (cleanPublic: '') {
+  doCleanPublic()
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // EOF

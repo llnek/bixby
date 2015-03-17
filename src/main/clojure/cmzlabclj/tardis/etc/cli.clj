@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013 Ken Leung. All rights reserved.
+;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -197,6 +197,7 @@
 
       (var-set fp (File. appDir "build.gant"))
       (let [s (str "arg (value: \"" appDomain ".core\")"
+                   "\n"
                    "arg (value: \"" appDomain ".pipe\")" ) ]
         (WriteOneFile @fp
                       (-> (ReadOneFile @fp)
@@ -356,8 +357,8 @@
 ;;
 (defn- create-mvc-web ""
 
-  [^File hhhHome 
-   appId 
+  [^File hhhHome
+   appId
    ^String appDomain
    ^String emType
    ]
