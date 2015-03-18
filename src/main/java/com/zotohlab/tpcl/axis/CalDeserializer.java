@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,17 +8,20 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.tpcl.axis;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
+
+import javax.xml.namespace.QName;
 
 import org.apache.axis.encoding.ser.CalendarDeserializer;
 import org.apache.axis.i18n.Messages;
-import javax.xml.namespace.QName;
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
@@ -125,10 +127,10 @@ public class CalDeserializer extends CalendarDeserializer {
 
     if (pos + 5 < source.length() &&
         (source.charAt(pos) == '+' || source.charAt(pos) == '-')) {
-      if (!Character.isDigit(source.charAt(pos + 1)) || 
-          !Character.isDigit(source.charAt(pos + 2)) || 
-          source.charAt(pos + 3) != ':' || 
-          !Character.isDigit(source.charAt(pos + 4)) || 
+      if (!Character.isDigit(source.charAt(pos + 1)) ||
+          !Character.isDigit(source.charAt(pos + 2)) ||
+          source.charAt(pos + 3) != ':' ||
+          !Character.isDigit(source.charAt(pos + 4)) ||
           !Character.isDigit(source.charAt(pos + 5)))
             throw new NumberFormatException(Messages.getMessage("badTimezone00"));
 

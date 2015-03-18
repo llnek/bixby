@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,7 +8,6 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.crypto;
 
@@ -24,16 +22,12 @@ import java.security.UnrecoverableEntryException;
 public enum CryptoUtils {
 ;
 
-  /**
-   */
   public static KeyStore.PrivateKeyEntry getPKey(KeyStore ks, String n, char[] pwd)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
     Object obj = ks.getEntry(n, new KeyStore.PasswordProtection(pwd));
     return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
   }
 
-  /**
-   */
   public static KeyStore.TrustedCertificateEntry getCert(KeyStore ks, String n)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
     Object obj = ks.getEntry(n, null);

@@ -18,9 +18,10 @@
 
   (:import  [java.nio ByteBuffer CharBuffer]
             [java.nio.charset Charset]
+
             [java.io ByteArrayOutputStream
-                    ByteArrayInputStream
-                    DataOutputStream DataInputStream]))
+            ByteArrayInputStream
+            DataOutputStream DataInputStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

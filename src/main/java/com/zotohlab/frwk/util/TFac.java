@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,11 +8,11 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.util;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -31,7 +30,6 @@ public class TFac implements ThreadFactory {
 
   @SuppressWarnings("unused")
   private ThreadGroup _group;
-
   private String _pfx="";
 
   public TFac(String pfx) {

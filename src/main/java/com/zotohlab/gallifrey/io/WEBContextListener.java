@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,15 +8,15 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.io;
 
-import org.eclipse.jetty.webapp.WebAppContext;
-import javax.servlet.*;
-import java.io.*;
-import java.util.*;
-import org.slf4j.*;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl

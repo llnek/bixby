@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,12 +8,9 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonObject;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -27,11 +23,8 @@ import java.util.Map;
  */
 public abstract class PipelineConfigurator {
 
-  protected PipelineConfigurator() {
-  }
-
   public ChannelHandler configure(final Map<?,?> options) {
-    return new ChannelInitializer() {
+    return new ChannelInitializer<Channel>() {
       public void initChannel(Channel ch) {
         assemble(ch.pipeline(), options);
       }
@@ -40,6 +33,7 @@ public abstract class PipelineConfigurator {
 
   protected abstract void assemble(ChannelPipeline pipe, Map<?,?> options);
 
+  protected PipelineConfigurator() {}
 }
 
 

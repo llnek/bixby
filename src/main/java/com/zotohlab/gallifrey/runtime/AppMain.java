@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,21 +8,20 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.gallifrey.runtime;
 
-import com.google.gson.JsonObject;
-import com.zotohlab.gallifrey.core.Container;
-import com.zotohlab.frwk.core.*;
-
 import java.util.Map;
+
+import com.zotohlab.frwk.core.Disposable;
+import com.zotohlab.frwk.core.Initializable;
+import com.zotohlab.frwk.core.Startable;
+import com.zotohlab.gallifrey.core.Container;
 
 /**
  * @author kenl
  */
-public interface AppMain extends Disposable , Initializable , Startable {
+public interface AppMain extends Disposable, Initializable, Startable {
 
   public void configure(Map<String,?> options);
 

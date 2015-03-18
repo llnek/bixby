@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,13 +8,19 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.crypto;
 
-import static com.zotohlab.frwk.util.CoreUtils.*;
+import static com.zotohlab.frwk.util.CoreUtils.nsb;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import javax.activation.DataSource;
-import java.io.*;
+
 import com.zotohlab.frwk.io.XStream;
 
 /**
@@ -62,7 +67,6 @@ public class SDataSource implements DataSource {
 
   public String getContentType() { return _ctype; }
 
-  @SuppressWarnings("resource")
   public InputStream getInputStream() {
     return (_fn==null) ? new ByteArrayInputStream(_bits) : new XStream(_fn);
   }

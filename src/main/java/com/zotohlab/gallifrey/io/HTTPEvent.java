@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,17 +8,15 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.io;
 
 
-import com.zotohlab.frwk.io.XData;
-
+import java.net.HttpCookie;
 import java.util.List;
 import java.util.Set;
-import java.util.Map;
-import java.net.HttpCookie;
+
+import com.zotohlab.frwk.io.XData;
 
 /**
  * @author kenl
@@ -48,7 +45,7 @@ public interface HTTPEvent  extends IOEvent {
   public Set<String> getHeaders();
   public String getHeaderValue(String nm);
   public boolean hasHeader(String nm);
-  
+
   public List<String> getParameterValues(String nm);
   public Set<String> getParameters();
   public String getParameterValue(String nm);
@@ -78,7 +75,6 @@ public interface HTTPEvent  extends IOEvent {
   public String serverName();
 
   public int serverPort();
-
 
   public boolean isSSL();
 

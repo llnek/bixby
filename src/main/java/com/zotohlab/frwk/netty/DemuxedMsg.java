@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,14 +8,12 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonObject;
-import com.zotohlab.frwk.io.XData;
-
 import java.util.Map;
+
+import com.zotohlab.frwk.io.XData;
 
 
 /**
@@ -27,13 +24,12 @@ public class DemuxedMsg {
   private XData _payload;
   private Map<?,?> _info;
 
-  public DemuxedMsg( Map<?,?> info, XData payload) {
+  public DemuxedMsg(Map<?,?> info, XData payload) {
     _payload = payload;
     _info = info;
   }
 
   public XData payload() { return _payload; }
-
   public Map<?,?> info() { return _info; }
 
 }

@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,13 +8,19 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import com.zotohlab.frwk.core.CallableWithArgs;
-import com.zotohlab.frwk.io.IOUtils;
-import com.zotohlab.frwk.io.XData;
+import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+import static com.zotohlab.frwk.netty.NettyFW.CBUF_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.MSGFUNC_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.MSGINFO_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.XDATA_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.XOS_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.delAttr;
+import static com.zotohlab.frwk.netty.NettyFW.getAttr;
+import static com.zotohlab.frwk.netty.NettyFW.setAttr;
+import static com.zotohlab.frwk.netty.NettyFW.slurpByteBuf;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,8 +29,6 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.ssl.SslHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,8 +36,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
-import static com.zotohlab.frwk.io.IOUtils.streamLimit;
-import static com.zotohlab.frwk.netty.NettyFW.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.zotohlab.frwk.core.CallableWithArgs;
+import com.zotohlab.frwk.io.IOUtils;
+import com.zotohlab.frwk.io.XData;
+
 
 /**
  * @author kenl
@@ -43,6 +51,8 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
 
   private static Logger _log = LoggerFactory.getLogger(AuxHttpFilter.class);
   public Logger tlog() { return _log; }
+
+  public String getName() { return this.getClass().getSimpleName(); }
 
   /** Clean up any attached attributes.
    */
@@ -59,11 +69,11 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   }
 
   public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+
     if (msg instanceof HttpContent) {
       tlog().debug("Got a valid http-content chunk, part of a message.");
-    } else {
-      return;
-    }
+    } else { return; }
+
     CompositeByteBuf cbuf = (CompositeByteBuf) getAttr(ctx, CBUF_KEY);
     OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
@@ -87,16 +97,17 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   }
 
   protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
+
     if (msg instanceof LastHttpContent) {
       tlog().debug("Got the final last-http-content chunk, end of message.");
-    } else  {
-      return;
-    }
-    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
+    } else  { return; }
+
     CallableWithArgs func= (CallableWithArgs) getAttr(ctx, MSGFUNC_KEY) ;
-    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
+    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
     ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
+
+    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
     if (os == null) {
       OutputStream baos = new ByteArrayOutputStream();
       slurpByteBuf(cbuf, baos);
@@ -116,10 +127,6 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
     Map<?,?> info = (Map<?,?>) getAttr(ctx, MSGINFO_KEY);
     resetAttrs(ctx);
     ctx.fireChannelRead( new DemuxedMsg(info, xs));
-  }
-
-  public String getName() {
-    return this.getClass().getSimpleName();
   }
 
   protected boolean tooMuchData(ByteBuf content, Object chunc) {

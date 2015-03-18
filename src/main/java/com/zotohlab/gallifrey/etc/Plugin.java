@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,18 +8,18 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.etc;
 
-import java.io.File;
-import com.zotohlab.frwk.core.*;
+import com.zotohlab.frwk.core.Configurable;
+import com.zotohlab.frwk.core.Disposable;
+import com.zotohlab.frwk.core.Startable;
 import com.zotohlab.gallifrey.core.Container;
 
 /**
  * @author kenl
  */
-public interface Plugin extends Startable , Configurable , Disposable {
+public interface Plugin extends Startable, Configurable, Disposable {
 
   public void contextualize(Container c);
 

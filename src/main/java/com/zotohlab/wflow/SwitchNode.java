@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,24 +8,19 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
 public class SwitchNode extends FlowNode {
-
-  public SwitchNode(FlowNode s, Activity a) {
-    super(s,a);
-  }
 
   private Map<Object,FlowNode> _cs = new HashMap<Object,FlowNode>();
   private SwitchChoiceExpr _expr= null;
@@ -35,6 +29,10 @@ public class SwitchNode extends FlowNode {
   public SwitchNode withChoices(Map<Object,FlowNode> cs) {
     _cs.putAll(cs);
     return this;
+  }
+
+  public SwitchNode(FlowNode s, Activity a) {
+    super(s,a);
   }
 
   public SwitchNode withDef(FlowNode s) {

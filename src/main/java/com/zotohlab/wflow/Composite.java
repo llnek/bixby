@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,7 +8,6 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.wflow;
 
@@ -26,13 +24,12 @@ public abstract class Composite extends Activity {
   private List<Activity> _children= new ArrayList<Activity>();
 
   public int size() { return _children.size(); }
+  protected void onAdd(Activity a) {}
 
   protected void add(Activity a) {
     _children.add(a);
     onAdd(a);
   }
-
-  protected void onAdd(Activity a) {}
 
   public ListIterator<Activity> listChildren() { return _children.listIterator(); }
 

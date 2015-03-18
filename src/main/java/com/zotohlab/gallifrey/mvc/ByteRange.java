@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,17 +8,15 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.gallifrey.mvc;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
@@ -38,7 +35,9 @@ public class ByteRange {
   private int _servedHeader = 0;
   private int _servedRange = 0;
 
-  public ByteRange (RandomAccessFile file, long start, long end, String cType, boolean incHeader) {
+  public ByteRange (RandomAccessFile file, long start, long end,
+      String cType, boolean incHeader) {
+
     _incHeader= incHeader;
     _file= file;
     _start= start;
@@ -81,7 +80,7 @@ public class ByteRange {
       }
       int c = _file.read( out, pos, (int)maxToRead);
       if (c < 0) {
-        throw new IOException("error while reading file : no more to read ! length=" + 
+        throw new IOException("error while reading file : no more to read ! length=" +
             _file.length() +
             ", seek=" + ( _start + _servedRange));
       }

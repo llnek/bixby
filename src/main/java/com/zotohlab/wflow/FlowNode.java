@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,27 +8,24 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.frwk.util.Schedulable;
-import org.slf4j.*;
 import java.util.concurrent.atomic.AtomicLong;
-import com.zotohlab.wflow.core.Job;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.RunnableWithId;
+import com.zotohlab.frwk.util.Schedulable;
+import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl
  *
  */
 public abstract class FlowNode implements  RunnableWithId {
-
-  protected FlowNode(Pipeline p) {
-    _parent=p;
-    _defn= new Nihil();
-  }
 
   private static Logger _log = LoggerFactory.getLogger(FlowNode.class);
   public Logger tlog() { return FlowNode._log; }
@@ -52,6 +48,11 @@ public abstract class FlowNode implements  RunnableWithId {
     this(s.flow() );
     _nextPtr=s;
     _defn=a;
+  }
+
+  protected FlowNode(Pipeline p) {
+    _parent=p;
+    _defn= new Nihil();
   }
 
   public abstract FlowNode eval(Job j);
@@ -111,7 +112,7 @@ public abstract class FlowNode implements  RunnableWithId {
     try {
       //f.job().clrLastResult();
       rc= eval( f.job() );
-    } 
+    }
     catch (Throwable e) {
       err= f.onError(e, this);
     }

@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,15 +8,14 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.loaders;
 
-import java.net.MalformedURLException;
-import java.net.URLClassLoader;
 import java.io.File;
-import java.net.URL;
 import java.io.FilenameFilter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 /**
  * @author kenl
@@ -33,7 +31,7 @@ public abstract class AbstractClassLoader extends URLClassLoader {
   public AbstractClassLoader findUrls(File dir) {
     if (dir.exists() ) {
       dir.listFiles( new FilenameFilter() {
-        public boolean accept(File f,String n) { 
+        public boolean accept(File f,String n) {
           if (n.endsWith(".jar")) {
             addUrl(f);
           }

@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,20 +8,18 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.io;
 
-import org.apache.commons.io.filefilter.FalseFileFilter;
-import org.apache.commons.io.filefilter.FileFilterUtils;
-import org.apache.commons.io.filefilter.NotFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import  org.apache.commons.lang3.StringUtils;
-import org.apache.commons.io.FileUtils;
-import java.io.*;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Collection;
 
-import org.slf4j.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -64,7 +61,7 @@ public class IOUtils {
   }
 
   public static File mkTempFile(String pfx, String sux) throws IOException {
-    return File.createTempFile( StringUtils.isEmpty(pfx) ? "temp-" : pfx,
+    return File.createTempFile( StringUtils.isEmpty(pfx) ? "tmp-" : pfx,
                                 StringUtils.isEmpty(sux) ? ".dat" : sux, _wd);
   }
 

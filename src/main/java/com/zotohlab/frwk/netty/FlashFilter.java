@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,15 +8,19 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.netty.NettyFW.*;
-
+import static com.zotohlab.frwk.netty.NettyFW.delAttr;
+import static com.zotohlab.frwk.netty.NettyFW.getAttr;
+import static com.zotohlab.frwk.netty.NettyFW.setAttr;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
 
@@ -29,6 +32,7 @@ import io.netty.util.CharsetUtil;
 @ChannelHandler.Sharable
 public class FlashFilter extends ChannelInboundHandlerAdapter {
 
+  @SuppressWarnings("unused")
   private static final String _XML = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
   private static final String XML= "<?xml version=\"1.0\"?>\r\n"
       + "<!DOCTYPE cross-domain-policy SYSTEM \"/xml/dtds/cross-domain-policy.dtd\">\r\n"
@@ -37,6 +41,7 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
       + "  <allow-access-from domain=\"*\" to-ports=\"" + "*" + "\" />\r\n"
       + "</cross-domain-policy>\r\n";
 
+  @SuppressWarnings("unused")
   private static final String FLASH_POLICY_REQ_WITH_NULL = "<policy-file-request/>\0";
   private static final String FLASH_POLICY_REQ = "<policy-file-request/>";
   private static final char[] FLASH_CHS = FLASH_POLICY_REQ.toCharArray();
@@ -50,8 +55,7 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
     return pipe;
   }
 
-  protected FlashFilter() {
-  }
+  protected FlashFilter() {}
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {

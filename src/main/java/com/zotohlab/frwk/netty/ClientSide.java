@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,12 +8,10 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import com.google.gson.JsonObject;
-import com.zotohlab.frwk.io.XData;
+import static com.zotohlab.frwk.io.IOUtils.streamLimit;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -22,27 +19,33 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.stream.ChunkedStream;
 import io.netty.util.AttributeKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Map;
 
-import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
+import com.zotohlab.frwk.io.XData;
+
 
 /**
  * @author kenl
  */
-@SuppressWarnings("unchecked")
 public enum ClientSide {
 ;
 
-  private static final AttributeKey URL_KEY = AttributeKey.valueOf("targetUrl");
+  private static final AttributeKey<Object> URL_KEY = AttributeKey.valueOf("targetUrl");
   private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
   public static Logger tlog() { return _log; }
 
@@ -62,9 +65,9 @@ public enum ClientSide {
    */
   public static Channel connect(Bootstrap bs, URL targetUrl) throws IOException {
     boolean ssl = "https".equals(targetUrl.getProtocol());
+    String host = targetUrl.getHost();
     int pnum = targetUrl.getPort();
     int port = (pnum < 0) ? (ssl ?  443 : 80) : pnum;
-    String host = targetUrl.getHost();
     InetSocketAddress sock = new InetSocketAddress(host, port);
     ChannelFuture cf = null;
     try {
@@ -72,7 +75,7 @@ public enum ClientSide {
     } catch (InterruptedException e) {
       throw new IOException("Connect failed: ", e);
     }
-    if ( ! cf.isSuccess() ) {
+    if (! cf.isSuccess() ) {
       throw new IOException("Connect error: ", cf.cause() );
     }
     Channel c= cf.channel();
@@ -98,17 +101,17 @@ public enum ClientSide {
 
   private static ChannelFuture send(Channel ch, String op, XData xdata, JsonObject options)
     throws IOException {
+    String mo = options.has("override") ? options.get("override").getAsString() : null;
     long clen = (xdata == null) ?  0L : xdata.size();
     URL targetUrl = (URL) ch.attr(URL_KEY).get();
-    String mo = options.has("override") ? options.get("override").getAsString() : null;
     HttpRequest req = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(op),
                                              targetUrl.toString() );
     HttpHeaders.setHeader(req, "Connection",
                                options.has("keep-alive") && options.get("keep-alive").getAsBoolean()
                                ? "keep-alive" : "close");
-
     HttpHeaders.setHeader(req, "host", targetUrl.getHost());
 
+    // content type
     String ct = HttpHeaders.getHeader(req, "content-type");
     if (clen > 0L && ct == null) {
       HttpHeaders.setHeader(req, "content-type",  "application/octet-stream");
@@ -118,8 +121,9 @@ public enum ClientSide {
     HttpHeaders.setContentLength(req, clen);
 
     tlog().debug("Netty client: about to flush out request (headers)");
-    tlog().debug( "Netty client: content has length " +  clen);
+    tlog().debug("Netty client: content has length " +  clen);
 
+    // send
     ChannelFuture cf= ch.write(req);
     if (clen > 0L) {
       if (clen > streamLimit() ) {

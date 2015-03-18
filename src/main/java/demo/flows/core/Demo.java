@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,17 +8,22 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package demo.flows.core;
 
+import static com.zotohlab.wflow.PTask.PTaskWrapper;
+import static demo.flows.core.Auth.getAuthMtd;
 import static java.lang.System.out;
 
-import static com.zotohlab.wflow.PTask.*;
-
-import com.zotohlab.wflow.*;
-
-import static demo.flows.core.Auth.*;
+import com.zotohlab.wflow.Activity;
+import com.zotohlab.wflow.Block;
+import com.zotohlab.wflow.FlowNode;
+import com.zotohlab.wflow.If;
+import com.zotohlab.wflow.Pipeline;
+import com.zotohlab.wflow.PipelineDelegate;
+import com.zotohlab.wflow.Split;
+import com.zotohlab.wflow.Switch;
+import com.zotohlab.wflow.While;
 
 
 /**

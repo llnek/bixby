@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,22 +8,21 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.io;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
+import java.io.File;
+import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
+
+import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * @author kenl
@@ -36,7 +34,7 @@ public class JettyUtils {
   }
 
   public static void replyRedirect(HttpServletRequest req,
-                                       HttpServletResponse rsp, String path) throws IOException {
+                                   HttpServletResponse rsp, String path) throws IOException {
     try {
       rsp.sendRedirect(path);
     }
@@ -56,13 +54,10 @@ public class JettyUtils {
     }
   }
 
-  public static WebAppContext newWebAppContext( final File warPath, final String ctxPath, final String attr, final Object obj) throws IOException {
+  public static WebAppContext newWebAppContext( final File warPath, final String ctxPath,
+      final String attr, final Object obj) throws IOException {
 
-    String cp = "";
-
-    if (ctxPath != null) {
-      cp = ctxPath;
-    }
+    String cp = ctxPath == null ?  "" :  ctxPath;
 
     return new WebAppContext(warPath.toURI().toURL().toString(), cp) {
 

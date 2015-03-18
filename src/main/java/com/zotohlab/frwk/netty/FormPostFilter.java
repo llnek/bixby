@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,25 +8,26 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-import com.zotohlab.frwk.net.ULFormItems;
+import static com.zotohlab.frwk.netty.NettyFW.FORMDEC_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.FORMITMS_KEY;
+import static com.zotohlab.frwk.netty.NettyFW.delAttr;
+import static com.zotohlab.frwk.netty.NettyFW.getAttr;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+
 import java.io.IOException;
-import static com.zotohlab.frwk.netty.NettyFW.*;
+
+import com.zotohlab.frwk.net.ULFormItems;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
 public abstract class FormPostFilter extends AuxHttpFilter {
-
-  protected FormPostFilter() {
-  }
 
   public abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
     throws IOException;
@@ -48,6 +48,8 @@ public abstract class FormPostFilter extends AuxHttpFilter {
     }
     super.resetAttrs(ctx);
   }
+
+  protected FormPostFilter() {}
 
 }
 

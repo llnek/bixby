@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,12 +8,20 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.ReferenceCountUtil;
 
 /**
@@ -30,8 +37,7 @@ public class Expect100Filter extends SimpleInboundFilter {
     return pipe;
   }
 
-  protected Expect100Filter() {
-  }
+  protected Expect100Filter() {}
 
   public static void handle100(final ChannelHandlerContext ctx, HttpMessage msg) {
     if (HttpHeaders.is100ContinueExpected(msg)) {
@@ -57,7 +63,7 @@ public class Expect100Filter extends SimpleInboundFilter {
 
   private static HttpResponse c100_rsp() {
     return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
-                                                  HttpResponseStatus.CONTINUE);
+                                       HttpResponseStatus.CONTINUE);
   }
 
 }

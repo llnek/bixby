@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,14 +8,19 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.net;
 
-import java.security.cert.*;
-import java.security.*;
-import javax.net.ssl.*;
-import org.slf4j.*;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.ManagerFactoryParameters;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactorySpi;
+import javax.net.ssl.X509TrustManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -26,7 +30,7 @@ import org.slf4j.*;
 public class SSLTrustMgrFactory extends TrustManagerFactorySpi {
 
   private static Logger _log=LoggerFactory.getLogger(SSLTrustMgrFactory.class);
-  public static Logger tlog() { return SSLTrustMgrFactory._log; }
+  public static Logger tlog() { return _log; }
 
   public static TrustManager[] getTrustManagers() {
     return new TrustManager[] { new X509TrustManager() {

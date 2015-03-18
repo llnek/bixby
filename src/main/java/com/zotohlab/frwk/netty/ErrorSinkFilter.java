@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,37 +8,39 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.util.CoreUtils.*;
-import io.netty.channel.*;
+import static com.zotohlab.frwk.netty.NettyFW.getAttr;
+import static com.zotohlab.frwk.netty.NettyFW.replyXXX;
+import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.zotohlab.frwk.netty.NettyFW.*;
 
 /**
  * @author kenl
  */
+@SuppressWarnings("rawtypes")
 @ChannelHandler.Sharable
 public class ErrorSinkFilter extends SimpleChannelInboundHandler {
 
-  private static Logger _log = LoggerFactory.getLogger(ErrorSinkFilter.class);
-  public Logger tlog() { return _log; }
-
   public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
+  private static Logger _log = LoggerFactory.getLogger(ErrorSinkFilter.class);
   private static final ErrorSinkFilter shared = new ErrorSinkFilter();
+  public Logger tlog() { return _log; }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(ErrorSinkFilter.class.getSimpleName(), shared);
     return pipe;
   }
 
-  protected ErrorSinkFilter() {
-  }
+  protected ErrorSinkFilter() {}
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {

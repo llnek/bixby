@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,13 +8,18 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.mock.jms;
 
-import javax.naming.*;
 import java.util.Hashtable;
+
+import javax.naming.Binding;
+import javax.naming.Context;
+import javax.naming.Name;
+import javax.naming.NameClassPair;
+import javax.naming.NameParser;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
 
 
 /**
@@ -23,6 +27,7 @@ import java.util.Hashtable;
  *
  */
 public class MockContext implements Context {
+
   @Override
   public Object lookup(Name name) throws NamingException {
     return null;

@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,8 +8,6 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.frwk.netty;
 
@@ -25,12 +22,11 @@ import java.io.IOException;
 @ChannelHandler.Sharable
 public abstract class RequestFilter extends AuxHttpFilter {
 
-  protected RequestFilter() {
-  }
-
   public abstract void handleInboundMsg
       (ChannelHandlerContext ctx, Object msg)
       throws IOException;
+
+  protected RequestFilter() {}
 
 }
 

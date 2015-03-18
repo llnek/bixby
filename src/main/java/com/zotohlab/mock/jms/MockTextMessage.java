@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,17 +8,16 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
-
 
 package com.zotohlab.mock.jms;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Random;
-import javax.jms.*;
-import com.zotohlab.frwk.util.CoreUtils.*;
+
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.TextMessage;
 
 /**
  * @author kenl
@@ -213,6 +211,7 @@ public class MockTextMessage implements TextMessage {
     return null;
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public Enumeration getPropertyNames() throws JMSException {
     return null;

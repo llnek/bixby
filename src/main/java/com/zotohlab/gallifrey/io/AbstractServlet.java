@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,16 +8,17 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.io;
 
-import java.io.IOException;
 import java.io.Serializable;
 
-import org.slf4j.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
@@ -30,19 +30,17 @@ public abstract class AbstractServlet extends HttpServlet implements Serializabl
   private static final long serialVersionUID= -3862652820921092885L;
   public Logger tlog() { return _log; }
 
-  protected AbstractServlet() {
-  }
-
   public void destroy() {
     tlog().debug("AbstractServlet: destroy()");
   }
-
-  protected abstract void doInit();
 
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     doInit();
   }
+
+  protected abstract void doInit();
+  protected AbstractServlet() {}
 
 }
 

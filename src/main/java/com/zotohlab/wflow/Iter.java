@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,7 +8,6 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.wflow;
 
@@ -26,15 +24,15 @@ public class Iter {
   private List<Activity> _acts= new ArrayList<Activity>();
   private FlowNode _outer;
 
-  public Iter(FlowNode outer) {
-    _outer= outer;
-  }
-
   public Iter(FlowNode c, ListIterator<Activity> a) {
     this(c);
     while (a.hasNext()) {
       _acts.add(a.next());
     }
+  }
+
+  public Iter(FlowNode outer) {
+    _outer= outer;
   }
 
   public boolean isEmpty() { return  _acts.size() == 0; }

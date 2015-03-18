@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,27 +8,29 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
 
 package com.zotohlab.gallifrey.core;
 
-import com.zotohlab.frwk.core.Named;
-import com.zotohlab.frwk.dbio.JDBCPool;
-import com.zotohlab.gallifrey.io.IOEvent;
-import com.zotohlab.frwk.core.Disposable;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-import com.zotohlab.frwk.server.ServerLike;
+import com.zotohlab.frwk.core.Disposable;
+import com.zotohlab.frwk.core.Named;
 import com.zotohlab.frwk.dbio.DBAPI;
+import com.zotohlab.frwk.dbio.JDBCPool;
+import com.zotohlab.frwk.server.ServerLike;
+import com.zotohlab.gallifrey.io.IOEvent;
 
 /**
  * @author kenl
  */
-public interface Container extends ServerLike , Named, Disposable {
+public interface Container extends ServerLike, Named, Disposable {
 
   public void notifyObservers(IOEvent evt, Map<?,?> options );
+
+  public List<?> loadTemplate (String tpl, Map<?,?> ctx);
+  public boolean isEnabled();
 
   public Map<String,?> getEnvConfig();
   public Map<String,?> getAppConfig();
@@ -42,9 +43,6 @@ public interface Container extends ServerLike , Named, Disposable {
 
   public JDBCPool acquireDbPool(Object groupid);
   public DBAPI acquireDbAPI(Object groupid);
-
-  public List<?> loadTemplate (String tpl, Map<?,?> ctx);
-  public boolean isEnabled();
 
 }
 

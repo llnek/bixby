@@ -1,4 +1,3 @@
-/*??
 // This library is distributed in  the hope that it will be useful but without
 // any  warranty; without  even  the  implied  warranty of  merchantability or
 // fitness for a particular purpose.
@@ -9,10 +8,44 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
- ??*/
-
 
 package com.zotohlab.frwk.netty;
+
+import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.AttributeKey;
+import io.netty.util.CharsetUtil;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,24 +53,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.zotohlab.frwk.io.IOUtils;
 import com.zotohlab.frwk.io.XData;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.util.AttributeKey;
-import io.netty.util.CharsetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.util.*;
-
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
 
 
 /**
@@ -46,19 +61,16 @@ import static com.zotohlab.frwk.util.CoreUtils.nsb;
 public enum NettyFW {
 ;
 
-  public static final AttributeKey FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
-  public static final AttributeKey FORMITMS_KEY= AttributeKey.valueOf("formitems");
-  public static final AttributeKey MSGFUNC_KEY= AttributeKey.valueOf("msgfunc");
-  public static final AttributeKey MSGINFO_KEY= AttributeKey.valueOf("msginfo");
-  public static final AttributeKey CBUF_KEY =AttributeKey.valueOf("cbuffer");
-  public static final AttributeKey XDATA_KEY =AttributeKey.valueOf("xdata");
-  public static final AttributeKey XOS_KEY =AttributeKey.valueOf("ostream");
-
+  public static final AttributeKey<?> FORMDEC_KEY = AttributeKey.valueOf( "formdecoder");
+  public static final AttributeKey<?> FORMITMS_KEY= AttributeKey.valueOf("formitems");
+  public static final AttributeKey<?> MSGFUNC_KEY= AttributeKey.valueOf("msgfunc");
+  public static final AttributeKey<?> MSGINFO_KEY= AttributeKey.valueOf("msginfo");
+  public static final AttributeKey<?> CBUF_KEY =AttributeKey.valueOf("cbuffer");
+  public static final AttributeKey<?> XDATA_KEY =AttributeKey.valueOf("xdata");
+  public static final AttributeKey<?> XOS_KEY =AttributeKey.valueOf("ostream");
 
   private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
-  public static Logger tlog() {
-    return _log;
-  }
+  public static Logger tlog() { return _log; }
 
   public static ChannelFutureListener dbgNettyDone(final String msg) {
     return new ChannelFutureListener() {
@@ -68,32 +80,32 @@ public enum NettyFW {
     };
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static void setAttr(ChannelHandlerContext ctx, AttributeKey akey, Object aval) {
     ctx.channel().attr(akey).set(aval);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static  void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
     ctx.channel().attr(akey).remove();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static Object getAttr(ChannelHandlerContext ctx, AttributeKey akey) {
     return ctx.channel().attr(akey).get();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static void setAttr(Channel ch, AttributeKey akey,  Object aval) {
     ch.attr(akey).set(aval);
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static void delAttr(Channel ch , AttributeKey akey) {
     ch.attr(akey).remove();
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   public static Object getAttr(Channel ch, AttributeKey akey) {
     return ch.attr(akey).get();
   }
