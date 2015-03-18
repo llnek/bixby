@@ -20,8 +20,8 @@
   (:use [ cmzlabclj.nucleus.util.core :only [IntoMap IsWindows?] ]
         [ cmzlabclj.nucleus.util.str :only [strim nsb Has?] ])
 
-  (:import  [java.io BufferedOutputStream InputStreamReader
-                    OutputStreamWriter]
+  (:import  [java.io BufferedOutputStream
+             InputStreamReader OutputStreamWriter]
             [java.io Reader Writer]
             [java.util Map HashMap]
             [org.apache.commons.lang3 StringUtils]))
@@ -59,7 +59,7 @@
   ;; windows has '\r\n' linux has '\n'
 
   (let [buf (StringBuilder.)
-        ms (loop [c (.read cin) ]
+        ms (loop [c (.read cin)]
              (let [m (cond
                        (or (= c -1)(= c 4)) #{ :quit :break }
                        (= c (int \newline)) #{ :break }
@@ -69,10 +69,10 @@
                        :else
                        (do
                          (.append buf (char c))
-                         #{})) ]
+                         #{}))]
                (if (contains? m :break)
                  m
-                 (recur (.read cin))))) ]
+                 (recur (.read cin)))))]
     (if (contains? ms :quit)
       nil
       (strim buf))
@@ -91,7 +91,7 @@
         dft (nsb (:dft cmdQ))
         must (:must cmdQ)
         onResp (:onok cmdQ)
-        q (:qline cmdQ) ]
+        q (:qline cmdQ)]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
     (when-not (cstr/blank? chs)
@@ -112,7 +112,7 @@
     ;; point to next question, blank ends it
     (let [rc (readData cout cin) ]
       (if (nil? rc)
-        (do (.write cout "\n") nil )
+        (do (.write cout "\n") nil)
         (onResp (if (cstr/blank? rc) dft rc) props)
       ))
   ))

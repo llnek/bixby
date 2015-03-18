@@ -14,7 +14,7 @@
 
   cmzlabclj.nucleus.util.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr ]
             [clojure.core :as ccore ]
             [clojure.edn :as edn])
@@ -25,12 +25,12 @@
             [java.net URL]
             [java.nio.charset Charset]
             [java.io InputStream File FileInputStream
-                    ByteArrayInputStream ByteArrayOutputStream]
+             ByteArrayInputStream
+             ByteArrayOutputStream]
             [java.util Map Properties Date Calendar
-                       HashMap HashSet ArrayList
-                       GregorianCalendar TimeZone]
-            [java.util.zip DataFormatException
-                          Deflater Inflater]
+             HashMap HashSet ArrayList
+             GregorianCalendar TimeZone]
+            [java.util.zip DataFormatException Deflater Inflater]
             [java.sql Timestamp]
             [java.rmi.server UID]
             [org.apache.commons.lang3.text StrSubstitutor]
@@ -45,7 +45,6 @@
 ;;
 (defmulti ^String NiceFPath
   "Convert the path into nice format (no) backslash." class)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

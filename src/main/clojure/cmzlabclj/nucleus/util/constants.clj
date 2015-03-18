@@ -17,7 +17,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 (def ^String TS_REGEX "^\\d\\d\\d\\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])\\s\\d\\d:\\d\\d:\\d\\d")
 (def ^String DT_REGEX "^\\d\\d\\d\\d-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$")
 
@@ -41,7 +40,7 @@
 (def MONTHS [ "JAN" "FEB" "MAR" "APR" "MAY" "JUN" "JUL" "AUG" "SEP" "OCT" "NOV" "DEC" ] )
 
 
-(def ^String COPYRIGHT "Copyright (c) 2013-2014, Ken Leung. All rights reserved.")
+(def ^String COPYRIGHT "Copyright (c) 2013-2015, Ken Leung. All rights reserved.")
 
 
 
