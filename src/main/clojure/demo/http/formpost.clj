@@ -55,7 +55,7 @@
                       nil) ]
           (cond
             (instance? ULFormItems stuff)
-            (doseq [^ULFileItem fi (seq (.getAll ^ULFormItems stuff))]
+            (doseq [^ULFileItem fi (seq (.intern ^ULFormItems stuff))]
                 (println "Fieldname : " (.getFieldName fi))
                 (println "Name : " (.getName fi))
                 (println "Formfield : " (.isFormField fi))

@@ -33,6 +33,7 @@ public class ULFormItems {
   }
 
   public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
+  public List<ULFileItem> intern() { return _items; }
 
   public Map<String,ULFileItem> asMap() {
     Map<String,ULFileItem> m = new HashMap<String,ULFileItem>();

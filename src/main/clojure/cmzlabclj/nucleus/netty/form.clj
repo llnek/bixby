@@ -145,9 +145,10 @@
 
   (proxy [FormPostFilter][]
 
-    (finzAndDone [c info data ]
+    (finzAndDone [c data ]
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
+               info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY) 
             xxx (.resetAttrs ^FormPostFilter this ctx)
             itms (splitBodyParams (if (.hasContent xs)
                                     (.stringify xs)

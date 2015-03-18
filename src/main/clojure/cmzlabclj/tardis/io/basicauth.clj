@@ -65,6 +65,7 @@
         (doseq [^ULFileItem x (seq (GetFormFields data)) ]
           (let [fm (.getFieldNameLC x)
                 fv (nsb (.getString x)) ]
+            (log/debug (str "form-field=" fm ", value=" fv))
             (when-let [v (get PMS fm) ]
               (var-set rc (assoc! @rc (first v)
                                   (apply (last v) [fv]))))))

@@ -69,7 +69,7 @@
   [^ULFormItems items]
 
   (filter #(not (.isFormField ^ULFileItem %))
-          (.getAll items)))
+          (.intern items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -78,7 +78,7 @@
   [^ULFormItems items]
 
   (filter #(.isFormField ^ULFileItem %)
-          (.getAll items)))
+          (.intern items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; internal functions to support apache http client.
