@@ -17,9 +17,9 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.xlib.util.core :only [RandomBoolValue notnil?]]
-        [cmzlabclj.xlib.util.str :only [nsb]]
-        [cmzlabclj.tardis.core.wfs])
+  (:use [czlabclj.xlib.util.core :only [RandomBoolValue notnil?]]
+        [czlabclj.xlib.util.str :only [nsb]]
+        [czlabclj.tardis.core.wfs])
 
   (:import  [com.zotohlab.wflow FlowNode PTask Switch If Block
              Activity Split While
@@ -167,7 +167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoMain [] cmzlabclj.tardis.impl.ext.CljAppMain
+(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
 
   (contextualize [_ c] )
 

@@ -14,14 +14,14 @@
 
   testcljc.tardis.auth
 
-  (:use [cmzlabclj.tardis.auth.plugin]
-        [cmzlabclj.tardis.auth.model]
-        [cmzlabclj.xlib.crypto.codec]
-        [cmzlabclj.xlib.util.core]
-        [cmzlabclj.xlib.dbio.drivers]
-        [cmzlabclj.xlib.dbio.connect]
-        [cmzlabclj.xlib.dbio.core]
-        [cmzlabclj.xlib.dbio.h2]
+  (:use [czlabclj.tardis.auth.plugin]
+        [czlabclj.tardis.auth.model]
+        [czlabclj.xlib.crypto.codec]
+        [czlabclj.xlib.util.core]
+        [czlabclj.xlib.dbio.drivers]
+        [czlabclj.xlib.dbio.connect]
+        [czlabclj.xlib.dbio.core]
+        [czlabclj.xlib.dbio.h2]
         [clojure.test])
 
   (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser]
@@ -31,7 +31,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def METAC (atom (MakeMetaCache (cmzlabclj.tardis.auth.model.AuthPluginSchema.))))
+(def METAC (atom (MakeMetaCache (czlabclj.tardis.auth.model.AuthPluginSchema.))))
 (def JDBC (atom nil))
 (def DB (atom nil))
 (def ROLES (atom nil))

@@ -686,24 +686,24 @@ def clj_Util() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.util.core')
-    arg (value: 'cmzlabclj.util.bytes')
-    arg (value: 'cmzlabclj.util.cmdline')
-    arg (value: 'cmzlabclj.util.constants')
-    arg (value: 'cmzlabclj.util.countrycode')
-    arg (value: 'cmzlabclj.util.dates')
-    arg (value: 'cmzlabclj.util.files')
-    arg (value: 'cmzlabclj.util.guids')
-    arg (value: 'cmzlabclj.util.io')
-    arg (value: 'cmzlabclj.util.meta')
-    arg (value: 'cmzlabclj.util.mime')
-    arg (value: 'cmzlabclj.util.process')
-    arg (value: 'cmzlabclj.util.seqnum')
-    arg (value: 'cmzlabclj.util.str')
-    arg (value: 'cmzlabclj.util.usastate')
-    arg (value: 'cmzlabclj.util.ini')
-    arg (value: 'cmzlabclj.util.scheduler')
-    arg (value: 'cmzlabclj.i18n.resources')
+    arg (value: 'czlabclj.util.core')
+    arg (value: 'czlabclj.util.bytes')
+    arg (value: 'czlabclj.util.cmdline')
+    arg (value: 'czlabclj.util.constants')
+    arg (value: 'czlabclj.util.countrycode')
+    arg (value: 'czlabclj.util.dates')
+    arg (value: 'czlabclj.util.files')
+    arg (value: 'czlabclj.util.guids')
+    arg (value: 'czlabclj.util.io')
+    arg (value: 'czlabclj.util.meta')
+    arg (value: 'czlabclj.util.mime')
+    arg (value: 'czlabclj.util.process')
+    arg (value: 'czlabclj.util.seqnum')
+    arg (value: 'czlabclj.util.str')
+    arg (value: 'czlabclj.util.usastate')
+    arg (value: 'czlabclj.util.ini')
+    arg (value: 'czlabclj.util.scheduler')
+    arg (value: 'czlabclj.i18n.resources')
   }
 }
 
@@ -715,10 +715,10 @@ def clj_Crypto() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.crypto.codec')
-    arg (value: 'cmzlabclj.crypto.core')
-    arg (value: 'cmzlabclj.crypto.stores')
-    arg (value: 'cmzlabclj.crypto.ssl')
+    arg (value: 'czlabclj.crypto.codec')
+    arg (value: 'czlabclj.crypto.core')
+    arg (value: 'czlabclj.crypto.stores')
+    arg (value: 'czlabclj.crypto.ssl')
   }
 }
 
@@ -731,9 +731,9 @@ def clj_JMX() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.jmx.names')
-    arg (value: 'cmzlabclj.jmx.bean')
-    arg (value: 'cmzlabclj.jmx.core')
+    arg (value: 'czlabclj.jmx.names')
+    arg (value: 'czlabclj.jmx.bean')
+    arg (value: 'czlabclj.jmx.core')
   }
 }
 
@@ -745,17 +745,17 @@ def clj_Net() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.net.comms')
-    arg (value: 'cmzlabclj.net.rts')
-    arg (value: 'cmzlabclj.netty.comms')
-    arg (value: 'cmzlabclj.netty.expect100')
-    arg (value: 'cmzlabclj.netty.exception')
-    arg (value: 'cmzlabclj.netty.auxdecode')
-    arg (value: 'cmzlabclj.netty.ssl')
-    arg (value: 'cmzlabclj.netty.client')
-    arg (value: 'cmzlabclj.netty.server')
-    arg (value: 'cmzlabclj.netty.filesvr')
-    arg (value: 'cmzlabclj.netty.snooper')
+    arg (value: 'czlabclj.net.comms')
+    arg (value: 'czlabclj.net.rts')
+    arg (value: 'czlabclj.netty.comms')
+    arg (value: 'czlabclj.netty.expect100')
+    arg (value: 'czlabclj.netty.exception')
+    arg (value: 'czlabclj.netty.auxdecode')
+    arg (value: 'czlabclj.netty.ssl')
+    arg (value: 'czlabclj.netty.client')
+    arg (value: 'czlabclj.netty.server')
+    arg (value: 'czlabclj.netty.filesvr')
+    arg (value: 'czlabclj.netty.snooper')
   }
 }
 
@@ -767,17 +767,17 @@ def clj_DBIO() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.dbio.core')
-    arg (value: 'cmzlabclj.dbio.sql')
-    arg (value: 'cmzlabclj.dbio.simple')
-    arg (value: 'cmzlabclj.dbio.composite')
-    arg (value: 'cmzlabclj.dbio.connect')
-    arg (value: 'cmzlabclj.dbio.drivers')
-    arg (value: 'cmzlabclj.dbio.sqlserver')
-    arg (value: 'cmzlabclj.dbio.h2')
-    arg (value: 'cmzlabclj.dbio.oracle')
-    arg (value: 'cmzlabclj.dbio.mysql')
-    arg (value: 'cmzlabclj.dbio.postgresql')
+    arg (value: 'czlabclj.dbio.core')
+    arg (value: 'czlabclj.dbio.sql')
+    arg (value: 'czlabclj.dbio.simple')
+    arg (value: 'czlabclj.dbio.composite')
+    arg (value: 'czlabclj.dbio.connect')
+    arg (value: 'czlabclj.dbio.drivers')
+    arg (value: 'czlabclj.dbio.sqlserver')
+    arg (value: 'czlabclj.dbio.h2')
+    arg (value: 'czlabclj.dbio.oracle')
+    arg (value: 'czlabclj.dbio.mysql')
+    arg (value: 'czlabclj.dbio.postgresql')
   }
 }
 
@@ -789,8 +789,8 @@ def cljhhh_MVC() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.tardis.mvc.tpls')
-    arg (value: 'cmzlabclj.tardis.mvc.handler')
+    arg (value: 'czlabclj.tardis.mvc.tpls')
+    arg (value: 'czlabclj.tardis.mvc.handler')
   }
 }
 
@@ -803,10 +803,10 @@ def cljhhh_Auth() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.tardis.auth.dms')
-    arg (value: 'cmzlabclj.tardis.auth.core')
-    arg (value: 'cmzlabclj.tardis.auth.rm')
-    arg (value: 'cmzlabclj.tardis.auth.shiro')
+    arg (value: 'czlabclj.tardis.auth.dms')
+    arg (value: 'czlabclj.tardis.auth.core')
+    arg (value: 'czlabclj.tardis.auth.rm')
+    arg (value: 'czlabclj.tardis.auth.shiro')
   }
 }
 
@@ -818,18 +818,18 @@ def cljhhh_IO() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.tardis.io.context')
-    arg (value: 'cmzlabclj.tardis.io.core')
-    arg (value: 'cmzlabclj.tardis.io.socket')
-    arg (value: 'cmzlabclj.tardis.io.files')
-    arg (value: 'cmzlabclj.tardis.io.http')
-    arg (value: 'cmzlabclj.tardis.io.jms')
-    arg (value: 'cmzlabclj.tardis.io.loops')
-    arg (value: 'cmzlabclj.tardis.io.mails')
-    arg (value: 'cmzlabclj.tardis.io.netty')
-    arg (value: 'cmzlabclj.tardis.io.servlet')
-    arg (value: 'cmzlabclj.tardis.io.triggers')
-    arg (value: 'cmzlabclj.tardis.io.ios')
+    arg (value: 'czlabclj.tardis.io.context')
+    arg (value: 'czlabclj.tardis.io.core')
+    arg (value: 'czlabclj.tardis.io.socket')
+    arg (value: 'czlabclj.tardis.io.files')
+    arg (value: 'czlabclj.tardis.io.http')
+    arg (value: 'czlabclj.tardis.io.jms')
+    arg (value: 'czlabclj.tardis.io.loops')
+    arg (value: 'czlabclj.tardis.io.mails')
+    arg (value: 'czlabclj.tardis.io.netty')
+    arg (value: 'czlabclj.tardis.io.servlet')
+    arg (value: 'czlabclj.tardis.io.triggers')
+    arg (value: 'czlabclj.tardis.io.ios')
   }
 }
 
@@ -841,16 +841,16 @@ def cljhhh_Core() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.tardis.core.constants')
-    arg (value: 'cmzlabclj.tardis.core.climain')
-    arg (value: 'cmzlabclj.tardis.core.sys')
-    arg (value: 'cmzlabclj.tardis.core.wfs')
-    arg (value: 'cmzlabclj.tardis.etc.cmdline')
-    arg (value: 'cmzlabclj.tardis.etc.task')
-    arg (value: 'cmzlabclj.tardis.etc.cli')
-    arg (value: 'cmzlabclj.tardis.etc.core')
-    arg (value: 'cmzlabclj.tardis.etc.misc')
-    arg (value: 'cmzlabclj.tardis.impl.defaults')
+    arg (value: 'czlabclj.tardis.core.constants')
+    arg (value: 'czlabclj.tardis.core.climain')
+    arg (value: 'czlabclj.tardis.core.sys')
+    arg (value: 'czlabclj.tardis.core.wfs')
+    arg (value: 'czlabclj.tardis.etc.cmdline')
+    arg (value: 'czlabclj.tardis.etc.task')
+    arg (value: 'czlabclj.tardis.etc.cli')
+    arg (value: 'czlabclj.tardis.etc.core')
+    arg (value: 'czlabclj.tardis.etc.misc')
+    arg (value: 'czlabclj.tardis.impl.defaults')
   }
 }
 
@@ -862,9 +862,9 @@ def cljhhh_Main() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'cmzlabclj.tardis.impl.ext')
-    arg (value: 'cmzlabclj.tardis.impl.sys')
-    arg (value: 'cmzlabclj.tardis.impl.exec')
+    arg (value: 'czlabclj.tardis.impl.ext')
+    arg (value: 'czlabclj.tardis.impl.sys')
+    arg (value: 'czlabclj.tardis.impl.exec')
   }
 }
 

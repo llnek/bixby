@@ -13,8 +13,8 @@
 
   testcljc.util.win32ini
 
-  (:require [cmzlabclj.xlib.util.core :as CU]
-            [cmzlabclj.xlib.util.ini :as WI])
+  (:require [czlabclj.xlib.util.core :as CU]
+            [czlabclj.xlib.util.ini :as WI])
 
   (:use [clojure.test])
 

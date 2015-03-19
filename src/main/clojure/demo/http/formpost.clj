@@ -17,10 +17,10 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.xlib.util.process :only [DelayExec]]
-        [cmzlabclj.xlib.util.core :only [notnil?]]
-        [cmzlabclj.xlib.util.str :only [nsb]]
-        [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
+  (:use [czlabclj.xlib.util.process :only [DelayExec]]
+        [czlabclj.xlib.util.core :only [notnil?]]
+        [czlabclj.xlib.util.str :only [nsb]]
+        [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]

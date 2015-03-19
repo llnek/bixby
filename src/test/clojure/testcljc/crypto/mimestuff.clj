@@ -13,12 +13,12 @@
 
   testcljc.crypto.mimestuff
 
-  (:use [cmzlabclj.xlib.crypto.codec]
-        [cmzlabclj.xlib.crypto.stores]
-        [cmzlabclj.xlib.util.core]
-        [cmzlabclj.xlib.util.io]
-        [cmzlabclj.xlib.util.meta]
-        [cmzlabclj.xlib.crypto.core]
+  (:use [czlabclj.xlib.crypto.codec]
+        [czlabclj.xlib.crypto.stores]
+        [czlabclj.xlib.util.core]
+        [czlabclj.xlib.util.io]
+        [czlabclj.xlib.util.meta]
+        [czlabclj.xlib.crypto.core]
         [clojure.test])
 
   (:import  [org.apache.commons.io FileUtils IOUtils]

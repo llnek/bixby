@@ -13,8 +13,8 @@
 
   testcljc.util.codes
 
-  (:require [cmzlabclj.xlib.util.countrycode :as CC]
-            [cmzlabclj.xlib.util.usastate :as SC])
+  (:require [czlabclj.xlib.util.countrycode :as CC]
+            [czlabclj.xlib.util.usastate :as SC])
 
   (:use [clojure.test]))
 

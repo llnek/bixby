@@ -14,7 +14,7 @@
 
   testcljc.util.guids
 
-  (:require [cmzlabclj.xlib.util.guids :as GU])
+  (:require [czlabclj.xlib.util.guids :as GU])
 
   (:use [clojure.test]))
 
