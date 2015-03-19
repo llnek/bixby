@@ -38,6 +38,7 @@ import com.zotohlab.wflow.While;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class Demo implements PipelineDelegate {
 
   public Activity onError(Throwable err, FlowNode p) { return null; }

@@ -23,16 +23,17 @@
    :state myState
   )
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
+  (:use [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
         [cmzlabclj.tardis.auth.plugin]
-        [cmzlabclj.nucleus.dbio.connect]
-        [cmzlabclj.nucleus.dbio.core])
+        [cmzlabclj.xlib.dbio.connect]
+        [cmzlabclj.xlib.dbio.core])
 
-  (:import  [org.apache.shiro.authc AuthenticationException AuthenticationToken SimpleAccount]
-            [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+  (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+            [org.apache.shiro.authc AuthenticationException
+             AuthenticationToken SimpleAccount]
             [org.apache.shiro.subject PrincipalCollection]
             [org.apache.shiro.realm AuthorizingRealm]
             [com.zotohlab.frwk.dbio DBAPI]
@@ -41,7 +42,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

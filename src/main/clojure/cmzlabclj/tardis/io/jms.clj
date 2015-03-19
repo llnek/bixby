@@ -14,24 +14,27 @@
 
   cmzlabclj.tardis.io.jms
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [ThrowIOE MubleAPI MakeMMap juid TryC] ]
-        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb] ]
+  (:use [cmzlabclj.xlib.util.core
+         :only
+         [ThrowIOE MubleAPI MakeMMap juid TryC]]
+        [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
+        [cmzlabclj.xlib.util.str :only [hgl? nsb]]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.core])
 
   (:import  [java.util Hashtable Properties ResourceBundle]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.core Identifiable]
-            [javax.jms Connection ConnectionFactory Destination Connection
-                       Message MessageConsumer MessageListener Queue
-                       QueueConnection QueueConnectionFactory QueueReceiver
-                       QueueSession Session Topic TopicConnection
-                       TopicConnectionFactory TopicSession TopicSubscriber]
+            [javax.jms Connection ConnectionFactory
+             Destination Connection
+             Message MessageConsumer MessageListener Queue
+             QueueConnection QueueConnectionFactory QueueReceiver
+             QueueSession Session Topic TopicConnection
+             TopicConnectionFactory TopicSession TopicSubscriber]
             [javax.naming Context InitialContext]
             [java.io IOException]
             [com.zotohlab.gallifrey.io JMSEvent]))

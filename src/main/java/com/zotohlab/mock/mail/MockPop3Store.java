@@ -22,6 +22,7 @@ import javax.mail.URLName;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockPop3Store extends Store {
 
   public MockPop3Store(Session s,URLName url) {

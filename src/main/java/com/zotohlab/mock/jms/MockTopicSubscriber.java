@@ -22,6 +22,7 @@ import javax.jms.TopicSubscriber;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockTopicSubscriber implements TopicSubscriber {
 
   public MockTopicSubscriber(Topic t, String n) {

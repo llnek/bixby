@@ -14,29 +14,33 @@
 
   cmzlabclj.tardis.io.files
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.tardis.core.sys :rename {seq* rego-seq*
-                                            has? rego-has? } ]
+  (:use [cmzlabclj.tardis.core.sys
+         :rename
+         {seq* rego-seq* has? rego-has? } ]
         [cmzlabclj.tardis.io.loops
-         :only [LoopableSchedule LoopableOneLoop CfgLoopable] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+         :only
+         [LoopableSchedule LoopableOneLoop CfgLoopable]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
         [cmzlabclj.tardis.io.core]
-        [cmzlabclj.nucleus.util.core
-         :only [MakeMMap notnil?  test-nestr TryC SubsVar] ]
-        [cmzlabclj.nucleus.util.str :only [nsb hgl? nsn] ])
+        [cmzlabclj.xlib.util.core
+         :only
+         [MakeMMap notnil?  test-nestr TryC SubsVar]]
+        [cmzlabclj.xlib.util.str :only [nsb hgl? nsn]])
 
   (:import  [java.io FileFilter File FilenameFilter IOException]
             [org.apache.commons.lang3 StringUtils]
             [java.util Properties ResourceBundle]
-            [org.apache.commons.io.filefilter SuffixFileFilter PrefixFileFilter
-                                             RegexFileFilter FileFileFilter]
+            [org.apache.commons.io.filefilter SuffixFileFilter
+             PrefixFileFilter
+             RegexFileFilter FileFileFilter]
             [org.apache.commons.io FileUtils]
             [org.apache.commons.io.monitor FileAlterationListener
-                                           FileAlterationListenerAdaptor
-                                           FileAlterationMonitor
-                                           FileAlterationObserver]
+             FileAlterationListenerAdaptor
+             FileAlterationMonitor
+             FileAlterationObserver]
             [com.zotohlab.gallifrey.io FileEvent]
             [com.zotohlab.frwk.core Identifiable]))
 

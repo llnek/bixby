@@ -13,7 +13,7 @@
 
   testcljc.util.coreutils
 
-  (:require [cmzlabclj.nucleus.util.core :as CU])
+  (:require [cmzlabclj.xlib.util.core :as CU])
 
   (:use [clojure.test])
 
@@ -162,7 +162,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getf (doto ^cmzlabclj.nucleus.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
+(is (= 100 (.getf (doto ^cmzlabclj.xlib.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
 
 
 )

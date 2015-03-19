@@ -14,16 +14,16 @@
 
   cmzlabclj.tardis.auth.shiro
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ])
+  (:use [cmzlabclj.xlib.crypto.codec :only [Pwdify]])
 
   (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
             [org.apache.shiro.authc.credential CredentialsMatcher]
             [org.apache.shiro.realm AuthorizingRealm]
-            [org.apache.shiro.authc AuthenticationException AuthenticationToken
-                                   AuthenticationInfo SimpleAccount]
+            [org.apache.shiro.authc AuthenticationException
+             AuthenticationToken AuthenticationInfo SimpleAccount]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [com.zotohlab.frwk.dbio DBAPI]))
 

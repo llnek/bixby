@@ -20,8 +20,8 @@ import org.apache.axis.encoding.ser.BaseDeserializerFactory;
  */
 public class CalDeserializerFactory extends BaseDeserializerFactory {
 
-  private Class<?> javaType;
-  private QName xmlType;
+  private static final long serialVersionUID = 1L;
+  
 
   public CalDeserializerFactory(Class<?> cz) {
     super(cz);

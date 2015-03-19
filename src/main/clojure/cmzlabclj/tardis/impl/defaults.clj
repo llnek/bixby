@@ -14,22 +14,24 @@
 
   cmzlabclj.tardis.impl.defaults
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? MubleAPI] ]
+  (:use [cmzlabclj.xlib.util.core :only [notnil? MubleAPI]]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
-        [cmzlabclj.nucleus.util.files
-         :only [FileRead? DirReadWrite? ] ]
-        [cmzlabclj.nucleus.util.core
-         :only [test-cond MakeMMap test-nestr] ] )
+        [cmzlabclj.xlib.util.files
+         :only
+         [FileRead? DirReadWrite? ]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [test-cond MakeMMap test-nestr]] )
 
   (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
             [com.zotohlab.gallifrey.loaders AppClassLoader]
             [com.zotohlab.frwk.util CoreUtils]
-            [com.zotohlab.frwk.server Component ComponentRegistry
-                                                RegistryError ServiceError]
+            [com.zotohlab.frwk.server Component
+             ComponentRegistry RegistryError ServiceError]
             [com.zotohlab.gallifrey.core ConfigError]
             [java.io File]))
 
@@ -62,7 +64,7 @@
 (defn MaybeDir ""
 
   ^File
-  [^cmzlabclj.nucleus.util.core.MubleAPI m kn]
+  [^cmzlabclj.xlib.util.core.MubleAPI m kn]
 
   (let [v (.getf m kn) ]
     (condp instance? v

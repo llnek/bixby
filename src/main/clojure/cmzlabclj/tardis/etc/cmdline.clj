@@ -17,18 +17,18 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
-        [cmzlabclj.nucleus.crypto.codec :only [CreateStrongPwd Pwdify]]
-        [cmzlabclj.nucleus.util.guids :only [NewUUid NewWWid]]
-        [cmzlabclj.nucleus.i18n.resources :only [GetString]]
+  (:use [cmzlabclj.xlib.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
+        [cmzlabclj.xlib.crypto.codec :only [CreateStrongPwd Pwdify]]
+        [cmzlabclj.xlib.util.guids :only [NewUUid NewWWid]]
+        [cmzlabclj.xlib.i18n.resources :only [GetString]]
         [cmzlabclj.tardis.etc.climain :only [StartMain]]
-        [cmzlabclj.nucleus.util.dates :only [AddMonths MakeCal]]
-        [cmzlabclj.nucleus.util.str :only [ucase nsb hgl? strim]]
+        [cmzlabclj.xlib.util.dates :only [AddMonths MakeCal]]
+        [cmzlabclj.xlib.util.str :only [ucase nsb hgl? strim]]
         [cmzlabclj.tardis.etc.gant]
         [cmzlabclj.tardis.etc.cli]
-        [cmzlabclj.nucleus.util.meta]
+        [cmzlabclj.xlib.util.meta]
 
-        [cmzlabclj.nucleus.util.core
+        [cmzlabclj.xlib.util.core
         :only
         [notnil?
          NiceFPath
@@ -39,13 +39,13 @@
          ConvLong
          ResStr]]
 
-        [cmzlabclj.nucleus.util.files
+        [cmzlabclj.xlib.util.files
         :only
         [ReadEdn
          ReadOneFile
          WriteOneFile]]
 
-        [cmzlabclj.nucleus.crypto.core
+        [cmzlabclj.xlib.crypto.core
         :only
         [AES256_CBC
          AssertJce

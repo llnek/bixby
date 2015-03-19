@@ -16,6 +16,8 @@ package com.zotohlab.gallifrey.runtime;
  */
 public class UnknownUser extends AuthError {
 
+  private static final long serialVersionUID = 1L;
+
   public UnknownUser(String msg,Throwable e) {
     super(msg,e);
   }

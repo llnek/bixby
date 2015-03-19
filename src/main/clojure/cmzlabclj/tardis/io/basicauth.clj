@@ -14,15 +14,17 @@
 
   cmzlabclj.tardis.io.basicauth
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.data.json :as json]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [NormalizeEmail Stringify notnil? ] ]
-        [cmzlabclj.nucleus.util.str :only [lcase strim nsb hgl? ] ]
-        [cmzlabclj.tardis.io.http :only [ScanBasicAuth] ]
-        [cmzlabclj.nucleus.crypto.codec :only [CaesarDecrypt] ]
-        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
+  (:use [cmzlabclj.xlib.util.str :only [lcase strim nsb hgl? ]]
+        [cmzlabclj.xlib.util.core 
+         :only 
+         [NormalizeEmail Stringify notnil? ]]
+        [cmzlabclj.tardis.io.http :only [ScanBasicAuth]]
+        [cmzlabclj.xlib.crypto.codec :only [CaesarDecrypt]]
+        [cmzlabclj.xlib.net.comms :only [GetFormFields]])
 
   (:import  [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]

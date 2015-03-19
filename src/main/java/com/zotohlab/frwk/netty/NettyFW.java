@@ -58,6 +58,7 @@ import com.zotohlab.frwk.io.XData;
 /**
  * @author kenl
  */
+@SuppressWarnings({"rawtypes","unchecked"})
 public enum NettyFW {
 ;
 
@@ -80,32 +81,26 @@ public enum NettyFW {
     };
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static void setAttr(ChannelHandlerContext ctx, AttributeKey akey, Object aval) {
     ctx.channel().attr(akey).set(aval);
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static  void delAttr(ChannelHandlerContext ctx , AttributeKey akey) {
     ctx.channel().attr(akey).remove();
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static Object getAttr(ChannelHandlerContext ctx, AttributeKey akey) {
     return ctx.channel().attr(akey).get();
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static void setAttr(Channel ch, AttributeKey akey,  Object aval) {
     ch.attr(akey).set(aval);
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static void delAttr(Channel ch , AttributeKey akey) {
     ch.attr(akey).remove();
   }
 
-  @SuppressWarnings({"rawtypes","unchecked"})
   public static Object getAttr(Channel ch, AttributeKey akey) {
     return ch.attr(akey).get();
   }

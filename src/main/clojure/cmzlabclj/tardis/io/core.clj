@@ -14,18 +14,19 @@
 
   cmzlabclj.tardis.io.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [notnil? ThrowIOE MakeMMap ternary ConvToJava TryC] ]
-        [cmzlabclj.nucleus.util.str :only [nsb strim ] ]
+  (:use [cmzlabclj.xlib.util.core
+         :only 
+         [notnil? ThrowIOE MakeMMap ternary ConvToJava TryC]]
+        [cmzlabclj.xlib.util.str :only [nsb strim ]]
         [cmzlabclj.tardis.core.sys])
 
   (:import  [com.zotohlab.frwk.server Component Service]
             [java.util.concurrent ConcurrentHashMap]
             [com.zotohlab.frwk.core Versioned Hierarchial
-                                    Identifiable Disposable Startable]
+             Identifiable Disposable Startable]
             [com.zotohlab.gallifrey.core Container]
             [com.google.gson JsonObject JsonArray]
             [com.zotohlab.gallifrey.io Emitter]

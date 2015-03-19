@@ -16,6 +16,8 @@ package com.zotohlab.gallifrey.etc;
  */
 public class PluginError extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   public PluginError(String msg,Throwable e) {
     super(msg, e);
   }

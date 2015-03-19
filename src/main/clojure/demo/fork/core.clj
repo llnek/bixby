@@ -14,16 +14,15 @@
 
   demo.fork.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [Try!] ]
-        [cmzlabclj.nucleus.util.str :only [nsb] ]
+  (:use [cmzlabclj.xlib.util.core :only [Try!]]
+        [cmzlabclj.xlib.util.str :only [nsb]]
         [cmzlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Split
-                               PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask Split PipelineDelegate]
             [java.lang StringBuilder]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.wflow.core Job]))

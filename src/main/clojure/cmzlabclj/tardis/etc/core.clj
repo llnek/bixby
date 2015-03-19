@@ -19,10 +19,10 @@
   (:require [clojure.tools.logging :as log :only [warn error info debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.i18n.resources :only [GetResource GetString]]
-        [cmzlabclj.nucleus.util.core :only [test-cond]]
-        [cmzlabclj.nucleus.util.str :only [MakeString]]
-        [cmzlabclj.nucleus.util.files :only [DirRead?]]
+  (:use [cmzlabclj.xlib.i18n.resources :only [GetResource GetString]]
+        [cmzlabclj.xlib.util.core :only [test-cond]]
+        [cmzlabclj.xlib.util.str :only [MakeString]]
+        [cmzlabclj.xlib.util.files :only [DirRead?]]
         [cmzlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand]])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]

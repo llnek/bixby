@@ -42,6 +42,7 @@ import javax.jms.TopicSubscriber;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockQueueSession implements QueueSession {
 
   private Map<String,QueueReceiver> _subs= new HashMap<String,QueueReceiver>();

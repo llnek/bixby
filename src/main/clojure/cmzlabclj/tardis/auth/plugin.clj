@@ -15,35 +15,38 @@
   cmzlabclj.tardis.auth.plugin
   (:import [com.zotohlab.wflow FlowNode])
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr]
             [clojure.data.json :as json])
 
-  (:use [cmzlabclj.nucleus.util.core :only [notnil? Stringify
-                                       MakeMMap juid ternary
-                                       test-nonil LoadJavaProps] ]
-        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
-        [cmzlabclj.nucleus.util.str :only [nsb hgl? strim] ]
-        [cmzlabclj.nucleus.util.files :only [ReadEdn] ]
-        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ]
+  (:use [cmzlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [notnil? Stringify
+          MakeMMap juid ternary
+          test-nonil LoadJavaProps]]
+        [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
+        [cmzlabclj.xlib.util.str :only [nsb hgl? strim]]
+        [cmzlabclj.xlib.util.files :only [ReadEdn]]
+        [cmzlabclj.xlib.net.comms :only [GetFormFields]]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.wfs]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.webss]
         [cmzlabclj.tardis.io.basicauth]
         [cmzlabclj.tardis.auth.model]
-        [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
-        [cmzlabclj.nucleus.dbio.core])
+        [cmzlabclj.xlib.dbio.core])
 
-  (:import  [com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError]
-            [com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser]
+  (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser]
+            [com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
             [org.apache.commons.codec.binary Base64]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.frwk.util CrappyDataError]
             [com.zotohlab.frwk.crypto PasswordAPI]
-            [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr
-                                    JDBCPool JDBCInfo]
+            [com.zotohlab.frwk.dbio DBAPI MetaCache
+             SQLr
+             JDBCPool JDBCInfo]
             [org.apache.commons.io FileUtils]
             [java.io File IOException]
             [java.util Properties]
@@ -52,8 +55,8 @@
             [org.apache.shiro.subject Subject]
             [org.apache.shiro.authc UsernamePasswordToken]
             [com.zotohlab.wflow If BoolExpr FlowNode
-                                Activity Pipeline
-                                PipelineDelegate PTask Work]
+             Activity Pipeline
+             PipelineDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow.core Job]))
 
@@ -95,6 +98,7 @@
   ^SQLr
   [^Container ctr]
 
+  ;; get the default db pool
   (-> (DbioConnectViaPool (.acquireDbPool ctr "") AUTH-MCACHE {})
       (.newSimpleSQLr)
   ))

@@ -199,53 +199,53 @@
   :uberjar-exclusions [#"META-INF/DUMMY.SF"]
 
   :XXXaot[
-    cmzlabclj.nucleus.util.bytes
-    cmzlabclj.nucleus.util.cmdline
-    cmzlabclj.nucleus.util.constants
-    cmzlabclj.nucleus.util.countrycode
-    cmzlabclj.nucleus.util.dates
-    cmzlabclj.nucleus.util.files
-    cmzlabclj.nucleus.util.guids
-    cmzlabclj.nucleus.util.io
-    cmzlabclj.nucleus.util.meta
-    cmzlabclj.nucleus.util.mime
-    cmzlabclj.nucleus.util.process
-    cmzlabclj.nucleus.util.seqnum
-    cmzlabclj.nucleus.util.str
-    cmzlabclj.nucleus.util.usastate
-    cmzlabclj.nucleus.util.ini
-    cmzlabclj.nucleus.util.scheduler
-    cmzlabclj.nucleus.i18n.resources
+    cmzlabclj.xlib.util.bytes
+    cmzlabclj.xlib.util.cmdline
+    cmzlabclj.xlib.util.constants
+    cmzlabclj.xlib.util.countrycode
+    cmzlabclj.xlib.util.dates
+    cmzlabclj.xlib.util.files
+    cmzlabclj.xlib.util.guids
+    cmzlabclj.xlib.util.io
+    cmzlabclj.xlib.util.meta
+    cmzlabclj.xlib.util.mime
+    cmzlabclj.xlib.util.process
+    cmzlabclj.xlib.util.seqnum
+    cmzlabclj.xlib.util.str
+    cmzlabclj.xlib.util.usastate
+    cmzlabclj.xlib.util.ini
+    cmzlabclj.xlib.util.scheduler
+    cmzlabclj.xlib.i18n.resources
 
-    cmzlabclj.nucleus.crypto.codec
-    cmzlabclj.nucleus.crypto.core
-    cmzlabclj.nucleus.crypto.stores
-    cmzlabclj.nucleus.crypto.ssl
+    cmzlabclj.xlib.crypto.codec
+    cmzlabclj.xlib.crypto.core
+    cmzlabclj.xlib.crypto.stores
+    cmzlabclj.xlib.crypto.ssl
 
-    cmzlabclj.nucleus.net.comms
-    cmzlabclj.nucleus.net.routes
-    cmzlabclj.nucleus.netty.request
-    cmzlabclj.nucleus.netty.form
-    cmzlabclj.nucleus.netty.io
-    cmzlabclj.nucleus.netty.filesvr
-    cmzlabclj.nucleus.netty.discarder
-    cmzlabclj.nucleus.netty.snooper
+    cmzlabclj.xlib.net.comms
+    cmzlabclj.xlib.net.routes
+    cmzlabclj.xlib.netty.request
+    cmzlabclj.xlib.netty.form
+    cmzlabclj.xlib.netty.io
+    cmzlabclj.xlib.netty.filesvr
+    cmzlabclj.xlib.netty.discarder
+    cmzlabclj.xlib.netty.snooper
 
-    cmzlabclj.nucleus.jmx.names
-    cmzlabclj.nucleus.jmx.bean
-    cmzlabclj.nucleus.jmx.core
+    cmzlabclj.xlib.jmx.names
+    cmzlabclj.xlib.jmx.bean
+    cmzlabclj.xlib.jmx.core
 
-    cmzlabclj.nucleus.dbio.core
-    cmzlabclj.nucleus.dbio.sql
-    cmzlabclj.nucleus.dbio.simple
-    cmzlabclj.nucleus.dbio.composite
-    cmzlabclj.nucleus.dbio.connect
-    cmzlabclj.nucleus.dbio.drivers
-    cmzlabclj.nucleus.dbio.sqlserver
-    cmzlabclj.nucleus.dbio.h2
-    cmzlabclj.nucleus.dbio.oracle
-    cmzlabclj.nucleus.dbio.mysql
-    cmzlabclj.nucleus.dbio.postgresql
+    cmzlabclj.xlib.dbio.core
+    cmzlabclj.xlib.dbio.sql
+    cmzlabclj.xlib.dbio.simple
+    cmzlabclj.xlib.dbio.composite
+    cmzlabclj.xlib.dbio.connect
+    cmzlabclj.xlib.dbio.drivers
+    cmzlabclj.xlib.dbio.sqlserver
+    cmzlabclj.xlib.dbio.h2
+    cmzlabclj.xlib.dbio.oracle
+    cmzlabclj.xlib.dbio.mysql
+    cmzlabclj.xlib.dbio.postgresql
 
     cmzlabclj.tardis.core.constants
     cmzlabclj.tardis.core.sys

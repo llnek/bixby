@@ -13,12 +13,12 @@
 
   testcljc.dbio.dbstuff
 
-  (:use [cmzlabclj.nucleus.crypto.codec]
-        [cmzlabclj.nucleus.util.core]
-        [cmzlabclj.nucleus.dbio.drivers]
-        [cmzlabclj.nucleus.dbio.connect]
-        [cmzlabclj.nucleus.dbio.core]
-        [cmzlabclj.nucleus.dbio.h2]
+  (:use [cmzlabclj.xlib.crypto.codec]
+        [cmzlabclj.xlib.util.core]
+        [cmzlabclj.xlib.dbio.drivers]
+        [cmzlabclj.xlib.dbio.connect]
+        [cmzlabclj.xlib.dbio.core]
+        [cmzlabclj.xlib.dbio.h2]
         [clojure.test])
 
   (:import [org.apache.commons.lang3 StringUtils]
@@ -52,7 +52,7 @@
     :sex {:null false}
                    })
   (WithDbAssocs {
-    :spouse { :kind :O2O :rhs (DbioScopeType "Person") }
+    :spouse { :kind :O2O :other (DbioScopeType "Person") }
                    })
   (WithDbIndexes { :i1 #{ :first_name :last_name }
     :i2 #{ :bday }
@@ -95,9 +95,9 @@
     :logo { :domain :Bytes }
                    })
   (WithDbAssocs {
-    :depts { :kind :O2M :rhs (DbioScopeType "Department") }
-    :emps { :kind :O2M :rhs (DbioScopeType "Employee") }
-    :hq { :kind :O2O :rhs (DbioScopeType "Address") }
+    :depts { :kind :O2M :other (DbioScopeType "Department") }
+    :emps { :kind :O2M :other (DbioScopeType "Employee") }
+    :hq { :kind :O2O :other (DbioScopeType "Address") }
                    })
   (WithDbUniques {
     :u1 #{ :cname }

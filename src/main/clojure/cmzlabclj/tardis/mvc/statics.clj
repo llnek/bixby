@@ -14,26 +14,28 @@
 
   cmzlabclj.tardis.mvc.statics
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ]
+  (:use [cmzlabclj.xlib.util.core
+         :only 
+         [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath]]
         [cmzlabclj.tardis.io.triggers]
-        [cmzlabclj.tardis.io.http :only [HttpBasicConfig] ]
+        [cmzlabclj.tardis.io.http :only [HttpBasicConfig]]
         [cmzlabclj.tardis.io.netty]
         [cmzlabclj.tardis.io.core]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.core.wfs]
         [cmzlabclj.tardis.core.constants]
-        [cmzlabclj.tardis.mvc.templates :only [MakeWebAsset] ]
+        [cmzlabclj.tardis.mvc.templates :only [MakeWebAsset]]
         [cmzlabclj.tardis.mvc.comms]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
-        [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
-        [cmzlabclj.nucleus.net.routes])
+        [cmzlabclj.xlib.util.str :only [hgl? nsb strim]]
+        [cmzlabclj.xlib.util.meta :only [MakeObj]]
+        [cmzlabclj.xlib.net.routes])
 
-  (:import  [com.zotohlab.wflow FlowNode Activity Pipeline
-                                PipelineDelegate PTask Work]
+  (:import  [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
+            [com.zotohlab.wflow FlowNode Activity Pipeline
+             PipelineDelegate PTask Work]
             [com.zotohlab.wflow.core Job]
             [com.zotohlab.frwk.netty NettyFW]
             [org.apache.commons.lang3 StringUtils]
@@ -41,7 +43,6 @@
             [java.io File]
             [com.zotohlab.frwk.io XData]
             [com.google.gson JsonObject]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
             [io.netty.channel Channel ChannelFuture]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

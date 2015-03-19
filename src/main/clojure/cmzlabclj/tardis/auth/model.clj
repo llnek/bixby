@@ -14,16 +14,16 @@
 
   cmzlabclj.tardis.auth.model
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.dbio.drivers]
-        [cmzlabclj.nucleus.dbio.core]
-        [cmzlabclj.nucleus.dbio.postgresql]
-        [cmzlabclj.nucleus.dbio.h2]
-        [cmzlabclj.nucleus.dbio.mysql]
-        [cmzlabclj.nucleus.dbio.sqlserver]
-        [cmzlabclj.nucleus.dbio.oracle])
+  (:use [cmzlabclj.xlib.dbio.drivers]
+        [cmzlabclj.xlib.dbio.core]
+        [cmzlabclj.xlib.dbio.postgresql]
+        [cmzlabclj.xlib.dbio.h2]
+        [cmzlabclj.xlib.dbio.mysql]
+        [cmzlabclj.xlib.dbio.sqlserver]
+        [cmzlabclj.xlib.dbio.oracle])
 
   (:import  [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
             [java.sql Connection]
@@ -71,7 +71,7 @@
                :joined :czc.tardis.auth/AccountRole }
       :addr { :kind :O2O
               :cascade true
-              :rhs :czc.tardis.auth/StdAddress } })
+              :other :czc.tardis.auth/StdAddress } })
   (WithDbUniques
     { :u2 #{ :acctid } }) )
 
@@ -87,7 +87,7 @@
 
   Schema
 
-  (getModels [_] [ StdAddress AuthRole LoginAccount AccountRole] ))
+  (getModels [_] [StdAddress AuthRole LoginAccount AccountRole] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

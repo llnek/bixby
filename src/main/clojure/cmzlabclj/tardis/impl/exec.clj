@@ -14,22 +14,24 @@
 
   cmzlabclj.tardis.impl.exec
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.tardis.core.constants]
+  (:use [cmzlabclj.xlib.util.str :only [nsb strim hgl?]]
+        [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.impl.defaults]
-        [cmzlabclj.nucleus.jmx.core]
+        [cmzlabclj.xlib.jmx.core]
         [cmzlabclj.tardis.impl.sys
-               :only [MakeKernel MakePodMeta MakeDeployer] ]
-        [cmzlabclj.nucleus.util.core
-               :only [LoadJavaProps test-nestr NiceFPath TryC
-                      ternary
-                      ConvLong MakeMMap juid test-nonil] ]
-        [cmzlabclj.nucleus.util.str :only [nsb strim hgl?] ]
-        [cmzlabclj.nucleus.util.files
-         :only [ReadOneUrl ReadEdn] ])
+         :only
+         [MakeKernel MakePodMeta MakeDeployer]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [LoadJavaProps test-nestr NiceFPath TryC
+          ternary
+          ConvLong MakeMMap juid test-nonil]]
+        [cmzlabclj.xlib.util.files
+         :only [ReadOneUrl ReadEdn]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -38,7 +40,8 @@
             [java.net URL]
             [java.util Date]
             [com.zotohlab.frwk.io IOUtils]
-            [com.zotohlab.frwk.core Startable Versioned Hierarchial Identifiable]
+            [com.zotohlab.frwk.core Startable
+             Versioned Hierarchial Identifiable]
             [com.zotohlab.frwk.server Component ComponentRegistry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,7 +78,7 @@
    ^File des
    mf]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+  (let [^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx execv)
         ^ComponentRegistry root (.getf ctx K_COMPS)
         ^ComponentRegistry apps (.lookup root K_APPS)
@@ -101,7 +104,7 @@
                              cz vid
                              (-> des (.toURI) (.toURL)))
                 (SynthesizeComponent { :ctx ctx }))
-          ^cmzlabclj.nucleus.util.core.MubleAPI
+          ^cmzlabclj.xlib.util.core.MubleAPI
           cx (.getCtx m) ]
       (.setf! cx K_EXECV execv)
       (.reg apps m)
@@ -139,7 +142,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (let [^FileFilter ff DirectoryFileFilter/DIRECTORY
-        ^cmzlabclj.nucleus.util.core.MubleAPI
+        ^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         ^File pd (.getf ctx K_PLAYDIR) ]
     (doseq [f (seq (.listFiles pd ff)) ]
@@ -155,11 +158,11 @@
 
   (log/info "JMX config " cfg)
   (TryC
-    (let [^cmzlabclj.nucleus.util.core.MubleAPI
+    (let [^cmzlabclj.xlib.util.core.MubleAPI
           ctx (.getCtx co)
           port (ternary (:port cfg) 7777)
           host (nsb (:host cfg))
-          ^cmzlabclj.nucleus.jmx.core.JMXServer
+          ^cmzlabclj.xlib.jmx.core.JMXServer
           jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
       (.start ^Startable jmx)
@@ -176,7 +179,7 @@
   [^cmzlabclj.tardis.core.sys.Element co]
 
   (TryC
-    (let [^cmzlabclj.nucleus.util.core.MubleAPI
+    (let [^cmzlabclj.xlib.util.core.MubleAPI
           ctx (.getCtx co)
           ^Startable jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx) (.stop jmx))
@@ -228,7 +231,7 @@
 
         Startable
         (start [this]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
@@ -237,7 +240,7 @@
             (.start k)))
 
         (stop [this]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
@@ -255,7 +258,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+  (let [^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
@@ -392,7 +395,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+  (let [^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         bDir (.getf ctx K_BKSDIR)
         fs (IOUtils/listFiles ^File bDir "meta" false) ]

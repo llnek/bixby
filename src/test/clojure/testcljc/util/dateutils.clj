@@ -14,7 +14,7 @@
 
   testcljc.util.dateutils
 
-  (:require [cmzlabclj.nucleus.util.dates :as DU])
+  (:require [cmzlabclj.xlib.util.dates :as DU])
 
   (:use [clojure.test])
 

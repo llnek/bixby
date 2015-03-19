@@ -24,6 +24,7 @@ import javax.jms.Topic;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockConnection implements Connection {
 
   private String _uid;

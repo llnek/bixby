@@ -14,17 +14,18 @@
 
   cmzlabclj.tardis.io.webss
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr]
             [clojure.data.json :as json])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [MubleAPI ConvLong notnil? juid ternary
-                MakeMMap Stringify Bytesify] ]
-        [cmzlabclj.nucleus.crypto.core :only [GenMac] ]
-        [cmzlabclj.nucleus.util.str :only [nsb hgl? AddDelim!] ]
-        ;;[cmzlabclj.nucleus.util.guids :only [NewUUid] ]
-        [cmzlabclj.nucleus.net.comms :only [GetFormFields] ])
+  (:use [cmzlabclj.xlib.util.str :only [nsb hgl? AddDelim!]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [MubleAPI ConvLong notnil? juid ternary
+          MakeMMap Stringify Bytesify]]
+        [cmzlabclj.xlib.crypto.core :only [GenMac]]
+        ;;[cmzlabclj.xlib.util.guids :only [NewUUid]]
+        [cmzlabclj.xlib.net.comms :only [GetFormFields]])
 
   (:import  [com.zotohlab.gallifrey.runtime ExpiredError AuthError]
             [org.apache.commons.lang3 StringUtils]
@@ -32,7 +33,8 @@
             [org.apache.commons.codec.binary Base64 Hex]
             [com.zotohlab.frwk.util CoreUtils]
             [java.net HttpCookie URLDecoder URLEncoder]
-            [com.zotohlab.gallifrey.io HTTPResult HTTPEvent IOSession Emitter]
+            [com.zotohlab.gallifrey.io HTTPResult
+             HTTPEvent IOSession Emitter]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 

@@ -16,6 +16,8 @@ package com.zotohlab.wflow.core;
  */
 public class FlowError extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   public FlowError(String msg,Throwable e) {
     super(msg,e);
   }

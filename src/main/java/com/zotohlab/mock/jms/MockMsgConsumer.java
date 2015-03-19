@@ -21,6 +21,7 @@ import javax.jms.MessageListener;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockMsgConsumer implements MessageConsumer {
 
   private MessageListener _sub;

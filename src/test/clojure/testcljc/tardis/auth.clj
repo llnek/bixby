@@ -16,12 +16,12 @@
 
   (:use [cmzlabclj.tardis.auth.plugin]
         [cmzlabclj.tardis.auth.model]
-        [cmzlabclj.nucleus.crypto.codec]
-        [cmzlabclj.nucleus.util.core]
-        [cmzlabclj.nucleus.dbio.drivers]
-        [cmzlabclj.nucleus.dbio.connect]
-        [cmzlabclj.nucleus.dbio.core]
-        [cmzlabclj.nucleus.dbio.h2]
+        [cmzlabclj.xlib.crypto.codec]
+        [cmzlabclj.xlib.util.core]
+        [cmzlabclj.xlib.dbio.drivers]
+        [cmzlabclj.xlib.dbio.connect]
+        [cmzlabclj.xlib.dbio.core]
+        [cmzlabclj.xlib.dbio.h2]
         [clojure.test])
 
   (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser]

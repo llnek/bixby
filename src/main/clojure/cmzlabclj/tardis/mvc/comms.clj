@@ -14,10 +14,10 @@
 
   cmzlabclj.tardis.mvc.comms
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI Try! NiceFPath] ]
+  (:use [cmzlabclj.xlib.util.core :only [MubleAPI Try! NiceFPath]]
         [cmzlabclj.tardis.io.triggers]
         [cmzlabclj.tardis.io.http]
         [cmzlabclj.tardis.io.netty]
@@ -25,29 +25,32 @@
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.mvc.templates
-         :only [MakeWebAsset GetLocalFile] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
-        [cmzlabclj.nucleus.util.meta :only [MakeObj] ])
+         :only
+         [MakeWebAsset GetLocalFile]]
+        [cmzlabclj.xlib.util.str :only [hgl? nsb strim]]
+        [cmzlabclj.xlib.util.meta :only [MakeObj]])
 
-  (:import  [com.zotohlab.gallifrey.mvc HTTPErrorHandler
-                                        MVCUtils WebAsset WebContent]
+  (:import  [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
+            [com.zotohlab.gallifrey.mvc HTTPErrorHandler
+             MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
             [com.zotohlab.gallifrey.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
             [java.util Date]
             [java.io File]
             [com.zotohlab.frwk.io XData]
-            [io.netty.handler.codec.http HttpRequest HttpResponseStatus HttpResponse
-                                         CookieDecoder ServerCookieEncoder
-                                         DefaultHttpResponse HttpVersion
-                                         HttpMessage
-                                         HttpHeaders LastHttpContent
-                                         HttpHeaders Cookie QueryStringDecoder]
+            [io.netty.handler.codec.http HttpRequest
+             HttpResponseStatus HttpResponse
+             CookieDecoder ServerCookieEncoder
+             DefaultHttpResponse HttpVersion
+             HttpMessage
+             HttpHeaders LastHttpContent
+             HttpHeaders Cookie QueryStringDecoder]
             [io.netty.buffer Unpooled]
-            [io.netty.channel Channel ChannelHandler ChannelFuture
-                              ChannelPipeline ChannelHandlerContext]
+            [io.netty.channel Channel ChannelHandler
+             ChannelFuture
+             ChannelPipeline ChannelHandlerContext]
             [com.google.gson JsonObject]
             [jregex Matcher Pattern]))
 
@@ -226,7 +229,7 @@
 ;;
 (defn ServeStatic ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI
+  [^cmzlabclj.xlib.util.core.MubleAPI
    ri
    ^Emitter src
    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
@@ -259,12 +262,12 @@
 ;;
 (defn ServeRoute ""
 
-  [^cmzlabclj.nucleus.net.routes.RouteInfo ri
+  [^cmzlabclj.xlib.net.routes.RouteInfo ri
    ^cmzlabclj.tardis.core.sys.Element src
    ^Matcher mc
    ^Channel ch
    ^HTTPEvent evt ]
-    ;;^cmzlabclj.nucleus.util.core.MubleAPI evt]
+    ;;^cmzlabclj.xlib.util.core.MubleAPI evt]
 
   (try
     (-> evt (.getSession)(.handleEvent evt))

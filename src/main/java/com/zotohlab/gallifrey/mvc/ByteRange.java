@@ -43,9 +43,9 @@ public class ByteRange {
     _start= start;
     _end= end;
     _cType= cType;
-    if ( incHeader) {
+    if ( _incHeader) {
       try {
-        _header= fmtRangeHeader( start, end, file.length() , cType, "DEFAULT_SEPARATOR");
+        _header= fmtRangeHeader( start, end, file.length() , _cType, "DEFAULT_SEPARATOR");
       } catch (IOException e) {
         tlog().error("",e);
       }

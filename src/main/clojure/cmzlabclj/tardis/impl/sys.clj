@@ -14,30 +14,33 @@
 
   cmzlabclj.tardis.impl.sys
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
   (:use [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.impl.ext]
         [cmzlabclj.tardis.impl.defaults
-         :rename {enabled? blockmeta-enabled?
-                  Start kernel-start
-                  Stop kernel-stop}]
-        [cmzlabclj.nucleus.util.core
-         :only [MakeMMap TryC NiceFPath notnil? ternary NewRandom] ]
-        [cmzlabclj.nucleus.util.str :only [strim] ]
-        [cmzlabclj.nucleus.util.process :only [SafeWait] ]
-        [cmzlabclj.nucleus.util.files :only [Unzip] ]
-        [cmzlabclj.nucleus.util.mime :only [SetupCache] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
+         :rename 
+         {enabled? blockmeta-enabled?
+          Start kernel-start
+          Stop kernel-stop}]
+        [cmzlabclj.xlib.util.core
+         :only 
+         [MakeMMap TryC NiceFPath 
+          notnil? ternary NewRandom]]
+        [cmzlabclj.xlib.util.str :only [strim]]
+        [cmzlabclj.xlib.util.process :only [SafeWait]]
+        [cmzlabclj.xlib.util.files :only [Unzip]]
+        [cmzlabclj.xlib.util.mime :only [SetupCache]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]])
 
-  (:import  [org.apache.commons.io FilenameUtils FileUtils]
+  (:import  [com.zotohlab.frwk.server Component ComponentRegistry]
+            [org.apache.commons.io FilenameUtils FileUtils]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.core Disposable Identifiable
-                                    Hierarchial Versioned Startable]
+             Hierarchial Versioned Startable]
             [com.zotohlab.frwk.util IWin32Conf]
-            [com.zotohlab.frwk.server Component ComponentRegistry]
             [com.zotohlab.gallifrey.loaders AppClassLoader]
             [java.net URL]
             [java.io File]
@@ -80,7 +83,7 @@
         Deployer
 
         (undeploy [this app]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 dir (File. ^File (.getf ctx K_PLAYDIR)
                            ^String app) ]
@@ -89,7 +92,7 @@
 
         (deploy [this src]
           (let [app (FilenameUtils/getBaseName (NiceFPath src))
-                ^cmzlabclj.nucleus.util.core.MubleAPI
+                ^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 des (File. ^File (.getf ctx K_PLAYDIR)
                            ^String app) ]
@@ -118,7 +121,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+  (let [^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         ^File py (.getf ctx K_PLAYDIR)
         ^File pd (.getf ctx K_PODSDIR) ]
@@ -189,7 +192,7 @@
         Startable
 
         (start [this]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI
+          (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
@@ -272,7 +275,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.nucleus.util.core.MubleAPI
+  (let [^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         rcl (.getf ctx K_ROOT_CZLR)
         ^URL url (.srcUrl ^cmzlabclj.tardis.impl.defaults.PODMeta co)

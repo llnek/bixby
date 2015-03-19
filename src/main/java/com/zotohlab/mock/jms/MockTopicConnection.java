@@ -27,6 +27,7 @@ import javax.jms.TopicSession;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockTopicConnection implements TopicConnection {
 
   public MockTopicConnection(String n, String p) {

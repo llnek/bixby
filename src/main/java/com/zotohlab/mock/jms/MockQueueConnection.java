@@ -26,6 +26,7 @@ import javax.jms.Topic;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockQueueConnection implements QueueConnection {
 
   private volatile boolean _active=false;

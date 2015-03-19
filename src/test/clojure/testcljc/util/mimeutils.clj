@@ -14,9 +14,9 @@
 
   testcljc.util.mimeutils
 
-  (:require [cmzlabclj.nucleus.util.core :as CU]
-            [cmzlabclj.nucleus.util.io :as IO]
-            [cmzlabclj.nucleus.util.mime :as MU])
+  (:require [cmzlabclj.xlib.util.core :as CU]
+            [cmzlabclj.xlib.util.io :as IO]
+            [cmzlabclj.xlib.util.mime :as MU])
 
   (:use [clojure.test])
 

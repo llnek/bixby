@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "kenl" }
 

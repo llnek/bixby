@@ -16,6 +16,8 @@ package com.zotohlab.gallifrey.runtime;
  */
 public class ExpiredError extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   public ExpiredError(String msg, Throwable e) {
     super(msg,e);
   }

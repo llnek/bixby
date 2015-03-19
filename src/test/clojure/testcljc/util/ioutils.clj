@@ -13,8 +13,8 @@
 
   testcljc.util.ioutils
 
-  (:require [cmzlabclj.nucleus.util.core :as CU]
-            [cmzlabclj.nucleus.util.io :as IO])
+  (:require [cmzlabclj.xlib.util.core :as CU]
+            [cmzlabclj.xlib.util.io :as IO])
 
   (:use [clojure.test])
 

@@ -17,13 +17,13 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.tardis.io.core]
+  (:use [cmzlabclj.xlib.util.core :only [test-posnum ConvLong spos?]]
+        [cmzlabclj.tardis.io.core]
         [cmzlabclj.tardis.core.sys]
-        [cmzlabclj.nucleus.util.process :only [Coroutine] ]
-        [cmzlabclj.nucleus.util.meta :only [GetCldr] ]
-        [cmzlabclj.nucleus.util.core :only [test-posnum ConvLong spos?] ]
-        [cmzlabclj.nucleus.util.str :only [strim nsb hgl?] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ])
+        [cmzlabclj.xlib.util.process :only [Coroutine]]
+        [cmzlabclj.xlib.util.meta :only [GetCldr]]
+        [cmzlabclj.xlib.util.str :only [strim nsb hgl?]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]])
 
   (:import  [java.net InetAddress ServerSocket Socket]
             [org.apache.commons.io IOUtils]

@@ -42,6 +42,7 @@ import javax.jms.TopicSubscriber;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockTopicSession implements TopicSession {
 
   private Map<String,TopicSubscriber> _subs = new HashMap<String,TopicSubscriber>();

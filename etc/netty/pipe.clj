@@ -6,7 +6,7 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
 
   (:use [cmzlabclj.tardis.core.constants]
-        [cmzlabclj.nucleus.util.str :only [nsb]]
+        [cmzlabclj.xlib.util.str :only [nsb]]
         [cmzlabclj.tardis.core.wfs])
 
   (:import [com.zotohlab.wflow FlowNode Activity

@@ -19,12 +19,13 @@
 
   cmzlabclj.tardis.io.triggers
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [ThrowIOE MakeMMap Stringify notnil? Try!] ]
-        [cmzlabclj.nucleus.util.str :only [nsb] ]
+  (:use [cmzlabclj.xlib.util.core
+         :only
+         [ThrowIOE MakeMMap Stringify notnil? Try!]]
+        [cmzlabclj.xlib.util.str :only [nsb]]
         [cmzlabclj.tardis.io.core])
 
   (:import  [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]

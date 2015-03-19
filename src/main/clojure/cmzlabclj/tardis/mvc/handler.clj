@@ -14,52 +14,59 @@
 
   cmzlabclj.tardis.mvc.handler
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath] ]
-        [cmzlabclj.nucleus.netty.io]
+  (:use [cmzlabclj.xlib.util.core
+         :only
+         [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath]]
+        [cmzlabclj.xlib.netty.io]
         [cmzlabclj.tardis.io.triggers]
-        [cmzlabclj.tardis.io.http :only [HttpBasicConfig] ]
+        [cmzlabclj.tardis.io.http :only [HttpBasicConfig]]
         [cmzlabclj.tardis.io.netty]
         [cmzlabclj.tardis.io.core]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.mvc.templates
-         :only [SetCacheAssetsFlag GetLocalFile ReplyFileAsset] ]
+         :only
+         [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
         [cmzlabclj.tardis.mvc.comms]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim] ]
-        [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
-        [cmzlabclj.nucleus.net.routes])
+        [cmzlabclj.xlib.util.str :only [hgl? nsb strim]]
+        [cmzlabclj.xlib.util.meta :only [MakeObj]]
+        [cmzlabclj.xlib.net.routes])
 
-  (:import [org.apache.commons.lang3 StringUtils]
-           [io.netty.util ReferenceCountUtil]
-           [java.util Date]
-           [java.io File]
-           [com.zotohlab.frwk.io XData]
-           [com.google.gson JsonObject]
-           [com.zotohlab.frwk.core Hierarchial Identifiable]
-           [com.zotohlab.gallifrey.io HTTPEvent Emitter]
-           [com.zotohlab.gallifrey.mvc HTTPErrorHandler MVCUtils WebAsset WebContent]
-           [io.netty.handler.codec.http HttpRequest HttpResponse
-                                        CookieDecoder ServerCookieEncoder
-                                        DefaultHttpResponse HttpVersion
-                                        HttpResponseEncoder HttpRequestDecoder
-                                        HttpHeaders LastHttpContent
-                                        HttpHeaders Cookie QueryStringDecoder]
-           [io.netty.bootstrap ServerBootstrap]
-           [io.netty.channel Channel ChannelHandler ChannelDuplexHandler
-                             SimpleChannelInboundHandler
-                             ChannelPipeline ChannelHandlerContext]
-           [io.netty.handler.stream ChunkedWriteHandler]
-           [io.netty.util AttributeKey]
-           [io.netty.handler.timeout IdleState IdleStateEvent
-                                     IdleStateHandler]
-           [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter SimpleInboundFilter
-                                     DemuxedMsg PipelineConfigurator
-                                     FlashFilter]
-           [jregex Matcher Pattern]))
+  (:import  [org.apache.commons.lang3 StringUtils]
+            [io.netty.util ReferenceCountUtil]
+            [java.util Date]
+            [java.io File]
+            [com.zotohlab.frwk.io XData]
+            [com.google.gson JsonObject]
+            [com.zotohlab.frwk.core Hierarchial Identifiable]
+            [com.zotohlab.gallifrey.io HTTPEvent Emitter]
+            [com.zotohlab.gallifrey.mvc HTTPErrorHandler
+             MVCUtils WebAsset WebContent]
+            [io.netty.handler.codec.http HttpRequest
+             HttpResponse
+             CookieDecoder ServerCookieEncoder
+             DefaultHttpResponse HttpVersion
+             HttpResponseEncoder HttpRequestDecoder
+             HttpHeaders LastHttpContent
+             HttpHeaders Cookie QueryStringDecoder]
+            [io.netty.bootstrap ServerBootstrap]
+            [io.netty.channel Channel ChannelHandler
+             ChannelDuplexHandler
+             SimpleChannelInboundHandler
+             ChannelPipeline ChannelHandlerContext]
+            [io.netty.handler.stream ChunkedWriteHandler]
+            [io.netty.util AttributeKey]
+            [io.netty.handler.timeout IdleState
+             IdleStateEvent
+             IdleStateHandler]
+            [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter
+             SimpleInboundFilter
+             DemuxedMsg PipelineConfigurator
+             FlashFilter]
+            [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -82,7 +89,7 @@
       ;;(log/debug "mvc route filter called with message = " (type msg))
       (cond
         (instance? HttpRequest msg)
-        (let [^cmzlabclj.nucleus.net.routes.RouteCracker
+        (let [^cmzlabclj.xlib.net.routes.RouteCracker
               ck (.getAttr co :cracker)
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
@@ -135,11 +142,11 @@
   (proxy [SimpleInboundFilter] []
     (channelRead0 [ctx msg]
       ;;(log/debug "mvc netty handler called with message = " (type msg))
-      (let [^cmzlabclj.nucleus.net.routes.RouteCracker
+      (let [^cmzlabclj.xlib.net.routes.RouteCracker
             rcc (.getAttr co :cracker)
             ch (.channel ^ChannelHandlerContext ctx)
             info (.info ^DemuxedMsg msg)
-            [r1 ^cmzlabclj.nucleus.net.routes.RouteInfo r2 r3 r4]
+            [r1 ^cmzlabclj.xlib.net.routes.RouteInfo r2 r3 r4]
             (.crack rcc info) ]
         (cond
           (= r1 true)

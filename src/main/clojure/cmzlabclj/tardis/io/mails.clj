@@ -14,20 +14,20 @@
 
   cmzlabclj.tardis.io.mails
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.util.core :only [spos? ThrowIOE TryC notnil?] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb] ]
+  (:use [cmzlabclj.xlib.util.core :only [spos? ThrowIOE TryC notnil?]]
+        [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
+        [cmzlabclj.xlib.util.str :only [hgl? nsb]]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.loops ]
         [cmzlabclj.tardis.io.core ])
 
   (:import  [javax.mail Flags Flags$Flag
-                        Store Folder
-                        Session Provider Provider$Type]
+             Store Folder
+             Session Provider Provider$Type]
             [java.util Properties]
             [javax.mail.internet MimeMessage]
             [java.io IOException]

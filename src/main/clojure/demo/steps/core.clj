@@ -14,17 +14,16 @@
 
   demo.steps.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [RandomBoolValue notnil?] ]
-        [cmzlabclj.nucleus.util.str :only [nsb] ]
+  (:use [cmzlabclj.xlib.util.core :only [RandomBoolValue notnil?]]
+        [cmzlabclj.xlib.util.str :only [nsb]]
         [cmzlabclj.tardis.core.wfs])
 
-
   (:import  [com.zotohlab.wflow FlowNode PTask Switch If Block
-                                Activity Split While
-                                PipelineDelegate]
+             Activity Split While
+             PipelineDelegate]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.wflow.core Job]))
 

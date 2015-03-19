@@ -14,18 +14,19 @@
 
   cmzlabclj.tardis.io.http
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.core :as ccore]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [MubleAPI notnil? juid TryC spos?
-                ToJavaInt SubsVar ternary
-                MakeMMap test-cond Stringify] ]
-        [cmzlabclj.nucleus.crypto.ssl]
-        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
-        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
+  (:use [cmzlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [MubleAPI notnil? juid TryC spos?
+          ToJavaInt SubsVar ternary
+          MakeMMap test-cond Stringify]]
+        [cmzlabclj.xlib.crypto.ssl]
+        [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.core]
@@ -44,17 +45,17 @@
             [com.zotohlab.frwk.server Component]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.core Versioned Hierarchial
-                                    Identifiable
-                                    Disposable Startable]
+             Identifiable
+             Disposable Startable]
             [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.gallifrey.io IOSession
-                                       ServletEmitter Emitter]
+             ServletEmitter Emitter]
             [javax.servlet.http HttpServletRequest
-                                HttpServletResponse]
+             HttpServletResponse]
             [com.zotohlab.gallifrey.io WebSockResult
-                                       HTTPResult
-                                       HTTPEvent JettyUtils]
+             HTTPResult
+             HTTPEvent JettyUtils]
             [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

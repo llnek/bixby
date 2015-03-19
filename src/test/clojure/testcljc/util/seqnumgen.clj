@@ -14,7 +14,7 @@
 
   testcljc.util.seqnumgen
 
-  (:require [cmzlabclj.nucleus.util.seqnum :as SN])
+  (:require [cmzlabclj.xlib.util.seqnum :as SN])
 
   (:use [clojure.test]))
 

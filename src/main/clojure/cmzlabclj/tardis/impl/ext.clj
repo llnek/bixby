@@ -14,13 +14,20 @@
 
   cmzlabclj.tardis.impl.ext
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr]
             [clojure.edn :as edn]
             [clojure.data.json :as json])
 
-  (:use [cmzlabclj.tardis.core.constants]
-        [cmzlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
+  (:use [cmzlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
+        [cmzlabclj.xlib.util.files
+         :only
+         [ReadEdn ReadOneFile WriteOneFile]]
+        [cmzlabclj.xlib.crypto.codec
+         :only [Pwdify CreateRandomString]]
+        [cmzlabclj.xlib.dbio.connect
+         :only [DbioConnectViaPool]]
+        [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.io.loops]
         [cmzlabclj.tardis.io.mails]
         [cmzlabclj.tardis.io.files]
@@ -31,40 +38,42 @@
         [cmzlabclj.tardis.io.socket]
         [cmzlabclj.tardis.mvc.handler]
         [cmzlabclj.tardis.impl.defaults
-         :rename {enabled? blockmeta-enabled?
-                  start kernel-start
-                  stop kernel-stop } ]
+         :rename
+         {enabled? blockmeta-enabled?
+          start kernel-start
+          stop kernel-stop } ]
         [cmzlabclj.tardis.etc.misc]
         [cmzlabclj.tardis.core.sys]
-        [cmzlabclj.nucleus.util.core
-         :only [MubleAPI MakeMMap NiceFPath
-                ConvToJava nbf ConvLong Bytesify] ]
-        [cmzlabclj.nucleus.util.scheduler :only [MakeScheduler] ]
-        [cmzlabclj.nucleus.util.process :only [Coroutine] ]
-        [cmzlabclj.nucleus.util.core :only [LoadJavaProps SubsVar] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.util.str :only [hgl? nsb strim nichts?] ]
-        [cmzlabclj.nucleus.util.meta :only [MakeObj] ]
-        [cmzlabclj.nucleus.util.files :only [ReadEdn ReadOneFile WriteOneFile] ]
-        [cmzlabclj.nucleus.crypto.codec :only [Pwdify CreateRandomString] ]
-        [cmzlabclj.nucleus.dbio.connect :only [DbioConnectViaPool] ]
-        [cmzlabclj.nucleus.dbio.core
-         :only [MakeJdbc MakeMetaCache MakeDbPool MakeSchema] ]
-        [cmzlabclj.nucleus.net.routes :only [LoadRoutes] ])
+        [cmzlabclj.xlib.util.core
+         :only
+         [MubleAPI MakeMMap NiceFPath
+          ConvToJava nbf ConvLong Bytesify]]
+        [cmzlabclj.xlib.util.scheduler :only [MakeScheduler]]
+        [cmzlabclj.xlib.util.process :only [Coroutine]]
+        [cmzlabclj.xlib.util.core :only [LoadJavaProps SubsVar]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
+        [cmzlabclj.xlib.util.str :only [hgl? nsb strim nichts?]]
+        [cmzlabclj.xlib.util.meta :only [MakeObj]]
+        [cmzlabclj.xlib.dbio.core
+         :only
+         [MakeJdbc MakeMetaCache MakeDbPool MakeSchema]]
+        [cmzlabclj.xlib.net.routes :only [LoadRoutes]])
 
-  (:import  [org.apache.commons.io FilenameUtils FileUtils]
+  (:import  [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
+            [org.apache.commons.io FilenameUtils FileUtils]
             [org.apache.commons.lang3 StringUtils]
             [org.apache.commons.codec.binary Hex]
-            [freemarker.template Configuration Template DefaultObjectWrapper]
+            [freemarker.template Configuration
+             Template DefaultObjectWrapper]
             [java.util Map Properties]
             [java.net URL]
             [java.io File StringWriter]
             [com.zotohlab.gallifrey.runtime AppMain]
             [com.zotohlab.gallifrey.etc PluginFactory Plugin]
-            [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
             [com.zotohlab.frwk.core Versioned Hierarchial
-                                    Startable Disposable Identifiable]
-            [com.zotohlab.frwk.server ComponentRegistry Component ServiceError]
+             Startable Disposable Identifiable]
+            [com.zotohlab.frwk.server ComponentRegistry
+             Component ServiceError]
             [com.zotohlab.gallifrey.core Container ConfigError]
             [com.zotohlab.gallifrey.io Emitter IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
@@ -436,7 +445,7 @@
                 (.reg srg s)))))
 
         (reifyService [this svc nm cfg]
-          (let [^cmzlabclj.nucleus.util.core.MubleAPI ctx (.getCtx this)
+          (let [^cmzlabclj.xlib.util.core.MubleAPI ctx (.getCtx this)
                 ^ComponentRegistry root (.getf ctx K_COMPS)
                 ^ComponentRegistry bks (.lookup root K_BLOCKS)
                 ^ComponentRegistry bk (.lookup bks (keyword svc)) ]
@@ -456,7 +465,7 @@
   [^cmzlabclj.tardis.core.sys.Element pod]
 
   (let [c (make-app-container pod)
-        ^cmzlabclj.nucleus.util.core.MubleAPI
+        ^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx pod)
         cl (.getf ctx K_APP_CZLR)
         ^ComponentRegistry root (.getf ctx K_COMPS)
@@ -648,7 +657,7 @@
         mCZ (strim (.get mf "Main-Class"))
         reg (.getAttr co K_SVCS)
         jc (make-jobcreator co)
-        ^cmzlabclj.nucleus.util.scheduler.SchedulerAPI
+        ^cmzlabclj.xlib.util.scheduler.SchedulerAPI
         sc (MakeScheduler co)
         cfg (:container env) ]
 

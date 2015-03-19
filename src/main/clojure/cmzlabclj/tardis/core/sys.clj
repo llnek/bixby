@@ -14,11 +14,11 @@
 
   cmzlabclj.tardis.core.sys
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI MakeMMap NiceFPath] ]
-        [cmzlabclj.nucleus.util.files :only [ReadOneFile ReadOneUrl] ]
+  (:use [cmzlabclj.xlib.util.core :only [MubleAPI MakeMMap NiceFPath]]
+        [cmzlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]
         [cmzlabclj.tardis.core.constants])
 
   (:import  [org.apache.commons.io FilenameUtils FileUtils]
@@ -88,7 +88,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SynthesizeComponent ""
+(defn SynthesizeComponent "Note the ordering."
 
   ^cmzlabclj.tardis.core.sys.Element
   [c options]
@@ -107,7 +107,7 @@
 ;;
 (defn MakeContext ""
 
-  ^cmzlabclj.nucleus.util.core.MubleAPI
+  ^cmzlabclj.xlib.util.core.MubleAPI
   []
 
   (let [impl (MakeMMap) ]
@@ -141,7 +141,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element
    co
-   ^cmzlabclj.nucleus.util.core.MubleAPI
+   ^cmzlabclj.xlib.util.core.MubleAPI
    ctx]
 
   (when-not (nil? ctx)

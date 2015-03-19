@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockPop3Msg {
   private static final String _mime=
   "From: Some One <someone@example.com>\r\n"+

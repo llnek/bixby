@@ -13,13 +13,13 @@
 
   testcljc.crypto.cryptostuff
 
-  (:use [cmzlabclj.nucleus.crypto.stores]
-        [cmzlabclj.nucleus.crypto.codec]
-        [cmzlabclj.nucleus.util.core]
-        [cmzlabclj.nucleus.util.str]
-        [cmzlabclj.nucleus.util.io]
+  (:use [cmzlabclj.xlib.crypto.stores]
+        [cmzlabclj.xlib.crypto.codec]
+        [cmzlabclj.xlib.util.core]
+        [cmzlabclj.xlib.util.str]
+        [cmzlabclj.xlib.util.io]
         [clojure.test]
-        [cmzlabclj.nucleus.crypto.core])
+        [cmzlabclj.xlib.crypto.core])
 
   (:import  [java.security KeyPair Policy KeyStore SecureRandom MessageDigest
                            KeyStore$PrivateKeyEntry KeyStore$TrustedCertificateEntry]

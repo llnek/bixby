@@ -14,57 +14,61 @@
 
   cmzlabclj.tardis.io.netty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [Try! Stringify ThrowIOE MubleAPI MakeMMap notnil? ConvLong] ]
-        [cmzlabclj.nucleus.netty.io]
+  (:use [cmzlabclj.xlib.net.routes :only [MakeRouteCracker RouteCracker]]
+        [cmzlabclj.xlib.util.str :only [lcase hgl? nsb strim nichts?]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [Try! Stringify ThrowIOE MubleAPI
+          MakeMMap notnil? ConvLong]]
+        [cmzlabclj.xlib.netty.io]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.core]
         [cmzlabclj.tardis.io.http]
         [cmzlabclj.tardis.io.triggers]
-        [cmzlabclj.tardis.io.webss :only [MakeWSSession] ]
-        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim nichts?] ]
-        [cmzlabclj.nucleus.net.routes :only [MakeRouteCracker RouteCracker] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.util.mime :only [GetCharset] ])
+        [cmzlabclj.tardis.io.webss :only [MakeWSSession]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
+        [cmzlabclj.xlib.util.mime :only [GetCharset]])
 
-  (:import [java.net HttpCookie URI URL InetSocketAddress]
-           [java.net SocketAddress InetAddress]
-           [java.util ArrayList List HashMap Map]
-           [com.google.gson JsonObject]
-           [java.io Closeable File IOException RandomAccessFile]
-           [com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
-                                               IOSession
-                                               WebSockEvent WebSockResult]
-           [javax.net.ssl SSLContext]
-           [java.nio.channels ClosedChannelException]
-           [io.netty.handler.codec.http HttpRequest HttpResponse HttpResponseStatus
-                                        CookieDecoder ServerCookieEncoder
-                                        DefaultHttpResponse HttpVersion
-                                        HttpRequestDecoder
-                                        HttpResponseEncoder DefaultCookie
-                                        HttpHeaders$Names LastHttpContent
-                                        HttpHeaders Cookie QueryStringDecoder]
-           [org.apache.commons.codec.net URLCodec]
-           [io.netty.bootstrap ServerBootstrap]
-           [io.netty.channel Channel ChannelHandler ChannelFuture
-                                     ChannelFutureListener
-                                     SimpleChannelInboundHandler
-                                     ChannelPipeline ChannelHandlerContext]
-           [io.netty.handler.stream ChunkedFile ChunkedStream ChunkedWriteHandler]
-           [com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput]
-           [com.zotohlab.frwk.netty NettyFW
-                                    DemuxedMsg
-                                    ErrorSinkFilter
-                                    PipelineConfigurator]
-           [io.netty.handler.codec.http.websocketx WebSocketFrame
-                                                   BinaryWebSocketFrame
-                                                   TextWebSocketFrame]
-           [io.netty.buffer ByteBuf Unpooled]
-           [com.zotohlab.frwk.core Hierarchial Identifiable]
-           [com.zotohlab.frwk.io XData]))
+  (:import  [java.io Closeable File IOException RandomAccessFile]
+            [java.net HttpCookie URI URL InetSocketAddress]
+            [java.net SocketAddress InetAddress]
+            [java.util ArrayList List HashMap Map]
+            [com.google.gson JsonObject]
+            [com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
+             IOSession
+             WebSockEvent WebSockResult]
+            [javax.net.ssl SSLContext]
+            [java.nio.channels ClosedChannelException]
+            [io.netty.handler.codec.http HttpRequest
+             HttpResponse HttpResponseStatus
+             CookieDecoder ServerCookieEncoder
+             DefaultHttpResponse HttpVersion
+             HttpRequestDecoder
+             HttpResponseEncoder DefaultCookie
+             HttpHeaders$Names LastHttpContent
+             HttpHeaders Cookie QueryStringDecoder]
+            [org.apache.commons.codec.net URLCodec]
+            [io.netty.bootstrap ServerBootstrap]
+            [io.netty.channel Channel ChannelHandler
+             ChannelFuture
+             ChannelFutureListener
+             SimpleChannelInboundHandler
+             ChannelPipeline ChannelHandlerContext]
+            [io.netty.handler.stream ChunkedFile
+             ChunkedStream ChunkedWriteHandler]
+            [com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput]
+            [com.zotohlab.frwk.netty NettyFW
+             DemuxedMsg
+             ErrorSinkFilter PipelineConfigurator]
+            [io.netty.handler.codec.http.websocketx
+             WebSocketFrame
+             BinaryWebSocketFrame TextWebSocketFrame]
+            [io.netty.buffer ByteBuf Unpooled]
+            [com.zotohlab.frwk.core Hierarchial Identifiable]
+            [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -156,7 +160,7 @@
 ;;
 (defn- netty-reply ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI res
+  [^cmzlabclj.xlib.util.core.MubleAPI res
    ^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
@@ -489,7 +493,7 @@
       (instance? WebSocketFrame msg)
       (makeWEBSockEvent co ch ssl msg)
       :else
-      (let [^cmzlabclj.nucleus.net.routes.RouteInfo
+      (let [^cmzlabclj.xlib.net.routes.RouteInfo
             ri (if (> (count args) 2)
                  (nth args 2)
                  nil)

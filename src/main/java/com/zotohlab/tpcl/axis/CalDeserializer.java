@@ -30,9 +30,11 @@ import org.slf4j.LoggerFactory;
 // and get the right timezone
 public class CalDeserializer extends CalendarDeserializer {
 
-  private static Logger _log= LoggerFactory.getLogger(CalDeserializer.class);
+	private static Logger _log= LoggerFactory.getLogger(CalDeserializer.class);
   public Logger tlog() { return _log; }
 
+  private static final long serialVersionUID = 1L;
+  
   public CalDeserializer(Class<?> javaType, QName xmlType) {
     super(javaType,xmlType);
   }

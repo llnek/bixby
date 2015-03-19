@@ -14,19 +14,20 @@
 
   cmzlabclj.tardis.etc.cli
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core
-         :only [GetUser juid IsWindows?
-                NiceFPath] ]
-        [cmzlabclj.nucleus.util.str :only [strim nsb] ]
-        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
-        [cmzlabclj.nucleus.util.guids :only [NewUUid] ]
-        [cmzlabclj.nucleus.util.files
-         :only [ReadOneFile WriteOneFile CopyFileToDir
-                CopyFile CopyDir
-                Unzip Mkdirs ReadEdn] ]
+  (:use [cmzlabclj.xlib.util.ini :only [ParseInifile]]
+        [cmzlabclj.xlib.util.str :only [strim nsb]]
+        [cmzlabclj.xlib.util.guids :only [NewUUid]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [GetUser juid IsWindows? NiceFPath]]
+        [cmzlabclj.xlib.util.files
+         :only
+         [ReadOneFile WriteOneFile CopyFileToDir
+          CopyFile CopyDir
+          Unzip Mkdirs ReadEdn]]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.etc.task])
@@ -260,7 +261,7 @@
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPKEY@@" (NewUUid))
                         (.replace "@@APPMAINCLASS@@"
-                                             (str appDomain ".core.MyAppMain"))))
+                                  (str appDomain ".core.MyAppMain"))))
 
       (var-set fp (File. appDir "pom.xml"))
       (WriteOneFile @fp
@@ -337,7 +338,8 @@
 
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)
-            dd (File. hhhHome (str "etc/weblibs/" dn))
+            dd (File. hhhHome
+                      (str "etc/weblibs/" dn))
             td (File. wlib dn) ]
         (when (.isDirectory dd)
           (CopyDir dd wlib)

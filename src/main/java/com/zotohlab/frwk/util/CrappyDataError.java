@@ -16,6 +16,8 @@ package com.zotohlab.frwk.util;
  */
 public class CrappyDataError extends RuntimeException {
 
+  private static final long serialVersionUID = 1L;
+
   public CrappyDataError(Throwable t) {
     super(t);
   }

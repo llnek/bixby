@@ -14,8 +14,8 @@
 
   testcljc.util.fileutils
 
-  (:require [cmzlabclj.nucleus.util.files :as FU]
-            [cmzlabclj.nucleus.util.core :as CU])
+  (:require [cmzlabclj.xlib.util.files :as FU]
+            [cmzlabclj.xlib.util.core :as CU])
 
   (:use [clojure.test])
 

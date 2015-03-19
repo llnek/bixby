@@ -17,30 +17,33 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.process
-         :only [ProcessPid SafeWait ThreadFunc] ]
-        [cmzlabclj.nucleus.i18n.resources :only [GetResource] ]
-        [cmzlabclj.nucleus.util.meta :only [SetCldr GetCldr] ]
-        [cmzlabclj.nucleus.util.files
-         :only [ReadOneFile WriteOneFile ReadEdn] ]
-        [cmzlabclj.nucleus.util.core
-               :only [ternary test-nonil test-cond ConvLong
-                      Try! PrintMutableObj MakeMMap] ]
-        [cmzlabclj.nucleus.util.str :only [lcase hgl? nsb strim] ]
-        [cmzlabclj.nucleus.util.ini :only [ParseInifile] ]
-        [cmzlabclj.nucleus.netty.discarder :only [MakeDiscardHTTPD] ]
-
-        [cmzlabclj.tardis.impl.exec :only [MakeExecvisor] ]
+  (:use [cmzlabclj.xlib.netty.discarder :only [MakeDiscardHTTPD]]
+        [cmzlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
+        [cmzlabclj.xlib.util.ini :only [ParseInifile]]
+        [cmzlabclj.xlib.util.process
+         :only
+         [ProcessPid SafeWait ThreadFunc]]
+        [cmzlabclj.xlib.i18n.resources :only [GetResource]]
+        [cmzlabclj.xlib.util.meta :only [SetCldr GetCldr]]
+        [cmzlabclj.xlib.util.files
+         :only
+         [ReadOneFile WriteOneFile ReadEdn]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [ternary test-nonil test-cond ConvLong
+          Try! PrintMutableObj MakeMMap]]
+        [cmzlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.impl.defaults]
-        [cmzlabclj.nucleus.netty.io :only [StopServer] ])
+        [cmzlabclj.xlib.netty.io :only [StopServer]])
 
-  (:import  [com.zotohlab.gallifrey.loaders AppClassLoader
-                                            RootClassLoader ExecClassLoader]
-            [com.zotohlab.frwk.core Versioned Identifiable Hierarchial Startable]
+  (:import  [io.netty.channel Channel ChannelFuture ChannelFutureListener]
+            [com.zotohlab.gallifrey.loaders AppClassLoader
+             RootClassLoader ExecClassLoader]
+            [com.zotohlab.frwk.core Versioned Identifiable
+             Hierarchial Startable]
             [com.zotohlab.frwk.util IWin32Conf]
-            [io.netty.channel Channel ChannelFuture ChannelFutureListener]
             [com.zotohlab.gallifrey.core ConfigError]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
@@ -65,7 +68,7 @@
   "the context object has a set of properties, such as basic dir, which
   is shared with other key components."
 
-  ^cmzlabclj.nucleus.util.core.MubleAPI
+  ^cmzlabclj.xlib.util.core.MubleAPI
   [^File baseDir]
 
   (let [cfg (File. baseDir ^String DN_CFG)
@@ -81,7 +84,7 @@
 ;;
 (defn- setupClassLoader ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [^ClassLoader root (.getf ctx K_ROOT_CZLR)
         cl (ExecClassLoader. root) ]
@@ -94,7 +97,7 @@
 ;;
 (defn- setupClassLoaderAsRoot ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx
    ^ClassLoader cur]
 
   (doto ctx
@@ -109,7 +112,7 @@
   The exec class loader inherits from the root and is the class loader
   that runs skaro."
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [cz (GetCldr) ]
     (condp instance? cz
@@ -133,7 +136,7 @@
 ;; Parse skaro.conf
 (defn- loadConf ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [^File home (.getf ctx K_BASEDIR)
         cf (File. home  (str DN_CONF
@@ -156,7 +159,7 @@
 ;;
 (defn- setupResources "Look for and load the resource bundle."
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [rc (GetResource "cmzlabclj/tardis/etc/Resources"
                         (.getf ctx K_LOCALE)) ]
@@ -190,7 +193,7 @@
 ;;
 (defn- start-exec "Start the Execvisor!"
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (log/info "About to start Skaro...")
   (let [^Startable exec (.getf ctx K_EXECV) ]
@@ -202,7 +205,7 @@
 ;; Create and synthesize Execvisor.
 (defn- primodial ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [cl (.getf ctx K_EXEC_CZLR)
         cli (.getf ctx K_CLISH)
@@ -211,7 +214,7 @@
     ;;(test-cond "conf file:exec-visor" (= cz "cmzlabclj.tardis.impl.Execvisor"))
     (log/info "Inside primodial() ---------------------------------------------->")
     (log/info "Execvisor = " cz)
-    (let [^cmzlabclj.nucleus.util.core.MubleAPI
+    (let [^cmzlabclj.xlib.util.core.MubleAPI
           execv (MakeExecvisor cli) ]
       (.setf! ctx K_EXECV execv)
       (SynthesizeComponent execv { :ctx ctx } )
@@ -223,7 +226,7 @@
 ;;
 (defn- stop-cli "Stop all apps and processors."
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [^File pid (.getf ctx K_PIDFILE)
         kp (.getf ctx K_KILLPORT)
@@ -250,7 +253,7 @@
 ;;
 (defn- enableRemoteShutdown "Listen on a port for remote kill command"
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (log/info "Enabling remote shutdown...")
   (let [port (ConvLong (System/getProperty "skaro.kill.port") 4444)
@@ -264,7 +267,7 @@
 ;;
 (defn- hookShutdown ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [cli (.getf ctx K_CLISH) ]
     (.addShutdownHook (Runtime/getRuntime)
@@ -278,7 +281,7 @@
 ;;
 (defn- writePID ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (let [fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
     (WriteOneFile fp (ProcessPid))
@@ -291,7 +294,7 @@
 ;;
 (defn- pause-cli ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI ctx]
+  [^cmzlabclj.xlib.util.core.MubleAPI ctx]
 
   (PrintMutableObj ctx)
   (log/info "Applications are now running...")

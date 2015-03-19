@@ -37,6 +37,7 @@ import javax.jms.TopicSubscriber;
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class MockSession implements Session {
 
   private boolean _tx;

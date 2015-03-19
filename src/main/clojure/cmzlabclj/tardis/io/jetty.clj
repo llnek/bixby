@@ -14,17 +14,19 @@
 
   cmzlabclj.tardis.io.jetty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug] ]
+  (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [cmzlabclj.nucleus.util.core :only [MubleAPI notnil? juid TryC spos?
-                                           ToJavaInt Try!
-                                           MakeMMap test-cond Stringify] ]
-        [cmzlabclj.nucleus.crypto.ssl]
-        [cmzlabclj.nucleus.util.str :only [lcase ucase hgl? nsb strim] ]
-        [cmzlabclj.nucleus.crypto.codec :only [Pwdify] ]
-        [cmzlabclj.nucleus.util.seqnum :only [NextLong] ]
-        [cmzlabclj.nucleus.net.routes]
+  (:use [cmzlabclj.xlib.util.str :only [lcase ucase hgl? nsb strim]]
+        [cmzlabclj.xlib.util.core
+         :only
+         [MubleAPI notnil? juid TryC spos?
+          ToJavaInt Try!
+          MakeMMap test-cond Stringify]]
+        [cmzlabclj.xlib.crypto.ssl]
+        [cmzlabclj.xlib.crypto.codec :only [Pwdify]]
+        [cmzlabclj.xlib.util.seqnum :only [NextLong]]
+        [cmzlabclj.xlib.net.routes]
         [cmzlabclj.tardis.core.constants]
         [cmzlabclj.tardis.core.sys]
         [cmzlabclj.tardis.io.core]
@@ -43,28 +45,30 @@
             [javax.servlet.http Cookie HttpServletRequest]
             [java.net HttpCookie]
             [com.google.gson JsonObject]
-            [org.eclipse.jetty.continuation Continuation ContinuationSupport]
+            [org.eclipse.jetty.continuation Continuation 
+             ContinuationSupport]
             [com.zotohlab.frwk.server Component]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.core Versioned Hierarchial
-                                    Identifiable Disposable Startable]
+             Identifiable Disposable Startable]
             [org.apache.commons.codec.binary Base64]
             [org.eclipse.jetty.server Connector HttpConfiguration
-                                      HttpConnectionFactory SecureRequestCustomizer
-                                      Server ServerConnector Handler
-                                      SslConnectionFactory]
+             HttpConnectionFactory SecureRequestCustomizer
+             Server ServerConnector Handler
+             SslConnectionFactory]
             [org.eclipse.jetty.util.ssl SslContextFactory]
             [org.eclipse.jetty.util.thread QueuedThreadPool]
             [org.eclipse.jetty.util.resource Resource]
-            [org.eclipse.jetty.server.handler AbstractHandler ContextHandler
-                                              ContextHandlerCollection
-                                              ResourceHandler]
+            [org.eclipse.jetty.server.handler AbstractHandler 
+             ContextHandler
+             ContextHandlerCollection
+             ResourceHandler]
             [com.zotohlab.gallifrey.io IOSession ServletEmitter Emitter]
             [org.eclipse.jetty.webapp WebAppContext]
             [javax.servlet.http HttpServletRequest HttpServletResponse]
             [com.zotohlab.gallifrey.io WebSockResult
-                                       HTTPResult
-                                       HTTPEvent JettyUtils]
+             HTTPResult
+             HTTPEvent JettyUtils]
             [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -103,7 +107,7 @@
 ;;
 (defn- replyServlet ""
 
-  [^cmzlabclj.nucleus.util.core.MubleAPI res
+  [^cmzlabclj.xlib.util.core.MubleAPI res
    ^HttpServletRequest req
    ^HttpServletResponse rsp
    src]
@@ -260,7 +264,7 @@
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
-  (let [^cmzlabclj.nucleus.net.routes.RouteCracker
+  (let [^cmzlabclj.xlib.net.routes.RouteCracker
         ck (.getAttr co :cracker)
         cfg {:method (ucase (.getMethod req))
              :uri (.getRequestURI req)}
@@ -272,7 +276,7 @@
       (JettyUtils/replyRedirect req rsp r4)
 
       (= r1 true)
-      (let [^cmzlabclj.nucleus.net.routes.RouteInfo ri r2
+      (let [^cmzlabclj.xlib.net.routes.RouteInfo ri r2
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
             wss (MakeWSSession co ssl)

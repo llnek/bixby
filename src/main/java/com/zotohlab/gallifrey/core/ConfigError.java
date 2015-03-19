@@ -16,6 +16,8 @@ package com.zotohlab.gallifrey.core;
  */
 public class ConfigError extends Exception {
 
+  private static final long serialVersionUID = 1L;
+
   public ConfigError(String msg,Throwable e) {
     super(msg,e);
   }
