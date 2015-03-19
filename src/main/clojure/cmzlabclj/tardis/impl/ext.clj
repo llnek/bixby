@@ -278,7 +278,7 @@
 
   (let [ftlCfg (Configuration.)
         impl (MakeMMap) ]
-    (log/info "About to create an app-container...")
+    (log/info "About to create an app-container: " (.id ^Identifiable pod))
     (with-meta
       (reify
 
@@ -649,6 +649,7 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
+  (log/info "Initializing container: " (.id ^Component co))
   (let [^Properties mf (.getAttr co K_MFPROPS)
         ^File appDir (.getAttr co K_APPDIR)
         env (.getAttr co K_ENVCONF)
@@ -677,7 +678,7 @@
     (.setAttr! co K_JCTOR jc)
 
     ;; build the user data-models or create a default one.
-    (log/info "Application data-model schema-class: " dmCZ )
+    (log/info "Application data-model schema-class: " dmCZ)
     (.setAttr! co
                K_MCACHE
                (MakeMetaCache (if (hgl? dmCZ)

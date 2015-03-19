@@ -59,6 +59,7 @@
   []
 
   (let [impl (MakeMMap) ]
+    (log/info "Making a deployer singleton.")
     (with-meta
       (reify
 
@@ -125,7 +126,9 @@
         ctx (.getCtx co)
         ^File py (.getf ctx K_PLAYDIR)
         ^File pd (.getf ctx K_PODSDIR) ]
+    (log/info "Initializing deployer...")
     (when (.isDirectory pd)
+      (log/info "Scanning pods-dir: " pd)
       (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
         (.deploy ^cmzlabclj.tardis.impl.defaults.Deployer co f)))
   ))
@@ -165,6 +168,7 @@
   []
 
   (let [impl (MakeMMap) ]
+    (log/info "Making a kernel singleton.")
     (.setf! impl K_CONTAINERS {} )
     (with-meta
       (reify
@@ -192,6 +196,7 @@
         Startable
 
         (start [this]
+          (log/info "Kernel starting...")
           (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
                 ^ComponentRegistry
@@ -212,12 +217,14 @@
             ;; need this to prevent deadlocks amongst pods
             ;; when there are dependencies
             ;; TODO: need to handle this better
+            (log/info "About to start endorsed pods: " endorsed)
             (doseq [[k v] (seq* apps) ]
               (let [r (-> (NewRandom) (.nextInt 6)) ]
                 (if (maybe-start-pod this cs v)
                   (SafeWait (* 1000 (Math/max (int 1) r))))))) )
 
         (stop [this]
+          (log/info "Kernel stopping...")
           (let [cs (.getf impl K_CONTAINERS) ]
             (doseq [[k v] (seq cs) ]
               (.stop ^Startable v))
@@ -308,6 +315,14 @@
                     (.toURL )))
     (CompCloneContext co ctx)
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/Kernel
+
+  [co]
+
+  (log/info "Initializing kernel..."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

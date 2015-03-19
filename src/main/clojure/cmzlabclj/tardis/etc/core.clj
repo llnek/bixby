@@ -36,7 +36,7 @@
 ;;
 (def ^:private CMDLINE-INFO [
   ["new [mvc|jetty|basic] <app-name> "  "e.g. new mvc foo"]
-  ["podify <app-name>"  "e.g. package app as a pod file"]
+  ["podify <app-name>"  "Package app as a pod file"]
 
   ["ide eclipse <app-name>" "Generate eclipse project files."]
   ["build <app-name> [target]" "Build app."]

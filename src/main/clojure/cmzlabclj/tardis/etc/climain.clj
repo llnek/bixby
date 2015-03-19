@@ -310,7 +310,8 @@
 
   [& args]
 
-  (let [impl (MakeMMap) ]
+  (let [home (first args)
+        impl (MakeMMap) ]
     (reify
 
       Element
@@ -326,7 +327,10 @@
       (parent [_] nil)
 
       Versioned
-      (version [_] "1.0")
+      (version [_]
+        (let [f (File. home "VERSION")
+              v (ReadOneFile f)]
+          (nsb v)))
 
       Identifiable
       (id [_] K_CLISH)
@@ -353,11 +357,14 @@
 
   [& args]
 
-  (when (< (count args) 1)
-    (throw (CmdHelpError. "Skaro Home not defined.")))
+  (if (< (count args) 1)
+    (throw (CmdHelpError. "Skaro Home not defined."))
+    (log/info "Skaro.home= " (first args)))
 
-  (log/info "SET skaro-home= " (first args))
-  (.start ^Startable (apply make-climain args)))
+  (let [m (apply make-climain args)]
+    (log/info "Skaro.ver= " (.version ^Versioned m))
+    (.start ^Startable m)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

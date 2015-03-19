@@ -42,7 +42,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:dynamic *SKARO-WEBCSSLANG* "scss")
@@ -321,7 +320,6 @@
                    ;;(mkcljd appDir appDomain))
     (CopyFileToDir (File. hhhHome "etc/netty/pipe.clj")
                    (mkcljd appDir appDomain))
-
 
     (CopyFileToDir (File. hhhHome "etc/web/main.scss")
                    (File. appDir (str "src/web/site/styles")))

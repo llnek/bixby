@@ -229,6 +229,7 @@
         (blocksDir [this] (MaybeDir (.getCtx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
+        ;;start the kernel
         Startable
         (start [this]
           (let [^cmzlabclj.xlib.util.core.MubleAPI
@@ -239,6 +240,7 @@
             (inspect-pods this)
             (.start k)))
 
+        ;;stop the kernel
         (stop [this]
           (let [^cmzlabclj.xlib.util.core.MubleAPI
                 ctx (.getCtx this)
@@ -258,7 +260,8 @@
 
   [^cmzlabclj.tardis.core.sys.Element co]
 
-  (let [^cmzlabclj.xlib.util.core.MubleAPI
+  (let [^cmzlabclj.tardis.impl.exec.ExecvisorAPI exec co
+        ^cmzlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
@@ -272,7 +275,7 @@
 
     (System/setProperty "file.encoding" "utf-8")
 
-    (let [^File home (.homeDir ^cmzlabclj.tardis.impl.exec.ExecvisorAPI co)
+    (let [^File home (.homeDir exec)
           bks (doto (File. home
                            (str DN_CFG "/" DN_BLOCKS))
                 (.mkdir))
@@ -299,8 +302,6 @@
         (.setf! K_TMPDIR tmp)
         (.setf! K_BKSDIR bks)))
 
-    (start-jmx co jmx)
-
     (let [^ComponentRegistry
           root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
@@ -322,6 +323,8 @@
       (SynthesizeComponent apps options)
       (SynthesizeComponent deployer options)
       (SynthesizeComponent knl options))
+
+      (start-jmx co jmx)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

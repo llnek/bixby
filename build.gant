@@ -906,6 +906,7 @@ def cljhhh_Core() {
 
 def cljhhh_Etc() {
   println "cljhhh_Etc:"
+  //replace (file: "${srcDir}/clojure/cmzlabclj/tardis/etc/climain.clj", token: "@@VERSION@@", value: "${buildVersion}")
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,

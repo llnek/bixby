@@ -97,7 +97,7 @@
   *SKARO-HOME-DIR*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;;not used
 (defn- getBuildFilePath ""
 
   ^String
@@ -113,13 +113,13 @@
 
   [& args]
 
-  (let [hhh (getHomeDir)
+  (let [t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+                      (nth args 2))
+        hhh (getHomeDir)
         hf (ReadEdn (File. hhh
                            (str DN_CONF
                                 "/" (name K_PROPS))))
         wlg (ternary (:lang (:webdev hf)) "js")
-        app (nth args 2)
-        t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*" app)
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
         id (when (notnil? t)
@@ -128,17 +128,18 @@
                (first t))) ]
     (binding [*SKARO-WEBLANG* wlg]
       (when (nil? id) (throw (CmdHelpError.)))
-      (case (nth args 1)
-        ("mvc" "web")
-        (CreateNetty hhh id app)
+      (let [app (nth args 2)]
+        (case (nth args 1)
+          ("mvc" "web")
+          (CreateNetty hhh id app)
 
-        "jetty"
-        (CreateJetty hhh id app)
+          "jetty"
+          (CreateJetty hhh id app)
 
-        "basic"
-        (CreateBasic hhh id app)
+          "basic"
+          (CreateBasic hhh id app)
 
-        (throw (CmdHelpError.))))
+          (throw (CmdHelpError.)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -222,7 +223,8 @@
   [& args]
 
   (if (> (count args) 1)
-    (let [s (nth args 1) h (getHomeDir) ]
+    (let [s (nth args 1)
+          h (getHomeDir) ]
       (if (= "samples" s)
         (CreateSamples h)
         (CreateDemo h s)))
