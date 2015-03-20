@@ -140,22 +140,23 @@
    ^czlabclj.tardis.core.sys.Element co]
 
   (proxy [SimpleInboundFilter] []
-    (channelRead0 [ctx msg]
+    (channelRead0 [c msg]
       ;;(log/debug "mvc netty handler called with message = " (type msg))
       (let [^czlabclj.xlib.net.routes.RouteCracker
             rcc (.getAttr co :cracker)
-            ch (.channel ^ChannelHandlerContext ctx)
+            ^ChannelHandlerContext ctx c
+            ch (.channel ctx)
             info (.info ^DemuxedMsg msg)
-            [r1 ^czlabclj.xlib.net.routes.RouteInfo r2 r3 r4]
-            (.crack rcc info) ]
+            [r1 r2 r3 r4] (.crack rcc info)
+            ^czlabclj.xlib.net.routes.RouteInfo ri r2]
         (cond
           (= r1 true)
-          (let [^HTTPEvent evt (IOESReifyEvent co ch msg r2) ]
-            (log/debug "Matched one route: " (.getPath r2)
-                       " , and static = " (.isStatic? r2))
-            (if (.isStatic? r2)
-              (ServeStatic r2 co r3 ch info evt)
-              (ServeRoute r2 co r3 ch evt)))
+          (let [^HTTPEvent evt (IOESReifyEvent co ch msg ri) ]
+            (log/debug "Matched one route: " (.getPath ri)
+                       " , and static = " (.isStatic? ri))
+            (if (.isStatic? ri)
+              (ServeStatic ri co r3 ch info evt)
+              (ServeRoute ri co r3 ch evt)))
           :else
           (do
             (log/debug "Failed to match uri: " (:uri info))
@@ -217,6 +218,7 @@
     (.addAfter pipe
                "HttpResponseEncoder"
                "ChunkedWriteHandler" (ChunkedWriteHandler.))
+    (log/info "mvcInitorOnHttp: pipeline() = " (NettyFW/dbgPipelineHandlers pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -236,6 +238,7 @@
     ;;(.remove pipe "ChunkedWriteHandler")
     (.remove pipe "MVCDispatcher")
     (.remove pipe "RouteFilter")
+    (log/info "mvcInitorOnWS: pipeline() = " (NettyFW/dbgPipelineHandlers pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

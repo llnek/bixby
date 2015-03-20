@@ -20,9 +20,9 @@
   (:use [czlabclj.xlib.util.core
          :only
          [ThrowIOE MakeMMap notnil? spos?
-          Try! SafeGetJsonObject
+          TryC Try! SafeGetJsonObject
           SafeGetJsonInt SafeGetJsonString]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]]
+        [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]]
         [czlabclj.xlib.netty.request]
         [czlabclj.xlib.netty.form])
 
@@ -107,7 +107,7 @@
   (with-local-vars [rc (transient {})]
     (doseq [^String n (seq (.names hdrs)) ]
       (var-set rc (assoc! @rc
-                          (.toLowerCase n)
+                          (lcase n)
                           (vec (.getAll hdrs n)))))
     (persistent! @rc)
   ))
@@ -245,7 +245,7 @@
   (let [^String keyUrlStr (:serverKey options)
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
-      (try
+      (TryC
         (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
               x (SSLContext/getInstance "TLS")
               ks (KeyStore/getInstance ^String
@@ -264,9 +264,7 @@
                    (.getTrustManagers t)
                    (SecureRandom/getInstance "SHA1PRNG"))
             (SslHandler. (doto (.createSSLEngine x)
-                           (.setUseClientMode false)))))
-        (catch Throwable e#
-          (log/error e# ""))))
+                           (.setUseClientMode false)))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,13 +274,11 @@
   ^ChannelHandler
   [options]
 
-  (try
+  (TryC
     (let [ctx (doto (SSLContext/getInstance "TLS")
                 (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
       (SslHandler. (doto (.createSSLEngine ctx)
                      (.setUseClientMode true))))
-    (catch Throwable e#
-      (log/error e# ""))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -334,7 +330,7 @@
   (let [info (ExtractMsgInfo req)
         ^String mt (:method info)
         ^String uri (:uri info)
-        ch (.channel ctx) ]
+        ch (.channel ctx)]
     (log/debug "First level demux of message\n{}\n\n{}" req info)
     (NettyFW/setAttr ctx NettyFW/MSGFUNC_KEY (reifyMsgFunc))
     (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
@@ -553,8 +549,8 @@
                       (operationComplete [_ cff]
                         (let [gc (.childGroup bs)
                               gp (.group bs) ]
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))
-                          (when-not (nil? gc) (Try! (.shutdownGracefully gc)))))))
+                          (when-not (nil? gc) (Try! (.shutdownGracefully gc)))
+                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

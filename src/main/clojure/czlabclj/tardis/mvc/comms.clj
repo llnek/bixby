@@ -138,30 +138,30 @@
 
   [src info ^HTTPEvent evt ^File file]
 
-  (with-local-vars [^HTTPResult res (.getResultObj evt)
-                    crap false]
-    (try
-      (log/debug "Serving static file: " (NiceFPath file))
-      (if (or (nil? file)
-              (not (.exists file)))
-        (do
-          (.setStatus @res 404)
-          (.replyResult evt))
-        (do
-          (.setContent @res (MakeWebAsset file))
-          (.setStatus @res 200)
-          (AddETag src info file @res)
-          (var-set crap true)
-          (.replyResult evt)))
-      (catch Throwable e#
-        (log/error "Failed to get static resource "
-                   (nsb (:uri2 info))
-                   e#)
-        (when-not @crap
-          (.setContent @res nil)
-          (.setStatus @res 500)
-          (.replyResult evt))
-        ))
+  (log/debug "Serving static file: " (NiceFPath file))
+  (with-local-vars [crap false]
+    (let [^HTTPResult res (.getResultObj evt)]
+      (try
+        (if (or (nil? file)
+                (not (.exists file)))
+          (do
+            (.setStatus res 404)
+            (.replyResult evt))
+          (do
+            (.setContent res (MakeWebAsset file))
+            (.setStatus res 200)
+            (AddETag src info file res)
+            (var-set crap true)
+            (.replyResult evt)))
+        (catch Throwable e#
+          (log/error "Failed to get static resource "
+                     (nsb (:uri2 info))
+                     e#)
+          (when-not @crap
+            (.setContent res nil)
+            (.setStatus res 500)
+            (.replyResult evt))
+          )))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

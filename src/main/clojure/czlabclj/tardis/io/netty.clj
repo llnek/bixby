@@ -108,7 +108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cookiesToNetty ""
+(defn- csToNetty ""
 
   [cookies]
 
@@ -123,10 +123,10 @@
 ;;
 (defn- netty-ws-reply ""
 
-  [^WebSockResult res ^Channel ch
-   ^WebSockEvent evt src]
+  [^Channel ch ^WebSockEvent evt src]
 
-  (let [^XData xs (.getData res)
+  (let [^WebSockResult res (.getResultObj evt)
+        ^XData xs (.getData res)
         bits (.javaBytes xs)
         ^WebSocketFrame
         f (cond
@@ -160,17 +160,20 @@
 ;;
 (defn- netty-reply ""
 
-  [^czlabclj.xlib.util.core.MubleAPI res
-   ^Channel ch ^HTTPEvent evt src]
+  [^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
-  (let [cks (cookiesToNetty (.getf res :cookies))
+  (let [^czlabclj.xlib.util.core.MubleAPI
+        res (.getResultObj evt)
+        cks (csToNetty (.getf res :cookies))
         code (.getf res :code)
         rsp (NettyFW/makeHttpReply code)
         loc (nsb (.getf res :redirect))
         data (.getf res :data)
         hdrs (.getf res :hds) ]
+
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
+
     (with-local-vars [clen 0 raf nil payload nil]
       (doseq [[^String nm vs] (seq hdrs)]
         (when-not (= "content-length" (lcase nm))
@@ -179,46 +182,50 @@
       (doseq [s cks]
         (HttpHeaders/addHeader rsp
                                HttpHeaders$Names/SET_COOKIE s) )
-      (when (and (>= code 300)
-                 (< code 400))
+      (cond
+        (and (>= code 300)
+             (< code 400))
         (when-not (cstr/blank? loc)
-          (HttpHeaders/setHeader rsp "Location" loc)))
-      (when (and (>= code 200)
-                 (< code 300)
-                 (not= "HEAD" (.method evt)))
-        (var-set  payload
-                  (condp instance? data
-                    WebAsset
-                    (let [^WebAsset ws data]
-                      (HttpHeaders/setHeader rsp
-                                             "content-type"
-                                             (.contentType ws))
-                      (var-set raf
-                               (RandomAccessFile. (.getFile ws)
-                                                  "r"))
-                      (replyOneFile @raf evt rsp))
+          (HttpHeaders/setHeader rsp "Location" loc))
 
-                    File
-                    (do
-                      (var-set raf
-                               (RandomAccessFile. ^File data "r"))
-                      (replyOneFile @raf evt rsp))
+        (and (>= code 200)
+             (< code 300)
+             (not= "HEAD" (.method evt)))
+        (do
+          (var-set  payload
+                    (condp instance? data
+                      WebAsset
+                      (let [^WebAsset ws data]
+                        (HttpHeaders/setHeader rsp
+                                               "content-type"
+                                               (.contentType ws))
+                        (var-set raf
+                                 (RandomAccessFile. (.getFile ws)
+                                                    "r"))
+                        (replyOneFile @raf evt rsp))
 
-                    XData
-                    (let [^XData xs data ]
-                      (var-set clen (.size xs))
-                      (ChunkedStream. (.stream xs)))
+                      File
+                      (do
+                        (var-set raf
+                                 (RandomAccessFile. ^File data "r"))
+                        (replyOneFile @raf evt rsp))
 
-                    ;;else
-                    (if-not (nil? data)
-                      (let [xs (XData. data)]
+                      XData
+                      (let [^XData xs data]
                         (var-set clen (.size xs))
                         (ChunkedStream. (.stream xs)))
-                      nil)))
 
-        (if (and (notnil? @payload)
-                 (notnil? @raf))
-          (var-set clen (.length ^RandomAccessFile @raf))))
+                      ;;else
+                      (if (notnil? data)
+                        (let [xs (XData. data)]
+                          (var-set clen (.size xs))
+                          (ChunkedStream. (.stream xs)))
+                        nil)))
+          (if (and (notnil? @payload)
+                   (notnil? @raf))
+            (var-set clen (.length ^RandomAccessFile @raf))))
+
+        :else nil)
 
       (when (.isKeepAlive evt)
         (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
@@ -253,8 +260,8 @@
 
     (resumeWithResult [_ res]
       (if (instance? WebSockEvent evt)
-        (Try! (netty-ws-reply res ch evt src) )
-        (Try! (netty-reply res ch evt src) ) ))
+        (Try! (netty-ws-reply ch evt src) )
+        (Try! (netty-reply ch evt src) ) ))
 
     (resumeWithError [_]
       (let [rsp (NettyFW/makeHttpReply 500) ]

@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,6 +220,10 @@ public enum NettyFW {
     return ch.close();
   }
 
+  public static void dbgPipelineHandlers(ChannelPipeline pipe) {
+    tlog().debug("ChannelPipeline: handlers= {}", StringUtils.join(pipe.names(), ","));
+  }
+  
   public static long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum)
     throws IOException {
     int cnt= (cbuf==null) ? 0 : cbuf.readableBytes();
