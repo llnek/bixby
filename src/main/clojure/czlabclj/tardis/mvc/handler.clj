@@ -291,6 +291,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg]
 
+  (log/info "CompConfigure: NetttyMVC: " (.id ^Identifiable co))
   (.setAttr! co :emcfg (HttpBasicConfig co cfg))
   co)
 
@@ -300,6 +301,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "CompInitialize: NetttyMVC: " (.id ^Identifiable co))
   (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

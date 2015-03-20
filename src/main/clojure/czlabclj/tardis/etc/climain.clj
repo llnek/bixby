@@ -315,8 +315,8 @@
 
   [& args]
 
-  (let [home (first args)
-        impl (MakeMMap) ]
+  (let [home (File. ^String (first args))
+        impl (MakeMMap)]
     (reify
 
       Element

@@ -18,7 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core
-         :only 
+         :only
          [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath]]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http :only [HttpBasicConfig]]
@@ -51,17 +51,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype StaticAssetHandler [] PipelineDelegate
+(deftype AssetHandler [] PipelineDelegate
 
-  (getStartActivity [_  pipe]
+  (getStartActivity [_ pipe]
     (DefWFTask
       (fn [cur ^Job job arg]
-        (let [^HTTPEvent evt (.event job)
-              res (.getResultObj evt) ] 
+        (let [^HTTPEvent evt (.event job)]
           (HandleStatic (.emitter evt)
                         evt
-                        res
-                        (.getv job EV_OPTS)) 
+                        (.getv job EV_OPTS))
           nil))))
 
   (onStop [_ pipe]

@@ -64,15 +64,21 @@
 
   [^String eTag lastTm info]
 
-  (with-local-vars [modd true ]
+  (with-local-vars [unmod "if-unmodified-since"
+                    none "if-none-match"
+                    modd true ]
     (cond
-      (HasHeader? info "if-none-match")
-      (var-set modd (not= eTag (GetHeader info "if-none-match")))
+      (HasHeader? info @unmod)
+      (when-let [s (GetHeader info @unmod)]
+        (Try!
+          (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
+                    lastTm)
+            (var-set modd false))))
 
-      (HasHeader? info "if-unmodified-since")
-      (when-let [s (GetHeader info "if-unmodified-since") ]
-        (Try! (when (>= (.getTime (.parse (MVCUtils/getSDF) s)) lastTm)
-                (var-set modd false))))
+      (HasHeader? info @none)
+      (var-set modd (not= eTag
+                          (GetHeader info @none)))
+
       :else nil)
     @modd
   ))
@@ -81,19 +87,20 @@
 ;;
 (defn AddETag ""
 
-  [^czlabclj.tardis.core.sys.Element src
-   info
+  [^czlabclj.tardis.core.sys.Element
+   src info
    ^File file
-   ^HTTPResult res ]
+   ^HTTPResult res]
 
-  (let [cfg (.getAttr src :emcfg)
-        maxAge (:cacheMaxAgeSecs cfg)
-        lastTm (.lastModified file)
-        eTag  (str "\""  lastTm  "-" (.hashCode file)  "\"") ]
+  (let [lastTm (.lastModified file)
+        cfg (.getAttr src :emcfg)
+        maxAge (:maxAgeSecs cfg)
+        eTag  (str "\""  lastTm  "-"
+                   (.hashCode file)  "\"")]
     (if (isModified eTag lastTm info)
       (.setHeader res "last-modified"
                   (.format (MVCUtils/getSDF) (Date. lastTm)))
-      (if (= (:method info) "GET")
+      (when (= (:method info) "GET")
         (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
     (.setHeader res "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
@@ -118,7 +125,7 @@
                  (and (> p1 0) (> p2 0)) (Math/min p1 p2)
                  (> p1 0) p1
                  (> p2 0) p2
-                 :else -1) ]
+                 :else -1)]
         (if (> p3 0)
           (.substring path 0 p3)
           path))
@@ -129,20 +136,21 @@
 ;;
 (defn- handleStatic2 ""
 
-  [src info ^HTTPEvent evt ^HTTPResult res ^File file]
+  [src info ^HTTPEvent evt ^File file]
 
-  (with-local-vars [crap false ]
+  (with-local-vars [^HTTPResult res (.getResultObj evt)
+                    crap false]
     (try
       (log/debug "Serving static file: " (NiceFPath file))
       (if (or (nil? file)
               (not (.exists file)))
         (do
-          (.setStatus res 404)
+          (.setStatus @res 404)
           (.replyResult evt))
         (do
-          (.setContent res (MakeWebAsset file))
-          (.setStatus res 200)
-          (AddETag src info file res)
+          (.setContent @res (MakeWebAsset file))
+          (.setStatus @res 200)
+          (AddETag src info file @res)
           (var-set crap true)
           (.replyResult evt)))
       (catch Throwable e#
@@ -150,7 +158,8 @@
                    (nsb (:uri2 info))
                    e#)
         (when-not @crap
-          (.setStatus res 500)
+          (.setContent @res nil)
+          (.setStatus @res 500)
           (.replyResult evt))
         ))
   ))
@@ -159,10 +168,11 @@
 ;;
 (defn HandleStatic ""
 
-  [^Emitter src ^HTTPEvent evt ^HTTPResult res options ]
+  [^Emitter src ^HTTPEvent evt options]
 
   (let [^File appDir (-> src (.container)(.getAppDir))
         ps (NiceFPath (File. appDir DN_PUBLIC))
+        ^HTTPResult res (.getResultObj evt)
         cfg (.getAttr ^czlabclj.tardis.core.sys.Element
                       src
                       :emcfg)
@@ -172,7 +182,7 @@
     (log/debug "Request to serve static file: " fpath)
     (if (or (.startsWith fpath ps)
             (false? ckAccess))
-      (handleStatic2 src info evt res
+      (handleStatic2 src info evt
                      (File. (maybeStripUrlCrap fpath)))
       (do
         (log/warn "Attempt to access non public file-system: " fpath)
@@ -199,7 +209,8 @@
    ^Channel ch
    code ]
 
-  (with-local-vars [rsp (NettyFW/makeHttpReply code) bits nil wf nil]
+  (with-local-vars [rsp (NettyFW/makeHttpReply code)
+                    bits nil wf nil]
     (try
       (let [cfg (.getAttr src :emcfg)
             h (:errorHandler cfg)
@@ -210,7 +221,9 @@
                  (reply-error src code)
                  (.getErrorResponse cb code)) ]
         (when-not (nil? rc)
-          (HttpHeaders/setHeader ^HttpMessage @rsp "content-type" (.contentType rc))
+          (HttpHeaders/setHeader ^HttpMessage
+                                 @rsp
+                                 "content-type" (.contentType rc))
           (var-set bits (.body rc)))
         (HttpHeaders/setContentLength @rsp
                                       (if (nil? @bits)
@@ -239,23 +252,27 @@
     (catch AuthError e#
       (ServeError src ch 403)))
   (let [^File appDir (-> src (.container)(.getAppDir))
-        mpt (nsb (.getf ri :mountPoint))
         ps (NiceFPath (File. appDir DN_PUBLIC))
-        gc (.groupCount mc) ]
-    (with-local-vars [mp (.replace mpt "${app.dir}" (NiceFPath appDir)) ]
-      (if (> gc 1)
-        (doseq [i (range 1 gc) ]
-          (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
+        mpt (nsb (.getf ri :mountPoint))
+        gc (.groupCount mc)]
+    (with-local-vars [mp (.replace mpt "${app.dir}" (NiceFPath appDir))]
+      (when (> gc 1)
+        (doseq [i (range 1 gc)]
+          (var-set mp (StringUtils/replace ^String @mp
+                                           "{}"
+                                           (.group mc (int i)) 1))))
       (var-set mp (NiceFPath (File. ^String @mp)))
-      (let [^czlabclj.tardis.io.core.EmitAPI co src
-            cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
+      (let [cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
+            ^czlabclj.tardis.io.core.EmitAPI co src
             ^czlabclj.tardis.io.core.WaitEventHolder
-            w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+            w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
         (.timeoutMillis w (:waitMillis cfg))
         (.hold co w)
-        (.dispatch co evt {:router "czlabclj.tardis.mvc.statics.StaticAssetHandler"
-                           :info info
-                           :path @mp } )))
+        (.dispatch co
+                   evt
+                   {:router "czlabclj.tardis.mvc.statics.AssetHandler"
+                    :info info
+                    :path @mp})))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -266,24 +283,26 @@
    ^czlabclj.tardis.core.sys.Element src
    ^Matcher mc
    ^Channel ch
-   ^HTTPEvent evt ]
+   ^HTTPEvent evt]
     ;;^czlabclj.xlib.util.core.MubleAPI evt]
 
   (try
     (-> evt (.getSession)(.handleEvent evt))
     (catch AuthError e#
       (ServeError src ch 403)))
-  (let [pms (.collect ri mc)
+  (let [^czlabclj.tardis.io.core.EmitAPI co src
         cfg (.getAttr src :emcfg)
+        pms (.collect ri mc)
         options {:router (.getHandler ri)
                  :params (merge {} pms)
-                 :template (.getTemplate ri) } ]
-    (let [^czlabclj.tardis.io.core.EmitAPI co src
-          ^czlabclj.tardis.io.core.WaitEventHolder
-          w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
-      (.timeoutMillis w (:waitMillis cfg))
-      (.hold co w)
-      (.dispatch co evt options))
+                 :template (.getTemplate ri)}
+        ^czlabclj.tardis.io.core.WaitEventHolder
+        w
+        (MakeAsyncWaitHolder
+          (MakeNettyTrigger ch evt co) evt)]
+    (.timeoutMillis w (:waitMillis cfg))
+    (.hold co w)
+    (.dispatch co evt options)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
