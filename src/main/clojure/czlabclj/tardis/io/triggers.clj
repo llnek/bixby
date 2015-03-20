@@ -55,7 +55,7 @@
 
       (resumeOnResult [this res]
         (let [^Timer tm (.getf impl :timer)
-              ^czlabclj.tardis.io.core.EmitterAPI
+              ^czlabclj.tardis.io.core.EmitAPI
               src (.emitter event) ]
           (when-not (nil? tm) (.cancel tm))
           (.release src this)
@@ -72,7 +72,7 @@
         (timeoutMillis this (* 1000 secs)))
 
       (onExpiry [this]
-        (let [^czlabclj.tardis.io.core.EmitterAPI
+        (let [^czlabclj.tardis.io.core.EmitAPI
               src (.emitter event) ]
           (.release src this)
           (.setf! impl :timer nil)

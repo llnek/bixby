@@ -128,18 +128,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePOP3Client ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/POP3))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod IOESReifyEvent :czc.tardis.io/POP3
 
   [co & args]
 
+  (log/info "IOESReifyEvent: POP3: " (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +167,7 @@
 ;;
 (defn- read-pop3 ""
 
-  [^czlabclj.tardis.io.core.EmitterAPI co msgs]
+  [^czlabclj.tardis.io.core.EmitAPI co msgs]
 
   (let [^czlabclj.tardis.core.sys.Element src co]
     (doseq [^MimeMessage mm (seq msgs) ]
@@ -251,6 +244,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: POP3: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.pop3" "")
         cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (std-config co cfg) ]
@@ -274,18 +268,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeIMAPClient ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/IMAP))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod IOESReifyEvent :czc.tardis.io/IMAP
 
   [co & args]
 
+  (log/info "IOESReifyEvent: IMAP: " (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,6 +320,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: IMAP: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.imap" "")
         cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (std-config co cfg) ]

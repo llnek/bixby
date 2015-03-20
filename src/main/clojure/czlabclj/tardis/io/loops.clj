@@ -134,11 +134,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Repeating Timer
-(defn MakeRepeatingTimer ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/RepeatingTimer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -146,6 +141,7 @@
 
   [co & args]
 
+  (log/info "IOESReifyEvent: RepeatingTimer: " (.id ^Identifiable co))
   (let [eeid (NextLong) ]
     (with-meta
       (reify
@@ -170,6 +166,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: RepeatingTimer: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg)]
     (.setAttr! co :emcfg c2)
@@ -181,6 +178,7 @@
 
   [co]
 
+  (log/info "IOESStart: RepeatingTimer: " (.id ^Identifiable co))
   (start-timer co)
   (IOESStarted co))
 
@@ -190,6 +188,7 @@
 
   [co]
 
+  (log/info "IOESStop RepeatingTimer: " (.id ^Identifiable co))
   (kill-timer co)
   (IOESStopped co))
 
@@ -197,7 +196,7 @@
 ;;
 (defmethod LoopableWakeup :czc.tardis.io/RepeatingTimer
 
-  [^czlabclj.tardis.io.core.EmitterAPI co & args]
+  [^czlabclj.tardis.io.core.EmitAPI co & args]
 
   (.dispatch co (IOESReifyEvent co) {} ))
 
@@ -211,11 +210,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Once Timer
-(defn MakeOnceTimer ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/OnceTimer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -223,6 +217,7 @@
 
   [co & args]
 
+  (log/info "IOESReifyEvent: OnceTimer: " (.id ^Identifiable co))
   (let [eeid (NextLong) ]
     (with-meta
       (reify
@@ -247,6 +242,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: OnceTimer: " (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg) ]
@@ -259,6 +255,7 @@
 
   [co]
 
+  (log/info "IOESStart OnceTimer: " (.id ^Identifiable co))
   (start-timer co)
   (IOESStarted co))
 
@@ -268,6 +265,7 @@
 
   [co]
 
+  (log/info "IOESStop OnceTimer: " (.id ^Identifiable co))
   (kill-timer co)
   (IOESStopped co))
 
@@ -275,7 +273,7 @@
 ;;
 (defmethod LoopableWakeup :czc.tardis.io/OnceTimer
 
-  [^czlabclj.tardis.io.core.EmitterAPI co & args]
+  [^czlabclj.tardis.io.core.EmitAPI co & args]
 
   (.dispatch co (IOESReifyEvent co) {} )
   (.stop ^Startable co))
@@ -315,6 +313,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStart: ThreadedTimer: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         intv (:intervalMillis cfg)
         ds (:delayMillis cfg)
@@ -336,6 +335,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStop ThreadedTimer: " (.id ^Identifiable co))
   (let [loopy (.getAttr co :loopy) ]
     (reset! loopy false)
     (IOESStopped co)

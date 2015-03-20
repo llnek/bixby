@@ -48,20 +48,6 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def FP_CREATED :FP-CREATED )
-(def FP_CHANGED :FP-CHANGED )
-(def FP_DELETED :FP-DELETED )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; FilePicker
-(defn MakeFilePicker
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/FilePicker))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Order of args must match.
 (defmethod IOESReifyEvent :czc.tardis.io/FilePicker
 
@@ -93,27 +79,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postPoll ""
+(defn- postPoll "Only look for new files."
 
   [^czlabclj.tardis.core.sys.Element
    co
    ^File f action]
 
-  (let [^czlabclj.tardis.io.core.EmitterAPI src co
+  (let [^czlabclj.tardis.io.core.EmitAPI src co
         cfg (.getAttr co :emcfg)
         ^File des (:recvFolder cfg)
-        ;; original file name
-        fname (.getName f)
-        cf (cond
-             (= action :FP-CREATED)
+        origFname (.getName f)
+        cf (case action
+             :FP-CREATED
              (if (notnil? des)
                (TryC
                  (FileUtils/moveFileToDirectory f des false)
-                 (File. des fname) )
+                 (File. des origFname))
                f)
-             :else nil) ]
+             nil)]
     (when-not (nil? cf)
-      (.dispatch src (IOESReifyEvent co fname cf action) {} ))
+      (.dispatch src (IOESReifyEvent co origFname cf action) {}))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,6 +107,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "ComConfigure: FilePicker: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         root (SubsVar (nsb (:targetFolder cfg)))
         dest (SubsVar (nsb (:recvFolder cfg)))
@@ -157,6 +143,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "ComInitialize FilePicker: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         obs (FileAlterationObserver. ^File (:targetFolder cfg)
                                      ^FileFilter (:fmask cfg))

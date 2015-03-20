@@ -195,7 +195,12 @@
 
   [^czlabclj.xlib.util.core.MubleAPI ctx]
 
+  (log/info "*********************************************************")
+  (log/info "*")
   (log/info "About to start Skaro...")
+  (log/info "*")
+  (log/info "*********************************************************")
+
   (let [^Startable exec (.getf ctx K_EXECV) ]
     (.start exec))
   (log/info "Skaro started.")

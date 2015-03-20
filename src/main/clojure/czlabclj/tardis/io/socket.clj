@@ -35,18 +35,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSocketIO ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/SocketIO))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod IOESReifyEvent :czc.tardis.io/SocketIO
 
   [co & args]
 
+  (log/info "IOESReifyEvent: SocketIO: " (.id ^Identifiable co))
   (let [^Socket soc (first args)
         eeid (NextLong) ]
     (with-meta
@@ -74,6 +67,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: SocketIO: " (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         tout (:timeoutMillis cfg)
@@ -95,6 +89,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "CompInitialize: SocketIO: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         backlog (:backlog cfg)
         host (:host cfg)
@@ -112,7 +107,7 @@
 ;;
 (defn- sockItDown ""
 
-  [^czlabclj.tardis.io.core.EmitterAPI co ^Socket soc]
+  [^czlabclj.tardis.io.core.EmitAPI co ^Socket soc]
 
   (.dispatch co (IOESReifyEvent co soc) {} ))
 
@@ -122,6 +117,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStart: SocketIO: " (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getAttr co :ssocket)
         cl (GetCldr) ]
     (when-not (nil? ssoc)
@@ -142,6 +138,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStop: SocketIO: " (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getAttr co :ssocket) ]
     (IOUtils/closeQuietly ssoc)
     (.setAttr! co :ssocket nil)

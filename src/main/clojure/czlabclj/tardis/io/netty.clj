@@ -285,7 +285,7 @@
 ;;
 (defn- makeWEBSockEvent ""
 
-  [^czlabclj.tardis.io.core.EmitterAPI co
+  [^czlabclj.tardis.io.core.EmitAPI co
    ^Channel ch
    ssl
    ^WebSocketFrame msg]
@@ -357,7 +357,7 @@
 (defn- makeHttpEvent2 ""
 
   ^HTTPEvent
-  [^czlabclj.tardis.io.core.EmitterAPI co
+  [^czlabclj.tardis.io.core.EmitAPI co
    ^Channel ch
    sslFlag
    ^XData xdata
@@ -469,7 +469,7 @@
 (defn- makeHttpEvent ""
 
   ^HTTPEvent
-  [^czlabclj.tardis.io.core.EmitterAPI co
+  [^czlabclj.tardis.io.core.EmitAPI co
    ^Channel ch
    sslFlag
    ^XData xdata
@@ -483,8 +483,9 @@
 ;;
 (defmethod IOESReifyEvent :czc.tardis.io/NettyIO
 
-  [^czlabclj.tardis.io.core.EmitterAPI co & args]
+  [^czlabclj.tardis.io.core.EmitAPI co & args]
 
+  (log/info "IOESReifyEvent: NettyIO: " (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
         ssl (notnil? (.get (.pipeline ch)
                            "ssl"))
@@ -510,6 +511,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: NettyIO: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
     (.setAttr! co :emcfg c2)
@@ -520,7 +522,7 @@
 (defn- msgDispatcher ""
 
   ^ChannelHandler
-  [^czlabclj.tardis.io.core.EmitterAPI co
+  [^czlabclj.tardis.io.core.EmitAPI co
    ^czlabclj.tardis.core.sys.Element src
    options]
 
@@ -568,6 +570,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStart: NettyIO: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         host (nsb (:host cfg))
         port (:port cfg)
@@ -584,6 +587,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStop NettyIO: " (.id ^Identifiable co))
   (let [nes (.getAttr co :netty)
         ^ServerBootstrap bs (:bootstrap nes)
         ^Channel ch (:channel nes) ]
@@ -597,6 +601,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "CompInitialize: NettyIO: " (.id ^Identifiable co))
   (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

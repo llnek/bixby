@@ -71,7 +71,7 @@
   [^HTTPEvent evt]
 
   (if (.hasHeader evt AUTH)
-    (let [s (StringUtils/split (nsb (.getHeaderValue evt AUTH))) ]
+    (let [s (StringUtils/split (nsb (.getHeaderValue evt AUTH)))]
       (cond
         (and (== 2 (count s))
              (= "Basic" (first s))
@@ -152,6 +152,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: HTTP: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
     (.setAttr! co :emcfg c2)

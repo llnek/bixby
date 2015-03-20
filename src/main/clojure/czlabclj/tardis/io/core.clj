@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol EmitterAPI
+(defprotocol EmitAPI
 
   ""
 
@@ -208,7 +208,7 @@
                 v (.getf impl kw) ]
             (ternary v (get cfg kw))))
 
-        EmitterAPI
+        EmitAPI
 
         (enabled? [_] (if (false? (.getf impl :enabled)) false true ))
         (active? [_] (if (false? (.getf impl :active)) false true))

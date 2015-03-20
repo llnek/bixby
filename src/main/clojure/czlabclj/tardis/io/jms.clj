@@ -44,18 +44,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJMSClient ""
-
-  [container]
-
-  (MakeEmitter container :czc.tardis.io/JMS))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod IOESReifyEvent :czc.tardis.io/JMS
 
   [co & args]
 
+  (log/info "IOESReifyEvent: JMS: " (.id ^Identifiable co))
   (let [eeid (NextLong)
         impl (MakeMMap)
         msg (first args) ]
@@ -83,7 +76,7 @@
 ;;
 (defn- onMsg ""
 
-  [^czlabclj.tardis.io.core.EmitterAPI co msg]
+  [^czlabclj.tardis.io.core.EmitAPI co msg]
 
       ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (IOESReifyEvent co msg) {} ))
@@ -94,6 +87,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: JMS: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
         pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
@@ -195,6 +189,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStart: JMS: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         ^String cf (:contextFactory cfg)
         ^String ju (:jndiUser cfg)
@@ -233,9 +228,9 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
-  (let [^Connection c (.getAttr co :conn) ]
-    (when-not (nil? c)
-      (TryC (.close c)))
+  (log/info "IOESStop: JMS: " (.id ^Identifiable co))
+  (when-let [^Connection c (.getAttr co :conn) ]
+    (TryC (.close c))
     (.setAttr! co :conn nil)
     (IOESStopped co)
   ))

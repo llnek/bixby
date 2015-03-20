@@ -247,7 +247,7 @@
         (doseq [i (range 1 gc) ]
           (var-set mp (StringUtils/replace ^String @mp "{}" (.group mc (int i)) 1))) )
       (var-set mp (NiceFPath (File. ^String @mp)))
-      (let [^czlabclj.tardis.io.core.EmitterAPI co src
+      (let [^czlabclj.tardis.io.core.EmitAPI co src
             cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
             ^czlabclj.tardis.io.core.WaitEventHolder
             w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
@@ -278,7 +278,7 @@
         options {:router (.getHandler ri)
                  :params (merge {} pms)
                  :template (.getTemplate ri) } ]
-    (let [^czlabclj.tardis.io.core.EmitterAPI co src
+    (let [^czlabclj.tardis.io.core.EmitAPI co src
           ^czlabclj.tardis.io.core.WaitEventHolder
           w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
       (.timeoutMillis w (:waitMillis cfg))

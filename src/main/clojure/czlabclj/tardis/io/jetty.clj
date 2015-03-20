@@ -184,6 +184,7 @@
 
   [^czlabclj.tardis.core.sys.Element co cfg0]
 
+  (log/info "CompConfigure: JettyIO: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)]
     (.setAttr! co :emcfg
                (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
@@ -290,7 +291,7 @@
               w (MakeAsyncWaitHolder (makeServletTrigger req
                                                          rsp co)
                                      evt)
-              ^czlabclj.tardis.io.core.EmitterAPI src co]
+              ^czlabclj.tardis.io.core.EmitAPI src co]
           (.timeoutMillis w wm)
           (.hold src w)
           (.dispatch src evt {:router (.getHandler ri)
@@ -309,7 +310,7 @@
 
   [co ^HttpServletRequest req ^HttpServletResponse rsp]
 
-  (let [c (ContinuationSupport/getContinuation req) ]
+  (when-let [c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (TryC
         (.suspend c rsp)
@@ -322,6 +323,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStart: JettyIO: " (.id ^Identifiable co))
   (let [^czlabclj.tardis.core.sys.Element
         ctr (.parent ^Hierarchial co)
         ^Server jetty (.getAttr co :jetty)
@@ -360,6 +362,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
+  (log/info "IOESStop: JettyIO: " (.id ^Identifiable co))
   (let [^Server svr (.getAttr co :jetty) ]
     (when-not (nil? svr)
       (TryC
@@ -403,6 +406,7 @@
 
   [co & args]
 
+  (log/debug "OPESReifyEvent: JettyIO: " (.id ^Identifiable co))
   (let [^HTTPResult result (MakeHttpResult co)
         ^HttpServletRequest req (first args)
         ssl (= "https" (.getScheme req))
@@ -489,7 +493,7 @@
       (getResultObj [_] result)
       (replyResult [this]
         (let [^czlabclj.tardis.io.core.WaitEventHolder
-              wevt (.release ^czlabclj.tardis.io.core.EmitterAPI co this)
+              wevt (.release ^czlabclj.tardis.io.core.EmitAPI co this)
               ^IOSession mvs (.getSession this)
               code (.getStatus result) ]
           (cond

@@ -136,7 +136,7 @@
 (defn- mvcDispatcher ""
 
   ^ChannelHandler
-  [^czlabclj.tardis.io.core.EmitterAPI em
+  [^czlabclj.tardis.io.core.EmitAPI em
    ^czlabclj.tardis.core.sys.Element co]
 
   (proxy [SimpleInboundFilter] []
@@ -189,7 +189,7 @@
 (defn- wsockDispatcher ""
 
   ^ChannelHandler
-  [^czlabclj.tardis.io.core.EmitterAPI em
+  [^czlabclj.tardis.io.core.EmitAPI em
    ^czlabclj.tardis.core.sys.Element co
    options]
 

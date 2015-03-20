@@ -8,7 +8,7 @@ ivyRoot=/wdrive/.ivy
 ivyLCacheDir=${ivyRoot}/cache
 ivyLRepoDir=${ivyRoot}/repos
 
-buildVersion=0.0.1-SNAPSHOT
+buildVersion=0.9.0-SNAPSHOT
 buildDebug=true
 
 distribDir=${gantBuildDir}/distrib
