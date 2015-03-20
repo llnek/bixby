@@ -33,7 +33,7 @@
 (def ^String POD_INF  "POD-INF" )
 (def ^String WEB_INF  "WEB-INF" )
 
-(def ^String DN_BLOCKS  "blocks" )
+(def ^String DN_BLOCKS  "ems" )
 (def ^String DN_BOOT "boot" )
 (def ^String DN_EXEC "exec" )
 (def ^String DN_CONF "conf" )

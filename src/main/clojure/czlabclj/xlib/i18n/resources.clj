@@ -70,12 +70,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetString "Return the string value for this key,
+(defn RStr "Return the string value for this key,
                 pms may contain values for positional substitutions."
 
   (^String [^ResourceBundle bundle
             ^String pkey]
-           (GetString bundle pkey []))
+           (RStr bundle pkey []))
 
   (^String [^ResourceBundle bundle
             ^String pkey

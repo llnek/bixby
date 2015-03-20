@@ -124,7 +124,7 @@
   [^File hhhHome demoId]
 
   (let [fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
-        dest (File. hhhHome (str "apps/demo-" demoId)) ]
+        dest (File. hhhHome (str "apps/" demoId)) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
       (Mkdirs dest)

@@ -36,15 +36,17 @@
 (deftype PwdMatcher [] CredentialsMatcher
 
   (doCredentialsMatch [_ token info]
-    (let [pwd (.getCredentials ^AuthenticationToken token)
-          uid (.getPrincipal ^AuthenticationToken token)
-          pc (.getCredentials ^AuthenticationInfo info)
+    (let [^AuthenticationToken tkn token
+          ^AuthenticationInfo inf info
+          pwd (.getCredentials tkn)
+          uid (.getPrincipal tkn)
+          pc (.getCredentials inf)
           tstPwd (Pwdify (if (instance? String pwd)
                            pwd
                            (String. ^chars pwd))
                          "")
-          acc (-> (.getPrincipals ^AuthenticationInfo info)
-                  (.getPrimaryPrincipal)) ]
+          acc (-> (.getPrincipals inf)
+                  (.getPrimaryPrincipal))]
       (and (= (:acctid acc) uid)
            (.validateHash tstPwd pc)))
   ))

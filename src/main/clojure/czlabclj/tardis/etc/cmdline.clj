@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
         [czlabclj.xlib.crypto.codec :only [CreateStrongPwd Pwdify]]
         [czlabclj.xlib.util.guids :only [NewUUid NewWWid]]
-        [czlabclj.xlib.i18n.resources :only [GetString]]
+        [czlabclj.xlib.i18n.resources :only [RStr]]
         [czlabclj.tardis.etc.climain :only [StartMain]]
         [czlabclj.xlib.util.dates :only [AddMonths MakeCal]]
         [czlabclj.xlib.util.str :only [ucase nsb hgl? strim]]
@@ -280,42 +280,42 @@
   [^ResourceBundle rcb]
 
   { "fname"
-    (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
+    (MakeCmdSeqQ "fname" (RStr rcb "cmd.save.file")
                  "" "csr-req" true
                  #(do (.put ^Map %2 "fn" %1) ""))
 
     "size"
-    (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
+    (MakeCmdSeqQ "size" (RStr rcb "cmd.key.size")
                  "" "1024" true
                  #(do (.put ^Map %2 "size" %1) "fname"))
 
     "c"
-    (MakeCmdSeqQ "c" (GetString rcb "cmd.dn.c")
+    (MakeCmdSeqQ "c" (RStr rcb "cmd.dn.c")
                  "" "US" true
                  #(do (.put ^Map %2 "c" %1) "size"))
 
     "st"
-    (MakeCmdSeqQ "st" (GetString rcb "cmd.dn.st")
+    (MakeCmdSeqQ "st" (RStr rcb "cmd.dn.st")
                  "" "" true
                  #(do (.put ^Map %2 "st" %1) "c"))
 
     "loc"
-    (MakeCmdSeqQ "loc" (GetString rcb "cmd.dn.loc")
+    (MakeCmdSeqQ "loc" (RStr rcb "cmd.dn.loc")
                  "" "" true
                  #(do (.put ^Map %2 "l" %1) "st"))
 
     "o"
-    (MakeCmdSeqQ "o" (GetString rcb "cmd.dn.org")
+    (MakeCmdSeqQ "o" (RStr rcb "cmd.dn.org")
                  "" "" true
                  #(do (.put ^Map %2 "o" %1) "loc"))
 
     "ou"
-    (MakeCmdSeqQ "ou" (GetString rcb "cmd.dn.ou")
+    (MakeCmdSeqQ "ou" (RStr rcb "cmd.dn.ou")
                  "" "" true
                  #(do (.put ^Map %2 "ou" %1) "o"))
 
     "cn"
-    (MakeCmdSeqQ "cn" (GetString rcb "cmd.dn.cn")
+    (MakeCmdSeqQ "cn" (RStr rcb "cmd.dn.cn")
                  "" "" true
                  #(do (.put ^Map %2 "cn" %1) "ou"))
   })
@@ -328,22 +328,22 @@
 
   {
     "fname"
-    (MakeCmdSeqQ "fname" (GetString rcb "cmd.save.file")
+    (MakeCmdSeqQ "fname" (RStr rcb "cmd.save.file")
                  "" "test.p12" true
                  #(do (.put ^Map %2 "fn" %1) ""))
 
     "pwd"
-    (MakeCmdSeqQ "pwd" (GetString rcb "cmd.key.pwd")
+    (MakeCmdSeqQ "pwd" (RStr rcb "cmd.key.pwd")
                  "" "" true
                  #(do (.put ^Map %2 "pwd" %1) "fname"))
 
     "duration"
-    (MakeCmdSeqQ "duration" (GetString rcb "cmd.key.duration")
+    (MakeCmdSeqQ "duration" (RStr rcb "cmd.key.duration")
                  "" "12" true
                  #(do (.put ^Map %2 "months" %1) "pwd"))
 
     "size"
-    (MakeCmdSeqQ "size" (GetString rcb "cmd.key.size")
+    (MakeCmdSeqQ "size" (RStr rcb "cmd.key.size")
                  "" "1024" true
                  #(do (.put ^Map %2 "size" %1) "duration"))
 

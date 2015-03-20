@@ -162,7 +162,7 @@ target (distroInit: '') {
   mkdir (dir: "${packDir}/dist/boot")
   mkdir (dir: "${packDir}/dist/exec")
   mkdir (dir: "${packDir}/bin")
-  mkdir (dir: "${packDir}/etc/blocks")
+  mkdir (dir: "${packDir}/etc/ems")
   //mkdir (dir: "${packDir}/etc")
   //mkdir (dir: "${packDir}/patch")
   mkdir (dir: "${packDir}/lib")
@@ -201,7 +201,7 @@ target (packAndDistro : '') {
        ================================= */
 
 target (packRes: '') {
-  copy (todir: "${packDir}/etc/blocks", flatten: true) {
+  copy (todir: "${packDir}/etc/ems", flatten: true) {
     fileset (dir: "${srcDir}/clojure") {
       include (name: '**/*.meta')
     }

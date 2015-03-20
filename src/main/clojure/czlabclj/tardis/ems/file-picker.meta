@@ -2,7 +2,7 @@
   :info {
 
     :blockType "czc.tardis.io/FilePicker"
-    :version "0.0.1"
+    :version "1.0"
     :name "FILEPicker"
   }
 

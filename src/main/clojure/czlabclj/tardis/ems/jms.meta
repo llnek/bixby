@@ -3,14 +3,14 @@
   :info {
 
     :blockType "czc.tardis.io/JMS"
-    :version "0.0.1"
+    :version "1.0"
     :name "JMS"
 
   }
 
   :conf {
 
-    :contextFactory "com.zotohlab.blason.mock.jms.MockContextFactory"
+    :contextFactory "com.zotohlab.mock.jms.MockContextFactory"
     :providerUrl "java://aaa"
     :connFactory "tcf"
     :destination "topic.abc"

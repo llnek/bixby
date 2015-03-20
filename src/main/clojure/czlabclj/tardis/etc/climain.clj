@@ -44,6 +44,7 @@
             [com.zotohlab.frwk.core Versioned Identifiable
              Hierarchial Startable]
             [com.zotohlab.frwk.util IWin32Conf]
+            [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.gallifrey.core ConfigError]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
@@ -165,6 +166,7 @@
                         (.getf ctx K_LOCALE)) ]
     (test-nonil "etc/resouces" rc)
     (.setf! ctx K_RCBUNDLE rc)
+    (I18N/setBase rc)
     (log/info "Resource bundle found and loaded.")
     ctx
   ))

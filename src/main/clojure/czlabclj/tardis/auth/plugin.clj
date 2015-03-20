@@ -20,9 +20,10 @@
             [clojure.data.json :as json])
 
   (:use [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
+        [czlabclj.xlib.i18n.resources :only [RStr]]
         [czlabclj.xlib.util.core
          :only
-         [notnil? Stringify
+         [TryC notnil? Stringify
           MakeMMap juid ternary
           test-nonil LoadJavaProps]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
@@ -43,6 +44,7 @@
             [org.apache.commons.codec.binary Base64]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.frwk.util CrappyDataError]
+            [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [com.zotohlab.frwk.dbio DBAPI MetaCache
              SQLr
@@ -84,11 +86,10 @@
 
   [^JDBCPool pool]
 
-  (let [tbl (:table LoginAccount) ]
+  (let [tbl (:table LoginAccount)]
     (when-not (TableExist? pool tbl)
-      (DbioError (str "Expected to find table "
-                      tbl
-                      ", but table is not found.")))
+      (DbioError (RStr (I18N/getBase)
+                       "auth.no.table" [tbl])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,9 +121,9 @@
 
   [^SQLr sql role]
 
-  (.execute sql (str "delete from "
+  (.execute sql (str "DELETE FROM "
                      (GTable AuthRole)
-                     " where "
+                     " WHERE "
                      ;;(ese (:column (:name (:fields (meta AuthRole)))))
                      (->> (meta AuthRole)
                           (:fields)
@@ -130,7 +131,7 @@
                           (:column)
                           (ese))
                      " = ?")
-                [(nsb role)]
+                [(strim role)]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -196,12 +197,13 @@
   [^SQLr sql ^String user ^String pwd]
 
   (if-let [acct (.findOne sql
-                       :czc.tardis.auth/LoginAccount
-                       { :acctid (strim user) }) ]
+                          :czc.tardis.auth/LoginAccount
+                          { :acctid (strim user) })]
     (if (.validateHash (Pwdify pwd "")
                        (:passwd acct))
       acct
-      (throw (AuthError. "Incorrect password")))
+      (throw (AuthError. (RStr (I18N/getBase)
+                               "auth.bad.pwd"))))
     (throw (UnknownUser. user))
   ))
 
@@ -239,8 +241,8 @@
 
   (if (empty? details)
     userObj
-    (with-local-vars [u userObj ]
-      (doseq [[f v] (seq details) ]
+    (with-local-vars [u userObj]
+      (doseq [[f v] (seq details)]
         (var-set u (DbioSetFld @u f v)))
       (.update sql @u))
   ))
@@ -275,8 +277,8 @@
 
   [^SQLr sql user]
 
-  (.execute sql (str "delete from " (GTable LoginAccount)
-                     " where "
+  (.execute sql (str "DELETE FROM " (GTable LoginAccount)
+                     " WHERE "
                      ;;(ese (:column (:acctid (:fields (meta LoginAccount)))))
                      (->> (meta LoginAccount)
                           (:fields)
@@ -305,7 +307,7 @@
         sm (-> (IniSecurityManagerFactory. (-> ini
                                                (.toURI)
                                                (.toURL)(.toString)))
-                (.getInstance)) ]
+                (.getInstance))]
     (SecurityUtils/setSecurityManager sm)
     (log/info "Created shiro security manager: " sm)
   ))
@@ -324,12 +326,13 @@
             ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
-            ^czlabclj.tardis.io.webss.WebSession
+            ^czlabclj.tardis.io.webss.WebSS
             mvs (.getSession evt)
             csrf (.getXref mvs)
+            rb (I18N/getBase)
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e# { :e e# }))
-            info (ternary si {}) ]
+            info (ternary si {})]
         (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
@@ -341,12 +344,16 @@
           (and (hgl? challengeStr)
                (not= challengeStr (nsb (:captcha info))))
           (do
-            (.setLastResult job { :error (AuthError. "Broken captcha.") })
+            (.setLastResult job
+                            { :error
+                             (AuthError. (RStr rb "auth.bad.cha")) })
             false)
 
           (not= csrf (nsb (:csrf info)))
           (do
-            (.setLastResult job { :error (AuthError. "Broken token.") })
+            (.setLastResult job
+                            { :error
+                             (AuthError. (RStr rb "auth.bad.tkn")) })
             false)
 
           (and (hgl? (:credential info))
@@ -354,7 +361,9 @@
                (hgl? (:email info)))
           (if (.hasAccount pa info)
             (do
-              (.setLastResult job { :error (DuplicateUser. ^String (:principal info)) })
+              (.setLastResult job { :error
+                                   (DuplicateUser. ^String
+                                                   (:principal info)) })
               false)
             (do
               (.setLastResult job { :account (.addAccount pa info) })
@@ -362,7 +371,9 @@
 
           :else
           (do
-            (.setLastResult job { :error (AuthError. "Bad Request") })
+            (.setLastResult job
+                            { :error
+                             (AuthError. (RStr rb "auth.bad.req")) })
             false))
       ))
   ))
@@ -380,9 +391,10 @@
             ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
-            ^czlabclj.tardis.io.webss.WebSession
+            ^czlabclj.tardis.io.webss.WebSS
             mvs (.getSession evt)
             csrf (.getXref mvs)
+            rb (I18N/getBase)
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e#  { :e e# }))
             info (ternary si {} ) ]
@@ -397,7 +409,9 @@
 
           (not= csrf (nsb (:csrf info)))
           (do
-            (.setLastResult job { :error (AuthError. "Broken token.") })
+            (.setLastResult job
+                            { :error
+                             (AuthError. (RStr rb "auth.bad.tkn")) })
             false)
 
           (and (hgl? (:credential info))
@@ -409,7 +423,9 @@
 
           :else
           (do
-            (.setLastResult job {:error (AuthError. "Bad Request") })
+            (.setLastResult job
+                            {:error
+                             (AuthError. (RStr rb "auth.bad.req")) })
             false))
       ))
   ))
@@ -464,12 +480,10 @@
             (log/debug "Current user session " sss)
             (log/debug "Current user object " cur)
             (when-not (.isAuthenticated cur)
-              (try
+              (TryC
                 ;;(.setRememberMe token true)
                 (.login cur token)
-                (log/debug "User [" user "] logged in successfully.")
-                (catch Exception e#
-                  (log/error e# ""))))
+                (log/debug "User [" user "] logged in successfully.")))
             (if (.isAuthenticated cur)
               (.getPrincipal cur)
               nil))))

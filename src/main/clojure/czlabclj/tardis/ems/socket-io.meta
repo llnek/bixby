@@ -3,14 +3,14 @@
   :info {
 
     :blockType "czc.tardis.io/SocketIO"
-    :version "0.0.1"
+    :version "1.0"
     :name "SocketIO"
 
   }
 
   :conf {
 
-    :host "localhost"
+    :host ""
     :port 8080
     :handler ""
 

@@ -19,7 +19,7 @@
   (:require [clojure.tools.logging :as log :only [warn error info debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.i18n.resources :only [GetResource GetString]]
+  (:use [czlabclj.xlib.i18n.resources :only [GetResource RStr]]
         [czlabclj.xlib.util.core :only [test-cond]]
         [czlabclj.xlib.util.str :only [MakeString]]
         [czlabclj.xlib.util.files :only [DirRead?]]
@@ -94,7 +94,7 @@
   [rcb & args]
 
   (let [h (File. ^String (first args)) ]
-    (test-cond (GetString rcb "skaro.home.none" [h]) (DirRead? h))
+    (test-cond (RStr rcb "skaro.home.none" [h]) (DirRead? h))
     (if (not (contains? (GetCommands) (keyword (nth args 1))))
       false
       #(apply EvalCommand h rcb (drop 1 args)))

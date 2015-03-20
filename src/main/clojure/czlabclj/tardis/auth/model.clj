@@ -17,7 +17,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.dbio.drivers]
+  (:use [czlabclj.xlib.i18n.resources :only [RStr]]
+        [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.postgresql]
         [czlabclj.xlib.dbio.h2]
@@ -28,6 +29,7 @@
   (:import  [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
             [java.sql Connection]
             [java.io File]
+            [com.zotohlab.frwk.i18n I18N]
             [org.apache.commons.io FileUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +109,9 @@
       :h2 H2
       (:sqlserver :mssql) SQLServer
       :oracle Oracle
-      (DbioError (str "Unsupported database type: " dbtype)))
+      (DbioError (RStr (I18N/getBase)
+                       "db.unknown"
+                       [ (name dbtype) ])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

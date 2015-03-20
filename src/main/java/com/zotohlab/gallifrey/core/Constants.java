@@ -31,7 +31,7 @@ public class Constants {
 //  public static String LIB="lib"
 //  public static String CFG="conf"
 //  public static String CLASSES="classes"
-  public static String DN_BLOCKS = "blocks";
+  public static String DN_BLOCKS = "ems";
   public static String DN_CORE="exec";
   public static String DN_CONF="conf";
   public static String DN_CLASSES="classes";

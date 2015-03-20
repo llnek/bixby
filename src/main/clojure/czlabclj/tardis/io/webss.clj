@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol WebSession
+(defprotocol WebSS
 
   ""
 
@@ -81,7 +81,7 @@
 ;;
 (defn- resetFlags ""
 
-  [^czlabclj.tardis.io.webss.WebSession mvs maxAge]
+  [^czlabclj.tardis.io.webss.WebSS mvs maxAge]
 
   (let [now (System/currentTimeMillis)
         mage (ternary maxAge 0) ]
@@ -112,7 +112,7 @@
 
   [^HTTPEvent evt ^HTTPResult res ]
 
-  (let [^czlabclj.tardis.io.webss.WebSession
+  (let [^czlabclj.tardis.io.webss.WebSS
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
       (log/debug "Session appears to be kosher, about to set-cookie!")
@@ -158,7 +158,7 @@
 
   [^HTTPEvent evt ]
 
-  (let [^czlabclj.tardis.io.webss.WebSession
+  (let [^czlabclj.tardis.io.webss.WebSS
         mvs (.getSession evt)
         ^Emitter netty (.emitter evt)
         ck (.getCookie evt SESSION_COOKIE) ]
@@ -217,7 +217,7 @@
     (.setf! impl :maxIdleSecs 0)
     (.setf! impl :newOne true)
     (with-meta
-      (reify WebSession
+      (reify WebSS
 
         (setAttribute [_ k v] (.setf! attrs k v))
         (getAttribute [_ k] (.getf attrs k) )
@@ -274,7 +274,7 @@
         (handleEvent [this evt] (upstream evt))
         (getImpl [_] nil))
 
-        { :typeid :czc.tardis.io/WebSession }
+        { :typeid :czc.tardis.io/WebSS }
 
   )))
 
