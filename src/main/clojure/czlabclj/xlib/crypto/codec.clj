@@ -87,10 +87,10 @@
   (let [len (* 8 (alength keyBits)) ]
     (when (and (= T3_DES algo)
                (< len 192)) ;; 8x 3 = 24 bytes
-      (ThrowBadArg "Encryption key length must be 192, when using TripleDES"))
+      (ThrowBadArg "TripleDES key length must be 192."))
     (when (and (= "AES" algo)
                (< len 128))
-      (ThrowBadArg "Encryption key length must be 128 or 256, when using AES"))
+      (ThrowBadArg "AES key length must be 128 or 256."))
     keyBits
   ))
 
@@ -128,8 +128,12 @@
 
   "Methods supported by a crypto object."
 
-  (decrypt [_ ^bytes pkey ^String cipherText] [_ ^String cipherText] )
-  (encrypt [_ ^bytes pkey ^String text] [_ ^String text] )
+  (decrypt [_ ^bytes pkey ^String cipherText]
+           [_ ^String cipherText] )
+
+  (encrypt [_ ^bytes pkey ^String text]
+           [_ ^String text] )
+
   (algo [_] ))
 
 (declare Pwdify)

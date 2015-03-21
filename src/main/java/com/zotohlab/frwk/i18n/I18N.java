@@ -11,6 +11,8 @@
 
 package com.zotohlab.frwk.i18n;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import org.slf4j.Logger;
@@ -25,6 +27,7 @@ public enum I18N {
   private static Logger _log= LoggerFactory.getLogger(I18N.class);
   public static Logger tlog() { return _log; }
 
+  private static Map<String,ResourceBundle> _bundles= new HashMap<String,ResourceBundle>();
   private static ResourceBundle _base;
 
   public static ResourceBundle getBase() {
@@ -35,5 +38,17 @@ public enum I18N {
     _base=b;
   }
 
+  public static ResourceBundle getBundle(String bkey) {
+    return _bundles.get(bkey);
+  }
+
+  public static void setBundle(String bkey, ResourceBundle b) {
+    _bundles.put(bkey,b);
+  }
+  
+  public static void clsBundle(String bkey) {
+    _bundles.remove(bkey);
+  }
+  
 }
 

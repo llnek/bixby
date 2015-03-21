@@ -268,7 +268,7 @@
   ^String
   []
 
-  (str "" (System/currentTimeMillis) ";" (NextInt)))
+  (str "" (System/currentTimeMillis) "#" (NextInt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

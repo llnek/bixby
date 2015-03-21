@@ -139,12 +139,13 @@
 
   [^czlabclj.tardis.core.sys.Element knl
    cset
-   ^czlabclj.tardis.core.sys.Element pod]
+   ^czlabclj.tardis.impl.dfts.PODMeta pod]
+   ;;^czlabclj.tardis.core.sys.Element pod]
 
   (TryC
     (let [cache (.getAttr knl K_CONTAINERS)
           cid (.id ^Identifiable pod)
-          app (.moniker ^czlabclj.tardis.impl.dfts.PODMeta pod)
+          app (.moniker pod)
           ctr (if (and (not (empty? cset))
                        (not (contains? cset app)))
                 nil
