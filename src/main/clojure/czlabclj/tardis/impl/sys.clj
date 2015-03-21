@@ -20,14 +20,14 @@
   (:use [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.impl.ext]
-        [czlabclj.tardis.impl.defaults
-         :rename 
+        [czlabclj.tardis.impl.dfts
+         :rename
          {enabled? blockmeta-enabled?
           Start kernel-start
           Stop kernel-stop}]
         [czlabclj.xlib.util.core
-         :only 
-         [MakeMMap TryC NiceFPath 
+         :only
+         [MakeMMap TryC NiceFPath
           notnil? ternary NewRandom]]
         [czlabclj.xlib.util.str :only [strim]]
         [czlabclj.xlib.util.process :only [SafeWait]]
@@ -130,7 +130,7 @@
     (when (.isDirectory pd)
       (log/info "Scanning pods-dir: " pd)
       (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
-        (.deploy ^czlabclj.tardis.impl.defaults.Deployer co f)))
+        (.deploy ^czlabclj.tardis.impl.dfts.Deployer co f)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,7 +144,7 @@
   (TryC
     (let [cache (.getAttr knl K_CONTAINERS)
           cid (.id ^Identifiable pod)
-          app (.moniker ^czlabclj.tardis.impl.defaults.PODMeta pod)
+          app (.moniker ^czlabclj.tardis.impl.dfts.PODMeta pod)
           ctr (if (and (not (empty? cset))
                        (not (contains? cset app)))
                 nil
@@ -218,10 +218,12 @@
             ;; when there are dependencies
             ;; TODO: need to handle this better
             (log/info "About to start endorsed pods: " endorsed)
-            (doseq [[k v] (seq* apps) ]
-              (let [r (-> (NewRandom) (.nextInt 6)) ]
-                (if (maybe-start-pod this cs v)
-                  (SafeWait (* 1000 (Math/max (int 1) r))))))) )
+            (with-local-vars [r nil]
+              (doseq [[k v] (seq* apps)]
+                (when @r
+                  (SafeWait (* 1000 (Math/max (int 1) (int r)))))
+                (when (maybe-start-pod this cs v)
+                  (var-set r (-> (NewRandom) (.nextInt 6))))))))
 
         (stop [this]
           (log/info "Kernel stopping...")
@@ -285,7 +287,7 @@
   (let [^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         rcl (.getf ctx K_ROOT_CZLR)
-        ^URL url (.srcUrl ^czlabclj.tardis.impl.defaults.PODMeta co)
+        ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta co)
         cl  (AppClassLoader. rcl) ]
     (.configure cl (NiceFPath (File. (.toURI  url))) )
     (.setf! ctx K_APP_CZLR cl)

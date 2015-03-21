@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.str :only [nsb strim hgl?]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
-        [czlabclj.tardis.impl.defaults]
+        [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.jmx.core]
         [czlabclj.tardis.impl.sys
          :only
@@ -73,6 +73,8 @@
 ;; Check the app's manifest file.
 (defn- chkManifest
 
+
+  ^czlabclj.tardis.impl.dfts.PODMeta
   [^czlabclj.tardis.core.sys.Element execv
    app
    ^File des
@@ -80,8 +82,10 @@
 
   (let [^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx execv)
-        ^ComponentRegistry root (.getf ctx K_COMPS)
-        ^ComponentRegistry apps (.lookup root K_APPS)
+        ^ComponentRegistry
+        root (.getf ctx K_COMPS)
+        ^ComponentRegistry
+        apps (.lookup root K_APPS)
         ps (LoadJavaProps mf)
         vid (.getProperty ps "Implementation-Vendor-Id", "???")
         ver (.getProperty ps "Implementation-Version" "")
@@ -98,7 +102,7 @@
     ;;.gets("Implementation-Vendor-URL")
     ;;.gets("Implementation-Vendor")
 
-    ;; synthesize the block meta component and register it as a application.
+    ;; synthesize the pod meta component and register it as a application.
     (let [^czlabclj.tardis.core.sys.Element
           m (-> (MakePodMeta app ver nil
                              cz vid
@@ -112,10 +116,11 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure the POD file is kosher.
+;; Make sure the app setup is kosher.
 ;;
-(defn- inspect-pod  ""
+(defn- inspect-app  ""
 
+  ^czlabclj.tardis.impl.dfts.PODMeta
   [execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (NiceFPath des))
@@ -137,7 +142,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check all pods in the /apps directory to ensure they are kosher.
 ;;
-(defn- inspect-pods ""
+(defn- inspect-apps ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -146,7 +151,7 @@
         ctx (.getCtx co)
         ^File pd (.getf ctx K_PLAYDIR) ]
     (doseq [f (seq (.listFiles pd ff)) ]
-      (inspect-pod co f))
+      (inspect-app co f))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,7 +242,7 @@
                 ^ComponentRegistry
                 root (.getf ctx K_COMPS)
                 ^Startable k (.lookup root K_KERNEL) ]
-            (inspect-pods this)
+            (inspect-apps this)
             (.start k)))
 
         ;;stop the kernel
@@ -311,12 +316,12 @@
           options { :ctx ctx } ]
 
       (.setf! ctx K_COMPS root)
+      (.setf! ctx K_EXECV co)
+
       (.reg root deployer)
       (.reg root knl)
       (.reg root apps)
       (.reg root bks)
-
-      (.setf! ctx K_EXECV co)
 
       (SynthesizeComponent root options)
       (SynthesizeComponent bks options)
@@ -358,7 +363,7 @@
         Hierarchial
         (parent [_] nil)
 
-        BlockMeta
+        EmitMeta
 
         (enabled? [_] (not (false? (-> (.getf impl :metaInfo)
                                        (:enabled)))))
@@ -366,15 +371,15 @@
                          (:name)))
         (metaUrl [_] url) )
 
-      { :typeid (keyword "czc.tardis.impl/BlockMeta") }
+      { :typeid (keyword "czc.tardis.impl/EmitMeta") }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Description of a Block.
 ;;
-(defmethod CompInitialize :czc.tardis.impl/BlockMeta
+(defmethod CompInitialize :czc.tardis.impl/EmitMeta
 
-  [^czlabclj.tardis.impl.defaults.BlockMeta block]
+  [^czlabclj.tardis.impl.dfts.EmitMeta block]
 
   (let [^czlabclj.tardis.core.sys.Element co block
         url (.metaUrl block)
@@ -383,7 +388,7 @@
         conf (:conf cfg)]
     (test-nonil "Invalid block-meta file, no info section." info)
     (test-nonil "Invalid block-meta file, no conf section." conf)
-    (log/info "Initializing BlockMeta: " url)
+    (log/info "Initializing EmitMeta: " url)
     (.setAttr! co :metaInfo info)
     (.setAttr! co :dftOptions conf)
     co
@@ -409,6 +414,29 @@
         (.reg ^ComponentRegistry co b)
         (log/info "Added one block: " (.id ^Identifiable b)) ))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/SystemRegistry
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (log/info "CompInitialize: SystemRegistry: " (.id ^Identifiable co))
+  co
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/AppsRegistry
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (log/info "CompInitialize: AppsRegistry: " (.id ^Identifiable co))
+  co
+)
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

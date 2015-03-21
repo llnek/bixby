@@ -37,7 +37,7 @@
         [czlabclj.tardis.io.jetty]
         [czlabclj.tardis.io.socket]
         [czlabclj.tardis.mvc.filters]
-        [czlabclj.tardis.impl.defaults
+        [czlabclj.tardis.impl.dfts
          :rename
          {enabled? blockmeta-enabled?
           start kernel-start
@@ -274,11 +274,11 @@
 (defn- make-app-container ""
 
   ^Container
-  [pod]
+  [^czlabclj.tardis.impl.dfts.PODMeta pod]
 
+  (log/info "Creating an app-container: " (.id ^Identifiable pod))
   (let [ftlCfg (Configuration.)
         impl (MakeMMap) ]
-    (log/info "About to create an app-container: " (.id ^Identifiable pod))
     (with-meta
       (reify
 
@@ -298,8 +298,8 @@
                 jc (.getAttr this K_JCTOR) ]
             (.update jc evt options)))
 
-        (getName [_] (.moniker ^czlabclj.tardis.impl.defaults.PODMeta pod))
-        (getAppKey [_] (.appKey ^czlabclj.tardis.impl.defaults.PODMeta pod))
+        (getAppKey [_] (.appKey pod))
+        (getName [_] (.moniker pod))
         (getAppKeyBits [this] (Bytesify (.getAppKey this)))
         (getAppDir [this] (.getAttr this K_APPDIR))
 
@@ -470,7 +470,7 @@
         cl (.getf ctx K_APP_CZLR)
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
-        ^URL url (.srcUrl ^czlabclj.tardis.impl.defaults.PODMeta pod)
+        ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta pod)
         ps {K_APPDIR (File. (.toURI  url))
             K_APP_CZLR cl } ]
     (CompCompose c apps)

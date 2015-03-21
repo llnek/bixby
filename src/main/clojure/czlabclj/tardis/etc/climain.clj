@@ -35,7 +35,7 @@
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
-        [czlabclj.tardis.impl.defaults]
+        [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.netty.io :only [StopServer]])
 
   (:import  [io.netty.channel Channel ChannelFuture ChannelFutureListener]

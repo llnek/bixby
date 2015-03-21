@@ -59,13 +59,13 @@
   [cacheFlag]
 
   (reset! cache-assets-flag (if cacheFlag true false))
-  (log/info "Web Assets caching is set to "
-            @cache-assets-flag))
+  (log/info "Web Assets caching is set to " @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- make-webcontent ""
 
+  ^WebAsset
   [^String cType bits]
 
   (reify
@@ -78,7 +78,7 @@
 ;;
 (defn GetLocalFile ""
 
-  ^WebContent
+  ^WebAsset
   [^File appDir ^String fname]
 
   (let [f (File. appDir fname) ]
@@ -110,6 +110,7 @@
 ;;
 (defn MakeWebAsset ""
 
+  ^WebAsset
   [^File file]
 
   (let [ct (GuessContentType file "utf-8" "text/plain")
@@ -128,6 +129,7 @@
 ;;
 (defn- fetchAsset ""
 
+  ^WebAsset
   [^File file]
 
   (if (and (.exists file)
@@ -140,6 +142,7 @@
 ;;
 (defn- fetchAndSetAsset ""
 
+  ^WebAsset
   [^Map cache fp ^File file]
 
   (if-let [wa (fetchAsset file) ]
@@ -156,6 +159,7 @@
 ;;
 (defn- getAsset ""
 
+  ^WebAsset
   [^File file]
 
   (if @cache-assets-flag
@@ -194,7 +198,7 @@
 
   [src ^Channel ch info ^HttpResponse rsp ^File file]
 
-  (let [^WebAsset asset (if (not (maybeCache file))
+  (let [^WebAsset asset (if-not (maybeCache file)
                           nil
                           (getAsset file))
         fname (.getName file) ]
@@ -211,7 +215,8 @@
           (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
       (log/debug "Serving file: " fname " with clen= " @clen ", ctype= " @ct)
       (try
-        (when (= (.getStatus rsp) HttpResponseStatus/NOT_MODIFIED)
+        (when (= HttpResponseStatus/NOT_MODIFIED
+                 (.getStatus rsp))
               (var-set clen 0))
         (HttpHeaders/addHeader rsp "Accept-Ranges" "bytes")
         (HttpHeaders/setHeader rsp "Content-Type" @ct)

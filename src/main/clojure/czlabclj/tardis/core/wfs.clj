@@ -63,7 +63,7 @@
 ;;
 (defn DefFLCountExpr
 
-  ^ForLoopCountExpr 
+  ^ForLoopCountExpr
   [func]
 
   (reify ForLoopCountExpr (getCount [_ job] (apply func [job]))

@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.impl.defaults
+  czlabclj.tardis.impl.dfts
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
@@ -20,6 +20,7 @@
   (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
+        [czlabclj.xlib.i18n.resources :only [RStr]]
         [czlabclj.xlib.util.files
          :only
          [FileRead? DirReadWrite? ]]
@@ -30,6 +31,7 @@
   (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
             [com.zotohlab.gallifrey.loaders AppClassLoader]
             [com.zotohlab.frwk.util CoreUtils]
+            [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.server Component
              ComponentRegistry RegistryError ServiceError]
             [com.zotohlab.gallifrey.core ConfigError]
@@ -46,8 +48,8 @@
 
   [d]
 
-  (test-cond (str "Directory " d " must be read-writable.")
-                  (DirReadWrite? d)))
+  (test-cond (RStr (I18N/getBase) "dir.no.rw" [d])
+             (DirReadWrite? d)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Asserts that the file is readable.
@@ -56,8 +58,8 @@
 
   [f]
 
-  (test-cond (str "File " f " must be readable.")
-                  (FileRead? f)))
+  (test-cond (RStr (I18N/getBase) "file.no.r" [f])
+             (FileRead? f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,7 +72,8 @@
     (condp instance? v
       String (File. ^String v)
       File v
-      (throw (ConfigError. (str "No such folder for key: " kn))))
+      (throw (ConfigError. (RStr (I18N/getBase)
+                                 "skaro.no.dir" [kn]))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol BlockMeta
+(defprotocol EmitMeta
 
   ""
 
@@ -171,9 +174,8 @@
                       (.id  ^Identifiable c))
                 cache (.getf impl :cache) ]
             (when (.has this cid)
-              (throw (RegistryError.  (str "Component \""
-                                           cid
-                                           "\" already exists" ))))
+              (throw (RegistryError. (RStr (I18N/getBase)
+                                           "skaro.dup.cmp" [cid]))))
             (.setf! impl :cache (assoc cache cid c))))
 
         Registry
@@ -187,5 +189,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private defaults-eof nil)
+(def ^:private dfts-eof nil)
 

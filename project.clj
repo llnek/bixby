@@ -271,7 +271,7 @@
     czlabclj.tardis.etc.cli
     czlabclj.tardis.etc.core
     czlabclj.tardis.etc.misc
-    czlabclj.tardis.impl.defaults
+    czlabclj.tardis.impl.dfts
 
     czlabclj.tardis.auth.model
     czlabclj.tardis.auth.realm

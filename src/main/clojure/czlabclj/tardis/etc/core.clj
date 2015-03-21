@@ -26,7 +26,8 @@
         [czlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand]])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
-            [java.util List Locale]
+            [com.zotohlab.frwk.i18n I18N]
+            [java.util ResourceBundle List Locale]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -111,6 +112,7 @@
   ;;(alter-var-root #'*read-eval* (constantly false))
   (let [rcb (GetResource "czlabclj/tardis/etc/Resources"
                          (Locale/getDefault)) ]
+    (I18N/setBase rcb)
     (try
       (when (< (count args) 2) (throw (CmdHelpError. "")))
       (if-let [rc (apply parseArgs rcb args) ]

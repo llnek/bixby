@@ -920,7 +920,7 @@ def cljhhh_Etc() {
     arg (value: 'czlabclj.tardis.etc.cli')
     arg (value: 'czlabclj.tardis.etc.core')
     arg (value: 'czlabclj.tardis.etc.misc')
-    arg (value: 'czlabclj.tardis.impl.defaults')
+    arg (value: 'czlabclj.tardis.impl.dfts')
   }
 }
 
