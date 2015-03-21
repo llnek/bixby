@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.mvc.templates
+  czlabclj.tardis.mvc.assets
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
@@ -50,7 +50,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private cache-assets-flag (atom true))
+(def ^:private cache-assets-flag (atom false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,12 +58,9 @@
 
   [cacheFlag]
 
-  (if cacheFlag
-    (reset! cache-assets-flag true)
-    (do
-      (reset! cache-assets-flag false)
-      (log/info "Web Assets caching is turned - OFF."))
-  ))
+  (reset! cache-assets-flag (if cacheFlag true false))
+  (log/info "Web Assets caching is set to "
+            @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,6 +78,7 @@
 ;;
 (defn GetLocalFile ""
 
+  ^WebContent
   [^File appDir ^String fname]
 
   (let [f (File. appDir fname) ]
@@ -93,7 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeCache ""
+(defn- maybeCache "Cache certain files..."
 
   [^File fp]
 
@@ -235,5 +233,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private templates-eof nil)
+(def ^:private assets-eof nil)
 

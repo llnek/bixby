@@ -841,10 +841,9 @@ def cljhhh_MVC() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.tardis.mvc.templates')
+    arg (value: 'czlabclj.tardis.mvc.assets')
     arg (value: 'czlabclj.tardis.mvc.comms')
-    arg (value: 'czlabclj.tardis.mvc.statics')
-    arg (value: 'czlabclj.tardis.mvc.handler')
+    arg (value: 'czlabclj.tardis.mvc.filters')
   }
 }
 

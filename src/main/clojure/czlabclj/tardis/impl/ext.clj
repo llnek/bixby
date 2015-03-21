@@ -36,7 +36,7 @@
         [czlabclj.tardis.io.netty]
         [czlabclj.tardis.io.jetty]
         [czlabclj.tardis.io.socket]
-        [czlabclj.tardis.mvc.handler]
+        [czlabclj.tardis.mvc.filters]
         [czlabclj.tardis.impl.defaults
          :rename
          {enabled? blockmeta-enabled?

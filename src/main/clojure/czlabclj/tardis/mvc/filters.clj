@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.mvc.handler
+  czlabclj.tardis.mvc.filters
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
@@ -27,7 +27,7 @@
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.core.constants]
-        [czlabclj.tardis.mvc.templates
+        [czlabclj.tardis.mvc.assets
          :only
          [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
         [czlabclj.tardis.mvc.comms]
@@ -309,5 +309,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private handler-eof nil)
+(def ^:private filters-eof nil)
 

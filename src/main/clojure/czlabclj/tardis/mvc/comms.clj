@@ -23,8 +23,9 @@
         [czlabclj.tardis.io.netty]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
+        [czlabclj.tardis.core.wfs]
         [czlabclj.tardis.core.constants]
-        [czlabclj.tardis.mvc.templates
+        [czlabclj.tardis.mvc.assets
          :only
          [MakeWebAsset GetLocalFile]]
         [czlabclj.xlib.util.str :only [hgl? nsb strim]]
@@ -34,6 +35,9 @@
             [com.zotohlab.gallifrey.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
+            [com.zotohlab.wflow FlowNode Activity Pipeline
+             PipelineDelegate PTask Work]
+            [com.zotohlab.wflow.core Job]
             [com.zotohlab.gallifrey.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
@@ -210,7 +214,8 @@
    code ]
 
   (with-local-vars [rsp (NettyFW/makeHttpReply code)
-                    bits nil wf nil]
+                    bits nil wf nil
+                    ctype "text/plain"]
     (try
       (let [cfg (.getAttr src :emcfg)
             h (:errorHandler cfg)
@@ -221,10 +226,11 @@
                  (reply-error src code)
                  (.getErrorResponse cb code)) ]
         (when-not (nil? rc)
-          (HttpHeaders/setHeader ^HttpMessage
-                                 @rsp
-                                 "content-type" (.contentType rc))
+          (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
+        (HttpHeaders/setHeader ^HttpMessage
+                                 @rsp
+                                 "content-type" @ctype)
         (HttpHeaders/setContentLength @rsp
                                       (if (nil? @bits)
                                         0
@@ -247,32 +253,35 @@
    ^Emitter src
    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
-  (try
-    (-> evt (.getSession)(.handleEvent evt))
-    (catch AuthError e#
-      (ServeError src ch 403)))
-  (let [^File appDir (-> src (.container)(.getAppDir))
-        ps (NiceFPath (File. appDir DN_PUBLIC))
-        mpt (nsb (.getf ri :mountPoint))
-        gc (.groupCount mc)]
-    (with-local-vars [mp (.replace mpt "${app.dir}" (NiceFPath appDir))]
-      (when (> gc 1)
-        (doseq [i (range 1 gc)]
-          (var-set mp (StringUtils/replace ^String @mp
-                                           "{}"
-                                           (.group mc (int i)) 1))))
-      (var-set mp (NiceFPath (File. ^String @mp)))
-      (let [cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
-            ^czlabclj.tardis.io.core.EmitAPI co src
-            ^czlabclj.tardis.io.core.WaitEventHolder
-            w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
-        (.timeoutMillis w (:waitMillis cfg))
-        (.hold co w)
-        (.dispatch co
-                   evt
-                   {:router "czlabclj.tardis.mvc.statics.AssetHandler"
-                    :info info
-                    :path @mp})))
+  (with-local-vars [ok true mp nil]
+    (try
+      (-> evt (.getSession)(.handleEvent evt))
+      (catch AuthError e#
+        (var-set ok false)
+        (ServeError src ch 403)))
+    (when @ok
+      (let [^File appDir (-> src (.container)(.getAppDir))
+            ps (NiceFPath (File. appDir DN_PUBLIC))
+            mpt (nsb (.getf ri :mountPoint))
+            gc (.groupCount mc)]
+        (var-set mp (.replace mpt "${app.dir}" (NiceFPath appDir)))
+        (when (> gc 1)
+          (doseq [i (range 1 gc)]
+            (var-set mp (StringUtils/replace ^String @mp
+                                             "{}"
+                                             (.group mc (int i)) 1))))
+        (var-set mp (NiceFPath (File. ^String @mp)))
+        (let [cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
+              ^czlabclj.tardis.io.core.EmitAPI co src
+              ^czlabclj.tardis.io.core.WaitEventHolder
+              w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
+          (.timeoutMillis w (:waitMillis cfg))
+          (.hold co w)
+          (.dispatch co
+                     evt
+                     {:router "czlabclj.tardis.mvc.comms.AssetHandler"
+                      :info info
+                      :path @mp}))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,26 +293,48 @@
    ^Matcher mc
    ^Channel ch
    ^HTTPEvent evt]
-    ;;^czlabclj.xlib.util.core.MubleAPI evt]
 
-  (try
-    (-> evt (.getSession)(.handleEvent evt))
-    (catch AuthError e#
-      (ServeError src ch 403)))
-  (let [^czlabclj.tardis.io.core.EmitAPI co src
-        cfg (.getAttr src :emcfg)
-        pms (.collect ri mc)
-        options {:router (.getHandler ri)
-                 :params (merge {} pms)
-                 :template (.getTemplate ri)}
-        ^czlabclj.tardis.io.core.WaitEventHolder
-        w
-        (MakeAsyncWaitHolder
-          (MakeNettyTrigger ch evt co) evt)]
-    (.timeoutMillis w (:waitMillis cfg))
-    (.hold co w)
-    (.dispatch co evt options)
+  (with-local-vars [ok true]
+    (try
+      (-> evt (.getSession)(.handleEvent evt))
+      (catch AuthError e#
+        (var-set ok false)
+        (ServeError src ch 403)))
+    (when @ok
+      (let [^czlabclj.tardis.io.core.EmitAPI co src
+            cfg (.getAttr src :emcfg)
+            pms (.collect ri mc)
+            options {:router (.getHandler ri)
+                     :params (merge {} pms)
+                     :template (.getTemplate ri)}
+            ^czlabclj.tardis.io.core.WaitEventHolder
+            w
+            (MakeAsyncWaitHolder
+              (MakeNettyTrigger ch evt co) evt)]
+        (.timeoutMillis w (:waitMillis cfg))
+        (.hold co w)
+        (.dispatch co evt options)))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype AssetHandler [] PipelineDelegate
+
+  (getStartActivity [_ pipe]
+    (DefWFTask
+      (fn [cur ^Job job arg]
+        (let [^HTTPEvent evt (.event job)]
+          (HandleStatic (.emitter evt)
+                        evt
+                        (.getv job EV_OPTS))
+          nil))))
+
+  (onStop [_ pipe]
+    (log/debug "Nothing to be done here, just stop please."))
+
+  (onError [ _ err curPt]
+    (log/error "Oops, I got an error!")))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

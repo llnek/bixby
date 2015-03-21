@@ -278,10 +278,9 @@
     czlabclj.tardis.auth.shiro
     czlabclj.tardis.auth.plugin
 
-    czlabclj.tardis.mvc.templates
+    czlabclj.tardis.mvc.assets
     czlabclj.tardis.mvc.comms
-    czlabclj.tardis.mvc.statics
-    czlabclj.tardis.mvc.handler
+    czlabclj.tardis.mvc.filters
 
     czlabclj.tardis.impl.ext
     czlabclj.tardis.impl.sys
