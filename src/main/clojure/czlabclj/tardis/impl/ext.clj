@@ -19,14 +19,14 @@
             [clojure.edn :as edn]
             [clojure.data.json :as json])
 
-  (:use [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
+  (:use [czlabclj.xlib.util.str :only [hgl? lcase nsb strim nichts?]]
+        [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
+        [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
+        [czlabclj.xlib.i18n.resources :only [LoadResource]]
         [czlabclj.xlib.util.files
          :only
-         [ReadEdn ReadOneFile WriteOneFile]]
-        [czlabclj.xlib.crypto.codec
-         :only [Pwdify CreateRandomString]]
-        [czlabclj.xlib.dbio.connect
-         :only [DbioConnectViaPool]]
+         [ReadEdn ReadOneFile WriteOneFile FileRead?]]
+        [czlabclj.xlib.crypto.codec :only [Pwdify CreateRandomString]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.io.loops]
         [czlabclj.tardis.io.mails]
@@ -37,26 +37,32 @@
         [czlabclj.tardis.io.jetty]
         [czlabclj.tardis.io.socket]
         [czlabclj.tardis.mvc.filters]
+
         [czlabclj.tardis.impl.dfts
          :rename
          {enabled? blockmeta-enabled?
           start kernel-start
           stop kernel-stop } ]
+
         [czlabclj.tardis.etc.misc]
         [czlabclj.tardis.core.sys]
+
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI MakeMMap NiceFPath
+         [MubleAPI MakeMMap NiceFPath ternary
           ConvToJava nbf ConvLong Bytesify]]
+
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.process :only [Coroutine]]
         [czlabclj.xlib.util.core :only [LoadJavaProps SubsVar]]
         [czlabclj.xlib.util.seqnum :only [NextLong]]
-        [czlabclj.xlib.util.str :only [hgl? nsb strim nichts?]]
         [czlabclj.xlib.util.meta :only [MakeObj]]
+
         [czlabclj.xlib.dbio.core
          :only
-         [MakeJdbc MakeMetaCache MakeDbPool MakeSchema]]
+         [MakeJdbc MakeMetaCache
+          MakeDbPool MakeSchema]]
+
         [czlabclj.xlib.net.routes :only [LoadRoutes]])
 
   (:import  [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
@@ -65,7 +71,8 @@
             [org.apache.commons.codec.binary Hex]
             [freemarker.template Configuration
              Template DefaultObjectWrapper]
-            [java.util Map Properties]
+            [java.util Locale Map Properties]
+            [com.zotohlab.frwk.i18n I18N]
             [java.net URL]
             [java.io File StringWriter]
             [com.zotohlab.gallifrey.runtime AppMain]
@@ -661,6 +668,17 @@
         ^czlabclj.xlib.util.scheduler.SchedulerAPI
         sc (MakeScheduler co)
         cfg (:container env) ]
+
+    (let [cn (lcase (ternary (K_COUNTRY (K_LOCALE env)) ""))
+          lg (lcase (ternary (K_LANG (K_LOCALE env)) "en"))
+          loc (if (hgl? cn)
+                  (Locale. lg cn)
+                  (Locale. lg))
+          res (File. appDir (str "i18n/Resources_"
+                                 (.toString loc) ".properties"))]
+      (when (FileRead? res)
+        (when-let [rb (LoadResource res)]
+          (I18N/setBundle (.id ^Identifiable co) rb))))
 
     (.setAttr! co K_DBPS (maybeInitDBs co env app))
     (log/debug "DB [dbpools]\n" (.getAttr co K_DBPS))

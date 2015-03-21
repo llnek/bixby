@@ -862,8 +862,8 @@ def cljhhh_Main() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    //arg (value: 'czlabclj.tardis.impl.dfts')
     arg (value: 'czlabclj.tardis.impl.ext')
-    arg (value: 'czlabclj.tardis.impl.sys')
     arg (value: 'czlabclj.tardis.impl.exec')
   }
 }

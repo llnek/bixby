@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
@@ -46,6 +47,9 @@ public enum CoreUtils {
       //System.out.println(shuffle("0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"));
 //      URLCodec cc = new URLCodec("utf-8");
 //      System.out.println(cc.encode("hello\u0000world"));
+//      String[] rc= StringUtils.split(",;,;,;", ",;");
+      String rc= new Locale("en").toString();
+      rc=null;
     } catch (Throwable t) {
       t.printStackTrace();
     }

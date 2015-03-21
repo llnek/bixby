@@ -137,12 +137,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CompCloneContext
+(defn CompCloneContext "Shallow copy."
 
-  [^czlabclj.tardis.core.sys.Element
-   co
-   ^czlabclj.xlib.util.core.MubleAPI
-   ctx]
+  ^czlabclj.tardis.core.sys.Element
+
+  [^czlabclj.tardis.core.sys.Element co
+   ^czlabclj.xlib.util.core.MubleAPI ctx]
 
   (when-not (nil? ctx)
     (let [x (MakeContext) ]

@@ -18,29 +18,35 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.str :only [nsb strim hgl?]]
+        [czlabclj.xlib.util.mime :only [SetupCache]]
+        [czlabclj.xlib.util.files :only [Unzip]]
+        [czlabclj.xlib.util.process :only [SafeWait]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.jmx.core]
-        [czlabclj.tardis.impl.sys
-         :only
-         [MakeKernel MakePodMeta MakeDeployer]]
+        [czlabclj.tardis.impl.dfts :only [MakePodMeta]]
+        [czlabclj.tardis.impl.ext]
         [czlabclj.xlib.util.core
          :only
          [LoadJavaProps test-nestr NiceFPath TryC
-          ternary
+          ternary notnil? NewRandom
           ConvLong MakeMMap juid test-nonil]]
         [czlabclj.xlib.util.files
          :only [ReadOneUrl ReadEdn]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
+            [com.zotohlab.gallifrey.loaders AppClassLoader]
+            [org.apache.commons.lang3 StringUtils]
             [java.io File FileFilter]
             [com.zotohlab.frwk.util IWin32Conf]
+            [java.security SecureRandom]
+            [java.util.zip ZipFile]
             [java.net URL]
             [java.util Date]
             [com.zotohlab.frwk.io IOUtils]
-            [com.zotohlab.frwk.core Startable
+            [com.zotohlab.frwk.core Startable Disposable
              Versioned Hierarchial Identifiable]
             [com.zotohlab.frwk.server Component ComponentRegistry]))
 
@@ -73,7 +79,6 @@
 ;; Check the app's manifest file.
 (defn- chkManifest
 
-
   ^czlabclj.tardis.impl.dfts.PODMeta
   [^czlabclj.tardis.core.sys.Element execv
    app
@@ -95,7 +100,8 @@
     (test-nestr "POD-Version" ver)
 
     (log/info "Checking manifest for app: " app
-              ", version: " ver ", main-class: " cz)
+              ", version: " ver
+              ", main-class: " cz)
 
     ;;ps.gets("Manifest-Version")
     ;;.gets("Implementation-Title")
@@ -104,7 +110,7 @@
 
     ;; synthesize the pod meta component and register it as a application.
     (let [^czlabclj.tardis.core.sys.Element
-          m (-> (MakePodMeta app ver nil
+          m (-> (MakePodMeta app ver
                              cz vid
                              (-> des (.toURI) (.toURL)))
                 (SynthesizeComponent { :ctx ctx }))
@@ -192,6 +198,126 @@
   (log/info "JMX connection terminated."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Scan for pods and deploy them to the /apps directory.  The pod file's
+;; contents are unzipped verbatim to the target subdirectory under /apps.
+;;
+(defn- deploy-one-pod  ""
+
+  [^File src ^File apps]
+
+  (let [^File app (FilenameUtils/getBaseName (NiceFPath src))
+        des (File. apps ^String app)]
+    (when-not (.exists des)
+      (Unzip src des))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- undeploy-one-pod  ""
+
+  [^czlabclj.tardis.core.sys.Element co
+   ^String app]
+
+  (let [^czlabclj.xlib.util.core.MubleAPI ctx (.getCtx co)
+        dir (File. ^File (.getf ctx K_PLAYDIR) app)]
+    (when (.exists dir)
+      (FileUtils/deleteDirectory dir))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- deploy-pods ""
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (log/info "Preparing to deploy pods...")
+  (let [^czlabclj.xlib.util.core.MubleAPI
+        ctx (.getCtx co)
+        ^File py (.getf ctx K_PLAYDIR)
+        ^File pd (.getf ctx K_PODSDIR) ]
+    (when (.isDirectory pd)
+      (log/info "Scanning pods-dir: " pd)
+      (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
+        (deploy-one-pod f py)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybe-start-pod
+
+  [^czlabclj.tardis.core.sys.Element co
+   cset
+   ^czlabclj.tardis.impl.dfts.PODMeta pod]
+
+  (TryC
+    (let [cache (.getAttr co K_CONTAINERS)
+          cid (.id ^Identifiable pod)
+          app (.moniker pod)
+          ctr (if (and (not (empty? cset))
+                       (not (contains? cset app)))
+                nil
+                (MakeContainer pod))]
+      (log/debug "Start pod? cid = " cid ", app = " app " !! cset = " cset)
+      (if (notnil? ctr)
+        (do
+          (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
+        ;;_jmx.register(ctr,"", c.name)
+          true)
+        (do
+          (log/info "Execvisor: pod " cid " disabled.")
+          false) ) )
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- start-pods ""
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (log/info "Preparing to start pods...")
+  (let [^czlabclj.xlib.util.core.MubleAPI
+        ctx (.getCtx co)
+        ^ComponentRegistry
+        root (.getf ctx K_COMPS)
+        wc (.getf ctx K_PROPS)
+        endorsed (-> (:endorsed (K_APPS wc))
+                     (ternary "")
+                     strim)
+        ^czlabclj.tardis.core.sys.Registry
+        apps (.lookup root K_APPS)
+         ;; start all apps or only those endorsed.
+        cs (if (or (= "*" endorsed)
+                   (= "" endorsed))
+             #{}
+             (into #{} (seq (StringUtils/split endorsed ",;"))))]
+    ;; need this to prevent deadlocks amongst pods
+    ;; when there are dependencies
+    ;; TODO: need to handle this better
+    (with-local-vars [r nil]
+      (doseq [[k v] (seq* apps)]
+        (when @r
+          (SafeWait (* 1000 (Math/max (int 1) (int r)))))
+        (when (maybe-start-pod co cs v)
+          (var-set r (-> (NewRandom) (.nextInt 6))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- stop-pods ""
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (log/info "Preparing to stop pods...")
+  (let [cs (.getAttr co K_CONTAINERS) ]
+    (doseq [[k v] (seq cs) ]
+      (.stop ^Startable v))
+    (doseq [[k v] (seq cs) ]
+      (.dispose ^Disposable v))
+    (.setAttr! co K_CONTAINERS {})
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeExecvisor ""
 
@@ -199,6 +325,7 @@
 
   (log/info "Creating execvisor, parent = " parObj)
   (let [impl (MakeMMap) ]
+    (.setf! impl K_CONTAINERS {})
     (with-meta
       (reify
 
@@ -234,29 +361,37 @@
         (blocksDir [this] (MaybeDir (.getCtx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
-        ;;start the kernel
         Startable
         (start [this]
-          (let [^czlabclj.xlib.util.core.MubleAPI
-                ctx (.getCtx this)
-                ^ComponentRegistry
-                root (.getf ctx K_COMPS)
-                ^Startable k (.lookup root K_KERNEL) ]
+          (let []
             (inspect-apps this)
-            (.start k)))
+            (start-pods this)))
 
-        ;;stop the kernel
         (stop [this]
-          (let [^czlabclj.xlib.util.core.MubleAPI
-                ctx (.getCtx this)
-                ^ComponentRegistry
-                root (.getf ctx K_COMPS)
-                ^Startable k (.lookup root K_KERNEL) ]
+          (let []
             (stop-jmx this)
-            (.stop k)))  )
+            (stop-pods this)))  )
 
        { :typeid (keyword "czc.tardis.impl/Execvisor") }
   )))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod CompInitialize :czc.tardis.impl/PODMeta
+
+  [^czlabclj.tardis.core.sys.Element co]
+
+  (let [^czlabclj.xlib.util.core.MubleAPI
+        ctx (.getCtx co)
+        rcl (.getf ctx K_ROOT_CZLR)
+        ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta co)
+        cl  (AppClassLoader. rcl) ]
+    (.configure cl (NiceFPath (File. (.toURI  url))) )
+    (.setf! ctx K_APP_CZLR cl)
+  ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Execvisor is the master controller of everthing.
@@ -268,10 +403,15 @@
   (let [^czlabclj.tardis.impl.exec.ExecvisorAPI exec co
         ^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
+        ^File base (.getf ctx K_BASEDIR)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
         regs (K_REGS cf)
         jmx  (K_JMXMGM cf) ]
+
+    (SetupCache (-> (File. base (str DN_CFG "/app/mime.properties"))
+                    (.toURI)
+                    (.toURL )))
 
     (log/info "Initializing component: Execvisor: " co)
     (test-nonil "conf file: components" comps)
@@ -311,25 +451,27 @@
           root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
-          deployer (MakeDeployer)
-          knl (MakeKernel)
+          ;;deployer (MakeDeployer)
+          ;;knl (MakeKernel)
           options { :ctx ctx } ]
 
       (.setf! ctx K_COMPS root)
       (.setf! ctx K_EXECV co)
 
-      (.reg root deployer)
-      (.reg root knl)
+      ;;(.reg root deployer)
+      ;;(.reg root knl)
       (.reg root apps)
       (.reg root bks)
 
       (SynthesizeComponent root options)
       (SynthesizeComponent bks options)
       (SynthesizeComponent apps options)
-      (SynthesizeComponent deployer options)
-      (SynthesizeComponent knl options))
 
-      (start-jmx co jmx)
+      (deploy-pods co))
+      ;;(SynthesizeComponent deployer options)
+      ;;(SynthesizeComponent knl options))
+
+    (start-jmx co jmx)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

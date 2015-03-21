@@ -231,6 +231,10 @@
       (Mkdirs (File. appDir "modules"))
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
+      (Mkdirs (File. appDir "i18n"))
+
+      (CopyFileToDir (File. hhhHome "etc/app/Resources_en.properties")
+                     (File.  appDir "i18n"))
 
       ;;(doseq [s [APP_CF ENV_CF "shiro.ini"]]
       (doseq [s [APP_CF ENV_CF ]]

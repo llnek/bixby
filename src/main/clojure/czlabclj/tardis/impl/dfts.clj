@@ -18,6 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
+        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.i18n.resources :only [RStr]]
@@ -78,12 +79,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Deployer
-
-  ""
-
-  (undeploy [_ app] )
-  (deploy [_ src] ))
+;;(defprotocol Deployer "" (undeploy [_ app] ) (deploy [_ src] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Kernel "")
+;;(defprotocol Kernel "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A registry is basically a container holding a bunch of components.
@@ -186,6 +182,49 @@
       { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) }
 
   )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakePodMeta ""
+
+  [app ver podType appid pathToPOD]
+
+  (let [pid (str podType "#" (NextLong))
+        impl (MakeMMap) ]
+    (log/info "PODMeta: " app ", " ver ", "
+              podType ", " appid ", " pathToPOD )
+    (with-meta
+      (reify
+
+        Element
+
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
+        (toEDN [_ ] (.toEDN impl))
+
+        Component
+
+        (version [_] ver)
+        (id [_] pid )
+
+        Hierarchial
+
+        (parent [_] nil)
+
+        PODMeta
+
+        (srcUrl [_] pathToPOD)
+        (moniker [_] app)
+        (appKey [_] appid)
+        (typeof [_] podType))
+
+      { :typeid (keyword "czc.tardis.impl/PODMeta") }
+
+  )))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

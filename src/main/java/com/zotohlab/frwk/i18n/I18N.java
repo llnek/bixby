@@ -27,7 +27,7 @@ public enum I18N {
   private static Logger _log= LoggerFactory.getLogger(I18N.class);
   public static Logger tlog() { return _log; }
 
-  private static Map<String,ResourceBundle> _bundles= new HashMap<String,ResourceBundle>();
+  private static Map<Object,ResourceBundle> _bundles= new HashMap<Object,ResourceBundle>();
   private static ResourceBundle _base;
 
   public static ResourceBundle getBase() {
@@ -38,11 +38,12 @@ public enum I18N {
     _base=b;
   }
 
-  public static ResourceBundle getBundle(String bkey) {
+  public static ResourceBundle getBundle(Object bkey) {
     return _bundles.get(bkey);
   }
 
-  public static void setBundle(String bkey, ResourceBundle b) {
+  public static void setBundle(Object bkey, ResourceBundle b) {
+    tlog().info("Setting a resource bundle, bkey = {}", bkey);
     _bundles.put(bkey,b);
   }
   
