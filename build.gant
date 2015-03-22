@@ -175,7 +175,7 @@ target (packAndDistro : '') {
            packBin,
            packDist,
            packLibs,
-           //packSamples,
+           packSamples,
            packAll)
 }
 
@@ -216,10 +216,10 @@ target (packDocs: '') {
 //////////////////////////////////////////////////////////////////////////////
 // pack-src
 target (packSrc: '') {
-  copy (todir: "${packDir}/docs/src/main/clojure") {
+  copy (todir: "${packDir}/src/main/clojure") {
     fileset (dir: "${srcDir}/clojure")
   }
-  copy (todir: "${packDir}/docs/src/main/java") {
+  copy (todir: "${packDir}/src/main/java") {
     fileset (dir: "${srcDir}/java")
   }
 }
@@ -277,12 +277,6 @@ target (packBin: '') {
 //////////////////////////////////////////////////////////////////////////////
 // pack-samples
 target (packSamples: '') {
-  new File( "${srcDir}/clojure/demo").eachDir { dir ->
-    createOneDemoApp(dir, "clojure")
-  }
-  new File( "${srcDir}/java/demo").eachDir { dir ->
-    createOneDemoApp(dir, "java")
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -422,88 +416,6 @@ target (packAllLics: '') {
       exclude (name: '.svn')
     }
   }
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// pack samples and/or demos
-def createOneDemoApp(dir, lang) {
-  final demoDir="${packDir}/docs/samples"
-  final demoSrc="${srcDir}/" + lang
-  final appkey= generateUUID()
-  final appid= dir.getName()
-  final res= "${demoDir}/${appid}/src/main/resources/"
-  final pfx= "${demoDir}/${appid}/public/"
-  if ("jetty" == "${appid}" || "mvc" == "${appid}") {
-    ["pages", "media","scripts","styles"].each { s ->
-      new File(pfx + s + "/site").mkdirs()
-    }
-    ant.copy (todir: pfx + "media/site", file: "${basedir}/etc/web/favicon.ico")
-    ant.copy (todir: pfx + "scripts/site", file: "${demoSrc}/demo/test.js")
-    ant.copy (todir: pfx + "styles/site", file: "${demoSrc}/demo/main.css")
-    //ant.mkdir (dir: res + "coffee")
-    ant.mkdir (dir: res + "scss")
-    ant.mkdir (dir: res + "js")
-  }
-  ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/build.gant")
-  if ("jetty" == "${appid}") {
-    /*
-    ant.mkdir (dir: "${demoDir}/${appid}/WEB-INF/classes")
-    ant.mkdir (dir: "${demoDir}/${appid}/WEB-INF/lib")
-    ant.copy (todir: "${demoDir}/${appid}/WEB-INF", file: "${basedir}/etc/jetty/web.xml")
-    */
-  }
-  ["classes", "patch", "lib" ].each { s ->
-    new File("${demoDir}/${appid}/POD-INF/" + s).mkdirs()
-  }
-  //copy (todir: "${demoDir}/${appid}/POD-INF/lib", file: "${distribDir}/demo.jar")
-  ant.mkdir (dir: "${demoDir}/${appid}/META-INF")
-  ant.echo (message: '', file: "${demoDir}/${appid}/META-INF/RELEASE-NOTES.txt")
-  ant.echo (message: '', file: "${demoDir}/${appid}/META-INF/NOTES.txt")
-  ant.echo (message: '', file: "${demoDir}/${appid}/META-INF/LICENSE.txt")
-  ant.echo (message: '', file: "${demoDir}/${appid}/META-INF/README.md")
-  ant.copy (todir: "${demoDir}/${appid}/META-INF", file: "${basedir}/etc/app/MANIFEST.MF")
-  ant.replace (file: "${demoDir}/${appid}/META-INF/MANIFEST.MF", token: "@@APPKEY@@", value: "${appkey}")
-  ant.replace (file: "${demoDir}/${appid}/META-INF/MANIFEST.MF", token: "@@APPMAINCLASS@@", value: "demo.${appid}.core.DemoMain")
-  ant.copy (todir: "${demoDir}/${appid}/conf") {
-    fileset (dir: "${demoSrc}/demo/${appid}") {
-      include (name: '*.conf')
-    }
-  }
-  copy (todir: "${demoDir}/${appid}/conf", file: "${basedir}/etc/app/app.conf")
-  replace (file: "${demoDir}/${appid}/conf/app.conf", token: "@@USER@@", value: 'test')
-  ant.copy (todir: "${demoDir}/${appid}/src/main/" + lang + "/demo/${appid}") {
-    fileset (dir: "${demoSrc}/demo/${appid}") {
-      exclude (name: '**/env.conf')
-    }
-  }
-  ant.mkdir(dir: "${demoDir}/${appid}/src/main/clojure")
-  ant.mkdir(dir: "${demoDir}/${appid}/src/main/java")
-  ant.mkdir(dir: "${demoDir}/${appid}/docs")
-  ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/build.xs")
-  ant.replace (file: "${demoDir}/${appid}/build.xs", token: "@@SKAROHOME@@", value: "${basedir}/../..")
-  ant.replace (file: "${demoDir}/${appid}/build.gant", token: "@@APPID@@", value: "${appid}")
-  if (lang == "clojure") {
-    ant.replace (file: "${demoDir}/${appid}/build.gant",
-    token: "@@APPCLJFILES@@",
-    value: "arg (value: \"demo.${appid}.core\")")
-  } else {
-    ant.replace (file: "${demoDir}/${appid}/build.gant",
-    token: "@@APPCLJFILES@@", value: '')
-  }
-  ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/ivy.config.xml")
-  ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/ivy.xml")
-  ant.replace (file: "${demoDir}/${appid}/ivy.xml", token: "@@APPDOMAIN@@", value: 'demoware')
-  ant.replace (file: "${demoDir}/${appid}/ivy.xml", token: "@@APPID@@", value: "${appid}")
-  ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/pom.xml")
-  ant.replace (file: "${demoDir}/${appid}/pom.xml", token: "@@APPDOMAIN@@", value: 'demoware')
-  ant.replace (file: "${demoDir}/${appid}/pom.xml", token: "@@APPID@@", value: "${appid}")
-  ant.zip (destfile: "${demoDir}/${appid}.pod") {
-    fileset (dir: "${demoDir}/${appid}")
-  }
-  delete (dir: "${demoDir}/${appid}")
-}
-
-target (createDemoApp: '') {
 }
 
 //////////////////////////////////////////////////////////////////////////////

@@ -122,10 +122,12 @@ def doCompileAndJar() {
   doCompileClj()
   //-- copy over other resources
   copy (todir: "${outJarDir}") {
-    fileset (dir: "${srcDir}/clojure") {
+    fileset (dir: "${srcDir}/clojure",
+             erroronmissingdir: 'false') {
       exclude (name: '**/*.clj')
     }
-    fileset (dir: "${srcDir}/java") {
+    fileset (dir: "${srcDir}/java",
+              erroronmissingdir: 'false') {
       exclude (name: '**/*.java')
     }
   }
@@ -133,6 +135,7 @@ def doCompileAndJar() {
     fileset (dir: "${outJarDir}")
   }
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -166,6 +169,7 @@ def doRunTestCode() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileJava() {
+  if (!new File("${srcDir}/java").exists()) { return; }
   javac (
          sourcepath: '',
          srcdir: "${srcDir}/java",
@@ -184,6 +188,7 @@ def doCompileJava() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileClj() {
+  if (!new File("${srcDir}/clojure").exists()) { return; }
   java (
         classname: 'clojure.lang.Compile',
         fork: 'true',

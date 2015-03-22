@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package demo.splits.core;
+package demo.flows;
 
 import java.util.Map;
 import java.util.Objects;
@@ -17,10 +17,10 @@ import java.util.Objects;
 import com.zotohlab.gallifrey.core.Container;
 import com.zotohlab.gallifrey.runtime.AppMain;
 
-
 /**
  * @author kenl
  */
+
 public class DemoMain implements AppMain {
 
   public void contextualize(Container c) {
@@ -35,17 +35,21 @@ public class DemoMain implements AppMain {
   }
 
   public void initialize() {
-    System.out.println("Demo fork(split)/join of tasks..." );
+    System.out.println("Demo a set of workflow control features..." );
   }
+
   public void configure(Map<String,?> j) {
     System.out.println("configure: config=");
     System.out.println(Objects.toString(j));
   }
 
   public void start() {}
+
   public void stop() {
   }
+
   public void dispose() {
   }
+
 }
 

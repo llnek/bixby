@@ -225,12 +225,9 @@
 
   [& args]
 
-  (if (> (count args) 1)
-    (let [s (nth args 1)
-          h (getHomeDir) ]
-      (if (= "samples" s)
-        (PublishSamples h)
-        (PublishDemo h s)))
+  (if (and (> (count args) 1)
+           (= "samples" (nth args 1)))
+    (PublishSamples (getHomeDir))
     (throw (CmdHelpError.))
   ))
 

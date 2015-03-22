@@ -9,10 +9,10 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package demo.flows.core;
+package demo.flows;
 
 import static com.zotohlab.wflow.PTask.PTaskWrapper;
-import static demo.flows.core.Auth.getAuthMtd;
+import static demo.flows.Auth.getAuthMtd;
 import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;

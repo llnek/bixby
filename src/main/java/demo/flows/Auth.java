@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package demo.flows.core;
+package demo.flows;
 
 import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static java.lang.System.out;

@@ -1,7 +1,10 @@
-(ns ^{:doc ""
-      :author "kenl"}
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;auto-generated
 
-  @@APPDOMAIN@@.pipe
+(ns ^{:doc ""
+      :author "@@USER@@"}
+
+  @@APPDOMAIN@@.core
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
 
@@ -20,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ftlContext ""
-  
+
   []
 
   (let [ctx (HashMap.)
@@ -50,7 +53,7 @@
 (deftype Handler [] PipelineDelegate
 
   (getStartActivity [_  pipe]
-    (require '@@APPDOMAIN@@.pipe)
+    (require '@@APPDOMAIN@@.core)
     (DefWFTask
       (fn [fw ^Job job arg]
         (let [tpl (:template (.getv job EV_OPTS))
@@ -76,7 +79,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private pipe-eof nil)
+(deftype MyAppMain [] czlabclj.tardis.impl.ext.CljAppMain
 
+  (contextualize [_ container]
+    (log/info "My AppMain contextualized by container " container))
 
+  (configure [_ options]
+    (log/info "My AppMain configured with options " options))
+
+  (initialize [_]
+    (log/info "My AppMain initialized!"))
+
+  (start [_]
+    (log/info "My AppMain started"))
+
+  (stop [_]
+    (log/info "My AppMain stopped"))
+
+  (dispose [_]
+    (log/info "My AppMain finz'ed"))
+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private core-eof nil)
 
