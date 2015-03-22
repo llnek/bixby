@@ -8,7 +8,7 @@
   </configurations>
 
   <publications>
-    <artifact name="skaro-distro" type="distro"  conf="libjar" ext="tar.gz"/>
+    <artifact name="skaro" type="distro"  conf="libjar" ext="tar.gz"/>
     <!--
     <artifact name="skaro-spec" type="jar"  conf="libjar" ext="jar"/>
     <artifact name="skaro" type="jar"  conf="libjar" ext="jar"/>
