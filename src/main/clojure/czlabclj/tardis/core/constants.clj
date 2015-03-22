@@ -32,6 +32,7 @@
 (def ^String META_INF  "META-INF" )
 (def ^String POD_INF  "POD-INF" )
 (def ^String WEB_INF  "WEB-INF" )
+(def ^String MF_FP "MANIFEST.MF")
 
 (def ^String DN_BLOCKS  "ems" )
 (def ^String DN_BOOT "boot" )
@@ -39,14 +40,20 @@
 (def ^String DN_CONF "conf" )
 (def ^String DN_CLASSES "classes" )
 (def ^String DN_LIB "lib" )
+
+(def ^String DN_CFGAPP "etc/app" )
+(def ^String DN_CFGWEB "etc/web" )
 (def ^String DN_CFG "etc" )
+
+(def ^String DN_RCPROPS  "Resources_en.properties" )
+(def ^String DN_TEMPLATES  "templates" )
+
 (def ^String DN_BOXX "apps" )
 (def ^String DN_PODS  "pods" )
 (def ^String DN_LOGS "logs" )
 (def ^String DN_TMP "tmp" )
 (def ^String DN_DBS "dbs" )
 (def ^String DN_DIST "dist" )
-(def ^String DN_TEMPLATES  "templates" )
 (def ^String DN_VIEWS  "htmls" )
 (def ^String DN_PAGES  "pages" )
 (def ^String DN_PATCH "patch" )

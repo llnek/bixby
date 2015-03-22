@@ -22,7 +22,10 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.meta :only [IsBytes?]])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
+
+  (:import  [org.apache.commons.io.filefilter FileFileFilter
+                                              FileFilterUtils]
+            [org.apache.commons.lang3 StringUtils]
             [java.io File FileInputStream
              FileOutputStream InputStream OutputStream]
             [java.util ArrayList]
@@ -143,6 +146,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn CopyFiles ""
+
+  [^File srcDir ^File destDir ext]
+
+  (FileUtils/copyDirectory
+    srcDir
+    destDir
+    (FileFilterUtils/andFileFilter FileFileFilter/FILE
+                                   (FileFilterUtils/suffixFileFilter (str "." ext)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn CopyFileToDir ""
 
   [^File fp ^File dir]
@@ -163,7 +179,7 @@
 
   [^File dir ^File targetDir]
 
-  (FileUtils/copyDirectoryToDirectory dir targetDir))
+  (FileUtils/copyDirectory dir targetDir))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

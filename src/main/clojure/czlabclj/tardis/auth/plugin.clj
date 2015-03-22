@@ -124,7 +124,6 @@
   (.execute sql (str "DELETE FROM "
                      (GTable AuthRole)
                      " WHERE "
-                     ;;(ese (:column (:name (:fields (meta AuthRole)))))
                      (->> (meta AuthRole)
                           (:fields)
                           (:name)
@@ -196,9 +195,7 @@
 
   [^SQLr sql ^String user ^String pwd]
 
-  (if-let [acct (.findOne sql
-                          :czc.tardis.auth/LoginAccount
-                          { :acctid (strim user) })]
+  (if-let [acct (FindLoginAccount sql user)]
     (if (.validateHash (Pwdify pwd "")
                        (:passwd acct))
       acct
@@ -213,10 +210,7 @@
 
   [^SQLr sql ^String user]
 
-  (notnil? (.findOne sql
-                     :czc.tardis.auth/LoginAccount
-                     { :acctid (strim user) } )
-  ))
+  (notnil? (FindLoginAccount sql user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -279,7 +273,6 @@
 
   (.execute sql (str "DELETE FROM " (GTable LoginAccount)
                      " WHERE "
-                     ;;(ese (:column (:acctid (:fields (meta LoginAccount)))))
                      (->> (meta LoginAccount)
                           (:fields)
                           (:acctid)

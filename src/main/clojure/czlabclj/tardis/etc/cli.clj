@@ -26,7 +26,7 @@
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile CopyFileToDir
-          CopyFile CopyDir
+          CopyFile CopyDir CopyFiles
           Unzip Mkdirs ReadEdn]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
@@ -47,18 +47,6 @@
 (def ^:dynamic *SKARO-WEBCSSLANG* "scss")
 ;;(def ^:dynamic *SKARO-WEBLANG* "coffee")
 (def ^:dynamic *SKARO-WEBLANG* "js")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- copy-files ""
-
-  [^File srcDir ^File destDir ext]
-
-  (FileUtils/copyDirectory srcDir
-                           destDir
-                           (FileFilterUtils/andFileFilter FileFileFilter/FILE
-                                                          (FileFilterUtils/suffixFileFilter (str "." ext)))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,8 +81,8 @@
 
   [^File hhhHome appId]
 
-  (let [pod (File. hhhHome (str "pods/" appId ".pod"))
-        srcDir (File. hhhHome (str "apps/" appId))
+  (let [pod (File. hhhHome (str DN_PODS "/" appId ".pod"))
+        srcDir (File. hhhHome (str DN_BOXX "/" appId))
         pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
     (ExecProj pj)
   ))
@@ -124,7 +112,7 @@
   [^File hhhHome demoId]
 
   (let [fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
-        dest (File. hhhHome (str "apps/" demoId)) ]
+        dest (File. hhhHome (str DN_BOXX "/" demoId)) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
       (Mkdirs dest)
@@ -171,7 +159,7 @@
   [^File hhhHome ^String appId ^String appDomain]
 
   (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
-        appDir (File. hhhHome (str "apps/" appId))
+        appDir (File. hhhHome (str DN_BOXX "/" appId))
         appDomainPath (.replace appDomain "." "/")
         cljd (mkcljd appDir appDomain) ]
     (Mkdirs (File. h2db))
@@ -212,33 +200,34 @@
 
   [^File hhhHome ^String appId ^String appDomain ^String flavor]
 
-  (let [appDir (Mkdirs (File. hhhHome (str "apps/" appId)))
+  (let [appDir (Mkdirs (File. hhhHome (str DN_BOXX "/" appId)))
         cfd (File. appDir DN_CONF)
         mfDir (Mkdirs (File. appDir "META-INF"))
         appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [fp nil ]
 
       (doseq [s ["classes" "patch" "lib"]]
-        (Mkdirs (File. appDir (str "POD-INF/" s))))
+        (Mkdirs (File. appDir (str POD_INF "/" s))))
 
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt" "README.md"]]
         (FileUtils/touch (File. mfDir ^String s)))
 
-      (CopyFileToDir (File. hhhHome "etc/app/MANIFEST.MF") mfDir)
-      (CopyFileToDir (File. hhhHome "etc/app/build.gant") appDir)
+      (CopyFileToDir (File. hhhHome
+                            (str DN_CFGAPP "/" "build.gant")) appDir)
+      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" MF_FP)) mfDir)
 
       (Mkdirs (File. appDir "modules"))
       (Mkdirs cfd)
       (Mkdirs (File. appDir "docs"))
       (Mkdirs (File. appDir "i18n"))
 
-      (CopyFileToDir (File. hhhHome "etc/app/Resources_en.properties")
+      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" DN_RCPROPS))
                      (File.  appDir "i18n"))
 
       ;;(doseq [s [APP_CF ENV_CF "shiro.ini"]]
       (doseq [s [APP_CF ENV_CF ]]
-        (CopyFileToDir (File. hhhHome (str "etc/app/" s)) cfd))
+        (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" s)) cfd))
 
       (var-set fp (File. cfd APP_CF))
       (WriteOneFile @fp
@@ -249,17 +238,17 @@
         (Mkdirs (File. appDir (str "src/main/" s)))
         (Mkdirs (File. appDir (str "src/test/" s))))
 
-      (CopyFileToDir (File. hhhHome "etc/app/core.clj")
+      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" "core.clj"))
                      (mkcljd appDir appDomain))
-      (CopyFileToDir (File. hhhHome "etc/app/pipe.clj")
+      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" "pipe.clj"))
                      (mkcljd appDir appDomain))
 
       (Mkdirs (File. appDir "src/main/resources"))
 
       (doseq [s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
-        (CopyFileToDir (File. hhhHome (str "etc/app/" s)) appDir))
+        (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" s)) appDir))
 
-      (var-set fp (File. mfDir "MANIFEST.MF"))
+      (var-set fp (File. mfDir MF_FP))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPKEY@@" (NewUUid))
@@ -302,8 +291,8 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [wfc (File. hhhHome (str DN_CFG "/app/weblibs.conf" ))
-        appDir (File. hhhHome (str "apps/" appId))
+  (let [wfc (File. hhhHome (str DN_CFGAPP "/" "weblibs.conf" ))
+        appDir (File. hhhHome (str DN_BOXX "/" appId))
         wlib (Mkdirs (File. appDir "public/vendors"))
         wbs (ReadEdn wfc)
         csslg *SKARO-WEBCSSLANG*
@@ -315,24 +304,24 @@
       (Mkdirs (File. appDir (str "src/web/site/" s)))
       (Mkdirs (File. appDir (str "public/" s))))
 
-    (let [src (File. hhhHome "etc/netty")
+    (let [src (File. hhhHome (str DN_CFG "/" "netty"))
           des (File. appDir (str "src/web/site/pages")) ]
-      (copy-files src des "ftl")
-      (copy-files src des "html"))
+      (CopyFiles src des "ftl")
+      (CopyFiles src des "html"))
 
     ;;(CopyFileToDir (File. hhhHome "etc/web/pipe.clj")
                    ;;(mkcljd appDir appDomain))
-    (CopyFileToDir (File. hhhHome "etc/netty/pipe.clj")
+    (CopyFileToDir (File. hhhHome (str DN_CFG "/" "netty/pipe.clj"))
                    (mkcljd appDir appDomain))
 
-    (CopyFileToDir (File. hhhHome "etc/web/main.scss")
+    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "main.scss"))
                    (File. appDir (str "src/web/site/styles")))
-    (CopyFileToDir (File. hhhHome "etc/web/main.js")
+    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "main.js"))
                    (File. appDir (str "src/web/site/scripts")))
 
-    (CopyFileToDir (File. hhhHome "etc/web/favicon.png")
+    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "favicon.png"))
                    (File. appDir "src/web/site/media"))
-    (CopyFileToDir (File. hhhHome "etc/web/body.jpg")
+    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "body.jpg"))
                    (File. appDir "src/web/site/media"))
 
     (FileUtils/copyFile wfc (File. wlib ".list"))
@@ -341,7 +330,7 @@
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)
             dd (File. hhhHome
-                      (str "etc/weblibs/" dn))
+                      (str DN_CFG "/weblibs/" dn))
             td (File. wlib dn) ]
         (when (.isDirectory dd)
           (CopyDir dd wlib)
@@ -367,17 +356,17 @@
    ^String emType
    ]
 
-  (let [appDir (File. hhhHome (str "apps/" appId))
+  (let [appDir (File. hhhHome (str DN_BOXX "/" appId))
         appDomainPath (.replace appDomain "." "/")
         cfd (File. appDir DN_CONF) ]
     (with-local-vars [fp nil]
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
-      (copy-files (File. hhhHome "etc/netty") cfd DN_CONF)
+      (CopyFiles (File. hhhHome (str DN_CFG "/netty")) cfd DN_CONF)
 
-      (CopyFileToDir (File. hhhHome "etc/netty/static-routes.conf")
+      (CopyFileToDir (File. hhhHome (str DN_CFG "/netty/static-routes.conf"))
                      cfd)
-      (CopyFileToDir (File. hhhHome "etc/netty/routes.conf")
+      (CopyFileToDir (File. hhhHome (str DN_CFG "/netty/routes.conf"))
                      cfd)
 
       (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
