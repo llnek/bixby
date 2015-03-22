@@ -175,7 +175,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyDir ""
+(defn CopyToDir ""
+
+  [^File dir ^File targetDir]
+
+  (FileUtils/copyDirectoryToDirectory dir targetDir))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CopyDirFiles ""
 
   [^File dir ^File targetDir]
 

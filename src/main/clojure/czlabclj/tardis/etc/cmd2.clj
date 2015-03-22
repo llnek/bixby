@@ -26,7 +26,7 @@
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile CopyFileToDir
-          CopyFile CopyDir CopyFiles
+          CopyFile CopyToDir CopyFiles
           Unzip Mkdirs ReadEdn]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
@@ -333,7 +333,7 @@
                       (str DN_CFG "/weblibs/" dn))
             td (File. wlib dn) ]
         (when (.isDirectory dd)
-          (CopyDir dd wlib)
+          (CopyToDir dd wlib)
           (when-not (:skip df)
             (doseq [^String f (:js df) ]
               (-> buf
