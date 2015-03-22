@@ -23,7 +23,7 @@
         [czlabclj.xlib.util.core :only [test-cond]]
         [czlabclj.xlib.util.str :only [MakeString]]
         [czlabclj.xlib.util.files :only [DirRead?]]
-        [czlabclj.tardis.etc.cmdline :only [GetCommands EvalCommand]])
+        [czlabclj.tardis.etc.cmd1 :only [GetCommands EvalCommand]])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
             [com.zotohlab.frwk.i18n I18N]

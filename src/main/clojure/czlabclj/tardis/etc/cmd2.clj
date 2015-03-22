@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.etc.cli
+  czlabclj.tardis.etc.cmd2
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
@@ -107,7 +107,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateDemo "Unzip the demo pod."
+(defn PublishDemo "Unzip the demo pod."
 
   [^File hhhHome demoId]
 
@@ -121,7 +121,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateSamples "Unzip all samples."
+(defn PublishSamples "Unzip all samples."
 
   [^File hhhHome]
 
@@ -131,7 +131,7 @@
     (doseq [^File f (seq fs) ]
       (when (and (.isFile f)
                  (.endsWith (.getName f) ".pod"))
-        (CreateDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
+        (PublishDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -399,5 +399,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private cli-eof nil)
+(def ^:private cmd2-eof nil)
 

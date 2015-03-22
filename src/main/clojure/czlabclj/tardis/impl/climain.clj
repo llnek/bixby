@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.etc.climain
+  czlabclj.tardis.impl.climain
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
             [clojure.string :as cstr])
@@ -46,6 +46,7 @@
             [com.zotohlab.frwk.util IWin32Conf]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.gallifrey.core ConfigError]
+            [com.zotohlab.gallifrey.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.server Component ComponentRegistry]
@@ -360,7 +361,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn StartMain ""
+(defn- start-main ""
 
   [& args]
 
@@ -372,6 +373,12 @@
     (log/info "Skaro.ver= " (.version ^Versioned m))
     (.start ^Startable m)
   ))
+
+(deftype StartMainViaCLI []
+    CliMain
+    (run [this args]
+      (require 'czlabclj.tardis.impl.climain)
+      (apply start-main args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -41,10 +41,8 @@ path (id : 'tpclPathId') {
 
 def generateUUID() { UUID.randomUUID() }
 
-  /* =================================
-        target: ivy stuff
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// ivy stuff
 ivy.settings( file: "${ivySettingsDir}/ivy.config.xml" )
 
 target (resolve: '') {
@@ -52,12 +50,10 @@ target (resolve: '') {
   ivy.retrieve( pattern: "${ivyLibDir}/[conf]/[artifact]-[revision].[ext]" )
 }
 
-  /* =================================
-        target: build
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// build
 target (buildr : '') {
-  depends (clean,checkTpcl,resolve,preBuild)
+  depends (clean, checkTpcl, resolve, preBuild)
   println "#############################################"
   println "#                                           #"
   println "Building project ${gantProjectName}..."
@@ -66,10 +62,8 @@ target (buildr : '') {
   compileAndJar()
 }
 
-  /* =================================
-        target: test-build
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// test-build
 target ( testBuild : '') {
   depends(compileTestCode, runTestCode)
   println "Test called - OK."
@@ -79,10 +73,8 @@ target (fullTestBuild : '') {
   depends (buildr, testBuild)
 }
 
-  /* =================================
-      target: publish
-     ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// publish
 target (pubDistro : '') {
   depends (justJar, distroPackage, clean4Distro)
   ivy.publish (resolver: 'local-repo',
@@ -102,10 +94,8 @@ target (justJar: '') {
   depends(buildr)
 }
 
-  /* =================================
-      target: clean
-     ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// clean
 target (cleanPackDir: '') {
   mkdir (dir: "${packDir}")
   delete ( includeEmptyDirs: true) {
@@ -121,35 +111,27 @@ target (clean: '') {
   mkdir (dir: "${gantBuildDir}")
 }
 
-  /* =================================
-        target: clean-cache
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// clean-cache
 target (cleanCache : '') {
   ivy.cleancache()
 }
 
-  /* =================================
-      target: clean-local
-     ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// clean-local
 target (cleanLocal: '') {
   println "${ivyLRepoDir}"
 }
 
-  /* =================================
-        target: report
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// report
 target (report: '') {
   depends (resolve)
   ivy.report (todir: "${buildDir}")
 }
 
-  /* =================================
-      target: distro-package
-     ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// distro-package
 target (distroPackage: '') {
   depends (distroInit, packAndDistro)
 }
@@ -158,24 +140,25 @@ target (distroInit: '') {
   depends (cleanPackDir)
   mkdir (dir: "${packDir}")
   mkdir (dir: "${packDir}/conf")
-  //mkdir (dir: "${packDir}/boot")
+
   mkdir (dir: "${packDir}/dist/boot")
   mkdir (dir: "${packDir}/dist/exec")
   mkdir (dir: "${packDir}/bin")
   mkdir (dir: "${packDir}/etc/ems")
-  //mkdir (dir: "${packDir}/etc")
-  //mkdir (dir: "${packDir}/patch")
+
   mkdir (dir: "${packDir}/lib")
   mkdir (dir: "${packDir}/logs")
   mkdir (dir: "${packDir}/docs/samples")
   mkdir (dir: "${packDir}/docs/src")
-  //mkdir (dir: "${packDir}/lics")
+
   mkdir (dir: "${packDir}/tmp")
   mkdir (dir: "${packDir}/apps")
-  //mkdir (dir: "${packDir}/pods")
+
   mkdir (dir: "${packDir}/.ivyroot")
+
   touch (file: "${packDir}/VERSION")
   echo (message: "${buildVersion}" , file: "${packDir}/VERSION")
+
   copy (todir: "${packDir}/etc") {
     fileset (dir: "${basedir}/etc")
   }
@@ -196,10 +179,8 @@ target (packAndDistro : '') {
            packAll)
 }
 
-  /* =================================
-        target: pack-resource
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-resources
 target (packRes: '') {
   copy (todir: "${packDir}/etc/ems", flatten: true) {
     fileset (dir: "${srcDir}/clojure") {
@@ -211,10 +192,8 @@ target (packRes: '') {
   }
 }
 
-  /* =================================
-        target: pack-docs
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-docs
 target (packDocs: '') {
   mkdir (dir: "${packDir}/docs/api")
   copy (todir: "${packDir}/docs") {
@@ -234,10 +213,8 @@ target (packDocs: '') {
   }
 }
 
-  /* =================================
-        target: pack-src
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-src
 target (packSrc: '') {
   copy (todir: "${packDir}/docs/src/main/clojure") {
     fileset (dir: "${srcDir}/clojure")
@@ -247,10 +224,8 @@ target (packSrc: '') {
   }
 }
 
-  /* =================================
-        target: pack-lics
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-lics
 target (packLics: '') {
   copy (todir: "${packDir}/lics") {
     fileset (dir: "${basedir}/lics", erroronmissingdir: false)
@@ -265,10 +240,8 @@ target (packLics: '') {
 
 }
 
-  /* =================================
-        target: pack-dist
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-dist
 target (packDist: '') {
   copy (todir: "${packDir}/dist/exec") {
     fileset (dir: "${distribDir}/exec") {
@@ -282,20 +255,16 @@ target (packDist: '') {
   }
 }
 
-  /* =================================
-        target: pack-libs
-       =================================  */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-libs
 target (packLibs: '') {
   copy (todir: "${packDir}/lib") {
     fileset (dir: "${libDir}/libjar")
   }
 }
 
-  /* =================================
-        target: pack-bin
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-bin
 target (packBin: '') {
   copy (todir: "${packDir}/bin") {
     fileset (dir: "${basedir}/bin", erroronmissingdir: false) {
@@ -305,10 +274,8 @@ target (packBin: '') {
   chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
 }
 
-  /* =================================
-        target: pack-samples
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-samples
 target (packSamples: '') {
   new File( "${srcDir}/clojure/demo").eachDir { dir ->
     createOneDemoApp(dir, "clojure")
@@ -318,10 +285,8 @@ target (packSamples: '') {
   }
 }
 
-  /* =================================
-        target: pack-all
-       ================================= */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack-all
 target (packAll: '') {
   delete (dir: "${packDir}/tmp")
   mkdir (dir: "${packDir}/tmp")
@@ -357,10 +322,8 @@ target (preBuild: '') {
   copy (todir: "${buildDir}", file: "${basedir}/logback.xml")
 }
 
-  /*
-       paths used for compilation and run
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// paths used for compilation and run
 path (id: 'compilePathId') {
   fileset (dir: "${libDir}/libjar")
   fileset (dir: "${clojureDir}")
@@ -390,15 +353,9 @@ path (id: 'testPathId') {
 }
 
 
-  /*
-       clojure console
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// clojure
 target (repl: '') { clj_console() }
-
-  /*
-       compile source code
-       */
 
 target (cljhhhDemo: '') { cljhhh_Demo() }
 
@@ -424,15 +381,14 @@ target (cljCrypto: '') { clj_Crypto() }
 
 target (cljUtil: '') { clj_Util() }
 
-target (jarit: '') { jarAll() }
-
+//////////////////////////////////////////////////////////////////////////////
+// compile and jar
 target (compileJavaCode: '') { compileJava() }
 target (compileClj: '') { compile_clj() }
+target (jarit: '') { jarAll() }
 
-  /*
-       compile test code
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// compile test code
 target (compileTestCode: '') {
   mkdir (dir: "${reportTestDir}")
   mkdir (dir: "${buildTestDir}")
@@ -440,10 +396,8 @@ target (compileTestCode: '') {
   compileTests_Clj()
 }
 
-  /*
-       run test code
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// run test code
 target (runtestsJava: '') { runtests_Java() }
 
 target (runtestsClj: '') { runtests_Clj() }
@@ -454,17 +408,14 @@ target (runTestCode: '') {
   //println 'No test to run.'
 }
 
-  /*
-       pack common web assets (css + js)
-       */
+
+//////////////////////////////////////////////////////////////////////////////
+// pack common web assets (css + js)
 target (packWebAssets: '') {
 }
 
-
-  /*
-       pack license files
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack license files
 target (packAllLics: '') {
   copy (todir: "${packDir}/lics") {
     fileset (dir: "${basedir}/lics", erroronmissingdir: false) {
@@ -473,10 +424,8 @@ target (packAllLics: '') {
   }
 }
 
-  /*
-       pack samples and/or demos
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// pack samples and/or demos
 def createOneDemoApp(dir, lang) {
   final demoDir="${packDir}/docs/samples"
   final demoSrc="${srcDir}/" + lang
@@ -492,7 +441,7 @@ def createOneDemoApp(dir, lang) {
     ant.copy (todir: pfx + "scripts/site", file: "${demoSrc}/demo/test.js")
     ant.copy (todir: pfx + "styles/site", file: "${demoSrc}/demo/main.css")
     //ant.mkdir (dir: res + "coffee")
-    ant.mkdir (dir: res + "less")
+    ant.mkdir (dir: res + "scss")
     ant.mkdir (dir: res + "js")
   }
   ant.copy (todir: "${demoDir}/${appid}", file: "${basedir}/etc/app/build.gant")
@@ -557,12 +506,8 @@ def createOneDemoApp(dir, lang) {
 target (createDemoApp: '') {
 }
 
-
-
-  /*
-       public TARGETS
-       */
-
+//////////////////////////////////////////////////////////////////////////////
+// public TARGETS
 target (release: '') {
   depends (pubDistro)
 }
@@ -905,7 +850,7 @@ def cljhhh_Core() {
 
 def cljhhh_Etc() {
   println "cljhhh_Etc:"
-  //replace (file: "${srcDir}/clojure/czlabclj/tardis/etc/climain.clj", token: "@@VERSION@@", value: "${buildVersion}")
+  //replace (file: "${srcDir}/clojure/czlabclj/tardis/impl/climain.clj", token: "@@VERSION@@", value: "${buildVersion}")
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -913,14 +858,13 @@ def cljhhh_Etc() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.tardis.etc.climain')
-    arg (value: 'czlabclj.tardis.etc.cmdline')
+    arg (value: 'czlabclj.tardis.etc.cmd2')
     arg (value: 'czlabclj.tardis.etc.task')
     arg (value: 'czlabclj.tardis.etc.gant')
-    arg (value: 'czlabclj.tardis.etc.cli')
+    arg (value: 'czlabclj.tardis.etc.cmd1')
     arg (value: 'czlabclj.tardis.etc.core')
     arg (value: 'czlabclj.tardis.etc.misc')
-    arg (value: 'czlabclj.tardis.impl.dfts')
+    //arg (value: 'czlabclj.tardis.impl.dfts')
   }
 }
 
@@ -933,7 +877,8 @@ def cljhhh_Main() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    //arg (value: 'czlabclj.tardis.impl.dfts')
+    arg (value: 'czlabclj.tardis.impl.climain')
+    arg (value: 'czlabclj.tardis.impl.dfts')
     arg (value: 'czlabclj.tardis.impl.ext')
     arg (value: 'czlabclj.tardis.impl.exec')
   }

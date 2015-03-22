@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.etc.cmdline
+  czlabclj.tardis.etc.cmd1
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
@@ -21,11 +21,11 @@
         [czlabclj.xlib.crypto.codec :only [CreateStrongPwd Pwdify]]
         [czlabclj.xlib.util.guids :only [NewUUid NewWWid]]
         [czlabclj.xlib.i18n.resources :only [RStr]]
-        [czlabclj.tardis.etc.climain :only [StartMain]]
+        ;;[czlabclj.tardis.etc.climain :only [StartMain]]
         [czlabclj.xlib.util.dates :only [AddMonths MakeCal]]
         [czlabclj.xlib.util.str :only [ucase nsb hgl? strim]]
         [czlabclj.tardis.etc.gant]
-        [czlabclj.tardis.etc.cli]
+        [czlabclj.tardis.etc.cmd2]
         [czlabclj.xlib.util.meta]
 
         [czlabclj.xlib.util.core
@@ -61,7 +61,7 @@
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
             [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.gallifrey.etc CmdHelpError]
+            [com.zotohlab.gallifrey.etc CliMain CmdHelpError]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [org.apache.commons.io FileUtils]
             [org.apache.commons.codec.binary Hex]
@@ -205,7 +205,10 @@
       (RunAppBg (getHomeDir) true)
 
       :else
-      (StartMain (NiceFPath (getHomeDir))))
+      (when-let [^CliMain m (MakeObj "czlabclj.tardis.impl.climain.StartMainViaCLI")]
+        (.run m (object-array [ (NiceFPath (getHomeDir)) ]))
+        ))
+      ;;(StartMain (NiceFPath (getHomeDir))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,8 +229,8 @@
     (let [s (nth args 1)
           h (getHomeDir) ]
       (if (= "samples" s)
-        (CreateSamples h)
-        (CreateDemo h s)))
+        (PublishSamples h)
+        (PublishDemo h s)))
     (throw (CmdHelpError.))
   ))
 
@@ -632,5 +635,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private cmdline-eof nil)
+(def ^:private cmd1-eof nil)
 
