@@ -22,10 +22,13 @@
   (:import  [java.util.zip GZIPInputStream GZIPOutputStream]
             [java.io ByteArrayInputStream
              ByteArrayOutputStream DataInputStream
+             DataInputStream DataOutputStream
              FileInputStream FileOutputStream
              CharArrayWriter OutputStreamWriter
              File InputStream InputStreamReader
              OutputStream Reader Writer]
+            [java.nio ByteBuffer CharBuffer]
+            [java.nio.charset Charset]
             [com.zotohlab.frwk.io XData XStream]
             [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
@@ -39,6 +42,74 @@
 ;;(def ^:private HEX_CHS [ \0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \A \B \C \D \E \F ])
 (def ^:private ^chars HEX_CHS (.toCharArray "0123456789ABCDEF"))
 (def ^:private SZ_10MEG (* 1024 1024 10))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti WriteBytes "Write this long value out as byte[]." class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ToBytes "Convert char[] to byte[]."
+
+  ^bytes
+  [^chars chArray ^String encoding]
+
+  (.array (.encode (Charset/forName encoding)
+                   (CharBuffer/wrap chArray)) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ToChars "Convert byte[] to char[]."
+
+  ^chars
+  [^bytes byteArray ^String encoding]
+
+  (.array (.decode (Charset/forName encoding)
+                   (ByteBuffer/wrap byteArray)) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReadLong "Return a long by scanning the byte[]."
+
+  [^bytes byteArray]
+
+  (.readLong (DataInputStream. (ByteArrayInputStream. byteArray))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReadInt "Return an int by scanning the byte[]."
+
+  [^bytes byteArray]
+
+  (.readInt (DataInputStream. (ByteArrayInputStream. byteArray)) ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod WriteBytes Integer
+
+  ^bytes
+  [nnum]
+
+  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
+    (doto (DataOutputStream. baos)
+      (.writeInt (int nnum))
+      (.flush))
+    (.toByteArray baos)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod WriteBytes Long
+
+  ^bytes
+  [nnum]
+
+  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
+    (doto (DataOutputStream. baos)
+      (.writeLong ^long nnum)
+      (.flush))
+    (.toByteArray baos)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

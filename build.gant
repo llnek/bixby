@@ -13,24 +13,20 @@ import java.util.UUID
 
 //////////////////////////////////////////////////////////////////////////////
 // external tools
-//////////////////////////////////////////////////////////////////////////////
-
 includeTool << gant.tools.Ivy
 
 //////////////////////////////////////////////////////////////////////////////
 // global properties
-//////////////////////////////////////////////////////////////////////////////
-
+//property( name: 'DISTRO', value: "${gantProjectName}-distro")
 property( name: 'gantProjectName' , value: 'skaro')
-property( name: 'PID_DISTRO', value: "${gantProjectName}-distro")
 property( name: "PID", value: "${gantProjectName}")
 property ( file: "build.xs" )
 property( name: 'ivySettingsDir', value: "${basedir}")
 
+def generateUUID() { UUID.randomUUID() }
+
 //////////////////////////////////////////////////////////////////////////////
 // language compilers
-//////////////////////////////////////////////////////////////////////////////
-
 path (id: 'clojurePathId') {
   fileset ( dir: "${clojureDir}")
 }
@@ -38,8 +34,6 @@ path (id: 'clojurePathId') {
 path (id : 'tpclPathId') {
   fileset ( dir: "${tpclDir}" )
 }
-
-def generateUUID() { UUID.randomUUID() }
 
 //////////////////////////////////////////////////////////////////////////////
 // ivy stuff
@@ -148,16 +142,16 @@ target (distroInit: '') {
 
   mkdir (dir: "${packDir}/lib")
   mkdir (dir: "${packDir}/logs")
-  mkdir (dir: "${packDir}/docs/samples")
-  mkdir (dir: "${packDir}/docs/src")
+  mkdir (dir: "${packDir}/docs")
 
   mkdir (dir: "${packDir}/tmp")
   mkdir (dir: "${packDir}/apps")
 
   mkdir (dir: "${packDir}/.ivyroot")
 
-  touch (file: "${packDir}/VERSION")
-  echo (message: "${buildVersion}" , file: "${packDir}/VERSION")
+  //touch (file: "${packDir}/VERSION")
+  echo (message: "${buildVersion}",
+        file: "${packDir}/VERSION")
 
   copy (todir: "${packDir}/etc") {
     fileset (dir: "${basedir}/etc")
@@ -228,7 +222,8 @@ target (packSrc: '') {
 // pack-lics
 target (packLics: '') {
   copy (todir: "${packDir}/lics") {
-    fileset (dir: "${basedir}/lics", erroronmissingdir: false)
+    fileset (dir: "${basedir}/lics",
+             erroronmissingdir: false)
   }
   copy (todir: "${packDir}", flatten: true) {
     fileset (dir: "${basedir}") {
@@ -284,7 +279,7 @@ target (packSamples: '') {
 target (packAll: '') {
   delete (dir: "${packDir}/tmp")
   mkdir (dir: "${packDir}/tmp")
-  tar (destfile: "${distribDir}/${PID_DISTRO}-${buildVersion}.tar.gz", compression: 'gzip') {
+  tar (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz", compression: 'gzip') {
     tarfileset (dir: "${packDir}") {
       exclude (name: 'apps/**')
       exclude (name: 'bin/**')
@@ -294,8 +289,9 @@ target (packAll: '') {
     }
   }
   /*
-  gzip (destfile: "${distribDir}/${PID_DISTRO}-${buildVersion}.tar.gz", src: "${distribDir}/${PID_DISTRO}.tar")
-  zip (destfile: "${distribDir}/${PID_DISTRO}.zip") {
+  gzip (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+        src: "${distribDir}/${PID}.tar")
+  zip (destfile: "${distribDir}/${PID}-${buildVersion}.zip") {
     fileset (dir: "${packDir}")
   }
   */
@@ -451,13 +447,11 @@ target (clean4Distro: '') {
   delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}", quiet: true)
 }
 
-
 setDefaultTarget (release)
 
 
-//////////////////////
+//////////////////////////////////////////////////////////////////////////////
 //
-
 def jslintScripts(filename) {
   java (classname: 'org.mozilla.javascript.tools.shell.Main',
         maxmemory: '2048m',
@@ -472,6 +466,8 @@ def jslintScripts(filename) {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compile_clj() {
 
   clj_Util()
@@ -498,6 +494,8 @@ def compile_clj() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compileBootJava() {
   javac (sourcepath: '',
          srcdir: "${srcDir}/java",
@@ -513,6 +511,8 @@ def compileBootJava() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compileJava() {
   javac (sourcepath: '',
          srcdir: "${srcDir}/java",
@@ -529,6 +529,8 @@ def compileJava() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compileAndJar() {
 
   /* build the classloaders */
@@ -565,6 +567,8 @@ def compileAndJar() {
 
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def jarAll() {
   jar (destfile: "${distribDir}/exec/${PID}-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
@@ -575,6 +579,8 @@ def jarAll() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_console() {
   java (classname: 'jline.ConsoleRunner',
         maxmemory: '2048m',
@@ -584,6 +590,8 @@ def clj_console() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_Util() {
   println "clj_Util:"
   java (classname: 'clojure.lang.Compile',
@@ -594,7 +602,6 @@ def clj_Util() {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'czlabclj.xlib.util.core')
-    arg (value: 'czlabclj.xlib.util.bytes')
     arg (value: 'czlabclj.xlib.util.cmdline')
     arg (value: 'czlabclj.xlib.util.constants')
     arg (value: 'czlabclj.xlib.util.countrycode')
@@ -605,15 +612,15 @@ def clj_Util() {
     arg (value: 'czlabclj.xlib.util.meta')
     arg (value: 'czlabclj.xlib.util.mime')
     arg (value: 'czlabclj.xlib.util.process')
-    arg (value: 'czlabclj.xlib.util.seqnum')
     arg (value: 'czlabclj.xlib.util.str')
-    arg (value: 'czlabclj.xlib.util.usastate')
     arg (value: 'czlabclj.xlib.util.ini')
     arg (value: 'czlabclj.xlib.util.scheduler')
     arg (value: 'czlabclj.xlib.i18n.resources')
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_Crypto() {
   println "clj_Crypto:"
   java (classname: 'clojure.lang.Compile',
@@ -630,7 +637,8 @@ def clj_Crypto() {
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_JMX() {
   println "clj_JMX:"
   java (classname: 'clojure.lang.Compile',
@@ -646,6 +654,8 @@ def clj_JMX() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_Net() {
   println "clj_Net:"
   java (classname: 'clojure.lang.Compile',
@@ -666,6 +676,8 @@ def clj_Net() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def clj_DBIO() {
   println "clj_DBIO:"
   java (classname: 'clojure.lang.Compile',
@@ -689,6 +701,8 @@ def clj_DBIO() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_MVC() {
   println "cljhhh_MVC:"
   java (classname: 'clojure.lang.Compile',
@@ -704,7 +718,8 @@ def cljhhh_MVC() {
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_Auth() {
   println "cljhhh_Auth:"
   java (classname: 'clojure.lang.Compile',
@@ -721,6 +736,8 @@ def cljhhh_Auth() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_IO() {
   println "cljhhh_IO:"
   java (classname: 'clojure.lang.Compile',
@@ -745,6 +762,8 @@ def cljhhh_IO() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_Core() {
   println "cljhhh_Core:"
   java (classname: 'clojure.lang.Compile',
@@ -760,9 +779,10 @@ def cljhhh_Core() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_Etc() {
   println "cljhhh_Etc:"
-  //replace (file: "${srcDir}/clojure/czlabclj/tardis/impl/climain.clj", token: "@@VERSION@@", value: "${buildVersion}")
   java (classname: 'clojure.lang.Compile',
         fork: true,
         failonerror: true,
@@ -776,10 +796,11 @@ def cljhhh_Etc() {
     arg (value: 'czlabclj.tardis.etc.cmd1')
     arg (value: 'czlabclj.tardis.etc.core')
     arg (value: 'czlabclj.tardis.etc.misc')
-    //arg (value: 'czlabclj.tardis.impl.dfts')
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_Main() {
   println "cljhhh_Main:"
   java (classname: 'clojure.lang.Compile',
@@ -796,6 +817,8 @@ def cljhhh_Main() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def cljhhh_Demo() {
   println "cljhhh_Demo:"
   java (classname: 'clojure.lang.Compile',
@@ -819,7 +842,10 @@ def cljhhh_Demo() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compileTests_Java() {
+
   javac (sourcepath: '',
     srcdir: "${testDir}/java",
     destdir: "${buildTestDir}",
@@ -839,6 +865,8 @@ def compileTests_Java() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def compileTests_Clj() {
   java (classname: 'clojure.lang.Compile',
     fork: true,
@@ -875,7 +903,8 @@ def compileTests_Clj() {
   }
 }
 
-
+//////////////////////////////////////////////////////////////////////////////
+//
 def runtests_Java() {
   ant.junit (logfailedtests: true,
     showoutput: false,
@@ -893,6 +922,8 @@ def runtests_Java() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//
 def runtests_Clj() {
   ant.junit (logfailedtests: true,
     showoutput: false,
@@ -908,6 +939,8 @@ def runtests_Clj() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+//EOF
 
 
 

@@ -21,12 +21,11 @@
   (:use [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI notnil? juid TryC spos?
+         [MubleAPI notnil? juid TryC spos? NextLong
           ToJavaInt SubsVar ternary
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core]

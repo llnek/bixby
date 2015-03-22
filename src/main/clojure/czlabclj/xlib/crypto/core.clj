@@ -23,13 +23,12 @@
             [clojure.math.numeric-tower :as math])
 
   (:use [czlabclj.xlib.util.dates :only [PlusMonths]]
-        [czlabclj.xlib.util.seqnum :only [NextInt]]
         [czlabclj.xlib.util.io
          :only
          [Streamify MakeBitOS ResetStream!]]
         [czlabclj.xlib.util.core
          :only
-         [ThrowIOE ThrowBadArg ternary NewRandom
+         [NextInt ThrowIOE ThrowBadArg ternary NewRandom
           Bytesify TryC Try! notnil? juid GetClassname]]
         [czlabclj.xlib.util.str :only [strim nsb hgl?]])
 

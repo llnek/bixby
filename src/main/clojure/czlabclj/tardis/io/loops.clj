@@ -17,11 +17,10 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [ternary spos? MubleAPI TryC]]
+  (:use [czlabclj.xlib.util.core :only [NextLong ternary spos? MubleAPI TryC]]
         [czlabclj.xlib.util.process :only [Coroutine SafeWait]]
         [czlabclj.xlib.util.dates :only [ParseDate]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.xlib.util.str :only [nsb hgl? strim]]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core])

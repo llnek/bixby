@@ -17,9 +17,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [spos? ThrowIOE TryC notnil?]]
+  (:use [czlabclj.xlib.util.core :only [NextLong spos? ThrowIOE TryC notnil?]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.xlib.util.str :only [hgl? nsb]]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.loops ]

@@ -23,11 +23,10 @@
         [czlabclj.tardis.io.loops
          :only
          [LoopableSchedule LoopableOneLoop CfgLoopable]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.tardis.io.core]
         [czlabclj.xlib.util.core
          :only
-         [MakeMMap notnil?  test-nestr TryC SubsVar]]
+         [NextLong MakeMMap notnil?  test-nestr TryC SubsVar]]
         [czlabclj.xlib.util.str :only [nsb hgl? nsn]])
 
   (:import  [java.io FileFilter File FilenameFilter IOException]

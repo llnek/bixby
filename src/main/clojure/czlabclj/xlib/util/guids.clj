@@ -17,10 +17,9 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [NowMillis TryC NewRandom]]
+  (:use [czlabclj.xlib.util.core :only [NextInt NowMillis TryC NewRandom]]
         [czlabclj.xlib.util.str :only [nsb Left Right]]
-        [czlabclj.xlib.util.bytes :only [ReadInt ReadLong]]
-        [czlabclj.xlib.util.seqnum :only [NextInt]])
+        [czlabclj.xlib.util.io :only [ReadInt ReadLong]])
 
   (:import  [java.lang StringBuilder]
             [java.net InetAddress]

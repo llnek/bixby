@@ -20,6 +20,7 @@
             [clojure.edn :as edn])
 
   (:import  [java.util.zip DataFormatException Deflater Inflater]
+            [java.util.concurrent.atomic AtomicLong AtomicInteger]
             [com.zotohlab.frwk.util CrappyDataError]
             [java.security SecureRandom]
             [com.google.gson JsonObject JsonElement]
@@ -1234,6 +1235,30 @@
   [obj]
 
   (toJava obj))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private _numInt (AtomicInteger. 1))
+(def ^:private  _numLong (AtomicLong. 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NextInt "Return a sequence number (integer)."
+
+  ^Integer
+  []
+
+  (.getAndIncrement ^AtomicInteger _numInt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn NextLong "Return a sequence number (long)."
+
+  ^long
+  []
+
+  (.getAndIncrement ^AtomicLong _numLong))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -18,7 +18,6 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.i18n.resources :only [RStr]]
@@ -27,7 +26,7 @@
          [FileRead? DirReadWrite? ]]
         [czlabclj.xlib.util.core
          :only
-         [test-cond MakeMMap test-nestr]] )
+         [NextLong test-cond MakeMMap test-nestr]] )
 
   (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
             [com.zotohlab.gallifrey.loaders AppClassLoader]

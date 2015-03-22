@@ -19,9 +19,8 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [ThrowIOE MubleAPI MakeMMap juid TryC]]
+         [NextLong ThrowIOE MubleAPI MakeMMap juid TryC]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.xlib.util.str :only [hgl? nsb]]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core])

@@ -188,13 +188,14 @@
     <dependency org="potemkin" name="potemkin" rev="0.3.4" conf="libjar->default"/>
     <dependency org="lamina" name="lamina" rev="0.5.2" conf="libjar->default"/>
     <dependency org="aleph" name="aleph" rev="0.3.2" conf="libjar->default"/>
+    <dependency org="jline" name="jline" rev="2.12" conf="libjar->default"/>
     -->
     <dependency org="org.clojure" name="clojure" rev="1.6.0" conf="libjar->default"/>
     <dependency org="org.clojure" name="clojurescript" rev="0.0-3058" conf="libjar->default">
     </dependency>
     <dependency org="org.apache.shiro" name="shiro-core" rev="1.2.3" conf="libjar->default"/>
     <dependency org="org.mozilla" name="rhino" rev="1.7R5" conf="libjar->default"/>
-    <dependency org="jline" name="jline" rev="2.12" conf="libjar->default"/>
+    <dependency org="jline" name="jline" rev="1.0" conf="libjar->default"/>
 
     <!-- testing -->
     <!--

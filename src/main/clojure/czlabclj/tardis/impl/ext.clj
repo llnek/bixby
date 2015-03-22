@@ -54,8 +54,7 @@
 
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.process :only [Coroutine]]
-        [czlabclj.xlib.util.core :only [LoadJavaProps SubsVar]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
+        [czlabclj.xlib.util.core :only [NextLong LoadJavaProps SubsVar]]
         [czlabclj.xlib.util.meta :only [MakeObj]]
 
         [czlabclj.xlib.dbio.core

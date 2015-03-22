@@ -199,7 +199,6 @@
   :uberjar-exclusions [#"META-INF/DUMMY.SF"]
 
   :XXXaot[
-    czlabclj.xlib.util.bytes
     czlabclj.xlib.util.cmdline
     czlabclj.xlib.util.constants
     czlabclj.xlib.util.countrycode
@@ -210,7 +209,6 @@
     czlabclj.xlib.util.meta
     czlabclj.xlib.util.mime
     czlabclj.xlib.util.process
-    czlabclj.xlib.util.seqnum
     czlabclj.xlib.util.str
     czlabclj.xlib.util.usastate
     czlabclj.xlib.util.ini

@@ -21,7 +21,7 @@
         [czlabclj.xlib.util.str :only [lcase hgl? nsb strim nichts?]]
         [czlabclj.xlib.util.core
          :only
-         [Try! Stringify ThrowIOE MubleAPI
+         [Try! Stringify ThrowIOE MubleAPI NextLong
           MakeMMap notnil? ConvLong]]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.core.sys]
@@ -29,7 +29,6 @@
         [czlabclj.tardis.io.http]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.webss :only [MakeWSSession]]
-        [czlabclj.xlib.util.seqnum :only [NextLong]]
         [czlabclj.xlib.util.mime :only [GetCharset]])
 
   (:import  [java.io Closeable File IOException RandomAccessFile]
