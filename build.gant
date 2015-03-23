@@ -117,7 +117,7 @@ def compileAndJar() {
 //////////////////////////////////////////////////////////////////////////////
 // test-build
 target (compileTestCode: '') {
-  depends(buildJavaFrwkTest, buildXLIbTest)
+  depends(buildJavaFrwkTest, buildXLibTest)
 }
 
 target (testBuild : '') {
