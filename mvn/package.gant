@@ -56,6 +56,7 @@ target (distroInit: '') {
   ant.mkdir (dir: "${packDir}/logs")
   ant.mkdir (dir: "${packDir}/docs")
 
+  ant.mkdir (dir: "${packDir}/pods")
   ant.mkdir (dir: "${packDir}/tmp")
   ant.mkdir (dir: "${packDir}/apps")
 

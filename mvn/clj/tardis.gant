@@ -13,7 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanTardis: '') {
-  ant.delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis", quiet: true)
   //delete ( dir: "${qaDir}/czlab", quiet: true)
 }
 
@@ -25,6 +25,31 @@ target (buildTardis: '') {
   println "Building module ${gantProjectName}#clojure.tardis"
   println "##############################################################################"
   doCompileTardis()
+}
+
+target (cTardisCore: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/core", quiet: true)
+  clj_Core()
+}
+target (cTardisEtc: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/etc", quiet: true)
+  clj_Etc()
+}
+target (cTardisAuth: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/auth", quiet: true)
+  clj_Auth()
+}
+target (cTardisIO: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/io", quiet: true)
+  clj_IO()
+}
+target (cTardisMVC: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/mvc", quiet: true)
+  clj_MVC()
+}
+target (cTardisMain: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tardis/impl", quiet: true)
+  clj_Main()
 }
 
 //////////////////////////////////////////////////////////////////////////////

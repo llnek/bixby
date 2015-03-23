@@ -234,11 +234,14 @@
   (let [^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         ^File py (.getf ctx K_PLAYDIR)
-        ^File pd (.getf ctx K_PODSDIR) ]
-    (when (.isDirectory pd)
-      (log/info "Scanning pods-dir: " pd)
-      (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
-        (deploy-one-pod f py)))
+        ^File pd (.getf ctx K_PODSDIR)]
+    (with-local-vars [sum 0]
+      (when (.isDirectory pd)
+        (log/info "Scanning for pods in: " pd)
+        (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
+          (var-set sum (inc @sum))
+          (deploy-one-pod f py)))
+      (log/info "Total pods deployed: " @sum))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
