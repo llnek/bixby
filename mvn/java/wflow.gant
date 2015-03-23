@@ -1,0 +1,71 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013, Ken Leung. All rights reserved.
+
+
+//////////////////////////////////////////////////////////////////////////////
+// clean
+target (cleanWFlow: '') {
+  delete ( dir: "${buildDir}/com/zotohlab/wflow", quiet: true)
+  delete ( dir: "${qaDir}/czlab", quiet: true)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// build
+target (buildWFlow: '') {
+  depends (cleanWFlow, checkTpcl, resolve, preBuild)
+  println "##############################################################################"
+  println "Building project ${gantProjectName}#java.wflow"
+  println "##############################################################################"
+  doCompileWFlow()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileWFlow() {
+
+  ant.javac (sourcepath: '',
+         srcdir: "${srcDir}/java",
+         destdir: "${buildDir}",
+         includeantruntime: false,
+         target: "1.8",
+         excludes: '',
+         debug: "${buildDebug}",
+         debuglevel: 'lines,vars,source',
+         classpathref: 'compilePathId') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    include (name: 'com/zotohlab/wflow/**/*.java')
+  }
+
+  ant.copy (todir: "${buildDir}/com/zotohlab/wflow") {
+    fileset (dir: "${srcDir}/java/com/zotohlab/wflow") {
+      exclude (name: '**/*.java')
+      exclude (name: '**/.svn')
+    }
+  }
+
+  ant.jar (destfile: "${distribDir}/java/wflow-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'com/zotohlab/wflow/**')
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+      exclude (name: 'demo/**')
+    }
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+
+
+
+

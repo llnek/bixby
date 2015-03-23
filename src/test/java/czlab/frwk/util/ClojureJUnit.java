@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package testzotohlab.java.frwk.util;
+package czlab.frwk.util;
 
 import mikera.cljunit.ClojureTest;
 import java.util.Arrays;
@@ -36,8 +36,8 @@ public class ClojureJUnit extends ClojureTest {
                 "testcljc.i18n.i18nstuff",
                 "testcljc.crypto.cryptostuff",
                 "testcljc.crypto.mimestuff",
-                "testcljc.dbio.dbstuff",
-                "testcljc.tardis.auth"
+                "testcljc.dbio.dbstuff"
+                //"testcljc.tardis.auth"
 
         });
     }

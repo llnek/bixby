@@ -1,0 +1,949 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013, Ken Leung. All rights reserved.
+
+import java.util.UUID
+
+//////////////////////////////////////////////////////////////////////////////
+// external tools
+includeTool << gant.tools.Ivy
+
+//////////////////////////////////////////////////////////////////////////////
+// global properties
+//property( name: 'DISTRO', value: "${gantProjectName}-distro")
+property( name: 'gantProjectName' , value: 'skaro')
+property( name: "PID", value: "${gantProjectName}")
+property ( file: "build.xs" )
+property( name: 'ivySettingsDir', value: "${basedir}")
+
+def generateUUID() { UUID.randomUUID() }
+
+//////////////////////////////////////////////////////////////////////////////
+// language compilers
+path (id: 'clojurePathId') {
+  fileset ( dir: "${clojureDir}")
+}
+
+path (id : 'tpclPathId') {
+  fileset ( dir: "${tpclDir}" )
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// ivy stuff
+ivy.settings( file: "${ivySettingsDir}/ivy.config.xml" )
+
+target (resolve: '') {
+  // conf="*" will copie artifacts defined for each conf in a dir matching conf name
+  ivy.retrieve( pattern: "${ivyLibDir}/[conf]/[artifact]-[revision].[ext]" )
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// build
+target (buildr : '') {
+  depends (clean, checkTpcl, resolve, preBuild)
+  println "#############################################"
+  println "#                                           #"
+  println "Building project ${gantProjectName}..."
+  println "#                                           #"
+  println "#############################################"
+  compileAndJar()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// test-build
+target ( testBuild : '') {
+  depends(compileTestCode, runTestCode)
+  println "Test called - OK."
+}
+
+target (fullTestBuild : '') {
+  depends (buildr, testBuild)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// publish
+target (pubDistro : '') {
+  depends (justJar, distroPackage, clean4Distro)
+  ivy.publish (resolver: 'local-repo',
+               overwrite: true,
+               status: 'release',
+               pubrevision: "${buildVersion}") {
+    artifacts ( pattern: "${distribDir}/[artifact]-${buildVersion}.[ext]")
+  }
+  println "Project ${PID} released with version ${buildVersion} - OK."
+}
+
+target (pubJar: '') {
+  depends (testBuild)
+}
+
+target (justJar: '') {
+  depends(buildr)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// clean
+target (cleanPackDir: '') {
+  mkdir (dir: "${packDir}")
+  delete ( includeEmptyDirs: true) {
+    fileset (followsymlinks: false, dir: "${packDir}", includes: '**/*')
+  }
+}
+target (clean: '') {
+  depends (cleanPackDir)
+  delete ( dir: "${buildDir}")
+  delete ( dir: "${qaDir}")
+  delete ( dir: "${distribDir}" )
+  delete ( dir: "${libDir}" )
+  mkdir (dir: "${gantBuildDir}")
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// clean-cache
+target (cleanCache : '') {
+  ivy.cleancache()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// clean-local
+target (cleanLocal: '') {
+  println "${ivyLRepoDir}"
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// report
+target (report: '') {
+  depends (resolve)
+  ivy.report (todir: "${buildDir}")
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// distro-package
+target (distroPackage: '') {
+  depends (distroInit, packAndDistro)
+}
+
+target (distroInit: '') {
+  depends (cleanPackDir)
+  mkdir (dir: "${packDir}")
+  mkdir (dir: "${packDir}/conf")
+
+  mkdir (dir: "${packDir}/dist/boot")
+  mkdir (dir: "${packDir}/dist/exec")
+  mkdir (dir: "${packDir}/bin")
+  mkdir (dir: "${packDir}/etc/ems")
+
+  mkdir (dir: "${packDir}/lib")
+  mkdir (dir: "${packDir}/logs")
+  mkdir (dir: "${packDir}/docs")
+
+  mkdir (dir: "${packDir}/tmp")
+  mkdir (dir: "${packDir}/apps")
+
+  mkdir (dir: "${packDir}/.ivyroot")
+
+  //touch (file: "${packDir}/VERSION")
+  echo (message: "${buildVersion}",
+        file: "${packDir}/VERSION")
+
+  copy (todir: "${packDir}/etc") {
+    fileset (dir: "${basedir}/etc")
+  }
+  copy (todir: "${packDir}/conf") {
+    fileset (dir: "${basedir}/etc/conf")
+  }
+}
+
+target (packAndDistro : '') {
+  depends (packRes,
+           //packDocs,
+           packSrc,
+           packLics,
+           packBin,
+           packDist,
+           packLibs,
+           packSamples,
+           packAll)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-resources
+target (packRes: '') {
+  copy (todir: "${packDir}/etc/ems", flatten: true) {
+    fileset (dir: "${srcDir}/clojure") {
+      include (name: '**/*.meta')
+    }
+  }
+  copy (todir: "${packDir}/etc") {
+    fileset (dir: "${basedir}/etc")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-docs
+target (packDocs: '') {
+  mkdir (dir: "${packDir}/docs/api")
+  copy (todir: "${packDir}/docs") {
+    fileset (dir: "${basedir}/docs", erroronmissingdir: false) {
+      exclude (name: 'dummy.txt')
+      exclude (name: '.svn')
+    }
+  }
+  java (classname: 'autodoc.autodoc',
+    fork: true,
+    failonerror: true) {
+    classpath (refid: 'compilePathId')
+    arg (value: '--name=Skaro')
+    arg (value: "--root=${basedir}")
+    arg (value: '--source-path=src/main/clojure')
+    arg (value: "--output-path=${packDir}/docs/api")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-src
+target (packSrc: '') {
+  copy (todir: "${packDir}/src/main/clojure") {
+    fileset (dir: "${srcDir}/clojure")
+  }
+  copy (todir: "${packDir}/src/main/java") {
+    fileset (dir: "${srcDir}/java")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-lics
+target (packLics: '') {
+  copy (todir: "${packDir}/lics") {
+    fileset (dir: "${basedir}/lics",
+             erroronmissingdir: false)
+  }
+  copy (todir: "${packDir}", flatten: true) {
+    fileset (dir: "${basedir}") {
+      include (name: '*.html')
+      include (name: '*.txt')
+      include (name: '*.md')
+    }
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-dist
+target (packDist: '') {
+  copy (todir: "${packDir}/dist/exec") {
+    fileset (dir: "${distribDir}/exec") {
+      include (name: '*.jar')
+    }
+  }
+  copy (todir: "${packDir}/dist/boot") {
+    fileset (dir: "${distribDir}/boot") {
+      include (name: '*.jar')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-libs
+target (packLibs: '') {
+  copy (todir: "${packDir}/lib") {
+    fileset (dir: "${libDir}/libjar")
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-bin
+target (packBin: '') {
+  copy (todir: "${packDir}/bin") {
+    fileset (dir: "${basedir}/bin", erroronmissingdir: false) {
+      exclude (name: '.svn')
+    }
+  }
+  chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-samples
+target (packSamples: '') {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-all
+target (packAll: '') {
+  delete (dir: "${packDir}/tmp")
+  mkdir (dir: "${packDir}/tmp")
+  tar (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz", compression: 'gzip') {
+    tarfileset (dir: "${packDir}") {
+      exclude (name: 'apps/**')
+      exclude (name: 'bin/**')
+    }
+    tarfileset (dir: "${packDir}", filemode: '755') {
+      include (name: 'bin/**')
+    }
+  }
+  /*
+  gzip (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+        src: "${distribDir}/${PID}.tar")
+  zip (destfile: "${distribDir}/${PID}-${buildVersion}.zip") {
+    fileset (dir: "${packDir}")
+  }
+  */
+}
+
+target (checkTpcl: '') {
+}
+
+target (preBuild: '') {
+  mkdir (dir: "${distribDir}/boot")
+  mkdir (dir: "${distribDir}/exec")
+  mkdir (dir: "${libDir}")
+  mkdir (dir: "${libDir}/libjar")
+  mkdir (dir: "${qaDir}")
+  mkdir (dir: "${buildDir}")
+  // get rid of debug logging during build!
+  copy (todir: "${buildDir}", file: "${basedir}/log4j.properties")
+  copy (todir: "${buildDir}", file: "${basedir}/logback.xml")
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// paths used for compilation and run
+path (id: 'compilePathId') {
+  fileset (dir: "${libDir}/libjar")
+  fileset (dir: "${clojureDir}")
+  path (location: "${buildDir}")
+  path (location: "${srcDir}/clojure")
+  fileset (dir: "${distribDir}") {
+    include (name: 'boot/*.jar')
+    include (name: 'exec/*.jar')
+  }
+}
+
+path (id: 'testPathId') {
+
+  fileset (dir: "${libDir}/test") {
+    include (name: '*.jar')
+  }
+  fileset (dir: "${clojureDir}") {
+    include (name: '*.jar')
+  }
+  path (location: "${buildDir}")
+  path (location: "${buildTestDir}")
+  path (location: "${testDir}/clojure")
+  fileset (dir: "${distribDir}") {
+    include (name: 'boot/*.jar')
+    include (name: 'exec/*.jar')
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// clojure
+target (repl: '') { clj_console() }
+
+target (cljhhhDemo: '') { cljhhh_Demo() }
+
+target (cljhhhMain: '') { cljhhh_Main() }
+
+target (cljhhhCore: '') { cljhhh_Core() }
+
+target (cljhhhEtc: '') { cljhhh_Etc() }
+
+target (cljhhhIO: '') { cljhhh_IO() }
+
+target (cljhhhAuth: '') { cljhhh_Auth() }
+
+target (cljhhhMVC: '') { cljhhh_MVC() }
+
+target (cljDBIO: '') { clj_DBIO() }
+
+target (cljNet:'') { clj_Net() }
+
+target (cljJMX: '') { clj_JMX() }
+
+target (cljCrypto: '') { clj_Crypto() }
+
+target (cljUtil: '') { clj_Util() }
+
+//////////////////////////////////////////////////////////////////////////////
+// compile and jar
+target (compileJavaCode: '') { compileJava() }
+target (compileClj: '') { compile_clj() }
+target (jarit: '') { jarAll() }
+
+//////////////////////////////////////////////////////////////////////////////
+// compile test code
+target (compileTestCode: '') {
+  mkdir (dir: "${reportTestDir}")
+  mkdir (dir: "${buildTestDir}")
+  compileTests_Java()
+  compileTests_Clj()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// run test code
+target (runtestsJava: '') { runtests_Java() }
+
+target (runtestsClj: '') { runtests_Clj() }
+
+target (runTestCode: '') {
+  //depends (compileTestCode)
+  depends(runtestsJava,runtestsClj)
+  //println 'No test to run.'
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// pack common web assets (css + js)
+target (packWebAssets: '') {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack license files
+target (packAllLics: '') {
+  copy (todir: "${packDir}/lics") {
+    fileset (dir: "${basedir}/lics", erroronmissingdir: false) {
+      exclude (name: '.svn')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// public TARGETS
+target (release: '') {
+  depends (pubDistro)
+}
+
+target (jar: '') {
+  depends (pubJar)
+}
+
+target (gentest: '') {
+  depends (fullTestBuild)
+}
+
+target (test: '') {
+  depends (testBuild)
+}
+
+target (jslint: '') {
+  new File("${basedir}/src/web/scripts").eachFileRecurse(groovy.io.FileType.FILES, { f ->
+    jslintScripts(f.getCanonicalPath())
+  });
+}
+
+  /*
+       housekeeping stuff
+       */
+
+target (clean4Distro: '') {
+  delete (dir: "${ivyLCacheDir}/com.zotohlab/${gantProjectName}", quiet: true)
+  delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}", quiet: true)
+}
+
+setDefaultTarget (release)
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def jslintScripts(filename) {
+  java (classname: 'org.mozilla.javascript.tools.shell.Main',
+        maxmemory: '2048m',
+        fork: true,
+        classpathref: 'compilePathId') {
+    arg (value: '-version')
+    arg (value: '170')
+    arg (value: '-encoding')
+    arg (value: 'utf-8')
+    arg (value: '-strict')
+    arg (value: filename)
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compile_clj() {
+
+  clj_Util()
+  clj_Crypto()
+  clj_Net()
+  clj_JMX()
+  clj_DBIO()
+  cljhhh_Core()
+  cljhhh_IO()
+  cljhhh_Etc()
+  cljhhh_Auth()
+  cljhhh_MVC()
+  cljhhh_Main()
+
+  // demo apps
+  cljhhh_Demo()
+
+  copy (todir: "${buildDir}") {
+    fileset (dir: "${srcDir}/clojure") {
+      exclude (name: '**/*.meta')
+      exclude (name: '**/*.clj')
+      exclude (name: '**/.svn')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compileBootJava() {
+  javac (sourcepath: '',
+         srcdir: "${srcDir}/java",
+         destdir: "${buildDir}",
+         includeantruntime: false,
+         target: "1.8",
+         excludes: '',
+         debug: "${buildDebug}",
+         debuglevel: 'lines,vars,source',
+         classpathref: 'compilePathId') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    include (name: 'com/zotohlab/gallifrey/loaders/**/*.java')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compileJava() {
+  javac (sourcepath: '',
+         srcdir: "${srcDir}/java",
+         destdir: "${buildDir}",
+         includeantruntime: false,
+         target: "1.8",
+         excludes: '',
+         debug: "${buildDebug}",
+         debuglevel: 'lines,vars,source',
+         classpathref: 'compilePathId') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    exclude (name: '**/loaders/*.java')
+    include (name: '**/*.java')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compileAndJar() {
+
+  /* build the classloaders */
+  compileBootJava()
+
+  jar (destfile: "${distribDir}/boot/${PID}-spec-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+    }
+  }
+
+  delete (dir: "${buildDir}")
+  mkdir (dir: "${buildDir}")
+
+  // get rid of debug logging during build!
+  copy (todir: "${buildDir}", file: "${basedir}/log4j.properties")
+  copy (todir: "${buildDir}", file: "${basedir}/logback.xml")
+
+  /* build other java stuff */
+
+  compileJava()
+
+  /* copy over other resources */
+  copy (todir: "${buildDir}") {
+    fileset (dir: "${srcDir}/java") {
+      exclude (name: '**/*.java')
+      exclude (name: '**/.svn')
+    }
+  }
+
+  compile_clj()
+  jarit()
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def jarAll() {
+  jar (destfile: "${distribDir}/exec/${PID}-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+      exclude (name: 'demo/**')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_console() {
+  java (classname: 'jline.ConsoleRunner',
+        maxmemory: '2048m',
+        fork: true,
+        classpathref: 'compilePathId') {
+    arg (value: 'clojure.main')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Util() {
+  println "clj_Util:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.util.core')
+    arg (value: 'czlabclj.xlib.util.cmdline')
+    arg (value: 'czlabclj.xlib.util.constants')
+    arg (value: 'czlabclj.xlib.util.countrycode')
+    arg (value: 'czlabclj.xlib.util.dates')
+    arg (value: 'czlabclj.xlib.util.files')
+    arg (value: 'czlabclj.xlib.util.guids')
+    arg (value: 'czlabclj.xlib.util.io')
+    arg (value: 'czlabclj.xlib.util.meta')
+    arg (value: 'czlabclj.xlib.util.mime')
+    arg (value: 'czlabclj.xlib.util.process')
+    arg (value: 'czlabclj.xlib.util.str')
+    arg (value: 'czlabclj.xlib.util.ini')
+    arg (value: 'czlabclj.xlib.util.scheduler')
+    arg (value: 'czlabclj.xlib.i18n.resources')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Crypto() {
+  println "clj_Crypto:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.crypto.codec')
+    arg (value: 'czlabclj.xlib.crypto.core')
+    arg (value: 'czlabclj.xlib.crypto.stores')
+    arg (value: 'czlabclj.xlib.crypto.ssl')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_JMX() {
+  println "clj_JMX:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.jmx.names')
+    arg (value: 'czlabclj.xlib.jmx.bean')
+    arg (value: 'czlabclj.xlib.jmx.core')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Net() {
+  println "clj_Net:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.net.comms')
+    arg (value: 'czlabclj.xlib.net.routes')
+    arg (value: 'czlabclj.xlib.netty.request')
+    arg (value: 'czlabclj.xlib.netty.form')
+    arg (value: 'czlabclj.xlib.netty.io')
+    arg (value: 'czlabclj.xlib.netty.filesvr')
+    arg (value: 'czlabclj.xlib.netty.discarder')
+    arg (value: 'czlabclj.xlib.netty.snooper')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_DBIO() {
+  println "clj_DBIO:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.dbio.core')
+    arg (value: 'czlabclj.xlib.dbio.sql')
+    arg (value: 'czlabclj.xlib.dbio.simple')
+    arg (value: 'czlabclj.xlib.dbio.composite')
+    arg (value: 'czlabclj.xlib.dbio.connect')
+    arg (value: 'czlabclj.xlib.dbio.drivers')
+    arg (value: 'czlabclj.xlib.dbio.sqlserver')
+    arg (value: 'czlabclj.xlib.dbio.h2')
+    arg (value: 'czlabclj.xlib.dbio.oracle')
+    arg (value: 'czlabclj.xlib.dbio.mysql')
+    arg (value: 'czlabclj.xlib.dbio.postgresql')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_MVC() {
+  println "cljhhh_MVC:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.mvc.assets')
+    arg (value: 'czlabclj.tardis.mvc.comms')
+    arg (value: 'czlabclj.tardis.mvc.filters')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_Auth() {
+  println "cljhhh_Auth:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.auth.model')
+    arg (value: 'czlabclj.tardis.auth.realm')
+    arg (value: 'czlabclj.tardis.auth.shiro')
+    arg (value: 'czlabclj.tardis.auth.plugin')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_IO() {
+  println "cljhhh_IO:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.io.core')
+    arg (value: 'czlabclj.tardis.io.socket')
+    arg (value: 'czlabclj.tardis.io.files')
+    arg (value: 'czlabclj.tardis.io.http')
+    arg (value: 'czlabclj.tardis.io.jms')
+    arg (value: 'czlabclj.tardis.io.loops')
+    arg (value: 'czlabclj.tardis.io.mails')
+    arg (value: 'czlabclj.tardis.io.netty')
+    arg (value: 'czlabclj.tardis.io.jetty')
+    arg (value: 'czlabclj.tardis.io.triggers')
+    arg (value: 'czlabclj.tardis.io.webss')
+    arg (value: 'czlabclj.tardis.io.basicauth')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_Core() {
+  println "cljhhh_Core:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.core.constants')
+    arg (value: 'czlabclj.tardis.core.sys')
+    arg (value: 'czlabclj.tardis.core.wfs')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_Etc() {
+  println "cljhhh_Etc:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.etc.cmd2')
+    arg (value: 'czlabclj.tardis.etc.task')
+    arg (value: 'czlabclj.tardis.etc.gant')
+    arg (value: 'czlabclj.tardis.etc.cmd1')
+    arg (value: 'czlabclj.tardis.etc.core')
+    arg (value: 'czlabclj.tardis.etc.misc')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_Main() {
+  println "cljhhh_Main:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.impl.climain')
+    arg (value: 'czlabclj.tardis.impl.dfts')
+    arg (value: 'czlabclj.tardis.impl.ext')
+    arg (value: 'czlabclj.tardis.impl.exec')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def cljhhh_Demo() {
+  println "cljhhh_Demo:"
+  java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'demo.async.core')
+    arg (value: 'demo.file.core')
+    arg (value: 'demo.fork.core')
+    arg (value: 'demo.http.core')
+    arg (value: 'demo.jetty.core')
+    arg (value: 'demo.jms.core')
+    arg (value: 'demo.mvc.core')
+    arg (value: 'demo.pop3.core')
+    arg (value: 'demo.steps.core')
+    arg (value: 'demo.tcpip.core')
+    arg (value: 'demo.timer.core')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compileTests_Java() {
+
+  javac (sourcepath: '',
+    srcdir: "${testDir}/java",
+    destdir: "${buildTestDir}",
+    includeantruntime: false,
+    excludes: '',
+    debug: "${buildDebug}",
+    debuglevel: 'lines,vars,source',
+    classpathref: 'testPathId') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    include (name: '**/*.java')
+  }
+  copy (todir: "${buildTestDir}") {
+    fileset (dir: "${testDir}/java") {
+      exclude (name: '**/*.java')
+      exclude (name: '**/.svn')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def compileTests_Clj() {
+  java (classname: 'clojure.lang.Compile',
+    fork: true,
+    failonerror: true,
+    maxmemory: '2048m',
+    classpathref: 'testPathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildTestDir}")
+    arg (value: 'testcljc.util.byteutils')
+    arg (value: 'testcljc.util.codes')
+    arg (value: 'testcljc.util.coreutils')
+    arg (value: 'testcljc.util.dateutils')
+    arg (value: 'testcljc.util.fileutils')
+    arg (value: 'testcljc.util.guids')
+    arg (value: 'testcljc.util.ioutils')
+    arg (value: 'testcljc.util.metautils')
+    arg (value: 'testcljc.util.mimeutils')
+    arg (value: 'testcljc.util.procutils')
+    arg (value: 'testcljc.util.seqnumgen')
+    arg (value: 'testcljc.util.strutils')
+    arg (value: 'testcljc.util.win32ini')
+    arg (value: 'testcljc.net.netstuff')
+    arg (value: 'testcljc.i18n.i18nstuff')
+    arg (value: 'testcljc.crypto.cryptostuff')
+    arg (value: 'testcljc.crypto.mimestuff')
+    arg (value: 'testcljc.dbio.dbstuff')
+    arg (value: 'testcljc.tardis.auth')
+  }
+  copy (todir: "${buildTestDir}") {
+    fileset (dir: "${testDir}/clojure") {
+      exclude (name: '**/*.clj')
+      exclude (name: '**/.svn')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def runtests_Java() {
+  ant.junit (logfailedtests: true,
+    showoutput: false,
+    printsummary: true,
+    fork: true,
+    haltonfailure: true) {
+    classpath (refid: 'testPathId')
+    formatter (type: 'plain', usefile: false)
+    batchtest (todir: "${reportTestDir}") {
+      fileset (dir: "${buildTestDir}") {
+        include (name: '**/JUTest.*')
+      }
+      formatter (type: 'xml')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def runtests_Clj() {
+  ant.junit (logfailedtests: true,
+    showoutput: false,
+    printsummary: true,
+    fork: true,
+    haltonfailure: true) {
+    classpath (refid: 'testPathId')
+    formatter (type: 'plain', usefile: false)
+    test (name: 'testzotohlab.java.frwk.util.ClojureJUnit',
+    todir: "${reportTestDir}") {
+      formatter (type: 'xml')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//EOF
+
+
+
+
+
+

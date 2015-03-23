@@ -1,0 +1,266 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013, Ken Leung. All rights reserved.
+
+
+//////////////////////////////////////////////////////////////////////////////
+// clean
+target (cleanXLib: '') {
+  delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+}
+
+target (cleanXLibTest: '') {
+  delete ( dir: "${buildTestDir}/czlab", quiet: true)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// test
+target (buildXLibTest: '') {
+  depends( cleanXLibTest, preTest)
+  doCompileXLibTest()
+}
+
+target (runXLibTest: '') {
+  depends(buildXLibTest)
+  doRunXLibTest()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileXLibTest() {
+
+  ant.javac (sourcepath: '',
+    srcdir: "${testDir}/java",
+    destdir: "${buildTestDir}",
+    includeantruntime: false,
+    excludes: '',
+    debug: "${buildDebug}",
+    debuglevel: 'lines,vars,source',
+    classpathref: 'testPathId') {
+    compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
+    include (name: '**/*.java')
+  }
+  ant.copy (todir: "${buildTestDir}") {
+    fileset (dir: "${testDir}/java") {
+      exclude (name: '**/*.java')
+      exclude (name: '**/.svn')
+    }
+  }
+
+  ant.java (classname: 'clojure.lang.Compile',
+    fork: true,
+    failonerror: true,
+    maxmemory: '2048m',
+    classpathref: 'testPathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildTestDir}")
+    arg (value: 'testcljc.util.byteutils')
+    arg (value: 'testcljc.util.codes')
+    arg (value: 'testcljc.util.coreutils')
+    arg (value: 'testcljc.util.dateutils')
+    arg (value: 'testcljc.util.fileutils')
+    arg (value: 'testcljc.util.guids')
+    arg (value: 'testcljc.util.ioutils')
+    arg (value: 'testcljc.util.metautils')
+    arg (value: 'testcljc.util.mimeutils')
+    arg (value: 'testcljc.util.procutils')
+    arg (value: 'testcljc.util.seqnumgen')
+    arg (value: 'testcljc.util.strutils')
+    arg (value: 'testcljc.util.win32ini')
+    arg (value: 'testcljc.net.netstuff')
+    arg (value: 'testcljc.i18n.i18nstuff')
+    arg (value: 'testcljc.crypto.cryptostuff')
+    arg (value: 'testcljc.crypto.mimestuff')
+    arg (value: 'testcljc.dbio.dbstuff')
+    //arg (value: 'testcljc.tardis.auth')
+  }
+  ant.copy (todir: "${buildTestDir}") {
+    fileset (dir: "${testDir}/clojure") {
+      exclude (name: '**/*.clj')
+      exclude (name: '**/.svn')
+    }
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doRunXLibTest() {
+  ant.junit (logfailedtests: true,
+    showoutput: false,
+    printsummary: true,
+    fork: true,
+    haltonfailure: true) {
+    classpath (refid: 'testPathId')
+    formatter (type: 'plain', usefile: false)
+    test (name: 'czlab.frwk.util.ClojureJUnit',
+    todir: "${reportTestDir}") {
+      formatter (type: 'xml')
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// build
+target (buildXLib: '') {
+  depends (cleanXLib, checkTpcl, resolve, preBuild)
+  println "##############################################################################"
+  println "Building project ${gantProjectName}#clojure.xlib"
+  println "##############################################################################"
+  doCompileXLib()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileXLib() {
+
+  clj_Util()
+  clj_Crypto()
+  clj_DBIO()
+  clj_Net()
+  clj_JMX()
+
+  ant.copy (todir: "${buildDir}/czlabclj/xlib") {
+    fileset (dir: "${srcDir}/clojure/czlabclj/xlib") {
+      exclude (name: '**/*.clj')
+      exclude (name: '**/.svn')
+    }
+  }
+
+  ant.jar (destfile: "${distribDir}/clj/xlib-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'czlabclj/xlib/**')
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+      exclude (name: 'demo/**')
+    }
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Util() {
+  //println "clj_Util:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.util.core')
+    arg (value: 'czlabclj.xlib.util.cmdline')
+    arg (value: 'czlabclj.xlib.util.constants')
+    arg (value: 'czlabclj.xlib.util.countrycode')
+    arg (value: 'czlabclj.xlib.util.dates')
+    arg (value: 'czlabclj.xlib.util.files')
+    arg (value: 'czlabclj.xlib.util.guids')
+    arg (value: 'czlabclj.xlib.util.io')
+    arg (value: 'czlabclj.xlib.util.meta')
+    arg (value: 'czlabclj.xlib.util.mime')
+    arg (value: 'czlabclj.xlib.util.process')
+    arg (value: 'czlabclj.xlib.util.str')
+    arg (value: 'czlabclj.xlib.util.ini')
+    arg (value: 'czlabclj.xlib.util.scheduler')
+    arg (value: 'czlabclj.xlib.i18n.resources')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Crypto() {
+  //println "clj_Crypto:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.crypto.codec')
+    arg (value: 'czlabclj.xlib.crypto.core')
+    arg (value: 'czlabclj.xlib.crypto.stores')
+    arg (value: 'czlabclj.xlib.crypto.ssl')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_JMX() {
+  //println "clj_JMX:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.jmx.names')
+    arg (value: 'czlabclj.xlib.jmx.bean')
+    arg (value: 'czlabclj.xlib.jmx.core')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Net() {
+  //println "clj_Net:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.net.comms')
+    arg (value: 'czlabclj.xlib.net.routes')
+    arg (value: 'czlabclj.xlib.netty.request')
+    arg (value: 'czlabclj.xlib.netty.form')
+    arg (value: 'czlabclj.xlib.netty.io')
+    arg (value: 'czlabclj.xlib.netty.filesvr')
+    arg (value: 'czlabclj.xlib.netty.discarder')
+    arg (value: 'czlabclj.xlib.netty.snooper')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_DBIO() {
+  //println "clj_DBIO:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.dbio.core')
+    arg (value: 'czlabclj.xlib.dbio.sql')
+    arg (value: 'czlabclj.xlib.dbio.simple')
+    arg (value: 'czlabclj.xlib.dbio.composite')
+    arg (value: 'czlabclj.xlib.dbio.connect')
+    arg (value: 'czlabclj.xlib.dbio.drivers')
+    arg (value: 'czlabclj.xlib.dbio.sqlserver')
+    arg (value: 'czlabclj.xlib.dbio.h2')
+    arg (value: 'czlabclj.xlib.dbio.oracle')
+    arg (value: 'czlabclj.xlib.dbio.mysql')
+    arg (value: 'czlabclj.xlib.dbio.postgresql')
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+
+
+
+

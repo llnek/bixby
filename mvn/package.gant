@@ -1,0 +1,212 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013, Ken Leung. All rights reserved.
+
+
+//////////////////////////////////////////////////////////////////////////////
+// clean
+target (cleanPackDir: '') {
+  ant.mkdir (dir: "${packDir}")
+  ant.delete ( includeEmptyDirs: true) {
+    fileset (followsymlinks: false,
+             dir: "${packDir}", includes: '**/*')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// publish
+
+target (pubDistro : '') {
+  depends (buildr, distroPackage, clean4Distro)
+  ivy.publish (resolver: 'local-repo',
+               overwrite: true,
+               status: 'release',
+               pubrevision: "${buildVersion}") {
+    artifacts ( pattern: "${distribDir}/[artifact]-${buildVersion}.[ext]")
+  }
+  println "Project ${PID} released with version ${buildVersion} - OK."
+}
+
+
+target (distroPackage: '') {
+  depends (distroInit, packAndDistro)
+}
+
+target (distroInit: '') {
+  depends (cleanPackDir)
+
+  ant.mkdir (dir: "${packDir}/.ivyroot")
+  ant.mkdir (dir: "${packDir}/conf")
+
+  ant.mkdir (dir: "${packDir}/dist/boot")
+  ant.mkdir (dir: "${packDir}/dist/exec")
+
+  ant.mkdir (dir: "${packDir}/bin")
+  ant.mkdir (dir: "${packDir}/etc/ems")
+
+  ant.mkdir (dir: "${packDir}/lib")
+  ant.mkdir (dir: "${packDir}/logs")
+  ant.mkdir (dir: "${packDir}/docs")
+
+  ant.mkdir (dir: "${packDir}/tmp")
+  ant.mkdir (dir: "${packDir}/apps")
+
+  //touch (file: "${packDir}/VERSION")
+  ant.echo (message: "${buildVersion}",
+        file: "${packDir}/VERSION")
+
+  ant.copy (todir: "${packDir}/etc") {
+    fileset (dir: "${basedir}/etc")
+  }
+  ant.copy (todir: "${packDir}/conf") {
+    fileset (dir: "${basedir}/etc/conf")
+  }
+}
+
+target (packAndDistro : '') {
+  depends (packRes,
+           //packDocs,
+           packSrc,
+           packLics,
+           packBin,
+           packDist,
+           packLibs,
+           packSamples,
+           packAll)
+}
+
+target (packRes: '') {
+  ant.copy (todir: "${packDir}/etc/ems", flatten: true) {
+    fileset (dir: "${srcDir}/clojure") {
+      include (name: '**/*.meta')
+    }
+  }
+  ant.copy (todir: "${packDir}/etc") {
+    fileset (dir: "${basedir}/etc")
+  }
+}
+
+target (packDocs: '') {
+  ant.mkdir (dir: "${packDir}/docs/api")
+  ant.copy (todir: "${packDir}/docs") {
+    fileset (dir: "${basedir}/docs", erroronmissingdir: false) {
+      exclude (name: 'dummy.txt')
+      exclude (name: '.svn')
+    }
+  }
+  ant.java (classname: 'autodoc.autodoc',
+    fork: true,
+    failonerror: true) {
+    classpath (refid: 'compilePathId')
+    arg (value: '--name=Skaro')
+    arg (value: "--root=${basedir}")
+    arg (value: '--source-path=src/main/clojure')
+    arg (value: "--output-path=${packDir}/docs/api")
+  }
+}
+
+target (packSrc: '') {
+  ant.copy (todir: "${packDir}/src/main/clojure") {
+    fileset (dir: "${srcDir}/clojure")
+  }
+  ant.copy (todir: "${packDir}/src/main/java") {
+    fileset (dir: "${srcDir}/java")
+  }
+}
+
+target (packLics: '') {
+  ant.copy (todir: "${packDir}/lics") {
+    fileset (dir: "${basedir}/lics",
+             erroronmissingdir: false)
+  }
+  ant.copy (todir: "${packDir}", flatten: true) {
+    fileset (dir: "${basedir}") {
+      include (name: '*.html')
+      include (name: '*.txt')
+      include (name: '*.md')
+    }
+  }
+
+}
+
+target (packDist: '') {
+  ant.copy (todir: "${packDir}/dist/exec") {
+    fileset (dir: "${distribDir}/java") {
+      include (name: '*.jar')
+    }
+    fileset (dir: "${distribDir}/clj") {
+      include (name: '*.jar')
+    }
+  }
+  ant.copy (todir: "${packDir}/dist/boot") {
+    fileset (dir: "${distribDir}/boot") {
+      include (name: '*.jar')
+    }
+  }
+}
+
+target (packLibs: '') {
+  ant.copy (todir: "${packDir}/lib") {
+    fileset (dir: "${libDir}/libjar")
+  }
+}
+
+target (packBin: '') {
+  ant.copy (todir: "${packDir}/bin") {
+    fileset (dir: "${basedir}/bin", erroronmissingdir: false) {
+      exclude (name: '.svn')
+    }
+  }
+  ant.chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
+}
+
+target (packSamples: '') {
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-all
+target (packAll: '') {
+  ant.delete (dir: "${packDir}/tmp")
+  ant.mkdir (dir: "${packDir}/tmp")
+  ant.tar (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+           compression: 'gzip') {
+    tarfileset (dir: "${packDir}") {
+      exclude (name: 'apps/**')
+      exclude (name: 'bin/**')
+    }
+    tarfileset (dir: "${packDir}", filemode: '755') {
+      include (name: 'bin/**')
+    }
+  }
+  /*
+  ant.gzip (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+        src: "${distribDir}/${PID}.tar")
+  ant.zip (destfile: "${distribDir}/${PID}-${buildVersion}.zip") {
+    fileset (dir: "${packDir}")
+  }
+  */
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// housekeeping stuff
+target (clean4Distro: '') {
+  ant.delete (dir: "${ivyLCacheDir}/com.zotohlab/${gantProjectName}",
+              quiet: true)
+  ant.delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}",
+              quiet: true)
+}
+
+
+
+
+
+
+
+

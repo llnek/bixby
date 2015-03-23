@@ -1,0 +1,208 @@
+// This library is distributed in  the hope that it will be useful but without
+// any  warranty; without  even  the  implied  warranty of  merchantability or
+// fitness for a particular purpose.
+// The use and distribution terms for this software are covered by the Eclipse
+// Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+// can be found in the file epl-v10.html at the root of this distribution.
+// By using this software in any  fashion, you are agreeing to be bound by the
+// terms of this license. You  must not remove this notice, or any other, from
+// this software.
+// Copyright (c) 2013, Ken Leung. All rights reserved.
+
+
+//////////////////////////////////////////////////////////////////////////////
+// clean
+target (cleanTardis: '') {
+  delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+  //delete ( dir: "${qaDir}/czlab", quiet: true)
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// build
+target (buildTardis: '') {
+  depends (cleanTardis, checkTpcl, resolve, preBuild)
+  println "##############################################################################"
+  println "Building project ${gantProjectName}#clojure.tardis"
+  println "##############################################################################"
+  doCompileTardis()
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doCompileTardis() {
+
+  clj_Core()
+  clj_Etc()
+  clj_Auth()
+  clj_IO()
+  clj_MVC()
+  clj_Main()
+
+  ant.copy (todir: "${buildDir}/czlabclj/tardis") {
+    fileset (dir: "${srcDir}/clojure/czlabclj/tardis") {
+      exclude (name: '**/*.meta')
+      exclude (name: '**/*.clj')
+      exclude (name: '**/.svn')
+    }
+  }
+
+  ant.jar (destfile: "${distribDir}/clj/tardis-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'czlabclj/tardis/**')
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+      exclude (name: 'demo/**')
+    }
+  }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Core() {
+  //println "cljhhh_Core:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.core.constants')
+    arg (value: 'czlabclj.tardis.core.sys')
+    arg (value: 'czlabclj.tardis.core.wfs')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Etc() {
+  //println "cljhhh_Etc:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.etc.cmd2')
+    arg (value: 'czlabclj.tardis.etc.task')
+    arg (value: 'czlabclj.tardis.etc.gant')
+    arg (value: 'czlabclj.tardis.etc.cmd1')
+    arg (value: 'czlabclj.tardis.etc.core')
+    arg (value: 'czlabclj.tardis.etc.misc')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Auth() {
+  //println "cljhhh_Auth:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.auth.model')
+    arg (value: 'czlabclj.tardis.auth.realm')
+    arg (value: 'czlabclj.tardis.auth.shiro')
+    arg (value: 'czlabclj.tardis.auth.plugin')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_IO() {
+  //println "cljhhh_IO:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.io.core')
+    arg (value: 'czlabclj.tardis.io.socket')
+    arg (value: 'czlabclj.tardis.io.files')
+    arg (value: 'czlabclj.tardis.io.http')
+    arg (value: 'czlabclj.tardis.io.jms')
+    arg (value: 'czlabclj.tardis.io.loops')
+    arg (value: 'czlabclj.tardis.io.mails')
+    arg (value: 'czlabclj.tardis.io.netty')
+    arg (value: 'czlabclj.tardis.io.jetty')
+    arg (value: 'czlabclj.tardis.io.triggers')
+    arg (value: 'czlabclj.tardis.io.webss')
+    arg (value: 'czlabclj.tardis.io.basicauth')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_MVC() {
+  //println "cljhhh_MVC:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.mvc.assets')
+    arg (value: 'czlabclj.tardis.mvc.comms')
+    arg (value: 'czlabclj.tardis.mvc.filters')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Main() {
+  //println "cljhhh_Main:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.tardis.impl.climain')
+    arg (value: 'czlabclj.tardis.impl.dfts')
+    arg (value: 'czlabclj.tardis.impl.ext')
+    arg (value: 'czlabclj.tardis.impl.exec')
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def clj_Demo() {
+  //println "cljhhh_Demo:"
+  ant.java (classname: 'clojure.lang.Compile',
+        fork: true,
+        failonerror: true,
+        maxmemory: '2048m',
+        classpathref: 'compilePathId') {
+    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
+    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'demo.async.core')
+    arg (value: 'demo.file.core')
+    arg (value: 'demo.fork.core')
+    arg (value: 'demo.http.core')
+    arg (value: 'demo.jetty.core')
+    arg (value: 'demo.jms.core')
+    arg (value: 'demo.mvc.core')
+    arg (value: 'demo.pop3.core')
+    arg (value: 'demo.steps.core')
+    arg (value: 'demo.tcpip.core')
+    arg (value: 'demo.timer.core')
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+
+
+
+

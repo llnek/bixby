@@ -36,6 +36,7 @@ public enum CoreUtils {
   private static Logger _log= LoggerFactory.getLogger(CoreUtils.class);
   public static Logger tlog() { return _log; }
 
+  @SuppressWarnings("unused")
   public static void main(String[] args) {
     try {
 //      String script = "(fn [_] {:a 1} )";
