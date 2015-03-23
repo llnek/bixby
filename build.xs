@@ -15,13 +15,13 @@ distribDir=${gantBuildDir}/distrib
 libDir=${gantBuildDir}/lib
 buildDir=${gantBuildDir}/build
 qaDir=${gantBuildDir}/test
-packDir=${gantBuildDir}/package
+packDir=${gantBuildDir}/pack
 
 testDir=${basedir}/src/test
 srcDir=${basedir}/src/main
 
-reportTestDir=${qaDir}/test-reports
-buildTestDir=${qaDir}/test-classes
+reportTestDir=${qaDir}/reports
+buildTestDir=${qaDir}/classes
 
 
 
