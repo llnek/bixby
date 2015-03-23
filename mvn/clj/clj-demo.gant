@@ -45,16 +45,19 @@ def doCompileCljDemo() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/exec/demo-clj-${buildVersion}.jar") {
-    fileset (dir: "${buildDir}") {
-      include (name: 'demo/**')
-      exclude (name: 'demo/splits/**')
-      exclude (name: 'demo/flows/**')
-      exclude (name: '**/log4j.properties')
-      exclude (name: '**/logback.xml')
-    }
+  if (false) {
+    // no need to jar them
+    ant.jar (destfile: "${distribDir}/exec/demo-clj-${buildVersion}.jar") {
+      fileset (dir: "${buildDir}") {
+        include (name: 'demo/**')
+        exclude (name: 'demo/splits/**')
+        exclude (name: 'demo/flows/**')
+        exclude (name: '**/log4j.properties')
+        exclude (name: '**/logback.xml')
+      }
   }
 
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////

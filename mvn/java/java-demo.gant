@@ -54,13 +54,16 @@ def doCompileJavaDemo() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/exec/demo-java-${buildVersion}.jar") {
-    fileset (dir: "${buildDir}") {
-      include (name: 'demo/splits/**')
-      include (name: 'demo/flows/**')
+  if (false) {
+    // dont need to jar them
+    ant.jar (destfile: "${distribDir}/exec/demo-java-${buildVersion}.jar") {
+      fileset (dir: "${buildDir}") {
+        include (name: 'demo/splits/**')
+        include (name: 'demo/flows/**')
+      }
     }
-  }
 
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
