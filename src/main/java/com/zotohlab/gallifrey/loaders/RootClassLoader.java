@@ -18,29 +18,32 @@ import java.io.File;
  */
 public class RootClassLoader extends AbstractClassLoader {
 
+  private String _baseDir="";
+  
   public RootClassLoader(ClassLoader par) {
     super(par);
-
-    String base=System.getProperty("skaro.home","");
-    if (base.length() > 0) { load(base); }
+    configure(System.getProperty("skaro.home",""));
   }
 
+  public String baseDir() { return _baseDir; }
+  
   public void configure(String baseDir) {
-    if (baseDir != null) {
+    if (baseDir != null && baseDir.length() > 0) {
       load( baseDir);
     }
   }
 
   private void load(String baseDir) {
 
-    File d= new File(baseDir, "dist/exec");
+//    File d= new File(baseDir, "dist/exec");
     File p= new File(baseDir, "patch");
     File b= new File(baseDir, "lib");
 
     if (!_loaded) {
-      findUrls(p).findUrls(d).findUrls(b);
+      findUrls(p).findUrls(b);
     }
 
+    _baseDir=baseDir;    
     _loaded=true;
   }
 

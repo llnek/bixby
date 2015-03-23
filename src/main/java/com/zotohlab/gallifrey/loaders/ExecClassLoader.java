@@ -11,30 +11,32 @@
 
 package com.zotohlab.gallifrey.loaders;
 
+import java.io.File;
+
 
 /**
  * @author kenl
  */
 public class ExecClassLoader extends AbstractClassLoader {
 
+  //should be called by command line
   public ExecClassLoader(ClassLoader par) {
-    super( new RootClassLoader(par));
+    super( par instanceof RootClassLoader ? par : new RootClassLoader(par));
 
-    String base=System.getProperty("skaro.home","");
-    if (base.length() > 0) { load(base); }
+    RootClassLoader c= (RootClassLoader) this.getParent();
+    configure(c.baseDir());
   }
 
   private void load(String base) {
-//    File p= new File(base, "exec");
-//
-//    if (p.exists() && !_loaded) {
-//      findUrls(p);
-//    }
+    File p= new File(base, "dist/exec");
+    if (p.exists() && !_loaded) {
+      findUrls(p);
+    }
     _loaded=true;
   }
 
   public void configure(String baseDir) {
-    if (baseDir != null) {
+    if (baseDir != null && baseDir.length() > 0) {
       load(baseDir);
     }
   }

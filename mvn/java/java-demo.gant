@@ -14,7 +14,7 @@
 // clean
 target (cleanJavaDemo: '') {
   ['flows', 'splits'].each { s ->
-    delete ( dir: "${buildDir}/demo/${s}", quiet: true)
+    ant.delete ( dir: "${buildDir}/demo/${s}", quiet: true)
   }
 }
 
@@ -23,7 +23,7 @@ target (cleanJavaDemo: '') {
 target (buildJavaDemo: '') {
   depends (cleanJavaDemo, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#skaro.java.demo"
+  println "Building module ${gantProjectName}#skaro.java.demo"
   println "##############################################################################"
   doCompileJavaDemo()
 }
@@ -54,7 +54,7 @@ def doCompileJavaDemo() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/java/demo-java-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/demo-java-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'demo/splits/**')
       include (name: 'demo/flows/**')

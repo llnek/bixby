@@ -13,11 +13,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanXLib: '') {
-  delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
 }
 
 target (cleanXLibTest: '') {
-  delete ( dir: "${buildTestDir}/czlab", quiet: true)
+  ant.delete ( dir: "${buildTestDir}/czlab", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -112,7 +112,7 @@ def doRunXLibTest() {
 target (buildXLib: '') {
   depends (cleanXLib, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#clojure.xlib"
+  println "Building module ${gantProjectName}#clojure.xlib"
   println "##############################################################################"
   doCompileXLib()
 }
@@ -134,7 +134,7 @@ def doCompileXLib() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/clj/xlib-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/xlib-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'czlabclj/xlib/**')
       exclude (name: '**/log4j.properties')

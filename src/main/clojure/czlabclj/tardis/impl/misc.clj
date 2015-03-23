@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.etc.misc
+  czlabclj.tardis.impl.misc
 
   (:use [czlabclj.tardis.core.wfs :only [DefWFTask]])
 

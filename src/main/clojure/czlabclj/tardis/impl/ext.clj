@@ -44,7 +44,7 @@
           start kernel-start
           stop kernel-stop } ]
 
-        [czlabclj.tardis.etc.misc]
+        [czlabclj.tardis.impl.misc]
         [czlabclj.tardis.core.sys]
 
         [czlabclj.xlib.util.core

@@ -19,7 +19,8 @@ import java.io.File;
  */
 public class AppClassLoader extends AbstractClassLoader {
 
-  public AppClassLoader(RootClassLoader par) {
+  
+  public AppClassLoader(ExecClassLoader par) {
     super(par);
   }
 
@@ -27,10 +28,12 @@ public class AppClassLoader extends AbstractClassLoader {
     File c= new File(appDir, "POD-INF/classes");
     File p= new File(appDir, "POD-INF/patch");
     File b= new File(appDir, "POD-INF/lib");
+   
     if (!_loaded) {
       findUrls(p);
       addUrl(c);
       findUrls(b);
+      
 //      if ( new File(appDir, "WEB-INF").exists() ) {
 //        addUrl( new File(appDir, "WEB-INF/classes"));
 //        findUrls(new File(appDir, "WEB-INF/lib"));

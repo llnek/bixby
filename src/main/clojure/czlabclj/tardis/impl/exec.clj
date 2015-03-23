@@ -385,7 +385,7 @@
 
   (let [^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
-        rcl (.getf ctx K_ROOT_CZLR)
+        rcl (.getf ctx K_EXEC_CZLR)
         ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta co)
         cl  (AppClassLoader. rcl) ]
     (.configure cl (NiceFPath (File. (.toURI  url))) )

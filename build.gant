@@ -27,33 +27,12 @@ def generateUUID() { UUID.randomUUID() }
 
 //////////////////////////////////////////////////////////////////////////////
 // language compilers
-path (id: 'clojurePathId') {
-  fileset ( dir: "${clojureDir}")
-}
-
-path (id : 'tpclPathId') {
-  fileset ( dir: "${tpclDir}" )
-}
 
 path (id: 'compilePathId') {
   path (location: "${srcDir}/clojure")
   path (location: "${buildDir}")
   fileset (dir: "${libDir}/libjar") {
     include (name: '*.jar')
-  }
-}
-
-path (id: 'XXcompilePathId') {
-  path (location: "${srcDir}/clojure")
-  path (location: "${buildDir}")
-  fileset (dir: "${libDir}/libjar") {
-    include (name: '*.jar')
-  }
-  fileset (dir: "${clojureDir}")
-  fileset (dir: "${distribDir}") {
-    include (name: 'boot/*.jar')
-    include (name: 'exec/*.jar')
-    include (name: 'java/*.jar')
   }
 }
 
@@ -112,8 +91,9 @@ target (report: '') {
 // build
 
 target (clean4Build: '') {
-  depends(cleanJavaFrwk, cleanWFlow, cleanGally, cleanJavaDemo,
-  cleanXLib, cleanTardis, cleanCljDemo)
+  depends(cleanJavaFrwk, cleanWFlow, cleanGally,
+  cleanXLib, cleanTardis,
+  cleanJavaDemo,cleanCljDemo)
 }
 
 target (buildr : '') {
@@ -134,7 +114,6 @@ def compileAndJar() {
   buildJavaDemo, buildCljDemo)
 }
 
-
 //////////////////////////////////////////////////////////////////////////////
 // test-build
 target (compileTestCode: '') {
@@ -152,10 +131,10 @@ target (fullTestBuild : '') {
 
 target (cleanAll: '') {
   depends (cleanPackDir)
-  ant.delete ( dir: "${buildDir}")
-  ant.delete ( dir: "${qaDir}")
-  ant.delete ( dir: "${distribDir}" )
-  ant.delete ( dir: "${libDir}" )
+  ant.delete ( dir: "${buildDir}", quiet: true)
+  ant.delete ( dir: "${qaDir}", quiet: true)
+  ant.delete ( dir: "${distribDir}" , quiet: true)
+  ant.delete ( dir: "${libDir}" , quiet: true)
   ant.mkdir (dir: "${gantBuildDir}")
 }
 
@@ -170,9 +149,6 @@ target (preTest: '') {
 target (preBuild: '') {
   mkdir (dir: "${distribDir}/boot")
   mkdir (dir: "${distribDir}/exec")
-  mkdir (dir: "${distribDir}/java")
-  mkdir (dir: "${distribDir}/clj")
-  mkdir (dir: "${libDir}")
   mkdir (dir: "${libDir}/libjar")
   mkdir (dir: "${qaDir}")
   mkdir (dir: "${buildDir}")

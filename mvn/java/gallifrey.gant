@@ -13,9 +13,9 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanGally: '') {
-  delete ( dir: "${buildDir}/com/zotohlab/gallifrey", quiet: true)
-  delete ( dir: "${buildDir}/com/zotohlab/mock", quiet: true)
-  delete ( dir: "${buildDir}/com/zotohlab/tpcl", quiet: true)
+  ant.delete ( dir: "${buildDir}/com/zotohlab/gallifrey", quiet: true)
+  ant.delete ( dir: "${buildDir}/com/zotohlab/mock", quiet: true)
+  ant.delete ( dir: "${buildDir}/com/zotohlab/tpcl", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ target (cleanGally: '') {
 target (buildGally: '') {
   depends (cleanGally, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#java.gallifrey"
+  println "Building module ${gantProjectName}#java.gallifrey"
   println "##############################################################################"
   doCompileGally()
 }
@@ -56,7 +56,13 @@ def doCompileGally() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/java/gallifrey-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/boot/cl-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'com/zotohlab/gallifrey/loaders/**')
+    }
+  }
+
+  ant.jar (destfile: "${distribDir}/exec/gallifrey-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'com/zotohlab/gallifrey/**')
       include (name: 'com/zotohlab/mock/**')

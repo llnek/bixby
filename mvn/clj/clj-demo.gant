@@ -27,7 +27,7 @@ target (cleanCljDemo: '') {
 target (buildCljDemo: '') {
   depends (cleanCljDemo, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#clojure.tardis.demo"
+  println "Building module ${gantProjectName}#clojure.tardis.demo"
   println "##############################################################################"
   doCompileCljDemo()
 }
@@ -45,7 +45,7 @@ def doCompileCljDemo() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/clj/demo-clj-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/demo-clj-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'demo/**')
       exclude (name: 'demo/splits/**')

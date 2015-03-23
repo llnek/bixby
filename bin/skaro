@@ -139,10 +139,11 @@ build_all() {
 JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
 DBGOPTS="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
 PATCHDIR=$SKARO_HOME/patch/*
-DISTRO=$SKARO_HOME/dist/exec/*
+#DISTRO=$SKARO_HOME/dist/exec/*
 BOOT=$SKARO_HOME/dist/boot/*
 LIBDIR=$SKARO_HOME/lib/*
-BCP=$BOOT:$PATCHDIR:$DISTRO:$LIBDIR:$CLASSPATH
+BCP=$BOOT:$CLASSPATH
+#BCP=$BOOT:$PATCHDIR:$LIBDIR:$CLASSPATH
 
 JAVA_CMD=$JAVA_HOME/bin/java
 BG=false

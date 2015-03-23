@@ -12,6 +12,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // clean
+
 target (cleanPackDir: '') {
   ant.mkdir (dir: "${packDir}")
   ant.delete ( includeEmptyDirs: true) {
@@ -58,7 +59,6 @@ target (distroInit: '') {
   ant.mkdir (dir: "${packDir}/tmp")
   ant.mkdir (dir: "${packDir}/apps")
 
-  //touch (file: "${packDir}/VERSION")
   ant.echo (message: "${buildVersion}",
         file: "${packDir}/VERSION")
 
@@ -78,7 +78,6 @@ target (packAndDistro : '') {
            packBin,
            packDist,
            packLibs,
-           packSamples,
            packAll)
 }
 
@@ -138,16 +137,18 @@ target (packLics: '') {
 
 target (packDist: '') {
   ant.copy (todir: "${packDir}/dist/exec") {
-    fileset (dir: "${distribDir}/java") {
-      include (name: '*.jar')
-    }
-    fileset (dir: "${distribDir}/clj") {
+    fileset (dir: "${distribDir}/exec") {
       include (name: '*.jar')
     }
   }
   ant.copy (todir: "${packDir}/dist/boot") {
     fileset (dir: "${distribDir}/boot") {
       include (name: '*.jar')
+    }
+  }
+  ant.jar (destfile: "${packDir}/dist/exec/clj-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'clojure/**')
     }
   }
 }
@@ -165,9 +166,6 @@ target (packBin: '') {
     }
   }
   ant.chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
-}
-
-target (packSamples: '') {
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -202,6 +200,12 @@ target (clean4Distro: '') {
   ant.delete (dir: "${ivyLRepoDir}/com.zotohlab/${gantProjectName}",
               quiet: true)
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+
 
 
 

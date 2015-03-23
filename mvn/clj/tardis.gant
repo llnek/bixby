@@ -13,7 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanTardis: '') {
-  delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
   //delete ( dir: "${qaDir}/czlab", quiet: true)
 }
 
@@ -22,7 +22,7 @@ target (cleanTardis: '') {
 target (buildTardis: '') {
   depends (cleanTardis, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#clojure.tardis"
+  println "Building module ${gantProjectName}#clojure.tardis"
   println "##############################################################################"
   doCompileTardis()
 }
@@ -46,12 +46,9 @@ def doCompileTardis() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/clj/tardis-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/tardis-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'czlabclj/tardis/**')
-      exclude (name: '**/log4j.properties')
-      exclude (name: '**/logback.xml')
-      exclude (name: 'demo/**')
     }
   }
 
@@ -90,7 +87,6 @@ def clj_Etc() {
     arg (value: 'czlabclj.tardis.etc.gant')
     arg (value: 'czlabclj.tardis.etc.cmd1')
     arg (value: 'czlabclj.tardis.etc.core')
-    arg (value: 'czlabclj.tardis.etc.misc')
   }
 }
 
@@ -170,34 +166,9 @@ def clj_Main() {
     arg (value: 'czlabclj.tardis.impl.dfts')
     arg (value: 'czlabclj.tardis.impl.ext')
     arg (value: 'czlabclj.tardis.impl.exec')
+    arg (value: 'czlabclj.tardis.impl.misc')
   }
 }
-
-//////////////////////////////////////////////////////////////////////////////
-//
-def clj_Demo() {
-  //println "cljhhh_Demo:"
-  ant.java (classname: 'clojure.lang.Compile',
-        fork: true,
-        failonerror: true,
-        maxmemory: '2048m',
-        classpathref: 'compilePathId') {
-    sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
-    sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'demo.async.core')
-    arg (value: 'demo.file.core')
-    arg (value: 'demo.fork.core')
-    arg (value: 'demo.http.core')
-    arg (value: 'demo.jetty.core')
-    arg (value: 'demo.jms.core')
-    arg (value: 'demo.mvc.core')
-    arg (value: 'demo.pop3.core')
-    arg (value: 'demo.steps.core')
-    arg (value: 'demo.tcpip.core')
-    arg (value: 'demo.timer.core')
-  }
-}
-
 
 //////////////////////////////////////////////////////////////////////////////
 //

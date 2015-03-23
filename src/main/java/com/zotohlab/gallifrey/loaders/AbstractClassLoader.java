@@ -33,7 +33,7 @@ public abstract class AbstractClassLoader extends URLClassLoader {
       dir.listFiles( new FilenameFilter() {
         public boolean accept(File f,String n) {
           if (n.endsWith(".jar")) {
-            addUrl(f);
+            addUrl(new File(f,n));
           }
           return false;
         }

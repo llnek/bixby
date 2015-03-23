@@ -13,11 +13,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanJavaFrwk: '') {
-  delete ( dir: "${buildDir}/com/zotohlab/frwk", quiet: true)
+  ant.delete ( dir: "${buildDir}/com/zotohlab/frwk", quiet: true)
 }
 
 target (cleanJavaFrwkTest: '') {
-  delete ( dir: "${buildTestDir}/czlab", quiet: true)
+  ant.delete ( dir: "${buildTestDir}/czlab", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -47,6 +47,7 @@ def doCompileJavaFrwkTest() {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
     include (name: '**/*.java')
   }
+
   ant.copy (todir: "${buildTestDir}") {
     fileset (dir: "${testDir}/java") {
       exclude (name: '**/*.java')
@@ -58,6 +59,7 @@ def doCompileJavaFrwkTest() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doRunJavaFrwkTest() {
+
   ant.junit (logfailedtests: true,
     showoutput: false,
     printsummary: true,
@@ -79,7 +81,7 @@ def doRunJavaFrwkTest() {
 target (buildJavaFrwk: '') {
   depends (cleanJavaFrwk, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#java.frwk"
+  println "Building module ${gantProjectName}#java.frwk"
   println "##############################################################################"
   doCompileJavaFrwk()
 }
@@ -108,7 +110,7 @@ def doCompileJavaFrwk() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/java/frwk-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/frwk-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'com/zotohlab/frwk/**')
       exclude (name: '**/log4j.properties')

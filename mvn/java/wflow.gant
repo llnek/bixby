@@ -13,8 +13,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanWFlow: '') {
-  delete ( dir: "${buildDir}/com/zotohlab/wflow", quiet: true)
-  delete ( dir: "${qaDir}/czlab", quiet: true)
+  ant.delete ( dir: "${buildDir}/com/zotohlab/wflow", quiet: true)
+  ant.delete ( dir: "${qaDir}/czlab", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -22,7 +22,7 @@ target (cleanWFlow: '') {
 target (buildWFlow: '') {
   depends (cleanWFlow, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building project ${gantProjectName}#java.wflow"
+  println "Building module ${gantProjectName}#java.wflow"
   println "##############################################################################"
   doCompileWFlow()
 }
@@ -51,7 +51,7 @@ def doCompileWFlow() {
     }
   }
 
-  ant.jar (destfile: "${distribDir}/java/wflow-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/wflow-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
       include (name: 'com/zotohlab/wflow/**')
       exclude (name: '**/log4j.properties')
