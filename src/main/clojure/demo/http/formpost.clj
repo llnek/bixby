@@ -29,7 +29,7 @@
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.net ULFileItem ULFormItems]
             [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -12,13 +12,15 @@
 package com.zotohlab.wflow;
 
 import static java.lang.invoke.MethodHandles.*;
+
 import org.slf4j.Logger;
+
 import static org.slf4j.LoggerFactory.*;
 
 import java.util.concurrent.atomic.AtomicLong;
+
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.server.ServerLike;
-import com.zotohlab.wflow.core.Job;
 import com.zotohlab.frwk.util.Schedulable;
 
 /**

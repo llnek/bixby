@@ -11,7 +11,7 @@
   (:import [com.zotohlab.wflow FlowNode Activity
                                  Pipeline PDelegate PTask Work]
            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-           [com.zotohlab.wflow.core Job]))
+           [com.zotohlab.wflow Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

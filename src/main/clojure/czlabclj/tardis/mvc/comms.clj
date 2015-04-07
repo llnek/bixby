@@ -37,7 +37,7 @@
             [com.zotohlab.frwk.core Hierarchial Identifiable]
             [com.zotohlab.wflow FlowNode Activity Pipeline
              PDelegate PTask Work]
-            [com.zotohlab.wflow.core Job]
+            [com.zotohlab.wflow Job]
             [com.zotohlab.gallifrey.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]

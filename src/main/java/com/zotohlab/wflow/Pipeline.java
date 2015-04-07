@@ -12,16 +12,18 @@
 package com.zotohlab.wflow;
 
 import static com.zotohlab.frwk.util.CoreUtils.dftCtor;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.invoke.MethodHandles.*;
+
 import org.slf4j.Logger;
+
 import static org.slf4j.LoggerFactory.*;
 
 import com.zotohlab.frwk.core.Startable;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
-import com.zotohlab.wflow.core.Job;
 
 
 /**

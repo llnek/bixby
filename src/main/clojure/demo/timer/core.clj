@@ -27,7 +27,7 @@
             [java.util Date]
             [com.zotohlab.gallifrey.io TimerEvent]
             [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

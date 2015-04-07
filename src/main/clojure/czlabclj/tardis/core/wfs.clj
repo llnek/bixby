@@ -19,7 +19,7 @@
              SwitchChoiceExpr
              Pipeline PDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

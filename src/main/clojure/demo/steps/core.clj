@@ -25,7 +25,7 @@
              Activity Split While
              PDelegate]
             [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

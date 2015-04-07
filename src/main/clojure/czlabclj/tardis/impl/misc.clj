@@ -16,7 +16,7 @@
 
   (:use [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow.core Job FlowError]
+  (:import  [com.zotohlab.wflow Job FlowError]
             [com.zotohlab.wflow Pipeline PDelegate PTask Work]
             [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
             [com.zotohlab.frwk.core Startable]))

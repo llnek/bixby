@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow.core;
+package com.zotohlab.wflow;
 
 import com.zotohlab.frwk.core.Gettable;
 import com.zotohlab.frwk.core.Settable;

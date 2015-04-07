@@ -29,7 +29,7 @@
             [java.net Socket]
             [java.util Date]
             [com.zotohlab.frwk.server Service]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -27,7 +27,7 @@
             [javax.jms TextMessage]
             [java.util.concurrent.atomic AtomicInteger]
             [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

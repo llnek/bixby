@@ -13,7 +13,6 @@ package com.zotohlab.wflow;
 
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
-import com.zotohlab.wflow.core.Job;
 
 /**
  * @author kenl

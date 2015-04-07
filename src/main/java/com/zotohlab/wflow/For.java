@@ -11,7 +11,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
 
 /**
  * A For is treated sort of like a while with the test-condition being (i &lt; upperlimit).

@@ -11,7 +11,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.core.Job;
 
 /**
  * A "AND" enforces that all bound activities must return before it continues.

@@ -28,7 +28,7 @@
             [com.zotohlab.gallifrey.io WebSockEvent
                                        WebSockResult]
             [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow.core Job]))
+            [com.zotohlab.wflow Job]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -10,7 +10,7 @@
   (:import ( com.zotohlab.wflow FlowNode Activity
                                  Pipeline PDelegate
                                  PTask Work))
-  (:import (com.zotohlab.wflow.core Job)))
+  (:import (com.zotohlab.wflow Job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

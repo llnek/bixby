@@ -14,8 +14,6 @@ package com.zotohlab.wflow;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.zotohlab.wflow.core.Job;
-
 /**
  * @author kenl
  *

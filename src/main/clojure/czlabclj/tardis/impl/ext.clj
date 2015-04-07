@@ -84,7 +84,7 @@
             [com.zotohlab.gallifrey.io Emitter IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
             [com.zotohlab.frwk.io XData]
-            [com.zotohlab.wflow.core Job]
+            [com.zotohlab.wflow Job]
             [com.zotohlab.wflow Pipeline]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
