@@ -51,6 +51,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn FileOK? "Returns true if file exists."
+
+  [^File fp]
+
+  (and (notnil? fp)
+       (.exists fp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn FileRead? "Returns true if file is readable."
 
   [^File fp]
