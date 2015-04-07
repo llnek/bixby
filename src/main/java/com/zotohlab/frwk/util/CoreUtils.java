@@ -21,8 +21,11 @@ import java.util.concurrent.Callable;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -30,13 +33,13 @@ import com.google.gson.JsonParser;
 /**
  * @author kenl
  */
+@SuppressWarnings("unused")
 public enum CoreUtils {
 ;
 
-  private static Logger _log= LoggerFactory.getLogger(CoreUtils.class);
+  private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
-  @SuppressWarnings("unused")
   public static void main(String[] args) {
     try {
 //      String script = "(fn [_] {:a 1} )";

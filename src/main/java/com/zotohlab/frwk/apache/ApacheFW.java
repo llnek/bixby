@@ -11,14 +11,16 @@
 
 package com.zotohlab.frwk.apache;
 
+import static java.lang.invoke.MethodHandles.*;
+import org.slf4j.Logger;
+import static org.slf4j.LoggerFactory.*;
+
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.ProtocolException;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
@@ -26,7 +28,7 @@ import org.slf4j.LoggerFactory;
 public enum ApacheFW {
 ;
 
-  private static Logger _log=LoggerFactory.getLogger(ApacheFW.class);
+  private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
   /**

@@ -22,7 +22,7 @@ import com.zotohlab.wflow.core.Job;
  */
 public class SwitchNode extends FlowNode {
 
-  private Map<Object,FlowNode> _cs = new HashMap<Object,FlowNode>();
+  private Map<Object,FlowNode> _cs = new HashMap<>();
   private SwitchChoiceExpr _expr= null;
   private FlowNode _def = null;
 

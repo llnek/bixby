@@ -24,8 +24,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
@@ -33,8 +36,9 @@ import org.slf4j.LoggerFactory;
  */
 public class WEBServlet extends HttpServlet implements Serializable {
 
-  private static Logger _log = LoggerFactory.getLogger(WEBServlet.class);
   private static final long serialVersionUID= -3862652820921092885L;
+  
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
   private ServletEmitter _src;
 

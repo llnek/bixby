@@ -17,8 +17,10 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
@@ -26,8 +28,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractServlet extends HttpServlet implements Serializable {
 
-  private static Logger _log = LoggerFactory.getLogger(AbstractServlet.class);
   private static final long serialVersionUID= -3862652820921092885L;
+  
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   public void destroy() {

@@ -11,8 +11,10 @@
 
 package com.zotohlab.wflow;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * An Activity is a definition of work - a task to be done.
@@ -24,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Activity {
 
-  private static Logger _log = LoggerFactory.getLogger(Activity.class);
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
 

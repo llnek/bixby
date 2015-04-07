@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.zotohlab.frwk.core.CallableWithArgs;
 import com.zotohlab.frwk.io.IOUtils;
@@ -49,7 +51,7 @@ import com.zotohlab.frwk.io.XData;
  */
 public abstract class AuxHttpFilter extends SimpleInboundFilter {
 
-  private static Logger _log = LoggerFactory.getLogger(AuxHttpFilter.class);
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   public String getName() { return this.getClass().getSimpleName(); }

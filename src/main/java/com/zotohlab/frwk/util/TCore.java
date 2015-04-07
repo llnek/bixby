@@ -17,15 +17,17 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
  */
 public class TCore implements RejectedExecutionHandler {
 
-  private static final Logger _log = LoggerFactory.getLogger(TCore.class);
+  private static final Logger _log = getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
   //private val serialVersionUID = 404521678153694367L

@@ -28,7 +28,7 @@ public class Switch extends Activity {
     _expr= expr;
   }
 
-  private Map<Object,Activity> _choices= new HashMap<Object,Activity>();
+  private Map<Object,Activity> _choices= new HashMap<>();
   private SwitchChoiceExpr _expr;
   private Activity _def = null;
 
@@ -45,7 +45,7 @@ public class Switch extends Activity {
   public FlowNode reifyNode(FlowNode cur) { return new SwitchNode(cur, this); }
 
   public void realize(FlowNode fp) {
-    Map<Object,FlowNode> t= new HashMap<Object,FlowNode>();
+    Map<Object,FlowNode> t= new HashMap<>();
     SwitchNode p= (SwitchNode) fp;
     FlowNode nxt= p.nextNode();
 

@@ -17,8 +17,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.zotohlab.frwk.io.XData;
 
@@ -27,7 +29,7 @@ import com.zotohlab.frwk.io.XData;
  */
 public class ULFormItems {
 
-  private static final Logger _log= LoggerFactory.getLogger(ULFormItems.class);
+  private static final Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   private List<ULFileItem> _items= new ArrayList<ULFileItem>();

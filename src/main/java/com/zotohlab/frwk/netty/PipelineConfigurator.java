@@ -18,15 +18,17 @@ import io.netty.channel.ChannelPipeline;
 
 import java.util.Map;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
  */
 public abstract class PipelineConfigurator {
 
-  private static Logger _log=LoggerFactory.getLogger(PipelineConfigurator.class);
+  private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
   
   public ChannelHandler configure(final Map<?,?> options) {

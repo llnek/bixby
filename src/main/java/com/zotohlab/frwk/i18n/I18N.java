@@ -15,8 +15,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
 
 /**
  * @author kenl
@@ -24,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public enum I18N {
 ;
 
-  private static Logger _log= LoggerFactory.getLogger(I18N.class);
+  private static Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
   private static Map<Object,ResourceBundle> _bundles= new HashMap<Object,ResourceBundle>();

@@ -20,7 +20,7 @@ import java.util.Map;
 public enum AssetCache {
 ;
 
-  private static Map<String, Object> _cache=  new HashMap<String, Object>();
+  private static Map<String, Object> _cache=  new HashMap<>();
 
   public static Map<String,Object> get() {
     return _cache;

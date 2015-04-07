@@ -11,8 +11,10 @@
 
 package com.zotohlab.frwk.dbio;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.jolbox.bonecp.ConnectionHandle;
 import com.jolbox.bonecp.hooks.AbstractConnectionHook;
@@ -22,7 +24,7 @@ import com.jolbox.bonecp.hooks.AbstractConnectionHook;
  */
 public class BoneCPHook extends AbstractConnectionHook {
 
-  private static final Logger _log= LoggerFactory.getLogger(BoneCPHook.class);
+  private static final Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
   /**

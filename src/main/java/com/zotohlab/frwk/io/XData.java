@@ -21,8 +21,10 @@ import java.io.Serializable;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
 
 /**
  * Wrapper structure to abstract a piece of data which can be a file
@@ -33,13 +35,15 @@ import org.slf4j.LoggerFactory;
  */
 public class XData implements Serializable {
 
-  private static final Logger _log= LoggerFactory.getLogger(XData.class);
   private static final long serialVersionUID = -8637175588593032279L;
+  
+  private static final Logger _log= getLogger(lookup().lookupClass());
+  public static Logger tlog() { return _log; }
+  
   private String _encoding ="utf-8";
   private Object _data = null;
   private boolean _cls=true;
 
-  public static Logger tlog() { return _log; }
 
   public XData(Object p) {
     resetContent(p);

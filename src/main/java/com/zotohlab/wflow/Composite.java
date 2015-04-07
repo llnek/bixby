@@ -21,7 +21,7 @@ import java.util.ListIterator;
  */
 public abstract class Composite extends Activity {
 
-  private List<Activity> _children= new ArrayList<Activity>();
+  private List<Activity> _children= new ArrayList<>();
 
   public int size() { return _children.size(); }
   protected void onAdd(Activity a) {}

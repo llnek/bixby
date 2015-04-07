@@ -19,8 +19,10 @@ import java.io.InputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
 
 /**
  * Wrapper on top of a File input stream such that it can
@@ -31,8 +33,9 @@ import org.slf4j.LoggerFactory;
  */
 public class XStream extends InputStream {
 
-  private static final Logger _log= LoggerFactory.getLogger(XStream.class);
+  private static final Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
+  
   private transient InputStream _inp = null;
   protected boolean _deleteFile;
   protected boolean _closed = true;

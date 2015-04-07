@@ -15,15 +15,17 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
  */
 public class WEBContextListener implements ServletContextListener {
 
-  private static Logger _log=LoggerFactory.getLogger(WEBContextListener.class);
+  private static Logger _log=getLogger(lookup().lookupClass());
   private Object _src;
   public Logger tlog() { return _log; }
 

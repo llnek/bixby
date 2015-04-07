@@ -15,8 +15,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCounted;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
@@ -24,7 +26,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("rawtypes")
 public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
 
-  private static Logger _log = LoggerFactory.getLogger(SimpleInboundFilter.class);
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   @Override

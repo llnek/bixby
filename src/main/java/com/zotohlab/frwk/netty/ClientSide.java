@@ -32,8 +32,10 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Map;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.google.gson.JsonObject;
 import com.zotohlab.frwk.io.XData;
@@ -46,7 +48,8 @@ public enum ClientSide {
 ;
 
   private static final AttributeKey<Object> URL_KEY = AttributeKey.valueOf("targetUrl");
-  private static Logger _log = LoggerFactory.getLogger(ClientSide.class) ;
+  
+  private static Logger _log = getLogger(lookup().lookupClass()) ;
   public static Logger tlog() { return _log; }
 
   /**

@@ -25,8 +25,11 @@ import java.io.UnsupportedEncodingException;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
 import org.apache.commons.io.IOUtils;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.zotohlab.frwk.io.XData;
 
@@ -37,8 +40,9 @@ import com.zotohlab.frwk.io.XData;
  */
 public class ULFileItem implements FileItem , Serializable {
 
-  private static final Logger _log= LoggerFactory.getLogger(ULFileItem.class);
   private static final long serialVersionUID= 2214937997601489203L;
+  
+  private static final Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   private transient OutputStream _os;

@@ -26,15 +26,17 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
  */
 public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
-  private static Logger _log= LoggerFactory.getLogger(HTTPRangeInput.class);
+  private static Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog()  { return _log; }
 
   private boolean _unsatisfiable = false;

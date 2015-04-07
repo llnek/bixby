@@ -45,8 +45,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -71,7 +74,7 @@ public enum NettyFW {
   public static final AttributeKey<?> XDATA_KEY =AttributeKey.valueOf("xdata");
   public static final AttributeKey<?> XOS_KEY =AttributeKey.valueOf("ostream");
 
-  private static Logger _log=LoggerFactory.getLogger(NettyFW.class);
+  private static Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
   public static ChannelFutureListener dbgNettyDone(final String msg) {

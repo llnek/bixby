@@ -15,15 +15,17 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
+
 
 /**
  * @author kenl
  */
 public class ByteRange {
 
-  private static Logger _log= LoggerFactory.getLogger(ByteRange.class);
+  private static Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   private RandomAccessFile _file;

@@ -21,7 +21,7 @@ import java.util.ListIterator;
  */
 public class Iter {
 
-  private List<Activity> _acts= new ArrayList<Activity>();
+  private List<Activity> _acts= new ArrayList<>();
   private FlowNode _outer;
 
   public Iter(FlowNode c, ListIterator<Activity> a) {

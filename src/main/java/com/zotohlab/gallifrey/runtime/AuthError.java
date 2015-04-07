@@ -15,6 +15,7 @@ package com.zotohlab.gallifrey.runtime;
  * @author kenl
  */
 public class AuthError extends Exception {
+  
 	private static final long serialVersionUID = 1L;
 
 	public AuthError(String msg,Throwable e) {
