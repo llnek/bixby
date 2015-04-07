@@ -67,7 +67,7 @@ public abstract class FlowNode implements RunnableWithId {
     _closure=c;
   }
 
-  public FlowNode realize() {
+  protected FlowNode realize() {
     getDef().realize(this);
     clsClosure();
     postRealize();

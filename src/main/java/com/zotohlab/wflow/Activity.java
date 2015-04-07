@@ -48,16 +48,12 @@ public abstract class Activity {
    * @return a *live* version of this Activity.
    */
   public FlowNode reify(FlowNode cur) {
-    return reifyNode(cur).realize();
+    FlowNode n= reifyNode(cur);
+    n.realize();
+    return n;
   }
 
   protected abstract FlowNode reifyNode(FlowNode cur) ;
-
-  /**
-   * Configure the *live* version of this Activity.
-   *
-   *
-   */
   protected abstract void realize(FlowNode p);
 
   /*
