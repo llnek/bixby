@@ -13,6 +13,7 @@ package com.zotohlab.frwk.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,9 +24,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
 
+import org.slf4j.Logger;
+
+import static org.slf4j.LoggerFactory.*;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -138,6 +140,16 @@ public enum CoreUtils {
     return StringUtils.split( nsb(s), "\u0000");
   }
 
+  public static Class<?> loadClass(String cz) throws ClassNotFoundException {
+    return Thread.currentThread().getContextClassLoader().loadClass(cz);  
+  }
+  
+  public static Object dftCtor(String cz) throws InstantiationException, IllegalAccessException, 
+  IllegalArgumentException, InvocationTargetException, 
+  NoSuchMethodException, SecurityException, ClassNotFoundException  {
+    return loadClass(cz).getDeclaredConstructor().newInstance();  
+  }
+    
   @SuppressWarnings("rawtypes")
   public static Object syncExec (Object syncObj, Callable r) throws Exception {
     synchronized(syncObj) {

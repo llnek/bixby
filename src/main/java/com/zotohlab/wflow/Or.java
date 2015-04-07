@@ -28,7 +28,7 @@ public class Or extends Merge {
   public void realize(FlowNode fp) {
     OrNode s= (OrNode) fp;
     if (_body != null) {
-      s.withBody( _body.reify(s.nextNode() ));
+      s.withBody( _body.reify(s.next() ));
     }
     s.withBranches(_branches);
   }

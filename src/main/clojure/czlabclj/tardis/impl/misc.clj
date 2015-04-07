@@ -17,7 +17,7 @@
   (:use [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
   (:import  [com.zotohlab.wflow.core Job FlowError]
-            [com.zotohlab.wflow Pipeline PipelineDelegate PTask Work]
+            [com.zotohlab.wflow Pipeline PDelegate PTask Work]
             [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
             [com.zotohlab.frwk.core Startable]))
 
@@ -57,7 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype FatalErrorFlow [] PipelineDelegate
+(deftype FatalErrorFlow [] PDelegate
 
   (getStartActivity [_ pipe] (make-internal-flow pipe 500))
   (onStop [_ pipe ] nil)
@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype OrphanFlow [] PipelineDelegate
+(deftype OrphanFlow [] PDelegate
 
   (getStartActivity [_  pipe] (make-internal-flow pipe 501))
   (onStop [_  pipe] nil)

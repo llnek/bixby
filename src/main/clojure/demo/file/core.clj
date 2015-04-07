@@ -23,7 +23,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.gallifrey.io FileEvent]
             [com.zotohlab.frwk.server Service]
@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoGen [] PipelineDelegate
+(deftype DemoGen [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.file.core)
@@ -73,7 +73,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoPick [] PipelineDelegate
+(deftype DemoPick [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.file.core)

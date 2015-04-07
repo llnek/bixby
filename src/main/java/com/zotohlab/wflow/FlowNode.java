@@ -11,59 +11,55 @@
 
 package com.zotohlab.wflow;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
 
-
-import com.zotohlab.frwk.server.ServerLike;
+import java.util.concurrent.atomic.AtomicLong;
 import com.zotohlab.frwk.util.RunnableWithId;
-import com.zotohlab.frwk.util.Schedulable;
+import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.wflow.core.Job;
+import com.zotohlab.frwk.util.Schedulable;
 
 /**
  * @author kenl
  *
  */
-public abstract class FlowNode implements  RunnableWithId {
+public abstract class FlowNode implements RunnableWithId {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  private AtomicLong _sn= new AtomicLong(0);
-  protected Pipeline _parent;
+  private static AtomicLong _sn= new AtomicLong(0);
+  private long _pid = _sn.incrementAndGet();
 
-  private long nextID() { return _sn.incrementAndGet(); }
-
-  private FlowNode _nextPtr= null;
-  private Activity _defn= null;
-  private Object _closure= null;
-  private long _pid=nextID();
+  private FlowNode _nextStep;
+  protected Pipeline _pipe;
+  private Object _closure;
+  private Activity _defn;
 
   /**
    * @param s
    * @param a
    */
   protected FlowNode(FlowNode s, Activity a) {
-    this(s.flow() );
-    _nextPtr=s;
+    this( s.pipe() );
+    _nextStep=s;
     _defn=a;
   }
 
   protected FlowNode(Pipeline p) {
-    _parent=p;
+    _pipe=p;
     _defn= new Nihil();
   }
+
+  public FlowNode next() { return _nextStep; }
+
+  public Activity getDef() { return _defn; }
 
   public abstract FlowNode eval(Job j);
 
   public Object getId() { return _pid; }
-
-  public FlowNode nextNode() { return _nextPtr; }
-
-  public Activity getDef() { return _defn; }
 
   public void attachClosureArg(Object c) {
     _closure=c;
@@ -76,11 +72,10 @@ public abstract class FlowNode implements  RunnableWithId {
     return this;
   }
 
-  protected void postRealize() {}
+  public Object getClosureArg() { return _closure; }
 
   protected void clsClosure() { _closure=null; }
-
-  public Object getClosureArg() { return _closure; }
+  protected void postRealize() {}
 
   public Object popClosureArg() {
     try {
@@ -93,45 +88,43 @@ public abstract class FlowNode implements  RunnableWithId {
   }
 
   public void forceNext(FlowNode n) {
-    _nextPtr=n;
+    _nextStep=n;
   }
 
-  public Pipeline flow() { return _parent; }
+  public Pipeline pipe() { return _pipe; }
 
   public void rerun() {
-    ServerLike x= (ServerLike) flow().container();
+    ServerLike x= (ServerLike) pipe().container();
     x.core().reschedule(this);
   }
 
   public void run() {
-    FlowNode rc= null;
+    ServerLike x= (ServerLike) pipe().container() ;
+    Pipeline pl = pipe();
     Activity err= null;
-    Pipeline f= flow();
+    FlowNode rc= null;
 
-    ServerLike x= (ServerLike) f.container() ;
     x.core().dequeue(this);
-
     try {
       //f.job().clrLastResult();
-      rc= eval( f.job() );
-    }
-    catch (Throwable e) {
-      err= f.onError(e, this);
+      rc= eval( pl.job() );
+    } catch (Throwable e) {
+      err= pl.onError(e, this);
     }
 
-    if (err != null) { rc= err.reify( new NihilNode(f) );  }
+    if (err != null) { rc= err.reify( new NihilNode(pl) );  }
     if (rc==null) {
       tlog().debug("FlowNode: rc==null => skip.");
       // indicate skip, happens with joins
     } else {
-      runAfter(f,rc);
+      runAfter(pl,rc);
     }
 
   }
 
-  private void runAfter(Pipeline f, FlowNode rc) {
-    ServerLike x = (ServerLike) f.container();
-    FlowNode np= rc.nextNode();
+  private void runAfter(Pipeline pl, FlowNode rc) {
+    ServerLike x = (ServerLike) pl.container();
+    FlowNode np= rc.next();
     Schedulable ct= x.core();
 
     if (rc instanceof DelayNode) {
@@ -143,7 +136,7 @@ public abstract class FlowNode implements  RunnableWithId {
     }
     else
     if (rc instanceof NihilNode) {
-      f.stop();
+      pl.stop();
     }
     else {
       ct.run(rc);

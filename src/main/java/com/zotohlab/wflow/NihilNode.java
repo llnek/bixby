@@ -25,7 +25,7 @@ public class NihilNode extends FlowNode {
     super(f);
   }
 
-  public FlowNode nextNode() { return this; }
+  public FlowNode next() { return this; }
 
   public FlowNode eval(Job j) { return this; }
 

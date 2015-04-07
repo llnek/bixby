@@ -31,7 +31,9 @@ public abstract class Composite extends Activity {
     onAdd(a);
   }
 
-  public ListIterator<Activity> listChildren() { return _children.listIterator(); }
+  public ListIterator<Activity> listChildren() {
+    return _children.listIterator();
+  }
 
   public void realize(FlowNode fp) {
     CompositeNode p= (CompositeNode) fp;

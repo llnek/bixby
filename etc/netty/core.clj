@@ -14,7 +14,7 @@
 
   (:import [com.zotohlab.wflow FlowNode Activity
                                Pipeline
-                               PipelineDelegate PTask]
+                               PDelegate PTask]
            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
            [com.zotohlab.gallifrey.core Container]
            [java.util HashMap]
@@ -50,7 +50,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Handler [] PipelineDelegate
+(deftype Handler [] PDelegate
 
   (getStartActivity [_  pipe]
     (require '@@APPDOMAIN@@.core)

@@ -16,8 +16,8 @@ import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.FlowNode;
+import com.zotohlab.wflow.PDelegate;
 import com.zotohlab.wflow.Pipeline;
-import com.zotohlab.wflow.PipelineDelegate;
 import com.zotohlab.wflow.Split;
 
 /**
@@ -31,7 +31,7 @@ import com.zotohlab.wflow.Split;
                    |
                    |-------> parent(s2)----> end
  */
-public class Demo implements PipelineDelegate {
+public class Demo implements PDelegate {
 
     // split but no wait
     // parent continues;

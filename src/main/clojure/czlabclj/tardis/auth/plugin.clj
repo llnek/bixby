@@ -58,7 +58,7 @@
             [org.apache.shiro.authc UsernamePasswordToken]
             [com.zotohlab.wflow If BoolExpr FlowNode
              Activity Pipeline
-             PipelineDelegate PTask Work]
+             PDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow.core Job]))
 

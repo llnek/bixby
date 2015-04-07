@@ -27,7 +27,7 @@ public class OrNode extends MergeNode {
     int nv= _cntr.incrementAndGet();
     FlowNode rc= this;
     Object c= getClosureArg();
-    FlowNode np= nextNode();
+    FlowNode np= next();
 
     if (size() == 0) {
       rc= np;

@@ -36,7 +36,7 @@
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
             [com.zotohlab.wflow FlowNode Activity Pipeline
-             PipelineDelegate PTask Work]
+             PDelegate PTask Work]
             [com.zotohlab.wflow.core Job]
             [com.zotohlab.gallifrey.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
@@ -318,7 +318,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype AssetHandler [] PipelineDelegate
+(deftype AssetHandler [] PDelegate
 
   (getStartActivity [_ pipe]
     (DefWFTask

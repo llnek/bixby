@@ -23,7 +23,7 @@
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask Work AsyncWait
-             PipelineDelegate
+             PDelegate
              AsyncCallback AsyncResumeToken]
             [com.zotohlab.gallifrey.runtime AppMain]
             [com.zotohlab.gallifrey.core Container]
@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.async.core)

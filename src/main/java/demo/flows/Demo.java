@@ -19,8 +19,8 @@ import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.Block;
 import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.If;
+import com.zotohlab.wflow.PDelegate;
 import com.zotohlab.wflow.Pipeline;
-import com.zotohlab.wflow.PipelineDelegate;
 import com.zotohlab.wflow.Split;
 import com.zotohlab.wflow.Switch;
 import com.zotohlab.wflow.While;
@@ -39,7 +39,7 @@ import com.zotohlab.wflow.While;
  *
  */
 @SuppressWarnings("unused")
-public class Demo implements PipelineDelegate {
+public class Demo implements PDelegate {
 
   public Activity onError(Throwable err, FlowNode p) { return null; }
 

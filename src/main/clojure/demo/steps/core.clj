@@ -23,7 +23,7 @@
 
   (:import  [com.zotohlab.wflow FlowNode PTask Switch If Block
              Activity Split While
-             PipelineDelegate]
+             PDelegate]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.wflow.core Job]))
 
@@ -88,7 +88,7 @@
 ;; This flow showcases the use of conditional activities such a Switch() &amp; If().  Shows how to loop using
 ;; While(), and how to use Split &amp; Join.
 ;;
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.steps.core)

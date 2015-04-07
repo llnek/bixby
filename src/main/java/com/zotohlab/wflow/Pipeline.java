@@ -11,8 +11,7 @@
 
 package com.zotohlab.wflow;
 
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
-
+import static com.zotohlab.frwk.util.CoreUtils.dftCtor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.invoke.MethodHandles.*;
@@ -31,36 +30,32 @@ import com.zotohlab.wflow.core.Job;
  */
 public class Pipeline implements Startable {
 
-  public Pipeline (Job scope, String cz) {
-    _delegateClass= nsb(cz);
-    _theScope=scope;
-    _pid= nextId();
-    Object obj = null;
-    try {
-      obj = Thread.currentThread().getContextClassLoader().loadClass(_delegateClass).getDeclaredConstructor().newInstance();
-    } catch (Throwable e) {
-      tlog().error("", e);
-    }
-    if (obj instanceof PipelineDelegate) {} else {
-      throw new ClassCastException("Class " + _delegateClass + " must implement PipelineDelegate.");
-    }
-    _delegate = (PipelineDelegate) obj;
-    tlog().debug("{}: {} => pid : {}" , "Pipeline", getClass().getName() , _pid);
-    //assert(_theScope != null, "Scope is null.");
-  }
-
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  private long nextId() { return _sn.incrementAndGet(); }
   private AtomicLong _sn= new AtomicLong(0L);
-
-  private PipelineDelegate _delegate;
-  private String _delegateClass;
+  private PDelegate _delegate;
   private Job _theScope;
 
   private boolean _active=false;
   private long _pid;
+
+  public Pipeline (Job scope, String cz) {
+
+    _pid = _sn.incrementAndGet();
+    _theScope=scope;
+
+    try {
+      _delegate = (PDelegate) dftCtor(cz);
+    } catch (Throwable e) {
+      tlog().error("", e);
+    }
+    if (_delegate instanceof PDelegate) {} else {
+      throw new ClassCastException("Class " + cz + " must implement PDelegate.");
+    }
+    tlog().debug("{}: {} => pid : {}" , "Pipeline", cz , _pid);
+    //assert(_theScope != null, "Scope is null.");
+  }
 
   public Schedulable core() {
     ServerLike x = (ServerLike) container();
@@ -80,9 +75,14 @@ public class Pipeline implements Startable {
   }
 
   protected Activity onError(Throwable e, FlowNode cur) {
-    tlog().error("", e);
+    // give the delegate a chance to handle the error, returning
+    // a different flow if necessary.
     Activity a= _delegate.onError(e,cur) ;
-    return (a==null) ? new Nihil() : a;
+    if (a == null) {
+      tlog().error("", e);
+      a= new Nihil();
+    }
+    return a;
   }
 
   protected Activity onStart() {
@@ -91,13 +91,12 @@ public class Pipeline implements Startable {
   }
 
   public void start() {
-    tlog().debug("{}: {} => pid : {} => starting" , "Pipeline", _delegateClass , _pid);
+    tlog().debug("{}: {} => starting" , "Pipeline", this);
     try {
       FlowNode f1= onStart().reify( new NihilNode(this));
       _active=true;
       core().run(f1);
-    }
-    catch(Throwable e) {
+    } catch(Throwable e) {
       tlog().error("", e);
       stop();
     }
@@ -106,15 +105,14 @@ public class Pipeline implements Startable {
   public void stop() {
     try {
       onEnd();
-    }
-    catch( Throwable e) {
+    } catch( Throwable e) {
       tlog().error("",e);
     }
-    tlog().debug("{}: {} => pid : {} => end" , "Pipeline", _delegateClass , _pid);
+    tlog().debug("{}: {} => end" , "Pipeline", this);
   }
 
   public String toString() {
-    return _delegateClass + "(" + _pid + ")";
+    return _delegate.getClass().getName() + "#(" + _pid + ")";
   }
 
   /*

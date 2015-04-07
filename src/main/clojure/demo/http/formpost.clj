@@ -23,7 +23,7 @@
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [java.util ListIterator]
             [com.zotohlab.frwk.io XData]
@@ -38,7 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.http.formpost)

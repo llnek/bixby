@@ -31,7 +31,9 @@ public abstract class ConditionalNode extends FlowNode {
     return this;
   }
 
-  protected boolean test(Job j) { return _expr.evaluate(j); }
+  protected boolean test(Job j) {
+    return _expr.evaluate(j);
+  }
 
 }
 

@@ -17,7 +17,7 @@
   (:import  [com.zotohlab.wflow If BoolExpr FlowNode Activity
              ForLoopCountExpr BoolExpr
              SwitchChoiceExpr
-             Pipeline PipelineDelegate PTask Work]
+             Pipeline PDelegate PTask Work]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow.core Job]))
 

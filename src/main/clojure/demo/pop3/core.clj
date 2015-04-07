@@ -22,7 +22,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [org.apache.commons.io IOUtils]
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
@@ -51,7 +51,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.pop3.core)

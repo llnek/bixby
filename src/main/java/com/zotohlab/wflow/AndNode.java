@@ -34,7 +34,7 @@ public class AndNode extends MergeNode {
 
     // all branches have returned, proceed...
     if (nv == size() ) {
-      rc= (_body == null) ? nextNode() : _body;
+      rc= (_body == null) ? next() : _body;
       if (rc != null) { rc.attachClosureArg(c); }
       realize();
     }

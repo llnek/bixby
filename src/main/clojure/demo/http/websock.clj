@@ -23,7 +23,7 @@
         [czlabclj.xlib.util.meta :only [IsBytes?]]
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.gallifrey.io WebSockEvent
                                        WebSockResult]
@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.http.websock)

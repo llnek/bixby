@@ -37,7 +37,7 @@ public class IfNode extends ConditionalNode {
   }
 
   public FlowNode eval(Job j) {
-    Object c= getClosureArg() ;  // data pass back from previous async call?
+    Object c= getClosureArg() ;
     boolean b = test(j);
     tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
     FlowNode rc = b ? _then : _else;

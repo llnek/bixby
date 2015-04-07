@@ -25,7 +25,7 @@ public class BlockNode extends CompositeNode {
 
   public FlowNode eval(Job j) {
     // data pass back from previous async call?
-    Object c= getClosureArg();   
+    Object c= getClosureArg();
     FlowNode rc= null;
 
     if ( ! _inner.isEmpty()) {
@@ -35,7 +35,7 @@ public class BlockNode extends CompositeNode {
       rc = n.eval(j);
     } else {
       //tlog.debug("BlockNode: no more elements.")
-      rc= nextNode();
+      rc= next();
       if (rc != null) {  rc.attachClosureArg(c); }
       realize();
     }

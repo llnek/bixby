@@ -28,7 +28,7 @@ public class SplitNode extends CompositeNode {
   private boolean _fallThru=false;
 
   public FlowNode eval(Job j) {
-    ServerLike x = flow().container();
+    ServerLike x = pipe().container();
     Schedulable core = x.core();
     Object c= getClosureArg();
     FlowNode rc= null;
@@ -42,7 +42,7 @@ public class SplitNode extends CompositeNode {
     realize();
 
     // should we also pass the closure to the next step ? not for now
-    return _fallThru ? nextNode() : null;
+    return _fallThru ? next() : null;
   }
 
   public SplitNode withBranches(Iter w) {

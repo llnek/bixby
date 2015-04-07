@@ -22,7 +22,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Date]
             [com.zotohlab.gallifrey.io TimerEvent]
@@ -49,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PipelineDelegate 
+(deftype Demo [] PDelegate 
 
   (getStartActivity [_ pipe]
     (require 'demo.timer.core)

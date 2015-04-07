@@ -23,7 +23,7 @@
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
-            [com.zotohlab.wflow FlowNode PTask Delay PipelineDelegate]
+            [com.zotohlab.wflow FlowNode PTask Delay PDelegate]
             [com.zotohlab.gallifrey.io SocketEvent]
             [com.zotohlab.gallifrey.core Container]
             [java.net Socket]
@@ -42,7 +42,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoClient [] PipelineDelegate
+(deftype DemoClient [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.tcpip.core)
@@ -80,7 +80,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoServer [] PipelineDelegate
+(deftype DemoServer [] PDelegate
 
   (getStartActivity [_ pipe]
     (require 'demo.tcpip.core)

@@ -22,7 +22,7 @@
         [czlabclj.tardis.core.wfs :only [DefWFTask]])
 
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Split PipelineDelegate]
+  (:import  [com.zotohlab.wflow FlowNode PTask Split PDelegate]
             [java.lang StringBuilder]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.wflow.core Job]))
@@ -54,7 +54,7 @@
 ;;                  |-------> parent(s2)----> end
 
 
-(deftype Demo [] PipelineDelegate
+(deftype Demo [] PDelegate
 
     ;; split but no wait
     ;; parent continues;

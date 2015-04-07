@@ -14,7 +14,7 @@ package com.zotohlab.wflow;
 /**
  * @author kenl
  */
-public interface PipelineDelegate {
+public interface PDelegate {
 
   public Activity getStartActivity(Pipeline p);
 

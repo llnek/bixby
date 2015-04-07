@@ -22,7 +22,7 @@ public class AsyncResumeToken extends FAsyncResumeToken {
   }
 
   public void resume(Object resultArg) {
-    FlowNode p = (_proc != null) ? _proc.nextNode() : null;
+    FlowNode p = (_proc != null) ? _proc.next() : null;
     if (p != null) {
       p.attachClosureArg(resultArg);
       p.rerun();

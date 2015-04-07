@@ -30,7 +30,7 @@ public class And extends Merge {
   public void realize(FlowNode fp) {
     AndNode s = (AndNode)fp;
     if (_body != null) {
-      s.withBody( _body.reify( s.nextNode()));
+      s.withBody( _body.reify( s.next()));
     }
     s.withBranches(_branches);
   }
