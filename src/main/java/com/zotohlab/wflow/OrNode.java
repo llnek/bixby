@@ -17,7 +17,7 @@ import com.zotohlab.wflow.core.Job;
  * @author kenl
  *
  */
-public class OrNode extends JoinNode {
+public class OrNode extends MergeNode {
 
   public OrNode(FlowNode s, Or a) {
     super(s,a);

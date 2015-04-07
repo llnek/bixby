@@ -15,16 +15,16 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public abstract class Join  extends Activity {
+public abstract class Merge  extends Activity {
 
   protected int _branches=0;
   protected Activity _body;
 
-  protected Join(Activity b) {
+  protected Merge(Activity b) {
     _body=b;
   }
 
-  protected Join withBranches(int n) {
+  protected Merge withBranches(int n) {
     _branches=n;
     return this;
   }

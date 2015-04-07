@@ -21,25 +21,29 @@ public enum Auth {
 
   public static Activity getAuthMtd(String t) {
 
-    if (t.equals("facebook")) {
-      return PTaskWrapper( (p,j,a) -> {
-        out.println("-> using facebook to login.\n");
-        return null;
-      });
-    }
+    switch (t) {
 
-    if (t.equals("google+")) {
-      return PTaskWrapper( (p,j,a) -> {
-        out.println("-> using google+ to login.\n");
-        return null;
-      });
-    }
+      case "facebook":
 
-    if (t.equals("openid")) {
-      return PTaskWrapper( (p,j,a) -> {
-        out.println("-> using open-id to login.\n");
-        return null;
-      });
+        return PTaskWrapper( (p,j,a) -> {
+          out.println("-> using facebook to login.\n");
+          return null;
+        });
+
+      case "google+":
+
+        return PTaskWrapper( (p,j,a) -> {
+          out.println("-> using google+ to login.\n");
+          return null;
+        });
+
+      case "openid":
+
+        return PTaskWrapper( (p,j,a) -> {
+          out.println("-> using open-id to login.\n");
+          return null;
+        });
+
     }
 
     return PTaskWrapper( (p,j,a) -> {

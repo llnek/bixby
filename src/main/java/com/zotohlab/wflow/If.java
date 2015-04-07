@@ -34,7 +34,9 @@ public class If extends Conditional {
     this(expr, thenCode, null );
   }
 
-  public FlowNode reifyNode(FlowNode cur) { return new IfNode(cur,this); }
+  public FlowNode reifyNode(FlowNode cur) { 
+    return new IfNode(cur,this);
+  }
 
   public void realize(FlowNode fp) {
     IfNode s= (IfNode) fp;

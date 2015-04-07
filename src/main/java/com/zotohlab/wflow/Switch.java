@@ -42,7 +42,9 @@ public class Switch extends Activity {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) { return new SwitchNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { 
+    return new SwitchNode(cur, this); 
+  }
 
   public void realize(FlowNode fp) {
     Map<Object,FlowNode> t= new HashMap<>();

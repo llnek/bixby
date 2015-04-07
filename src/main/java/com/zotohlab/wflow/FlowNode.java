@@ -30,7 +30,7 @@ import com.zotohlab.wflow.core.Job;
 public abstract class FlowNode implements  RunnableWithId {
 
   private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return FlowNode._log; }
+  public Logger tlog() { return _log; }
 
   private AtomicLong _sn= new AtomicLong(0);
   protected Pipeline _parent;
@@ -150,10 +150,12 @@ public abstract class FlowNode implements  RunnableWithId {
     }
   }
 
+  /*
   public void finalize() throws Throwable {
     super.finalize();
     //tlog().debug("=========================> FlowNode: " + getClass().getName() + " finz'ed");
   }
+  */
 
 }
 

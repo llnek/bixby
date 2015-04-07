@@ -36,7 +36,9 @@ public abstract class Activity {
    * @param a the unit of work to follow after this one.
    * @return an *ordered* list of work units.
    */
-  public Activity chain( Activity a) { return new Block(this).chain(a); }
+  public Activity chain( Activity a) {
+    return new Block(this).chain(a);
+  }
 
   /**
    * Instantiate a *live* version of this work unit as it becomes
@@ -58,10 +60,12 @@ public abstract class Activity {
    */
   protected abstract void realize(FlowNode p);
 
+  /*
   public void finalize() throws Throwable {
     super.finalize();
     //tlog().debug("=========================> Activity: " + getClass().getName() + " finz'ed");
   }
+  */
 
 }
 

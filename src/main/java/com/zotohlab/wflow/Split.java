@@ -32,7 +32,7 @@ public class Split extends Composite {
     return new Split(new Or(orBody));
   }
 
-  public static Split apply(Join j) {
+  public static Split apply(Merge j) {
     return new Split(j);
   }
 
@@ -40,9 +40,9 @@ public class Split extends Composite {
     return new Split();
   }
 
-  protected Join _theJoin;
+  protected Merge _theJoin;
 
-  public Split(Join j) {
+  public Split(Merge j) {
     _theJoin = j;
   }
 
@@ -62,7 +62,9 @@ public class Split extends Composite {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) { return new SplitNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { 
+    return new SplitNode(cur, this); 
+  }
 
   public  void realize(FlowNode fp) {
     SplitNode p= (SplitNode) fp;
@@ -89,13 +91,15 @@ public class Split extends Composite {
  * @author kenl
  *
  */
-class NullJoin extends Join {
+class NullJoin extends Merge {
 
   public NullJoin() {
     super(null);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { return new NullJoinNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { 
+    return new NullJoinNode(cur, this); 
+  }
 
   public void realize(FlowNode cur) {}
 
@@ -105,9 +109,9 @@ class NullJoin extends Join {
  * @author kenl
  *
  */
-class NullJoinNode extends JoinNode {
+class NullJoinNode extends MergeNode {
 
-  public NullJoinNode(FlowNode s, Join a) {
+  public NullJoinNode(FlowNode s, Merge a) {
     super(s,a);
   }
 

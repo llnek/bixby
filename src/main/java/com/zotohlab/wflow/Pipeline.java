@@ -15,8 +15,9 @@ import static com.zotohlab.frwk.util.CoreUtils.nsb;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
 
 import com.zotohlab.frwk.core.Startable;
 import com.zotohlab.frwk.server.ServerLike;
@@ -48,8 +49,8 @@ public class Pipeline implements Startable {
     //assert(_theScope != null, "Scope is null.");
   }
 
-  private static Logger _log = LoggerFactory.getLogger(Pipeline.class);
-  public Logger tlog() { return Pipeline._log; }
+  private static Logger _log = getLogger(lookup().lookupClass());
+  public Logger tlog() { return _log; }
 
   private long nextId() { return _sn.incrementAndGet(); }
   private AtomicLong _sn= new AtomicLong(0L);
@@ -116,10 +117,12 @@ public class Pipeline implements Startable {
     return _delegateClass + "(" + _pid + ")";
   }
 
+  /*
   public void finalize() throws Throwable {
     super.finalize();
     //tlog().debug("=========================> Pipeline: " + getClass().getName() + " finz'ed");
   }
+  */
 
 }
 

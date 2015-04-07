@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author kenl
  *
  */
-public abstract class JoinNode extends FlowNode {
+public abstract class MergeNode extends FlowNode {
 
-  protected JoinNode(FlowNode s, Join a) {
+  protected MergeNode(FlowNode s, Merge a) {
     super(s,a);
   }
 
@@ -27,12 +27,12 @@ public abstract class JoinNode extends FlowNode {
   protected FlowNode _body = null;
   private int _branches= 0;
 
-  public JoinNode withBody(FlowNode body) {
+  public MergeNode withBody(FlowNode body) {
     _body=body;
     return this;
   }
 
-  public JoinNode withBranches(int n) {
+  public MergeNode withBranches(int n) {
     _branches=n;
     return this;
   }

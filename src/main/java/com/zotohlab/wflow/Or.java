@@ -15,13 +15,15 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public class Or extends Join {
+public class Or extends Merge {
 
   public Or(Activity b) {
     super(b);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { return new OrNode(cur, this); }
+  public FlowNode reifyNode(FlowNode cur) { 
+    return new OrNode(cur, this); 
+  }
 
   public void realize(FlowNode fp) {
     OrNode s= (OrNode) fp;

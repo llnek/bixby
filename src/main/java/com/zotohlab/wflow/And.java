@@ -12,12 +12,12 @@
 package com.zotohlab.wflow;
 
 /**
- * A "AND" join enforces that all bound activities must return before Join continues.
+ * A "AND" enforces that all bound activities must return before it continues.
  *
  * @author kenl
  *
  */
-public class And extends Join {
+public class And extends Merge {
 
   public And(Activity body) {
     super(body);

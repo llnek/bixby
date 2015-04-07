@@ -14,12 +14,12 @@ package com.zotohlab.wflow;
 import com.zotohlab.wflow.core.Job;
 
 /**
- * A "AND" join enforces that all bound activities must return before Join continues.
+ * A "AND" enforces that all bound activities must return before it continues.
  *
  * @author kenl
  *
  */
-public class AndNode extends JoinNode {
+public class AndNode extends MergeNode {
 
   public AndNode(FlowNode s, And a) {
     super(s,a);
