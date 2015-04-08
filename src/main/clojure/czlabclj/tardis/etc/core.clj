@@ -150,7 +150,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype CmdDelegate [] PDelegate
-  (onStop [_ p] (-> (.core p) (.dispose)))
+  (onStop [_ p]
+    (log/debug "CmdDelegate onstop ------------ ending!!!!!")
+    (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
   (getStartActivity [_ p]
     (require 'czlabclj.tardis.etc.core)
@@ -158,19 +160,18 @@
         (.chain (parseArgs))
         (.chain (execArgs)))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn BootAndRun ""
 
   [^File home ^ResourceBundle rcb args]
 
-  (reset! SKARO-HOME-DIR home)
-  (reset! SKARO-RSBUNDLE rcb)
   (let [cz "czlabclj.tardis.etc.core.CmdDelegate"
         ctr (PseudoServer)
         job (PseudoJob ctr)
         pipe (Pipeline. job cz)]
+    (reset! SKARO-HOME-DIR home)
+    (reset! SKARO-RSBUNDLE rcb)
     (.setLastResult job args)
     (.setv job :home home)
     (.setv job :rcb rcb)

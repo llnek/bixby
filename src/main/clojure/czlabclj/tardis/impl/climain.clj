@@ -28,6 +28,7 @@
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile ReadEdn]]
+        [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.core
          :only
          [ternary test-nonil test-cond ConvLong
@@ -35,6 +36,7 @@
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
+        [czlabclj.tardis.core.wfs]
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.netty.io :only [StopServer]])
 
@@ -45,11 +47,14 @@
              Hierarchial Startable]
             [com.zotohlab.frwk.util IWin32Conf]
             [com.zotohlab.frwk.i18n I18N]
+            [com.zotohlab.wflow Job Pipeline
+             Activity Nihil PDelegate]
             [com.zotohlab.gallifrey.core ConfigError]
             [com.zotohlab.gallifrey.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
-            [com.zotohlab.frwk.server Component ComponentRegistry]
+            [com.zotohlab.frwk.server ServerLike
+             Component ComponentRegistry]
             [com.zotohlab.gallifrey.etc CmdHelpError]
             [java.util ResourceBundle Locale]
             [java.io File]
@@ -73,161 +78,13 @@
   ^czlabclj.xlib.util.core.MubleAPI
   [^File baseDir]
 
-  (let [cfg (File. baseDir ^String DN_CFG)
+  (let [cfg (File. baseDir DN_CFG)
         home (.getParentFile cfg) ]
     (PrecondDir home)
     (PrecondDir cfg)
     (doto (MakeContext)
       (.setf! K_BASEDIR home)
       (.setf! K_CFGDIR cfg))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setupClassLoader ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [^ClassLoader root (.getf ctx K_ROOT_CZLR)
-        cl (ExecClassLoader. root) ]
-    (SetCldr cl)
-    (.setf! ctx K_EXEC_CZLR cl)
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setupClassLoaderAsRoot ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx
-   ^ClassLoader cur]
-
-  (doto ctx
-    (.setf! K_ROOT_CZLR (RootClassLoader. cur))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- maybeInizLoaders
-
-  "Prepare class loaders.  The root class loader loads all the core libs.
-  The exec class loader inherits from the root and is the class loader
-  that runs skaro."
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [cz (GetCldr) ]
-    (condp instance? cz
-      RootClassLoader
-      (do
-        (.setf! ctx K_ROOT_CZLR cz)
-        (setupClassLoader ctx))
-
-      ExecClassLoader
-      (do
-        (.setf! ctx K_ROOT_CZLR (.getParent cz))
-        (.setf! ctx K_EXEC_CZLR cz))
-
-      (setupClassLoader (setupClassLoaderAsRoot ctx cz)))
-
-    (log/info "Classloaders configured. using " (type (GetCldr)))
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse skaro.conf
-(defn- loadConf ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [^File home (.getf ctx K_BASEDIR)
-        cf (File. home  (str DN_CONF
-                             "/" (name K_PROPS) )) ]
-    (log/info "About to parse config file " cf)
-    (let [w (ReadEdn cf)
-          cn (lcase (ternary (K_COUNTRY (K_LOCALE w)) ""))
-          lg (lcase (ternary (K_LANG (K_LOCALE w)) "en"))
-          loc (if (hgl? cn)
-                (Locale. lg cn)
-                (Locale. lg)) ]
-      (log/info (str "Using locale: " loc))
-      (doto ctx
-        (.setf! K_LOCALE loc)
-        (.setf! K_PROPS w)
-      ))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setupResources "Look for and load the resource bundle."
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [rc (GetResource "czlabclj/tardis/etc/Resources"
-                        (.getf ctx K_LOCALE)) ]
-    (test-nonil "etc/resouces" rc)
-    (.setf! ctx K_RCBUNDLE rc)
-    (I18N/setBase rc)
-    (log/info "Resource bundle found and loaded.")
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- pre-parse "Make sure that the home directory looks ok."
-
-  [^czlabclj.tardis.core.sys.Element cli args]
-
-  (let [home (File. ^String (first args))
-        ctx (inizContext home) ]
-    (log/info "Inside pre-parse()")
-    ;;(precondDir (File. home ^String DN_BLOCKS))
-    (PrecondDir (File. home ^String DN_BOXX))
-    (PrecondDir (File. home ^String DN_CFG))
-    ;; a bit of circular referencing here.  the climain object refers to context
-    ;; and the context refers back to the climain object.
-    (.setf! ctx K_CLISH cli)
-    (.setCtx! cli ctx)
-    (log/info "Home directory looks ok.")
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- start-exec "Start the Execvisor!"
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (log/info "*********************************************************")
-  (log/info "*")
-  (log/info "About to start Skaro...")
-  (log/info "*")
-  (log/info "*********************************************************")
-
-  (let [^Startable exec (.getf ctx K_EXECV) ]
-    (.start exec))
-  (log/info "Skaro started.")
-  ctx)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Create and synthesize Execvisor.
-(defn- primodial ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [cl (.getf ctx K_EXEC_CZLR)
-        cli (.getf ctx K_CLISH)
-        wc (.getf ctx K_PROPS)
-        cz (ternary (K_EXECV (K_COMPS wc)) "") ]
-    ;;(test-cond "conf file:exec-visor" (= cz "czlabclj.tardis.impl.Execvisor"))
-    (log/info "Inside primodial() ---------------------------------------------->")
-    (log/info "Execvisor = " cz)
-    (let [^czlabclj.xlib.util.core.MubleAPI
-          execv (MakeExecvisor cli) ]
-      (.setf! ctx K_EXECV execv)
-      (SynthesizeComponent execv { :ctx ctx } )
-      (log/info "Execvisor created and synthesized - OK.")
-      ctx)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,8 +110,10 @@
       (when-not (nil? execv)
         (.stop ^Startable execv))
       (log/info "Execvisor stopped.")
-      (log/info "Time to say \"Goodbye\".")
-      (deliver CLI-TRIGGER 911))
+      (log/info "\"Goodbye\".")
+      (deliver CLI-TRIGGER 911)
+      (Thread/sleep 5000)
+      (log/info "cli-triggered to un-pause --------------------->>>"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,53 +130,12 @@
     (.setf! ctx K_KILLPORT rc)
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- hookShutdown ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [cli (.getf ctx K_CLISH) ]
-    (.addShutdownHook (Runtime/getRuntime)
-                      (ThreadFunc #(stop-cli ctx) false))
-    (enableRemoteShutdown ctx)
-    (log/info "Added shutdown hook.")
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- writePID ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (let [fp (File. ^File (.getf ctx K_BASEDIR) "skaro.pid") ]
-    (WriteOneFile fp (ProcessPid))
-    (.setf! ctx K_PIDFILE fp)
-    (log/info "Wrote skaro.pid - OK.")
-    ctx
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- pause-cli ""
-
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
-
-  (PrintMutableObj ctx)
-  (log/info "Applications are now running...")
-  (log/info "System thread paused on promise - awaits delivery.")
-  (deref CLI-TRIGGER) ;; pause here
-  (log/info "Promise delivered! Done.")
-  (SafeWait 5000) ;; give some time for stuff to wind-down.
-  (System/exit 0))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeMemServer
+(defn- cserver
 
   ^ServerLike
-  [^File home ^ResourceBundle rcb]
+  [^File home]
 
   (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
         cpu (MakeScheduler nil)
@@ -350,22 +168,188 @@
           (nsb v)))
 
       Identifiable
-      (id [_] K_CLISH)
+      (id [_] K_CLISH))
 
-      Startable
+  ))
 
-      (start [this]
-        (-> (pre-parse this args)
-            (maybeInizLoaders)
-            (loadConf)
-            (setupResources )
-            (primodial)
-            (start-exec)
-            (writePID)
-            (hookShutdown)
-            (pause-cli)) )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- pauseCLI ""
 
-      (stop [this] (stop-cli (.getCtx this))))
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            ^ServerLike s (.container j)]
+        (PrintMutableObj x)
+        (log/info "Applications are now running...")
+        (log/info "System thread paused.")
+        (deref CLI-TRIGGER) ;; pause here
+        (log/info "System thread unpaused----------------<<<")
+        ;;(SafeWait 5000) ;; give some time for stuff to wind-down.
+        (log/info "Shutting down VM...")
+        ;;(System/exit 0)
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hookShutdown ""
+
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            cli (.getf x K_CLISH)]
+        (.addShutdownHook (Runtime/getRuntime)
+                          (ThreadFunc #(stop-cli x) false))
+        (enableRemoteShutdown x)
+        (log/info "Added shutdown hook.")
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- writePID ""
+
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            ^File home (.getf x K_BASEDIR)
+            fp (File. home "skaro.pid")]
+        (WriteOneFile fp (ProcessPid))
+        (.setf! x K_PIDFILE fp)
+        (log/info "Wrote skaro.pid - OK.")
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Create and synthesize Execvisor.
+(defn- primodial ""
+
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            cl (.getf x K_EXEC_CZLR)
+            cli (.getf x K_CLISH)
+            wc (.getf x K_PROPS)
+            cz (ternary (K_EXECV (K_COMPS wc)) "")]
+        ;;(test-cond "conf file:exec-visor" (= cz "czlabclj.tardis.impl.Execvisor"))
+        (log/info "Inside primodial() ---------------------------------------------->")
+        (log/info "Execvisor = " cz)
+        (let [^czlabclj.xlib.util.core.MubleAPI
+              execv (MakeExecvisor cli)]
+          (.setf! x K_EXECV execv)
+          (SynthesizeComponent execv { :ctx x })
+          (log/info "Execvisor created and synthesized - OK.")
+          (log/info "*********************************************************")
+          (log/info "*")
+          (log/info "About to start Skaro...")
+          (log/info "*")
+          (log/info "*********************************************************")
+          (.start ^Startable execv)
+          (log/info "Skaro started."))
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- loadRes "Look for and load the resource bundle."
+
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            rc (GetResource "czlabclj/tardis/etc/Resources"
+                            (.getf x K_LOCALE))]
+        (test-nonil "etc/resouces" rc)
+        (.setf! x K_RCBUNDLE rc)
+        (I18N/setBase rc)
+        (log/info "Resource bundle found and loaded.")
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Parse skaro.conf
+(defn- loadConf ""
+
+  []
+
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.MubleAPI
+            x (.getLastResult j)
+            ^File home (.getf x K_BASEDIR)
+            cf (File. home (str DN_CONF
+                                 "/" (name K_PROPS)))]
+        (log/info "About to parse config file " cf)
+        (let [w (ReadEdn cf)
+              cn (lcase (ternary (K_COUNTRY (K_LOCALE w)) ""))
+              lg (lcase (ternary (K_LANG (K_LOCALE w)) "en"))
+              loc (if (hgl? cn)
+                    (Locale. lg cn)
+                    (Locale. lg))]
+          (log/info (str "Using locale: " loc))
+          (doto x
+            (.setf! K_LOCALE loc)
+            (.setf! K_PROPS w)
+          ))
+      ))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setupLoaders
+
+  "Prepare class loaders.  The root class loader loads all the core libs.
+  The exec class loader inherits from the root and is the class loader
+  that runs skaro."
+
+  []
+
+  (letfn
+    [(f1 [^czlabclj.xlib.util.core.MubleAPI x]
+       (let [^ClassLoader r (.getf x K_ROOT_CZLR)
+             cl (ExecClassLoader. r)]
+         (SetCldr cl)
+         (.setf! x K_EXEC_CZLR cl)))
+     (f0 [^czlabclj.xlib.util.core.MubleAPI x
+          ^ClassLoader cur]
+       (.setf! x K_ROOT_CZLR (RootClassLoader. cur))) ]
+    (SimPTask
+      (fn [^Job j]
+        (let [^czlabclj.xlib.util.core.MubleAPI
+              x (.getLastResult j)
+              cz (GetCldr)
+              p (.getParent cz)]
+          (condp instance? cz
+            RootClassLoader
+            (do
+              (.setf! x K_ROOT_CZLR cz)
+              (f1 x))
+
+            ExecClassLoader
+            (do
+              (.setf! x K_ROOT_CZLR p)
+              (.setf! x K_EXEC_CZLR cz))
+
+            (do
+              (f0 x cz)
+              (f1 x)))
+          (log/info "Classloaders configured. using " (type cz))
+        )))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -397,11 +381,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype RtDelegate [] PDelegate
-  (onStop [_ p] (-> (.core ^Pipeline p) (.dispose)))
+  ;;(onStop [_ p] (-> (.core ^Pipeline p) (.dispose)))
+  (onStop [_ p]
+    (log/debug "RtDelegate STOPPING!!!!!!!!!!!!!!!!!!!!!!")
+    (while true nil))
   (onError [_ err cur] (Nihil.))
   (getStartActivity [_ p]
     (-> (rtStart)
-        (.chain)
+        (.chain (setupLoaders))
+        (.chain (loadConf))
+        (.chain (loadRes))
+        (.chain (primodial))
+        (.chain (writePID))
+        (.chain (hookShutdown))
+        (.chain (pauseCLI)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -409,14 +402,11 @@
     CliMain
     (run [_ args]
       (require 'czlabclj.tardis.impl.climain)
-      (let [^Job j (first args)
-            home (.getv j :home)
-            rcb (.getv j :rcb)
-            svr (makeMemServer home rcb)
+      (let [home (first args)
+            svr (cserver home)
             job (PseudoJob svr)
             p (Pipeline. job "czlabclj.tardis.impl.climain.RtDelegate")]
         (.setv job :home home)
-        (.setv job :rcb rcb)
         (.start p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

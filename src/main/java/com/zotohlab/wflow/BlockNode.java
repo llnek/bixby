@@ -28,12 +28,12 @@ public class BlockNode extends CompositeNode {
     FlowNode rc= null;
 
     if ( ! _inner.isEmpty()) {
-      //tlog.debug("BlockNode: {} element(s.)",  _inner.size )
+      tlog().debug("BlockNode: {} element(s.)",  _inner.size() );
       FlowNode n=_inner.next();
       n.attachClosureArg(c);
       rc = n.eval(j);
     } else {
-      //tlog.debug("BlockNode: no more elements.")
+      tlog().debug("BlockNode: no more elements.");
       rc= next();
       if (rc != null) {  rc.attachClosureArg(c); }
       realize();

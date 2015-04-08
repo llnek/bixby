@@ -110,6 +110,8 @@ public abstract class FlowNode implements RunnableWithId {
     try {
       //f.job().clrLastResult();
       rc= eval( pl.job() );
+      System.out.println("FlowNode.eval done................." +
+      ((rc==null) ? "NULL" : rc.getClass().getName()));
     } catch (Throwable e) {
       err= pl.onError(e, this);
     }

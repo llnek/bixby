@@ -207,14 +207,15 @@
   (let [args (.getLastResult j)
         s2 (if (> (count args) 1)
              (nth args 1)
-             "") ]
+             "")
+        home (GetHomeDir)]
     (if
       ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
-      (RunAppBg (GetHomeDir) true)
+      (RunAppBg home true)
       ;;else
       (when-let [^CliMain m (MakeObj "czlabclj.tardis.impl.climain.StartMainViaCLI")]
-        (.run m (object-array [ j ]))))
+        (.run m (object-array [ home ]))))
     nil
   ))
 
