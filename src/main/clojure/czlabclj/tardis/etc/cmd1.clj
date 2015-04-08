@@ -197,6 +197,7 @@
       (throw (CmdHelpError.)))
   ))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
 (defn OnStart ""
@@ -204,17 +205,17 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        s2 (if (> (count args) 1) (nth args 1) "") ]
-    (cond
+        s2 (if (> (count args) 1)
+             (nth args 1)
+             "") ]
+    (if
       ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
       (RunAppBg (GetHomeDir) true)
-
-      :else
+      ;;else
       (when-let [^CliMain m (MakeObj "czlabclj.tardis.impl.climain.StartMainViaCLI")]
-        (.run m (object-array [ (NiceFPath (GetHomeDir)) ]))
-        ))
-      ;;(StartMain (NiceFPath (GetHomeDir))))
+        (.run m (object-array [ j ]))))
+    nil
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

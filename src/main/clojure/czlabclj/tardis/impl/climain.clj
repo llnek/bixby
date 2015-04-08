@@ -314,13 +314,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-climain ""
+(defn- makeMemServer
 
-  [& args]
+  ^ServerLike
+  [^File home ^ResourceBundle rcb]
 
-  (let [home (File. ^String (first args))
+  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
+        cpu (MakeScheduler nil)
         impl (MakeMMap)]
+    (.activate cpu { :threads 1 })
     (reify
+
+      ServerLike
+
+      (hasService [_ s] )
+      (getService [_ s] )
+      (core [_] cpu)
 
       Element
 
@@ -361,24 +370,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start-main ""
+(defn- rtStart ""
 
-  [& args]
+  ^Activity
+  []
 
-  (if (< (count args) 1)
-    (throw (CmdHelpError. "Skaro Home not defined."))
-    (log/info "Skaro.home= " (first args)))
-
-  (let [m (apply make-climain args)]
-    (log/info "Skaro.ver= " (.version ^Versioned m))
-    (.start ^Startable m)
+  (SimPTask
+    (fn [^Job j]
+      (let [^czlabclj.tardis.core.sys.Element
+            c (.container j)
+            ^File home (.getv j :home)
+            x (inizContext home)]
+        (log/info "SKARO.Version= " (.version ^Versioned c))
+        ;;(precondDir (File. home ^String DN_BLOCKS))
+        (PrecondDir (File. home DN_BOXX))
+        (PrecondDir (File. home DN_CFG))
+        ;; a bit of circular referencing here.  the climain object refers to context
+        ;; and the context refers back to the climain object.
+        (.setf! x K_CLISH c)
+        (.setCtx! c x)
+        (log/info "Home directory looks ok.")
+        (.setLastResult j x)
+      ))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype RtDelegate [] PDelegate
+  (onStop [_ p] (-> (.core ^Pipeline p) (.dispose)))
+  (onError [_ err cur] (Nihil.))
+  (getStartActivity [_ p]
+    (-> (rtStart)
+        (.chain)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftype StartMainViaCLI []
     CliMain
-    (run [this args]
+    (run [_ args]
       (require 'czlabclj.tardis.impl.climain)
-      (apply start-main args)))
+      (let [^Job j (first args)
+            home (.getv j :home)
+            rcb (.getv j :rcb)
+            svr (makeMemServer home rcb)
+            job (PseudoJob svr)
+            p (Pipeline. job "czlabclj.tardis.impl.climain.RtDelegate")]
+        (.setv job :home home)
+        (.setv job :rcb rcb)
+        (.start p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

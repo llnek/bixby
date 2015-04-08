@@ -161,13 +161,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype RtDelegate [] PDelegate
-  (getStartActivity [_ p] )
-  (onStop [_ p] )
-  (onError [_ err cur]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn BootAndRun ""
 
   [^File home ^ResourceBundle rcb args]
