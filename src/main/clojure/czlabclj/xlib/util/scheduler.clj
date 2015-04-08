@@ -66,11 +66,12 @@
 
         (activate [_ options]
           (let [^long t (ternary (:threads options) 4)
+                b (ternary (:trace options) true)
                 jid (if (instance? Named parObj)
                       (str (.getName ^Named parObj) "#core")
                       (Format "skaro#core-%03d"
                               (.incrementAndGet SEQNUM)))
-                c (TCore. jid t)]
+                c (TCore. jid t (true? b)) ]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))
               (.setf! :runQ (ConcurrentHashMap.))

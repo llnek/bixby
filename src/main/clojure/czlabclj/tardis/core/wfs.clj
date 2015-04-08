@@ -40,7 +40,7 @@
 
   (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
         cpu (MakeScheduler nil)]
-    (.activate cpu { :threads 1 })
+    (.activate cpu { :threads 1, :trace false })
     (reify ServerLike
       (hasService [_ s] )
       (getService [_ s] )

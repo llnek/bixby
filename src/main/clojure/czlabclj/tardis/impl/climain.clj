@@ -97,23 +97,20 @@
         kp (.getf ctx K_KILLPORT)
         execv (.getf ctx K_EXECV) ]
 
-    (log/info "Shutting down the http discarder...")
-    (StopServer ^ServerBootstrap (:bootstrap kp)
-                ^Channel (:channel kp))
-    (log/info "Http discarder closed. OK")
-
     (when-not @STOPCLI
       (reset! STOPCLI true)
+      (log/info "Shutting down the http discarder...")
+      (StopServer ^ServerBootstrap (:bootstrap kp)
+                  ^Channel (:channel kp))
+      (log/info "Http discarder closed. OK")
       (when-not (nil? pid) (FileUtils/deleteQuietly pid))
-      (log/info "Applications are shutting down...")
+      (log/info "Containers are shutting down...")
       (log/info "About to stop Skaro...")
       (when-not (nil? execv)
         (.stop ^Startable execv))
-      (log/info "Execvisor stopped.")
-      (log/info "\"Goodbye\".")
-      (deliver CLI-TRIGGER 911)
-      (Thread/sleep 5000)
-      (log/info "cli-triggered to un-pause --------------------->>>"))
+      (log/info "Skaro stopped.")
+      (log/info "Shutting down VM...")
+      (log/info "\"Goodbye\"."))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,13 +181,7 @@
             x (.getLastResult j)
             ^ServerLike s (.container j)]
         (PrintMutableObj x)
-        (log/info "Applications are now running...")
-        (log/info "System thread paused.")
-        (deref CLI-TRIGGER) ;; pause here
-        (log/info "System thread unpaused----------------<<<")
-        ;;(SafeWait 5000) ;; give some time for stuff to wind-down.
-        (log/info "Shutting down VM...")
-        ;;(System/exit 0)
+        (log/info "Container(s) are now running...")
       ))
   ))
 
@@ -381,10 +372,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype RtDelegate [] PDelegate
-  ;;(onStop [_ p] (-> (.core ^Pipeline p) (.dispose)))
   (onStop [_ p]
-    (log/debug "RtDelegate STOPPING!!!!!!!!!!!!!!!!!!!!!!")
-    (while true nil))
+    ;;(log/debug "RtDelegate STOPPING!!!!!!!!!!!!!!!!!!!!!!")
+    (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
   (getStartActivity [_ p]
     (-> (rtStart)

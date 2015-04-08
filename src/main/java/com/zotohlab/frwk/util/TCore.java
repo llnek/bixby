@@ -33,27 +33,44 @@ public class TCore implements RejectedExecutionHandler {
   //private val serialVersionUID = 404521678153694367L
 
   private ExecutorService _scd;
+  private boolean _trace;
+  private boolean _paused;
   private String _id ="";
   private int _tds = 4;
 
-  public TCore (String id, int tds) {
+  public TCore (String id, int tds, boolean traceable) {
     _tds= Math.max(1,tds);
     _id=id;
+    _trace=traceable;
+    _paused=true;
+  }
+  
+  public TCore (String id, int tds) {
+    this(id, tds, true);
   }
 
   public void start() {
     activate();
+    _paused=false;
   }
 
-  public void stop() {}
+  public void stop() {
+    _paused=true;
+  }
 
   public void dispose() {
+    stop();
     //_scd.shutdownNow()
-    _scd.shutdown();
+    _scd.shutdown();    
+    if (_trace) {
+      tlog().debug("Core \"{}\"  disposed and shut down." , _id );      
+    }
   }
 
   public void schedule(Runnable work) {
-    _scd.execute(work);
+    if (! _paused) {
+      _scd.execute(work);      
+    }
   }
 
   public void rejectedExecution(Runnable r, ThreadPoolExecutor x) {
@@ -61,12 +78,18 @@ public class TCore implements RejectedExecutionHandler {
     tlog().error("\"{}\" rejected work - threads/queue are max'ed out" , _id);
   }
 
+  public String toString() {
+    return "Core \"" + _id + "\" with threads = " + _tds;    
+  }
+  
   private void activate() {
 //    _scd= Executors.newCachedThreadPool( new TFac(_id) )
     _scd= new ThreadPoolExecutor( _tds, _tds, 5000L,
         TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
         new TFac(_id) , this );
-    tlog().info("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");
+    if (_trace) {
+      tlog().debug("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");      
+    }
   }
 
 }

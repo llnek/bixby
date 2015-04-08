@@ -204,7 +204,8 @@
 
   [^Job j]
 
-  (let [args (.getLastResult j)
+  (let [cz "czlabclj.tardis.impl.climain.StartMainViaCLI"
+        args (.getLastResult j)
         s2 (if (> (count args) 1)
              (nth args 1)
              "")
@@ -214,7 +215,7 @@
       (and (= s2 "bg") (IsWindows?))
       (RunAppBg home true)
       ;;else
-      (when-let [^CliMain m (MakeObj "czlabclj.tardis.impl.climain.StartMainViaCLI")]
+      (when-let [^CliMain m (MakeObj cz)]
         (.run m (object-array [ home ]))))
     nil
   ))

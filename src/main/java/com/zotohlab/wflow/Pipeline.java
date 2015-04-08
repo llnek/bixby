@@ -39,14 +39,16 @@ public class Pipeline implements Startable {
   private PDelegate _delegate;
   private Job _theScope;
 
+  private boolean _trace=true;
   private boolean _active=false;
   private long _pid;
-
-  public Pipeline (Job scope, String cz) {
+  
+  public Pipeline (Job scope, String cz, boolean traceable) {
 
     _pid = _sn.incrementAndGet();
     _theScope=scope;
-
+    _trace=traceable;
+    
     try {
       _delegate = (PDelegate) dftCtor(cz);
     } catch (Throwable e) {
@@ -55,8 +57,14 @@ public class Pipeline implements Startable {
     if (_delegate instanceof PDelegate) {} else {
       throw new ClassCastException("Class " + cz + " must implement PDelegate.");
     }
-    tlog().debug("{}: {} => pid : {}" , "Pipeline", cz , _pid);
-    //assert(_theScope != null, "Scope is null.");
+    if (_trace) {
+      tlog().debug("{}: {} => pid : {}" , "Pipeline", cz , _pid);      
+    }
+    //assert(_theScope != null, "Scope is null.");    
+  }
+  
+  public Pipeline (Job scope, String cz) {
+    this(scope,cz,true);
   }
 
   public Schedulable core() {
@@ -93,7 +101,9 @@ public class Pipeline implements Startable {
   }
 
   public void start() {
-    tlog().debug("{}: {} => starting" , "Pipeline", this);
+    if (_trace) {
+      tlog().debug("{}: {} => starting" , "Pipeline", this);      
+    }
     try {
       FlowNode f1= onStart().reify( new NihilNode(this));
       _active=true;
@@ -110,7 +120,9 @@ public class Pipeline implements Startable {
     } catch( Throwable e) {
       tlog().error("",e);
     }
-    tlog().debug("{}: {} => end" , "Pipeline", this);
+    if (_trace) {
+      tlog().debug("{}: {} => end" , "Pipeline", this);      
+    }
   }
 
   public String toString() {
