@@ -14,24 +14,29 @@
 
   czlabclj.tardis.etc.core
 
-  (:gen-class)
-
   (:require [clojure.tools.logging :as log :only [warn error info debug]]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.i18n.resources :only [GetResource RStr]]
-        [czlabclj.xlib.util.core :only [test-cond]]
+        [czlabclj.xlib.util.core :only [test-cond MakeMMap]]
         [czlabclj.xlib.util.str :only [MakeString]]
+        [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.files :only [DirRead?]]
-        [czlabclj.tardis.etc.cmd1 :only [GetCommands EvalCommand]])
+        [czlabclj.tardis.core.wfs]
+        [czlabclj.tardis.etc.cmd1])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
+            [com.zotohlab.frwk.server ServerLike]
+            [com.zotohlab.wflow Activity Pipeline
+             Nihil
+             Job PDelegate Switch]
             [com.zotohlab.frwk.i18n I18N]
             [java.util ResourceBundle List Locale]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -72,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- usage ""
+(defn Usage ""
 
   []
 
@@ -86,39 +91,97 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; arg(0) is skaro-home
-;;println("#### apprunner loader = " + getClass().getClassLoader().getClass().getName())
-;;println("#### sys loader = " + ClassLoader.getSystemClassLoader().getClass().getName())
-;;mkCZldrs(home)
-(defn- parseArgs "Returns false or a valid function to execute."
+(defn- execArgs ""
 
-  [rcb & args]
+  ^Activity
+  []
 
-  (let [h (File. ^String (first args)) ]
-    (test-cond (RStr rcb "skaro.home.none" [h]) (DirRead? h))
-    (if (not (contains? (GetCommands) (keyword (nth args 1))))
-      false
-      #(apply EvalCommand h rcb (drop 1 args)))
+  (doto (Switch/apply (DefChoiceExpr
+                        (fn [^Job j]
+                          (keyword (first (.getLastResult j))))))
+    (.withChoice :new (SimPTask #(OnCreate %)))
+    (.withChoice :ide (SimPTask #(OnIDE %)))
+    (.withChoice :build (SimPTask #(OnBuild %)))
+    (.withChoice :podify (SimPTask #(OnPodify %)))
+    (.withChoice :test (SimPTask #(OnTest %)))
+    (.withChoice :debug (SimPTask #(OnDebug %)))
+    (.withChoice :start (SimPTask #(OnStart %)))
+    (.withChoice :demo (SimPTask #(OnDemo %)))
+    (.withChoice :generate (SimPTask #(OnGenerate %)))
+    (.withChoice :encrypt (SimPTask #(OnEncrypt %)))
+    (.withChoice :decrypt (SimPTask #(OnDecrypt %)))
+    (.withChoice :hash (SimPTask #(OnHash %)))
+    (.withChoice :testjce (SimPTask #(OnTestJCE %)))
+    (.withChoice :version (SimPTask #(OnVersion %)))
+    (.withChoice :help (SimPTask #(OnHelp %)))
+    (.withDft (SimPTask #(OnHelp %)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -main "Main Entry"
+;; arg(0) is skaro-home
+;;println("#### apprunner loader = " + getClass().getClassLoader().getClass().getName())
+;;println("#### sys loader = " + ClassLoader.getSystemClassLoader().getClass().getName())
+;;mkCZldrs(home)
+(defn- parseArgs ""
 
-  [& args]
+  ^Activity
+  []
 
-  ;;(debug "Skaro: Main Entry")
-  ;; for security, don't just eval stuff
-  ;;(alter-var-root #'*read-eval* (constantly false))
-  (let [rcb (GetResource "czlabclj/tardis/etc/Resources"
-                         (Locale/getDefault)) ]
-    (I18N/setBase rcb)
-    (try
-      (when (< (count args) 2) (throw (CmdHelpError. "")))
-      (if-let [rc (apply parseArgs rcb args) ]
-        (rc)
-        (throw (CmdHelpError. "")))
-      (catch CmdHelpError e# (usage)))
+  (DefPTask
+    (fn [_ ^Job j _])
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cmdStart ""
+
+  ^Activity
+  []
+
+  (DefPTask
+    (fn [_ ^Job j _]
+      (try
+        (let [args (.getLastResult j)]
+          (when (< (count args) 1) (throw (CmdHelpError. ""))))
+        (catch CmdHelpError e# (Usage))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype CmdDelegate [] PDelegate
+  (onStop [_ p] (-> (.core p) (.dispose)))
+  (onError [_ err cur] (Nihil.))
+  (getStartActivity [_ p]
+    (require 'czlabclj.tardis.etc.core)
+    (-> (cmdStart)
+        (.chain (parseArgs))
+        (.chain (execArgs)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype RtDelegate [] PDelegate
+  (getStartActivity [_ p] )
+  (onStop [_ p] )
+  (onError [_ err cur]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BootAndRun ""
+
+  [^File home ^ResourceBundle rcb args]
+
+  (reset! SKARO-HOME-DIR home)
+  (reset! SKARO-RSBUNDLE rcb)
+  (let [cz "czlabclj.tardis.etc.core.CmdDelegate"
+        ctr (PseudoServer)
+        job (PseudoJob ctr)
+        pipe (Pipeline. job cz)]
+    (.setLastResult job args)
+    (.setv job :home home)
+    (.setv job :rcb rcb)
+    (.start pipe)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

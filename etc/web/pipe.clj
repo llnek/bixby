@@ -18,7 +18,7 @@
 (deftype Handler [] PDelegate
 
   (getStartActivity [_  pipe]
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^HTTPEvent evt (.event job)
               res (.getResultObj evt) ]

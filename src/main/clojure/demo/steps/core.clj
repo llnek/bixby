@@ -41,15 +41,15 @@
 
   (condp = t
     "facebook"
-    (DefWFTask (fn [c j a] (println "-> using facebook to login.\n")))
+    (DefPTask (fn [c j a] (println "-> using facebook to login.\n")))
 
     "google+"
-    (DefWFTask (fn [c j a] (println "-> using google+ to login.\n")))
+    (DefPTask (fn [c j a] (println "-> using google+ to login.\n")))
 
     "openid"
-    (DefWFTask (fn [c j a] (println "-> using open-id to login.\n")))
+    (DefPTask (fn [c j a] (println "-> using open-id to login.\n")))
 
-    (DefWFTask (fn [c j a] (println "-> using internal db to login.\n")))))
+    (DefPTask (fn [c j a] (println "-> using internal db to login.\n")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -106,14 +106,14 @@
                        (.withChoice "openid" (getAuthMtd "openid"))
                        (.withDft (getAuthMtd "db")))
     ;; step2.
-          GetProfile (DefWFTask (fn [c j a] (println "Step(2): Get user profile\n"
+          GetProfile (DefPTask (fn [c j a] (println "Step(2): Get user profile\n"
                                           "-> user is superuser.\n")))
     ;; step3. we are going to dummy up a retry of 2 times to simulate network/operation
     ;; issues encountered with EC2 while trying to grant permission.
     ;; so here , we are using a while() to do that.
           prov_ami (While/apply
                      (DefBoolExpr (maybeLoopXXX "ami_count" 3))
-                     (DefWFTask
+                     (DefPTask
                        (maybeWhileBody "ami_count" 3
                                        #(println "Step(3): Granted permission for user to launch "
                                                  "this ami(id).\n")
@@ -124,7 +124,7 @@
           ;; so here , we are using a while() to do that.
           prov_vol (While/apply
                      (DefBoolExpr (maybeLoopXXX "vol_count" 3))
-                     (DefWFTask
+                     (DefPTask
                        (maybeWhileBody "vol_count" 3
                                        #(println "Step(3): Granted permission for user to mount "
                                                  "this vol(id).\n")
@@ -135,7 +135,7 @@
           ;; so again , we are using a while() to do that.
           save_sdb (While/apply
                      (DefBoolExpr (maybeLoopXXX "wdb_count" 3))
-                     (DefWFTask
+                     (DefPTask
                        (maybeWhileBody "wdb_count" 3
                                        #(println "Step(4): Wrote stuff to database successfully.\n")
                                        #(println "Step(4): Failed to contact db- server, "
@@ -150,10 +150,10 @@
           ;; do a final test to see what sort of response should we send back to the user.
           FinalTest (If/apply
                       (DefBoolExpr (fn [j] (RandomBoolValue)))
-                      (DefWFTask
+                      (DefPTask
                         (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
                                   "back to caller here.\n")))
-                      (DefWFTask
+                      (DefPTask
                         (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
                                   "but with errors.\n")))) ]
       ;;

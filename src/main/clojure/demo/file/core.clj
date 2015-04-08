@@ -21,7 +21,7 @@
   (:use [czlabclj.xlib.util.process :only [ThreadFunc]]
         [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.core Container]
@@ -56,7 +56,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.file.core)
-    (DefWFTask
+    (DefPTask
       (fn [cur job arg]
         (let [s (str "Current time is " (Date.))
               ^Service p (-> (.container pipe)
@@ -77,7 +77,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.file.core)
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^FileEvent ev (.event job)
               f (.getFile ev) ]

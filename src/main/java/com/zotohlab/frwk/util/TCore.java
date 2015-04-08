@@ -37,7 +37,7 @@ public class TCore implements RejectedExecutionHandler {
   private int _tds = 4;
 
   public TCore (String id, int tds) {
-    _tds= Math.max(4,tds);
+    _tds= Math.max(1,tds);
     _id=id;
   }
 

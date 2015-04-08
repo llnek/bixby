@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [java.util.concurrent.atomic AtomicInteger]
@@ -53,7 +53,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.timer.core)
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^TimerEvent ev (.event job) ] 
           (if (.isRepeating ev)

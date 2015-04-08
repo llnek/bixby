@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
@@ -49,7 +49,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.mvc.core)
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev) ]

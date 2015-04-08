@@ -65,6 +65,7 @@
             [com.zotohlab.frwk.crypto PasswordAPI]
             [org.apache.commons.io FileUtils]
             [org.apache.commons.codec.binary Hex]
+            [com.zotohlab.wflow Job]
             [java.io File]
             [java.security KeyPair PublicKey PrivateKey]
             [com.zotohlab.frwk.io IOUtils]))
@@ -72,29 +73,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;(def ^:dynamic *SKARO-RSBUNDLE* nil)
+;;(def ^:dynamic *SKARO-HOME-DIR* "")
+
+(def SKARO-RSBUNDLE (atom nil))
+(def SKARO-HOME-DIR (atom nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:dynamic *SKARO-RSBUNDLE* nil)
-(def ^:dynamic *SKARO-HOME-DIR* "")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- rcb ""
+(defn ResBdl ""
 
   ^ResourceBundle
   []
 
-  *SKARO-RSBUNDLE*)
+  @SKARO-RSBUNDLE)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getHomeDir ""
+(defn GetHomeDir ""
 
   ^File
   []
 
-  *SKARO-HOME-DIR*)
+  @SKARO-HOME-DIR)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;not used
@@ -103,7 +104,7 @@
   ^String
   []
 
-  (NiceFPath (File. (File. (getHomeDir)
+  (NiceFPath (File. (File. (GetHomeDir)
                            (str DN_CFG "/app"))
                     "build.xml")))
 
@@ -115,7 +116,7 @@
 
   (let [t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
                       (nth args 2))
-        hhh (getHomeDir)
+        hhh (GetHomeDir)
         hf (ReadEdn (File. hhh
                            (str DN_CONF
                                 "/" (name K_PROPS))))
@@ -144,91 +145,97 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn- onCreate ""
+(defn OnCreate ""
 
-  [& args]
+  [^Job j]
 
-  (if (< (count args) 3)
-    (throw (CmdHelpError.))
-    (apply onCreateApp args)
+  (let [args (.getLastResult j)]
+    (if (< (count args) 3)
+      (throw (CmdHelpError.))
+      (apply onCreateApp args))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
-(defn- onBuild ""
+(defn OnBuild ""
 
-  [& args]
+  [^Job j]
 
-  (if (>= (count args) 2)
-    (let [appId (nth args 1)
-          taskId (if (> (count args) 2)
-                   (nth args 2)
-                   "devmode") ]
-      ;;(AntBuildApp (getHomeDir) appId taskId))
-      (ExecGantScript (getHomeDir) appId taskId))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (>= (count args) 2)
+      (let [appId (nth args 1)
+            taskId (if (> (count args) 2)
+                     (nth args 2)
+                     "devmode") ]
+        ;;(AntBuildApp (GetHomeDir) appId taskId))
+        (ExecGantScript (GetHomeDir) appId taskId))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
-(defn- onPodify ""
+(defn OnPodify ""
 
-  [& args]
+  [^Job j]
 
-  (if (> (count args) 1)
-    (BundleApp (getHomeDir) (nth args 1))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (> (count args) 1)
+      (BundleApp (GetHomeDir) (nth args 1))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
-(defn- onTest ""
+(defn OnTest ""
 
-  [& args]
+  [^Job j]
 
-  (if (> (count args) 1)
-    ;;(AntBuildApp (getHomeDir) (nth args 1) "test")
-    (ExecGantScript (getHomeDir) (nth args 1) "test")
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (> (count args) 1)
+      ;;(AntBuildApp (GetHomeDir) (nth args 1) "test")
+      (ExecGantScript (GetHomeDir) (nth args 1) "test")
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
-(defn- onStart ""
+(defn OnStart ""
 
-  [& args]
+  [^Job j]
 
-  (let [s2 (if (> (count args) 1) (nth args 1) "") ]
+  (let [args (.getLastResult j)
+        s2 (if (> (count args) 1) (nth args 1) "") ]
     (cond
       ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
-      (RunAppBg (getHomeDir) true)
+      (RunAppBg (GetHomeDir) true)
 
       :else
       (when-let [^CliMain m (MakeObj "czlabclj.tardis.impl.climain.StartMainViaCLI")]
-        (.run m (object-array [ (NiceFPath (getHomeDir)) ]))
+        (.run m (object-array [ (NiceFPath (GetHomeDir)) ]))
         ))
-      ;;(StartMain (NiceFPath (getHomeDir))))
+      ;;(StartMain (NiceFPath (GetHomeDir))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
-(defn- onDebug ""
+(defn OnDebug ""
 
-  [& args]
+  [^Job j]
 
-  (onStart args))
+  (OnStart j))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe generate some demo apps?
-(defn- onDemo ""
+(defn OnDemo ""
 
-  [& args]
+  [^Job j]
 
-  (if (and (> (count args) 1)
-           (= "samples" (nth args 1)))
-    (PublishSamples (getHomeDir))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (and (> (count args) 1)
+             (= "samples" (nth args 1)))
+      (PublishSamples (GetHomeDir))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -369,8 +376,8 @@
 
   []
 
-  (if-let [res (promptQuestions (merge (make-csr-qs *SKARO-RSBUNDLE*)
-                                       (make-key-qs *SKARO-RSBUNDLE*))
+  (if-let [res (promptQuestions (merge (make-csr-qs @SKARO-RSBUNDLE)
+                                       (make-key-qs @SKARO-RSBUNDLE))
                                 "cn") ]
     (let [^String dn (first res)
           rc (last res)
@@ -394,7 +401,7 @@
 
   []
 
-  (if-let [res (promptQuestions (make-csr-qs *SKARO-RSBUNDLE*) "cn") ]
+  (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) "cn") ]
     (let [^String dn (first res)
           rc (last res)
           [req pkey]
@@ -412,23 +419,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onGenerate ""
+(defn OnGenerate ""
 
-  [& args]
+  [^Job j]
 
-  (when-not (if (> (count args) 1)
-              (condp = (nth args 1)
-                "keypair" (if (> (count args) 2)
-                            (do (genKeyPair (nth args 2)) true)
-                            false)
-                "password" (do (generatePassword 12) true)
-                "serverkey" (do (keyfile) true)
-                "guid" (do (genGuid) true)
-                "wwid" (do (genWwid) true)
-                "csr" (do (csrfile) true)
+  (let [args (.getLastResult j)]
+    (when-not (if (> (count args) 1)
+                (condp = (nth args 1)
+                  "keypair" (if (> (count args) 2)
+                              (do (genKeyPair (nth args 2)) true)
+                              false)
+                  "password" (do (generatePassword 12) true)
+                  "serverkey" (do (keyfile) true)
+                  "guid" (do (genGuid) true)
+                  "wwid" (do (genWwid) true)
+                  "csr" (do (csrfile) true)
+                  false)
                 false)
-              false)
-    (throw (CmdHelpError.))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -443,13 +451,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHash ""
+(defn OnHash ""
 
-  [& args]
+  [^Job j]
 
-  (if (> (count args) 1)
-    (genHash (nth args 1))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (> (count args) 1)
+      (genHash (nth args 1))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -464,13 +473,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onEncrypt ""
+(defn OnEncrypt ""
 
-  [& args]
+  [^Job j]
 
-  (if (> (count args) 2)
-    (encrypt (nth args 1) (nth args 2))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (> (count args) 2)
+      (encrypt (nth args 1) (nth args 2))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -485,31 +495,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onDecrypt ""
+(defn OnDecrypt ""
 
-  [& args]
+  [^Job j]
 
-  (if (> (count args) 2)
-    (decrypt (nth args 1) (nth args 2))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (> (count args) 2)
+      (decrypt (nth args 1) (nth args 2))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onTestJCE ""
+(defn OnTestJCE ""
 
-  [& args]
+  [^Job j]
 
   (AssertJce)
   (println "JCE is OK."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onVersion ""
+(defn OnVersion ""
 
-  [& args]
+  [^Job j]
 
-  (let [s (ReadOneFile (File. (getHomeDir) "VERSION")) ]
+  (log/debug "HomeDor = " (GetHomeDir))
+  (let [s (ReadOneFile (File. (GetHomeDir) "VERSION")) ]
     (if (hgl? s)
       (println s)
       (println "Unknown version."))
@@ -517,9 +529,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp ""
+(defn OnHelp ""
 
-  [& args]
+  [^Job j]
 
   (throw (CmdHelpError.)))
 
@@ -545,7 +557,7 @@
 
   [^String app]
 
-  (let [cwd (File. (getHomeDir) (str DN_BOXX "/" app))
+  (let [cwd (File. (GetHomeDir) (str DN_BOXX "/" app))
         sb (StringBuilder.)
         ec (doto (File. cwd "eclipse.projfiles")
              (.mkdirs))
@@ -565,8 +577,8 @@
           (.replace "${TEST.SRC}"
                     (NiceFPath (File. cwd
                                       (str "src/test/" lang))))))
-    (scanJars (File. (getHomeDir) DN_DIST) sb)
-    (scanJars (File. (getHomeDir) DN_LIB) sb)
+    (scanJars (File. (GetHomeDir) DN_DIST) sb)
+    (scanJars (File. (GetHomeDir) DN_LIB) sb)
     (scanJars (File. cwd POD_CLASSES) sb)
     (scanJars (File. cwd POD_LIB) sb)
     (WriteOneFile (File. ec ".classpath")
@@ -579,33 +591,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onIDE ""
+(defn OnIDE ""
 
-  [& args]
+  [^Job j]
 
-  (if (and (> (count args) 2)
-           (= "eclipse" (nth args 1)))
-    (genEclipseProj (nth args 2))
-    (throw (CmdHelpError.))
+  (let [args (.getLastResult j)]
+    (if (and (> (count args) 2)
+             (= "eclipse" (nth args 1)))
+      (genEclipseProj (nth args 2))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Like a map of function pointers.
-(def ^:private _ARGS {:new #'onCreate
-                      :ide #'onIDE
-                      :build #'onBuild
-                      :podify #'onPodify
-                      :test #'onTest
-                      :debug #'onDebug
-                      :start #'onStart
-                      :demo #'onDemo
-                      :generate #'onGenerate
-                      :encrypt #'onEncrypt
-                      :decrypt #'onDecrypt
-                      :hash #'onHash
-                      :testjce #'onTestJCE
-                      :version #'onVersion
-                      :help #'onHelp})
+(def ^:private _ARGS {:new #'OnCreate
+                      :ide #'OnIDE
+                      :build #'OnBuild
+                      :podify #'OnPodify
+                      :test #'OnTest
+                      :debug #'OnDebug
+                      :start #'OnStart
+                      :demo #'OnDemo
+                      :generate #'OnGenerate
+                      :encrypt #'OnEncrypt
+                      :decrypt #'OnDecrypt
+                      :hash #'OnHash
+                      :testjce #'OnTestJCE
+                      :version #'OnVersion
+                      :help #'OnHelp})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -616,10 +629,11 @@
   (if-let [v ((keyword (first args)) _ARGS) ]
     ;; set the global values for skaro-home and system resource bundle
     ;; for messages.
-    (binding [*SKARO-HOME-DIR* home
-              *SKARO-RSBUNDLE* rcb]
-      (apply v args))
-    (throw (CmdHelpError.))
+    ;;(binding [*SKARO-HOME-DIR* home
+              ;;*SKARO-RSBUNDLE* rcb]
+      ;;(apply v args))
+    ;;(throw (CmdHelpError.))
+    (do)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

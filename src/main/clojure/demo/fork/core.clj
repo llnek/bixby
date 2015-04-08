@@ -19,7 +19,7 @@
 
   (:use [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
 
   (:import  [com.zotohlab.wflow FlowNode PTask Split PDelegate]
@@ -61,19 +61,19 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.fork.core)
-    (let [a1 (DefWFTask
+    (let [a1 (DefPTask
                (fn [c j a]
                  (println "I am the *Parent*")
                  (println "I am programmed to fork off a parallel child process, "
                           "and continue my business.")
                  nil))
-          a2 (Split/fork (DefWFTask
+          a2 (Split/fork (DefPTask
                            (fn [cur ^Job job arg]
                              (println "*Child*: will create my own child (blocking)")
                              (.setv job "rhs" 60)
                              (.setv job "lhs" 5)
                              (-> (Split/applyAnd
-                                   (DefWFTask
+                                   (DefPTask
                                      (fn [cur ^Job j arg]
                                        (println "*Child*: the result for (5 * 60) according to "
                                                 "my own child is = "
@@ -81,7 +81,7 @@
                                        (println "*Child*: done.")
                                        nil)))
                                  (.include
-                                   (DefWFTask
+                                   (DefPTask
                                      (fn [cur ^Job j arg]
                                        (println "*Child->child*: taking some time to do "
                                                 "this task... ( ~ 6secs)")
@@ -96,7 +96,7 @@
                                        (println "*Child->child*: done.")
                                        nil))))))) ]
       (-> (.chain a1 a2)
-          (.chain (DefWFTask
+          (.chain (DefPTask
                     (fn [cur job arg]
                       (let [b (StringBuilder. "*Parent*: ")]
                         (println "*Parent*: after fork, continue to calculate fib(6)...")

@@ -17,7 +17,7 @@
 (deftype Handler [] PDelegate
 
   (getStartActivity [_  pipe]
-    (DefWFTask
+    (DefPTask
       (fn [cur job arg]
         (log/info "I  just handled a job!"))))
 

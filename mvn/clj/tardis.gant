@@ -27,6 +27,11 @@ target (buildTardis: '') {
   doCompileTardis()
 }
 
+target (cTardisJar: '') {
+  ant.delete (file: "${distribDir}/exec/tardis-${buildVersion}.jar", quiet: true)
+  doJarTardis()
+}
+
 target (cTardisCore: '') {
   ant.delete ( dir: "${buildDir}/czlabclj/tardis/core", quiet: true)
   clj_Core()
@@ -62,6 +67,11 @@ def doCompileTardis() {
   clj_IO()
   clj_MVC()
   clj_Main()
+
+  doJarTardis()
+}
+
+def doJarTardis() {
 
   ant.copy (todir: "${buildDir}/czlabclj/tardis") {
     fileset (dir: "${srcDir}/clojure/czlabclj/tardis") {
@@ -112,6 +122,7 @@ def clj_Etc() {
     arg (value: 'czlabclj.tardis.etc.gant')
     arg (value: 'czlabclj.tardis.etc.cmd1')
     arg (value: 'czlabclj.tardis.etc.core')
+    arg (value: 'czlabclj.tardis.etc.shell')
   }
 }
 

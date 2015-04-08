@@ -21,7 +21,7 @@
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.meta :only [IsBytes?]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
             [com.zotohlab.frwk.io XData]
@@ -41,7 +41,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.http.websock)
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^WebSockEvent ev (.event job)
               res (.getResultObj ev)

@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow FlowNode PTask Work AsyncWait
              PDelegate
@@ -60,7 +60,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.async.core)
-    (let [a1 (DefWFTask
+    (let [a1 (DefPTask
                (fn [cur job arg]
                  (println "/* Calling a mock-webservice which takes a long time (10secs),")
                  (println "- since the call is *async*, event loop is not blocked.")
@@ -71,7 +71,7 @@
                  (println "+ the websevice is done.")
                  (println "\n\n")
                  (AsyncWait.)))
-          a2 (DefWFTask
+          a2 (DefPTask
                (fn [cur job arg]
                  (println "-> The result from WS is: " arg)
                  nil)) ]

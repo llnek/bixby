@@ -14,21 +14,64 @@
 
   czlabclj.tardis.core.wfs
 
+  (:require [clojure.tools.logging :as log :only [warn error info debug]]
+            [clojure.string :as cstr])
+
+  (:use [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
+        [czlabclj.xlib.util.core :only [MakeMMap]])
+
   (:import  [com.zotohlab.wflow If BoolExpr FlowNode Activity
              ForLoopCountExpr BoolExpr
              SwitchChoiceExpr
              Pipeline PDelegate PTask Work]
+            [com.zotohlab.frwk.server ServerLike]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.wflow Pipeline PDelegate Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PseudoServer
+
+  ^ServerLike
+  []
+
+  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
+        cpu (MakeScheduler nil)]
+    (.activate cpu { :threads 1 })
+    (reify ServerLike
+      (hasService [_ s] )
+      (getService [_ s] )
+      (core [_] cpu))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PseudoJob
+
+  ^Job
+  [parObj]
+
+  (let [impl (MakeMMap)]
+    (reify Job
+      (container [_] parObj)
+      (event [_] )
+      (id [_] "heeloo")
+      (unsetv [_ k] (.clrf! impl k))
+      (setv [_ k v] (.setf! impl k v))
+      (getv [_ k] (.getf impl k))
+      (setLastResult [_ v] (.setf! impl :last v))
+      (clrLastResult [_] (.clrf! impl :last))
+      (getLastResult [_] (.getf impl :last)))
+  ))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;(defmacro DefWFTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
-(defn DefWFTask ""
+;;(defmacro DefPTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
+(defn DefPTask ""
 
   ^PTask
   [func]
@@ -36,6 +79,16 @@
   (PTask. (reify Work
             (exec [_ fw job arg]
               (apply func [fw job arg])))
+  ))
+
+(defn SimPTask ""
+
+  ^PTask
+  [func]
+
+  (PTask. (reify Work
+            (exec [_ fw job arg]
+              (apply func [job])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

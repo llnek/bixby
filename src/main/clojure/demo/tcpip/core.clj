@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [Try! notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefWFTask]])
+        [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
             [com.zotohlab.wflow FlowNode PTask Delay PDelegate]
@@ -49,7 +49,7 @@
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
         (.chain
-          (DefWFTask
+          (DefPTask
             (fn [cur job arg]
               (with-local-vars [tcp (-> (.container pipe)
                                         (.getService :default-sample))
@@ -84,7 +84,7 @@
 
   (getStartActivity [_ pipe]
     (require 'demo.tcpip.core)
-    (-> (DefWFTask
+    (-> (DefPTask
           (fn [cur ^Job job arg]
             (let [^SocketEvent ev (.event job)
                   dis (DataInputStream. (.getSockIn ev))
@@ -96,7 +96,7 @@
               ;; add a delay into the workflow before next step
               (Delay/apply 1500))))
         (.chain
-          (DefWFTask
+          (DefPTask
             (fn [cur ^Job job arg]
               (println "Socket Server Received: "
                        (.getv job "cmsg")))))))

@@ -321,7 +321,7 @@
 (deftype AssetHandler [] PDelegate
 
   (getStartActivity [_ pipe]
-    (DefWFTask
+    (DefPTask
       (fn [cur ^Job job arg]
         (let [^HTTPEvent evt (.event job)]
           (HandleStatic (.emitter evt)
