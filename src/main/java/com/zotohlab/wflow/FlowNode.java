@@ -102,7 +102,9 @@ public abstract class FlowNode implements RunnableWithId {
 
     x.core().dequeue(this);
     try {
-      tlog().debug("FlowNode##{} :about to call eval().", getDef().getName());
+      if (getDef().hasName()) {
+        tlog().debug("FlowNode##{} :about to call eval().", getDef().getName());        
+      }
       //f.job().clrLastResult();
       rc= eval( pl.job() );
     } catch (Throwable e) {

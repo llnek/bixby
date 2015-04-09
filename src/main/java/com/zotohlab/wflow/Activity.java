@@ -34,8 +34,9 @@ public abstract class Activity implements Named {
   private String _name;
 
   protected Activity(String n) {
-    if (n==null || n.length()==0) {
-      n= getClass().getSimpleName();
+    if (n==null) {
+      //n= getClass().getSimpleName();
+      n="";
     }
     _name=n;
   }  
@@ -71,6 +72,10 @@ public abstract class Activity implements Named {
     return n;
   }
 
+  public boolean hasName() {
+    return _name.length() > 0;
+  }
+  
   protected abstract FlowNode reifyNode(FlowNode cur) ;
   protected abstract void realize(FlowNode p);
 
