@@ -52,7 +52,7 @@
 ;;
 (deftype Handler [] PDelegate
 
-  (getStartActivity [_  pipe]
+  (startWith [_  pipe]
     (require '@@APPDOMAIN@@.core)
     (DefPTask
       (fn [fw ^Job job arg]

@@ -16,7 +16,7 @@ package com.zotohlab.wflow;
  */
 public interface PDelegate {
 
-  public Activity getStartActivity(Pipeline p);
+  public Activity startWith(Pipeline p);
 
   public void onStop(Pipeline p);
 

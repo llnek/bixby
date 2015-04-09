@@ -47,7 +47,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.mvc.core)
     (DefPTask
       (fn [cur ^Job job arg]

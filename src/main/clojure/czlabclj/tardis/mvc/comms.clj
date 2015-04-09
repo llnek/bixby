@@ -320,7 +320,7 @@
 ;;
 (deftype AssetHandler [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (DefPTask
       (fn [cur ^Job job arg]
         (let [^HTTPEvent evt (.event job)]

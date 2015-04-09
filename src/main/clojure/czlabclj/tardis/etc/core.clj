@@ -154,7 +154,7 @@
     ;;(log/debug "CmdDelegate onstop ------------ ending!!!!!")
     (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
-  (getStartActivity [_ p]
+  (startWith [_ p]
     (require 'czlabclj.tardis.etc.core)
     (-> (cmdStart)
         (.chain (parseArgs))

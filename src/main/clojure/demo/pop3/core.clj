@@ -53,7 +53,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.pop3.core)
     (DefPTask
       (fn [cur ^Job job arg]

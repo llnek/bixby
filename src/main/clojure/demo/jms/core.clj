@@ -48,7 +48,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.jms.core)
     (DefPTask
       (fn [cur ^Job job arg]

@@ -172,7 +172,7 @@ public class Demo implements PDelegate {
     ErrorUser );
 
   // returning the 1st step of the workflow.
-  public Activity getStartActivity(Pipeline pipe) {
+  public Activity startWith(Pipeline pipe) {
     // so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
     // a split, which forks off more steps in parallel.
     return Block.apply(AuthUser).chainMany(GetProfile, Provision, FinalTest);

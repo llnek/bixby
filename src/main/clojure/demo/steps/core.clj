@@ -90,7 +90,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.steps.core)
     ;; step1. choose a method to authenticate the user
     ;; here, we'll use a switch() to pick which method

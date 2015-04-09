@@ -59,7 +59,7 @@
 ;;
 (deftype FatalErrorFlow [] PDelegate
 
-  (getStartActivity [_ pipe] (make-internal-flow pipe 500))
+  (startWith [_ pipe] (make-internal-flow pipe 500))
   (onStop [_ pipe ] nil)
   (onError [_ error cur] nil))
 
@@ -67,7 +67,7 @@
 ;;
 (deftype OrphanFlow [] PDelegate
 
-  (getStartActivity [_  pipe] (make-internal-flow pipe 501))
+  (startWith [_  pipe] (make-internal-flow pipe 501))
   (onStop [_  pipe] nil)
   (onError [_  error cur] nil))
 

@@ -36,7 +36,7 @@ public class Demo implements PDelegate {
     // split but no wait
     // parent continues;
 
-  public Activity getStartActivity(Pipeline pipe) {
+  public Activity startWith(Pipeline pipe) {
 
     Activity a0= PTaskWrapper( (cur,job,arg) -> {
       out.println("I am the *Parent*");

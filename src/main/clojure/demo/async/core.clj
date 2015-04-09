@@ -58,7 +58,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.async.core)
     (let [a1 (DefPTask
                (fn [cur job arg]

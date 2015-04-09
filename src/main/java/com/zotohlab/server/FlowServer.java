@@ -44,7 +44,7 @@ public class FlowServer implements ServerLike {
       FlowServer s= new FlowServer().start();
       Job j= s.reifyJob(null);
       new Pipeline("hello",  j, new SDelegate() {
-        public Activity getStartActivity(Pipeline p) {
+        public Activity startWith(Pipeline p) {
           return PTask.apply(new Work() {
             public Object exec(FlowNode cur, Job job, Object arg) {
               System.out.println("do something!");

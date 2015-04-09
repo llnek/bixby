@@ -376,7 +376,7 @@
     ;;(log/debug "RtDelegate STOPPING!!!!!!!!!!!!!!!!!!!!!!")
     (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
-  (getStartActivity [_ p]
+  (startWith [_ p]
     (-> (rtStart)
         (.chain (setupLoaders))
         (.chain (loadConf))

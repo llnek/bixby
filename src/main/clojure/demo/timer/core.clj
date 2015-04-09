@@ -51,7 +51,7 @@
 ;;
 (deftype Demo [] PDelegate 
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.timer.core)
     (DefPTask
       (fn [cur ^Job job arg]

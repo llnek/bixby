@@ -54,7 +54,7 @@
 ;;
 (deftype DemoGen [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.file.core)
     (DefPTask
       (fn [cur job arg]
@@ -75,7 +75,7 @@
 ;;
 (deftype DemoPick [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.file.core)
     (DefPTask
       (fn [cur ^Job job arg]

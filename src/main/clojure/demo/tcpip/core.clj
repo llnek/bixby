@@ -44,7 +44,7 @@
 ;;
 (deftype DemoClient [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
@@ -82,7 +82,7 @@
 ;;
 (deftype DemoServer [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.tcpip.core)
     (-> (DefPTask
           (fn [cur ^Job job arg]

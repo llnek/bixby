@@ -46,7 +46,7 @@
 ;;
 (deftype Demo [] PDelegate
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.http.core)
     (DefPTask
       (fn [cur ^Job job arg]

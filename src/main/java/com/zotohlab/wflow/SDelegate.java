@@ -18,7 +18,7 @@ public abstract class SDelegate implements PDelegate {
 
   protected SDelegate() {}
   
-//  public Activity getStartActivity(Pipeline p);
+//  public Activity startWith(Pipeline p);
 
   public void onStop(Pipeline p) {}
 

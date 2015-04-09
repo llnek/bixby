@@ -106,7 +106,7 @@ public class Pipeline implements Startable {
   }
 
   protected Activity onStart() {
-    Activity x= _delegate.getStartActivity(this);
+    Activity x= _delegate.startWith(this);
     return (x==null) ? new Nihil() : x;
   }
 

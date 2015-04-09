@@ -59,7 +59,7 @@
     ;; split but no wait
     ;; parent continues;
 
-  (getStartActivity [_ pipe]
+  (startWith [_ pipe]
     (require 'demo.fork.core)
     (let [a1 (DefPTask
                (fn [c j a]
