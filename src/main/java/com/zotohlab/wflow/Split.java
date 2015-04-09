@@ -59,11 +59,11 @@ public class Split extends Composite {
     return new Split();
   }
 
-  protected Merge _theJoin;
+  protected Merge _theMerge;
 
   public Split(String name, Merge j) {
     super(name);
-    _theJoin = j;
+    _theMerge = j;
   }
 
   public Split(Merge j) {
@@ -96,18 +96,19 @@ public class Split extends Composite {
 
   public  void realize(FlowNode fp) {
     SplitNode p= (SplitNode) fp;
-
-    if ( _theJoin != null) {
-      _theJoin.withBranches( size() );
+    Merge m= _theMerge;
+    
+    if ( m != null) {
+      m.withBranches( size() );
     } else {
-      _theJoin= new NullJoin();
+      m = new NullJoin();
     }
 
-    FlowNode s = _theJoin.reify(p.next() );
+    FlowNode s = m.reify(p.next() );
     // note: get all *children* to come back to the join
     p.withBranches( new Iter(s, listChildren() ) );
 
-    if ( _theJoin instanceof NullJoin) {
+    if (m instanceof NullJoin) {
         p.fallThrough();
     }
   }

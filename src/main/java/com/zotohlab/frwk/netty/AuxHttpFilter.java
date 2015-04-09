@@ -54,7 +54,7 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  public String getName() { return this.getClass().getSimpleName(); }
+  public String getName() { return getClass().getSimpleName(); }
 
   /** Clean up any attached attributes.
    */

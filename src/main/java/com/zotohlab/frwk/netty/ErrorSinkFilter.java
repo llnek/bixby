@@ -20,8 +20,10 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 
+
+import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.*;
 
 /**
  * @author kenl
@@ -31,8 +33,9 @@ import org.slf4j.LoggerFactory;
 public class ErrorSinkFilter extends SimpleChannelInboundHandler {
 
   public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
-  private static Logger _log = LoggerFactory.getLogger(ErrorSinkFilter.class);
+  
   private static final ErrorSinkFilter shared = new ErrorSinkFilter();
+  private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {

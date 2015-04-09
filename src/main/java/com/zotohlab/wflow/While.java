@@ -25,8 +25,6 @@ public class While extends Conditional {
     return apply("", b,body);
   }
 
-  private Activity _body;
-
   public While(String name, BoolExpr expr, Activity b) {
     super(name, expr);
     _body=b;
@@ -35,13 +33,9 @@ public class While extends Conditional {
   public While(BoolExpr expr, Activity b) {
     this("", expr, b);
   }
+  
+  private Activity _body;
 
-//  public While(Activity body) {
-//    this(body, new BoolExpr () {
-//      public boolean evaluate(Job j) { return false; }
-//    });
-//  }
-//
   public FlowNode reifyNode(FlowNode cur) { 
     return new WhileNode(cur, this); 
   }

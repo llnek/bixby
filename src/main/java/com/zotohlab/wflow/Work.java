@@ -18,9 +18,7 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface Work {
-
   public Object exec(FlowNode cur, Job job, Object arg);
-
 }
 
 

@@ -36,7 +36,9 @@ public enum ApacheFW {
    */
   public static void cfgForRedirect( HttpClientBuilder cli) {
     cli.setRedirectStrategy(new DefaultRedirectStrategy() {
-      public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
+      public boolean isRedirected(HttpRequest request, 
+          HttpResponse response, 
+          HttpContext context) {
         boolean isRedirect=false;
         try {
           isRedirect = super.isRedirected( request, response, context);
@@ -45,7 +47,8 @@ public enum ApacheFW {
         }
         if (!isRedirect) {
           int responseCode = response.getStatusLine().getStatusCode();
-          if (responseCode == 301 || responseCode == 302 || responseCode == 307 || responseCode == 308) {
+          if (responseCode == 301 || responseCode == 302 || 
+              responseCode == 307 || responseCode == 308) {
             isRedirect= true;
           }
         }

@@ -25,11 +25,11 @@ import static org.slf4j.LoggerFactory.*;
 public enum I18N {
 ;
 
+  private static Map<Object,ResourceBundle> _bundles= new HashMap<>();
+  private static ResourceBundle _base;
+  
   private static Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
-
-  private static Map<Object,ResourceBundle> _bundles= new HashMap<Object,ResourceBundle>();
-  private static ResourceBundle _base;
 
   public static ResourceBundle getBase() {
     return _base;
