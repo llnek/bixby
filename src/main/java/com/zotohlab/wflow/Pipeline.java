@@ -73,7 +73,7 @@ public class Pipeline implements Startable {
     _trace=traceable;
     _name= name;
     if (_trace) {
-      tlog().debug("Pipeline: {} => pid : {}" , _name, _pid);
+      tlog().debug("Pipeline##{} => pid : {} - created OK." , _name, _pid);
     }
   }
 
@@ -112,7 +112,7 @@ public class Pipeline implements Startable {
 
   public void start() {
     if (_trace) {
-      tlog().debug("{}: {} => starting" , "Pipeline", this);
+      tlog().debug("Pipeline##{} => starting" , _name);
     }
     try {
       FlowNode f1= onStart().reify( new NihilNode(this));
@@ -131,7 +131,7 @@ public class Pipeline implements Startable {
       tlog().error("",e);
     }
     if (_trace) {
-      tlog().debug("{}: {} => end" , "Pipeline", this);
+      tlog().debug("Pipeline##{} => end" , _name);
     }
   }
 

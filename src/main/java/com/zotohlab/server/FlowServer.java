@@ -20,7 +20,13 @@ import com.zotohlab.frwk.server.Event;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.Service;
 import com.zotohlab.frwk.util.Schedulable;
+import com.zotohlab.wflow.Activity;
+import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.Job;
+import com.zotohlab.wflow.PDelegate;
+import com.zotohlab.wflow.PTask;
+import com.zotohlab.wflow.Pipeline;
+import com.zotohlab.wflow.Work;
 
 /**
  * 
@@ -33,6 +39,33 @@ public class FlowServer implements ServerLike {
   private final AtomicLong _sn= new AtomicLong(0L);
   private FlowScheduler _sch;
 
+  public static void main(String[] args) {
+    try {
+      FlowServer s= new FlowServer().start();
+      Job j= s.reifyJob(null);
+      Pipeline p= new Pipeline("hello",  j, new PDelegate() {
+        public Activity getStartActivity(Pipeline p) {
+          return PTask.apply(new Work() {
+            public Object exec(FlowNode cur, Job job, Object arg) {
+              System.out.println("do something!");
+              return null;
+            }            
+          });
+        }
+        public void onStop(Pipeline p) {
+          System.out.println("stoppping!!!!");
+        }
+        public Activity onError(Throwable e, FlowNode cur) {
+          return null;
+        }        
+      });
+      p.start();
+      Thread.sleep(10000);
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
+  
   public FlowServer() {
     _sch= new FlowScheduler();
   }
@@ -52,8 +85,13 @@ public class FlowServer implements ServerLike {
     return _sch;
   }  
   
-  public void start(Properties options) {
-    _sch.activate(options);
+  public FlowServer start(Properties options) {
+    _sch.activate(options);    
+    return this;
+  }
+  
+  public FlowServer start() {
+    return start(new Properties());
   }
   
   public void dispose() {
