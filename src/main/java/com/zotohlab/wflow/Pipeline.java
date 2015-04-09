@@ -12,13 +12,10 @@
 package com.zotohlab.wflow;
 
 import static com.zotohlab.frwk.util.CoreUtils.dftCtor;
-
 import java.util.concurrent.atomic.AtomicLong;
-
 import static java.lang.invoke.MethodHandles.*;
 
 import org.slf4j.Logger;
-
 import static org.slf4j.LoggerFactory.*;
 
 import com.zotohlab.frwk.core.Startable;
@@ -36,35 +33,48 @@ public class Pipeline implements Startable {
   public Logger tlog() { return _log; }
 
   private AtomicLong _sn= new AtomicLong(0L);
+  private String _name= "";
   private PDelegate _delegate;
-  private Job _theScope;
+  private Job _job;
 
-  private boolean _trace=true;
   private boolean _active=false;
+  private boolean _trace=true;
   private long _pid;
-  
-  public Pipeline (Job scope, String cz, boolean traceable) {
 
-    _pid = _sn.incrementAndGet();
-    _theScope=scope;
-    _trace=traceable;
-    
+  public Pipeline(String name, String cz, Job job, boolean traceable) {
+    PDelegate p= null;;
     try {
-      _delegate = (PDelegate) dftCtor(cz);
+      p = (PDelegate) dftCtor(cz);
     } catch (Throwable e) {
       tlog().error("", e);
     }
-    if (_delegate instanceof PDelegate) {} else {
+    if (p instanceof PDelegate) {} else {
       throw new ClassCastException("Class " + cz + " must implement PDelegate.");
     }
-    if (_trace) {
-      tlog().debug("{}: {} => pid : {}" , "Pipeline", cz , _pid);      
-    }
-    //assert(_theScope != null, "Scope is null.");    
+    ctor(name, job, p, traceable);
   }
-  
-  public Pipeline (Job scope, String cz) {
-    this(scope,cz,true);
+
+  public Pipeline(String name, String cz, Job job) {
+    this(name, cz, job,true);
+  }
+
+  public Pipeline(String name, Job job, PDelegate p, boolean traceable) {
+    ctor(name, job, p, traceable);
+  }
+
+  public Pipeline(String name, Job job, PDelegate p) {
+    this(name, job, p, true);
+  }
+
+  private void ctor(String name, Job job, PDelegate p, boolean traceable) {
+    _pid = _sn.incrementAndGet();
+    _delegate =p;
+    _job=job;
+    _trace=traceable;
+    _name= name;
+    if (_trace) {
+      tlog().debug("Pipeline: {} => pid : {}" , _name, _pid);
+    }
   }
 
   public Schedulable core() {
@@ -72,11 +82,11 @@ public class Pipeline implements Startable {
     return x.core();
   }
 
-  public ServerLike container() { return _theScope.container(); }
+  public ServerLike container() { return _job.container(); }
 
   public boolean isActive() { return  _active; }
 
-  public Job job() { return _theScope; }
+  public Job job() { return _job; }
 
   public long getPID() { return  _pid; }
 
@@ -102,7 +112,7 @@ public class Pipeline implements Startable {
 
   public void start() {
     if (_trace) {
-      tlog().debug("{}: {} => starting" , "Pipeline", this);      
+      tlog().debug("{}: {} => starting" , "Pipeline", this);
     }
     try {
       FlowNode f1= onStart().reify( new NihilNode(this));
@@ -121,7 +131,7 @@ public class Pipeline implements Startable {
       tlog().error("",e);
     }
     if (_trace) {
-      tlog().debug("{}: {} => end" , "Pipeline", this);      
+      tlog().debug("{}: {} => end" , "Pipeline", this);
     }
   }
 

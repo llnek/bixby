@@ -22,7 +22,7 @@
         [czlabclj.xlib.util.str :only [Format]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
-            [com.zotohlab.frwk.core Named]
+            [com.zotohlab.frwk.core Identifiable Named]
             [java.util.concurrent ConcurrentHashMap]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Map Properties Timer TimerTask]))
@@ -38,8 +38,8 @@
 
   [runable]
 
-  (if (instance? RunnableWithId runable)
-    (.getId ^RunnableWithId runable)
+  (if (instance? Identifiable runable)
+    (.id ^Identifiable runable)
     nil
   ))
 

@@ -61,7 +61,7 @@ public abstract class FlowNode implements RunnableWithId {
 
   public abstract FlowNode eval(Job j);
 
-  public Object getId() { return _pid; }
+  public Object id() { return _pid; }
 
   public void attachClosureArg(Object c) {
     _closure=c;

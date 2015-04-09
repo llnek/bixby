@@ -167,7 +167,10 @@
   ^czlabclj.tardis.impl.ext.JobCreator
   [parObj]
 
-  (let [impl (MakeMMap) ]
+  (let [id (if (instance? Identifiable parObj)
+             (.id ^Identifiable parObj)
+             "Container")
+        impl (MakeMMap) ]
     (log/info "About to synthesize a job-creator...")
     (with-meta
       (reify
@@ -186,7 +189,7 @@
             (log/debug "Event router = " c1)
             (log/debug "IO handler = " c0)
             (try
-              (let [p (Pipeline. job (if (hgl? c1) c1 c0)) ]
+              (let [p (Pipeline. id (if (hgl? c1) c1 c0) job) ]
                 (.setv job EV_OPTS options)
                 (.start p))
               (catch Throwable e#

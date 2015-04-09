@@ -395,7 +395,7 @@
       (let [home (first args)
             svr (cserver home)
             job (PseudoJob svr)
-            p (Pipeline. job "czlabclj.tardis.impl.climain.RtDelegate")]
+            p (Pipeline. "RtDelegate" "czlabclj.tardis.impl.climain.RtDelegate" job)]
         (.setv job :home home)
         (.start p))))
 

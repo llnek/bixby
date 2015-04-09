@@ -11,13 +11,12 @@
 
 package com.zotohlab.frwk.util;
 
+import com.zotohlab.frwk.core.Identifiable;
+
 /**
  * @author kenl
  */
-public interface RunnableWithId extends Runnable {
-
-  public Object getId();
-
+public interface RunnableWithId extends Runnable, Identifiable {
 }
 
 

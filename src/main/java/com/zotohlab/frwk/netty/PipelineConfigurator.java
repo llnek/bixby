@@ -30,7 +30,7 @@ public abstract class PipelineConfigurator {
 
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
-  
+
   public ChannelHandler configure(final Map<?,?> options) {
     return new ChannelInitializer<Channel>() {
       public void initChannel(Channel ch) {
@@ -38,7 +38,7 @@ public abstract class PipelineConfigurator {
       }
     };
   }
-  
+
   protected void mkInitor(ChannelPipeline pipe, Map<?,?> options) {
     assemble(pipe, options);
     NettyFW.dbgPipelineHandlers(pipe);

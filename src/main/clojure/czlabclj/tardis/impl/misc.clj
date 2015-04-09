@@ -78,7 +78,7 @@
   ^Startable
   [job]
 
-  (Pipeline. job "czlabclj.tardis.etc.misc.FatalErrorFlow"))
+  (Pipeline. "Fatal Error" "czlabclj.tardis.etc.misc.FatalErrorFlow" job))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,7 +87,7 @@
   ^Startable
   [job]
 
-  (Pipeline. job "czlabclj.tardis.etc.misc.OrphanFlow"))
+  (Pipeline. "Orphan Flow" "czlabclj.tardis.etc.misc.OrphanFlow" job))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

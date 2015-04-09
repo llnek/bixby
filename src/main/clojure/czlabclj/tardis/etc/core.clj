@@ -169,7 +169,7 @@
   (let [cz "czlabclj.tardis.etc.core.CmdDelegate"
         ctr (PseudoServer)
         job (PseudoJob ctr)
-        pipe (Pipeline. job cz, false)]
+        pipe (Pipeline. "Cmdline" cz job false)]
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (.setLastResult job args)
