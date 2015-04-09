@@ -20,8 +20,17 @@ import java.util.Map;
  */
 public class Switch extends Activity {
 
+  public static Switch apply(String name, SwitchChoiceExpr e) {
+    return new Switch(name, e);
+  }
+
   public static Switch apply(SwitchChoiceExpr e) {
     return new Switch(e);
+  }
+
+  public Switch(String name, SwitchChoiceExpr expr) {
+    super(name);
+    _expr= expr;
   }
 
   public Switch(SwitchChoiceExpr expr) {

@@ -20,8 +20,13 @@ public abstract class Merge  extends Activity {
   protected int _branches=0;
   protected Activity _body;
 
-  protected Merge(Activity b) {
+  protected Merge(String name, Activity b) {
+    super(name);
     _body=b;
+  }
+  
+  protected Merge(Activity b) {
+    this("",b);
   }
 
   protected Merge withBranches(int n) {

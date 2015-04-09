@@ -17,18 +17,31 @@ package com.zotohlab.wflow;
  */
 public class Delay extends Activity {
 
+  public static Delay apply(String name, long delay) {
+    return new Delay(name, delay);
+  }
+  
   public static Delay apply(long delay) {
-    return new Delay(delay);
+    return apply("", delay);
   }
 
   private long _delayMillis;
 
-  public Delay(long delay) {
+  public Delay(String name, long delay) {
+    super(name);
     _delayMillis = delay;
+  }
+  
+  public Delay(long delay) {
+    this("", delay);
+  }
+  
+  public Delay(String name) {
+    this(name,0L);
   }
 
   public Delay() {
-    this(0L);
+    this("", 0L);
   }
 
   public FlowNode reifyNode(FlowNode cur) { 

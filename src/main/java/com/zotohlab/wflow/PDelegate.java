@@ -16,11 +16,11 @@ package com.zotohlab.wflow;
  */
 public interface PDelegate {
 
+  public Activity onError(Throwable e, FlowNode cur);
+
   public Activity startWith(Pipeline p);
 
   public void onStop(Pipeline p);
-
-  public Activity onError(Throwable e, FlowNode cur);
 
 }
 

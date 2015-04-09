@@ -19,20 +19,40 @@ package com.zotohlab.wflow;
  */
 public class Split extends Composite {
 
+  public static Split fork(String name, Activity a) {
+    return new Split(name).include(a);
+  }
+
   public static Split fork(Activity a) {
     return new Split().include(a);
+  }
+
+  public static Split applyAnd(String name, Activity andBody)  {
+    return new Split(name, new And(andBody));
   }
 
   public static Split applyAnd(Activity andBody)  {
     return new Split(new And(andBody));
   }
 
+  public static Split applyOr(String name, Activity orBody)  {
+    return new Split(name, new Or(orBody));
+  }
+  
   public static Split applyOr(Activity orBody)  {
     return new Split(new Or(orBody));
   }
 
+  public static Split apply(String name, Merge j) {
+    return new Split(name, j);
+  }
+
   public static Split apply(Merge j) {
     return new Split(j);
+  }
+
+  public static Split apply(String name) {
+    return new Split(name);
   }
 
   public static Split apply() {
@@ -41,12 +61,21 @@ public class Split extends Composite {
 
   protected Merge _theJoin;
 
-  public Split(Merge j) {
+  public Split(String name, Merge j) {
+    super(name);
     _theJoin = j;
   }
 
+  public Split(Merge j) {
+    this("", j);
+  }
+
+  public Split (String name) {
+    this(name,null);
+  }
+
   public Split () {
-    this(null);
+    this("",null);
   }
 
   public Split includeMany(Activity... acts) {

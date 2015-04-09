@@ -17,7 +17,7 @@
   (:use [czlabclj.tardis.core.wfs :only [DefPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowError]
-            [com.zotohlab.wflow Pipeline PDelegate PTask Work]
+            [com.zotohlab.wflow Pipeline Job PDelegate PTask Work]
             [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
             [com.zotohlab.frwk.core Startable]))
 
@@ -76,7 +76,7 @@
 (defn MakeFatalErrorFlow
 
   ^Startable
-  [job]
+  [^Job job]
 
   (Pipeline. "Fatal Error" "czlabclj.tardis.etc.misc.FatalErrorFlow" job))
 
@@ -85,7 +85,7 @@
 (defn MakeOrphanFlow ""
 
   ^Startable
-  [job]
+  [^Job job]
 
   (Pipeline. "Orphan Flow" "czlabclj.tardis.etc.misc.OrphanFlow" job))
 

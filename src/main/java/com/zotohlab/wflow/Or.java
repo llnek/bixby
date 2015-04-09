@@ -17,8 +17,12 @@ package com.zotohlab.wflow;
  */
 public class Or extends Merge {
 
+  public Or(String name, Activity b) {
+    super(name,b);
+  }
+
   public Or(Activity b) {
-    super(b);
+    this("",b);
   }
 
   public FlowNode reifyNode(FlowNode cur) { 

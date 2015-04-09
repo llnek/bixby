@@ -19,6 +19,14 @@ package com.zotohlab.wflow;
  */
 public class AsyncWait extends Activity {
 
+  public AsyncWait(String name) {
+    super(name);
+  }
+  
+  public AsyncWait() {
+    this("");
+  }
+  
   public FlowNode reifyNode(FlowNode cur) {
     return new AsyncWaitNode(cur,this);
   }

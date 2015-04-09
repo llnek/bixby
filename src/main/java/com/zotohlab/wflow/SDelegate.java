@@ -16,13 +16,11 @@ package com.zotohlab.wflow;
  */
 public abstract class SDelegate implements PDelegate {
 
+  public Activity onError(Throwable e, FlowNode cur) { return null; }
+
   protected SDelegate() {}
-  
-//  public Activity startWith(Pipeline p);
 
   public void onStop(Pipeline p) {}
-
-  public Activity onError(Throwable e, FlowNode cur) { return null; }
 
 }
 

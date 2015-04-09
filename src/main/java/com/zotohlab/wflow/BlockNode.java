@@ -31,6 +31,7 @@ public class BlockNode extends CompositeNode {
       //tlog().debug("BlockNode: {} element(s.)",  _inner.size() );
       FlowNode n=_inner.next();
       n.attachClosureArg(c);
+      tlog().debug("FlowNode##{} :about to call eval().", n.getDef().getName());      
       rc = n.eval(j);
     } else {
       //tlog().debug("BlockNode: no more elements.");

@@ -17,18 +17,31 @@ package com.zotohlab.wflow;
  */
 public class PTask extends Activity {
 
+  public static PTask PTaskWrapper(String name, Work w) {
+    return new PTask(name, w);
+  }
+
   public static PTask PTaskWrapper(Work w) {
-    return new PTask(w);
+    return new PTask("",w);
+  }
+
+  public static PTask apply(String name, Work w) {
+    return new PTask(name, w);
   }
 
   public static PTask apply(Work w) {
-    return new PTask(w);
+    return apply("",w);
   }
 
   private Work _work;
 
-  public PTask(Work w) {
+  public PTask(String name, Work w) {
+    super(name);
     _work=w;
+  }
+  
+  public PTask(Work w) {
+    this("",w);
   }
 
   public FlowNode reifyNode(FlowNode cur) { 

@@ -72,23 +72,19 @@
 ;;(defmacro DefPTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
 (defn DefPTask ""
 
-  ^PTask
-  [func]
+  (^PTask [func] (DefPTask "" func))
 
-  (PTask. (reify Work
-            (exec [_ fw job arg]
-              (apply func [fw job arg])))
-  ))
+  (^PTask [^String nm func]
+    (PTask. nm (reify Work
+                 (exec [_ fw job arg]
+                   (apply func [fw job arg]))))))
 
 (defn SimPTask ""
 
-  ^PTask
-  [func]
+  (^PTask [func] (SimPTask "" func))
 
-  (PTask. (reify Work
-            (exec [_ fw job arg]
-              (apply func [job])))
-  ))
+  (^PTask [^String nm func]
+    (PTask. nm (reify Work (exec [_ fw job arg] (apply func [job]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -17,10 +17,15 @@ package com.zotohlab.wflow;
  */
 public abstract class Conditional extends Activity {
 
-  protected Conditional(BoolExpr expr) {
+  protected Conditional(String name, BoolExpr expr) {
+    super(name);
     _expr= expr;
   }
 
+  protected Conditional(BoolExpr expr) {
+    this("", expr);
+  }
+  
   private BoolExpr _expr;
 
   public BoolExpr expr() { return _expr; }

@@ -12,12 +12,14 @@
 package com.zotohlab.wflow;
 
 import static com.zotohlab.frwk.util.CoreUtils.dftCtor;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.util.concurrent.atomic.AtomicLong;
-import static java.lang.invoke.MethodHandles.*;
 
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
 
+import com.zotohlab.frwk.core.Identifiable;
 import com.zotohlab.frwk.core.Startable;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
@@ -27,7 +29,7 @@ import com.zotohlab.frwk.util.Schedulable;
  * @author kenl
  *
  */
-public class Pipeline implements Startable {
+public class Pipeline implements Startable, Identifiable {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
@@ -41,6 +43,14 @@ public class Pipeline implements Startable {
   private boolean _trace=true;
   private long _pid;
 
+  public Pipeline(String name, Job job, PDelegate p, boolean traceable) {
+    ctor(name, job, p, traceable);
+  }
+
+  public Pipeline(String name, Job job, PDelegate p) {
+    this(name, job, p, true);
+  }
+
   public Pipeline(String name, String cz, Job job, boolean traceable) {
     PDelegate p= null;;
     try {
@@ -49,21 +59,13 @@ public class Pipeline implements Startable {
       tlog().error("", e);
     }
     if (p instanceof PDelegate) {} else {
-      throw new ClassCastException("Class " + cz + " must implement PDelegate.");
+      throw new ClassCastException(cz + " must implement PDelegate.");
     }
     ctor(name, job, p, traceable);
   }
 
   public Pipeline(String name, String cz, Job job) {
     this(name, cz, job,true);
-  }
-
-  public Pipeline(String name, Job job, PDelegate p, boolean traceable) {
-    ctor(name, job, p, traceable);
-  }
-
-  public Pipeline(String name, Job job, PDelegate p) {
-    this(name, job, p, true);
   }
 
   private void ctor(String name, Job job, PDelegate p, boolean traceable) {
@@ -83,12 +85,9 @@ public class Pipeline implements Startable {
   }
 
   public ServerLike container() { return _job.container(); }
-
   public boolean isActive() { return  _active; }
-
   public Job job() { return _job; }
-
-  public long getPID() { return  _pid; }
+  public Object id() { return  _pid; }
 
   protected void onEnd() {
     _delegate.onStop(this);
@@ -126,6 +125,7 @@ public class Pipeline implements Startable {
 
   public void stop() {
     try {
+      _active=false;
       onEnd();
     } catch( Throwable e) {
       tlog().error("",e);

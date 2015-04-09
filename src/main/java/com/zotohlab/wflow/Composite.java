@@ -23,6 +23,13 @@ public abstract class Composite extends Activity {
 
   private List<Activity> _children= new ArrayList<>();
 
+  protected Composite(String name) {
+    super(name);
+  }
+  
+  protected Composite() {
+  }
+  
   public int size() { return _children.size(); }
   protected void onAdd(Activity a) {}
 

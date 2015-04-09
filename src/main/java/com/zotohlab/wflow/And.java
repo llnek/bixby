@@ -19,8 +19,11 @@ package com.zotohlab.wflow;
  */
 public class And extends Merge {
 
+  public And(String name, Activity body) {
+    super(name, body);
+  }
   public And(Activity body) {
-    super(body);
+    this("",body);
   }
 
   public FlowNode reifyNode(FlowNode cur) {

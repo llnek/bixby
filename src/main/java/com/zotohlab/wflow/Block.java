@@ -23,11 +23,22 @@ public class Block extends Composite {
     return new Block(a);
   }
 
-  public Block(Activity a) {
+  public Block(String name, Activity a) {
+    this(name);
     add(a);
   }
+  
+  public Block(Activity a) {
+    this("",a);
+  }
 
-  public Block() {}
+  public Block(String name) {
+    super(name);
+  }
+  
+  public Block() {
+    this("");
+  }
 
   public Activity chainMany(Activity... acts) {
     for (Activity a: acts) {

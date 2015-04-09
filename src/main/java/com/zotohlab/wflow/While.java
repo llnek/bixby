@@ -17,15 +17,23 @@ package com.zotohlab.wflow;
  */
 public class While extends Conditional {
 
+  public static While apply(String name, BoolExpr b, Activity body) {
+    return new While(name, b,body);
+  }
+
   public static While apply(BoolExpr b, Activity body) {
-    return new While(b,body);
+    return apply("", b,body);
   }
 
   private Activity _body;
 
-  public While(BoolExpr expr, Activity b) {
-    super(expr);
+  public While(String name, BoolExpr expr, Activity b) {
+    super(name, expr);
     _body=b;
+  }
+  
+  public While(BoolExpr expr, Activity b) {
+    this("", expr, b);
   }
 
 //  public While(Activity body) {

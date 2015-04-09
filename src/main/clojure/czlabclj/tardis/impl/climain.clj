@@ -99,6 +99,7 @@
 
     (when-not @STOPCLI
       (reset! STOPCLI true)
+      (println)
       (log/info "Shutting down the http discarder...")
       (StopServer ^ServerBootstrap (:bootstrap kp)
                   ^Channel (:channel kp))
@@ -175,7 +176,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "PauseCLI"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -191,7 +192,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "HookShutDown"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -209,7 +210,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "WritePID"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -227,7 +228,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "Primodial"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -259,7 +260,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "LoadResource"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -278,7 +279,7 @@
 
   []
 
-  (SimPTask
+  (SimPTask "LoadConf"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
@@ -319,7 +320,7 @@
      (f0 [^czlabclj.xlib.util.core.MubleAPI x
           ^ClassLoader cur]
        (.setf! x K_ROOT_CZLR (RootClassLoader. cur))) ]
-    (SimPTask
+    (SimPTask "SetupLoaders"
       (fn [^Job j]
         (let [^czlabclj.xlib.util.core.MubleAPI
               x (.getLastResult j)
@@ -350,7 +351,7 @@
   ^Activity
   []
 
-  (SimPTask
+  (SimPTask "RtStart"
     (fn [^Job j]
       (let [^czlabclj.tardis.core.sys.Element
             c (.container j)

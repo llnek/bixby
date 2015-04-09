@@ -56,17 +56,16 @@ public abstract class FlowNode implements RunnableWithId {
   }
 
   public FlowNode next() { return _nextStep; }
-
   public Activity getDef() { return _defn; }
-
-  public abstract FlowNode eval(Job j);
-
   public Object id() { return _pid; }
 
   public void attachClosureArg(Object c) {
     _closure=c;
   }
+  
+  public abstract FlowNode eval(Job j);
 
+  protected void postRealize() {}
   protected FlowNode realize() {
     getDef().realize(this);
     clsClosure();
@@ -75,25 +74,20 @@ public abstract class FlowNode implements RunnableWithId {
   }
 
   public Object getClosureArg() { return _closure; }
-
   protected void clsClosure() { _closure=null; }
-  protected void postRealize() {}
-
   public Object popClosureArg() {
     try {
       Object c=_closure;
       return c;
-    }
-    finally {
+    } finally {
       _closure=null ;
     }
   }
 
+  public Pipeline pipe() { return _pipe; }
   public void forceNext(FlowNode n) {
     _nextStep=n;
   }
-
-  public Pipeline pipe() { return _pipe; }
 
   public void rerun() {
     ServerLike x= (ServerLike) pipe().container();
@@ -108,6 +102,7 @@ public abstract class FlowNode implements RunnableWithId {
 
     x.core().dequeue(this);
     try {
+      tlog().debug("FlowNode##{} :about to call eval().", getDef().getName());
       //f.job().clrLastResult();
       rc= eval( pl.job() );
     } catch (Throwable e) {

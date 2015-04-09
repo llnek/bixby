@@ -11,9 +11,12 @@
 
 package com.zotohlab.wflow;
 
-import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
+
+import com.zotohlab.frwk.core.Named;
 
 
 /**
@@ -24,12 +27,27 @@ import static org.slf4j.LoggerFactory.*;
  * @author kenl
  *
  */
-public abstract class Activity {
+public abstract class Activity implements Named {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
+  private String _name;
 
-
+  protected Activity(String n) {
+    if (n==null || n.length()==0) {
+      n= getClass().getSimpleName();
+    }
+    _name=n;
+  }  
+  
+  protected Activity() { 
+    this("");
+  }
+  
+  public String getName() {
+    return _name;
+  }
+  
   /**
    * Connect up another activity to make up a chain.
    *

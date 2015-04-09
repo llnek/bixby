@@ -24,12 +24,20 @@ public class If extends Conditional {
   private Activity _thenCode;
   private Activity _elseCode;
 
-  public If(BoolExpr expr,Activity thenCode, Activity elseCode) {
-    super(expr);
+  public If(String name, BoolExpr expr,Activity thenCode, Activity elseCode) {
+    super(name, expr);
     _elseCode= elseCode;
     _thenCode= thenCode;
   }
+  
+  public If(BoolExpr expr,Activity thenCode, Activity elseCode) {
+    this("", expr, thenCode, elseCode);
+  }
 
+  public If(String name, BoolExpr expr,Activity thenCode) {
+    this(name, expr, thenCode, null );
+  }
+  
   public If(BoolExpr expr,Activity thenCode) {
     this(expr, thenCode, null );
   }

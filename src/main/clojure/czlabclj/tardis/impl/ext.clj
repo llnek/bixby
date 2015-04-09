@@ -167,7 +167,7 @@
   ^czlabclj.tardis.impl.ext.JobCreator
   [parObj]
 
-  (let [id (if (instance? Identifiable parObj)
+  (let [^String id (if (instance? Identifiable parObj)
              (.id ^Identifiable parObj)
              "Container")
         impl (MakeMMap) ]
@@ -181,9 +181,9 @@
           (let [^czlabclj.tardis.core.sys.Element
                 src (.emitter ^IOEvent evt)
                 cfg (.getAttr src :emcfg)
-                c0 (:handler cfg)
-                c1 (:router options)
-                job (make-job parObj evt) ]
+                ^String c0 (:handler cfg)
+                ^String c1 (:router options)
+                ^Job job (make-job parObj evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
