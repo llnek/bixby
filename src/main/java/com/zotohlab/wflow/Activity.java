@@ -49,7 +49,8 @@ public abstract class Activity implements Named {
    * @return an *ordered* list of work units.
    */
   public Activity chain( Activity a) {
-    return new Group(this).chain(a);
+    return 
+    new Group(this).chain(a);
   }
 
   /**
@@ -71,7 +72,7 @@ public abstract class Activity implements Named {
   /*
   public void finalize() throws Throwable {
     super.finalize();
-    //tlog().debug("=========================> Activity: " + getClass().getName() + " finz'ed");
+    //tlog().debug("Activity: " + getClass().getName() + " finz'ed");
   }
   */
 

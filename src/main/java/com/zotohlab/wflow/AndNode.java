@@ -20,8 +20,8 @@ package com.zotohlab.wflow;
  */
 public class AndNode extends MergeNode {
 
-  public AndNode(FlowNode s, And a) {
-    super(s,a);
+  public AndNode(FlowNode c, And a) {
+    super(c,a);
   }
 
   public FlowNode eval(Job j) {
