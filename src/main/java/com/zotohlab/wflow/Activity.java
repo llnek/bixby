@@ -31,14 +31,14 @@ public abstract class Activity implements Named {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
-  private String _name;
+  private String _label;
 
   protected Activity(String n) {
     if (n==null) {
       //n= getClass().getSimpleName();
       n="";
     }
-    _name=n;
+    _label=n;
   }  
   
   protected Activity() { 
@@ -46,7 +46,7 @@ public abstract class Activity implements Named {
   }
   
   public String getName() {
-    return _name;
+    return _label;
   }
   
   /**
@@ -55,8 +55,8 @@ public abstract class Activity implements Named {
    * @param a the unit of work to follow after this one.
    * @return an *ordered* list of work units.
    */
-  public Activity ensue( Activity a) {
-    return new Group(this).ensue(a);
+  public Activity chain( Activity a) {
+    return new Group(this).chain(a);
   }
 
   /**
@@ -73,7 +73,7 @@ public abstract class Activity implements Named {
   }
 
   public boolean hasName() {
-    return _name.length() > 0;
+    return _label.length() > 0;
   }
   
   protected abstract FlowNode reifyNode(FlowNode cur) ;

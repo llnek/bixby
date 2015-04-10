@@ -160,9 +160,9 @@
       ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
       ;; a split, which forks off more steps in parallel.
       (-> AuthUser
-        (.ensue GetProfile)
-        (.ensue Provision)
-        (.ensue FinalTest))))
+        (.chain GetProfile)
+        (.chain Provision)
+        (.chain FinalTest))))
 
   (onError [_ err c] nil)
   (onStop [_ pipe] ))

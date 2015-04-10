@@ -85,7 +85,7 @@ public class Demo implements PDelegate {
       return null;
     });
 
-    return a0.ensue(a1).ensue(a2);
+    return a0.chain(a1).chain(a2);
   }
 
   public void onStop(Pipeline p) {}

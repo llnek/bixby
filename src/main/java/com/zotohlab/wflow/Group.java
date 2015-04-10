@@ -40,14 +40,14 @@ class Group extends Composite {
     this("");
   }
 
-  public Activity ensueMany(Activity... acts) {
+  public Activity chainMany(Activity... acts) {
     for (Activity a: acts) {
       add(a);
     }
     return this;
   }
 
-  public Activity ensue(Activity a) {
+  public Activity chain(Activity a) {
     add(a);
     return this;
   }

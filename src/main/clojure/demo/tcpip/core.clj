@@ -48,7 +48,7 @@
     (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
-        (.ensue
+        (.chain
           (DefPTask
             (fn [cur job arg]
               (with-local-vars [tcp (-> (.container pipe)
@@ -95,7 +95,7 @@
               (.setv job "cmsg" (String. buf "utf-8"))
               ;; add a delay into the workflow before next step
               (Delay/apply 1500))))
-        (.ensue
+        (.chain
           (DefPTask
             (fn [cur ^Job job arg]
               (println "Socket Server Received: "
