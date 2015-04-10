@@ -40,7 +40,10 @@ public class OrNode extends MergeNode {
       realize();
     }
 
-    if (rc != null) { rc.attachClosureArg(c); }
+    if (rc != null) {
+      rc.attachClosureArg(c);
+    }
+
     return rc;
   }
 

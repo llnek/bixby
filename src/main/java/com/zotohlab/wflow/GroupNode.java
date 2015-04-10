@@ -23,7 +23,6 @@ class GroupNode extends CompositeNode {
   }
 
   public FlowNode eval(Job j) {
-    // data pass back from previous async call?
     Object c= getClosureArg();
     FlowNode rc= null;
 
@@ -32,8 +31,8 @@ class GroupNode extends CompositeNode {
       FlowNode n=_inner.next();
       n.attachClosureArg(c);
       if (n.getDef().hasName()) {
-        tlog().debug("FlowNode##{} :about to call eval().", n.getDef().getName());      
-      }      
+        tlog().debug("FlowNode##{} :eval().", n.getDef().getName());
+      }
       rc = n.eval(j);
     } else {
       //tlog().debug("BlockNode: no more elements.");

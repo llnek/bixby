@@ -19,13 +19,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class MergeNode extends FlowNode {
 
-  protected MergeNode(FlowNode s, Merge a) {
-    super(s,a);
-  }
-
   protected AtomicInteger _cntr=new AtomicInteger(0);
   protected FlowNode _body = null;
   private int _branches= 0;
+
+  protected MergeNode(FlowNode s, Merge a) {
+    super(s,a);
+  }
 
   public MergeNode withBody(FlowNode body) {
     _body=body;

@@ -21,25 +21,24 @@ import java.util.ListIterator;
  */
 public abstract class Composite extends Activity {
 
-  private List<Activity> _children= new ArrayList<>();
+  private List<Activity> _innards= new ArrayList<>();
 
   protected Composite(String name) {
     super(name);
   }
-  
-  protected Composite() {
-  }
-  
-  public int size() { return _children.size(); }
+
+  protected Composite() {}
+
+  public int size() { return _innards.size(); }
   protected void onAdd(Activity a) {}
 
   protected void add(Activity a) {
-    _children.add(a);
+    _innards.add(a);
     onAdd(a);
   }
 
   public ListIterator<Activity> listChildren() {
-    return _children.listIterator();
+    return _innards.listIterator();
   }
 
   public void realize(FlowNode fp) {

@@ -13,9 +13,7 @@ package com.zotohlab.wflow;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
-
 import org.slf4j.Logger;
-
 import com.zotohlab.frwk.core.Named;
 
 
@@ -33,22 +31,17 @@ public abstract class Activity implements Named {
   public Logger tlog() { return _log; }
   private String _label;
 
+  protected Activity() { this(""); }
+
   protected Activity(String n) {
-    if (n==null) {
-      //n= getClass().getSimpleName();
-      n="";
-    }
-    _label=n;
-  }  
-  
-  protected Activity() { 
-    this("");
+    _label= n==null ? "" : n;
   }
-  
+
+  public boolean hasName() { return _label.length() > 0; }
   public String getName() {
     return _label;
   }
-  
+
   /**
    * Connect up another activity to make up a chain.
    *
@@ -72,10 +65,6 @@ public abstract class Activity implements Named {
     return n;
   }
 
-  public boolean hasName() {
-    return _label.length() > 0;
-  }
-  
   protected abstract FlowNode reifyNode(FlowNode cur) ;
   protected abstract void realize(FlowNode p);
 
@@ -87,6 +76,4 @@ public abstract class Activity implements Named {
   */
 
 }
-
-
 

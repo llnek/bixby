@@ -39,13 +39,13 @@ public class PTask extends Activity {
     super(name);
     _work=w;
   }
-  
+
   public PTask(Work w) {
     this("",w);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new PTaskNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new PTaskNode(cur, this);
   }
 
   public void realize(FlowNode fp) {

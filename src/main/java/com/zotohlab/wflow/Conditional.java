@@ -15,7 +15,7 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public abstract class Conditional extends Activity {
+abstract class Conditional extends Activity {
 
   protected Conditional(String name, BoolExpr expr) {
     super(name);
@@ -25,11 +25,10 @@ public abstract class Conditional extends Activity {
   protected Conditional(BoolExpr expr) {
     this("", expr);
   }
-  
-  private BoolExpr _expr;
 
   public BoolExpr expr() { return _expr; }
 
+  private BoolExpr _expr;
 }
 
 

@@ -20,22 +20,20 @@ public class Delay extends Activity {
   public static Delay apply(String name, long delay) {
     return new Delay(name, delay);
   }
-  
+
   public static Delay apply(long delay) {
     return apply("", delay);
   }
-
-  private long _delayMillis;
 
   public Delay(String name, long delay) {
     super(name);
     _delayMillis = delay;
   }
-  
+
   public Delay(long delay) {
     this("", delay);
   }
-  
+
   public Delay(String name) {
     this(name,0L);
   }
@@ -44,8 +42,8 @@ public class Delay extends Activity {
     this("", 0L);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new DelayNode(cur,this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new DelayNode(cur,this);
   }
 
   public void realize(FlowNode fp) {
@@ -53,8 +51,11 @@ public class Delay extends Activity {
     p.withDelay(_delayMillis);
   }
 
-  public long delayMillis() { return _delayMillis; }
+  public long delayMillis() {
+    return _delayMillis;
+  }
 
+  private long _delayMillis;
 }
 
 

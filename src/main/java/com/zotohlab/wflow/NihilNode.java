@@ -20,13 +20,12 @@ package com.zotohlab.wflow;
  */
 public class NihilNode extends FlowNode {
 
+  public FlowNode eval(Job j) { return this; }
+  public FlowNode next() { return this; }
+
   public NihilNode(Pipeline f) {
     super(f);
   }
-
-  public FlowNode next() { return this; }
-
-  public FlowNode eval(Job j) { return this; }
 
 }
 

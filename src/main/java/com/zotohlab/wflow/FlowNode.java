@@ -12,13 +12,10 @@
 package com.zotohlab.wflow;
 
 import static java.lang.invoke.MethodHandles.*;
-
 import org.slf4j.Logger;
-
 import static org.slf4j.LoggerFactory.*;
 
 import java.util.concurrent.atomic.AtomicLong;
-
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
@@ -62,7 +59,7 @@ public abstract class FlowNode implements RunnableWithId {
   public void attachClosureArg(Object c) {
     _closure=c;
   }
-  
+
   public abstract FlowNode eval(Job j);
 
   protected void postRealize() {}
@@ -103,9 +100,8 @@ public abstract class FlowNode implements RunnableWithId {
     x.core().dequeue(this);
     try {
       if (getDef().hasName()) {
-        tlog().debug("FlowNode##{} :about to call eval().", getDef().getName());        
+        tlog().debug("FlowNode##{} :eval().",getDef().getName());
       }
-      //f.job().clrLastResult();
       rc= eval( pl.job() );
     } catch (Throwable e) {
       err= pl.onError(e, this);
@@ -118,7 +114,6 @@ public abstract class FlowNode implements RunnableWithId {
     } else {
       runAfter(pl,rc);
     }
-
   }
 
   private void runAfter(Pipeline pl, FlowNode rc) {

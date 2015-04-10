@@ -17,15 +17,15 @@ package com.zotohlab.wflow;
  *
  * @author kenl
  */
-public abstract class FAsyncResumeToken {
+abstract class FAsyncResumeToken {
+
+  public abstract void resume(Object resultArg);
 
   protected FAsyncResumeToken(FlowNode p) {
     _proc=p;
   }
+
   protected FlowNode _proc;
-
-  public abstract void resume(Object resultArg);
-
 }
 
 

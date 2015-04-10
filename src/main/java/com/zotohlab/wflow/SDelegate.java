@@ -16,7 +16,9 @@ package com.zotohlab.wflow;
  */
 public abstract class SDelegate implements PDelegate {
 
-  public Activity onError(Throwable e, FlowNode cur) { return null; }
+  public Activity onError(Throwable e, FlowNode cur) {
+    return null;
+  }
 
   protected SDelegate() {}
 

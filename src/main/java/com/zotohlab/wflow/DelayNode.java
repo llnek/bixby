@@ -18,22 +18,19 @@ package com.zotohlab.wflow;
  */
 public class DelayNode extends FlowNode {
 
+  public long delayMillis() { return _delayMillis; }
+  public FlowNode eval(Job j) { return this; }
+
   public DelayNode(FlowNode cur, Delay a) {
     super(cur,a);
   }
-
-  private long _delayMillis= 0L;
-
-  public FlowNode eval(Job j) { return this; }
-
-  public long delayMillis() { return _delayMillis; }
 
   public FlowNode withDelay(long millis) {
     _delayMillis=millis;
     return this;
   }
 
-
+  private long _delayMillis= 0L;
 }
 
 

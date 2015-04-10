@@ -17,32 +17,32 @@ package com.zotohlab.wflow;
  */
 public class If extends Conditional {
 
-  public static If apply(BoolExpr expr,Activity thenCode, Activity elseCode) {
-    return new If(expr,thenCode,elseCode);
+  public static If apply(BoolExpr expr,Activity then, Activity elze) {
+    return new If(expr,then,elze);
   }
 
   private Activity _thenCode;
   private Activity _elseCode;
 
-  public If(String name, BoolExpr expr,Activity thenCode, Activity elseCode) {
+  public If(String name, BoolExpr expr,Activity then, Activity elze) {
     super(name, expr);
-    _elseCode= elseCode;
-    _thenCode= thenCode;
-  }
-  
-  public If(BoolExpr expr,Activity thenCode, Activity elseCode) {
-    this("", expr, thenCode, elseCode);
+    _elseCode= elze;
+    _thenCode= then;
   }
 
-  public If(String name, BoolExpr expr,Activity thenCode) {
-    this(name, expr, thenCode, null );
-  }
-  
-  public If(BoolExpr expr,Activity thenCode) {
-    this(expr, thenCode, null );
+  public If(BoolExpr expr,Activity then, Activity elze) {
+    this("", expr, then, elze);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
+  public If(String name, BoolExpr expr,Activity then) {
+    this(name, expr, then, null);
+  }
+
+  public If(BoolExpr expr,Activity then) {
+    this(expr, then, null );
+  }
+
+  public FlowNode reifyNode(FlowNode cur) {
     return new IfNode(cur,this);
   }
 

@@ -27,7 +27,7 @@ class Group extends Composite {
     this(name);
     add(a);
   }
-  
+
   public Group(Activity a) {
     this("",a);
   }
@@ -35,7 +35,7 @@ class Group extends Composite {
   public Group(String name) {
     super(name);
   }
-  
+
   public Group() {
     this("");
   }

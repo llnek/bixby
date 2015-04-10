@@ -38,7 +38,7 @@ public class Split extends Composite {
   public static Split applyOr(String name, Activity orBody)  {
     return new Split(name, new Or(orBody));
   }
-  
+
   public static Split applyOr(Activity orBody)  {
     return new Split(new Or(orBody));
   }
@@ -90,14 +90,14 @@ public class Split extends Composite {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new SplitNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new SplitNode(cur, this);
   }
 
   public  void realize(FlowNode fp) {
     SplitNode p= (SplitNode) fp;
     Merge m= _theMerge;
-    
+
     if ( m != null) {
       m.withBranches( size() );
     } else {
@@ -122,15 +122,15 @@ public class Split extends Composite {
  */
 class NullJoin extends Merge {
 
-  public NullJoin() {
-    super(null);
-  }
-
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new NullJoinNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new NullJoinNode(cur, this);
   }
 
   public void realize(FlowNode cur) {}
+
+  public NullJoin() {
+    super(null);
+  }
 
 }
 
@@ -144,7 +144,9 @@ class NullJoinNode extends MergeNode {
     super(s,a);
   }
 
-  public FlowNode eval(Job j) { return null; }
+  public FlowNode eval(Job j) {
+    return null;
+  }
 
 }
 

@@ -17,13 +17,11 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public abstract class ConditionalNode extends FlowNode {
+abstract class ConditionalNode extends FlowNode {
 
   protected ConditionalNode(FlowNode s, Conditional a) {
     super(s,a);
   }
-
-  private BoolExpr _expr;
 
   public FlowNode withTest(BoolExpr expr) {
     _expr=expr;
@@ -34,6 +32,7 @@ public abstract class ConditionalNode extends FlowNode {
     return _expr.evaluate(j);
   }
 
+  private BoolExpr _expr;
 }
 
 

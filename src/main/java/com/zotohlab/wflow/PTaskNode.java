@@ -22,8 +22,6 @@ public class PTaskNode extends FlowNode {
     super(s,a);
   }
 
-  private Work _work= null;
-
   public PTaskNode withWork(Work w) {
     _work=w;
     return this;
@@ -50,6 +48,6 @@ public class PTaskNode extends FlowNode {
     return rc;
   }
 
-
+  private Work _work= null;
 }
 

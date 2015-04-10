@@ -11,7 +11,7 @@
 
 package com.zotohlab.wflow;
 
-import java.util.ListIterator;
+import java.util.Iterator;
 
 /**
  * @author kenl
@@ -23,13 +23,12 @@ public abstract class CompositeNode extends FlowNode {
     super(cur,a);
   }
 
-  protected Iter _inner = null;
-
-  public void reifyInner( ListIterator<Activity> children) {
-    _inner=new Iter(this,children);
+  public void reifyInner( Iterator<Activity> c) {
+    _inner=new Iter(this,c);
   }
 
   public Iter inner() { return _inner; }
 
+  protected Iter _inner = null;
 }
 

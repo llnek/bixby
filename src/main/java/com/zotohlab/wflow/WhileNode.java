@@ -22,8 +22,6 @@ public class WhileNode extends ConditionalNode {
     super(s,a);
   }
 
-  private FlowNode _body = null;
-
   public FlowNode eval(Job j) {
     Object c= getClosureArg();
     FlowNode f,rc = this;
@@ -60,6 +58,7 @@ public class WhileNode extends ConditionalNode {
     return this;
   }
 
+  private FlowNode _body = null;
 }
 
 

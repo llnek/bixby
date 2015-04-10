@@ -24,16 +24,14 @@ public class For extends While {
     return new For(loopCount, body);
   }
 
-  private ForLoopCountExpr _loopCntr;
-
   public For(ForLoopCountExpr loopCount, Activity body) {
     // put a dummy bool-expr, not used.
     super((j) -> { return false; }, body);
     _loopCntr = loopCount;
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new ForNode(cur,this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new ForNode(cur,this);
   }
 
   public void realize(FlowNode fp) {
@@ -42,6 +40,7 @@ public class For extends While {
     p.withTest( new ForLoopExpr(p, _loopCntr));
   }
 
+  private ForLoopCountExpr _loopCntr;
 }
 
 /**

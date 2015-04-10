@@ -17,9 +17,7 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface ForLoopCountExpr {
-
   public int getCount(Job job);
-
 }
 
 

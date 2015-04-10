@@ -34,8 +34,6 @@ public class While extends Conditional {
     this("", expr, b);
   }
 
-  private Activity _body;
-
   public FlowNode reifyNode(FlowNode cur) {
     return new WhileNode(cur, this);
   }
@@ -48,6 +46,7 @@ public class While extends Conditional {
     p.withTest( expr() );
   }
 
+  private Activity _body;
 }
 
 

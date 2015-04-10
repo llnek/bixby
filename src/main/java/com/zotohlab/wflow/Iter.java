@@ -13,7 +13,7 @@ package com.zotohlab.wflow;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Iterator;
 
 /**
  * @author kenl
@@ -24,7 +24,7 @@ public class Iter {
   private List<Activity> _acts= new ArrayList<>();
   private FlowNode _outer;
 
-  public Iter(FlowNode c, ListIterator<Activity> a) {
+  public Iter(FlowNode c, Iterator<Activity> a) {
     this(c);
     while (a.hasNext()) {
       _acts.add(a.next());
@@ -38,7 +38,11 @@ public class Iter {
   public boolean isEmpty() { return  _acts.size() == 0; }
 
   public FlowNode next() {
-    return (_acts.size() > 0) ? _acts.remove(0).reify(_outer) : null;
+    if (_acts.size() > 0) {
+      return _acts.remove(0).reify(_outer);
+    } else {
+      return null;
+    }
   }
 
   public int size() { return _acts.size(); }
