@@ -29,15 +29,15 @@ public class While extends Conditional {
     super(name, expr);
     _body=b;
   }
-  
+
   public While(BoolExpr expr, Activity b) {
     this("", expr, b);
   }
-  
+
   private Activity _body;
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new WhileNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new WhileNode(cur, this);
   }
 
   public void realize(FlowNode fp) {

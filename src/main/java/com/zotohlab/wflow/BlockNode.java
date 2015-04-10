@@ -16,7 +16,7 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public class BlockNode extends CompositeNode {
+class BlockNode extends CompositeNode {
 
   public BlockNode(FlowNode s, Block a) {
     super(s,a);

@@ -16,7 +16,7 @@ import static demo.flows.Auth.getAuthMtd;
 import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;
-import com.zotohlab.wflow.Block;
+
 import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.If;
 import com.zotohlab.wflow.PDelegate;
@@ -175,7 +175,7 @@ public class Demo implements PDelegate {
   public Activity startWith(Pipeline pipe) {
     // so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
     // a split, which forks off more steps in parallel.
-    return Block.apply(AuthUser).chainMany(GetProfile, Provision, FinalTest);
+    return AuthUser.chain(GetProfile).chain(Provision).chain( FinalTest);
   }
 
 }

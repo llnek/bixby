@@ -21,7 +21,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.tardis.core.wfs])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Switch If Block
+  (:import  [com.zotohlab.wflow FlowNode PTask Switch If
              Activity Split While
              PDelegate]
             [com.zotohlab.gallifrey.core Container]
@@ -159,8 +159,10 @@
       ;;
       ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
       ;; a split, which forks off more steps in parallel.
-      (.chainMany (Block/apply AuthUser)
-                  (into-array Activity [GetProfile Provision FinalTest]))))
+      (-> AuthUser
+        (.chain GetProfile)
+        (.chain Provision)
+        (.chain FinalTest))))
 
   (onError [_ err c] nil)
   (onStop [_ pipe] ))

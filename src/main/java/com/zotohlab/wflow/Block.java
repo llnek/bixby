@@ -17,7 +17,7 @@ package com.zotohlab.wflow;
  * @author kenl
  *
  */
-public class Block extends Composite {
+class Block extends Composite {
 
   public static Block apply(Activity a) {
     return new Block(a);
