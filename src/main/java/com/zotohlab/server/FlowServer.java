@@ -56,7 +56,7 @@ public class FlowServer implements ServerLike {
           return null;
         }        
       });
-      c= a.chain(b);
+      c= a.ensue(b);
       d= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job, Object arg) {
           System.out.println("D");
@@ -69,11 +69,11 @@ public class FlowServer implements ServerLike {
           return null;
         }        
       });
-      f= d.chain(e);
+      f= d.ensue(e);
       
       new Pipeline("hello",  j, new SDelegate() {
         public Activity startWith(Pipeline p) {
-          return c.chain(f);
+          return c.ensue(f);
         }
       }).start();
       Thread.sleep(10000);

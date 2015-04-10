@@ -379,13 +379,13 @@
   (onError [_ err cur] (Nihil.))
   (startWith [_ p]
     (-> (rtStart)
-        (.chain (setupLoaders))
-        (.chain (loadConf))
-        (.chain (loadRes))
-        (.chain (primodial))
-        (.chain (writePID))
-        (.chain (hookShutdown))
-        (.chain (pauseCLI)))))
+        (.ensue (setupLoaders))
+        (.ensue (loadConf))
+        (.ensue (loadRes))
+        (.ensue (primodial))
+        (.ensue (writePID))
+        (.ensue (hookShutdown))
+        (.ensue (pauseCLI)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -75,7 +75,7 @@
                (fn [cur job arg]
                  (println "-> The result from WS is: " arg)
                  nil)) ]
-      (.chain a1 a2)))
+      (.ensue a1 a2)))
 
   (onStop [_ pipe] )
 

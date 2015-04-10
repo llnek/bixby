@@ -11,39 +11,51 @@
 
 package com.zotohlab.wflow;
 
-
 /**
+ * A logical group - sequence of connected activities.
+ *
  * @author kenl
  *
  */
-class BlockNode extends CompositeNode {
+class Group extends Composite {
 
-  public BlockNode(FlowNode s, Block a) {
-    super(s,a);
+  public static Group apply(Activity a) {
+    return new Group(a);
   }
 
-  public FlowNode eval(Job j) {
-    // data pass back from previous async call?
-    Object c= getClosureArg();
-    FlowNode rc= null;
+  public Group(String name, Activity a) {
+    this(name);
+    add(a);
+  }
+  
+  public Group(Activity a) {
+    this("",a);
+  }
 
-    if ( ! _inner.isEmpty()) {
-      //tlog().debug("BlockNode: {} element(s.)",  _inner.size() );
-      FlowNode n=_inner.next();
-      n.attachClosureArg(c);
-      if (n.getDef().hasName()) {
-        tlog().debug("FlowNode##{} :about to call eval().", n.getDef().getName());      
-      }      
-      rc = n.eval(j);
-    } else {
-      //tlog().debug("BlockNode: no more elements.");
-      rc= next();
-      if (rc != null) {  rc.attachClosureArg(c); }
-      realize();
+  public Group(String name) {
+    super(name);
+  }
+  
+  public Group() {
+    this("");
+  }
+
+  public Activity ensueMany(Activity... acts) {
+    for (Activity a: acts) {
+      add(a);
     }
+    return this;
+  }
 
-    return rc;
+  public Activity ensue(Activity a) {
+    add(a);
+    return this;
+  }
+
+  public FlowNode reifyNode(FlowNode cur) {
+    return new GroupNode(cur,this);
   }
 
 }
+
 

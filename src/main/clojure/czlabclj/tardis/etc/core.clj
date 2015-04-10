@@ -157,8 +157,8 @@
   (startWith [_ p]
     (require 'czlabclj.tardis.etc.core)
     (-> (cmdStart)
-        (.chain (parseArgs))
-        (.chain (execArgs)))))
+        (.ensue (parseArgs))
+        (.ensue (execArgs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

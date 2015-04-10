@@ -95,8 +95,8 @@
                                                  (.getv j "lhs")))
                                        (println "*Child->child*: done.")
                                        nil))))))) ]
-      (-> (.chain a1 a2)
-          (.chain (DefPTask
+      (-> (.ensue a1 a2)
+          (.ensue (DefPTask
                     (fn [cur job arg]
                       (let [b (StringBuilder. "*Parent*: ")]
                         (println "*Parent*: after fork, continue to calculate fib(6)...")

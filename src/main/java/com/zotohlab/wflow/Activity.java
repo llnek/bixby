@@ -55,8 +55,8 @@ public abstract class Activity implements Named {
    * @param a the unit of work to follow after this one.
    * @return an *ordered* list of work units.
    */
-  public Activity chain( Activity a) {
-    return new Block(this).chain(a);
+  public Activity ensue( Activity a) {
+    return new Group(this).ensue(a);
   }
 
   /**
