@@ -79,8 +79,8 @@
   (startWith [_ pipe]
     (require 'demo.file.core)
     (SimPTask
-      (fn [^Job job]
-        (let [^FileEvent ev (.event job)
+      (fn [^Job j]
+        (let [^FileEvent ev (.event j)
               f (.getFile ev) ]
           (println "Picked up new file: " f)
           (println "Content: " (FileUtils/readFileToString f "utf-8"))

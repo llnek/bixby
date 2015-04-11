@@ -50,8 +50,8 @@
   (startWith [_ pipe]
     (require 'demo.mvc.core)
     (SimPTask
-      (fn [^Job job]
-        (let [^HTTPEvent ev (.event job)
+      (fn [^Job j]
+        (let [^HTTPEvent ev (.event j)
               res (.getResultObj ev) ]
           (doto res
             (.setContent FMTHtml)

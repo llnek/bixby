@@ -52,8 +52,8 @@
   (startWith [_ pipe]
     (require 'demo.jetty.core)
     (SimPTask
-      (fn [cur ^Job job arg]
-        (let [^HTTPEvent ev (.event job)
+      (fn [^Job j]
+        (let [^HTTPEvent ev (.event j)
               res (.getResultObj ev) ]
           (doto res
             (.setContent FMTHtml)

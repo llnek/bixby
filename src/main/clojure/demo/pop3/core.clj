@@ -56,8 +56,8 @@
   (startWith [_ pipe]
     (require 'demo.pop3.core)
     (SimPTask
-      (fn [^Job job]
-        (let [^EmailEvent ev (.event job)
+      (fn [^Job j]
+        (let [^EmailEvent ev (.event j)
               ^MimeMessage msg (.getMsg ev)
               ^Multipart p (.getContent msg) ]
           (println "######################## (" (ncount) ")" )
@@ -67,7 +67,7 @@
                                        Message$RecipientType/TO)))
           (print "\r\n")
           (println (IOUtils/toString (-> (.getBodyPart p 0)
-                                        (.getInputStream))
+                                         (.getInputStream))
                                      "utf-8"))
           nil)))
   ))

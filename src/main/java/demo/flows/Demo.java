@@ -19,7 +19,7 @@ import com.zotohlab.wflow.Activity;
 
 import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.If;
-import com.zotohlab.wflow.PDelegate;
+import com.zotohlab.wflow.SDelegate;
 import com.zotohlab.wflow.Pipeline;
 import com.zotohlab.wflow.Split;
 import com.zotohlab.wflow.Switch;
@@ -39,13 +39,7 @@ import com.zotohlab.wflow.While;
  *
  */
 @SuppressWarnings("unused")
-public class Demo implements PDelegate {
-
-  public Activity onError(Throwable err, FlowNode p) { return null; }
-
-  public void onStop(Pipeline p) {
-    out.println("Finally, workflow is done.!");
-  }
+public class Demo extends SDelegate {
 
   // step1. choose a method to authenticate the user
   // here, we'll use a switch() to pick which method

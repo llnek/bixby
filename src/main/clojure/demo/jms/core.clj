@@ -52,8 +52,8 @@
   (startWith [_ pipe]
     (require 'demo.jms.core)
     (SimPTask
-      (fn [^Job job]
-        (let [^JMSEvent ev (.event job)
+      (fn [^Job j]
+        (let [^JMSEvent ev (.event j)
               ^TextMessage msg (.getMsg ev) ]
           (println "-> Correlation ID= " (.getJMSCorrelationID msg))
           (println "-> Msg ID= " (.getJMSMessageID msg))

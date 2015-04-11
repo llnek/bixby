@@ -51,7 +51,7 @@
     (-> (Delay/apply 3000)
         (.chain
           (SimPTask
-            (fn [j]
+            (fn [_]
               (with-local-vars [tcp (-> (.container pipe)
                                         (.getService :default-sample))
                                 s (.replace TEXTMsg
@@ -85,21 +85,21 @@
   (startWith [_ pipe]
     (require 'demo.tcpip.core)
     (-> (SimPTask
-          (fn [^Job job]
-            (let [^SocketEvent ev (.event job)
+          (fn [^Job j]
+            (let [^SocketEvent ev (.event j)
                   dis (DataInputStream. (.getSockIn ev))
                   clen (.readInt dis)
                   bf (BufferedInputStream. (.getSockIn ev))
                   ^bytes buf (byte-array clen) ]
               (.read bf buf)
-              (.setv job "cmsg" (String. buf "utf-8"))
+              (.setv j "cmsg" (String. buf "utf-8"))
               ;; add a delay into the workflow before next step
               (Delay/apply 1500))))
         (.chain
           (SimPTask
-            (fn [^Job job]
+            (fn [^Job j]
               (println "Socket Server Received: "
-                       (.getv job "cmsg"))))))
+                       (.getv j "cmsg"))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

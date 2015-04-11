@@ -68,8 +68,8 @@
 
   [^String fkey limit ok nok]
 
-  (fn [^Job job]
-    (let [obj (.getv job fkey)]
+  (fn [^Job j]
+    (let [obj (.getv j fkey)]
       (when (number? obj)
         (if (>= obj limit)
           (apply ok [obj])

@@ -70,20 +70,20 @@
                           "and continue my business.")))
        a2 (Split/fork
             (SimPTask
-              (fn [^Job job]
+              (fn [^Job j]
                 (println "*Child*: will create my own child (blocking)")
-                (.setv job "rhs" 60)
-                (.setv job "lhs" 5)
+                (.setv j "rhs" 60)
+                (.setv j "lhs" 5)
                 (-> (Split/applyAnd
                       (SimPTask
-                        (fn [^Job j]
+                        (fn [_]
                           (println "*Child*: the result for (5 * 60) according to "
                                    "my own child is = "
                                    (.getv j "result"))
                           (println "*Child*: done."))))
                     (.include
                       (SimPTask
-                        (fn [^Job j]
+                        (fn [^Job j2]
                           (println "*Child->child*: taking some time to do "
                                    "this task... ( ~ 6secs)")
                           (dotimes [n 7]
@@ -91,13 +91,13 @@
                             (print "..."))
                           (println "")
                           (println "*Child->child*: returning result back to *Child*.")
-                          (.setv j "result" (* (.getv j "rhs")
-                                               (.getv j "lhs")))
+                          (.setv j2 "result" (* (.getv j2 "rhs")
+                                               (.getv j2 "lhs")))
                           (println "*Child->child*: done.")
                           nil))))))) ]
       (-> (.chain a1 a2)
           (.chain (SimPTask
-                    (fn [j]
+                    (fn [_]
                       (let [b (StringBuilder. "*Parent*: ")]
                         (println "*Parent*: after fork, continue to calculate fib(6)...")
                         (dotimes [n 7]

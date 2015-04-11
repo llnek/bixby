@@ -26,7 +26,7 @@
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.skaro.io WebSockEvent
-                                       WebSockResult]
+                                   WebSockResult]
             [com.zotohlab.skaro.core Container]))
 
 
@@ -43,8 +43,8 @@
   (startWith [_ pipe]
     (require 'demo.http.websock)
     (SimPTask
-      (fn [^Job job]
-        (let [^WebSockEvent ev (.event job)
+      (fn [^Job j]
+        (let [^WebSockEvent ev (.event j)
               res (.getResultObj ev)
               data (.getData ev)
               stuff (if (and (notnil? data)

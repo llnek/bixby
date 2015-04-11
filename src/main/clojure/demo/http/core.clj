@@ -49,8 +49,8 @@
   (startWith [_ pipe]
     (require 'demo.http.core)
     (SimPTask
-      (fn [^Job job]
-        (let [^HTTPEvent ev (.event job)
+      (fn [^Job j]
+        (let [^HTTPEvent ev (.event j)
               res (.getResultObj ev) ]
           ;; construct a simple html page back to caller
           ;; by wrapping it into a stream data object

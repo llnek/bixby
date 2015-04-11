@@ -15,8 +15,7 @@ import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;
-import com.zotohlab.wflow.FlowNode;
-import com.zotohlab.wflow.PDelegate;
+import com.zotohlab.wflow.SDelegate;
 import com.zotohlab.wflow.Pipeline;
 import com.zotohlab.wflow.Split;
 
@@ -31,33 +30,33 @@ import com.zotohlab.wflow.Split;
                    |
                    |-------> parent(s2)----> end
  */
-public class Demo implements PDelegate {
+public class Demo extends SDelegate {
 
     // split but no wait
     // parent continues;
 
   public Activity startWith(Pipeline pipe) {
 
-    Activity a0= PTaskWrapper( (cur,job) -> {
+    Activity a0= PTaskWrapper( (c,j) -> {
       out.println("I am the *Parent*");
       out.println("I am programmed to fork off a parallel child process, " +
         "and continue my business.");
       return null;
     });
-    Activity a1= Split.fork( PTaskWrapper( (cur,job) -> {
+    Activity a1= Split.fork( PTaskWrapper( (c,j) -> {
       out.println("*Child*: will create my own child (blocking)");
-      job.setv("rhs", 60);
-      job.setv("lhs", 5);
+      j.setv("rhs", 60);
+      j.setv("lhs", 5);
 
-      Split s1= Split.applyAnd(PTaskWrapper( (c,j) -> {
+      Split s1= Split.applyAnd(PTaskWrapper( (c1,j1) -> {
         out.println("*Child*: the result for (5 * 60) according to my own child is = "  +
-                    j.getv("result"));
+                    j1.getv("result"));
         out.println("*Child*: done.");
         return null;
       }));
 
       // split & wait
-      return s1.include(PTaskWrapper( (c, j) -> {
+      return s1.include(PTaskWrapper( (c2, j2) -> {
         out.println("*Child->child*: taking some time to do this task... ( ~ 6secs)");
         for (int i= 1; i < 7; ++i) {
           try {
@@ -69,13 +68,13 @@ public class Demo implements PDelegate {
         }
         out.println("");
         out.println("*Child->child*: returning result back to *Child*.");
-        job.setv("result",  (Integer) j.getv("rhs") * (Integer) j.getv("lhs"));
+        j2.setv("result",  (Integer) j2.getv("rhs") * (Integer) j2.getv("lhs"));
         out.println("*Child->child*: done.");
         return null;
       }));
     }));
 
-    Activity a2= PTaskWrapper( (cur,job) -> {
+    Activity a2= PTaskWrapper( (c,j) -> {
       out.println("*Parent*: after fork, continue to calculate fib(6)...");
       StringBuilder b=new StringBuilder("*Parent*: ");
       for (int i=1; i < 7; ++i) {
@@ -87,9 +86,6 @@ public class Demo implements PDelegate {
 
     return a0.chain(a1).chain(a2);
   }
-
-  public void onStop(Pipeline p) {}
-  public Activity onError(Throwable e, FlowNode p) { return null; }
 
   private int fib(int n) {
     return (n <3) ? 1 : fib(n-2) + fib(n-1);

@@ -43,8 +43,8 @@
   (startWith [_ pipe]
     (require 'demo.http.formpost)
     (SimPTask
-      (fn [^Job job]
-        (let [^HTTPEvent ev (.event job)
+      (fn [^Job j]
+        (let [^HTTPEvent ev (.event j)
               res (.getResultObj ev)
               data (.data ev)
               stuff (if (and (notnil? data)
