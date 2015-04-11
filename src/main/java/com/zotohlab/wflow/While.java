@@ -50,3 +50,49 @@ public class While extends Conditional {
 }
 
 
+class WhileNode extends ConditionalNode {
+
+  public WhileNode(FlowNode c, While a) {
+    super(c,a);
+  }
+
+  public FlowNode eval(Job j) {
+    FlowNode n, rc = this;
+
+    if ( ! test(j)) {
+      //tlog().debug("WhileNode: test-condition == false")
+      rc= next();
+      realize();
+    } else {
+      //tlog().debug("WhileNode: looping - eval body")
+      //normally n is null, but if it is not
+      //switch the body to it.
+      n= _body.eval(j);
+      if (n != null) {
+
+        if (n instanceof DelayNode) {
+          ((DelayNode) n).setNext(rc);
+          rc=n;
+        }
+        else
+        if (n != this){
+          tlog().error("WhileNode##{}.body should not return anything.",
+              getDef().getName());
+          // let's not do this now
+          //_body = n;
+        }
+      }
+    }
+
+    return rc;
+  }
+
+  public WhileNode withBody(FlowNode b) {
+    _body=b;
+    return this;
+  }
+
+  private FlowNode _body = null;
+}
+
+

@@ -11,6 +11,8 @@
 
 package com.zotohlab.wflow;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * @author kenl
  *
@@ -35,5 +37,34 @@ public abstract class Merge  extends Activity {
   protected Activity _body;
 
 }
+
+abstract class MergeNode extends FlowNode {
+
+  protected AtomicInteger _cntr=new AtomicInteger(0);
+  protected FlowNode _body = null;
+  private int _branches= 0;
+
+  protected MergeNode(FlowNode c, Merge a) {
+    super(c,a);
+  }
+
+  public MergeNode withBody(FlowNode body) {
+    _body=body;
+    return this;
+  }
+
+  public MergeNode withBranches(int n) {
+    _branches=n;
+    return this;
+  }
+
+  public int size() { return  _branches; }
+
+  public void postRealize() {
+    _cntr.set(0);
+  }
+
+}
+
 
 

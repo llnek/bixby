@@ -58,6 +58,24 @@ public class Delay extends Activity {
   private long _delayMillis;
 }
 
+class DelayNode extends FlowNode {
+
+  public long delayMillis() { return _delayMillis; }
+  public FlowNode eval(Job j) { return this; }
+
+  public DelayNode(FlowNode c, Delay a) {
+    super(c,a);
+  }
+
+  public FlowNode withDelay(long millis) {
+    _delayMillis=millis;
+    return this;
+  }
+
+  private long _delayMillis= 0L;
+}
+
+
 
 
 

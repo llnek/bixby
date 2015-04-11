@@ -57,4 +57,36 @@ public class PTask extends Activity {
 
 }
 
+class PTaskNode extends FlowNode {
+
+  public PTaskNode(FlowNode c, PTask a) {
+    super(c,a);
+  }
+
+  public PTaskNode withWork(Work w) {
+    _work=w;
+    return this;
+  }
+
+  public FlowNode eval(Job j) {
+    //tlog.debug("PTaskNode: {} about to exec work.", this.id )
+    Object a= _work.exec(this,j);
+    FlowNode rc= next();
+
+    if (a instanceof Nihil) {
+      rc = new NihilNode(pipe() );
+    }
+    else
+    if (a instanceof Activity) {
+      rc = ((Activity) a).reify(rc);
+    }
+    else {
+    }
+
+    return rc;
+  }
+
+  private Work _work= null;
+}
+
 

@@ -34,3 +34,15 @@ public class Nihil  extends Activity {
 }
 
 
+class NihilNode extends FlowNode {
+
+  public FlowNode eval(Job j) { return this; }
+  public FlowNode next() { return this; }
+
+  public NihilNode(Pipeline f) {
+    super(f);
+  }
+
+}
+
+

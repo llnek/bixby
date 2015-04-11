@@ -11,6 +11,9 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.frwk.server.ServerLike;
+import com.zotohlab.frwk.util.Schedulable;
+
 
 
 /**
@@ -149,4 +152,41 @@ class NullJoinNode extends MergeNode {
   }
 
 }
+
+
+class SplitNode extends CompositeNode {
+
+  public SplitNode(FlowNode c, Split a) {
+    super(c,a);
+  }
+
+  private boolean _fallThru=false;
+
+  public FlowNode eval(Job j) {
+    ServerLike x = pipe().container();
+    Schedulable core = x.core();
+    FlowNode rc= null;
+
+    while ( !_inner.isEmpty() ) {
+      rc = _inner.next();
+      core.run(rc);
+    }
+
+    realize();
+
+    return _fallThru ? next() : null;
+  }
+
+  public SplitNode withBranches(Iter w) {
+    _inner=w;
+    return this;
+  }
+
+  public SplitNode fallThrough() {
+    _fallThru=true;
+    return this;
+  }
+
+}
+
 

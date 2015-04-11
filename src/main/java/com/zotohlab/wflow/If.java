@@ -56,4 +56,34 @@ public class If extends Conditional {
 
 }
 
+class IfNode extends ConditionalNode {
+
+  public IfNode(FlowNode c, If a) {
+    super(c,a);
+  }
+
+  private FlowNode _then= null;
+  private FlowNode _else= null;
+
+  public IfNode withElse(FlowNode n ) {
+    _else=n;
+    return this;
+  }
+
+  public IfNode withThen(FlowNode n ) {
+    _then=n;
+    return this;
+  }
+
+  public FlowNode eval(Job j) {
+    boolean b = test(j);
+    tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
+    FlowNode rc = b ? _then : _else;
+    realize();
+    return rc;
+  }
+
+}
+
+
 

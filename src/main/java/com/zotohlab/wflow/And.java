@@ -42,4 +42,28 @@ public class And extends Merge {
 
 }
 
+class AndNode extends MergeNode {
+
+  public AndNode(FlowNode c, And a) {
+    super(c,a);
+  }
+
+  public FlowNode eval(Job j) {
+    int nv= _cntr.incrementAndGet();
+    FlowNode rc= null;
+
+    tlog().debug("AndNode: size={}, cntr={}, join={}",
+        size(),  nv, getDef().getName());
+
+    // all branches have returned, proceed...
+    if (nv == size() ) {
+      rc= (_body == null) ? next() : _body;
+      realize();
+    }
+    return rc;
+  }
+
+}
+
+
 

@@ -59,3 +59,31 @@ class Group extends Composite {
 }
 
 
+class GroupNode extends CompositeNode {
+
+  public GroupNode(FlowNode c, Group a) {
+    super(c,a);
+  }
+
+  public FlowNode eval(Job j) {
+    FlowNode rc= null;
+
+    if ( ! _inner.isEmpty()) {
+      //tlog().debug("Group: {} element(s.)",  _inner.size() );
+      FlowNode n=_inner.next();
+      Activity d=n.getDef();
+      if (d.hasName()) {
+        tlog().debug("FlowNode##{} :eval().", d.getName());
+      }
+      rc = n.eval(j);
+    } else {
+      //tlog().debug("Group: no more elements.");
+      rc= next();
+      realize();
+    }
+
+    return rc;
+  }
+
+}
+

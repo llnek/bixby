@@ -75,3 +75,58 @@ public class Switch extends Activity {
   }
 
 }
+
+
+
+
+class SwitchNode extends FlowNode {
+
+  private Map<Object,FlowNode> _cs = new HashMap<>();
+  private ChoiceExpr _expr= null;
+  private FlowNode _def = null;
+
+  public SwitchNode withChoices(Map<Object,FlowNode> cs) {
+    _cs.putAll(cs);
+    return this;
+  }
+
+  public SwitchNode(FlowNode c, Activity a) {
+    super(c,a);
+  }
+
+  public SwitchNode withDef(FlowNode c) {
+    _def=c;
+    return this;
+  }
+
+  public SwitchNode withExpr(ChoiceExpr e) {
+    _expr=e;
+    return this;
+  }
+
+  public Map<Object,FlowNode> choices() { return  _cs; }
+
+  public FlowNode defn() { return  _def; }
+
+  public FlowNode eval(Job j) {
+    Object m= _expr.getChoice(j);
+    FlowNode a= null;
+
+    if (m != null) {
+      a = _cs.get(m);
+    }
+
+    // if no match, try default?
+    if (a == null) {
+      a=_def;
+    }
+
+    realize();
+
+    return a;
+  }
+
+}
+
+
+

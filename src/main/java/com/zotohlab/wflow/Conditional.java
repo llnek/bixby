@@ -32,4 +32,22 @@ abstract class Conditional extends Activity {
 }
 
 
+abstract class ConditionalNode extends FlowNode {
+
+  protected ConditionalNode(FlowNode c, Conditional a) {
+    super(c,a);
+  }
+
+  public FlowNode withTest(BoolExpr expr) {
+    _expr=expr;
+    return this;
+  }
+
+  protected boolean test(Job j) {
+    return _expr.evaluate(j);
+  }
+
+  private BoolExpr _expr;
+}
+
 

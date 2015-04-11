@@ -49,4 +49,19 @@ public abstract class Composite extends Activity {
 
 }
 
+abstract class CompositeNode extends FlowNode {
+
+  protected CompositeNode(FlowNode c, Activity a) {
+    super(c,a);
+  }
+
+  public void reifyInner( Iterator<Activity> c) {
+    _inner=new Iter(this,c);
+  }
+
+  public Iter inner() { return _inner; }
+
+  protected Iter _inner = null;
+}
+
 

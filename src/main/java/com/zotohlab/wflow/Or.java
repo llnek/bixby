@@ -40,3 +40,41 @@ public class Or extends Merge {
 }
 
 
+class OrNode extends MergeNode {
+
+  public OrNode(FlowNode c, Or a) {
+    super(c,a);
+  }
+
+  public FlowNode eval(Job j) {
+    int nv= _cntr.incrementAndGet();
+    FlowNode rc= this;
+    FlowNode nx= next();
+
+    if (size() == 0) {
+      // 'or' of nothing, nothing to do
+      rc= nx;
+      realize();
+    }
+    else
+    if (nv==1) {
+      // got one in, proceed
+      rc= (_body== null) ? nx : _body;
+      // there is only one? end it
+      if(size() == 1) {
+        realize();
+      }
+    }
+    else
+    if ( nv >= size() ) {
+      // don't care about others
+      rc=null;
+      realize();
+    }
+
+    return rc;
+  }
+
+}
+
+
