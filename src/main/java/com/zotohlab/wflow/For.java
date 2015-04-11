@@ -20,11 +20,11 @@ package com.zotohlab.wflow;
  */
 public class For extends While {
 
-  public static For apply(ForLoopCountExpr loopCount, Activity body) {
+  public static For apply(CounterExpr loopCount, Activity body) {
     return new For(loopCount, body);
   }
 
-  public For(ForLoopCountExpr loopCount, Activity body) {
+  public For(CounterExpr loopCount, Activity body) {
     // put a dummy bool-expr, not used.
     super((j) -> { return false; }, body);
     _loopCntr = loopCount;
@@ -34,27 +34,27 @@ public class For extends While {
     return new ForNode(cur,this);
   }
 
-  public void realize(FlowNode fp) {
-    ForNode p= (ForNode) fp;
-    super.realize(fp);
-    p.withTest( new ForLoopExpr(p, _loopCntr));
+  public void realize(FlowNode n) {
+    ForNode p= (ForNode) n;
+    super.realize(n);
+    p.withTest( new LoopExpr(p, _loopCntr));
   }
 
-  private ForLoopCountExpr _loopCntr;
+  private CounterExpr _loopCntr;
 }
 
 /**
  * @author kenl
  *
  */
-class ForLoopExpr implements BoolExpr {
+class LoopExpr implements BoolExpr {
 
-  public ForLoopExpr(FlowNode pt, ForLoopCountExpr cnt) {
+  public LoopExpr(FlowNode pt, CounterExpr cnt) {
     _point = pt;
     _cnt= cnt;
   }
 
-  private ForLoopCountExpr _cnt;
+  private CounterExpr _cnt;
   private FlowNode _point;
 
   private boolean _started=false;
@@ -66,7 +66,7 @@ class ForLoopExpr implements BoolExpr {
         _loop=_cnt.getCount(j);
         _started=true;
       }
-      _point.tlog().debug("ForLoopExpr: loop {}", _loop);
+      _point.tlog().debug("LoopExpr: loop {}", _loop);
       return _loop > 0;
     } finally {
       _loop -= 1;

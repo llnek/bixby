@@ -20,15 +20,13 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Date]
             [com.zotohlab.gallifrey.io TimerEvent]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
-
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -42,30 +40,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ncount ""
-  
+
   []
-  
+
   (.incrementAndGet _count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PDelegate 
+(deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.timer.core)
-    (DefPTask
-      (fn [cur ^Job job arg]
-        (let [^TimerEvent ev (.event job) ] 
+    (SimPTask
+      (fn [^Job job]
+        (let [^TimerEvent ev (.event job) ]
           (if (.isRepeating ev)
             (println "-----> (" (ncount) ") repeating-update: " (Date.))
             (println "-----> once-only!!: " (Date.)))
-          nil))))
+          nil)))
 
-  (onStop [_ p] )
-
-  (onError [_ e p] nil))
-
-
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

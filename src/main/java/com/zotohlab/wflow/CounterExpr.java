@@ -16,10 +16,8 @@ package com.zotohlab.wflow;
  * @author kenl
  */
 @FunctionalInterface
-public interface SwitchChoiceExpr {
-
-  public Object getChoice(Job job);
-
+public interface CounterExpr {
+  public int getCount(Job job);
 }
 
 

@@ -142,7 +142,7 @@ public class Pipeline implements Startable, Identifiable {
   /*
   public void finalize() throws Throwable {
     super.finalize();
-    //tlog().debug("=========================> Pipeline: " + getClass().getName() + " finz'ed");
+    //tlog().debug("Pipeline: " + getClass().getName() + " finz'ed");
   }
   */
 

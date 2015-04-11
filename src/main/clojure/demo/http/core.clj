@@ -20,13 +20,11 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,10 +44,12 @@
 ;;
 (deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.http.core)
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev) ]
           ;; construct a simple html page back to caller
@@ -62,11 +62,8 @@
           ;; associate this result with the orignal event
           ;; this will trigger the http response
           (.replyResult ev)
-          nil))))
-
-  (onStop [_ p] )
-  (onError [_ e c] nil))
-
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

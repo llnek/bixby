@@ -19,8 +19,8 @@ import java.util.Iterator;
  */
 public abstract class CompositeNode extends FlowNode {
 
-  protected CompositeNode(FlowNode cur, Activity a) {
-    super(cur,a);
+  protected CompositeNode(FlowNode c, Activity a) {
+    super(c,a);
   }
 
   public void reifyInner( Iterator<Activity> c) {

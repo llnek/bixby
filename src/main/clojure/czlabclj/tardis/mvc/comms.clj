@@ -23,7 +23,7 @@
         [czlabclj.tardis.io.netty]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
-        [czlabclj.tardis.core.wfs]
+        [czlabclj.xlib.util.wfs :only [SimPTask]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.mvc.assets
          :only
@@ -321,8 +321,8 @@
 (deftype AssetHandler [] PDelegate
 
   (startWith [_ pipe]
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^HTTPEvent evt (.event job)]
           (HandleStatic (.emitter evt)
                         evt

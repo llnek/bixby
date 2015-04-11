@@ -13,7 +13,7 @@ package com.zotohlab.wflow;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Iterator;
 
 /**
  * @author kenl
@@ -23,13 +23,14 @@ public abstract class Composite extends Activity {
 
   private List<Activity> _innards= new ArrayList<>();
 
+  public int size() { return _innards.size(); }
+
   protected Composite(String name) {
     super(name);
   }
 
   protected Composite() {}
 
-  public int size() { return _innards.size(); }
   protected void onAdd(Activity a) {}
 
   protected void add(Activity a) {
@@ -37,7 +38,7 @@ public abstract class Composite extends Activity {
     onAdd(a);
   }
 
-  public ListIterator<Activity> listChildren() {
+  public Iterator<Activity> listChildren() {
     return _innards.listIterator();
   }
 

@@ -36,7 +36,7 @@
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.core.sys]
-        [czlabclj.tardis.core.wfs]
+        [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.netty.io :only [StopServer]])
 

@@ -49,7 +49,7 @@ public abstract class Activity implements Named {
    * @return an *ordered* list of work units.
    */
   public Activity chain( Activity a) {
-    return 
+    return
     new Group(this).chain(a);
   }
 
@@ -68,6 +68,10 @@ public abstract class Activity implements Named {
 
   protected abstract FlowNode reifyNode(FlowNode cur) ;
   protected abstract void realize(FlowNode p);
+
+  public String toString() {
+    return "Activity##(" + getClass().getName() + ")";
+  }
 
   /*
   public void finalize() throws Throwable {

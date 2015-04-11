@@ -19,13 +19,12 @@
 
   (:use [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Split PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask Split PDelegate]
             [java.lang StringBuilder]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -53,60 +52,59 @@
 ;;                  |
 ;;                  |-------> parent(s2)----> end
 
-
 (deftype Demo [] PDelegate
+
+  (onError [_ _ _])
+  (onStop [_ _])
 
     ;; split but no wait
     ;; parent continues;
 
   (startWith [_ pipe]
     (require 'demo.fork.core)
-    (let [a1 (DefPTask
-               (fn [c j a]
-                 (println "I am the *Parent*")
-                 (println "I am programmed to fork off a parallel child process, "
-                          "and continue my business.")
-                 nil))
-          a2 (Split/fork (DefPTask
-                           (fn [cur ^Job job arg]
-                             (println "*Child*: will create my own child (blocking)")
-                             (.setv job "rhs" 60)
-                             (.setv job "lhs" 5)
-                             (-> (Split/applyAnd
-                                   (DefPTask
-                                     (fn [cur ^Job j arg]
-                                       (println "*Child*: the result for (5 * 60) according to "
-                                                "my own child is = "
-                                                (.getv j "result"))
-                                       (println "*Child*: done.")
-                                       nil)))
-                                 (.include
-                                   (DefPTask
-                                     (fn [cur ^Job j arg]
-                                       (println "*Child->child*: taking some time to do "
-                                                "this task... ( ~ 6secs)")
-                                       (dotimes [n 7]
-                                         (Thread/sleep 1000)
-                                         (print "..."))
-                                       (println "")
-                                       (println "*Child->child*: returning result back to *Child*.")
-                                       (.setv j "result"
-                                              (* (.getv j "rhs")
-                                                 (.getv j "lhs")))
-                                       (println "*Child->child*: done.")
-                                       nil))))))) ]
+    (let
+      [a1 (SimPTask
+            (fn [j]
+              (println "I am the *Parent*")
+              (println "I am programmed to fork off a parallel child process, "
+                          "and continue my business.")))
+       a2 (Split/fork
+            (SimPTask
+              (fn [^Job job]
+                (println "*Child*: will create my own child (blocking)")
+                (.setv job "rhs" 60)
+                (.setv job "lhs" 5)
+                (-> (Split/applyAnd
+                      (SimPTask
+                        (fn [^Job j]
+                          (println "*Child*: the result for (5 * 60) according to "
+                                   "my own child is = "
+                                   (.getv j "result"))
+                          (println "*Child*: done."))))
+                    (.include
+                      (SimPTask
+                        (fn [^Job j]
+                          (println "*Child->child*: taking some time to do "
+                                   "this task... ( ~ 6secs)")
+                          (dotimes [n 7]
+                            (Thread/sleep 1000)
+                            (print "..."))
+                          (println "")
+                          (println "*Child->child*: returning result back to *Child*.")
+                          (.setv j "result" (* (.getv j "rhs")
+                                               (.getv j "lhs")))
+                          (println "*Child->child*: done.")
+                          nil))))))) ]
       (-> (.chain a1 a2)
-          (.chain (DefPTask
-                    (fn [cur job arg]
+          (.chain (SimPTask
+                    (fn [j]
                       (let [b (StringBuilder. "*Parent*: ")]
                         (println "*Parent*: after fork, continue to calculate fib(6)...")
                         (dotimes [n 7]
                           (.append b (str (fib n) " ")))
                         (println (.toString b) "\n" "*Parent*: done.")
-                        nil)))))))
-
-  (onStop [_ p] )
-  (onError [_ e c] nil))
+                        nil))))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

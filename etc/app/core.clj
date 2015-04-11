@@ -7,7 +7,7 @@
   @@APPDOMAIN@@.core
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:use [czlabclj.tardis.core.wfs])
+  (:use [czlabclj.xlib.util.wfs])
   (:import ( com.zotohlab.wflow FlowNode Activity
                                  Pipeline PDelegate
                                  PTask Work))

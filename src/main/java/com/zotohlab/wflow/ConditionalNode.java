@@ -19,8 +19,8 @@ package com.zotohlab.wflow;
  */
 abstract class ConditionalNode extends FlowNode {
 
-  protected ConditionalNode(FlowNode s, Conditional a) {
-    super(s,a);
+  protected ConditionalNode(FlowNode c, Conditional a) {
+    super(c,a);
   }
 
   public FlowNode withTest(BoolExpr expr) {

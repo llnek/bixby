@@ -14,17 +14,12 @@ package com.zotohlab.wflow;
 
 /**
  * @author kenl
- *
  */
-public class AsyncWaitNode extends FlowNode {
+@FunctionalInterface
+public interface ChoiceExpr {
 
-  public AsyncWaitNode(FlowNode cur, AsyncWait a) {
-    super(cur,a);
-  }
-
-  public FlowNode eval(Job j) { return this; }
+  public Object getChoice(Job job);
 
 }
-
 
 

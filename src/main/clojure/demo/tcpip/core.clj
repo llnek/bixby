@@ -20,16 +20,15 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [Try! notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
-            [com.zotohlab.wflow FlowNode PTask Delay PDelegate]
+            [com.zotohlab.wflow Job FlowNode PTask Delay PDelegate]
             [com.zotohlab.gallifrey.io SocketEvent]
             [com.zotohlab.gallifrey.core Container]
             [java.net Socket]
             [java.util Date]
-            [com.zotohlab.frwk.server Service]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.frwk.server Service]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,16 +43,18 @@
 ;;
 (deftype DemoClient [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
         (.chain
-          (DefPTask
-            (fn [cur job arg]
+          (SimPTask
+            (fn [j]
               (with-local-vars [tcp (-> (.container pipe)
                                         (.getService :default-sample))
-                                s (.replace TEXTMsg 
+                                s (.replace TEXTMsg
                                             "${TS}" (.toString (Date.)))
                                 ssoc nil]
                 (println "TCP Client: about to send message" @s)
@@ -72,20 +73,19 @@
                   (finally
                     (Try! (when-not (nil? @ssoc)
                             (.close ^Socket @ssoc)))))
-                nil))))))
-
-  (onError [_ err c] nil)
-  (onStop [_ pipe] ))
-
+                nil)))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype DemoServer [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.tcpip.core)
-    (-> (DefPTask
-          (fn [cur ^Job job arg]
+    (-> (SimPTask
+          (fn [^Job job]
             (let [^SocketEvent ev (.event job)
                   dis (DataInputStream. (.getSockIn ev))
                   clen (.readInt dis)
@@ -96,15 +96,11 @@
               ;; add a delay into the workflow before next step
               (Delay/apply 1500))))
         (.chain
-          (DefPTask
-            (fn [cur ^Job job arg]
+          (SimPTask
+            (fn [^Job job]
               (println "Socket Server Received: "
-                       (.getv job "cmsg")))))))
-
-  (onError [_ err cur] nil)
-  (onStop [_ pipe] ))
-
-
+                       (.getv job "cmsg"))))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

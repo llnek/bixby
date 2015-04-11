@@ -94,8 +94,8 @@ public class Split extends Composite {
     return new SplitNode(cur, this);
   }
 
-  public  void realize(FlowNode fp) {
-    SplitNode p= (SplitNode) fp;
+  public  void realize(FlowNode n) {
+    SplitNode p= (SplitNode) n;
     Merge m= _theMerge;
 
     if ( m != null) {
@@ -140,8 +140,8 @@ class NullJoin extends Merge {
  */
 class NullJoinNode extends MergeNode {
 
-  public NullJoinNode(FlowNode s, Merge a) {
-    super(s,a);
+  public NullJoinNode(FlowNode c, Merge a) {
+    super(c,a);
   }
 
   public FlowNode eval(Job j) {

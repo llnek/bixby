@@ -24,6 +24,7 @@ public abstract class SDelegate implements PDelegate {
 
   public void onStop(Pipeline p) {}
 
+
 }
 
 

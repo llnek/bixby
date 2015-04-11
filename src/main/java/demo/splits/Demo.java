@@ -38,18 +38,18 @@ public class Demo implements PDelegate {
 
   public Activity startWith(Pipeline pipe) {
 
-    Activity a0= PTaskWrapper( (cur,job,arg) -> {
+    Activity a0= PTaskWrapper( (cur,job) -> {
       out.println("I am the *Parent*");
       out.println("I am programmed to fork off a parallel child process, " +
         "and continue my business.");
       return null;
     });
-    Activity a1= Split.fork( PTaskWrapper( (cur,job,arg) -> {
+    Activity a1= Split.fork( PTaskWrapper( (cur,job) -> {
       out.println("*Child*: will create my own child (blocking)");
       job.setv("rhs", 60);
       job.setv("lhs", 5);
 
-      Split s1= Split.applyAnd(PTaskWrapper( (c,j,a) -> {
+      Split s1= Split.applyAnd(PTaskWrapper( (c,j) -> {
         out.println("*Child*: the result for (5 * 60) according to my own child is = "  +
                     j.getv("result"));
         out.println("*Child*: done.");
@@ -57,7 +57,7 @@ public class Demo implements PDelegate {
       }));
 
       // split & wait
-      return s1.include(PTaskWrapper( (c, j, a) -> {
+      return s1.include(PTaskWrapper( (c, j) -> {
         out.println("*Child->child*: taking some time to do this task... ( ~ 6secs)");
         for (int i= 1; i < 7; ++i) {
           try {
@@ -75,7 +75,7 @@ public class Demo implements PDelegate {
       }));
     }));
 
-    Activity a2= PTaskWrapper( (cur,job,arg) -> {
+    Activity a2= PTaskWrapper( (cur,job) -> {
       out.println("*Parent*: after fork, continue to calculate fib(6)...");
       StringBuilder b=new StringBuilder("*Parent*: ");
       for (int i=1; i < 7; ++i) {

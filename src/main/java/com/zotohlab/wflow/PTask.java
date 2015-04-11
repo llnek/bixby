@@ -48,8 +48,8 @@ public class PTask extends Activity {
     return new PTaskNode(cur, this);
   }
 
-  public void realize(FlowNode fp) {
-    PTaskNode s= (PTaskNode) fp;
+  public void realize(FlowNode n) {
+    PTaskNode s= (PTaskNode) n;
     s.withWork(_work);
   }
 

@@ -20,16 +20,14 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
             [java.util ListIterator]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.net ULFileItem ULFormItems]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.gallifrey.core Container]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,10 +38,12 @@
 ;;
 (deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.http.formpost)
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^HTTPEvent ev (.event job)
               res (.getResultObj ev)
               data (.data ev)
@@ -54,25 +54,21 @@
           (cond
             (instance? ULFormItems stuff)
             (doseq [^ULFileItem fi (seq (.intern ^ULFormItems stuff))]
-                (println "Fieldname : " (.getFieldName fi))
-                (println "Name : " (.getName fi))
-                (println "Formfield : " (.isFormField fi))
-                (if (.isFormField fi)
-                  (println "Field value: " (.getString fi))
-                  (when-let [xs (.fileData fi)]
-                    (println "Field file = " (.filePath xs)))))
+              (println "Fieldname : " (.getFieldName fi))
+              (println "Name : " (.getName fi))
+              (println "Formfield : " (.isFormField fi))
+              (if (.isFormField fi)
+                (println "Field value: " (.getString fi))
+                (when-let [xs (.fileData fi)]
+                  (println "Field file = " (.filePath xs)))))
             :else
             (println "Error: data is not ULFormItems."))
           (.setStatus res 200)
           ;; associate this result with the orignal event
           ;; this will trigger the http response
           (.replyResult ev)
-          nil))))
-
-  (onStop [_ p] )
-  (onError [e c] nil))
-
-
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.core.wfs
+  czlabclj.xlib.util.wfs
 
   (:require [clojure.tools.logging :as log :only [warn error info debug]]
             [clojure.string :as cstr])
@@ -20,13 +20,12 @@
   (:use [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.core :only [MakeMMap]])
 
-  (:import  [com.zotohlab.wflow If BoolExpr FlowNode Activity
-             ForLoopCountExpr BoolExpr
-             SwitchChoiceExpr
+  (:import  [com.zotohlab.wflow If FlowNode Activity
+             CounterExpr BoolExpr
+             ChoiceExpr Job
              Pipeline PDelegate PTask Work]
             [com.zotohlab.frwk.server ServerLike]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-            [com.zotohlab.wflow Pipeline PDelegate Job]))
+            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -76,15 +75,15 @@
 
   (^PTask [^String nm func]
     (PTask. nm (reify Work
-                 (exec [_ fw job arg]
-                   (apply func [fw job arg]))))))
+                 (exec [_ fw job]
+                   (apply func [fw job]))))))
 
 (defn SimPTask ""
 
   (^PTask [func] (SimPTask "" func))
 
   (^PTask [^String nm func]
-    (PTask. nm (reify Work (exec [_ fw job arg] (apply func [job]))))))
+    (PTask. nm (reify Work (exec [_ fw job] (apply func [job]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -101,22 +100,21 @@
 ;;
 (defn DefChoiceExpr
 
-  ^SwitchChoiceExpr
+  ^ChoiceExpr
   [func]
 
-  (reify SwitchChoiceExpr (getChoice [_ job] (apply func [job]))
+  (reify ChoiceExpr (getChoice [_ job] (apply func [job]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefFLCountExpr
+(defn DefCounterExpr
 
-  ^ForLoopCountExpr
+  ^CounterExpr
   [func]
 
-  (reify ForLoopCountExpr (getCount [_ job] (apply func [job]))
+  (reify CounterExpr (getCount [_ job] (apply func [job]))
   ))
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

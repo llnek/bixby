@@ -21,9 +21,9 @@
   (:use [czlabclj.xlib.util.process :only [ThreadFunc]]
         [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.core Container]
             [com.zotohlab.gallifrey.io FileEvent]
             [com.zotohlab.frwk.server Service]
@@ -31,8 +31,7 @@
             [org.apache.commons.io FileUtils]
             [java.util Date]
             [java.lang StringBuilder]
-            [java.io File IOException]
-            [com.zotohlab.wflow Job]))
+            [java.io File IOException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -54,39 +53,39 @@
 ;;
 (deftype DemoGen [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.file.core)
-    (DefPTask
-      (fn [cur job arg]
+    (SimPTask
+      (fn [job]
         (let [s (str "Current time is " (Date.))
-              ^Service p (-> (.container pipe)
-                             (.getService :default-sample)) ]
+              ^Service
+              p (-> (.container pipe)
+                    (.getService :default-sample)) ]
           (FileUtils/writeStringToFile (File. (nsb (.getv p :targetFolder))
                                               (str "ts-" (ncount) ".txt"))
                                        s
                                        "utf-8")
-          nil))))
-
-  (onStop [_ p] )
-
-  (onError [_ err c] nil))
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype DemoPick [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.file.core)
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^FileEvent ev (.event job)
               f (.getFile ev) ]
           (println "Picked up new file: " f)
           (println "Content: " (FileUtils/readFileToString f "utf-8"))
-          nil))))
-
-  (onStop [_ p] )
-  (onError [_ err c] nil))
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,7 +103,6 @@
   (stop [_])
 
   (dispose [_] ))
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

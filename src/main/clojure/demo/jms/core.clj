@@ -20,14 +20,13 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.gallifrey.io JMSEvent]
             [javax.jms TextMessage]
             [java.util.concurrent.atomic AtomicInteger]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -48,10 +47,12 @@
 ;;
 (deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.jms.core)
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^JMSEvent ev (.event job)
               ^TextMessage msg (.getMsg ev) ]
           (println "-> Correlation ID= " (.getJMSCorrelationID msg))
@@ -61,11 +62,8 @@
                    (ncount)
                    ") -> Message= "
                    (.getText msg))
-          nil))))
-
-  (onStop [_ pipe] )
-
-  (onError [_ err c] nil))
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

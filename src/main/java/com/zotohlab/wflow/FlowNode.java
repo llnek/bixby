@@ -34,16 +34,15 @@ public abstract class FlowNode implements RunnableWithId {
 
   private FlowNode _nextStep;
   protected Pipeline _pipe;
-  private Object _closure;
   private Activity _defn;
 
   /**
    * @param s
    * @param a
    */
-  protected FlowNode(FlowNode s, Activity a) {
-    this( s.pipe() );
-    _nextStep=s;
+  protected FlowNode(FlowNode c, Activity a) {
+    this( c.pipe() );
+    _nextStep=c;
     _defn=a;
   }
 
@@ -56,51 +55,36 @@ public abstract class FlowNode implements RunnableWithId {
   public Activity getDef() { return _defn; }
   public Object id() { return _pid; }
 
-  public void attachClosureArg(Object c) {
-    _closure=c;
-  }
-
   public abstract FlowNode eval(Job j);
 
   protected void postRealize() {}
   protected FlowNode realize() {
     getDef().realize(this);
-    clsClosure();
     postRealize();
     return this;
   }
 
-  public Object getClosureArg() { return _closure; }
-  protected void clsClosure() { _closure=null; }
-  public Object popClosureArg() {
-    try {
-      Object c=_closure;
-      return c;
-    } finally {
-      _closure=null ;
-    }
-  }
-
   public Pipeline pipe() { return _pipe; }
-  public void forceNext(FlowNode n) {
+  public void setNext(FlowNode n) {
     _nextStep=n;
   }
 
   public void rerun() {
-    ServerLike x= (ServerLike) pipe().container();
+    ServerLike x= pipe().container();
     x.core().reschedule(this);
   }
 
   public void run() {
-    ServerLike x= (ServerLike) pipe().container() ;
+    ServerLike x= pipe().container() ;
     Pipeline pl = pipe();
-    Activity err= null;
+    Activity err= null,
+             d= getDef();
     FlowNode rc= null;
 
     x.core().dequeue(this);
     try {
-      if (getDef().hasName()) {
-        tlog().debug("FlowNode##{} :eval().",getDef().getName());
+      if (d.hasName()) {
+        tlog().debug("FlowNode##{} :eval().", d.getName());
       }
       rc= eval( pl.job() );
     } catch (Throwable e) {
@@ -117,16 +101,12 @@ public abstract class FlowNode implements RunnableWithId {
   }
 
   private void runAfter(Pipeline pl, FlowNode rc) {
-    ServerLike x = (ServerLike) pl.container();
+    ServerLike x = pl.container();
     FlowNode np= rc.next();
     Schedulable ct= x.core();
 
     if (rc instanceof DelayNode) {
       ct.postpone( np, ((DelayNode) rc).delayMillis() );
-    }
-    else
-    if (rc instanceof AsyncWaitNode) {
-      ct.hold( np);
     }
     else
     if (rc instanceof NihilNode) {
@@ -140,7 +120,7 @@ public abstract class FlowNode implements RunnableWithId {
   /*
   public void finalize() throws Throwable {
     super.finalize();
-    //tlog().debug("=========================> FlowNode: " + getClass().getName() + " finz'ed");
+    //tlog().debug("FlowNode: " + getClass().getName() + " finz'ed");
   }
   */
 

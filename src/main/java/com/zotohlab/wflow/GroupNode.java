@@ -18,26 +18,24 @@ package com.zotohlab.wflow;
  */
 class GroupNode extends CompositeNode {
 
-  public GroupNode(FlowNode s, Group a) {
-    super(s,a);
+  public GroupNode(FlowNode c, Group a) {
+    super(c,a);
   }
 
   public FlowNode eval(Job j) {
-    Object c= getClosureArg();
     FlowNode rc= null;
 
     if ( ! _inner.isEmpty()) {
-      //tlog().debug("BlockNode: {} element(s.)",  _inner.size() );
+      //tlog().debug("Group: {} element(s.)",  _inner.size() );
       FlowNode n=_inner.next();
-      n.attachClosureArg(c);
-      if (n.getDef().hasName()) {
-        tlog().debug("FlowNode##{} :eval().", n.getDef().getName());
+      Activity d=n.getDef();
+      if (d.hasName()) {
+        tlog().debug("FlowNode##{} :eval().", d.getName());
       }
       rc = n.eval(j);
     } else {
-      //tlog().debug("BlockNode: no more elements.");
+      //tlog().debug("Group: no more elements.");
       rc= next();
-      if (rc != null) {  rc.attachClosureArg(c); }
       realize();
     }
 

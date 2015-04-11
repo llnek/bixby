@@ -61,7 +61,7 @@ public class Demo implements PDelegate {
      withDft( getAuthMtd("db"));
 
   // step2.
-  private Activity GetProfile = PTaskWrapper( (p,j,c) -> {
+  private Activity GetProfile = PTaskWrapper( (p,j) -> {
     out.println("Step(2): Get user profile\n-> user is superuser.\n");
     return null;
   });
@@ -79,7 +79,7 @@ public class Demo implements PDelegate {
     j.setv("ami_count", c);
     return c < 3;
   },
-  PTaskWrapper((p,j,a) -> {
+  PTaskWrapper((p,j) -> {
     Object obj = j.getv("ami_count");
     if (obj instanceof Integer) {
       int n= (Integer)obj;
@@ -106,7 +106,7 @@ public class Demo implements PDelegate {
     j.setv("vol_count", c);
     return c < 3;
   },
-  PTaskWrapper((p,j,a) -> {
+  PTaskWrapper((p,j) -> {
     Object jv= j.getv("vol_count");
     if (jv instanceof Integer) {
       int n= (Integer)jv;
@@ -132,7 +132,7 @@ public class Demo implements PDelegate {
     j.setv("wdb_count", c);
     return c < 3;
   },
-  PTaskWrapper((p,j,a) -> {
+  PTaskWrapper((p,j) -> {
     Object jv = j.getv("wdb_count");
     if (jv instanceof Integer) {
       int n= (Integer)jv;
@@ -153,12 +153,12 @@ public class Demo implements PDelegate {
 
   // this is the final step, after all the work are done, reply back to the caller.
   // like, returning a 200-OK.
-  private Activity ReplyUser = PTaskWrapper( (p,j,a) -> {
+  private Activity ReplyUser = PTaskWrapper( (p,j) -> {
     out.println("Step(5): We'd probably return a 200 OK back to caller here.\n");
     return null;
   });
 
-  private Activity ErrorUser = PTaskWrapper( (p,j,a) -> {
+  private Activity ErrorUser = PTaskWrapper( (p,j) -> {
     out.println("Step(5): We'd probably return a 200 OK but with errors.\n");
     return null;
   });

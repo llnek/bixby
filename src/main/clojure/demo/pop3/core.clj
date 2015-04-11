@@ -20,17 +20,15 @@
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs :only [DefPTask]])
+        [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [org.apache.commons.io IOUtils]
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
             [com.zotohlab.gallifrey.io EmailEvent]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
-
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -53,10 +51,12 @@
 ;;
 (deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.pop3.core)
-    (DefPTask
-      (fn [cur ^Job job arg]
+    (SimPTask
+      (fn [^Job job]
         (let [^EmailEvent ev (.event job)
               ^MimeMessage msg (.getMsg ev)
               ^Multipart p (.getContent msg) ]
@@ -69,10 +69,8 @@
           (println (IOUtils/toString (-> (.getBodyPart p 0)
                                         (.getInputStream))
                                      "utf-8"))
-          nil))))
-
-  (onStop [_ p] )
-  (onError [_ err c] nil))
+          nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

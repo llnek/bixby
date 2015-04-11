@@ -22,7 +22,7 @@ public class And extends Merge {
   public And(String name, Activity body) {
     super(name, body);
   }
-  
+
   public And(Activity body) {
     this("",body);
   }
@@ -31,8 +31,8 @@ public class And extends Merge {
     return new AndNode(cur, this);
   }
 
-  public void realize(FlowNode fp) {
-    AndNode s = (AndNode)fp;
+  public void realize(FlowNode n) {
+    AndNode s = (AndNode)n;
     FlowNode x=s.next();
     s.withBranches(_branches);
     if (_body != null) {

@@ -18,35 +18,35 @@ package com.zotohlab.wflow;
  */
 public class WhileNode extends ConditionalNode {
 
-  public WhileNode(FlowNode s, While a) {
-    super(s,a);
+  public WhileNode(FlowNode c, While a) {
+    super(c,a);
   }
 
   public FlowNode eval(Job j) {
-    Object c= getClosureArg();
-    FlowNode f,rc = this;
+    FlowNode n, rc = this;
 
     if ( ! test(j)) {
       //tlog().debug("WhileNode: test-condition == false")
       rc= next();
-      if (rc != null) { rc.attachClosureArg(c); }
       realize();
     } else {
       //tlog().debug("WhileNode: looping - eval body")
-      _body.attachClosureArg(c);
-      f= _body.eval(j);
-      if (f instanceof AsyncWaitNode) {
-        ((AsyncWaitNode) f).forceNext(rc);
-        rc=f;
-      }
-      else
-      if (f instanceof DelayNode) {
-        ((DelayNode) f).forceNext(rc);
-        rc=f;
-      }
-      else
-      if (f != null) {
-        if (f == this) {} else { _body = f; }
+      //normally n is null, but if it is not
+      //switch the body to it.
+      n= _body.eval(j);
+      if (n != null) {
+
+        if (n instanceof DelayNode) {
+          ((DelayNode) n).setNext(rc);
+          rc=n;
+        }
+        else
+        if (n != this){
+          tlog().error("WhileNode##{}.body should not return anything.",
+              getDef().getName());
+          // let's not do this now
+          //_body = n;
+        }
       }
     }
 

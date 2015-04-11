@@ -10,7 +10,7 @@
 
   (:use [czlabclj.tardis.core.constants]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs])
+        [czlabclj.xlib.util.wfs])
 
   (:import [com.zotohlab.wflow FlowNode Activity
                                Pipeline

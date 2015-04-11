@@ -25,12 +25,12 @@ public class Or extends Merge {
     this("",b);
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new OrNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new OrNode(cur, this);
   }
 
-  public void realize(FlowNode fp) {
-    OrNode s= (OrNode) fp;
+  public void realize(FlowNode n) {
+    OrNode s= (OrNode) n;
     if (_body != null) {
       s.withBody( _body.reify(s.next() ));
     }

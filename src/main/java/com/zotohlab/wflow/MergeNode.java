@@ -23,8 +23,8 @@ public abstract class MergeNode extends FlowNode {
   protected FlowNode _body = null;
   private int _branches= 0;
 
-  protected MergeNode(FlowNode s, Merge a) {
-    super(s,a);
+  protected MergeNode(FlowNode c, Merge a) {
+    super(c,a);
   }
 
   public MergeNode withBody(FlowNode body) {

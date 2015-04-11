@@ -31,7 +31,7 @@
         [czlabclj.xlib.util.files :only [ReadEdn]]
         [czlabclj.xlib.net.comms :only [GetFormFields]]
         [czlabclj.tardis.core.constants]
-        [czlabclj.tardis.core.wfs]
+        [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.webss]
         [czlabclj.tardis.io.basicauth]

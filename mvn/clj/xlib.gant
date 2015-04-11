@@ -169,6 +169,7 @@ def clj_Util() {
     arg (value: 'czlabclj.xlib.util.process')
     arg (value: 'czlabclj.xlib.util.str')
     arg (value: 'czlabclj.xlib.util.ini')
+    arg (value: 'czlabclj.xlib.util.wfs')
     arg (value: 'czlabclj.xlib.util.scheduler')
     arg (value: 'czlabclj.xlib.i18n.resources')
   }

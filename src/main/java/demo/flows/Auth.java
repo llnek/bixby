@@ -25,28 +25,28 @@ public enum Auth {
 
       case "facebook":
 
-        return PTaskWrapper( (p,j,a) -> {
+        return PTaskWrapper( (p,j) -> {
           out.println("-> using facebook to login.\n");
           return null;
         });
 
       case "google+":
 
-        return PTaskWrapper( (p,j,a) -> {
+        return PTaskWrapper( (p,j) -> {
           out.println("-> using google+ to login.\n");
           return null;
         });
 
       case "openid":
 
-        return PTaskWrapper( (p,j,a) -> {
+        return PTaskWrapper( (p,j) -> {
           out.println("-> using open-id to login.\n");
           return null;
         });
 
     }
 
-    return PTaskWrapper( (p,j,a) -> {
+    return PTaskWrapper( (p,j) -> {
       out.println("-> using internal db to login.\n");
       return null;
     });

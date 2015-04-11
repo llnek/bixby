@@ -14,7 +14,7 @@
 
   czlabclj.tardis.impl.misc
 
-  (:use [czlabclj.tardis.core.wfs :only [DefPTask]])
+  (:use [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowError]
             [com.zotohlab.wflow Pipeline Job PDelegate PTask Work]
@@ -31,8 +31,8 @@
 
   [s]
 
-  (DefPTask
-    (fn [cur ^Job job arg]
+  (SimPTask
+    (fn [^Job job]
       (let [^HTTPEvent evt (.event job)
             ^HTTPResult
             res (.getResultObj evt) ]

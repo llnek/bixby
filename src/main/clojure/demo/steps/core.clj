@@ -19,14 +19,12 @@
 
   (:use [czlabclj.xlib.util.core :only [RandomBoolValue notnil?]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.tardis.core.wfs])
+        [czlabclj.xlib.util.wfs])
 
-  (:import  [com.zotohlab.wflow FlowNode PTask Switch If
-             Activity Split While
-             PDelegate]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.wflow Job]))
-
+  (:import  [com.zotohlab.wflow FlowNode Switch If
+             Activity Split While PTask
+             Job PDelegate]
+            [com.zotohlab.gallifrey.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -36,20 +34,20 @@
 ;;
 (defn- getAuthMtd ""
 
-  ^PTask
+  ^Activity
   [^String t]
 
   (condp = t
     "facebook"
-    (DefPTask (fn [c j a] (println "-> using facebook to login.\n")))
+    (SimPTask (fn [j] (println "-> using facebook to login.\n")))
 
     "google+"
-    (DefPTask (fn [c j a] (println "-> using google+ to login.\n")))
+    (SimPTask (fn [j] (println "-> using google+ to login.\n")))
 
     "openid"
-    (DefPTask (fn [c j a] (println "-> using open-id to login.\n")))
+    (SimPTask (fn [j] (println "-> using open-id to login.\n")))
 
-    (DefPTask (fn [c j a] (println "-> using internal db to login.\n")))))
+    (SimPTask (fn [j] (println "-> using internal db to login.\n")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,7 +68,7 @@
 
   [^String fkey limit ok nok]
 
-  (fn [cur ^Job job arg]
+  (fn [^Job job]
     (let [obj (.getv job fkey)]
       (when (number? obj)
         (if (>= obj limit)
@@ -90,30 +88,34 @@
 ;;
 (deftype Demo [] PDelegate
 
+  (onError [_ _ _])
+  (onStop [_ _])
   (startWith [_ pipe]
     (require 'demo.steps.core)
     ;; step1. choose a method to authenticate the user
     ;; here, we'll use a switch() to pick which method
-    (let [AuthUser (-> (Switch/apply (DefChoiceExpr
-                                       (fn [j]
-                                         ;; hard code to use facebook in this example, but you
-                                         ;; could check some data from the job, such as URI/Query params
-                                         ;; and decide on which mth-value to switch() on.
-                                         (println "Step(1): Choose an authentication method.")
-                                         "facebook")))
+    (let [AuthUser (-> (Switch/apply
+                         (DefChoiceExpr
+                           (fn [j]
+                           ;; hard code to use facebook in this example, but you
+                           ;; could check some data from the job, such as URI/Query params
+                           ;; and decide on which mth-value to switch() on.
+                           (println "Step(1): Choose an authentication method.")
+                           "facebook")))
                        (.withChoice "facebook" (getAuthMtd "facebook"))
                        (.withChoice "google+" (getAuthMtd "google+"))
                        (.withChoice "openid" (getAuthMtd "openid"))
                        (.withDft (getAuthMtd "db")))
     ;; step2.
-          GetProfile (DefPTask (fn [c j a] (println "Step(2): Get user profile\n"
+          GetProfile (SimPTask (fn [j]
+                                 (println "Step(2): Get user profile\n"
                                           "-> user is superuser.\n")))
     ;; step3. we are going to dummy up a retry of 2 times to simulate network/operation
     ;; issues encountered with EC2 while trying to grant permission.
     ;; so here , we are using a while() to do that.
           prov_ami (While/apply
                      (DefBoolExpr (maybeLoopXXX "ami_count" 3))
-                     (DefPTask
+                     (SimPTask
                        (maybeWhileBody "ami_count" 3
                                        #(println "Step(3): Granted permission for user to launch "
                                                  "this ami(id).\n")
@@ -124,7 +126,7 @@
           ;; so here , we are using a while() to do that.
           prov_vol (While/apply
                      (DefBoolExpr (maybeLoopXXX "vol_count" 3))
-                     (DefPTask
+                     (SimPTask
                        (maybeWhileBody "vol_count" 3
                                        #(println "Step(3): Granted permission for user to mount "
                                                  "this vol(id).\n")
@@ -135,7 +137,7 @@
           ;; so again , we are using a while() to do that.
           save_sdb (While/apply
                      (DefBoolExpr (maybeLoopXXX "wdb_count" 3))
-                     (DefPTask
+                     (SimPTask
                        (maybeWhileBody "wdb_count" 3
                                        #(println "Step(4): Wrote stuff to database successfully.\n")
                                        #(println "Step(4): Failed to contact db- server, "
@@ -150,22 +152,20 @@
           ;; do a final test to see what sort of response should we send back to the user.
           FinalTest (If/apply
                       (DefBoolExpr (fn [j] (RandomBoolValue)))
-                      (DefPTask
-                        (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
-                                  "back to caller here.\n")))
-                      (DefPTask
-                        (fn [c j a] (println "Step(5): We'd probably return a 200 OK "
-                                  "but with errors.\n")))) ]
+                      (SimPTask
+                        (fn [j] (println "Step(5): We'd probably return a 200 OK "
+                                         "back to caller here.\n")))
+                      (SimPTask
+                        (fn [j] (println "Step(5): We'd probably return a 200 OK "
+                                         "but with errors.\n")))) ]
       ;;
       ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
       ;; a split, which forks off more steps in parallel.
       (-> AuthUser
         (.chain GetProfile)
         (.chain Provision)
-        (.chain FinalTest))))
-
-  (onError [_ err c] nil)
-  (onStop [_ pipe] ))
+        (.chain FinalTest)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

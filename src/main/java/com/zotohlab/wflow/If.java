@@ -46,11 +46,11 @@ public class If extends Conditional {
     return new IfNode(cur,this);
   }
 
-  public void realize(FlowNode fp) {
-    IfNode s= (IfNode) fp;
-    FlowNode np= s.next();
-    s.withElse( (_elseCode ==null) ? np : _elseCode.reify(np) );
-    s.withThen( _thenCode.reify(np));
+  public void realize(FlowNode n) {
+    IfNode s= (IfNode) n;
+    FlowNode nx= s.next();
+    s.withElse( (_elseCode ==null) ? nx : _elseCode.reify(nx) );
+    s.withThen( _thenCode.reify(nx));
     s.withTest( expr());
   }
 

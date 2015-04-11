@@ -21,6 +21,8 @@ import java.util.Iterator;
  */
 public class Iter {
 
+  public boolean isEmpty() { return  _acts.size() == 0; }
+
   private List<Activity> _acts= new ArrayList<>();
   private FlowNode _outer;
 
@@ -34,8 +36,6 @@ public class Iter {
   public Iter(FlowNode outer) {
     _outer= outer;
   }
-
-  public boolean isEmpty() { return  _acts.size() == 0; }
 
   public FlowNode next() {
     if (_acts.size() > 0) {

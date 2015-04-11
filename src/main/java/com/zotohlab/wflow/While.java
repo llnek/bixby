@@ -38,8 +38,8 @@ public class While extends Conditional {
     return new WhileNode(cur, this);
   }
 
-  public void realize(FlowNode fp) {
-    WhileNode p= (WhileNode) fp;
+  public void realize(FlowNode n) {
+    WhileNode p= (WhileNode) n;
     if (_body != null) {
       p.withBody(_body.reify(p));
     }

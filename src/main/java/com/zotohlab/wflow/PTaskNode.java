@@ -18,8 +18,8 @@ package com.zotohlab.wflow;
  */
 public class PTaskNode extends FlowNode {
 
-  public PTaskNode(FlowNode s, PTask a) {
-    super(s,a);
+  public PTaskNode(FlowNode c, PTask a) {
+    super(c,a);
   }
 
   public PTaskNode withWork(Work w) {
@@ -29,7 +29,7 @@ public class PTaskNode extends FlowNode {
 
   public FlowNode eval(Job j) {
     //tlog.debug("PTaskNode: {} about to exec work.", this.id )
-    Object a= _work.exec(this, j, popClosureArg());
+    Object a= _work.exec(this,j);
     FlowNode rc= next();
 
     if (a instanceof Nihil) {
@@ -40,9 +40,6 @@ public class PTaskNode extends FlowNode {
       rc = ((Activity) a).reify(rc);
     }
     else {
-      if (rc != null) {
-        rc.attachClosureArg(a);
-      }
     }
 
     return rc;

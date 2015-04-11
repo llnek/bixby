@@ -18,31 +18,27 @@ package com.zotohlab.wflow;
  */
 public class IfNode extends ConditionalNode {
 
-  public IfNode(FlowNode s, If a) {
-    super(s,a);
+  public IfNode(FlowNode c, If a) {
+    super(c,a);
   }
 
   private FlowNode _then= null;
   private FlowNode _else= null;
 
-  public IfNode withElse(FlowNode s ) {
-    _else=s;
+  public IfNode withElse(FlowNode n ) {
+    _else=n;
     return this;
   }
 
-  public IfNode withThen(FlowNode s ) {
-    _then=s;
+  public IfNode withThen(FlowNode n ) {
+    _then=n;
     return this;
   }
 
   public FlowNode eval(Job j) {
-    Object c= getClosureArg() ;
     boolean b = test(j);
     tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
     FlowNode rc = b ? _then : _else;
-    if (rc != null) {
-      rc.attachClosureArg(c);
-    }
     realize();
     return rc;
   }

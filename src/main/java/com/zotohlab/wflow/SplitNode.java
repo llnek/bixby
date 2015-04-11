@@ -20,8 +20,8 @@ import com.zotohlab.frwk.util.Schedulable;
  */
 public class SplitNode extends CompositeNode {
 
-  public SplitNode(FlowNode s, Split a) {
-    super(s,a);
+  public SplitNode(FlowNode c, Split a) {
+    super(c,a);
   }
 
   private boolean _fallThru=false;
@@ -29,18 +29,15 @@ public class SplitNode extends CompositeNode {
   public FlowNode eval(Job j) {
     ServerLike x = pipe().container();
     Schedulable core = x.core();
-    Object c= getClosureArg();
     FlowNode rc= null;
 
     while ( !_inner.isEmpty() ) {
       rc = _inner.next();
-      rc.attachClosureArg(c);
       core.run(rc);
     }
 
     realize();
 
-    // should we also pass the closure to the next step ? not for now
     return _fallThru ? next() : null;
   }
 

@@ -20,25 +20,25 @@ import java.util.Map;
  */
 public class Switch extends Activity {
 
-  public static Switch apply(String name, SwitchChoiceExpr e) {
+  public static Switch apply(String name, ChoiceExpr e) {
     return new Switch(name, e);
   }
 
-  public static Switch apply(SwitchChoiceExpr e) {
+  public static Switch apply(ChoiceExpr e) {
     return new Switch(e);
   }
 
-  public Switch(String name, SwitchChoiceExpr expr) {
+  public Switch(String name, ChoiceExpr expr) {
     super(name);
     _expr= expr;
   }
 
-  public Switch(SwitchChoiceExpr expr) {
+  public Switch(ChoiceExpr expr) {
     _expr= expr;
   }
 
   private Map<Object,Activity> _choices= new HashMap<>();
-  private SwitchChoiceExpr _expr;
+  private ChoiceExpr _expr;
   private Activity _def = null;
 
   public Switch withChoice(Object matcher, Activity body) {
@@ -51,13 +51,13 @@ public class Switch extends Activity {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) { 
-    return new SwitchNode(cur, this); 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new SwitchNode(cur, this);
   }
 
-  public void realize(FlowNode fp) {
+  public void realize(FlowNode n) {
     Map<Object,FlowNode> t= new HashMap<>();
-    SwitchNode p= (SwitchNode) fp;
+    SwitchNode p= (SwitchNode) n;
     FlowNode nxt= p.next();
 
     for (Map.Entry<Object,Activity> en: _choices.entrySet()) {
@@ -73,12 +73,5 @@ public class Switch extends Activity {
     p.withExpr(_expr);
 
   }
-
-
-
-
-
-
-
 
 }

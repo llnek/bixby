@@ -22,7 +22,7 @@
         [czlabclj.xlib.util.str :only [MakeString]]
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.files :only [DirRead?]]
-        [czlabclj.tardis.core.wfs]
+        [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.etc.cmd1])
 
   (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
@@ -128,9 +128,7 @@
   ^Activity
   []
 
-  (DefPTask
-    (fn [_ ^Job j _])
-  ))
+  (SimPTask (fn [_])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -139,8 +137,8 @@
   ^Activity
   []
 
-  (DefPTask
-    (fn [_ ^Job j _]
+  (SimPTask
+    (fn [^Job j]
       (try
         (let [args (.getLastResult j)]
           (when (< (count args) 1) (throw (CmdHelpError. ""))))
@@ -150,6 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype CmdDelegate [] PDelegate
+
   (onStop [_ p]
     ;;(log/debug "CmdDelegate onstop ------------ ending!!!!!")
     (-> (.core p) (.dispose)))

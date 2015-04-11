@@ -45,26 +45,26 @@ public class FlowServer implements ServerLike {
       Job j= s.reifyJob(null);
       Activity a, b, c,d,e,f;
       a= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job, Object arg) {
+        public Object exec(FlowNode cur, Job job) {
           System.out.println("A");
           return null;
         }        
       });
       b= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job, Object arg) {
+        public Object exec(FlowNode cur, Job job) {
           System.out.println("B");
           return null;
         }        
       });
       c= a.chain(b);
       d= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job, Object arg) {
+        public Object exec(FlowNode cur, Job job) {
           System.out.println("D");
           return null;
         }        
       });
       e= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job, Object arg) {
+        public Object exec(FlowNode cur, Job job) {
           System.out.println("E");
           return null;
         }        

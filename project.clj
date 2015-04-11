@@ -213,6 +213,7 @@
     czlabclj.xlib.util.usastate
     czlabclj.xlib.util.ini
     czlabclj.xlib.util.scheduler
+    czlabclj.xlib.util.wfs
     czlabclj.xlib.i18n.resources
 
     czlabclj.xlib.crypto.codec
@@ -247,7 +248,6 @@
 
     czlabclj.tardis.core.constants
     czlabclj.tardis.core.sys
-    czlabclj.tardis.core.wfs
 
     czlabclj.tardis.io.core
     czlabclj.tardis.io.socket

@@ -102,7 +102,6 @@ def clj_Core() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'czlabclj.tardis.core.constants')
     arg (value: 'czlabclj.tardis.core.sys')
-    arg (value: 'czlabclj.tardis.core.wfs')
   }
 }
 

@@ -21,7 +21,7 @@ import java.util.Map;
 public class SwitchNode extends FlowNode {
 
   private Map<Object,FlowNode> _cs = new HashMap<>();
-  private SwitchChoiceExpr _expr= null;
+  private ChoiceExpr _expr= null;
   private FlowNode _def = null;
 
   public SwitchNode withChoices(Map<Object,FlowNode> cs) {
@@ -29,16 +29,16 @@ public class SwitchNode extends FlowNode {
     return this;
   }
 
-  public SwitchNode(FlowNode s, Activity a) {
-    super(s,a);
+  public SwitchNode(FlowNode c, Activity a) {
+    super(c,a);
   }
 
-  public SwitchNode withDef(FlowNode s) {
-    _def=s;
+  public SwitchNode withDef(FlowNode c) {
+    _def=c;
     return this;
   }
 
-  public SwitchNode withExpr(SwitchChoiceExpr e) {
+  public SwitchNode withExpr(ChoiceExpr e) {
     _expr=e;
     return this;
   }
@@ -49,8 +49,8 @@ public class SwitchNode extends FlowNode {
 
   public FlowNode eval(Job j) {
     Object m= _expr.getChoice(j);
-    Object c= popClosureArg();
     FlowNode a= null;
+
     if (m != null) {
       a = _cs.get(m);
     }
@@ -58,10 +58,6 @@ public class SwitchNode extends FlowNode {
     // if no match, try default?
     if (a == null) {
       a=_def;
-    }
-
-    if (a != null) {
-      a.attachClosureArg(c);
     }
 
     realize();

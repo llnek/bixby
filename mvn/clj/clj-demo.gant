@@ -71,7 +71,6 @@ def cljDemo() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'demo.async.core')
     arg (value: 'demo.file.core')
     arg (value: 'demo.fork.core')
     arg (value: 'demo.http.core')

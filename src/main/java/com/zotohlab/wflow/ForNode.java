@@ -17,8 +17,8 @@ package com.zotohlab.wflow;
  */
 public class ForNode extends WhileNode {
 
-  public ForNode(FlowNode s, For a) {
-    super(s,a);
+  public ForNode(FlowNode c, For a) {
+    super(c,a);
   }
 
 }

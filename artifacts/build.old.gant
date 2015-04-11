@@ -614,6 +614,7 @@ def clj_Util() {
     arg (value: 'czlabclj.xlib.util.process')
     arg (value: 'czlabclj.xlib.util.str')
     arg (value: 'czlabclj.xlib.util.ini')
+    arg (value: 'czlabclj.xlib.util.wfs')
     arg (value: 'czlabclj.xlib.util.scheduler')
     arg (value: 'czlabclj.xlib.i18n.resources')
   }
@@ -775,7 +776,6 @@ def cljhhh_Core() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     arg (value: 'czlabclj.tardis.core.constants')
     arg (value: 'czlabclj.tardis.core.sys')
-    arg (value: 'czlabclj.tardis.core.wfs')
   }
 }
 
