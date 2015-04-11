@@ -41,7 +41,7 @@
         [czlabclj.xlib.netty.io :only [StopServer]])
 
   (:import  [io.netty.channel Channel ChannelFuture ChannelFutureListener]
-            [com.zotohlab.gallifrey.loaders AppClassLoader
+            [com.zotohlab.skaro.loaders AppClassLoader
              RootClassLoader ExecClassLoader]
             [com.zotohlab.frwk.core Versioned Identifiable
              Hierarchial Startable]
@@ -49,13 +49,13 @@
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.wflow Job Pipeline
              Activity Nihil PDelegate]
-            [com.zotohlab.gallifrey.core ConfigError]
-            [com.zotohlab.gallifrey.etc CliMain]
+            [com.zotohlab.skaro.core ConfigError]
+            [com.zotohlab.skaro.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.server ServerLike
              Component ComponentRegistry]
-            [com.zotohlab.gallifrey.etc CmdHelpError]
+            [com.zotohlab.skaro.etc CmdHelpError]
             [java.util ResourceBundle Locale]
             [java.io File]
             [org.apache.commons.io FileUtils]))

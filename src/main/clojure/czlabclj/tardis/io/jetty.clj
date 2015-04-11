@@ -62,13 +62,13 @@
              ContextHandler
              ContextHandlerCollection
              ResourceHandler]
-            [com.zotohlab.gallifrey.io IOSession ServletEmitter Emitter]
+            [com.zotohlab.skaro.io IOSession ServletEmitter Emitter]
             [org.eclipse.jetty.webapp WebAppContext]
             [javax.servlet.http HttpServletRequest HttpServletResponse]
-            [com.zotohlab.gallifrey.io WebSockResult
+            [com.zotohlab.skaro.io WebSockResult
              HTTPResult
              HTTPEvent JettyUtils]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

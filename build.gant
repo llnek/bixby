@@ -48,7 +48,7 @@ path (id: 'testPathId') {
 //////////////////////////////////////////////////////////////////////////////
 // sub modules
 
-includeTargets << new File ('mvn/java/gallifrey.gant')
+includeTargets << new File ('mvn/java/skaro.gant')
 includeTargets << new File ('mvn/java/wflow.gant')
 includeTargets << new File ('mvn/java/frwk.gant')
 includeTargets << new File ('mvn/java/java-demo.gant')

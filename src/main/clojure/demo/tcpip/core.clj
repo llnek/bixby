@@ -24,8 +24,8 @@
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
             [com.zotohlab.wflow Job FlowNode PTask Delay PDelegate]
-            [com.zotohlab.gallifrey.io SocketEvent]
-            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.skaro.io SocketEvent]
+            [com.zotohlab.skaro.core Container]
             [java.net Socket]
             [java.util Date]
             [com.zotohlab.frwk.server Service]))

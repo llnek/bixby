@@ -10,7 +10,7 @@
   (:use [czlabclj.xlib.util.wfs])
   (:import [com.zotohlab.wflow FlowNode Activity
                                  Pipeline PDelegate PTask Work]
-           [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+           [com.zotohlab.skaro.io HTTPEvent HTTPResult]
            [com.zotohlab.wflow Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

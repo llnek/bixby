@@ -30,7 +30,7 @@
             [java.util Properties]
             [javax.mail.internet MimeMessage]
             [java.io IOException]
-            [com.zotohlab.gallifrey.io EmailEvent]
+            [com.zotohlab.skaro.io EmailEvent]
             [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

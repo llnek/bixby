@@ -40,7 +40,7 @@
              FileAlterationListenerAdaptor
              FileAlterationMonitor
              FileAlterationObserver]
-            [com.zotohlab.gallifrey.io FileEvent]
+            [com.zotohlab.skaro.io FileEvent]
             [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

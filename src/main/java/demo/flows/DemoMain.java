@@ -14,8 +14,8 @@ package demo.flows;
 import java.util.Map;
 import java.util.Objects;
 
-import com.zotohlab.gallifrey.core.Container;
-import com.zotohlab.gallifrey.runtime.AppMain;
+import com.zotohlab.skaro.core.Container;
+import com.zotohlab.skaro.runtime.AppMain;
 
 /**
  * @author kenl

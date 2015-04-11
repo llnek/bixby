@@ -27,7 +27,7 @@
   (:import  [java.net InetAddress ServerSocket Socket]
             [org.apache.commons.io IOUtils]
             [com.zotohlab.frwk.core Identifiable]
-            [com.zotohlab.gallifrey.io SocketEvent]))
+            [com.zotohlab.skaro.io SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

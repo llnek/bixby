@@ -38,7 +38,7 @@
             [com.zotohlab.frwk.netty NettyFW]
             [com.google.gson JsonObject JsonArray]
             [org.apache.commons.io FileUtils]
-            [com.zotohlab.gallifrey.mvc WebContent
+            [com.zotohlab.skaro.mvc WebContent
              WebAsset
              HTTPRangeInput AssetCache]
             [java.io Closeable RandomAccessFile File]

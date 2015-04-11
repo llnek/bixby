@@ -36,7 +36,7 @@
              TopicConnectionFactory TopicSession TopicSubscriber]
             [javax.naming Context InitialContext]
             [java.io IOException]
-            [com.zotohlab.gallifrey.io JMSEvent]))
+            [com.zotohlab.skaro.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -24,7 +24,7 @@
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask Split PDelegate]
             [java.lang StringBuilder]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

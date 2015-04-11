@@ -38,11 +38,11 @@
         [czlabclj.tardis.auth.model]
         [czlabclj.xlib.dbio.core])
 
-  (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser DuplicateUser]
-            [com.zotohlab.gallifrey.etc PluginFactory Plugin PluginError]
+  (:import  [com.zotohlab.skaro.runtime AuthError UnknownUser DuplicateUser]
+            [com.zotohlab.skaro.etc PluginFactory Plugin PluginError]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
             [org.apache.commons.codec.binary Base64]
-            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.skaro.core Container]
             [com.zotohlab.frwk.util CrappyDataError]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.crypto PasswordAPI]
@@ -59,7 +59,7 @@
             [com.zotohlab.wflow If BoolExpr FlowNode
              Activity Pipeline
              PDelegate PTask Work]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.wflow Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

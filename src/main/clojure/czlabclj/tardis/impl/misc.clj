@@ -18,7 +18,7 @@
 
   (:import  [com.zotohlab.wflow Job FlowError]
             [com.zotohlab.wflow Pipeline Job PDelegate PTask Work]
-            [com.zotohlab.gallifrey.io IOEvent HTTPEvent HTTPResult]
+            [com.zotohlab.skaro.io IOEvent HTTPEvent HTTPResult]
             [com.zotohlab.frwk.core Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -28,8 +28,8 @@
 
   (:import  [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.gallifrey.io HTTPEvent Emitter]
-            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.skaro.io HTTPEvent Emitter]
+            [com.zotohlab.skaro.core Container]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 

@@ -507,7 +507,7 @@ def compileBootJava() {
          debuglevel: 'lines,vars,source',
          classpathref: 'compilePathId') {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
-    include (name: 'com/zotohlab/gallifrey/loaders/**/*.java')
+    include (name: 'com/zotohlab/skaro/loaders/**/*.java')
   }
 }
 

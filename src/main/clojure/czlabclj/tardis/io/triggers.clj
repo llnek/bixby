@@ -28,7 +28,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.tardis.io.core])
 
-  (:import  [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [java.io OutputStream IOException]
             [java.util List Timer TimerTask]
             [com.zotohlab.frwk.netty NettyFW]

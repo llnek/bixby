@@ -25,7 +25,7 @@
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.etc.cmd1])
 
-  (:import  [com.zotohlab.gallifrey.etc CmdHelpError]
+  (:import  [com.zotohlab.skaro.etc CmdHelpError]
             [com.zotohlab.frwk.server ServerLike]
             [com.zotohlab.wflow Activity Pipeline
              Nihil

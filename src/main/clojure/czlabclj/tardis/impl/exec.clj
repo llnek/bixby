@@ -37,7 +37,7 @@
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
-            [com.zotohlab.gallifrey.loaders AppClassLoader]
+            [com.zotohlab.skaro.loaders AppClassLoader]
             [org.apache.commons.lang3 StringUtils]
             [java.io File FileFilter]
             [com.zotohlab.frwk.util IWin32Conf]

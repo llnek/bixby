@@ -25,7 +25,7 @@
              ChoiceExpr Job
              Pipeline PDelegate PTask Work]
             [com.zotohlab.frwk.server ServerLike]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]))
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

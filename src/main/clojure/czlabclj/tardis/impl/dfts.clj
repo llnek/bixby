@@ -29,12 +29,12 @@
          [NextLong test-cond MakeMMap test-nestr]] )
 
   (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
-            [com.zotohlab.gallifrey.loaders AppClassLoader]
+            [com.zotohlab.skaro.loaders AppClassLoader]
             [com.zotohlab.frwk.util CoreUtils]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.server Component
              ComponentRegistry RegistryError ServiceError]
-            [com.zotohlab.gallifrey.core ConfigError]
+            [com.zotohlab.skaro.core ConfigError]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

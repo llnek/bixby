@@ -23,11 +23,11 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [java.util ListIterator]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.net ULFileItem ULFormItems]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

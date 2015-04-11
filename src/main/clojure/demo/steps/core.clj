@@ -24,7 +24,7 @@
   (:import  [com.zotohlab.wflow FlowNode Switch If
              Activity Split While PTask
              Job PDelegate]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

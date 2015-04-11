@@ -27,8 +27,8 @@
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
-            [com.zotohlab.gallifrey.io EmailEvent]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.io EmailEvent]
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

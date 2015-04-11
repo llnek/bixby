@@ -24,7 +24,7 @@
         [czlabclj.xlib.dbio.h2]
         [clojure.test])
 
-  (:import  [com.zotohlab.gallifrey.runtime AuthError UnknownUser]
+  (:import  [com.zotohlab.skaro.runtime AuthError UnknownUser]
             [java.io File]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]))

@@ -23,8 +23,8 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
-            [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

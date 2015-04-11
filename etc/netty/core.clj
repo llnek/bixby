@@ -15,8 +15,8 @@
   (:import [com.zotohlab.wflow FlowNode Activity
                                Pipeline
                                PDelegate PTask]
-           [com.zotohlab.gallifrey.io HTTPEvent HTTPResult]
-           [com.zotohlab.gallifrey.core Container]
+           [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+           [com.zotohlab.skaro.core Container]
            [java.util HashMap]
            [com.zotohlab.wflow Job]))
 

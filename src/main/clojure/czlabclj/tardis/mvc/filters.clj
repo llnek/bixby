@@ -42,8 +42,8 @@
             [com.zotohlab.frwk.io XData]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.gallifrey.io HTTPEvent Emitter]
-            [com.zotohlab.gallifrey.mvc HTTPErrorHandler
+            [com.zotohlab.skaro.io HTTPEvent Emitter]
+            [com.zotohlab.skaro.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [io.netty.handler.codec.http HttpRequest
              HttpResponse

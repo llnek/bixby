@@ -24,8 +24,8 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
-            [com.zotohlab.gallifrey.core Container]
-            [com.zotohlab.gallifrey.io FileEvent]
+            [com.zotohlab.skaro.core Container]
+            [com.zotohlab.skaro.io FileEvent]
             [com.zotohlab.frwk.server Service]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]

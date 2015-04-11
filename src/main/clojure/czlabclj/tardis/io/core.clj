@@ -27,9 +27,9 @@
             [java.util.concurrent ConcurrentHashMap]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable Disposable Startable]
-            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.skaro.core Container]
             [com.google.gson JsonObject JsonArray]
-            [com.zotohlab.gallifrey.io Emitter]
+            [com.zotohlab.skaro.io Emitter]
             [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

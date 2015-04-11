@@ -31,14 +31,14 @@
         [czlabclj.xlib.util.str :only [hgl? nsb strim]]
         [czlabclj.xlib.util.meta :only [MakeObj]])
 
-  (:import  [com.zotohlab.gallifrey.io HTTPEvent HTTPResult Emitter]
-            [com.zotohlab.gallifrey.mvc HTTPErrorHandler
+  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult Emitter]
+            [com.zotohlab.skaro.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
             [com.zotohlab.wflow FlowNode Activity Pipeline
              PDelegate PTask Work]
             [com.zotohlab.wflow Job]
-            [com.zotohlab.gallifrey.runtime AuthError]
+            [com.zotohlab.skaro.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
             [java.util Date]

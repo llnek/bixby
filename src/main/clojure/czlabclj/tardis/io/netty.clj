@@ -36,7 +36,7 @@
             [java.net SocketAddress InetAddress]
             [java.util ArrayList List HashMap Map]
             [com.google.gson JsonObject]
-            [com.zotohlab.gallifrey.io Emitter HTTPEvent HTTPResult
+            [com.zotohlab.skaro.io Emitter HTTPEvent HTTPResult
              IOSession
              WebSockEvent WebSockResult]
             [javax.net.ssl SSLContext]
@@ -58,7 +58,7 @@
              ChannelPipeline ChannelHandlerContext]
             [io.netty.handler.stream ChunkedFile
              ChunkedStream ChunkedWriteHandler]
-            [com.zotohlab.gallifrey.mvc WebAsset HTTPRangeInput]
+            [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
             [com.zotohlab.frwk.netty NettyFW
              DemuxedMsg
              ErrorSinkFilter PipelineConfigurator]

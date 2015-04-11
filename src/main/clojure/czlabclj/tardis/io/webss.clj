@@ -27,15 +27,15 @@
         ;;[czlabclj.xlib.util.guids :only [NewUUid]]
         [czlabclj.xlib.net.comms :only [GetFormFields]])
 
-  (:import  [com.zotohlab.gallifrey.runtime ExpiredError AuthError]
+  (:import  [com.zotohlab.skaro.runtime ExpiredError AuthError]
             [org.apache.commons.lang3 StringUtils]
             [org.apache.commons.codec.net URLCodec]
             [org.apache.commons.codec.binary Base64 Hex]
             [com.zotohlab.frwk.util CoreUtils]
             [java.net HttpCookie URLDecoder URLEncoder]
-            [com.zotohlab.gallifrey.io HTTPResult
+            [com.zotohlab.skaro.io HTTPResult
              HTTPEvent IOSession Emitter]
-            [com.zotohlab.gallifrey.core Container]
+            [com.zotohlab.skaro.core Container]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

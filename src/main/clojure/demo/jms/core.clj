@@ -23,10 +23,10 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
-            [com.zotohlab.gallifrey.io JMSEvent]
+            [com.zotohlab.skaro.io JMSEvent]
             [javax.jms TextMessage]
             [java.util.concurrent.atomic AtomicInteger]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

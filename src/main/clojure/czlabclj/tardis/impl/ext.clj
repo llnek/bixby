@@ -74,14 +74,14 @@
             [com.zotohlab.frwk.i18n I18N]
             [java.net URL]
             [java.io File StringWriter]
-            [com.zotohlab.gallifrey.runtime AppMain]
-            [com.zotohlab.gallifrey.etc PluginFactory Plugin]
+            [com.zotohlab.skaro.runtime AppMain]
+            [com.zotohlab.skaro.etc PluginFactory Plugin]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Startable Disposable Identifiable]
             [com.zotohlab.frwk.server ComponentRegistry
              Component ServiceError]
-            [com.zotohlab.gallifrey.core Container ConfigError]
-            [com.zotohlab.gallifrey.io Emitter IOEvent]
+            [com.zotohlab.skaro.core Container ConfigError]
+            [com.zotohlab.skaro.io Emitter IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.wflow Job]

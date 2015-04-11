@@ -61,7 +61,7 @@
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
             [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.gallifrey.etc CliMain CmdHelpError]
+            [com.zotohlab.skaro.etc CliMain CmdHelpError]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [org.apache.commons.io FileUtils]
             [org.apache.commons.codec.binary Hex]
@@ -569,7 +569,7 @@
         ulang (ucase lang) ]
     (FileUtils/cleanDirectory ec)
     (WriteOneFile (File. ec ".project")
-      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
+      (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
                        "/project.txt")
                   "utf-8")
@@ -585,7 +585,7 @@
     (scanJars (File. cwd POD_CLASSES) sb)
     (scanJars (File. cwd POD_LIB) sb)
     (WriteOneFile (File. ec ".classpath")
-      (-> (ResStr (str "com/zotohlab/gallifrey/eclipse/"
+      (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
                        "/classpath.txt")
                   "utf-8")

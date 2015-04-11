@@ -25,9 +25,9 @@
 
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [com.zotohlab.frwk.io XData]
-            [com.zotohlab.gallifrey.io WebSockEvent
+            [com.zotohlab.skaro.io WebSockEvent
                                        WebSockResult]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.core Container]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

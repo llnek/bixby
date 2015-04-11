@@ -26,7 +26,7 @@
         [czlabclj.tardis.io.core])
 
   (:import  [java.util Date Timer TimerTask]
-            [com.zotohlab.gallifrey.io TimerEvent]
+            [com.zotohlab.skaro.io TimerEvent]
             [com.zotohlab.frwk.core Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

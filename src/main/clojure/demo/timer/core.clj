@@ -25,8 +25,8 @@
   (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Date]
-            [com.zotohlab.gallifrey.io TimerEvent]
-            [com.zotohlab.gallifrey.core Container]))
+            [com.zotohlab.skaro.io TimerEvent]
+            [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
