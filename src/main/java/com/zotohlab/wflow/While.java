@@ -50,6 +50,12 @@ public class While extends Conditional {
 }
 
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 class WhileNode extends ConditionalNode {
 
   public WhileNode(FlowNode c, While a) {

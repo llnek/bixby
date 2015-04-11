@@ -58,6 +58,12 @@ public class Delay extends Activity {
   private long _delayMillis;
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 class DelayNode extends FlowNode {
 
   public long delayMillis() { return _delayMillis; }

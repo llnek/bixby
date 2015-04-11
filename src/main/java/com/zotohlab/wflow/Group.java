@@ -59,6 +59,11 @@ class Group extends Composite {
 }
 
 
+/**
+ * 
+ * @author kenl
+ *
+ */
 class GroupNode extends CompositeNode {
 
   public GroupNode(FlowNode c, Group a) {

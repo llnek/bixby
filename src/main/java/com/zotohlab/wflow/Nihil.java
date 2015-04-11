@@ -34,6 +34,11 @@ public class Nihil  extends Activity {
 }
 
 
+/**
+ * 
+ * @author kenl
+ *
+ */
 class NihilNode extends FlowNode {
 
   public FlowNode eval(Job j) { return this; }

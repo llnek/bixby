@@ -78,7 +78,11 @@ public class Switch extends Activity {
 
 
 
-
+/**
+ * 
+ * @author kenl
+ *
+ */
 class SwitchNode extends FlowNode {
 
   private Map<Object,FlowNode> _cs = new HashMap<>();

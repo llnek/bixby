@@ -38,6 +38,12 @@ public abstract class Merge  extends Activity {
 
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 abstract class MergeNode extends FlowNode {
 
   protected AtomicInteger _cntr=new AtomicInteger(0);

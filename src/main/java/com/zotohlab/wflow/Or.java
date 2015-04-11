@@ -40,6 +40,11 @@ public class Or extends Merge {
 }
 
 
+/**
+ * 
+ * @author kenl
+ *
+ */
 class OrNode extends MergeNode {
 
   public OrNode(FlowNode c, Or a) {

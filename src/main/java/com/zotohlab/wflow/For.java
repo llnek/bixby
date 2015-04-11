@@ -75,6 +75,12 @@ class LoopExpr implements BoolExpr {
 
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 class ForNode extends WhileNode {
 
   public ForNode(FlowNode c, For a) {

@@ -57,6 +57,12 @@ public class PTask extends Activity {
 
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 class PTaskNode extends FlowNode {
 
   public PTaskNode(FlowNode c, PTask a) {

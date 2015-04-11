@@ -56,6 +56,12 @@ public class If extends Conditional {
 
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 class IfNode extends ConditionalNode {
 
   public IfNode(FlowNode c, If a) {

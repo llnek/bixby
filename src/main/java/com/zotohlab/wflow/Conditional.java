@@ -32,6 +32,12 @@ abstract class Conditional extends Activity {
 }
 
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 abstract class ConditionalNode extends FlowNode {
 
   protected ConditionalNode(FlowNode c, Conditional a) {

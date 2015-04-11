@@ -49,6 +49,12 @@ public abstract class Composite extends Activity {
 
 }
 
+
+/**
+ * 
+ * @author kenl
+ *
+ */
 abstract class CompositeNode extends FlowNode {
 
   protected CompositeNode(FlowNode c, Activity a) {

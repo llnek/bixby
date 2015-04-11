@@ -154,6 +154,11 @@ class NullJoinNode extends MergeNode {
 }
 
 
+/**
+ * 
+ * @author kenl
+ *
+ */
 class SplitNode extends CompositeNode {
 
   public SplitNode(FlowNode c, Split a) {

@@ -42,6 +42,11 @@ public class And extends Merge {
 
 }
 
+/**
+ * 
+ * @author kenl
+ *
+ */
 class AndNode extends MergeNode {
 
   public AndNode(FlowNode c, And a) {
