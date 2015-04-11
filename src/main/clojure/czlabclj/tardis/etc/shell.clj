@@ -37,7 +37,7 @@
 
   [& args]
 
-  (with-local-vars [rcb (GetResource "czlabclj/tardis/etc/Resources" 
+  (with-local-vars [rcb (GetResource "czlabclj/tardis/etc/Resources"
                                      (Locale/getDefault))
                     ok false]
     (I18N/setBase @rcb)
