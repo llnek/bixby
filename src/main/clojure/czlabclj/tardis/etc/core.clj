@@ -129,10 +129,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; arg(0) is skaro-home
-;;println("#### apprunner loader = " + getClass().getClassLoader().getClass().getName())
-;;println("#### sys loader = " + ClassLoader.getSystemClassLoader().getClass().getName())
-;;mkCZldrs(home)
 (defn- parseArgs ""
 
   ^Activity

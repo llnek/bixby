@@ -65,8 +65,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def CLI-TRIGGER (promise))
-(def STOPCLI (atom false))
+;;(def CLI-TRIGGER (promise))
+(def ^:private STOPCLI (atom false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stop-cli "Stop all apps and processors."
+(defn- stopCLI "Stop all apps and processors."
 
   [^czlabclj.xlib.util.core.MubleAPI ctx]
 
@@ -110,7 +110,7 @@
       (when-not (nil? execv)
         (.stop ^Startable execv))
       (log/info "Skaro stopped.")
-      (log/info "Shutting down VM...")
+      (log/info "VM shut down.")
       (log/info "\"Goodbye\"."))
   ))
 
@@ -120,11 +120,11 @@
 
   [^czlabclj.xlib.util.core.MubleAPI ctx]
 
-  (log/info "Enabling remote shutdown...")
+  (log/info "Enabling remote shutdown")
   (let [port (ConvLong (System/getProperty "skaro.kill.port") 4444)
         rc (MakeDiscardHTTPD "127.0.0.1"
                              port {}
-                             #(stop-cli ctx)) ]
+                             #(stopCLI ctx)) ]
     (.setf! ctx K_KILLPORT rc)
   ))
 
@@ -180,7 +180,16 @@
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
             x (.getLastResult j)
-            ^ServerLike s (.container j)]
+            s (.container j)]
+        (log/debug "#### sys loader = "
+                   (-> (ClassLoader/getSystemClassLoader)
+                       (.getClass)
+                       (.getName)))
+        (log/debug "#### app loader = "
+                   (-> (.getClass s)
+                       (.getClassLoader)
+                       (.getClass)
+                       (.getName)))
         (PrintMutableObj x)
         (log/info "Container(s) are now running...")
       ))
@@ -198,7 +207,7 @@
             x (.getLastResult j)
             cli (.getf x K_CLISH)]
         (.addShutdownHook (Runtime/getRuntime)
-                          (ThreadFunc #(stop-cli x) false))
+                          (ThreadFunc #(stopCLI x) false))
         (enableRemoteShutdown x)
         (log/info "Added shutdown hook.")
       ))
@@ -313,8 +322,8 @@
 
   (letfn
     [(f1 [^czlabclj.xlib.util.core.MubleAPI x]
-       (let [^ClassLoader r (.getf x K_ROOT_CZLR)
-             cl (ExecClassLoader. r)]
+       (let [cl (ExecClassLoader. ^ClassLoader
+                                  (.getf x K_ROOT_CZLR))]
          (SetCldr cl)
          (.setf! x K_EXEC_CZLR cl)))
      (f0 [^czlabclj.xlib.util.core.MubleAPI x
@@ -355,7 +364,8 @@
     (fn [^Job j]
       (let [^czlabclj.tardis.core.sys.Element
             c (.container j)
-            ^File home (.getv j :home)
+            ^File
+            home (.getv j :home)
             x (inizContext home)]
         (log/info "SKARO.Version= " (.version ^Versioned c))
         ;;(precondDir (File. home ^String DN_BLOCKS))
@@ -373,9 +383,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype RtDelegate [] PDelegate
-  (onStop [_ p]
-    ;;(log/debug "RtDelegate STOPPING!!!!!!!!!!!!!!!!!!!!!!")
-    (-> (.core p) (.dispose)))
+  (onStop [_ p] (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
   (startWith [_ p]
     (-> (rtStart)

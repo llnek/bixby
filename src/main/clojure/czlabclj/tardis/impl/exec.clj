@@ -33,7 +33,7 @@
           ternary notnil? NewRandom
           ConvLong MakeMMap juid test-nonil]]
         [czlabclj.xlib.util.files
-         :only [ReadOneUrl ReadEdn]])
+         :only [Mkdirs ReadOneUrl ReadEdn]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -163,7 +163,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Basic JMX support.
 ;;
-(defn- start-jmx ""
+(defn- startJmx ""
 
   [^czlabclj.tardis.core.sys.Element co cfg]
 
@@ -185,7 +185,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Kill the internal JMX server.
 ;;
-(defn- stop-jmx ""
+(defn- stopJmx ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -372,7 +372,7 @@
 
         (stop [this]
           (let []
-            (stop-jmx this)
+            (stopJmx this)
             (stop-pods this)))  )
 
        { :typeid (keyword "czc.tardis.impl/Execvisor") }
@@ -424,17 +424,13 @@
     (System/setProperty "file.encoding" "utf-8")
 
     (let [^File home (.homeDir exec)
-          bks (doto (File. home
-                           (str DN_CFG "/" DN_BLOCKS))
-                (.mkdir))
-          apps (doto (File. home ^String DN_BOXX)
-                 (.mkdir))
-          tmp (doto (File. home ^String DN_TMP)
-                (.mkdir))
-          pods (File. home ^String DN_PODS)
-          db (File. home ^String DN_DBS)
-          log (doto (File. home ^String DN_LOGS)
-                (.mkdir)) ]
+          bks (Mkdirs (File. home
+                             (str DN_CFG "/" DN_BLOCKS)))
+          apps (Mkdirs (File. home ^String DN_BOXX))
+          tmp (Mkdirs (File. home ^String DN_TMP))
+          pods (File. home DN_PODS)
+          db (File. home DN_DBS)
+          log (Mkdirs (File. home DN_LOGS))]
       ;;(precondDir pods)
       (PrecondDir apps)
       (PrecondDir log)
@@ -474,7 +470,7 @@
       ;;(SynthesizeComponent deployer options)
       ;;(SynthesizeComponent knl options))
 
-    (start-jmx co jmx)
+    (startJmx co jmx)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

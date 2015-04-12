@@ -72,10 +72,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;(def ^:dynamic *SKARO-RSBUNDLE* nil)
-;;(def ^:dynamic *SKARO-HOME-DIR* "")
-
+;; some globals
 (def SKARO-RSBUNDLE (atom nil))
 (def SKARO-HOME-DIR (atom nil))
 
@@ -127,8 +124,8 @@
              (if-let [tkn (last t) ]
                (.substring ^String tkn 1)
                (first t))) ]
+    (when (nil? id) (throw (CmdHelpError.)))
     (binding [*SKARO-WEBLANG* wlg]
-      (when (nil? id) (throw (CmdHelpError.)))
       (let [app (nth args 2)]
         (case (nth args 1)
           ("mvc" "web")
@@ -523,7 +520,7 @@
 
   [^Job j]
 
-  (log/debug "HomeDor = " (GetHomeDir))
+  ;;(log/debug "HomeDir = " (GetHomeDir))
   (let [s (ReadOneFile (File. (GetHomeDir) "VERSION")) ]
     (if (hgl? s)
       (println s)
@@ -604,48 +601,6 @@
       (genEclipseProj (nth args 2))
       (throw (CmdHelpError.)))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Like a map of function pointers.
-(def ^:private _ARGS {:new #'OnCreate
-                      :ide #'OnIDE
-                      :build #'OnBuild
-                      :podify #'OnPodify
-                      :test #'OnTest
-                      :debug #'OnDebug
-                      :start #'OnStart
-                      :demo #'OnDemo
-                      :generate #'OnGenerate
-                      :encrypt #'OnEncrypt
-                      :decrypt #'OnDecrypt
-                      :hash #'OnHash
-                      :testjce #'OnTestJCE
-                      :version #'OnVersion
-                      :help #'OnHelp})
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn EvalCommand ""
-
-  [home rcb & args]
-
-  (if-let [v ((keyword (first args)) _ARGS) ]
-    ;; set the global values for skaro-home and system resource bundle
-    ;; for messages.
-    ;;(binding [*SKARO-HOME-DIR* home
-              ;;*SKARO-RSBUNDLE* rcb]
-      ;;(apply v args))
-    ;;(throw (CmdHelpError.))
-    (do)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetCommands ""
-
-  []
-
-  (set (keys _ARGS)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

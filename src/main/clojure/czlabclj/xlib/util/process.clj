@@ -52,12 +52,14 @@
   (when-not (nil? r)
     (let [c (ternary (:classLoader options)
                      (GetCldr))
+          d (true? (:daemon options))
           n (:name options)
           t (Thread. r) ]
       (.setContextClassLoader t ^ClassLoader c)
-      (.setDaemon t true)
+      (.setDaemon t d)
       (when (hgl? n)
         (.setName t (str "(" n ") " (.getName t))))
+      (log/debug "asyncExecThread: about to start thread, daemon = " d)
       (.start t))
   ))
 
@@ -78,25 +80,33 @@
 
   ([func] (Coroutine func nil))
 
-  ([func cl]
+  ([func options]
    (let [r (reify Runnable
              (run [_]
                (Try! (when (fn? func) (func)))
                (log/debug "Coroutine thread:(run) is done."))) ]
-     (AsyncExec r cl))))
+     (AsyncExec r options))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ThreadFunc ""
 
   (^Thread
-    [func start ^ClassLoader cl]
+    [func start arg]
     (let [t (Thread. (reify Runnable
-                       (run [_] (apply func [])))) ]
-      (when-not (nil? cl)
-        (.setContextClassLoader t cl))
-      (.setDaemon t true)
+                       (run [_] (apply func []))))]
+      (with-local-vars [daemon false cl nil]
+        (when (instance? ClassLoader arg)
+          (var-set cl arg))
+        (when (map? arg)
+          (var-set cl (:classLoader arg))
+          (when (true? (:daemon arg))
+            (var-set daemon true)))
+        (when-not (nil? @cl)
+          (.setContextClassLoader t @cl))
+        (.setDaemon t (true? @daemon)))
       (when start (.start t))
+      (log/debug "ThreadFunc thread, daemon = " (.isDaemon t))
       t))
 
   (^Thread [func start] (ThreadFunc func start nil)))

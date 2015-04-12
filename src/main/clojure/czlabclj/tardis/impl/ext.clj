@@ -257,7 +257,7 @@
 
   (let [mcache (.getAttr co K_MCACHE)
         p (maybeGetDBPool co gid) ]
-    (log/debug (str "Acquiring from dbpool " p))
+    (log/debug "Acquiring from dbpool " p)
     (if (nil? p)
       nil
       (DbioConnectViaPool p mcache {}))
@@ -302,18 +302,18 @@
 
         Container
 
+        (getAppKeyBits [this] (Bytesify (.getAppKey this)))
+        (getAppDir [this] (.getAttr this K_APPDIR))
+        (getAppKey [_] (.appKey pod))
+        (getName [_] (.moniker pod))
+
+        (acquireDbPool [this gid] (maybeGetDBPool this gid))
+        (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
+
         (notifyObservers [this evt options]
           (let [^czlabclj.tardis.impl.ext.JobCreator
                 jc (.getAttr this K_JCTOR) ]
             (.update jc evt options)))
-
-        (getAppKey [_] (.appKey pod))
-        (getName [_] (.moniker pod))
-        (getAppKeyBits [this] (Bytesify (.getAppKey this)))
-        (getAppDir [this] (.getAttr this K_APPDIR))
-
-        (acquireDbPool [this gid] (maybeGetDBPool this gid))
-        (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
         (loadTemplate [_ tpath ctx]
           (let [tpl (nsb tpath)
@@ -341,14 +341,16 @@
               true)))
 
         (hasService [_ serviceId]
-          (let [^ComponentRegistry srg (.getf impl K_SVCS) ]
+          (let [^ComponentRegistry
+                srg (.getf impl K_SVCS) ]
             (.has srg (keyword serviceId))))
 
         (core [this]
           (.getAttr this K_SCHEDULER))
 
         (getService [_ serviceId]
-          (let [^ComponentRegistry srg (.getf impl K_SVCS) ]
+          (let [^ComponentRegistry
+                srg (.getf impl K_SVCS) ]
             (.lookup srg (keyword serviceId))))
 
         (getEnvConfig [_]
@@ -491,6 +493,7 @@
                       (CompInitialize c)
                       (.start ^Startable c))
                    {:classLoader cl
+                    :daemon false
                     :name (.getName c)})
         c)
       nil)
