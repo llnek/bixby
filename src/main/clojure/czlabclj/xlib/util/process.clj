@@ -85,7 +85,7 @@
              (run [_]
                (Try! (when (fn? func) (func)))
                (log/debug "Coroutine thread#"
-                          (-> (Thread/currentThead)
+                          (-> (Thread/currentThread)
                               (.getName))
                           ": (run) is done."))) ]
      (AsyncExec r options))))
