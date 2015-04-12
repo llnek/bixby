@@ -40,29 +40,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private CMDLINE-INFO [
-  ["new [mvc|jetty|basic] <app-name> "  "e.g. new mvc foo"]
-  ["podify <app-name>"  "Package app as a pod file"]
+(defn- getCmdInfo ""
 
-  ["ide eclipse <app-name>" "Generate eclipse project files."]
-  ["build <app-name> [target]" "Build app."]
-  ["test <app-name>" "Run test cases."]
+  [rcb]
 
-  ["debug" "Start & debug the application."]
-  ["start [bg]" "Start the application."]
+  [[(RStr rcb "usage.cmdline") ""]
+   [(RStr rcb "usage.new") (RStr rcb "usage.new.desc")]
+   [(RStr rcb "usage.podify")  (RStr rcb "usage.podify.desc")]
 
-  ["generate keypair <length>" "Generate a pair of private/public keys."]
-  ["generate serverkey" "Create self-signed server key (pkcs12)."]
-  ["generate password" "Generate a random password."]
-  ["generate csr" "Create a Certificate Signing Request."]
-  ["generate guid" "Generate a RFC4122 compliant UUID."]
-  ["encrypt <password> <clear-text>" "e.g. encrypt SomeSecretData"]
-  ["decrypt <password> <cipher-text>" "e.g. decrypt Data"]
-  ["hash <password>" "e.g. hash SomePassword"]
-  ["testjce" "Check JCE  Policy Files."]
+   [(RStr rcb "usage.ide") (RStr rcb "usage.ide.desc")]
+   [(RStr rcb "usage.build") (RStr rcb "usage.build.desc")]
+   [(RStr rcb "usage.test") (RStr rcb "usage.test.desc")]
 
-  ["demo samples" "Generate a set of samples."]
-  ["version" "Show version info."]])
+   [(RStr rcb "usage.debug") (RStr rcb "usage.debug.desc")]
+   [(RStr rcb "usage.start") (RStr rcb "usage.start.desc")]
+
+   [(RStr rcb "usage.gen.keypair") (RStr rcb "usage.gen.keypair.desc")]
+   [(RStr rcb "usage.gen.key") (RStr rcb "usage.gen.key.desc")]
+   [(RStr rcb "usage.gen.pwd") (RStr rcb "usage.gen.pwd.desc")]
+   [(RStr rcb "usage.gen.csr") (RStr rcb "usage.gen.csr.desc")]
+   [(RStr rcb "usage.gen.guid") (RStr rcb "usage.gen.guid.desc")]
+   [(RStr rcb "usage.encrypt") (RStr rcb "usage.encrypt.desc")]
+   [(RStr rcb "usage.decrypt") (RStr rcb "usage.decrypt.desc")]
+   [(RStr rcb "usage.hash") (RStr rcb "usage.hash.desc")]
+   [(RStr rcb "usage.testjce") (RStr rcb "usage.testjce.desc")]
+
+   [(RStr rcb "usage.demo") (RStr rcb "usage.demo.desc")]
+   [(RStr rcb "usage.version") (RStr rcb "usage.version.desc")]
+   [(RStr rcb "usage.help") ""]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,13 +86,18 @@
 
   []
 
-  (println (MakeString \= 78))
-  (println "> skaro <commands & options>")
-  (println "> -----------------")
-  (drawHelp "> %-35s %s\n" CMDLINE-INFO )
-  (println ">")
-  (println "> help - show standard commands")
-  (println (MakeString \= 78)))
+  (let [strs (getCmdInfo (I18N/getBase))
+        h (take 1 strs)
+        e (take-last 1 strs)
+        b (drop-last (drop 1 strs))]
+    (println (MakeString \= 78))
+    (drawHelp "> %-35s %s\n" h)
+    (println "> -----------------")
+    (drawHelp "> %-35s %s\n" b)
+    (println ">")
+    (drawHelp "> %-35s %s\n" e)
+    (println (MakeString \= 78))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,9 +159,7 @@
 ;;
 (deftype CmdDelegate [] PDelegate
 
-  (onStop [_ p]
-    ;;(log/debug "CmdDelegate onstop ------------ ending!!!!!")
-    (-> (.core p) (.dispose)))
+  (onStop [_ p] (-> (.core p) (.dispose)))
   (onError [_ err cur] (Nihil.))
   (startWith [_ p]
     (require 'czlabclj.tardis.etc.core)

@@ -81,6 +81,7 @@
             ^String pkey
             pms]
            (let [kv (nsb (.getString bundle pkey)) ]
+             ;;(log/debug "RStr key = " pkey ", value = "kv)
              (if (empty? pms)
                kv
                (loop [src kv pos 0 ]

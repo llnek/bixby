@@ -48,7 +48,6 @@
           (var-set ok true)
           (BootAndRun home rcb (drop 1 args)))))
     (when-not @ok (Usage))
-    ;;(log/debug "^^^^^^^^MAIN THREAD DONE^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
