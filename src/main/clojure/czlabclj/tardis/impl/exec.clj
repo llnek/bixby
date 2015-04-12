@@ -124,7 +124,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure the app setup is kosher.
 ;;
-(defn- inspect-app  ""
+(defn- inspectApp  ""
 
   ^czlabclj.tardis.impl.dfts.PODMeta
   [execv ^File des]
@@ -148,7 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check all pods in the /apps directory to ensure they are kosher.
 ;;
-(defn- inspect-apps ""
+(defn- inspectApps ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -157,7 +157,7 @@
         ctx (.getCtx co)
         ^File pd (.getf ctx K_PLAYDIR) ]
     (doseq [f (seq (.listFiles pd ff)) ]
-      (inspect-app co f))
+      (inspectApp co f))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -179,7 +179,7 @@
       (.start ^Startable jmx)
       (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
       (.setf! ctx K_JMXSVR jmx)
-      (log/info (str "JMXserver listening on: " host " "  port)) )
+      (log/info "JMXserver listening on: " host " "  port))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,7 +201,7 @@
 ;; Scan for pods and deploy them to the /apps directory.  The pod file's
 ;; contents are unzipped verbatim to the target subdirectory under /apps.
 ;;
-(defn- deploy-one-pod  ""
+(defn- deployOnePod  ""
 
   [^File src ^File apps]
 
@@ -213,7 +213,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- undeploy-one-pod  ""
+(defn- undeployOnePod  ""
 
   [^czlabclj.tardis.core.sys.Element co
    ^String app]
@@ -226,7 +226,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- deploy-pods ""
+(defn- deployPods ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -240,13 +240,13 @@
         (log/info "Scanning for pods in: " pd)
         (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
           (var-set sum (inc @sum))
-          (deploy-one-pod f py)))
+          (deployOnePod f py)))
       (log/info "Total pods deployed: " @sum))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybe-start-pod
+(defn- maybeStartPod
 
   [^czlabclj.tardis.core.sys.Element co
    cset
@@ -264,7 +264,6 @@
       (if (notnil? ctr)
         (do
           (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
-        ;;_jmx.register(ctr,"", c.name)
           true)
         (do
           (log/info "Execvisor: pod " cid " disabled.")
@@ -274,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start-pods ""
+(defn- startPods ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -301,13 +300,13 @@
       (doseq [[k v] (seq* apps)]
         (when @r
           (SafeWait (* 1000 (Math/max (int 1) (int r)))))
-        (when (maybe-start-pod co cs v)
+        (when (maybeStartPod co cs v)
           (var-set r (-> (NewRandom) (.nextInt 6))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stop-pods ""
+(defn- stopPods ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -367,13 +366,13 @@
         Startable
         (start [this]
           (let []
-            (inspect-apps this)
-            (start-pods this)))
+            (inspectApps this)
+            (startPods this)))
 
         (stop [this]
           (let []
             (stopJmx this)
-            (stop-pods this)))  )
+            (stopPods this)))  )
 
        { :typeid (keyword "czc.tardis.impl/Execvisor") }
   )))
@@ -466,7 +465,7 @@
       (SynthesizeComponent bks options)
       (SynthesizeComponent apps options)
 
-      (deploy-pods co))
+      (deployPods co))
       ;;(SynthesizeComponent deployer options)
       ;;(SynthesizeComponent knl options))
 
@@ -475,7 +474,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-blockmeta ""
+(defn- makeBlockMeta ""
 
   ;; url points to block-meta file
   [^URL url]
@@ -550,7 +549,7 @@
         fs (IOUtils/listFiles ^File bDir "meta" false) ]
     (doseq [^File f (seq fs) ]
       (let [^czlabclj.tardis.core.sys.Element
-            b (-> (make-blockmeta (-> f (.toURI)(.toURL)))
+            b (-> (makeBlockMeta (-> f (.toURI)(.toURL)))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
         (log/info "Added one block: " (.id ^Identifiable b)) ))

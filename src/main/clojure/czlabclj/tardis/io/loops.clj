@@ -17,7 +17,9 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [NextLong ternary spos? MubleAPI TryC]]
+  (:use [czlabclj.xlib.util.core
+         :only
+         [NextLong ternary spos? MubleAPI TryC]]
         [czlabclj.xlib.util.process :only [Coroutine SafeWait]]
         [czlabclj.xlib.util.dates :only [ParseDate]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
@@ -58,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-timer ""
+(defn- configTimer ""
 
   [^Timer tm delays func]
 
@@ -74,7 +76,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-timertask ""
+(defn- configTimerTask ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -86,7 +88,7 @@
         func #(LoopableWakeup co) ]
     (if (number? intv)
       (config-repeat-timer t [dw ds] intv func)
-      (config-timer t [dw ds] func))
+      (configTimer t [dw ds] func))
     co
   ))
 
@@ -205,7 +207,7 @@
 
   [co]
 
-  (config-timertask co))
+  (configTimerTask co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Once Timer
@@ -323,7 +325,7 @@
     (.setAttr! co :loopy loopy)
     (if (or (number? ds)
             (instance? Date dw))
-      (config-timer (Timer.) [dw ds] func)
+      (configTimer (Timer.) [dw ds] func)
       (apply func []))
     (IOESStarted co)
   ))

@@ -18,7 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core
-         :only 
+         :only
          [notnil? ThrowIOE MakeMMap ternary ConvToJava TryC]]
         [czlabclj.xlib.util.str :only [nsb strim ]]
         [czlabclj.tardis.core.sys])

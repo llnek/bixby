@@ -17,7 +17,9 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [NextLong spos? ThrowIOE TryC notnil?]]
+  (:use [czlabclj.xlib.util.core
+         :only
+         [NextLong spos? ThrowIOE TryC notnil?]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
         [czlabclj.xlib.util.str :only [hgl? nsb]]
         [czlabclj.tardis.core.sys]
@@ -136,7 +138,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- connect-pop3 ""
+(defn- connectPop3 ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -164,7 +166,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- read-pop3 ""
+(defn- readPop3 ""
 
   [^czlabclj.tardis.io.core.EmitAPI co msgs]
 
@@ -180,7 +182,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- scan-pop3 ""
+(defn- scanPop3 ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -193,7 +195,7 @@
       (let [cnt (.getMessageCount fd) ]
         (log/debug "Count of new mail-messages: " cnt)
         (when (> cnt 0)
-          (read-pop3 co (.getMessages fd)))))
+          (readPop3 co (.getMessages fd)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -203,8 +205,8 @@
   [^czlabclj.tardis.core.sys.Element co]
 
   (try
-    (connect-pop3 co)
-    (scan-pop3 co)
+    (connectPop3 co)
+    (scanPop3 co)
     (catch Throwable e#
       (log/warn e# ""))
     (finally
@@ -213,7 +215,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- std-config ""
+(defn- stdConfig ""
 
   [^czlabclj.tardis.core.sys.Element co cfg]
 
@@ -246,7 +248,7 @@
   (log/info "CompConfigure: POP3: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.pop3" "")
         cfg (merge (.getAttr co :dftOptions) cfg0)
-        c2 (std-config co cfg) ]
+        c2 (stdConfig co cfg) ]
     (.setAttr! co :emcfg c2)
     (resolve-provider co
                       (if (:ssl c2)
@@ -280,7 +282,7 @@
 
   [co]
 
-  (connect-pop3 co))
+  (connectPop3 co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -288,7 +290,7 @@
 
   [co msgs]
 
-  (read-pop3 co msgs))
+  (readPop3 co msgs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -296,7 +298,7 @@
 
   [co]
 
-  (scan-pop3 co))
+  (scanPop3 co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -322,7 +324,7 @@
   (log/info "CompConfigure: IMAP: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.imap" "")
         cfg (merge (.getAttr co :dftOptions) cfg0)
-        c2 (std-config co cfg) ]
+        c2 (stdConfig co cfg) ]
     (.setAttr! co :emcfg c2)
     (resolve-provider co
                       (if (:ssl c2)

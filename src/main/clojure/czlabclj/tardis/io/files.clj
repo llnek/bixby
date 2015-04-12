@@ -24,6 +24,7 @@
          :only
          [LoopableSchedule LoopableOneLoop CfgLoopable]]
         [czlabclj.tardis.io.core]
+        [czlabclj.xlib.util.files :only [Mkdirs]]
         [czlabclj.xlib.util.core
          :only
          [NextLong MakeMMap notnil?  test-nestr TryC SubsVar]]
@@ -117,7 +118,7 @@
     (log/info "Rcv folder: " (nsn dest))
     (.setAttr! co :emcfg
     (-> c2
-        (assoc :targetFolder (doto (File. root) (.mkdirs)))
+        (assoc :targetFolder (Mkdirs (File. root)))
         (assoc :fmask
                (cond
                  (.startsWith mask "*.")
@@ -131,7 +132,7 @@
                  FileFileFilter/FILE))
         (assoc :recvFolder
                (if (hgl? dest)
-                 (doto (File. dest) (.mkdirs))
+                 (Mkdirs (File. dest))
                  nil))))
     co
   ))

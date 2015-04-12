@@ -170,8 +170,6 @@
             src netty
             cfg (.getAttr src :emcfg)
             cookie (nsb (.getValue ck))
-             ;;cookie (-> (URLCodec. "utf-8")
-                        ;;(decode (nsb (.getValue ck))))
             pos (.indexOf cookie (int \-))
             [rc1 rc2] (if (< pos 0)
                         ["" cookie]

@@ -69,7 +69,7 @@
 
   [^HTTPEvent evt]
 
-  (if (.hasHeader evt AUTH)
+  (when (.hasHeader evt AUTH)
     (let [s (StringUtils/split (nsb (.getHeaderValue evt AUTH)))]
       (cond
         (and (== 2 (count s))
@@ -83,7 +83,6 @@
             nil))
         :else
         nil))
-    nil
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

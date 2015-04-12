@@ -17,7 +17,9 @@
   (:require [clojure.tools.logging :as log :only (info warn error debug)]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [NextLong test-posnum ConvLong spos?]]
+  (:use [czlabclj.xlib.util.core
+         :only
+         [NextLong test-posnum ConvLong spos?]]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.util.process :only [Coroutine]]

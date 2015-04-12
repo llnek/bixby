@@ -26,7 +26,9 @@
         [czlabclj.xlib.util.files
          :only
          [ReadEdn ReadOneFile WriteOneFile FileRead?]]
-        [czlabclj.xlib.crypto.codec :only [Pwdify CreateRandomString]]
+        [czlabclj.xlib.crypto.codec
+         :only
+         [Pwdify CreateRandomString]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.io.loops]
         [czlabclj.tardis.io.mails]
@@ -54,7 +56,9 @@
 
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.process :only [Coroutine]]
-        [czlabclj.xlib.util.core :only [NextLong LoadJavaProps SubsVar]]
+        [czlabclj.xlib.util.core
+         :only
+         [NextLong LoadJavaProps SubsVar]]
         [czlabclj.xlib.util.meta :only [MakeObj]]
 
         [czlabclj.xlib.dbio.core
@@ -115,7 +119,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-job ""
+(defn- makeJob ""
 
   ^Job
   [_container evt]
@@ -162,7 +166,7 @@
 ;; a new Pipline which will handle the job.  The Pipeline internally will
 ;; call out to your application workflow  for the actual handling of the job.
 ;;
-(defn- make-jobcreator ""
+(defn- makeJobCreator ""
 
   ^czlabclj.tardis.impl.ext.JobCreator
   [parObj]
@@ -183,7 +187,7 @@
                 cfg (.getAttr src :emcfg)
                 ^String c0 (:handler cfg)
                 ^String c1 (:router options)
-                ^Job job (make-job parObj evt) ]
+                ^Job job (makeJob parObj evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
@@ -214,7 +218,7 @@
 ;; A Service is an instance of a Block, that is, an instance of an event
 ;; emitter.
 ;;
-(defn- make-service-block
+(defn- makeServiceBlock
 
   [^Identifiable bk container nm cfg]
 
@@ -280,7 +284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-app-container ""
+(defn- makeAppContainer ""
 
   ^Container
   [^czlabclj.tardis.impl.dfts.PODMeta pod]
@@ -462,7 +466,7 @@
                 ^ComponentRegistry bk (.lookup bks (keyword svc)) ]
             (when (nil? bk)
               (throw (ServiceError. (str "No such Service: " svc "."))))
-            (make-service-block bk this nm cfg))) )
+            (makeServiceBlock bk this nm cfg))) )
 
     { :typeid (keyword "czc.tardis.ext/Container") }
 
@@ -475,15 +479,16 @@
 
   [^czlabclj.tardis.core.sys.Element pod]
 
-  (let [c (make-app-container pod)
+  (let [^czlabclj.tardis.impl.dfts.PODMeta pm pod
+        ^URL url (.srcUrl pm)
         ^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx pod)
         cl (.getf ctx K_APP_CZLR)
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
-        ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta pod)
-        ps {K_APPDIR (File. (.toURI  url))
-            K_APP_CZLR cl } ]
+        ps {K_APPDIR (File. (.toURI url))
+            K_APP_CZLR cl }
+        c (makeAppContainer pod)]
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)
@@ -493,7 +498,6 @@
                       (CompInitialize c)
                       (.start ^Startable c))
                    {:classLoader cl
-                    :daemon false
                     :name (.getName c)})
         c)
       nil)
@@ -573,7 +577,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- plugin-inited? ""
+(defn- pluginInited? ""
 
   [^String v ^File appDir]
 
@@ -581,7 +585,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- post-init-plugin ""
+(defn- postInitPlugin ""
 
   [^String v ^File appDir]
 
@@ -606,11 +610,11 @@
       (log/info "Calling plugin-factory: " v)
       (.contextualize p co)
       (.configure p { :env env :app app })
-      (if (plugin-inited? v appDir)
+      (if (pluginInited? v appDir)
         (log/info "Plugin " v " already initialized.")
         (do
           (.initialize p)
-          (post-init-plugin v appDir)))
+          (postInitPlugin v appDir)))
       (log/info "Plugin " v " starting...")
       (.start p)
       (log/info "Plugin " v " started.")
@@ -634,12 +638,13 @@
 ;;
 (defn- maybeInitDBs ""
 
-  [^czlabclj.tardis.core.sys.Element co
+  ;;[^czlabclj.tardis.core.sys.Element co
+  [^Container co
    env app]
 
   (with-local-vars [p (transient {}) ]
     (let [cfg (->> env (:databases)(:jdbc))
-          pkey (.getAppKey ^Container co) ]
+          pkey (.getAppKey co) ]
       (when-not (nil? cfg)
         (doseq [[k v] (seq cfg) ]
           (when-not (false? (:status v))
@@ -662,16 +667,16 @@
   [^czlabclj.tardis.core.sys.Element co]
 
   (log/info "Initializing container: " (.id ^Component co))
-  (let [^Properties mf (.getAttr co K_MFPROPS)
+  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
+        sc (MakeScheduler co)
+        ^Properties mf (.getAttr co K_MFPROPS)
+        mCZ (strim (.get mf "Main-Class"))
         ^File appDir (.getAttr co K_APPDIR)
         env (.getAttr co K_ENVCONF)
         app (.getAttr co K_APPCONF)
         dmCZ (nsb (:data-model app))
-        mCZ (strim (.get mf "Main-Class"))
         reg (.getAttr co K_SVCS)
-        jc (make-jobcreator co)
-        ^czlabclj.xlib.util.scheduler.SchedulerAPI
-        sc (MakeScheduler co)
+        jc (makeJobCreator co)
         cfg (:container env) ]
 
     (let [cn (lcase (ternary (K_COUNTRY (K_LOCALE env)) ""))

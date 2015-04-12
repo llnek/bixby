@@ -19,9 +19,9 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.str :only [lcase strim nsb hgl? ]]
-        [czlabclj.xlib.util.core 
-         :only 
-         [NormalizeEmail Stringify notnil? ]]
+        [czlabclj.xlib.util.core
+         :only
+         [NormalizeEmail Stringify notnil? TryC]]
         [czlabclj.tardis.io.http :only [ScanBasicAuth]]
         [czlabclj.xlib.crypto.codec :only [CaesarDecrypt]]
         [czlabclj.xlib.net.comms :only [GetFormFields]])
@@ -67,7 +67,7 @@
         (doseq [^ULFileItem x (seq (GetFormFields data)) ]
           (let [fm (.getFieldNameLC x)
                 fv (nsb (.getString x)) ]
-            (log/debug (str "form-field=" fm ", value=" fv))
+            (log/debug "form-field=" fm ", value=" fv)
             (when-let [v (get PMS fm) ]
               (var-set rc (assoc! @rc (first v)
                                   (apply (last v) [fv]))))))
@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackBodyContent ""
+(defn- crackBodyContent "Parse a JSON body."
 
   [^HTTPEvent evt]
 
@@ -97,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackUrlParams ""
+(defn- crackUrlParams "Parse form fields in the Url."
 
   [^HTTPEvent evt]
 
@@ -113,7 +113,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeGetAuthInfo ""
+(defn MaybeGetAuthInfo "Attempt to parse and get authentication info."
 
   [^HTTPEvent evt]
 
@@ -137,17 +137,14 @@
   [info fld shiftCount]
 
   (if (:nonce info)
-    (try
+    (TryC
       (let [decr (CaesarDecrypt (get info fld) shiftCount)
             bits (Base64/decodeBase64 decr)
             s (Stringify bits) ]
         (log/debug "info = " info)
         (log/debug "decr = " decr)
         (log/debug "val = " s)
-        (assoc info fld s))
-      (catch Throwable e#
-        (log/error e# "")
-        nil))
+        (assoc info fld s)))
     info
   ))
 

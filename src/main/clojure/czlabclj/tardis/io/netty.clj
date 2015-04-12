@@ -157,11 +157,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- netty-reply ""
+(defn- nettyReply ""
 
   [^Channel ch ^HTTPEvent evt src]
 
-  ;;(log/debug "netty-reply called by event with uri: " (.getUri evt))
+  ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
   (let [^czlabclj.xlib.util.core.MubleAPI
         res (.getResultObj evt)
         cks (csToNetty (.getf res :cookies))
@@ -260,7 +260,7 @@
     (resumeWithResult [_ res]
       (if (instance? WebSockEvent evt)
         (Try! (netty-ws-reply ch evt src) )
-        (Try! (netty-reply ch evt src) ) ))
+        (Try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
       (let [rsp (NettyFW/makeHttpReply 500) ]
