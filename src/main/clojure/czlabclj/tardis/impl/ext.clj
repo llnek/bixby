@@ -741,6 +741,11 @@
     (.activate sc cfg)
 
     (log/info "Initialized app: " (.id ^Identifiable co))
+    (log/info "Container app class-loader: "
+              (-> (Thread/currentThread)
+                  (.getContextClassLoader)
+                  (.getClass)
+                  (.getName)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -59,7 +59,7 @@
       (.setDaemon t d)
       (when (hgl? n)
         (.setName t (str "(" n ") " (.getName t))))
-      (log/debug "asyncExecThread: about to start thread, daemon = " d)
+      (log/debug "asyncExecThread: about to start thread#" (.getName t) ", daemon = " d)
       (.start t))
   ))
 
@@ -84,7 +84,10 @@
    (let [r (reify Runnable
              (run [_]
                (Try! (when (fn? func) (func)))
-               (log/debug "Coroutine thread:(run) is done."))) ]
+               (log/debug "Coroutine thread#"
+                          (-> (Thread/currentThead)
+                              (.getName))
+                          ": (run) is done."))) ]
      (AsyncExec r options))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,7 +109,7 @@
           (.setContextClassLoader t @cl))
         (.setDaemon t (true? @daemon)))
       (when start (.start t))
-      (log/debug "ThreadFunc thread, daemon = " (.isDaemon t))
+      (log/debug "ThreadFunc thread#" (.getName t) ", daemon = " (.isDaemon t))
       t))
 
   (^Thread [func start] (ThreadFunc func start nil)))

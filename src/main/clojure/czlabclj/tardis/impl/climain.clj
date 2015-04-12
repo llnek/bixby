@@ -185,11 +185,6 @@
                    (-> (ClassLoader/getSystemClassLoader)
                        (.getClass)
                        (.getName)))
-        (log/debug "#### app loader = "
-                   (-> (.getClass s)
-                       (.getClassLoader)
-                       (.getClass)
-                       (.getName)))
         (PrintMutableObj x)
         (log/info "Container(s) are now running...")
       ))
