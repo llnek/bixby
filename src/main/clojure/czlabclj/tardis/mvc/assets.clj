@@ -63,7 +63,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-webcontent ""
+(defn- makeWebContent ""
 
   ^WebAsset
   [^String cType bits]
@@ -83,7 +83,7 @@
 
   (let [f (File. appDir fname) ]
     (if (.canRead f)
-      (make-webcontent
+      (makeWebContent
         (GuessContentType f "utf-8")
         (FileUtils/readFileToByteArray f))
       nil)

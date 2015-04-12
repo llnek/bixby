@@ -196,7 +196,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reply-error ""
+(defn- replyError ""
 
   [^Emitter src code]
 
@@ -223,7 +223,7 @@
             cb (if (hgl? h) (MakeObj h) nil)
             ^WebContent
             rc (if (nil? cb)
-                 (reply-error src code)
+                 (replyError src code)
                  (.getErrorResponse cb code)) ]
         (when-not (nil? rc)
           (var-set ctype (.contentType rc))
@@ -317,7 +317,7 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;;TODO: make this into a singleton for reuse?
 (deftype AssetHandler [] PDelegate
 
   (startWith [_ pipe]
@@ -329,11 +329,11 @@
                         (.getv job EV_OPTS))
           nil))))
 
-  (onStop [_ pipe]
-    (log/debug "Nothing to be done here, just stop please."))
+  (onStop [_ pipe])
+    ;;(log/debug "Nothing to be done here, just stop please."))
 
   (onError [ _ err curPt]
-    (log/error "Oops, I got an error!")))
+    (log/error "AssetHandler: Oops, I got an error!")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

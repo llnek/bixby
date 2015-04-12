@@ -127,7 +127,7 @@
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "Skipping unwanted msg")))
+            (log/debug "routeFilter: skipping unwanted msg")))
       ))
   ))
 
@@ -149,7 +149,7 @@
             info (.info ^DemuxedMsg msg)
             [r1 r2 r3 r4] (.crack rcc info)
             ^czlabclj.xlib.net.routes.RouteInfo ri r2]
-        (cond
+        (if
           (= r1 true)
           (let [^HTTPEvent evt (IOESReifyEvent co ch msg ri) ]
             (log/debug "Matched one route: " (.getPath ri)
@@ -157,7 +157,7 @@
             (if (.isStatic? ri)
               (ServeStatic ri co r3 ch info evt)
               (ServeRoute ri co r3 ch evt)))
-          :else
+          ;;else
           (do
             (log/debug "Failed to match uri: " (:uri info))
             (ServeError co ch 404)) )))
@@ -198,22 +198,22 @@
                       (:handler )) ]
     (log/debug "wsockDispatcher has user function: " handlerFn)
     (proxy [SimpleInboundFilter] []
-        (channelRead0 [ctx msg]
-          (let [ch (.channel ^ChannelHandlerContext ctx)
-                opts {:router handlerFn}
-                ^WebSockEvent
-                evt (IOESReifyEvent co ch msg nil) ]
-            (log/debug "Reified one websocket event")
-            (.dispatch em evt opts))))
+      (channelRead0 [ctx msg]
+        (let [ch (.channel ^ChannelHandlerContext ctx)
+              opts {:router handlerFn}
+              ^WebSockEvent
+              evt (IOESReifyEvent co ch msg nil) ]
+          (log/debug "Reified one websocket event")
+          (.dispatch em evt opts))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcInitorOnHttp ""
+(defn- mvcInitorOnHttp "Jiggle the pipeline upon a http request."
 
   [^ChannelHandlerContext ctx hack options]
 
-  (let [^ChannelPipeline pipe (.pipeline ctx)
+  (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
     (.addAfter pipe
                "HttpResponseEncoder"
@@ -223,11 +223,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcInitorOnWS ""
+(defn- mvcInitorOnWS "Jiggle the pipeline upon a websocket request."
 
   [^ChannelHandlerContext ctx hack options]
 
-  (let [^ChannelPipeline pipe (.pipeline ctx)
+  (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
     (.addBefore pipe
                 "ErrorSinkFilter"
@@ -274,7 +274,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-netty ""
+(defn- initNetty ""
 
   [^czlabclj.tardis.core.sys.Element co]
 
@@ -305,7 +305,7 @@
   [^czlabclj.tardis.core.sys.Element co]
 
   (log/info "CompInitialize: NetttyMVC: " (.id ^Identifiable co))
-  (init-netty co))
+  (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
