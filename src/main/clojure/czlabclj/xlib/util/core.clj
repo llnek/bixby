@@ -60,6 +60,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro TryCR "Catch exception,log it and return a default value."
+
+  [defv & exprs]
+
+  `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") ~defv )) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro TryC "Catch exception and log it."
 
   [& exprs]
