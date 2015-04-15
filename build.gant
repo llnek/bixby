@@ -30,8 +30,9 @@ def generateUUID() { UUID.randomUUID() }
 
 path (id: 'compilePathId') {
   path (location: "${srcDir}/clojure")
+  path (location: "${cljBuildDir}")
   path (location: "${buildDir}")
-  fileset (dir: "${libDir}/libjar") {
+  fileset (dir: "${libDir}/test") {
     include (name: '*.jar')
   }
 }
@@ -39,10 +40,14 @@ path (id: 'compilePathId') {
 path (id: 'testPathId') {
   path (location: "${testDir}/clojure")
   path (location: "${buildTestDir}")
+  path (refid: "compile.path.id")
+  /*
+  path (location: "${cljBuildDir}")
   path (location: "${buildDir}")
   fileset (dir: "${libDir}/test") {
     include (name: '*.jar')
   }
+  */
 }
 
 //////////////////////////////////////////////////////////////////////////////

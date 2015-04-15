@@ -20,14 +20,13 @@ includeTool << gant.tools.Ivy
 // global properties
 //////////////////////////////////////////////////////////////////////////////
 
-property( name: 'gantProjectName' , value: '@@APPID@@')
-property( name: 'ivySettingsDir', value: "${basedir}")
-property( name: "PID", value: "${gantProjectName}")
-property( name: 'DISTRO', value: "${PID}-distro")
+property(name: 'gantProjectName' , value: '@@APPID@@')
+property(name: 'ivySettingsDir', value: "${basedir}")
+property(name: "PID", value: "${gantProjectName}")
 loadproperties (srcFile: "${basedir}/build.xs")
-property( name: 'websrc', value: "${buildDir}/webscripts")
-property( name: 'webcss', value: "${buildDir}/webstyles")
-property( environment: "env" )
+property(name: 'websrc', value: "${buildDir}/webscripts")
+property(name: 'webcss', value: "${buildDir}/webstyles")
+property(environment: "env" )
 
 //////////////////////////////////////////////////////////////////////////////
 // language compilers
@@ -36,6 +35,7 @@ property( environment: "env" )
 ant.path (id: 'compile.path.id') {
   path (location: "${srcDir}/clojure")
   path (location: "${outJarDir}")
+  path (location: "${cljBuildDir}")
   path (location: "${buildDir}")
   fileset (dir: "${libDir}")
   fileset (dir: "${skaroHome}/dist")
@@ -47,6 +47,7 @@ ant.path (id: 'test.path.id') {
   path (location: "${outTestDir}")
   path (refid: "compile.path.id")
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 // ivy stuff
@@ -90,13 +91,13 @@ target (buildr: '') {
 //////////////////////////////////////////////////////////////////////////////
 //
 target (preBuild: '') {
-  mkdir (dir: "${basedir}/POD-INF/classes")
-  mkdir (dir: "${basedir}/POD-INF/lib")
-  mkdir (dir: "${basedir}/POD-INF/patch")
-  mkdir (dir: "${buildDir}")
+  ant.mkdir (dir: "${basedir}/POD-INF/classes")
+  ant.mkdir (dir: "${basedir}/POD-INF/lib")
+  ant.mkdir (dir: "${basedir}/POD-INF/patch")
+  ant.mkdir (dir: "${buildDir}")
   if ("web" == "${buildType}") {
-    mkdir (dir: "${websrc}")
-    mkdir (dir: "${webcss}")
+    ant.mkdir (dir: "${websrc}")
+    ant.mkdir (dir: "${webcss}")
   }
 }
 
@@ -121,7 +122,7 @@ def doCompileAndJar() {
   doCompileJava()
   doCompileClj()
   //-- copy over other resources
-  copy (todir: "${outJarDir}") {
+  ant.copy (todir: "${outJarDir}") {
     fileset (dir: "${srcDir}/clojure",
              erroronmissingdir: 'false') {
       exclude (name: '**/*.clj')
@@ -131,7 +132,8 @@ def doCompileAndJar() {
       exclude (name: '**/*.java')
     }
   }
-  jar (destfile: "${libDir}/${PID}-${buildVersion}.jar") {
+  ant.jar (destfile: "${libDir}/${PID}-${buildVersion}.jar") {
+    fileset (dir: "${cljBuildDir}")
     fileset (dir: "${outJarDir}")
   }
 }
@@ -157,8 +159,8 @@ target (runTestCode: '') {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileTestCode() {
-  mkdir (dir: "${outTestDir}")
-  mkdir (dir: "${reportDir}")
+  ant.mkdir (dir: "${outTestDir}")
+  ant.mkdir (dir: "${reportDir}")
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -170,7 +172,7 @@ def doRunTestCode() {
 //
 def doCompileJava() {
   if (!new File("${srcDir}/java").exists()) { return; }
-  javac (
+  ant.javac (
          sourcepath: '',
          srcdir: "${srcDir}/java",
          destdir: "${outJarDir}",
@@ -189,7 +191,7 @@ def doCompileJava() {
 //
 def doCompileClj() {
   if (!new File("${srcDir}/clojure").exists()) { return; }
-  java (
+  ant.java (
         classname: 'clojure.lang.Compile',
         fork: 'true',
         failonerror: 'true',
@@ -199,7 +201,7 @@ def doCompileClj() {
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
     @@APPCLJFILES@@
   }
-  copy (todir: "${outJarDir}") {
+  ant.copy (todir: "${outJarDir}") {
     fileset (dir: "${buildDir}")
   }
 }
@@ -207,7 +209,7 @@ def doCompileClj() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doClean() {
-  delete (includeemptydirs: 'true') {
+  ant.delete (includeemptydirs: 'true') {
     fileset (erroronmissingdir: 'false', dir: "${outJarDir}",  includes: '**/*')
     fileset (erroronmissingdir: 'false', dir: "${buildDir}", includes: '**/*')
     fileset (erroronmissingdir: 'false', dir: "${libDir}", includes: '**/*.jar')
@@ -220,7 +222,7 @@ def doClean() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCleanPublic() {
-  delete (includeemptydirs: 'true') {
+  ant.delete (includeemptydirs: 'true') {
     fileset (erroronmissingdir: 'false', dir: "${basedir}/public/scripts", includes: '**/*')
     fileset (erroronmissingdir: 'false', dir: "${basedir}/public/styles", includes: '**/*')
   }
@@ -239,8 +241,8 @@ def doBuildWebApps() {
 def doBuildOneWebApp (dir) {
   final wappid= dir.getName()
 
-  mkdir (dir: "${websrc}/${wappid}")
-  mkdir (dir: "${webcss}/${wappid}")
+  ant.mkdir (dir: "${websrc}/${wappid}")
+  ant.mkdir (dir: "${webcss}/${wappid}")
 
   if ("clojurescript" == "${jslang}") {
     doCompileCljScript(wappid)
@@ -266,12 +268,12 @@ def doBuildOneWebApp (dir) {
 //
 def doCompileCljScript(wappid) {
   final sdir= "${webDir}/${wappid}/scripts"
-  copy (todir: "${websrc}/${wappid}") {
+  ant.copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${sdir}") {
       include (name: '**/*.cljs')
     }
   }
-  java (
+  ant.java (
         classname: 'clojure.main',
         fork: 'true',
         failonerror: 'true',
@@ -289,12 +291,12 @@ def doCompileCljScript(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileTypeScript(wappid) {
-  copy (todir: "${websrc}/${wappid}") {
+  ant.copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/scripts") {
       include (name: '**/*.ts')
     }
   }
-  exec (executable: 'tsc', dir: "${websrc}/${wappid}") {
+  ant.exec (executable: 'tsc', dir: "${websrc}/${wappid}") {
     arg (value: '--outDir')
     arg (value: '--output')
     arg (value: "${websrc}/${wappid}")
@@ -305,12 +307,12 @@ def doCompileTypeScript(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileCoffeeScript(wappid) {
-  copy (todir: "${websrc}/${wappid}") {
+  ant.copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/scripts") {
       include (name: '**/*.coffee')
     }
   }
-  exec (executable: 'coffee') {
+  ant.exec (executable: 'coffee') {
     arg (value: '--bare')
     arg (value: '--output')
     arg (value: "${websrc}/${wappid}")
@@ -322,13 +324,13 @@ def doCompileCoffeeScript(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileJS(wappid) {
-  copy (todir: "${websrc}/${wappid}") {
+  ant.copy (todir: "${websrc}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/scripts") {
       include (name: '**/*.js')
     }
   }
-  mkdir (dir: "${basedir}/public/scripts/${wappid}")
-  copy (todir: "${basedir}/public/scripts/${wappid}") {
+  ant.mkdir (dir: "${basedir}/public/scripts/${wappid}")
+  ant.copy (todir: "${basedir}/public/scripts/${wappid}") {
     fileset (dir: "${websrc}/${wappid}")
   }
 }
@@ -336,12 +338,12 @@ def doCompileJS(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileLESS(wappid) {
-  copy (todir: "${webcss}/${wappid}") {
+  ant.copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.less')
     }
   }
-  apply (executable: "lessc", parallel: 'false') {
+  ant.apply (executable: "lessc", parallel: 'false') {
     fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.less')
     }
@@ -352,13 +354,13 @@ def doCompileLESS(wappid) {
     }
     targetfile ()
   }
-  copy (todir: "${webcss}/${wappid}") {
+  ant.copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.css')
     }
   }
-  mkdir (dir: "${basedir}/public/styles/${wappid}")
-  copy (todir: "${basedir}/public/styles/${wappid}") {
+  ant.mkdir (dir: "${basedir}/public/styles/${wappid}")
+  ant.copy (todir: "${basedir}/public/styles/${wappid}") {
     fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.css')
     }
@@ -368,12 +370,12 @@ def doCompileLESS(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileSCSS(wappid) {
-  copy (todir: "${webcss}/${wappid}") {
+  ant.copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles"){
       include (name: '**/*.scss')
     }
   }
-  apply (executable: 'sass', parallel: 'false') {
+  ant.apply (executable: 'sass', parallel: 'false') {
     fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.scss')
     }
@@ -385,13 +387,13 @@ def doCompileSCSS(wappid) {
     }
     targetfile ()
   }
-  copy (todir: "${webcss}/${wappid}") {
+  ant.copy (todir: "${webcss}/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/styles") {
       include (name: '**/*.css')
     }
   }
-  mkdir (dir: "${basedir}/public/styles/${wappid}")
-  copy (todir: "${basedir}/public/styles/${wappid}") {
+  ant.mkdir (dir: "${basedir}/public/styles/${wappid}")
+  ant.copy (todir: "${basedir}/public/styles/${wappid}") {
     fileset (dir: "${webcss}/${wappid}") {
       include (name: '**/*.css')
     }
@@ -401,8 +403,8 @@ def doCompileSCSS(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileMedia(wappid) {
-  mkdir (dir: "${basedir}/public/media/${wappid}")
-  copy (todir: "${basedir}/public/media/${wappid}") {
+  ant.mkdir (dir: "${basedir}/public/media/${wappid}")
+  ant.copy (todir: "${basedir}/public/media/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/media") {
       include (name: '**/*')
     }
@@ -412,8 +414,8 @@ def doCompileMedia(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompilePages(wappid) {
-  mkdir (dir: "${basedir}/public/pages/${wappid}")
-  copy (todir: "${basedir}/public/pages/${wappid}") {
+  ant.mkdir (dir: "${basedir}/public/pages/${wappid}")
+  ant.copy (todir: "${basedir}/public/pages/${wappid}") {
     fileset (dir: "${webDir}/${wappid}/pages") {
       include (name: '**/*')
     }
@@ -423,7 +425,7 @@ def doCompilePages(wappid) {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doYuiCSS() {
-  apply (executable: 'java', parallel: 'false') {
+  ant.apply (executable: 'java', parallel: 'false') {
     fileset (dir: "${basedir}/public/styles") {
       exclude (name: '**/*.min.css')
       include (name: '**/*.css')
@@ -443,7 +445,7 @@ def doYuiCSS() {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doYuiJS() {
-  apply (executable: 'java', parallel: 'false') {
+  ant.apply (executable: 'java', parallel: 'false') {
     fileset (dir: "${basedir}/public/scripts") {
       exclude (name: '**/*.min.js')
       include (name: '**/*.js')

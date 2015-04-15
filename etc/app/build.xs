@@ -1,10 +1,12 @@
 skaroHome=@@SKAROHOME@@
 
+cljBuildDir=${basedir}/alchemy.dir/clojure.org
+buildDir=${basedir}/alchemy.dir/build
+
 ivyRoot=${skaroHome}/.ivyroot
 ivyLCacheDir=${ivyRoot}/cache
 ivyLRepoDir=${ivyRoot}/repos
 
-buildDir=${basedir}/build.output.folder
 reportDir=${buildDir}/reports
 podDir=${basedir}/POD-INF
 

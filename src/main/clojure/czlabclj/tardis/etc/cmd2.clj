@@ -275,7 +275,8 @@
 
       ;; make all the folders
 
-      (doseq [^String s [DN_CONF "docs" "i18n"
+      (doseq [^String s ["alchemy/clojure.org" DN_CONF
+                         "alchemy/build" "docs" "i18n"
                          META_INF "modules" POD_INF "src"]]
         (Mkdirs (File. appDir s)))
       (doseq [s ["classes" "patch" "lib"]]

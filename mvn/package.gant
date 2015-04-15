@@ -148,6 +148,9 @@ target (packDist: '') {
     }
   }
   ant.jar (destfile: "${packDir}/dist/exec/clj-${buildVersion}.jar") {
+    fileset (dir: "${cljBuildDir}") {
+      include (name: 'clojure/**')
+    }
     fileset (dir: "${buildDir}") {
       include (name: 'clojure/**')
     }

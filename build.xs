@@ -1,4 +1,5 @@
-gantBuildDir=/wdrive/dev/builds/${gantProjectName}
+gantBuildDir=./alchemy.dir/${gantProjectName}
+cljBuildDir=./alchemy.dir/clojure.org
 
 ivyLibDir=${gantBuildDir}/lib
 ivyRoot=/wdrive/.ivy
