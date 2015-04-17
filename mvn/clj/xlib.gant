@@ -156,6 +156,7 @@ def clj_Util() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
+    arg (value: 'czlabclj.xlib.util.format')
     arg (value: 'czlabclj.xlib.util.core')
     arg (value: 'czlabclj.xlib.util.cmdline')
     arg (value: 'czlabclj.xlib.util.constants')
