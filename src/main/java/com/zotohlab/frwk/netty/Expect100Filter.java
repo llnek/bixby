@@ -25,6 +25,8 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.ReferenceCountUtil;
 
 /**
+ * Handle 100-continue.
+ * 
  * @author kenl
  */
 @ChannelHandler.Sharable

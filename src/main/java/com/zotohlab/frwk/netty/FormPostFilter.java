@@ -29,6 +29,7 @@ import com.zotohlab.frwk.net.ULFormItems;
 @ChannelHandler.Sharable
 public abstract class FormPostFilter extends AuxHttpFilter {
 
+  // special handler for inbound FORM post.
   public abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
     throws IOException;
 

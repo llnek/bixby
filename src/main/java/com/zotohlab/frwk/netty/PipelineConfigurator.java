@@ -24,6 +24,8 @@ import static org.slf4j.LoggerFactory.*;
 
 
 /**
+ * Use to configure the Netty Pipeline.
+ * 
  * @author kenl
  */
 public abstract class PipelineConfigurator {

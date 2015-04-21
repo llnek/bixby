@@ -171,7 +171,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
         }
     });
 
-    List<Long[]> rc= new ArrayList<Long[]>();
+    List<Long[]> rc= new ArrayList<>();
     rc.add(sortedChunks[0] );
     for (int n = 1; n < sortedChunks.length; ++n) {
         Long[] r1 = rc.get(rc.size() - 1);

@@ -22,14 +22,37 @@ import java.security.UnrecoverableEntryException;
 public enum CryptoUtils {
 ;
 
+  /**
+   * Get the private key entry, or null.
+   * 
+   * @param ks
+   * @param n
+   * @param pwd
+   * @return
+   * @throws UnrecoverableEntryException
+   * @throws NoSuchAlgorithmException
+   * @throws KeyStoreException
+   */
   public static KeyStore.PrivateKeyEntry getPKey(KeyStore ks, String n, char[] pwd)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
+    
     Object obj = ks.getEntry(n, new KeyStore.PasswordProtection(pwd));
     return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
   }
 
+  /**
+   * Get the certificate entry, or null.
+   * 
+   * @param ks
+   * @param n
+   * @return
+   * @throws UnrecoverableEntryException
+   * @throws NoSuchAlgorithmException
+   * @throws KeyStoreException
+   */
   public static KeyStore.TrustedCertificateEntry getCert(KeyStore ks, String n)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
+    
     Object obj = ks.getEntry(n, null);
     return obj instanceof KeyStore.TrustedCertificateEntry ? (KeyStore.TrustedCertificateEntry) obj : null;
   }

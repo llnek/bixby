@@ -85,6 +85,8 @@ public enum NettyFW {
     };
   }
 
+  // these are for backward compatibility.  older versions of netty allowed you
+  // to bind attributes to both context and channel
   public static void setAttr(ChannelHandlerContext ctx, AttributeKey akey, Object aval) {
     ctx.channel().attr(akey).set(aval);
   }
@@ -224,7 +226,7 @@ public enum NettyFW {
   }
 
   public static void dbgPipelineHandlers(ChannelPipeline pipe) {
-    tlog().debug("ChannelPipeline: handlers= {}", StringUtils.join(pipe.names(), ","));
+    tlog().debug("ChannelPipeline: handlers= {}", StringUtils.join(pipe.names(), "|"));
   }
   
   public static long sockItDown(ByteBuf cbuf, OutputStream out, long lastSum)
@@ -312,7 +314,7 @@ public enum NettyFW {
 
   public static void sendRedirect(Channel ch, boolean permanent, String targetUrl) {
     HttpResponse rsp = makeFullHttpReply( permanent ? 301 : 307);
-    tlog().debug("Redirecting to -> " + targetUrl);
+    tlog().debug("Redirecting to -> {}", targetUrl);
     HttpHeaders.setHeader(rsp, "location", targetUrl);
     closeCF( writeFlush(ch,rsp), false);
   }

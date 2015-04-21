@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
 
 /**
+ * Last in the pipeline to catch all errors.
+ * 
  * @author kenl
  */
 @SuppressWarnings("rawtypes")

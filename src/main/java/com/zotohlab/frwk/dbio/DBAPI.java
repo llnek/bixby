@@ -15,6 +15,8 @@ import java.sql.Connection;
 import java.util.Map;
 
 /**
+ * Abstraction of a database interface.
+ * 
  * @author kenl
  */
 public interface DBAPI {

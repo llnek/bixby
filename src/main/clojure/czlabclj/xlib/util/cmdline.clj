@@ -97,12 +97,10 @@
     (when-not (cstr/blank? chs)
       (if (Has? chs \n)
         (.write cout (str (if (.startsWith chs "\n")
-                            "["
-                            "[\n")
+                            "[" "[\n")
                           chs
                           (if (.endsWith chs "\n")
-                            "]"
-                            "\n]" ) ))
+                            "]" "\n]" ) ))
         (.write cout (str "[" chs "]"))))
     ;; defaults ?
     (when-not (cstr/blank? dft)
@@ -123,9 +121,9 @@
 
   [cout cin cmdQ props]
 
-  (if (nil? cmdQ)
-    ""
+  (if-not (nil? cmdQ)
     (popQQ cout cin cmdQ props)
+    ""
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,13 +133,11 @@
   ;; map
   [cout cin cmdQNs start props]
 
-  (do
-    (loop [rc (popQ cout cin (cmdQNs start) props) ]
-      (cond
-        (nil? rc) {}
-        (cstr/blank? rc) (IntoMap props)
-        :else (recur (popQ cout cin (cmdQNs rc) props))
-      ))
+  (loop [rc (popQ cout cin (cmdQNs start) props) ]
+    (cond
+      (nil? rc) {}
+      (cstr/blank? rc) (IntoMap props)
+      :else (recur (popQ cout cin (cmdQNs rc) props)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

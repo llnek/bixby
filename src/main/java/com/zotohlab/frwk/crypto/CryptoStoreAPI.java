@@ -19,13 +19,26 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
- *
+ *  Abstraction on top of a java key store.
+ *  
  * @author kenl
  *
  */
 public interface CryptoStoreAPI {
 
+  /**
+   * Add a private key.
+   * 
+   * @param keyBits
+   * @param pwdObj
+   */
   public void addKeyEntity(byte[] keyBits, PasswordAPI pwdObj);
+  
+  /**
+   * Add a certificate.
+   * 
+   * @param certBits
+   */
   public void addCertEntity(byte[] certBits);
 
   public TrustManagerFactory trustManagerFactory();
@@ -34,9 +47,9 @@ public interface CryptoStoreAPI {
   public List<String> certAliases();
   public List<String> keyAliases();
 
-  public KeyStore.PrivateKeyEntry keyEntity(String nm, PasswordAPI pwdObj);
-  public KeyStore.TrustedCertificateEntry certEntity(String nm);
-  public void removeEntity(String nm);
+  public KeyStore.PrivateKeyEntry keyEntity(String alias, PasswordAPI pwdObj);
+  public KeyStore.TrustedCertificateEntry certEntity(String alias);
+  public void removeEntity(String alias);
 
   public List<X509Certificate> intermediateCAs();
   public List<X509Certificate> rootCAs();

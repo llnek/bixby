@@ -40,7 +40,7 @@
 (def MONTHS [ "JAN" "FEB" "MAR" "APR" "MAY" "JUN" "JUL" "AUG" "SEP" "OCT" "NOV" "DEC" ] )
 
 
-(def ^String COPYRIGHT "Copyright (c) 2013-2015, Ken Leung. All rights reserved.")
+(def ^String COPYRIGHT "Copyright (c) 2008-2015, Ken Leung. All rights reserved.")
 
 
 

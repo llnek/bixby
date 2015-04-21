@@ -23,6 +23,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HttpContext;
 
 /**
+ * Detect http redirect from server.  This is meant to fix a bug
+ * in the apache http client.
  * @author kenl
  */
 public enum ApacheFW {
@@ -31,9 +33,6 @@ public enum ApacheFW {
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
-  /**
-   * Detect http redirect from server.
-   */
   public static void cfgForRedirect( HttpClientBuilder cli) {
     cli.setRedirectStrategy(new DefaultRedirectStrategy() {
       public boolean isRedirected(HttpRequest request, 
@@ -43,7 +42,7 @@ public enum ApacheFW {
         try {
           isRedirect = super.isRedirected( request, response, context);
         } catch (ProtocolException e) {
-          _log.warn("",e);
+          tlog().warn("",e);
         }
         if (!isRedirect) {
           int responseCode = response.getStatusLine().getStatusCode();

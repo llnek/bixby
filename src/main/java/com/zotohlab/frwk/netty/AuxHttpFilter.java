@@ -47,6 +47,8 @@ import com.zotohlab.frwk.io.XData;
 
 
 /**
+ * Base class for handling inbound messages.
+ * 
  * @author kenl
  */
 public abstract class AuxHttpFilter extends SimpleInboundFilter {

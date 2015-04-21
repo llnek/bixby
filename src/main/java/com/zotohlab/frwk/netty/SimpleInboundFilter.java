@@ -21,6 +21,8 @@ import static org.slf4j.LoggerFactory.*;
 
 
 /**
+ * Wrapper so that we can do some reference count debugging.
+ * 
  * @author kenl
  */
 @SuppressWarnings("rawtypes")
@@ -39,7 +41,7 @@ public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
         try {
           os= c.toString();
         } catch (Throwable t) {}
-        tlog().debug("Object " + os + " : after channelRead() has ref-count = " + c.refCnt());
+        tlog().debug("Object {}: after channelRead() has ref-count = {}" , os, c.refCnt());
       }
     }
     catch (Exception e) {

@@ -32,7 +32,7 @@ public class ULFormItems {
   private static final Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  private List<ULFileItem> _items= new ArrayList<ULFileItem>();
+  private List<ULFileItem> _items= new ArrayList<>();
 
   public ULFormItems() {
   }
@@ -41,7 +41,7 @@ public class ULFormItems {
   public List<ULFileItem> intern() { return _items; }
 
   public Map<String,ULFileItem> asMap() {
-    Map<String,ULFileItem> m = new HashMap<String,ULFileItem>();
+    Map<String,ULFileItem> m = new HashMap<>();
     for (ULFileItem n : _items) {
       m.put(n.getFieldName(), n);
     }

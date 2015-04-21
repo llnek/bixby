@@ -99,8 +99,14 @@ public enum CoreUtils {
     return x==null ? "" : x.toString();
   }
 
+  /**
+   * Shuffle characters in this string.
+   * 
+   * @param s
+   * @return
+   */
   public static String shuffle(String s) {
-    List<Character> lst = new ArrayList<Character>();
+    List<Character> lst = new ArrayList<>();
     char[] cs= s.toCharArray();
     for (int n= 0; n < cs.length; ++n) {
       lst.add(cs[n]);

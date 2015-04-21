@@ -26,6 +26,8 @@ import static org.slf4j.LoggerFactory.*;
 
 
 /**
+ * A simple trust manager.
+ * 
  * @author kenl
  *
  */

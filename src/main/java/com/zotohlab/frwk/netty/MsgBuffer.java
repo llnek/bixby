@@ -14,12 +14,12 @@ package com.zotohlab.frwk.netty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import com.zotohlab.frwk.net.MessageBuffer;
+import com.zotohlab.frwk.net.ByteBuffer;
 
 /**
  * @author kenl
  */
-public class MsgBuffer implements MessageBuffer<ByteBuf> {
+public class MsgBuffer implements ByteBuffer<ByteBuf> {
 
   private final ByteBuf buffer;
 
@@ -42,7 +42,7 @@ public class MsgBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public byte[] array() {
+  public byte[] toBytes() {
     return buffer.array();
   }
 
@@ -99,16 +99,6 @@ public class MsgBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public int readUnsignedMedium() {
-    return buffer.readUnsignedMedium();
-  }
-
-  @Override
-  public int readMedium() {
-    return buffer.readMedium();
-  }
-
-  @Override
   public long readUnsignedInt() {
     return buffer.readUnsignedInt();
   }
@@ -144,67 +134,61 @@ public class MsgBuffer implements MessageBuffer<ByteBuf> {
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeByte(byte b) {
+  public ByteBuffer<ByteBuf> writeByte(byte b) {
     buffer.writeByte(b);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeBytes(byte[] src) {
+  public ByteBuffer<ByteBuf> writeBytes(byte[] src) {
     buffer.writeBytes(src);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeChar(int value) {
+  public ByteBuffer<ByteBuf> writeChar(int value) {
     buffer.writeChar(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeShort(int value) {
+  public ByteBuffer<ByteBuf> writeShort(int value) {
     buffer.writeShort(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeMedium(int value) {
-    buffer.writeMedium(value);
-    return this;
-  }
-
-  @Override
-  public MessageBuffer<ByteBuf> writeInt(int value) {
+  public ByteBuffer<ByteBuf> writeInt(int value) {
     buffer.writeInt(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeLong(long value) {
+  public ByteBuffer<ByteBuf> writeLong(long value) {
     buffer.writeLong(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeFloat(float value) {
+  public ByteBuffer<ByteBuf> writeFloat(float value) {
     buffer.writeFloat(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeDouble(double value) {
+  public ByteBuffer<ByteBuf> writeDouble(double value) {
     buffer.writeDouble(value);
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeString(String message) {
+  public ByteBuffer<ByteBuf> writeString(String message) {
     buffer.writeBytes( NettyFW.writeString(message));
     return this;
   }
 
   @Override
-  public MessageBuffer<ByteBuf> writeStrings(String[] messages) {
+  public ByteBuffer<ByteBuf> writeStrings(String[] messages) {
     buffer.writeBytes( NettyFW.writeStrings(messages));
     return this;
   }

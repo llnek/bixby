@@ -20,6 +20,8 @@ import com.jolbox.bonecp.ConnectionHandle;
 import com.jolbox.bonecp.hooks.AbstractConnectionHook;
 
 /**
+ * To debug BoneCP if necessary.
+ * 
  * @author kenl
  */
 public class BoneCPHook extends AbstractConnectionHook {

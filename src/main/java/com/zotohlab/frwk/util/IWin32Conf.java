@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Handle windows config file in INI format.
+ * 
  * @author kenl
  */
 public interface IWin32Conf {

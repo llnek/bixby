@@ -21,6 +21,8 @@ import com.zotohlab.frwk.io.XData;
  */
 public class DemuxedMsg {
 
+  // payload is body of message
+  // info is the headers
   private XData _payload;
   private Map<?,?> _info;
 

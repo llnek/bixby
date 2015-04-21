@@ -12,9 +12,11 @@
 package com.zotohlab.skaro.core;
 
 /**
+ * Not used.
+ * 
  * @author kenl
  */
-public class Constants {
+class Constants {
 
   public static String  SYS_DEVID_PFX= "system.####";
   public static String  SYS_DEVID_SFX= "####";
