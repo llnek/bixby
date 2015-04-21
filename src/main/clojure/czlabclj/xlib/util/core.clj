@@ -72,7 +72,7 @@
 
   [& exprs]
 
-  `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") nil )) )
+  `(TryCR nil ~@exprs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -317,8 +317,7 @@
   ^String
   [^String propname]
 
-  (if (cstr/blank? propname)
-    nil
+  (when-not (nil? propname)
     (System/getProperty propname)
   ))
 
@@ -329,8 +328,7 @@
   ^String
   [^String envname]
 
-  (if (cstr/blank? envname)
-    nil
+  (when-not (nil? envname)
     (System/getenv envname)
   ))
 
@@ -530,8 +528,7 @@
   ^bytes
   [obj]
 
-  (if (nil? obj)
-    nil
+  (when-not (nil? obj)
     (SerializationUtils/serialize obj)
   ))
 
@@ -542,8 +539,7 @@
   ^Object
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
+  (when-not (nil? bits)
     (SerializationUtils/deserialize bits)
   ))
 
@@ -564,11 +560,11 @@
 (defn FilePath "Get the file path."
 
   ^String
-  [aFile]
+  [^File aFile]
 
   (if (nil? aFile)
     ""
-    (NiceFPath ^File aFile)
+    (NiceFPath aFile)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -668,8 +664,7 @@
 
   (^String [^bytes bits
             ^String encoding]
-           (if (nil? bits)
-             nil
+           (when-not (nil? bits)
              (String. bits encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -681,8 +676,7 @@
 
   (^bytes [^String s
            ^String encoding]
-          (if (nil? s)
-            nil
+          (when-not (nil? s)
             (.getBytes s encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -694,8 +688,7 @@
 
   (^InputStream [^String rcPath
                  ^ClassLoader czLoader]
-                (if (nil? rcPath)
-                  nil
+                (when-not (nil? rcPath)
                   (.getResourceAsStream (get-czldr czLoader)
                                         rcPath))) )
 
@@ -708,8 +701,7 @@
 
   (^URL [^String rcPath
          ^ClassLoader czLoader]
-        (if (nil? rcPath)
-          nil
+        (when-not (nil? rcPath)
           (.getResource (get-czldr czLoader)
                         rcPath))) )
 
@@ -750,8 +742,7 @@
   ^bytes
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
+  (when-not (nil? bits)
     (let [buf (byte-array 1024)
           cpz (Deflater.) ]
       (doto cpz
@@ -778,8 +769,7 @@
   ^bytes
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
+  (when-not (nil? bits)
     (let [buf (byte-array 1024)
           decr (Inflater.)
           baos (ByteArrayOutputStream. (alength bits)) ]
@@ -841,9 +831,8 @@
   ^URL
   [^String path]
 
-  (if (cstr/blank? path)
-    nil
-    (.toURL (.toURI (File. path)))
+  (when-not (nil? path)
+    (-> (File. path)(.toURI)(.toURL))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -877,16 +866,15 @@
 
   (fetch-tmpdir ""))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; test and assert funcs
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmulti test-isa "Tests if object is subclass of parent."
   (fn [a b c]
-    (cond
+    (if
       (instance? Class b) :class
-      :else :object)))
+      :object)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -924,7 +912,7 @@
 
   [^String msg cnd ]
 
-  (assert (= cnd true)
+  (assert cnd
           (str msg)
   ))
 
@@ -1029,7 +1017,7 @@
 
   [root]
 
-  (let [ e (RootCause root) ]
+  (let [e (RootCause root) ]
     (if (nil? e)
       ""
       (str (.getName (.getClass e)) ": " (.getMessage e)))
@@ -1181,6 +1169,7 @@
 ;;
 (defn- convList ""
 
+  ^ArrayList
   [obj]
 
   (let [rc (ArrayList.)]
@@ -1193,6 +1182,7 @@
 ;;
 (defn- convSet ""
 
+  ^HashSet
   [obj]
 
   (let [rc (HashSet.)]
@@ -1205,6 +1195,7 @@
 ;;
 (defn- convMap ""
 
+  ^HashMap
   [obj]
 
   (let [rc (HashMap.)]
@@ -1239,7 +1230,7 @@
 ;;
 (defn ConvToJava ""
 
-  ^Map
+  ^Object
   [obj]
 
   (toJava obj))

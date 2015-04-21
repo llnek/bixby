@@ -99,9 +99,8 @@
   ^Date
   [^String tstr ^String fmt]
 
-  (if (or (cstr/blank? tstr)
-          (cstr/blank? fmt))
-    nil
+  (when-not (or (cstr/blank? tstr)
+                (cstr/blank? fmt))
     (.parse (SimpleDateFormat. fmt) tstr)
   ))
 
@@ -112,14 +111,11 @@
   ^Date
   [^String tstr]
 
-  (if (nichts? tstr)
-    nil
+  (when-not (nichts? tstr)
     (let [fmt (if (Has? tstr \:)
                 (if (Has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
                 CS/DATE_FMT ) ]
-      (ParseDate tstr (if (hastz? tstr)
-                        (str fmt "Z")
-                        fmt)))
+      (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,8 +163,7 @@
   ^Calendar
   [^Calendar cal calendarField amount]
 
-  (if (nil? cal)
-    nil
+  (when-not (nil? cal)
     (doto (GregorianCalendar. (.getTimeZone cal))
       (.setTime (.getTime cal))
       (.add (int calendarField) ^long amount))
