@@ -62,8 +62,6 @@
 
   `(:typeid (meta ~model)))
 
-  ;;`(if-not (nil? ~model) (:typeid (meta ~model))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ese "Escape string entity for sql."
@@ -1159,16 +1157,17 @@
         fv (:rowid (meta lhsObj))
         rt (:cast ctx)
         rp (ternary rt (:other ac))
+        ^SQLr sqlr (:with ctx)
         fid (:fkey ac) ]
     (when (nil? ac)(DbioError "Unknown assoc " (:as ctx)))
-    (.execute ^SQLr
-              (:with ctx)
-              (str "delete from "
-                   (ese (:table (mc rp)))
-                   " where "
-                   (ese fid)
-                   " = ?")
-              [ fv ])
+    (if (:cascade ac)
+      (.execute sqlr (str "delete from "
+                          (ese (:table (mc rp)))
+                          " where " (ese fid) " = ?") [fv])
+      (.execute sqlr (str "update "
+                          (ese (:table (mc rp)))
+                          " set " (ese fid) " = NULL "
+                          " where " (ese fid) " = ?") [fv]))
     lhsObj
   ))
 
@@ -1212,7 +1211,9 @@
         (let [x (vary-meta (-> (DbioCreateObj (GetTypeId y))
                                (DbioSetFld fid nil))
                             MergeMeta (meta y)) ]
-          (.update sql x))))
+          (if (:cascade ac)
+            (.delete sql x)
+            (.update sql x)))))
     lhsObj
   ))
 
