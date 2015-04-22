@@ -205,8 +205,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; data modelling
 ;;
-(def JOINED-MODEL-MONIKER :czc.dbio.core/dbio-joined-model)
-(def BASEMODEL-MONIKER :czc.dbio.core/dbio-basemodel)
+(def JOINED-MODEL-MONIKER :czc.dbio.core/DBIOJoinedModel)
+(def BASEMODEL-MONIKER :czc.dbio.core/DBIOBaseModel)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -216,16 +216,16 @@
 
   ([^String nsp ^String nm]
    {
-      :id (keyword (str nsp "/" nm))
-      :table (cstr/upper-case nm)
-      :parent nil
-      :abstract false
-      :system false
-      :mxm false
-      :indexes {}
-      :uniques {}
-      :fields {}
-      :assocs {} }) )
+    :id (keyword (str nsp "/" nm))
+    :table (cstr/upper-case nm)
+    :parent nil
+    :abstract false
+    :system false
+    :mxm false
+    :indexes {}
+    :uniques {}
+    :fields {}
+    :assocs {} }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -333,7 +333,7 @@
   {:column (cstr/upper-case (name fid))
    :domain :String
    :size 255
-   :id fid
+   :id (keyword fid)
    :assoc-key false
    :pkey false
    :null true
@@ -426,7 +426,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here.
 ;;
-(DefModel2 "czc.dbio.core" dbio-basemodel
+(DefModel2 "czc.dbio.core" DBIOBaseModel
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {:rowid {:column "DBIO_ROWID" :pkey true :domain :Long
@@ -441,7 +441,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2 "czc.dbio.core" dbio-joined-model
+(DefModel2 "czc.dbio.core" DBIOJoinedModel
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {:lhs-typeid {:column "LHS_TYPEID" }
@@ -553,7 +553,7 @@
 ;;
 (defn- collect-db-xxx-filter ""
 
-  [a b]
+  [k a b]
 
   (cond
     (keyword? b)
@@ -568,83 +568,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti CollectDbFields collect-db-xxx-filter)
+(defmulti CollectDbXXX collect-db-xxx-filter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CollectDbFields :keyword
+(defmethod CollectDbXXX :keyword
 
-  [cache modelid]
+  [kw cache modelid]
 
   (if-let [mm (cache modelid) ]
-    (CollectDbFields cache mm)
+    (CollectDbXXX kw cache mm)
     (log/warn "Unknown database model id " modelid)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CollectDbFields :map
+(defmethod CollectDbXXX :map
 
-  [cache zm]
-
-  (if-let [par (:parent zm) ]
-    (merge {} (CollectDbFields cache par)
-              (:fields zm))
-    (merge {} (:fields zm))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti CollectDbIndexes collect-db-xxx-filter)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod CollectDbIndexes :keyword
-
-  [cache modelid]
-
-  (if-let [mm (cache modelid) ]
-    (CollectDbIndexes cache mm)
-    (log/warn "Unknown model id " modelid)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod CollectDbIndexes :map
-
-  [cache zm]
+  [kw cache zm]
 
   (if-let [par (:parent zm) ]
-    (merge {} (CollectDbIndexes cache par)
-              (:indexes zm))
-    (merge {} (:indexes zm))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti CollectDbUniques collect-db-xxx-filter)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod CollectDbUniques :keyword
-
-  [cache modelid]
-
-  (if-let [mm (cache modelid) ]
-    (CollectDbUniques cache mm)
-    (log/warn "Unknown model id " modelid)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod CollectDbUniques :map
-
-  [cache zm]
-
-  (if-let [par (:parent zm) ]
-    (merge {} (CollectDbUniques cache par)
-              (:uniques zm))
-    (merge {} (:uniques zm))
+    (merge {} (CollectDbXXX kw cache par)
+              (kw zm))
+    (merge {} (kw zm))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -671,7 +617,7 @@
 
   (with-local-vars [sum (transient {}) ]
     (doseq [[k m] (seq cache) ]
-      (let [flds (CollectDbFields cache m)
+      (let [flds (CollectDbXXX :fields cache m)
             cols (colmap-fields flds) ]
         (var-set sum
                  (assoc! @sum k
@@ -693,10 +639,10 @@
              (mapize-models (.getModels schema)))
         m2 (if (empty? ms)
              {}
-             (-> (assoc ms JOINED-MODEL-MONIKER dbio-joined-model)
+             (-> (assoc ms JOINED-MODEL-MONIKER DBIOJoinedModel)
                  (resolve-parents)
                  (resolve-assocs)
-                 (assoc BASEMODEL-MONIKER dbio-basemodel)
+                 (assoc BASEMODEL-MONIKER DBIOBaseModel)
                  (meta-models))) ]
     (reify MetaCache
       (getMetas [_] m2))
@@ -814,7 +760,7 @@
 
   [^Connection conn ^String table]
 
-  (with-local-vars [rc false ]
+  (with-local-vars [rc false]
     (log/debug "Testing the existence of table " table)
     (Try!
       (let [mt (.getMetaData conn)
@@ -1124,8 +1070,7 @@
 
   [mc zm id]
 
-  (if (nil? zm)
-    nil
+  (when-not (nil? zm)
     (let [rc ((:assocs zm) id) ]
       (if (nil? rc)
         (DbioGetAssoc mc (mc (:parent zm)) id)

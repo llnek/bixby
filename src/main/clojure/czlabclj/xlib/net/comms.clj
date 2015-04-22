@@ -28,7 +28,7 @@
              ManagerFactoryParameters]
             [java.security KeyStoreException KeyStore
              InvalidAlgorithmParameterException]
-            [com.zotohlab.frwk.apache ApacheFW ]
+            [com.zotohlab.tpcl.apache ApacheHttpClient ]
             [com.zotohlab.frwk.net SSLTrustMgrFactory]
             [com.zotohlab.frwk.io XData]
             [org.apache.commons.lang3 StringUtils]
@@ -96,7 +96,7 @@
                 (.setSocketTimeout (int *socket-timeout*))
                 (.build)) ]
     (.setDefaultRequestConfig cli ^RequestConfig cfg)
-    (ApacheFW/cfgForRedirect cli)
+    (ApacheHttpClient/cfgForRedirect cli)
     (.build cli)
   ))
 

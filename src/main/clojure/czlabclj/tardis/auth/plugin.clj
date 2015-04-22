@@ -30,7 +30,7 @@
         [czlabclj.xlib.util.str :only [nsb hgl? strim]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.net.comms :only [GetFormFields]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.webss]

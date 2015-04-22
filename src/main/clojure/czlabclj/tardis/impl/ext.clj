@@ -29,7 +29,7 @@
         [czlabclj.xlib.crypto.codec
          :only
          [Pwdify CreateRandomString]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.io.loops]
         [czlabclj.tardis.io.mails]
         [czlabclj.tardis.io.files]

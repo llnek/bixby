@@ -19,7 +19,7 @@
 
   (:use [czlabclj.xlib.util.core :only [MubleAPI MakeMMap NiceFPath]]
         [czlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]
-        [czlabclj.tardis.core.constants])
+        [czlabclj.tardis.core.consts])
 
   (:import  [org.apache.commons.io FilenameUtils FileUtils]
             [java.io File]

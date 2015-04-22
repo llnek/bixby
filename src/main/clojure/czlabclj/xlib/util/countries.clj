@@ -12,7 +12,7 @@
 (ns ^{:doc "A class that maps country-codes to the country-names."
       :author "kenl" }
 
-  czlabclj.xlib.util.countrycode
+  czlabclj.xlib.util.countries
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr ]))
@@ -386,5 +386,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private countrycode-eof nil)
+(def ^:private countries-eof nil)
 

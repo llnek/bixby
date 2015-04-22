@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.xlib.util.constants)
+  czlabclj.xlib.util.consts)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -47,6 +47,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private constants-eof nil)
+(def ^:private consts-eof nil)
 
 

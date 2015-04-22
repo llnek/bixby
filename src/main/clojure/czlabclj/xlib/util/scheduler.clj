@@ -18,19 +18,17 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [ternary juid MakeMMap]]
+  (:use [czlabclj.xlib.util.core :only [NextInt ternary juid MakeMMap]]
         [czlabclj.xlib.util.str :only [Format]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
             [com.zotohlab.frwk.core Identifiable Named]
             [java.util.concurrent ConcurrentHashMap]
-            [java.util.concurrent.atomic AtomicInteger]
             [java.util Map Properties Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private ^AtomicInteger SEQNUM (AtomicInteger.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -67,10 +65,9 @@
         (activate [_ options]
           (let [^long t (ternary (:threads options) 4)
                 b (ternary (:trace options) true)
-                jid (if (instance? Named parObj)
-                      (str (.getName ^Named parObj) "#core")
-                      (Format "skaro#core-%03d"
-                              (.incrementAndGet SEQNUM)))
+                jid (if-not (instance? Named parObj)
+                      (Format "skaro#core-%03d" (NextInt))
+                      (str (.getName ^Named parObj) "#core"))
                 c (TCore. jid t (true? b)) ]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))

@@ -24,7 +24,7 @@
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.util.wfs :only [SimPTask]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.mvc.assets
          :only
          [MakeWebAsset GetLocalFile]]

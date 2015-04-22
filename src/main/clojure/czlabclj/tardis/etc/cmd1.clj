@@ -56,7 +56,7 @@
          MakeSSv1PKCS12
          MakeCsrReq]]
 
-        [czlabclj.tardis.core.constants])
+        [czlabclj.tardis.core.consts])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
             [org.apache.commons.lang3 StringUtils]

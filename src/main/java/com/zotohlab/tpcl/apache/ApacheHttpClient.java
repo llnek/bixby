@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.frwk.apache;
+package com.zotohlab.tpcl.apache;
 
 import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import org.apache.http.protocol.HttpContext;
  * in the apache http client.
  * @author kenl
  */
-public enum ApacheFW {
+public enum ApacheHttpClient {
 ;
 
   private static Logger _log=getLogger(lookup().lookupClass());
@@ -35,8 +35,8 @@ public enum ApacheFW {
 
   public static void cfgForRedirect( HttpClientBuilder cli) {
     cli.setRedirectStrategy(new DefaultRedirectStrategy() {
-      public boolean isRedirected(HttpRequest request, 
-          HttpResponse response, 
+      public boolean isRedirected(HttpRequest request,
+          HttpResponse response,
           HttpContext context) {
         boolean isRedirect=false;
         try {
@@ -46,7 +46,7 @@ public enum ApacheFW {
         }
         if (!isRedirect) {
           int responseCode = response.getStatusLine().getStatusCode();
-          if (responseCode == 301 || responseCode == 302 || 
+          if (responseCode == 301 || responseCode == 302 ||
               responseCode == 307 || responseCode == 308) {
             isRedirect= true;
           }

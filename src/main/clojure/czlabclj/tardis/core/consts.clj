@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.core.constants)
+  czlabclj.tardis.core.consts)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -148,6 +148,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private constants-eof nil)
+(def ^:private consts-eof nil)
 
 

@@ -21,7 +21,7 @@
         [czlabclj.xlib.util.mime :only [SetupCache]]
         [czlabclj.xlib.util.files :only [Unzip]]
         [czlabclj.xlib.util.process :only [SafeWait]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.jmx.core]

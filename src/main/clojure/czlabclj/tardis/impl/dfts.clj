@@ -18,7 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.i18n.resources :only [RStr]]
         [czlabclj.xlib.util.files

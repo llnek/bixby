@@ -26,7 +26,7 @@
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.io.webss]

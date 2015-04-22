@@ -29,7 +29,7 @@
          [ReadOneFile WriteOneFile CopyFileToDir DeleteDir
           CopyFile CopyToDir CopyFiles
           Unzip Mkdirs]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.etc.task])
 
   (:import  [org.apache.commons.io.filefilter FileFileFilter

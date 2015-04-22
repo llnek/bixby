@@ -35,7 +35,7 @@
          [ternary test-nonil test-cond ConvLong
           Try! PrintMutableObj MakeMMap]]
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
-        [czlabclj.tardis.core.constants]
+        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.impl.dfts]
