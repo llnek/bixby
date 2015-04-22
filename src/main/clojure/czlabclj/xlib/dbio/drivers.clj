@@ -355,7 +355,7 @@
   ^String
   [db cache table flds zm]
 
-  (let [m (CollectDbIndexes cache zm)
+  (let [m (CollectDbXXX :indexes cache zm)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
@@ -377,7 +377,7 @@
 
   [db cache flds zm]
 
-  (let [m (CollectDbUniques cache zm)
+  (let [m (CollectDbXXX :uniques cache zm)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
@@ -406,7 +406,7 @@
 
   [db cache table zm]
 
-  (let [flds (CollectDbFields cache zm)
+  (let [flds (CollectDbXXX :fields cache zm)
         bf (StringBuilder.)
         inx (StringBuilder.) ]
     (with-local-vars [pkeys (transient #{}) ]
