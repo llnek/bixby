@@ -188,9 +188,7 @@
   [^String dbtype]
 
   (let [kw (keyword (cstr/lower-case dbtype)) ]
-    (if (nil? (DBTYPES kw))
-       nil
-       kw)
+    (when-not (nil? (DBTYPES kw)) kw)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,9 +198,8 @@
   [^String url]
 
   (let [ss (StringUtils/split url \:) ]
-    (if (> (alength ss) 1)
-      (MatchDbType (aget ss 1))
-      nil)
+    (when (> (alength ss) 1)
+      (MatchDbType (aget ss 1)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1025,8 +1022,8 @@
 
   (let [oracle (Embeds? (nsb dbn) "oracle")
         ee (RootCause e)
-        ec (if (instance? SQLException ee)
-             (.getErrorCode ^SQLException ee) ) ]
+        ec (when (instance? SQLException ee)
+             (.getErrorCode ^SQLException ee)) ]
     (if (nil? ec)
       (throw e)
       (cond
@@ -1179,7 +1176,7 @@
   [ctx lhsObj]
 
   (let [[sql rt pms] (dbio-get-o2x ctx lhsObj) ]
-    (if-not (nil? rt)
+    (when-not (nil? rt)
       (.findSome ^SQLr sql rt pms))
   ))
 

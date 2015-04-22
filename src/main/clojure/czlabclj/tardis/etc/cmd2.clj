@@ -23,11 +23,12 @@
         [czlabclj.xlib.util.core
          :only
          [GetUser juid IsWindows? NiceFPath]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile CopyFileToDir DeleteDir
           CopyFile CopyToDir CopyFiles
-          Unzip Mkdirs ReadEdn]]
+          Unzip Mkdirs]]
         [czlabclj.tardis.core.constants]
         [czlabclj.tardis.etc.task])
 

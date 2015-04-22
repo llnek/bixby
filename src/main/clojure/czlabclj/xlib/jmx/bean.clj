@@ -95,12 +95,11 @@
       (getType [this]
         (let [^Method g (.getter this)
               ^Method s (.setter this) ]
-          (if (notnil? g)
+          (if-not (nil? g)
             (.getReturnType g)
-            (if (nil? s)
-              nil
+            (when-not (nil? s)
               (let [ps (.getParameterTypes s) ]
-                (if (== 1 (count ps)) (first ps) nil))))))
+                (when (== 1 (count ps)) (first ps)))))))
       (getter [_] (.getf impl :getr))
       (getName [_] prop)
       (desc [_] descn)
@@ -238,11 +237,12 @@
               (.setGetter methodInfo mtd)))
 
           (.startsWith mn "set")
-          (if (== 1 (count ptypes))
+          (when (== 1 (count ptypes))
             (if (nil? methodInfo)
               (var-set props
                        (assoc! @props pname (mkBPropInfo pname "" nil mtd)))
               (.setSetter methodInfo mtd)))
+
           :else nil)))
     (let [rc (persistent! @props) ]
       (doseq [[k ^czlabclj.xlib.jmx.bean.BPropInfo v] rc ]

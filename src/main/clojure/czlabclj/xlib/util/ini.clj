@@ -157,21 +157,17 @@
 ;;
 (defn- makeWinini ""
 
-  [^Map mapOfSections]
+  [^Map sections]
 
   (reify IWin32Conf
 
-    (getSection [_ sectionName]
-      (let [sn (name sectionName) ]
-        (if (cstr/blank? sn)
-          nil
-          (let [m (.get mapOfSections sn) ]
-            (if (nil? m)
-              nil
-              (into {} m))))))
+    (sectionKeys [_] (.keySet sections))
 
-    (sectionKeys [_]
-      (.keySet mapOfSections))
+    (getSection [_ sname]
+      (when-let [sn (if-not (nil? sname)
+                      (name sname))]
+        (when-let [m (.get sections sn)]
+          (into {} m))))
 
     (getString [this section property]
       (nsb (getKV this section property true)))
@@ -214,10 +210,10 @@
         dft))
 
     (dbgShow [_]
-      (let [buf (StringBuilder.) ]
-        (doseq [[k v] (seq mapOfSections) ]
+      (let [buf (StringBuilder.)]
+        (doseq [[k v] (seq sections)]
           (.append buf (str "[" (name k) "]\n"))
-          (doseq [[x y] (seq v) ]
+          (doseq [[x y] (seq v)]
             (.append buf (str (name x) "=" y)))
           (.append buf "\n"))
         (println buf)))
@@ -230,8 +226,7 @@
   ^IWin32Conf
   [^String fpath]
 
-  (if (nil? fpath)
-    nil
+  (when-not (nil? fpath)
     (ParseInifile (File. fpath))
   ))
 
@@ -242,10 +237,9 @@
   ^IWin32Conf
   [^File file]
 
-  (if (or (nil? file)
-          (not (FileRead? file)))
-    nil
-    (ParseInifile (.toURL (.toURI file)))
+  (when (FileRead? file)
+    (ParseInifile (-> file
+                      (.toURI)(.toURL)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -275,8 +269,7 @@
   ^IWin32Conf
   [^URL fileUrl]
 
-  (if (nil? fileUrl)
-    nil
+  (when-not (nil? fileUrl)
     (parseFile fileUrl)
   ))
 

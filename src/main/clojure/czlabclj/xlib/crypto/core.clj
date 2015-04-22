@@ -181,10 +181,10 @@
   []
 
   (let [kgen (doto (KeyGenerator/getInstance BFISH)
-               (.init 256))
+                   (.init 256))
         cipher (doto (Cipher/getInstance BFISH)
-                 (.init (Cipher/ENCRYPT_MODE)
-                        (SecretKeySpec. (.. kgen generateKey getEncoded) BFISH))) ]
+                     (.init (Cipher/ENCRYPT_MODE)
+                            (SecretKeySpec. (.. kgen generateKey getEncoded) BFISH))) ]
     (.doFinal cipher (Bytesify "This is just an example"))
   ))
 
@@ -220,7 +220,7 @@
   [^URL keyUrl]
 
   (not (-> (.getFile keyUrl)
-           cstr/lower-case
+           (cstr/lower-case)
            (.endsWith ".jks"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -275,7 +275,8 @@
 
   [^KeyStore ks predicate]
 
-  (loop [en (.aliases ks) rc (transient []) ]
+  (loop [en (.aliases ks)
+         rc (transient []) ]
     (if (.hasMoreElements en)
       (let [n (.nextElement en) ]
         (if (predicate ks n)
@@ -309,7 +310,7 @@
 
   [^KeyStore ks ^PasswordAPI pwdObj]
 
-  (let [^chars ca (if-not (nil? pwdObj)
+  (let [^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj)) ]
     (doseq [^String a (PKeyAliases ks) ]
       (let [cs (-> (CryptoUtils/getPKey ks a ca)
@@ -325,7 +326,7 @@
 
   (^KeyStore [^InputStream inp
               ^PasswordAPI pwdObj]
-    (let [^chars ca (if-not (nil? pwdObj)
+    (let [^chars ca (when-not (nil? pwdObj)
                       (.toCharArray pwdObj))
           ks (doto (KeyStore/getInstance "PKCS12"
                                          _BCProvider)
@@ -341,7 +342,7 @@
 
   (^KeyStore [^InputStream inp
               ^PasswordAPI pwdObj]
-    (let [^chars ca (if-not (nil? pwdObj)
+    (let [^chars ca (when-not (nil? pwdObj)
                       (.toCharArray pwdObj))
           pv (Security/getProvider "SUN")
           ks (doto (KeyStore/getInstance "JKS" pv)
@@ -367,8 +368,7 @@
    ^InputStream inp
    ^PasswordAPI pwdObj]
 
-  (doto store (.load inp (if (nil? pwdObj)
-                           nil
+  (doto store (.load inp (when-not (nil? pwdObj)
                            (.toCharArray pwdObj)))
   ))
 
@@ -419,7 +419,7 @@
   [^bytes bits
    ^PasswordAPI pwdObj]
 
-  (let [^chars ca (if-not (nil? pwdObj)
+  (let [^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
         ks (GetPkcsStore) ]
     (.load ks (Streamify bits) ca)
@@ -449,8 +449,8 @@
 
   (^String [^bytes skey ^String data ^String algo]
            (let [mac (doto (Mac/getInstance algo _BCProvider)
-                       (.init (SecretKeySpec. skey algo))
-                       (.update (Bytesify data))) ]
+                           (.init (SecretKeySpec. skey algo))
+                           (.update (Bytesify data))) ]
              (Hex/encodeHexString (.doFinal mac)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -472,7 +472,7 @@
   [^String algo keylen]
 
   (let [kpg (doto (KeyPairGenerator/getInstance algo _BCProvider)
-              (.initialize (int keylen) (NewRandom))) ]
+                  (.initialize (int keylen) (NewRandom))) ]
     (log/debug "Generating keypair for algo " algo ", length " keylen)
     (.generateKeyPair kpg)
   ))
@@ -486,7 +486,7 @@
    ^PasswordAPI pwdObj]
 
   (with-open [inp (.openStream p12File) ]
-    (let [^chars ca (if-not (nil? pwdObj)
+    (let [^chars ca (when-not (nil? pwdObj)
                       (.toCharArray pwdObj))
           ks (doto (GetPkcsStore) (.load inp ca)) ]
       (CryptoUtils/getPKey ks (str (.nextElement (.aliases ks))) ca))
@@ -634,7 +634,7 @@
 
   (let [[^Certificate cert ^PrivateKey pkey]
         (mkSSV1Cert (.getProvider ks) kp options)
-        ^chars ca (if-not (nil? pwdObj)
+        ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
         baos (MakeBitOS) ]
     (.setKeyEntry ks (juid) pkey ca (into-array Certificate [cert] ))
@@ -652,7 +652,7 @@
 
   (let [ct (.getTrustedCertificate (ConvCert certPEM))
         rdr (InputStreamReader. (Streamify keyPEM))
-        ^chars ca (if-not (nil? pwdObj)
+        ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
         baos (MakeBitOS)
         ss (GetPkcsStore)
@@ -749,7 +749,7 @@
                                  (:keylen options))
                     [ (first issuerCerts) issuerKey ]
                     options)
-        ^chars ca (if-not (nil? pwdObj)
+        ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
         baos (MakeBitOS)
         cs (cons cert issuerCerts) ]
@@ -848,8 +848,7 @@
   (^Session [^String user
              ^PasswordAPI pwdObj]
             (Session/getInstance (System/getProperties)
-                                 (if (cstr/blank? user)
-                                   nil
+                                 (when-not (cstr/blank? user)
                                    (DefaultAuthenticator. user
                                                           (nsb pwdObj)) )))
   (^Session []

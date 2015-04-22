@@ -107,8 +107,7 @@
   ^bytes
   [^HttpEntity ent]
 
-  (if (nil? ent)
-    nil
+  (when-not (nil? ent)
     (EntityUtils/toByteArray ent)
   ))
 
@@ -128,7 +127,7 @@
   [^HttpResponse rsp]
 
   (let [ent (.getEntity rsp)
-        ct (if (nil? ent) nil (.getContentType ent))
+        ct (when-not (nil? ent) (.getContentType ent))
         cv (if (nil? ct) "" (strim (.getValue ct)))
         cl (cstr/lower-case cv) ]
     (Try!
@@ -250,7 +249,8 @@
   []
 
   (doto (SSLContext/getInstance "TLS")
-    (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) )
+        (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

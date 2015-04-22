@@ -15,7 +15,6 @@
   czlabclj.xlib.util.files
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.edn :as edn]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [notnil?]]
@@ -248,44 +247,6 @@
 
   (^String [^URL url ^String encoding]
     (IOUtils/toString url encoding)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn WriteEdnString ""
-
-  ^String
-  [obj]
-
-  (if-not (nil? obj)
-    (pr-str obj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti ReadEdn (fn [a] (class a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ReadEdn File
-
-  [^File fp]
-
-  (ReadEdn (.toURL fp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ReadEdn String
-
-  [^String s]
-
-  (edn/read-string s))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ReadEdn URL
-
-  [^URL url]
-
-  (edn/read-string (ReadOneUrl url)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -99,11 +99,11 @@
   (proxy [SimpleChannelInboundHandler][]
     (channelRead0 [c m]
       (let [vdir (File. ^String (:vdir options))
-            ^ChannelHandlerContext ctx c
+            ch (-> ^ChannelHandlerContext c
+                   (.channel))
             ^DemuxedMsg msg m
             xs (.payload msg)
             info (.info msg)
-            ch (.channel ctx)
             ^String mtd (:method info)
             ^String uri (:uri info)
             pos (.lastIndexOf uri (int \/))

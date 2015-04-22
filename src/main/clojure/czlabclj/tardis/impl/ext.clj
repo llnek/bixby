@@ -16,16 +16,16 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr]
-            [clojure.edn :as edn]
             [clojure.data.json :as json])
 
   (:use [czlabclj.xlib.util.str :only [hgl? lcase nsb strim nichts?]]
         [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
         [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [LoadResource]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
          :only
-         [ReadEdn ReadOneFile WriteOneFile FileRead?]]
+         [ReadOneFile WriteOneFile FileRead?]]
         [czlabclj.xlib.crypto.codec
          :only
          [Pwdify CreateRandomString]]

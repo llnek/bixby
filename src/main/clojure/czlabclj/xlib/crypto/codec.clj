@@ -264,9 +264,9 @@
   ^String
   [^chars pkey ^String text]
 
-  (let [c (doto (StrongTextEncryptor.)
-            (.setPasswordCharArray pkey)) ]
-    (.decrypt c text)
+  (-> (doto (StrongTextEncryptor.)
+            (.setPasswordCharArray pkey))
+      (.decrypt text)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,9 +276,9 @@
   ^String
   [^chars pkey ^String text]
 
-  (let [c (doto (StrongTextEncryptor.)
-            (.setPasswordCharArray pkey)) ]
-    (.encrypt c text)
+  (-> (doto (StrongTextEncryptor.)
+            (.setPasswordCharArray pkey))
+      (.encrypt text)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -306,9 +306,9 @@
   ^Cipher
   [^bytes pkey mode ^String algo]
 
-  (let [spec (SecretKeySpec. (keyAsBits pkey algo) algo) ]
-    (doto (Cipher/getInstance algo)
-      (.init (int mode) spec))
+  (doto (Cipher/getInstance algo)
+        (.init (int mode)
+               (SecretKeySpec. (keyAsBits pkey algo) algo))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -401,7 +401,7 @@
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePublic (X509EncodedKeySpec. pubKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
-                   (.init Cipher/ENCRYPT_MODE pk))
+                       (.init Cipher/ENCRYPT_MODE pk))
           out (.doFinal cipher data) ]
       (Base64/encodeBase64String out))
   ))
@@ -413,14 +413,12 @@
   ^bytes
   [^bytes prvKey ^String cipherText]
 
-  (if (nichts? cipherText)
-    nil
+  (when-not (nichts? cipherText)
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
-                   (.init Cipher/DECRYPT_MODE pk))
-          out (.doFinal cipher (Base64/decodeBase64 cipherText)) ]
-      out)
+                   (.init Cipher/DECRYPT_MODE pk))]
+      (.doFinal cipher (Base64/decodeBase64 cipherText)) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,9 +559,7 @@
                              (.toCharArray pkey)
                              pwdStr))))
 
-  (text [_] (if (nil? pwdStr)
-              nil
-              (nsb pwdStr) )))
+  (text [_] (when-not (nil? pwdStr) (nsb pwdStr) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

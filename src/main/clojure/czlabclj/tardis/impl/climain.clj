@@ -25,9 +25,10 @@
          [ProcessPid SafeWait ThreadFunc]]
         [czlabclj.xlib.i18n.resources :only [GetResource]]
         [czlabclj.xlib.util.meta :only [SetCldr GetCldr]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
          :only
-         [ReadOneFile WriteOneFile ReadEdn]]
+         [ReadOneFile WriteOneFile]]
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.core
          :only

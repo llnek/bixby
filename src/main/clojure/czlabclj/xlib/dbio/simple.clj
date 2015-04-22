@@ -66,7 +66,7 @@
 
       (findOne [this model filters]
         (let [rset (.findSome this model filters {})]
-          (if (empty? rset) nil (first rset))))
+          (when-not (empty? rset) (first rset))))
 
       (findSome [this  model filters] (.findSome this model filters {} ))
 

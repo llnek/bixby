@@ -28,7 +28,7 @@
           test-nonil LoadJavaProps]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
         [czlabclj.xlib.util.str :only [nsb hgl? strim]]
-        [czlabclj.xlib.util.files :only [ReadEdn]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.net.comms :only [GetFormFields]]
         [czlabclj.tardis.core.constants]
         [czlabclj.xlib.util.wfs]

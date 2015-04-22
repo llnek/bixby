@@ -60,7 +60,7 @@
 ;;
 (defn- make-route-info ""
 
-  [route ^String verb handler]
+  [route verb handler]
 
   (let [verbList (cstr/upper-case verb)
         impl (MakeMMap) ]
@@ -203,10 +203,10 @@
 
   [mtd uri rts]
 
-  (if-not (nil? rts)
+  (when-not (nil? rts)
     (some (fn [^czlabclj.xlib.net.routes.RouteInfo ri]
             (let [m (.resemble? ri mtd uri) ]
-              (if (nil? m) nil [ri m])))
+              (when-not (nil? m) [ri m])))
           (seq rts))
   ))
 

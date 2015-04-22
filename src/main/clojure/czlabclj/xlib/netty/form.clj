@@ -143,7 +143,7 @@
 
   (proxy [FormPostFilter][]
 
-    (finzAndDone [c data ]
+    (finzAndDone [c data]
       (let [^ChannelHandlerContext ctx c
             ^XData xs data
             info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)

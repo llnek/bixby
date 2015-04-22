@@ -16,13 +16,56 @@
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr]
-            [clojure.data.json :as js]))
+            [clojure.edn :as edn]
+            [clojure.data.json :as js])
+
+  (:use [czlabclj.xlib.util.files :only [ReadOneUrl]])
+
+  (:import  [java.net URL]
+            [java.io File]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WriteEdnString ""
+
+  ^String
+  [obj]
+
+  (if-not (nil? obj)
+    (pr-str obj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ReadEdn (fn [a] (class a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn File
+
+  [^File fp]
+
+  (ReadEdn (.toURL fp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn String
+
+  [^String s]
+
+  (edn/read-string s))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod ReadEdn URL
+
+  [^URL url]
+
+  (edn/read-string (ReadOneUrl url)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

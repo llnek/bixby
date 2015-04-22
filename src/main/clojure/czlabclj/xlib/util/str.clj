@@ -31,8 +31,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro  lcase [s] `(cstr/lower-case ~s))
-(defmacro  ucase [s] `(cstr/upper-case ~s))
+(defmacro lcase [s] `(cstr/lower-case ~s))
+(defmacro ucase [s] `(cstr/upper-case ~s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

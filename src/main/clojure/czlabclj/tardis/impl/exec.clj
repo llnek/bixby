@@ -32,8 +32,9 @@
          [LoadJavaProps test-nestr NiceFPath TryC
           ternary notnil? NewRandom
           ConvLong MakeMMap juid test-nonil]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
-         :only [Mkdirs ReadOneUrl ReadEdn]])
+         :only [Mkdirs ReadOneUrl]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]

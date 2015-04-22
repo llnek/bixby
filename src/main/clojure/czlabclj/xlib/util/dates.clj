@@ -15,7 +15,7 @@
   czlabclj.xlib.util.dates
 
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [czlabclj.xlib.util.constants :as CS ]
+            [czlabclj.xlib.util.constants :as CS]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.str :only [Has? HasAny? nichts? nsb]]

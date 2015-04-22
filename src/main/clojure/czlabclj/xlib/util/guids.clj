@@ -33,8 +33,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;(def ^:private  _CHARS (.toCharArray "0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"))
-(def ^:private ^chars  _CHARS (.toCharArray "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW"))
-(def ^:private  _UUIDLEN 36)
+(def ^:private ^String _SS "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW")
+(def ^:private ^chars  _CHARS (.toCharArray _SS))
+(def ^:private _UUIDLEN (.length _SS))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,11 +98,11 @@
   (TryC
     (let [neta (InetAddress/getLocalHost)
           b (.getAddress neta) ]
-      (if (.isLoopbackAddress neta )
+      (if (.isLoopbackAddress neta)
         (.nextLong (NewRandom))
         (if (= 4 (alength b))
           (long (ReadInt b))
-          (ReadLong b) )
+          (ReadLong b))
       ))
   ))
 
@@ -113,7 +114,8 @@
 ;;
 (defn NewUUid "RFC4122, version 4 form."
 
-  ^String[]
+  ^String
+  []
 
   (nsb (UUID/randomUUID)))
 

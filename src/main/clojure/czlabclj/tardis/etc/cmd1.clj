@@ -38,11 +38,10 @@
          FlattenNil
          ConvLong
          ResStr]]
-
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
         :only
-        [ReadEdn
-         ReadOneFile
+        [ReadOneFile
          WriteOneFile]]
 
         [czlabclj.xlib.crypto.core

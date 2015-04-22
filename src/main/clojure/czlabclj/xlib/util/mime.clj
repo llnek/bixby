@@ -111,7 +111,6 @@
 
 (def CRLF "\r\n")
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^Pattern ^:private _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
@@ -213,11 +212,10 @@
 (defn UrlDecode "URL decode this string."
 
   ^String
-  [u]
+  [^String u]
 
-  (if (nil? u)
-    nil
-    (Try! (-> (URLCodec. "utf-8")(.decode ^String u)))
+  (when-not (nil? u)
+    (Try! (-> (URLCodec. "utf-8")(.decode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,11 +223,10 @@
 (defn UrlEncode "URL encode this string."
 
   ^String
-  [u]
+  [^String u]
 
-  (if (nil? u)
-    nil
-    (Try! (-> (URLCodec. "utf-8")(.encode ^String u)))
+  (when-not (nil? u)
+    (Try! (-> (URLCodec. "utf-8")(.encode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

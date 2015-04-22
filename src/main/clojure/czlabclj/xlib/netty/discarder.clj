@@ -48,8 +48,8 @@
 
   (proxy [SimpleChannelInboundHandler][]
     (channelRead0 [c msg]
-      (let [^ChannelHandlerContext ctx c
-            ch (.channel ctx) ]
+      (let [ch (-> ^ChannelHandlerContext c
+                   (.channel))]
         (when (instance? LastHttpContent msg)
           (NettyFW/replyXXX ch 200)
           (when (fn? callback)
@@ -65,9 +65,8 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [p options]
-      (let [^ChannelPipeline pipe p
-            ssl (SSLServerHShake options) ]
-        (doto pipe
+      (let [ssl (SSLServerHShake options) ]
+        (doto ^ChannelPipeline p
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
           (.addLast "HttpObjectAggregator"
                     (HttpObjectAggregator. (int 1048576)))

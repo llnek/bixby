@@ -246,7 +246,7 @@
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
       (TryC
-        (let [pwd (if (nil? pwdStr) nil (.toCharArray pwdStr))
+        (let [pwd (when-not (nil? pwdStr) (.toCharArray pwdStr))
               x (SSLContext/getInstance "TLS")
               ks (KeyStore/getInstance ^String
                                        (if (.endsWith keyUrlStr ".jks")
@@ -276,9 +276,9 @@
 
   (TryC
     (let [ctx (doto (SSLContext/getInstance "TLS")
-                (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
+                    (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
       (SslHandler. (doto (.createSSLEngine ctx)
-                     (.setUseClientMode true))))
+                         (.setUseClientMode true))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

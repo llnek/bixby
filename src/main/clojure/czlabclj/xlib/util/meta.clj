@@ -206,10 +206,9 @@
           (LoadClass clazzName nil))
 
   (^Class [^String clazzName ^ClassLoader cl]
-          (if (not (hgl? clazzName))
+          (if-not (hgl? clazzName)
             nil
             (.loadClass (GetCldr cl) clazzName))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -260,7 +259,7 @@
 
   (^Object [^String clazzName
             ^ClassLoader cl]
-           (if (not (hgl? clazzName))
+           (if-not (hgl? clazzName)
              nil
              (CtorObj (LoadClass clazzName cl)))) )
 

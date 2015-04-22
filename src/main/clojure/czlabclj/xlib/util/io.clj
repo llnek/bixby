@@ -143,11 +143,10 @@
 (defn Streamify "Wrapped these bytes in an input-stream."
 
   ^InputStream
-  [bits]
+  [^bytes bits]
 
-  (if (nil? bits)
-    nil
-    (ByteArrayInputStream. ^bytes bits)
+  (when-not (nil? bits)
+    (ByteArrayInputStream. bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,10 +166,9 @@
   [^bytes bits]
 
   (let [len (* 2 (if (nil? bits) 0 (alength bits)))
-        out (char-array len) ]
-    (loop [k 0 pos 0 ]
-      (if (>= pos len)
-        nil
+        out (char-array len)]
+    (loop [k 0 pos 0]
+      (when-not (>= pos len)
         (let [n (bit-and (aget ^bytes bits k) 0xff) ]
           (aset-char out pos
                      (aget ^chars HEX_CHS (bit-shift-right n 4))) ;; high 4 bits
@@ -187,9 +185,9 @@
   ^String
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
-    (String. (HexifyChars bits))) )
+  (when-not (nil? bits)
+    (String. (HexifyChars bits))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -202,10 +200,9 @@
   ^bytes
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
-    (let [baos (MakeBitOS) ]
-      (with-open [g (GZIPOutputStream. baos) ]
+  (when-not (nil? bits)
+    (let [baos (MakeBitOS)]
+      (with-open [g (GZIPOutputStream. baos)]
         (.write g bits, 0, (alength bits)))
       (.toByteArray baos))
   ))
@@ -217,8 +214,7 @@
   ^bytes
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
+  (when-not (nil? bits)
     (IOUtils/toByteArray (GZIPInputStream. (Streamify bits)))
   ))
 
@@ -235,11 +231,11 @@
 (defmethod OpenFile String
 
   ^XStream
-  [ ^String fp]
+  [^String fp]
 
-  (if (nil? fp)
-    nil
-    (XStream. (File. fp))))
+  (when-not (nil? fp)
+    (XStream. (File. fp))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -248,9 +244,9 @@
   ^XStream
   [^File f]
 
-  (if (nil? f)
-    nil
-    (XStream. f)))
+  (when-not (nil? f)
+    (XStream. f)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -259,9 +255,9 @@
   ^bytes
   [^String gzb64]
 
-  (if (nil? gzb64)
-    nil
-    (Gunzip (Base64/decodeBase64 gzb64))) )
+  (when-not (nil? gzb64)
+    (Gunzip (Base64/decodeBase64 gzb64))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -270,9 +266,9 @@
   ^String
   [^bytes bits]
 
-  (if (nil? bits)
-    nil
-    (Base64/encodeBase64String (Gzip bits))) )
+  (when-not (nil? bits)
+    (Base64/encodeBase64String (Gzip bits))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -283,7 +279,8 @@
 
   (if (nil? inp)
     0
-    (.available inp)) )
+    (.available inp)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -308,7 +305,8 @@
   [^InputStream src ^OutputStream out bytesToCopy]
 
   (when (> bytesToCopy 0)
-    (IOUtils/copyLarge src out 0 ^long bytesToCopy)) )
+    (IOUtils/copyLarge src out 0 ^long bytesToCopy)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -500,8 +498,7 @@
 ;;      val b1 = b(i-1)
 ;;      ch(i-1) = (if (b1 < 0) { 256 + b1 } else b1 ).asInstanceOf[Char]
 ;;    }
-    (if (nil? bits)
-      nil
+    (when-not (nil? bits)
       (IOUtils/toCharArray (Streamify bits) charSet))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

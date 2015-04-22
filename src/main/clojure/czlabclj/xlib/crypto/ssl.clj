@@ -66,10 +66,9 @@
   ^SSLContext
   [ssl]
 
-  (if (not ssl)
-    nil
+  (when ssl
     (doto (SSLContext/getInstance "TLS")
-      (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
+          (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
