@@ -40,7 +40,7 @@ path (id: 'compilePathId') {
 path (id: 'testPathId') {
   path (location: "${testDir}/clojure")
   path (location: "${buildTestDir}")
-  path (refid: "compile.path.id")
+  path (refid: "compilePathId")
   /*
   path (location: "${cljBuildDir}")
   path (location: "${buildDir}")
