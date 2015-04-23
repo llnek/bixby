@@ -21,7 +21,7 @@
 
   (:use [czlabclj.xlib.util.str
          :only
-         [strim Embeds? nsb HasNocase? hgl?]]
+         [lcase ucase strim Embeds? nsb HasNocase? hgl?]]
         [czlabclj.xlib.util.core
          :only
          [TryC Try! RootCause StripNSPath
@@ -48,6 +48,16 @@
 (def ^:dynamic *JDBC-INFO* nil)
 (def ^:dynamic *JDBC-POOL* nil)
 (def ^String DDL_SEP "-- :")
+
+(def ^String COL_LASTCHANGED "DBIO_LASTCHANGED")
+(def ^String COL_CREATED_ON "DBIO_CREATED_ON")
+(def ^String COL_CREATED_BY "DBIO_CREATED_BY")
+(def ^String COL_LHS_TYPEID "LHS_TYPEID")
+(def ^String COL_LHS_ROWID "LHS_ROWID")
+(def ^String COL_RHS_TYPEID "RHS_TYPEID")
+(def ^String COL_RHS_ROWID "RHS_ROWID")
+(def ^String COL_ROWID "DBIO_ROWID")
+(def ^String COL_VERID "DBIO_VERID")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,10 +100,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro eseOID [] `(ese "DBIO_ROWID"))
-(defmacro eseVID [] `(ese "DBIO_VERID"))
-(defmacro eseLHS [] `(ese "LHS_ROWID"))
-(defmacro eseRHS [] `(ese "RHS_ROWID"))
+(defmacro eseLHS [] `(ese COL_LHS_ROWID))
+(defmacro eseRHS [] `(ese COL_RHS_ROWID))
+(defmacro eseOID [] `(ese COL_ROWID))
+(defmacro eseVID [] `(ese COL_VERID))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,7 +161,7 @@
 
   [^String product]
 
-  (let [lp (cstr/lower-case product)
+  (let [lp (lcase product)
         fc #(Embeds? %2 %1) ]
     (condp fc lp
       "microsoft" :sqlserver
@@ -185,7 +195,7 @@
 
   [^String dbtype]
 
-  (let [kw (keyword (cstr/lower-case dbtype)) ]
+  (let [kw (keyword (lcase dbtype)) ]
     (when-not (nil? (DBTYPES kw)) kw)
   ))
 
@@ -215,7 +225,7 @@
   ([^String nsp ^String nm]
    {
     :id (keyword (str nsp "/" nm))
-    :table (cstr/upper-case nm)
+    :table (ucase nm)
     :parent nil
     :abstract false
     :system false
@@ -304,7 +314,7 @@
 
   [pojo tablename]
 
-  (assoc pojo :table tablename))
+  (assoc pojo :table (ucase tablename)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -328,7 +338,7 @@
 
   [fid]
 
-  {:column (cstr/upper-case (name fid))
+  {:column (ucase (name fid))
    :domain :String
    :size 255
    :id (keyword fid)
@@ -427,25 +437,25 @@
 (DefModel2 "czc.dbio.core" DBIOBaseModel
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields {:rowid {:column "DBIO_ROWID" :pkey true :domain :Long
+  (WithDbFields {:rowid {:column COL_ROWID :pkey true :domain :Long
                          :auto true :system true :updatable false}
-    :verid {:column "DBIO_VERSION" :domain :Long :system true
+    :verid {:column COL_VERID :domain :Long :system true
             :dft [ 0 ] }
-    :last-modify {:column "DBIO_LASTCHANGED" :domain :Timestamp
+    :last-modify {:column COL_LASTCHANGED :domain :Timestamp
                   :system true :dft [""] }
-    :created-on {:column "DBIO_CREATED_ON" :domain :Timestamp
+    :created-on {:column COL_CREATED_ON :domain :Timestamp
                  :system true :dft [""] :updatable false}
-    :created-by {:column "DBIO_CREATED_BY" :system true :domain :String } }))
+    :created-by {:column COL_CREATED_BY :system true :domain :String } }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (DefModel2 "czc.dbio.core" DBIOJoinedModel
   (WithDbAbstract)
   (WithDbSystem)
-  (WithDbFields {:lhs-typeid {:column "LHS_TYPEID" }
-    :lhs-oid {:column "LHS_ROWID" :domain :Long :null false}
-    :rhs-typeid {:column "RHS_TYPEID" }
-    :rhs-oid {:column "RHS_ROWID" :domain :Long :null false} }) )
+  (WithDbFields {:lhs-typeid {:column COL_LHS_TYPEID }
+    :lhs-oid {:column COL_LHS_ROWID :domain :Long :null false}
+    :rhs-typeid {:column COL_RHS_TYPEID }
+    :rhs-oid {:column COL_RHS_ROWID :domain :Long :null false} }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -490,9 +500,9 @@
       ;; fields to the actual models.
       (let [tm (persistent! @rc) ]
         (doseq [[k v] (seq tm) ]
-          (let [zm (ms k)
-                fs (:fields zm) ]
-            (var-set xs (assoc! @xs k (assoc zm :fields (merge fs v))))))
+          (let [mcz (ms k)
+                fs (:fields mcz) ]
+            (var-set xs (assoc! @xs k (assoc mcz :fields (merge fs v))))))
         (persistent! @xs)))
   ))
 
@@ -503,12 +513,12 @@
 
   ;; map of models
   ;; model defn
-  [ms model]
+  [mcz model]
 
   (let [par (:parent model) ]
     (cond
       (keyword? par)
-      (if (nil? (ms par))
+      (if (nil? (mcz par))
         (DbioError (str "Unknown parent model " par))
         model)
 
@@ -574,8 +584,8 @@
 
   [kw cache modelid]
 
-  (if-let [mm (cache modelid) ]
-    (CollectDbXXX kw cache mm)
+  (if-let [mcz (cache modelid) ]
+    (CollectDbXXX kw cache mcz)
     (log/warn "Unknown database model id " modelid)
   ))
 
@@ -583,12 +593,12 @@
 ;;
 (defmethod CollectDbXXX :map
 
-  [kw cache zm]
+  [kw cache mcz]
 
-  (if-let [par (:parent zm) ]
+  (if-let [par (:parent mcz) ]
     (merge {} (CollectDbXXX kw cache par)
-              (kw zm))
-    (merge {} (kw zm))
+              (kw mcz))
+    (merge {} (kw mcz))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,7 +610,7 @@
 
   (with-local-vars [sum (transient {}) ]
     (doseq [[k v] (seq flds) ]
-      (let [cn (cstr/upper-case (nsb (:column v))) ]
+      (let [cn (ucase (nsb (:column v))) ]
         (var-set sum (assoc! @sum cn v))))
     (persistent! @sum)
   ))
@@ -764,9 +774,9 @@
       (let [mt (.getMetaData conn)
             tbl (cond
                   (.storesUpperCaseIdentifiers mt)
-                  (cstr/upper-case table)
+                  (ucase table)
                   (.storesLowerCaseIdentifiers mt)
-                  (cstr/lower-case table)
+                  (lcase table)
                   :else table) ]
         (with-open [res (.getColumns mt nil nil tbl nil) ]
           (when (and (notnil? res) (.next res))
@@ -798,7 +808,7 @@
   (with-local-vars [rc false ]
     (Try!
       (let [sql (str "SELECT COUNT(*) FROM  "
-                     (cstr/upper-case table)) ]
+                     (ucase table)) ]
         (with-open [stmt (.createStatement conn)
                     res (.executeQuery stmt sql) ]
           (when (and (notnil? res) (.next res))
@@ -820,7 +830,7 @@
         (if (not more)
           (var-set pkeys (persistent! sum))
           (recur
-            (conj! sum (cstr/upper-case (.getString rs (int 4))) )
+            (conj! sum (ucase (.getString rs (int 4))) )
             (.next rs))
         )))
     (with-open [rs (.getColumns mt catalog schema table "%") ]
@@ -830,7 +840,7 @@
           (var-set cms (persistent! sum))
           (let [opt (not= (.getInt rs (int 11))
                           DatabaseMetaData/columnNoNulls)
-                cn (cstr/upper-case (.getString rs (int 4)))
+                cn (ucase (.getString rs (int 4)))
                 ctype (.getInt rs (int 5)) ]
             (recur
               (assoc! sum (keyword cn)
@@ -856,9 +866,9 @@
         schema (if (= (:id dbv) :oracle) "%" nil)
         tbl (cond
               (.storesUpperCaseIdentifiers mt)
-              (cstr/upper-case table)
+              (ucase table)
               (.storesLowerCaseIdentifiers mt)
-              (cstr/lower-case table)
+              (lcase table)
               :else table) ]
     ;; not good, try mixed case... arrrrrrrrrrhhhhhhhhhhhhhh
     ;;rs = m.getTables( catalog, schema, "%", null)
@@ -971,9 +981,9 @@
     (if (nil? ec)
       (throw e)
       (cond
-        (and oracle (= 942 ec)
-             (= 1418 ec)
-             (= 2289 ec)(= 0 ec))
+        (and oracle (== 942 ec)
+             (== 1418 ec)
+             (== 2289 ec)(== 0 ec))
         true
         :else
         (throw e)))
@@ -1010,14 +1020,14 @@
   [^Connection conn ^String ddl]
 
   (log/debug "\n" ddl)
-  (let [dbn (cstr/lower-case (-> (.getMetaData conn)
-                                 (.getDatabaseProductName)))
+  (let [dbn (lcase (-> (.getMetaData conn)
+                       (.getDatabaseProductName)))
         lines (splitLines ddl) ]
     (.setAutoCommit conn true)
     (doseq [^String line (seq lines) ]
       (let [ln (StringUtils/strip (strim line) ";") ]
         (when (and (hgl? ln)
-                   (not= (cstr/lower-case ln) "go"))
+                   (not= (lcase ln) "go"))
           (try
             (with-open [stmt (.createStatement conn) ]
               (.executeUpdate stmt ln))
@@ -1031,9 +1041,9 @@
 (defn DbioCreateObj "Creates a blank object of the given type.
                     model : keyword, the model type id."
 
-  [model]
+  [modelid]
 
-  (with-meta {} { :typeid model } ))
+  (with-meta {} { :typeid modelid } ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1062,16 +1072,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn DbioGetAssoc "Get the assoc definition.
-                   mc : meta cache.
-                   zm : the model.
+                   cache : meta cache.
+                   mcz : the model.
                    id : assoc id."
 
-  [mc zm id]
+  [cache mcz id]
 
-  (when-not (nil? zm)
-    (let [rc ((:assocs zm) id) ]
+  (when-not (nil? mcz)
+    (let [rc ((:assocs mcz) id) ]
       (if (nil? rc)
-        (DbioGetAssoc mc (mc (:parent zm)) id)
+        (DbioGetAssoc cache (cache (:parent mcz)) id)
         rc))
   ))
 
@@ -1081,15 +1091,16 @@
 
   [ctx lhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
-        zm (mc (GetTypeId lhsObj))
-        ac (DbioGetAssoc mc zm (:as ctx))
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcz (mcache (GetTypeId lhsObj))
+        ac (DbioGetAssoc mcache mcz (:as ctx))
         rt (:cast ctx)
         fid (:fkey ac)
         fv (:rowid (meta lhsObj)) ]
     (if (nil? ac)
       (DbioError "Unknown assoc " (:as ctx))
-      [ (:with ctx) (ternary rt (:other ac)) {fid fv} ])
+      [ sqlr (ternary rt (:other ac)) {fid fv} ])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1098,16 +1109,17 @@
 
   [ctx lhsObj rhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
-        zm (mc (GetTypeId lhsObj))
-        ac (DbioGetAssoc mc zm (:as ctx))
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcz (mcache (GetTypeId lhsObj))
+        ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
         fid (:fkey ac) ]
     (when (nil? ac) (DbioError "Unknown assoc " (:as ctx)))
     (let [x (-> (DbioCreateObj (GetTypeId rhsObj))
                 (DbioSetFld fid fv)
                 (vary-meta MergeMeta (Concise rhsObj)))
-          y (.update ^SQLr (:with ctx) x) ]
+          y (.update sqlr x) ]
       [ lhsObj (merge y (dissoc rhsObj fid)) ])
   ))
 
@@ -1151,23 +1163,23 @@
 
   [ctx lhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
-        zm (mc (GetTypeId lhsObj))
-        ac (DbioGetAssoc mc zm (:as ctx))
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcz (mcache (GetTypeId lhsObj))
+        ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
         rt (:cast ctx)
         rp (ternary rt (:other ac))
-        ^SQLr sqlr (:with ctx)
         fid (:fkey ac) ]
     (when (nil? ac)(DbioError "Unknown assoc " (:as ctx)))
     (if (:cascade ac)
-      (.execute sqlr (str "delete from "
-                          (ese (:table (mc rp)))
-                          " where " (ese fid) " = ?") [fv])
-      (.execute sqlr (str "update "
-                          (ese (:table (mc rp)))
-                          " set " (ese fid) " = NULL "
-                          " where " (ese fid) " = ?") [fv]))
+      (.exec sqlr (str "delete from "
+                       (GTable (mcache rp))
+                       " where " (ese fid) " = ?") [fv])
+      (.exec sqlr (str "update "
+                       (GTable (mcache rp))
+                       " set " (ese fid) " = NULL "
+                       " where " (ese fid) " = ?") [fv]))
     lhsObj
   ))
 
@@ -1196,15 +1208,15 @@
 
   [ctx lhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
-        zm (mc (GetTypeId lhsObj))
-        ac (DbioGetAssoc mc zm (:as ctx))
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcz (mcache (GetTypeId lhsObj))
+        ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
-        ^SQLr sql (:with ctx)
         rt (:cast ctx)
         fid (:fkey ac) ]
     (when (nil? ac) (DbioError "Unknown assoc " (:as ctx)))
-    (let [y (.findOne sql
+    (let [y (.findOne sqlr
                       (ternary rt (:other ac))
                       { fid fv } ) ]
       (when-not (nil? y)
@@ -1212,8 +1224,8 @@
                                (DbioSetFld fid nil))
                             MergeMeta (meta y)) ]
           (if (:cascade ac)
-            (.delete sql x)
-            (.update sql x)))))
+            (.delete sqlr x)
+            (.update sqlr x)))))
     lhsObj
   ))
 
@@ -1224,14 +1236,15 @@
 
   [ctx lhsObj rhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
         rv (:rowid (meta rhsObj))
         lv (:rowid (meta lhsObj))
         lid (GetTypeId lhsObj)
         rid (GetTypeId rhsObj)
-        zm (mc lid)
-        ac (DbioGetAssoc mc zm (:as ctx))
-        mm (mc (:joined ac))
+        mcz (mcache lid)
+        ac (DbioGetAssoc mcache mcz (:as ctx))
+        mm (mcache (:joined ac))
         rl (:other (:rhs (:assocs mm)))
         ml (:other (:lhs (:assocs mm)))
         x (DbioCreateObj (:id mm))
@@ -1246,7 +1259,7 @@
                   (DbioSetFld :lhs-oid rv)
                   (DbioSetFld :rhs-typeid (StripNSPath lid))
                   (DbioSetFld :rhs-oid lv))) ]
-    (.insert ^SQLr (:with ctx) y)
+    (.insert sqlr y)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1256,18 +1269,18 @@
   ([ctx lhsObj] (DbioClrM2M ctx lhsObj nil))
 
   ([ctx lhsObj rhsObj]
-    (let [mc (.getMetas *META-CACHE*)
+    (let [^SQLr sqlr (:with ctx)
+          mcache (-> sqlr (.getMetaCache)(.getMetas))
           rv (:rowid (meta rhsObj))
           lv (:rowid (meta lhsObj))
           lid (GetTypeId lhsObj)
           rid (GetTypeId rhsObj)
-          zm (mc lid)
-          ac (DbioGetAssoc mc zm (:as ctx))
-          mm (mc (:joined ac))
+          mcz (mcache lid)
+          ac (DbioGetAssoc mcache mcz (:as ctx))
+          mm (mcache (:joined ac))
           flds (:fields (meta mm))
           rl (:other (:rhs (:assocs mm)))
           ml (:other (:lhs (:assocs mm)))
-          ^SQLr sql (:with ctx)
           [x y a b]
           (if (= ml lid)
               [ (:column (:lhs-oid flds)) (:column (:lhs-typeid flds))
@@ -1276,20 +1289,20 @@
                 (:column (:lhs-oid flds)) (:column (:lhs-typeid flds)) ]) ]
       (when (nil? ac) (DbioError "Unkown assoc " (:as ctx)))
       (if (nil? rhsObj)
-        (.execute sql
-                  (str "delete from "
-                       (ese (:table mm))
-                       " where " (ese x) " =? and " (ese y) " =?")
-                  [ lv (StripNSPath lid) ] )
-        (.execute sql
-                  (str "delete from "
-                       (ese (:table mm))
-                       " where " (ese x) " =? and " (ese y) " =? and "
-                       (ese a)
-                       " =? and "
-                       (ese b)
-                       " =?" )
-                  [ lv (StripNSPath lid) rv (StripNSPath rid) ])) )
+        (.exec sqlr
+               (str "delete from "
+                    (GTable mm)
+                    " where " (ese x) " =? and " (ese y) " =?")
+               [ lv (StripNSPath lid) ] )
+        (.exec sqlr
+               (str "delete from "
+                    (GTable mm)
+                    " where " (ese x) " =? and " (ese y) " =? and "
+                    (ese a)
+                    " =? and "
+                    (ese b)
+                    " =?" )
+               [ lv (StripNSPath lid) rv (StripNSPath rid) ])) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1298,14 +1311,15 @@
 
   [ctx lhsObj]
 
-  (let [mc (.getMetas *META-CACHE*)
+  (let [^SQLr sqlr (:with ctx)
+        mcache (-> sqlr (.getMetaCache)(.getMetas))
         lv (:rowid (meta lhsObj))
         lid (GetTypeId lhsObj)
         eseRES (ese "RES")
         eseMM (ese "MM")
-        zm (mc lid)
-        ac (DbioGetAssoc mc zm (:as ctx))
-        mm (mc (:joined ac))
+        mcz (mcache lid)
+        ac (DbioGetAssoc mcache mcz (:as ctx))
+        mm (mcache (:joined ac))
         flds (:fields (meta mm))
         rl (:other (:rhs (:assocs mm)))
         ml (:other (:lhs (:assocs mm)))
@@ -1314,14 +1328,13 @@
           [:lhs-typeid :rhs-typeid :lhs-oid :rhs-oid ml rl]
           [:rhs-typeid :lhs-typeid :rhs-oid :lhs-oid rl ml] ) ]
     (when (nil? ac) (DbioError "Unknown assoc " (:as ctx)))
-    (.select ^SQLr
-             (:with ctx)
+    (.select sqlr
              t
              (str "select distinct "
                   eseRES
                   ".* from "
-                  (ese (:table (get mc t)))
-                  " " eseRES " join " (ese (:table mm)) " " eseMM " on "
+                  (GTable (get mcache t))
+                  " " eseRES " join " (GTable mm) " " eseMM " on "
                   (str eseMM "." (ese (:column (x flds))))
                   "=? and "
                   (str eseMM "." (ese (:column (y flds))))

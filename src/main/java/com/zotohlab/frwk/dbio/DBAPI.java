@@ -21,7 +21,7 @@ import java.util.Map;
  */
 public interface DBAPI {
 
-  public boolean supportsOptimisticLock();
+  public boolean optimisticLock();
 
   public MetaCache getMetaCache();
 

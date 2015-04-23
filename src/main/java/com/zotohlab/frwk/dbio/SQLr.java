@@ -36,8 +36,8 @@ public interface SQLr {
   public List<?> select(Object modeldef, String sql, List<?> params);
   public List<?> select(String sql, List<?> params);
 
-  public Object executeWithOutput(String sql, List<?> params);
-  public Object execute(String sql, List<?> params);
+  public Object execWithOutput(String sql, List<?> params);
+  public Object exec(String sql, List<?> params);
 
   public int countAll(Object modeldef);
 

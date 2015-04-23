@@ -35,6 +35,7 @@
   ^String
   [^String sql extra]
 
+  ;;TODO: extra is a map of things.
   sql)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,15 +54,15 @@
       (findAll [this model] (.findAll this model {}))
 
       (findOne [this model filters]
-        (let [rset (.findSome this model filters {}) ]
+        (when-let [rset (.findSome this model filters {}) ]
           (when-not (empty? rset) (first rset))))
 
       (findSome [this model filters] (.findSome this model filters {}))
       (findSome [_ model filters extraSQL]
-        (let [zm (metas model)
+        (let [mcz (metas model)
               [wc pms]
-              (SqlFilterClause zm filters)
-              tbl (Tablename zm)
+              (SqlFilterClause mcz filters)
+              tbl (Tablename mcz)
               s (str "SELECT * FROM " (ese tbl)) ]
           (if (hgl? wc)
             (.doQuery proc conn
@@ -76,10 +77,10 @@
       (delete [_ obj] (.doDelete proc conn obj) )
       (insert [_ obj] (.doInsert proc conn obj) )
 
-      (executeWithOutput [_ sql pms]
-        (.doExecuteWithOutput proc conn sql pms { :pkey "DBIO_ROWID" } ) )
+      (execWithOutput [_ sql pms]
+        (.doExecWithOutput proc conn sql pms { :pkey COL_ROWID } ) )
 
-      (execute [_ sql pms] (.doExecute proc conn sql pms) )
+      (exec [_ sql pms] (.doExec proc conn sql pms) )
 
       (getMetaCache [_] metaCache)
 
@@ -105,11 +106,9 @@
           (with-open [conn (.begin this) ]
             (test-nonil "sql-connection" conn)
             (try
-              (let [tx (mk-tx proc metaCache conn)
-                    r (func tx) ]
-                (var-set rc r)
-                (.commit this conn)
-                @rc)
+              (var-set rc (func (mk-tx proc metaCache conn)))
+              (.commit this conn)
+              @rc
               (catch Throwable e#
                 (do
                   (.rollback this conn)

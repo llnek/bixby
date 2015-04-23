@@ -206,33 +206,34 @@
     o2))
 
 (defn- wedlock []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
            h (create-emp "joe" "blog" "joeb")
            w (create-person "mary" "lou")
-
+           mc (.getMetaCache ^DBAPI @DB)
            [h1 w1] (.execWith
                      sql
-                     (fn [^SQLr tx] (DbioSetO2O {:as :spouse :with tx } h w)))
+                     (fn [^SQLr tx] (DbioSetO2O {:as :spouse :with tx :cache mc} h w)))
            w2 (.execWith
                 sql
                 (fn [^SQLr tx] (DbioGetO2O
                            {:as :spouse
                             :cast :testcljc.dbio.dbstuff/Person
+                            :cache mc
                             :with tx } h1))) ]
       (and (not (nil? h))
            (not (nil? w))
-           (not (nil? w2))))))
+           (not (nil? w2)))))
 
 
 (defn- undo-wedlock []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
+           mc (.getMetaCache ^DBAPI @DB)
            h (fetch-emp "joeb")
            w (.execWith
                sql
                (fn [^SQLr tx] (DbioGetO2O
                           { :as :spouse
+                            :cache mc
                             :with tx
                             :cast :testcljc.dbio.dbstuff/Person } h)))
            h1 (.execWith
@@ -240,22 +241,24 @@
                 (fn [^SQLr tx] (DbioClrO2O
                            {:as :spouse
                              :with tx
+                             :cache mc
                              :cast :testcljc.dbio.dbstuff/Person } h)))
            w1 (.execWith
                 sql
                 (fn [^SQLr tx] (DbioGetO2O
                            { :as :spouse
                              :with tx
+                             :cache mc
                              :cast :testcljc.dbio.dbstuff/Person } h1))) ]
       (and
         (not (nil? h))
         (not (nil? w))
         (not (nil? h1))
-        (nil? w1)))) )
+        (nil? w1))))
 
 (defn- test-company []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
+           mc (.getMetaCache ^DBAPI @DB)
            c (.execWith
                sql
                (fn [^SQLr tx]
@@ -263,12 +266,12 @@
       (.execWith
          sql
          (fn [^SQLr tx]
-           (DbioSetO2M {:as :depts :with tx}
+           (DbioSetO2M {:as :depts :with tx :cache mc}
                              c (.insert tx (create-dept "d1")))))
       (.execWith
          sql
          (fn [^SQLr tx]
-           (DbioAddO2M {:as :depts :with tx}
+           (DbioAddO2M {:as :depts :with tx :cache mc}
                          c
                          [ (.insert tx (create-dept "d2"))
                            (.insert tx (create-dept "d3")) ] )))
@@ -276,7 +279,7 @@
         sql
         (fn [^SQLr tx]
           (DbioAddO2M
-            {:as :emps :with tx }
+            {:as :emps :with tx :cache mc}
             c
             [ (.insert tx (mkEmp "emp1" "ln1" "e1"))
               (.insert tx (mkEmp "emp2" "ln2" "e2"))
@@ -284,58 +287,58 @@
 
       (let [ ds (.execWith
                   sql
-                  (fn [^SQLr tx] (DbioGetO2M  {:as :depts :with tx} c)))
+                  (fn [^SQLr tx] (DbioGetO2M  {:cache mc :as :depts :with tx} c)))
              es (.execWith
                   sql
-                  (fn [^SQLr tx] (DbioGetO2M  {:as :emps :with tx} c))) ]
+                  (fn [^SQLr tx] (DbioGetO2M  {:cache mc :as :emps :with tx} c))) ]
         (and (= (count ds) 3)
-             (= (count es) 3))) )))
+             (= (count es) 3))) ))
 
 (defn- test-m2m []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
+           mc (.getMetaCache ^DBAPI @DB) 
            c (.execWith
                sql
                (fn [^SQLr tx]
                  (.findOne tx :testcljc.dbio.dbstuff/Company {:cname "acme"} )))
            ds (.execWith
                 sql
-                (fn [^SQLr tx] (DbioGetO2M {:as :depts :with tx} c)))
+                (fn [^SQLr tx] (DbioGetO2M {:cache mc :as :depts :with tx} c)))
            es (.execWith
                 sql
-                (fn [^SQLr tx] (DbioGetO2M {:as :emps :with tx} c))) ]
+                (fn [^SQLr tx] (DbioGetO2M {:cache mc :as :emps :with tx} c))) ]
       (.execWith
         sql
         (fn [^SQLr tx]
           (doseq [ d (seq ds) ]
             (if (= (:dname d) "d2")
               (doseq [ e (seq es) ]
-                (DbioSetM2M {:as :emps :with tx} d e))))
+                (DbioSetM2M {:cache mc :as :emps :with tx} d e))))
           (doseq [ e (seq es) ]
             (if (= (:login e) "e2")
               (doseq [ d (seq ds) ]
-                (DbioSetM2M {:as :depts :with tx} e d)))) ))
+                (DbioSetM2M {:cache mc :as :depts :with tx} e d)))) ))
 
       (let [ s1 (.execWith
                   sql
                   (fn [^SQLr tx]
                     (DbioGetM2M
-                    {:as :emps :with tx}
+                    {:cache mc :as :emps :with tx}
                     (some (fn [d]
                               (if (= (:dname d) "d2") d nil)) ds) )))
              s2 (.execWith
                   sql
                   (fn [^SQLr tx]
                     (DbioGetM2M
-                    {:as :depts :with tx}
+                    {:cache mc :as :depts :with tx}
                     (some (fn [e]
                               (if (= (:login e) "e2") e nil)) es) ))) ]
         (and (== (count s1) 3)
-             (== (count s2) 3)) ))))
+             (== (count s2) 3)) )))
 
 (defn- undo-m2m []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
+           mc (.getMetaCache ^DBAPI @DB) 
            d2 (.execWith
                sql
                (fn [^SQLr tx]
@@ -348,30 +351,30 @@
       (.execWith
         sql
         (fn [^SQLr tx]
-          (DbioClrM2M { :as :emps :with tx } d2)))
+          (DbioClrM2M {:cache mc :as :emps :with tx } d2)))
 
       (.execWith
         sql
         (fn [^SQLr tx]
-          (DbioClrM2M { :as :depts :with tx } e2)))
+          (DbioClrM2M {:cache mc :as :depts :with tx } e2)))
 
       (let [ s1 (.execWith
                   sql
                   (fn [^SQLr tx]
-                    (DbioGetM2M {:as :emps :with tx} d2)))
+                    (DbioGetM2M {:cache mc :as :emps :with tx} d2)))
 
              s2 (.execWith
                   sql
                   (fn [^SQLr tx]
-                    (DbioGetM2M {:as :depts :with tx} e2))) ]
+                    (DbioGetM2M {:cache mc :as :depts :with tx} e2))) ]
 
         (and (== (count s1) 0)
-             (== (count s2) 0)) ))))
+             (== (count s2) 0)) )))
 
 
 (defn- undo-company []
-  (binding [ *META-CACHE* (.getMetaCache ^DBAPI @DB) ]
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
+           mc (.getMetaCache ^DBAPI @DB) 
            c (.execWith
                sql
                (fn [^SQLr tx]
@@ -379,24 +382,24 @@
       (.execWith
         sql
         (fn [^SQLr tx]
-          (DbioClrO2M {:as :depts :with tx} c)))
+          (DbioClrO2M {:cache mc :as :depts :with tx} c)))
 
       (.execWith
         sql
         (fn [^SQLr tx]
-          (DbioClrO2M {:as :emps :with tx} c)))
+          (DbioClrO2M {:cache mc :as :emps :with tx} c)))
 
       (let [ s1 (.execWith
                   sql
                   (fn [^SQLr tx]
-                    (DbioGetO2M {:as :depts :with tx} c)))
+                    (DbioGetO2M {:cache mc :as :depts :with tx} c)))
              s2 (.execWith
                   sql
                   (fn [^SQLr tx]
-                    (DbioGetO2M {:as :emps :with tx} c))) ]
+                    (DbioGetO2M {:cache mc :as :emps :with tx} c))) ]
 
         (and (== (count s1) 0)
-             (== (count s2) 0))))))
+             (== (count s2) 0)))))
 
 
 (deftest testdbio-dbstuff

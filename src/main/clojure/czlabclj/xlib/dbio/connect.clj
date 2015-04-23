@@ -21,12 +21,12 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.composite]
-        [czlabclj.xlib.dbio.simple]
-        [czlabclj.xlib.dbio.sqlserver]
-        [czlabclj.xlib.dbio.postgresql]
-        [czlabclj.xlib.dbio.mysql]
-        [czlabclj.xlib.dbio.oracle]
-        [czlabclj.xlib.dbio.h2])
+        [czlabclj.xlib.dbio.simple])
+        ;;[czlabclj.xlib.dbio.sqlserver]
+        ;;[czlabclj.xlib.dbio.postgresql]
+        ;;[czlabclj.xlib.dbio.mysql]
+        ;;[czlabclj.xlib.dbio.oracle]
+        ;;[czlabclj.xlib.dbio.h2])
 
   (:import  [java.util Map HashMap]
             [com.zotohlab.frwk.dbio DBAPI
@@ -65,7 +65,7 @@
     ;;(log/debug (.getMetas metaCache))
     (reify DBAPI
 
-      (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
+      (optimisticLock [_] (not (false? (:opt-lock options))))
 
       (vendor [_] (ResolveVendor jdbc))
 
@@ -88,7 +88,7 @@
 
   (reify DBAPI
 
-    (supportsOptimisticLock [_] (not (false? (:opt-lock options))))
+    (optimisticLock [_] (not (false? (:opt-lock options))))
     (getMetaCache [_] metaCache)
 
     (vendor [_] (.vendor pool))

@@ -121,16 +121,16 @@
 
   [^SQLr sql role]
 
-  (.execute sql (str "DELETE FROM "
-                     (GTable AuthRole)
-                     " WHERE "
-                     (->> (meta AuthRole)
-                          (:fields)
-                          (:name)
-                          (:column)
-                          (ese))
-                     " = ?")
-                [(strim role)]
+  (.exec sql (str "DELETE FROM "
+                  (GTable AuthRole)
+                  " WHERE "
+                  (->> (meta AuthRole)
+                       (:fields)
+                       (:name)
+                       (:column)
+                       (ese))
+                  " = ?")
+             [(strim role)]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,15 +271,15 @@
 
   [^SQLr sql user]
 
-  (.execute sql (str "DELETE FROM " (GTable LoginAccount)
-                     " WHERE "
-                     (->> (meta LoginAccount)
-                          (:fields)
-                          (:acctid)
-                          (:column)
-                          (ese))
-                     " =?")
-                [ (strim user) ]
+  (.exec sql (str "DELETE FROM " (GTable LoginAccount)
+                  " WHERE "
+                  (->> (meta LoginAccount)
+                       (:fields)
+                       (:acctid)
+                       (:column)
+                       (ese))
+                  " =?")
+             [ (strim user) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -17,7 +17,8 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.str :only [hgl? AddDelim! nsb]]
+  (:use [czlabclj.xlib.util.str
+         :only [lcase ucase hgl? AddDelim! nsb]]
         [czlabclj.xlib.dbio.core])
 
   (:import  [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]
@@ -33,8 +34,8 @@
   ^String
   [flds fid]
 
-  (let [^String c (:column (get flds fid)) ]
-    (if (hgl? c) (cstr/upper-case c) c)
+  (let [c (:column (get flds fid)) ]
+    (if (hgl? c) (ucase c) c)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,7 +89,7 @@
   ^String
   [fld]
 
-  (cstr/upper-case ^String (:column fld)))
+  (ucase (:column fld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -185,7 +186,7 @@
   [db ^String col ty opt? dft]
 
   (str (GetPad db)
-       (cstr/upper-case col)
+       (ucase col)
        " " ty " "
        (nullClause db opt?)
        (if (nil? dft) "" (str " DEFAULT " dft))))
@@ -353,16 +354,16 @@
 (defn- genExIndexes ""
 
   ^String
-  [db cache table flds zm]
+  [db cache table flds mcz]
 
-  (let [m (CollectDbXXX :indexes cache zm)
+  (let [m (CollectDbXXX :indexes cache mcz)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
         (when (empty? cols)
           (DbioError (str "Cannot have empty index: " nm)))
         (.append bf (str "CREATE INDEX "
-                         (cstr/lower-case (str table "_" (name nm)))
+                         (lcase (str table "_" (name nm)))
                          " ON " table
                          " ( "
                          (cstr/join "," cols)
@@ -375,9 +376,9 @@
 ;;
 (defn- genUniques ""
 
-  [db cache flds zm]
+  [db cache flds mcz]
 
-  (let [m (CollectDbXXX :uniques cache zm)
+  (let [m (CollectDbXXX :uniques cache mcz)
         bf (StringBuilder.) ]
     (doseq [[nm nv] (seq m) ]
       (let [cols (map #(getcolname flds %) nv) ]
@@ -392,11 +393,11 @@
 ;;
 (defn- genPrimaryKey ""
 
-  [db zm pks]
+  [db mcz pks]
 
   (str (GetPad db)
        "PRIMARY KEY("
-       (cstr/upper-case (nsb (cstr/join "," pks)) )
+       (ucase (nsb (cstr/join "," pks)) )
        ")"
   ))
 
@@ -404,15 +405,15 @@
 ;;
 (defn- genBody ""
 
-  [db cache table zm]
+  [db cache table mcz]
 
-  (let [flds (CollectDbXXX :fields cache zm)
+  (let [flds (CollectDbXXX :fields cache mcz)
         bf (StringBuilder.)
         inx (StringBuilder.) ]
     (with-local-vars [pkeys (transient #{}) ]
       ;; 1st do the columns
       (doseq [[fid fld] (seq flds) ]
-        (let [cn (cstr/upper-case ^String (:column fld))
+        (let [cn (ucase (:column fld))
               dt (:domain fld)
               col (case dt
                     :Boolean (GenBool db fld)
@@ -434,12 +435,12 @@
           (AddDelim! bf ",\n" col)))
       ;; now do the assocs
       ;; now explicit indexes
-      (-> inx (.append (genExIndexes db cache table flds zm)))
+      (-> inx (.append (genExIndexes db cache table flds mcz)))
       ;; now uniques, primary keys and done.
       (when (> (.length bf) 0)
         (when (> (count @pkeys) 0)
-          (.append bf (str ",\n" (genPrimaryKey db zm (persistent! @pkeys)))))
-        (let [s (genUniques db cache flds zm) ]
+          (.append bf (str ",\n" (genPrimaryKey db mcz (persistent! @pkeys)))))
+        (let [s (genUniques db cache flds mcz) ]
           (when (hgl? s)
             (.append bf (str ",\n" s)))))
     [ (.toString bf) (.toString inx) ] )
@@ -449,11 +450,11 @@
 ;;
 (defn- genOneTable ""
 
-  [db ms zm]
+  [db mcache mcz]
 
-  (let [table (cstr/upper-case ^String (:table zm))
+  (let [table (ucase (:table mcz))
         b (GenBegin db table)
-        d (genBody db ms table zm)
+        d (genBody db mcache table mcz)
         e (GenEnd db table)
         s1 (str b (first d) e)
         inx (last d) ]
@@ -475,7 +476,7 @@
         (let [^String tbl (:table tdef) ]
           (when (and (not (:abstract tdef)) (hgl? tbl))
             (log/debug "Model Id: " (name id) " table: " tbl)
-            (-> drops (.append (GenDrop db (cstr/upper-case tbl) )))
+            (-> drops (.append (GenDrop db (ucase tbl) )))
             (-> body (.append (genOneTable db ms tdef))))))
       (str "" drops body (GenEndSQL db)))
   ))

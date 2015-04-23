@@ -65,18 +65,18 @@
       (findAll [this model] (.findAll this model {}))
 
       (findOne [this model filters]
-        (let [rset (.findSome this model filters {})]
+        (when-let [rset (.findSome this model filters {})]
           (when-not (empty? rset) (first rset))))
 
       (findSome [this  model filters] (.findSome this model filters {} ))
 
       (findSome [this model filters extraSQL]
         (with-open [conn (openDB db) ]
-          (let [zm (metas model)
-                tbl (Tablename zm)
+          (let [mcz (metas model)
+                tbl (Tablename mcz)
                 s (str "SELECT * FROM " (ese tbl))
                 [wc pms]
-                (SqlFilterClause zm filters) ]
+                (SqlFilterClause mcz filters) ]
             (if (hgl? wc)
               (.doQuery proc conn (doExtraSQL (str s " WHERE " wc)
                                               extraSQL)
@@ -103,14 +103,14 @@
         (with-open [conn (openDB db) ]
           (.doQuery proc conn sql params) ))
 
-      (executeWithOutput [this sql pms]
+      (execWithOutput [this sql pms]
         (with-open [conn (openDB db) ]
-          (.doExecuteWithOutput proc conn
-                                sql pms {:pkey "DBIO_ROWID"} )))
+          (.doExecWithOutput proc conn
+                                sql pms {:pkey COL_ROWID} )))
 
-      (execute [this sql pms]
+      (exec [this sql pms]
         (with-open [conn (openDB db) ]
-          (doExecute proc conn sql pms) ))
+          (doExec proc conn sql pms) ))
 
       (countAll [this model]
         (with-open [conn (openDB db) ]
