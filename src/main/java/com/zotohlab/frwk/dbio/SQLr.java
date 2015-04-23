@@ -43,7 +43,7 @@ public interface SQLr {
 
   public void purge(Object modeldef);
 
-  public MetaCache getMetaCache();
+  public Map<?,?> metas();
 
 }
 

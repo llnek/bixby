@@ -15,6 +15,7 @@ import static com.zotohlab.frwk.netty.NettyFW.FORMDEC_KEY;
 import static com.zotohlab.frwk.netty.NettyFW.FORMITMS_KEY;
 import static com.zotohlab.frwk.netty.NettyFW.delAttr;
 import static com.zotohlab.frwk.netty.NettyFW.getAttr;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
@@ -36,18 +37,18 @@ public abstract class FormPostFilter extends AuxHttpFilter {
   public abstract void handleFormChunk(ChannelHandlerContext ctx, Object msg)
     throws IOException;
 
-  public void resetAttrs(ChannelHandlerContext ctx) {
-    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr(ctx, FORMDEC_KEY);
-    ULFormItems fis = (ULFormItems) getAttr(ctx, FORMITMS_KEY);
-    delAttr(ctx, FORMITMS_KEY);
-    delAttr(ctx, FORMDEC_KEY);
+  public void resetAttrs(Channel ch) {
+    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr(ch, FORMDEC_KEY);
+    ULFormItems fis = (ULFormItems) getAttr(ch, FORMITMS_KEY);
+    delAttr(ch, FORMITMS_KEY);
+    delAttr(ch, FORMDEC_KEY);
     if (fis != null) {
       fis.destroy();
     }
     if (dc != null) {
       dc.destroy();
     }
-    super.resetAttrs(ctx);
+    super.resetAttrs(ch);
   }
 
   protected FormPostFilter() {}

@@ -35,10 +35,10 @@ import static org.slf4j.LoggerFactory.*;
  */
 public class XData implements Serializable {
 
-  private static final long serialVersionUID = -8637175588593032279L;
-  
   private static final Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
+  
+  private static final long serialVersionUID = -8637175588593032279L;
   
   private String _encoding ="utf-8";
   private Object _data = null;

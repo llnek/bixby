@@ -80,7 +80,7 @@ public enum NettyFW {
   public static ChannelFutureListener dbgNettyDone(final String msg) {
     return new ChannelFutureListener() {
       public void operationComplete(ChannelFuture fff) {
-        _log.debug("netty-op-complete: {}", msg);
+        tlog().debug("netty-op-complete: {}", msg);
       }
     };
   }

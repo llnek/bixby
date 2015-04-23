@@ -357,9 +357,9 @@
 
   [pojo fid fdef]
 
-  (let [fd (-> (merge (getDftFldObj fid) fdef)
-               (assoc :id (keyword fid)) ) ]
-    (Interject pojo :fields #(assoc % fid fd))
+  (let [fd (merge (getDftFldObj fid) fdef)
+        k (:id fd)]
+    (Interject pojo :fields #(assoc % k fd))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,8 +387,9 @@
              (assoc ad :fkey (fmtfkey (:id pojo) aid))
              (:M2M :MXM) ad
              ;;else
-             (DbioError (str "Invalid assoc def " adef))) ]
-    (Interject pojo :assocs #(assoc % aid a2))
+             (DbioError (str "Invalid assoc def " adef))) 
+        k (keyword aid)]
+    (Interject pojo :assocs #(assoc % k a2))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -491,8 +492,8 @@
         (doseq [[x s] (seq (:assocs m)) ]
           (case (:kind s)
             (:O2O :O2M)
-            (let [rhs (@rc (:other s))
-                  fid (:fkey s)
+            (let [fid (keyword (:fkey s))
+                  rhs (@rc (:other s))
                   ft (merge (getDftFldObj fid) fdef) ]
               (var-set rc (assoc! @rc (:other s) (assoc rhs fid ft))))
             nil)))
@@ -1092,7 +1093,7 @@
   [ctx lhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         mcz (mcache (GetTypeId lhsObj))
         ac (DbioGetAssoc mcache mcz (:as ctx))
         rt (:cast ctx)
@@ -1110,7 +1111,7 @@
   [ctx lhsObj rhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         mcz (mcache (GetTypeId lhsObj))
         ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
@@ -1164,7 +1165,7 @@
   [ctx lhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         mcz (mcache (GetTypeId lhsObj))
         ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
@@ -1209,7 +1210,7 @@
   [ctx lhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         mcz (mcache (GetTypeId lhsObj))
         ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
@@ -1237,7 +1238,7 @@
   [ctx lhsObj rhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         rv (:rowid (meta rhsObj))
         lv (:rowid (meta lhsObj))
         lid (GetTypeId lhsObj)
@@ -1270,7 +1271,7 @@
 
   ([ctx lhsObj rhsObj]
     (let [^SQLr sqlr (:with ctx)
-          mcache (-> sqlr (.getMetaCache)(.getMetas))
+          mcache (.metas sqlr)
           rv (:rowid (meta rhsObj))
           lv (:rowid (meta lhsObj))
           lid (GetTypeId lhsObj)
@@ -1312,7 +1313,7 @@
   [ctx lhsObj]
 
   (let [^SQLr sqlr (:with ctx)
-        mcache (-> sqlr (.getMetaCache)(.getMetas))
+        mcache (.metas sqlr)
         lv (:rowid (meta lhsObj))
         lid (GetTypeId lhsObj)
         eseRES (ese "RES")

@@ -431,9 +431,9 @@
 (defn MakeProc ""
 
   ^czlabclj.xlib.dbio.sql.SQLProcAPI
-  [^MetaCache metaCache ^DBAPI db]
+  [^DBAPI db]
 
-  (let [metas (.getMetas metaCache)
+  (let [metas (-> db (.getMetaCache)(.getMetas))
         sqlr (makeSqlr db)]
     (reify SQLProcAPI
 
@@ -470,7 +470,7 @@
               mcz (metas model) ]
           (when (nil? mcz)
             (DbioError (str "Unknown model " model)))
-          (let [lock (.optimisticLock db)
+          (let [lock (.supportsLock db)
                 table (Tablename mcz)
                 rowid (:rowid info)
                 verid (:verid info)
@@ -492,7 +492,7 @@
           (when (nil? mcz)
             (DbioError (str "Unknown model " model)))
           (let [pkey {:pkey (Colname :rowid mcz)}
-                lock (.optimisticLock db)
+                lock (.supportsLock db)
                 flds (:fields (meta mcz))
                 table (Tablename mcz)
                 s2 (StringBuilder.)
@@ -523,7 +523,7 @@
               mcz (metas model) ]
           (when (nil? mcz)
             (DbioError (str "Unknown model " model)))
-          (let [lock (.optimisticLock db)
+          (let [lock (.supportsLock db)
                 flds (:fields (meta mcz))
                 cver (nnz (:verid info))
                 table (Tablename mcz)

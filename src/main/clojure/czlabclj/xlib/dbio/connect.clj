@@ -65,7 +65,7 @@
     ;;(log/debug (.getMetas metaCache))
     (reify DBAPI
 
-      (optimisticLock [_] (not (false? (:opt-lock options))))
+      (supportsLock [_] (not (false? (:opt-lock options))))
 
       (vendor [_] (ResolveVendor jdbc))
 
@@ -75,8 +75,8 @@
 
       (open [_] (MakeConnection jdbc))
 
-      (newCompositeSQLr [this] (CompositeSQLr metaCache this))
-      (newSimpleSQLr [this] (SimpleSQLr metaCache this)) )
+      (newCompositeSQLr [this] (CompositeSQLr this))
+      (newSimpleSQLr [this] (SimpleSQLr this)) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,15 +88,15 @@
 
   (reify DBAPI
 
-    (optimisticLock [_] (not (false? (:opt-lock options))))
+    (supportsLock [_] (not (false? (:opt-lock options))))
     (getMetaCache [_] metaCache)
 
     (vendor [_] (.vendor pool))
     (finz [_] nil)
     (open [_] (.nextFree pool))
 
-    (newCompositeSQLr [this] (CompositeSQLr metaCache this))
-    (newSimpleSQLr [this] (SimpleSQLr metaCache this)) ))
+    (newCompositeSQLr [this] (CompositeSQLr this))
+    (newSimpleSQLr [this] (SimpleSQLr this)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

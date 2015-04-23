@@ -11,6 +11,11 @@
 
 package com.zotohlab.tpcl.axis;
 
+import static java.lang.invoke.MethodHandles.*;
+import org.slf4j.Logger;
+import static org.slf4j.LoggerFactory.*;
+
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -20,8 +25,6 @@ import javax.xml.namespace.QName;
 
 import org.apache.axis.encoding.ser.CalendarDeserializer;
 import org.apache.axis.i18n.Messages;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author kenl
@@ -30,8 +33,8 @@ import org.slf4j.LoggerFactory;
 // and get the right timezone
 public class CalDeserializer extends CalendarDeserializer {
 
-	private static Logger _log= LoggerFactory.getLogger(CalDeserializer.class);
-  public Logger tlog() { return _log; }
+  private static Logger _log=getLogger(lookup().lookupClass());
+  public static Logger tlog() { return _log; }
 
   private static final long serialVersionUID = 1L;
   

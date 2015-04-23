@@ -54,11 +54,10 @@
 (defn SimpleSQLr "Non transactional SQL object."
 
   ^SQLr
-  [^MetaCache metaCache ^DBAPI db ]
+  [^DBAPI db]
 
   (let [^czlabclj.xlib.dbio.sql.SQLProcAPI
-        proc (MakeProc metaCache db)
-        metas (.getMetas metaCache) ]
+        proc (MakeProc db)]
     (reify SQLr
 
       (findAll [this model extra] (.findSome this model {} extra))
@@ -72,7 +71,7 @@
 
       (findSome [this model filters extraSQL]
         (with-open [conn (openDB db) ]
-          (let [mcz (metas model)
+          (let [mcz ((.metas this) model)
                 tbl (Tablename mcz)
                 s (str "SELECT * FROM " (ese tbl))
                 [wc pms]
@@ -82,6 +81,8 @@
                                               extraSQL)
                                   pms model)
               (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) ))
+
+      (metas [_] (-> db (.getMetaCache)(.getMetas)))
 
       (update [this obj]
         (with-open [ conn (openDB db) ]

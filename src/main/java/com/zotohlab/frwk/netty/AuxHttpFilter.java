@@ -23,6 +23,7 @@ import static com.zotohlab.frwk.netty.NettyFW.setAttr;
 import static com.zotohlab.frwk.netty.NettyFW.slurpByteBuf;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -37,9 +38,10 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
 
+import org.slf4j.Logger;
+
+import static org.slf4j.LoggerFactory.*;
 
 import com.zotohlab.frwk.core.CallableWithArgs;
 import com.zotohlab.frwk.io.IOUtils;
@@ -56,20 +58,26 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  public String getName() { return getClass().getSimpleName(); }
+  public String getName() { 
+    return getClass().getSimpleName(); 
+  }
 
+  public void resetAttrs(ChannelHandlerContext ctx) {
+    resetAttrs(ctx.channel());
+  }
+  
   /** Clean up any attached attributes.
    */
-  public void resetAttrs(ChannelHandlerContext ctx) {
+  public void resetAttrs(Channel ch) {
 
-    ByteBuf buf= (ByteBuf) getAttr(ctx, CBUF_KEY);
+    ByteBuf buf= (ByteBuf) getAttr(ch, CBUF_KEY);
     if (buf != null) { buf.release(); }
 
-    delAttr(ctx,MSGFUNC_KEY);
-    delAttr(ctx,MSGINFO_KEY);
-    delAttr(ctx,CBUF_KEY);
-    delAttr(ctx,XDATA_KEY);
-    delAttr(ctx,XOS_KEY);
+    delAttr(ch,MSGFUNC_KEY);
+    delAttr(ch,MSGINFO_KEY);
+    delAttr(ch,CBUF_KEY);
+    delAttr(ch,XDATA_KEY);
+    delAttr(ch,XOS_KEY);
   }
 
   public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {

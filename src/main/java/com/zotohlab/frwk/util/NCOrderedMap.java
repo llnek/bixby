@@ -26,7 +26,7 @@ import java.util.Set;
 public class NCOrderedMap<T> extends NCMap<T> {
 
   private static final long serialVersionUID = -3637175588593032279L;
-  private Map<String,T> _map= new LinkedHashMap<String,T>();
+  private Map<String,T> _map= new LinkedHashMap<>();
 
   public Set<Map.Entry<String,T>> entrySet() {
     return _map.entrySet();

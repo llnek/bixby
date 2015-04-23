@@ -40,11 +40,11 @@ import com.zotohlab.frwk.io.XData;
  */
 public class ULFileItem implements FileItem , Serializable {
 
-  private static final long serialVersionUID= 2214937997601489203L;
-  
   private static final Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
+  private static final long serialVersionUID= 2214937997601489203L;
+  
   private transient OutputStream _os;
   private byte[] _fieldBits;
   private String _filename = "";

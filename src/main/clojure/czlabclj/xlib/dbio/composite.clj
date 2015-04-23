@@ -47,7 +47,7 @@
    ^MetaCache metaCache
    ^Connection conn]
 
-  (let [metas (.getMetas metaCache) ]
+  (let []
     (reify SQLr
 
       (findAll [this model extra] (.findSome this model {} extra))
@@ -58,8 +58,8 @@
           (when-not (empty? rset) (first rset))))
 
       (findSome [this model filters] (.findSome this model filters {}))
-      (findSome [_ model filters extraSQL]
-        (let [mcz (metas model)
+      (findSome [this model filters extraSQL]
+        (let [mcz ((.metas this) model)
               [wc pms]
               (SqlFilterClause mcz filters)
               tbl (Tablename mcz)
@@ -82,7 +82,7 @@
 
       (exec [_ sql pms] (.doExec proc conn sql pms) )
 
-      (getMetaCache [_] metaCache)
+      (metas [_] (.getMetas metaCache))
 
       (countAll [_ model] (.doCount proc conn model) )
       (purge [_ model] (.doPurge proc conn model) )
@@ -93,12 +93,11 @@
 (defn CompositeSQLr "A composite supports transactions."
 
   ^Transactable
-  [^MetaCache metaCache ^DBAPI db ]
+  [^DBAPI db ]
 
-  (let [proc (MakeProc metaCache db) ]
-    (test-nonil "meta-cache" metaCache)
+  (let [mcache (.getMetaCache db)
+        proc (MakeProc db) ]
     (test-nonil "sql-proc!" proc)
-    (test-nonil "dbapi" db)
     (reify Transactable
 
       (execWith [this func]
@@ -106,7 +105,7 @@
           (with-open [conn (.begin this) ]
             (test-nonil "sql-connection" conn)
             (try
-              (var-set rc (func (mk-tx proc metaCache conn)))
+              (var-set rc (func (mk-tx proc mcache conn)))
               (.commit this conn)
               @rc
               (catch Throwable e#

@@ -23,8 +23,8 @@ public class DemuxedMsg {
 
   // payload is body of message
   // info is the headers
-  private XData _payload;
   private Map<?,?> _info;
+  private XData _payload;
 
   public DemuxedMsg(Map<?,?> info, XData payload) {
     _payload = payload;

@@ -28,11 +28,11 @@ import static org.slf4j.LoggerFactory.*;
  */
 public abstract class AbstractServlet extends HttpServlet implements Serializable {
 
-  private static final long serialVersionUID= -3862652820921092885L;
-  
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
+  private static final long serialVersionUID= -3862652820921092885L;
+  
   public void destroy() {
     tlog().debug("AbstractServlet: destroy()");
   }
