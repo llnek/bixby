@@ -13,7 +13,8 @@
 
   testcljc.dbio.dbstuff
 
-  (:use [czlabclj.xlib.crypto.codec]
+  (:use [czlabclj.xlib.util.files :only [WriteOneFile]]
+        [czlabclj.xlib.crypto.codec]
         [czlabclj.xlib.util.core]
         [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.connect]
@@ -117,11 +118,11 @@
         jdbc (MakeJdbc (juid)
                { :d H2-DRIVER :url url :user "sa" :passwd "" }
                (Pwdify "")) ]
+    (WriteOneFile (File. dir "dbstuff.out") (DbgShowMetaCache @METAC))
     (reset! JDBC jdbc)
     (UploadDdl jdbc (GetDDL @METAC :h2))
     (reset! DB (DbioConnect jdbc @METAC {})))
-  (if (nil? f) nil (f))
-    )
+  (if (nil? f) nil (f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +297,7 @@
 
 (defn- test-m2m []
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
-           mc (.getMetaCache ^DBAPI @DB) 
+           mc (.getMetaCache ^DBAPI @DB)
            c (.execWith
                sql
                (fn [^SQLr tx]
@@ -338,7 +339,7 @@
 
 (defn- undo-m2m []
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
-           mc (.getMetaCache ^DBAPI @DB) 
+           mc (.getMetaCache ^DBAPI @DB)
            d2 (.execWith
                sql
                (fn [^SQLr tx]
@@ -374,7 +375,7 @@
 
 (defn- undo-company []
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
-           mc (.getMetaCache ^DBAPI @DB) 
+           mc (.getMetaCache ^DBAPI @DB)
            c (.execWith
                sql
                (fn [^SQLr tx]

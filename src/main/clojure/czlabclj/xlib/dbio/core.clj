@@ -21,14 +21,17 @@
 
   (:use [czlabclj.xlib.util.str
          :only
-         [lcase ucase strim Embeds? nsb HasNocase? hgl?]]
+         [lcase ucase strim Embeds?
+          AddDelim! nsb HasNocase? hgl?]]
+        [czlabclj.xlib.util.format :only [WriteEdnString]]
         [czlabclj.xlib.util.core
          :only
          [TryC Try! RootCause StripNSPath
           Interject ternary notnil? nnz nbf juid]]
         [czlabclj.xlib.util.meta :only [ForName]])
 
-  (:import  [java.util HashMap GregorianCalendar TimeZone Properties]
+  (:import  [java.util HashMap GregorianCalendar
+             TimeZone Properties]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.dbio MetaCache
              Schema BoneCPHook DBIOError SQLr JDBCPool JDBCInfo]
@@ -387,7 +390,7 @@
              (assoc ad :fkey (fmtfkey (:id pojo) aid))
              (:M2M :MXM) ad
              ;;else
-             (DbioError (str "Invalid assoc def " adef))) 
+             (DbioError (str "Invalid assoc def " adef)))
         k (keyword aid)]
     (Interject pojo :assocs #(assoc % k a2))
   ))
@@ -656,6 +659,22 @@
     (reify MetaCache
       (getMetas [_] m2))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbgShowMetaCache ""
+
+  ^String
+  [^MetaCache mcache]
+
+  (reduce (fn [a b]
+            (AddDelim! a
+                       "\n"
+                       (WriteEdnString {:TABLE (:table b)
+                                        :DEFN b
+                                        :META (meta b)})))
+          (StringBuilder.)
+          (vals (.getMetas mcache))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
