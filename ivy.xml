@@ -144,7 +144,7 @@
     </dependency>
 
     <dependency org="org.apache.geronimo.specs" name="geronimo-jms_1.1_spec" rev="1.1.1" conf="libjar->default"/>
-    <dependency org="com.h2database" name="h2" rev="1.4.181" conf="libjar->default"/>
+    <dependency org="com.h2database" name="h2" rev="1.4.186" conf="libjar->default"/>
     <dependency org="org.postgresql" name="postgresql" rev="9.4-1201-jdbc41" conf="libjar->default"/>
     <!--
     <dependency org="com.mysql" name="mysql-connector-java" rev="5.1.23-bin" conf="libjar->default"/>

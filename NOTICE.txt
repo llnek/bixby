@@ -1,6 +1,6 @@
 ------------------------------------------------------------------------------
 Skaro - Server Side JVM Application Framework.
-Copyright 2013-2014 Cherimoia,LLC. All Rights Reserved.
+Copyright 2013-2015 ken Leung. All Rights Reserved.
 ------------------------------------------------------------------------------
 The following set of software modules/components are included
 ( bundled as binaries/source code):
@@ -9,12 +9,6 @@ The following set of software modules/components are included
   which is open source (Mozilla or EPL) software.
   @see http://h2database.com
   @see-license http://h2database.com/html/license.html
-
-- Daisen Cloud API,
-  which is open source (Apache-license) software.
-  @see-also http://dasein-cloud.sourceforge.net
-  @see http://zotoh.com
-  @see-license http://www.apache.org/licenses/LICENSE-2.0
 
 - Apache Ant - (junit, tools & launcher),
   which is open source (Apache-license) software.
@@ -41,11 +35,6 @@ The following set of software modules/components are included
   @see http://jdom.org/index.html
   @see-license jDOM.LICENSE.txt
 
-- ScalaTest - unit testing,
-  which is open source (Apache License) software.
-  @see http://scalatest.org/
-  @see-license http://www.apache.org/licenses/LICENSE-2.0
-
 - Rome Atom/RSS java utilites,
   which is open source (Apache License) software.
   @see http://java.net/projects/rome/
@@ -57,7 +46,7 @@ The following set of software modules/components are included
   @see http://www.cleondris.ch/opensource/ssh2/
   @see-license GanyMed-SSH2.LICENSE.txt
 
-- SUN JDK 1.7 (tools.jar) is included for compiling java source code.
+- SUN JDK 1.8 (tools.jar) is included for compiling java source code.
   @see http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
 
