@@ -234,6 +234,8 @@
   [^File hhhHome ^String appId ^String appDomain]
 
   (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
+        h2dbUrl (str h2db "/" appId
+                     ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
         appDir (File. hhhHome (str DN_BOXX "/" appId))
         appDomainPath (.replace appDomain "." "/")
         cljd (mkcljd appDir appDomain) ]
@@ -248,8 +250,7 @@
       (var-set fp (File. appDir CFG_ENV_CF))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
-                        (.replace "@@H2DBPATH@@"
-                                             (str h2db "/" appId))
+                        (.replace "@@H2DBPATH@@" h2dbUrl)
                         (.replace "@@APPDOMAIN@@"
                                              appDomain)))
 

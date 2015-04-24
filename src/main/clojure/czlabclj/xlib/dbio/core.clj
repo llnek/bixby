@@ -116,12 +116,13 @@
   [^String id cfg ^PasswordAPI pwdObj]
 
   ;;(debug "JDBC id= " id ", cfg = " cfg)
-  (reify JDBCInfo
-    (getUser [_] (:user cfg))
-    (getDriver [_] (:d cfg))
-    (getId [_] id)
-    (getUrl [_] (:url cfg))
-    (getPwd [_] (nsb pwdObj))
+  (let [server (:server cfg)]
+    (reify JDBCInfo
+      (getUser [_] (:user cfg))
+      (getDriver [_] (:d cfg))
+      (getId [_] id)
+      (getUrl [_] (if (hgl? server) server (:url cfg)))
+      (getPwd [_] (nsb pwdObj)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -715,7 +716,7 @@
     (when (nil? conn)
           (DbioError (str "Failed to create db connection: " url)))
     (doto conn
-      (.setTransactionIsolation Connection/TRANSACTION_READ_COMMITTED))
+      (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
