@@ -19,7 +19,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [notnil? ThrowIOE MakeMMap ternary ConvToJava TryC]]
+         [notnil? ThrowIOE MakeMMap ConvToJava TryC]]
         [czlabclj.xlib.util.str :only [nsb strim ]]
         [czlabclj.tardis.core.sys])
 
@@ -206,7 +206,7 @@
           (let [cfg (.getf impl :emcfg)
                 kw (keyword k)
                 v (.getf impl kw) ]
-            (ternary v (get cfg kw))))
+            (or v (get cfg kw))))
 
         EmitAPI
 

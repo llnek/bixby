@@ -146,10 +146,10 @@
 
   (let [ct (HttpHeaders/getHeader rsp "content-type")
         rv (.getHeaderValue evt "range") ]
-    (if (cstr/blank? rv)
+    (if-not (HTTPRangeInput/isAcceptable rv)
       (ChunkedFile. raf)
       (let [r (HTTPRangeInput. raf ct rv)
-            n (.prepareNettyResponse r rsp) ]
+            n (.process r rsp) ]
         (if (> n 0)
           r
           nil)))

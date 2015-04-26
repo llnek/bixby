@@ -22,7 +22,7 @@
         [czlabclj.xlib.util.core
          :only
          [MubleAPI notnil? juid TryC spos? NextLong
-          ToJavaInt SubsVar ternary
+          ToJavaInt SubsVar
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
@@ -238,7 +238,7 @@
 
       (addHeader [_ nm v]
         (let [m (.getf impl :hds)
-              a (ternary (get m (lcase nm))
+              a (or (get m (lcase nm))
                          []) ]
           (.setf! impl
                   :hds

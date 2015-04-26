@@ -32,7 +32,7 @@
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.core
          :only
-         [ternary test-nonil test-cond ConvLong
+         [test-nonil test-cond ConvLong
           Try! PrintMutableObj MakeMMap]]
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [czlabclj.tardis.core.consts]
@@ -240,7 +240,7 @@
             cl (.getf x K_EXEC_CZLR)
             cli (.getf x K_CLISH)
             wc (.getf x K_PROPS)
-            cz (ternary (K_EXECV (K_COMPS wc)) "")]
+            cz (or (K_EXECV (K_COMPS wc)) "")]
         ;;(test-cond "conf file:exec-visor" (= cz "czlabclj.tardis.impl.Execvisor"))
         (log/info "Inside primodial() ---------------------------------------------->")
         (log/info "Execvisor = " cz)
@@ -293,8 +293,8 @@
                                  "/" (name K_PROPS)))]
         (log/info "About to parse config file " cf)
         (let [w (ReadEdn cf)
-              cn (lcase (ternary (K_COUNTRY (K_LOCALE w)) ""))
-              lg (lcase (ternary (K_LANG (K_LOCALE w)) "en"))
+              cn (lcase (or (K_COUNTRY (K_LOCALE w)) ""))
+              lg (lcase (or (K_LANG (K_LOCALE w)) "en"))
               loc (if (hgl? cn)
                     (Locale. lg cn)
                     (Locale. lg))]

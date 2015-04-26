@@ -20,7 +20,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [NewRandom Bytesify Stringify ThrowBadArg ternary]]
+         [NewRandom Bytesify Stringify ThrowBadArg]]
         [czlabclj.xlib.util.io :only [MakeBitOS]]
         [czlabclj.xlib.util.str :only [nichts? nsb]])
 
@@ -156,7 +156,7 @@
 
   (let [idx (some #(if (= ch (aget ^chars VISCHS %1)) %1 nil)
                   (range VISCHS_LEN)) ]
-    (ternary idx -1)
+    (or idx -1)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

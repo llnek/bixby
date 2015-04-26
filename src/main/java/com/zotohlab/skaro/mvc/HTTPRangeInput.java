@@ -27,7 +27,9 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.lang.invoke.MethodHandles.*;
+
 import org.slf4j.Logger;
+
 import static org.slf4j.LoggerFactory.*;
 
 
@@ -36,29 +38,32 @@ import static org.slf4j.LoggerFactory.*;
  */
 public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
+  protected static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
+
   private static Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog()  { return _log; }
 
-  private boolean _unsatisfiable = false;
-  private int _chunkSize = 8096;
+  private boolean _bad = false;
   private ByteRange[] _ranges;
-  private int _currentByteRange = 0;
+  private String _cType;
+  private int _current= 0;
   private long _clen= 0L;
 
   private RandomAccessFile _file;
-  private String _contentType;
 
   public HTTPRangeInput(RandomAccessFile file, String cType, String range) {
-    initRanges(range);
+    _cType= cType;
+    _file=file;
+    init(range);
   }
 
-  public static boolean accepts(String range) {
+  public static boolean isAcceptable(String range) {
     return range != null && range.length() > 0;
   }
 
-  public long prepareNettyResponse(HttpResponse rsp) {
+  public long process(HttpResponse rsp) {
     HttpHeaders.addHeader(rsp,"accept-ranges", "bytes");
-    if (_unsatisfiable) {
+    if (_bad) {
       rsp.setStatus(HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
       HttpHeaders.setHeader(rsp, "content-range", "bytes " + "0-" + (_clen-1) + "/" + _clen);
       HttpHeaders.setHeader(rsp, "content-length", "0");
@@ -70,11 +75,11 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       ByteRange r= _ranges[0];
       HttpHeaders.setHeader(rsp, "content-range", "bytes " + r.start() + "-" + r.end() + "/" + _clen);
     } else {
-      HttpHeaders.setHeader(rsp, "content-type", "multipart/byteranges; boundary="+ "DEFAULT_SEPARATOR");
+      HttpHeaders.setHeader(rsp, "content-type", "multipart/byteranges; boundary="+ DEF_BD);
     }
     long len=0L;
     for (int n=0; n < _ranges.length; ++n) {
-      len += _ranges[n].computeTotalLength();
+      len += _ranges[n].calcTotalSize();
     }
     HttpHeaders.setHeader(rsp, "content-length", Long.toString(len));
     return len;
@@ -82,42 +87,44 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   public ByteBuf readChunk(ChannelHandlerContext ctx) throws IOException {
 
-    byte[] buff= new byte[ _chunkSize];
+    byte[] buff= new byte[ 8192];
+    int mlen= buff.length;
     int count = 0;
 
-    while ( count < _chunkSize && _currentByteRange < _ranges.length &&
-        _ranges[_currentByteRange] != null) {
-      if ( _ranges[_currentByteRange].remaining() > 0) {
-          count += _ranges[_currentByteRange].fill(buff, count);
+    while ( count < mlen && _current < _ranges.length &&
+      _ranges[_current] != null) {
+      if ( _ranges[_current].remaining() > 0) {
+        count += _ranges[_current].pack(buff, count);
       } else {
-          _currentByteRange += 1;
+        _current += 1;
       }
     }
     return (count == 0) ? null : Unpooled.copiedBuffer(buff);
   }
 
-  private boolean hasNextChunk() {
-    return _currentByteRange < _ranges.length && _ranges[_currentByteRange].remaining() > 0;
+  private boolean hasNext() {
+    return _current < _ranges.length && _ranges[_current].remaining() > 0;
   }
 
-  public boolean isEndOfInput() { return !hasNextChunk(); }
+  public boolean isEndOfInput() { return !hasNext(); }
 
   public void close() {
-      try {
-          _file.close();
-      } catch (IOException e) {
-          tlog().warn("",e);
-      }
+    try {
+      _file.close();
+    } catch (IOException e) {
+      tlog().warn("",e);
+    }
   }
 
-  private void initRanges(String s /* range */) {
+  private void init(String s /* range */) {
     try {
-      _clen= _file.length();
       //val ranges = mutable.ArrayBuffer[ (Long,Long) ]()
       // strip off "bytes="
       int pos= s.indexOf("bytes=");
       String[] rvs= (pos < 0) ?  null : s.substring(pos+6).trim().split(",");
-      List<Long[]> ranges= new ArrayList<Long[]>();
+      List<Long[]> ranges= new ArrayList<>();
+
+          _clen= _file.length();
 
       if (rvs != null) for (int n=0; n < rvs.length; ++n) {
           String rs= rvs[n].trim();
@@ -135,17 +142,17 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
           if (start <= end) { ranges.add( new Long[]{ start, end } ); }
       }
 
-      List<ByteRange> bytes = new ArrayList<ByteRange>();
+      List<ByteRange> bytes = new ArrayList<>();
       List<Long[]> nrs = normalize(ranges);
       for (Long[] rr : nrs) {
-        bytes.add( new ByteRange( _file, rr[0], rr[1], _contentType, nrs.size() > 1) );
+        bytes.add( new ByteRange( _file, nrs.size() > 1, rr[0], rr[1], _cType) );
       }
       _ranges = bytes.toArray( new ByteRange[0]) ;
-      _unsatisfiable = (_ranges.length == 0);
+      _bad = (_ranges.length == 0);
     }
     catch (Throwable e) {
-      _unsatisfiable = true;
-      tlog().error("", e);
+        _bad = true;
+     tlog().error("", e);
     }
   }
 
@@ -154,7 +161,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
                ( r1[1] >= r2[0] && r1[0] <= r2[1] );
   }
 
-  private Long[] mergeRanges(Long[] r1, Long[] r2) {
+  private Long[] merge(Long[] r1, Long[] r2) {
     return new Long[] { (r1[0] < r2[0]) ?  r1[0] : r2[0],
                         (r1[1] > r2[1]) ? r1[1] : r2[1] } ;
   }
@@ -164,6 +171,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     if (chunks.size() == 0) { return new ArrayList<Long[]>(); }
 
     Long[][] sortedChunks = chunks.toArray(new Long[][] {} );
+    List<Long[]> rc= new ArrayList<>();
 
     Arrays.sort(sortedChunks, new Comparator< Long[]> () {
         public int compare( Long[] t1, Long[] t2) {
@@ -171,15 +179,14 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
         }
     });
 
-    List<Long[]> rc= new ArrayList<>();
     rc.add(sortedChunks[0] );
     for (int n = 1; n < sortedChunks.length; ++n) {
         Long[] r1 = rc.get(rc.size() - 1);
         Long[] c1 = sortedChunks[n];
         if ( maybeIntersect(c1, r1)) {
-            rc.set(rc.size() - 1, mergeRanges(c1, r1));
+          rc.set(rc.size() - 1, merge(c1, r1));
         } else {
-            rc.add(c1);
+          rc.add(c1);
         }
     }
     return rc;

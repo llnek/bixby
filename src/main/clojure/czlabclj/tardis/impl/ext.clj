@@ -51,7 +51,7 @@
 
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI MakeMMap NiceFPath ternary
+         [MubleAPI MakeMMap NiceFPath
           ConvToJava nbf ConvLong Bytesify]]
 
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
@@ -679,8 +679,8 @@
         jc (makeJobCreator co)
         cfg (:container env) ]
 
-    (let [cn (lcase (ternary (K_COUNTRY (K_LOCALE env)) ""))
-          lg (lcase (ternary (K_LANG (K_LOCALE env)) "en"))
+    (let [cn (lcase (or (K_COUNTRY (K_LOCALE env)) ""))
+          lg (lcase (or (K_LANG (K_LOCALE env)) "en"))
           loc (if (hgl? cn)
                   (Locale. lg cn)
                   (Locale. lg))

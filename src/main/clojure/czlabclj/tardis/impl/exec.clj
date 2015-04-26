@@ -30,7 +30,7 @@
         [czlabclj.xlib.util.core
          :only
          [LoadJavaProps test-nestr NiceFPath TryC
-          ternary notnil? NewRandom
+          notnil? NewRandom
           ConvLong MakeMMap juid test-nonil]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
@@ -172,7 +172,7 @@
   (TryC
     (let [^czlabclj.xlib.util.core.MubleAPI
           ctx (.getCtx co)
-          port (ternary (:port cfg) 7777)
+          port (or (:port cfg) 7777)
           host (nsb (:host cfg))
           ^czlabclj.xlib.jmx.core.JMXServer
           jmx (MakeJmxServer host) ]
@@ -285,7 +285,7 @@
         root (.getf ctx K_COMPS)
         wc (.getf ctx K_PROPS)
         endorsed (-> (:endorsed (K_APPS wc))
-                     (ternary "")
+                     (or "")
                      strim)
         ^czlabclj.tardis.core.sys.Registry
         apps (.lookup root K_APPS)

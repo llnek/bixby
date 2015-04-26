@@ -19,7 +19,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [NextLong ternary spos? MubleAPI TryC]]
+         [NextLong spos? MubleAPI TryC]]
         [czlabclj.xlib.util.process :only [Coroutine SafeWait]]
         [czlabclj.xlib.util.dates :only [ParseDate]]
         [czlabclj.xlib.util.meta :only [GetCldr]]

@@ -24,7 +24,7 @@
         [czlabclj.xlib.util.core
          :only
          [TryC notnil? Stringify
-          MakeMMap juid ternary
+          MakeMMap juid
           test-nonil LoadJavaProps]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
         [czlabclj.xlib.util.str :only [nsb hgl? strim]]
@@ -325,7 +325,7 @@
             rb (I18N/getBase)
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e# { :e e# }))
-            info (ternary si {})]
+            info (or si {})]
         (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
@@ -390,7 +390,7 @@
             rb (I18N/getBase)
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e#  { :e e# }))
-            info (ternary si {} ) ]
+            info (or si {} ) ]
         (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond

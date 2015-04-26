@@ -186,9 +186,9 @@
    ^HttpResponse rsp ]
 
   (let [s (nsb (GetHeader info "range"))]
-    (if (HTTPRangeInput/accepts s)
+    (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
-        (.prepareNettyResponse rsp))
+        (.process rsp))
       (ChunkedFile. raf))
   ))
 

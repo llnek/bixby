@@ -18,7 +18,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [NextInt ternary juid MakeMMap]]
+  (:use [czlabclj.xlib.util.core :only [NextInt juid MakeMMap]]
         [czlabclj.xlib.util.str :only [Format]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
@@ -63,8 +63,8 @@
       (reify SchedulerAPI
 
         (activate [_ options]
-          (let [^long t (ternary (:threads options) 4)
-                b (ternary (:trace options) true)
+          (let [^long t (or (:threads options) 4)
+                b (or (:trace options) true)
                 jid (if-not (instance? Named parObj)
                       (Format "skaro#core-%03d" (NextInt))
                       (str (.getName ^Named parObj) "#core"))

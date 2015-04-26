@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.core :only [ternary Try!]]
+  (:use [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
         [czlabclj.xlib.util.str :only [nsb hgl?]])
 
@@ -50,7 +50,7 @@
   [^Runnable r options]
 
   (when-not (nil? r)
-    (let [c (ternary (:classLoader options)
+    (let [c (or (:classLoader options)
                      (GetCldr))
           d (true? (:daemon options))
           n (:name options)

@@ -34,7 +34,6 @@
          NiceFPath
          IsWindows?
          Stringify
-         ternary
          FlattenNil
          ConvLong
          ResStr]]
@@ -116,7 +115,7 @@
         hf (ReadEdn (File. hhh
                            (str DN_CONF
                                 "/" (name K_PROPS))))
-        wlg (ternary (:lang (:webdev hf)) "js")
+        wlg (or (:lang (:webdev hf)) "js")
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
         id (when (notnil? t)

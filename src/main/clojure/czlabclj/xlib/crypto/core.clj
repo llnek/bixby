@@ -28,7 +28,7 @@
          [Streamify MakeBitOS ResetStream!]]
         [czlabclj.xlib.util.core
          :only
-         [NextInt ThrowIOE ThrowBadArg ternary NewRandom
+         [NextInt ThrowIOE ThrowBadArg NewRandom
           Bytesify TryC Try! notnil? juid GetClassname]]
         [czlabclj.xlib.util.str :only [strim nsb hgl?]])
 

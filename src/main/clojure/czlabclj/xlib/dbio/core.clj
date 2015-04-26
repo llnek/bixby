@@ -27,7 +27,7 @@
         [czlabclj.xlib.util.core
          :only
          [TryC Try! RootCause StripNSPath
-          Interject ternary notnil? nnz nbf juid]]
+          Interject notnil? nnz nbf juid]]
         [czlabclj.xlib.util.meta :only [ForName]])
 
   (:import  [java.util HashMap GregorianCalendar
@@ -1121,7 +1121,7 @@
         fv (:rowid (meta lhsObj)) ]
     (if (nil? ac)
       (DbioError "Unknown assoc " (:as ctx))
-      [ sqlr (ternary rt (:other ac)) {fid fv} ])
+      [ sqlr (or rt (:other ac)) {fid fv} ])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1190,7 +1190,7 @@
         ac (DbioGetAssoc mcache mcz (:as ctx))
         fv (:rowid (meta lhsObj))
         rt (:cast ctx)
-        rp (ternary rt (:other ac))
+        rp (or rt (:other ac))
         fid (:fkey ac) ]
     (when (nil? ac)(DbioError "Unknown assoc " (:as ctx)))
     (if (:cascade ac)
@@ -1238,7 +1238,7 @@
         fid (:fkey ac) ]
     (when (nil? ac) (DbioError "Unknown assoc " (:as ctx)))
     (let [y (.findOne sqlr
-                      (ternary rt (:other ac))
+                      (or rt (:other ac))
                       { fid fv } ) ]
       (when-not (nil? y)
         (let [x (vary-meta (-> (DbioCreateObj (GetTypeId y))

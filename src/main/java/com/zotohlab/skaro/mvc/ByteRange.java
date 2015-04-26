@@ -23,13 +23,12 @@ import static org.slf4j.LoggerFactory.*;
 /**
  * @author kenl
  */
-public class ByteRange {
+class ByteRange {
 
   private static Logger _log= getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   private RandomAccessFile _file;
-  private boolean _incHeader;
   private byte[] _header;
   private long _start;
   private long _end;
@@ -37,22 +36,21 @@ public class ByteRange {
   private int _servedHeader = 0;
   private int _servedRange = 0;
 
-  public ByteRange (RandomAccessFile file, long start, long end,
-      String cType, boolean incHeader) {
+  public ByteRange (RandomAccessFile file, boolean wantHeader, long start, long end,
+    String cType) {
 
-    _incHeader= incHeader;
+    _header= new byte[0];
     _file= file;
     _start= start;
     _end= end;
     _cType= cType;
-    if ( _incHeader) {
+
+    if (wantHeader) {
       try {
-        _header= fmtRangeHeader( start, end, file.length() , _cType, "DEFAULT_SEPARATOR");
+        _header= fmtHeader(file.length());
       } catch (IOException e) {
         tlog().error("",e);
       }
-    } else {
-      _header= new byte[0];
     }
   }
 
@@ -61,11 +59,11 @@ public class ByteRange {
 
   public long size() { return _end - _start + 1; }
 
-  public long remaining() { return _end - _start + 1 - _servedRange; }
+  public long remaining() { return size() - _servedRange; }
 
-  public long computeTotalLength() { return size() + _header.length; }
+  public long calcTotalSize() { return size() + _header.length; }
 
-  public int fill(byte[] out, int offset) throws IOException {
+  public int pack(byte[] out, int offset) throws IOException {
     int count = 0;
     int pos=offset;
     while ( pos < out.length && _servedHeader < _header.length ) {
@@ -92,16 +90,10 @@ public class ByteRange {
     return count;
   }
 
-  private byte[] fmtRangeHeader(long start, long end, long flen, String cType, String boundary) {
-    String s= "--" + boundary + "\r\n" + "content-type: " + cType + "\r\n" +
-    "content-range: bytes " + start + "-" + end + "/" + flen + "\r\n" +
-    "\r\n";
-      try {
-          return s.getBytes("utf-8");
-      } catch (UnsupportedEncodingException e) {
-          tlog().error("",e);
-          return null;
-      }
+  private byte[] fmtHeader(long flen) throws UnsupportedEncodingException {
+    String s= "--" + HTTPRangeInput.DEF_BD + "\r\n" + "content-type: " + _cType + "\r\n" +
+      "content-range: bytes " + _start + "-" + _end + "/" + flen + "\r\n\r\n";
+    return s.getBytes("utf-8");
   }
 
 }

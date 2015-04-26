@@ -21,7 +21,7 @@
   (:use [czlabclj.xlib.util.str :only [nsb hgl? AddDelim!]]
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI ConvLong notnil? juid ternary
+         [MubleAPI ConvLong notnil? juid
           MakeMMap Stringify Bytesify]]
         [czlabclj.xlib.crypto.core :only [GenMac]]
         ;;[czlabclj.xlib.util.guids :only [NewUUid]]
@@ -84,7 +84,7 @@
   [^czlabclj.tardis.io.webss.WebSS mvs maxAge]
 
   (let [now (System/currentTimeMillis)
-        mage (ternary maxAge 0) ]
+        mage (or maxAge 0) ]
     (.setAttribute mvs SSID_FLAG
                    (Hex/encodeHexString (Bytesify (juid))))
     (.setAttribute mvs ES_FLAG (if (> mage 0)
@@ -190,8 +190,8 @@
           (catch Throwable e#
             (throw (ExpiredError. "Corrupted cookie."))))
         (.setNew! mvs false 0)
-        (let [ts (ternary (.getAttribute mvs LS_FLAG) -1)
-              es (ternary (.getAttribute mvs ES_FLAG) -1)
+        (let [ts (or (.getAttribute mvs LS_FLAG) -1)
+              es (or (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
               mi (:maxIdleSecs cfg) ]
           (if (< es now)
@@ -246,13 +246,13 @@
               (.setf! impl :newOne true))
             (.setf! impl :newOne false)))
 
-        (getMaxInactiveInterval [_] (ternary (.getf impl :maxIdleSecs) 0))
-        (getCreationTime [_] (ternary (.getf attrs CS_FLAG) 0))
-        (getExpiryTime [_] (ternary (.getf attrs ES_FLAG) 0))
+        (getMaxInactiveInterval [_] (or (.getf impl :maxIdleSecs) 0))
+        (getCreationTime [_] (or (.getf attrs CS_FLAG) 0))
+        (getExpiryTime [_] (or (.getf attrs ES_FLAG) 0))
         (getXref [_] (.getf attrs :csrf))
         (getId [_] (.getf attrs SSID_FLAG))
 
-        (getLastAccessedTime [_] (ternary (.getf attrs LS_FLAG) 0))
+        (getLastAccessedTime [_] (or (.getf attrs LS_FLAG) 0))
         (getLastError [_] (.getf impl :error))
 
         Object
