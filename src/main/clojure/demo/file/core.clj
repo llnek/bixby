@@ -21,11 +21,13 @@
   (:use [czlabclj.xlib.util.process :only [ThreadFunc]]
         [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+        [czlabclj.xlib.util.wfs :only [DefMorphable SimPTask]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job Pipeline
+             FlowNode PTask SDelegate PDelegate]
             [com.zotohlab.skaro.core Container]
             [com.zotohlab.skaro.io FileEvent]
+            [com.zotohlab.frwk.core Morphable]
             [com.zotohlab.frwk.server Service]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]
@@ -38,37 +40,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^AtomicInteger _count (AtomicInteger.))
+;;(def ^:private ^AtomicInteger _count (AtomicInteger.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ncount ""
+(let [ctr (AtomicInteger.)]
+  (defn- ncount ""
+    []
+    (.incrementAndGet ctr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkDelegate ""
 
   []
 
-  (.incrementAndGet _count))
-
+  (proxy [SDelegate][]
+    (startWith [pipe]
+      (SimPTask
+        #(let [^Service
+               p (-> ^Pipeline pipe
+                     (.container)
+                     (.getService :default-sample))
+               s (str "Current time is " (Date.)) ]
+           (FileUtils/writeStringToFile
+             (File. (nsb (.getv p :targetFolder))
+                    (str "ts-" (ncount) ".txt")) s "utf-8")
+           nil)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoGen [] PDelegate
-
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
-    (require 'demo.file.core)
-    (SimPTask
-      (fn [job]
-        (let [s (str "Current time is " (Date.))
-              ^Service
-              p (-> (.container pipe)
-                    (.getService :default-sample)) ]
-          (FileUtils/writeStringToFile (File. (nsb (.getv p :targetFolder))
-                                              (str "ts-" (ncount) ".txt"))
-                                       s
-                                       "utf-8")
-          nil)))
-  ))
+;;(deftype DemoGen [] Morphable
+;;(morph [_]
+;;(require 'demo.file.core)
+;;(mkDelegate)))
+(DefMorphable DemoGen mkDelegate)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

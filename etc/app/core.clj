@@ -1,29 +1,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;auto-generated
 
-(ns  ^{:doc ""
-       :author "@@USER@@" }
+(ns ^{:doc ""
+      :author "@@USER@@" }
 
   @@APPDOMAIN@@.core
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
   (:use [czlabclj.xlib.util.wfs])
-  (:import ( com.zotohlab.wflow FlowNode Activity
-                                 Pipeline PDelegate
-                                 PTask Work))
-  (:import (com.zotohlab.wflow Job)))
+  (:import  [com.zotohlab.wflow FlowNode Activity Job
+                                Pipeline PDelegate
+                                PTask Work]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype Handler [] PDelegate
 
-  (startWith [_  pipe]
+  (onStop [_ pipe]
+    (log/info "nothing to be done here, just stop please."))
+
+  (startWith [_ pipe]
     (DefPTask
       (fn [cur job arg]
         (log/info "I  just handled a job!"))))
-
-  (onStop [_ pipe]
-    (log/info "nothing to be done here, just stop please."))
 
   (onError [ _ err curPt]
     (log/info "Oops, I got an error!")))
@@ -48,8 +47,7 @@
     (log/info "My AppMain stopped"))
 
   (dispose [_]
-    (log/info "My AppMain finz'ed"))
-)
+    (log/info "My AppMain finz'ed")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -68,6 +68,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro DefMorphable ""
+
+  [typesym morphFunc]
+
+  `(deftype ~typesym [] com.zotohlab.frwk.core.Morphable
+     (morph [_]
+       (require '~(ns-name *ns*))
+       (~morphFunc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro DefPipe ""
+
+  [func & body]
+
+  `(defn- ~func "" []
+     (proxy [com.zotohlab.wflow.SDelegate][]
+       (startWith [pipe#]
+         ~@body))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;(defmacro DefPTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
 (defn DefPTask ""
 

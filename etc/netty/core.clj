@@ -13,12 +13,11 @@
         [czlabclj.xlib.util.wfs])
 
   (:import [com.zotohlab.wflow FlowNode Activity
-                               Pipeline
+                               Pipeline Job
                                PDelegate PTask]
            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
            [com.zotohlab.skaro.core Container]
-           [java.util HashMap]
-           [com.zotohlab.wflow Job]))
+           [java.util HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -52,6 +51,9 @@
 ;;
 (deftype Handler [] PDelegate
 
+  (onStop [_ pipe]
+    (log/info "nothing to be done here, just stop please."))
+
   (startWith [_  pipe]
     (require '@@APPDOMAIN@@.core)
     (DefPTask
@@ -70,9 +72,6 @@
           (.setStatus res 200)
           (.replyResult evt)))
     ))
-
-  (onStop [_ pipe]
-    (log/info "nothing to be done here, just stop please."))
 
   (onError [ _ err curPt]
     (log/info "Oops, I got an error!")))

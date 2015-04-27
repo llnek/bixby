@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 
 import com.zotohlab.frwk.core.Identifiable;
+import com.zotohlab.frwk.core.Morphable;
 import com.zotohlab.frwk.core.Startable;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
@@ -52,16 +53,19 @@ public class Pipeline implements Startable, Identifiable {
   }
 
   public Pipeline(String name, String cz, Job job, boolean traceable) {
-    PDelegate p= null;;
+    Object obj= null;
     try {
-      p = (PDelegate) dftCtor(cz);
+      obj = dftCtor(cz);
+      if (obj instanceof Morphable) {
+        obj = ((Morphable) obj).morph();
+      }
     } catch (Throwable e) {
       tlog().error("", e);
     }
-    if (p instanceof PDelegate) {} else {
-      throw new ClassCastException(cz + " must implement PDelegate.");
+    if (obj instanceof PDelegate) {} else {
+      throw new ClassCastException(cz + " must implement PDelegate or be Morphable.");
     }
-    ctor(name, job, p, traceable);
+    ctor(name, job, (PDelegate) obj, traceable);
   }
 
   public Pipeline(String name, String cz, Job job) {
