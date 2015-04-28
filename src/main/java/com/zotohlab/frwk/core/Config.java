@@ -18,10 +18,10 @@ import java.util.Set;
 /**
  * @author kenl
  */
-public interface Configuration {
+public interface Config {
 
-  public Configuration getChild( String name);
   public List<?> getSequence( String name);
+  public Config getChild( String name);
 
   public boolean contains( String name);
   public int size();

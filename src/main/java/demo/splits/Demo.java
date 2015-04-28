@@ -15,8 +15,7 @@ import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;
-import com.zotohlab.wflow.SDelegate;
-import com.zotohlab.wflow.Pipeline;
+import com.zotohlab.server.WorkFlow;
 import com.zotohlab.wflow.Split;
 
 /**
@@ -30,12 +29,12 @@ import com.zotohlab.wflow.Split;
                    |
                    |-------> parent(s2)----> end
  */
-public class Demo extends SDelegate {
+public class Demo implements WorkFlow {
 
     // split but no wait
     // parent continues;
 
-  public Activity startWith(Pipeline pipe) {
+  public Activity startsWith() {
 
     Activity a0= PTaskWrapper( (c,j) -> {
       out.println("I am the *Parent*");

@@ -81,13 +81,16 @@
             [com.zotohlab.skaro.runtime AppMain]
             [com.zotohlab.skaro.etc PluginFactory Plugin]
             [com.zotohlab.frwk.core Versioned Hierarchial
+             Morphable
              Startable Disposable Identifiable]
             [com.zotohlab.frwk.server ComponentRegistry
-             Component ServiceError]
+             EventBus
+             Component ServiceHandler ServiceError]
             [com.zotohlab.skaro.core Container ConfigError]
             [com.zotohlab.skaro.io Emitter IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
             [com.zotohlab.frwk.io XData]
+            [com.zotohlab.server WorkFlow]
             [com.zotohlab.wflow Job]
             [com.zotohlab.wflow Pipeline]))
 
@@ -122,7 +125,7 @@
 (defn- makeJob ""
 
   ^Job
-  [_container evt]
+  [_container evt handler]
 
   (let [impl (MakeMMap)
         jid (NextLong) ]
@@ -140,13 +143,16 @@
 
         Job
 
-        (container [_] _container)
-        (setv [this k v] (.setf! this k v))
-        (unsetv [this k] (.clrf! this k))
-        (getv [this k] (.getf this k))
         (setLastResult [this v] (.setf! this JS_LAST v))
         (getLastResult [this] (.getf this JS_LAST))
         (clrLastResult [this] (.clrf! this JS_LAST))
+        (finz [_]
+          (tlog/debug "Job##" jid " has been served."))
+        (setv [this k v] (.setf! this k v))
+        (unsetv [this k] (.clrf! this k))
+        (getv [this k] (.getf this k))
+        (handleError [_ ex] nil)
+        (container [_] _container)
         (event [_] evt)
         (id [_] jid))
 
@@ -155,51 +161,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol ^:private JobCreator
+(defn- fakePTask ""
 
-  ""
+  [^WorkHandler wf]
 
-  (update [_ event options] ))
+  (SimPTask (fn [^Job j] (.workOn wf j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A Job creator has the task of creating a job from an event, and delegates
+;; A EventBus has the task of creating a job from an event, and delegates
 ;; a new Pipline which will handle the job.  The Pipeline internally will
 ;; call out to your application workflow  for the actual handling of the job.
 ;;
-(defn- makeJobCreator ""
+(defn- makeEventBus ""
 
-  ^czlabclj.tardis.impl.ext.JobCreator
+  ^EventBus
   [parObj]
 
   (let [^String id (if (instance? Identifiable parObj)
              (.id ^Identifiable parObj)
              "Container")
         impl (MakeMMap) ]
-    (log/info "About to synthesize a job-creator...")
+    (log/info "About to synthesize an event-bus...")
     (with-meta
       (reify
 
-        JobCreator
+        EventBus
 
-        (update [_  evt options]
+        (onEvent [_  evt options]
           (let [^czlabclj.tardis.core.sys.Element
                 src (.emitter ^IOEvent evt)
+                ^ServiceHandler
+                hr (.handler ^Service src)
                 cfg (.getAttr src :emcfg)
                 ^String c0 (:handler cfg)
                 ^String c1 (:router options)
-                ^Job job (makeJob parObj evt) ]
+                ^Job job (makeJob parObj evt hr) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
             (log/debug "IO handler = " c0)
             (try
-              (let [p (Pipeline. id (if (hgl? c1) c1 c0) job) ]
+              (let [z (MakeObj (if (hgl? c1) c1 c0))
+                    a (cond
+                        (instance? WorkHandler z)
+                        (fakePTask z)
+                        (instance? Morphable z)
+                        (-> ^WorkFlow
+                            (.morph z)
+                            (.startsWith))
+                        (instance? WorkFlow z)
+                        (-> ^WorkFlow z
+                            (.startsWith))
+                        :else nil )]
                 (.setv job EV_OPTS options)
-                (.start p))
-              (catch Throwable e#
-                (-> (MakeFatalErrorFlow job) (.start)))))))
+                (if-not (nil? a)
+                  (.handle hr {:activity a :job job})
+                  (throw (Exception. "no matchable handler!"))))
+              (catch Throwable _
+                (-> (MakeFatalErrorFlow job) (.start))))))
 
-      { :typeid (keyword "czc.tardis.impl/JobCreator") }
+        (parent [_] parObj))
+
+      { :typeid (keyword "czc.tardis.impl/EventBus") }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,10 +337,7 @@
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
-        (notifyObservers [this evt options]
-          (let [^czlabclj.tardis.impl.ext.JobCreator
-                jc (.getAttr this K_JCTOR) ]
-            (.update jc evt options)))
+        (eventBus [_] (.getAttr this K_EBUS))
 
         (loadTemplate [_ tpath ctx]
           (let [tpl (nsb tpath)
@@ -676,7 +696,7 @@
         app (.getAttr co K_APPCONF)
         dmCZ (nsb (:data-model app))
         reg (.getAttr co K_SVCS)
-        jc (makeJobCreator co)
+        bus (makeEventBus co)
         cfg (:container env) ]
 
     (let [cn (lcase (or (K_COUNTRY (K_LOCALE env)) ""))
@@ -703,7 +723,7 @@
                                     (transient {})
                                     (seq (:plugins app))) ))
     (.setAttr! co K_SCHEDULER sc)
-    (.setAttr! co K_JCTOR jc)
+    (.setAttr! co K_EBUS bus)
 
     ;; build the user data-models or create a default one.
     (log/info "Application data-model schema-class: " dmCZ)

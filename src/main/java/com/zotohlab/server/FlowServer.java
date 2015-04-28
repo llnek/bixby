@@ -11,21 +11,21 @@
 
 package com.zotohlab.server;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.zotohlab.frwk.server.Event;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.Service;
+import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.Job;
-import com.zotohlab.wflow.SDelegate;
+import com.zotohlab.wflow.Nihil;
 import com.zotohlab.wflow.PTask;
-import com.zotohlab.wflow.Pipeline;
 import com.zotohlab.wflow.Work;
 
 /**
@@ -33,7 +33,7 @@ import com.zotohlab.wflow.Work;
  * @author kenl
  *
  */
-public class FlowServer implements ServerLike {
+public class FlowServer implements ServerLike, ServiceHandler {
   
   private static final String JS_LAST = "____lastresult";
   private final AtomicLong _sn= new AtomicLong(0L);
@@ -71,11 +71,11 @@ public class FlowServer implements ServerLike {
       });
       f= d.chain(e);
       
-      new Pipeline("hello",  j, new SDelegate() {
-        public Activity startWith(Pipeline p) {
+      WorkFlow w= new WorkFlow() {
+        public Activity startsWith() {
           return c.chain(f);
-        }
-      }).start();
+      }};
+      s.handle(new Object[]{w, j});
       Thread.sleep(10000);
     } catch (Throwable t) {
       t.printStackTrace();
@@ -117,7 +117,7 @@ public class FlowServer implements ServerLike {
   public Job reifyJob(final Event evt) {
     final FlowServer me=this;
     return new Job() {
-      private Map<Object,Object> _m= new HashMap<>();
+      private Map<Object,Object> _m= new ConcurrentHashMap<>();
       @Override
       public Object getv(Object key) {
         return key==null ? null : _m.get(key);
@@ -137,6 +137,11 @@ public class FlowServer implements ServerLike {
         }
       }
 
+      @Override
+      public void finz() {
+        
+      }
+      
       @Override
       public ServerLike container() {
         return me;
@@ -166,8 +171,28 @@ public class FlowServer implements ServerLike {
       public Object getLastResult() {
         return _m.get(JS_LAST);
       }
+
+      @Override
+      public Activity handleError(Throwable e) {
+        return null;
+      }
       
     };
+  }
+
+  @Override
+  public Object handleError(Throwable t) {
+    return null;
+  }
+
+  @Override
+  public Object handle(Object work) throws Exception {
+    Object[] args= (Object[]) work;
+    WorkFlow w= (WorkFlow) args[0];
+    Job j = (Job) args[1];
+    FlowNode end= Nihil.apply().reify(j);
+    core().run( w.startsWith().reify(end));
+    return null;
   }
   
 }

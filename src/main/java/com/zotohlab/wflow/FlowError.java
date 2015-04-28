@@ -17,19 +17,27 @@ package com.zotohlab.wflow;
 public class FlowError extends Exception {
 
   private static final long serialVersionUID = 1L;
-
-  public FlowError(String msg,Throwable e) {
+  private FlowNode _node;
+  
+  public FlowError(FlowNode n, String msg, Throwable e) {
     super(msg,e);
+    _node=n;
+  }
+  
+  public FlowError(String msg,Throwable e) {
+    this(null, msg,e);
   }
 
   public FlowError(Throwable e) {
-    this(null,e);
+    this(null,"", e);
   }
 
   public FlowError(String msg) {
-    this(msg,null);
+    this(null, msg,null);
   }
 
+  public FlowNode getLastNode() { return _node; }
+  
 }
 
 

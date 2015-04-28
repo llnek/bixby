@@ -80,7 +80,7 @@ class PTaskNode extends FlowNode {
     FlowNode rc= next();
 
     if (a instanceof Nihil) {
-      rc = new NihilNode(pipe() );
+      rc = new NihilNode( j );
     }
     else
     if (a instanceof Activity) {

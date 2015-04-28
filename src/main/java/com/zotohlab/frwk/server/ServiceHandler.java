@@ -9,20 +9,15 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow;
+package com.zotohlab.frwk.server;
+
 
 /**
  * @author kenl
  */
-public interface PDelegate {
-
-  public Activity onError(Throwable e, FlowNode cur);
-
-  public Activity startWith(Pipeline p);
-
-  public void onStop(Pipeline p);
-
+public interface ServiceHandler {
+  public Object handleError(Throwable t);
+  public Object handle(Object work) throws Exception;
 }
-
 
 

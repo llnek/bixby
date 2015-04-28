@@ -18,6 +18,7 @@ import com.zotohlab.frwk.core.Settable;
  * @author kenl
  */
 public interface Service extends Component , Gettable , Settable {
+  public ServiceHandler handler();
 }
 
 

@@ -11,13 +11,14 @@
 
 package com.zotohlab.wflow;
 
-import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+
 import com.zotohlab.frwk.util.RunnableWithId;
-import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.util.Schedulable;
 
 /**
@@ -33,7 +34,7 @@ public abstract class FlowNode implements RunnableWithId {
   private long _pid = _sn.incrementAndGet();
 
   private FlowNode _nextStep;
-  protected Pipeline _pipe;
+  protected Job _job;
   private Activity _defn;
 
   /**
@@ -41,13 +42,13 @@ public abstract class FlowNode implements RunnableWithId {
    * @param a
    */
   protected FlowNode(FlowNode c, Activity a) {
-    this( c.pipe() );
+    this( c.job() );
     _nextStep=c;
     _defn=a;
   }
 
-  protected FlowNode(Pipeline p) {
-    _pipe=p;
+  protected FlowNode(Job j) {
+    _job=j;
     _defn= new Nihil();
   }
 
@@ -64,56 +65,60 @@ public abstract class FlowNode implements RunnableWithId {
     return this;
   }
 
-  public Pipeline pipe() { return _pipe; }
+  protected Schedulable core() {
+    return _job.container().core();
+  }
+  
+  public Job job() { return _job; }
   public void setNext(FlowNode n) {
     _nextStep=n;
   }
 
   public void rerun() {
-    ServerLike x= pipe().container();
-    x.core().reschedule(this);
+    core().reschedule(this);
   }
 
   public void run() {
-    ServerLike x= pipe().container() ;
-    Pipeline pl = pipe();
     Activity err= null,
              d= getDef();
     FlowNode rc= null;
 
-    x.core().dequeue(this);
+    core().dequeue(this);
     try {
       if (d.hasName()) {
         tlog().debug("FlowNode##{} :eval().", d.getName());
       }
-      rc= eval( pl.job() );
+      rc= eval( _job );
     } catch (Throwable e) {
-      err= pl.onError(e, this);
+      err= _job.handleError(new FlowError(this,"",e));
+      if (err != null) { 
+        rc= err.reify( new NihilNode( _job) );  
+      } else {    
+        tlog().error("",e);
+      }
     }
 
-    if (err != null) { rc= err.reify( new NihilNode(pl) );  }
     if (rc==null) {
       tlog().debug("FlowNode: rc==null => skip.");
       // indicate skip, happens with joins
     } else {
-      runAfter(pl,rc);
+      runAfter(rc);
     }
   }
 
-  private void runAfter(Pipeline pl, FlowNode rc) {
-    ServerLike x = pl.container();
+  private void runAfter(FlowNode rc) {
     FlowNode np= rc.next();
-    Schedulable ct= x.core();
 
     if (rc instanceof DelayNode) {
-      ct.postpone( np, ((DelayNode) rc).delayMillis() );
+      core().postpone( np, ((DelayNode) rc).delayMillis() );
     }
     else
     if (rc instanceof NihilNode) {
-      pl.stop();
+      rc.job().finz();
+      //end
     }
     else {
-      ct.run(rc);
+      core().run(rc);
     }
   }
 

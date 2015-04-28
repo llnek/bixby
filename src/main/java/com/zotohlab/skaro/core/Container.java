@@ -19,19 +19,19 @@ import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Named;
 import com.zotohlab.frwk.dbio.DBAPI;
 import com.zotohlab.frwk.dbio.JDBCPool;
+import com.zotohlab.frwk.server.EventBus;
 import com.zotohlab.frwk.server.ServerLike;
-import com.zotohlab.skaro.io.IOEvent;
 
 /**
  * @author kenl
  */
 public interface Container extends ServerLike, Named, Disposable {
 
-  public void notifyObservers(IOEvent evt, Map<?,?> options );
-
   public List<?> loadTemplate (String tpl, Map<?,?> ctx);
   public boolean isEnabled();
 
+  public EventBus eventBus();
+  
   public Map<String,?> getEnvConfig();
   public Map<String,?> getAppConfig();
 

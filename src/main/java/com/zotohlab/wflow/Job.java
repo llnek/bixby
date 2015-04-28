@@ -12,6 +12,7 @@
 package com.zotohlab.wflow;
 
 import com.zotohlab.frwk.core.Gettable;
+import com.zotohlab.frwk.core.Identifiable;
 import com.zotohlab.frwk.core.Settable;
 import com.zotohlab.frwk.server.Event;
 import com.zotohlab.frwk.server.ServerLike;
@@ -19,13 +20,15 @@ import com.zotohlab.frwk.server.ServerLike;
 /**
  * @author kenl
  */
-public interface Job extends Gettable , Settable {
+public interface Job extends Gettable , Settable, Identifiable {
 
-  public ServerLike container() ;
-
+  public Activity handleError(Throwable e);
+  
+  public ServerLike container();
+  
+  public void finz();
+  
   public Event event() ;
-
-  public Object id() ;
 
   public void setLastResult( Object v) ;
 

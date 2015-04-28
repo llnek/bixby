@@ -19,15 +19,17 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [notnil? ThrowIOE MakeMMap ConvToJava TryC]]
+         [NextLong notnil? ThrowIOE MakeMMap ConvToJava TryC]]
         [czlabclj.xlib.util.str :only [nsb strim ]]
         [czlabclj.tardis.core.sys])
 
-  (:import  [com.zotohlab.frwk.server Component Service]
+  (:import  [com.zotohlab.frwk.server Component
+             ServiceHandler Service]
             [java.util.concurrent ConcurrentHashMap]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable Disposable Startable]
             [com.zotohlab.skaro.core Container]
+            [com.zotohlab.wflow Job Nihil Activity]
             [com.google.gson JsonObject JsonArray]
             [com.zotohlab.skaro.io Emitter]
             [java.util Map]))
@@ -155,6 +157,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn MakePipeline ""
+
+  ^Startable
+  [^Service service traceable]
+
+  (when traceable
+    (log/info "Pipeline##" service " created. OK."))
+  (let [pid (NextLong)]
+    (reify
+
+      Startable
+      (start [_])
+      (stop [_])
+
+      Disposable
+      (dispose [_])
+
+      Identifiable
+      (id [_] (.id service))
+
+      ServiceHandler
+      (handle [_ arg]
+        (let [^Activity a (:activity arg)
+              ^Job j (:job arg)]
+          (tlog/debug "Job##" (.id j) " is being serviced by " service)
+          (-> ^Emitter service
+              (.container)
+              (.core)
+              (.run (->> (.reify (Nihil/apply) j)
+                         (.reify a)))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn MakeEmitter ""
 
   [^Container parObj emId emAlias]
@@ -196,8 +232,17 @@
 
         Startable
 
-        (start [this] (IOESStart this))
-        (stop [this] (IOESStop this))
+        (start [this]
+          (let [p (MakePipeline this true)]
+            (.setf! impl :pipe p)
+            (.start p)
+            (IOESStart this)))
+
+        (stop [this]
+          (let [^Disposable p (.getf impl :pipe)]
+            (when-not (nil? p)(.dispose p))
+            (IOESStop this)
+            (.clrf! impl :pipe)))
 
         Service
 
@@ -207,6 +252,8 @@
                 kw (keyword k)
                 v (.getf impl kw) ]
             (or v (get cfg kw))))
+
+        (handler [_] (.getf impl :pipe))
 
         EmitAPI
 
@@ -218,7 +265,8 @@
 
         (dispatch [_ ev options]
           (TryC
-              (.notifyObservers parObj ev options) ))
+            (-> (.eventBus parObj)
+                (.onEvent ev options))))
 
         (release [_ wevt]
           (when-not (nil? wevt)

@@ -13,7 +13,9 @@ package com.zotohlab.wflow;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
+
 import org.slf4j.Logger;
+
 import com.zotohlab.frwk.core.Named;
 
 
@@ -64,6 +66,10 @@ public abstract class Activity implements Named {
     FlowNode n= reifyNode(cur);
     n.realize();
     return n;
+  }
+  
+  public FlowNode reify(Job j) throws Exception {
+    throw new IllegalAccessException("Should not be called");
   }
 
   protected abstract FlowNode reifyNode(FlowNode cur) ;

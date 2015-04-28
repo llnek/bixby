@@ -19,7 +19,7 @@ import java.util.Iterator;
  * @author kenl
  *
  */
-public class Iter {
+class Iter {
 
   public boolean isEmpty() { return  _acts.size() == 0; }
 
@@ -38,11 +38,10 @@ public class Iter {
   }
 
   public FlowNode next() {
-    if (_acts.size() > 0) {
-      return _acts.remove(0).reify(_outer);
-    } else {
-      return null;
-    }
+    return _acts.size() > 0
+      ? _acts.remove(0).reify(_outer)
+    :
+      null;    
   }
 
   public int size() { return _acts.size(); }

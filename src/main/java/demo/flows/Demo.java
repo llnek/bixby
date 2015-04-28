@@ -16,15 +16,11 @@ import static demo.flows.Auth.getAuthMtd;
 import static java.lang.System.out;
 
 import com.zotohlab.wflow.Activity;
-
-import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.If;
-import com.zotohlab.wflow.SDelegate;
-import com.zotohlab.wflow.Pipeline;
 import com.zotohlab.wflow.Split;
 import com.zotohlab.wflow.Switch;
 import com.zotohlab.wflow.While;
-
+import com.zotohlab.server.WorkFlow;
 
 /**
  * What this example demostrates is a webservice which takes in some user info, authenticate the
@@ -39,7 +35,7 @@ import com.zotohlab.wflow.While;
  *
  */
 @SuppressWarnings("unused")
-public class Demo extends SDelegate {
+public class Demo implements WorkFlow {
 
   // step1. choose a method to authenticate the user
   // here, we'll use a switch() to pick which method
@@ -166,7 +162,8 @@ public class Demo extends SDelegate {
     ErrorUser );
 
   // returning the 1st step of the workflow.
-  public Activity startWith(Pipeline pipe) {
+  @Override
+  public Activity startsWith() {
     // so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
     // a split, which forks off more steps in parallel.
     return AuthUser.chain(GetProfile).chain(Provision).chain( FinalTest);

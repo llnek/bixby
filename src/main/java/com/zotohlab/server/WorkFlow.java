@@ -9,23 +9,17 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow;
+package com.zotohlab.server;
+
+import com.zotohlab.wflow.Activity;
 
 /**
+ *
  * @author kenl
+ *
  */
-public abstract class SDelegate implements PDelegate {
+public interface WorkFlow {
 
-  public Activity onError(Throwable e, FlowNode cur) {
-    return null;
-  }
-
-  protected SDelegate() {}
-
-  public void onStop(Pipeline p) {}
-
+  public Activity startsWith();
 
 }
-
-
-

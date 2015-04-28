@@ -9,49 +9,17 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow;
+package com.zotohlab.server;
+
+import com.zotohlab.wflow.Job;
 
 /**
- * A nothing, nada task.
  *
  * @author kenl
  *
  */
-public class Nihil  extends Activity {
+public interface WorkHandler {
 
-  public static Nihil apply() {
-    return new Nihil();
-  }
-
-  public Nihil() {}
-
-  public FlowNode reifyNode(FlowNode cur) {
-    return new NihilNode(cur.job());
-  }
-
-  public FlowNode reify(Job j) throws Exception {
-    return new NihilNode(j);    
-  }
-  
-  public void realize(FlowNode p) {}
+  public void workOn(Job j);
 
 }
-
-
-/**
- * 
- * @author kenl
- *
- */
-class NihilNode extends FlowNode {
-
-  public FlowNode eval(Job j) { return this; }
-  public FlowNode next() { return this; }
-
-  public NihilNode(Job j) {
-    super(j);
-  }
-
-}
-
-

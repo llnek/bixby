@@ -11,10 +11,6 @@
 
 package com.zotohlab.wflow;
 
-import com.zotohlab.frwk.server.ServerLike;
-import com.zotohlab.frwk.util.Schedulable;
-
-
 
 /**
  * @author kenl
@@ -168,13 +164,11 @@ class SplitNode extends CompositeNode {
   private boolean _fallThru=false;
 
   public FlowNode eval(Job j) {
-    ServerLike x = pipe().container();
-    Schedulable core = x.core();
     FlowNode rc= null;
 
     while ( !_inner.isEmpty() ) {
       rc = _inner.next();
-      core.run(rc);
+      core().run(rc);
     }
 
     realize();
