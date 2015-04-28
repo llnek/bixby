@@ -72,7 +72,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
       f= d.chain(e);
       
       WorkFlow w= new WorkFlow() {
-        public Activity startsWith() {
+        public Activity startWith() {
           return c.chain(f);
       }};
       s.handle(new Object[]{w, j});
@@ -180,6 +180,10 @@ public class FlowServer implements ServerLike, ServiceHandler {
     };
   }
 
+  public Job reifyJob() {
+    return reifyJob(null);
+  }
+  
   @Override
   public Object handleError(Throwable t) {
     return null;
@@ -189,9 +193,14 @@ public class FlowServer implements ServerLike, ServiceHandler {
   public Object handle(Object work) throws Exception {
     Object[] args= (Object[]) work;
     WorkFlow w= (WorkFlow) args[0];
-    Job j = (Job) args[1];
+    Job j;
+    if (args.length > 1) {
+      j= (Job) args[1];
+    } else {
+      j = reifyJob(null);
+    }
     FlowNode end= Nihil.apply().reify(j);
-    core().run( w.startsWith().reify(end));
+    core().run( w.startWith().reify(end));
     return null;
   }
   

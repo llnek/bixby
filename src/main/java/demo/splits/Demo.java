@@ -34,7 +34,7 @@ public class Demo implements WorkFlow {
     // split but no wait
     // parent continues;
 
-  public Activity startsWith() {
+  public Activity startWith() {
 
     Activity a0= PTaskWrapper( (c,j) -> {
       out.println("I am the *Parent*");

@@ -56,6 +56,8 @@
 ;;
 (defn MakeScheduler "Make a Scheduler."
 
+  ;;^czlabclj.xlib.util.scheduler.SchedulerAPI
+  ^Schedulable
   [parObj]
 
   (let [impl (MakeMMap) ]

@@ -23,7 +23,8 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
-            [com.zotohlab.wflow Job FlowNode PTask Delay PDelegate]
+            [com.zotohlab.wflow Job FlowNode PTask Delay]
+            [com.zotohlab.server WorkFlow]
             [com.zotohlab.skaro.io SocketEvent]
             [com.zotohlab.skaro.core Container]
             [java.net Socket]
@@ -34,25 +35,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private ^String TEXTMsg "Hello World, time is ${TS} !")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoClient [] PDelegate
+(deftype DemoClient [] WorkFlow
 
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (startWith [_]
     (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
     (-> (Delay/apply 3000)
         (.chain
           (SimPTask
-            (fn [_]
-              (with-local-vars [tcp (-> (.container pipe)
+            (fn [^Job j]
+              (with-local-vars [tcp (-> (.container j)
                                         (.getService :default-sample))
                                 s (.replace TEXTMsg
                                             "${TS}" (.toString (Date.)))
@@ -78,11 +76,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoServer [] PDelegate
+(deftype DemoServer [] WorkFlow
 
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (startWith [_]
     (require 'demo.tcpip.core)
     (-> (SimPTask
           (fn [^Job j]
@@ -117,7 +113,6 @@
   (stop [_] )
 
   (dispose [_] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

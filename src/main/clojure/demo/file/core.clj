@@ -18,17 +18,14 @@
   (:require [clojure.tools.logging :as log :only [info warn error debug]]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.process :only [ThreadFunc]]
-        [czlabclj.xlib.util.core :only [Try!]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [DefMorphable SimPTask]])
+  (:use [czlabclj.xlib.util.core :only [Try!]]
+        [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job Pipeline
-             FlowNode PTask SDelegate PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask ]
             [com.zotohlab.skaro.core Container]
             [com.zotohlab.skaro.io FileEvent]
-            [com.zotohlab.frwk.core Morphable]
             [com.zotohlab.frwk.server Service]
+            [com.zotohlab.server WorkHandler]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]
             [java.util Date]
@@ -40,10 +37,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;(def ^:private ^AtomicInteger _count (AtomicInteger.))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (let [ctr (AtomicInteger.)]
   (defn- ncount ""
     []
@@ -51,48 +44,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkDelegate ""
+(deftype DemoGen [] WorkHandler
 
-  []
-
-  (proxy [SDelegate][]
-    (startWith [pipe]
-      (SimPTask
-        #(let [^Service
-               p (-> ^Pipeline pipe
-                     (.container)
-                     (.getService :default-sample))
-               s (str "Current time is " (Date.)) ]
-           (FileUtils/writeStringToFile
-             (File. (nsb (.getv p :targetFolder))
-                    (str "ts-" (ncount) ".txt")) s "utf-8")
-           nil)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;(deftype DemoGen [] Morphable
-;;(morph [_]
-;;(require 'demo.file.core)
-;;(mkDelegate)))
-(DefMorphable DemoGen mkDelegate)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype DemoPick [] PDelegate
-
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (workOn [_  j]
     (require 'demo.file.core)
-    (SimPTask
-      (fn [^Job j]
-        (let [^FileEvent ev (.event j)
-              f (.getFile ev) ]
-          (println "Picked up new file: " f)
-          (println "Content: " (FileUtils/readFileToString f "utf-8"))
-          nil)))
-  ))
+    (let [^Service p (-> (.container j)
+                         (.getService :default-sample))
+          s (str "Current time is " (Date.)) ]
+      (spit (File. (nsb (.getv p :targetFolder))
+                   (str "ts-" (ncount) ".txt"))
+            s :encoding "utf-8"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype DemoPick [] WorkHandler
+
+  (workOn [_   j]
+    (require 'demo.file.core)
+    (let [f (-> ^FileEvent (.event j)
+                (.getFile)) ]
+      (println "Picked up new file: " f)
+      (println "Content: " (slurp f :encoding "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,7 +82,6 @@
   (stop [_])
 
   (dispose [_] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

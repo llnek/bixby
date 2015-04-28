@@ -19,16 +19,15 @@
 
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+        [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask]
+            [com.zotohlab.server WorkHandler]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -45,22 +44,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] PDelegate
+(deftype Demo [] WorkHandler
 
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (workOn [_  j]
     (require 'demo.jetty.core)
-    (SimPTask
-      (fn [^Job j]
-        (let [^HTTPEvent ev (.event j)
-              res (.getResultObj ev) ]
-          (doto res
-            (.setContent FMTHtml)
-            (.setStatus 200))
-          (.replyResult ev)
-          nil)))
-  ))
+    (let [^HTTPEvent ev (.event ^Job j)
+          res (.getResultObj ev) ]
+      (doto res
+        (.setContent FMTHtml)
+        (.setStatus 200))
+      (.replyResult ev))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

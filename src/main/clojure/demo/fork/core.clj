@@ -21,14 +21,13 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-
-  (:import  [com.zotohlab.wflow Job FlowNode PTask Split PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask Split]
+            [com.zotohlab.server WorkFlow]
             [java.lang StringBuilder]
             [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -41,7 +40,6 @@
     (+ (fib (- n 2))
        (fib (- n 1)))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;   parent(s1) --> split&nowait
@@ -52,15 +50,12 @@
 ;;                  |
 ;;                  |-------> parent(s2)----> end
 
-(deftype Demo [] PDelegate
+(deftype Demo [] WorkFlow
 
-  (onError [_ _ _])
-  (onStop [_ _])
+  ;; split but no wait
+  ;; parent continues;
 
-    ;; split but no wait
-    ;; parent continues;
-
-  (startWith [_ pipe]
+  (startWith [_]
     (require 'demo.fork.core)
     (let
       [a1 (SimPTask

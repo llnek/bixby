@@ -19,10 +19,12 @@
             [clojure.data.json :as json])
 
   (:use [czlabclj.xlib.util.str :only [hgl? lcase nsb strim nichts?]]
+        [czlabclj.xlib.util.consts]
         [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
         [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [LoadResource]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
+        [czlabclj.xlib.util.wfs :only [MakeJob SimPTask]]
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile FileRead?]]
@@ -84,15 +86,14 @@
              Morphable
              Startable Disposable Identifiable]
             [com.zotohlab.frwk.server ComponentRegistry
-             EventBus
+             EventBus Service
              Component ServiceHandler ServiceError]
             [com.zotohlab.skaro.core Container ConfigError]
             [com.zotohlab.skaro.io Emitter IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
             [com.zotohlab.frwk.io XData]
-            [com.zotohlab.server WorkFlow]
-            [com.zotohlab.wflow Job]
-            [com.zotohlab.wflow Pipeline]))
+            [com.zotohlab.server WorkHandler WorkFlow]
+            [com.zotohlab.wflow Activity Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -122,42 +123,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeJob ""
+(defn- mkJob ""
 
   ^Job
-  [_container evt handler]
+  [container evt]
 
-  (let [impl (MakeMMap)
-        jid (NextLong) ]
-    (with-meta
-      (reify
-
-        MubleAPI
-
-        (setf! [_ k v] (.setf! impl k v))
-        (clear! [_] (.clear! impl))
-        (seq* [_] (.seq* impl))
-        (toEDN [_] (.toEDN impl))
-        (getf [_ k] (.getf impl k))
-        (clrf! [_ k] (.clrf! impl k))
-
-        Job
-
-        (setLastResult [this v] (.setf! this JS_LAST v))
-        (getLastResult [this] (.getf this JS_LAST))
-        (clrLastResult [this] (.clrf! this JS_LAST))
-        (finz [_]
-          (tlog/debug "Job##" jid " has been served."))
-        (setv [this k v] (.setf! this k v))
-        (unsetv [this k] (.clrf! this k))
-        (getv [this k] (.getf this k))
-        (handleError [_ ex] nil)
-        (container [_] _container)
-        (event [_] evt)
-        (id [_] jid))
-
-      { :typeid (keyword "czc.tardis.impl/Job") }
-  )))
+  (with-meta
+    (MakeJob container evt)
+    { :typeid (keyword "czc.tardis.impl/Job") }
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -195,7 +169,7 @@
                 cfg (.getAttr src :emcfg)
                 ^String c0 (:handler cfg)
                 ^String c1 (:router options)
-                ^Job job (makeJob parObj evt hr) ]
+                ^Job job (mkJob parObj evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
@@ -207,18 +181,19 @@
                         (fakePTask z)
                         (instance? Morphable z)
                         (-> ^WorkFlow
-                            (.morph z)
-                            (.startsWith))
+                            (.morph ^Morphable z)
+                            (.startWith))
                         (instance? WorkFlow z)
                         (-> ^WorkFlow z
-                            (.startsWith))
+                            (.startWith))
                         :else nil )]
                 (.setv job EV_OPTS options)
                 (if-not (nil? a)
                   (.handle hr {:activity a :job job})
                   (throw (Exception. "no matchable handler!"))))
               (catch Throwable _
-                (-> (MakeFatalErrorFlow job) (.start))))))
+                (.handle hr {:activity (MakeFatalErrorFlow job)
+                             :job job})))))
 
         (parent [_] parObj))
 
@@ -337,7 +312,7 @@
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
-        (eventBus [_] (.getAttr this K_EBUS))
+        (eventBus [this] (.getAttr this K_EBUS))
 
         (loadTemplate [_ tpath ctx]
           (let [tpl (nsb tpath)

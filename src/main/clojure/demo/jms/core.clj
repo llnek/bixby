@@ -19,10 +19,10 @@
 
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+        [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask]
+            [com.zotohlab.server WorkHandler]
             [com.zotohlab.skaro.io JMSEvent]
             [javax.jms TextMessage]
             [java.util.concurrent.atomic AtomicInteger]
@@ -33,37 +33,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^AtomicInteger _count (AtomicInteger.))
+(let [ctr (AtomicInteger.)]
+  (defn- ncount ""
+    []
+    (.incrementAndGet ctr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ncount ""
+(deftype Demo [] WorkHandler
 
-  []
-
-  (.incrementAndGet _count))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype Demo [] PDelegate
-
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (workOn [_  j]
     (require 'demo.jms.core)
-    (SimPTask
-      (fn [^Job j]
-        (let [^JMSEvent ev (.event j)
-              ^TextMessage msg (.getMsg ev) ]
-          (println "-> Correlation ID= " (.getJMSCorrelationID msg))
-          (println "-> Msg ID= " (.getJMSMessageID msg))
-          (println "-> Type= " (.getJMSType msg))
-          (println "("
-                   (ncount)
-                   ") -> Message= "
-                   (.getText msg))
-          nil)))
-  ))
+    (let [^JMSEvent ev (.event ^Job j)
+          ^TextMessage msg (.getMsg ev) ]
+      (println "-> Correlation ID= " (.getJMSCorrelationID msg))
+      (println "-> Msg ID= " (.getJMSMessageID msg))
+      (println "-> Type= " (.getJMSType msg))
+      (println "("
+               (ncount)
+               ") -> Message= "
+               (.getText msg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -80,7 +69,6 @@
   (stop [_] )
 
   (dispose [_] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

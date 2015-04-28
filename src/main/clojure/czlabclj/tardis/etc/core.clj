@@ -19,6 +19,7 @@
 
   (:use [czlabclj.xlib.i18n.resources :only [GetResource RStr]]
         [czlabclj.xlib.util.core :only [test-cond MakeMMap]]
+        [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.str :only [MakeString]]
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.files :only [DirRead?]]
@@ -26,17 +27,16 @@
         [czlabclj.tardis.etc.cmd1])
 
   (:import  [com.zotohlab.skaro.etc CmdHelpError]
-            [com.zotohlab.frwk.server ServerLike]
-            [com.zotohlab.wflow Activity Pipeline
+            [com.zotohlab.frwk.server ServiceHandler ServerLike]
+            [com.zotohlab.wflow Activity
              Nihil
-             Job PDelegate Switch]
+             Job Switch]
             [com.zotohlab.frwk.i18n I18N]
             [java.util ResourceBundle List Locale]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -153,32 +153,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype CmdDelegate [] PDelegate
-
-  (onStop [_ p] (-> (.core p) (.dispose)))
-  (onError [_ err cur] (Nihil.))
-  (startWith [_ p]
-    (require 'czlabclj.tardis.etc.core)
-    (-> (cmdStart)
-        (.chain (parseArgs))
-        (.chain (execArgs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn BootAndRun ""
 
   [^File home ^ResourceBundle rcb args]
 
-  (let [cz "czlabclj.tardis.etc.core.CmdDelegate"
-        ctr (PseudoServer)
-        job (PseudoJob ctr)
-        pipe (Pipeline. "Cmdline" cz job false)]
+  (let [job (MakeJob (FlowServer))
+        a (-> (cmdStart)
+              (.chain (parseArgs))
+              (.chain (execArgs)))]
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (.setLastResult job args)
+    (.setv job JS_FLATLINE true)
     (.setv job :home home)
     (.setv job :rcb rcb)
-    (.start pipe)
+    (-> ^ServiceHandler
+        (.container job)
+        (.handle {:activity a :job job}))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

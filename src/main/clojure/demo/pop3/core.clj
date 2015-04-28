@@ -19,11 +19,11 @@
 
   (:use [czlabclj.xlib.util.process :only [DelayExec]]
         [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+        [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask]
             [org.apache.commons.io IOUtils]
+            [com.zotohlab.server WorkHandler]
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
@@ -33,44 +33,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(let [ctr (AtomicInteger.)]
+  (defn- ncount ""
+    []
+    (.incrementAndGet ctr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^AtomicInteger _count (AtomicInteger.))
+(deftype Demo [] WorkHandler
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- ncount ""
-
-  []
-
-  (.incrementAndGet _count))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype Demo [] PDelegate
-
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (workOn [_  j]
     (require 'demo.pop3.core)
-    (SimPTask
-      (fn [^Job j]
-        (let [^EmailEvent ev (.event j)
-              ^MimeMessage msg (.getMsg ev)
-              ^Multipart p (.getContent msg) ]
-          (println "######################## (" (ncount) ")" )
-          (print "Subj:" (.getSubject msg) "\r\n")
-          (print "Fr:" (first (.getFrom msg)) "\r\n")
-          (print "To:" (first (.getRecipients msg
-                                       Message$RecipientType/TO)))
-          (print "\r\n")
-          (println (IOUtils/toString (-> (.getBodyPart p 0)
-                                         (.getInputStream))
-                                     "utf-8"))
-          nil)))
-  ))
+    (let [^EmailEvent ev (.event ^Job j)
+          ^MimeMessage msg (.getMsg ev)
+          ^Multipart p (.getContent msg) ]
+      (println "######################## (" (ncount) ")" )
+      (print "Subj:" (.getSubject msg) "\r\n")
+      (print "Fr:" (first (.getFrom msg)) "\r\n")
+      (print "To:" (first (.getRecipients msg
+                                   Message$RecipientType/TO)))
+      (print "\r\n")
+      (println (IOUtils/toString (-> (.getBodyPart p 0)
+                                     (.getInputStream))
+                                 "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

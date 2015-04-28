@@ -163,7 +163,7 @@ public class Demo implements WorkFlow {
 
   // returning the 1st step of the workflow.
   @Override
-  public Activity startsWith() {
+  public Activity startWith() {
     // so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
     // a split, which forks off more steps in parallel.
     return AuthUser.chain(GetProfile).chain(Provision).chain( FinalTest);

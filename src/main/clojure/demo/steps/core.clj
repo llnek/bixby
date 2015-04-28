@@ -23,12 +23,12 @@
 
   (:import  [com.zotohlab.wflow FlowNode Switch If
              Activity Split While PTask
-             Job PDelegate]
+             Job]
+            [com.zotohlab.server WorkFlow]
             [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -86,11 +86,9 @@
 ;; This flow showcases the use of conditional activities such a Switch() &amp; If().  Shows how to loop using
 ;; While(), and how to use Split &amp; Join.
 ;;
-(deftype Demo [] PDelegate
+(deftype Demo [] WorkFlow
 
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (startWith [_]
     (require 'demo.steps.core)
     ;; step1. choose a method to authenticate the user
     ;; here, we'll use a switch() to pick which method
@@ -183,7 +181,6 @@
   (stop [_] )
 
   (dispose [_] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

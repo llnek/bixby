@@ -20,6 +20,6 @@ import com.zotohlab.wflow.Activity;
  */
 public interface WorkFlow {
 
-  public Activity startsWith();
+  public Activity startWith();
 
 }

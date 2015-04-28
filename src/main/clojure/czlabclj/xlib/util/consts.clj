@@ -35,10 +35,16 @@
 (def ^String SLASH   "/" )
 (def ^String PATHSEP   SLASH )
 
+(def ^String EV_OPTS "____eventoptions")
+(def ^String JS_LAST "____lastresult")
+(def ^String JS_CRED "credential")
+(def ^String JS_USER "principal")
+(def ^String JS_FLATLINE "____flatline")
+
 (def BOOLS #{ "true", "yes", "on", "ok", "active", "1"} )
 
-(def MONTHS [ "JAN" "FEB" "MAR" "APR" "MAY" "JUN" "JUL" "AUG" "SEP" "OCT" "NOV" "DEC" ] )
-
+(def MONTHS ["JAN" "FEB" "MAR" "APR" "MAY" "JUN"
+             "JUL" "AUG" "SEP" "OCT" "NOV" "DEC" ] )
 
 (def ^String COPYRIGHT "Copyright (c) 2008-2015, Ken Leung. All rights reserved.")
 

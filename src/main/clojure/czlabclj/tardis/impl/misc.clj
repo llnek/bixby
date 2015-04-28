@@ -16,10 +16,9 @@
 
   (:use [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow Job FlowError]
-            [com.zotohlab.wflow Pipeline Job PDelegate PTask Work]
-            [com.zotohlab.skaro.io IOEvent HTTPEvent HTTPResult]
-            [com.zotohlab.frwk.core Startable]))
+  (:import  [com.zotohlab.wflow Activity Job
+             FlowError PTask Work]
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -27,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal flows
-(defn- make-work ""
+(defn- mkWork ""
 
   [s]
 
@@ -43,13 +42,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-internal-flow ""
+(defn- mkInternalFlow ""
 
-  [^Pipeline pipe s]
+  ^Activity
+  [^Job j s]
 
-  (let [evt (-> pipe (.job)(.event)) ]
+  (let [evt (.event j) ]
     (if (instance? HTTPEvent evt)
-      (make-work s)
+      (mkWork s)
       (throw (FlowError. (str "Unhandled event-type \""
                               (:typeid (meta evt))
                               "\"."))))
@@ -57,37 +57,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype FatalErrorFlow [] PDelegate
-
-  (startWith [_ pipe] (make-internal-flow pipe 500))
-  (onStop [_ pipe ] nil)
-  (onError [_ error cur] nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype OrphanFlow [] PDelegate
-
-  (startWith [_  pipe] (make-internal-flow pipe 501))
-  (onStop [_  pipe] nil)
-  (onError [_  error cur] nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn MakeFatalErrorFlow
 
-  ^Startable
+  ^Activity
   [^Job job]
 
-  (Pipeline. "Fatal Error" "czlabclj.tardis.etc.misc.FatalErrorFlow" job))
+  (mkInternalFlow job 500))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeOrphanFlow ""
 
-  ^Startable
+  ^Activity
   [^Job job]
 
-  (Pipeline. "Orphan Flow" "czlabclj.tardis.etc.misc.OrphanFlow" job))
+  (mkInternalFlow job 501))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

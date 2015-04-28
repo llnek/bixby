@@ -18,6 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [MubleAPI Try! NiceFPath]]
+        [czlabclj.xlib.util.consts]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http]
         [czlabclj.tardis.io.netty]
@@ -35,12 +36,13 @@
             [com.zotohlab.skaro.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.wflow FlowNode Activity Pipeline
-             PDelegate PTask Work]
+            [com.zotohlab.wflow FlowNode Activity
+             PTask Work]
             [com.zotohlab.wflow Job]
             [com.zotohlab.skaro.runtime AuthError]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
+            [com.zotohlab.server WorkHandler]
             [java.util Date]
             [java.io File]
             [com.zotohlab.frwk.io XData]
@@ -317,24 +319,15 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;TODO: make this into a singleton for reuse?
-(deftype AssetHandler [] PDelegate
+;;
+(deftype AssetHandler [] WorkHandler
 
-  (startWith [_ pipe]
-    (SimPTask
-      (fn [^Job job]
-        (let [^HTTPEvent evt (.event job)]
-          (HandleStatic (.emitter evt)
-                        evt
-                        (.getv job EV_OPTS))
-          nil))))
-
-  (onStop [_ pipe])
-    ;;(log/debug "Nothing to be done here, just stop please."))
-
-  (onError [ _ err curPt]
-    (log/error "AssetHandler: Oops, I got an error!")))
-
+  (workOn [_  j]
+    (require 'czlabclj.tardis.mvc.comms)
+    (let [^HTTPEvent evt (.event ^Job j)]
+      (HandleStatic (.emitter evt)
+                    evt
+                    (.getv ^Job j EV_OPTS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

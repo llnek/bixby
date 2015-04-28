@@ -181,7 +181,7 @@
       (handle [_ arg]
         (let [^Activity a (:activity arg)
               ^Job j (:job arg)]
-          (tlog/debug "Job##" (.id j) " is being serviced by " service)
+          (log/debug "Job##" (.id j) " is being serviced by " service)
           (-> ^Emitter service
               (.container)
               (.core)

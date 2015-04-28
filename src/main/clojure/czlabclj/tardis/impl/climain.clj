@@ -20,6 +20,7 @@
   (:use [czlabclj.xlib.netty.discarder :only [MakeDiscardHTTPD]]
         [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
         [czlabclj.xlib.util.ini :only [ParseInifile]]
+        [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.process
          :only
          [ProcessPid SafeWait ThreadFunc]]
@@ -45,16 +46,18 @@
             [com.zotohlab.skaro.loaders AppClassLoader
              RootClassLoader ExecClassLoader]
             [com.zotohlab.frwk.core Versioned Identifiable
+             Disposable
              Hierarchial Startable]
-            [com.zotohlab.frwk.util IWin32Conf]
+            [com.zotohlab.frwk.util Schedulable IWin32Conf]
             [com.zotohlab.frwk.i18n I18N]
-            [com.zotohlab.wflow Job Pipeline
-             Activity Nihil PDelegate]
+            [com.zotohlab.wflow Job
+             Activity Nihil]
             [com.zotohlab.skaro.core ConfigError]
             [com.zotohlab.skaro.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.server ServerLike
+             ServiceHandler
              Component ComponentRegistry]
             [com.zotohlab.skaro.etc CmdHelpError]
             [java.util ResourceBundle Locale]
@@ -136,11 +139,25 @@
   ^ServerLike
   [^File home]
 
-  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
-        cpu (MakeScheduler nil)
+  (let [cpu (MakeScheduler nil)
         impl (MakeMMap)]
-    (.activate cpu { :threads 1 })
+    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
+        cpu
+        (.activate { :threads 1 }))
     (reify
+
+      ServiceHandler
+
+      (handleError [_ e] )
+      (handle [_  arg]
+        (let [^Activity a (:activity arg)
+              ^Job j (:job arg)]
+          (.run cpu (.reify a
+                            (-> (Nihil/apply)
+                                (.reify j))))))
+
+      Disposable
+      (dispose [_] (.dispose cpu))
 
       ServerLike
 
@@ -378,31 +395,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype RtDelegate [] PDelegate
-  (onStop [_ p] (-> (.core p) (.dispose)))
-  (onError [_ err cur] (Nihil.))
-  (startWith [_ p]
-    (-> (rtStart)
-        (.chain (setupLoaders))
-        (.chain (loadConf))
-        (.chain (loadRes))
-        (.chain (primodial))
-        (.chain (writePID))
-        (.chain (hookShutdown))
-        (.chain (pauseCLI)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (deftype StartMainViaCLI []
     CliMain
     (run [_ args]
       (require 'czlabclj.tardis.impl.climain)
       (let [home (first args)
-            svr (cserver home)
-            job (PseudoJob svr)
-            p (Pipeline. "RtDelegate" "czlabclj.tardis.impl.climain.RtDelegate" job)]
+            job (MakeJob (cserver home))
+            a (-> (rtStart)
+                      (.chain (setupLoaders))
+                      (.chain (loadConf))
+                      (.chain (loadRes))
+                      (.chain (primodial))
+                      (.chain (writePID))
+                      (.chain (hookShutdown))
+                      (.chain (pauseCLI)))]
+        (.setv job JS_FLATLINE true)
         (.setv job :home home)
-        (.start p))))
+        (-> ^ServiceHandler
+            (.container job)
+            (.handle {:activity a :job job})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

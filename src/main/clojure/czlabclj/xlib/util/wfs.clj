@@ -18,13 +18,18 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
-        [czlabclj.xlib.util.core :only [MakeMMap]])
+        [czlabclj.xlib.util.consts]
+        [czlabclj.xlib.util.core
+         :only [MubleAPI MakeMMap NextLong]])
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
-             CounterExpr BoolExpr
+             CounterExpr BoolExpr Nihil
              ChoiceExpr Job
-             Pipeline PDelegate PTask Work]
-            [com.zotohlab.frwk.server ServerLike]
+             PTask Work]
+            [com.zotohlab.frwk.server Event ServerLike
+             ServiceHandler]
+            [com.zotohlab.frwk.util Schedulable]
+            [com.zotohlab.frwk.core Disposable]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,15 +37,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PseudoServer ""
+(defn FlowServer ""
 
   ^ServerLike
   []
 
-  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
-        cpu (MakeScheduler nil)]
-    (.activate cpu { :threads 1, :trace false })
-    (reify ServerLike
+  (let [cpu (MakeScheduler nil)]
+    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
+        cpu
+        (.activate { :threads 1, :trace false }))
+    (reify
+
+      ServiceHandler
+
+      (handleError [_ e] )
+      (handle [_  arg]
+        (let [^Activity a (:activity arg)
+              ^Job j (:job arg)]
+          (.run cpu (.reify a
+                            (-> (Nihil/apply)
+                                (.reify j))))))
+
+      Disposable
+      (dispose [_] (.dispose cpu))
+
+      ServerLike
+
       (hasService [_ s] )
       (getService [_ s] )
       (core [_] cpu))
@@ -48,23 +70,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PseudoJob ""
+(defn MakeJob ""
 
-  ^Job
-  [parObj]
+  (^Job [parObj] (MakeJob parObj nil))
 
-  (let [impl (MakeMMap)]
-    (reify Job
-      (container [_] parObj)
-      (event [_] )
-      (id [_] "heeloo")
-      (unsetv [_ k] (.clrf! impl k))
-      (setv [_ k v] (.setf! impl k v))
-      (getv [_ k] (.getf impl k))
-      (setLastResult [_ v] (.setf! impl :last v))
-      (clrLastResult [_] (.clrf! impl :last))
-      (getLastResult [_] (.getf impl :last)))
-  ))
+  (^Job [^ServerLike parObj
+         ^Event evt]
+    (let [impl (MakeMMap)
+          jid (NextLong) ]
+      (reify
+
+        MubleAPI
+
+        (setf! [_ k v] (.setf! impl k v))
+        (clear! [_] (.clear! impl))
+        (seq* [_] (.seq* impl))
+        (toEDN [_] (.toEDN impl))
+        (getf [_ k] (.getf impl k))
+        (clrf! [_ k] (.clrf! impl k))
+
+        Job
+
+        (setLastResult [this v] (.setf! this JS_LAST v))
+        (getLastResult [this] (.getf this JS_LAST))
+        (clrLastResult [this] (.clrf! this JS_LAST))
+        (finz [_]
+          (log/debug "Job##" jid " has been served.")
+          (when (and (.getf impl JS_FLATLINE)
+                     (instance? Disposable parObj))
+            (-> ^Disposable parObj
+                (.dispose))))
+        (setv [this k v] (.setf! this k v))
+        (unsetv [this k] (.clrf! this k))
+        (getv [this k] (.getf this k))
+        (handleError [_ ex] nil)
+        (container [_] parObj)
+        (event [_] evt)
+        (id [_] jid)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,18 +121,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro DefPipe ""
-
-  [func & body]
-
-  `(defn- ~func "" []
-     (proxy [com.zotohlab.wflow.SDelegate][]
-       (startWith [pipe#]
-         ~@body))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;(defmacro DefPTask [ & exprs ] `(PTask. (reify Work ~@exprs )))
 (defn DefPTask ""
 
   (^PTask [func] (DefPTask "" func))
@@ -100,6 +130,8 @@
                  (exec [_ fw job]
                    (apply func [fw job]))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn SimPTask ""
 
   (^PTask [func] (SimPTask "" func))
@@ -109,7 +141,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;(defmacro DefPredicate [ & exprs ] `(reify BoolExpr ~@exprs))
 (defn DefBoolExpr
 
   ^BoolExpr
@@ -137,7 +168,6 @@
 
   (reify CounterExpr (getCount [_ job] (apply func [job]))
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

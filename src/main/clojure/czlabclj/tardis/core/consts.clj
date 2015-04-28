@@ -142,11 +142,6 @@
 
 (def K_KILLPORT :discarder)
 
-(def ^String EV_OPTS "____eventoptions")
-(def ^String JS_LAST "____lastresult")
-(def ^String JS_CRED "credential")
-(def ^String JS_USER "principal")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private consts-eof nil)

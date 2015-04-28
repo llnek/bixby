@@ -13,6 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanWFlow: '') {
+  ant.delete ( dir: "${buildDir}/com/zotohlab/server", quiet: true)
   ant.delete ( dir: "${buildDir}/com/zotohlab/wflow", quiet: true)
   ant.delete ( dir: "${qaDir}/czlab", quiet: true)
 }
@@ -42,6 +43,7 @@ def doCompileWFlow() {
          classpathref: 'compilePathId') {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
     include (name: 'com/zotohlab/wflow/**/*.java')
+    include (name: 'com/zotohlab/server/**/*.java')
   }
 
   ant.copy (todir: "${buildDir}/com/zotohlab/wflow") {
@@ -49,10 +51,15 @@ def doCompileWFlow() {
       exclude (name: '**/*.java')
       exclude (name: '**/.svn')
     }
+    fileset (dir: "${srcDir}/java/com/zotohlab/server") {
+      exclude (name: '**/*.java')
+      exclude (name: '**/.svn')
+    }
   }
 
   ant.jar (destfile: "${distribDir}/exec/wflow-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
+      include (name: 'com/zotohlab/server/**')
       include (name: 'com/zotohlab/wflow/**')
       exclude (name: '**/log4j.properties')
       exclude (name: '**/logback.xml')

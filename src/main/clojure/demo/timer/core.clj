@@ -22,8 +22,9 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask PDelegate]
+  (:import  [com.zotohlab.wflow Job FlowNode PTask]
             [java.util.concurrent.atomic AtomicInteger]
+            [com.zotohlab.server WorkHandler]
             [java.util Date]
             [com.zotohlab.skaro.io TimerEvent]
             [com.zotohlab.skaro.core Container]))
@@ -31,37 +32,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(let [ctr (AtomicInteger.)]
+  (defn- ncount ""
+    []
+    (.incrementAndGet ctr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^AtomicInteger _count (AtomicInteger.))
+(deftype Demo [] WorkHandler
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- ncount ""
-
-  []
-
-  (.incrementAndGet _count))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype Demo [] PDelegate
-
-  (onError [_ _ _])
-  (onStop [_ _])
-  (startWith [_ pipe]
+  (workOn [_  j]
     (require 'demo.timer.core)
-    (SimPTask
-      (fn [^Job job]
-        (let [^TimerEvent ev (.event job) ]
-          (if (.isRepeating ev)
-            (println "-----> (" (ncount) ") repeating-update: " (Date.))
-            (println "-----> once-only!!: " (Date.)))
-          nil)))
-
-  ))
+    (let [^TimerEvent ev (.event ^Job j) ]
+      (if (.isRepeating ev)
+        (println "-----> (" (ncount) ") repeating-update: " (Date.))
+        (println "-----> once-only!!: " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
