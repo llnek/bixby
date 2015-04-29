@@ -66,11 +66,11 @@
 
         (activate [_ options]
           (let [^long t (or (:threads options) 4)
-                b (or (:trace options) true)
+                b (not (false? (:trace options)))
                 jid (if-not (instance? Named parObj)
                       (Format "skaro#core-%03d" (NextInt))
                       (str (.getName ^Named parObj) "#core"))
-                c (TCore. jid t (true? b)) ]
+                c (TCore. jid t b) ]
             (doto impl
               (.setf! :holdQ (ConcurrentHashMap.))
               (.setf! :runQ (ConcurrentHashMap.))

@@ -21,7 +21,7 @@ import com.zotohlab.frwk.core.Hierarchial;
  */
 public interface EventBus extends Hierarchial {
 
-  public void onEvent(Event evt, Map<?,?> options );
+  public void onEvent(Event<?> evt, Map<?,?> options );
 
 }
 

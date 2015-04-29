@@ -63,7 +63,7 @@
         (getLastResult [this] (.getf this JS_LAST))
         (clrLastResult [this] (.clrf! this JS_LAST))
         (finz [_]
-          (log/debug "Job##" jid " has been served.")
+          ;;(log/debug "Job##" jid " has been served.")
           (when (and (.getf impl JS_FLATLINE)
                      (instance? Disposable parObj))
             (-> ^Disposable parObj
@@ -71,7 +71,6 @@
         (setv [this k v] (.setf! this k v))
         (unsetv [this k] (.clrf! this k))
         (getv [this k] (.getf this k))
-        (handleError [_ ex] nil)
         (container [_] parObj)
         (event [_] evt)
         (id [_] jid)))))
@@ -142,9 +141,12 @@
 (defn FlowServer ""
 
   ^ServerLike
-  []
+  [options]
 
-  (let [cpu (MakeScheduler)]
+  (let [options (or options {})
+        cpu (MakeScheduler)
+        errorHandler (:error options)
+        svcHandler (:service options) ]
     (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
         cpu
         (.activate { :threads 1, :trace false }))
@@ -153,31 +155,36 @@
       ServiceHandler
 
       (handle [this arg opts]
-        (let [^Activity
-              a
-              (cond
-                (instance? WorkHandler arg)
-                (SimPTask
-                  (fn [^Job j]
-                    (-> ^WorkHandler arg (.workOn j))))
+        (if (fn? svcHandler)
+          (svcHandler arg opts)
+          (let [^Activity
+                a
+                (cond
+                  (instance? WorkHandler arg)
+                  (SimPTask
+                    (fn [^Job j]
+                      (-> ^WorkHandler arg (.workOn j))))
 
-                (instance? WorkFlow arg)
-                (-> ^WorkFlow arg
-                    (.startWith))
+                  (instance? WorkFlow arg)
+                  (-> ^WorkFlow arg
+                      (.startWith))
 
-                (instance? Activity arg)
-                arg
+                  (instance? Activity arg)
+                  arg
 
-                :else nil)
-              j (MakeJob this)
-              opts (or opts {})]
-          (.setv j JS_FLATLINE true)
-          (doseq [[k v] (seq opts)]
-            (.setv j k v))
-          (.run cpu (.reify a
-                            (-> (Nihil/apply)
-                                (.reify j))))))
-      (handleError [_ e] )
+                  :else nil)
+                j (MakeJob this)
+                opts (or opts {})]
+            (.setv j JS_FLATLINE true)
+            (doseq [[k v] (seq opts)]
+              (.setv j k v))
+            (.run cpu (.reify a
+                              (-> (Nihil/apply)
+                                  (.reify j)))))))
+
+      (handleError [_ e]
+        (when (fn? errorHandler)
+          (errorHandler e)))
 
       Disposable
       (dispose [_] (.dispose cpu))

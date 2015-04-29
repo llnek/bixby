@@ -169,5 +169,10 @@ public class Demo implements WorkFlow {
     return AuthUser.chain(GetProfile).chain(Provision).chain( FinalTest);
   }
 
+  @Override
+  public Activity onError(Throwable e) {
+    return null;
+  }
+
 }
 

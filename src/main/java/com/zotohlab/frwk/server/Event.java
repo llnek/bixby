@@ -15,9 +15,11 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
-public interface Event {
+public interface Event<T> {
 
   public Object getId();
+  
+  public T emitter();
 
 }
 

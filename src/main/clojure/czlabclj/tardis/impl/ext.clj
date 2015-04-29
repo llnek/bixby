@@ -119,7 +119,7 @@
   ^String
   [^IOEvent evt]
 
-  (-> (.emitter evt) (.container) (.getAppKey)))
+  (-> ^Emitter (.emitter evt) (.container) (.getAppKey)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

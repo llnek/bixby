@@ -158,7 +158,7 @@ class JobCreator {
     _server=s;
   }
 
-  public Job newJob(final Event evt) {
+  public Job newJob(final Event<?> evt) {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
       private long _id= CoreUtils.nextSeqLong();
@@ -201,7 +201,7 @@ class JobCreator {
       }
 
       @Override
-      public Event event() {
+      public Event<?> event() {
         return evt;
       }
 
@@ -223,11 +223,6 @@ class JobCreator {
       @Override
       public Object getLastResult() {
         return _m.get(JS_LAST);
-      }
-
-      @Override
-      public Activity handleError(Throwable e) {
-        return null;
       }
 
     };

@@ -155,7 +155,7 @@
   ^bytes
   [^HTTPEvent evt]
 
-  (-> (.emitter evt) (.container) (.getAppKeyBits)))
+  (-> ^Emitter (.emitter evt) (.container) (.getAppKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

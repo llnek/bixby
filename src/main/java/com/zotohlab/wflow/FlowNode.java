@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
+import com.zotohlab.frwk.server.ServerLike;
+import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.util.Schedulable;
 
@@ -79,10 +81,11 @@ public abstract class FlowNode implements RunnableWithId {
   }
 
   public void run() {
+    ServerLike par = _job.container();
+    ServiceHandler svc = null;
     Activity err= null,
              d= getDef();
     FlowNode rc= null;
-
     core().dequeue(this);
     try {
       if (d.hasName()) {
@@ -90,12 +93,20 @@ public abstract class FlowNode implements RunnableWithId {
       }
       rc= eval( _job );
     } catch (Throwable e) {
-      err= _job.handleError(new FlowError(this,"",e));
-      if (err != null) { 
-        rc= err.reify( new NihilNode( _job) );  
-      } else {    
-        tlog().error("",e);
+      if (par instanceof ServiceHandler) {
+        svc= (ServiceHandler)par;
       }
+      if (svc != null) {
+        Object ret= svc.handleError(new FlowError(this,"",e)); 
+        if (ret instanceof Activity) {
+          err= (Activity)ret;
+        }
+      }
+      if (err == null) { 
+        //tlog().error("",e);
+        err= Nihil.apply();
+      }
+      rc= err.reify( new NihilNode( _job) );  
     }
 
     if (rc==null) {

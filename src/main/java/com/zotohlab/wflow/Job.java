@@ -22,13 +22,13 @@ import com.zotohlab.frwk.server.ServerLike;
  */
 public interface Job extends Gettable , Settable, Identifiable {
 
-  public Activity handleError(Throwable e);
+  //public Activity handleError(Throwable e);
   
   public ServerLike container();
   
   public void finz();
   
-  public Event event() ;
+  public Event<?> event() ;
 
   public void setLastResult( Object v) ;
 

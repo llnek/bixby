@@ -90,5 +90,10 @@ public class Demo implements WorkFlow {
     return (n <3) ? 1 : fib(n-2) + fib(n-1);
   }
 
+  @Override
+  public Activity onError(Throwable e) {
+    return null;
+  }
+
 }
 

@@ -16,15 +16,13 @@ import com.zotohlab.frwk.server.Event;
 /**
  * @author kenl
  */
-public interface IOEvent extends Event {
+public interface IOEvent extends Event<Emitter> {
 
   public void bindSession(IOSession s);
 
   public IOSession getSession();
 
   public boolean checkAuthenticity();
-
-  public Emitter emitter();
 
 }
 
