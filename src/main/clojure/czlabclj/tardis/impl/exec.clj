@@ -271,7 +271,6 @@
           false) ) )
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- startPods ""
@@ -394,7 +393,6 @@
     (.configure cl (NiceFPath (File. (.toURI  url))) )
     (.setf! ctx K_APP_CZLR cl)
   ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Execvisor is the master controller of everthing.
@@ -575,9 +573,6 @@
   (log/info "CompInitialize: AppsRegistry: " (.id ^Identifiable co))
   co
 )
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

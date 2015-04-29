@@ -54,7 +54,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeScheduler "Make a Scheduler."
+(defn- mkSCD "Make a Scheduler."
 
   ;;^czlabclj.xlib.util.scheduler.SchedulerAPI
   ^Schedulable
@@ -145,6 +145,13 @@
 
       { :typeid (keyword "czc.frwk.util/Scheduler") }
   )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeScheduler "Make a Scheduler."
+
+  (^Schedulable [] (MakeScheduler nil))
+  (^Schedulable [parObj] (mkSCD parObj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

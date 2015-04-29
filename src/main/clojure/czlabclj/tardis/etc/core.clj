@@ -73,10 +73,10 @@
 ;;
 (defn- drawHelp ""
 
-  [fmt arr]
+  [^String fmt arr]
 
   (doseq [[k v] (seq arr) ]
-    (print (String/format ^String fmt
+    (print (String/format fmt
                           (into-array Object [k v]) ))
   ))
 
@@ -107,8 +107,8 @@
   []
 
   (doto (Switch/apply (DefChoiceExpr
-                        (fn [^Job j]
-                          (keyword (first (.getLastResult j))))))
+                        (fn [j]
+                          (keyword (first (.getLastResult ^Job j))))))
     (.withChoice :new (SimPTask #(OnCreate %)))
     (.withChoice :ide (SimPTask #(OnIDE %)))
     (.withChoice :build (SimPTask #(OnBuild %)))
@@ -144,11 +144,11 @@
   []
 
   (SimPTask
-    (fn [^Job j]
+    (fn [j]
       (try
-        (let [args (.getLastResult j)]
+        (let [args (.getLastResult ^Job j)]
           (when (< (count args) 1) (throw (CmdHelpError. ""))))
-        (catch CmdHelpError e# (Usage))))
+        (catch CmdHelpError _ (Usage))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -157,19 +157,16 @@
 
   [^File home ^ResourceBundle rcb args]
 
-  (let [job (MakeJob (FlowServer))
-        a (-> (cmdStart)
+  (let [a (-> (cmdStart)
               (.chain (parseArgs))
               (.chain (execArgs)))]
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
-    (.setLastResult job args)
-    (.setv job JS_FLATLINE true)
-    (.setv job :home home)
-    (.setv job :rcb rcb)
     (-> ^ServiceHandler
-        (.container job)
-        (.handle {:activity a :job job}))
+        (FlowServer)
+        (.handle a {:home home
+                    :rcb rcb
+                    JS_LAST args}))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

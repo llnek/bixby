@@ -12,12 +12,13 @@
 package com.zotohlab.frwk.server;
 
 
+
 /**
  * @author kenl
  */
 public interface ServiceHandler {
+  public Object handle(Object work, Object options) throws Exception;
   public Object handleError(Throwable t);
-  public Object handle(Object work) throws Exception;
 }
 
 

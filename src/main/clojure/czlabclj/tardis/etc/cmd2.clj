@@ -20,10 +20,10 @@
   (:use [czlabclj.xlib.util.ini :only [ParseInifile]]
         [czlabclj.xlib.util.str :only [strim nsb]]
         [czlabclj.xlib.util.guids :only [NewUUid]]
+        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.core
          :only
          [GetUser juid IsWindows? NiceFPath]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile CopyFileToDir DeleteDir
@@ -134,7 +134,7 @@
     (log/debug "Unzipping all samples.")
     (doseq [^File f (seq fs) ]
       (when (and (.isFile f)
-                 (.endsWith (.getName f) ".pod"))
+                 (-> (.getName f)(.endsWith ".pod")))
         (PublishDemo hhhHome (FilenameUtils/getBaseName (nsb f)))))
   ))
 
@@ -170,8 +170,7 @@
     (let [top (File. hhh (str DN_BOXX "/" dname))
           src (File. top (str "src/main/clojure/demo/" dname))]
       (CopyFiles demo (File. top DN_CONF) "conf")
-      (CopyFiles demo src "clj")
-      )
+      (CopyFiles demo src "clj"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -270,15 +269,15 @@
   [^File hhhHome ^String appId ^String appDomain ^String flavor]
 
   (let [appDir (Mkdirs (File. hhhHome (str DN_BOXX "/" appId)))
-        cfd (File. appDir DN_CONF)
         mfDir (File. appDir META_INF)
+        cfd (File. appDir DN_CONF)
         appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [fp nil ]
 
       ;; make all the folders
 
-      (doseq [^String s ["alchemy/clojure.org" DN_CONF
-                         "alchemy/build" "docs" "i18n"
+      (doseq [^String s ["alchemy.dir/clojure.org" DN_CONF
+                         "alchemy.dir/build" "docs" "i18n"
                          META_INF "modules" POD_INF "src"]]
         (Mkdirs (File. appDir s)))
       (doseq [s ["classes" "patch" "lib"]]

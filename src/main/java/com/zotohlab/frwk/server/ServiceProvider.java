@@ -11,14 +11,15 @@
 
 package com.zotohlab.frwk.server;
 
-import com.zotohlab.frwk.util.Schedulable;
 
 /**
  * @author kenl
  */
-public interface ServerLike {
+public interface ServiceProvider {
 
-  public Schedulable core();
+  public boolean hasService( Object serviceId);
+
+  public Service getService( Object serviceId);
 
 }
 

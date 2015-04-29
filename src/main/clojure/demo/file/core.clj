@@ -24,7 +24,7 @@
   (:import  [com.zotohlab.wflow Job FlowNode PTask ]
             [com.zotohlab.skaro.core Container]
             [com.zotohlab.skaro.io FileEvent]
-            [com.zotohlab.frwk.server Service]
+            [com.zotohlab.frwk.server ServiceProvider Service]
             [com.zotohlab.server WorkHandler]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]
@@ -48,7 +48,8 @@
 
   (workOn [_  j]
     (require 'demo.file.core)
-    (let [^Service p (-> (.container j)
+    (let [^Service p (-> ^ServiceProvider
+                         (.container j)
                          (.getService :default-sample))
           s (str "Current time is " (Date.)) ]
       (spit (File. (nsb (.getv p :targetFolder))

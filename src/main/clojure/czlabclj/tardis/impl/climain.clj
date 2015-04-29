@@ -69,15 +69,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;(def CLI-TRIGGER (promise))
 (def ^:private STOPCLI (atom false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizContext
-
-  "the context object has a set of properties, such as basic dir, which
-  is shared with other key components."
+(defn- inizContext "the context object has a set of properties, such as basic dir, which
+                   is shared with other key components."
 
   ^czlabclj.xlib.util.core.MubleAPI
   [^File baseDir]
@@ -103,7 +100,7 @@
 
     (when-not @STOPCLI
       (reset! STOPCLI true)
-      (println)
+      (print "\n\n")
       (log/info "Shutting down the http discarder...")
       (StopServer ^ServerBootstrap (:bootstrap kp)
                   ^Channel (:channel kp))
@@ -139,7 +136,7 @@
   ^ServerLike
   [^File home]
 
-  (let [cpu (MakeScheduler nil)
+  (let [cpu (MakeScheduler)
         impl (MakeMMap)]
     (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
         cpu
@@ -148,21 +145,22 @@
 
       ServiceHandler
 
-      (handleError [_ e] )
-      (handle [_  arg]
-        (let [^Activity a (:activity arg)
-              ^Job j (:job arg)]
+      (handle [this  arg options]
+        (let [^Activity
+              a
+              (cond
+                (instance? Activity arg) arg
+                :else nil)]
           (.run cpu (.reify a
                             (-> (Nihil/apply)
-                                (.reify j))))))
+                                (.reify (MakeJob this)))))))
+      (handleError [_ e] )
 
       Disposable
       (dispose [_] (.dispose cpu))
 
       ServerLike
 
-      (hasService [_ s] )
-      (getService [_ s] )
       (core [_] cpu)
 
       Element
@@ -197,13 +195,13 @@
   (SimPTask "PauseCLI"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
+            ctx (.getLastResult j)
             s (.container j)]
         (log/debug "#### sys loader = "
                    (-> (ClassLoader/getSystemClassLoader)
                        (.getClass)
                        (.getName)))
-        (PrintMutableObj x)
+        (PrintMutableObj ctx)
         (log/info "Container(s) are now running...")
       ))
   ))
@@ -217,11 +215,11 @@
   (SimPTask "HookShutDown"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
-            cli (.getf x K_CLISH)]
+            ctx (.getLastResult j)
+            cli (.getf ctx K_CLISH)]
         (.addShutdownHook (Runtime/getRuntime)
-                          (ThreadFunc #(stopCLI x) false))
-        (enableRemoteShutdown x)
+                          (ThreadFunc #(stopCLI ctx) false))
+        (enableRemoteShutdown ctx)
         (log/info "Added shutdown hook.")
       ))
   ))
@@ -235,11 +233,11 @@
   (SimPTask "WritePID"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
-            ^File home (.getf x K_BASEDIR)
+            ctx (.getLastResult j)
+            ^File home (.getf ctx K_BASEDIR)
             fp (File. home "skaro.pid")]
         (WriteOneFile fp (ProcessPid))
-        (.setf! x K_PIDFILE fp)
+        (.setf! ctx K_PIDFILE fp)
         (log/info "Wrote skaro.pid - OK.")
       ))
   ))
@@ -253,18 +251,18 @@
   (SimPTask "Primodial"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
-            cl (.getf x K_EXEC_CZLR)
-            cli (.getf x K_CLISH)
-            wc (.getf x K_PROPS)
+            ctx (.getLastResult j)
+            cl (.getf ctx K_EXEC_CZLR)
+            cli (.getf ctx K_CLISH)
+            wc (.getf ctx K_PROPS)
             cz (or (K_EXECV (K_COMPS wc)) "")]
         ;;(test-cond "conf file:exec-visor" (= cz "czlabclj.tardis.impl.Execvisor"))
         (log/info "Inside primodial() ---------------------------------------------->")
         (log/info "Execvisor = " cz)
         (let [^czlabclj.xlib.util.core.MubleAPI
               execv (MakeExecvisor cli)]
-          (.setf! x K_EXECV execv)
-          (SynthesizeComponent execv { :ctx x })
+          (.setf! ctx K_EXECV execv)
+          (SynthesizeComponent execv {:ctx ctx})
           (log/info "Execvisor created and synthesized - OK.")
           (log/info "*********************************************************")
           (log/info "*")
@@ -285,11 +283,11 @@
   (SimPTask "LoadResource"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
+            ctx (.getLastResult j)
             rc (GetResource "czlabclj/tardis/etc/Resources"
-                            (.getf x K_LOCALE))]
+                            (.getf ctx K_LOCALE))]
         (test-nonil "etc/resouces" rc)
-        (.setf! x K_RCBUNDLE rc)
+        (.setf! ctx K_RCBUNDLE rc)
         (I18N/setBase rc)
         (log/info "Resource bundle found and loaded.")
       ))
@@ -304,8 +302,8 @@
   (SimPTask "LoadConf"
     (fn [^Job j]
       (let [^czlabclj.xlib.util.core.MubleAPI
-            x (.getLastResult j)
-            ^File home (.getf x K_BASEDIR)
+            ctx (.getLastResult j)
+            ^File home (.getf ctx K_BASEDIR)
             cf (File. home (str DN_CONF
                                  "/" (name K_PROPS)))]
         (log/info "About to parse config file " cf)
@@ -316,7 +314,7 @@
                     (Locale. lg cn)
                     (Locale. lg))]
           (log/info (str "Using locale: " loc))
-          (doto x
+          (doto ctx
             (.setf! K_LOCALE loc)
             (.setf! K_PROPS w)
           ))
@@ -395,25 +393,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype StartMainViaCLI []
-    CliMain
+(deftype StartMainViaCLI [] CliMain
+
     (run [_ args]
       (require 'czlabclj.tardis.impl.climain)
       (let [home (first args)
-            job (MakeJob (cserver home))
+            cs (cserver home)
             a (-> (rtStart)
-                      (.chain (setupLoaders))
-                      (.chain (loadConf))
-                      (.chain (loadRes))
-                      (.chain (primodial))
-                      (.chain (writePID))
-                      (.chain (hookShutdown))
-                      (.chain (pauseCLI)))]
-        (.setv job JS_FLATLINE true)
-        (.setv job :home home)
+                  (.chain (setupLoaders))
+                  (.chain (loadConf))
+                  (.chain (loadRes))
+                  (.chain (primodial))
+                  (.chain (writePID))
+                  (.chain (hookShutdown))
+                  (.chain (pauseCLI)))]
         (-> ^ServiceHandler
-            (.container job)
-            (.handle {:activity a :job job})))))
+            cs
+            (.handle a {:home home})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

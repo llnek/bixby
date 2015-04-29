@@ -18,8 +18,9 @@ import com.zotohlab.wflow.Job;
  * @author kenl
  *
  */
+@FunctionalInterface
 public interface WorkHandler {
 
-  public void workOn(Job j);
+  public Object workOn(Job j);
 
 }

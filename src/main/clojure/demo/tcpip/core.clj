@@ -29,7 +29,7 @@
             [com.zotohlab.skaro.core Container]
             [java.net Socket]
             [java.util Date]
-            [com.zotohlab.frwk.server Service]))
+            [com.zotohlab.frwk.server ServiceProvider Service]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +50,8 @@
         (.chain
           (SimPTask
             (fn [^Job j]
-              (with-local-vars [tcp (-> (.container j)
+              (with-local-vars [tcp (-> ^ServiceProvider
+                                        (.container j)
                                         (.getService :default-sample))
                                 s (.replace TEXTMsg
                                             "${TS}" (.toString (Date.)))

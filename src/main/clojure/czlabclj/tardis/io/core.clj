@@ -20,7 +20,8 @@
   (:use [czlabclj.xlib.util.core
          :only
          [NextLong notnil? ThrowIOE MakeMMap ConvToJava TryC]]
-        [czlabclj.xlib.util.str :only [nsb strim ]]
+        [czlabclj.xlib.util.str :only [nsb strim]]
+        [czlabclj.xlib.util.wfs :only [WrapPTask]]
         [czlabclj.tardis.core.sys])
 
   (:import  [com.zotohlab.frwk.server Component
@@ -32,6 +33,7 @@
             [com.zotohlab.wflow Job Nihil Activity]
             [com.google.gson JsonObject JsonArray]
             [com.zotohlab.skaro.io Emitter]
+            [com.zotohlab.server WorkHandler WorkFlow]
             [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,9 +180,20 @@
       (id [_] (.id service))
 
       ServiceHandler
-      (handle [_ arg]
-        (let [^Activity a (:activity arg)
-              ^Job j (:job arg)]
+      (handle [_ arg options]
+        (let [^Activity
+              a
+              (cond
+                (instance? WorkHandler arg)
+                (WrapPTask arg)
+                (instance? WorkFlow arg)
+                (-> ^WorkFlow arg
+                    (.startWith))
+                (instance? Activity arg)
+                arg
+                :else nil)
+              ^Job j
+              (if (instance? Job options) options nil)]
           (log/debug "Job##" (.id j) " is being serviced by " service)
           (-> ^Emitter service
               (.container)

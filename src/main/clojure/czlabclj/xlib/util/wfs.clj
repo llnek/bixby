@@ -29,44 +29,12 @@
             [com.zotohlab.frwk.server Event ServerLike
              ServiceHandler]
             [com.zotohlab.frwk.util Schedulable]
+            [com.zotohlab.server WorkFlow WorkHandler]
             [com.zotohlab.frwk.core Disposable]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn FlowServer ""
-
-  ^ServerLike
-  []
-
-  (let [cpu (MakeScheduler nil)]
-    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
-        cpu
-        (.activate { :threads 1, :trace false }))
-    (reify
-
-      ServiceHandler
-
-      (handleError [_ e] )
-      (handle [_  arg]
-        (let [^Activity a (:activity arg)
-              ^Job j (:job arg)]
-          (.run cpu (.reify a
-                            (-> (Nihil/apply)
-                                (.reify j))))))
-
-      Disposable
-      (dispose [_] (.dispose cpu))
-
-      ServerLike
-
-      (hasService [_ s] )
-      (getService [_ s] )
-      (core [_] cpu))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -168,6 +136,65 @@
 
   (reify CounterExpr (getCount [_ job] (apply func [job]))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FlowServer ""
+
+  ^ServerLike
+  []
+
+  (let [cpu (MakeScheduler)]
+    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
+        cpu
+        (.activate { :threads 1, :trace false }))
+    (reify
+
+      ServiceHandler
+
+      (handle [this arg opts]
+        (let [^Activity
+              a
+              (cond
+                (instance? WorkHandler arg)
+                (SimPTask
+                  (fn [^Job j]
+                    (-> ^WorkHandler arg (.workOn j))))
+
+                (instance? WorkFlow arg)
+                (-> ^WorkFlow arg
+                    (.startWith))
+
+                (instance? Activity arg)
+                arg
+
+                :else nil)
+              j (MakeJob this)
+              opts (or opts {})]
+          (.setv j JS_FLATLINE true)
+          (doseq [[k v] (seq opts)]
+            (.setv j k v))
+          (.run cpu (.reify a
+                            (-> (Nihil/apply)
+                                (.reify j))))))
+      (handleError [_ e] )
+
+      Disposable
+      (dispose [_] (.dispose cpu))
+
+      ServerLike
+
+      (core [_] cpu))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WrapPTask ""
+
+  ^Activity
+  [^WorkHandler wf]
+
+  (SimPTask (fn [^Job j] (.workOn wf j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

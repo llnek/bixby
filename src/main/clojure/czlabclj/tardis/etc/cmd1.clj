@@ -40,8 +40,7 @@
         [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
         :only
-        [ReadOneFile
-         WriteOneFile]]
+        [ReadOneFile Mkdirs WriteOneFile]]
 
         [czlabclj.xlib.crypto.core
         :only
@@ -99,9 +98,8 @@
   ^String
   []
 
-  (NiceFPath (File. (File. (GetHomeDir)
-                           (str DN_CFG "/app"))
-                    "build.xml")))
+  (NiceFPath (File. (GetHomeDir)
+                    (str DN_CFG "/app/build.xml"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Create a new app template.
@@ -118,7 +116,7 @@
         wlg (or (:lang (:webdev hf)) "js")
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
-        id (when (notnil? t)
+        id (when-not (nil? t)
              (if-let [tkn (last t) ]
                (.substring ^String tkn 1)
                (first t))) ]
@@ -142,9 +140,9 @@
 ;; Maybe create a new app?
 (defn OnCreate ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (< (count args) 3)
       (throw (CmdHelpError.))
       (apply onCreateApp args))
@@ -154,9 +152,9 @@
 ;; Maybe build an app?
 (defn OnBuild ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (>= (count args) 2)
       (let [appId (nth args 1)
             taskId (if (> (count args) 2)
@@ -171,9 +169,9 @@
 ;; Maybe compress and package an app?
 (defn OnPodify ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (> (count args) 1)
       (BundleApp (GetHomeDir) (nth args 1))
       (throw (CmdHelpError.)))
@@ -183,24 +181,23 @@
 ;; Maybe run tests on an app?
 (defn OnTest ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (> (count args) 1)
       ;;(AntBuildApp (GetHomeDir) (nth args 1) "test")
       (ExecGantScript (GetHomeDir) (nth args 1) "test")
       (throw (CmdHelpError.)))
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
 (defn OnStart ""
 
-  [^Job j]
+  [j]
 
   (let [cz "czlabclj.tardis.impl.climain.StartMainViaCLI"
-        args (.getLastResult j)
+        args (.getLastResult ^Job j)
         s2 (if (> (count args) 1)
              (nth args 1)
              "")
@@ -219,7 +216,7 @@
 ;; Maybe run in debug mode?
 (defn OnDebug ""
 
-  [^Job j]
+  [j]
 
   (OnStart j))
 
@@ -227,9 +224,9 @@
 ;; Maybe generate some demo apps?
 (defn OnDemo ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (and (> (count args) 1)
              (= "samples" (nth args 1)))
       (PublishSamples (GetHomeDir))
@@ -419,9 +416,9 @@
 ;;
 (defn OnGenerate ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (when-not (if (> (count args) 1)
                 (condp = (nth args 1)
                   "keypair" (if (> (count args) 2)
@@ -451,9 +448,9 @@
 ;;
 (defn OnHash ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (> (count args) 1)
       (genHash (nth args 1))
       (throw (CmdHelpError.)))
@@ -473,9 +470,9 @@
 ;;
 (defn OnEncrypt ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (> (count args) 2)
       (encrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -495,9 +492,9 @@
 ;;
 (defn OnDecrypt ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (> (count args) 2)
       (decrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -507,7 +504,7 @@
 ;;
 (defn OnTestJCE ""
 
-  [^Job j]
+  [j]
 
   (AssertJce)
   (println "JCE is OK."))
@@ -516,7 +513,7 @@
 ;;
 (defn OnVersion ""
 
-  [^Job j]
+  [j]
 
   ;;(log/debug "HomeDir = " (GetHomeDir))
   (let [s (ReadOneFile (File. (GetHomeDir) "VERSION")) ]
@@ -529,7 +526,7 @@
 ;;
 (defn OnHelp ""
 
-  [^Job j]
+  [j]
 
   (throw (CmdHelpError.)))
 
@@ -557,8 +554,7 @@
 
   (let [cwd (File. (GetHomeDir) (str DN_BOXX "/" app))
         sb (StringBuilder.)
-        ec (doto (File. cwd "eclipse.projfiles")
-             (.mkdirs))
+        ec (Mkdirs (File. cwd "eclipse.projfiles"))
          ;;lang "scala"
         lang "java"
         ulang (ucase lang) ]
@@ -591,9 +587,9 @@
 ;;
 (defn OnIDE ""
 
-  [^Job j]
+  [j]
 
-  (let [args (.getLastResult j)]
+  (let [args (.getLastResult ^Job j)]
     (if (and (> (count args) 2)
              (= "eclipse" (nth args 1)))
       (genEclipseProj (nth args 2))

@@ -16,9 +16,9 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.zotohlab.frwk.core.Identifiable;
+import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.frwk.util.TCore;
 
@@ -28,17 +28,16 @@ import com.zotohlab.frwk.util.TCore;
  *
  */
 @SuppressWarnings({ "rawtypes", "unchecked"})
-public class FlowScheduler implements Schedulable {
+public class FlowCore implements Schedulable {
 
-  private static AtomicInteger _sn= new AtomicInteger(0);
   private Timer _timer;
   private Map _holdQ;
   private Map _runQ;
   private TCore _core;
   private String _id;
   
-  public FlowScheduler() {
-    _id= "FlowScheduler#" + _sn.incrementAndGet();
+  public FlowCore() {
+    _id= "FlowScheduler#" + CoreUtils.nextSeqInt();
   }
   
   public void activate(Properties options) {
@@ -59,7 +58,7 @@ public class FlowScheduler implements Schedulable {
   }
   
   private void addTimer(Runnable w, long delay) {
-    FlowScheduler me= this;
+    FlowCore me= this;
     _timer.schedule(new TimerTask() {
       public void run() {
         me.wakeup(w);

@@ -24,7 +24,7 @@
         [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [LoadResource]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.wfs :only [MakeJob SimPTask]]
+        [czlabclj.xlib.util.wfs :only [WrapPTask MakeJob SimPTask]]
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile FileRead?]]
@@ -134,14 +134,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fakePTask ""
-
-  [^WorkHandler wf]
-
-  (SimPTask (fn [^Job j] (.workOn wf j))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A EventBus has the task of creating a job from an event, and delegates
 ;; a new Pipline which will handle the job.  The Pipeline internally will
 ;; call out to your application workflow  for the actual handling of the job.
@@ -175,25 +167,11 @@
             (log/debug "Event router = " c1)
             (log/debug "IO handler = " c0)
             (try
-              (let [z (MakeObj (if (hgl? c1) c1 c0))
-                    a (cond
-                        (instance? WorkHandler z)
-                        (fakePTask z)
-                        (instance? Morphable z)
-                        (-> ^WorkFlow
-                            (.morph ^Morphable z)
-                            (.startWith))
-                        (instance? WorkFlow z)
-                        (-> ^WorkFlow z
-                            (.startWith))
-                        :else nil )]
+              (let [z (MakeObj (if (hgl? c1) c1 c0))]
                 (.setv job EV_OPTS options)
-                (if-not (nil? a)
-                  (.handle hr {:activity a :job job})
-                  (throw (Exception. "no matchable handler!"))))
+                (.handle hr z job))
               (catch Throwable _
-                (.handle hr {:activity (MakeFatalErrorFlow job)
-                             :job job})))))
+                (.handle hr (MakeFatalErrorFlow job) job)))))
 
         (parent [_] parObj))
 
@@ -339,6 +317,11 @@
               false
               true)))
 
+        (getService [_ serviceId]
+          (let [^ComponentRegistry
+                srg (.getf impl K_SVCS) ]
+            (.lookup srg (keyword serviceId))))
+
         (hasService [_ serviceId]
           (let [^ComponentRegistry
                 srg (.getf impl K_SVCS) ]
@@ -346,11 +329,6 @@
 
         (core [this]
           (.getAttr this K_SCHEDULER))
-
-        (getService [_ serviceId]
-          (let [^ComponentRegistry
-                srg (.getf impl K_SVCS) ]
-            (.lookup srg (keyword serviceId))))
 
         (getEnvConfig [_]
           (let [env (.getf impl K_ENVCONF)]
@@ -657,6 +635,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- mkDftAppMain ""
+
+  []
+
+  (reify czlabclj.tardis.impl.ext.CljAppMain
+    (contextualize [_ c] )
+    (initialize [_])
+    (configure [_ cfg] )
+    (start [_] )
+    (stop [_])
+    (dispose [_] )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod CompInitialize :czc.tardis.ext/Container
 
   [^czlabclj.tardis.core.sys.Element co]
@@ -715,16 +707,17 @@
     (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
     ;;(test-nestr "Main-Class" mCZ)
 
-    (when (hgl? mCZ)
-      (let [obj (MakeObj mCZ) ]
-        (cond
-          (satisfies? CljAppMain obj)
-          (doCljApp co app obj)
-          (instance? AppMain obj)
-          (doJavaApp co obj)
-          :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
-        (.setAttr! co :main-app obj)
-        (log/info "Application main-class " mCZ " created and invoked")))
+    (let [obj (if (hgl? mCZ)
+                (MakeObj mCZ)
+                (mkDftAppMain))]
+      (cond
+        (satisfies? CljAppMain obj)
+        (doCljApp co app obj)
+        (instance? AppMain obj)
+        (doJavaApp co obj)
+        :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
+      (.setAttr! co :main-app obj)
+      (log/info "Application main-class " (if (hgl? mCZ) mCZ "???") " created and invoked"))
 
     (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
           rf (File. appDir (str DN_CONF "/routes.conf")) ]

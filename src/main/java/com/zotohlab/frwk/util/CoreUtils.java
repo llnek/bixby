@@ -11,6 +11,9 @@
 
 package com.zotohlab.frwk.util;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -19,15 +22,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-
-import static java.lang.invoke.MethodHandles.*;
-
 import org.slf4j.Logger;
-
-import static org.slf4j.LoggerFactory.*;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -41,6 +41,9 @@ public enum CoreUtils {
 
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
+
+  private static final AtomicInteger _si= new AtomicInteger(0);
+  private static final AtomicLong _sn= new AtomicLong(0L);
 
   public static void main(String[] args) {
     try {
@@ -167,5 +170,8 @@ public enum CoreUtils {
     }
   }
 
+  public static long nextSeqLong() { return _sn.incrementAndGet(); }
+  public static int nextSeqInt() { return _si.incrementAndGet(); }
+  
 }
 

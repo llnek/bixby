@@ -11,17 +11,23 @@
 
 package com.zotohlab.server;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
 
 import com.zotohlab.frwk.server.Event;
 import com.zotohlab.frwk.server.ServerLike;
-import com.zotohlab.frwk.server.Service;
 import com.zotohlab.frwk.server.ServiceHandler;
+import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.Activity;
+import com.zotohlab.wflow.FlowError;
 import com.zotohlab.wflow.FlowNode;
 import com.zotohlab.wflow.Job;
 import com.zotohlab.wflow.Nihil;
@@ -29,95 +35,138 @@ import com.zotohlab.wflow.PTask;
 import com.zotohlab.wflow.Work;
 
 /**
- * 
+ *
  * @author kenl
  *
  */
 public class FlowServer implements ServerLike, ServiceHandler {
-  
-  private static final String JS_LAST = "____lastresult";
-  private final AtomicLong _sn= new AtomicLong(0L);
-  private FlowScheduler _sch;
+
+  private static Logger _log=getLogger(lookup().lookupClass());
+  public static Logger tlog() { return _log; }
+
+  private JobCreator _jctor;
+  private FlowCore _sch;
 
   public static void main(String[] args) {
     try {
       FlowServer s= new FlowServer().start();
-      Job j= s.reifyJob(null);
       Activity a, b, c,d,e,f;
       a= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job) {
           System.out.println("A");
           return null;
-        }        
+        }
       });
       b= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job) {
           System.out.println("B");
           return null;
-        }        
+        }
       });
       c= a.chain(b);
       d= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job) {
           System.out.println("D");
           return null;
-        }        
+        }
       });
       e= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job) {
           System.out.println("E");
           return null;
-        }        
+        }
       });
       f= d.chain(e);
-      
-      WorkFlow w= new WorkFlow() {
-        public Activity startWith() {
-          return c.chain(f);
-      }};
-      s.handle(new Object[]{w, j});
-      Thread.sleep(10000);
+
+      s.handle(c.chain(f), Collections.EMPTY_MAP);
+
+      //Thread.sleep(1000);
     } catch (Throwable t) {
       t.printStackTrace();
     }
   }
-  
+
   public FlowServer() {
-    _sch= new FlowScheduler();
-  }
-
-  @Override
-  public boolean hasService(Object serviceId) {
-    return false;
-  }
-
-  @Override
-  public Service getService(Object serviceId) {
-    return null;
+    _jctor= new JobCreator(this);
+    _sch= new FlowCore();
   }
 
   @Override
   public Schedulable core() {
     return _sch;
-  }  
-  
+  }
+
   public FlowServer start(Properties options) {
-    _sch.activate(options);    
+    _sch.activate(options);
     return this;
   }
-  
+
   public FlowServer start() {
     return start(new Properties());
   }
-  
+
   public void dispose() {
     _sch.dispose();
   }
-  
-  public Job reifyJob(final Event evt) {
-    final FlowServer me=this;
+
+  @Override
+  public Object handleError(Throwable t) {
+    return null;
+  }
+
+  @Override
+  public Object handle(Object work, Object options) throws Exception {
+    Activity a=null;
+    if (work instanceof WorkHandler) {
+      final WorkHandler h = (WorkHandler)work;
+      a=new PTask(new Work(){
+        @Override
+        public Object exec(FlowNode cur, Job j) {
+          return h.workOn(j);
+        }});
+    }
+    else
+    if (work instanceof WorkFlow) {
+      WorkFlow w = (WorkFlow) work;
+      a= w.startWith();
+    }
+    else
+    if (work instanceof Activity) {
+      a= (Activity) work;
+    }
+
+    if (a == null) {
+      throw new FlowError("no valid activity to handle.");
+    }
+
+    FlowNode end= Nihil.apply().reify( _jctor.newJob(null));
+    core().run( a.reify(end));
+    return null;
+  }
+
+}
+
+
+
+class JobCreator {
+
+  protected static final String JS_FLATLINE = "____flatline";
+  protected static final String JS_LAST = "____lastresult";
+  private final FlowServer _server;
+
+  public JobCreator(FlowServer s) {
+    _server=s;
+  }
+
+  public Job newJob(final Event evt) {
     return new Job() {
-      private Map<Object,Object> _m= new ConcurrentHashMap<>();
+      private Map<Object,Object> _m= new HashMap<>();
+      private long _id= CoreUtils.nextSeqLong();
+      {
+        if (evt==null) {
+          _m.put(JS_FLATLINE,true);
+        }
+      }
       @Override
       public Object getv(Object key) {
         return key==null ? null : _m.get(key);
@@ -139,12 +188,16 @@ public class FlowServer implements ServerLike, ServiceHandler {
 
       @Override
       public void finz() {
-        
+        FlowServer.tlog().debug("job##{} has been served.", _id);
+        Object o= _m.get(JS_FLATLINE);
+        if (o != null) {
+          _server.dispose();
+        }
       }
-      
+
       @Override
       public ServerLike container() {
-        return me;
+        return _server;
       }
 
       @Override
@@ -154,7 +207,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
 
       @Override
       public Object id() {
-        return me._sn.getAndIncrement();
+        return _id;
       }
 
       @Override
@@ -176,32 +229,9 @@ public class FlowServer implements ServerLike, ServiceHandler {
       public Activity handleError(Throwable e) {
         return null;
       }
-      
+
     };
   }
 
-  public Job reifyJob() {
-    return reifyJob(null);
-  }
-  
-  @Override
-  public Object handleError(Throwable t) {
-    return null;
-  }
-
-  @Override
-  public Object handle(Object work) throws Exception {
-    Object[] args= (Object[]) work;
-    WorkFlow w= (WorkFlow) args[0];
-    Job j;
-    if (args.length > 1) {
-      j= (Job) args[1];
-    } else {
-      j = reifyJob(null);
-    }
-    FlowNode end= Nihil.apply().reify(j);
-    core().run( w.startWith().reify(end));
-    return null;
-  }
-  
 }
+

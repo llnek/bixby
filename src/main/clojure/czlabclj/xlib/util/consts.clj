@@ -35,11 +35,11 @@
 (def ^String SLASH   "/" )
 (def ^String PATHSEP   SLASH )
 
-(def ^String EV_OPTS "____eventoptions")
-(def ^String JS_LAST "____lastresult")
-(def ^String JS_CRED "credential")
-(def ^String JS_USER "principal")
-(def ^String JS_FLATLINE "____flatline")
+(def EV_OPTS :____eventoptions)
+(def JS_LAST :____lastresult)
+(def JS_CRED :credential)
+(def JS_USER :principal)
+(def JS_FLATLINE :____flatline)
 
 (def BOOLS #{ "true", "yes", "on", "ok", "active", "1"} )
 

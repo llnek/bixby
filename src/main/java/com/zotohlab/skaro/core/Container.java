@@ -21,11 +21,12 @@ import com.zotohlab.frwk.dbio.DBAPI;
 import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.frwk.server.EventBus;
 import com.zotohlab.frwk.server.ServerLike;
+import com.zotohlab.frwk.server.ServiceProvider;
 
 /**
  * @author kenl
  */
-public interface Container extends ServerLike, Named, Disposable {
+public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
   public List<?> loadTemplate (String tpl, Map<?,?> ctx);
   public boolean isEnabled();
