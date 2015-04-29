@@ -14,10 +14,10 @@
 
   czlabclj.tardis.auth.model
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.i18n.resources :only [RStr]]
+        [czlabclj.xlib.util.str :only [ToKW]]
         [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.postgresql]
@@ -29,16 +29,16 @@
   (:import  [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
             [java.sql Connection]
             [java.io File]
-            [com.zotohlab.frwk.i18n I18N]
-            [org.apache.commons.io FileUtils]))
+            [com.zotohlab.frwk.i18n I18N]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^String ^:private _NSP "czc.tardis.auth")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2 "czc.tardis.auth" StdAddress
+(DefModel2 _NSP StdAddress
   (WithDbFields {
     :addr1 { :size 255 :null false }
     :addr2 { }
@@ -53,7 +53,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2 "czc.tardis.auth"  AuthRole
+(DefModel2 _NSP  AuthRole
   (WithDbFields
     { :name { :column "role_name" :null false }
       :desc { :column "description" :null false } })
@@ -62,7 +62,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2  "czc.tardis.auth" LoginAccount
+(DefModel2 _NSP LoginAccount
   (WithDbFields
     { :acctid { :null false }
       :email { :size 128 }
@@ -70,18 +70,18 @@
       :passwd { :null false :domain :Password } })
   (WithDbAssocs
     { :roles { :kind :M2M
-               :joined :czc.tardis.auth/AccountRole }
+               :joined (ToKW _NSP "AccountRole") }
       :addr { :kind :O2O
               :cascade true
-              :other :czc.tardis.auth/StdAddress } })
+              :other (ToKW _NSP "StdAddress") } })
   (WithDbUniques
     { :u2 #{ :acctid } }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefJoined2 "czc.tardis.auth" AccountRole
-           :czc.tardis.auth/LoginAccount
-           :czc.tardis.auth/AuthRole)
+(DefJoined2 _NSP AccountRole
+           (ToKW _NSP "LoginAccount")
+           (ToKW _NSP "AuthRole"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -124,7 +124,7 @@
 
   [^JDBCInfo jdbc]
 
-  (let [dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
+  (when-let [dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
     (with-open [conn (MakeConnection jdbc) ]
       (UploadDdl conn (GenerateAuthPluginDDL dbtype)))
   ))
@@ -135,7 +135,7 @@
 
   [^JDBCPool pool]
 
-  (let [dbtype (MatchJdbcUrl (.dbUrl pool)) ]
+  (when-let [dbtype (MatchJdbcUrl (.dbUrl pool)) ]
     (UploadDdl pool (GenerateAuthPluginDDL dbtype))
   ))
 
@@ -145,7 +145,7 @@
 
   [dbtype ^File file]
 
-  (FileUtils/writeStringToFile file (GenerateAuthPluginDDL dbtype) "utf-8"))
+  (spit file (GenerateAuthPluginDDL dbtype) :encoding "utf-8"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

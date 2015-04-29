@@ -43,6 +43,8 @@
 ;;
 (deftype DemoClient [] WorkFlow
 
+  (onError [_ e] )
+
   (startWith [_]
     (require 'demo.tcpip.core)
     ;; wait, then opens a socket and write something to server process.
@@ -78,6 +80,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype DemoServer [] WorkFlow
+
+  (onError [_ e] )
 
   (startWith [_]
     (require 'demo.tcpip.core)

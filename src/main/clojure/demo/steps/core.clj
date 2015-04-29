@@ -88,6 +88,8 @@
 ;;
 (deftype Demo [] WorkFlow
 
+  (onError [_ e] )
+
   (startWith [_]
     (require 'demo.steps.core)
     ;; step1. choose a method to authenticate the user

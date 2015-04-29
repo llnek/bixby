@@ -13,11 +13,8 @@
       :author "kenl" }
 
   czlabclj.tardis.auth.plugin
-  (:import [com.zotohlab.wflow FlowNode])
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
-            [clojure.data.json :as json])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [RStr]]
@@ -49,22 +46,19 @@
             [com.zotohlab.frwk.dbio DBAPI MetaCache
              SQLr
              JDBCPool JDBCInfo]
-            [org.apache.commons.io FileUtils]
             [java.io File IOException]
             [java.util Properties]
             [org.apache.shiro.config IniSecurityManagerFactory]
             [org.apache.shiro SecurityUtils]
             [org.apache.shiro.subject Subject]
             [org.apache.shiro.authc UsernamePasswordToken]
-            [com.zotohlab.wflow If BoolExpr FlowNode
-             Activity
+            [com.zotohlab.wflow If BoolExpr
+             Activity Job
              PTask Work]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [com.zotohlab.wflow Job]))
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,7 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RemoveAuthRole ""
+(defn DeleteAuthRole ""
 
   [^SQLr sql role]
 
@@ -243,7 +237,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RemoveLoginAccountRole ""
+(defn DeleteLoginAccountRole ""
 
   [^SQLr sql userObj roleObj]
 
@@ -259,7 +253,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RemoveLoginAccount ""
+(defn DeleteLoginAccount ""
 
   [^SQLr sql userObj]
 
@@ -267,7 +261,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteLoginAccount ""
+(defn DeleteUser ""
 
   [^SQLr sql user]
 
@@ -437,7 +431,8 @@
 
       (configure [_ props] nil)
 
-      (initialize [_] (ApplyAuthPluginDDL (.acquireDbPool ctr "")))
+      (initialize [_]
+        (ApplyAuthPluginDDL (.acquireDbPool ctr "")))
 
       (start [_]
         (AssertPluginOK (.acquireDbPool ctr ""))
@@ -453,7 +448,7 @@
 
       AuthPlugin
 
-      (checkAction [_ acctObj action])
+      (checkAction [_ acctObj action] )
 
       (addAccount [_ options]
         (let [pkey (.getAppKey ctr)

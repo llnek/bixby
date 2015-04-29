@@ -55,6 +55,8 @@
   ;; split but no wait
   ;; parent continues;
 
+  (onError [_ e])
+
   (startWith [_]
     (require 'demo.fork.core)
     (let
