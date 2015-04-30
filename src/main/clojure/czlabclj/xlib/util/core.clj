@@ -14,7 +14,7 @@
 
   czlabclj.xlib.util.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr]
             [clojure.core :as ccore]
             [clojure.edn :as edn])

@@ -14,15 +14,16 @@
 
   czlabclj.xlib.netty.io
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core
          :only
          [ThrowIOE MakeMMap notnil? spos?
           TryC Try! SafeGetJsonObject
           SafeGetJsonInt SafeGetJsonString]]
-        [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]]
+        [czlabclj.xlib.util.str
+         :only
+         [lcase ucase strim nsb hgl?]]
         [czlabclj.xlib.netty.request]
         [czlabclj.xlib.netty.form])
 
@@ -161,7 +162,7 @@
             md (-> req (.getMethod)(.name))
             mt (if (hgl? mo) mo md)
             dc (QueryStringDecoder. uriStr) ]
-        (var-set rc (assoc! @rc :method (cstr/upper-case mt)))
+        (var-set rc (assoc! @rc :method (ucase mt)))
         (var-set rc (assoc! @rc :params (ExtractParams dc)))
         (var-set rc (assoc! @rc :uri (.path dc)))
         (var-set rc (assoc! @rc :uri2 uriStr))
@@ -312,7 +313,7 @@
   (let [ct (-> (HttpHeaders/getHeader msg "content-type")
                nsb
                strim
-               cstr/lower-case) ]
+               lcase) ]
     ;; multipart form
     (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
          (or (>= (.indexOf ct "multipart/form-data") 0)
@@ -393,11 +394,11 @@
   (let [^String ws (-> (HttpHeaders/getHeader req "upgrade")
                        nsb
                        strim
-                       cstr/lower-case)
+                       lcase)
         ^String cn (-> (HttpHeaders/getHeader req "connection")
                        nsb
                        strim
-                       cstr/lower-case)
+                       lcase)
         ^String mo (-> (HttpHeaders/getHeader req "X-HTTP-Method-Override")
                        nsb
                        strim) ]

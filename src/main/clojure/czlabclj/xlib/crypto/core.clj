@@ -14,13 +14,12 @@
 
   czlabclj.xlib.crypto.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr]
             [czlabclj.xlib.util.mime
              :as mime
              :only [MaybeStream IsCompressed?
-                    IsEncrypted? IsSigned? ]]
-            [clojure.math.numeric-tower :as math])
+                    IsEncrypted? IsSigned? ]])
 
   (:use [czlabclj.xlib.util.dates :only [PlusMonths]]
         [czlabclj.xlib.util.io
@@ -30,7 +29,7 @@
          :only
          [NextInt ThrowIOE ThrowBadArg NewRandom
           Bytesify TryC Try! notnil? juid GetClassname]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]])
+        [czlabclj.xlib.util.str :only [lcase ucase strim nsb hgl?]])
 
   (:import  [org.bouncycastle.pkcs.jcajce JcaPKCS10CertificationRequestBuilder]
             [org.bouncycastle.operator OperatorCreationException ContentSigner]
@@ -220,7 +219,7 @@
   [^URL keyUrl]
 
   (not (-> (.getFile keyUrl)
-           (cstr/lower-case)
+           (lcase)
            (.endsWith ".jks"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -14,8 +14,7 @@
 
   czlabclj.tardis.impl.climain
 
-  (:require [clojure.tools.logging :as log :only (info warn error debug)]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.netty.discarder :only [MakeDiscardHTTPD]]
         [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
@@ -52,6 +51,7 @@
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.wflow Job
              Activity Nihil]
+            [com.zotohlab.server WorkFlow WorkHandler]
             [com.zotohlab.skaro.core ConfigError]
             [com.zotohlab.skaro.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
@@ -138,22 +138,22 @@
 
   (let [cpu (MakeScheduler)
         impl (MakeMMap)]
-    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
+    (-> ^czlabclj.xlib.util.scheduler.CoreAPI
         cpu
         (.activate { :threads 1 }))
     (reify
 
       ServiceHandler
 
-      (handle [this  arg options]
-        (let [^Activity
-              a
-              (cond
-                (instance? Activity arg) arg
-                :else nil)]
-          (.run cpu (.reify a
+      (handle [this arg options]
+        (let [options (or options {})
+              w (ToWorkFlow arg)
+              j (MakeJob this)]
+          (doseq [[k v] (seq options)]
+            (.setv j k v))
+          (.run cpu (.reify (.startWith w)
                             (-> (Nihil/apply)
-                                (.reify (MakeJob this)))))))
+                                (.reify j))))))
       (handleError [_ e] )
 
       Disposable
@@ -190,6 +190,7 @@
 ;;
 (defn- pauseCLI ""
 
+  ^Activity
   []
 
   (SimPTask "PauseCLI"
@@ -210,6 +211,7 @@
 ;;
 (defn- hookShutdown ""
 
+  ^Activity
   []
 
   (SimPTask "HookShutDown"
@@ -228,6 +230,7 @@
 ;;
 (defn- writePID ""
 
+  ^Activity
   []
 
   (SimPTask "WritePID"
@@ -246,6 +249,7 @@
 ;; Create and synthesize Execvisor.
 (defn- primodial ""
 
+  ^Activity
   []
 
   (SimPTask "Primodial"
@@ -278,6 +282,7 @@
 ;;
 (defn- loadRes "Look for and load the resource bundle."
 
+  ^Activity
   []
 
   (SimPTask "LoadResource"
@@ -297,6 +302,7 @@
 ;; Parse skaro.conf
 (defn- loadConf ""
 
+  ^Activity
   []
 
   (SimPTask "LoadConf"
@@ -329,6 +335,7 @@
   The exec class loader inherits from the root and is the class loader
   that runs skaro."
 
+  ^Activity
   []
 
   (letfn

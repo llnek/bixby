@@ -15,12 +15,11 @@
 
   czlabclj.xlib.util.mime
 
-  (:require [clojure.tools.logging :as log  :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [Bytesify Try! IntoMap]]
         [czlabclj.xlib.util.meta :only [BytesClass]]
-        [czlabclj.xlib.util.str :only [nsb hgl?]]
+        [czlabclj.xlib.util.str :only [lcase ucase nsb hgl?]]
         [czlabclj.xlib.util.io :only [Streamify]])
 
   (:import  [org.apache.commons.lang3 StringUtils]
@@ -140,7 +139,7 @@
   ^String
   [^String cType]
 
-  (let [pos (-> (nsb cType) (cstr/lower-case )
+  (let [pos (-> (nsb cType) (lcase )
                 (.indexOf "charset="))
         rc "utf-8" ]
          ;;rc "ISO-8859-1" ]
@@ -157,7 +156,7 @@
 
   [^String cType]
 
-  (let [ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (lcase (nsb cType)) ]
     (or (>= (.indexOf ct "multipart/signed") 0)
         (and (is-pkcs7mime? ct) (>= (.indexOf ct "signed-data") 0)))
   ))
@@ -168,7 +167,7 @@
 
   [^String cType]
 
-  (let [ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (lcase (nsb cType)) ]
     (and (is-pkcs7mime? ct) (>= (.indexOf ct "enveloped-data") 0))
   ))
 
@@ -178,7 +177,7 @@
 
   [^String cType]
 
-  (let [ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (lcase (nsb cType)) ]
     (and (>= (.indexOf ct "application/pkcs7-mime") 0)
          (>= (.indexOf ct "compressed-data") 0))
   ))
@@ -189,7 +188,7 @@
 
   [^String cType]
 
-  (let [ct (cstr/lower-case (nsb cType)) ]
+  (let [ct (lcase (nsb cType)) ]
     (and (>= (.indexOf ct "multipart/report") 0)
          (>= (.indexOf ct "disposition-notification") 0))
   ))
@@ -240,7 +239,7 @@
             ^String dft]
            (let [^Matcher
                  mc (.matcher _extRegex
-                              (cstr/lower-case (.getName file)))
+                              (lcase (.getName file)))
                  ex (if (.matches mc)
                       (.group mc 1)
                       "")

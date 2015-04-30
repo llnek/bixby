@@ -14,8 +14,7 @@
 
   czlabclj.xlib.util.format
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
+  (:require [clojure.tools.logging :as log]
             [clojure.edn :as edn]
             [clojure.data.json :as js])
 

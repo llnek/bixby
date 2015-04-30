@@ -14,9 +14,7 @@
 
   czlabclj.tardis.io.http
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.core :as ccore]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
         [czlabclj.xlib.util.core
@@ -25,6 +23,7 @@
           ToJavaInt SubsVar
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
+        [czlabclj.xlib.net.comms :only [ParseBasicAuth]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
         [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
@@ -70,19 +69,7 @@
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
-    (let [s (StringUtils/split (nsb (.getHeaderValue evt AUTH)))]
-      (cond
-        (and (== 2 (count s))
-             (= "Basic" (first s))
-             (hgl? (last s)))
-        (let [tail (Base64/decodeBase64 ^String (last s))
-              rc (StringUtils/split tail ":" 1) ]
-          (if (== 2 (count rc))
-            {:principal (first rc)
-             :credential (last rc) }
-            nil))
-        :else
-        nil))
+    (ParseBasicAuth (nsb (.getHeaderValue evt AUTH)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

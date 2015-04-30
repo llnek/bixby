@@ -14,14 +14,13 @@
 
   czlabclj.tardis.io.basicauth
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.data.json :as json]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.str :only [lcase strim nsb hgl? ]]
         [czlabclj.xlib.util.core
          :only
          [NormalizeEmail Stringify notnil? TryC]]
+        [czlabclj.xlib.util.format :only [ReadJson WriteJson]]
         [czlabclj.tardis.io.http :only [ScanBasicAuth]]
         [czlabclj.xlib.crypto.codec :only [CaesarDecrypt]]
         [czlabclj.xlib.net.comms :only [GetFormFields]])
@@ -60,15 +59,15 @@
 
   [^HTTPEvent evt]
 
-  (let [data (if (.hasData evt) (.content (.data evt)) nil) ]
+  (let [data (when (.hasData evt) (.content (.data evt)))]
     (cond
       (instance? ULFormItems data)
       (with-local-vars [rc (transient {})]
-        (doseq [^ULFileItem x (seq (GetFormFields data)) ]
+        (doseq [^ULFileItem x (GetFormFields data)]
           (let [fm (.getFieldNameLC x)
-                fv (nsb (.getString x)) ]
+                fv (nsb (.getString x))]
             (log/debug "form-field=" fm ", value=" fv)
-            (when-let [v (get PMS fm) ]
+            (when-let [v (get PMS fm)]
               (var-set rc (assoc! @rc (first v)
                                   (apply (last v) [fv]))))))
         (persistent! @rc))
@@ -81,11 +80,11 @@
 
   [^HTTPEvent evt]
 
-  (when-let [^XData xs (if (.hasData evt) (.data evt) nil) ]
-    (when-let [json (json/read-str (if (.hasContent xs)
-                                     (.stringify xs)
-                                     "{}")
-                                   :key-fn #(lcase %)) ]
+  (when-let [^XData xs (when (.hasData evt) (.data evt)) ]
+    (when-let [json (ReadJson (if (.hasContent xs)
+                                (.stringify xs)
+                                "{}")
+                              :key-fn #(lcase %)) ]
       (with-local-vars [rc (transient {})]
         (doseq [[k v] (seq PMS)]
           (when-let [fv (get json k) ]
@@ -117,7 +116,7 @@
 
   [^HTTPEvent evt]
 
-  (let [ct (.contentType evt) ]
+  (when-let [ct (.contentType evt) ]
     (cond
       (or (> (.indexOf ct "form-urlencoded") 0)
           (> (.indexOf ct "form-data") 0))

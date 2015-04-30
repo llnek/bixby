@@ -14,11 +14,10 @@
 
   czlabclj.xlib.netty.form
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [ThrowIOE notnil? Bytesify]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]])
+        [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]])
 
   (:import  [java.io OutputStream IOException File ByteArrayOutputStream]
             [io.netty.buffer Unpooled]
@@ -194,7 +193,7 @@
             ctype (-> (HttpHeaders/getHeader msg "content-type")
                       nsb
                       strim
-                      cstr/lower-case) ]
+                      lcase) ]
         (NettyFW/setAttr ctx NettyFW/FORMITMS_KEY (ULFormItems.))
         (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
         (if (< (.indexOf ctype "multipart") 0)

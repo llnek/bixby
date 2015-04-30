@@ -14,8 +14,7 @@
 
   czlabclj.xlib.jmx.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [MakeMMap Try! TryC]]
         [czlabclj.xlib.util.str :only [hgl? ]]
@@ -123,6 +122,7 @@
 ;;
 (defn MakeJmxServer ""
 
+  ^czlabclj.xlib.jmx.core.JMXServer
   [^String host]
 
   (let [objNames (atom [])

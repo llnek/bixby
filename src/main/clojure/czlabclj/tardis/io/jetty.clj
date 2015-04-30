@@ -14,8 +14,7 @@
 
   czlabclj.tardis.io.jetty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.str :only [lcase ucase hgl? nsb strim]]
         [czlabclj.xlib.util.core
@@ -73,10 +72,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn isServletKeepAlive ""
+(defn- isServletKeepAlive ""
 
   [^HttpServletRequest req]
 

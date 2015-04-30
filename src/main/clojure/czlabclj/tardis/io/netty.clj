@@ -14,7 +14,7 @@
 
   czlabclj.tardis.io.netty
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.net.routes :only [MakeRouteCracker RouteCracker]]
@@ -215,7 +215,7 @@
                         (ChunkedStream. (.stream xs)))
 
                       ;;else
-                      (if (notnil? data)
+                      (if-not (nil? data)
                         (let [xs (XData. data)]
                           (var-set clen (.size xs))
                           (ChunkedStream. (.stream xs)))
@@ -241,7 +241,7 @@
         (log/debug "Wrote response body out to client."))
 
       (let [wf (WriteLastContent ch true) ]
-        (FutureCB wf #(when (notnil? @raf)
+        (FutureCB wf #(when-not (nil? @raf)
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
           (log/debug "Keep-alive == false, closing channel.  bye.")

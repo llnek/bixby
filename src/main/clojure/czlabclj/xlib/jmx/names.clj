@@ -14,7 +14,7 @@
 
   czlabclj.xlib.jmx.names
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
   (:import  [org.apache.commons.lang3 StringUtils]

@@ -14,8 +14,7 @@
 
   czlabclj.xlib.dbio.simple
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.str :only [hgl?]]
         [czlabclj.xlib.dbio.core]
@@ -72,8 +71,7 @@
       (findSome [this model filters extraSQL]
         (with-open [conn (openDB db) ]
           (let [mcz ((.metas this) model)
-                tbl (Tablename mcz)
-                s (str "SELECT * FROM " (ese tbl))
+                s (str "SELECT * FROM " (GTable mcz))
                 [wc pms]
                 (SqlFilterClause mcz filters) ]
             (if (hgl? wc)

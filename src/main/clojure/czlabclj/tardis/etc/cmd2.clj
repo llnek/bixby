@@ -14,8 +14,7 @@
 
   czlabclj.tardis.etc.cmd2
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.ini :only [ParseInifile]]
         [czlabclj.xlib.util.str :only [strim nsb]]

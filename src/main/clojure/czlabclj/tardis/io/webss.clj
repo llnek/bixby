@@ -14,9 +14,7 @@
 
   czlabclj.tardis.io.webss
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
-            [clojure.data.json :as json])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.str :only [nsb hgl? AddDelim!]]
         [czlabclj.xlib.util.core
@@ -75,7 +73,6 @@
   (getLastError [_])
   (getLastAccessedTime [_] )
   (getMaxInactiveInterval [_] ))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -227,7 +224,7 @@
           (when (number? idleSecs)
             (.setf! impl :maxIdleSecs idleSecs)))
 
-        (isNull? [_] (= (count (.seq* impl)) 0))
+        (isNull? [_] (== (count (.seq* impl)) 0))
         (isNew? [_] (.getf impl :newOne))
         (isSSL? [_] ssl)
 

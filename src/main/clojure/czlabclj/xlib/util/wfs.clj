@@ -14,8 +14,7 @@
 
   czlabclj.xlib.util.wfs
 
-  (:require [clojure.tools.logging :as log :only [warn error info debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
         [czlabclj.xlib.util.consts]
@@ -27,6 +26,7 @@
              ChoiceExpr Job
              PTask Work]
             [com.zotohlab.frwk.server Event ServerLike
+             NonEvent
              ServiceHandler]
             [com.zotohlab.frwk.util Schedulable]
             [com.zotohlab.server WorkFlow WorkHandler]
@@ -36,11 +36,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^:private NON_EVENT (NonEvent.))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeJob ""
 
-  (^Job [parObj] (MakeJob parObj nil))
+  (^Job [parObj] (MakeJob parObj NON_EVENT))
 
   (^Job [^ServerLike parObj
          ^Event evt]
@@ -64,7 +66,7 @@
         (clrLastResult [this] (.clrf! this JS_LAST))
         (finz [_]
           ;;(log/debug "Job##" jid " has been served.")
-          (when (and (.getf impl JS_FLATLINE)
+          (when (and (instance? NonEvent evt)
                      (instance? Disposable parObj))
             (-> ^Disposable parObj
                 (.dispose))))
@@ -138,6 +140,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn WrapPTask ""
+
+  ^Activity
+  [^WorkHandler wf]
+
+  (SimPTask (fn [^Job j] (.workOn wf j))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ToWorkFlow
+
+  ^WorkFlow
+  [arg]
+
+  (cond
+    (instance? WorkHandler arg)
+    (reify WorkFlow
+      (startWith [_] (WrapPTask arg))
+      (onError [_ e]))
+
+    (instance? WorkFlow arg)
+    arg
+
+    (instance? Activity arg)
+    (reify WorkFlow
+      (startWith [_] arg)
+      (onError [_ e]))
+
+    (fn? arg)
+    (reify WorkFlow
+      (startWith [_] (SimPTask arg))
+      (onError [_ e]))
+
+    :else nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn FlowServer ""
 
   ^ServerLike
@@ -147,7 +186,7 @@
         cpu (MakeScheduler)
         errorHandler (:error options)
         svcHandler (:service options) ]
-    (-> ^czlabclj.xlib.util.scheduler.SchedulerAPI
+    (-> ^czlabclj.xlib.util.scheduler.CoreAPI
         cpu
         (.activate { :threads 1, :trace false }))
     (reify
@@ -157,28 +196,12 @@
       (handle [this arg opts]
         (if (fn? svcHandler)
           (svcHandler arg opts)
-          (let [^Activity
-                a
-                (cond
-                  (instance? WorkHandler arg)
-                  (SimPTask
-                    (fn [^Job j]
-                      (-> ^WorkHandler arg (.workOn j))))
-
-                  (instance? WorkFlow arg)
-                  (-> ^WorkFlow arg
-                      (.startWith))
-
-                  (instance? Activity arg)
-                  arg
-
-                  :else nil)
+          (let [w (ToWorkFlow arg)
                 j (MakeJob this)
                 opts (or opts {})]
-            (.setv j JS_FLATLINE true)
             (doseq [[k v] (seq opts)]
               (.setv j k v))
-            (.run cpu (.reify a
+            (.run cpu (.reify (.startWith w)
                               (-> (Nihil/apply)
                                   (.reify j)))))))
 
@@ -194,17 +217,7 @@
       (core [_] cpu))
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn WrapPTask ""
-
-  ^Activity
-  [^WorkHandler wf]
-
-  (SimPTask (fn [^Job j] (.workOn wf j))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private wfs-eof nil)
-
 

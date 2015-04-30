@@ -14,14 +14,13 @@
 
   czlabclj.tardis.io.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core
          :only
          [NextLong notnil? ThrowIOE MakeMMap ConvToJava TryC]]
         [czlabclj.xlib.util.str :only [nsb strim]]
-        [czlabclj.xlib.util.wfs :only [WrapPTask]]
+        [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.core.sys])
 
   (:import  [com.zotohlab.frwk.server Component
@@ -159,9 +158,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePipeline ""
+(defn- mkPipeline ""
 
-  ^Startable
+  ^ServiceHandler
   [^Service service traceable]
 
   (when traceable
@@ -169,37 +168,26 @@
   (let [pid (NextLong)]
     (reify
 
-      Startable
-      (start [_])
-      (stop [_])
-
       Disposable
-      (dispose [_])
+      (dispose [_] )
 
       Identifiable
       (id [_] (.id service))
 
       ServiceHandler
       (handle [_ arg options]
-        (let [^Activity
-              a
-              (cond
-                (instance? WorkHandler arg)
-                (WrapPTask arg)
-                (instance? WorkFlow arg)
-                (-> ^WorkFlow arg
-                    (.startWith))
-                (instance? Activity arg)
-                arg
-                :else nil)
-              ^Job j
-              (if (instance? Job options) options nil)]
-          (log/debug "Job##" (.id j) " is being serviced by " service)
+        (let [^Job j (when (instance? Job options) options)
+              w (ToWorkFlow arg)]
+          (when-not (nil? j)
+            (log/debug "Job##" (.id j)
+                       " is being serviced by " service))
           (-> ^Emitter service
               (.container)
               (.core)
               (.run (->> (.reify (Nihil/apply) j)
-                         (.reify a)))))))
+                         (.reify (.startWith w)))))))
+
+      (handleError [_ e]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,9 +196,9 @@
 
   [^Container parObj emId emAlias]
 
-  (let [impl (MakeMMap) ]
-    ;; holds all the events from this source.
-    (.setf! impl :backlog (ConcurrentHashMap.))
+  ;; holds all the events from this source.
+  (let [backlog (ConcurrentHashMap.)
+        impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -246,9 +234,8 @@
         Startable
 
         (start [this]
-          (let [p (MakePipeline this true)]
+          (let [p (mkPipeline this true)]
             (.setf! impl :pipe p)
-            (.start p)
             (IOESStart this)))
 
         (stop [this]
@@ -283,17 +270,15 @@
 
         (release [_ wevt]
           (when-not (nil? wevt)
-            (let [wid (.id ^Identifiable wevt)
-                  b (.getf impl :backlog) ]
+            (let [wid (.id ^Identifiable wevt)]
               (log/debug "Emitter releasing an event with id: " wid)
-              (.remove ^Map b wid))))
+              (.remove backlog wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
-            (let [wid (.id ^Identifiable wevt)
-                  b (.getf impl :backlog) ]
+            (let [wid (.id ^Identifiable wevt)]
               (log/debug "Emitter holding an event with id: " wid)
-              (.put ^Map b wid wevt)))) )
+              (.put backlog wid wevt)))) )
 
       { :typeid emId }
 

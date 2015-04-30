@@ -14,8 +14,7 @@
 
   czlabclj.xlib.dbio.composite
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [test-nonil notnil? Try!]]
         [czlabclj.xlib.dbio.core]
@@ -47,46 +46,44 @@
    ^MetaCache metaCache
    ^Connection conn]
 
-  (let []
-    (reify SQLr
+  (reify SQLr
 
-      (findAll [this model extra] (.findSome this model {} extra))
-      (findAll [this model] (.findAll this model {}))
+    (findAll [this model extra] (.findSome this model {} extra))
+    (findAll [this model] (.findAll this model {}))
 
-      (findOne [this model filters]
-        (when-let [rset (.findSome this model filters {}) ]
-          (when-not (empty? rset) (first rset))))
+    (findOne [this model filters]
+      (when-let [rset (.findSome this model filters {}) ]
+        (when-not (empty? rset) (first rset))))
 
-      (findSome [this model filters] (.findSome this model filters {}))
-      (findSome [this model filters extraSQL]
-        (let [mcz ((.metas this) model)
-              [wc pms]
-              (SqlFilterClause mcz filters)
-              tbl (Tablename mcz)
-              s (str "SELECT * FROM " (ese tbl)) ]
-          (if (hgl? wc)
-            (.doQuery proc conn
-                      (doExtraSQL (str s " WHERE " wc) extraSQL)
-                      pms model)
-            (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) )
+    (findSome [this model filters] (.findSome this model filters {}))
+    (findSome [this model filters extraSQL]
+      (let [mcz ((.metas this) model)
+            [wc pms]
+            (SqlFilterClause mcz filters)
+            s (str "SELECT * FROM " (GTable mcz)) ]
+        (if (hgl? wc)
+          (.doQuery proc conn
+                    (doExtraSQL (str s " WHERE " wc) extraSQL)
+                    pms model)
+          (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) )
 
-      (select [_ model sql params] (.doQuery proc conn sql params model) )
-      (select [_ sql params] (.doQuery proc conn sql params) )
+    (select [_ model sql params] (.doQuery proc conn sql params model) )
+    (select [_ sql params] (.doQuery proc conn sql params) )
 
-      (update [_ obj] (.doUpdate proc conn obj) )
-      (delete [_ obj] (.doDelete proc conn obj) )
-      (insert [_ obj] (.doInsert proc conn obj) )
+    (update [_ obj] (.doUpdate proc conn obj) )
+    (delete [_ obj] (.doDelete proc conn obj) )
+    (insert [_ obj] (.doInsert proc conn obj) )
 
-      (execWithOutput [_ sql pms]
-        (.doExecWithOutput proc conn sql pms { :pkey COL_ROWID } ) )
+    (execWithOutput [_ sql pms]
+      (.doExecWithOutput proc conn sql pms { :pkey COL_ROWID } ) )
 
-      (exec [_ sql pms] (.doExec proc conn sql pms) )
+    (exec [_ sql pms] (.doExec proc conn sql pms) )
 
-      (metas [_] (.getMetas metaCache))
+    (metas [_] (.getMetas metaCache))
 
-      (countAll [_ model] (.doCount proc conn model) )
-      (purge [_ model] (.doPurge proc conn model) )
-  )) )
+    (countAll [_ model] (.doCount proc conn model) )
+    (purge [_ model] (.doPurge proc conn model) )
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

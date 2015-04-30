@@ -15,8 +15,7 @@
 
   czlabclj.xlib.util.scheduler
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [NextInt juid MakeMMap]]
         [czlabclj.xlib.util.str :only [Format]])
@@ -43,7 +42,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol SchedulerAPI
+(defprotocol CoreAPI
 
   ""
 
@@ -62,7 +61,7 @@
 
   (let [impl (MakeMMap) ]
     (with-meta
-      (reify SchedulerAPI
+      (reify CoreAPI
 
         (activate [_ options]
           (let [^long t (or (:threads options) 4)

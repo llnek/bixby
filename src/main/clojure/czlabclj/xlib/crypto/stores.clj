@@ -14,9 +14,7 @@
 
   czlabclj.xlib.crypto.stores
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
-            [clojure.math.numeric-tower :as math])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.crypto.core
          :only

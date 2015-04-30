@@ -14,8 +14,7 @@
 
   czlabclj.xlib.i18n.resources
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.meta :only [GetCldr]]
         [czlabclj.xlib.util.str :only [nsb]])

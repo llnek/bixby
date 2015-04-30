@@ -14,11 +14,11 @@
 
   czlabclj.xlib.net.routes
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [MubleAPI MakeMMap test-nestr]]
-        [czlabclj.xlib.util.str :only [nsb nichts? hgl?]]
+        [czlabclj.xlib.util.str
+         :only [lcase ucase nsb nichts? hgl?]]
         [czlabclj.xlib.util.ini :only [ParseInifile]])
 
   (:import  [org.apache.commons.lang3 StringUtils]
@@ -62,7 +62,7 @@
 
   [route verb handler]
 
-  (let [verbList (cstr/upper-case verb)
+  (let [verbList (ucase verb)
         impl (MakeMMap) ]
     (with-meta
       (reify
@@ -87,7 +87,7 @@
 
         (resemble? [_ mtd path]
           (let [^Pattern rg (.getf impl :regex)
-                um (cstr/upper-case mtd)
+                um (ucase mtd)
                 m (.matcher rg path) ]
             (if (and (.matches m)
                      (or (= "*" verbList)
@@ -165,7 +165,7 @@
                               "GET"
                               verb)
                             pipe) ]
-    (.setf! rc :secure (= "true" (cstr/lower-case secure)))
+    (.setf! rc :secure (= "true" (lcase secure)))
     (if stat
       (do
         (.setf! rc :mountPoint mpt)

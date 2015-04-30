@@ -14,8 +14,7 @@
 
   czlabclj.tardis.io.files
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.tardis.core.sys
          :rename
@@ -91,7 +90,7 @@
         origFname (.getName f)
         cf (case action
              :FP-CREATED
-             (if (notnil? des)
+             (if-not (nil? des)
                (TryC
                  (FileUtils/moveFileToDirectory f des false)
                  (File. des origFname))
@@ -169,7 +168,7 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
-  (let [^FileAlterationMonitor mon (.getAttr co :monitor) ]
+  (when-let [^FileAlterationMonitor mon (.getAttr co :monitor) ]
     (log/info "FilePicker's apache io monitor starting...")
     (.start mon)
   ))

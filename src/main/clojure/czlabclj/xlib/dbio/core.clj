@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.core
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr]
             [clojure.set :as cset]
             [czlabclj.xlib.crypto.codec :as codec ])
@@ -61,6 +61,8 @@
 (def ^String COL_RHS_ROWID "RHS_ROWID")
 (def ^String COL_ROWID "DBIO_ROWID")
 (def ^String COL_VERID "DBIO_VERID")
+
+(def ^:private ^String _NSP "czc.dbio.core" )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -439,7 +441,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here.
 ;;
-(DefModel2 "czc.dbio.core" DBIOBaseModel
+(DefModel2 _NSP DBIOBaseModel
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {:rowid {:column COL_ROWID :pkey true :domain :Long
@@ -454,7 +456,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2 "czc.dbio.core" DBIOJoinedModel
+(DefModel2 _NSP DBIOJoinedModel
   (WithDbAbstract)
   (WithDbSystem)
   (WithDbFields {:lhs-typeid {:column COL_LHS_TYPEID }

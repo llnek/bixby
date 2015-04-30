@@ -14,10 +14,9 @@
 
   czlabclj.tardis.impl.exec
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.str :only [nsb strim hgl?]]
+  (:use [czlabclj.xlib.util.str :only [nsb strim hgl? ToKW]]
         [czlabclj.xlib.util.mime :only [SetupCache]]
         [czlabclj.xlib.util.files :only [Unzip]]
         [czlabclj.xlib.util.process :only [SafeWait]]
@@ -60,7 +59,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol ExecvisorAPI
+(defprotocol ExecVisor
 
   ""
 
@@ -81,10 +80,10 @@
 (defn- chkManifest
 
   ^czlabclj.tardis.impl.dfts.PODMeta
+
   [^czlabclj.tardis.core.sys.Element execv
    app
-   ^File des
-   mf]
+   ^File des mf]
 
   (let [^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx execv)
@@ -174,7 +173,6 @@
           ctx (.getCtx co)
           port (or (:port cfg) 7777)
           host (nsb (:host cfg))
-          ^czlabclj.xlib.jmx.core.JMXServer
           jmx (MakeJmxServer host) ]
       (.setRegistryPort jmx port)
       (.start ^Startable jmx)
@@ -193,8 +191,9 @@
   (TryC
     (let [^czlabclj.xlib.util.core.MubleAPI
           ctx (.getCtx co)
-          ^Startable jmx (.getf ctx K_JMXSVR) ]
-      (when-not (nil? jmx) (.stop jmx))
+          jmx (.getf ctx K_JMXSVR) ]
+      (when-not (nil? jmx)
+        (.stop ^Startable jmx))
       (.setf! ctx K_JMXSVR nil)))
   (log/info "JMX connection terminated."))
 
@@ -323,6 +322,7 @@
 ;;
 (defn MakeExecvisor ""
 
+  ^czlabclj.tardis.impl.exec.ExecVisor
   [parObj]
 
   (log/info "Creating execvisor, parent = " parObj)
@@ -349,7 +349,7 @@
         Identifiable
         (id [_] K_EXECV )
 
-        ExecvisorAPI
+        ExecVisor
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
@@ -374,9 +374,8 @@
             (stopJmx this)
             (stopPods this)))  )
 
-       { :typeid (keyword "czc.tardis.impl/Execvisor") }
+       { :typeid (ToKW "czc.tardis.impl" "ExecVisor") }
   )))
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -397,11 +396,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Execvisor is the master controller of everthing.
 ;;
-(defmethod CompInitialize :czc.tardis.impl/Execvisor
+(defmethod CompInitialize :czc.tardis.impl/ExecVisor
 
   [^czlabclj.tardis.core.sys.Element co]
 
-  (let [^czlabclj.tardis.impl.exec.ExecvisorAPI exec co
+  (let [^czlabclj.tardis.impl.exec.ExecVisor exec co
         ^czlabclj.xlib.util.core.MubleAPI
         ctx (.getCtx co)
         ^File base (.getf ctx K_BASEDIR)
@@ -414,7 +413,7 @@
                     (.toURI)
                     (.toURL )))
 
-    (log/info "Initializing component: Execvisor: " co)
+    (log/info "Initializing component: ExecVisor: " co)
     (test-nonil "conf file: components" comps)
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
@@ -510,7 +509,7 @@
                          (:name)))
         (metaUrl [_] url) )
 
-      { :typeid (keyword "czc.tardis.impl/EmitMeta") }
+      { :typeid (ToKW "czc.tardis.impl" "EmitMeta") }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -14,8 +14,7 @@
 
   czlabclj.tardis.core.sys
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [MubleAPI MakeMMap NiceFPath]]
         [czlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]

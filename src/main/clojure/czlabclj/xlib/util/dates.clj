@@ -14,11 +14,11 @@
 
   czlabclj.xlib.util.dates
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [czlabclj.xlib.util.consts :as CS]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.str :only [Has? HasAny? nichts? nsb]]
+        [czlabclj.xlib.util.consts :as CS]
         [czlabclj.xlib.util.core :only [Try!]])
 
   (:import  [java.text ParsePosition SimpleDateFormat]

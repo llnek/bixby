@@ -14,11 +14,10 @@
 
   czlabclj.tardis.impl.ext
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
-            [clojure.data.json :as json])
+  (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.str :only [hgl? lcase nsb strim nichts?]]
+  (:use [czlabclj.xlib.util.str
+         :only [ToKW hgl? lcase nsb strim nichts?]]
         [czlabclj.xlib.util.consts]
         [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
         [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
@@ -130,7 +129,7 @@
 
   (with-meta
     (MakeJob container evt)
-    { :typeid (keyword "czc.tardis.impl/Job") }
+    { :typeid (ToKW "czc.tardis.impl" "Job") }
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,9 +158,9 @@
                 ^ServiceHandler
                 hr (.handler ^Service src)
                 cfg (.getAttr src :emcfg)
-                ^String c0 (:handler cfg)
-                ^String c1 (:router options)
-                ^Job job (mkJob parObj evt) ]
+                c0 (nsb (:handler cfg))
+                c1 (nsb (:router options))
+                job (mkJob parObj evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
@@ -175,7 +174,7 @@
 
         (parent [_] parObj))
 
-      { :typeid (keyword "czc.tardis.impl/EventBus") }
+      { :typeid (ToKW "czc.tardis.impl" "EventBus") }
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -441,9 +440,9 @@
               (throw (ServiceError. (str "No such Service: " svc "."))))
             (makeServiceBlock bk this nm cfg))) )
 
-    { :typeid (keyword "czc.tardis.ext/Container") }
+    { :typeid (ToKW "czc.tardis.ext" "Container") }
 
-  )) )
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  The runtime container for your application.
@@ -654,7 +653,7 @@
   [^czlabclj.tardis.core.sys.Element co]
 
   (log/info "Initializing container: " (.id ^Component co))
-  (let [^czlabclj.xlib.util.scheduler.SchedulerAPI
+  (let [^czlabclj.xlib.util.scheduler.CoreAPI
         sc (MakeScheduler co)
         ^Properties mf (.getAttr co K_MFPROPS)
         mCZ (strim (.get mf "Main-Class"))
@@ -665,7 +664,6 @@
         reg (.getAttr co K_SVCS)
         bus (makeEventBus co)
         cfg (:container env) ]
-
     (let [cn (lcase (or (K_COUNTRY (K_LOCALE env)) ""))
           lg (lcase (or (K_LANG (K_LOCALE env)) "en"))
           loc (if (hgl? cn)

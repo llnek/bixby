@@ -14,12 +14,11 @@ package com.zotohlab.wflow;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.slf4j.Logger;
 
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
+import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.util.Schedulable;
 
@@ -32,9 +31,8 @@ public abstract class FlowNode implements RunnableWithId {
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  private static AtomicLong _sn= new AtomicLong(0);
-  private long _pid = _sn.incrementAndGet();
-
+  private long _pid = CoreUtils.nextSeqLong();
+  
   private FlowNode _nextStep;
   protected Job _job;
   private Activity _defn;

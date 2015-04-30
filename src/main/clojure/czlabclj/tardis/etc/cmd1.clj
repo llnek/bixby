@@ -14,7 +14,7 @@
 
   czlabclj.tardis.etc.cmd1
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
+  (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
@@ -140,9 +140,9 @@
 ;; Maybe create a new app?
 (defn OnCreate ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (< (count args) 3)
       (throw (CmdHelpError.))
       (apply onCreateApp args))
@@ -152,9 +152,9 @@
 ;; Maybe build an app?
 (defn OnBuild ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (>= (count args) 2)
       (let [appId (nth args 1)
             taskId (if (> (count args) 2)
@@ -169,9 +169,9 @@
 ;; Maybe compress and package an app?
 (defn OnPodify ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (> (count args) 1)
       (BundleApp (GetHomeDir) (nth args 1))
       (throw (CmdHelpError.)))
@@ -181,9 +181,9 @@
 ;; Maybe run tests on an app?
 (defn OnTest ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (> (count args) 1)
       ;;(AntBuildApp (GetHomeDir) (nth args 1) "test")
       (ExecGantScript (GetHomeDir) (nth args 1) "test")
@@ -194,10 +194,10 @@
 ;; Maybe start the server?
 (defn OnStart ""
 
-  [j]
+  [^Job j]
 
   (let [cz "czlabclj.tardis.impl.climain.StartMainViaCLI"
-        args (.getLastResult ^Job j)
+        args (.getLastResult j)
         s2 (if (> (count args) 1)
              (nth args 1)
              "")
@@ -224,9 +224,9 @@
 ;; Maybe generate some demo apps?
 (defn OnDemo ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (and (> (count args) 1)
              (= "samples" (nth args 1)))
       (PublishSamples (GetHomeDir))
@@ -416,9 +416,9 @@
 ;;
 (defn OnGenerate ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (when-not (if (> (count args) 1)
                 (condp = (nth args 1)
                   "keypair" (if (> (count args) 2)
@@ -448,9 +448,9 @@
 ;;
 (defn OnHash ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (> (count args) 1)
       (genHash (nth args 1))
       (throw (CmdHelpError.)))
@@ -470,9 +470,9 @@
 ;;
 (defn OnEncrypt ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (> (count args) 2)
       (encrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -492,9 +492,9 @@
 ;;
 (defn OnDecrypt ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (> (count args) 2)
       (decrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -587,9 +587,9 @@
 ;;
 (defn OnIDE ""
 
-  [j]
+  [^Job j]
 
-  (let [args (.getLastResult ^Job j)]
+  (let [args (.getLastResult j)]
     (if (and (> (count args) 2)
              (= "eclipse" (nth args 1)))
       (genEclipseProj (nth args 2))

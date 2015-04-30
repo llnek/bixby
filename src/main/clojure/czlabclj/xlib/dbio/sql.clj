@@ -15,8 +15,7 @@
 
   czlabclj.xlib.dbio.sql
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.meta :only [BytesClass CharsClass]]
         [czlabclj.xlib.util.str

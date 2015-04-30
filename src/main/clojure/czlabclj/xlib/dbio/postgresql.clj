@@ -14,11 +14,10 @@
 
   czlabclj.xlib.dbio.postgresql
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
-            [czlabclj.xlib.dbio.core :as dbcore])
+  (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.dbio.drivers]))
+  (:use [czlabclj.xlib.dbio.drivers]
+        [czlabclj.xlib.dbio.core :as dbcore]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

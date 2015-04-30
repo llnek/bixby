@@ -427,9 +427,9 @@
   (let [impl (MakeMMap) ]
     (reify Plugin
 
-      (contextualize [_ c] nil)
+      (contextualize [_ c] )
 
-      (configure [_ props] nil)
+      (configure [_ props] )
 
       (initialize [_]
         (ApplyAuthPluginDDL (.acquireDbPool ctr "")))

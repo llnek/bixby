@@ -14,8 +14,7 @@
 
   czlabclj.xlib.crypto.codec
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr]
+  (:require [clojure.tools.logging :as log]
             [clojure.math.numeric-tower :as math])
 
   (:use [czlabclj.xlib.util.core

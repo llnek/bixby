@@ -9,33 +9,25 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow;
+package com.zotohlab.frwk.server;
 
-import com.zotohlab.frwk.core.Gettable;
-import com.zotohlab.frwk.core.Identifiable;
-import com.zotohlab.frwk.core.Settable;
-import com.zotohlab.frwk.server.Event;
-import com.zotohlab.frwk.server.ServerLike;
 
 /**
  * @author kenl
  */
-public interface Job extends Gettable , Settable, Identifiable {
-  
-  public ServerLike container();
-  
-  public void finz();
-  
-  public Event<?> event() ;
+public class EndEvent implements Event<Object> {
 
-  public void setLastResult( Object v) ;
+  public EndEvent() {}
+  
+  @Override
+  public Object getId() {
+    return "end-event-101";
+  }
 
-  public void clrLastResult() ;
-
-  public Object getLastResult() ;
+  @Override
+  public Object emitter() {
+    return null;
+  }
 
 }
-
-
-
 

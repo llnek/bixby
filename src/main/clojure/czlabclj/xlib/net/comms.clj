@@ -14,10 +14,10 @@
 
   czlabclj.xlib.net.comms
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.str :only [strim Embeds? HasNocase?]]
+  (:use [czlabclj.xlib.util.str
+         :only [lcase hgl? strim Embeds? HasNocase?]]
         [czlabclj.xlib.util.core :only [ThrowIOE Try!]]
         [czlabclj.xlib.util.mime :only [GetCharset]])
 
@@ -26,6 +26,7 @@
             [javax.net.ssl SSLContext SSLEngine X509TrustManager
              TrustManagerFactorySpi TrustManager
              ManagerFactoryParameters]
+            [org.apache.commons.codec.binary Base64]
             [java.security KeyStoreException KeyStore
              InvalidAlgorithmParameterException]
             [com.zotohlab.tpcl.apache ApacheHttpClient ]
@@ -49,6 +50,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+
+(def ^:private ^String AUTH "Authorization")
+(def ^:private ^String BASIC "Basic")
+
 (def ^:dynamic *socket-timeout* 5000)
 (def ^String LOOPBACK "127.0.0.1")
 (def ^String LHOST "localhost")
@@ -82,6 +87,27 @@
 
   (filter #(.isFormField ^ULFileItem %)
           (.intern items)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ParseBasicAuth ""
+
+  [^String line]
+
+  (when-let [s (StringUtils/split line)]
+    (cond
+      (and (== 2 (count s))
+           (= "Basic" (first s))
+           (hgl? (last s)))
+      (let [tail (Base64/decodeBase64 ^String (last s))
+            rc (StringUtils/split tail ":" 1) ]
+        (if (== 2 (count rc))
+          {:principal (first rc)
+           :credential (last rc) }
+          nil))
+      :else
+      nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; internal functions to support apache http client.
@@ -129,7 +155,7 @@
   (let [ent (.getEntity rsp)
         ct (when-not (nil? ent) (.getContentType ent))
         cv (if (nil? ct) "" (strim (.getValue ct)))
-        cl (cstr/lower-case cv) ]
+        cl (lcase cv) ]
     (Try!
       (log/debug "Http-response: content-encoding: "
                  (.getContentEncoding ent)

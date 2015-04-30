@@ -14,10 +14,10 @@
 
   czlabclj.tardis.impl.dfts
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
+        [czlabclj.xlib.util.str :only [ToKW]]
         [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.i18n.resources :only [RStr]]
@@ -169,7 +169,7 @@
             (let [cache (.getf impl :cache) ]
               (seq cache))) )
 
-      { :typeid (keyword (str "czc.tardis.impl/" (name regoType))) }
+      { :typeid (ToKW "czc.tardis.impl" (name regoType)) }
 
   )))
 
@@ -211,7 +211,7 @@
         (appKey [_] appid)
         (typeof [_] podType))
 
-      { :typeid (keyword "czc.tardis.impl/PODMeta") }
+      { :typeid (ToKW "czc.tardis.impl" "PODMeta") }
 
   )))
 

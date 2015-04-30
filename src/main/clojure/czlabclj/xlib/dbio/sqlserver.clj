@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.sqlserver
 
-  (:require [clojure.tools.logging :as log :only [info warn error debug]])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core]))

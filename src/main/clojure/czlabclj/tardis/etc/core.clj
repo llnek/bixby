@@ -14,8 +14,7 @@
 
   czlabclj.tardis.etc.core
 
-  (:require [clojure.tools.logging :as log :only [warn error info debug]]
-            [clojure.string :as cstr])
+  (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.i18n.resources :only [GetResource RStr]]
         [czlabclj.xlib.util.core :only [test-cond MakeMMap]]
@@ -107,8 +106,8 @@
   []
 
   (doto (Switch/apply (DefChoiceExpr
-                        (fn [j]
-                          (keyword (first (.getLastResult ^Job j))))))
+                        (fn [^Job j]
+                          (keyword (first (.getLastResult j))))))
     (.withChoice :new (SimPTask #(OnCreate %)))
     (.withChoice :ide (SimPTask #(OnIDE %)))
     (.withChoice :build (SimPTask #(OnBuild %)))
@@ -144,11 +143,9 @@
   []
 
   (SimPTask
-    (fn [j]
-      (try
-        (let [args (.getLastResult ^Job j)]
-          (when (< (count args) 1) (throw (CmdHelpError. ""))))
-        (catch CmdHelpError _ (Usage))))
+    (fn [^Job j]
+      (let [args (.getLastResult j)]
+        (when (< (count args) 1) (throw (CmdHelpError. "")))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
