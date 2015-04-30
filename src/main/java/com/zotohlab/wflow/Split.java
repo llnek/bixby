@@ -105,7 +105,7 @@ public class Split extends Composite {
 
     FlowNode s = m.reify(p.next() );
     // note: get all *children* to come back to the join
-    p.withBranches( new Iter(s, listChildren() ) );
+    p.withBranches( new Innards(s, listChildren() ) );
 
     if (m instanceof NullJoin) {
         p.fallThrough();
@@ -166,8 +166,8 @@ class SplitNode extends CompositeNode {
   public FlowNode eval(Job j) {
     FlowNode rc= null;
 
-    while ( !_inner.isEmpty() ) {
-      rc = _inner.next();
+    while ( !inner().isEmpty() ) {
+      rc = inner().next();
       core().run(rc);
     }
 
@@ -176,8 +176,8 @@ class SplitNode extends CompositeNode {
     return _fallThru ? next() : null;
   }
 
-  public SplitNode withBranches(Iter w) {
-    _inner=w;
+  public SplitNode withBranches(Innards w) {
+    setInner(w);
     return this;
   }
 

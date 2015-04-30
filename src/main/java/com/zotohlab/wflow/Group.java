@@ -73,9 +73,9 @@ class GroupNode extends CompositeNode {
   public FlowNode eval(Job j) {
     FlowNode rc= null;
 
-    if ( ! _inner.isEmpty()) {
+    if ( ! inner().isEmpty()) {
       //tlog().debug("Group: {} element(s.)",  _inner.size() );
-      FlowNode n=_inner.next();
+      FlowNode n=inner().next();
       Activity d=n.getDef();
       if (d.hasName()) {
         tlog().debug("FlowNode##{} :eval().", d.getName());

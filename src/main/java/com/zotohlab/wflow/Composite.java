@@ -62,12 +62,49 @@ abstract class CompositeNode extends FlowNode {
   }
 
   public void reifyInner( Iterator<Activity> c) {
-    _inner=new Iter(this,c);
+    _inner=new Innards(this,c);
   }
 
-  public Iter inner() { return _inner; }
+  public Innards inner() { return _inner; }
+  protected void setInner(Innards n) {
+    _inner=n;
+  }
+  
+  private Innards _inner = null;
+}
 
-  protected Iter _inner = null;
+/**
+ * 
+ * @author kenl
+ *
+ */
+class Innards {
+
+  public boolean isEmpty() { return  _acts.size() == 0; }
+
+  private List<Activity> _acts= new ArrayList<>();
+  private FlowNode _outer;
+
+  public Innards(FlowNode c, Iterator<Activity> a) {
+    this(c);
+    while (a.hasNext()) {
+      _acts.add(a.next());
+    }
+  }
+
+  public Innards(FlowNode outer) {
+    _outer= outer;
+  }
+
+  public FlowNode next() {
+    return _acts.size() > 0
+      ? _acts.remove(0).reify(_outer)
+    :
+      null;    
+  }
+
+  public int size() { return _acts.size(); }
+
 }
 
 
