@@ -16,7 +16,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
 
-import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.RunnableWithId;
@@ -79,7 +78,7 @@ public abstract class FlowNode implements RunnableWithId {
   }
 
   public void run() {
-    ServerLike par = _job.container();
+    Object par = _job.container();
     ServiceHandler svc = null;
     Activity err= null,
              d= getDef();

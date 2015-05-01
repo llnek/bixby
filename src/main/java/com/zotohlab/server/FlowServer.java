@@ -22,6 +22,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 
 import com.zotohlab.frwk.server.Event;
+import com.zotohlab.frwk.server.NonEvent;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.CoreUtils;
@@ -162,11 +163,7 @@ class JobCreator {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
       private long _id= CoreUtils.nextSeqLong();
-      {
-        if (evt==null) {
-          _m.put(JS_FLATLINE,true);
-        }
-      }
+      
       @Override
       public Object getv(Object key) {
         return key==null ? null : _m.get(key);
@@ -189,8 +186,7 @@ class JobCreator {
       @Override
       public void finz() {
         FlowServer.tlog().debug("job##{} has been served.", _id);
-        Object o= _m.get(JS_FLATLINE);
-        if (o != null) {
+        if (evt instanceof NonEvent) {
           _server.dispose();
         }
       }
