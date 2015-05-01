@@ -160,7 +160,7 @@
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (-> ^ServiceHandler
-        (FlowServer {:error (fn [_] (Usage)) })
+        (FlowServer {:mock true :error (fn [_] (Usage)) })
         (.handle a {:home home
                     :rcb rcb
                     JS_LAST args}))

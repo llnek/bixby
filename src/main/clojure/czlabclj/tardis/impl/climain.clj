@@ -29,7 +29,7 @@
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile]]
-        [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
+        [czlabclj.xlib.util.scheduler :only [MockScheduler]]
         [czlabclj.xlib.util.core
          :only
          [test-nonil test-cond ConvLong
@@ -136,7 +136,7 @@
   ^ServerLike
   [^File home]
 
-  (let [cpu (MakeScheduler)
+  (let [cpu (MockScheduler)
         impl (MakeMMap)]
     (-> ^czlabclj.xlib.util.scheduler.CoreAPI
         cpu

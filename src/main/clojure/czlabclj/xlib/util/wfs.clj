@@ -16,7 +16,8 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
+  (:use [czlabclj.xlib.util.scheduler
+         :only [MockScheduler MakeScheduler]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core
          :only [MubleAPI MakeMMap NextLong]])
@@ -183,7 +184,9 @@
   [options]
 
   (let [options (or options {})
-        cpu (MakeScheduler)
+        cpu (if (:mock options)
+              (MockScheduler)
+              (MakeScheduler))
         errorHandler (:error options)
         svcHandler (:service options) ]
     (-> ^czlabclj.xlib.util.scheduler.CoreAPI
