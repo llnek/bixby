@@ -18,52 +18,26 @@
   (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [NextInt juid MakeMMap]]
-        [czlabclj.xlib.util.str :only [Format]])
+        [czlabclj.xlib.util.str :only [Format hgl?]])
 
   (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
-            [com.zotohlab.frwk.core Identifiable Named]
+            [com.zotohlab.frwk.core Activable Identifiable Named]
             [java.util.concurrent ConcurrentHashMap]
             [java.util Map Properties Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- xrefPID
-
-  [runable]
-
-  (if (instance? Identifiable runable)
-    (.id ^Identifiable runable)
-    nil
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol CoreAPI
-
-  ""
-
-  (activate [_ options] )
-  (preRun [_ w] )
-  (deactivate [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mockSCD "Make a Mock Scheduler."
+(defn NulScheduler "Make a Mock Scheduler."
 
   ^Schedulable
-  [parObj]
+  []
 
   (let []
     (with-meta
-      (reify CoreAPI
-
-        (activate [_ options] )
-        (preRun [_ w] )
-        (deactivate [_] )
+      (reify
 
         Schedulable
 
@@ -71,7 +45,7 @@
 
         (run [this w]
           (when-let [^Runnable r w]
-            (.preRun this r)
+            ;;(.preRun this r)
             ;;(log/debug "mock scheduler: nothing to schedule - just run it.")
             (.run r)))
 
@@ -92,11 +66,37 @@
 
         (reschedule [this w] (.run this w))
 
-        (dispose [_] ))
+        (dispose [_] )
 
-      { :typeid (keyword "czc.frwk.util/MockScheduler") }
+        Activable
+
+        (activate [_ options] )
+        (deactivate [_] ))
+
+      { :typeid (keyword "czc.frwk.util/NulScheduler") }
   )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- xrefPID
+
+  [runable]
+
+  (if (instance? Identifiable runable)
+    (.id ^Identifiable runable)
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- preRun  ""
+
+  [^Map hQ ^Map rQ w]
+
+  (when-let [pid (xrefPID w) ]
+    (.remove hQ pid)
+    (.put rQ pid w)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -106,53 +106,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSCD "Make a Scheduler."
+(defn MakeScheduler "Make a Scheduler."
 
   ^Schedulable
-  [parObj]
+  [^String named]
 
-  (let [jid (if-not (instance? Named parObj)
+  (let [jid (if-not (hgl? named)
               (Format "xlib#core-%03d" (NextInt))
-              (str (.getName ^Named parObj) "#core"))
+              (str named "#core"))
         holdQ (ConcurrentHashMap.)
         runQ (ConcurrentHashMap.)
         timer (atom nil)
         impl (MakeMMap) ]
     (reset! timer (Timer. jid true))
     (with-meta
-      (reify CoreAPI
-
-        (activate [_ options]
-          (let [^long t (or (:threads options) 4)
-                b (not (false? (:trace options)))
-                c (TCore. jid t b) ]
-            (doto impl
-              (.setf! :core c))
-            (.start c)))
-
-        (preRun [_ w]
-          (let [pid (xrefPID w) ]
-            (when-not (nil? pid)
-              (.remove holdQ pid)
-              (.put runQ pid w))))
-
-        (deactivate [_]
-          (.cancel ^Timer @timer)
-          (.clear holdQ)
-          (.clear runQ)
-          (.stop ^TCore (.getf impl :core)))
+      (reify
 
         Schedulable
 
         ;; called by a *running* task to remove itself from the running queue
         (dequeue [_ w]
-          (let [pid (xrefPID w) ]
-            (when-not (nil? pid)
-              (.remove runQ pid))) )
+          (when-let [pid (xrefPID w) ]
+              (.remove runQ pid)))
 
         (run [this w]
-          (let [^Runnable r w]
-            (.preRun this r)
+          (when-let [^Runnable r w]
+            (preRun holdQ runQ r)
             (.schedule ^TCore (.getf impl :core) r)) )
 
         (postpone [me w delayMillis]
@@ -191,25 +170,27 @@
             (.cancel ^Timer @timer)
             (.clear holdQ)
             (.clear runQ)
-            (when-not (nil? c) (.dispose c)))) )
+            (when-not (nil? c) (.dispose c)))) 
+
+        Activable
+
+        (activate [_ options]
+          (let [^long t (or (:threads options) 4)
+                b (not (false? (:trace options)))
+                c (TCore. jid t b) ]
+            (doto impl
+              (.setf! :core c))
+            (.start c)))
+
+        (deactivate [_]
+          (.cancel ^Timer @timer)
+          (.clear holdQ)
+          (.clear runQ)
+          (.stop ^TCore (.getf impl :core))))
 
       { :typeid (keyword "czc.frwk.util/Scheduler") }
 
   )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MockScheduler "Make a mock Scheduler."
-
-  (^Schedulable [] (MockScheduler nil))
-  (^Schedulable [parObj] (mockSCD parObj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeScheduler "Make a Scheduler."
-
-  (^Schedulable [] (MakeScheduler nil))
-  (^Schedulable [parObj] (mkSCD parObj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

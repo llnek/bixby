@@ -9,30 +9,16 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.frwk.util;
-
-import com.zotohlab.frwk.core.Disposable;
+package com.zotohlab.frwk.core;
 
 /**
  * @author kenl
  */
-public interface Schedulable extends Disposable {
+public interface Activable {
 
-  public void postpone(Runnable w, long delayMillis);
+  public void activate(Object options);
 
-  public void dequeue(Runnable w);
-
-  public void run(Runnable w);
-
-  public void hold(Object pid, Runnable w);
-
-  public void hold(Runnable w);
-
-  public void wakeAndRun(Object pid,Runnable w);
-
-  public void wakeup(Runnable w);
-
-  public void reschedule(Runnable w);
+  public void deactivate();
 
 }
 

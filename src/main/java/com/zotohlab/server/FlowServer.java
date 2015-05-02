@@ -21,9 +21,10 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 
+import com.zotohlab.frwk.core.Activable;
 import com.zotohlab.frwk.server.Event;
-import com.zotohlab.frwk.server.MockEmitter;
 import com.zotohlab.frwk.server.NonEvent;
+import com.zotohlab.frwk.server.NulEmitter;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.CoreUtils;
@@ -46,13 +47,13 @@ public class FlowServer implements ServerLike, ServiceHandler {
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
-  protected MockEmitter _mock;
+  protected NulEmitter _mock;
   private JobCreator _jctor;
-  private FlowCore _sch;
+  private Schedulable _sch;
   
   public static void main(String[] args) {
     try {
-      FlowServer s= new FlowServer().start();
+      FlowServer s= new FlowServer(NulCore.apply()).start();
       Activity a, b, c,d,e,f;
       a= PTask.apply(new Work() {
         public Object exec(FlowNode cur, Job job) {
@@ -89,10 +90,10 @@ public class FlowServer implements ServerLike, ServiceHandler {
     }
   }
 
-  public FlowServer() {
-    _mock=new MockEmitter(this);
+  public FlowServer(final Schedulable s) {
+    _mock=new NulEmitter(this);
     _jctor= new JobCreator(this);
-    _sch= new FlowCore();
+    _sch= s;
   }
 
   @Override
@@ -101,7 +102,9 @@ public class FlowServer implements ServerLike, ServiceHandler {
   }
 
   public FlowServer start(Properties options) {
-    _sch.activate(options);
+    if (_sch instanceof Activable) {
+      ((Activable)_sch).activate(options);
+    }
     return this;
   }
 
@@ -197,9 +200,6 @@ class JobCreator {
       @Override
       public void finz() {
         FlowServer.tlog().debug("job##{} has been served.", _id);
-        if (evt instanceof NonEvent) {
-          _server.dispose();
-        }
       }
 
       @Override

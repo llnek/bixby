@@ -20,7 +20,7 @@
         [czlabclj.xlib.util.core :only [test-cond MakeMMap]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.str :only [MakeString]]
-        [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
+        [czlabclj.xlib.util.scheduler :only [NulScheduler]]
         [czlabclj.xlib.util.files :only [DirRead?]]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.etc.cmd1])
@@ -160,7 +160,7 @@
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (-> ^ServiceHandler
-        (FlowServer {:mock true :error (fn [_] (Usage)) })
+        (FlowServer (NulScheduler) {:error (fn [_] (Usage)) })
         (.handle a {:home home
                     :rcb rcb
                     JS_LAST args}))

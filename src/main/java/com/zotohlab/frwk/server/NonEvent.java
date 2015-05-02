@@ -19,7 +19,7 @@ public class NonEvent implements Event {
 
   private Emitter _emit;
   
-  public NonEvent(Emitter em) {
+  public NonEvent(NulEmitter em) {
     _emit=em;
   }
   

@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.scheduler
-         :only [MockScheduler MakeScheduler]]
+         :only [NulScheduler MakeScheduler]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core
          :only [MubleAPI MakeMMap NextLong]])
@@ -27,11 +27,11 @@
              ChoiceExpr Job
              PTask Work]
             [com.zotohlab.frwk.server Event ServerLike
-             NonEvent MockEmitter
+             NonEvent NulEmitter
              ServiceHandler]
             [com.zotohlab.frwk.util Schedulable]
             [com.zotohlab.server WorkFlow WorkHandler]
-            [com.zotohlab.frwk.core Disposable]
+            [com.zotohlab.frwk.core Activable Disposable]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -42,7 +42,7 @@
 (defn MakeJob ""
 
   (^Job [^ServerLike parObj]
-        (MakeJob parObj (NonEvent. (MockEmitter. parObj))))
+        (MakeJob parObj (NonEvent. (NulEmitter. parObj))))
 
   (^Job [^ServerLike parObj
          ^Event evt]
@@ -64,12 +64,8 @@
         (setLastResult [this v] (.setf! this JS_LAST v))
         (getLastResult [this] (.getf this JS_LAST))
         (clrLastResult [this] (.clrf! this JS_LAST))
-        (finz [_]
+        (finz [_] )
           ;;(log/debug "Job##" jid " has been served.")
-          (when (and (instance? NonEvent evt)
-                     (instance? Disposable parObj))
-            (-> ^Disposable parObj
-                (.dispose))))
         (setv [this k v] (.setf! this k v))
         (unsetv [this k] (.clrf! this k))
         (getv [this k] (.getf this k))
@@ -180,15 +176,12 @@
 (defn FlowServer ""
 
   ^ServerLike
-  [options]
+  [^Schedulable cpu options]
 
   (let [options (or options {})
-        cpu (if (:mock options)
-              (MockScheduler)
-              (MakeScheduler))
         errorHandler (:error options)
         svcHandler (:service options) ]
-    (-> ^czlabclj.xlib.util.scheduler.CoreAPI
+    (-> ^Activable
         cpu
         (.activate { :threads 1, :trace false }))
     (reify

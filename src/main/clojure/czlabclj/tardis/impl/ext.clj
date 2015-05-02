@@ -654,9 +654,7 @@
   [^czlabclj.tardis.core.sys.Element co]
 
   (log/info "Initializing container: " (.id ^Component co))
-  (let [^czlabclj.xlib.util.scheduler.CoreAPI
-        sc (MakeScheduler co)
-        ^Properties mf (.getAttr co K_MFPROPS)
+  (let [^Properties mf (.getAttr co K_MFPROPS)
         mCZ (strim (.get mf "Main-Class"))
         ^File appDir (.getAttr co K_APPDIR)
         env (.getAttr co K_ENVCONF)
@@ -688,7 +686,7 @@
                                                           appDir env app))
                                     (transient {})
                                     (seq (:plugins app))) ))
-    (.setAttr! co K_SCHEDULER sc)
+    (.setAttr! co K_SCHEDULER (MakeScheduler co))
     (.setAttr! co K_EBUS bus)
 
     ;; build the user data-models or create a default one.

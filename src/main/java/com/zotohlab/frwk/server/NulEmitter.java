@@ -18,12 +18,12 @@ import java.util.Map;
  * @author kenl
  *
  */
-public class MockEmitter implements Emitter{
+public class NulEmitter implements Emitter{
 
   private static final Map<String,?> _cfg = new HashMap<>();
   private ServerLike _server;
   
-  public MockEmitter(ServerLike s) {
+  public NulEmitter(ServerLike s) {
     _server=s;
   }
   

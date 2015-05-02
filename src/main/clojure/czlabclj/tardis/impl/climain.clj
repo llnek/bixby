@@ -29,7 +29,7 @@
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile]]
-        [czlabclj.xlib.util.scheduler :only [MockScheduler]]
+        [czlabclj.xlib.util.scheduler :only [NulScheduler]]
         [czlabclj.xlib.util.core
          :only
          [test-nonil test-cond ConvLong
@@ -45,7 +45,7 @@
             [com.zotohlab.skaro.loaders AppClassLoader
              RootClassLoader ExecClassLoader]
             [com.zotohlab.frwk.core Versioned Identifiable
-             Disposable
+             Disposable Activable
              Hierarchial Startable]
             [com.zotohlab.frwk.util Schedulable IWin32Conf]
             [com.zotohlab.frwk.i18n I18N]
@@ -136,9 +136,9 @@
   ^ServerLike
   [^File home]
 
-  (let [cpu (MockScheduler)
+  (let [cpu (NulScheduler)
         impl (MakeMMap)]
-    (-> ^czlabclj.xlib.util.scheduler.CoreAPI
+    (-> ^Activable
         cpu
         (.activate { :threads 1 }))
     (reify

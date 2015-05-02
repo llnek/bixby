@@ -17,6 +17,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.zotohlab.frwk.core.Activable;
 import com.zotohlab.frwk.core.Identifiable;
 import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.Schedulable;
@@ -28,7 +29,7 @@ import com.zotohlab.frwk.util.TCore;
  *
  */
 @SuppressWarnings({ "rawtypes", "unchecked"})
-public class FlowCore implements Schedulable {
+public class FlowCore implements Schedulable, Activable {
 
   private Timer _timer;
   private Map _holdQ;
@@ -36,13 +37,17 @@ public class FlowCore implements Schedulable {
   private TCore _core;
   private String _id;
   
-  public FlowCore() {
+  public static FlowCore apply() { return new FlowCore(); }
+  
+  private FlowCore() {
     _id= "FlowScheduler#" + CoreUtils.nextSeqInt();
   }
   
-  public void activate(Properties options) {
-    boolean b = (boolean) options.getOrDefault("trace", true);
-    int t = (int) options.getOrDefault("threads", 1);    
+  public void activate(Object options) {
+    assert(options instanceof Properties);
+    Properties props= (Properties) options;
+    boolean b = (boolean) props.getOrDefault("trace", true);
+    int t = (int) props.getOrDefault("threads", 1);    
     _core = new TCore(_id, t,b);
     _timer= new Timer (_id, true);
     _holdQ= new ConcurrentHashMap();
@@ -127,6 +132,7 @@ public class FlowCore implements Schedulable {
 
   @Override
   public void dispose() {
+    deactivate();
     _core.dispose();
   }
 
