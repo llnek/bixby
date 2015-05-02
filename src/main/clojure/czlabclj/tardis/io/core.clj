@@ -24,6 +24,7 @@
         [czlabclj.tardis.core.sys])
 
   (:import  [com.zotohlab.frwk.server Component
+             Emitter
              ServiceHandler Service]
             [java.util.concurrent ConcurrentHashMap]
             [com.zotohlab.frwk.core Versioned Hierarchial
@@ -31,7 +32,6 @@
             [com.zotohlab.skaro.core Container]
             [com.zotohlab.wflow Job Nihil Activity]
             [com.google.gson JsonObject JsonArray]
-            [com.zotohlab.skaro.io Emitter]
             [com.zotohlab.server WorkHandler WorkFlow]
             [java.util Map]))
 

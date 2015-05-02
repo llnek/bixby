@@ -43,9 +43,9 @@
             [javax.servlet.http Cookie HttpServletRequest]
             [java.net HttpCookie]
             [com.google.gson JsonObject]
-            [org.eclipse.jetty.continuation Continuation 
+            [org.eclipse.jetty.continuation Continuation
              ContinuationSupport]
-            [com.zotohlab.frwk.server Component]
+            [com.zotohlab.frwk.server Component Emitter]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable Disposable Startable]
@@ -57,11 +57,11 @@
             [org.eclipse.jetty.util.ssl SslContextFactory]
             [org.eclipse.jetty.util.thread QueuedThreadPool]
             [org.eclipse.jetty.util.resource Resource]
-            [org.eclipse.jetty.server.handler AbstractHandler 
+            [org.eclipse.jetty.server.handler AbstractHandler
              ContextHandler
              ContextHandlerCollection
              ResourceHandler]
-            [com.zotohlab.skaro.io IOSession ServletEmitter Emitter]
+            [com.zotohlab.skaro.io IOSession ServletEmitter]
             [org.eclipse.jetty.webapp WebAppContext]
             [javax.servlet.http HttpServletRequest HttpServletResponse]
             [com.zotohlab.skaro.io WebSockResult

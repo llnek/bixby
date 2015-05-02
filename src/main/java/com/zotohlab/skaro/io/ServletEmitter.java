@@ -14,6 +14,8 @@ package com.zotohlab.skaro.io;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.zotohlab.frwk.server.Emitter;
+
 /**
  * @author kenl
  *

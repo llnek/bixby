@@ -9,20 +9,35 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.skaro.io;
+package com.zotohlab.frwk.server;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import com.zotohlab.skaro.core.Container;
 
 /**
  * @author kenl
  *
  */
-public interface Emitter {
+public class MockEmitter implements Emitter{
 
-  public Map<String,?> getConfig();
-  public Container container();
+  private static final Map<String,?> _cfg = new HashMap<>();
+  private ServerLike _server;
+  
+  public MockEmitter(ServerLike s) {
+    _server=s;
+  }
+  
+  @Override
+  public Map<String, ?> getConfig() {
+    return _cfg;
+  }
+
+  @Override
+  public ServerLike container() {
+    return _server;
+  }
+
+  
 
 }
 

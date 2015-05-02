@@ -85,10 +85,10 @@
              Morphable
              Startable Disposable Identifiable]
             [com.zotohlab.frwk.server ComponentRegistry
-             EventBus Service
+             EventBus Service Emitter
              Component ServiceHandler ServiceError]
             [com.zotohlab.skaro.core Container ConfigError]
-            [com.zotohlab.skaro.io Emitter IOEvent]
+            [com.zotohlab.skaro.io IOEvent]
             [com.zotohlab.frwk.util Schedulable CoreUtils]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.server WorkHandler WorkFlow]
@@ -118,7 +118,8 @@
   ^String
   [^IOEvent evt]
 
-  (-> ^Emitter (.emitter evt) (.container) (.getAppKey)))
+  (-> ^Container (.container (.emitter evt))
+      (.getAppKey)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

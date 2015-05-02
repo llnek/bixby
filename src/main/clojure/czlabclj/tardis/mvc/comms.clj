@@ -31,14 +31,16 @@
         [czlabclj.xlib.util.str :only [hgl? nsb strim]]
         [czlabclj.xlib.util.meta :only [MakeObj]])
 
-  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult Emitter]
+  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.skaro.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
+            [com.zotohlab.frwk.server Emitter]
             [com.zotohlab.wflow FlowNode Activity
              PTask Work]
             [com.zotohlab.wflow Job]
             [com.zotohlab.skaro.runtime AuthError]
+            [com.zotohlab.skaro.core Container]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
             [com.zotohlab.server WorkHandler]
@@ -174,7 +176,9 @@
 
   [^Emitter src ^HTTPEvent evt options]
 
-  (let [^File appDir (-> src (.container)(.getAppDir))
+  (let [^File appDir (-> ^Container
+                         (.container src)
+                         (.getAppDir))
         ps (NiceFPath (File. appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
         cfg (.getAttr ^czlabclj.tardis.core.sys.Element
@@ -200,7 +204,7 @@
 
   [^Emitter src code]
 
-  (let [ctr (.container src)
+  (let [^Container ctr (.container src)
         appDir (.getAppDir ctr) ]
     (GetLocalFile appDir (str "pages/errors/" code ".html"))
   ))
@@ -260,7 +264,9 @@
         (var-set ok false)
         (ServeError src ch 403)))
     (when @ok
-      (let [^File appDir (-> src (.container)(.getAppDir))
+      (let [^File appDir (-> ^Container
+                             (.container src)
+                             (.getAppDir))
             ps (NiceFPath (File. appDir DN_PUBLIC))
             mpt (nsb (.getf ri :mountPoint))
             gc (.groupCount mc)]

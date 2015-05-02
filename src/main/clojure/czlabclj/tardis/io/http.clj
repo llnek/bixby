@@ -40,7 +40,7 @@
             [javax.servlet.http Cookie HttpServletRequest]
             [java.net HttpCookie]
             [com.google.gson JsonObject JsonArray]
-            [com.zotohlab.frwk.server Component]
+            [com.zotohlab.frwk.server Emitter Component]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable
@@ -48,7 +48,7 @@
             [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.skaro.io IOSession
-             ServletEmitter Emitter]
+             ServletEmitter]
             [javax.servlet.http HttpServletRequest
              HttpServletResponse]
             [com.zotohlab.skaro.io WebSockResult

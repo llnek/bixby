@@ -15,9 +15,13 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
-public class StartEvent implements Event<Object> {
+public class StartEvent implements Event {
 
-  public StartEvent() {}
+  private Emitter _emit;
+  
+  public StartEvent(Emitter em) {
+    _emit=em;
+  }
   
   @Override
   public Object getId() {
@@ -25,8 +29,8 @@ public class StartEvent implements Event<Object> {
   }
 
   @Override
-  public Object emitter() {
-    return null;
+  public Emitter emitter() {
+    return _emit;
   }
 
 }

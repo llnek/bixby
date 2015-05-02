@@ -15,9 +15,13 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
-public class EndEvent implements Event<Object> {
+public class EndEvent implements Event {
 
-  public EndEvent() {}
+  private Emitter _emit;
+  
+  public EndEvent(Emitter em) {
+    _emit=em;
+  }
   
   @Override
   public Object getId() {
@@ -25,8 +29,8 @@ public class EndEvent implements Event<Object> {
   }
 
   @Override
-  public Object emitter() {
-    return null;
+  public Emitter emitter() {
+    return _emit;
   }
 
 }

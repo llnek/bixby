@@ -32,7 +32,7 @@ public interface Job extends Gettable , Settable, Identifiable {
   
   public void finz();
   
-  public Event<?> event() ;
+  public Event event() ;
 
 }
 

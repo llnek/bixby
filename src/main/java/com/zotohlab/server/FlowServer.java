@@ -22,6 +22,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 
 import com.zotohlab.frwk.server.Event;
+import com.zotohlab.frwk.server.MockEmitter;
 import com.zotohlab.frwk.server.NonEvent;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
@@ -45,9 +46,10 @@ public class FlowServer implements ServerLike, ServiceHandler {
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
+  protected MockEmitter _mock;
   private JobCreator _jctor;
   private FlowCore _sch;
-
+  
   public static void main(String[] args) {
     try {
       FlowServer s= new FlowServer().start();
@@ -88,6 +90,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
   }
 
   public FlowServer() {
+    _mock=new MockEmitter(this);
     _jctor= new JobCreator(this);
     _sch= new FlowCore();
   }
@@ -132,6 +135,10 @@ public class FlowServer implements ServerLike, ServiceHandler {
       a= w.startWith();
     }
     else
+    if (work instanceof Work) {
+      a= new PTask((Work)work);
+    }
+    else
     if (work instanceof Activity) {
       a= (Activity) work;
     }
@@ -140,7 +147,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
       throw new FlowError("no valid activity to handle.");
     }
 
-    FlowNode end= Nihil.apply().reify( _jctor.newJob(null));
+    FlowNode end= Nihil.apply().reify( _jctor.newJob());
     core().run( a.reify(end));
     return null;
   }
@@ -159,7 +166,11 @@ class JobCreator {
     _server=s;
   }
 
-  public Job newJob(final Event<?> evt) {
+  public Job newJob() {
+    return newJob(new NonEvent(_server._mock));
+  }
+  
+  public Job newJob(final Event evt) {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
       private long _id= CoreUtils.nextSeqLong();
@@ -197,7 +208,7 @@ class JobCreator {
       }
 
       @Override
-      public Event<?> event() {
+      public Event event() {
         return evt;
       }
 

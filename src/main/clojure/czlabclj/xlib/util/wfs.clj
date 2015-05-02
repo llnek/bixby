@@ -27,7 +27,7 @@
              ChoiceExpr Job
              PTask Work]
             [com.zotohlab.frwk.server Event ServerLike
-             NonEvent
+             NonEvent MockEmitter
              ServiceHandler]
             [com.zotohlab.frwk.util Schedulable]
             [com.zotohlab.server WorkFlow WorkHandler]
@@ -37,13 +37,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private NON_EVENT (NonEvent.))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeJob ""
 
-  (^Job [parObj] (MakeJob parObj NON_EVENT))
+  (^Job [^ServerLike parObj]
+        (MakeJob parObj (NonEvent. (MockEmitter. parObj))))
 
   (^Job [^ServerLike parObj
          ^Event evt]

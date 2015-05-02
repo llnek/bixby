@@ -9,21 +9,23 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.skaro.io;
+package com.zotohlab.frwk.server;
 
-import com.zotohlab.frwk.server.Event;
+import java.util.Map;
 
 /**
  * @author kenl
+ *
  */
-public interface IOEvent extends Event {
+public interface Emitter {
 
-  public void bindSession(IOSession s);
-
-  public IOSession getSession();
-
-  public boolean checkAuthenticity();
+  public Map<String,?> getConfig();
+  public ServerLike container();
 
 }
+
+
+
+
 
 

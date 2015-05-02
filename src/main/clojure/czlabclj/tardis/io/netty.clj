@@ -36,7 +36,8 @@
             [java.net SocketAddress InetAddress]
             [java.util ArrayList List HashMap Map]
             [com.google.gson JsonObject]
-            [com.zotohlab.skaro.io Emitter HTTPEvent HTTPResult
+            [com.zotohlab.frwk.server Emitter]
+            [com.zotohlab.skaro.io HTTPEvent HTTPResult
              IOSession
              WebSockEvent WebSockResult]
             [javax.net.ssl SSLContext]

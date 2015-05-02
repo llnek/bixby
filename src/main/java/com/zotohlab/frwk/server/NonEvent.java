@@ -15,9 +15,13 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
-public class NonEvent implements Event<Object> {
+public class NonEvent implements Event {
 
-  public NonEvent() {}
+  private Emitter _emit;
+  
+  public NonEvent(Emitter em) {
+    _emit=em;
+  }
   
   @Override
   public Object getId() {
@@ -25,8 +29,8 @@ public class NonEvent implements Event<Object> {
   }
 
   @Override
-  public Object emitter() {
-    return null;
+  public Emitter emitter() {
+    return _emit;
   }
 
 }

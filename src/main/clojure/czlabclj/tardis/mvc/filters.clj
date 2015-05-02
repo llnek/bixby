@@ -38,10 +38,11 @@
             [io.netty.util ReferenceCountUtil]
             [java.util Date]
             [java.io File]
+            [com.zotohlab.frwk.server Emitter]
             [com.zotohlab.frwk.io XData]
             [com.google.gson JsonObject]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.skaro.io HTTPEvent Emitter]
+            [com.zotohlab.skaro.io HTTPEvent]
             [com.zotohlab.skaro.mvc HTTPErrorHandler
              MVCUtils WebAsset WebContent]
             [io.netty.handler.codec.http HttpRequest
