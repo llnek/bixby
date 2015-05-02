@@ -106,7 +106,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeScheduler "Make a Scheduler."
+(defn- mkSCD "Make a Scheduler."
 
   ^Schedulable
   [^String named]
@@ -191,6 +191,13 @@
       { :typeid (keyword "czc.frwk.util/Scheduler") }
 
   )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeScheduler "Make a Scheduler."
+
+  (^Schedulable [] (MakeScheduler ""))
+  (^Schedulable [^String named] (mkSCD named)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

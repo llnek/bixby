@@ -82,7 +82,7 @@
             [com.zotohlab.skaro.runtime AppMain]
             [com.zotohlab.skaro.etc PluginFactory Plugin]
             [com.zotohlab.frwk.core Versioned Hierarchial
-             Morphable
+             Morphable Activable
              Startable Disposable Identifiable]
             [com.zotohlab.frwk.server ComponentRegistry
              EventBus Service Emitter
@@ -653,90 +653,93 @@
 
   [^czlabclj.tardis.core.sys.Element co]
 
-  (log/info "Initializing container: " (.id ^Component co))
-  (let [^Properties mf (.getAttr co K_MFPROPS)
-        mCZ (strim (.get mf "Main-Class"))
-        ^File appDir (.getAttr co K_APPDIR)
-        env (.getAttr co K_ENVCONF)
-        app (.getAttr co K_APPCONF)
-        dmCZ (nsb (:data-model app))
-        reg (.getAttr co K_SVCS)
-        bus (makeEventBus co)
-        cfg (:container env) ]
-    (let [cn (lcase (or (K_COUNTRY (K_LOCALE env)) ""))
-          lg (lcase (or (K_LANG (K_LOCALE env)) "en"))
-          loc (if (hgl? cn)
-                  (Locale. lg cn)
-                  (Locale. lg))
-          res (File. appDir (str "i18n/Resources_"
-                                 (.toString loc) ".properties"))]
-      (when (FileRead? res)
-        (when-let [rb (LoadResource res)]
-          (I18N/setBundle (.id ^Identifiable co) rb))))
+  (let [pid (.id ^Component co)]
+    (log/info "Initializing container: " pid)
+    (let [^Properties mf (.getAttr co K_MFPROPS)
+          cpu (MakeScheduler (nsb pid))
+          mCZ (strim (.get mf "Main-Class"))
+          ^File appDir (.getAttr co K_APPDIR)
+          env (.getAttr co K_ENVCONF)
+          app (.getAttr co K_APPCONF)
+          dmCZ (nsb (:data-model app))
+          reg (.getAttr co K_SVCS)
+          bus (makeEventBus co)
+          cfg (:container env) ]
+      (let [cn (lcase (or (K_COUNTRY (K_LOCALE env)) ""))
+            lg (lcase (or (K_LANG (K_LOCALE env)) "en"))
+            loc (if (hgl? cn)
+                    (Locale. lg cn)
+                    (Locale. lg))
+            res (File. appDir (str "i18n/Resources_"
+                                   (.toString loc) ".properties"))]
+        (when (FileRead? res)
+          (when-let [rb (LoadResource res)]
+            (I18N/setBundle (.id ^Identifiable co) rb))))
 
-    (.setAttr! co K_DBPS (maybeInitDBs co env app))
-    (log/debug "DB [dbpools]\n" (.getAttr co K_DBPS))
+      (.setAttr! co K_DBPS (maybeInitDBs co env app))
+      (log/debug "DB [dbpools]\n" (.getAttr co K_DBPS))
 
-    ;; handle the plugins
-    (.setAttr! co K_PLUGINS
-               (persistent! (reduce #(assoc! %1
-                                             (keyword (first %2))
-                                             (doOnePlugin co
-                                                          (last %2)
-                                                          appDir env app))
-                                    (transient {})
-                                    (seq (:plugins app))) ))
-    (.setAttr! co K_SCHEDULER (MakeScheduler co))
-    (.setAttr! co K_EBUS bus)
+      ;; handle the plugins
+      (.setAttr! co K_PLUGINS
+                 (persistent! (reduce #(assoc! %1
+                                               (keyword (first %2))
+                                               (doOnePlugin co
+                                                            (last %2)
+                                                            appDir env app))
+                                      (transient {})
+                                      (seq (:plugins app))) ))
 
-    ;; build the user data-models or create a default one.
-    (log/info "Application data-model schema-class: " dmCZ)
-    (.setAttr! co
-               K_MCACHE
-               (MakeMetaCache (if (hgl? dmCZ)
-                                (let [sc (MakeObj dmCZ) ]
-                                  (when-not (instance? Schema sc)
-                                    (throw (ConfigError. (str "Invalid Schema Class "
-                                                              dmCZ))))
-                                  sc)
-                                (MakeSchema [])) ))
+      (.setAttr! co K_SCHEDULER cpu)
+      (.setAttr! co K_EBUS bus)
 
-    (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
-    ;;(test-nestr "Main-Class" mCZ)
+      ;; build the user data-models or create a default one.
+      (log/info "Application data-model schema-class: " dmCZ)
+      (.setAttr! co
+                 K_MCACHE
+                 (MakeMetaCache (if (hgl? dmCZ)
+                                  (let [sc (MakeObj dmCZ) ]
+                                    (when-not (instance? Schema sc)
+                                      (throw (ConfigError. (str "Invalid Schema Class "
+                                                                dmCZ))))
+                                    sc)
+                                  (MakeSchema [])) ))
 
-    (let [obj (if (hgl? mCZ)
-                (MakeObj mCZ)
-                (mkDftAppMain))]
-      (cond
-        (satisfies? CljAppMain obj)
-        (doCljApp co app obj)
-        (instance? AppMain obj)
-        (doJavaApp co obj)
-        :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
-      (.setAttr! co :main-app obj)
-      (log/info "Application main-class " (if (hgl? mCZ) mCZ "???") " created and invoked"))
+      (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
+      ;;(test-nestr "Main-Class" mCZ)
 
-    (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
-          rf (File. appDir (str DN_CONF "/routes.conf")) ]
-      (.setAttr! co :routes
-                 (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
-                              (if (.exists rf) (LoadRoutes rf) [] ))) ))
+      (let [obj (if (hgl? mCZ)
+                  (MakeObj mCZ)
+                  (mkDftAppMain))]
+        (cond
+          (satisfies? CljAppMain obj)
+          (doCljApp co app obj)
+          (instance? AppMain obj)
+          (doJavaApp co obj)
+          :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
+        (.setAttr! co :main-app obj)
+        (log/info "Application main-class " (if (hgl? mCZ) mCZ "???") " created and invoked"))
 
-    (let [svcs (:services env) ]
-      (if (empty? svcs)
-        (log/warn "No system service defined in env.conf.")
-        (.reifyServices ^czlabclj.tardis.impl.ext.ContainerAPI co)))
+      (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
+            rf (File. appDir (str DN_CONF "/routes.conf")) ]
+        (.setAttr! co :routes
+                   (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
+                                (if (.exists rf) (LoadRoutes rf) [] ))) ))
 
-    ;; start the scheduler
-    (.activate sc cfg)
+      (let [svcs (:services env) ]
+        (if (empty? svcs)
+          (log/warn "No system service defined in env.conf.")
+          (.reifyServices ^czlabclj.tardis.impl.ext.ContainerAPI co)))
 
-    (log/info "Initialized app: " (.id ^Identifiable co))
-    (log/info "Container app class-loader: "
-              (-> (Thread/currentThread)
-                  (.getContextClassLoader)
-                  (.getClass)
-                  (.getName)))
-  ))
+      ;; start the scheduler
+      (.activate ^Activable cpu cfg)
+
+      (log/info "Initialized app: " (.id ^Identifiable co))
+      (log/info "Container app class-loader: "
+                (-> (Thread/currentThread)
+                    (.getContextClassLoader)
+                    (.getClass)
+                    (.getName)))
+    )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

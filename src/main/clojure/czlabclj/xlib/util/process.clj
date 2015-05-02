@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [Try!]]
+  (:use [czlabclj.xlib.util.core :only [Try! TryC]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
         [czlabclj.xlib.util.str :only [nsb hgl?]])
 
@@ -82,7 +82,7 @@
   ([func options]
    (let [r (reify Runnable
              (run [_]
-               (Try! (when (fn? func) (func)))
+               (TryC (when (fn? func) (func)))
                (log/debug "Coroutine thread#"
                           (-> (Thread/currentThread)
                               (.getName))
