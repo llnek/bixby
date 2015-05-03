@@ -24,8 +24,8 @@ class Group extends Composite {
   }
 
   public Group(String name, Activity a) {
-    this(name);
-    add(a);
+    super(name);
+    if (a != null) { add(a); }
   }
 
   public Group(Activity a) {
@@ -33,7 +33,7 @@ class Group extends Composite {
   }
 
   public Group(String name) {
-    super(name);
+    this(name, null);
   }
 
   public Group() {
@@ -60,7 +60,7 @@ class Group extends Composite {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */

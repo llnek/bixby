@@ -21,7 +21,7 @@ import com.zotohlab.frwk.core.Named;
 
 /**
  * An Activity is a definition of work - a task to be done.
- * At runtime, it has to be reified - make alive.  This process
+ * At runtime, it has to be reified.  This process
  * turns an Activity into a Step in the Workflow.
  *
  * @author kenl
@@ -56,18 +56,18 @@ public abstract class Activity implements Named {
   }
 
   /**
-   * Instantiate a *live* version of this work unit as it becomes
+   * Instantiate a *runtime* version of this work unit as it becomes
    * part of the Workflow.
    *
    * @param cur current step.
-   * @return a *live* version of this Activity.
+   * @return a *runtime* version of this Activity.
    */
   public FlowNode reify(FlowNode cur) {
     FlowNode n= reifyNode(cur);
     n.realize();
     return n;
   }
-  
+
   public FlowNode reify(Job j) throws Exception {
     throw new IllegalAccessException("Should not be called");
   }

@@ -19,7 +19,7 @@ import java.util.Iterator;
  * @author kenl
  *
  */
-public abstract class Composite extends Activity {
+abstract class Composite extends Activity {
 
   private List<Activity> _innards= new ArrayList<>();
 
@@ -31,11 +31,8 @@ public abstract class Composite extends Activity {
 
   protected Composite() {}
 
-  protected void onAdd(Activity a) {}
-
   protected void add(Activity a) {
     _innards.add(a);
-    onAdd(a);
   }
 
   public Iterator<Activity> listChildren() {
@@ -51,7 +48,7 @@ public abstract class Composite extends Activity {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
@@ -65,16 +62,20 @@ abstract class CompositeNode extends FlowNode {
     _inner=new Innards(this,c);
   }
 
+  public void reifyInner() {
+    _inner=new Innards(this);
+  }
+
   public Innards inner() { return _inner; }
   protected void setInner(Innards n) {
     _inner=n;
   }
-  
+
   private Innards _inner = null;
 }
 
 /**
- * 
+ *
  * @author kenl
  *
  */
@@ -100,7 +101,7 @@ class Innards {
     return _acts.size() > 0
       ? _acts.remove(0).reify(_outer)
     :
-      null;    
+      null;
   }
 
   public int size() { return _acts.size(); }
