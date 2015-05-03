@@ -96,8 +96,8 @@
 ;;
 (defn- maybeMacIt ""
 
-  [^HTTPEvent evt
-   ^Container ctr ^String data]
+  [^HTTPEvent evt ^String data
+   ^Container ctr]
 
   (if (.checkAuthenticity evt)
     (str (GenMac (.getAppKeyBits ctr) data) "-" data)
@@ -120,9 +120,9 @@
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
                                          (:maxIdleSecs cfg))
-            du1 (if (.isNew? mvs)
+            du1 (when (.isNew? mvs)
                   (resetFlags mvs (:sessionAgeSecs cfg)))
-            data (maybeMacIt evt ctr (nsb mvs))
+            data (maybeMacIt evt (nsb mvs) ctr)
             now (System/currentTimeMillis)
             est (.getExpiryTime mvs)
             ck (HttpCookie. SESSION_COOKIE data) ]
@@ -139,8 +139,8 @@
 ;;
 (defn- maybeValidateCookie  ""
 
-  [^HTTPEvent evt ^Container ctr
-   ^String part1 ^String part2 ]
+  [^HTTPEvent evt ^String part1 ^String part2
+   ^Container ctr]
 
   (when-let [pkey (if (.checkAuthenticity evt)
                     (.getAppKeyBits ctr)
@@ -173,10 +173,10 @@
                         ["" cookie]
                         [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
-        (maybeValidateCookie evt (.container netty) rc1 rc2)
+        (maybeValidateCookie evt rc1 rc2 (.container netty))
         (log/debug "Session attributes = " rc2)
         (try
-          (doseq [^String nv (seq (.split ^String rc2 NV_SEP)) ]
+          (doseq [^String nv (.split ^String rc2 NV_SEP) ]
             (let [ss (StringUtils/split nv ":" 2)
                   ^String s1 (aget ss 0)
                   ^String s2 (aget ss 1) ]
@@ -185,7 +185,7 @@
                        (.endsWith s1 "n"))
                 (.setAttribute mvs (keyword s1) (ConvLong s2 0))
                 (.setAttribute mvs (keyword s1) s2))))
-          (catch Throwable e#
+          (catch Throwable _
             (throw (ExpiredError. "Corrupted cookie."))))
         (.setNew! mvs false 0)
         (let [ts (or (.getAttribute mvs LS_FLAG) -1)
@@ -208,10 +208,9 @@
   ^IOSession
   [co ssl]
 
-  (let [attrs (MakeMMap)
-        impl (MakeMMap) ]
-    (.setf! impl :maxIdleSecs 0)
-    (.setf! impl :newOne true)
+  (let [impl (MakeMMap {:maxIdleSecs 0
+                        :newOne true})
+        attrs (MakeMMap)]
     (with-meta
       (reify WebSS
 

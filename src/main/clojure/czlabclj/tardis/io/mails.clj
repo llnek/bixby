@@ -77,18 +77,20 @@
         session (Session/getInstance props nil)
         ps (.getProviders session) ]
     (with-local-vars [proto sn sun nil]
-      (var-set sun (some #(if (= pkey (.getClassName ^Provider %))
-                             %
-                             nil)
-                         (seq ps)))
-      (when (nil? @sun)
-        (ThrowIOE (str "Failed to find store: " pkey) ))
-      (when (hgl? demo)
-        (var-set sun (Provider. Provider$Type/STORE
-                                mock demo "test" "1.0.0"))
-        (log/debug "Using demo store " mock " !!!")
-        (var-set proto mock) )
-
+      (if (hgl? demo)
+        (do
+          (var-set sun (Provider. Provider$Type/STORE
+                                  mock demo "test" "1.0.0"))
+          (log/debug "Using demo store " mock " !!!")
+          (var-set proto mock))
+        (do
+          (var-set sun (some #(if (= pkey (.getClassName ^Provider %))
+                                 %
+                                 nil)
+                             (seq ps)))
+          (when (nil? @sun)
+            (ThrowIOE (str "Failed to find store: " pkey) ))
+          ))
       (.setProvider session @sun)
       (.setAttr! co :proto @proto)
       (.setAttr! co :session session))

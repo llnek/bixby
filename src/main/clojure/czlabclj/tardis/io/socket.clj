@@ -118,8 +118,7 @@
   [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: SocketIO: " (.id ^Identifiable co))
-  (let [^ServerSocket ssoc (.getAttr co :ssocket)
-        cl (GetCldr) ]
+  (let [^ServerSocket ssoc (.getAttr co :ssocket)]
     (when-not (nil? ssoc)
       (Coroutine #(while (.isBound ssoc)
                     (try
@@ -128,7 +127,7 @@
                         (log/warn e# "")
                         (IOUtils/closeQuietly ssoc)
                         (.setAttr! co :ssocket nil))))
-                 cl))
+                 (GetCldr)))
     (IOESStarted co)
   ))
 

@@ -175,10 +175,10 @@
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
     (with-local-vars [clen 0 raf nil payload nil]
-      (doseq [[^String nm vs] (seq hdrs)]
+      (doseq [[nm vs] (seq hdrs)]
         (when-not (= "content-length" (lcase nm))
-          (doseq [^String vv (seq vs)]
-            (HttpHeaders/addHeader rsp nm vv))))
+          (doseq [vv (seq vs)]
+            (HttpHeaders/addHeader rsp ^String nm ^String vv))))
       (doseq [s cks]
         (HttpHeaders/addHeader rsp
                                HttpHeaders$Names/SET_COOKIE s) )
@@ -267,7 +267,7 @@
       (let [rsp (NettyFW/makeHttpReply 500) ]
         (try
           (maybeClose evt (.writeAndFlush ch rsp))
-          (catch ClosedChannelException e#
+          (catch ClosedChannelException _
             (log/warn "ClosedChannelException thrown while flushing headers"))
           (catch Throwable t# (log/error t# "") )) ))
   ))
@@ -595,10 +595,9 @@
   [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop NettyIO: " (.id ^Identifiable co))
-  (let [nes (.getAttr co :netty)
-        ^ServerBootstrap bs (:bootstrap nes)
-        ^Channel ch (:channel nes) ]
-    (StopServer  bs ch)
+  (let [{:keys [bootstrap channel]}
+        (.getAttr co :netty) ]
+    (StopServer  bootstrap channel)
     (IOESStopped co)
   ))
 
