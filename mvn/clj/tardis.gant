@@ -139,7 +139,7 @@ def clj_Auth() {
     arg (value: 'czlabclj.tardis.auth.model')
     arg (value: 'czlabclj.tardis.auth.realm')
     arg (value: 'czlabclj.tardis.auth.shiro')
-    arg (value: 'czlabclj.tardis.auth.plugin')
+    arg (value: 'czlabclj.tardis.auth.plug')
   }
 }
 

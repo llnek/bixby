@@ -60,7 +60,8 @@
 
   [^HTTPEvent evt]
 
-  (let [data (when (.hasData evt) (.content (.data evt)))]
+  (when-let [data (when (.hasData evt)
+                    (.content (.data evt)))]
     (cond
       (instance? ULFormItems data)
       (with-local-vars [rc (transient {})]
@@ -85,7 +86,7 @@
     (when-let [json (ReadJson (if (.hasContent xs)
                                 (.stringify xs)
                                 "{}")
-                              :key-fn #(lcase %)) ]
+                              #(lcase %)) ]
       (with-local-vars [rc (transient {})]
         (doseq [[k v] (seq PMS)]
           (when-let [fv (get json k) ]

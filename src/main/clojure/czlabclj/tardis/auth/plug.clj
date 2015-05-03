@@ -12,7 +12,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.auth.plugin
+  czlabclj.tardis.auth.plug
 
   (:require [clojure.tools.logging :as log])
 
@@ -62,7 +62,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol AuthPlugin
+(defprotocol AuthPlug
 
   "A Plugin that uses Apache Shiro for authentication and authorization of
   users."
@@ -310,7 +310,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
-            ^czlabclj.tardis.auth.plugin.AuthPlugin
+            ^czlabclj.tardis.auth.plug.AuthPlug
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
             ^czlabclj.tardis.io.webss.WebSS
@@ -320,7 +320,8 @@
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e# { :e e# }))
             info (or si {})]
-        (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
+        (log/debug "Session csrf = " csrf
+                   ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
           (notnil? (:e info))
@@ -375,7 +376,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
-            ^czlabclj.tardis.auth.plugin.AuthPlugin
+            ^czlabclj.tardis.auth.plug.AuthPlug
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
             ^czlabclj.tardis.io.webss.WebSS
@@ -385,7 +386,8 @@
             si (try (GetSignupInfo evt)
                     (catch CrappyDataError e#  { :e e# }))
             info (or si {} ) ]
-        (log/debug "Session csrf = " csrf ", and form token = " (:csrf info))
+        (log/debug "Session csrf = " csrf
+                   ", and form token = " (:csrf info))
         (test-nonil "AuthPlugin" pa)
         (cond
 
@@ -444,14 +446,13 @@
       (dispose [_]
         (log/info "AuthPlugin disposed."))
 
-      AuthPlugin
+      AuthPlug
 
       (checkAction [_ acctObj action] )
 
       (addAccount [_ options]
-        (let [pkey (.getAppKey ctr)
-              sql (getSQLr ctr) ]
-          (CreateLoginAccount sql
+        (let [pkey (.getAppKey ctr)]
+          (CreateLoginAccount (getSQLr ctr)
                               (:principal options)
                               (Pwdify (:credential options) pkey)
                               options
@@ -475,9 +476,8 @@
               nil))))
 
       (hasAccount [_ options]
-        (let [pkey (.getAppKey ctr)
-              sql (getSQLr ctr) ]
-          (HasLoginAccount sql
+        (let [pkey (.getAppKey ctr)]
+          (HasLoginAccount (getSQLr ctr)
                            (:principal options))))
 
       (getAccount [_ options]
@@ -503,7 +503,7 @@
   PluginFactory
 
   (createPlugin [_ ctr]
-    (require 'czlabclj.tardis.auth.plugin)
+    (require 'czlabclj.tardis.auth.plug)
     (makeAuthPlugin ctr)
   ))
 
@@ -514,12 +514,14 @@
   [& args]
 
   (let [appDir (File. ^String (nth args 0))
-        ^Properties mf (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
-        pkey (.toCharArray (.getProperty mf "Implementation-Vendor-Id"))
+        ^Properties mf
+        (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
+        pkey (-> (.getProperty mf "Implementation-Vendor-Id")
+                 (.toCharArray))
         ^String cmd (nth args 1)
         ^String db (nth args 2)
         env (ReadEdn (File. appDir CFG_ENV_CF))
-        cfg (get (:jdbc (:databases env)) (keyword db)) ]
+        cfg ((keyword db) (:jdbc (:databases env))) ]
     (when-not (nil? cfg)
       (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
             t (MatchJdbcUrl (nsb (:url cfg))) ]
@@ -553,6 +555,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private plugin-eof nil)
+(def ^:private plug-eof nil)
 
 

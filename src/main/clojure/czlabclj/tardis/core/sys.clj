@@ -70,7 +70,7 @@
 
   ""
 
-  (fn [a ctx] (:typeid (meta a))))
+  (fn [a arg] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -140,7 +140,8 @@
   ^String
   [^File appDir ^String confile]
 
-  (let [cs (ReadOneFile (File. appDir (str DN_CONF "/" confile)))
+  (let [cs (-> (File. appDir (str DN_CONF "/" confile))
+               (ReadOneFile))
         rc (StringUtils/replace cs
                                 "${appdir}"
                                 (NiceFPath appDir)) ]

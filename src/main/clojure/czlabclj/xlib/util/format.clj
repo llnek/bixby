@@ -88,10 +88,9 @@
 ;;
 (defn ReadJson ""
 
-  ^String
-  [^String data]
-
-  (js/read-str data))
+  (^String [^String data] (js/read-str data))
+  (^String [^String data keyfn]
+           (js/read-str data :key-fn keyfn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

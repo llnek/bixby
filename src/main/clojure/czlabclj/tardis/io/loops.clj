@@ -49,8 +49,7 @@
 
   (let [tt (proxy [TimerTask][] (run []
                                   (TryC (apply func []))))
-        [^Date dw ^long ds]
-        delays]
+        [^Date dw ^long ds] delays]
     (when (instance? Date dw)
       (.schedule tm tt dw intv))
     (when (number? ds)
@@ -65,8 +64,7 @@
 
   (let [tt (proxy [TimerTask][] (run []
                                   (apply func [])))
-        [^Date dw ^long ds]
-        delays]
+        [^Date dw ^long ds] delays]
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)

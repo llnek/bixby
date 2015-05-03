@@ -112,11 +112,11 @@
         dest (SubsVar (nsb (:recvFolder cfg)))
         mask (nsb (:fmask cfg))
         c2 (CfgLoopable co cfg) ]
-    (test-nestr "file-root-folder" root)
     (log/info "Monitoring folder: " root)
     (log/info "Rcv folder: " (nsn dest))
+    (test-nestr "file-root-folder" root)
     (.setAttr! co :emcfg
-    (-> c2
+      (-> c2
         (assoc :targetFolder (Mkdirs (File. root)))
         (assoc :fmask
                (cond
@@ -168,9 +168,9 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (when-let [^FileAlterationMonitor mon (.getAttr co :monitor) ]
+  (when-let [mon (.getAttr co :monitor) ]
     (log/info "FilePicker's apache io monitor starting...")
-    (.start mon)
+    (.start ^FileAlterationMonitor mon)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

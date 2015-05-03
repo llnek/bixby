@@ -1105,10 +1105,16 @@
 ;;
 (defn MakeMMap ""
 
-  ^czlabclj.xlib.util.core.Muble
-  []
+  (^czlabclj.xlib.util.core.Muble
+    [opts]
+    (let [m (MakeMMap)]
+      (doseq [[k v] (seq opts)]
+        (.setf! m k v))
+      m))
 
-  (MutableMap. {} ))
+  (^czlabclj.xlib.util.core.Muble
+    []
+    (MutableMap. {} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

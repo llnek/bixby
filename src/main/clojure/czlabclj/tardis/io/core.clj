@@ -118,7 +118,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [cfg (.getAttr co :emcfg)]
+  (when-let [cfg (.getAttr co :emcfg)]
     (log/info "Emitter config:\n" (pr-str cfg))
     (log/info "Emitter " (:typeid (meta co)) " started - OK")
   ))
@@ -168,11 +168,11 @@
   (let [pid (NextLong)]
     (reify
 
-      Disposable
-      (dispose [_] )
-
       Identifiable
       (id [_] (.id service))
+
+      Disposable
+      (dispose [_] )
 
       ServiceHandler
       (handle [_ arg options]
@@ -224,7 +224,7 @@
 
         (container [this] (.parent this))
         (getConfig [_]
-          (let [cfg (.getf impl :emcfg)]
+          (when-let [cfg (.getf impl :emcfg)]
             (ConvToJava cfg)))
 
         Disposable
@@ -234,13 +234,13 @@
         Startable
 
         (start [this]
-          (let [p (mkPipeline this true)]
+          (when-let [p (mkPipeline this true)]
             (.setf! impl :pipe p)
             (IOESStart this)))
 
         (stop [this]
-          (let [^Disposable p (.getf impl :pipe)]
-            (when-not (nil? p)(.dispose p))
+          (when-let [p (.getf impl :pipe)]
+            (.dispose ^Disposable p)
             (IOESStop this)
             (.clrf! impl :pipe)))
 
@@ -290,13 +290,14 @@
 
   [co arg]
 
-  (let [^czlabclj.tardis.core.sys.Elmt c arg ]
+  ;; arg is Container here
+  (when-let [^czlabclj.tardis.core.sys.Elmt c arg ]
     (CompCloneContext co (.getCtx c))
   ))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy.
+;;
 (derive :czc.tardis.io/HTTP :czc.tardis.io/Emitter)
 
 (derive :czc.tardis.io/JettyIO :czc.tardis.io/HTTP)

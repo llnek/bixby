@@ -117,12 +117,12 @@
         data (.getf res :data) ]
     (try
       (.setStatus rsp code)
-      (doseq [[^String nm vs] (seq hds)]
+      (doseq [[nm vs] hds]
         (when (not= "content-length"
                     (lcase nm))
-          (doseq [^String vv (seq vs) ]
-            (.addHeader rsp nm vv))))
-      (doseq [c (seq cks) ]
+          (doseq [vv vs]
+            (.addHeader rsp ^String nm ^String vv))))
+      (doseq [c cks ]
         (.addCookie rsp (cookieToServlet c)))
       (cond
         (and (>= code 300)
@@ -201,7 +201,7 @@
                 (.setKeyStorePath (-> keyfile
                                       (.toURI)
                                       (.toURL)
-                                      nsb))
+                                      (.toString )))
                 (.setKeyStorePassword pwd)
                 (.setKeyManagerPassword pwd))
         config (doto (HttpConfiguration. conf)
@@ -329,7 +329,7 @@
         rcpathStr (-> rcpath
                       (.toURI)
                       (.toURL)
-                      nsb)
+                      (.toString))
         cfg (.getAttr co :emcfg)
         cp (:contextPath cfg)
         ctxs (ContextHandlerCollection.)
@@ -406,10 +406,9 @@
   (log/debug "OPESReifyEvent: JettyIO: " (.id ^Identifiable co))
   (let [^HTTPResult result (MakeHttpResult co)
         ^HttpServletRequest req (first args)
+        impl (MakeMMap {:cookies (maybeGetCookies req)})
         ssl (= "https" (.getScheme req))
-        impl (MakeMMap)
         eid (NextLong) ]
-    (.setf! impl :cookies (maybeGetCookies req))
     (reify
 
       Identifiable
@@ -419,7 +418,7 @@
 
       (getCookies [_] (vals (.getf impl :cookies)))
       (getCookie [_ nm]
-        (let [cs (.getf impl :cookies)]
+        (when-let [cs (.getf impl :cookies)]
           (get cs nm)))
 
       (checkAuthenticity [_] false)
@@ -490,7 +489,9 @@
       (getResultObj [_] result)
       (replyResult [this]
         (let [^czlabclj.tardis.io.core.WaitEventHolder
-              wevt (.release ^czlabclj.tardis.io.core.EmitAPI co this)
+              wevt
+              (-> ^czlabclj.tardis.io.core.EmitAPI co
+                  (.release this))
               ^IOSession mvs (.getSession this)
               code (.getStatus result) ]
           (cond

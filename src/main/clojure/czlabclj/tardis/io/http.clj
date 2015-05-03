@@ -151,9 +151,8 @@
   ^WebSockResult
   [co]
 
-  (let [impl (MakeMMap) ]
-    (.setf! impl :binary false)
-    (.setf! impl :data nil)
+  (let [impl (MakeMMap {:binary false
+                        :data nil}) ]
     (reify
 
       Muble
@@ -166,6 +165,7 @@
       (clear! [_] (.clear! impl))
 
       WebSockResult
+
       (isBinary [_] (true? (.getf impl :binary)))
       (isText [this] (not (.isBinary this)))
       (getData [_] (XData. (.getf impl :data)))
@@ -180,11 +180,10 @@
   ^HTTPResult
   [co]
 
-  (let [impl (MakeMMap) ]
-    (.setf! impl :version "HTTP/1.1" )
-    (.setf! impl :cookies [])
-    (.setf! impl :code -1)
-    (.setf! impl :hds {})
+  (let [impl (MakeMMap {:version "HTTP/1.1"
+                        :cookies []
+                        :code -1
+                        :hds {} })]
     (reify
 
       Muble

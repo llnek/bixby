@@ -47,9 +47,9 @@
   [co & args]
 
   (log/info "IOESReifyEvent: JMS: " (.id ^Identifiable co))
-  (let [eeid (NextLong)
-        impl (MakeMMap)
-        msg (first args) ]
+  (let [msg (first args)
+        eeid (NextLong)
+        impl (MakeMMap)]
     (with-meta
       (reify
 
@@ -137,8 +137,8 @@
    ^TopicConnectionFactory cf]
 
   (let [cfg (.getAttr co :emcfg)
-        ^String des (:destination cfg)
-        ^String ju (:jmsUser cfg)
+        des (nsb (:destination cfg))
+        ju (nsb (:jmsUser cfg))
         jp (nsb (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createTopicConnection cf ju (if (hgl? jp) jp nil))
@@ -165,8 +165,8 @@
    ^QueueConnectionFactory cf]
 
   (let [cfg (.getAttr co :emcfg)
-        ^String des (:destination cfg)
-        ^String ju (:jmsUser cfg)
+        des (nsb (:destination cfg))
+        ju (nsb (:jmsUser cfg))
         jp (nsb (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createQueueConnection cf ju (if (hgl? jp) jp nil))
@@ -189,8 +189,8 @@
 
   (log/info "IOESStart: JMS: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
-        ^String cf (:contextFactory cfg)
-        ^String ju (:jndiUser cfg)
+        cf (nsb (:contextFactory cfg))
+        ju (nsb (:jndiUser cfg))
         jp (nsb (:jndiPwd cfg))
         pl (:providerUrl cfg)
         vars (Hashtable.) ]
@@ -207,7 +207,8 @@
         (.put vars "jndi.password" jp)))
 
     (let [ctx (InitialContext. vars)
-          obj (.lookup ctx ^String (:connFactory cfg))
+          obj (->> (nsb (:connFactory cfg))
+                   (.lookup ctx))
           c (condp instance? obj
               QueueConnectionFactory (inizQueue co ctx obj)
               TopicConnectionFactory (inizTopic co ctx obj)
