@@ -98,11 +98,16 @@ public class Split extends Composite {
     Merge m= _theMerge;
 
     if ( m != null) {
+      // note: get all *children* to come back to the join
       m.withBranches( size() );
+      FlowNode s = m.reify(p.next() );
+      p.withBranches( new Innards(s, listChildren() ) );      
     } else {
-      m = new NullJoin();
+//      m = new NullJoin();
+      p.fallThrough();
     }
 
+    /*
     FlowNode s = m.reify(p.next() );
     // note: get all *children* to come back to the join
     p.withBranches( new Innards(s, listChildren() ) );
@@ -110,42 +115,9 @@ public class Split extends Composite {
     if (m instanceof NullJoin) {
         p.fallThrough();
     }
+    */
   }
 
-
-}
-
-/**
- * @author kenl
- *
- */
-class NullJoin extends Merge {
-
-  public FlowNode reifyNode(FlowNode cur) {
-    return new NullJoinNode(cur, this);
-  }
-
-  public void realize(FlowNode cur) {}
-
-  public NullJoin() {
-    super(null);
-  }
-
-}
-
-/**
- * @author kenl
- *
- */
-class NullJoinNode extends MergeNode {
-
-  public NullJoinNode(FlowNode c, Merge a) {
-    super(c,a);
-  }
-
-  public FlowNode eval(Job j) {
-    return null;
-  }
 
 }
 

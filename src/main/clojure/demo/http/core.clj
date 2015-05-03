@@ -58,22 +58,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
-
-  (contextualize [_ c] )
-
-  (initialize [_]
-    (println "Point your browser to http://localhost:8080/test/hello"))
-
-  (configure [_ cfg] )
-
-  (start [_])
-  (stop [_])
-
-  (dispose [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def ^:private core-eof nil)
 
 

@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [notnil? MubleAPI]]
+  (:use [czlabclj.xlib.util.core :only [notnil? Muble]]
         [czlabclj.xlib.util.str :only [ToKW]]
         [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
@@ -65,7 +65,7 @@
 (defn MaybeDir ""
 
   ^File
-  [^czlabclj.xlib.util.core.MubleAPI m kn]
+  [^czlabclj.xlib.util.core.Muble m kn]
 
   (let [v (.getf m kn) ]
     (condp instance? v
@@ -113,7 +113,7 @@
     (with-meta
       (reify
 
-        Element
+        Elmt
 
         (setCtx! [_ x] (.setf! impl :ctx x))
         (getCtx [_] (.getf impl :ctx))
@@ -164,7 +164,7 @@
                                            "skaro.dup.cmp" [cid]))))
             (.setf! impl :cache (assoc cache cid c))))
 
-        Registry
+        Rego
           (seq* [_]
             (let [cache (.getf impl :cache) ]
               (seq cache))) )
@@ -186,7 +186,7 @@
     (with-meta
       (reify
 
-        Element
+        Elmt
 
         (setCtx! [_ x] (.setf! impl :ctx x))
         (getCtx [_] (.getf impl :ctx))

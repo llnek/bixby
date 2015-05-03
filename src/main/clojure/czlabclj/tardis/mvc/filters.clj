@@ -18,7 +18,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [notnil? spos? ToJavaInt MubleAPI Try! NiceFPath]]
+         [notnil? spos? ToJavaInt Muble Try! NiceFPath]]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http :only [HttpBasicConfig]]
@@ -82,7 +82,7 @@
 (defn- routeFilter ""
 
   ^ChannelHandler
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (proxy [SimpleInboundFilter] []
     (channelRead0 [c msg]
@@ -137,7 +137,7 @@
 
   ^ChannelHandler
   [^czlabclj.tardis.io.core.EmitAPI em
-   ^czlabclj.tardis.core.sys.Element co]
+   ^czlabclj.tardis.core.sys.Elmt co]
 
   (proxy [SimpleInboundFilter] []
     (channelRead0 [c msg]
@@ -191,7 +191,7 @@
 
   ^ChannelHandler
   [^czlabclj.tardis.io.core.EmitAPI em
-   ^czlabclj.tardis.core.sys.Element co
+   ^czlabclj.tardis.core.sys.Elmt co
    options]
 
   (let [handlerFn (-> (:wsock options)
@@ -246,7 +246,7 @@
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
-  [^czlabclj.tardis.core.sys.Element co options1]
+  [^czlabclj.tardis.core.sys.Elmt co options1]
 
   (let [hack {:onhttp mvcInitorOnHttp
               :onwsock mvcInitorOnWS
@@ -276,9 +276,9 @@
 ;;
 (defn- initNetty ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [^czlabclj.tardis.core.sys.Element
+  (let [^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         rts (.getAttr ctr :routes)
         options (.getAttr co :emcfg)
@@ -292,7 +292,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/NettyMVC
 
-  [^czlabclj.tardis.core.sys.Element co cfg]
+  [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (log/info "CompConfigure: NetttyMVC: " (.id ^Identifiable co))
   (.setAttr! co :emcfg (HttpBasicConfig co cfg))
@@ -302,7 +302,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.io/NettyMVC
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "CompInitialize: NetttyMVC: " (.id ^Identifiable co))
   (initNetty co))

@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [MubleAPI Try! NiceFPath]]
+  (:use [czlabclj.xlib.util.core :only [Muble Try! NiceFPath]]
         [czlabclj.xlib.util.consts]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http]
@@ -93,7 +93,7 @@
 ;;
 (defn AddETag ""
 
-  [^czlabclj.tardis.core.sys.Element
+  [^czlabclj.tardis.core.sys.Elmt
    src info
    ^File file
    ^HTTPResult res]
@@ -181,7 +181,7 @@
                          (.getAppDir))
         ps (NiceFPath (File. appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
-        cfg (.getAttr ^czlabclj.tardis.core.sys.Element
+        cfg (.getAttr ^czlabclj.tardis.core.sys.Elmt
                       src
                       :emcfg)
         ckAccess (:fileAccessCheck cfg)
@@ -213,7 +213,7 @@
 ;;
 (defn ServeError ""
 
-  [^czlabclj.tardis.core.sys.Element src
+  [^czlabclj.tardis.core.sys.Elmt src
    ^Channel ch
    code ]
 
@@ -252,7 +252,7 @@
 ;;
 (defn ServeStatic ""
 
-  [^czlabclj.xlib.util.core.MubleAPI
+  [^czlabclj.xlib.util.core.Muble
    ri
    ^Emitter src
    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
@@ -277,7 +277,7 @@
                                              "{}"
                                              (.group mc (int i)) 1))))
         (var-set mp (NiceFPath (File. ^String @mp)))
-        (let [cfg (.getAttr ^czlabclj.tardis.core.sys.Element src :emcfg)
+        (let [cfg (.getAttr ^czlabclj.tardis.core.sys.Elmt src :emcfg)
               ^czlabclj.tardis.io.core.EmitAPI co src
               ^czlabclj.tardis.io.core.WaitEventHolder
               w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
@@ -295,7 +295,7 @@
 (defn ServeRoute ""
 
   [^czlabclj.xlib.net.routes.RouteInfo ri
-   ^czlabclj.tardis.core.sys.Element src
+   ^czlabclj.tardis.core.sys.Elmt src
    ^Matcher mc
    ^Channel ch
    ^HTTPEvent evt]

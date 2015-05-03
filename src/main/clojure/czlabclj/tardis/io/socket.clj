@@ -65,7 +65,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/SocketIO
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: SocketIO: " (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
@@ -87,7 +87,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.io/SocketIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "CompInitialize: SocketIO: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
@@ -115,7 +115,7 @@
 ;;
 (defmethod IOESStart :czc.tardis.io/SocketIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: SocketIO: " (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getAttr co :ssocket)
@@ -136,7 +136,7 @@
 ;;
 (defmethod IOESStop :czc.tardis.io/SocketIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop: SocketIO: " (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getAttr co :ssocket) ]

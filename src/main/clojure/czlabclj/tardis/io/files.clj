@@ -80,7 +80,7 @@
 ;;
 (defn- postPoll "Only look for new files."
 
-  [^czlabclj.tardis.core.sys.Element
+  [^czlabclj.tardis.core.sys.Elmt
    co
    ^File f action]
 
@@ -104,7 +104,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/FilePicker
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "ComConfigure: FilePicker: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
@@ -140,7 +140,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.io/FilePicker
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "ComInitialize FilePicker: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
@@ -166,7 +166,7 @@
 ;;
 (defmethod LoopableSchedule :czc.tardis.io/FilePicker
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (when-let [^FileAlterationMonitor mon (.getAttr co :monitor) ]
     (log/info "FilePicker's apache io monitor starting...")

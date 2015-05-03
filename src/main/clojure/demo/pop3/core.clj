@@ -60,12 +60,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
+(deftype DemoMain [] czlabclj.tardis.core.sys.CljAppMain
 
-  (contextualize [_ c] )
+  (contextualize [_ ctr] )
 
-  (initialize [_]
-    (println "Demo receiving POP3 emails..." ))
+  (initialize [_] )
 
   (configure [_ cfg]
     (System/setProperty "skaro.demo.pop3"

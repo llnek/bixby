@@ -20,7 +20,7 @@
          :only [NulScheduler MakeScheduler]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core
-         :only [MubleAPI MakeMMap NextLong]])
+         :only [Muble MakeMMap NextLong]])
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
@@ -50,7 +50,7 @@
           jid (NextLong) ]
       (reify
 
-        MubleAPI
+        Muble
 
         (setf! [_ k v] (.setf! impl k v))
         (clear! [_] (.clear! impl))

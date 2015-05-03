@@ -18,7 +18,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [NextLong spos? MubleAPI TryC]]
+         [NextLong spos? Muble TryC]]
         [czlabclj.xlib.util.process :only [Coroutine SafeWait]]
         [czlabclj.xlib.util.dates :only [ParseDate]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
@@ -77,7 +77,7 @@
 ;;
 (defn- configTimerTask ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [cfg (.getAttr co :emcfg)
         intv (:intervalMillis cfg)
@@ -95,7 +95,7 @@
 ;;
 (defn CfgLoopable ""
 
-  [^czlabclj.tardis.core.sys.Element co cfg]
+  [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (let [intv (:intervalSecs cfg)
         ds (:delaySecs cfg)
@@ -116,7 +116,7 @@
 ;;
 (defn- start-timer ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (.setAttr! co :timer (Timer. true))
   (LoopableSchedule co))
@@ -125,7 +125,7 @@
 ;;
 (defn- kill-timer ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Timer t (.getAttr co :timer) ]
     (TryC
@@ -164,7 +164,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/RepeatingTimer
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: RepeatingTimer: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
@@ -240,7 +240,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/OnceTimer
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: OnceTimer: " (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
@@ -287,7 +287,7 @@
 ;;
 (defmethod LoopableSchedule :czc.tardis.io/ThreadedTimer
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [cfg (.getAttr co :emcfg)
         intv (:intervalMillis cfg)
@@ -311,7 +311,7 @@
 ;;
 (defmethod IOESStart :czc.tardis.io/ThreadedTimer
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: ThreadedTimer: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
@@ -333,7 +333,7 @@
 ;;
 (defmethod IOESStop :czc.tardis.io/ThreadedTimer
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop ThreadedTimer: " (.id ^Identifiable co))
   (let [loopy (.getAttr co :loopy) ]

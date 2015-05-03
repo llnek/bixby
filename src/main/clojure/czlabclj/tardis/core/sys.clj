@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [MubleAPI MakeMMap NiceFPath]]
+  (:use [czlabclj.xlib.util.core :only [Muble MakeMMap NiceFPath]]
         [czlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]
         [czlabclj.tardis.core.consts])
 
@@ -28,9 +28,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; An application must implement this protocol.
+;;
+(defprotocol CljAppMain
+
+  ""
+
+  (contextualize [_ ctr] )
+  (configure [_ options] )
+  (initialize [_] )
+  (start [_] )
+  (stop [_])
+  (dispose [_] ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Element
+(defprotocol Elmt
 
   ""
 
@@ -43,7 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Registry
+(defprotocol Rego
 
   ""
 
@@ -51,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlabclj.tardis.core.sys.Element
+(defmulti ^czlabclj.tardis.core.sys.Elmt
           CompContextualize
 
   ""
@@ -60,7 +74,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlabclj.tardis.core.sys.Element
+(defmulti ^czlabclj.tardis.core.sys.Elmt
           CompCompose
 
   ""
@@ -69,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlabclj.tardis.core.sys.Element
+(defmulti ^czlabclj.tardis.core.sys.Elmt
           CompConfigure
 
   ""
@@ -78,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlabclj.tardis.core.sys.Element
+(defmulti ^czlabclj.tardis.core.sys.Elmt
           CompInitialize
 
   ""
@@ -89,14 +103,14 @@
 ;;
 (defn SynthesizeComponent "Note the ordering."
 
-  ^czlabclj.tardis.core.sys.Element
+  ^czlabclj.tardis.core.sys.Elmt
   [c options]
 
   (let [props (:props options)
         rego (:rego options)
         ctx (:ctx options) ]
-   (when-not (nil? rego) (CompCompose c rego))
    (when-not (nil? ctx) (CompContextualize c ctx))
+   (when-not (nil? rego) (CompCompose c rego))
    (when-not (nil? props) (CompConfigure c props))
    (CompInitialize c)
    c
@@ -106,11 +120,11 @@
 ;;
 (defn MakeContext ""
 
-  ^czlabclj.xlib.util.core.MubleAPI
+  ^czlabclj.xlib.util.core.Muble
   []
 
   (let [impl (MakeMMap) ]
-    (reify MubleAPI
+    (reify Muble
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))
       (toEDN [_] (.toEDN impl))
@@ -138,10 +152,10 @@
 ;;
 (defn CompCloneContext "Shallow copy."
 
-  ^czlabclj.tardis.core.sys.Element
+  ^czlabclj.tardis.core.sys.Elmt
 
-  [^czlabclj.tardis.core.sys.Element co
-   ^czlabclj.xlib.util.core.MubleAPI ctx]
+  [^czlabclj.tardis.core.sys.Elmt co
+   ^czlabclj.xlib.util.core.Muble ctx]
 
   (when-not (nil? ctx)
     (let [x (MakeContext) ]
@@ -154,9 +168,9 @@
 ;;
 (defmethod CompContextualize :default
 
-  [co ctx]
+  [co arg]
 
-  (CompCloneContext co ctx))
+  (CompCloneContext co arg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

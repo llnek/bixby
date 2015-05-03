@@ -51,21 +51,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
-
-  (contextualize [_ c] )
-
-  (initialize [_] )
-
-  (configure [_ cfg] )
-
-  (start [_] )
-  (stop [_] )
-
-  (dispose [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def ^:private core-eof nil)
 
 

@@ -81,40 +81,42 @@
 
   ^czlabclj.tardis.impl.dfts.PODMeta
 
-  [^czlabclj.tardis.core.sys.Element execv
+  [^czlabclj.tardis.core.sys.Elmt
+   execv
    app
    ^File des mf]
 
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx execv)
         ^ComponentRegistry
-        root (.getf ctx K_COMPS)
-        ^ComponentRegistry
-        apps (.lookup root K_APPS)
+        apps (-> ^ComponentRegistry
+                 (.getf ctx K_COMPS)
+                 (.lookup K_APPS))
         ps (LoadJavaProps mf)
         vid (.getProperty ps "Implementation-Vendor-Id", "???")
         ver (.getProperty ps "Implementation-Version" "")
         cz (.getProperty ps "Main-Class" "") ]
 
-    (test-nestr "POD-MainClass" cz)
-    (test-nestr "POD-Version" ver)
-
     (log/info "Checking manifest for app: " app
               ", version: " ver
               ", main-class: " cz)
+
+    ;;(test-nestr "POD-MainClass" cz)
+    (test-nestr "POD-Version" ver)
 
     ;;ps.gets("Manifest-Version")
     ;;.gets("Implementation-Title")
     ;;.gets("Implementation-Vendor-URL")
     ;;.gets("Implementation-Vendor")
 
-    ;; synthesize the pod meta component and register it as a application.
-    (let [^czlabclj.tardis.core.sys.Element
+    ;; synthesize the pod meta component and register it
+    ;; as a application.
+    (let [^czlabclj.tardis.core.sys.Elmt
           m (-> (MakePodMeta app ver
                              cz vid
                              (-> des (.toURI) (.toURL)))
                 (SynthesizeComponent { :ctx ctx }))
-          ^czlabclj.xlib.util.core.MubleAPI
+          ^czlabclj.xlib.util.core.Muble
           cx (.getCtx m) ]
       (.setf! cx K_EXECV execv)
       (.reg apps m)
@@ -150,13 +152,13 @@
 ;;
 (defn- inspectApps ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^FileFilter ff DirectoryFileFilter/DIRECTORY
-        ^czlabclj.xlib.util.core.MubleAPI
+        ^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         ^File pd (.getf ctx K_PLAYDIR) ]
-    (doseq [f (seq (.listFiles pd ff)) ]
+    (doseq [f (.listFiles pd ff) ]
       (inspectApp co f))
   ))
 
@@ -165,11 +167,11 @@
 ;;
 (defn- startJmx ""
 
-  [^czlabclj.tardis.core.sys.Element co cfg]
+  [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (log/info "JMX config " cfg)
   (TryC
-    (let [^czlabclj.xlib.util.core.MubleAPI
+    (let [^czlabclj.xlib.util.core.Muble
           ctx (.getCtx co)
           port (or (:port cfg) 7777)
           host (nsb (:host cfg))
@@ -186,14 +188,15 @@
 ;;
 (defn- stopJmx ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (TryC
-    (let [^czlabclj.xlib.util.core.MubleAPI
+    (let [^czlabclj.xlib.util.core.Muble
           ctx (.getCtx co)
+          ^Startable
           jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx)
-        (.stop ^Startable jmx))
+        (.stop jmx))
       (.setf! ctx K_JMXSVR nil)))
   (log/info "JMX connection terminated."))
 
@@ -215,11 +218,13 @@
 ;;
 (defn- undeployOnePod  ""
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    ^String app]
 
-  (let [^czlabclj.xlib.util.core.MubleAPI ctx (.getCtx co)
-        dir (File. ^File (.getf ctx K_PLAYDIR) app)]
+  (let [^czlabclj.xlib.util.core.Muble
+        ctx (.getCtx co)
+        dir (-> ^File (.getf ctx K_PLAYDIR)
+                (File. app))]
     (when (.exists dir)
       (FileUtils/deleteDirectory dir))
   ))
@@ -228,17 +233,17 @@
 ;;
 (defn- deployPods ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "Preparing to deploy pods...")
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         ^File py (.getf ctx K_PLAYDIR)
         ^File pd (.getf ctx K_PODSDIR)]
     (with-local-vars [sum 0]
       (when (.isDirectory pd)
         (log/info "Scanning for pods in: " pd)
-        (doseq [^File f (seq (IOUtils/listFiles pd "pod" false)) ]
+        (doseq [f (IOUtils/listFiles pd "pod" false) ]
           (var-set sum (inc @sum))
           (deployOnePod f py)))
       (log/info "Total pods deployed: " @sum))
@@ -248,7 +253,7 @@
 ;;
 (defn- maybeStartPod
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    cset
    ^czlabclj.tardis.impl.dfts.PODMeta pod]
 
@@ -274,24 +279,23 @@
 ;;
 (defn- startPods ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "Preparing to start pods...")
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
-        ^ComponentRegistry
-        root (.getf ctx K_COMPS)
         wc (.getf ctx K_PROPS)
-        endorsed (-> (:endorsed (K_APPS wc))
-                     (or "")
-                     strim)
-        ^czlabclj.tardis.core.sys.Registry
-        apps (.lookup root K_APPS)
+        ^czlabclj.tardis.core.sys.Rego
+        apps
+        (-> ^ComponentRegistry
+            (.getf ctx K_COMPS)
+            (.lookup K_APPS))
+        endorsed (strim (:endorsed (K_APPS wc)))
          ;; start all apps or only those endorsed.
         cs (if (or (= "*" endorsed)
                    (= "" endorsed))
              #{}
-             (into #{} (seq (StringUtils/split endorsed ",;"))))]
+             (into #{} (StringUtils/split endorsed ",;")))]
     ;; need this to prevent deadlocks amongst pods
     ;; when there are dependencies
     ;; TODO: need to handle this better
@@ -307,7 +311,7 @@
 ;;
 (defn- stopPods ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "Preparing to stop pods...")
   (let [cs (.getAttr co K_CONTAINERS) ]
@@ -331,15 +335,6 @@
     (with-meta
       (reify
 
-        Element
-
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
-        (toEDN [_ ] (.toEDN impl))
-
         Versioned
         (version [_] "1.0")
 
@@ -348,6 +343,15 @@
 
         Identifiable
         (id [_] K_EXECV )
+
+        Elmt
+
+        (setCtx! [_ x] (.setf! impl :ctx x))
+        (getCtx [_] (.getf impl :ctx))
+        (setAttr! [_ a v] (.setf! impl a v) )
+        (clrAttr! [_ a] (.clrf! impl a) )
+        (getAttr [_ a] (.getf impl a) )
+        (toEDN [_ ] (.toEDN impl))
 
         ExecVisor
 
@@ -365,14 +369,12 @@
 
         Startable
         (start [this]
-          (let []
-            (inspectApps this)
-            (startPods this)))
+          (inspectApps this)
+          (startPods this))
 
         (stop [this]
-          (let []
             (stopJmx this)
-            (stopPods this)))  )
+            (stopPods this)) )
 
        { :typeid (ToKW "czc.tardis.impl" "ExecVisor") }
   )))
@@ -382,12 +384,15 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/PODMeta
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         rcl (.getf ctx K_EXEC_CZLR)
-        ^URL url (.srcUrl ^czlabclj.tardis.impl.dfts.PODMeta co)
+        ^URL url
+        (-> ^czlabclj.tardis.impl.dfts.PODMeta
+            co
+            (.srcUrl))
         cl  (AppClassLoader. rcl) ]
     (.configure cl (NiceFPath (File. (.toURI  url))) )
     (.setf! ctx K_APP_CZLR cl)
@@ -398,10 +403,10 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/ExecVisor
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^czlabclj.tardis.impl.exec.ExecVisor exec co
-        ^czlabclj.xlib.util.core.MubleAPI
+        ^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         ^File base (.getf ctx K_BASEDIR)
         cf (.getf ctx K_PROPS)
@@ -423,15 +428,15 @@
     (let [^File home (.homeDir exec)
           bks (Mkdirs (File. home
                              (str DN_CFG "/" DN_BLOCKS)))
-          apps (Mkdirs (File. home ^String DN_BOXX))
-          tmp (Mkdirs (File. home ^String DN_TMP))
+          apps (Mkdirs (File. home DN_BOXX))
+          tmp (Mkdirs (File. home DN_TMP))
           pods (File. home DN_PODS)
           db (File. home DN_DBS)
           log (Mkdirs (File. home DN_LOGS))]
       ;;(precondDir pods)
       (PrecondDir apps)
-      (PrecondDir log)
-      (PrecondDir tmp)
+      ;;(PrecondDir log)
+      ;;(PrecondDir tmp)
       ;;(precondDir db)
       (PrecondDir bks)
 
@@ -482,7 +487,10 @@
     (with-meta
       (reify
 
-        Element
+        Hierarchial
+        (parent [_] nil)
+
+        Elmt
 
         (setCtx! [_ x] (.setf! impl :ctx x))
         (getCtx [_] (.getf impl :ctx))
@@ -497,9 +505,6 @@
                     (keyword)))
         (version [_] (-> (.getf impl :metaInfo)
                          (:version)))
-
-        Hierarchial
-        (parent [_] nil)
 
         EmitMeta
 
@@ -519,7 +524,7 @@
 
   [^czlabclj.tardis.impl.dfts.EmitMeta block]
 
-  (let [^czlabclj.tardis.core.sys.Element co block
+  (let [^czlabclj.tardis.core.sys.Elmt co block
         url (.metaUrl block)
         cfg (ReadEdn url)
         info (:info cfg)
@@ -539,14 +544,14 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/BlocksRegistry
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
-        bDir (.getf ctx K_BKSDIR)
-        fs (IOUtils/listFiles ^File bDir "meta" false) ]
-    (doseq [^File f (seq fs) ]
-      (let [^czlabclj.tardis.core.sys.Element
+        ^File bDir (.getf ctx K_BKSDIR)
+        fs (IOUtils/listFiles bDir "meta" false) ]
+    (doseq [^File f fs ]
+      (let [^czlabclj.tardis.core.sys.Elmt
             b (-> (makeBlockMeta (-> f (.toURI)(.toURL)))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
@@ -557,7 +562,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/SystemRegistry
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "CompInitialize: SystemRegistry: " (.id ^Identifiable co))
   co
@@ -567,7 +572,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.impl/AppsRegistry
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "CompInitialize: AppsRegistry: " (.id ^Identifiable co))
   co

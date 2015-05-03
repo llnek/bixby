@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [MubleAPI MakeMMap test-nestr]]
+  (:use [czlabclj.xlib.util.core :only [Muble MakeMMap test-nestr]]
         [czlabclj.xlib.util.str
          :only [lcase ucase nsb nichts? hgl?]]
         [czlabclj.xlib.util.ini :only [ParseInifile]])
@@ -67,7 +67,7 @@
     (with-meta
       (reify
 
-        MubleAPI
+        Muble
 
         (setf! [_ k v] (.setf! impl k v) )
         (seq* [_] (.seq* impl))
@@ -116,7 +116,7 @@
 ;;
 (defn- initRoute ""
 
-  [^czlabclj.xlib.util.core.MubleAPI rc
+  [^czlabclj.xlib.util.core.Muble rc
    ^String path]
 
   (let [tknz (StringTokenizer. path "/" true)
@@ -158,7 +158,7 @@
         verb (.optString cfile path :verb "")
         mpt (.optString cfile path :mount "")
         pipe (.optString cfile path :pipe "")
-        ^czlabclj.xlib.util.core.MubleAPI
+        ^czlabclj.xlib.util.core.Muble
         rc (make-route-info path
                             (if (and stat
                                      (nichts? verb))

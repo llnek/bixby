@@ -73,4 +73,24 @@ abstract class MergeNode extends FlowNode {
 }
 
 
+/**
+ * @author kenl
+ *
+class NullJoin extends Merge {
 
+  public FlowNode reifyNode(FlowNode cur) {
+    return new MergeNode(cur, this){
+      public FlowNode eval(Job j) {
+        return null;
+      }      
+    };
+  }
+
+  public void realize(FlowNode cur) {}
+
+  public NullJoin() {
+    super(null);
+  }
+
+}
+*/

@@ -49,7 +49,7 @@
 ;;
 (defn- startRMI ""
 
-  [^czlabclj.xlib.util.core.MubleAPI impl]
+  [^czlabclj.xlib.util.core.Muble impl]
 
   (let [^long port (.getf impl :regoPort) ]
     (try
@@ -62,7 +62,7 @@
 ;;
 (defn- startJMX ""
 
-  [^czlabclj.xlib.util.core.MubleAPI impl]
+  [^czlabclj.xlib.util.core.Muble impl]
 
   (let [hn (-> (InetAddress/getLocalHost)(.getHostName))
         ^long regoPort (.getf impl :regoPort)

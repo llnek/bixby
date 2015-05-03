@@ -19,7 +19,7 @@
   (:use [czlabclj.xlib.util.str :only [lcase ucase hgl? nsb strim]]
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI notnil? juid TryC spos? NextLong
+         [Muble notnil? juid TryC spos? NextLong
           ToJavaInt Try!
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
@@ -104,7 +104,7 @@
 ;;
 (defn- replyServlet ""
 
-  [^czlabclj.xlib.util.core.MubleAPI res
+  [^czlabclj.xlib.util.core.Muble res
    ^HttpServletRequest req
    ^HttpServletResponse rsp
    src]
@@ -179,7 +179,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/JettyIO
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: JettyIO: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)]
@@ -218,13 +218,13 @@
 ;;
 (defmethod CompInitialize :czc.tardis.io/JettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
 
-        ^czlabclj.tardis.core.sys.Element
+        ^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         rts (.getAttr ctr :routes)
 
@@ -258,7 +258,7 @@
 ;;
 (defn- dispREQ ""
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
@@ -318,10 +318,10 @@
 ;;
 (defmethod IOESStart :czc.tardis.io/JettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: JettyIO: " (.id ^Identifiable co))
-  (let [^czlabclj.tardis.core.sys.Element
+  (let [^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         ^Server jetty (.getAttr co :jetty)
         ^File app (.getAttr ctr K_APPDIR)
@@ -357,7 +357,7 @@
 ;;
 (defmethod IOESStop :czc.tardis.io/JettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop: JettyIO: " (.id ^Identifiable co))
   (let [^Server svr (.getAttr co :jetty) ]

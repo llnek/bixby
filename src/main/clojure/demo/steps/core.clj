@@ -168,23 +168,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
-
-  (contextualize [_ c] )
-
-  (initialize [_]
-    (println "Demo a set of workflow control features..." ))
-
-  (configure [_ cfg] )
-
-  (start [_] )
-
-  (stop [_] )
-
-  (dispose [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def ^:private core-eof nil)
 
 

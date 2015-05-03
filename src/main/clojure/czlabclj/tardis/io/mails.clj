@@ -52,7 +52,7 @@
 ;;
 (defn- closeStore ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Store conn (.getAttr co :store)
         ^Folder fd (.getAttr co :folder) ]
@@ -67,7 +67,7 @@
 ;;
 (defn- resolve-provider ""
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    protos
    ^String demo ^String mock]
 
@@ -139,7 +139,7 @@
 ;;
 (defn- connectPop3 ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Session session (.getAttr co :session)
         cfg (.getAttr co :emcfg)
@@ -169,7 +169,7 @@
 
   [^czlabclj.tardis.io.core.EmitAPI co msgs]
 
-  (let [^czlabclj.tardis.core.sys.Element src co]
+  (let [^czlabclj.tardis.core.sys.Elmt src co]
     (doseq [^MimeMessage mm (seq msgs) ]
       (try
         (doto mm (.getAllHeaders)(.getContent))
@@ -183,7 +183,7 @@
 ;;
 (defn- scanPop3 ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Folder fd (.getAttr co :folder)
         ^Store s (.getAttr co :store) ]
@@ -201,7 +201,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.tardis.io/POP3
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (try
     (connectPop3 co)
@@ -216,7 +216,7 @@
 ;;
 (defn- stdConfig ""
 
-  [^czlabclj.tardis.core.sys.Element co cfg]
+  [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (let [intv (:intervalSecs cfg)
         port (:port cfg)
@@ -242,7 +242,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/POP3
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: POP3: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.pop3" "")
@@ -303,7 +303,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.tardis.io/IMAP
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (try
     (connect-imap co)
@@ -318,7 +318,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/IMAP
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: IMAP: " (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.imap" "")

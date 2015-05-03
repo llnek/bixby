@@ -18,7 +18,7 @@
 
   (:use [czlabclj.xlib.util.core
          :only
-         [NextLong ThrowIOE MubleAPI MakeMMap juid TryC]]
+         [NextLong ThrowIOE Muble MakeMMap juid TryC]]
         [czlabclj.xlib.crypto.codec :only [Pwdify]]
         [czlabclj.xlib.util.str :only [hgl? nsb]]
         [czlabclj.tardis.core.sys]
@@ -83,7 +83,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/JMS
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: JMS: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
@@ -103,7 +103,7 @@
 
   ^Connection
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
@@ -132,7 +132,7 @@
 
   ^Connection
 
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
@@ -160,7 +160,7 @@
 (defn- inizQueue ""
 
   ^Connection
-  [^czlabclj.tardis.core.sys.Element co
+  [^czlabclj.tardis.core.sys.Elmt co
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
@@ -185,7 +185,7 @@
 ;;
 (defmethod IOESStart :czc.tardis.io/JMS
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: JMS: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
@@ -224,7 +224,7 @@
 ;;
 (defmethod IOESStop :czc.tardis.io/JMS
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop: JMS: " (.id ^Identifiable co))
   (when-let [^Connection c (.getAttr co :conn) ]

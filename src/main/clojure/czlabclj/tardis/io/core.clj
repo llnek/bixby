@@ -116,7 +116,7 @@
 ;;
 (defmethod IOESStarted :default
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [cfg (.getAttr co :emcfg)]
     (log/info "Emitter config:\n" (pr-str cfg))
@@ -202,7 +202,7 @@
     (with-meta
       (reify
 
-        Element
+        Elmt
 
         (setCtx! [_ x] (.setf! impl :ctx x))
         (getCtx [_] (.getf impl :ctx))
@@ -288,9 +288,9 @@
 ;;
 (defmethod CompContextualize :czc.tardis.io/Emitter
 
-  [co ctx]
+  [co arg]
 
-  (let [^czlabclj.tardis.core.sys.Element c ctx ]
+  (let [^czlabclj.tardis.core.sys.Elmt c arg ]
     (CompCloneContext co (.getCtx c))
   ))
 

@@ -19,7 +19,7 @@
   (:use [czlabclj.xlib.util.str :only [nsb hgl? AddDelim!]]
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI ConvLong notnil? juid
+         [Muble ConvLong notnil? juid
           MakeMMap Stringify Bytesify]]
         [czlabclj.xlib.crypto.core :only [GenMac]]
         ;;[czlabclj.xlib.util.guids :only [NewUUid]]
@@ -114,7 +114,7 @@
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
       (log/debug "Session appears to be kosher, about to set-cookie!")
-      (let [^czlabclj.tardis.core.sys.Element
+      (let [^czlabclj.tardis.core.sys.Elmt
             src (.emitter evt)
             cfg (.getAttr src :emcfg)
             ctr (.container ^Emitter src)
@@ -164,7 +164,7 @@
       (do
         (log/debug "Request contains no session cookie, invalidate the session.")
         (.invalidate! mvs))
-      (let [^czlabclj.tardis.core.sys.Element
+      (let [^czlabclj.tardis.core.sys.Elmt
             src netty
             cfg (.getAttr src :emcfg)
             cookie (nsb (.getValue ck))

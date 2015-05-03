@@ -76,7 +76,7 @@
 (defn- inizContext "the context object has a set of properties, such as basic dir, which
                    is shared with other key components."
 
-  ^czlabclj.xlib.util.core.MubleAPI
+  ^czlabclj.xlib.util.core.Muble
   [^File baseDir]
 
   (let [cfg (File. baseDir DN_CFG)
@@ -92,7 +92,7 @@
 ;;
 (defn- stopCLI "Stop all apps and processors."
 
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
+  [^czlabclj.xlib.util.core.Muble ctx]
 
   (let [^File pid (.getf ctx K_PIDFILE)
         kp (.getf ctx K_KILLPORT)
@@ -119,7 +119,7 @@
 ;;
 (defn- enableRemoteShutdown "Listen on a port for remote kill command"
 
-  [^czlabclj.xlib.util.core.MubleAPI ctx]
+  [^czlabclj.xlib.util.core.Muble ctx]
 
   (log/info "Enabling remote shutdown")
   (let [port (ConvLong (System/getProperty "skaro.kill.port") 4444)
@@ -163,7 +163,7 @@
 
       (core [_] cpu)
 
-      Element
+      Elmt
 
       (setCtx! [_ x] (.setf! impl :ctx x))
       (getCtx [_] (.getf impl :ctx))
@@ -195,7 +195,7 @@
 
   (SimPTask "PauseCLI"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             s (.container j)]
         (log/debug "#### sys loader = "
@@ -216,7 +216,7 @@
 
   (SimPTask "HookShutDown"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             cli (.getf ctx K_CLISH)]
         (.addShutdownHook (Runtime/getRuntime)
@@ -235,7 +235,7 @@
 
   (SimPTask "WritePID"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             ^File home (.getf ctx K_BASEDIR)
             fp (File. home "skaro.pid")]
@@ -254,7 +254,7 @@
 
   (SimPTask "Primodial"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             cl (.getf ctx K_EXEC_CZLR)
             cli (.getf ctx K_CLISH)
@@ -263,7 +263,7 @@
         ;;(test-cond "conf file:exec-visor" (= cz "czlabclj.tardis.impl.Execvisor"))
         (log/info "Inside primodial() ---------------------------------------------->")
         (log/info "Execvisor = " cz)
-        (let [^czlabclj.xlib.util.core.MubleAPI
+        (let [^czlabclj.xlib.util.core.Muble
               execv (MakeExecvisor cli)]
           (.setf! ctx K_EXECV execv)
           (SynthesizeComponent execv {:ctx ctx})
@@ -287,7 +287,7 @@
 
   (SimPTask "LoadResource"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             rc (GetResource "czlabclj/tardis/etc/Resources"
                             (.getf ctx K_LOCALE))]
@@ -307,7 +307,7 @@
 
   (SimPTask "LoadConf"
     (fn [^Job j]
-      (let [^czlabclj.xlib.util.core.MubleAPI
+      (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             ^File home (.getf ctx K_BASEDIR)
             cf (File. home (str DN_CONF
@@ -339,17 +339,17 @@
   []
 
   (letfn
-    [(f1 [^czlabclj.xlib.util.core.MubleAPI x]
+    [(f1 [^czlabclj.xlib.util.core.Muble x]
        (let [cl (ExecClassLoader. ^ClassLoader
                                   (.getf x K_ROOT_CZLR))]
          (SetCldr cl)
          (.setf! x K_EXEC_CZLR cl)))
-     (f0 [^czlabclj.xlib.util.core.MubleAPI x
+     (f0 [^czlabclj.xlib.util.core.Muble x
           ^ClassLoader cur]
        (.setf! x K_ROOT_CZLR (RootClassLoader. cur))) ]
     (SimPTask "SetupLoaders"
       (fn [^Job j]
-        (let [^czlabclj.xlib.util.core.MubleAPI
+        (let [^czlabclj.xlib.util.core.Muble
               x (.getLastResult j)
               cz (GetCldr)
               p (.getParent cz)]
@@ -380,7 +380,7 @@
 
   (SimPTask "RtStart"
     (fn [^Job j]
-      (let [^czlabclj.tardis.core.sys.Element
+      (let [^czlabclj.tardis.core.sys.Elmt
             c (.container j)
             ^File
             home (.getv j :home)

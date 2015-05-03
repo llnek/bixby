@@ -43,16 +43,14 @@
 
         [czlabclj.tardis.impl.dfts
          :rename
-         {enabled? blockmeta-enabled?
-          start kernel-start
-          stop kernel-stop } ]
+         {enabled? blockmeta-enabled?} ]
 
         [czlabclj.tardis.impl.misc]
         [czlabclj.tardis.core.sys]
 
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI MakeMMap NiceFPath
+         [Muble MakeMMap NiceFPath TryCR
           ConvToJava nbf ConvLong Bytesify]]
 
         [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
@@ -98,20 +96,6 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; An application must implement this protocol.
-;;
-(defprotocol CljAppMain
-
-  ""
-
-  (contextualize [_ ctr] )
-  (configure [_ options] )
-  (initialize [_] )
-  (start [_] )
-  (stop [_])
-  (dispose [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetAppKeyFromEvent ""
 
@@ -154,7 +138,7 @@
         EventBus
 
         (onEvent [_  evt options]
-          (let [^czlabclj.tardis.core.sys.Element
+          (let [^czlabclj.tardis.core.sys.Elmt
                 src (.emitter ^IOEvent evt)
                 ^ServiceHandler
                 hr (.handler ^Service src)
@@ -201,7 +185,7 @@
   (let [pkey (.getAppKey ^Container container)
         hid (:handler cfg)
         eid (.id bk)
-        ^czlabclj.tardis.core.sys.Element
+        ^czlabclj.tardis.core.sys.Elmt
         obj (MakeEmitter container eid nm)
         mm (meta obj) ]
     (log/info "About to synthesize an emitter: " eid)
@@ -222,7 +206,7 @@
 (defn- maybeGetDBPool ""
 
   ^JDBCPool
-  [^czlabclj.tardis.core.sys.Element co ^String gid]
+  [^czlabclj.tardis.core.sys.Elmt co ^String gid]
 
   (let [dbs (.getAttr co K_DBPS)
         dk (if (hgl? gid) gid DEF_DBID) ]
@@ -233,7 +217,7 @@
 ;;
 (defn- maybeGetDBAPI ""
 
-  [^czlabclj.tardis.core.sys.Element co ^String gid]
+  [^czlabclj.tardis.core.sys.Elmt co ^String gid]
 
   (let [mcache (.getAttr co K_MCACHE)
         p (maybeGetDBPool co gid) ]
@@ -247,7 +231,7 @@
 ;;
 (defn- releaseSysResources ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Schedulable sc (.getAttr co K_SCHEDULER)
         dbs (.getAttr co K_DBPS) ]
@@ -271,7 +255,7 @@
     (with-meta
       (reify
 
-        Element
+        Elmt
 
         (setAttr! [_ a v] (.setf! impl a v) )
         (clrAttr! [_ a] (.clrf! impl a) )
@@ -352,7 +336,7 @@
         (start [this]
           (let [pub (File. (.getAppDir this)
                            (str DN_PUBLIC "/" DN_PAGES))
-                ^czlabclj.tardis.core.sys.Registry
+                ^czlabclj.tardis.core.sys.Rego
                 srg (.getf impl K_SVCS)
                 main (.getf impl :main-app) ]
             (log/info "Container starting all services...")
@@ -366,13 +350,13 @@
             (log/info "Container starting main app...")
             (cond
               (satisfies? CljAppMain main)    ;; clojure app
-              (.start ^czlabclj.tardis.impl.ext.CljAppMain main)
+              (.start ^czlabclj.tardis.core.sys.CljAppMain main)
               (instance? AppMain main) ;; java app
               (.start ^AppMain main)
               :else nil)))
 
         (stop [this]
-          (let [^czlabclj.tardis.core.sys.Registry
+          (let [^czlabclj.tardis.core.sys.Rego
                 srg (.getf impl K_SVCS)
                 pls (.getAttr this K_PLUGINS)
                 main (.getf impl :main-app) ]
@@ -385,7 +369,7 @@
             (log/info "Container stopping...")
             (cond
               (satisfies? CljAppMain main)
-              (.stop ^czlabclj.tardis.impl.ext.CljAppMain main)
+              (.stop ^czlabclj.tardis.core.sys.CljAppMain main)
               (instance? AppMain main)
               (.stop ^AppMain main)
               :else nil) ))
@@ -393,7 +377,7 @@
         Disposable
 
         (dispose [this]
-          (let [^czlabclj.tardis.core.sys.Registry
+          (let [^czlabclj.tardis.core.sys.Rego
                 srg (.getf impl K_SVCS)
                 pls (.getAttr this K_PLUGINS)
                 main (.getf impl :main-app) ]
@@ -405,7 +389,7 @@
               (.dispose ^Disposable v))
             (cond
               (satisfies? CljAppMain main)
-              (.dispose ^czlabclj.tardis.impl.ext.CljAppMain main)
+              (.dispose ^czlabclj.tardis.core.sys.CljAppMain main)
               (instance? AppMain main)
               (.dispose ^AppMain main)
               :else nil)
@@ -433,7 +417,7 @@
                 (.reg srg s)))))
 
         (reifyService [this svc nm cfg]
-          (let [^czlabclj.xlib.util.core.MubleAPI ctx (.getCtx this)
+          (let [^czlabclj.xlib.util.core.Muble ctx (.getCtx this)
                 ^ComponentRegistry root (.getf ctx K_COMPS)
                 ^ComponentRegistry bks (.lookup root K_BLOCKS)
                 ^ComponentRegistry bk (.lookup bks (keyword svc)) ]
@@ -450,11 +434,11 @@
 ;;
 (defn MakeContainer ""
 
-  [^czlabclj.tardis.core.sys.Element pod]
+  [^czlabclj.tardis.core.sys.Elmt pod]
 
   (let [^czlabclj.tardis.impl.dfts.PODMeta pm pod
         ^URL url (.srcUrl pm)
-        ^czlabclj.xlib.util.core.MubleAPI
+        ^czlabclj.xlib.util.core.Muble
         ctx (.getCtx pod)
         cl (.getf ctx K_APP_CZLR)
         ^ComponentRegistry root (.getf ctx K_COMPS)
@@ -492,7 +476,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.ext/Container
 
-  [^czlabclj.tardis.core.sys.Element co props]
+  [^czlabclj.tardis.core.sys.Elmt co props]
 
   (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
         ^File appDir (K_APPDIR props)
@@ -516,7 +500,7 @@
 ;;
 (defn- doCljApp ""
 
-  [ctr opts ^czlabclj.tardis.impl.ext.CljAppMain obj]
+  [ctr opts ^czlabclj.tardis.core.sys.CljAppMain obj]
 
   (.contextualize obj ctr)
   (.configure obj opts)
@@ -526,7 +510,7 @@
 ;;
 (defn- doJavaApp ""
 
-  [^czlabclj.tardis.core.sys.Element ctr
+  [^czlabclj.tardis.core.sys.Elmt ctr
    ^AppMain obj]
 
   ;; if java, pass in the conf properties as json,
@@ -581,7 +565,6 @@
                     nil) ]
     (when (instance? Plugin p)
       (log/info "Calling plugin-factory: " v)
-      (.contextualize p co)
       (.configure p { :env env :app app })
       (if (pluginInited? v appDir)
         (log/info "Plugin " v " already initialized.")
@@ -611,7 +594,7 @@
 ;;
 (defn- maybeInitDBs ""
 
-  ;;[^czlabclj.tardis.core.sys.Element co
+  ;;[^czlabclj.tardis.core.sys.Elmt co
   [^Container co
    env app]
 
@@ -639,8 +622,8 @@
 
   []
 
-  (reify czlabclj.tardis.impl.ext.CljAppMain
-    (contextualize [_ c] )
+  (reify czlabclj.tardis.core.sys.CljAppMain
+    (contextualize [_ ctr] )
     (initialize [_])
     (configure [_ cfg] )
     (start [_] )
@@ -651,7 +634,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.ext/Container
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [pid (.id ^Component co)]
     (log/info "Initializing container: " pid)
@@ -707,17 +690,20 @@
       (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
       ;;(test-nestr "Main-Class" mCZ)
 
-      (let [obj (if (hgl? mCZ)
-                  (MakeObj mCZ)
-                  (mkDftAppMain))]
+      (with-local-vars [obj (TryCR nil (when (hgl? mCZ) (MakeObj mCZ)))]
+        (when (nil? @obj)
+          (log/warn "Failed to create main class: " mCZ)
+          (var-set obj (mkDftAppMain)))
         (cond
-          (satisfies? CljAppMain obj)
-          (doCljApp co app obj)
-          (instance? AppMain obj)
-          (doJavaApp co obj)
+          (satisfies? CljAppMain @obj)
+          (doCljApp co app @obj)
+          (instance? AppMain @obj)
+          (doJavaApp co @obj)
           :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
-        (.setAttr! co :main-app obj)
-        (log/info "Application main-class " (if (hgl? mCZ) mCZ "???") " created and invoked"))
+
+        (.setAttr! co :main-app @obj)
+        (log/info "Application main-class "
+                  (if (hgl? mCZ) mCZ "???") " created and invoked"))
 
       (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
             rf (File. appDir (str DN_CONF "/routes.conf")) ]

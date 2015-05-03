@@ -30,7 +30,6 @@
             [java.util Date]
             [com.zotohlab.frwk.server ServiceProvider Service]))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
@@ -101,22 +100,6 @@
               (println "Socket Server Received: "
                        (.getv j "cmsg"))))))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype DemoMain [] czlabclj.tardis.impl.ext.CljAppMain
-
-  (contextualize [_ c] )
-
-  (initialize [_]
-    (println "Demo sending & receiving messages via sockets..." ))
-
-  (configure [_ cfg] )
-
-  (start [_] )
-  (stop [_] )
-
-  (dispose [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

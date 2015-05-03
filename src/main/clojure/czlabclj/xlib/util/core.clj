@@ -1074,7 +1074,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol MubleAPI
+(defprotocol Muble
 
   "A Mutable Interface."
 
@@ -1092,7 +1092,7 @@
   ;;[ ^:volatile-mutable data ]
   [ ^:unsynchronized-mutable data ]
 
-  MubleAPI
+  Muble
 
   (setf! [_ k v] (set! data (assoc data k v)))
   (clrf! [_ k] (set! data (dissoc data k)))
@@ -1105,7 +1105,7 @@
 ;;
 (defn MakeMMap ""
 
-  ^czlabclj.xlib.util.core.MubleAPI
+  ^czlabclj.xlib.util.core.Muble
   []
 
   (MutableMap. {} ))
@@ -1114,7 +1114,7 @@
 ;;
 (defn PrintMutableObj ""
 
-  ([^czlabclj.xlib.util.core.MubleAPI ctx dbg ]
+  ([^czlabclj.xlib.util.core.Muble ctx dbg ]
    (let [buf (StringBuilder.) ]
      (.append buf "\n")
      (doseq [[k v] (.seq* ctx) ]

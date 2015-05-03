@@ -19,7 +19,7 @@
   (:use [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
         [czlabclj.xlib.util.core
          :only
-         [MubleAPI notnil? juid TryC spos? NextLong
+         [Muble notnil? juid TryC spos? NextLong
           ToJavaInt SubsVar
           MakeMMap test-cond Stringify]]
         [czlabclj.xlib.crypto.ssl]
@@ -76,7 +76,7 @@
 ;;
 (defn HttpBasicConfig ""
 
-  [^czlabclj.tardis.core.sys.Element co cfg]
+  [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (let [kfile (SubsVar (nsb (:serverKey cfg)))
         socto (:sockTimeOut cfg)
@@ -135,7 +135,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/HTTP
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: HTTP: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
@@ -156,7 +156,7 @@
     (.setf! impl :data nil)
     (reify
 
-      MubleAPI
+      Muble
 
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))
@@ -187,7 +187,7 @@
     (.setf! impl :hds {})
     (reify
 
-      MubleAPI
+      Muble
 
       (setf! [_ k v] (.setf! impl k v) )
       (seq* [_] (.seq* impl))

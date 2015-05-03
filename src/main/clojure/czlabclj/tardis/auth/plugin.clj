@@ -309,7 +309,7 @@
 
   (DefBoolExpr
     (fn [^Job job]
-      (let [^czlabclj.tardis.core.sys.Element ctr (.container job)
+      (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
             ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
@@ -374,7 +374,7 @@
 
   (DefBoolExpr
     (fn [^Job job]
-      (let [^czlabclj.tardis.core.sys.Element ctr (.container job)
+      (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
             ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
@@ -426,8 +426,6 @@
 
   (let [impl (MakeMMap) ]
     (reify Plugin
-
-      (contextualize [_ c] )
 
       (configure [_ props] )
 

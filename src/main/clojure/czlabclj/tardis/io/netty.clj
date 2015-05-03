@@ -21,7 +21,7 @@
         [czlabclj.xlib.util.str :only [lcase hgl? nsb strim nichts?]]
         [czlabclj.xlib.util.core
          :only
-         [Try! Stringify ThrowIOE MubleAPI NextLong
+         [Try! Stringify ThrowIOE Muble NextLong
           MakeMMap notnil? ConvLong]]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.core.sys]
@@ -163,7 +163,7 @@
   [^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
-  (let [^czlabclj.xlib.util.core.MubleAPI
+  (let [^czlabclj.xlib.util.core.Muble
         res (.getResultObj evt)
         cks (csToNetty (.getf res :cookies))
         code (.getf res :code)
@@ -310,7 +310,7 @@
                      :else nil))
     (with-meta
       (reify
-        MubleAPI
+        Muble
 
         (setf! [_ k v] (.setf! impl k v) )
         (seq* [_] (.seq* impl))
@@ -378,7 +378,7 @@
     (with-meta
       (reify
 
-        MubleAPI
+        Muble
 
         (setf! [_ k v] (.setf! impl k v) )
         (seq* [_] (.seq* impl))
@@ -516,7 +516,7 @@
 ;;
 (defmethod CompConfigure :czc.tardis.io/NettyIO
 
-  [^czlabclj.tardis.core.sys.Element co cfg0]
+  [^czlabclj.tardis.core.sys.Elmt co cfg0]
 
   (log/info "CompConfigure: NettyIO: " (.id ^Identifiable co))
   (let [cfg (merge (.getAttr co :dftOptions) cfg0)
@@ -530,7 +530,7 @@
 
   ^ChannelHandler
   [^czlabclj.tardis.io.core.EmitAPI co
-   ^czlabclj.tardis.core.sys.Element src
+   ^czlabclj.tardis.core.sys.Elmt src
    options]
 
   (proxy [SimpleChannelInboundHandler] []
@@ -552,7 +552,7 @@
 (defn- nettyInitor ""
 
   ^PipelineConfigurator
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/debug "tardis netty pipeline initor called with emitter = " (type co))
   (ReifyHTTPPipe "NettyDispatcher" #(msgDispatcher co co %)))
@@ -561,9 +561,9 @@
 ;;
 (defn- init-netty ""
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [^czlabclj.tardis.core.sys.Element
+  (let [^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         options (.getAttr co :emcfg)
         bs (InitTCPServer (nettyInitor co) options) ]
@@ -575,7 +575,7 @@
 ;;
 (defmethod IOESStart :czc.tardis.io/NettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStart: NettyIO: " (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
@@ -592,7 +592,7 @@
 ;;
 (defmethod IOESStop :czc.tardis.io/NettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "IOESStop NettyIO: " (.id ^Identifiable co))
   (let [nes (.getAttr co :netty)
@@ -606,7 +606,7 @@
 ;;
 (defmethod CompInitialize :czc.tardis.io/NettyIO
 
-  [^czlabclj.tardis.core.sys.Element co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/info "CompInitialize: NettyIO: " (.id ^Identifiable co))
   (init-netty co))
