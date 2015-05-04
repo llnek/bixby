@@ -22,8 +22,7 @@
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
-            [com.zotohlab.wflow Job FlowNode PTask Delay]
-            [com.zotohlab.server WorkFlow]
+            [com.zotohlab.wflow WorkFlow Job FlowNode PTask Delay]
             [com.zotohlab.skaro.io SocketEvent]
             [com.zotohlab.skaro.core Container]
             [java.net Socket]
@@ -40,8 +39,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype DemoClient [] WorkFlow
-
-  (onError [_ e] )
 
   (startWith [_]
     (require 'demo.tcpip.core)
@@ -78,8 +75,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftype DemoServer [] WorkFlow
-
-  (onError [_ e] )
 
   (startWith [_]
     (require 'demo.tcpip.core)

@@ -20,8 +20,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask Split]
-            [com.zotohlab.server WorkFlow]
+  (:import  [com.zotohlab.wflow Job WorkFlow FlowNode PTask Split]
             [java.lang StringBuilder]
             [com.zotohlab.skaro.core Container]))
 
@@ -53,8 +52,6 @@
 
   ;; split but no wait
   ;; parent continues;
-
-  (onError [_ e])
 
   (startWith [_]
     (require 'demo.fork.core)

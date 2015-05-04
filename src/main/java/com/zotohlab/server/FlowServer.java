@@ -36,6 +36,10 @@ import com.zotohlab.wflow.Job;
 import com.zotohlab.wflow.Nihil;
 import com.zotohlab.wflow.PTask;
 import com.zotohlab.wflow.Work;
+import com.zotohlab.wflow.WorkFlow;
+import com.zotohlab.wflow.WorkFlowEx;
+import com.zotohlab.wflow.WHandler;
+
 
 /**
  *
@@ -110,24 +114,34 @@ public class FlowServer implements ServerLike, ServiceHandler {
 
   @Override
   public Object handleError(Throwable t) {
+    WorkFlowEx ex = null;
     if (t instanceof FlowError) {
       FlowError fe = (FlowError)t;
       FlowNode n=fe.getLastNode();
+      Object obj = null;
       if (n != null) {
-        return n.job().handleError(t);
+        obj= n.job().workflow();
       }
+      if (obj instanceof WorkFlowEx) {
+        ex= (WorkFlowEx)obj;
+        t= fe.getCause();
+      }
+    }    
+    if (ex != null) {
+      return ex.onError(t);      
+    } else {      
+      return null;      
     }
-    return null;
   }
 
   @Override
   public Object handle(Object work, Object options) throws Exception {
     WorkFlow wf= null;
-    if (work instanceof WorkHandler) {
-      final WorkHandler h = (WorkHandler)work;
+    if (work instanceof WHandler) {
+      final WHandler h = (WHandler)work;
       wf=() -> {
           return PTask.apply( (FlowNode cur, Job j) -> {
-            return h.workOn(j);
+            return h.eval(j);
           });
       };
     }
@@ -235,8 +249,8 @@ class JobCreator {
       }
 
       @Override
-      public Activity handleError(Throwable t) {
-        return wf.onError(t);
+      public WorkFlow workflow() {
+        return wf;
       }
 
     };

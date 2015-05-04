@@ -9,9 +9,8 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.server;
+package com.zotohlab.wflow;
 
-import com.zotohlab.wflow.Job;
 
 /**
  *
@@ -19,8 +18,6 @@ import com.zotohlab.wflow.Job;
  *
  */
 @FunctionalInterface
-public interface WorkHandler {
-
-  public Object workOn(Job j);
-
+public interface WHandler {
+  public Object handle(Job j);
 }

@@ -37,13 +37,11 @@
             [com.zotohlab.frwk.core Hierarchial Identifiable]
             [com.zotohlab.frwk.server Emitter]
             [com.zotohlab.wflow FlowNode Activity
-             PTask Work]
-            [com.zotohlab.wflow Job]
+             Job WHandler PTask Work]
             [com.zotohlab.skaro.runtime AuthError]
             [com.zotohlab.skaro.core Container]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.frwk.netty NettyFW]
-            [com.zotohlab.server WorkHandler]
             [java.util Date]
             [java.io File]
             [com.zotohlab.frwk.io XData]
@@ -324,9 +322,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype AssetHandler [] WorkHandler
+(deftype AssetHandler [] WHandler
 
-  (workOn [_  j]
+  (eval [_  j]
     (require 'czlabclj.tardis.mvc.comms)
     (let [^HTTPEvent evt (.event ^Job j)]
       (HandleStatic (.emitter evt)

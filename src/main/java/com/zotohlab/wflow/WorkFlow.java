@@ -9,9 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.server;
-
-import com.zotohlab.wflow.Activity;
+package com.zotohlab.wflow;
 
 /**
  *

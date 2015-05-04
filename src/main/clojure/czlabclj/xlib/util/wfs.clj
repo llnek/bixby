@@ -24,13 +24,12 @@
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
-             ChoiceExpr Job
+             ChoiceExpr Job WorkFlow WHandler
              PTask Work]
             [com.zotohlab.frwk.server Event ServerLike
              NonEvent NulEmitter
              ServiceHandler]
             [com.zotohlab.frwk.util Schedulable]
-            [com.zotohlab.server WorkFlow WorkHandler]
             [com.zotohlab.frwk.core Activable Disposable]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
@@ -139,9 +138,9 @@
 (defn WrapPTask ""
 
   ^Activity
-  [^WorkHandler wf]
+  [^WHandler wf]
 
-  (SimPTask (fn [^Job j] (.workOn wf j))))
+  (SimPTask (fn [^Job j] (.eval wf j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,7 +150,7 @@
   [arg]
 
   (cond
-    (instance? WorkHandler arg)
+    (instance? WHandler arg)
     (reify WorkFlow
       (startWith [_] (WrapPTask arg))
       (onError [_ e]))

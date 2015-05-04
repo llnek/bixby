@@ -15,7 +15,7 @@ import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static demo.flows.Auth.getAuthMtd;
 import static java.lang.System.out;
 
-import com.zotohlab.server.WorkFlow;
+import com.zotohlab.wflow.WorkFlow;
 import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.FlowError;
 import com.zotohlab.wflow.If;

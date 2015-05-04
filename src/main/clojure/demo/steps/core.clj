@@ -22,8 +22,7 @@
 
   (:import  [com.zotohlab.wflow FlowNode Switch If
              Activity Split While PTask
-             Job]
-            [com.zotohlab.server WorkFlow]
+             WorkFlow Job]
             [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,8 +85,6 @@
 ;; While(), and how to use Split &amp; Join.
 ;;
 (deftype Demo [] WorkFlow
-
-  (onError [_ e] )
 
   (startWith [_]
     (require 'demo.steps.core)

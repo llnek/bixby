@@ -51,7 +51,6 @@
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.wflow Job
              Activity Nihil]
-            [com.zotohlab.server WorkFlow WorkHandler]
             [com.zotohlab.skaro.core ConfigError]
             [com.zotohlab.skaro.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]

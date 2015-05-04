@@ -43,9 +43,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoGen [] WorkHandler
+(deftype DemoGen [] WHandler
 
-  (workOn [_  j]
+  (eval [_  j]
     (require 'demo.file.core)
     (let [^Service p (-> ^ServiceProvider
                          (.container j)
@@ -57,9 +57,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoPick [] WorkHandler
+(deftype DemoPick [] WHandler
 
-  (workOn [_   j]
+  (eval [_   j]
     (require 'demo.file.core)
     (let [f (-> ^FileEvent (.event j)
                 (.getFile)) ]
