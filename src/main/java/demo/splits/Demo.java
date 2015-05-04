@@ -14,8 +14,8 @@ package demo.splits;
 import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static java.lang.System.out;
 
-import com.zotohlab.wflow.Activity;
 import com.zotohlab.server.WorkFlow;
+import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.Split;
 
 /**
@@ -88,11 +88,6 @@ public class Demo implements WorkFlow {
 
   private int fib(int n) {
     return (n <3) ? 1 : fib(n-2) + fib(n-1);
-  }
-
-  @Override
-  public Activity onError(Throwable e) {
-    return null;
   }
 
 }

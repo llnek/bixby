@@ -72,10 +72,11 @@ abstract class MergeNode extends FlowNode {
 
 }
 
-
 /**
+ * 
  * @author kenl
  *
+ */
 class NullJoin extends Merge {
 
   public FlowNode reifyNode(FlowNode cur) {
@@ -93,4 +94,3 @@ class NullJoin extends Merge {
   }
 
 }
-*/

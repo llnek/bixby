@@ -20,11 +20,13 @@ import com.zotohlab.frwk.server.ServiceHandler;
 import com.zotohlab.frwk.util.CoreUtils;
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.util.Schedulable;
+import com.zotohlab.wflow.Delay;
 
 /**
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public abstract class FlowNode implements RunnableWithId {
 
   private static Logger _log = getLogger(lookup().lookupClass());

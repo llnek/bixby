@@ -9,16 +9,15 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package com.zotohlab.wflow;
+package com.zotohlab.server;
 
+import com.zotohlab.wflow.Activity;
 
 /**
+ *
  * @author kenl
  *
  */
-@FunctionalInterface
-public interface Work {
-  public Object on(FlowNode cur, Job j);
+public interface WorkFlowEx extends WorkFlow {
+  public Activity onError(Throwable e);
 }
-
-

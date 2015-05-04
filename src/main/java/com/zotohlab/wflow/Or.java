@@ -67,19 +67,24 @@ class OrNode extends MergeNode {
       rc= (_body== null) ? nx : _body;
       // there is only one? end it
       if(size() == 1) {
-        realize();
+        done();
       }
     }
     else
     if ( nv >= size() ) {
       // don't care about others
       rc=null;
-      realize();
+      done();
     }
 
     return rc;
   }
 
+  private void done() {
+    tlog().debug("OrNode: all branches have returned.");
+    realize();    
+  }
+  
 }
 
 

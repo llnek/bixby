@@ -83,7 +83,7 @@ class IfNode extends ConditionalNode {
 
   public FlowNode eval(Job j) {
     boolean b = test(j);
-    tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
+    //tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
     FlowNode rc = b ? _then : _else;
     realize();
     return rc;

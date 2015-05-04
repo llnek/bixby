@@ -29,11 +29,12 @@ public interface Job extends Gettable , Settable, Identifiable {
   public Object getLastResult() ;
 
   public ServerLike container();
-  
+    
   public void finz();
   
   public Event event() ;
 
+  public WorkFlow workflow();
 }
 
 

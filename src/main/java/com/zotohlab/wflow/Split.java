@@ -97,25 +97,16 @@ public class Split extends Composite {
     SplitNode p= (SplitNode) n;
     Merge m= _theMerge;
 
-    if ( m != null) {
-      // note: get all *children* to come back to the join
-      m.withBranches( size() );
-      FlowNode s = m.reify(p.next() );
-      p.withBranches( new Innards(s, listChildren() ) );      
-    } else {
-//      m = new NullJoin();
-      p.fallThrough();
-    }
-
-    /*
+    if ( m == null) {      m = new NullJoin();    }
+    m.withBranches( size() );
+    
     FlowNode s = m.reify(p.next() );
-    // note: get all *children* to come back to the join
     p.withBranches( new Innards(s, listChildren() ) );
 
     if (m instanceof NullJoin) {
         p.fallThrough();
     }
-    */
+    
   }
 
 
@@ -145,6 +136,10 @@ class SplitNode extends CompositeNode {
 
     realize();
 
+    if (_fallThru) {
+      //tlog().debug("SplitNode: falling falling falling through.");
+    }
+    
     return _fallThru ? next() : null;
   }
 

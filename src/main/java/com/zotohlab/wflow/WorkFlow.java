@@ -18,8 +18,7 @@ import com.zotohlab.wflow.Activity;
  * @author kenl
  *
  */
+@FunctionalInterface
 public interface WorkFlow {
-
-  public Activity onError(Throwable e);
   public Activity startWith();
 }

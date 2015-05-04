@@ -34,7 +34,7 @@ public class Switch extends Activity {
   }
 
   public Switch(ChoiceExpr expr) {
-    _expr= expr;
+    this("",expr);
   }
 
   private Map<Object,Activity> _choices= new HashMap<>();

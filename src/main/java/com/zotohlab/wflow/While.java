@@ -11,10 +11,13 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.wflow.Delay;
+
 /**
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 public class While extends Conditional {
 
   public static While apply(String name, BoolExpr b, Activity body) {
@@ -40,9 +43,8 @@ public class While extends Conditional {
 
   public void realize(FlowNode n) {
     WhileNode p= (WhileNode) n;
-    if (_body != null) {
-      p.withBody(_body.reify(p));
-    }
+    assert(_body != null);
+    p.withBody(_body.reify(p));
     p.withTest( expr() );
   }
 

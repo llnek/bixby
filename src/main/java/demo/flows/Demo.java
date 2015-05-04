@@ -15,12 +15,13 @@ import static com.zotohlab.wflow.PTask.PTaskWrapper;
 import static demo.flows.Auth.getAuthMtd;
 import static java.lang.System.out;
 
+import com.zotohlab.server.WorkFlow;
 import com.zotohlab.wflow.Activity;
+import com.zotohlab.wflow.FlowError;
 import com.zotohlab.wflow.If;
 import com.zotohlab.wflow.Split;
 import com.zotohlab.wflow.Switch;
 import com.zotohlab.wflow.While;
-import com.zotohlab.server.WorkFlow;
 
 /**
  * What this example demostrates is a webservice which takes in some user info, authenticate the
@@ -167,11 +168,6 @@ public class Demo implements WorkFlow {
     // so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
     // a split, which forks off more steps in parallel.
     return AuthUser.chain(GetProfile).chain(Provision).chain( FinalTest);
-  }
-
-  @Override
-  public Activity onError(Throwable e) {
-    return null;
   }
 
 }

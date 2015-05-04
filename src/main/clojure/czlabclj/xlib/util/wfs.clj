@@ -92,7 +92,7 @@
 
   (^PTask [^String nm func]
     (PTask. nm (reify Work
-                 (exec [_ fw job]
+                 (on [_ fw job]
                    (apply func [fw job]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,7 +102,7 @@
   (^PTask [func] (SimPTask "" func))
 
   (^PTask [^String nm func]
-    (PTask. nm (reify Work (exec [_ fw job] (apply func [job]))))))
+    (PTask. nm (reify Work (on [_ fw job] (apply func [job]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

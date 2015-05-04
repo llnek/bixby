@@ -63,11 +63,16 @@ class AndNode extends MergeNode {
     // all branches have returned, proceed...
     if (nv == size() ) {
       rc= (_body == null) ? next() : _body;
-      realize();
+      done();
     }
     return rc;
   }
 
+  private void done() {
+    tlog().debug("AndNode: all branches have returned.");
+    realize();    
+  }
+  
 }
 
 

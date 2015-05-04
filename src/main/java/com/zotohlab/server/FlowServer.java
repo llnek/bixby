@@ -55,30 +55,22 @@ public class FlowServer implements ServerLike, ServiceHandler {
     try {
       FlowServer s= new FlowServer(NulCore.apply()).start();
       Activity a, b, c,d,e,f;
-      a= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job) {
+      a= PTask.apply((FlowNode cur, Job job)-> {
           System.out.println("A");
           return null;
-        }
       });
-      b= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job) {
+      b= PTask.apply((FlowNode cur, Job job) -> {
           System.out.println("B");
           return null;
-        }
       });
       c= a.chain(b);
-      d= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job) {
+      d= PTask.apply((FlowNode cur, Job job) -> {
           System.out.println("D");
           return null;
-        }
       });
-      e= PTask.apply(new Work() {
-        public Object exec(FlowNode cur, Job job) {
+      e= PTask.apply((FlowNode cur, Job job) -> {
           System.out.println("E");
           return null;
-        }
       });
       f= d.chain(e);
 
@@ -118,40 +110,50 @@ public class FlowServer implements ServerLike, ServiceHandler {
 
   @Override
   public Object handleError(Throwable t) {
+    if (t instanceof FlowError) {
+      FlowError fe = (FlowError)t;
+      FlowNode n=fe.getLastNode();
+      if (n != null) {
+        return n.job().handleError(t);
+      }
+    }
     return null;
   }
 
   @Override
   public Object handle(Object work, Object options) throws Exception {
-    Activity a=null;
+    WorkFlow wf= null;
     if (work instanceof WorkHandler) {
       final WorkHandler h = (WorkHandler)work;
-      a=new PTask(new Work(){
-        @Override
-        public Object exec(FlowNode cur, Job j) {
-          return h.workOn(j);
-        }});
+      wf=() -> {
+          return PTask.apply( (FlowNode cur, Job j) -> {
+            return h.workOn(j);
+          });
+      };
     }
     else
     if (work instanceof WorkFlow) {
-      WorkFlow w = (WorkFlow) work;
-      a= w.startWith();
+      wf= (WorkFlow) work;
     }
     else
     if (work instanceof Work) {
-      a= new PTask((Work)work);
+      wf= () -> {
+          return new PTask((Work)work);
+      };
     }
     else
     if (work instanceof Activity) {
-      a= (Activity) work;
+      wf = () -> {
+        return (Activity) work;        
+      };
     }
 
-    if (a == null) {
-      throw new FlowError("no valid activity to handle.");
+    if (wf == null) {
+      throw new FlowError("no valid workflow to handle.");
     }
 
-    FlowNode end= Nihil.apply().reify( _jctor.newJob());
-    core().run( a.reify(end));
+    FlowNode end= Nihil.apply().reify( _jctor.newJob(wf));
+    core().run( wf.startWith().reify(end));
     return null;
   }
 
@@ -169,11 +171,11 @@ class JobCreator {
     _server=s;
   }
 
-  public Job newJob() {
-    return newJob(new NonEvent(_server._mock));
+  public Job newJob(WorkFlow wf) {
+    return newJob(wf, new NonEvent(_server._mock));
   }
   
-  public Job newJob(final Event evt) {
+  public Job newJob(WorkFlow wf, final Event evt) {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
       private long _id= CoreUtils.nextSeqLong();
@@ -230,6 +232,11 @@ class JobCreator {
       @Override
       public Object getLastResult() {
         return _m.get(JS_LAST);
+      }
+
+      @Override
+      public Activity handleError(Throwable t) {
+        return wf.onError(t);
       }
 
     };

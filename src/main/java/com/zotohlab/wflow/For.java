@@ -20,6 +20,8 @@ package com.zotohlab.wflow;
  */
 public class For extends While {
 
+  public static final String JS_INDEX = "____index";
+  
   public static For apply(CounterExpr loopCount, Activity body) {
     return new For(loopCount, body);
   }
@@ -47,6 +49,7 @@ public class For extends While {
  * @author kenl
  *
  */
+@SuppressWarnings("unused")
 class LoopExpr implements BoolExpr {
 
   public LoopExpr(FlowNode pt, CounterExpr cnt) {
@@ -56,20 +59,18 @@ class LoopExpr implements BoolExpr {
 
   private CounterExpr _cnt;
   private FlowNode _point;
-
-  private boolean _started=false;
   private int _loop=0;
 
   public boolean evaluate(Job j) {
-    try {
-      if (!_started) {
-        _loop=_cnt.getCount(j);
-        _started=true;
-      }
-      _point.tlog().debug("LoopExpr: loop {}", _loop);
-      return _loop > 0;
-    } finally {
-      _loop -= 1;
+    int c= _cnt.getCount(j);
+    int v= _loop;
+    if (v < c) {
+      //_point.tlog().debug("LoopExpr: loop {}", v);
+      j.setv(For.JS_INDEX, v);
+      ++_loop;
+      return true;
+    } else {      
+      return false;
     }
   }
 
