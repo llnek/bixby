@@ -24,7 +24,8 @@
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
-             ChoiceExpr Job WorkFlow WHandler
+             ChoiceExpr Job WorkFlow WorkFlowEx
+             WHandler FlowError
              PTask Work]
             [com.zotohlab.frwk.server Event ServerLike
              NonEvent NulEmitter
@@ -40,10 +41,11 @@
 ;;
 (defn MakeJob ""
 
-  (^Job [^ServerLike parObj]
-        (MakeJob parObj (NonEvent. (NulEmitter. parObj))))
+  (^Job [^ServerLike parObj ^WorkFlow wf]
+        (MakeJob parObj wf (NonEvent. (NulEmitter. parObj))))
 
   (^Job [^ServerLike parObj
+         ^WorkFlow wfw
          ^Event evt]
     (let [impl (MakeMMap)
           jid (NextLong) ]
@@ -69,6 +71,7 @@
         (unsetv [this k] (.clrf! this k))
         (getv [this k] (.getf this k))
         (container [_] parObj)
+        (workflow [_] wfw)
         (event [_] evt)
         (id [_] jid)))))
 
@@ -140,7 +143,7 @@
   ^Activity
   [^WHandler wf]
 
-  (SimPTask (fn [^Job j] (.eval wf j))))
+  (SimPTask (fn [^Job j] (.run wf j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,23 +155,28 @@
   (cond
     (instance? WHandler arg)
     (reify WorkFlow
-      (startWith [_] (WrapPTask arg))
-      (onError [_ e]))
+      (startWith [_] (WrapPTask arg)))
 
     (instance? WorkFlow arg)
     arg
 
+    (instance? Work arg)
+    (reify WorkFlow
+      (startWith [_] (PTask/apply ^Work arg)))
+
     (instance? Activity arg)
     (reify WorkFlow
-      (startWith [_] arg)
-      (onError [_ e]))
+      (startWith [_] arg))
 
     (fn? arg)
     (reify WorkFlow
-      (startWith [_] (SimPTask arg))
-      (onError [_ e]))
+      (startWith [_] (SimPTask arg)))
 
-    :else nil))
+    :else
+    (do
+      (log/warn "unknown object type "
+                (type arg) ", cannot cast to WorkFlow.")
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,31 +185,33 @@
   ^ServerLike
   [^Schedulable cpu options]
 
-  (let [options (or options {})
-        errorHandler (:error options)
-        svcHandler (:service options) ]
+  (let [options (or options {})]
     (-> ^Activable
         cpu
-        (.activate { :threads 1, :trace false }))
+        (.activate { :threads 1 :trace false }))
     (reify
 
       ServiceHandler
 
       (handle [this arg opts]
-        (if (fn? svcHandler)
-          (svcHandler arg opts)
-          (let [w (ToWorkFlow arg)
-                j (MakeJob this)
-                opts (or opts {})]
-            (doseq [[k v] (seq opts)]
-              (.setv j k v))
-            (.run cpu (.reify (.startWith w)
-                              (-> (Nihil/apply)
-                                  (.reify j)))))))
+        (let [w (ToWorkFlow arg)
+              j (MakeJob this w)
+              opts (or opts {})]
+          (doseq [[k v] (seq opts)]
+            (.setv j k v))
+          (.run cpu (.reify (.startWith w)
+                            (-> (Nihil/apply)
+                                (.reify j))))))
 
       (handleError [_ e]
-        (when (fn? errorHandler)
-          (errorHandler e)))
+        (with-local-vars [done false]
+          (when-let [^FlowError fe (if (instance? FlowError e) e)]
+            (when-let [n (.getLastNode fe)]
+              (let [w (-> (.job n)(.workflow))]
+                (when (instance? WorkFlowEx w)
+                  (var-set done true)
+                  (.onError ^WorkFlowEx w (.getCause fe))))))
+          (when-not done nil)))
 
       Disposable
       (dispose [_] (.dispose cpu))

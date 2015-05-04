@@ -30,7 +30,7 @@
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable Disposable Startable]
             [com.zotohlab.skaro.core Container]
-            [com.zotohlab.wflow Job Nihil Activity]
+            [com.zotohlab.wflow WorkFlow Job Nihil Activity]
             [com.google.gson JsonObject JsonArray]
             [java.util Map]))
 

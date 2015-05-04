@@ -21,9 +21,8 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.wfs :only [SimPTask]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [java.util.concurrent.atomic AtomicInteger]
-            [com.zotohlab.server WorkHandler]
             [java.util Date]
             [com.zotohlab.skaro.io TimerEvent]
             [com.zotohlab.skaro.core Container]))
@@ -40,9 +39,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.timer.core)
     (let [^TimerEvent ev (.event ^Job j) ]
       (if (.isRepeating ev)

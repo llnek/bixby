@@ -20,11 +20,10 @@
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [java.util ListIterator]
             [com.zotohlab.frwk.io XData]
-            [com.zotohlab.server WorkHandler]
             [com.zotohlab.frwk.net ULFileItem ULFormItems]
             [com.zotohlab.skaro.core Container]))
 
@@ -33,9 +32,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.http.formpost)
     (let [^HTTPEvent ev (.event  ^Job j)
           res (.getResultObj ev)

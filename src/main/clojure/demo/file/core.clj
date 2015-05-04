@@ -20,11 +20,10 @@
   (:use [czlabclj.xlib.util.core :only [Try!]]
         [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask ]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask ]
             [com.zotohlab.skaro.core Container]
             [com.zotohlab.skaro.io FileEvent]
             [com.zotohlab.frwk.server ServiceProvider Service]
-            [com.zotohlab.server WorkHandler]
             [java.util.concurrent.atomic AtomicInteger]
             [org.apache.commons.io FileUtils]
             [java.util Date]
@@ -45,7 +44,7 @@
 ;;
 (deftype DemoGen [] WHandler
 
-  (eval [_  j]
+  (run [_  j]
     (require 'demo.file.core)
     (let [^Service p (-> ^ServiceProvider
                          (.container j)
@@ -59,7 +58,7 @@
 ;;
 (deftype DemoPick [] WHandler
 
-  (eval [_   j]
+  (run [_   j]
     (require 'demo.file.core)
     (let [f (-> ^FileEvent (.event j)
                 (.getFile)) ]

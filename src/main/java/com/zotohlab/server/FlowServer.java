@@ -141,7 +141,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
       final WHandler h = (WHandler)work;
       wf=() -> {
           return PTask.apply( (FlowNode cur, Job j) -> {
-            return h.eval(j);
+            return h.run(j);
           });
       };
     }

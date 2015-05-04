@@ -49,7 +49,7 @@
              Hierarchial Startable]
             [com.zotohlab.frwk.util Schedulable IWin32Conf]
             [com.zotohlab.frwk.i18n I18N]
-            [com.zotohlab.wflow Job
+            [com.zotohlab.wflow Job WorkFlow
              Activity Nihil]
             [com.zotohlab.skaro.core ConfigError]
             [com.zotohlab.skaro.etc CliMain]
@@ -147,7 +147,7 @@
       (handle [this arg options]
         (let [options (or options {})
               w (ToWorkFlow arg)
-              j (MakeJob this)]
+              j (MakeJob this w)]
           (doseq [[k v] (seq options)]
             (.setv j k v))
           (.run cpu (.reify (.startWith w)

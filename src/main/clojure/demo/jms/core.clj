@@ -20,8 +20,7 @@
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
-            [com.zotohlab.server WorkHandler]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [com.zotohlab.skaro.io JMSEvent]
             [javax.jms TextMessage]
             [java.util.concurrent.atomic AtomicInteger]
@@ -39,9 +38,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.jms.core)
     (let [^JMSEvent ev (.event ^Job j)
           ^TextMessage msg (.getMsg ev) ]

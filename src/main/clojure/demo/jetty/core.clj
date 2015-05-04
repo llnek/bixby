@@ -20,8 +20,7 @@
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
-            [com.zotohlab.server WorkHandler]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.skaro.core Container]))
 
@@ -43,9 +42,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.jetty.core)
     (let [^HTTPEvent ev (.event ^Job j)
           res (.getResultObj ev) ]

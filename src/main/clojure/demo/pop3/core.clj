@@ -20,9 +20,8 @@
         [czlabclj.xlib.util.core :only [notnil?]]
         [czlabclj.xlib.util.str :only [nsb]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [org.apache.commons.io IOUtils]
-            [com.zotohlab.server WorkHandler]
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
@@ -41,9 +40,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.pop3.core)
     (let [^EmailEvent ev (.event ^Job j)
           ^MimeMessage msg (.getMsg ev)

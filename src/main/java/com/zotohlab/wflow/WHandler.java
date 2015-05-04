@@ -19,5 +19,5 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface WHandler {
-  public Object handle(Job j);
+  public Object run(Job j);
 }

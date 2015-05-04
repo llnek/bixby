@@ -109,10 +109,10 @@
 (defn- mkJob ""
 
   ^Job
-  [container evt]
+  [container wf evt]
 
   (with-meta
-    (MakeJob container evt)
+    (MakeJob container wf evt)
     { :typeid (ToKW "czc.tardis.impl" "Job") }
   ))
 
@@ -144,15 +144,15 @@
                 cfg (.getAttr src :emcfg)
                 c0 (nsb (:handler cfg))
                 c1 (nsb (:router options))
-                job (mkJob parObj evt) ]
+                wf (MakeObj (if (hgl? c1) c1 c0))
+                job (mkJob parObj wf evt) ]
             (log/debug "Event type = " (type evt))
             (log/debug "Event options = " options)
             (log/debug "Event router = " c1)
             (log/debug "IO handler = " c0)
             (try
-              (let [z (MakeObj (if (hgl? c1) c1 c0))]
-                (.setv job EV_OPTS options)
-                (.handle hr z job))
+              (.setv job EV_OPTS options)
+              (.handle hr wf job)
               (catch Throwable _
                 (.handle hr (MakeFatalErrorFlow job) job)))))
 

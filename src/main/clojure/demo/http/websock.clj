@@ -21,8 +21,7 @@
         [czlabclj.xlib.util.str :only [nsb]]
         [czlabclj.xlib.util.meta :only [IsBytes?]])
 
-  (:import  [com.zotohlab.wflow Job FlowNode PTask]
-            [com.zotohlab.server WorkHandler]
+  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.skaro.io WebSockEvent
                                    WebSockResult]
@@ -33,9 +32,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkHandler
+(deftype Demo [] WHandler
 
-  (workOn [_  j]
+  (run [_  j]
     (require 'demo.http.websock)
     (let [^WebSockEvent ev (.event ^Job j)
           res (.getResultObj ev)

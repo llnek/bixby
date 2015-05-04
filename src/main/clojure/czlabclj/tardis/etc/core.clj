@@ -28,7 +28,7 @@
   (:import  [com.zotohlab.skaro.etc CmdHelpError]
             [com.zotohlab.frwk.server ServiceHandler ServerLike]
             [com.zotohlab.wflow Activity
-             Nihil
+             WorkFlowEx Nihil
              Job Switch]
             [com.zotohlab.frwk.i18n I18N]
             [java.util ResourceBundle List Locale]
@@ -154,16 +154,19 @@
 
   [^File home ^ResourceBundle rcb args]
 
-  (let [a (-> (cmdStart)
-              (.chain (parseArgs))
-              (.chain (execArgs)))]
+  (let [wf (reify WorkFlowEx
+             (startWith [_]
+               (-> (cmdStart)
+                   (.chain (parseArgs))
+                   (.chain (execArgs))))
+             (onError [_ e] (Usage)))]
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (-> ^ServiceHandler
-        (FlowServer (NulScheduler) {:error (fn [_] (Usage)) })
-        (.handle a {:home home
-                    :rcb rcb
-                    JS_LAST args}))
+        (FlowServer (NulScheduler) {})
+        (.handle wf {:home home
+                     :rcb rcb
+                     JS_LAST args}))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
