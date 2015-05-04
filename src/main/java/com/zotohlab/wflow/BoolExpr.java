@@ -17,7 +17,7 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface BoolExpr {
-  public boolean evaluate(Job j);
+  public boolean ptest(Job j);
 }
 
 

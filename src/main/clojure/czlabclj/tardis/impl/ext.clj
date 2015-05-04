@@ -23,7 +23,7 @@
         [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [LoadResource]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.wfs :only [WrapPTask MakeJob SimPTask]]
+        [czlabclj.xlib.util.wfs :only [WrapPTask NewJob SimPTask]]
         [czlabclj.xlib.util.files
          :only
          [ReadOneFile WriteOneFile FileRead?]]
@@ -112,7 +112,7 @@
   [container wf evt]
 
   (with-meta
-    (MakeJob container wf evt)
+    (NewJob container wf evt)
     { :typeid (ToKW "czc.tardis.impl" "Job") }
   ))
 

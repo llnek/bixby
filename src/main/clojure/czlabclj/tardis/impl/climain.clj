@@ -147,7 +147,7 @@
       (handle [this arg options]
         (let [options (or options {})
               w (ToWorkFlow arg)
-              j (MakeJob this w)]
+              j (NewJob this w)]
           (doseq [[k v] (seq options)]
             (.setv j k v))
           (.run cpu (.reify (.startWith w)

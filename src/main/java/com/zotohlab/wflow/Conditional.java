@@ -50,7 +50,7 @@ abstract class ConditionalNode extends FlowNode {
   }
 
   protected boolean test(Job j) {
-    return _expr.evaluate(j);
+    return _expr.ptest(j);
   }
 
   private BoolExpr _expr;

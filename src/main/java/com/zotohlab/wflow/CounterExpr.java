@@ -17,7 +17,7 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface CounterExpr {
-  public int getCount(Job job);
+  public int gcount(Job job);
 }
 
 

@@ -23,6 +23,10 @@ public class NonEvent implements Event {
     _emit=em;
   }
   
+  public NonEvent(ServerLike s) {
+    this(new NulEmitter(s));
+  }
+  
   @Override
   public Object getId() {
     return "nada";

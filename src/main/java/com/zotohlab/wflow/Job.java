@@ -34,7 +34,7 @@ public interface Job extends Gettable , Settable, Identifiable {
   
   public Event event() ;
 
-  public WorkFlow workflow();
+  public WorkFlow wflow();
 }
 
 

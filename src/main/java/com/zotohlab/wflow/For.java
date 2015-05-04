@@ -61,8 +61,8 @@ class LoopExpr implements BoolExpr {
   private FlowNode _point;
   private int _loop=0;
 
-  public boolean evaluate(Job j) {
-    int c= _cnt.getCount(j);
+  public boolean ptest(Job j) {
+    int c= _cnt.gcount(j);
     int v= _loop;
     if (v < c) {
       //_point.tlog().debug("LoopExpr: loop {}", v);

@@ -20,7 +20,7 @@
          :only [NulScheduler MakeScheduler]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core
-         :only [Muble MakeMMap NextLong]])
+         :only [Cast? Muble MakeMMap NextLong]])
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
@@ -39,10 +39,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJob ""
+(defn NewJob ""
 
   (^Job [^ServerLike parObj ^WorkFlow wf]
-        (MakeJob parObj wf (NonEvent. (NulEmitter. parObj))))
+        (NewJob parObj wf (NonEvent. parObj)))
 
   (^Job [^ServerLike parObj
          ^WorkFlow wfw
@@ -71,20 +71,9 @@
         (unsetv [this k] (.clrf! this k))
         (getv [this k] (.getf this k))
         (container [_] parObj)
-        (workflow [_] wfw)
+        (wflow [_] wfw)
         (event [_] evt)
         (id [_] jid)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro DefMorphable ""
-
-  [typesym morphFunc]
-
-  `(deftype ~typesym [] com.zotohlab.frwk.core.Morphable
-     (morph [_]
-       (require '~(ns-name *ns*))
-       (~morphFunc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,8 +102,7 @@
   ^BoolExpr
   [func]
 
-  (reify BoolExpr (evaluate [_ job] (apply func [job]))
-  ))
+  (reify BoolExpr (ptest [_ job] (apply func [job]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -123,7 +111,7 @@
   ^ChoiceExpr
   [func]
 
-  (reify ChoiceExpr (getChoice [_ job] (apply func [job]))
+  (reify ChoiceExpr (choice [_ job] (apply func [job]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +121,7 @@
   ^CounterExpr
   [func]
 
-  (reify CounterExpr (getCount [_ job] (apply func [job]))
+  (reify CounterExpr (gcount [_ job] (apply func [job]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -188,14 +176,15 @@
   (let [options (or options {})]
     (-> ^Activable
         cpu
-        (.activate { :threads 1 :trace false }))
+        (.activate {:threads 1
+                    :trace false }))
     (reify
 
       ServiceHandler
 
       (handle [this arg opts]
         (let [w (ToWorkFlow arg)
-              j (MakeJob this w)
+              j (NewJob this w)
               opts (or opts {})]
           (doseq [[k v] (seq opts)]
             (.setv j k v))
@@ -205,15 +194,15 @@
 
       (handleError [_ e]
         (with-local-vars [done false]
-          (when-let [^FlowError fe (if (instance? FlowError e) e)]
-            (when-let [n (.getLastNode fe)]
-              (let [w (-> (.job n)(.workflow))]
-                (when (instance? WorkFlowEx w)
-                  (var-set done true)
-                  (.onError ^WorkFlowEx w (.getCause fe))))))
+          (when-let [^FlowError fe (Cast? FlowError e)]
+          (when-let [n (.getLastNode fe)]
+          (when-let [w (Cast? WorkFlowEx (-> (.job n)(.wflow)))]
+            (var-set done true)
+            (.onError ^WorkFlowEx w (.getCause fe)))))
           (when-not done nil)))
 
       Disposable
+
       (dispose [_] (.dispose cpu))
 
       ServerLike

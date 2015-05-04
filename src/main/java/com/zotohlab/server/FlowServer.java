@@ -120,7 +120,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
       FlowNode n=fe.getLastNode();
       Object obj = null;
       if (n != null) {
-        obj= n.job().workflow();
+        obj= n.job().wflow();
       }
       if (obj instanceof WorkFlowEx) {
         ex= (WorkFlowEx)obj;
@@ -249,7 +249,7 @@ class JobCreator {
       }
 
       @Override
-      public WorkFlow workflow() {
+      public WorkFlow wflow() {
         return wf;
       }
 

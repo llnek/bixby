@@ -18,7 +18,7 @@ package com.zotohlab.wflow;
 @FunctionalInterface
 public interface ChoiceExpr {
 
-  public Object getChoice(Job job);
+  public Object choice(Job job);
 
 }
 

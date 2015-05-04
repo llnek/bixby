@@ -113,7 +113,7 @@ class SwitchNode extends FlowNode {
   public FlowNode defn() { return  _def; }
 
   public FlowNode eval(Job j) {
-    Object m= _expr.getChoice(j);
+    Object m= _expr.choice(j);
     FlowNode a= null;
 
     if (m != null) {
