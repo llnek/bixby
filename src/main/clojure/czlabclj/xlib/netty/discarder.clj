@@ -52,12 +52,12 @@
         (when (instance? LastHttpContent msg)
           (NettyFW/replyXXX ch 200)
           (when (fn? callback)
-            (Try! (apply callback nil))))))
+            (Try! (apply callback []))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- discarder ""
+(defn- discarder "Netty pipeline with standard handlers."
 
   ^PipelineConfigurator
   [callback]
@@ -76,14 +76,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeDiscardHTTPD "Just returns 200 OK"
+(defn MakeDiscardHTTPD "Discards the request, just returns 200 OK"
 
-  [^String host port options callback]
-
-  (let [^ServerBootstrap bs (InitTCPServer (discarder callback) options)
-        ch (StartServer bs host port) ]
-    {:bootstrap bs :channel ch}
-  ))
+  ([^String host port callback] (MakeDiscardHTTPD host port {} callback))
+  ([^String host port options callback]
+    (let [bs (InitTCPServer (discarder callback) options)
+          ch (StartServer bs host port) ]
+      {:bootstrap bs :channel ch})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

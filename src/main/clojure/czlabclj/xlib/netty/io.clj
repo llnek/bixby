@@ -32,6 +32,7 @@
              ChannelOption ChannelFutureListener
              Channel ChannelHandler]
             [io.netty.handler.ssl SslHandler]
+            [io.netty.buffer Unpooled]
             [io.netty.channel.socket.nio NioDatagramChannel
              NioServerSocketChannel]
             [io.netty.channel.nio NioEventLoopGroup]
@@ -40,14 +41,14 @@
             [java.io InputStream IOException]
             [java.util Map Map$Entry]
             [io.netty.handler.codec.http HttpHeaders HttpMessage
-             LastHttpContent
+             LastHttpContent DefaultFullHttpResponse
              DefaultFullHttpRequest HttpContent
              HttpRequest HttpResponse FullHttpRequest
-             QueryStringDecoder
-             HttpRequestDecoder
+             QueryStringDecoder HttpResponseStatus
+             HttpRequestDecoder HttpVersion
              HttpResponseEncoder]
            [io.netty.bootstrap Bootstrap ServerBootstrap]
-           [io.netty.util ReferenceCountUtil]
+           [io.netty.util CharsetUtil ReferenceCountUtil]
            [io.netty.handler.codec.http.websocketx
             WebSocketServerProtocolHandler]
            [io.netty.handler.stream ChunkedWriteHandler]
@@ -85,6 +86,17 @@
   [^ChannelFuture cf]
 
   (.addListener cf ChannelFutureListener/CLOSE))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DftFullResp ""
+
+  ^DefaultFullHttpResponse
+  [^String s]
+
+  (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
+                            HttpResponseStatus/OK
+                            (Unpooled/copiedBuffer s CharsetUtil/UTF_8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

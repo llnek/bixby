@@ -29,6 +29,7 @@
              SimpleChannelInboundHandler
              ChannelHandler]
             [io.netty.handler.codec.http HttpHeaders
+             HttpHeaders$Names HttpHeaders$Values
              HttpVersion
              HttpContent DefaultFullHttpResponse
              HttpResponseStatus CookieDecoder
@@ -44,6 +45,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+(def ^:private KALIVE (AttributeKey. "keepalive"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- writeReply ""
@@ -53,28 +56,28 @@
    ^StringBuilder buf
    ^HttpContent curObj ]
 
-  (let [ka (-> (.attr ctx (AttributeKey. "keepalive"))(.get))
-        response (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
-                                           HttpResponseStatus/OK
-                                           (Unpooled/copiedBuffer (nsb buf)
-                                                                  CharsetUtil/UTF_8))
-        clen (-> response (.content)(.readableBytes)) ]
-    (-> response (.headers)(.set "content-type" "text/plain; charset=UTF-8"))
-    (-> response (.headers)(.set "content-length" (str clen)))
-    (when ka (-> response (.headers)(.set "connection" "keep-alive")))
+  (let [res (DftFullRsp (nsb buf))
+        clen (-> (.content res)(.readableBytes)) ]
+    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_TYPE "text/plain; charset=UTF-8"))
+    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_LENGTH (str clen)))
+    (-> (.headers res)
+        (.set HttpHeaders$Names/CONNECTION
+              (if (-> (.attr ctx KALIVE)(.get))
+                  HttpHeaders$Values/KEEP_ALIVE
+                  HttpHeaders$Values/CLOSE)))
     (let [cs (CookieDecoder/decode (nsb cookieBuf)) ]
       (if (.isEmpty cs)
-        (do
-          (-> response (.headers)(.add "set-cookie"
-                                       (ServerCookieEncoder/encode "key1" "value1")))
-          (-> response (.headers)(.add "set-cookie"
-                                       (ServerCookieEncoder/encode "key2" "value2"))))
-        (doseq [v (seq cs) ]
-          (-> response (.headers)(.add "set-cookie"
-                                       (ServerCookieEncoder/encode ^Cookie v))))))
-    (.setLength cookieBuf 0)
-    (.setLength buf 0)
-    (.write ctx response)
+        (doto (.headers res)
+          (.add HttpHeaders$Names/SET_COOKIE
+                (ServerCookieEncoder/encode "key1" "value1"))
+          (.add HttpHeaders$Names/SET_COOKIE
+                (ServerCookieEncoder/encode "key2" "value2")))
+        (doseq [^Cookie v (seq cs) ]
+          (-> (.headers res)(.add HttpHeaders$Names/SET_COOKIE
+                                  (ServerCookieEncoder/encode v))))))
+    ;;(.setLength cookieBuf 0)
+    ;;(.setLength buf 0)
+    (.write ctx res)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
