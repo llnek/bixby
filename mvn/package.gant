@@ -94,13 +94,16 @@ target (packRes: '') {
 }
 
 target (packDocs: '') {
+  ant.delete (dir: "${packDir}/docs/api", quiet: true)
   ant.mkdir (dir: "${packDir}/docs/api")
+
   ant.copy (todir: "${packDir}/docs") {
     fileset (dir: "${basedir}/docs", erroronmissingdir: false) {
       exclude (name: 'dummy.txt')
       exclude (name: '.svn')
     }
   }
+
   ant.javadoc(destdir:"${packDir}/docs/api",
       access:"protected",
       author:true,
@@ -120,17 +123,27 @@ target (packDocs: '') {
     }
   }
 
-  if (false) {
-  ant.java (classname: 'autodoc.autodoc',
-    fork: true,
-    failonerror: true) {
-    classpath (refid: 'docoPathId')
-    arg (value: '--name=Skaro')
-    arg (value: "--root=${basedir}")
-    arg (value: '--source-path=src/main/clojure')
-    arg (value: "--output-path=${packDir}/docs/api")
+  ant.java(classname: "autodoc.autodoc",
+           fork:true,
+           failonerror:true) {
+    classpath() {
+      pathelement (location: "${srcDir}/clojure")
+      fileset (dir: "${libDir}/test") {
+        include (name: '*.jar')
+      }
+      pathelement(location: "${buildDir}")
+      pathelement(location: "${cljDocJar}")
+      pathelement(location: "${cljBuildDir}")
+    }
+
+    arg(value: '--source-path=src/main/clojure')
+    arg(value: "--output-path=${packDir}/docs/api")
+    arg(value: "--root=${basedir}")
+    arg(value:'--name=Skaro')
+    arg(value:'--description=Skaro Documentation')
+    arg(value:'--page-title=Skaro API Documentation')
   }
-  }
+
 }
 
 target (packSrc: '') {
