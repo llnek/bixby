@@ -46,16 +46,13 @@
   []
 
   (proxy [RequestFilter][]
+
     (handleInboundMsg [c obj]
       (let [^ChannelHandlerContext ctx c
-            ^HttpMessage msg obj
-            ch (.channel ctx)
-            info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-            isc (:is-chunked info)
-            mtd (:method info)
-            clen (:clen info) ]
-        (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
-        (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
+            ^HttpMessage msg obj ]
+        (doto ctx
+          (NettyFW/setAttr NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
+          (NettyFW/setAttr NettyFW/XDATA_KEY (XData.)))
         (.handleMsgChunk ^RequestFilter this ctx msg)))
 
     (channelRead0 [c obj]

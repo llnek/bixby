@@ -303,6 +303,12 @@ public enum NettyFW {
   public static HttpResponse makeFullHttpReply(int status, ByteBuf payload) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status), payload);
   }
+  
+  public static HttpResponse makeFullHttpReply(int status, String payload) {
+    return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , 
+        HttpResponseStatus.valueOf(status), 
+        Unpooled.copiedBuffer(payload, CharsetUtil.UTF_8));
+  }
 
   public static HttpResponse makeFullHttpReply(int status) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status));

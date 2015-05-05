@@ -29,6 +29,7 @@
              SimpleChannelInboundHandler
              ChannelFuture ChannelHandler]
             [io.netty.handler.codec.http HttpHeaders
+             HttpHeaders$Names
              HttpMessage HttpContent HttpRequest LastHttpContent]
             [io.netty.handler.codec.http.multipart InterfaceHttpData
              DefaultHttpDataFactory
@@ -119,11 +120,13 @@
   "****************************************************************")
   (let [tkns (StringUtils/split body \&)
         fis (ULFormItems.) ]
-    (when (and (notnil? tkns)(> (alength tkns) 0))
+    (when (and (notnil? tkns)
+               (> (alength tkns) 0))
       (areduce tkns n memo nil
         (let [t (nsb (aget tkns n))
               ss (StringUtils/split t \=) ]
-          (when (and (notnil? ss)(> (alength ss) 0))
+          (when (and (notnil? ss)
+                     (> (alength ss) 0))
             (let [fi (URLDecoder/decode (aget ss 0) "utf-8")
                   fv (if (> (alength ss) 1)
                          (URLDecoder/decode  (aget ss 1) "utf-8")
@@ -160,7 +163,8 @@
             ^HttpPostRequestDecoder
             dc (NettyFW/getAttr ctx NettyFW/FORMDEC_KEY)
             ^ULFormItems
-            fis (NettyFW/getAttr ctx NettyFW/FORMITMS_KEY) ]
+            fis (NettyFW/getAttr ctx
+                                 NettyFW/FORMITMS_KEY) ]
         (if (nil? dc)
           ;;(proxy-super handleMsgChunk ctx msg)
           (.handleMsgChunk ^FormPostFilter this ctx msg)
@@ -190,12 +194,14 @@
             ^HttpMessage msg obj
             ch (.channel ctx)
             info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
-            ctype (-> (HttpHeaders/getHeader msg "content-type")
+            ctype (-> (HttpHeaders/getHeader msg
+                                             HttpHeaders$Names/CONTENT_TYPE)
                       nsb
                       strim
                       lcase) ]
-        (NettyFW/setAttr ctx NettyFW/FORMITMS_KEY (ULFormItems.))
-        (NettyFW/setAttr ctx NettyFW/XDATA_KEY (XData.))
+        (doto ctx
+          (NettyFW/setAttr NettyFW/FORMITMS_KEY (ULFormItems.))
+          (NettyFW/setAttr NettyFW/XDATA_KEY (XData.)))
         (if (< (.indexOf ctype "multipart") 0)
           (do
           ;; nothing to decode.

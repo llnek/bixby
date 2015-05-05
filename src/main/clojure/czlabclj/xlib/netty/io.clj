@@ -41,6 +41,8 @@
             [java.io InputStream IOException]
             [java.util Map Map$Entry]
             [io.netty.handler.codec.http HttpHeaders HttpMessage
+             HttpHeaders$Values
+             HttpHeaders$Names
              LastHttpContent DefaultFullHttpResponse
              DefaultFullHttpRequest HttpContent
              HttpRequest HttpResponse FullHttpRequest
@@ -86,17 +88,6 @@
   [^ChannelFuture cf]
 
   (.addListener cf ChannelFutureListener/CLOSE))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn DftFullResp ""
-
-  ^DefaultFullHttpResponse
-  [^String s]
-
-  (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
-                            HttpResponseStatus/OK
-                            (Unpooled/copiedBuffer s CharsetUtil/UTF_8)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -323,7 +314,8 @@
 
   [^HttpMessage msg ^String method]
 
-  (let [ct (-> (HttpHeaders/getHeader msg "content-type")
+  (let [ct (-> (HttpHeaders/getHeader msg
+                                      HttpHeaders$Names/CONTENT_TYPE)
                nsb
                strim
                lcase) ]
@@ -342,14 +334,14 @@
    ^czlabclj.xlib.util.core.Muble impl]
 
   (let [info (ExtractMsgInfo req)
-        ^String mt (:method info)
-        ^String uri (:uri info)
+        {:keys[method uri]} info
         ch (.channel ctx)]
     (log/debug "First level demux of message\n{}\n\n{}" req info)
-    (NettyFW/setAttr ctx NettyFW/MSGFUNC_KEY (reifyMsgFunc))
-    (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY info)
+    (doto ctx
+      (NettyFW/setAttr NettyFW/MSGFUNC_KEY (reifyMsgFunc))
+      (NettyFW/setAttr NettyFW/MSGINFO_KEY info))
     (.setf! impl :delegate nil)
-    (if (.startsWith uri "/favicon.") ;; ignore this crap
+    (if (.startsWith (nsb uri) "/favicon.") ;; ignore this crap
       (do
         (NettyFW/replyXXX ch 404)
         (.setf! impl :ignore true))
@@ -357,15 +349,16 @@
         (Expect100Filter/handle100 ctx req)
         (.setf! impl
                 :delegate
-                (if (isFormPost req mt)
+                (if (isFormPost req method)
                   (do
                     (NettyFW/setAttr ctx
                                      NettyFW/MSGINFO_KEY
                                      (assoc info :formpost true))
                     (ReifyFormPostFilterSingleton))
                   (ReifyRequestFilterSingleton)))))
-    (when-let [^AuxHttpFilter d (.getf impl :delegate) ]
-      (.channelReadXXX d ctx req))
+    (when-let [d (.getf impl :delegate) ]
+      (-> ^AuxHttpFilter d
+          (.channelReadXXX ctx req)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,7 +372,7 @@
                         :ignore false}) ]
     (proxy [AuxHttpFilter][]
       (channelRead0 [ctx msg]
-        (let [^AuxHttpFilter d (.getf impl :delegate)
+        (let [d (.getf impl :delegate)
               e (.getf impl :ignore) ]
           (log/debug "HttpHandler got msg = " (type msg))
           (log/debug "HttpHandler delegate = " d)
@@ -388,7 +381,8 @@
             (doDemux ctx msg impl)
 
             (notnil? d)
-            (.channelReadXXX d ctx msg)
+            (-> ^AuxHttpFilter d
+                (.channelReadXXX ctx msg))
 
             (true? e)
             nil ;; ignore
@@ -403,11 +397,11 @@
 
   [^HttpRequest req]
 
-  (let [^String ws (-> (HttpHeaders/getHeader req "upgrade")
+  (let [^String ws (-> (HttpHeaders/getHeader req HttpHeaders$Names/UPGRADE)
                        nsb
                        strim
                        lcase)
-        ^String cn (-> (HttpHeaders/getHeader req "connection")
+        ^String cn (-> (HttpHeaders/getHeader req HttpHeaders$Names/CONNECTION)
                        nsb
                        strim
                        lcase)

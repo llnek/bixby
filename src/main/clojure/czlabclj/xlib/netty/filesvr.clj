@@ -26,7 +26,10 @@
         [czlabclj.xlib.util.str :only [strim nsb hgl?]]
         [czlabclj.xlib.netty.io])
 
-  (:import  [io.netty.handler.codec.http HttpHeaders LastHttpContent]
+  (:import  [io.netty.handler.codec.http
+             HttpHeaders$Names
+             HttpHeaders$Values
+             HttpHeaders LastHttpContent]
             [com.zotohlab.frwk.netty PipelineConfigurator DemuxedMsg]
             [java.io IOException File]
             [io.netty.channel ChannelHandlerContext
@@ -47,27 +50,32 @@
 
   [^Channel ch info ^XData xdata]
 
-  (let [kalive (and (notnil? info)
-                    (:keepAlive info))
-        res (NettyFW/makeHttpReply 200)
+  (let [res (NettyFW/makeHttpReply 200)
+        kalive (:keepAlive info)
         clen (.size xdata) ]
-    (HttpHeaders/setHeader res "connection" (if kalive "keep-alive" "close"))
-    (HttpHeaders/setHeader res "content-type" "application/octet-stream")
-    (HttpHeaders/setTransferEncodingChunked res)
-    (HttpHeaders/setContentLength res clen)
+    (doto res
+      (HttpHeaders/setHeader HttpHeaders$Names/CONNECTION
+                             (if kalive
+                               HttpHeaders$Values/KEEP_ALIVE
+                               HttpHeaders$Values/CLOSE))
+      (HttpHeaders/setHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
+      (HttpHeaders/setTransferEncodingChunked )
+      (HttpHeaders/setContentLength clen))
     (log/debug "Flushing file of " clen " bytes. to client.")
-    (NettyFW/writeOnly ch res)
-    (NettyFW/writeOnly ch (ChunkedStream. (.stream xdata)))
-    (NettyFW/closeCF (NettyFW/writeFlush ch
-                                         LastHttpContent/EMPTY_LAST_CONTENT)
-                     kalive)
+    (doto ch
+      (NettyFW/writeOnly res)
+      (NettyFW/writeOnly (ChunkedStream. (.stream xdata))))
+    (-> (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
+        (NettyFW/closeCF kalive))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- filePutter ""
 
-  [^File vdir ^Channel ch info ^String fname ^XData xdata]
+  [^File vdir ^Channel ch
+   info
+   fname xdata]
 
   (try
     (SaveFile vdir fname xdata)
@@ -81,7 +89,8 @@
 ;;
 (defn- fileGetter ""
 
-  [^File vdir ^Channel ch info ^String fname]
+  [^File vdir ^Channel ch
+   info fname]
 
   (let [xdata (GetFile vdir fname) ]
     (if (.hasContent xdata)
@@ -111,10 +120,12 @@
             nm (if (cstr/blank? p) (str (juid) ".dat") p) ]
         (log/debug "Method = " mtd ", Uri = " uri ", File = " nm)
         (cond
-          (or (= mtd "POST")(= mtd "PUT"))
+          (or (= mtd "POST")
+              (= mtd "PUT"))
           (filePutter vdir ch info nm xs)
 
-          (or (= mtd "GET")(= mtd "HEAD"))
+          (or (= mtd "HEAD")
+              (= mtd "GET"))
           (fileGetter vdir ch info nm)
 
           :else
@@ -138,7 +149,7 @@
   ;; returns netty objects if you want to do clean up
   [^String host port options]
 
-  (let [^ServerBootstrap bs (InitTCPServer  (fileCfgtor) options)
+  (let [bs (InitTCPServer (fileCfgtor) options)
         ch (StartServer bs host (int port)) ]
     {:bootstrap bs :channel ch}
   ))

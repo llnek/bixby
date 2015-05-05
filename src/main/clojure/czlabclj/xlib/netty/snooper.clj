@@ -56,10 +56,11 @@
    ^StringBuilder buf
    ^HttpContent curObj ]
 
-  (let [res (DftFullRsp (nsb buf))
+  (let [res (NettyFW/makeFullHttpReply 200 (nsb buf))
         clen (-> (.content res)(.readableBytes)) ]
-    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_TYPE "text/plain; charset=UTF-8"))
     (-> (.headers res)(.set HttpHeaders$Names/CONTENT_LENGTH (str clen)))
+    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_TYPE
+                            "text/plain; charset=UTF-8"))
     (-> (.headers res)
         (.set HttpHeaders$Names/CONNECTION
               (if (-> (.attr ctx KALIVE)(.get))
@@ -75,8 +76,9 @@
         (doseq [^Cookie v (seq cs) ]
           (-> (.headers res)(.add HttpHeaders$Names/SET_COOKIE
                                   (ServerCookieEncoder/encode v))))))
-    ;;(.setLength cookieBuf 0)
-    ;;(.setLength buf 0)
+    ;; incase of reuse, clean up the buffers
+    (.setLength cookieBuf 0)
+    (.setLength buf 0)
     (.write ctx res)
   ))
 
@@ -93,7 +95,7 @@
         ka (HttpHeaders/isKeepAlive req)
         headers (.headers req)
         pms (.parameters dc) ]
-    (-> (.attr ctx (AttributeKey. "keepalive"))(.set ka))
+    (-> (.attr ctx KALIVE)(.set ka))
     (doto buf
           (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
           (.append "===================================\r\n")
@@ -101,29 +103,29 @@
           (.append (.getProtocolVersion req))
           (.append "\r\n")
           (.append "HOSTNAME: ")
-          (.append (HttpHeaders/getHost req "unknown"))
+          (.append (HttpHeaders/getHost req "???"))
           (.append "\r\n")
           (.append "REQUEST_URI: ")
           (.append (.getUri req))
           (.append "\r\n\r\n"))
     (reduce (fn [memo ^String n]
-              (doto buf
+              (doto memo
                 (.append "HEADER: ")
                 (.append n)
                 (.append " = ")
                 (.append (cstr/join "," (.getAll headers n)))
                 (.append "\r\n")))
-            nil
+            buf
             (.names headers))
     (.append buf "\r\n")
     (reduce (fn [memo ^Map$Entry en]
-              (doto buf
+              (doto memo
                 (.append "PARAM: ")
                 (.append (.getKey en))
                 (.append " = ")
                 (.append (cstr/join "," (.getValue en)))
                 (.append "\r\n")))
-            nil
+            buf
             pms)
     (.append buf "\r\n")
     (.append cookieBuf (nsb (.get headers "cookie")))
@@ -152,13 +154,13 @@
         (when-not (.isEmpty thds)
           (.append buf "\r\n")
           (reduce (fn [memo ^String n]
-                    (doto buf
+                    (doto memo
                       (.append "TRAILING HEADER: ")
                       (.append n)
                       (.append " = ")
                       (.append (cstr/join "," (.getAll thds n)))
                       (.append "\r\n")))
-                  nil
+                  buf
                   (.names thds))
           (.append buf "\r\n")))
       (writeReply ctx cookieBuf buf msg))
@@ -201,7 +203,7 @@
 
   [^String host port options]
 
-  (let [^ServerBootstrap bs (InitTCPServer (snooper) options)
+  (let [bs (InitTCPServer (snooper) options)
         ch (StartServer bs host (int port)) ]
     {:bootstrap bs :channel ch}
   ))
