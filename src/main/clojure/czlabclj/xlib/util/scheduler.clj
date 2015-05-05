@@ -35,46 +35,46 @@
   ^Schedulable
   []
 
-  (let []
-    (with-meta
-      (reify
+  (with-meta
+    (reify
 
-        Schedulable
+      Schedulable
 
-        (dequeue [_ w] )
+      (dequeue [_ w] )
 
-        (run [this w]
-          (when-let [^Runnable r w]
-            ;;(.preRun this r)
-            ;;(log/debug "mock scheduler: nothing to schedule - just run it.")
-            (.run r)))
+      (run [this w]
+        (when-let [^Runnable r w]
+          ;;(.preRun this r)
+          ;;(log/debug "mock scheduler: nothing to schedule - just run it.")
+          (.run r)))
 
-        (postpone [this w delayMillis]
-          (when (> delayMillis 0)
-            (Thread/sleep delayMillis))
-          (.run this w))
+      (postpone [this w delayMillis]
+        (when (> delayMillis 0)
+          (Thread/sleep delayMillis))
+        (.run this w))
 
-        (hold [this w] (.hold this 0 w))
+      (hold [this w] (.hold this 0 w))
 
-        (hold [_ _ w]
-          (throw (Exception. "Not Implemented.")))
+      (hold [_ _ w]
+        (throw (Exception. "Not Implemented.")))
 
-        (wakeup [this w]
-          (.wakeAndRun this 0 w))
+      (wakeup [this w]
+        (.wakeAndRun this 0 w))
 
-        (wakeAndRun [this _ w] (.run this w))
+      (wakeAndRun [this _ w] (.run this w))
 
-        (reschedule [this w] (.run this w))
+      (reschedule [this w] (.run this w))
 
-        (dispose [_] )
+      (dispose [_] )
 
-        Activable
+      Activable
 
-        (activate [_ options] )
-        (deactivate [_] ))
+      (activate [_ options] )
+      (deactivate [_] ))
 
-      { :typeid (keyword "czc.frwk.util/NulScheduler") }
-  )))
+    { :typeid (keyword "czc.frwk.util/NulScheduler") }
+
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -170,7 +170,7 @@
             (.cancel ^Timer @timer)
             (.clear holdQ)
             (.clear runQ)
-            (when-not (nil? c) (.dispose c)))) 
+            (when-not (nil? c) (.dispose c))))
 
         Activable
 

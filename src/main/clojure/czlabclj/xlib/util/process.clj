@@ -50,7 +50,7 @@
 
   (when-not (nil? r)
     (let [c (or (:classLoader options)
-                     (GetCldr))
+                (GetCldr))
           d (true? (:daemon options))
           n (:name options)
           t (Thread. r) ]

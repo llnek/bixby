@@ -104,7 +104,7 @@ target (packDocs: '') {
   ant.java (classname: 'autodoc.autodoc',
     fork: true,
     failonerror: true) {
-    classpath (refid: 'compilePathId')
+    classpath (refid: 'docoPathId')
     arg (value: '--name=Skaro')
     arg (value: "--root=${basedir}")
     arg (value: '--source-path=src/main/clojure')

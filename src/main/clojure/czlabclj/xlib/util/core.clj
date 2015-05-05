@@ -1104,7 +1104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MutableMap
+(deftype MubleObj
 
   ;;[ ^:volatile-mutable data ]
   [ ^:unsynchronized-mutable data ]
@@ -1131,7 +1131,7 @@
 
   (^czlabclj.xlib.util.core.Muble
     []
-    (MutableMap. {} )))
+    (MubleObj. {} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

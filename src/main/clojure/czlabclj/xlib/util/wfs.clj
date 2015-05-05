@@ -84,7 +84,7 @@
   (^PTask [^String nm func]
     (PTask. nm (reify Work
                  (on [_ fw job]
-                   (apply func [fw job]))))))
+                   (apply func fw job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,7 +93,7 @@
   (^PTask [func] (SimPTask "" func))
 
   (^PTask [^String nm func]
-    (PTask. nm (reify Work (on [_ fw job] (apply func [job]))))))
+    (PTask. nm (reify Work (on [_ fw job] (apply func job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,7 +102,7 @@
   ^BoolExpr
   [func]
 
-  (reify BoolExpr (ptest [_ job] (apply func [job]))))
+  (reify BoolExpr (ptest [_ j] (apply func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,8 +111,7 @@
   ^ChoiceExpr
   [func]
 
-  (reify ChoiceExpr (choice [_ job] (apply func [job]))
-  ))
+  (reify ChoiceExpr (choice [_ j] (apply func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,8 +120,7 @@
   ^CounterExpr
   [func]
 
-  (reify CounterExpr (gcount [_ job] (apply func [job]))
-  ))
+  (reify CounterExpr (gcount [_ j] (apply func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -164,7 +162,8 @@
     (do
       (log/warn "unknown object type "
                 (type arg) ", cannot cast to WorkFlow.")
-      nil)))
+      nil)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,8 +173,7 @@
   [^Schedulable cpu options]
 
   (let [options (or options {})]
-    (-> ^Activable
-        cpu
+    (-> ^Activable cpu
         (.activate {:threads 1
                     :trace false }))
     (reify
@@ -199,7 +197,7 @@
           (when-let [w (Cast? WorkFlowEx (-> (.job n)(.wflow)))]
             (var-set done true)
             (.onError ^WorkFlowEx w (.getCause fe)))))
-          (when-not done nil)))
+          (when-not @done nil)))
 
       Disposable
 

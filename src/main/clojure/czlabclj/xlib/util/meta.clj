@@ -226,8 +226,8 @@
     (doseq [n (range len)]
       (aset #^"[Ljava.lang.Object;" cargs n (nth args n))
       (aset #^"[Ljava.lang.Class;" ca n Object))
-    (.newInstance (.getDeclaredConstructor cz ca)
-                  cargs)
+    (-> (.getDeclaredConstructor cz ca)
+        (.newInstance cargs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

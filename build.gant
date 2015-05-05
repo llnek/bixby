@@ -50,6 +50,13 @@ path (id: 'testPathId') {
   */
 }
 
+path (id: 'docoPathId') {
+  fileset (dir: "${basedir}/artifacts/lib") {
+    include (name: '*.jar')
+  }
+  path (refid: "compilePathId")
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // sub modules
 
@@ -70,7 +77,7 @@ ivy.settings( file: "${ivySettingsDir}/ivy.config.xml" )
 
 target (resolve: '') {
   // conf="*" will copie artifacts defined for each conf in a dir matching conf name
-  ivy.retrieve( pattern: "${ivyLibDir}/[conf]/[artifact]-[revision].[ext]" )
+  ivy.retrieve( pattern: "${ivyLibDir}/[conf]/[artifact]-[revision].[ext]")
 }
 
 //////////////////////////////////////////////////////////////////////////////

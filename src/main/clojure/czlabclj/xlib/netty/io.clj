@@ -75,7 +75,7 @@
 
   (.addListener cf (reify ChannelFutureListener
                      (operationComplete [_ ff]
-                       (Try! (apply func [ (.isSuccess ^ChannelFuture ff)]))))
+                       (Try! (apply func (.isSuccess ^ChannelFuture ff)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,7 +106,7 @@
   [^HttpHeaders hdrs]
 
   (with-local-vars [rc (transient {})]
-    (doseq [^String n (seq (.names hdrs)) ]
+    (doseq [^String n (.names hdrs) ]
       (var-set rc (assoc! @rc
                           (lcase n)
                           (vec (.getAll hdrs n)))))
@@ -120,7 +120,8 @@
   [^QueryStringDecoder decr]
 
   (with-local-vars [rc (transient {})]
-    (doseq [^Map$Entry en (seq (-> decr (.parameters)(.entrySet))) ]
+    (doseq [^Map$Entry en
+            (-> decr (.parameters)(.entrySet))]
       (var-set rc (assoc! @rc
                           (.getKey en)
                           (vec (.getValue en)))))
@@ -326,7 +327,7 @@
 
   [^ChannelHandlerContext ctx
    ^HttpRequest req
-   ^czlabclj.xlib.util.core.MutableMap impl]
+   ^czlabclj.xlib.util.core.Muble impl]
 
   (let [info (ExtractMsgInfo req)
         ^String mt (:method info)
@@ -362,9 +363,8 @@
   ^ChannelHandler
   []
 
-  (let [impl (MakeMMap)]
-    (.setf! impl :delegate nil)
-    (.setf! impl :ignore false)
+  (let [impl (MakeMMap {:delegate nil
+                        :ignore false}) ]
     (proxy [AuxHttpFilter][]
       (channelRead0 [ctx msg]
         (let [^AuxHttpFilter d (.getf impl :delegate)
