@@ -39,7 +39,7 @@ public abstract class FlowNode implements RunnableWithId {
   private Activity _defn;
 
   /**
-   * @param s
+   * @param c
    * @param a
    */
   protected FlowNode(FlowNode c, Activity a) {

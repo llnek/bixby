@@ -101,6 +101,26 @@ target (packDocs: '') {
       exclude (name: '.svn')
     }
   }
+  ant.javadoc(destdir:"${packDir}/docs/api",
+      access:"protected",
+      author:true,
+      nodeprecated:false,
+      nodeprecatedlist:false,
+      noindex:false,
+      nonavbar:false,
+      notree:false,
+      source: "1.8",
+      splitindex:true,
+      use:true,
+      version:true) {
+    classpath(refid:'compilePathId')
+    fileset(dir:"${srcDir}/java") {
+      exclude(name:"demo/**")
+      include(name:"**/*.java")
+    }
+  }
+
+  if (false) {
   ant.java (classname: 'autodoc.autodoc',
     fork: true,
     failonerror: true) {
@@ -109,6 +129,7 @@ target (packDocs: '') {
     arg (value: "--root=${basedir}")
     arg (value: '--source-path=src/main/clojure')
     arg (value: "--output-path=${packDir}/docs/api")
+  }
   }
 }
 

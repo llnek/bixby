@@ -19,7 +19,7 @@ import java.util.Map;
 public interface MetaCache {
 
   /**
-   * Returns a map of { type -> model-def , type -> model-def, ... }
+   * Returns a map of { type -&gt; model-def , type -&gt; model-def, ... }
    */
   public Map<?,?> getMetas();
 
