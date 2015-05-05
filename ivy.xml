@@ -182,6 +182,9 @@
     <dependency org="org.clojure" name="algo.generic" rev="0.1.2" conf="libjar->default"/>
     <dependency org="org.clojure" name="core.memoize" rev="0.5.7" conf="libjar->default"/>
 
+    <dependency org="codox" name="codox.core" rev="0.8.12" conf="libjar->default"/>
+
+
     <!--
     <dependency org="potemkin" name="potemkin" rev="0.3.4" conf="libjar->default"/>
     <dependency org="lamina" name="lamina" rev="0.5.2" conf="libjar->default"/>

@@ -173,6 +173,7 @@ def clj_Util() {
     arg (value: 'czlabclj.xlib.util.wfs')
     arg (value: 'czlabclj.xlib.util.scheduler')
     arg (value: 'czlabclj.xlib.i18n.resources')
+    arg (value: 'czlabclj.xlib.util.codox')
   }
 }
 

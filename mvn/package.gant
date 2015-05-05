@@ -123,25 +123,36 @@ target (packDocs: '') {
     }
   }
 
-  ant.java(classname: "autodoc.autodoc",
+  ant.java(classname: "czlabclj.xlib.util.codox",
            fork:true,
            failonerror:true) {
-    classpath() {
-      pathelement (location: "${srcDir}/clojure")
-      fileset (dir: "${libDir}/test") {
-        include (name: '*.jar')
-      }
-      pathelement(location: "${buildDir}")
-      pathelement(location: "${cljDocJar}")
-      pathelement(location: "${cljBuildDir}")
-    }
+    classpath(refid:'compilePathId')
+    arg(value: "${basedir}")
+    arg(value: "${srcDir}/clojure")
+    arg(value: "${packDir}/docs/api")
+  }
 
-    arg(value: '--source-path=src/main/clojure')
-    arg(value: "--output-path=${packDir}/docs/api")
-    arg(value: "--root=${basedir}")
-    arg(value:'--name=Skaro')
-    arg(value:'--description=Skaro Documentation')
-    arg(value:'--page-title=Skaro API Documentation')
+  if (false) {
+    ant.java(classname: "autodoc.autodoc",
+             fork:true,
+             failonerror:true) {
+      classpath() {
+        pathelement (location: "${srcDir}/clojure")
+        fileset (dir: "${libDir}/test") {
+          include (name: '*.jar')
+        }
+        pathelement(location: "${buildDir}")
+        pathelement(location: "${cljDocJar}")
+        pathelement(location: "${cljBuildDir}")
+      }
+
+      arg(value: '--source-path=src/main/clojure')
+      arg(value: "--output-path=${packDir}/docs/api")
+      arg(value: "--root=${basedir}")
+      arg(value:'--name=Skaro')
+      arg(value:'--description=Skaro Documentation')
+      arg(value:'--page-title=Skaro API Documentation')
+    }
   }
 
 }
