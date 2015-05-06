@@ -24,7 +24,7 @@
   (:use [czlabclj.xlib.util.dates :only [PlusMonths]]
         [czlabclj.xlib.util.io
          :only
-         [Streamify MakeBitOS ResetStream!]]
+         [Streamify ByteOS ResetStream!]]
         [czlabclj.xlib.util.core
          :only
          [NextInt ThrowIOE ThrowBadArg NewRandom
@@ -499,7 +499,7 @@
   [^String top ^String end ^bytes bits]
 
   (let [bs (Base64/encodeBase64 bits)
-        baos (MakeBitOS)
+        baos (ByteOS)
         nl (Bytesify "\n")
         len (alength bs)
         bb (byte-array 1) ]
@@ -635,7 +635,7 @@
         (mkSSV1Cert (.getProvider ks) kp options)
         ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
-        baos (MakeBitOS) ]
+        baos (ByteOS) ]
     (.setKeyEntry ks (juid) pkey ca (into-array Certificate [cert] ))
     (.store ks baos ca)
     (.toByteArray baos)
@@ -653,7 +653,7 @@
         rdr (InputStreamReader. (Streamify keyPEM))
         ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
-        baos (MakeBitOS)
+        baos (ByteOS)
         ss (GetPkcsStore)
         ^KeyPair kp (.readObject (PEMParser. rdr)) ]
     (.setKeyEntry ss
@@ -750,7 +750,7 @@
                     options)
         ^chars ca (when-not (nil? pwdObj)
                     (.toCharArray pwdObj))
-        baos (MakeBitOS)
+        baos (ByteOS)
         cs (cons cert issuerCerts) ]
     (.setKeyEntry ks (juid) pkey ca (into-array Certificate cs))
     (.store ks baos ca)

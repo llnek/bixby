@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-
 (ns ^{:doc "This is a utility class that provides various MIME related functionality."
       :author "kenl" }
 
@@ -112,7 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^Pattern ^:private _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
+(def ^:private ^Pattern _extRegex (Pattern/compile "^.*\\.([^.]+)$"))
 (def ^:private _mime_cache (atom {}))
 (def ^:private _mime_types (atom nil))
 
@@ -139,7 +138,8 @@
   ^String
   [^String cType]
 
-  (let [pos (-> (nsb cType) (lcase )
+  (let [pos (-> (nsb cType)
+                (lcase )
                 (.indexOf "charset="))
         rc "utf-8" ]
          ;;rc "ISO-8859-1" ]

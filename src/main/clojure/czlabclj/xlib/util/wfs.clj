@@ -17,10 +17,12 @@
   (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.scheduler
-         :only [NulScheduler MakeScheduler]]
+         :only
+         [NulScheduler MakeScheduler]]
         [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core
-         :only [Cast? Muble MakeMMap NextLong]])
+         :only
+         [Cast? Muble MakeMMap NextLong]])
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
@@ -39,7 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewJob ""
+(defn NewJob "Create a new job for downstream processing."
 
   (^Job [^ServerLike parObj ^WorkFlow wf]
         (NewJob parObj wf (NonEvent. parObj)))
@@ -77,7 +79,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefPTask ""
+(defn DefPTask "Given a function(arity 2), return a PTask."
 
   (^PTask [func] (DefPTask "" func))
 
@@ -88,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SimPTask ""
+(defn SimPTask "Given a function(arity 1), return a PTask."
 
   (^PTask [func] (SimPTask "" func))
 
@@ -97,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefBoolExpr
+(defn DefBoolExpr "Given a function(arity 1), return a BoolExpr."
 
   ^BoolExpr
   [func]
@@ -106,7 +108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefChoiceExpr
+(defn DefChoiceExpr "Given a function(arity 1), return a ChoiceExpr."
 
   ^ChoiceExpr
   [func]
@@ -115,7 +117,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefCounterExpr
+(defn DefCounterExpr "Given a function(arity 1), return a CounterExpr."
 
   ^CounterExpr
   [func]
@@ -124,7 +126,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WrapPTask ""
+(defn WrapPTask "Wrap a PTask around this WHandler."
 
   ^Activity
   [^WHandler wf]
@@ -133,7 +135,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToWorkFlow
+(defn ToWorkFlow "Coerce argument into a WorkFlow object."
 
   ^WorkFlow
   [arg]
@@ -167,15 +169,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FlowServer ""
+(defn ^:no-doc FlowServer "A server that handles WorkFlows."
 
   ^ServerLike
   [^Schedulable cpu options]
 
   (let [options (or options {})]
-    (-> ^Activable cpu
-        (.activate {:threads 1
-                    :trace false }))
+    (-> ^Activable
+        cpu
+        (.activate options))
     (reify
 
       ServiceHandler

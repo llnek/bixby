@@ -15,6 +15,7 @@
   czlabclj.xlib.util.io
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [Try!]])
@@ -54,8 +55,9 @@
   ^bytes
   [^chars chArray ^String encoding]
 
-  (.array (.encode (Charset/forName encoding)
-                   (CharBuffer/wrap chArray)) ))
+  (-> (Charset/forName encoding)
+      (.encode (CharBuffer/wrap chArray))
+      (.array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,8 +66,9 @@
   ^chars
   [^bytes byteArray ^String encoding]
 
-  (.array (.decode (Charset/forName encoding)
-                   (ByteBuffer/wrap byteArray)) ))
+  (-> (Charset/forName encoding)
+      (.decode (ByteBuffer/wrap byteArray))
+      (.array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,7 +76,9 @@
 
   [^bytes byteArray]
 
-  (.readLong (DataInputStream. (ByteArrayInputStream. byteArray))))
+  (-> (ByteArrayInputStream. byteArray)
+      (DataInputStream.  )
+      (.readLong )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,7 +86,9 @@
 
   [^bytes byteArray]
 
-  (.readInt (DataInputStream. (ByteArrayInputStream. byteArray)) ))
+  (-> (ByteArrayInputStream. byteArray)
+      (DataInputStream.  )
+      (.readInt )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,29 +120,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeTmpfile "Create a temp file in the temp dir."
+(defn TempFile "Create a temp file in the temp dir."
 
-  (^File
-    []
-    (MakeTmpfile "" ""))
+  (^File [] (TempFile "" ""))
 
-  (^File
-    [^String pfx ^String sux]
+  (^File [^String pfx
+          ^String sux]
     (File/createTempFile (if (cstr/blank? pfx) "tmp-" pfx)
                          (if (cstr/blank? sux) ".dat" sux)
                          (com.zotohlab.frwk.io.IOUtils/workDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewlyTmpfile "Create a new temp file, optionally open it for write as stream."
+(defn NewlyTempFile "Create a new temp file,
+                     optionally open it for write as stream.
+                     Returns a [file, ostream] tuple."
 
-  ([]
-   (NewlyTmpfile false))
+  ([] (NewlyTempFile false))
 
   ([open]
-   (let [f (MakeTmpfile) ]
+   (let [f (TempFile) ]
      (if open
-       [f (FileOutputStream. f) ]
+       [ f (FileOutputStream. f) ]
        [ f nil ]))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +157,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeBitOS "Make a byte array output stream."
+(defn ByteOS "Make a byte array output stream."
 
   ^ByteArrayOutputStream
   []
@@ -165,7 +171,7 @@
   ^chars
   [^bytes bits]
 
-  (let [len (* 2 (if (nil? bits) 0 (alength bits)))
+  (let [len (if (nil? bits) 0 (* 2 (alength bits)))
         out (char-array len)]
     (loop [k 0 pos 0]
       (when-not (>= pos len)
@@ -201,9 +207,9 @@
   [^bytes bits]
 
   (when-not (nil? bits)
-    (let [baos (MakeBitOS)]
+    (let [baos (ByteOS)]
       (with-open [g (GZIPOutputStream. baos)]
-        (.write g bits, 0, (alength bits)))
+        (.write g bits 0 (alength bits)))
       (.toByteArray baos))
   ))
 
@@ -234,7 +240,7 @@
   [^String fp]
 
   (when-not (nil? fp)
-    (XStream. (File. fp))
+    (XStream. (io/file fp))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,7 +296,7 @@
   [^InputStream inp]
 
   (let [[^File fp ^OutputStream os]
-        (NewlyTmpfile true) ]
+        (NewlyTempFile true) ]
     (try
       (IOUtils/copy inp os)
       (finally
@@ -329,7 +335,7 @@
 
   (^XData [usefile]
           (if usefile
-            (XData. (MakeTmpfile))
+            (XData. (TempFile))
             (XData.)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -338,35 +344,17 @@
 
   [^ByteArrayOutputStream baos]
 
-  (let [[^File fp ^OutputStream os]
-        (NewlyTmpfile true) ]
-    (doto os
-      (.write (.toByteArray baos))
-      (.flush))
-    (.close baos)
-    [fp os]
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- swap-read-bytes ""
-
-  [^InputStream inp ^ByteArrayOutputStream baos]
-
-  (let [[^File fp ^OutputStream os]
-        (swap-bytes baos)
-        bits (byte-array 4096) ]
-    (try
-      (loop [c (.read inp bits) ]
-        (if (< c 0)
-          (XData. fp)
-          (if (= c 0)
-            (recur (.read inp bits))
-            (do
-              (.write os bits 0 c)
-              (recur (.read inp bits))))))
-      (finally
-        (IOUtils/closeQuietly os)))
+  (if (< (.size baos)
+         (com.zotohlab.frwk.io.IOUtils/streamLimit))
+    (XData. baos)
+    (let [[^File fp ^OutputStream os]
+          (NewlyTempFile true) ]
+      (with-open [os os]
+        (doto os
+          (.write (.toByteArray baos))
+          (.flush)))
+      (.close baos)
+      (XData. fp))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -374,20 +362,20 @@
 (defn- slurp-bytes ""
 
   ^XData
-  [^InputStream inp lmt]
+  [^InputStream inp limit]
 
   (let [bits (byte-array 4096)
-        baos (MakeBitOS) ]
+        baos (ByteOS) ]
     (loop [c (.read inp bits)
            cnt 0 ]
       (if (< c 0)
-        (XData. baos)
-        (if (= c 0)
+        (swap-bytes baos)
+        (if (== c 0)
           (recur (.read inp bits) cnt)
-          (do ;; some data
+          (do
             (.write baos bits 0 c)
-            (if (> (+ c cnt) lmt)
-              (swap-read-bytes inp baos)
+            (if (> (+ c cnt) limit)
+              (swap-bytes baos)
               (recur (.read inp bits) (+ c cnt)) )))
       ))
   ))
@@ -399,7 +387,7 @@
   [^CharArrayWriter wtr]
 
   (let [[^File fp ^OutputStream out]
-        (NewlyTmpfile true)
+        (NewlyTempFile true)
         bits (.toCharArray wtr)
         os (OutputStreamWriter. out "utf-8") ]
     (doto os

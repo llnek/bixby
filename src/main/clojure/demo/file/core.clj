@@ -10,8 +10,8 @@
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
 
-(ns ^{:doc ""
-      :author "kenl"}
+(ns ^:no-doc
+    ^{:author "kenl"}
 
   demo.file.core
 

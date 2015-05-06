@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.zotohlab.frwk.core.CallableWithArgs;
 
 /**
  * @author kenl
@@ -163,10 +163,9 @@ public enum CoreUtils {
     return loadClass(cz).getDeclaredConstructor().newInstance();  
   }
     
-  @SuppressWarnings("rawtypes")
-  public static Object syncExec (Object syncObj, Callable r) throws Exception {
+  public static Object syncExec (Object syncObj, CallableWithArgs r) throws Exception {
     synchronized(syncObj) {
-      return r.call();
+      return r.run(new Object[]{});
     }
   }
 

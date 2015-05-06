@@ -9,8 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:doc "A Scheduler with pooled threads."
       :author "kenl" }
 
   czlabclj.xlib.util.scheduler
@@ -30,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NulScheduler "Make a Mock Scheduler."
+(defn NulScheduler "Make a Singly threaded Scheduler."
 
   ^Schedulable
   []
@@ -78,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- xrefPID
+(defn- xrefPID "Returns the id of this runnable or nil."
 
   [runable]
 
@@ -89,7 +88,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- preRun  ""
+(defn- preRun  "Stuff to do before running the task."
 
   [^Map hQ ^Map rQ w]
 
@@ -100,8 +99,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- addTimer ""
-  [^Timer timer ^TimerTask task ^long delay]
+(defn- addTimer "Schedule a timer task."
+
+  [^Timer timer ^TimerTask task
+   ^long delay]
+
   (.schedule timer task delay))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -117,6 +119,7 @@
         holdQ (ConcurrentHashMap.)
         runQ (ConcurrentHashMap.)
         timer (atom nil)
+        cpu (atom nil)
         impl (MakeMMap) ]
     (reset! timer (Timer. jid true))
     (with-meta
@@ -126,13 +129,15 @@
 
         ;; called by a *running* task to remove itself from the running queue
         (dequeue [_ w]
-          (when-let [pid (xrefPID w) ]
-              (.remove runQ pid)))
+          (when-let [pid (xrefPID w)]
+            (.remove runQ pid)))
 
         (run [this w]
           (when-let [^Runnable r w]
             (preRun holdQ runQ r)
-            (.schedule ^TCore (.getf impl :core) r)) )
+            (-> ^TCore
+                @cpu
+                (.schedule r))))
 
         (postpone [me w delayMillis]
           (cond
@@ -166,7 +171,7 @@
             (.run this w)))
 
         (dispose [_]
-          (let [^TCore c (.getf impl :core) ]
+          (let [^TCore c @cpu]
             (.cancel ^Timer @timer)
             (.clear holdQ)
             (.clear runQ)
@@ -178,15 +183,14 @@
           (let [^long t (or (:threads options) 4)
                 b (not (false? (:trace options)))
                 c (TCore. jid t b) ]
-            (doto impl
-              (.setf! :core c))
+            (reset! cpu c)
             (.start c)))
 
         (deactivate [_]
           (.cancel ^Timer @timer)
           (.clear holdQ)
           (.clear runQ)
-          (.stop ^TCore (.getf impl :core))))
+          (.stop ^TCore @cpu)))
 
       { :typeid (keyword "czc.frwk.util/Scheduler") }
 

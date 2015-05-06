@@ -184,9 +184,7 @@
   (^ClassLoader [] (GetCldr nil))
 
   (^ClassLoader [^ClassLoader cl]
-                (if (nil? cl)
-                  (.getContextClassLoader (Thread/currentThread))
-                  cl)))
+                (or cl (.getContextClassLoader (Thread/currentThread)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -211,7 +209,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Object MakeObjArgN (fn [a & args] (class a)))
+(defmulti ^Object MakeObjArgN
+
+  "Instantiate object with arity-n constructor."
+
+  (fn [a & args] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,18 +242,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CtorObj ""
+(defn CtorObj "Call the default contructor."
 
   ^Object
   [^Class cz]
 
   (test-nonil "java-class" cz)
-  (.newInstance (.getDeclaredConstructor cz (make-array Class 0))
-                (make-array Object 0)  ))
+  (-> (.getDeclaredConstructor cz (make-array Class 0))
+      (.newInstance (make-array Object 0)  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeObj "Make an object of this class by calling the default constructor."
+(defn MakeObj "Make an object of this class by
+               calling the default constructor."
 
   (^Object [^String clazzName]
            (MakeObj clazzName nil))
@@ -274,10 +277,9 @@
                (persistent! sum)
                (recur (conj! sum par)
                       (.getSuperclass par)))) ]
-    ;; since we always add the original class, we need to ignore it on return
-    (if (> (count rc) 1)
-      (rest rc)
-      [])
+    ;; since we always add the original class,
+    ;; we need to ignore it on return
+    (drop 1 rc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -330,7 +332,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListMethods "List all methods belonging to this class, including inherited ones."
+(defn ListMethods "List all methods belonging to this class,
+                   including inherited ones."
 
   [^Class javaClass]
 
@@ -341,7 +344,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListFields "List all fields belonging to this class, including inherited ones."
+(defn ListFields "List all fields belonging to this class,
+                  including inherited ones."
 
   [^Class javaClass]
 

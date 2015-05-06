@@ -20,7 +20,7 @@
   (:use [czlabclj.xlib.util.core
          :only
          [NewRandom Bytesify Stringify ThrowBadArg]]
-        [czlabclj.xlib.util.io :only [MakeBitOS]]
+        [czlabclj.xlib.util.io :only [ByteOS]]
         [czlabclj.xlib.util.str :only [nichts? nsb]])
 
   (:import  [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
@@ -322,7 +322,7 @@
     (let [c (getCipher pkey Cipher/ENCRYPT_MODE algo)
           p (Bytesify text)
           plen (alength p)
-          baos (MakeBitOS)
+          baos (ByteOS)
           out (byte-array (max 4096 (.getOutputSize c plen)))
           n (.update c p 0 plen out 0) ]
       (when (> n 0) (.write baos out 0 n))
@@ -343,7 +343,7 @@
     (let [c (getCipher pkey Cipher/DECRYPT_MODE algo)
           p (Base64/decodeBase64 encoded)
           plen (alength p)
-          baos (MakeBitOS)
+          baos (ByteOS)
           out (byte-array (max 4096 (.getOutputSize c plen)))
           n (.update c p 0 plen out 0) ]
       (when (> n 0) (.write baos out 0 n))
@@ -436,7 +436,7 @@
                           (KeyParameter. (keyAsBits pkey algo))))
           p (Base64/decodeBase64 text)
           out (byte-array 1024)
-          baos (MakeBitOS)
+          baos (ByteOS)
           c (.processBytes cipher p 0 (alength p) out 0) ]
       (when (> c 0) (.write baos out 0 c))
       (let [c2 (.doFinal cipher out 0) ]
@@ -459,7 +459,7 @@
                    (.init true
                           (KeyParameter. (keyAsBits pkey algo))))
           out (byte-array 4096)
-          baos (MakeBitOS)
+          baos (ByteOS)
           p (Bytesify text)
           c (.processBytes cipher p 0 (alength p) out 0) ]
       (when (> c 0) (.write baos out 0 c))

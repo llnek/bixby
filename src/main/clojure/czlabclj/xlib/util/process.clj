@@ -24,27 +24,27 @@
             [java.util.concurrent Callable]
             [java.util TimerTask Timer]
             [com.zotohlab.frwk.util CoreUtils]
+            [com.zotohlab.frwk.core CallableWithArgs]
             [java.lang Thread Runnable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SyncBlockExec ""
+(defn SyncBlockExec "Run this function synchronously."
 
   [^Object lock func & args]
 
   (CoreUtils/syncExec lock
-                      (reify Callable
-                        (call [_]
+                      (reify CallableWithArgs
+                        (run [_]
                           (apply func args)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- asyncExecThread ""
+(defn- asyncExecThread "Execute this runnable in a separate thread."
 
   [^Runnable r options]
 
@@ -58,13 +58,15 @@
       (.setDaemon t d)
       (when (hgl? n)
         (.setName t (str "(" n ") " (.getName t))))
-      (log/debug "asyncExecThread: about to start thread#" (.getName t) ", daemon = " d)
+      (log/debug "asyncExecThread: start thread#"
+                 (.getName t)
+                 ", daemon = " d)
       (.start t))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsyncExec "Run the code (runnable) in a separate daemon thread."
+(defn AsyncExec "Run the code (runnable) in a separate thread."
 
   ([^Runnable runable] (AsyncExec runable (GetCldr)))
 
@@ -91,7 +93,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThreadFunc ""
+(defn ThreadFunc "Run this function in a separate thread."
 
   (^Thread
     [func start arg]
@@ -108,7 +110,9 @@
           (.setContextClassLoader t @cl))
         (.setDaemon t (true? @daemon)))
       (when start (.start t))
-      (log/debug "ThreadFunc thread#" (.getName t) ", daemon = " (.isDaemon t))
+      (log/debug "ThreadFunc thread#"
+                 (.getName t)
+                 ", daemon = " (.isDaemon t))
       t))
 
   (^Thread [func start] (ThreadFunc func start nil)))
@@ -138,7 +142,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DelayExec ""
+(defn DelayExec "Run this function after some delay."
 
   [func delayMillis]
 

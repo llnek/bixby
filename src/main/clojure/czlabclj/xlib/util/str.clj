@@ -9,7 +9,6 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-
 (ns ^{:doc "String utilities."
       :author "kenl" }
 
@@ -31,36 +30,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro lcase [s] `(cstr/lower-case ~s))
-(defmacro ucase [s] `(cstr/upper-case ~s))
+(defmacro lcase "Lowercase string." [s] `(cstr/lower-case ~s))
+(defmacro ucase "Uppercase string." [s] `(cstr/upper-case ~s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasNocase? "Returns true if this sub-string is inside this string."
+(defn HasNocase? "Returns true if this sub-string
+                 is inside this bigger string."
 
-  [^String aStr s]
+  [^String bigs s]
 
-  (>= (.indexOf (lcase aStr) (lcase s)) 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Embeds? "Returns true if this sub-string is inside this string."
-
-  [^String aStr ^String s]
-
-  (>= (.indexOf aStr s) 0))
+  (>= (.indexOf (lcase bigs) (lcase s)) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Has? "Returns true if this character is inside this string."
+(defn Embeds? "Returns true if this sub-string
+              is inside this bigger string."
 
-  [^String aStr ^Character ch]
+  [^String bigs ^String s]
 
-  (>= (.indexOf aStr (int ch)) 0))
+  (>= (.indexOf bigs s) 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nsb "Returns empty string if obj is null, or obj.toString."
+(defn Has? "Returns true if this character
+           is inside this string."
+
+  [^String bigs ^Character ch]
+
+  (>= (.indexOf bigs (int (.charValue ch))) 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn nsb "Returns empty string if obj is null,
+          or obj.toString."
 
   ^String
   [^Object obj]
@@ -78,7 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToKW ""
+(defn ToKW "Concatenate all args and return it as a keyword."
 
   [& args]
 
@@ -86,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nsn "Returns \"(null)\" if obj is null, or obj.toString."
+(defn nsn "Returns (null) if obj is null, or obj.toString."
 
   ^String
   [^Object obj]
@@ -141,7 +144,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddDelim! "Append to a string-builder, optionally inserting a delimiter if the buffer is not empty."
+(defn AddDelim! "Append to a string-builder, optionally
+                inserting a delimiter if the buffer is not empty."
 
   ^StringBuilder
   [^StringBuilder buf ^String delim ^String item]
@@ -154,7 +158,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Splunk "Split a large string into chucks, each chunk having a specific length."
+(defn Splunk "Split a large string into chucks,
+             each chunk having a specific length."
 
   [^String largeString chunkLength]
 
@@ -165,7 +170,7 @@
       (if (<= (.length src) chunkLength)
         (persistent! (if (> (.length src) 0)
                        (conj! ret src)
-                       ret) )
+                       ret))
         (recur (conj! ret (.substring src 0 chunkLength))
                (.substring src chunkLength))
       ))
@@ -173,13 +178,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasicAny? "Tests String.indexOf() against a list of possible args. (ignoring case)."
+(defn HasicAny? "Tests String.indexOf() against
+                a list of possible args. (ignoring case)."
 
   [^String src substrs]
 
-  (if (nil? src)
+  (if (or (empty? substrs)
+          (nil? src))
     false
-    (if (some #(>= (.indexOf (lcase src) (lcase %)) 0) substrs) true false)
+    (let [lc (lcase src)]
+      (some #(>= (.indexOf lc (lcase %)) 0) substrs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -188,31 +196,37 @@
 
   [^String src substrs]
 
-  (if (nil? src)
+  (if (or (empty? substrs)
+          (nil? src))
     false
-    (if (some #(>= (.indexOf src ^String %) 0) substrs) true false)
+    (some #(>= (.indexOf src ^String %) 0) substrs)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SWicAny? "Tests startsWith (ignore-case)."
+(defn SWicAny? "Tests startWith() no-case, looping through
+               the list of possible prefixes."
 
   [^String src pfxs]
 
-  (if (nil? src)
+  (if (or (empty? pfxs)
+          (nil? src))
     false
-    (if (some #(.startsWith (lcase src) (lcase %)) pfxs) true false)
+    (let [lc (lcase src)]
+      (some #(.startsWith lc (lcase %)) pfxs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SWAny? "Tests startWith(), looping through the list of possible prefixes."
+(defn SWAny? "Tests startWith(), looping through
+             the list of possible prefixes."
 
   [^String src pfxs]
 
-  (if (nil? src)
+  (if (or (empty? pfxs)
+          (nil? src))
     false
-    (if (some #(.startsWith src %) pfxs) true false)
+    (some #(.startsWith src %) pfxs)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,9 +235,11 @@
 
   [^String src strs]
 
-  (if (nil? src)
+  (if (or (empty? strs)
+          (nil? src))
     false
-    (if (some #(.equalsIgnoreCase src %) strs) true false)
+    (let [lc (lcase src)]
+      (some #(.equals lc (lcase %)) strs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -232,21 +248,22 @@
 
   [^String src strs]
 
-  (if (nil? src)
+  (if (or (empty? strs)
+          (nil? src))
     false
-    (if (some #(.equals src %) strs) true false)
+    (some #(.equals src %) strs)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeString "Make a string of contain length."
+(defn MakeString "Make a string of certain length."
 
   ^String
-  [ch  cnt]
+  [^Character ch cnt]
 
   (let [buf (StringBuilder.) ]
     (dotimes [n cnt ]
-      (.append buf ^Character ch))
+      (.append buf ch))
     (.toString buf)
   ))
 
@@ -257,9 +274,10 @@
   ^String
   [^String src len]
 
-  (if (nil? src)
+  (if (or (<= len 0)
+          (nil? src))
     ""
-    (StringUtils/right src ^long len)
+    (StringUtils/right src (int len))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -269,14 +287,15 @@
   ^String
   [^String src len]
 
-  (if (nil? src)
+  (if (or (<= len 0)
+          (nil? src))
     ""
-    (StringUtils/left src ^long len)
+    (StringUtils/left src (int len))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Format ""
+(defn Format "Format a string using Java String format syntax."
 
   [^String fmt & args]
 
