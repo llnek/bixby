@@ -64,8 +64,10 @@
 
   (proxy [PipelineConfigurator][]
     (assemble [p options]
-      (let [ssl (SSLServerHShake options) ]
-        (doto ^ChannelPipeline p
+      (let [ssl (SSLServerHShake options)
+            ^ChannelPipeline pipe p]
+        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
+        (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
           (.addLast "HttpObjectAggregator"
                     (HttpObjectAggregator. (int 1048576)))

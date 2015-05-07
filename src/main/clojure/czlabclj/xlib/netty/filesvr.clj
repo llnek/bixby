@@ -54,11 +54,11 @@
         kalive (:keepAlive info)
         clen (.size xdata) ]
     (doto res
-      (HttpHeaders/setHeader HttpHeaders$Names/CONNECTION
-                             (if kalive
-                               HttpHeaders$Values/KEEP_ALIVE
-                               HttpHeaders$Values/CLOSE))
-      (HttpHeaders/setHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
+      (SetHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
+      (SetHeader HttpHeaders$Names/CONNECTION
+                 (if kalive
+                   HttpHeaders$Values/KEEP_ALIVE
+                   HttpHeaders$Values/CLOSE))
       (HttpHeaders/setTransferEncodingChunked )
       (HttpHeaders/setContentLength clen))
     (log/debug "Flushing file of " clen " bytes. to client.")
@@ -139,7 +139,7 @@
   ^PipelineConfigurator
   []
 
-  (ReifyHTTPPipe fileHandler))
+  (ReifyHTTPPipe "FileServer" fileHandler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
@@ -156,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filesvr host port vdir
-(defn -main ""
+(defn -main "Start a basic file server."
 
   [& args]
 

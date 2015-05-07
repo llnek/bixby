@@ -179,10 +179,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThrowIOE "Throw an IO Exception."
+(defmulti ThrowIOE "Throw an IO Exception." class)
 
+(defmethod ThrowIOE Throwable
+  [^Throwable t]
+  (throw (java.io.IOException. t)))
+
+(defmethod ThrowIOE String
   [^String msg]
-
   (throw (java.io.IOException. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
