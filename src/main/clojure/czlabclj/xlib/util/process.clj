@@ -23,7 +23,7 @@
   (:import  [java.lang.management ManagementFactory]
             [java.util.concurrent Callable]
             [java.util TimerTask Timer]
-            [com.zotohlab.frwk.util CoreUtils]
+            [com.zotohlab.frwk.util CU]
             [com.zotohlab.frwk.core CallableWithArgs]
             [java.lang Thread Runnable]))
 
@@ -36,9 +36,9 @@
 
   [^Object lock func & args]
 
-  (CoreUtils/syncExec lock
+  (CU/syncExec lock
                       (reify CallableWithArgs
-                        (run [_]
+                        (run [_ _]
                           (apply func args)))
   ))
 

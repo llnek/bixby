@@ -27,7 +27,7 @@ import com.zotohlab.frwk.server.NonEvent;
 import com.zotohlab.frwk.server.NulEmitter;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceHandler;
-import com.zotohlab.frwk.util.CoreUtils;
+import com.zotohlab.frwk.util.CU;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.FlowError;
@@ -192,7 +192,7 @@ class JobCreator {
   public Job newJob(WorkFlow wf, final Event evt) {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
-      private long _id= CoreUtils.nextSeqLong();
+      private long _id= CU.nextSeqLong();
       
       @Override
       public Object getv(Object key) {

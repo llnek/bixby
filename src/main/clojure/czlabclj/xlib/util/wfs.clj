@@ -86,7 +86,7 @@
   (^PTask [^String nm func]
     (PTask. nm (reify Work
                  (on [_ fw job]
-                   (apply func fw job))))))
+                   (apply func fw job []))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -95,7 +95,7 @@
   (^PTask [func] (SimPTask "" func))
 
   (^PTask [^String nm func]
-    (PTask. nm (reify Work (on [_ fw job] (apply func job))))))
+    (PTask. nm (reify Work (on [_ fw job] (apply func job []))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,7 +104,7 @@
   ^BoolExpr
   [func]
 
-  (reify BoolExpr (ptest [_ j] (apply func j))))
+  (reify BoolExpr (ptest [_ j] (apply func j []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,7 +113,7 @@
   ^ChoiceExpr
   [func]
 
-  (reify ChoiceExpr (choice [_ j] (apply func j))))
+  (reify ChoiceExpr (choice [_ j] (apply func j []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -122,7 +122,7 @@
   ^CounterExpr
   [func]
 
-  (reify CounterExpr (gcount [_ j] (apply func j))))
+  (reify CounterExpr (gcount [_ j] (apply func j []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

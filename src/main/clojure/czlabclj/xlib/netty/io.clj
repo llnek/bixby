@@ -72,18 +72,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FutureCB ""
+(defn FutureCB "Register a callback upon operation completion."
 
   [^ChannelFuture cf func]
 
   (.addListener cf (reify ChannelFutureListener
                      (operationComplete [_ ff]
-                       (Try! (apply func (.isSuccess ^ChannelFuture ff)))))
+                       (Try! (apply func (.isSuccess ^ChannelFuture ff) []))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CloseFuture
+(defn CloseFuture "Close the channel."
 
   [^ChannelFuture cf]
 
@@ -91,7 +91,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteLastContent ""
+(defn WriteLastContent "Write out the last content flag."
 
   ^ChannelFuture
   [^Channel ch flush?]
@@ -104,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractHeaders ""
+(defn ExtractHeaders "Return the headers in a map."
 
   [^HttpHeaders hdrs]
 
@@ -118,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractParams ""
+(defn ExtractParams "Return the parameters in a map."
 
   [^QueryStringDecoder decr]
 
@@ -133,7 +133,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractMsgInfo ""
+(defn ExtractMsgInfo "Pick out pertinent information from the message,
+                      can be request or response."
 
   [^HttpMessage msg]
 
@@ -216,6 +217,7 @@
 
   (reify CallableWithArgs
     (run [_ args]
+      ;; args === array of objects
       (let [^ChannelHandlerContext ctx (aget args 0)
             ^String op (aget args 1) ]
         (condp = op
@@ -242,7 +244,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLServerHShake ""
+(defn SSLServerHShake "Create a server-side handler for SSL."
 
   ^ChannelHandler
   [options]
@@ -274,7 +276,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLClientHShake ""
+(defn SSLClientHShake "Create a client side handler for SSL."
 
   ^ChannelHandler
   [options]
@@ -302,11 +304,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Channel StartServer "" demux-server-type)
+(defmulti ^Channel StartServer "Start a Netty server." demux-server-type)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Channel StopServer "" demux-server-type)
+(defmulti ^Channel StopServer "Stop a Netty server." demux-server-type)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -327,14 +329,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doDemux "Detect and handle a FORM post differently versus a normal request."
+(defn- doDemux "Detect and handle a FORM post or a normal request."
 
   [^ChannelHandlerContext ctx
    ^HttpRequest req
    ^czlabclj.xlib.util.core.Muble impl]
 
   (let [info (ExtractMsgInfo req)
-        {:keys[method uri]} info
+        {:keys [method uri]}
+        info
         ch (.channel ctx)]
     (log/debug "First level demux of message\n{}\n\n{}" req info)
     (doto ctx
@@ -486,7 +489,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyHTTPPipe ""
+(defn ReifyHTTPPipe "Create a typical request pipeline."
 
   ^PipelineConfigurator
   [^String yourHandlerName yourHandlerFn]
@@ -551,14 +554,12 @@
   [^ServerBootstrap bs
    ^Channel ch]
 
-  (-> (.close ch)
-      (.addListener (reify ChannelFutureListener
-                      (operationComplete [_ cff]
-                        (let [gc (.childGroup bs)
-                              gp (.group bs) ]
-                          (when-not (nil? gc) (Try! (.shutdownGracefully gc)))
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
-  ))
+  (FutureCB (.close ch)
+            (fn [_]
+              (let [gc (.childGroup bs)
+                    gp (.group bs) ]
+                (when-not (nil? gc) (Try! (.shutdownGracefully gc)))
+                (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -567,12 +568,10 @@
   [^Bootstrap bs
    ^Channel ch]
 
-  (-> (.close ch)
-      (.addListener (reify ChannelFutureListener
-                      (operationComplete [_ cff]
-                        (let [gp (.group bs) ]
-                          (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
-  ))
+  (FutureCB (.close ch)
+            (fn [_]
+              (let [gp (.group bs) ]
+                (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -588,7 +587,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InitTCPServer ""
+(defn InitTCPServer "Create and configure a TCP Netty Server."
 
   ^ServerBootstrap
   [^PipelineConfigurator cfg
@@ -607,7 +606,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InitUDPServer ""
+(defn InitUDPServer "Create and configure a UDP Netty Server."
 
   ^Bootstrap
   [^PipelineConfigurator cfg

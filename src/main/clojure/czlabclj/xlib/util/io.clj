@@ -27,10 +27,11 @@
              FileInputStream FileOutputStream
              CharArrayWriter OutputStreamWriter
              File InputStream InputStreamReader
+             Closeable
              OutputStream Reader Writer]
             [java.nio ByteBuffer CharBuffer]
             [java.nio.charset Charset]
-            [com.zotohlab.frwk.io XData XStream]
+            [com.zotohlab.frwk.io IO XData XStream]
             [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
             [org.apache.commons.io IOUtils]
@@ -40,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;(def ^:private HEX_CHS [ \0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \A \B \C \D \E \F ])
 (def ^:private ^chars HEX_CHS (.toCharArray "0123456789ABCDEF"))
 (def ^:private SZ_10MEG (* 1024 1024 10))
 
@@ -128,7 +128,7 @@
           ^String sux]
     (File/createTempFile (if (cstr/blank? pfx) "tmp-" pfx)
                          (if (cstr/blank? sux) ".dat" sux)
-                         (com.zotohlab.frwk.io.IOUtils/workDir))))
+                         (IO/workDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -154,6 +154,15 @@
   (when-not (nil? bits)
     (ByteArrayInputStream. bits)
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseQ "Quietly close this object."
+
+  [obj]
+
+  (when (instance? Closeable obj)
+    (Try! (.close ^Closeable obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -250,9 +259,7 @@
   ^XStream
   [^File f]
 
-  (when-not (nil? f)
-    (XStream. f)
-  ))
+  (when-not (nil? f) (XStream. f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -300,7 +307,7 @@
     (try
       (IOUtils/copy inp os)
       (finally
-        (IOUtils/closeQuietly os)))
+        CloseQ os))
     fp
   ))
 
@@ -346,7 +353,7 @@
   [^ByteArrayOutputStream baos]
 
   (let [[^File fp ^OutputStream os]
-        (NewlyTmpfile true) ]
+        (NewlyTempFile true) ]
     (doto os
       (.write (.toByteArray baos))
       (.flush))
@@ -356,146 +363,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- swap-read-bytes ""
-
-  [^InputStream inp ^ByteArrayOutputStream baos]
-
-  (let [[^File fp ^OutputStream os]
-        (swap-bytes baos)
-        bits (byte-array 4096) ]
-    (try
-      (loop [c (.read inp bits) ]
-        (if (< c 0)
-          (XData. fp)
-          (if (= c 0)
-            (recur (.read inp bits))
-            (do
-              (.write os bits 0 c)
-              (recur (.read inp bits))))))
-      (finally
-        (IOUtils/closeQuietly os)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- slurp-bytes ""
-
-  ^XData
-  [^InputStream inp limit]
-
-  (let [bits (byte-array 4096)
-        fout (atom nil)
-        baos (MakeBitOS) ]
-    (loop [c (.read inp bits)
-           os baos
-           cnt 0]
-      (cond
-        (== c 0)
-        (recur (.read inp bits) os cnt)
-
-        (< c 0)
-        (try
-          (if-not (nil? @fout)
-            (XData. @fout)
-            (XData. baos))
-          (finally
-            (.close os)))
-
-        :else
-        (do
-          (if (> (+ c cnt) limit)
-            (let [[f os] (SwapBytes baos)]
-              (.write os bits 0 c)
-              (reset! fout f))
-            (.write os bits 0 c))
-          (recur (.read inp bits) os (+ c cnt)))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- swap-chars ""
+(defn SwapChars "Swap chars in writer to file,
+                 returning a [File,OWriter] tuple."
 
   [^CharArrayWriter wtr]
 
   (let [[^File fp ^OutputStream out]
-        (NewlyTmpfile true)
-        bits (.toCharArray wtr)
-        os (OutputStreamWriter. out "utf-8") ]
-    (doto os
-      (.write bits)
+        (NewlyTempFile true)
+        w (OutputStreamWriter. out "utf-8") ]
+    (doto w
+      (.write (.toCharArray wtr))
       (.flush))
-    (IOUtils/closeQuietly wtr)
-    [fp os]
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- swap-read-chars ""
-
-  ^XData
-  [^Reader inp ^CharArrayWriter wtr]
-
-  (let [[^File fp ^Writer os]
-        (swap-chars wtr)
-        bits (char-array 4096) ]
-    (try
-      (loop [c (.read inp bits) ]
-        (if (< c 0)
-          (XData. fp)
-          (if (= c 0)
-            (recur (.read inp bits))
-            (do
-              (.write os bits 0 c)
-              (recur (.read inp bits))))
-        ))
-      (finally
-        (IOUtils/closeQuietly os)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- slurp-chars ""
-
-  ^XData
-  [^Reader inp lmt]
-
-  (let [wtr (CharArrayWriter. (int 10000))
-        bits (char-array 4096) ]
-    (loop [c (.read inp bits) cnt 0 ]
-      (if (< c 0)
-        (XData. wtr)
-        (if (= c 0)
-          (recur (.read inp bits) cnt)
-          (do
-            (.write wtr bits 0 c)
-            (if (> (+ c cnt) lmt)
-              (swap-read-chars inp wtr)
-              (recur (.read inp bits) (+ c cnt)))))
-      ))
-  ))
-
-
-
-;;;------------------
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- swap-bytes ""
-
-  [^ByteArrayOutputStream baos]
-
-  (if (< (.size baos)
-         (com.zotohlab.frwk.io.IOUtils/streamLimit))
-    (XData. baos)
-    (let [[^File fp ^OutputStream os]
-          (NewlyTempFile true) ]
-      (with-open [os os]
-        (doto os
-          (.write (.toByteArray baos))
-          (.flush)))
-      (.close baos)
-      (XData. fp))
+    (CloseQ wtr)
+    [fp w]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -505,40 +385,31 @@
   ^XData
   [^InputStream inp limit]
 
-  (let [bits (byte-array 4096)
-        baos (ByteOS) ]
-    (loop [c (.read inp bits)
-           cnt 0 ]
-      (if (== c 0)
-        (recur (.read inp bits) cnt)
+  (with-local-vars [os (ByteOS)
+                    fout nil]
+    (loop [bits (byte-array 4096)
+           cnt 0
+           c (.read inp bits)]
+      (if
+        (< c 0)
+        (try
+          (if-not (nil? @fout)
+            (XData. @fout)
+            (XData. @os))
+          (finally
+            (CloseQ @os)))
+        ;;else
         (do
-          (when (> c 0) (.write baos bits 0 c))
-          (if (or (< c 0)
-                  (> (+ c cnt) limit))
-            (swap-bytes baos)
-            (recur (.read inp bits) (+ c cnt))))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- swap-chars ""
-
-  ^XData
-  [^CharArrayWriter wtr]
-
-  (if (< (* 2 (.size wtr))
-         (com.zotohlab.frwk.io.IOUtils/streamLimit))
-    (XData. wtr)
-    (let [[^File fp ^OutputStream out]
-          (NewlyTempFile true)
-          bits (.toCharArray wtr)
-          os (OutputStreamWriter. out "utf-8") ]
-      (with-open[os os]
-        (doto os
-          (.write bits)
-          (.flush)))
-      (IOUtils/closeQuietly wtr)
-      (XData. fp))
+          (when (c > 0)
+            (.write ^OutputStream @os bits 0 c)
+            (if (and (nil? @fout)
+                     (> (+ c cnt) limit))
+              (let [[f o] (SwapBytes os)]
+                (reset! fout f)
+                (reset! os o))))
+          (recur bits
+                 (+ c cnt)
+                 (.read inp bits)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,18 +419,31 @@
   ^XData
   [^Reader rdr limit]
 
-  (let [wtr (CharArrayWriter. (int 10000))
-        carr (char-array 4096) ]
-    (loop [c (.read rdr carr)
-           cnt 0 ]
-      (if (== c 0)
-        (recur (.read rdr carr) cnt)
+  (with-local-vars [wtr (CharArrayWriter. (int 4096))
+                    fout nil]
+    (loop [carr (char-array 4096)
+           cnt 0
+           c (.read rdr carr)]
+      (if
+        (< c 0)
+        (try
+          (if-not (nil? @fout)
+            (XData. @fout)
+            (XData. @wtr))
+          (finally
+            (CloseQ @wtr)))
+        ;;else
         (do
-          (when (c > 0) (.write wtr carr 0 c))
-          (if (or (< c 0)
-                  (> (+ c cnt) limit))
-            (swap-chars wtr)
-            (recur (.read rdr carr) (+ c cnt))))))
+          (when (c > 0)
+            (.write ^Writer @wtr carr 0 c)
+            (if (and (nil? @fout)
+                     (> (+ c cnt) limit))
+              (let [[f w] (SwapChars wtr)]
+                (reset! fout f)
+                (reset! wtr w))))
+          (recur carr
+                 (+ c cnt)
+                 (.read rdr carr)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -567,14 +451,12 @@
 (defn ReadBytes "Read bytes and return a XData."
 
   (^XData
-    [^InputStream inp usefile]
-    (slurp-bytes inp (if usefile
-                       1
-                       (com.zotohlab.frwk.io.IOUtils/streamLimit))))
+    [^InputStream inp]
+    (slurp-bytes inp (IO/streamLimit)))
 
   (^XData
-    [^InputStream inp]
-    (slurp-bytes inp (com.zotohlab.frwk.io.IOUtils/streamLimit))) )
+    [^InputStream inp usefile]
+    (slurp-bytes inp (if usefile 1 (IO/streamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -582,14 +464,11 @@
 
   (^XData
     [^Reader rdr]
-    (slurp-chars rdr
-                 (com.zotohlab.frwk.io.IOUtils/streamLimit)))
+    (slurp-chars rdr (IO/streamLimit)))
 
   (^XData
     [^Reader rdr usefile]
-    (slurp-chars rdr (if usefile
-                       1
-                       (com.zotohlab.frwk.io.IOUtils/streamLimit)))))
+    (slurp-chars rdr (if usefile 1 (IO/streamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -607,18 +486,6 @@
 ;;    }
     (when-not (nil? bits)
       (IOUtils/toCharArray (Streamify bits) charSet))) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Diff? "Tests if both streams are the same or different at byte level."
-
-  [^InputStream inp1 ^InputStream inp2]
-
-  (cond
-    (and (nil? inp1) (nil? inp2)) false
-    (or (nil? inp1) (nil? inp2)) true
-    :else (not (IOUtils/contentEquals inp1 inp2))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

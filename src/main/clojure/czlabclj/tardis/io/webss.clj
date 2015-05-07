@@ -29,7 +29,7 @@
             [org.apache.commons.lang3 StringUtils]
             [org.apache.commons.codec.net URLCodec]
             [org.apache.commons.codec.binary Base64 Hex]
-            [com.zotohlab.frwk.util CoreUtils]
+            [com.zotohlab.frwk.util CU]
             [java.net HttpCookie URLDecoder URLEncoder]
             [com.zotohlab.frwk.server Emitter]
             [com.zotohlab.skaro.io HTTPResult

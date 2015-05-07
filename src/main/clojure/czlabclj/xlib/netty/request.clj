@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyRequestFilter
+(defn- reifyRequestFilter ""
 
   ^AuxHttpFilter
   []
@@ -57,14 +57,15 @@
 
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
+            ^RequestFilter me this
             ^Object msg obj ]
         (log/debug "Channel-read0 called with msg " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (.handleInboundMsg ^RequestFilter this ctx msg)
+          (.handleInboundMsg me ctx msg)
 
           (instance? HttpContent msg)
-          (.handleMsgChunk ^RequestFilter this ctx msg)
+          (.handleMsgChunk me ctx msg)
 
           :else
           (do

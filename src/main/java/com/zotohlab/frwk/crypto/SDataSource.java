@@ -11,7 +11,7 @@
 
 package com.zotohlab.frwk.crypto;
 
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import static com.zotohlab.frwk.util.CU.nsb;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

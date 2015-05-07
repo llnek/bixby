@@ -11,7 +11,9 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import static com.zotohlab.frwk.util.CU.nsb;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -22,6 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMessage;
 import io.netty.handler.codec.http.HttpRequest;
@@ -45,17 +48,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-
-import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
-
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.zotohlab.frwk.io.IOUtils;
+import com.zotohlab.frwk.io.IO;
 import com.zotohlab.frwk.io.XData;
 
 
@@ -248,8 +247,8 @@ public enum NettyFW {
 
   public static OutputStream swapFileBacked(XData x, OutputStream out, long lastSum)
     throws IOException {
-    if (lastSum > IOUtils.streamLimit() ) {
-      Object[] fos = IOUtils.newTempFile(true);
+    if (lastSum > IO.streamLimit() ) {
+      Object[] fos = IO.newTempFile(true);
       x.resetContent(fos[0] );
       return (OutputStream) fos[1];
     } else {
@@ -300,21 +299,21 @@ public enum NettyFW {
     return ctx.channel().pipeline().get(SslHandler.class) != null;
   }
 
-  public static HttpResponse makeFullHttpReply(int status, ByteBuf payload) {
+  public static FullHttpResponse makeFullHttpReply(int status, ByteBuf payload) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status), payload);
   }
   
-  public static HttpResponse makeFullHttpReply(int status, String payload) {
+  public static FullHttpResponse makeFullHttpReply(int status, String payload) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , 
         HttpResponseStatus.valueOf(status), 
         Unpooled.copiedBuffer(payload, CharsetUtil.UTF_8));
   }
 
-  public static HttpResponse makeFullHttpReply(int status) {
+  public static FullHttpResponse makeFullHttpReply(int status) {
     return new DefaultFullHttpResponse( HttpVersion.HTTP_1_1 , HttpResponseStatus.valueOf(status));
   }
 
-  public static HttpResponse makeFullHttpReply() {
+  public static FullHttpResponse makeFullHttpReply() {
     return makeFullHttpReply(200);
   }
 

@@ -45,7 +45,7 @@
             [java.util.zip ZipFile]
             [java.net URL]
             [java.util Date]
-            [com.zotohlab.frwk.io IOUtils]
+            [com.zotohlab.frwk.io IO]
             [com.zotohlab.frwk.core Startable Disposable
              Versioned Hierarchial Identifiable]
             [com.zotohlab.frwk.server Component ComponentRegistry]))
@@ -243,7 +243,7 @@
     (with-local-vars [sum 0]
       (when (.isDirectory pd)
         (log/info "Scanning for pods in: " pd)
-        (doseq [f (IOUtils/listFiles pd "pod" false) ]
+        (doseq [f (IO/listFiles pd "pod" false) ]
           (var-set sum (inc @sum))
           (deployOnePod f py)))
       (log/info "Total pods deployed: " @sum))
@@ -549,7 +549,7 @@
   (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         ^File bDir (.getf ctx K_BKSDIR)
-        fs (IOUtils/listFiles bDir "meta" false) ]
+        fs (IO/listFiles bDir "meta" false) ]
     (doseq [^File f fs ]
       (let [^czlabclj.tardis.core.sys.Elmt
             b (-> (makeBlockMeta (-> f (.toURI)(.toURL)))

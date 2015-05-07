@@ -15,6 +15,7 @@
   czlabclj.xlib.util.ini
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core
@@ -22,7 +23,7 @@
          [ThrowBadData ThrowIOE
           ConvBool ConvInt ConvLong ConvDouble]]
         [czlabclj.xlib.util.files :only [FileRead?]]
-        [czlabclj.xlib.util.str :only [nsb strim]])
+        [czlabclj.xlib.util.str :only [sname nsb strim]])
 
   (:import  [com.zotohlab.frwk.util NCOrderedMap]
             [org.apache.commons.lang3 StringUtils]
@@ -67,13 +68,13 @@
 ;;
 (defn- maybeSection
 
+  ^String
   [^LineNumberReader rdr
    ^Map ncmap
    ^String line]
 
   (let [s (strim (StringUtils/strip line "[]")) ]
-    (when (cstr/blank? s)
-      (throwBadIni rdr))
+    (when (cstr/blank? s) (throwBadIni rdr))
     (when-not (.containsKey ncmap s)
       (.put ncmap s (NCOrderedMap.)))
     s
@@ -89,8 +90,7 @@
    ^String line]
 
   (let [^Map kvs (.get ncmap section) ]
-    (when (nil? kvs)
-      (throwBadIni rdr))
+    (when (nil? kvs) (throwBadIni rdr))
     (let [pos (.indexOf line (int \=))
           nm (if (> pos 0)
                (strim (.substring line 0 pos))
@@ -118,9 +118,7 @@
       (maybeSection rdr ncmap ln)
 
       :else
-      (do
-        (maybeLine rdr ncmap curSec ln)
-        curSec))
+      (do (maybeLine rdr ncmap curSec ln) curSec))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,7 +127,7 @@
 
   [^Map m k]
 
-  (let [kn (name k) ]
+  (let [kn (sname k) ]
     (if (or (nil? kn)
             (nil? m))
       nil
@@ -143,13 +141,13 @@
   ^String
   [^IWin32Conf cf s k err]
 
-  (let [kn (name k)
-        sn (name s)
+  (let [kn (sname k)
+        sn (sname s)
         ^Map mp (.getSection cf sn) ]
     (cond
-      (nil? mp) (if err (throwBadMap sn) nil)
-      (nil? k) (if err (throwBadKey "") nil)
-      (not (hasKV mp k)) (if err (throwBadKey kn) nil)
+      (nil? mp) (when err (throwBadMap sn))
+      (nil? k) (when err (throwBadKey ""))
+      (not (hasKV mp k)) (when err (throwBadKey kn))
       :else (nsb (.get mp kn)))
   ))
 
@@ -157,17 +155,16 @@
 ;;
 (defn- makeWinini ""
 
-  [^Map sections]
+  [^Map sects]
 
   (reify IWin32Conf
 
-    (sectionKeys [_] (.keySet sections))
+    (sectionKeys [_] (.keySet sects))
 
-    (getSection [_ sname]
-      (when-let [sn (if-not (nil? sname)
-                      (name sname))]
-        (when-let [m (.get sections sn)]
-          (into {} m))))
+    (getSection [_ sect]
+      (when-let [sn (sname sect)]
+      (when-let [m (.get sects sn)]
+        (into {} m))))
 
     (getString [this section property]
       (nsb (getKV this section property true)))
@@ -211,10 +208,10 @@
 
     (dbgShow [_]
       (let [buf (StringBuilder.)]
-        (doseq [[k v] (seq sections)]
-          (.append buf (str "[" (name k) "]\n"))
+        (doseq [[k v] (seq sects)]
+          (.append buf (str "[" (sname k) "]\n"))
           (doseq [[x y] (seq v)]
-            (.append buf (str (name x) "=" y)))
+            (.append buf (str (sname x) "=" y)))
           (.append buf "\n"))
         (println buf)))
   ))
@@ -224,10 +221,10 @@
 (defmethod ParseInifile String
 
   ^IWin32Conf
-  [^String fpath]
+  [fpath]
 
   (when-not (nil? fpath)
-    (ParseInifile (File. fpath))
+    (ParseInifile (io/file fpath))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -235,11 +232,10 @@
 (defmethod ParseInifile File
 
   ^IWin32Conf
-  [^File file]
+  [file]
 
   (when (FileRead? file)
-    (ParseInifile (-> file
-                      (.toURI)(.toURL)))
+    (ParseInifile (io/as-url file))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -250,7 +246,7 @@
   [^URL fUrl]
 
   (with-open [inp (.openStream fUrl) ]
-    (loop [rdr (LineNumberReader. (InputStreamReader. inp "utf-8"))
+    (loop [rdr (LineNumberReader. (io/reader inp :encoding "utf-8"))
            total (NCOrderedMap.)
            curSec ""
            line (.readLine rdr)  ]

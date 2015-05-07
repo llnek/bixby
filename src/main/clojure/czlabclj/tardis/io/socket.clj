@@ -23,10 +23,10 @@
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.util.process :only [Coroutine]]
         [czlabclj.xlib.util.meta :only [GetCldr]]
+        [czlabclj.xlib.util.io :only [CloseQ]]
         [czlabclj.xlib.util.str :only [strim nsb hgl?]])
 
   (:import  [java.net InetAddress ServerSocket Socket]
-            [org.apache.commons.io IOUtils]
             [com.zotohlab.frwk.core Identifiable]
             [com.zotohlab.skaro.io SocketEvent]))
 
@@ -56,7 +56,7 @@
         (getSockOut [_] (.getOutputStream soc))
         (getSockIn [_] (.getInputStream soc))
         (emitter [_] co)
-        (dispose [_] (IOUtils/closeQuietly soc)))
+        (dispose [_] (CloseQ soc)))
 
       { :typeid :czc.tardis.io/SocketEvent }
   )))
@@ -125,7 +125,7 @@
                       (sockItDown co (.accept ssoc))
                       (catch Throwable e#
                         (log/warn e# "")
-                        (IOUtils/closeQuietly ssoc)
+                        (CloseQ ssoc)
                         (.setAttr! co :ssocket nil))))
                  (GetCldr)))
     (IOESStarted co)
@@ -139,7 +139,7 @@
 
   (log/info "IOESStop: SocketIO: " (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getAttr co :ssocket) ]
-    (IOUtils/closeQuietly ssoc)
+    (CloseQ ssoc)
     (.setAttr! co :ssocket nil)
     (IOESStopped co)
   ))

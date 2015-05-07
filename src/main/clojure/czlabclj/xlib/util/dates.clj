@@ -18,7 +18,7 @@
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.str :only [Has? HasAny? nichts? nsb]]
-        [czlabclj.xlib.util.consts :as CS]
+        [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.core :only [Try!]])
 
   (:import  [java.text ParsePosition SimpleDateFormat]
@@ -113,8 +113,8 @@
 
   (when-not (nichts? tstr)
     (let [fmt (if (Has? tstr \:)
-                (if (Has? tstr \.) CS/DT_FMT_MICRO CS/DT_FMT )
-                CS/DATE_FMT ) ]
+                (if (Has? tstr \.) DT_FMT_MICRO DT_FMT )
+                DATE_FMT ) ]
       (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))
   ))
 
@@ -133,7 +133,7 @@
 
   (^String
     [^Date dt]
-    (FmtDate dt CS/DT_FMT_MICRO nil))
+    (FmtDate dt DT_FMT_MICRO nil))
 
   (^String
     [^Date dt fmt]
@@ -154,7 +154,7 @@
   ^String
   [^Date dt]
 
-  (FmtDate dt CS/DT_FMT_MICRO (SimpleTimeZone. 0 "GMT")))
+  (FmtDate dt DT_FMT_MICRO (SimpleTimeZone. 0 "GMT")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

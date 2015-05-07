@@ -17,6 +17,7 @@
   (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.util.core :only [ThrowIOE notnil? Bytesify]]
+        [czlabclj.xlib.util.io :only [NewlyTempFile CloseQ]]
         [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]])
 
   (:import  [java.io OutputStream IOException File ByteArrayOutputStream]
@@ -43,7 +44,7 @@
              AuxHttpFilter FormPostFilter DemuxedMsg]
             [com.zotohlab.frwk.netty NettyFW]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
-            [com.zotohlab.frwk.io XData IOUtils]
+            [com.zotohlab.frwk.io IO XData]
             [com.google.gson JsonObject]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,15 +68,14 @@
             fnm (.getFilename fu) ]
         (when (.isCompleted fu)
           (if (instance? DiskFileUpload fu)
-            (let [^File fp  (-> (IOUtils/newTempFile false)
-                                (aget 0)) ]
+            (let [[^File fp _]
+                  (NewlyTempFile)]
               (.renameTo ^DiskFileUpload fu fp)
               (.add fis (ULFileItem. nm  ct fnm  (XData. fp))))
-            (let [fos (IOUtils/newTempFile true)
-                  ^OutputStream os (aget fos 1)
-                  ^File fp (aget fos 0) ]
+            (let [[^File fp ^OutputStream os]
+                  (NewlyTempFile true)]
               (NettyFW/slurpByteBuf (.content fu) os)
-              (org.apache.commons.io.IOUtils/closeQuietly os)
+              (CloseQ os)
               (.add fis (ULFileItem. nm  ct fnm  (XData. fp)))))))
 
       (= InterfaceHttpData$HttpDataType/Attribute dt)
@@ -208,7 +208,7 @@
             (NettyFW/setAttr ctx NettyFW/CBUF_KEY (Unpooled/compositeBuffer 1024))
             ;;(proxy-super handleMsgChunk ctx msg))
             (.handleMsgChunk ^FormPostFilter this ctx msg))
-          (let [fac (DefaultHttpDataFactory. (IOUtils/streamLimit))
+          (let [fac (DefaultHttpDataFactory. (IO/streamLimit))
                 dc (HttpPostRequestDecoder. fac msg) ]
             (NettyFW/setAttr ctx NettyFW/FORMDEC_KEY dc)
             (.handleFormChunk ^FormPostFilter this ctx msg)))))

@@ -17,7 +17,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import org.slf4j.Logger;
 
 import com.zotohlab.frwk.server.ServiceHandler;
-import com.zotohlab.frwk.util.CoreUtils;
+import com.zotohlab.frwk.util.CU;
 import com.zotohlab.frwk.util.RunnableWithId;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.Delay;
@@ -32,7 +32,7 @@ public abstract class FlowNode implements RunnableWithId {
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  private long _pid = CoreUtils.nextSeqLong();
+  private long _pid = CU.nextSeqLong();
   
   private FlowNode _nextStep;
   protected Job _job;

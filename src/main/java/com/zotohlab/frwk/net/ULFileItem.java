@@ -11,8 +11,8 @@
 
 package com.zotohlab.frwk.net;
 
-import static com.zotohlab.frwk.io.IOUtils.newTempFile;
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import static com.zotohlab.frwk.io.IO.newTempFile;
+import static com.zotohlab.frwk.util.CU.nsb;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

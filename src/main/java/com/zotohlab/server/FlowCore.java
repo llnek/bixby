@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.zotohlab.frwk.core.Activable;
 import com.zotohlab.frwk.core.Identifiable;
-import com.zotohlab.frwk.util.CoreUtils;
+import com.zotohlab.frwk.util.CU;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.frwk.util.TCore;
 
@@ -40,7 +40,7 @@ public class FlowCore implements Schedulable, Activable {
   public static FlowCore apply() { return new FlowCore(); }
   
   private FlowCore() {
-    _id= "FlowScheduler#" + CoreUtils.nextSeqInt();
+    _id= "FlowScheduler#" + CU.nextSeqInt();
   }
   
   public void activate(Object options) {

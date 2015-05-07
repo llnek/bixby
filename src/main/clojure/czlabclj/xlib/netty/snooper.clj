@@ -49,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- writeReply ""
+(defn- writeReply "Reply back a string."
 
   [^ChannelHandlerContext ctx
    ^StringBuilder cookieBuf
@@ -57,25 +57,26 @@
    ^HttpContent curObj ]
 
   (let [res (NettyFW/makeFullHttpReply 200 (nsb buf))
+        hds (.headers res)
         clen (-> (.content res)(.readableBytes)) ]
-    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_LENGTH (str clen)))
-    (-> (.headers res)(.set HttpHeaders$Names/CONTENT_TYPE
+    (-> hds (.set HttpHeaders$Names/CONTENT_LENGTH (str clen)))
+    (-> hds (.set HttpHeaders$Names/CONTENT_TYPE
                             "text/plain; charset=UTF-8"))
-    (-> (.headers res)
+    (-> hds
         (.set HttpHeaders$Names/CONNECTION
               (if (-> (.attr ctx KALIVE)(.get))
                   HttpHeaders$Values/KEEP_ALIVE
                   HttpHeaders$Values/CLOSE)))
     (let [cs (CookieDecoder/decode (nsb cookieBuf)) ]
       (if (.isEmpty cs)
-        (doto (.headers res)
+        (doto hds
           (.add HttpHeaders$Names/SET_COOKIE
                 (ServerCookieEncoder/encode "key1" "value1"))
           (.add HttpHeaders$Names/SET_COOKIE
                 (ServerCookieEncoder/encode "key2" "value2")))
         (doseq [^Cookie v (seq cs) ]
-          (-> (.headers res)(.add HttpHeaders$Names/SET_COOKIE
-                                  (ServerCookieEncoder/encode v))))))
+          (-> hds (.add HttpHeaders$Names/SET_COOKIE
+                        (ServerCookieEncoder/encode v))))))
     ;; incase of reuse, clean up the buffers
     (.setLength cookieBuf 0)
     (.setLength buf 0)
@@ -84,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleReq ""
+(defn- handleReq "Introspect the inbound request."
 
   [^ChannelHandlerContext ctx
    ^StringBuilder cookieBuf
@@ -109,7 +110,8 @@
           (.append (.getUri req))
           (.append "\r\n\r\n"))
     (reduce (fn [memo ^String n]
-              (doto memo
+              (doto ^StringBuilder
+                memo
                 (.append "HEADER: ")
                 (.append n)
                 (.append " = ")
@@ -119,7 +121,8 @@
             (.names headers))
     (.append buf "\r\n")
     (reduce (fn [memo ^Map$Entry en]
-              (doto memo
+              (doto ^StringBuilder
+                memo
                 (.append "PARAM: ")
                 (.append (.getKey en))
                 (.append " = ")
@@ -134,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handlec ""
+(defn- handlec "Handle the request content."
 
   [^ChannelHandlerContext ctx
    ^StringBuilder cookieBuf
@@ -154,7 +157,8 @@
         (when-not (.isEmpty thds)
           (.append buf "\r\n")
           (reduce (fn [memo ^String n]
-                    (doto memo
+                    (doto ^StringBuilder
+                      memo
                       (.append "TRAILING HEADER: ")
                       (.append n)
                       (.append " = ")
@@ -195,7 +199,7 @@
   ^PipelineConfigurator
   []
 
-  (ReifyHTTPPipe snooperHandler))
+  (ReifyHTTPPipe "NettySnooper" snooperHandler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -87,7 +87,7 @@
              Component ServiceHandler ServiceError]
             [com.zotohlab.skaro.core Container ConfigError]
             [com.zotohlab.skaro.io IOEvent]
-            [com.zotohlab.frwk.util Schedulable CoreUtils]
+            [com.zotohlab.frwk.util Schedulable CU]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.wflow Activity Job]))
 

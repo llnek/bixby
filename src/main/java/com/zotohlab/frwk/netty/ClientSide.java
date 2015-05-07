@@ -11,7 +11,7 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+import static com.zotohlab.frwk.io.IO.streamLimit;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

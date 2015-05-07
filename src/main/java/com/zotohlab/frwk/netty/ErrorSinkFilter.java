@@ -13,7 +13,7 @@ package com.zotohlab.frwk.netty;
 
 import static com.zotohlab.frwk.netty.NettyFW.getAttr;
 import static com.zotohlab.frwk.netty.NettyFW.replyXXX;
-import static com.zotohlab.frwk.util.CoreUtils.nsb;
+import static com.zotohlab.frwk.util.CU.nsb;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;

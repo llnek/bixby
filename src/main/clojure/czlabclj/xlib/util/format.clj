@@ -15,6 +15,7 @@
   czlabclj.xlib.util.format
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.edn :as edn]
             [clojure.data.json :as js])
 
@@ -30,17 +31,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteEdnString ""
+(defn WriteEdnString "Convert clojure object into EDN format."
 
   ^String
   [obj]
 
-  (if-not (nil? obj)
-    (pr-str obj)))
+  (if-not (nil? obj) (pr-str obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ReadEdn (fn [a] (class a)))
+(defmulti ReadEdn "Parse EDN formatted text." (fn [a] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -48,7 +48,7 @@
 
   [^File fp]
 
-  (ReadEdn (.toURL fp)))
+  (ReadEdn (io/as-url fp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,22 +71,21 @@
 (defn WriteJson "Convert into JSON."
 
   ^String
-  [^String data]
+  [data]
 
   (js/write-str data))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadJsonKW ""
+(defn ReadJsonKW "Parse JSON into object with keys mapped to keywords."
 
-  ^String
   [^String data]
 
   (js/read-str data :key-fn keyword))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadJson ""
+(defn ReadJson "Parse JSON into object."
 
   (^String [^String data] (js/read-str data))
   (^String [^String data keyfn]

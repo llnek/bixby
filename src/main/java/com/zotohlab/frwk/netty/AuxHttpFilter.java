@@ -11,7 +11,7 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.io.IOUtils.streamLimit;
+import static com.zotohlab.frwk.io.IO.streamLimit;
 import static com.zotohlab.frwk.netty.NettyFW.CBUF_KEY;
 import static com.zotohlab.frwk.netty.NettyFW.MSGFUNC_KEY;
 import static com.zotohlab.frwk.netty.NettyFW.MSGINFO_KEY;
@@ -44,7 +44,7 @@ import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
 
 import com.zotohlab.frwk.core.CallableWithArgs;
-import com.zotohlab.frwk.io.IOUtils;
+import com.zotohlab.frwk.io.IO;
 import com.zotohlab.frwk.io.XData;
 
 
@@ -156,7 +156,7 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf)
     throws IOException {
     XData xs = (XData) getAttr(ctx, XDATA_KEY);
-    Object[] fos = IOUtils.newTempFile(true);
+    Object[] fos = IO.newTempFile(true);
     OutputStream os = (OutputStream) fos[1];
     File fp = (File) fos[0];
     slurpByteBuf(bbuf, os);

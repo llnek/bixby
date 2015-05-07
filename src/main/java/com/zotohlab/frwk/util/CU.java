@@ -36,7 +36,7 @@ import com.zotohlab.frwk.core.CallableWithArgs;
  * @author kenl
  */
 @SuppressWarnings("unused")
-public enum CoreUtils {
+public enum CU {
 ;
 
   private static Logger _log=getLogger(lookup().lookupClass());
@@ -63,6 +63,8 @@ public enum CoreUtils {
 //      String[] rc= StringUtils.split(",;,;,;", ",;");
       String rc= new Locale("en").toString();
       rc=null;
+      
+      FileUtils.copyDirectoryToDirectory(new File("/tmp/poo"), new File("/tmp/shit"));
     } catch (Throwable t) {
       t.printStackTrace();
     }

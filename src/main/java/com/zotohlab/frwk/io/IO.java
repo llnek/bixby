@@ -25,7 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * @author kenl
  */
-public class IOUtils {
+public class IO {
 
   private static File _wd = new File( System.getProperty("java.io.tmpdir"));
   private static long _DFT= 2L * 1024 * 1024; // 2M

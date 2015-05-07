@@ -30,7 +30,7 @@
 
   (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
             [com.zotohlab.skaro.loaders AppClassLoader]
-            [com.zotohlab.frwk.util CoreUtils]
+            [com.zotohlab.frwk.util CU]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.server Component
              ComponentRegistry RegistryError ServiceError]

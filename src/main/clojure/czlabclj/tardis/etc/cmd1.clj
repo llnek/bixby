@@ -65,7 +65,7 @@
             [com.zotohlab.wflow Job]
             [java.io File]
             [java.security KeyPair PublicKey PrivateKey]
-            [com.zotohlab.frwk.io IOUtils]))
+            [com.zotohlab.frwk.io IO]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -537,7 +537,7 @@
   [^File dir ^StringBuilder out]
 
   (let [sep (System/getProperty "line.separator")
-        fs (IOUtils/listFiles dir "jar" false) ]
+        fs (IO/listFiles dir "jar" false) ]
     (doseq [f (seq fs) ]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""

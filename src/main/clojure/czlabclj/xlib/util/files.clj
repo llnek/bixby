@@ -15,6 +15,7 @@
   czlabclj.xlib.util.files
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.core :only [notnil?]]
@@ -127,7 +128,7 @@
 
   [^ZipFile src ^File des ^ZipEntry en]
 
-  (let [f (File. des (jiggleZipEntryName en) ) ]
+  (let [f (io/file des (jiggleZipEntryName en)) ]
     (if (.isDirectory en)
       (.mkdirs f)
       (do
@@ -153,20 +154,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFiles ""
+(defn CopyFiles "Copy all files with *ext* to the destination folder."
 
   [^File srcDir ^File destDir ext]
 
   (FileUtils/copyDirectory
     srcDir
     destDir
-    (FileFilterUtils/andFileFilter FileFileFilter/FILE
-                                   (FileFilterUtils/suffixFileFilter (str "." ext)))
+    (FileFilterUtils/andFileFilter
+      FileFileFilter/FILE
+      (FileFilterUtils/suffixFileFilter (str "." ext)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFileToDir ""
+(defn CopyFileToDir "Copy a file to the target folder."
 
   [^File fp ^File dir]
 
@@ -174,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFile ""
+(defn CopyFile "Copy a file."
 
   [^File fp ^File target]
 
@@ -182,7 +184,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyToDir ""
+(defn CopyToDir "Copy source folder to be a subfolder of target folder."
 
   [^File dir ^File targetDir]
 
@@ -190,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyDirFiles ""
+(defn CopyDirFiles "Copy all contents in source folder to target folder."
 
   [^File dir ^File targetDir]
 
@@ -198,7 +200,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteDir ""
+(defn DeleteDir "Erase the folder."
 
   [^File dir]
 
@@ -206,47 +208,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CleanDir ""
+(defn CleanDir "Remove contents in this folder."
 
   [^File dir]
 
   (FileUtils/cleanDirectory dir))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteOneFile ""
+(defn WriteOneFile "Write data to file."
 
   ([^File fout ^Object data ^String enc]
-   (cond
-     (nil? data)
-     nil
-
-     (IsBytes? data)
-     (FileUtils/writeByteArrayToFile fout ^bytes data)
-
-     :else
-     (FileUtils/writeStringToFile fout (nsb data) enc)))
+   (when-not (nil? data)
+     (spit fout data :encoding enc)))
 
   ([^File fout ^Object data] (WriteOneFile fout data "utf-8")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadOneFile ""
+(defn ReadOneFile "Read data from a file."
 
   (^String [^File fp] (ReadOneFile fp "utf-8"))
 
-  (^String [^File fp ^String encoding]
-    (FileUtils/readFileToString fp encoding)))
+  (^String [^File fp ^String enc] (slurp fp :encoding enc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadOneUrl ""
+(defn ReadOneUrl "Read data from a URL."
 
   (^String [^URL url] (ReadOneUrl url "utf-8"))
 
-  (^String [^URL url ^String encoding]
-    (IOUtils/toString url encoding)))
+  (^String [^URL url ^String enc] (slurp url :encoding enc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -254,12 +246,12 @@
 
   [^File dir ^String fname ^XData xdata]
 
-  (let [fp (File. dir fname) ]
-    (log/debug "Saving file: " fp)
-    (FileUtils/deleteQuietly fp)
-    (if (.isDiskFile xdata)
-      (FileUtils/moveFile (.fileRef xdata) fp)
-      (FileUtils/writeByteArrayToFile fp (.javaBytes xdata)))
+  ;;(log/debug "Saving file: " fname)
+  (let [fp (io/file dir fname) ]
+    (io/delete-file fp true)
+    (if-not (.isDiskFile xdata)
+      (spit fp (.javaBytes xdata))
+      (FileUtils/moveFile (.fileRef xdata) fp))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -269,11 +261,10 @@
   ^XData
   [^File dir ^String fname]
 
-  (let [fp (File. dir fname)
+  ;;(log/debug "Getting file: " fname)
+  (let [fp (io/file dir fname)
         xs (XData.) ]
-    (log/debug "Getting file: " fp)
-    (if (and (.exists fp)
-             (.canRead fp))
+    (if (FileRead? fp)
       (doto xs
         (.setDeleteFile false)
         (.resetContent fp))

@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-(ns ^{:doc ""
+(ns ^{:doc "Call and execute the codox document generator."
       :author "kenl" }
 
   czlabclj.xlib.util.codox
@@ -24,7 +24,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -main "Main Entry"
+(defn -main "Run the codox document generator."
 
   [& args]
 

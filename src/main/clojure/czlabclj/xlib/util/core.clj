@@ -15,6 +15,7 @@
   czlabclj.xlib.util.core
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr]
             [clojure.core :as ccore]
             [clojure.edn :as edn])
@@ -56,7 +57,8 @@
 ;;
 (def ^:private _BOOLS #{ "true" "yes"  "on"  "ok"  "active"  "1"} )
 (def ^:private _PUNCS #{ \_ \- \. \( \) \space } )
-(deftype TYPE_NICHTS [])
+
+(deftype TypeNichts [])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,7 +66,7 @@
 
   [defv & exprs]
 
-  `(try (do ~@exprs) (catch Throwable e# (log/warn e# "") ~defv )) )
+  `(try ~@exprs (catch Throwable e# (log/warn e# "") ~defv )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -80,11 +82,11 @@
 
   [& exprs]
 
-  `(try (do ~@exprs) (catch Throwable e# nil )) )
+  `(try ~@exprs (catch Throwable e# nil )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro Inst? ""
+(defmacro Inst? "Same as clojure's instance?."
 
   [a b]
 
@@ -92,12 +94,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro Cast? ""
+(defmacro Cast? "If object is an instance of this type,
+                 return it else nil."
 
-  [a b]
+  [someType obj]
 
-  `(let [x# ~b]
-     (if (instance? ~a x#) x#)))
+  `(let [x# ~obj]
+     (if (instance? ~someType x#) x#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -109,10 +112,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def NICHTS (TYPE_NICHTS.) )
+(def GBS (* 1024 1024 1024))
 (def KBS 1024)
 (def MBS (* 1024 1024))
-(def GBS (* 1024 1024 1024))
+(def NICHTS (TypeNichts.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -120,16 +123,17 @@
 
   [x y]
 
-  `(if (nil? ~x) ~y ~x))
+  `(let [x# ~x]
+     (if (nil? x#) ~y x#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; local hack
 (defn- nsb ""
 
   ^String
-  [s]
+  [^Object s]
 
-  (if (nil? s) "" (.toString ^Object s)))
+  (if (nil? s) "" (.toString s)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; local hack
@@ -142,7 +146,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NilNichts ""
+(defn ^:no-doc NilNichts "If object is nil, return a NICHTS."
 
   ^Object
   [obj]
@@ -151,7 +155,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsNichts? ""
+(defn ^:no-doc IsNichts? "Returns true if the object is the NICHTS."
 
   [obj]
 
@@ -196,19 +200,16 @@
   ;; a vector
   [somesequence]
 
-  (cond
-    (nil? somesequence) nil
-    (empty? somesequence) []
-    :else (into [] (remove nil? somesequence))
-  ))
+  (into [] (remove nil? somesequence)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Interject ""
+(defn Interject "Run the function on the current field value,
+                 replacing the key with the returned value."
 
   [pojo field func]
 
-  (let [nv (apply func [ (get pojo field) ])]
+  (let [nv (apply func field (get pojo field) [])]
     (assoc pojo field nv)
   ))
 
@@ -218,7 +219,8 @@
 
   [e]
 
-  `(and (number? ~e)(pos? ~e)))
+  `(let [e# ~e]
+     (and (number? e#)(pos? e#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -258,7 +260,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonObject ""
+(defn SafeGetJsonObject "If the field is a JsonObject,
+                         return it else nil."
 
   ^JsonObject
   [^JsonObject json ^String field]
@@ -271,7 +274,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonString ""
+(defn SafeGetJsonString "If the field is a String,
+                         return it else nil"
 
   ^String
   [^JsonObject json ^String field]
@@ -284,7 +288,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonDouble ""
+(defn SafeGetJsonDouble "If the field is a double,
+                         return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -296,7 +301,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonInt ""
+(defn SafeGetJsonInt "If the field is an int,
+                      return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -308,7 +314,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonBool ""
+(defn SafeGetJsonBool "If the field is a boolean,
+                       return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -320,7 +327,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MatchChar? "Returns true if this char exists inside this set of chars."
+(defn MatchChar? "Returns true if this char is inside this set of chars."
 
   ;; boolean
   [ch setOfChars]
@@ -360,7 +367,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RandomSign ""
+(defn RandomSign "Randomly choose a sign, positive or negative."
 
   []
 
@@ -368,7 +375,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RandomBoolValue ""
+(defn RandomBoolValue "Randomly choose a boolean value."
 
   []
 
@@ -378,12 +385,9 @@
 ;;
 (defn NewRandom "Return a new random object."
 
-  (^SecureRandom
-    []
-    (NewRandom 4))
+  (^SecureRandom [] (NewRandom 4))
 
-  (^SecureRandom
-    [numBytes]
+  (^SecureRandom [numBytes]
     (SecureRandom. (SecureRandom/getSeed numBytes)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -509,7 +513,7 @@
   ^File
   []
 
-  (File. (SysProp "user.home")) )
+  (io/file (SysProp "user.home")) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -524,10 +528,10 @@
 ;;
 (defn GetCwd "Get the current dir."
 
-  ^String
+  ^File
   []
 
-  (SysProp "user.dir"))
+  (io/file (SysProp "user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -610,7 +614,7 @@
 
   (try
     (Long/parseLong s)
-    (catch Throwable e# dftLongVal)
+    (catch Throwable _ dftLongVal)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -622,7 +626,7 @@
 
   (try
     (Integer/parseInt s)
-    (catch Throwable e# (int dftIntVal))
+    (catch Throwable _ (int dftIntVal))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -634,7 +638,7 @@
 
   (try
     (Double/parseDouble s)
-    (catch Throwable e# dftDblVal)
+    (catch Throwable _ dftDblVal)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -660,7 +664,7 @@
 
   [^File aFile]
 
-  (LoadJavaProps (-> aFile (.toURI) (.toURL) )))
+  (LoadJavaProps (io/as-url aFile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -839,7 +843,7 @@
 
   (if (nil? fileUrlPath)
     ""
-    (.getPath (URL. fileUrlPath))) )
+    (.getPath (io/as-url fileUrlPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -849,39 +853,8 @@
   [^String path]
 
   (when-not (nil? path)
-    (-> (File. path)(.toURI)(.toURL))
+    (io/as-url path)
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fetch-tmpdir
-
-  ^File
-  [extra]
-
-  (doto (File. (str (SysProp "java.io.tmpdir")
-                    "/"
-                    extra))
-    (.mkdirs )
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeTmpDir "Generate and return a new temp File dir."
-
-  ^File
-  []
-
-  (fetch-tmpdir (juid)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetTmpDir "Return the current temp File dir."
-
-  ^File
-  []
-
-  (fetch-tmpdir ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; test and assert funcs
@@ -1022,7 +995,7 @@
   ^Throwable
   [root]
 
-  (loop [r root t (if (nil? root) nil (.getCause ^Throwable root)) ]
+  (loop [r root t (if-not (nil? root) (.getCause ^Throwable root)) ]
     (if (nil? t)
       r
       (recur t (.getCause t)))
@@ -1079,7 +1052,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IntoMap ""
+(defn IntoMap "Convert Java Map into Clojure Map."
 
   [^java.util.Map props]
 
@@ -1120,7 +1093,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeMMap ""
+(defn MakeMMap "Create a mutable object."
 
   (^czlabclj.xlib.util.core.Muble
     [opts]
@@ -1135,7 +1108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PrintMutableObj ""
+(defn PrintMutableObj "Print out this mutable object."
 
   ([^czlabclj.xlib.util.core.Muble ctx dbg ]
    (let [buf (StringBuilder.) ]
@@ -1151,7 +1124,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn StripNSPath ""
+(defn StripNSPath "Remove the leading colon."
 
   ^String
   [path]
@@ -1164,7 +1137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NormalizeEmail ""
+(defn NormalizeEmail "Normalize an email address."
 
   ^String
   [^String email]
@@ -1251,7 +1224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ConvToJava ""
+(defn ConvToJava "Convert a clojure object to a Java object."
 
   ^Object
   [obj]
@@ -1281,8 +1254,9 @@
 
   (.getAndIncrement ^AtomicLong _numLong))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(ns-unmap *ns* '->TypeNichts)
+(ns-unmap *ns* '->MubleObj)
 (def ^:private core-eof nil)
 

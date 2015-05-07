@@ -16,7 +16,9 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [NextInt NowMillis TryC NewRandom]]
+  (:use [czlabclj.xlib.util.core
+         :only
+         [NextInt NowMillis TryC NewRandom]]
         [czlabclj.xlib.util.str :only [nsb Left Right]]
         [czlabclj.xlib.util.io :only [ReadInt ReadLong]])
 
@@ -30,8 +32,8 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;(def ^:private  _CHARS (.toCharArray "0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"))
+;;pre-shuffle the chars in string.
+;;"0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"
 (def ^:private ^String _SS "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW")
 (def ^:private ^chars  _CHARS (.toCharArray _SS))
 (def ^:private _UUIDLEN (.length _SS))
@@ -99,7 +101,7 @@
           b (.getAddress neta) ]
       (if (.isLoopbackAddress neta)
         (.nextLong (NewRandom))
-        (if (= 4 (alength b))
+        (if (== 4 (alength b))
           (long (ReadInt b))
           (ReadLong b))
       ))
@@ -120,7 +122,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MyOwnNewUUid "RFC4122, version 4 form."
+(defn ^:no-doc MyOwnNewUUid
+
+  "RFC4122, version 4 form."
 
   ^String
   []
