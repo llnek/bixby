@@ -21,8 +21,7 @@
         [czlabclj.xlib.util.core :only [ThrowIOE Try!]]
         [czlabclj.xlib.util.mime :only [GetCharset]])
 
-  (:import  [org.apache.http Header StatusLine HttpEntity HttpResponse]
-            [java.security.cert X509Certificate CertificateException]
+  (:import  [java.security.cert X509Certificate CertificateException]
             [javax.net.ssl SSLContext SSLEngine X509TrustManager
              TrustManagerFactorySpi TrustManager
              ManagerFactoryParameters]
@@ -33,15 +32,8 @@
             [com.zotohlab.frwk.net SSLTrustMgrFactory]
             [com.zotohlab.frwk.io XData]
             [org.apache.commons.lang3 StringUtils]
-            [org.apache.http.client.config RequestConfig]
-            [org.apache.http.client HttpClient]
-            [org.apache.http.client.methods HttpGet HttpPost]
-            [org.apache.http.impl.client HttpClientBuilder]
             [java.io File IOException]
-            [org.apache.http.util EntityUtils]
             [java.net URL URI]
-            [org.apache.http.params HttpConnectionParams]
-            [org.apache.http.entity InputStreamEntity]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
             [com.zotohlab.frwk.io XData]))
 
@@ -90,7 +82,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseBasicAuth ""
+(defn ParseBasicAuth "Parse line looking for basic authentication info."
 
   [^String line]
 
@@ -109,175 +101,6 @@
       nil)
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; internal functions to support apache http client.
-(defn- mkApacheClientHandle ""
-
-  ^HttpClient
-  []
-
-  (let [cli (HttpClientBuilder/create)
-        cfg (-> (RequestConfig/custom)
-                (.setConnectTimeout (int *socket-timeout*))
-                (.setSocketTimeout (int *socket-timeout*))
-                (.build)) ]
-    (.setDefaultRequestConfig cli ^RequestConfig cfg)
-    (ApacheHttpClient/cfgForRedirect cli)
-    (.build cli)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- get-bits ""
-
-  ^bytes
-  [^HttpEntity ent]
-
-  (when-not (nil? ent)
-    (EntityUtils/toByteArray ent)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- get-str ""
-
-  ^String
-  [^HttpEntity ent]
-
-  (EntityUtils/toString ent "utf-8"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- processOK ""
-
-  [^HttpResponse rsp]
-
-  (let [ent (.getEntity rsp)
-        ct (when-not (nil? ent) (.getContentType ent))
-        cv (if (nil? ct) "" (strim (.getValue ct)))
-        cl (lcase cv) ]
-    (Try!
-      (log/debug "Http-response: content-encoding: "
-                 (.getContentEncoding ent)
-                 "\n"
-                 "Content-type: " cv))
-    (let [bits (get-bits ent)
-          clen (if (nil? bits) 0 (alength bits)) ]
-      {:encoding (GetCharset cv)
-       :content-type cv
-       :data (if (== clen 0) nil (XData. bits)) } )
-  ))
-    ;;(cond
-      ;;(or (.startsWith cl "text/")
-          ;;(.startsWith cl "application/xml")
-          ;;(.startsWith cl "application/json")) (get-bits ent) ;;(get-str ent)
-      ;;:else (get-bits ent))) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- processError ""
-
-  [^HttpResponse rsp ^Throwable exp]
-
-  (Try! (EntityUtils/consumeQuietly (.getEntity rsp)))
-  (throw exp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- processRedirect ""
-
-  [^HttpResponse rsp]
-
-  ;;TODO - handle redirect
-  (processError rsp (ThrowIOE "Redirect not supported.")) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- processReply ""
-
-  [^HttpResponse rsp]
-
-  (let [st (.getStatusLine rsp)
-        msg (if (nil? st) "" (.getReasonPhrase st))
-        rc (if (nil? st) 0 (.getStatusCode st)) ]
-    (cond
-      (and (>= rc 200) (< rc 300))
-      (processOK rsp)
-
-      (and (>= rc 300) (< rc 400))
-      (processRedirect rsp)
-
-      :else
-      (processError rsp (ThrowIOE (str "Service Error: " rc ": " msg))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doPOST ""
-
-  [^URL targetUrl ^String contentType ^XData rdata beforeSendFunc]
-
-  (let [^HttpClient cli (mkApacheClientHandle) ]
-    (try
-      (let [ent (InputStreamEntity. (.stream rdata) (.size rdata))
-            p (HttpPost. (.toURI targetUrl)) ]
-        (.setEntity p (doto ent
-                            (.setContentType contentType)
-                            (.setChunked true)))
-        (when (fn? beforeSendFunc) (beforeSendFunc p))
-        (processReply (.execute cli p)))
-      (finally
-        (.. cli getConnectionManager shutdown)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doGET ""
-
-  [^URL targetUrl beforeSendFunc]
-
-  (let [^HttpClient cli (mkApacheClientHandle) ]
-    (try
-      (let [g (HttpGet. (.toURI targetUrl)) ]
-        (when (fn? beforeSendFunc) (beforeSendFunc g))
-        (processReply (.execute cli g)))
-      (finally
-        (.. cli getConnectionManager shutdown)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SyncPost "Perform a http-post on the target url."
-
-  ([^URL targetUrl contentType
-    ^XData rdata]
-   (SyncPost targetUrl contentType rdata nil))
-
-  ([^URL targetUrl contentType
-    ^XData rdata b4SendFn]
-   (doPOST targetUrl contentType rdata b4SendFn)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SyncGet "Perform a http-get on the target url."
-
-  ([^URL targetUrl]
-   (SyncGet targetUrl nil))
-
-  ([^URL targetUrl b4SendFn]
-   (doGET targetUrl b4SendFn)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeSimpleClientSSL "Simple minded, trusts everyone."
-
-  ^SSLContext
-  []
-
-  (doto (SSLContext/getInstance "TLS")
-        (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)
-  ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- clean-str ""
@@ -289,7 +112,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseIE ""
+(defn ParseIE "Parse user agent line looking for IE."
 
   [^String line]
 
@@ -314,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseChrome ""
+(defn ParseChrome "Parse user agent line looking for chrome."
 
   [^String line]
 
@@ -329,7 +152,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseKindle ""
+(defn ParseKindle "Parse header line looking for Kindle."
 
   [^String line]
 
@@ -344,7 +167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseAndroid ""
+(defn ParseAndroid "Parse header line looking for Android."
 
   [^String line]
 
@@ -359,7 +182,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseFFox ""
+(defn ParseFFox "Parse header line looking for Firefox."
 
   [^String line]
 
@@ -374,7 +197,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseSafari ""
+(defn ParseSafari "Parse header line looking for Safari."
 
   [^String line]
 

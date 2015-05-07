@@ -24,7 +24,8 @@
          :only
          [SafeGetJsonBool SafeGetJsonString juid notnil? ]]
         [czlabclj.xlib.util.str :only [strim nsb hgl?]]
-        [czlabclj.xlib.netty.io])
+        [czlabclj.xlib.netty.io]
+        [czlabclj.xlib.netty.filters :only [ReifyHTTPPipe]])
 
   (:import  [io.netty.handler.codec.http
              HttpHeaders$Names
@@ -54,8 +55,8 @@
         kalive (:keepAlive info)
         clen (.size xdata) ]
     (doto res
-      (SetHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
-      (SetHeader HttpHeaders$Names/CONNECTION
+      (SetHdr HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
+      (SetHdr HttpHeaders$Names/CONNECTION
                  (if kalive
                    HttpHeaders$Values/KEEP_ALIVE
                    HttpHeaders$Values/CLOSE))

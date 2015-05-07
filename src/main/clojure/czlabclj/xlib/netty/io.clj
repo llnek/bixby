@@ -23,9 +23,7 @@
           SafeGetJsonInt SafeGetJsonString]]
         [czlabclj.xlib.util.str
          :only
-         [lcase ucase strim nsb hgl?]]
-        [czlabclj.xlib.netty.request]
-        [czlabclj.xlib.netty.form])
+         [lcase ucase strim nsb hgl?]])
 
   (:import  [io.netty.channel ChannelHandlerContext ChannelPipeline
              ChannelInboundHandlerAdapter ChannelFuture
@@ -118,7 +116,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetHeader "Set the header value."
+(defn SetHdr "Set the header value."
 
   [^HttpMessage msg ^String nm
    ^String value]
@@ -127,7 +125,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHeader "Get the header value."
+(defn GetHdr "Get the header value."
 
   ^String
   [^HttpMessage msg ^String nm]
@@ -194,70 +192,6 @@
 
       :else nil)
     (persistent! @rc)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setContentLength ""
-
-  [^ChannelHandlerContext ctx clen]
-
-  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-        olen (:clen info) ]
-    (when-not (== olen clen)
-      (log/warn "Content-length read from headers = " olen ", new clen = " clen)
-      (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY (assoc info :clen clen)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- appendHeaders ""
-
-  [^ChannelHandlerContext ctx
-   ^HttpHeaders hds]
-
-  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-        old (:headers info)
-        nnw (ExtractHeaders hds) ]
-    (NettyFW/setAttr ctx
-                     NettyFW/MSGINFO_KEY
-                     (assoc info
-                            :headers
-                            (merge {} old nnw)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- reifyMsgFunc ""
-
-  ^CallableWithArgs
-  []
-
-  (reify CallableWithArgs
-    (run [_ args]
-      ;; args === array of objects
-      (let [^ChannelHandlerContext ctx (aget args 0)
-            ^String op (aget args 1) ]
-        (condp = op
-          "setContentLength" (setContentLength ctx (aget args 2))
-          "appendHeaders" (appendHeaders ctx (aget args 2))
-          nil)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fakeFullHttpRequest ""
-
-  ^FullHttpRequest
-  [^HttpRequest req]
-
-  (let [rc (DefaultFullHttpRequest. (.getProtocolVersion req)
-                                    (.getMethod req)
-                                    (.getUri req)) ]
-    (-> (.headers rc)
-        (.set (.headers req)))
-    ;;(-> (.trailingHeaders rc) (.set (.trailingHeaders req)))
-    rc
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -330,11 +264,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- isFormPost "Determine if this request is a http form post."
+(defn IsFormPost "Detects if this request is a http form post."
 
   [^HttpMessage msg ^String method]
 
-  (let [ct (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
+  (let [ct (-> (GetHdr msg HttpHeaders$Names/CONTENT_TYPE)
                nsb strim lcase) ]
     (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
          (or (>= (.indexOf ct "multipart/form-data") 0)
@@ -343,84 +277,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onFormPost "" [info]
-  (NettyFW/setAttr ctx
-                   NettyFW/MSGINFO_KEY (assoc info :formpost true))
-  (ReifyFormPostFilterSingleton))
-
-(defn- doDemux "Detect and handle a FORM post or a normal request."
-
-  [^ChannelHandlerContext ctx
-   ^HttpRequest req
-   ^czlabclj.xlib.util.core.Muble impl]
-
-  (let [info (ExtractMsgInfo req)
-        {:keys [method uri]}
-        info
-        ch (.channel ctx)]
-    (log/debug "Demux of message\n{}\n\n{}" req info)
-    (doto ctx
-      (NettyFW/setAttr NettyFW/MSGFUNC_KEY (reifyMsgFunc))
-      (NettyFW/setAttr NettyFW/MSGINFO_KEY info))
-    (.setf! impl :delegate nil)
-    (if (.startsWith (nsb uri) "/favicon.")
-      (do
-        ;; ignore this crap
-        (NettyFW/replyXXX ch 404)
-        (.setf! impl :ignore true))
-      (do
-        (Expect100Filter/handle100 ctx req)
-        (.setf! impl
-                :delegate
-                (if (isFormPost req method)
-                  (onFormPost info)
-                  (ReifyRequestFilterSingleton)))))
-    (when-let [d (.getf impl :delegate) ]
-      (-> ^AuxHttpFilter d
-          (.channelReadXXX ctx req)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- reifyHttpFilter "Filter to sort out standard request or formpost."
-
-  ^ChannelHandler
-  []
-
-  (let [impl (MakeMMap {:delegate nil
-                        :ignore false}) ]
-    (proxy [AuxHttpFilter][]
-      (channelRead0 [ctx msg]
-        (let [d (.getf impl :delegate)
-              e (.getf impl :ignore) ]
-          (log/debug "HttpHandler got msg = " (type msg))
-          (log/debug "HttpHandler delegate = " d)
-          (cond
-            (instance? HttpRequest msg)
-            (doDemux ctx msg impl)
-
-            (notnil? d)
-            (-> ^AuxHttpFilter d
-                (.channelReadXXX ctx msg))
-
-            (true? e)
-            nil ;; ignore
-
-            :else
-            (ThrowIOE (str "Fatal error while reading http message. " (type msg)))))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- isWEBSock "Detect if request is a websocket request."
+(defn IsWEBSock "Detects if request is a websocket request."
 
   [^HttpRequest req]
 
-  (let [^String cn (-> (GetHeader req HttpHeaders$Names/CONNECTION)
+  (let [^String cn (-> (GetHdr req HttpHeaders$Names/CONNECTION)
                        nsb strim lcase)
-        ^String ws (-> (GetHeader req HttpHeaders$Names/UPGRADE)
+        ^String ws (-> (GetHdr req HttpHeaders$Names/UPGRADE)
                        nsb strim lcase)
-        ^String mo (-> (GetHeader req "X-HTTP-Method-Override")
+        ^String mo (-> (GetHdr req "X-HTTP-Method-Override")
                        nsb strim) ]
     (and (>= (.indexOf ws "websocket") 0)
          (>= (.indexOf cn "upgrade") 0)
@@ -428,98 +293,6 @@
                     (-> (.getMethod req)
                         (.name))
                     mo)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- exitHttpDemuxFilter "Send msg upstream and remove the filter."
-
-  [^ChannelHandlerContext ctx msg]
-
-  (do
-    (.fireChannelRead ctx msg)
-    (.remove (.pipeline ctx) "HttpDemuxFilter")
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeHttpDemuxFilter "First level filter, detects websock or normal http."
-
-  (^ChannelHandler [options ] (MakeHttpDemuxFilter options {}))
-
-  (^ChannelHandler [options hack]
-
-    (let [ws (:wsock options)
-          uri (:uri ws)
-          tmp (MakeMMap) ]
-      (proxy [ChannelInboundHandlerAdapter][]
-        (channelRead [c obj]
-          (log/debug "HttpDemuxFilter got this msg " (type obj))
-          (let [^ChannelHandlerContext ctx c
-                ^Object msg obj
-                pipe (.pipeline ctx)
-                ch (.channel ctx) ]
-            (cond
-              (and (instance? HttpRequest msg)
-                   (isWEBSock msg))
-              (do
-                ;; wait for full request
-                (log/debug "Got a websock req - let's wait for full msg.")
-                (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-                (.setf! tmp :wait4wsock true)
-                (ReferenceCountUtil/release msg))
-
-              (true? (.getf tmp :wait4wsock))
-              (try
-                (when (instance? LastHttpContent msg)
-                  (log/debug "Got a wsock upgrade request for uri "
-                             uri
-                             ", swapping to netty's websock handler.")
-                  (.addAfter pipe
-                             "HttpResponseEncoder"
-                             "WebSocketServerProtocolHandler"
-                             (WebSocketServerProtocolHandler. uri))
-                  ;; maybe do something extra when wsock? caller decide...
-                  (-> (or (:onwsock hack) (constantly nil))
-                      (apply ctx hack options []))
-                  (exitHttpDemuxFilter ctx (.getf tmp :wsreq)))
-                (finally
-                  (ReferenceCountUtil/release msg)))
-
-              :else
-              (do
-                (log/debug "Standard http request - swap in our own http handler.")
-                (.addAfter pipe
-                           "HttpDemuxFilter"
-                           "ReifyHttpFilter"
-                           (reifyHttpFilter))
-                ;; maybe do something extra? caller decide...
-                (-> (or (:onhttp hack) (constantly nil))
-                    (apply ctx hack options []))
-                (log/debug "Added new handler - reifyHttpFilter to the chain")
-                (exitHttpDemuxFilter ctx msg))))))
-  )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ReifyHTTPPipe "Create a standard request pipeline."
-
-  ^PipelineConfigurator
-  [^String yourHandlerName yourHandlerFn]
-
-  (proxy [PipelineConfigurator][]
-    (assemble [pl options]
-      (let [ssl (SSLServerHShake options)
-            ^ChannelPipeline pipe pl]
-        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
-        (doto pipe
-          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options))
-          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast yourHandlerName
-                    ^ChannelHandler (yourHandlerFn options))
-          (ErrorSinkFilter/addLast))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

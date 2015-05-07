@@ -19,6 +19,7 @@
   (:use [czlabclj.xlib.util.core
          :only
          [notnil? spos? ToJavaInt Muble Try! NiceFPath]]
+        [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http :only [HttpBasicConfig]]

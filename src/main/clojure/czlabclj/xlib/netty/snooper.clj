@@ -19,7 +19,8 @@
 
   (:use [czlabclj.xlib.util.core :only [notnil? ]]
         [czlabclj.xlib.util.str :only [strim nsb hgl?]]
-        [czlabclj.xlib.netty.io])
+        [czlabclj.xlib.netty.io]
+        [czlabclj.xlib.netty.filters :only [ReifyHTTPPipe]])
 
   (:import  [io.netty.util Attribute AttributeKey CharsetUtil]
             [io.netty.buffer Unpooled]

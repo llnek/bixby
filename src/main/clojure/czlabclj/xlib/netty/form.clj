@@ -18,7 +18,7 @@
 
   (:use [czlabclj.xlib.util.core :only [ThrowIOE notnil? Bytesify]]
         [czlabclj.xlib.util.io :only [NewlyTempFile CloseQ ByteOS]]
-        [czlabclj.xlib.netty.io :only [GetHeader]]
+        [czlabclj.xlib.netty.io :only [GetHdr]]
         [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]])
 
   (:import  [java.io OutputStream IOException File ByteArrayOutputStream]
@@ -195,7 +195,7 @@
             ^FormPostFilter me this
             ch (.channel ctx)
             info (NettyFW/getAttr ch NettyFW/MSGINFO_KEY)
-            ctype (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
+            ctype (-> (GetHdr msg HttpHeaders$Names/CONTENT_TYPE)
                       nsb strim lcase) ]
         (doto ctx
           (NettyFW/setAttr NettyFW/FORMITMS_KEY (ULFormItems.))
