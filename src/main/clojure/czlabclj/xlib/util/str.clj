@@ -64,6 +64,7 @@
 ;;
 (defn sname "Safely get the name of this object."
 
+  ^String
   [n]
 
   (when-not (nil? n) (name n)))

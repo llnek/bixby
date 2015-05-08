@@ -105,6 +105,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn Tablename "Return the table-name defined for this model."
+
+  (^String
+    [mdef]
+    (:table mdef))
+
+  (^String
+    [mid cache]
+    (:table (cache mid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Colname "Return the column-name defined for this field."
+
+  (^String
+    [fdef]
+    (:column fdef))
+
+  (^String
+    [fid mcz]
+    (-> (:fields (meta mcz))
+        (get fid)
+        (:column))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro eseLHS [] `(ese COL_LHS_ROWID))
 (defmacro eseRHS [] `(ese COL_RHS_ROWID))
 (defmacro eseOID [] `(ese COL_ROWID))

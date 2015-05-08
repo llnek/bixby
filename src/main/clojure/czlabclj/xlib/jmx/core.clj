@@ -27,7 +27,7 @@
             [com.zotohlab.frwk.core Startable]
             [java.rmi.registry LocateRegistry Registry]
             [java.rmi.server UnicastRemoteObject]
-            [javax.management DynamicMBean 
+            [javax.management DynamicMBean
              JMException MBeanServer ObjectName]
             [javax.management.remote JMXConnectorServer
              JMXConnectorServerFactory JMXServiceURL]
@@ -68,13 +68,13 @@
         ^long regoPort (.getf impl :regoPort)
         ^long port (.getf impl :port)
         ^String host (.getf impl :host)
-        endpt (-> "service:jmx:rmi://{{host}}:{{sport}}/jndi/rmi://:{{rport}}/jmxrmi"
-                  (StringUtils/replace "{{host}}" (if (hgl? host) host hn))
-                  (StringUtils/replace "{{sport}}" (str "" port))
-                  (StringUtils/replace "{{rport}}" (str "" regoPort)))
+        endpt (-> "service:jmx:rmi://{{h}}:{{s}}/jndi/rmi://:{{r}}/jmxrmi"
+                  (StringUtils/replace "{{h}}" (if (hgl? host) host hn))
+                  (StringUtils/replace "{{s}}" (str "" port))
+                  (StringUtils/replace "{{r}}" (str "" regoPort)))
         url (try
               (JMXServiceURL. endpt)
-              (catch Throwable e# 
+              (catch Throwable e#
                 (mkJMXrror (str "Malformed url: " endpt) e#)))
         ^JMXConnectorServer
         conn (try
@@ -110,7 +110,7 @@
 ;;
 (defprotocol JMXServer
 
-  ""
+  "JMX Server API"
 
   (reg [_ obj domain nname paths] )
   (setRegistryPort [_ port])
@@ -125,17 +125,16 @@
   ^czlabclj.xlib.jmx.core.JMXServer
   [^String host]
 
-  (let [objNames (atom [])
-        impl (MakeMMap) ]
-    (.setf! impl :regoPort 7777)
-    (.setf! impl :port 0)
+  (let [impl (MakeMMap {:regoPort 7777
+                        :port 0})
+        objNames (atom []) ]
     (reify
 
       JMXServer
 
       (reset [_]
         (let [^MBeanServer bs (.getf impl :beanSvr) ]
-          (doseq [nm (seq @objNames) ]
+          (doseq [nm @objNames]
             (Try!
                (.unregisterMBean bs nm)) )
           (reset! objNames [])))
@@ -171,7 +170,7 @@
       (stop [this]
         (let [^JMXConnectorServer c (.getf impl :conn)
               ^Registry r (.getf impl :rmi) ]
-          (reset this)
+          (.reset this)
           (when-not (nil? c) (TryC (.stop c)))
           (.setf! impl :conn nil)
           (when-not (nil? r)

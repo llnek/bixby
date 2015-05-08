@@ -27,63 +27,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doExtraSQL ""
-
-  ^String
-  [^String sql extra]
-
-  ;;TODO: extra is a map of things.
-  sql)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mk-tx "Make a transactable-sql object."
-
-  ^SQLr
-  [^czlabclj.xlib.dbio.sql.SQLProcAPI proc
-   ^MetaCache metaCache
-   ^Connection conn]
-
-  (reify SQLr
-
-    (findAll [this model extra] (.findSome this model {} extra))
-    (findAll [this model] (.findAll this model {}))
-
-    (findOne [this model filters]
-      (when-let [rset (.findSome this model filters {}) ]
-        (when-not (empty? rset) (first rset))))
-
-    (findSome [this model filters] (.findSome this model filters {}))
-    (findSome [this model filters extraSQL]
-      (let [mcz ((.metas this) model)
-            [wc pms]
-            (SqlFilterClause mcz filters)
-            s (str "SELECT * FROM " (GTable mcz)) ]
-        (if (hgl? wc)
-          (.doQuery proc conn
-                    (doExtraSQL (str s " WHERE " wc) extraSQL)
-                    pms model)
-          (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) )
-
-    (select [_ model sql params] (.doQuery proc conn sql params model) )
-    (select [_ sql params] (.doQuery proc conn sql params) )
-
-    (update [_ obj] (.doUpdate proc conn obj) )
-    (delete [_ obj] (.doDelete proc conn obj) )
-    (insert [_ obj] (.doInsert proc conn obj) )
-
-    (execWithOutput [_ sql pms]
-      (.doExecWithOutput proc conn sql pms { :pkey COL_ROWID } ) )
-
-    (exec [_ sql pms] (.doExec proc conn sql pms) )
-
-    (metas [_] (.getMetas metaCache))
-
-    (countAll [_ model] (.doCount proc conn model) )
-    (purge [_ model] (.doPurge proc conn model) )
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,24 +35,25 @@
   ^Transactable
   [^DBAPI db ]
 
-  (let [mcache (.getMetaCache db)
-        proc (MakeProc db) ]
-    (test-nonil "sql-proc!" proc)
+  (let []
     (reify Transactable
 
       (execWith [this func]
         (with-local-vars [rc nil]
           (with-open [conn (.begin this) ]
-            (test-nonil "sql-connection" conn)
-            (try
-              (var-set rc (func (mk-tx proc mcache conn)))
-              (.commit this conn)
-              @rc
-              (catch Throwable e#
-                (do
-                  (.rollback this conn)
-                  (log/warn e# "")
-                  (throw e#))) ))))
+            ;;(test-nonil "sql-connection" conn)
+            (let [runc (fn [c f] (f c))
+                  getc (fn [_] conn)
+                  s (ReifySQLr (MakeProc db) db getc runc)]
+              (try
+                (var-set rc (func s))
+                (.commit this conn)
+                @rc
+                (catch Throwable e#
+                  (do
+                    (.rollback this conn)
+                    (log/warn e# "")
+                    (throw e#))) )))))
 
       (rollback [_ conn] (Try! (.rollback ^Connection conn)))
       (commit [_ conn] (.commit ^Connection conn))

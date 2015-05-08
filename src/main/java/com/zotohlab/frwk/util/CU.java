@@ -64,7 +64,6 @@ public enum CU {
       String rc= new Locale("en").toString();
       rc=null;
       
-      FileUtils.copyDirectoryToDirectory(new File("/tmp/poo"), new File("/tmp/shit"));
     } catch (Throwable t) {
       t.printStackTrace();
     }

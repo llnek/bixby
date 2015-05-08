@@ -14,7 +14,8 @@
 
   czlabclj.xlib.i18n.resources
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.meta :only [GetCldr]]
         [czlabclj.xlib.util.str :only [nsb]])
@@ -38,7 +39,7 @@
   ^ResourceBundle
   [^File aFile]
 
-  (LoadResource (-> aFile (.toURI) (.toURL))))
+  (LoadResource (io/as-url aFile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,24 +71,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RStr "Return the string value for this key,
-                pms may contain values for positional substitutions."
+           pms may contain values for positional substitutions."
 
-  (^String [^ResourceBundle bundle
-            ^String pkey]
-           (RStr bundle pkey []))
+  (^String
+    [^ResourceBundle bundle
+     ^String pkey]
 
-  (^String [^ResourceBundle bundle
-            ^String pkey
-            pms]
-           (let [kv (nsb (.getString bundle pkey)) ]
-             ;;(log/debug "RStr key = " pkey ", value = "kv)
-             (if (empty? pms)
-               kv
-               (loop [src kv pos 0 ]
-                 (if (>= pos (count pms))
-                   src
-                   (recur (StringUtils/replace src "{}" (nsb (nth pms pos)) 1)
-                          (inc pos))))))) )
+    (RStr bundle pkey []))
+
+  (^String
+    [^ResourceBundle bundle
+    ^String pkey
+    pms]
+
+    (let [kv (nsb (.getString bundle pkey))
+          pc (count pms) ]
+      ;;(log/debug "RStr key = " pkey ", value = "kv)
+      (loop [src kv pos 0 ]
+        (if (>= pos pc)
+         src
+         (recur (StringUtils/replace src
+                                     "{}"
+                                     (nsb (nth pms pos)) 1)
+                (inc pos)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

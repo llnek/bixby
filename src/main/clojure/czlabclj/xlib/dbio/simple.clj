@@ -41,84 +41,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doExtraSQL ""
-
-  ^String
-  [^String sql extra]
-
-  sql)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn SimpleSQLr "Non transactional SQL object."
 
   ^SQLr
   [^DBAPI db]
 
-  (let [^czlabclj.xlib.dbio.sql.SQLProcAPI
-        proc (MakeProc db)]
-    (reify SQLr
-
-      (findAll [this model extra] (.findSome this model {} extra))
-      (findAll [this model] (.findAll this model {}))
-
-      (findOne [this model filters]
-        (when-let [rset (.findSome this model filters {})]
-          (when-not (empty? rset) (first rset))))
-
-      (findSome [this  model filters] (.findSome this model filters {} ))
-
-      (findSome [this model filters extraSQL]
-        (with-open [conn (openDB db) ]
-          (let [mcz ((.metas this) model)
-                s (str "SELECT * FROM " (GTable mcz))
-                [wc pms]
-                (SqlFilterClause mcz filters) ]
-            (if (hgl? wc)
-              (.doQuery proc conn (doExtraSQL (str s " WHERE " wc)
-                                              extraSQL)
-                                  pms model)
-              (.doQuery proc conn (doExtraSQL s extraSQL) [] model))) ))
-
-      (metas [_] (-> db (.getMetaCache)(.getMetas)))
-
-      (update [this obj]
-        (with-open [ conn (openDB db) ]
-          (.doUpdate proc conn obj) ))
-
-      (delete [this obj]
-        (with-open [conn (openDB db) ]
-          (.doDelete proc conn obj) ))
-
-      (insert [this obj]
-        (with-open [conn (openDB db) ]
-          (.doInsert proc conn obj) ))
-
-      (select [this model sql params]
-        (with-open [conn (openDB db) ]
-          (.doQuery proc conn sql params model) ))
-
-      (select [this sql params]
-        (with-open [conn (openDB db) ]
-          (.doQuery proc conn sql params) ))
-
-      (execWithOutput [this sql pms]
-        (with-open [conn (openDB db) ]
-          (.doExecWithOutput proc conn
-                                sql pms {:pkey COL_ROWID} )))
-
-      (exec [this sql pms]
-        (with-open [conn (openDB db) ]
-          (doExec proc conn sql pms) ))
-
-      (countAll [this model]
-        (with-open [conn (openDB db) ]
-          (.doCount proc conn model) ))
-
-      (purge [this model]
-        (with-open [conn (openDB db) ]
-          (.doPurge proc conn model) ))
-  )))
+  (let [runc (fn [^Connection c f] (with-open [c c] (f c)))
+        getc (fn [d] (openDB d))]
+    (ReifySQLr (MakeProc db) db getc runc)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

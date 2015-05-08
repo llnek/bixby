@@ -40,7 +40,6 @@
             [com.zotohlab.skaro.loaders AppClassLoader]
             [org.apache.commons.lang3 StringUtils]
             [java.io File FileFilter]
-            [com.zotohlab.frwk.util IWin32Conf]
             [java.security SecureRandom]
             [java.util.zip ZipFile]
             [java.net URL]

@@ -19,7 +19,9 @@
 
   (:use [czlabclj.xlib.util.meta :only [BytesClass CharsClass]]
         [czlabclj.xlib.util.str
-         :only [ucase lcase AddDelim! nsb strim]]
+         :only
+         [sname ucase lcase hgl?
+          AddDelim! nsb strim]]
         [czlabclj.xlib.util.io :only [ReadChars ReadBytes ]]
         [czlabclj.xlib.util.core
          :only
@@ -27,7 +29,8 @@
         [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.util.dates :only [GmtCal]])
 
-  (:import  [com.zotohlab.frwk.dbio MetaCache DBIOError OptLockError]
+  (:import  [com.zotohlab.frwk.dbio MetaCache
+             SQLr DBIOError OptLockError]
             [java.util Calendar GregorianCalendar TimeZone]
             [java.math BigDecimal BigInteger]
             [java.io Reader InputStream]
@@ -40,32 +43,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Tablename ""
-
-  (^String
-    [mdef]
-    (:table mdef))
-
-  (^String
-    [mid cache]
-    (:table (cache mid))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Colname ""
-
-  (^String
-    [fdef]
-    (:column fdef))
-
-  (^String
-    [fid mcz]
-    (-> (:fields (meta mcz))
-        (get fid)
-        (:column))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,7 +79,7 @@
         wc (reduce #(let [k (first %2)
                           fld (get flds k)
                           c (if (nil? fld)
-                              k
+                              (sname k)
                               (:column fld)) ]
                       (AddDelim! %1 " AND "
                                  (str (ese c)
@@ -168,13 +145,13 @@
 (defn- stdInjtor "Generic resultset, no model defined.
                   Row is a transient object."
 
-  [row ^String cn ct cv]
+  [row cn ct cv]
 
   (assoc! row (keyword (ucase cn)) cv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- row2Obj ""
+(defn- row2Obj "Convert a jdbc row into object."
 
   [finj ^ResultSet rs ^ResultSetMetaData rsmeta]
 
@@ -231,12 +208,12 @@
 ;;
 (defn- mssqlTweakSqlstr ""
 
-  [^String sqlstr token ^String cmd]
+  [^String sqlstr token cmd]
 
   (loop [stop false sql sqlstr]
     (if stop
       sql
-      (let [pos (.indexOf (lcase sql) (name token))
+      (let [pos (.indexOf (lcase sql) (sname token))
             rc (if (< pos 0)
                  []
                  [(.substring sql 0 pos)
@@ -277,7 +254,7 @@
 (defn- buildStmt ""
 
   ^PreparedStatement
-  [db ^Connection conn ^String sqlstr params]
+  [db ^Connection conn sqlstr params]
 
   (let [sql (jiggleSQL db sqlstr)
         ps (if (insert? sql)
@@ -286,7 +263,7 @@
                                 Statement/RETURN_GENERATED_KEYS)
              (.prepareStatement conn sql)) ]
     (log/debug "Building SQLStmt: {}" sql)
-    (doseq [n (seq (range 0 (count params))) ]
+    (doseq [n (range 0 (count params)) ]
       (setBindVar ps (inc n) (nth params n)))
     ps
   ))
@@ -305,53 +282,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol ^:private SQueryAPI
+(defn- sqlExecWithOutput ""
 
-  (sqlSelect [_ conn sql pms row-func post-func] [_ conn sql pms] )
-  (sqlExecWithOutput [_ conn sql pms options] )
-  (sqlExec [_ conn sql pms] ) )
+  [db conn sql pms options]
+
+  (with-open [stmt (buildStmt db conn sql pms) ]
+    (when (> (.executeUpdate stmt) 0)
+      (with-open [rs (.getGeneratedKeys stmt) ]
+        (let [cnt (if (nil? rs)
+                    0
+                    (-> (.getMetaData rs)
+                        (.getColumnCount))) ]
+          (if (and (> cnt 0)
+                   (.next rs))
+            (handleGKeys rs cnt options)
+            {}
+            ))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeSqlr ""
+(defn- sqlSelect ""
 
-  ^czlabclj.xlib.dbio.sql.SQueryAPI
-  [^DBAPI db]
+  [db conn sql pms func post]
 
-  (reify SQueryAPI
+  (with-open [stmt (buildStmt db conn sql pms)
+              rs (.executeQuery stmt) ]
+    (let [rsmeta (.getMetaData rs) ]
+      (loop [sum (transient [])
+             ok (.next rs) ]
+        (if-not ok
+          (persistent! sum)
+          (recur (->> (post (func rs rsmeta))
+                      (conj! sum))
+                 (.next rs)))))
+  ))
 
-    (sqlExecWithOutput [this conn sql pms options]
-      (with-open [stmt (buildStmt db conn sql pms) ]
-        (when (> (.executeUpdate stmt) 0)
-          (with-open [rs (.getGeneratedKeys stmt) ]
-            (let [cnt (if (nil? rs)
-                        0
-                        (-> (.getMetaData rs)
-                            (.getColumnCount))) ]
-              (if (and (> cnt 0)
-                       (.next rs))
-                (handleGKeys rs cnt options)
-                {}
-                ))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- sqlSelect ""
 
-    (sqlSelect [this conn sql pms ]
-      (.sqlSelect this conn sql pms
-                 (partial row2Obj stdInjtor) identity))
+  [db conn sql pms ]
 
-    (sqlSelect [this conn sql pms func post]
-      (with-open [stmt (buildStmt db conn sql pms)
-                  rs (.executeQuery stmt) ]
-        (let [rsmeta (.getMetaData rs) ]
-          (loop [sum (transient [])
-                 ok (.next rs) ]
-            (if-not ok
-              (persistent! sum)
-              (recur (conj! sum (post (func rs rsmeta)))
-                     (.next rs)))))))
+  (sqlSelect db conn sql pms
+             (partial row2Obj stdInjtor) identity))
 
-    (sqlExec [this conn sql pms]
-      (with-open [stmt (buildStmt db conn sql pms) ]
-        (.executeUpdate stmt)))  ) )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- sqlExec ""
+
+  [db conn sql pms]
+
+  (with-open [stmt (buildStmt db conn sql pms) ]
+    (.executeUpdate stmt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,7 +356,7 @@
 ;;
 (defn- insertFlds "Format sql string for insert."
 
-  [s1 s2 obj flds]
+  [sb1 sb2 obj flds]
 
   (with-local-vars [ps (transient []) ]
     (doseq [[k v] (seq obj) ]
@@ -381,8 +364,8 @@
         (when (and (notnil? fdef)
                    (not (:auto fdef))
                    (not (:system fdef)))
-          (AddDelim! s1 "," (ese (Colname fdef)))
-          (AddDelim! s2 "," (if (nil? v) "NULL" "?"))
+          (AddDelim! sb1 "," (ese (Colname fdef)))
+          (AddDelim! sb2 "," (if (nil? v) "NULL" "?"))
           (when-not (nil? v)
             (var-set ps (conj! @ps v))))))
     (persistent! @ps)
@@ -427,26 +410,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeProc ""
+(defn MakeProc "Create an instance of SQLProc."
 
   ^czlabclj.xlib.dbio.sql.SQLProcAPI
   [^DBAPI db]
 
-  (let [metas (-> db (.getMetaCache)(.getMetas))
-        sqlr (makeSqlr db)]
+  (let [metas (-> db (.getMetaCache)(.getMetas)) ]
     (reify SQLProcAPI
 
       (doQuery [_ conn sql pms model]
         (let [mcz (metas model) ]
           (when (nil? mcz)
                 (DbioError (str "Unknown model " model)))
-          (.sqlSelect sqlr conn sql pms
-                      (partial row2Obj
-                               (partial modelInjtor mcz))
-                      #(postFmtModelRow model %))))
+          (sqlSelect db conn sql pms
+                     (partial row2Obj
+                              (partial modelInjtor mcz))
+                     #(postFmtModelRow model %))))
 
       (doQuery [_ conn sql pms]
-        (.sqlSelect sqlr conn sql pms ))
+        (sqlSelect db conn sql pms ))
 
       (doCount [this conn model]
         (let [rc (doQuery this conn
@@ -460,7 +442,7 @@
       (doPurge [_ conn model]
         (let [sql (str "DELETE FROM "
                        (ese (Tablename model metas))) ]
-          (.sqlExec sqlr conn sql [])
+          (sqlExec db conn sql [])
           nil))
 
       (doDelete [this conn obj]
@@ -476,11 +458,9 @@
                 p (if lock [rowid verid] [rowid] )
                 w (fmtUpdateWhere lock mcz)
                 cnt (doExec this conn
-                               (str "DELETE FROM "
-                                    (ese table)
-                                    " WHERE "
-                                    w)
-                               p) ]
+                            (str "DELETE FROM "
+                                 (ese table)
+                                 " WHERE " w) p) ]
             (when lock (lockError? "delete" cnt table rowid))
             cnt)))
 
@@ -557,11 +537,107 @@
         )))
 
         (doExecWithOutput [this conn sql pms options]
-          (.sqlExecWithOutput sqlr conn sql pms options))
+          (sqlExecWithOutput db conn sql pms options))
 
         (doExec [this conn sql pms]
-          (.sqlExec sqlr conn sql pms))
+          (sqlExec db conn sql pms))
     )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doExtraSQL ""
+
+  ^String
+  [^String sql extra]
+
+  sql)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReifySQLr ""
+
+  ^SQLr
+  [^czlabclj.xlib.dbio.sql.SQLProcAPI
+   proc
+   ^DBAPI db
+   getc
+   runc]
+
+  (let []
+    (reify SQLr
+
+      (findAll [this model extra] (.findSome this model {} extra))
+      (findAll [this model] (.findAll this model {}))
+
+      (findOne [this model filters]
+        (when-let [rset (.findSome this model filters {})]
+          (when-not (empty? rset) (first rset))))
+
+      (findSome [this  model filters] (.findSome this model filters {} ))
+
+      (findSome [this model filters extraSQL]
+        (let [func (fn [conn]
+                     (let [mcz ((.metas this) model)
+                           s (str "SELECT * FROM " (GTable mcz))
+                           [wc pms]
+                           (SqlFilterClause mcz filters) ]
+                       (if (hgl? wc)
+                         (.doQuery proc conn
+                                   (doExtraSQL (str s " WHERE " wc)
+                                               extraSQL)
+                                   pms model)
+                         (.doQuery proc conn (doExtraSQL s extraSQL) [] model))))]
+          (runc (getc db) func)))
+
+      (metas [_] (-> db (.getMetaCache)(.getMetas)))
+
+      (update [this obj]
+        (let [func (fn [conn]
+                     (.doUpdate proc conn obj) )]
+          (runc (getc db) func)))
+
+      (delete [this obj]
+        (let [func (fn [conn]
+                     (.doDelete proc conn obj) )]
+          (runc (getc db) func)))
+
+      (insert [this obj]
+        (let [func (fn [conn]
+                     (.doInsert proc conn obj))]
+          (runc (getc db) func)))
+
+      (select [this model sql params]
+        (let [func (fn [conn]
+                     (.doQuery proc conn sql params model) )]
+          (runc (getc db) func)))
+
+      (select [this sql params]
+        (let [func (fn [conn]
+                     (.doQuery proc conn sql params) )]
+          (runc (getc db) func)))
+
+      (execWithOutput [this sql pms]
+        (let [func (fn [conn]
+                     (.doExecWithOutput proc conn
+                                        sql pms {:pkey COL_ROWID} ))]
+          (runc (getc db) func)))
+
+      (exec [this sql pms]
+        (let [func (fn [conn]
+                     (doExec proc conn sql pms) )]
+          (runc (getc db) func)))
+
+      (countAll [this model]
+        (let [func (fn [conn]
+                     (.doCount proc conn model) )]
+          (runc (getc db) func)))
+
+      (purge [this model]
+        (let [func (fn [conn]
+                     (.doPurge proc conn model) )]
+          (runc (getc db) func)))
+  )))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

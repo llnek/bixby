@@ -47,7 +47,7 @@
             [com.zotohlab.frwk.core Versioned Identifiable
              Disposable Activable
              Hierarchial Startable]
-            [com.zotohlab.frwk.util Schedulable IWin32Conf]
+            [com.zotohlab.frwk.util Schedulable]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.wflow Job WorkFlow
              Activity Nihil]

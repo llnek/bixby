@@ -25,16 +25,19 @@ public interface IWin32Conf {
 
   public void dbgShow();
 
+  public String getString(Object sectionName, Object property, String dft);
   public String getString(Object sectionName, Object property);
+  
+  public long getLong(Object sectionName, Object property, long dft);
   public long getLong(Object sectionName, Object property);
+  
+  public int getInt(Object sectionName, Object property, int dft);
   public int getInt(Object sectionName, Object property);
+  
+  public boolean getBool(Object sectionName, Object property, boolean dft);
   public boolean getBool(Object sectionName, Object property);
+    
+  public double getDouble(Object sectionName, Object property, double dft);
   public double getDouble(Object sectionName, Object property);
-
-  public String optString(Object sectionName, Object property, String dft);
-  public long optLong(Object sectionName, Object property, long dft);
-  public int optInt(Object sectionName, Object property, int dft);
-  public boolean optBool(Object sectionName, Object property, boolean dft);
-  public double optDouble(Object sectionName, Object property, double dft);
 
 }

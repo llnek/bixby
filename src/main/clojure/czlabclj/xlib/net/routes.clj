@@ -153,11 +153,11 @@
 
   [stat path ^IWin32Conf cfile]
 
-  (let [secure (.optString cfile path :secure "")
-        tpl (.optString cfile path :template "")
-        verb (.optString cfile path :verb "")
-        mpt (.optString cfile path :mount "")
-        pipe (.optString cfile path :pipe "")
+  (let [secure (.getString cfile path :secure "")
+        tpl (.getString cfile path :template "")
+        verb (.getString cfile path :verb "")
+        mpt (.getString cfile path :mount "")
+        pipe (.getString cfile path :pipe "")
         ^czlabclj.xlib.util.core.Muble
         rc (make-route-info path
                             (if (and stat
@@ -191,7 +191,7 @@
   (let [stat (-> file (.getName)(.startsWith "static-"))
         cf (ParseInifile file) ]
     (with-local-vars [rc (transient []) ]
-      (doseq [s (seq (.sectionKeys cf)) ]
+      (doseq [s (.sectionKeys cf) ]
         ;;(log/debug "route key === " s)
         (var-set rc (conj! @rc (mkRoute stat s cf))))
       (persistent! @rc)
@@ -213,6 +213,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; router cracker
 (defn MakeRouteCracker "Create a url route cracker."
+
+  ;; returns [true? RouteInfo? Matcher? Redirect?]
 
   ^czlabclj.xlib.net.routes.RouteCracker
   [routes]

@@ -169,42 +169,42 @@
     (getString [this section property]
       (nsb (getKV this section property true)))
 
-    (optString [this section property dft]
+    (getString [this section property dft]
       (if-let [rc (getKV this section property false) ]
         rc
+        dft))
+
+    (getLong [this section property dft]
+      (if-let [rc (getKV this section property false) ]
+        (ConvLong rc 0)
         dft))
 
     (getLong [this section property]
       (ConvLong (getKV this section property true) 0))
 
+    (getInt [this section property dft]
+      (if-let [rc (getKV this section property false) ]
+        (ConvInt rc 0)
+        dft))
+
     (getInt [this section property]
       (ConvInt (getKV this section property true) 0))
 
-    (optLong [this section property dft]
+    (getDouble [this section property dft]
       (if-let [rc (getKV this section property false) ]
-        (ConvLong rc 0)
-        dft))
-
-    (optInt [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvInt rc 0)
+        (ConvDouble rc 0.0)
         dft))
 
     (getDouble [this section property]
       (ConvDouble (getKV this section property true) 0.0))
 
-    (optDouble [this section property dft]
+    (getBool [this section property dft]
       (if-let [rc (getKV this section property false) ]
-        (ConvDouble rc 0.0)
+        (ConvBool rc false)
         dft))
 
     (getBool [this section property]
       (ConvBool (getKV this section property true) false))
-
-    (optBool [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvBool rc false)
-        dft))
 
     (dbgShow [_]
       (let [buf (StringBuilder.)]
