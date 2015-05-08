@@ -71,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (meta nil) is fine, so no need to worry
-(defmacro GetTypeId
+(defmacro GetTypeId "Return the typeid of this model."
 
   [model]
 
@@ -87,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GTable ""
+(defn GTable "Get the table name (escaped) of this model."
 
   ^String
   [model]
@@ -97,7 +97,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; have to be function , not macro as this is passed into another higher
 ;; function - merge.
-(defn MergeMeta ""
+(defn MergeMeta "Merge 2 meta maps."
 
   [m1 m2]
 
@@ -173,7 +173,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DbioError "Throw a DBIOError execption."
+(defn ^:no-doc DbioError "Throw a DBIOError execption."
 
   [^String msg]
 
@@ -193,8 +193,8 @@
 
   [^String product]
 
-  (let [lp (lcase product)
-        fc #(Embeds? %2 %1) ]
+  (let [fc #(Embeds? %2 %1)
+        lp (lcase product)]
     (condp fc lp
       "microsoft" :sqlserver
       "postgres" :postgresql
@@ -757,7 +757,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ResolveVendor class)
+(defmulti ResolveVendor "Find out the type of database." class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -789,7 +789,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti TableExist? (fn [a b] (class a)))
+(defmulti TableExist? "Is this table defined in db?" (fn [a b] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -836,7 +836,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti RowExist? (fn [a b] (class a)))
+(defmulti RowExist? "Is there any rows in the table?" (fn [a b] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -905,7 +905,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn LoadTableMeta ""
+(defn LoadTableMeta "Fetch metadata of this table from db."
 
   [^Connection conn ^String table]
 
@@ -962,7 +962,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeDbPool ""
+(defn MakeDbPool "Create a db connection pool."
 
   ([^JDBCInfo jdbc] (MakeDbPool jdbc {}))
 
@@ -1040,7 +1040,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti UploadDdl (fn [a b] (class a)))
+(defmulti UploadDdl "Upload DDL to db." (fn [a b] (class a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

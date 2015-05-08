@@ -338,22 +338,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol SQLProcAPI
-
-  "Methods supported by a SQL Processor."
-
-  (doExecWithOutput [_ conn sql params options] )
-  (doQuery [_ conn sql params model]
-           [_ conn sql params] )
-  (doExec [_ conn sql params] )
-  (doCount [_  conn model] )
-  (doPurge [_  conn model] )
-  (doDelete [_  conn pojo] )
-  (doInsert [_  conn pojo] )
-  (doUpdate [_  conn pojo] ) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- insertFlds "Format sql string for insert."
 
   [sb1 sb2 obj flds]
@@ -410,138 +394,176 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeProc "Create an instance of SQLProc."
+(defn- doExecWithOutput ""
 
-  ^czlabclj.xlib.dbio.sql.SQLProcAPI
-  [^DBAPI db]
+  [db conn sql pms options]
 
-  (let [metas (-> db (.getMetaCache)(.getMetas)) ]
-    (reify SQLProcAPI
+  (sqlExecWithOutput db conn sql pms options))
 
-      (doQuery [_ conn sql pms model]
-        (let [mcz (metas model) ]
-          (when (nil? mcz)
-                (DbioError (str "Unknown model " model)))
-          (sqlSelect db conn sql pms
-                     (partial row2Obj
-                              (partial modelInjtor mcz))
-                     #(postFmtModelRow model %))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doExec ""
 
-      (doQuery [_ conn sql pms]
-        (sqlSelect db conn sql pms ))
+  [db metas conn sql pms]
 
-      (doCount [this conn model]
-        (let [rc (doQuery this conn
-                          (str "SELECT COUNT(*) FROM "
-                               (ese (Tablename model metas)))
-                          [] ) ]
-          (if (empty? rc)
-            0
-            (last (first (seq (first rc)))))))
+  (sqlExec db conn sql pms))
 
-      (doPurge [_ conn model]
-        (let [sql (str "DELETE FROM "
-                       (ese (Tablename model metas))) ]
-          (sqlExec db conn sql [])
-          nil))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doQuery ""
 
-      (doDelete [this conn obj]
-        (let [info (meta obj)
-              model (:typeid info)
-              mcz (metas model) ]
-          (when (nil? mcz)
-            (DbioError (str "Unknown model " model)))
-          (let [lock (.supportsLock db)
-                table (Tablename mcz)
-                rowid (:rowid info)
-                verid (:verid info)
-                p (if lock [rowid verid] [rowid] )
-                w (fmtUpdateWhere lock mcz)
-                cnt (doExec this conn
-                            (str "DELETE FROM "
-                                 (ese table)
-                                 " WHERE " w) p) ]
-            (when lock (lockError? "delete" cnt table rowid))
-            cnt)))
+  [db metas conn sql pms model]
 
-      (doInsert [this conn obj]
-        (let [info (meta obj)
-              model (:typeid info)
-              mcz (metas model) ]
-          (when (nil? mcz)
-            (DbioError (str "Unknown model " model)))
-          (let [pkey {:pkey (Colname :rowid mcz)}
-                lock (.supportsLock db)
-                flds (:fields (meta mcz))
-                table (Tablename mcz)
-                s2 (StringBuilder.)
-                s1 (StringBuilder.)
-                now (NowJTstamp)
-                pms (insertFlds s1 s2 obj flds) ]
-            (when (> (.length s1) 0)
-              (let [out (doExecWithOutput this conn
-                                          (str "INSERT INTO "
-                                               (ese table)
-                                               "(" s1
-                                               ") VALUES (" s2
-                                               ")" )
-                                          pms
-                                          pkey)]
-                (if (empty? out)
-                  (DbioError (str "Insert requires row-id to be returned."))
-                  (log/debug "Exec-with-out " out))
-                (let [wm {:rowid (:1 out) :verid 0} ]
-                  (when-not (number? (:rowid wm))
+  (let [mcz (metas model) ]
+    (when (nil? mcz)
+          (DbioError (str "Unknown model " model)))
+    (sqlSelect db conn sql pms
+               (partial row2Obj
+                        (partial modelInjtor mcz))
+               #(postFmtModelRow model %))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doQuery ""
+
+  [db metas conn sql pms]
+
+  (sqlSelect db conn sql pms ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doCount ""
+
+  [db metas conn model]
+
+  (let [rc (doQuery db metas conn
+                    (str "SELECT COUNT(*) FROM "
+                         (ese (Tablename model metas)))
+                    [] ) ]
+    (if (empty? rc)
+      0
+      (last (first (seq (first rc)))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doPurge ""
+
+  [db metas conn model]
+
+  (let [sql (str "DELETE FROM "
+                 (ese (Tablename model metas))) ]
+    (sqlExec db conn sql [])
+    nil
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doDelete ""
+
+  [^DBAPI db metas conn obj]
+
+  (let [info (meta obj)
+        model (:typeid info)
+        mcz (metas model) ]
+    (when (nil? mcz)
+      (DbioError (str "Unknown model " model)))
+    (let [lock (.supportsLock db)
+          table (Tablename mcz)
+          rowid (:rowid info)
+          verid (:verid info)
+          p (if lock [rowid verid] [rowid] )
+          w (fmtUpdateWhere lock mcz)
+          cnt (doExec db metas conn
+                      (str "DELETE FROM "
+                           (ese table)
+                           " WHERE " w) p) ]
+      (when lock (lockError? "delete" cnt table rowid))
+      cnt)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doInsert ""
+
+  [^DBAPI db metas conn obj]
+
+  (let [info (meta obj)
+        model (:typeid info)
+        mcz (metas model) ]
+    (when (nil? mcz)
+      (DbioError (str "Unknown model " model)))
+    (let [pkey {:pkey (Colname :rowid mcz)}
+          lock (.supportsLock db)
+          flds (:fields (meta mcz))
+          table (Tablename mcz)
+          s2 (StringBuilder.)
+          s1 (StringBuilder.)
+          now (NowJTstamp)
+          pms (insertFlds s1 s2 obj flds) ]
+      (when (> (.length s1) 0)
+        (let [out (doExecWithOutput db metas conn
+                                    (str "INSERT INTO "
+                                         (ese table)
+                                         "(" s1
+                                         ") VALUES (" s2
+                                         ")" )
+                                    pms
+                                    pkey)]
+          (if (empty? out)
+            (DbioError (str "Insert requires row-id to be returned."))
+            (log/debug "Exec-with-out " out))
+          (let [wm {:rowid (:1 out) :verid 0} ]
+            (when-not (number? (:rowid wm))
                     (DbioError (str "RowID data-type must be Long.")))
-                  (vary-meta obj MergeMeta wm))))
-          )))
+                  (vary-meta obj MergeMeta wm)))))
+  ))
 
-      (doUpdate [this conn obj]
-        (let [info (meta obj)
-              model (:typeid info)
-              mcz (metas model) ]
-          (when (nil? mcz)
-            (DbioError (str "Unknown model " model)))
-          (let [lock (.supportsLock db)
-                flds (:fields (meta mcz))
-                cver (nnz (:verid info))
-                table (Tablename mcz)
-                rowid (:rowid info)
-                sb1 (StringBuilder.)
-                now (NowJTstamp)
-                nver (inc cver)
-                pms (updateFlds sb1 obj flds) ]
-            (when (> (.length sb1) 0)
-              (with-local-vars [ ps (transient pms) ]
-                (-> (AddDelim! sb1 "," (ese (Colname :last-modify mcz)))
-                    (.append "=?"))
-                (var-set ps (conj! @ps now))
-                (when lock ;; up the version
-                  (-> (AddDelim! sb1 "," (ese (Colname :verid mcz)))
-                      (.append "=?"))
-                  (var-set ps (conj! @ps nver)))
-                ;; for the where clause
-                (var-set ps (conj! @ps rowid))
-                (when lock (var-set  ps (conj! @ps cver)))
-                (let [cnt (doExec this conn
-                                  (str "UPDATE "
-                                       (ese table)
-                                       " SET "
-                                       sb1
-                                       " WHERE "
-                                       (fmtUpdateWhere lock mcz))
-                                  (persistent! @ps)) ]
-                  (when lock (lockError? "update" cnt table rowid))
-                  (vary-meta obj MergeMeta
-                             { :verid nver :last-modify now }))))
-        )))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- doUpdate ""
 
-        (doExecWithOutput [this conn sql pms options]
-          (sqlExecWithOutput db conn sql pms options))
+  [^DBAPI db metas conn obj]
 
-        (doExec [this conn sql pms]
-          (sqlExec db conn sql pms))
-    )))
+  (let [info (meta obj)
+        model (:typeid info)
+        mcz (metas model) ]
+    (when (nil? mcz)
+      (DbioError (str "Unknown model " model)))
+    (let [lock (.supportsLock db)
+          flds (:fields (meta mcz))
+          cver (nnz (:verid info))
+          table (Tablename mcz)
+          rowid (:rowid info)
+          sb1 (StringBuilder.)
+          now (NowJTstamp)
+          nver (inc cver)
+          pms (updateFlds sb1 obj flds) ]
+      (when (> (.length sb1) 0)
+        (with-local-vars [ ps (transient pms) ]
+          (-> (AddDelim! sb1 "," (ese (Colname :last-modify mcz)))
+              (.append "=?"))
+          (var-set ps (conj! @ps now))
+          (when lock ;; up the version
+            (-> (AddDelim! sb1 "," (ese (Colname :verid mcz)))
+                (.append "=?"))
+            (var-set ps (conj! @ps nver)))
+          ;; for the where clause
+          (var-set ps (conj! @ps rowid))
+          (when lock (var-set  ps (conj! @ps cver)))
+          (let [cnt (doExec db metas conn
+                            (str "UPDATE "
+                                 (ese table)
+                                 " SET "
+                                 sb1
+                                 " WHERE "
+                                 (fmtUpdateWhere lock mcz))
+                            (persistent! @ps)) ]
+            (when lock (lockError? "update" cnt table rowid))
+            (vary-meta obj MergeMeta
+                       { :verid nver :last-modify now })))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -554,17 +576,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifySQLr ""
+(defn ReifySQLr "Create a SQLr."
 
   ^SQLr
-  [^czlabclj.xlib.dbio.sql.SQLProcAPI
-   proc
-   ^DBAPI db
-   getc
-   runc]
+  [^DBAPI db getc runc]
 
-  (let []
+  (let [metaz (-> db (.getMetaCache)(.getMetas))]
     (reify SQLr
+
+      (findSome [this  model filters] (.findSome this model filters {} ))
 
       (findAll [this model extra] (.findSome this model {} extra))
       (findAll [this model] (.findAll this model {}))
@@ -573,71 +593,69 @@
         (when-let [rset (.findSome this model filters {})]
           (when-not (empty? rset) (first rset))))
 
-      (findSome [this  model filters] (.findSome this model filters {} ))
-
-      (findSome [this model filters extraSQL]
+      (findSome [_ model filters extraSQL]
         (let [func (fn [conn]
-                     (let [mcz ((.metas this) model)
+                     (let [mcz (metaz model)
                            s (str "SELECT * FROM " (GTable mcz))
                            [wc pms]
                            (SqlFilterClause mcz filters) ]
                        (if (hgl? wc)
-                         (.doQuery proc conn
+                         (doQuery db metaz conn
                                    (doExtraSQL (str s " WHERE " wc)
                                                extraSQL)
                                    pms model)
-                         (.doQuery proc conn (doExtraSQL s extraSQL) [] model))))]
+                         (doQuery db metaz conn
+                                  (doExtraSQL s extraSQL) [] model))))]
           (runc (getc db) func)))
 
-      (metas [_] (-> db (.getMetaCache)(.getMetas)))
+      (metas [_] metaz)
 
-      (update [this obj]
+      (update [_ obj]
         (let [func (fn [conn]
-                     (.doUpdate proc conn obj) )]
+                     (doUpdate db metaz conn obj) )]
           (runc (getc db) func)))
 
-      (delete [this obj]
+      (delete [_ obj]
         (let [func (fn [conn]
-                     (.doDelete proc conn obj) )]
+                     (doDelete db metaz conn obj) )]
           (runc (getc db) func)))
 
-      (insert [this obj]
+      (insert [_ obj]
         (let [func (fn [conn]
-                     (.doInsert proc conn obj))]
+                     (doInsert db metaz conn obj))]
           (runc (getc db) func)))
 
-      (select [this model sql params]
+      (select [_ model sql params]
         (let [func (fn [conn]
-                     (.doQuery proc conn sql params model) )]
+                     (doQuery db metaz conn sql params model) )]
           (runc (getc db) func)))
 
-      (select [this sql params]
+      (select [_ sql params]
         (let [func (fn [conn]
-                     (.doQuery proc conn sql params) )]
+                     (doQuery db metaz conn sql params) )]
           (runc (getc db) func)))
 
-      (execWithOutput [this sql pms]
+      (execWithOutput [_ sql pms]
         (let [func (fn [conn]
-                     (.doExecWithOutput proc conn
-                                        sql pms {:pkey COL_ROWID} ))]
+                     (doExecWithOutput db metaz conn
+                                       sql pms {:pkey COL_ROWID} ))]
           (runc (getc db) func)))
 
-      (exec [this sql pms]
+      (exec [_ sql pms]
         (let [func (fn [conn]
-                     (doExec proc conn sql pms) )]
+                     (doExec db metaz conn sql pms) )]
           (runc (getc db) func)))
 
-      (countAll [this model]
+      (countAll [_ model]
         (let [func (fn [conn]
-                     (.doCount proc conn model) )]
+                     (doCount db metaz conn model) )]
           (runc (getc db) func)))
 
-      (purge [this model]
+      (purge [_ model]
         (let [func (fn [conn]
-                     (.doPurge proc conn model) )]
+                     (doPurge db metaz conn model) )]
           (runc (getc db) func)))
   )))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

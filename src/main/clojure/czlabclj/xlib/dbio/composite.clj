@@ -35,35 +35,33 @@
   ^Transactable
   [^DBAPI db ]
 
-  (let []
-    (reify Transactable
+  (reify Transactable
 
-      (execWith [this func]
-        (with-local-vars [rc nil]
-          (with-open [conn (.begin this) ]
-            ;;(test-nonil "sql-connection" conn)
-            (let [runc (fn [c f] (f c))
-                  getc (fn [_] conn)
-                  s (ReifySQLr (MakeProc db) db getc runc)]
-              (try
-                (var-set rc (func s))
-                (.commit this conn)
-                @rc
-                (catch Throwable e#
-                  (do
-                    (.rollback this conn)
-                    (log/warn e# "")
-                    (throw e#))) )))))
+    (execWith [this func]
+      (with-local-vars [rc nil]
+        (with-open [conn (.begin this) ]
+          (let [runc (fn [c f] (f c))
+                getc (fn [_] conn)
+                s (ReifySQLr db getc runc)]
+            (try
+              (var-set rc (func s))
+              (.commit this conn)
+              @rc
+              (catch Throwable e#
+                (do
+                  (.rollback this conn)
+                  (log/warn e# "")
+                  (throw e#))) )))))
 
-      (rollback [_ conn] (Try! (.rollback ^Connection conn)))
-      (commit [_ conn] (.commit ^Connection conn))
+    (rollback [_ conn] (Try! (.rollback ^Connection conn)))
+    (commit [_ conn] (.commit ^Connection conn))
 
-      (begin [_]
-        (let [conn (.open db) ]
-          (.setAutoCommit conn false)
-          (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)
-          conn))
-  )) )
+    (begin [_]
+      (let [conn (.open db) ]
+        (.setAutoCommit conn false)
+        (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)
+        conn))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

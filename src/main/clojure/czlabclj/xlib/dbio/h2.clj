@@ -14,7 +14,8 @@
 
   czlabclj.xlib.dbio.h2
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.core :only [test-nonil test-nestr]]
         [czlabclj.xlib.util.str :only [nsb]]
@@ -39,8 +40,6 @@
 (def H2-FILE-URL "jdbc:h2:{{path}};MVCC=TRUE" )
 
 (def H2_MVCC ";MVCC=TRUE" )
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; H2
@@ -91,14 +90,15 @@
 ;;
 (defn MakeH2Db "Create a H2 database."
 
-  [^File dbFileDir ^String dbid
+  [^File dbFileDir
+   ^String dbid
    ^String user
    ^PasswordAPI pwdObj]
 
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
-  (let [url (File. dbFileDir dbid)
+  (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
         pwd (nsb pwdObj)
         dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
@@ -118,14 +118,15 @@
 ;;
 (defn CloseH2Db "Close an existing H2 database."
 
-  [^File dbFileDir ^String dbid
+  [^File dbFileDir 
+   ^String dbid
    ^String user
    ^PasswordAPI pwdObj]
 
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
-  (let [url (File. dbFileDir dbid)
+  (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
         pwd (nsb pwdObj)
         dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]

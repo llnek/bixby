@@ -46,9 +46,9 @@
   ^SQLr
   [^DBAPI db]
 
-  (let [runc (fn [^Connection c f] (with-open [c c] (f c)))
-        getc (fn [d] (openDB d))]
-    (ReifySQLr (MakeProc db) db getc runc)
+  (ReifySQLr db
+             #(openDB %)
+             (fn [^Connection c f] (with-open [c c] (f c)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
