@@ -19,6 +19,7 @@
 
   (:use [czlabclj.xlib.util.core :only [Muble Try! NiceFPath]]
         [czlabclj.xlib.util.consts]
+        [czlabclj.xlib.netty.io]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http]
         [czlabclj.tardis.io.netty]
@@ -190,7 +191,7 @@
     (if (or (.startsWith fpath ps)
             (false? ckAccess))
       (handleStatic2 src info evt
-                     (File. (maybeStripUrlCrap fpath)))
+                     (io/file (maybeStripUrlCrap fpath)))
       (do
         (log/warn "Attempt to access non public file-system: " fpath)
         (.setStatus res 403)
@@ -210,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeError ""
+(defn ServeError "Reply back an error."
 
   [^czlabclj.tardis.core.sys.Elmt src
    ^Channel ch
@@ -231,9 +232,7 @@
         (when-not (nil? rc)
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
-        (HttpHeaders/setHeader ^HttpMessage
-                                 @rsp
-                                 "content-type" @ctype)
+        (SetHdr @rsp "content-type" @ctype)
         (HttpHeaders/setContentLength @rsp
                                       (if (nil? @bits)
                                         0
@@ -249,7 +248,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeStatic ""
+(defn ServeStatic "Reply back with a static file content."
 
   [^czlabclj.xlib.util.core.Muble
    ri

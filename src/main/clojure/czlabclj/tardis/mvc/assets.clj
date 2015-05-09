@@ -20,6 +20,8 @@
         [czlabclj.xlib.util.mime :only [GuessContentType]]
         [czlabclj.xlib.util.str :only [lcase nsb]]
         [czlabclj.xlib.netty.io]
+        [czlabclj.xlib.util.files
+         :only [ReadFileBytes WriteOneFile]]
         [czlabclj.xlib.util.io :only [Streamify]]
         [czlabclj.tardis.io.http])
 
@@ -83,7 +85,7 @@
     (if (.canRead f)
       (makeWebContent
         (GuessContentType f "utf-8")
-        (FileUtils/readFileToByteArray f))
+        (WriteOneFile f))
       nil)
   ))
 
@@ -120,7 +122,7 @@
       (getFile [_] file)
       (getTS [_] ts)
       (size [_] (.length file))
-      (getBytes [_] (FileUtils/readFileToByteArray file)))
+      (getBytes [_] (ReadFileBytes file)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

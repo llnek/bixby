@@ -228,6 +228,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn ReadFileBytes "Read bytes from a file."
+
+  ^bytes
+  [^File fp]
+
+  (FileUtils/readFileToByteArray fp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ReadOneFile "Read data from a file."
 
   (^String [^File fp] (ReadOneFile fp "utf-8"))
