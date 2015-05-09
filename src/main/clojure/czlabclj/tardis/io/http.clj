@@ -64,8 +64,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ScanBasicAuth ""
+(defn ScanBasicAuth "Scan and parse if exists basic authentication."
 
+  ;; returns map
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
@@ -74,7 +75,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HttpBasicConfig ""
+(defn HttpBasicConfig "Basic http config."
 
   [^czlabclj.tardis.core.sys.Elmt co cfg]
 
@@ -146,7 +147,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeWSockResult ""
+(defn MakeWSockResult "Create a WebSocket result object."
 
   ^WebSockResult
   [co]
@@ -175,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeHttpResult ""
+(defn MakeHttpResult "Create a HttpResult object."
 
   ^HTTPResult
   [co]
@@ -246,7 +247,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasHeader? ""
+(defn HasHeader? "Returns true if header exists."
 
   ;; boolean
   [info ^String header]
@@ -259,7 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasParam? ""
+(defn HasParam? "Returns true if parameter exists."
 
   ;; boolean
   [info ^String param]
@@ -272,7 +273,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetParameter ""
+(defn GetParameter "Get the named parameter."
 
   ^String
   [info ^String param]
@@ -287,7 +288,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHeader ""
+(defn GetHeader "Get the named header."
 
   ^String
   [info ^String header]

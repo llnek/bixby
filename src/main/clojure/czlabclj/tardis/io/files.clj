@@ -14,7 +14,8 @@
 
   czlabclj.tardis.io.files
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.tardis.core.sys
          :rename
@@ -93,7 +94,7 @@
              (if-not (nil? des)
                (TryC
                  (FileUtils/moveFileToDirectory f des false)
-                 (File. des origFname))
+                 (io/file des origFname))
                f)
              nil)]
     (when-not (nil? cf)
@@ -117,7 +118,7 @@
     (test-nestr "file-root-folder" root)
     (.setAttr! co :emcfg
       (-> c2
-        (assoc :targetFolder (Mkdirs (File. root)))
+        (assoc :targetFolder (Mkdirs (io/file root)))
         (assoc :fmask
                (cond
                  (.startsWith mask "*.")
@@ -131,7 +132,7 @@
                  FileFileFilter/FILE))
         (assoc :recvFolder
                (if (hgl? dest)
-                 (Mkdirs (File. dest))
+                 (Mkdirs (io/file dest))
                  nil))))
     co
   ))

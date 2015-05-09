@@ -116,6 +116,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AddHdr "Add the header value."
+
+  [^HttpMessage msg ^String nm
+   ^String value]
+
+  (HttpHeaders/addHeader msg nm value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn SetHdr "Set the header value."
 
   [^HttpMessage msg ^String nm

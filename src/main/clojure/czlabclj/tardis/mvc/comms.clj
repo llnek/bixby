@@ -14,7 +14,8 @@
 
   czlabclj.tardis.mvc.comms
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.core :only [Muble Try! NiceFPath]]
         [czlabclj.xlib.util.consts]
@@ -89,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddETag ""
+(defn AddETag "Add a ETag."
 
   [^czlabclj.tardis.core.sys.Elmt
    src info
@@ -170,14 +171,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleStatic ""
+(defn HandleStatic "Handle static file resource."
 
   [^Emitter src ^HTTPEvent evt options]
 
   (let [^File appDir (-> ^Container
                          (.container src)
                          (.getAppDir))
-        ps (NiceFPath (File. appDir DN_PUBLIC))
+        ps (NiceFPath (io/file appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
         cfg (.getAttr ^czlabclj.tardis.core.sys.Elmt
                       src
@@ -265,7 +266,7 @@
       (let [^File appDir (-> ^Container
                              (.container src)
                              (.getAppDir))
-            ps (NiceFPath (File. appDir DN_PUBLIC))
+            ps (NiceFPath (io/file appDir DN_PUBLIC))
             mpt (nsb (.getf ri :mountPoint))
             gc (.groupCount mc)]
         (var-set mp (.replace mpt "${app.dir}" (NiceFPath appDir)))
@@ -290,7 +291,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeRoute ""
+(defn ServeRoute "Handle a match route."
 
   [^czlabclj.xlib.net.routes.RouteInfo ri
    ^czlabclj.tardis.core.sys.Elmt src

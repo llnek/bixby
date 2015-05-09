@@ -55,8 +55,8 @@
                     NONCE_PARAM [ :nonce #(notnil? %) ] })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Parse a standard login-like form with userid,password,email
-(defn- crackFormFields ""
+;;
+(defn- crackFormFields "Parse a standard login-like form with userid,password,email"
 
   [^HTTPEvent evt]
 
@@ -71,7 +71,7 @@
             (log/debug "form-field=" fm ", value=" fv)
             (when-let [v (get PMS fm)]
               (var-set rc (assoc! @rc (first v)
-                                  (apply (last v) [fv]))))))
+                                  (apply (last v) fv []))))))
         (persistent! @rc))
       :else nil)
   ))
@@ -88,11 +88,11 @@
                                 "{}")
                               #(lcase %)) ]
       (with-local-vars [rc (transient {})]
-        (doseq [[k v] (seq PMS)]
+        (doseq [[k v] PMS]
           (when-let [fv (get json k) ]
             (var-set rc (assoc! @rc
                                 (first v)
-                                (apply (last v) [fv])))))
+                                (apply (last v) fv [])))))
         (persistent! @rc)))
   ))
 
@@ -103,12 +103,12 @@
   [^HTTPEvent evt]
 
   (with-local-vars [rc (transient {})]
-    (doseq [[k v] (seq PMS)]
+    (doseq [[k v]  PMS ]
       (when (.hasParameter evt k)
         (var-set rc (assoc! @rc
                             (first v)
                             (apply (last v)
-                                   [(.getParameterValue evt k)])))))
+                                   (.getParameterValue evt k) [])))))
     (persistent! @rc)
   ))
 

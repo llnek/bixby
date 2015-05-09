@@ -39,7 +39,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAsyncWaitHolder
+(defn MakeAsyncWaitHolder "Create a async wait wrapper."
 
   [^czlabclj.tardis.io.core.AsyncWaitTrigger trigger
    ^HTTPEvent event ]

@@ -53,7 +53,7 @@
 ;;
 (defprotocol WebSS
 
-  ""
+  "Web Session API."
 
   (setMaxInactiveInterval [_ idleSecs] )
   (setAttribute [_ k v] )

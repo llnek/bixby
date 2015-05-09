@@ -14,7 +14,8 @@
 
   czlabclj.tardis.io.jetty
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.str :only [lcase ucase hgl? nsb strim]]
         [czlabclj.xlib.util.core
@@ -199,8 +200,6 @@
   ;; SSL Context Factory for HTTPS and SPDY
   (let [sslxf (doto (SslContextFactory.)
                 (.setKeyStorePath (-> keyfile
-                                      (.toURI)
-                                      (.toURL)
                                       (.toString )))
                 (.setKeyStorePassword pwd)
                 (.setKeyManagerPassword pwd))
@@ -325,11 +324,8 @@
         ctr (.parent ^Hierarchial co)
         ^Server jetty (.getAttr co :jetty)
         ^File app (.getAttr ctr K_APPDIR)
-        ^File rcpath (File. app DN_PUBLIC)
-        rcpathStr (-> rcpath
-                      (.toURI)
-                      (.toURL)
-                      (.toString))
+        ^File rcpath (io/file app DN_PUBLIC)
+        rcpathStr (io/as-url  rcpath)
         cfg (.getAttr co :emcfg)
         cp (:contextPath cfg)
         ctxs (ContextHandlerCollection.)

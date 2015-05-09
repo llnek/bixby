@@ -41,7 +41,7 @@
 ;;
 (defprotocol EmitAPI
 
-  ""
+  "Emitter API."
 
   (dispatch [_ evt options] )
 
@@ -58,7 +58,7 @@
 ;;
 (defprotocol WaitEventHolder
 
-  ""
+  "Wrapper to hold an event."
 
   (timeoutMillis [_ millis] )
   (resumeOnResult [_ res] )
@@ -69,7 +69,7 @@
 ;;
 (defprotocol AsyncWaitTrigger
 
-  ""
+  "Trigger to rerun a waiting event."
 
   (resumeWithResult [_ res] )
   (resumeWithError [_] )
@@ -77,39 +77,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESReifyEvent "" (fn [a & args] (:typeid (meta a))))
+(defmulti IOESReifyEvent
+
+  "Create an event."
+
+  (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispatch "" (fn [a & args] (:typeid (meta a))))
+(defmulti IOESDispatch
+
+  "Dispatch an event."
+
+  (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispose "" (fn [a] (:typeid (meta a))))
+(defmulti IOESDispose
+
+  "Dispose a component."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESSuspend "" (fn [a] (:typeid (meta a))))
+(defmulti IOESSuspend
+
+  "Suspend a component."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStart "" (fn [a] (:typeid (meta a))))
+(defmulti IOESStart
+
+  "Start a component."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStop "" (fn [a] (:typeid (meta a))))
+(defmulti IOESStop
+
+  "Stop a component."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESResume "" (fn [a] (:typeid (meta a))))
+(defmulti IOESResume
+
+  "Resume a component."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStopped "" (fn [a] (:typeid (meta a))))
+(defmulti IOESStopped
+
+  "Called after a component has stopped."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStarted "" (fn [a] (:typeid (meta a))))
+(defmulti IOESStarted
+
+  "Called after a component has started."
+
+  (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -164,34 +200,33 @@
 
   (when traceable
     (log/info "Pipeline##" service " created. OK."))
-  (let [pid (NextLong)]
-    (reify
 
-      Identifiable
-      (id [_] (.id service))
+  (reify
 
-      Disposable
-      (dispose [_] )
+    Identifiable
+    (id [_] (.id service))
 
-      ServiceHandler
-      (handle [_ arg options]
-        (let [^Job j (when (instance? Job options) options)
-              w (ToWorkFlow arg)]
-          (when-not (nil? j)
-            (log/debug "Job##" (.id j)
-                       " is being serviced by " service))
-          (-> ^Emitter service
-              (.container)
-              (.core)
-              (.run (->> (.reify (Nihil/apply) j)
-                         (.reify (.startWith w)))))))
+    Disposable
+    (dispose [_] )
 
-      (handleError [_ e]))
-  ))
+    ServiceHandler
+    (handle [_ arg options]
+      (let [^Job j (when (instance? Job options) options)
+            w (ToWorkFlow arg)]
+        (when-not (nil? j)
+          (log/debug "Job##" (.id j)
+                     " is being serviced by " service))
+        (-> ^Emitter service
+            (.container)
+            (.core)
+            (.run (->> (.reify (Nihil/apply) j)
+                       (.reify (.startWith w)))))))
+
+    (handleError [_ e])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeEmitter ""
+(defn MakeEmitter "Create an Emitter."
 
   [^Container parObj emId emAlias]
 

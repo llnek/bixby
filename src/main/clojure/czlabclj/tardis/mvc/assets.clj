@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetCacheAssetsFlag ""
+(defn SetCacheAssetsFlag "Toggle caching of assers,"
 
   [cacheFlag]
 
@@ -216,8 +216,8 @@
         (when (= HttpResponseStatus/NOT_MODIFIED
                  (.getStatus rsp))
               (var-set clen 0))
-        (HttpHeaders/addHeader rsp "Accept-Ranges" "bytes")
-        (HttpHeaders/setHeader rsp "Content-Type" @ct)
+        (AddHdr rsp "Accept-Ranges" "bytes")
+        (SetHdr rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.writeAndFlush ch rsp))
         (when-not (or (= (:method info) "HEAD")

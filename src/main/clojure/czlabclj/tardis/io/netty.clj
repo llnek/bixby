@@ -146,7 +146,7 @@
    ^HTTPEvent evt
    ^HttpResponse rsp ]
 
-  (let [ct (HttpHeaders/getHeader rsp "content-type")
+  (let [ct (GetHdr rsp "content-type")
         rv (.getHeaderValue evt "range") ]
     (if-not (HTTPRangeInput/isAcceptable rv)
       (ChunkedFile. raf)
@@ -179,15 +179,14 @@
       (doseq [[nm vs] (seq hdrs)]
         (when-not (= "content-length" (lcase nm))
           (doseq [vv (seq vs)]
-            (HttpHeaders/addHeader rsp ^String nm ^String vv))))
+            (AddHdr rsp nm vv))))
       (doseq [s cks]
-        (HttpHeaders/addHeader rsp
-                               HttpHeaders$Names/SET_COOKIE s) )
+        (AddHdr rsp HttpHeaders$Names/SET_COOKIE s) )
       (cond
         (and (>= code 300)
              (< code 400))
         (when-not (cstr/blank? loc)
-          (HttpHeaders/setHeader rsp "Location" loc))
+          (SetHdr rsp "Location" loc))
 
         (and (>= code 200)
              (< code 300)
@@ -197,9 +196,7 @@
                     (condp instance? data
                       WebAsset
                       (let [^WebAsset ws data]
-                        (HttpHeaders/setHeader rsp
-                                               "content-type"
-                                               (.contentType ws))
+                        (SetHdr rsp "content-type" (.contentType ws))
                         (var-set raf
                                  (RandomAccessFile. (.getFile ws)
                                                     "r"))
@@ -229,7 +226,7 @@
         :else nil)
 
       (when (.isKeepAlive evt)
-        (HttpHeaders/setHeader rsp "Connection" "keep-alive"))
+        (SetHdr rsp "Connection" "keep-alive"))
 
       (log/debug "Writing out " @clen " bytes back to client");
       (HttpHeaders/setContentLength rsp @clen)
@@ -252,7 +249,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeNettyTrigger ""
+(defn MakeNettyTrigger "Create a Netty Async Trigger."
 
   ^czlabclj.tardis.io.core.AsyncWaitTrigger
   [^Channel ch evt src]
@@ -453,7 +450,7 @@
 
         (getUri [_] (:uri info))
 
-        (getRequestURL [_] (throw (IOException. "not implemented")))
+        (getRequestURL [_] (ThrowIOE "not implemented"))
 
         (getResultObj [_] res)
         (replyResult [this]
@@ -583,7 +580,7 @@
         host (nsb (:host cfg))
         port (:port cfg)
         nes (.getAttr co :netty)
-        ^ServerBootstrap bs (:bootstrap nes)
+        bs (:bootstrap nes)
         ch (StartServer bs host port) ]
     (.setAttr! co :netty (assoc nes :channel ch))
     (IOESStarted co)
