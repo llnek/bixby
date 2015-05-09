@@ -12,9 +12,10 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlabclj.tardis.auth.plug
+  czlabclj.tardis.auth.plugin
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
         [czlabclj.xlib.i18n.resources :only [RStr]]
@@ -62,7 +63,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol AuthPlug
+(defprotocol AuthPlugin
 
   "A Plugin that uses Apache Shiro for authentication and authorization of
   users."
@@ -76,7 +77,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AssertPluginOK ""
+(defn AssertPluginOK "Test if the plugin has been initialized,
+                      by looking into the db."
 
   [^JDBCPool pool]
 
@@ -100,7 +102,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateAuthRole ""
+(defn CreateAuthRole "Create a new auth-role in db."
 
   [^SQLr sql ^String role ^String desc]
 
@@ -111,7 +113,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteAuthRole ""
+(defn DeleteAuthRole "Delete this role."
 
   [^SQLr sql role]
 
@@ -129,7 +131,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListAuthRoles ""
+(defn ListAuthRoles "List all the roles in db."
 
   [^SQLr sql]
 
@@ -139,8 +141,10 @@
 ;;
 (defn CreateLoginAccount
 
-  "options : a set of extra properties, such as email address.
-  roleObjs : a list of roles to be assigned to the account."
+  "Create a new account.
+
+   options : a set of extra properties, such as email address.
+   roleObjs : a list of roles to be assigned to the account."
 
   [^SQLr sql ^String user
    ^PasswordAPI pwdObj options roleObjs]
@@ -165,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindLoginAccountViaEmail  ""
+(defn FindLoginAccountViaEmail  "Look for account with this email address."
 
   [^SQLr sql ^String email]
 
@@ -175,7 +179,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindLoginAccount  ""
+(defn FindLoginAccount  "Look for account with this user id."
 
   [^SQLr sql ^String user]
 
@@ -185,7 +189,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetLoginAccount  ""
+(defn GetLoginAccount  "Get the user account."
 
   [^SQLr sql ^String user ^String pwd]
 
@@ -200,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasLoginAccount  ""
+(defn HasLoginAccount  "Returns true if this user account exists."
 
   [^SQLr sql ^String user]
 
@@ -208,7 +212,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ChangeLoginAccount ""
+(defn ChangeLoginAccount "Change the account password."
 
   [^SQLr sql userObj ^PasswordAPI pwdObj ]
 
@@ -223,7 +227,9 @@
 ;;
 (defn UpdateLoginAccount
 
-  "details : a set of properties such as email address."
+  "Update account details.
+
+   details : a set of properties such as email address."
 
   [^SQLr sql userObj details]
 
@@ -237,7 +243,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteLoginAccountRole ""
+(defn DeleteLoginAccountRole "Remove a role from this user."
 
   [^SQLr sql userObj roleObj]
 
@@ -245,7 +251,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddLoginAccountRole ""
+(defn AddLoginAccountRole "Add a role to this user."
 
   [^SQLr sql userObj roleObj]
 
@@ -253,7 +259,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteLoginAccount ""
+(defn DeleteLoginAccount "Delete this account."
 
   [^SQLr sql userObj]
 
@@ -261,7 +267,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteUser ""
+(defn DeleteUser "Delete the account with this user id."
 
   [^SQLr sql user]
 
@@ -278,7 +284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListLoginAccounts ""
+(defn ListLoginAccounts "List all user accounts."
 
   [^SQLr sql]
 
@@ -291,18 +297,15 @@
   [^File appDir ^String appKey]
 
   (let [ini (File. appDir "conf/shiro.ini")
-        sm (-> (IniSecurityManagerFactory. (-> ini
-                                               (.toURI)
-                                               (.toURL)(.toString)))
-                (.getInstance))]
+        sm (-> (IniSecurityManagerFactory. (nsb (io/as-url ini)))
+               (.getInstance))]
     (SecurityUtils/setSecurityManager sm)
     (log/info "Created shiro security manager: " sm)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Work Flow
 ;;
-(defn MaybeSignupTest ""
+(defn MaybeSignupTest "Test component of a standard sign-up workflow."
 
   ^BoolExpr
   [^String challengeStr]
@@ -310,7 +313,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
-            ^czlabclj.tardis.auth.plug.AuthPlug
+            ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
             ^czlabclj.tardis.io.webss.WebSS
@@ -376,7 +379,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let [^czlabclj.tardis.core.sys.Elmt ctr (.container job)
-            ^czlabclj.tardis.auth.plug.AuthPlug
+            ^czlabclj.tardis.auth.plugin.AuthPlugin
             pa (:auth (.getAttr ctr K_PLUGINS))
             ^HTTPEvent evt (.event job)
             ^czlabclj.tardis.io.webss.WebSS
@@ -446,7 +449,7 @@
       (dispose [_]
         (log/info "AuthPlugin disposed."))
 
-      AuthPlug
+      AuthPlugin
 
       (checkAction [_ acctObj action] )
 
@@ -503,7 +506,7 @@
   PluginFactory
 
   (createPlugin [_ ctr]
-    (require 'czlabclj.tardis.auth.plug)
+    (require 'czlabclj.tardis.auth.plugin)
     (makeAuthPlugin ctr)
   ))
 
@@ -555,6 +558,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^:private plug-eof nil)
+(def ^:private plugin-eof nil)
 
 

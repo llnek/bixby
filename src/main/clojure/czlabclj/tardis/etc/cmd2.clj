@@ -14,7 +14,8 @@
 
   czlabclj.tardis.etc.cmd2
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.ini :only [ParseInifile]]
         [czlabclj.xlib.util.str :only [strim nsb]]
@@ -64,12 +65,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunAppBg ""
+(defn RunAppBg "Run the application in the background."
 
   [^File hhhHome bg]
 
-  (let [progW (NiceFPath (File. hhhHome "bin/skaro.bat"))
-        prog (NiceFPath (File. hhhHome "bin/skaro"))
+  (let [progW (NiceFPath (io/file hhhHome "bin/skaro.bat"))
+        prog (NiceFPath (io/file hhhHome "bin/skaro"))
         pj (if (IsWindows?)
              (MakeExecTask "cmd.exe"
                            hhhHome
@@ -80,19 +81,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BundleApp ""
+(defn BundleApp "Bundle an app."
 
   [^File hhhHome appId]
 
-  (let [pod (File. hhhHome (str DN_PODS "/" appId ".pod"))
-        srcDir (File. hhhHome (str DN_BOXX "/" appId))
+  (let [pod (io/file hhhHome DN_PODS appId ".pod")
+        srcDir (io/file hhhHome DN_BOXX appId)
         pj (MakeZipTask srcDir pod [] [ "build.output.folder/**" ]) ]
     (ExecProj pj)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntBuildApp ""
+(defn AntBuildApp "Run and execute an ant target."
 
   [^File hhhHome appId antTarget]
 
@@ -100,7 +101,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CleanAppClasses ""
+(defn CleanAppClasses "Clean up stuff."
 
   [^File webzDir ^File czDir]
 
@@ -114,8 +115,8 @@
 
   [^File hhhHome demoId]
 
-  (let [fp (File. hhhHome (str "docs/samples/" demoId ".pod"))
-        dest (File. hhhHome (str DN_BOXX "/" demoId)) ]
+  (let [fp (io/file hhhHome "docs" "samples" demoId ".pod")
+        dest (io/file hhhHome DN_BOXX demoId) ]
     (log/debug "Unzipping demo pod: " demoId)
     (when (.exists fp)
       (Mkdirs dest)
@@ -128,7 +129,7 @@
 
   [^File hhhHome]
 
-  (let [top (File. hhhHome (str "docs/samples"))
+  (let [top (io/file hhhHome "docs" "samples")
         fs (.listFiles top) ]
     (log/debug "Unzipping all samples.")
     (doseq [^File f (seq fs) ]
@@ -146,12 +147,12 @@
   (let [dname (.getName demo)
         dom (str "demo." dname) ]
     (CreateBasic hhh dname dom)
-    (let [top (File. hhh (str DN_BOXX "/" dname))
-          src (File. top (str "src/main/java/demo/" dname))]
-      (CopyFiles demo (File. top DN_CONF) "conf")
+    (let [top (io/file hhh DN_BOXX dname)
+          src (io/file top "src" "main" "java" "demo" dname)]
+      (CopyFiles demo (io/file top DN_CONF) "conf")
       (CopyFiles demo src "java")
-      (DeleteDir (File. top (str "src/main/clojure")))
-      (DeleteDir (File. top (str "src/test/clojure"))))
+      (DeleteDir (io/file top "src" "main" "clojure"))
+      (DeleteDir (io/file top "src" "test" "clojure")))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,9 +167,9 @@
       "jetty" (CreateJetty hhh dname dom)
       "mvc" (CreateNetty hhh dname dom)
       (CreateBasic hhh dname dom))
-    (let [top (File. hhh (str DN_BOXX "/" dname))
-          src (File. top (str "src/main/clojure/demo/" dname))]
-      (CopyFiles demo (File. top DN_CONF) "conf")
+    (let [top (io/file hhh DN_BOXX dname)
+          src (io/file top "src" "main" "clojure" "demo" dname)]
+      (CopyFiles demo (io/file top DN_CONF) "conf")
       (CopyFiles demo src "clj"))
   ))
 
@@ -178,7 +179,7 @@
 
   [^File hhh]
 
-  (let [top (File. hhh "src/main/java/demo")
+  (let [top (io/file hhh "src" "main" "java" "demo")
         dss (.listFiles top)]
     (doseq [^File d (seq dss)]
       (when (.isDirectory d)
@@ -191,7 +192,7 @@
 
   [^File hhh]
 
-  (let [top (File. hhh "src/main/clojure/demo")
+  (let [top (io/file hhh "src" "main" "clojure" "demo")
         dss (.listFiles top)]
     (doseq [^File d (seq dss)]
       (when (.isDirectory d)
@@ -212,9 +213,9 @@
 (defn- mkcljfp ""
 
   ^File
-  [^File cljd  ^String file]
+  [^File cljd  ^String fname]
 
-  (File. cljd file))
+  (io/file cljd fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -223,7 +224,9 @@
   ^File
   [^File appDir ^String appDomain]
 
-  (File. appDir (str "src/main/clojure/" (.replace appDomain "." "/"))))
+  (io/file appDir
+           "src" "main" "clojure"
+           (.replace appDomain "." "/")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -234,10 +237,10 @@
   (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
         h2dbUrl (str h2db "/" appId
                      ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
-        appDir (File. hhhHome (str DN_BOXX "/" appId))
+        appDir (io/file hhhHome DN_BOXX appId)
         appDomainPath (.replace appDomain "." "/")
         cljd (mkcljd appDir appDomain) ]
-    (Mkdirs (File. h2db))
+    (Mkdirs (io/file h2db))
     (with-local-vars [fp nil ]
       (var-set fp (mkcljfp cljd "core.clj"))
       (WriteOneFile @fp
@@ -245,14 +248,14 @@
                         (.replace "@@APPDOMAIN@@" appDomain)
                         (.replace "@@USER@@" (GetUser))))
 
-      (var-set fp (File. appDir CFG_ENV_CF))
+      (var-set fp (io/file appDir CFG_ENV_CF))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@H2DBPATH@@" h2dbUrl)
                         (.replace "@@APPDOMAIN@@"
                                              appDomain)))
 
-      (var-set fp (File. appDir "build.gant"))
+      (var-set fp (io/file appDir "build.gant"))
       (let [s (str "arg (value: \"" appDomain ".core\")")]
         (WriteOneFile @fp
                       (-> (ReadOneFile @fp)
@@ -267,9 +270,9 @@
 
   [^File hhhHome ^String appId ^String appDomain ^String flavor]
 
-  (let [appDir (Mkdirs (File. hhhHome (str DN_BOXX "/" appId)))
-        mfDir (File. appDir META_INF)
-        cfd (File. appDir DN_CONF)
+  (let [appDir (Mkdirs (io/file hhhHome DN_BOXX appId))
+        mfDir (io/file appDir META_INF)
+        cfd (io/file appDir DN_CONF)
         appDomainPath (.replace appDomain "." "/") ]
     (with-local-vars [fp nil ]
 
@@ -278,58 +281,59 @@
       (doseq [^String s ["alchemy.dir/clojure.org" DN_CONF
                          "alchemy.dir/build" "docs" "i18n"
                          META_INF "modules" POD_INF "src"]]
-        (Mkdirs (File. appDir s)))
+        (Mkdirs (io/file appDir s)))
       (doseq [s ["classes" "patch" "lib"]]
-        (Mkdirs (File. appDir (str POD_INF "/" s))))
+        (Mkdirs (io/file  appDir POD_INF  s)))
       (doseq [s [ "java" (str "clojure/" appDomainPath) ]]
-        (Mkdirs (File. appDir (str "src/main/" s)))
-        (Mkdirs (File. appDir (str "src/test/" s))))
-      (Mkdirs (File. appDir "src/main/resources"))
+        (Mkdirs (io/file appDir "src" "main" s))
+        (Mkdirs (io/file appDir "src" "test" s)))
+      (Mkdirs (io/file appDir "src" "main" "resources"))
 
       ;;copy files
 
-      (CopyFileToDir (File. hhhHome
-                            (str DN_CFGAPP "/" "build.gant")) appDir)
-      (doseq [s ["build.xs" "ivy.config.xml" "ivy.xml" "pom.xml"]]
-        (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" s)) appDir))
+      (CopyFileToDir (io/file hhhHome
+                              DN_CFGAPP "build.gant") appDir)
+      (doseq [s ["build.xs" "ivy.config.xml"
+                 "ivy.xml" "pom.xml"]]
+        (CopyFileToDir (io/file hhhHome DN_CFGAPP s) appDir))
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt" "README.md"]]
-        (FileUtils/touch (File. mfDir ^String s)))
+        (FileUtils/touch (io/file mfDir s)))
       (doseq [s [APP_CF ENV_CF ]]
-        (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" s)) cfd))
-      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" DN_RCPROPS))
-                     (File.  appDir "i18n"))
-      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" MF_FP)) mfDir)
-      (CopyFileToDir (File. hhhHome (str DN_CFGAPP "/" "core.clj"))
+        (CopyFileToDir (io/file hhhHome DN_CFGAPP s) cfd))
+      (CopyFileToDir (io/file hhhHome DN_CFGAPP DN_RCPROPS)
+                     (io/file  appDir "i18n"))
+      (CopyFileToDir (io/file hhhHome DN_CFGAPP MF_FP) mfDir)
+      (CopyFileToDir (io/file hhhHome DN_CFGAPP "core.clj")
                      (mkcljd appDir appDomain))
 
       ;;modify files, replace placeholders
 
-      (var-set fp (File. cfd APP_CF))
+      (var-set fp (io/file cfd APP_CF))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@USER@@" (GetUser))))
 
-      (var-set fp (File. mfDir MF_FP))
+      (var-set fp (io/file mfDir MF_FP))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPKEY@@" (NewUUid))
                         (.replace "@@APPMAINCLASS@@"
                                   (str appDomain ".core.MyAppMain"))))
 
-      (var-set fp (File. appDir "pom.xml"))
+      (var-set fp (io/file appDir "pom.xml"))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPDOMAIN@@" appDomain)
                         (.replace "@@APPID@@" appId)))
 
-      (var-set fp (File. appDir "ivy.xml"))
+      (var-set fp (io/file appDir "ivy.xml"))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPDOMAIN@@" appDomain)
                         (.replace "@@APPID@@" appId)))
 
-      (var-set fp (File. appDir "build.xs"))
+      (var-set fp (io/file appDir "build.xs"))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@WEBCSSLANG@@" ^String *SKARO-WEBCSSLANG*)
@@ -344,9 +348,9 @@
 
   [^File hhhHome appId ^String appDomain]
 
-  (let [wfc (File. hhhHome (str DN_CFGAPP "/" "weblibs.conf" ))
-        appDir (File. hhhHome (str DN_BOXX "/" appId))
-        wlib (File. appDir "public/vendors")
+  (let [wfc (io/file hhhHome DN_CFGAPP "weblibs.conf")
+        appDir (io/file hhhHome DN_BOXX  appId)
+        wlib (io/file appDir "public/vendors")
         wbs (ReadEdn wfc)
         csslg *SKARO-WEBCSSLANG*
         wlg *SKARO-WEBLANG*
@@ -355,49 +359,48 @@
 
     ;; make folders
     (doseq [s ["pages" "media" "scripts" "styles"]]
-      (Mkdirs (File. appDir (str "src/web/site/" s)))
-      (Mkdirs (File. appDir (str "public/" s))))
+      (Mkdirs (io/file appDir "src" "web" "site" s))
+      (Mkdirs (io/file appDir "public" s)))
     (Mkdirs wlib)
 
     ;; copy files
-    (let [src (File. hhhHome (str DN_CFG "/" "netty"))
-          des (File. appDir (str "src/web/site/pages")) ]
+    (let [src (io/file hhhHome DN_CFG "netty")
+          des (io/file appDir "src" "web" "site" "pages") ]
       (CopyFiles src des "ftl")
       (CopyFiles src des "html"))
 
-    (CopyFileToDir (File. hhhHome
-                          (str DN_CFG "/" "netty/core.clj"))
+    (CopyFileToDir (io/file hhhHome
+                          DN_CFG "netty/core.clj")
                    (mkcljd appDir appDomain))
 
-    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "main.scss"))
-                   (File. appDir (str "src/web/site/styles")))
-    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "main.js"))
-                   (File. appDir (str "src/web/site/scripts")))
+    (CopyFileToDir (io/file hhhHome DN_CFGWEB "main.scss")
+                   (io/file appDir "src" "web" "site" "styles"))
+    (CopyFileToDir (io/file hhhHome DN_CFGWEB "main.js")
+                   (io/file appDir "src" "web" "site" "scripts"))
 
-    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "favicon.png"))
-                   (File. appDir "src/web/site/media"))
-    (CopyFileToDir (File. hhhHome (str DN_CFGWEB "/" "body.jpg"))
-                   (File. appDir "src/web/site/media"))
+    (CopyFileToDir (io/file hhhHome DN_CFGWEB "favicon.png")
+                   (io/file appDir "src" "web" "site" "media"))
+    (CopyFileToDir (io/file hhhHome DN_CFGWEB "body.jpg")
+                   (io/file appDir "src" "web" "site" "media"))
 
-    (FileUtils/copyFile wfc (File. wlib ".list"))
-    (Mkdirs (File. appDir "src/test/js"))
+    (FileUtils/copyFile wfc (io/file wlib ".list"))
+    (Mkdirs (io/file appDir "src/test/js"))
 
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)
-            dd (File. hhhHome
-                      (str DN_CFG "/weblibs/" dn))
-            td (File. wlib dn) ]
+            dd (io/file hhhHome DN_CFG "weblibs" dn)
+            td (io/file wlib dn) ]
         (when (.isDirectory dd)
           (CopyToDir dd wlib)
           (when-not (:skip df)
             (doseq [^String f (:js df) ]
               (-> buf
-                  (.append (ReadOneFile (File. td f)))
+                  (.append (ReadOneFile (io/file td f)))
                   (.append (str "\n\n/* @@@" f "@@@ */"))
                   (.append "\n\n")))))))
 
-    (WriteOneFile (File. appDir "public/c/webcommon.css") "")
-    (WriteOneFile (File. appDir "public/c/webcommon.js") buf)
+    (WriteOneFile (io/file appDir "public" "c" "webcommon.css") "")
+    (WriteOneFile (io/file appDir "public" "c" "webcommon.js") buf)
 
   ))
 
@@ -408,27 +411,27 @@
   [^File hhhHome appId
    ^String appDomain ^String emType ]
 
-  (let [appDir (File. hhhHome (str DN_BOXX "/" appId))
+  (let [appDir (io/file hhhHome DN_BOXX  appId)
         appDomainPath (.replace appDomain "." "/")
-        cfd (File. appDir DN_CONF) ]
+        cfd (io/file appDir DN_CONF) ]
     (with-local-vars [fp nil]
       (create-app-common hhhHome appId appDomain "web")
       (create-web-common hhhHome appId appDomain)
       ;; copy files
-      (CopyFiles (File. hhhHome (str DN_CFG "/netty")) cfd DN_CONF)
-      (CopyFileToDir (File. hhhHome
-                            (str DN_CFG
-                                 "/netty/static-routes.conf")) cfd)
-      (CopyFileToDir (File. hhhHome
-                            (str DN_CFG "/netty/routes.conf")) cfd)
+      (CopyFiles (io/file hhhHome DN_CFG "netty") cfd DN_CONF)
+      (CopyFileToDir (io/file hhhHome
+                              DN_CFG
+                              "netty" "static-routes.conf") cfd)
+      (CopyFileToDir (io/file hhhHome
+                              DN_CFG "netty" "routes.conf") cfd)
 
       ;; modify files
-      (var-set fp (File. appDir (str DN_CONF "/" "routes.conf")))
+      (var-set fp (io/file appDir DN_CONF "routes.conf"))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@APPDOMAIN@@" appDomain)))
 
-      (var-set fp (File. cfd ENV_CF))
+      (var-set fp (io/file cfd ENV_CF))
       (WriteOneFile @fp
                     (-> (ReadOneFile @fp)
                         (.replace "@@EMTYPE@@" emType)))

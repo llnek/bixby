@@ -16,7 +16,8 @@
 
   (:gen-class)
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.i18n.resources :only [GetResource]]
         [czlabclj.xlib.util.files :only [DirRead?]]
@@ -40,7 +41,7 @@
                     ok false]
     (I18N/setBase @rcb)
     (when (> (count args) 0)
-      (let [home (File. ^String (first args))]
+      (let [home (io/file (first args))]
         (when (DirRead? home)
           ;;(log/info "set SKARO_HOME=" home)
           (var-set ok true)

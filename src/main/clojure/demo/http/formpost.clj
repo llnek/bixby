@@ -10,7 +10,7 @@
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
-    {:author "kenl"}
+    ^{:author "kenl"}
 
   demo.http.formpost
 

@@ -15,6 +15,7 @@
   czlabclj.tardis.etc.cmd1
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr])
 
   (:use [czlabclj.xlib.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
@@ -75,7 +76,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResBdl ""
+(defn ResBdl "Return the system resource bundle."
 
   ^ResourceBundle
   []
@@ -84,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHomeDir ""
+(defn GetHomeDir "Return the home directory."
 
   ^File
   []
@@ -110,9 +111,7 @@
   (let [t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
                       (nth args 2))
         hhh (GetHomeDir)
-        hf (ReadEdn (File. hhh
-                           (str DN_CONF
-                                "/" (name K_PROPS))))
+        hf (ReadEdn (io/file hhh DN_CONF (name K_PROPS)))
         wlg (or (:lang (:webdev hf)) "js")
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
@@ -138,11 +137,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn OnCreate ""
+(defn OnCreate "Create a new app."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (< (count args) 3)
       (throw (CmdHelpError.))
       (apply onCreateApp args))
@@ -150,11 +149,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
-(defn OnBuild ""
+(defn OnBuild "Build the app."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (>= (count args) 2)
       (let [appId (nth args 1)
             taskId (if (> (count args) 2)
@@ -167,11 +166,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
-(defn OnPodify ""
+(defn OnPodify "Package the app."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (> (count args) 1)
       (BundleApp (GetHomeDir) (nth args 1))
       (throw (CmdHelpError.)))
@@ -179,11 +178,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
-(defn OnTest ""
+(defn OnTest "Test the app."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (> (count args) 1)
       ;;(AntBuildApp (GetHomeDir) (nth args 1) "test")
       (ExecGantScript (GetHomeDir) (nth args 1) "test")
@@ -192,11 +191,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
-(defn OnStart ""
+(defn OnStart "Start and run the app."
 
   [^Job j]
 
-  (let [cz "czlabclj.tardis.impl.climain.StartMainViaCLI"
+  (let [cz "czlabclj.tardis.impl.climain.StartViaCLI"
         args (.getLastResult j)
         s2 (if (> (count args) 1)
              (nth args 1)
@@ -214,7 +213,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
-(defn OnDebug ""
+(defn OnDebug "Debug the app."
 
   [j]
 
@@ -222,11 +221,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe generate some demo apps?
-(defn OnDemo ""
+(defn OnDemo "Generate demo apps."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (and (> (count args) 1)
              (= "samples" (nth args 1)))
       (PublishSamples (GetHomeDir))
@@ -387,8 +386,8 @@
                       :end (-> (MakeCal now)
                                (AddMonths (ConvLong (:months rc) 12))
                                (.getTime)) })
-      (println (str "Wrote file: " ff)))
-  ))
+      (println (str "Wrote file: " ff))
+  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -414,11 +413,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnGenerate ""
+(defn OnGenerate "Generate a bunch of stuff."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (when-not (if (> (count args) 1)
                 (condp = (nth args 1)
                   "keypair" (if (> (count args) 2)
@@ -446,11 +445,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHash ""
+(defn OnHash "Generate a hash."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (> (count args) 1)
       (genHash (nth args 1))
       (throw (CmdHelpError.)))
@@ -468,11 +467,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnEncrypt ""
+(defn OnEncrypt "Encrypt the data."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (> (count args) 2)
       (encrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -490,11 +489,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnDecrypt ""
+(defn OnDecrypt "Decrypt the cypher."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (> (count args) 2)
       (decrypt (nth args 1) (nth args 2))
       (throw (CmdHelpError.)))
@@ -502,7 +501,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnTestJCE ""
+(defn OnTestJCE "Test if JCE (crypto) is ok."
 
   [j]
 
@@ -511,12 +510,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnVersion ""
+(defn OnVersion "Show the version of system."
 
   [j]
 
   ;;(log/debug "HomeDir = " (GetHomeDir))
-  (let [s (ReadOneFile (File. (GetHomeDir) "VERSION")) ]
+  (let [s (ReadOneFile (io/file (GetHomeDir) "VERSION")) ]
     (if (hgl? s)
       (println s)
       (println "Unknown version."))
@@ -524,7 +523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHelp ""
+(defn OnHelp "Show help."
 
   [j]
 
@@ -552,30 +551,28 @@
 
   [^String app]
 
-  (let [cwd (File. (GetHomeDir) (str DN_BOXX "/" app))
+  (let [cwd (io/file (GetHomeDir) DN_BOXX app)
         sb (StringBuilder.)
-        ec (Mkdirs (File. cwd "eclipse.projfiles"))
+        ec (Mkdirs (io/file cwd "eclipse.projfiles"))
          ;;lang "scala"
         lang "java"
         ulang (ucase lang) ]
     (FileUtils/cleanDirectory ec)
-    (WriteOneFile (File. ec ".project")
+    (WriteOneFile (io/file ec ".project")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
                        "/project.txt")
                   "utf-8")
           (.replace "${APP.NAME}" app)
           (.replace (str "${" ulang ".SRC}")
-                    (NiceFPath (File. cwd
-                                      (str "src/main/" lang))))
+                    (NiceFPath (io/file cwd "src/main/" lang)))
           (.replace "${TEST.SRC}"
-                    (NiceFPath (File. cwd
-                                      (str "src/test/" lang))))))
-    (scanJars (File. (GetHomeDir) DN_DIST) sb)
-    (scanJars (File. (GetHomeDir) DN_LIB) sb)
-    (scanJars (File. cwd POD_CLASSES) sb)
-    (scanJars (File. cwd POD_LIB) sb)
-    (WriteOneFile (File. ec ".classpath")
+                    (NiceFPath (io/file cwd "src" "test" lang)))))
+    (scanJars (io/file (GetHomeDir) DN_DIST) sb)
+    (scanJars (io/file (GetHomeDir) DN_LIB) sb)
+    (scanJars (io/file cwd POD_CLASSES) sb)
+    (scanJars (io/file cwd POD_LIB) sb)
+    (WriteOneFile (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
                        "/classpath.txt")
@@ -585,11 +582,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnIDE ""
+(defn OnIDE "Generate IDE project files."
 
   [^Job j]
 
-  (let [args (.getLastResult j)]
+  (when-let [args (.getLastResult j)]
     (if (and (> (count args) 2)
              (= "eclipse" (nth args 1)))
       (genEclipseProj (nth args 2))

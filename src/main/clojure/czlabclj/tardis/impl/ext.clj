@@ -14,7 +14,8 @@
 
   czlabclj.tardis.impl.ext
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.str
          :only [ToKW hgl? lcase nsb strim nichts?]]
@@ -96,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetAppKeyFromEvent ""
+(defn GetAppKeyFromEvent "Get the secret application key."
 
   ^String
   [^IOEvent evt]
@@ -431,7 +432,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  The runtime container for your application.
 ;;
-(defn MakeContainer ""
+(defn MakeContainer "Create an application container."
 
   [^czlabclj.tardis.core.sys.Elmt pod]
 
@@ -465,7 +466,7 @@
 
   [^File appDir ^String conf]
 
-  (-> (ReadOneFile (File. appDir conf))
+  (-> (ReadOneFile (io/file appDir conf))
       (SubsVar)
       (.replace "${appdir}" (NiceFPath appDir))
       (ReadEdn)
@@ -479,8 +480,8 @@
 
   (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
         ^File appDir (K_APPDIR props)
-        cfgDir (File. appDir DN_CONF)
-        mf (LoadJavaProps (File. appDir MN_FILE))
+        cfgDir (io/file appDir DN_CONF)
+        mf (LoadJavaProps (io/file appDir MN_FILE))
         envConf (parseConfile appDir CFG_ENV_CF)
         appConf (parseConfile appDir CFG_APP_CF) ]
     ;; make registry to store services
@@ -527,8 +528,7 @@
   ^File
   [^String v ^File appDir]
 
-  (File. appDir (str "modules/"
-                     (.replace v "." ""))))
+  (io/file appDir "modules" (.replace v "." "")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,18 +600,19 @@
   (with-local-vars [p (transient {}) ]
     (let [cfg (->> env (:databases)(:jdbc))
           pkey (.getAppKey co) ]
-      (when-not (nil? cfg)
-        (doseq [[k v] (seq cfg) ]
-          (when-not (false? (:status v))
-            (let [[t c] (splitPoolSize (nsb (:poolsize v))) ]
-              (var-set p
-                       (assoc! @p k
-                               (MakeDbPool (MakeJdbc k v (Pwdify (:passwd v) pkey))
-                                           {:max-conns c
-                                            :min-conns 1
-                                            :partitions t
-                                            :debug (nbf (:debug v)) }))))))
-    ))
+      (doseq [[k v] (seq cfg) ]
+        (when-not (false? (:status v))
+          (let [[t c]
+                (splitPoolSize (nsb (:poolsize v))) ]
+            (var-set p
+                     (->> (MakeDbPool (MakeJdbc k v
+                                                (Pwdify (:passwd v)
+                                                        pkey))
+                                      {:max-conns c
+                                       :min-conns 1
+                                       :partitions t
+                                       :debug (nbf (:debug v)) })
+                          (assoc! @p k)))))))
     (persistent! @p)
   ))
 
@@ -652,8 +653,9 @@
             loc (if (hgl? cn)
                     (Locale. lg cn)
                     (Locale. lg))
-            res (File. appDir (str "i18n/Resources_"
-                                   (.toString loc) ".properties"))]
+            res (io/file appDir "i18n"
+                         (str "Resources_"
+                              (.toString loc) ".properties"))]
         (when (FileRead? res)
           (when-let [rb (LoadResource res)]
             (I18N/setBundle (.id ^Identifiable co) rb))))
@@ -704,8 +706,8 @@
         (log/info "Application main-class "
                   (if (hgl? mCZ) mCZ "???") " created and invoked"))
 
-      (let [sf (File. appDir (str DN_CONF "/static-routes.conf"))
-            rf (File. appDir (str DN_CONF "/routes.conf")) ]
+      (let [sf (io/file appDir DN_CONF "static-routes.conf")
+            rf (io/file appDir DN_CONF "routes.conf") ]
         (.setAttr! co :routes
                    (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
                                 (if (.exists rf) (LoadRoutes rf) [] ))) ))

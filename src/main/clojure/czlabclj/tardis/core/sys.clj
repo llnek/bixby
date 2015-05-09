@@ -14,7 +14,8 @@
 
   czlabclj.tardis.core.sys
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.core :only [Muble MakeMMap NiceFPath]]
         [czlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]
@@ -33,7 +34,7 @@
 ;;
 (defprotocol CljAppMain
 
-  ""
+  "Main Application API."
 
   (contextualize [_ ctr] )
   (configure [_ options] )
@@ -46,7 +47,7 @@
 ;;
 (defprotocol Elmt
 
-  ""
+  "Element API."
 
   (setCtx! [_ ctx] )
   (getCtx [_] )
@@ -59,7 +60,7 @@
 ;;
 (defprotocol Rego
 
-  ""
+  "Registry API."
 
   (seq* [_] ))
 
@@ -68,7 +69,7 @@
 (defmulti ^czlabclj.tardis.core.sys.Elmt
           CompContextualize
 
-  ""
+  "Contextualize a component."
 
   (fn [a arg] (:typeid (meta a))))
 
@@ -77,7 +78,7 @@
 (defmulti ^czlabclj.tardis.core.sys.Elmt
           CompCompose
 
-  ""
+  "Compose a component within a registry."
 
   (fn [a rego] (:typeid (meta a))))
 
@@ -86,7 +87,7 @@
 (defmulti ^czlabclj.tardis.core.sys.Elmt
           CompConfigure
 
-  ""
+  "Configure a component with options."
 
   (fn [a options] (:typeid (meta a))))
 
@@ -95,13 +96,18 @@
 (defmulti ^czlabclj.tardis.core.sys.Elmt
           CompInitialize
 
-  ""
+  "Initialize a component."
 
   (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SynthesizeComponent "Note the ordering."
+(defn SynthesizeComponent "Synthesize a component.
+                           Note the ordering.
+                          1. contextualize
+                          2. compose
+                          3. configure
+                          4. initialize"
 
   ^czlabclj.tardis.core.sys.Elmt
   [c options]
@@ -118,7 +124,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeContext ""
+(defn MakeContext "Create a context object."
 
   ^czlabclj.xlib.util.core.Muble
   []
@@ -135,12 +141,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadConf ""
+(defn ReadConf "Parse a edn configuration file."
 
   ^String
   [^File appDir ^String confile]
 
-  (let [cs (-> (File. appDir (str DN_CONF "/" confile))
+  (let [cs (-> (io/file appDir DN_CONF confile)
                (ReadOneFile))
         rc (StringUtils/replace cs
                                 "${appdir}"

@@ -25,7 +25,7 @@
   (:require [clojure.tools.logging :as log])
 
   (:use [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.tardis.auth.plug]
+        [czlabclj.tardis.auth.plugin]
         [czlabclj.xlib.dbio.connect]
         [czlabclj.xlib.dbio.core])
 

@@ -14,7 +14,8 @@
 
   czlabclj.tardis.impl.dfts
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.core :only [notnil? Muble]]
         [czlabclj.xlib.util.str :only [ToKW]]
@@ -28,7 +29,8 @@
          :only
          [NextLong test-cond MakeMMap test-nestr]] )
 
-  (:import  [com.zotohlab.frwk.core Versioned Identifiable Hierarchial]
+  (:import  [com.zotohlab.frwk.core Versioned 
+             Identifiable Hierarchial]
             [com.zotohlab.skaro.loaders AppClassLoader]
             [com.zotohlab.frwk.util CU]
             [com.zotohlab.frwk.i18n I18N]
@@ -43,7 +45,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Asserts that the directory is readable & writable.
 ;;
-(defn PrecondDir ""
+(defn ^:no-doc PrecondDir "Is this folder read-writeable?"
 
   [d]
 
@@ -53,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Asserts that the file is readable.
 ;;
-(defn PrecondFile ""
+(defn ^:no-doc PrecondFile "Is this file readable?"
 
   [f]
 
@@ -62,14 +64,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeDir ""
+(defn ^:no-doc MaybeDir "Tests if the key maps to a File."
 
   ^File
   [^czlabclj.xlib.util.core.Muble m kn]
 
   (let [v (.getf m kn) ]
     (condp instance? v
-      String (File. ^String v)
+      String (io/file v)
       File v
       (throw (ConfigError. (RStr (I18N/getBase)
                                  "skaro.no.dir" [kn]))))
@@ -79,7 +81,7 @@
 ;;
 (defprotocol EmitMeta
 
-  ""
+  "Metadata for a Emitter."
 
   (enabled? [_] )
   (getName [_])
@@ -89,7 +91,7 @@
 ;;
 (defprotocol PODMeta
 
-  ""
+  "Metadata for an application bundle."
 
   (typeof [_ ] )
   (moniker [_] )
@@ -101,15 +103,14 @@
 ;; A component itself can be a registry which implies that registeries can
 ;; ne nested.
 ;;
-(defn MakeRegistry ""
+(defn MakeRegistry "Create a generic component registry."
 
   [regoType regoId ver parObj]
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MakeMMap {:cache {} })]
     (test-cond "registry type" (keyword? regoType))
     (test-cond "registry id" (keyword? regoId))
     (test-nestr "registry version" ver)
-    (.setf! impl :cache {} )
     (with-meta
       (reify
 
@@ -175,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePodMeta ""
+(defn MakePodMeta "Create metadata for an application bundle."
 
   [app ver podType appid pathToPOD]
 

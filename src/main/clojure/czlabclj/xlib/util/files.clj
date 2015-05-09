@@ -29,7 +29,7 @@
              FileOutputStream InputStream OutputStream]
             [java.util ArrayList]
             [java.net URL URI]
-            [org.apache.commons.io IOUtils FileUtils]
+            [org.apache.commons.io IOUtils  FileUtils]
             [java.util.zip ZipFile ZipEntry]
             [com.zotohlab.frwk.io XData]))
 
@@ -219,8 +219,10 @@
 (defn WriteOneFile "Write data to file."
 
   ([^File fout ^Object data ^String enc]
-   (when-not (nil? data)
-     (spit fout data :encoding enc)))
+   (if (IsBytes? (class data))
+     (FileUtils/writeByteArrayToFile fout ^bytes data)
+     (FileUtils/writeStringToFile fout
+                                  (nsb data) enc)))
 
   ([^File fout ^Object data] (WriteOneFile fout data "utf-8")))
 
@@ -250,7 +252,7 @@
   (let [fp (io/file dir fname) ]
     (io/delete-file fp true)
     (if-not (.isDiskFile xdata)
-      (spit fp (.javaBytes xdata))
+      (WriteOneFile fp (.javaBytes xdata))
       (FileUtils/moveFile (.fileRef xdata) fp))
   ))
 

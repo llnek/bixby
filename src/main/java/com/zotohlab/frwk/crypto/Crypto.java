@@ -19,7 +19,7 @@ import java.security.UnrecoverableEntryException;
 /**
  * @author kenl
  */
-public enum CryptoUtils {
+public enum Crypto {
 ;
 
   /**

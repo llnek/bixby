@@ -14,6 +14,8 @@
 
   czlabclj.tardis.etc.task
 
+  (:require [clojure.java.io :as io])
+
   (:import  [org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac]
             [org.apache.tools.ant.listener TimestampedLogger]
             [org.apache.tools.ant.types FileSet Path DirSet]
@@ -66,7 +68,7 @@
   (let [tk (Ant.)
         pj (ProjAntTask tk) ]
     (doto tk
-      (.setDir (File. hhhHome (str "apps/" appId)))
+      (.setDir (io/file hhhHome "apps" appId))
       (.setAntfile "build.xml")
       (.setTarget taskId)
           ;;(.setOutput "/tmp/out.txt")

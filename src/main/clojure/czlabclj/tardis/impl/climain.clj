@@ -14,12 +14,14 @@
 
   czlabclj.tardis.impl.climain
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.netty.discarder :only [MakeDiscardHTTPD]]
         [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
         [czlabclj.xlib.util.ini :only [ParseInifile]]
         [czlabclj.xlib.util.consts]
+        [czlabclj.xlib.util.io :only [CloseQ]]
         [czlabclj.xlib.util.process
          :only
          [ProcessPid SafeWait ThreadFunc]]
@@ -41,7 +43,8 @@
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.netty.io :only [StopServer]])
 
-  (:import  [io.netty.channel Channel ChannelFuture ChannelFutureListener]
+  (:import  [io.netty.channel Channel ChannelFuture
+             ChannelFutureListener]
             [com.zotohlab.skaro.loaders AppClassLoader
              RootClassLoader ExecClassLoader]
             [com.zotohlab.frwk.core Versioned Identifiable
@@ -78,7 +81,7 @@
   ^czlabclj.xlib.util.core.Muble
   [^File baseDir]
 
-  (let [cfg (File. baseDir DN_CFG)
+  (let [cfg (io/file baseDir DN_CFG)
         home (.getParentFile cfg) ]
     (PrecondDir home)
     (PrecondDir cfg)
@@ -101,10 +104,10 @@
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "Shutting down the http discarder...")
-      (StopServer ^ServerBootstrap (:bootstrap kp)
-                  ^Channel (:channel kp))
+      (StopServer (:bootstrap kp)
+                  (:channel kp))
       (log/info "Http discarder closed. OK")
-      (when-not (nil? pid) (FileUtils/deleteQuietly pid))
+      (when-not (nil? pid) (io/delete-file pid true))
       (log/info "Containers are shutting down...")
       (log/info "About to stop Skaro...")
       (when-not (nil? execv)
@@ -237,7 +240,7 @@
       (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             ^File home (.getf ctx K_BASEDIR)
-            fp (File. home "skaro.pid")]
+            fp (io/file home "skaro.pid")]
         (WriteOneFile fp (ProcessPid))
         (.setf! ctx K_PIDFILE fp)
         (log/info "Wrote skaro.pid - OK.")
@@ -309,8 +312,7 @@
       (let [^czlabclj.xlib.util.core.Muble
             ctx (.getLastResult j)
             ^File home (.getf ctx K_BASEDIR)
-            cf (File. home (str DN_CONF
-                                 "/" (name K_PROPS)))]
+            cf (io/file home DN_CONF (name K_PROPS))]
         (log/info "About to parse config file " cf)
         (let [w (ReadEdn cf)
               cn (lcase (or (K_COUNTRY (K_LOCALE w)) ""))
@@ -386,8 +388,8 @@
             x (inizContext home)]
         (log/info "SKARO.Version= " (.version ^Versioned c))
         ;;(precondDir (File. home ^String DN_BLOCKS))
-        (PrecondDir (File. home DN_BOXX))
-        (PrecondDir (File. home DN_CFG))
+        (PrecondDir (io/file home DN_BOXX))
+        (PrecondDir (io/file home DN_CFG))
         ;; a bit of circular referencing here.  the climain object refers to context
         ;; and the context refers back to the climain object.
         (.setf! x K_CLISH c)
@@ -399,7 +401,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype StartMainViaCLI [] CliMain
+(deftype StartViaCLI [] CliMain
 
     (run [_ args]
       (require 'czlabclj.tardis.impl.climain)

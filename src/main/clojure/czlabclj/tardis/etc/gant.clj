@@ -14,6 +14,8 @@
 
   czlabclj.tardis.etc.gant
 
+  (:require [clojure.java.io :as io])
+
   (:import  [org.codehaus.gant GantState]
             [gant Gant]
             [java.io File]))
@@ -28,9 +30,9 @@
   [^File homeDir ^String appDir ^String target]
 
   (System/setProperty "user.dir"
-                      (-> (File. homeDir (str "/apps/" appDir))
+                      (-> (io/file homeDir "apps" appDir)
                           (.getCanonicalPath)))
-  (let [fp (-> (File. homeDir (str "/apps/" appDir "/build.gant"))
+  (let [fp (-> (io/file homeDir "apps" appDir "build.gant")
                (.getCanonicalPath))
         g (Gant.)
         args (make-array String 4)]
@@ -48,11 +50,11 @@
   [^File homeDir ^String appDir ^String target]
 
   (doto (Gant.)
-    (.loadScript (File. homeDir (str "/apps/" appDir "/build.gant")))
+    (.loadScript (io/file homeDir "apps" appDir "build.gant"))
     (.processTargets target)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private task-eof nil)
+(def ^:private gant-eof nil)
 

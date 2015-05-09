@@ -19,7 +19,7 @@
   (:use [czlabclj.xlib.crypto.stores :only [MakeCryptoStore]]
         [czlabclj.xlib.util.core :only [NewRandom]]
         [czlabclj.xlib.crypto.core
-         :only 
+         :only
          [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
 
   (:import  [javax.net.ssl X509TrustManager TrustManager]
@@ -42,8 +42,7 @@
 
   (^SSLContext
     [^URL keyUrl
-     ^PasswordAPI pwdObj
-     ^String flavor]
+     ^PasswordAPI pwdObj ^String flavor]
     (let [ks (with-open [inp (.openStream keyUrl) ]
                (if (PkcsFile? keyUrl)
                  (GetPkcsStore inp pwdObj)
@@ -53,8 +52,8 @@
           kmf (.keyManagerFactory cs)
           ctx (SSLContext/getInstance flavor) ]
       (.init ctx
-             (.getKeyManagers ^KeyManagerFactory kmf)
-             (.getTrustManagers ^TrustManagerFactory tmf)
+             (.getKeyManagers kmf)
+             (.getTrustManagers tmf)
              (NewRandom))
       ctx)))
 

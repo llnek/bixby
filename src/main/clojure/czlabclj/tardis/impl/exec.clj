@@ -14,7 +14,8 @@
 
   czlabclj.tardis.impl.exec
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.util.str :only [nsb strim hgl? ToKW]]
         [czlabclj.xlib.util.mime :only [SetupCache]]
@@ -60,7 +61,7 @@
 ;;
 (defprotocol ExecVisor
 
-  ""
+  "ExecVisor API."
 
   (homeDir [_] )
   (confDir [_] )
@@ -113,7 +114,7 @@
     (let [^czlabclj.tardis.core.sys.Elmt
           m (-> (MakePodMeta app ver
                              cz vid
-                             (-> des (.toURI) (.toURL)))
+                             (io/as-url des))
                 (SynthesizeComponent { :ctx ctx }))
           ^czlabclj.xlib.util.core.Muble
           cx (.getCtx m) ]
@@ -131,17 +132,17 @@
   [execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (NiceFPath des))
-        mf (File. des MN_FILE) ]
+        mf (io/file des MN_FILE) ]
     (log/info "About to inspect app: " app)
     (log/info "app-dir: " des)
     (TryC
-      (PrecondDir (File. des POD_INF))
-      (PrecondDir (File. des POD_CLASSES))
-      (PrecondDir (File. des POD_LIB))
-      (PrecondDir (File. des META_INF))
-      (PrecondFile (File. des CFG_APP_CF))
-      (PrecondFile (File. des CFG_ENV_CF))
-      (PrecondDir (File. des DN_CONF))
+      (PrecondDir (io/file des POD_INF))
+      (PrecondDir (io/file des POD_CLASSES))
+      (PrecondDir (io/file des POD_LIB))
+      (PrecondDir (io/file des META_INF))
+      (PrecondFile (io/file des CFG_APP_CF))
+      (PrecondFile (io/file des CFG_ENV_CF))
+      (PrecondDir (io/file des DN_CONF))
       (PrecondFile mf)
       (chkManifest execv app des mf) )
   ))
@@ -208,7 +209,7 @@
   [^File src ^File apps]
 
   (let [^File app (FilenameUtils/getBaseName (NiceFPath src))
-        des (File. apps ^String app)]
+        des (io/file apps app)]
     (when-not (.exists des)
       (Unzip src des))
   ))
@@ -223,7 +224,7 @@
   (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         dir (-> ^File (.getf ctx K_PLAYDIR)
-                (File. app))]
+                (io/file app))]
     (when (.exists dir)
       (FileUtils/deleteDirectory dir))
   ))
@@ -264,7 +265,8 @@
                        (not (contains? cset app)))
                 nil
                 (MakeContainer pod))]
-      (log/debug "Start pod? cid = " cid ", app = " app " !! cset = " cset)
+      (log/debug "Start pod? cid = " cid
+                 ", app = " app " !! cset = " cset)
       (if (notnil? ctr)
         (do
           (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
@@ -323,14 +325,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeExecvisor ""
+(defn MakeExecvisor "Create a ExecVisor."
 
   ^czlabclj.tardis.impl.exec.ExecVisor
   [parObj]
 
   (log/info "Creating execvisor, parent = " parObj)
-  (let [impl (MakeMMap) ]
-    (.setf! impl K_CONTAINERS {})
+  (let [impl (MakeMMap {K_CONTAINERS {}}) ]
     (with-meta
       (reify
 
@@ -393,7 +394,7 @@
             co
             (.srcUrl))
         cl  (AppClassLoader. rcl) ]
-    (.configure cl (NiceFPath (File. (.toURI  url))) )
+    (.configure cl (NiceFPath (io/file url)))
     (.setf! ctx K_APP_CZLR cl)
   ))
 
@@ -413,9 +414,9 @@
         regs (K_REGS cf)
         jmx  (K_JMXMGM cf) ]
 
-    (SetupCache (-> (File. base (str DN_CFG "/app/mime.properties"))
-                    (.toURI)
-                    (.toURL )))
+    (SetupCache (-> (io/file base DN_CFG
+                             "app" "mime.properties")
+                    (io/as-url)))
 
     (log/info "Initializing component: ExecVisor: " co)
     (test-nonil "conf file: components" comps)
@@ -425,13 +426,12 @@
     (System/setProperty "file.encoding" "utf-8")
 
     (let [^File home (.homeDir exec)
-          bks (Mkdirs (File. home
-                             (str DN_CFG "/" DN_BLOCKS)))
-          apps (Mkdirs (File. home DN_BOXX))
-          tmp (Mkdirs (File. home DN_TMP))
-          pods (File. home DN_PODS)
-          db (File. home DN_DBS)
-          log (Mkdirs (File. home DN_LOGS))]
+          bks (Mkdirs (io/file home DN_CFG DN_BLOCKS))
+          apps (Mkdirs (io/file home DN_BOXX))
+          tmp (Mkdirs (io/file home DN_TMP))
+          pods (io/file home DN_PODS)
+          db (io/file home DN_DBS)
+          log (Mkdirs (io/file home DN_LOGS))]
       ;;(precondDir pods)
       (PrecondDir apps)
       ;;(PrecondDir log)
@@ -551,7 +551,7 @@
         fs (IO/listFiles bDir "meta" false) ]
     (doseq [^File f fs ]
       (let [^czlabclj.tardis.core.sys.Elmt
-            b (-> (makeBlockMeta (-> f (.toURI)(.toURL)))
+            b (-> (makeBlockMeta (io/as-url f))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
         (log/info "Added one block: " (.id ^Identifiable b)) ))
