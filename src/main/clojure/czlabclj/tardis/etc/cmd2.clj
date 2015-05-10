@@ -125,7 +125,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn XXXPublishSamples "Unzip all samples."
+(defn ^:no-doc XXXPublishSamples "Unzip all samples."
 
   [^File hhhHome]
 
