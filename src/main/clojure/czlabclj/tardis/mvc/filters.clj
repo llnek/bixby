@@ -265,8 +265,14 @@
                                                        {:onwsock w
                                                         :onhttp h
                                                         :emitter co}))
-                       (.remove "ChunkedWriteHandler")
-                       (FlashFilter/addFirst ))))
+                       (.remove "ChunkedWriteHandler"))
+                     (when-let [h (cond (.get pipe "ssl")
+                                        "ssl"
+                                        (.get pipe "HttpRequestDecoder")
+                                        "HttpRequestDecoder"
+                                        :else nil)]
+                       (FlashFilter/addBefore pipe ^String h))
+                     pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

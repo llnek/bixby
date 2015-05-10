@@ -307,7 +307,6 @@
             (ErrorSinkFilter/addLast))
           (when (fn? epilogue)
             (epilogue pipe options))
-          (NettyFW/dbgPipelineHandlers pipe)
           pipe)))
   ))
 

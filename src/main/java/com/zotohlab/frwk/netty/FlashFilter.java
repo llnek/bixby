@@ -14,6 +14,11 @@ package com.zotohlab.frwk.netty;
 import static com.zotohlab.frwk.netty.NettyFW.delAttr;
 import static com.zotohlab.frwk.netty.NettyFW.getAttr;
 import static com.zotohlab.frwk.netty.NettyFW.setAttr;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -32,6 +37,9 @@ import io.netty.util.CharsetUtil;
 @ChannelHandler.Sharable
 public class FlashFilter extends ChannelInboundHandlerAdapter {
 
+  private static Logger _log = getLogger(lookup().lookupClass());
+  public Logger tlog() { return _log; }
+  
   @SuppressWarnings("unused")
   private static final String _XML = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
   private static final String XML= "<?xml version=\"1.0\"?>\r\n"
@@ -50,8 +58,8 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
   private static final AttributeKey<Integer> HINT = AttributeKey.valueOf("flash-hint");
   private static final FlashFilter shared = new FlashFilter();
 
-  public static ChannelPipeline addFirst(ChannelPipeline pipe) {
-    pipe.addFirst(FlashFilter.class.getSimpleName(), shared);
+  public static ChannelPipeline addBefore(ChannelPipeline pipe, String name) {
+    pipe.addBefore(name, FlashFilter.class.getSimpleName(), shared);
     return pipe;
   }
   
@@ -68,6 +76,8 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
     if (bbuf == null || !bbuf.isReadable()) {
       return;
     }
+    
+    tlog().debug("FlashFilter:channelRead called.");
 
     Integer hint = (Integer) getAttr(ctx,HINT);
     if (hint==null) {
@@ -111,11 +121,13 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
 
     if (success) {
 
+      tlog().debug("FlashFilter:channelRead: replying back to Flash with policy info");
       ctx.writeAndFlush(Unpooled.copiedBuffer(XML,
             CharsetUtil.US_ASCII)).addListener(ChannelFutureListener.CLOSE);
 
     } else {
 
+      tlog().debug("FlashFilter:channelRead: finito!.");
       ctx.fireChannelRead(msg);
       ctx.pipeline().remove(this);
     }
