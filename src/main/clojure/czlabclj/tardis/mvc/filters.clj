@@ -211,35 +211,35 @@
 ;;
 (defn- mvcInitorOnHttp "Jiggle the pipeline upon a http request."
 
+  ^ChannelPipeline
   [^ChannelHandlerContext ctx hack options]
 
   (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
     (doto pipe
       (.addAfter "HttpResponseEncoder"
-                 "ChunkedWriteHandler" (ChunkedWriteHandler.)))
-    (log/info "mvcInitorOnHttp: pipe() = "
-              (NettyFW/dbgPipelineHandlers pipe))
+                 "ChunkedWriteHandler" (ChunkedWriteHandler.))
+      (NettyFW/dbgPipelineHandlers))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mvcInitorOnWS "Jiggle the pipeline upon a websocket request."
 
+  ^ChannelPipeline
   [^ChannelHandlerContext ctx hack options]
 
   (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
+    (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
+        (.set "wsock"))
     (doto pipe
       (.addBefore "ErrorSinkFilter"
                   "WSOCKDispatcher"
                   (wsockDispatcher co co options))
+      (.remove "RouteFilter")
       (.remove "MVCDispatcher")
-      (.remove "RouteFilter"))
-    (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
-        (.set "wsock"))
-    (log/info "mvcInitorOnWS: pipe() = "
-              (NettyFW/dbgPipelineHandlers pipe))
+      (NettyFW/dbgPipelineHandlers ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -250,9 +250,8 @@
   [^czlabclj.tardis.core.sys.Elmt co]
 
   (log/debug "MVC netty pipeline initor called with emitter = " (type co))
-  (let [hack {:onhttp mvcInitorOnHttp
-              :onwsock mvcInitorOnWS
-              :emitter co} ]
+  (let [h mvcInitorOnHttp
+        w mvcInitorOnWS]
     (ReifyHTTPPipe "MVCDispatcher"
                    (fn [_] (mvcDispatcher co))
                    (fn [^ChannelPipeline pipe options]
@@ -262,7 +261,10 @@
                                   (routeFilter co))
                        (.addAfter "RouteFilter",
                                   "HttpDemuxFilter"
-                                  (MakeHttpDemuxFilter options hack))
+                                  (MakeHttpDemuxFilter options
+                                                       {:onwsock w
+                                                        :onhttp h
+                                                        :emitter co}))
                        (.remove "ChunkedWriteHandler")
                        (FlashFilter/addFirst ))))
   ))

@@ -300,7 +300,6 @@
           (doto pipe
             ;;(.addLast "IdleStateHandler" (IdleStateHandler. 100 100 100))
             (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-            ;;(.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options))
             (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
             (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
             (.addLast yourHandlerName
@@ -308,6 +307,7 @@
             (ErrorSinkFilter/addLast))
           (when (fn? epilogue)
             (epilogue pipe options))
+          (NettyFW/dbgPipelineHandlers pipe)
           pipe)))
   ))
 
