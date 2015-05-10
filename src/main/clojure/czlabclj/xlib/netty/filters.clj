@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
 
-(ns ^{:doc ""
+(ns ^{:doc "Netty Request Pipeline."
       :author "kenl" }
 
   czlabclj.xlib.netty.filters
@@ -276,24 +276,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyHTTPPipe "Create a standard request pipeline."
+(defn ReifyHTTPPipe "Create a netty request pipeline."
 
-  ^PipelineConfigurator
-  [^String yourHandlerName yourHandlerFn]
+  (^PipelineConfigurator
+    [^String yourHandlerName yourHandlerFn]
+    (ReifyHTTPPipe yourHandlerName
+                   yourHandlerFn
+                   (fn [^ChannelPipeline pipe options]
+                     (.addAfter pipe
+                                "HttpRequestDecoder",
+                                "HttpDemuxFilter"
+                                (MakeHttpDemuxFilter options))
+                     pipe)))
 
-  (proxy [PipelineConfigurator][]
-    (assemble [pl options]
-      (let [ssl (SSLServerHShake options)
-            ^ChannelPipeline pipe pl]
-        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
-        (doto pipe
-          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options))
-          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast yourHandlerName
-                    ^ChannelHandler (yourHandlerFn options))
-          (ErrorSinkFilter/addLast))))
+  (^PipelineConfigurator
+    [^String yourHandlerName yourHandlerFn
+     epilogue]
+    (proxy [PipelineConfigurator][]
+      (assemble [pl options]
+        (let [ssl (SSLServerHShake options)
+              ^ChannelPipeline pipe pl]
+          (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
+          (doto pipe
+            ;;(.addLast "IdleStateHandler" (IdleStateHandler. 100 100 100))
+            (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
+            ;;(.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options))
+            (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
+            (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
+            (.addLast yourHandlerName
+                      ^ChannelHandler (yourHandlerFn options))
+            (ErrorSinkFilter/addLast))
+          (when (fn? epilogue)
+            (epilogue pipe options))
+          pipe)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

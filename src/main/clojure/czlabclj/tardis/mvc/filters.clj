@@ -137,8 +137,7 @@
 (defn- mvcDispatcher ""
 
   ^ChannelHandler
-  [^czlabclj.tardis.io.core.EmitAPI em
-   ^czlabclj.tardis.core.sys.Elmt co]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
   (proxy [SimpleInboundFilter] []
     (channelRead0 [c msg]
@@ -216,10 +215,11 @@
 
   (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
-    (.addAfter pipe
-               "HttpResponseEncoder"
-               "ChunkedWriteHandler" (ChunkedWriteHandler.))
-    (log/info "mvcInitorOnHttp: pipeline() = " (NettyFW/dbgPipelineHandlers pipe))
+    (doto pipe
+      (.addAfter "HttpResponseEncoder"
+                 "ChunkedWriteHandler" (ChunkedWriteHandler.)))
+    (log/info "mvcInitorOnHttp: pipe() = "
+              (NettyFW/dbgPipelineHandlers pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,16 +230,16 @@
 
   (let [pipe (.pipeline ctx)
         co (:emitter hack) ]
-    (.addBefore pipe
-                "ErrorSinkFilter"
-                "WSOCKDispatcher"
-                (wsockDispatcher co co options))
+    (doto pipe
+      (.addBefore "ErrorSinkFilter"
+                  "WSOCKDispatcher"
+                  (wsockDispatcher co co options))
+      (.remove "MVCDispatcher")
+      (.remove "RouteFilter"))
     (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
         (.set "wsock"))
-    ;;(.remove pipe "ChunkedWriteHandler")
-    (.remove pipe "MVCDispatcher")
-    (.remove pipe "RouteFilter")
-    (log/info "mvcInitorOnWS: pipeline() = " (NettyFW/dbgPipelineHandlers pipe))
+    (log/info "mvcInitorOnWS: pipe() = "
+              (NettyFW/dbgPipelineHandlers pipe))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -247,31 +247,25 @@
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
-  [^czlabclj.tardis.core.sys.Elmt co options1]
+  [^czlabclj.tardis.core.sys.Elmt co]
 
+  (log/debug "MVC netty pipeline initor called with emitter = " (type co))
   (let [hack {:onhttp mvcInitorOnHttp
               :onwsock mvcInitorOnWS
               :emitter co} ]
-    (log/debug "MVC netty pipeline initor called with emitter = " (type co))
-    (proxy [PipelineConfigurator] []
-      (assemble [p options]
-        (let [^ChannelPipeline pipe p
-              ssl (SSLServerHShake options) ]
-          ;; should flash go before ssl, probably...
-          (FlashFilter/addLast pipe)
-          (when-not (nil? ssl)
-            (.addLast pipe "ssl" ssl))
-          (doto pipe
-            ;;(.addLast "IdleStateHandler" (IdleStateHandler. 100 100 100))
-            (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-            (.addLast "RouteFilter" (routeFilter co))
-            (.addLast "HttpDemuxFilter" (MakeHttpDemuxFilter options hack))
-            (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-            ;;(.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-            (.addLast "MVCDispatcher" (mvcDispatcher co co))
-            (ErrorSinkFilter/addLast ))
-          pipe)))
-    ))
+    (ReifyHTTPPipe "MVCDispatcher"
+                   (fn [_] (mvcDispatcher co))
+                   (fn [^ChannelPipeline pipe options]
+                     (doto pipe
+                       (.addAfter "HttpRequestDecoder",
+                                  "RouteFilter"
+                                  (routeFilter co))
+                       (.addAfter "RouteFilter",
+                                  "HttpDemuxFilter"
+                                  (MakeHttpDemuxFilter options hack))
+                       (.remove "ChunkedWriteHandler")
+                       (FlashFilter/addFirst ))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -283,7 +277,7 @@
         ctr (.parent ^Hierarchial co)
         rts (.getAttr ctr :routes)
         options (.getAttr co :emcfg)
-        bs (InitTCPServer (mvcInitor co options) options) ]
+        bs (InitTCPServer (mvcInitor co) options) ]
     (.setAttr! co :cracker (MakeRouteCracker rts))
     (.setAttr! co :netty  { :bootstrap bs })
     co
