@@ -296,12 +296,13 @@
 
   [^File appDir ^String appKey]
 
-  (let [ini (File. appDir "conf/shiro.ini")
-        sm (-> (IniSecurityManagerFactory. (nsb (io/as-url ini)))
-               (.getInstance))]
-    (SecurityUtils/setSecurityManager sm)
-    (log/info "Created shiro security manager: " sm)
-  ))
+  (-> (io/file appDir "conf" "shiro.ini")
+      (io/as-url )
+      (.toString)
+      (IniSecurityManagerFactory. )
+      (.getInstance)
+      (SecurityUtils/setSecurityManager ))
+  (log/info "Created shiro security manager."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -510,20 +511,22 @@
     (makeAuthPlugin ctr)
   ))
 
+(ns-unmap *ns* '->AuthPluginFactory)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doMain ""
 
   [& args]
 
-  (let [appDir (File. ^String (nth args 0))
+  (let [appDir (io/file (first args))
         ^Properties mf
-        (LoadJavaProps (File. appDir "META-INF/MANIFEST.MF"))
+        (LoadJavaProps (io/file appDir "META-INF" "MANIFEST.MF"))
         pkey (-> (.getProperty mf "Implementation-Vendor-Id")
                  (.toCharArray))
         ^String cmd (nth args 1)
         ^String db (nth args 2)
-        env (ReadEdn (File. appDir CFG_ENV_CF))
+        env (ReadEdn (io/file appDir CFG_ENV_CF))
         cfg ((keyword db) (:jdbc (:databases env))) ]
     (when-not (nil? cfg)
       (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
@@ -535,7 +538,7 @@
           (= "gen-sql" cmd)
           (if (> (count args) 3)
             (ExportAuthPluginDDL t
-                                 (File. ^String (nth args 3))))
+                                 (io/file (nth args 3))))
 
           :else
           nil)) )
@@ -558,7 +561,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(ns-unmap *ns* '->AuthPluginFactory)
 (def ^:private plugin-eof nil)
 
 

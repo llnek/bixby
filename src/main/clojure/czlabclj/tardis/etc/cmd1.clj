@@ -99,8 +99,7 @@
   ^String
   []
 
-  (NiceFPath (File. (GetHomeDir)
-                    (str DN_CFG "/app/build.xml"))))
+  (NiceFPath (io/file (GetHomeDir) DN_CFG "app" "build.xml")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Create a new app template.

@@ -112,14 +112,12 @@
   ^czlabclj.tardis.core.sys.Elmt
   [c options]
 
-  (let [props (:props options)
-        rego (:rego options)
-        ctx (:ctx options) ]
-   (when-not (nil? ctx) (CompContextualize c ctx))
-   (when-not (nil? rego) (CompCompose c rego))
-   (when-not (nil? props) (CompConfigure c props))
-   (CompInitialize c)
-   c
+  (let [{:keys [props rego ctx]} options]
+    (when-not (nil? ctx) (CompContextualize c ctx))
+    (when-not (nil? rego) (CompCompose c rego))
+    (when-not (nil? props) (CompConfigure c props))
+    (CompInitialize c)
+    c
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -49,8 +49,9 @@
            (.validateHash tstPwd pc)))
   ))
 
+(ns-unmap *ns* '->PwdMatcher)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(ns-unmap *ns* '->PwdMatcher)
 (def ^:private shiro-eof nil)
 

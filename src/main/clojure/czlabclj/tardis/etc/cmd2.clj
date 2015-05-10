@@ -45,7 +45,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:dynamic *SKARO-WEBCSSLANG* "scss")
-;;(def ^:dynamic *SKARO-WEBLANG* "coffee")
 (def ^:dynamic *SKARO-WEBLANG* "js")
 
 (declare CreateBasic)
@@ -69,8 +68,8 @@
 
   [^File hhhHome bg]
 
-  (let [progW (NiceFPath (io/file hhhHome "bin/skaro.bat"))
-        prog (NiceFPath (io/file hhhHome "bin/skaro"))
+  (let [progW (NiceFPath (io/file hhhHome "bin" "skaro.bat"))
+        prog (NiceFPath (io/file hhhHome "bin" "skaro"))
         pj (if (IsWindows?)
              (MakeExecTask "cmd.exe"
                            hhhHome
@@ -181,7 +180,7 @@
 
   (let [top (io/file hhh "src" "main" "java" "demo")
         dss (.listFiles top)]
-    (doseq [^File d (seq dss)]
+    (doseq [^File d dss]
       (when (.isDirectory d)
         (genOneJavaDemo hhh d)))
   ))
@@ -194,7 +193,7 @@
 
   (let [top (io/file hhh "src" "main" "clojure" "demo")
         dss (.listFiles top)]
-    (doseq [^File d (seq dss)]
+    (doseq [^File d dss]
       (when (.isDirectory d)
         (genOneCljDemo hhh d)))
   ))
@@ -369,8 +368,7 @@
       (CopyFiles src des "ftl")
       (CopyFiles src des "html"))
 
-    (CopyFileToDir (io/file hhhHome
-                          DN_CFG "netty/core.clj")
+    (CopyFileToDir (io/file hhhHome DN_CFG "netty" "core.clj")
                    (mkcljd appDir appDomain))
 
     (CopyFileToDir (io/file hhhHome DN_CFGWEB "main.scss")
@@ -384,7 +382,7 @@
                    (io/file appDir "src" "web" "site" "media"))
 
     (FileUtils/copyFile wfc (io/file wlib ".list"))
-    (Mkdirs (io/file appDir "src/test/js"))
+    (Mkdirs (io/file appDir "src" "test" "js"))
 
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)

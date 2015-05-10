@@ -151,7 +151,7 @@
         (let [options (or options {})
               w (ToWorkFlow arg)
               j (NewJob this w)]
-          (doseq [[k v] (seq options)]
+          (doseq [[k v] options]
             (.setv j k v))
           (.run cpu (.reify (.startWith w)
                             (-> (Nihil/apply)
@@ -419,8 +419,9 @@
             cs
             (.handle a {:home home})))))
 
+(ns-unmap *ns* '->StartViaCLI)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(ns-unmap *ns* '->StartViaCLI)
 (def ^:private climain-eof nil)
 

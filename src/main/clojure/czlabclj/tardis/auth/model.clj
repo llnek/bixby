@@ -85,15 +85,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype AuthPluginSchema []
-
-  Schema
-
-  (getModels [_] [StdAddress AuthRole LoginAccount AccountRole] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def AUTH-MCACHE (MakeMetaCache (AuthPluginSchema.)))
+(def AUTH-MCACHE
+  (-> (reify Schema
+        (getModels [_] [StdAddress AuthRole
+                        LoginAccount AccountRole] ))
+      (MakeMetaCache )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,6 +145,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(ns-unmap *ns* '->AuthPluginSchema)
 (def ^:private model-eof nil)
 

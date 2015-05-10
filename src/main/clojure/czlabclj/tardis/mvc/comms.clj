@@ -331,8 +331,9 @@
                     evt
                     (.getv ^Job j EV_OPTS)))))
 
+(ns-unmap *ns* '->AssetHandler)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(ns-unmap *ns* '->AssetHandler)
 (def ^:private comms-eof nil)
 

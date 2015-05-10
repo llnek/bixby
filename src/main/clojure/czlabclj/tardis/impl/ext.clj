@@ -334,8 +334,7 @@
         Startable
 
         (start [this]
-          (let [pub (File. (.getAppDir this)
-                           (str DN_PUBLIC "/" DN_PAGES))
+          (let [pub (io/file (.getAppDir this) DN_PUBLIC DN_PAGES)
                 ^czlabclj.tardis.core.sys.Rego
                 srg (.getf impl K_SVCS)
                 main (.getf impl :main-app) ]
@@ -398,8 +397,13 @@
 
         ContainerAPI
 
-        (generateNonce [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
-        (generateCsrf [_] (Hex/encodeHexString (Bytesify (CreateRandomString 18))))
+        (generateNonce [_] (-> (CreateRandomString 18)
+                               (Bytesify )
+                               (Hex/encodeHexString )))
+
+        (generateCsrf [_] (-> (CreateRandomString 18)
+                              (Bytesify )
+                              (Hex/encodeHexString )))
 
         (reifyServices [this]
           (let [env (.getf impl K_ENVCONF)
@@ -412,9 +416,10 @@
           (let [^ComponentRegistry srg (.getf impl K_SVCS)
                 svc (nsb (:service cfg))
                 b (:enabled cfg) ]
-            (if-not (or (false? b) (nichts? svc))
-              (let [s (reifyService this svc nm cfg) ]
-                (.reg srg s)))))
+            (if-not (or (false? b)
+                        (nichts? svc))
+              (->> (reifyService this svc nm cfg)
+                   (.reg srg )))))
 
         (reifyService [this svc nm cfg]
           (let [^czlabclj.xlib.util.core.Muble ctx (.getCtx this)
