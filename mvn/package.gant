@@ -94,6 +94,8 @@ target (packRes: '') {
 }
 
 target (packDocs: '') {
+  ant.delete (dir: "${packDir}/docs/jsdoc", quiet: true)
+  ant.mkdir (dir: "${packDir}/docs/jsdoc")
   ant.delete (dir: "${packDir}/docs/api", quiet: true)
   ant.mkdir (dir: "${packDir}/docs/api")
 
@@ -102,6 +104,13 @@ target (packDocs: '') {
       exclude (name: 'dummy.txt')
       exclude (name: '.svn')
     }
+  }
+
+  ant.exec(executable: "jsdoc", dir: "${basedir}", spawn: true) {
+    arg(value:"-c")
+    arg(value:"src/jsdoc-conf.json")
+    arg(value:"-d")
+    arg(value:"${packDir}/docs/jsdoc")
   }
 
   ant.javadoc(destdir:"${packDir}/docs/api",
