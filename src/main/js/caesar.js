@@ -10,19 +10,18 @@
 // Copyright (c) 2013-2015 Ken Leung. All rights reserved.
 
 /**
- * @requires module:cherimoia/skarojs
+ * @requires cherimoia/skarojs
  * @module cherimoia/caesar
  */
-define("cherimoia/caesar", ['cherimoia/skarojs'],
+define("cherimoia/caesar",
+
+  ['cherimoia/skarojs'],
 
   function (sjs) { "use strict";
 
     var VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
                 "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",
     VISCHS_LEN=  VISCHS.length;
-
-    /** @alias module:cherimoia/caesar */
-    var exports = {};
 
     /////////////////////////////////////////////////////////////////////////////
     //
@@ -69,67 +68,69 @@ define("cherimoia/caesar", ['cherimoia/skarojs'],
       }
     }
 
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    /**
-     * Encrypt the text.
-     *
-     * @method
-     * @param {String} clearText
-     * @param {Number} shiftpos
-     * @return {String} - Cipher text.
-     */
-    exports.encrypt= function caesarEncrypt (str,shiftpos) {
+    /** @alias module:cherimoia/caesar */
+    var exports = {
+      /**
+       * Encrypt the text.
+       *
+       * @method encrypt
+       * @static
+       * @param {String} clearText
+       * @param {Number} shiftpos
+       * @return {String} cipher text
+       */
+      encrypt: function (str,shiftpos) {
 
-      if (sjs.isString(str) && str.length > 0 && shiftpos !== 0) {} else {
-        return "";
-      }
-      var delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN);
-      var p, ch, n, len= str.length;
-      var out=[];
-      for (n=0; n < len; ++n) {
-        ch = str.charAt(n);
-        p= locateChar(ch);
-        if (p < 0) {
-          //ch
-        } else {
-          ch= shiftEnc(shiftpos, delta, p);
+        if (sjs.isString(str) && str.length > 0 && shiftpos !== 0) {} else {
+          return "";
         }
-        out.push(ch);
-      }
-      return out.join('');
-    }
-
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    /**
-     * Decrypt the cipher.
-     *
-     * @method
-     * @param {String} cipherText
-     * @param {Number} shiftpos
-     * @return {String} - Clear text.
-     */
-    exports.decrypt= function caesarDecrypt(cipherText,shiftpos) {
-
-      if (sjs.isString(cipherText) && cipherText.length > 0 && shiftpos !== 0) {} else {
-        return "";
-      }
-      var delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN);
-      var ch, n, len= cipherText.length;
-      var p, out=[];
-      for (n=0; n < len; ++n) {
-        ch= cipherText.charAt(n);
-        p= locateChar(ch);
-        if (p < 0) {
-          //ch
-        } else {
-          ch= shiftDec(shiftpos, delta, p);
+        var delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN);
+        var p, ch, n, len= str.length;
+        var out=[];
+        for (n=0; n < len; ++n) {
+          ch = str.charAt(n);
+          p= locateChar(ch);
+          if (p < 0) {
+            //ch
+          } else {
+            ch= shiftEnc(shiftpos, delta, p);
+          }
+          out.push(ch);
         }
-        out.push(ch);
+        return out.join('');
+      },
+
+      /**
+       * Decrypt the cipher.
+       *
+       * @method decrypt
+       * @static
+       * @param {String} cipherText
+       * @param {Number} shiftpos
+       * @return {String} clear text
+       */
+      decrypt: function (cipherText,shiftpos) {
+
+        if (sjs.isString(cipherText) && cipherText.length > 0 && shiftpos !== 0) {} else {
+          return "";
+        }
+        var delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN);
+        var ch, n, len= cipherText.length;
+        var p, out=[];
+        for (n=0; n < len; ++n) {
+          ch= cipherText.charAt(n);
+          p= locateChar(ch);
+          if (p < 0) {
+            //ch
+          } else {
+            ch= shiftDec(shiftpos, delta, p);
+          }
+          out.push(ch);
+        }
+        return out.join('');
       }
-      return out.join('');
-    }
+
+    };
 
     return exports;
 });

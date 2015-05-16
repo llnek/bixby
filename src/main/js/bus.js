@@ -10,10 +10,12 @@
 // Copyright (c) 2013-2015 Ken Leung. All rights reserved.
 
 /**
- * @requires module:cherimoia/skarojs
+ * @requires cherimoia/skarojs
  * @module cherimoia/ebus
  */
-define("cherimoia/ebus", ['cherimoia/skarojs'],
+define("cherimoia/ebus",
+
+       ['cherimoia/skarojs'],
 
   function (sjs) { "use strict";
 
@@ -51,7 +53,7 @@ define("cherimoia/ebus", ['cherimoia/skarojs'],
     /**
      * @class EventBus
      */
-    var EventBus = sjs.Class.xtends({
+    var EventBus = sjs.mixes({
 
       /**
        * Subscribe to 1+ topics, returning a list of subscriber handles.
@@ -306,13 +308,16 @@ define("cherimoia/ebus", ['cherimoia/skarojs'],
     });
 
     /**
-     * @method
+     * @method reify
+     * @static
      * @return {EventBus}
      */
     exports.reify= function() { return new EventBus(); },
 
     /**
      * @property {EventBus} EventBus
+     * @static
+     * @final
      */
     exports.EventBus= EventBus;
 

@@ -87,8 +87,8 @@ define("cherimoia/skarojs",
     klass= function() {},
     initing = false;
 
-    // main extends method
-    klass.xtends = function (other) {
+    // inheritance method
+    klass.mixes = function (other) {
       var proto;
 
       initing = true; proto = new this(); initing = false;
@@ -110,7 +110,7 @@ define("cherimoia/skarojs",
 
       Claxx.prototype = proto;
       Claxx.prototype.constructor = Claxx;
-      Claxx.xtends = klass.xtends;
+      Claxx.mixes = klass.mixes;
       Claxx.inject = monkeyPatch;
 
       return Claxx;
@@ -367,6 +367,26 @@ define("cherimoia/skarojs",
         } else {
           return "";
         }
+      },
+
+      /**
+       * @method jsonDecode
+       * @static
+       * @param {String} s
+       * @return {Object}
+       */
+      jsonDecode: function(s) {
+        return !!s ? JSON.parse(s) : null;
+      },
+
+      /**
+       * @method jsonEncode
+       * @static
+       * @param {Object} obj
+       * @return {String}
+       */
+      jsonEncode: function(obj) {
+        return !!obj ? JSON.stringify(obj) : null;
       },
 
       /**
@@ -744,6 +764,17 @@ define("cherimoia/skarojs",
       },
 
       /**
+       * Mixin this object.
+       *
+       * @method mixes
+       * @param {Object} object
+       * @return {Claxx}
+       */
+      mixes: function(obj) {
+        return klass.mixes(obj);
+      },
+
+      /**
        * @property {Logger} logger Short cut to logger
        * @static
        */
@@ -765,13 +796,8 @@ define("cherimoia/skarojs",
        * @property {Ramda} R Short cut to Ramda
        * @static
        */
-      R: R,
+      R: R
 
-      /**
-       * @property {Function} Class Class based inheritance
-       * @static
-       */
-      Class : klass
     };
 
     return exports;
