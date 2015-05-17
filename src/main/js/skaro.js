@@ -370,22 +370,22 @@ define("cherimoia/skarojs",
       },
 
       /**
-       * @method jsonDecode
+       * @method objectfy
        * @static
        * @param {String} s
        * @return {Object}
        */
-      jsonDecode: function(s) {
+      objectfy: function(s) {
         return !!s ? JSON.parse(s) : null;
       },
 
       /**
-       * @method jsonEncode
+       * @method jsonfy
        * @static
        * @param {Object} obj
        * @return {String}
        */
-      jsonEncode: function(obj) {
+      jsonfy: function(obj) {
         return !!obj ? JSON.stringify(obj) : null;
       },
 
