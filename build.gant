@@ -125,7 +125,7 @@ target (buildr : '') {
 def compileAndJar() {
   depends(buildJavaFrwk, buildWFlow, buildGally,
   buildXLib, buildTardis,
-  buildJavaDemo, buildCljDemo, buildJSFrwk)
+  buildJavaDemo, buildCljDemo, buildJSLib)
 }
 
 //////////////////////////////////////////////////////////////////////////////

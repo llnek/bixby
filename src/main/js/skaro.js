@@ -24,7 +24,7 @@ define("cherimoia/skarojs",
 
   function (global,DBG,R) { "use strict";
 
-    var fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /[\D|\d]*/,
+    let fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /[\D|\d]*/,
     ZEROS= "00000000000000000000000000000000",  //32
     CjsBase64,
     CjsUtf8,
@@ -41,7 +41,7 @@ define("cherimoia/skarojs",
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //
-    function _echt (obj) {
+    let _echt = (obj) => {
       return typeof obj !== 'undefined' && obj !== null;
     }
 
@@ -57,7 +57,7 @@ define("cherimoia/skarojs",
      * @private
      */
     function patchProto(zuper, proto, other) {
-      var par={},
+      let par={},
       name;
 
       for (name in other) {
@@ -65,11 +65,12 @@ define("cherimoia/skarojs",
             typeof(other[name]) === "function" &&
             fnTest.test(other[name])) {
           par[name] = zuper[name]; // save original function
-          proto[name] = (function(name, fn){
+          proto[name] = ((name, fn) => {
             return function() {
-              var tmp = this._super;
+              let tmp = this._super,
+              ret;
               this._super = par[name];
-              var ret = fn.apply(this, arguments);
+              ret = fn.apply(this, arguments);
               this._super = tmp;
               return ret;
             };
@@ -80,7 +81,7 @@ define("cherimoia/skarojs",
       }
     }
 
-    var monkeyPatch = function(other) {
+    let monkeyPatch = function(other) {
       patchProto(this.prototype,
                  this.prototype, other);
     },
@@ -89,7 +90,7 @@ define("cherimoia/skarojs",
 
     // inheritance method
     klass.mixes = function (other) {
-      var proto;
+      let proto;
 
       initing = true; proto = new this(); initing = false;
       patchProto(this.prototype, proto, other);
@@ -98,7 +99,7 @@ define("cherimoia/skarojs",
         if ( !initing ) {
           // static constructor?
           if (!!this.staticCtor) {
-            var obj = this.staticCtor.apply(this, arguments);
+            let obj = this.staticCtor.apply(this, arguments);
             if (!!obj) { return obj; }
           }
           if (!!this.ctor) {
@@ -118,7 +119,7 @@ define("cherimoia/skarojs",
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     /** @alias module:cherimoia/skarojs */
-    var exports = {
+    let exports = {
 /*
       strPadRight: function(str,len, pad){
         return (str+new Array(len+1).join(pad)).slice(0,len);
@@ -138,7 +139,7 @@ define("cherimoia/skarojs",
        * @param {String} s
        * @return {String}
        */
-      strPadRight: function(str, len, s) {
+      strPadRight(str, len, s) {
         return (len -= str.length) > 0
         ? str + new Array(Math.ceil(len/s.length) + 1).join(s).substr(0, len)
         : str;
@@ -154,7 +155,7 @@ define("cherimoia/skarojs",
        * @param {String} s
        * @return {String}
        */
-      strPadLeft: function(str, len, s) {
+      strPadLeft(str, len, s) {
         return (len -= str.length) > 0
         ? new Array(Math.ceil(len/s.length) + 1).join(s).substr(0, len) + str
         : str;
@@ -169,7 +170,7 @@ define("cherimoia/skarojs",
        * @param {String} sep
        * @return {Array.String}
        */
-      safeSplit: function(s, sep) {
+      safeSplit(s, sep) {
         return !!s ? R.reject(function(z) { return z.length===0; }, s.trim().split(sep)) : [];
       },
 
@@ -190,7 +191,7 @@ define("cherimoia/skarojs",
        * @param {String} str
        * @return {String} with the first letter capitalized.
        */
-      capitalize: function(str) {
+      capitalize(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
       },
 
@@ -203,7 +204,7 @@ define("cherimoia/skarojs",
        * @param {Number} to
        * @return {Number}
        */
-      randomRange: function(from, to) {
+      randomRange(from, to) {
         return Math.floor(Math.random() * (to - from + 1) + from);
       },
 
@@ -216,7 +217,7 @@ define("cherimoia/skarojs",
        * @param {Number} N
        * @return {Number}
        */
-      xmod: function(x, N) {
+      xmod(x, N) {
         if (x < 0) {
           return x - (-1 * (Math.floor(-x / N) * N + N));
         } else {
@@ -233,8 +234,8 @@ define("cherimoia/skarojs",
        * @param {Object} value
        * @return {Array}
        */
-      makeArray: function(len, value) {
-        var n, arr=[];
+      makeArray(len, value) {
+        let n, arr=[];
         for (n=0; n < len; ++n) { arr.push(value); }
         return arr;
       },
@@ -246,7 +247,7 @@ define("cherimoia/skarojs",
        * @static
        * @param {String} msg
        */
-      tne: function(msg) { throw new Error(msg); },
+      tne(msg) { throw new Error(msg); },
 
       /**
        * A no-op function.
@@ -254,7 +255,7 @@ define("cherimoia/skarojs",
        * @method NILFUNC
        * @static
        */
-      NILFUNC: function() {},
+      NILFUNC() {},
 
       /**
        * Test if object is valid and not null.
@@ -275,7 +276,7 @@ define("cherimoia/skarojs",
        * @param {Number} digits
        * @return {String}
        */
-      prettyNumber: function (num, digits) {
+      prettyNumber(num, digits) {
         return this.strPadLeft(Number(num).toString(), digits, "0");
         /*
         var nums= Number(num).toString(),
@@ -297,7 +298,7 @@ define("cherimoia/skarojs",
        * @static
        * @return {String} the transport protocol for websocket
        */
-      getWebSockProtocol: function() {
+      getWebSockProtocol() {
         return this.isSSL() ? "wss://" : "ws://";
       },
 
@@ -308,7 +309,7 @@ define("cherimoia/skarojs",
        * @static
        * @return {Number} current time (millisecs)
        */
-      nowMillis: function() {
+      nowMillis() {
         return this.now();
       },
 
@@ -320,7 +321,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      boolify: function(obj) {
+      boolify(obj) {
         return obj ? true : false;
       },
 
@@ -333,7 +334,7 @@ define("cherimoia/skarojs",
        * @param {Number} num
        * @return {Array} remaining arguments
        */
-      dropArgs: function(args,num) {
+      dropArgs(args,num) {
         return args.length > num ? Array.prototype.slice(args,num) : [];
       },
 
@@ -344,7 +345,7 @@ define("cherimoia/skarojs",
        * @static
        * @return {Boolean}
        */
-      isSSL: function() {
+      isSSL() {
         if (!!window && window.location) {
           return window.location.protocol.indexOf('https') >= 0;
         } else {
@@ -361,7 +362,7 @@ define("cherimoia/skarojs",
        * @param {String} uri
        * @return {String}
        */
-      fmtUrl: function (scheme, uri) {
+      fmtUrl(scheme, uri) {
         if (!!window && window.location) {
           return scheme + window.location.host + uri;
         } else {
@@ -375,7 +376,7 @@ define("cherimoia/skarojs",
        * @param {String} s
        * @return {Object}
        */
-      objectfy: function(s) {
+      objectfy(s) {
         return !!s ? JSON.parse(s) : null;
       },
 
@@ -385,7 +386,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {String}
        */
-      jsonfy: function(obj) {
+      jsonfy(obj) {
         return !!obj ? JSON.stringify(obj) : null;
       },
 
@@ -397,7 +398,7 @@ define("cherimoia/skarojs",
        * @param {String} navigator
        * @return {Boolean}
        */
-      isMobile: function (navigator) {
+      isMobile(navigator) {
         if (!!navigator) {
           return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         } else {
@@ -413,7 +414,7 @@ define("cherimoia/skarojs",
        * @param {String} navigator
        * @return {Boolean}
        */
-      isSafari: function(navigator) {
+      isSafari(navigator) {
         if (!!navigator) {
           return /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor);
         } else {
@@ -428,7 +429,7 @@ define("cherimoia/skarojs",
        * @static
        * @param {Event} e
        */
-      pde: function (e) {
+      pde(e) {
         if (!!e.preventDefault) {
           e.preventDefault();
         } else {
@@ -443,7 +444,7 @@ define("cherimoia/skarojs",
        * @static
        * @return {Number}
        */
-      randSign: function() {
+      randSign() {
         if (this.rand(10) % 2 === 0) {
           return -1;
         } else {
@@ -459,7 +460,7 @@ define("cherimoia/skarojs",
        * @param {Array} arr
        * @return {Object}
        */
-      randArrayItem: function(arr) {
+      randArrayItem(arr) {
         return arr.length === 0 ? null : arr.length === 1 ? arr[0] : arr[ Math.floor(Math.random() * arr.length) ];
       },
 
@@ -470,7 +471,7 @@ define("cherimoia/skarojs",
        * @static
        * @return {Number}
        */
-      randPercent: function() {
+      randPercent() {
         var pc = [0.1,0.9,0.3,0.7,0.6,0.5,0.4,0.8,0.2];
         return this.randArrayItem(pc);
       },
@@ -483,7 +484,7 @@ define("cherimoia/skarojs",
        * @param {Number} limit
        * @return {Number}
        */
-      rand: function(limit) {
+      rand(limit) {
         return Math.floor(Math.random() * limit);
       },
 
@@ -496,8 +497,8 @@ define("cherimoia/skarojs",
        * @param {String} pwd
        * @return {Array.String} - [header, data]
        */
-      toBasicAuthHeader: function(user,pwd) {
-        var str='Basic ' + this.base64_encode(""+user+":"+pwd);
+      toBasicAuthHeader(user,pwd) {
+        let str='Basic ' + this.base64_encode(""+user+":"+pwd);
         return [ 'Authorization', str ];
       },
 
@@ -509,7 +510,7 @@ define("cherimoia/skarojs",
        * @param {String} s
        * @return {String}
        */
-      toUtf8: function(s) {
+      toUtf8(s) {
         return CjsUtf8.stringify( CjsUtf8.parse(s));
       },
 
@@ -533,7 +534,7 @@ define("cherimoia/skarojs",
        * @param {String} s
        * @return {String}
        */
-      base64_decode: function(s) {
+      base64_decode(s) {
         return CjsUtf8.stringify( CjsBase64.parse(s));
       },
 
@@ -546,7 +547,7 @@ define("cherimoia/skarojs",
        * @param {Object} extended
        * @return {Object} a new object
        */
-      mergeEx:function(original,extended) {
+      mergeEx(original,extended) {
         return this.merge(this.merge({},original), extended);
       },
 
@@ -559,8 +560,8 @@ define("cherimoia/skarojs",
        * @param {Object} extended
        * @return {Object} the modified original object
        */
-      merge: function(original, extended) {
-        var key, ext;
+      merge(original, extended) {
+        let key, ext;
         for(key in extended) {
           ext = extended[key];
           if ( typeof(ext) !== 'object' ||
@@ -585,9 +586,9 @@ define("cherimoia/skarojs",
        * @static
        * @return {Array}
        */
-      removeFromArray: function(arr, item) {
+      removeFromArray(arr, item) {
         if (arr && arr.indexOf && arr.splice) {
-          var index = arr.indexOf(item);
+          let index = arr.indexOf(item);
           while (index !== -1) {
             arr.splice(index,1);
             index = arr.indexOf(item);
@@ -604,7 +605,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isUndef: function(obj) {
+      isUndef(obj) {
         return obj === void 0;
       },
 
@@ -616,7 +617,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isNull: function(obj) {
+      isNull(obj) {
         return obj === null;
       },
 
@@ -628,7 +629,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isNumber: function(obj) {
+      isNumber(obj) {
         return toString.call(obj) === '[object Number]';
       },
 
@@ -640,7 +641,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isDate: function(obj) {
+      isDate(obj) {
         return toString.call(obj) === '[object Date]';
       },
 
@@ -652,7 +653,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isFunction: function(obj) {
+      isFunction(obj) {
         return toString.call(obj) === '[object Function]';
       },
 
@@ -664,7 +665,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isString: function(obj) {
+      isString(obj) {
         return toString.call(obj) === '[object String]';
       },
 
@@ -676,7 +677,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isArray: function(obj) {
+      isArray(obj) {
         return !!obj && toString.call(obj) === '[object Array]';
       },
 
@@ -688,8 +689,8 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isObject: function(obj) {
-        var type = typeof obj;
+      isObject(obj) {
+        let type = typeof obj;
         return type === 'function' || type === 'object' && !!obj;
       },
 
@@ -702,7 +703,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Boolean}
        */
-      isEmpty: function(obj) {
+      isEmpty(obj) {
         if (this.isObject(obj)) {
           return Object.keys(obj).length === 0;
         }
@@ -723,7 +724,7 @@ define("cherimoia/skarojs",
        * @param {Object} key
        * @return {Boolean}
        */
-      hasKey: function(obj, key) {
+      hasKey(obj, key) {
         return !!obj && Object.prototype.hasOwnProperty.call(obj, key);
       },
 
@@ -738,7 +739,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Object}  memo
        */
-      reduceObj: function(f, memo, obj) {
+      reduceObj(f, memo, obj) {
         return R.reduce(function(sum, pair) {
           return f(sum, pair[1], pair[0]);
         },
@@ -755,7 +756,7 @@ define("cherimoia/skarojs",
        * @param {Object} obj
        * @return {Object} original object
        */
-      eachObj: function(f, obj) {
+      eachObj(f, obj) {
         R.forEach(function(pair) {
           return f(pair[1], pair[0]);
         },
@@ -770,7 +771,7 @@ define("cherimoia/skarojs",
        * @param {Object} object
        * @return {Claxx}
        */
-      mixes: function(obj) {
+      mixes(obj) {
         return klass.mixes(obj);
       },
 

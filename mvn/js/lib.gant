@@ -11,51 +11,51 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // clean
-target (cleanJSFrwk: '') {
+target (cleanJSLib: '') {
   ant.delete ( dir: "${buildDir}/skarojs", quiet: true)
 }
 
-target (cleanJSFrwkTest: '') {
+target (cleanJSLibTest: '') {
   ant.delete ( dir: "${buildTestDir}/skarojs", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // test
-target (buildJSFrwkTest: '') {
-  depends(cleanJSFrwkTest, preTest)
-  doCompileJSFrwkTest()
+target (buildJSLibTest: '') {
+  depends(cleanJSLibTest, preTest)
+  doCompileJSLibTest()
 }
 
-target (runJSFrwkTest: '') {
-  depends(buildJSFrwkTest)
-  doRunJSFrwkTest()
-}
-
-//////////////////////////////////////////////////////////////////////////////
-//
-def doCompileJSFrwkTest() {
-
+target (runJSLibTest: '') {
+  depends(buildJSLibTest)
+  doRunJSLibTest()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def doRunJSFrwkTest() {
+def doCompileJSLibTest() {
+
+}
+
+//////////////////////////////////////////////////////////////////////////////
+//
+def doRunJSLibTest() {
 
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // build
-target (buildJSFrwk: '') {
-  depends (cleanJSFrwk, checkTpcl, resolve, preBuild)
+target (buildJSLib: '') {
+  depends (cleanJSLib, checkTpcl, resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#skarojs"
   println "##############################################################################"
-  doCompileJSFrwk()
+  doCompileJSLib()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def doCompileJSFrwk() {
+def doCompileJSLib() {
 
   ant.exec (executable: 'babel', dir: "${basedir}") {
     arg(value: "${srcDir}/js")
