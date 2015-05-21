@@ -69,6 +69,8 @@ includeTargets << new File ('mvn/clj/tardis.gant')
 includeTargets << new File ('mvn/clj/xlib.gant')
 includeTargets << new File ('mvn/clj/clj-demo.gant')
 
+includeTargets << new File ('mvn/js/lib.gant')
+
 includeTargets << new File ('mvn/package.gant')
 
 //////////////////////////////////////////////////////////////////////////////
@@ -123,7 +125,7 @@ target (buildr : '') {
 def compileAndJar() {
   depends(buildJavaFrwk, buildWFlow, buildGally,
   buildXLib, buildTardis,
-  buildJavaDemo, buildCljDemo)
+  buildJavaDemo, buildCljDemo, buildJSFrwk)
 }
 
 //////////////////////////////////////////////////////////////////////////////
