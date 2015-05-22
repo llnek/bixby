@@ -24,9 +24,9 @@ define("cherimoia/skarojs",
 
   function (global,DBG,R) { "use strict";
 
-    let fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /[\D|\d]*/,
-    ZEROS= "00000000000000000000000000000000",  //32
-    CjsBase64,
+    const fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /[\D|\d]*/,
+    ZEROS= "00000000000000000000000000000000";  //32
+    let CjsBase64,
     CjsUtf8,
     undef;
 
@@ -56,10 +56,9 @@ define("cherimoia/skarojs",
     /**
      * @private
      */
-    function patchProto(zuper, proto, other) {
+    function _patchProto(zuper, proto, other) {
       let par={},
       name;
-
       for (name in other) {
         if (typeof(zuper[name]) === "function" &&
             typeof(other[name]) === "function" &&
@@ -81,59 +80,47 @@ define("cherimoia/skarojs",
       }
     }
 
-    let monkeyPatch = function(other) {
-      patchProto(this.prototype,
-                 this.prototype, other);
-    },
-    klass= function() {},
-    initing = false;
-
-    // inheritance method
-    klass.mixes = function (other) {
+    let wrapper= function() {},
+    initing = false,
+    _mixer = function (other) {
       let proto;
 
       initing = true; proto = new this(); initing = false;
-      patchProto(this.prototype, proto, other);
+      _patchProto(this.prototype, proto, other);
 
-      function Claxx() {
-        if ( !initing ) {
-          // static constructor?
-          if (!!this.staticCtor) {
-            let obj = this.staticCtor.apply(this, arguments);
-            if (!!obj) { return obj; }
-          }
-          if (!!this.ctor) {
-            this.ctor.apply(this, arguments);
-          }
+      function claxx() {
+        if ( !initing && !!this.ctor) {
+          this.ctor.apply(this, arguments);
         }
         return this;
       }
 
-      Claxx.prototype = proto;
-      Claxx.prototype.constructor = Claxx;
-      Claxx.mixes = klass.mixes;
-      Claxx.inject = monkeyPatch;
+      claxx.prototype = proto;
+      claxx.prototype.constructor = Claxx;
+      claxx.mixes = _mixer;
+      claxx.patch = function(other) {
+        _patchProto(this.prototype,
+                   this.prototype, other);
+      };
 
-      return Claxx;
+      return claxx;
     };
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    /** @alias module:cherimoia/skarojs */
-    let exports = {
+    /** @alias module:cherimoia/skarojs
+     */
+    let exports = /** @lends exports# */ {
 /*
-      strPadRight: function(str,len, pad){
+      strPadRight(str,len, pad){
         return (str+new Array(len+1).join(pad)).slice(0,len);
       },
-
-      strPadLeft: function(str,len,pad){
+      strPadLeft(str,len,pad){
         return (new Array(len+1).join(pad)+str).slice(-len);
       },
 */
       /**
        * Maybe pad a string (right side.)
-       *
-       * @method strPadRight
-       * @static
+       * @function
        * @param {String} str
        * @param {Number} len
        * @param {String} s
@@ -147,8 +134,7 @@ define("cherimoia/skarojs",
 
       /**
        * Maybe pad a string (left side.)
-       *
-       * @method strPadLeft
+       * @function
        * @static
        * @param {String} str
        * @param {Number} len
@@ -163,9 +149,7 @@ define("cherimoia/skarojs",
 
       /**
        * Safely split a string, null and empty strings are removed.
-       *
-       * @method safeSplit
-       * @static
+       * @function
        * @param {String} s
        * @param {String} sep
        * @return {Array.String}
@@ -176,18 +160,14 @@ define("cherimoia/skarojs",
 
       /**
        * Get the current time.
-       *
-       * @method now
-       * @static
+       * @function
        * @return {Number} time in milliseconds.
        */
       now: Date.now || function() { return new Date().getTime(); },
 
       /**
        * Capitalize the first char of the string.
-       *
-       * @method capitalize
-       * @static
+       * @function
        * @param {String} str
        * @return {String} with the first letter capitalized.
        */
@@ -197,9 +177,7 @@ define("cherimoia/skarojs",
 
       /**
        * Pick a random number between these 2 limits.
-       *
-       * @method randomRange
-       * @static
+       * @function
        * @param {Number} from
        * @param {Number} to
        * @return {Number}
@@ -210,9 +188,7 @@ define("cherimoia/skarojs",
 
       /**
        * Return the proper mathematical modulo of x mod N.
-       *
-       * @method xmod
-       * @static
+       * @function
        * @param {Number} x
        * @param {Number} N
        * @return {Number}
@@ -227,12 +203,10 @@ define("cherimoia/skarojs",
 
       /**
        * Create an array of len, seeding it with value.
-       *
-       * @method makeArray
-       * @static
+       * @function
        * @param {Number} len
        * @param {Object} value
-       * @return {Array}
+       * @return {Array.Any}
        */
       makeArray(len, value) {
         let n, arr=[];
@@ -242,26 +216,20 @@ define("cherimoia/skarojs",
 
       /**
        * Throw an error exception.
-       *
-       * @method tne
-       * @static
+       * @function
        * @param {String} msg
        */
       tne(msg) { throw new Error(msg); },
 
       /**
        * A no-op function.
-       *
-       * @method NILFUNC
-       * @static
+       * @function
        */
       NILFUNC() {},
 
       /**
        * Test if object is valid and not null.
-       *
-       * @method echt
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -269,9 +237,7 @@ define("cherimoia/skarojs",
 
       /**
        * Maybe pad the number with zeroes.
-       *
-       * @method prettyNumber
-       * @static
+       * @function
        * @param {Number} num
        * @param {Number} digits
        * @return {String}
@@ -293,10 +259,8 @@ define("cherimoia/skarojs",
 
       /**
        * Get the websocket transport protocol.
-       *
-       * @method getWebSockProtocol
-       * @static
-       * @return {String} the transport protocol for websocket
+       * @function
+       * @return {String} transport protocol for websocket
        */
       getWebSockProtocol() {
         return this.isSSL() ? "wss://" : "ws://";
@@ -304,9 +268,7 @@ define("cherimoia/skarojs",
 
       /**
        * Get the current time in milliseconds.
-       *
-       * @method nowMillis
-       * @static
+       * @function
        * @return {Number} current time (millisecs)
        */
       nowMillis() {
@@ -315,9 +277,7 @@ define("cherimoia/skarojs",
 
       /**
        * Cast the value to boolean.
-       *
-       * @method boolify
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -327,9 +287,7 @@ define("cherimoia/skarojs",
 
       /**
        * Remove some arguments from the front.
-       *
-       * @method dropArgs
-       * @static
+       * @function
        * @param {Javascript.arguments} args
        * @param {Number} num
        * @return {Array} remaining arguments
@@ -340,9 +298,7 @@ define("cherimoia/skarojs",
 
       /**
        * Returns true if the web address is ssl.
-       *
-       * @method isSSL
-       * @static
+       * @function
        * @return {Boolean}
        */
       isSSL() {
@@ -355,9 +311,7 @@ define("cherimoia/skarojs",
 
       /**
        * Format a URL based on the current web address host.
-       *
-       * @method fmtUrl
-       * @static
+       * @function
        * @param {String} scheme
        * @param {String} uri
        * @return {String}
@@ -371,8 +325,7 @@ define("cherimoia/skarojs",
       },
 
       /**
-       * @method objectfy
-       * @static
+       * @function
        * @param {String} s
        * @return {Object}
        */
@@ -381,8 +334,7 @@ define("cherimoia/skarojs",
       },
 
       /**
-       * @method jsonfy
-       * @static
+       * @function
        * @param {Object} obj
        * @return {String}
        */
@@ -392,9 +344,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if the client is a mobile device.
-       *
-       * @method isMobile
-       * @static
+       * @function
        * @param {String} navigator
        * @return {Boolean}
        */
@@ -408,9 +358,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if the client is Safari browser.
-       *
-       * @method isSafari
-       * @static
+       * @function
        * @param {String} navigator
        * @return {Boolean}
        */
@@ -424,9 +372,7 @@ define("cherimoia/skarojs",
 
       /**
        * Prevent default propagation of this event.
-       *
-       * @method pde
-       * @static
+       * @function
        * @param {Event} e
        */
       pde(e) {
@@ -439,9 +385,7 @@ define("cherimoia/skarojs",
 
       /**
        * Randomly pick positive or negative.
-       *
-       * @method randSign
-       * @static
+       * @function
        * @return {Number}
        */
       randSign() {
@@ -454,33 +398,31 @@ define("cherimoia/skarojs",
 
       /**
        * Randomly choose an item from this array.
-       *
-       * @method randArrayItem
-       * @static
+       * @function
        * @param {Array} arr
        * @return {Object}
        */
       randArrayItem(arr) {
-        return arr.length === 0 ? null : arr.length === 1 ? arr[0] : arr[ Math.floor(Math.random() * arr.length) ];
+        return arr.length === 0 ?
+          null :
+          arr.length === 1 ?
+          arr[0] :
+          arr[ Math.floor(Math.random() * arr.length) ];
       },
 
       /**
        * Randomly choose a percentage in step of 10.
-       *
-       * @method randPercent
-       * @static
+       * @function
        * @return {Number}
        */
       randPercent() {
-        var pc = [0.1,0.9,0.3,0.7,0.6,0.5,0.4,0.8,0.2];
+        const pc = [0.1,0.9,0.3,0.7,0.6,0.5,0.4,0.8,0.2];
         return this.randArrayItem(pc);
       },
 
       /**
        * Pick a random number.
-       *
-       * @method rand
-       * @static
+       * @function
        * @param {Number} limit
        * @return {Number}
        */
@@ -490,23 +432,19 @@ define("cherimoia/skarojs",
 
       /**
        * Format input into HTTP Basic Authentication.
-       *
-       * @method toBasicAuthHeader
-       * @static
+       * @function
        * @param {String} user
        * @param {String} pwd
        * @return {Array.String} - [header, data]
        */
       toBasicAuthHeader(user,pwd) {
-        let str='Basic ' + this.base64_encode(""+user+":"+pwd);
+        const str='Basic ' + this.base64_encode(""+user+":"+pwd);
         return [ 'Authorization', str ];
       },
 
       /**
        * Convert string to utf-8 string.
-       *
-       * @method toUtf8
-       * @static
+       * @function
        * @param {String} s
        * @return {String}
        */
@@ -516,9 +454,7 @@ define("cherimoia/skarojs",
 
       /**
        * Base64 encode the string.
-       *
-       * @method base64_encode
-       * @static
+       * @function
        * @param {String} s
        * @return {String}
        */
@@ -528,9 +464,7 @@ define("cherimoia/skarojs",
 
       /**
        * Base64 decode the string.
-       *
-       * @method base64_decode
-       * @static
+       * @function
        * @param {String} s
        * @return {String}
        */
@@ -540,9 +474,7 @@ define("cherimoia/skarojs",
 
       /**
        * Merge 2 objects together.
-       *
-       * @method mergeEx
-       * @static
+       * @function
        * @param {Object} original
        * @param {Object} extended
        * @return {Object} a new object
@@ -553,9 +485,7 @@ define("cherimoia/skarojs",
 
       /**
        * Merge 2 objects in place.
-       *
-       * @method merge
-       * @static
+       * @function
        * @param {Object} original
        * @param {Object} extended
        * @return {Object} the modified original object
@@ -565,7 +495,7 @@ define("cherimoia/skarojs",
         for(key in extended) {
           ext = extended[key];
           if ( typeof(ext) !== 'object' ||
-               ext instanceof klass ||
+               //ext instanceof wrapper ||
                ext instanceof HTMLElement ||
                ext === null ) {
             original[key] = ext;
@@ -581,9 +511,7 @@ define("cherimoia/skarojs",
 
       /**
        * Maybe remove this item from this array.
-       *
-       * @method removeFromArray
-       * @static
+       * @function
        * @return {Array}
        */
       removeFromArray(arr, item) {
@@ -599,9 +527,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if the input is *undefined*.
-       *
-       * @method isUndef
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -611,9 +537,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is null.
-       *
-       * @method isNull
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -623,9 +547,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is a Number.
-       *
-       * @method isNumber
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -635,9 +557,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is a Date.
-       *
-       * @method isDate
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -647,9 +567,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is a Function.
-       *
-       * @method isFunction
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -659,9 +577,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is a String.
-       *
-       * @method isString
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -671,9 +587,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is an Array.
-       *
-       * @method isArray
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -683,23 +597,19 @@ define("cherimoia/skarojs",
 
       /**
        * Test if input is an Object.
-       *
-       * @method isObject
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
       isObject(obj) {
-        let type = typeof obj;
+        const type = typeof obj;
         return type === 'function' || type === 'object' && !!obj;
       },
 
       /**
        * Test if input has *length* attribute, and if so, is it
        * empty.
-       *
-       * @method isEmpty
-       * @static
+       * @function
        * @param {Object} obj
        * @return {Boolean}
        */
@@ -717,9 +627,7 @@ define("cherimoia/skarojs",
 
       /**
        * Test if this object has this key.
-       *
-       * @method hasKey
-       * @static
+       * @function
        * @param {Object} obj
        * @param {Object} key
        * @return {Boolean}
@@ -731,9 +639,7 @@ define("cherimoia/skarojs",
       //since R doesn't handle object :(
       /**
        * Perform reduce on this object.
-       *
-       * @method reduceObj
-       * @static
+       * @function
        * @param {Function} f
        * @param {Object} memo
        * @param {Object} obj
@@ -749,9 +655,7 @@ define("cherimoia/skarojs",
 
       /**
        * Iterate over this object [k,v] pairs and call f(v,k).
-       *
-       * @method eachObj
-       * @static
+       * @function
        * @param {Function} f
        * @param {Object} obj
        * @return {Object} original object
@@ -766,36 +670,31 @@ define("cherimoia/skarojs",
 
       /**
        * Mixin this object.
-       *
-       * @method mixes
+       * @function
        * @param {Object} object
-       * @return {Claxx}
+       * @return {claxx}
        */
       mixes(obj) {
-        return klass.mixes(obj);
+        return _mixer(obj);
       },
 
       /**
        * @property {Logger} logger Short cut to logger
-       * @static
        */
       logger: DBG,
 
       /**
        * @property {Logger} loggr Short cut to logger
-       * @static
        */
       loggr: DBG,
 
       /**
        * @property {Ramda} ramda Short cut to Ramda
-       * @static
        */
       ramda: R,
 
       /**
        * @property {Ramda} R Short cut to Ramda
-       * @static
        */
       R: R
 

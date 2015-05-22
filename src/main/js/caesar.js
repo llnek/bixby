@@ -19,24 +19,24 @@ define("cherimoia/caesar",
 
   function (sjs) { "use strict";
 
-    var VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
+    const VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
                 "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",
     VISCHS_LEN=  VISCHS.length;
 
     /////////////////////////////////////////////////////////////////////////////
     //
-    function identifyChar(pos) { return VISCHS.charAt(pos); }
-    function locateChar(ch) {
-      var n;
-      for (n= 0; n < VISCHS_LEN; ++n) {
+    let identifyChar = (pos) => VISCHS.charAt(pos);
+    let locateChar = (ch) => {
+      for (let n= 0; n < VISCHS_LEN; ++n) {
         if (ch === VISCHS.charAt(n)) {
           return n;
         }
       }
       return -1;
     }
-    function slideForward(delta, cpos) {
-      var np, ptr= cpos + delta;
+    let slideForward = (delta, cpos) => {
+      let ptr= cpos + delta,
+      np;
       if (ptr >= VISCHS_LEN) {
         np = ptr - VISCHS_LEN;
       } else {
@@ -44,8 +44,9 @@ define("cherimoia/caesar",
       }
       return identifyChar(np);
     }
-    function slideBack(delta, cpos) {
-      var np, ptr= cpos - delta;
+    let slideBack = (delta, cpos) => {
+      let ptr= cpos - delta,
+      np;
       if (ptr < 0) {
         np= VISCHS_LEN + ptr;
       } else {
@@ -53,14 +54,14 @@ define("cherimoia/caesar",
       }
       return identifyChar(np);
     }
-    function shiftEnc( shiftpos, delta, cpos) {
+    let shiftEnc = (shiftpos, delta, cpos) => {
       if (shiftpos < 0) {
         return slideForward( delta, cpos);
       } else {
         return slideBack( delta, cpos);
       }
     }
-    function shiftDec( shiftpos, delta, cpos) {
+    let shiftDec = (shiftpos, delta, cpos) => {
       if ( shiftpos <  0) {
         return slideBack( delta, cpos);
       } else {
@@ -69,24 +70,22 @@ define("cherimoia/caesar",
     }
 
     /** @alias module:cherimoia/caesar */
-    var exports = {
+    let exports = /** @lends exports# */ {
       /**
        * Encrypt the text.
-       *
-       * @method encrypt
-       * @static
+       * @function
        * @param {String} clearText
        * @param {Number} shiftpos
        * @return {String} cipher text
        */
-      encrypt: function (str,shiftpos) {
+      encrypt(str,shiftpos) {
 
         if (sjs.isString(str) && str.length > 0 && shiftpos !== 0) {} else {
           return "";
         }
-        var delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN);
-        var p, ch, n, len= str.length;
-        var out=[];
+        const delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN);
+        const out=[];
+        let p, ch, n, len= str.length;
         for (n=0; n < len; ++n) {
           ch = str.charAt(n);
           p= locateChar(ch);
@@ -102,23 +101,21 @@ define("cherimoia/caesar",
 
       /**
        * Decrypt the cipher.
-       *
-       * @method decrypt
-       * @static
-       * @param {String} cipherText
+       * @function
+       * @param {String} cipher
        * @param {Number} shiftpos
        * @return {String} clear text
        */
-      decrypt: function (cipherText,shiftpos) {
+      decrypt(cipher,shiftpos) {
 
-        if (sjs.isString(cipherText) && cipherText.length > 0 && shiftpos !== 0) {} else {
+        if (sjs.isString(cipher) && cipher.length > 0 && shiftpos !== 0) {} else {
           return "";
         }
-        var delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN);
-        var ch, n, len= cipherText.length;
-        var p, out=[];
+        const delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN);
+        const out=[];
+        let p, ch, n, len= cipher.length;
         for (n=0; n < len; ++n) {
-          ch= cipherText.charAt(n);
+          ch= cipher.charAt(n);
           p= locateChar(ch);
           if (p < 0) {
             //ch

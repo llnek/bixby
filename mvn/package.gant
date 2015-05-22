@@ -106,9 +106,10 @@ target (packDocs: '') {
     }
   }
 
+  copyJsFiles()
   ant.exec(executable: "jsdoc", dir: "${basedir}", spawn: true) {
     arg(value:"-c")
-    arg(value:"src/jsdoc-conf.json")
+    arg(value:"mvn/js/jsdoc-conf.json")
     arg(value:"-d")
     arg(value:"${packDir}/docs/jsdoc")
   }
@@ -219,11 +220,8 @@ target (packDist: '') {
       include (name: 'clojure/**')
     }
   }
-  ant.copy (todir: "${packDir}/public/vendors/cherimoia") {
-    fileset (dir: "${buildDir}/skarojs") {
-      include (name: '**/*.js')
-    }
-  }
+
+  copyJsFiles()
 }
 
 target (packLibs: '') {
@@ -274,6 +272,13 @@ target (clean4Distro: '') {
               quiet: true)
 }
 
+def copyJsFiles() {
+  ant.copy (todir: "${packDir}/public/vendors/cherimoia") {
+    fileset (dir: "${buildDir}/skarojs") {
+      include (name: '**/*.js')
+    }
+  }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 //
