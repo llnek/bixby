@@ -1,6 +1,8 @@
-gantBuildDir=./alchemy.dir/${gantProjectName}
-cljBuildDir=./alchemy.dir/clojure.org
+old__gantBuildDir=./alchemy.dir/${gantProjectName}
+
 cljDocJar=./artifacts/lib/autodoc-0.9.0.jar
+cljBuildDir=./alchemy.dir/clojure.org
+gantBuildDir=./alchemy.dir/_
 
 ivyLibDir=${gantBuildDir}/lib
 ivyRoot=/wdrive/.ivy
