@@ -41,9 +41,7 @@ define("cherimoia/skarojs",
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //
-    let _echt = (obj) => {
-      return typeof obj !== 'undefined' && obj !== null;
-    }
+    let _echt = (obj) => { return typeof obj !== 'undefined' && obj !== null; }
 
     if (_echt( global.CryptoJS))  {
       CjsBase64= global.CryptoJS.enc.Base64;
@@ -100,7 +98,7 @@ define("cherimoia/skarojs",
       claxx.mixes = _mixer;
       claxx.patch = function(other) {
         _patchProto(this.prototype,
-                   this.prototype, other);
+                    this.prototype, other);
       };
 
       return claxx;
@@ -109,7 +107,7 @@ define("cherimoia/skarojs",
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     /** @alias module:cherimoia/skarojs
      */
-    let exports = /** @lends exports# */ {
+    let exports = /** @lends exports# */{
 /*
       strPadRight(str,len, pad){
         return (str+new Array(len+1).join(pad)).slice(0,len);
@@ -135,7 +133,6 @@ define("cherimoia/skarojs",
       /**
        * Maybe pad a string (left side.)
        * @function
-       * @static
        * @param {String} str
        * @param {Number} len
        * @param {String} s
@@ -182,7 +179,7 @@ define("cherimoia/skarojs",
        * @param {Number} to
        * @return {Number}
        */
-      randomRange(from, to) {
+      randRange(from, to) {
         return Math.floor(Math.random() * (to - from + 1) + from);
       },
 
@@ -209,8 +206,8 @@ define("cherimoia/skarojs",
        * @return {Array.Any}
        */
       makeArray(len, value) {
-        let n, arr=[];
-        for (n=0; n < len; ++n) { arr.push(value); }
+        const arr=[];
+        for (let n=0; n < len; ++n) { arr.push(value); }
         return arr;
       },
 
@@ -515,12 +512,10 @@ define("cherimoia/skarojs",
        * @return {Array}
        */
       removeFromArray(arr, item) {
-        if (arr && arr.indexOf && arr.splice) {
-          let index = arr.indexOf(item);
-          while (index !== -1) {
-            arr.splice(index,1);
-            index = arr.indexOf(item);
-          }
+        let index = arr.indexOf(item);
+        while (index !== -1) {
+          arr.splice(index,1);
+          index = arr.indexOf(item);
         }
         return arr;
       },
@@ -672,7 +667,7 @@ define("cherimoia/skarojs",
        * Mixin this object.
        * @function
        * @param {Object} object
-       * @return {claxx}
+       * @return {Object}
        */
       mixes(obj) {
         return _mixer(obj);

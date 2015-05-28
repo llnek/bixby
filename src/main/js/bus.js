@@ -26,9 +26,9 @@ define("cherimoia/ebus",
     _SEED=0;
 
     //////////////////////////////////////////////////////////////////////////////
-    let mkSubSCR = (topic, selector, target, repeat, args) => {
+    const mkSubSCR = (topic, selector, target, repeat, args) => {
       return {
-        id: "sub-" + Number(++_SEED),
+        id: "sub#" + Number(++_SEED),
         repeat: sjs.boolify(repeat),
         args: args || [],
         action: selector,
@@ -39,7 +39,7 @@ define("cherimoia/ebus",
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    let mkTreeNode = () => {
+    const mkTreeNode = () => {
       return {
         tree: {},  // children - branches
         subs: []   // subscribers (callbacks)
@@ -51,7 +51,6 @@ define("cherimoia/ebus",
      * @class EventBus
      */
     class EventBus {
-
       /**
        * Subscribe to 1+ topics, returning a list of subscriber handles.
        * topics => "/hello/*  /goodbye/*"
@@ -301,13 +300,13 @@ define("cherimoia/ebus",
     };
 
     /**
-     * @method
+     * @method reify
      * @return {EventBus}
      */
-    exports.reify= function() { return new EventBus(); },
+    exports.reify= () => { return new EventBus(); },
 
     /**
-     * @property {EventBus}
+     * @property {EventBus} EventBus
      */
     exports.EventBus= EventBus;
 

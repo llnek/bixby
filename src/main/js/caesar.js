@@ -25,8 +25,8 @@ define("cherimoia/caesar",
 
     /////////////////////////////////////////////////////////////////////////////
     //
-    let identifyChar = (pos) => VISCHS.charAt(pos);
-    let locateChar = (ch) => {
+    const identifyChar = (pos) => VISCHS.charAt(pos);
+    const locateChar = (ch) => {
       for (let n= 0; n < VISCHS_LEN; ++n) {
         if (ch === VISCHS.charAt(n)) {
           return n;
@@ -34,7 +34,7 @@ define("cherimoia/caesar",
       }
       return -1;
     }
-    let slideForward = (delta, cpos) => {
+    const slideForward = (delta, cpos) => {
       let ptr= cpos + delta,
       np;
       if (ptr >= VISCHS_LEN) {
@@ -44,7 +44,7 @@ define("cherimoia/caesar",
       }
       return identifyChar(np);
     }
-    let slideBack = (delta, cpos) => {
+    const slideBack = (delta, cpos) => {
       let ptr= cpos - delta,
       np;
       if (ptr < 0) {
@@ -54,14 +54,14 @@ define("cherimoia/caesar",
       }
       return identifyChar(np);
     }
-    let shiftEnc = (shiftpos, delta, cpos) => {
+    const shiftEnc = (shiftpos, delta, cpos) => {
       if (shiftpos < 0) {
         return slideForward( delta, cpos);
       } else {
         return slideBack( delta, cpos);
       }
     }
-    let shiftDec = (shiftpos, delta, cpos) => {
+    const shiftDec = (shiftpos, delta, cpos) => {
       if ( shiftpos <  0) {
         return slideBack( delta, cpos);
       } else {
@@ -70,7 +70,7 @@ define("cherimoia/caesar",
     }
 
     /** @alias module:cherimoia/caesar */
-    let exports = /** @lends exports# */ {
+    let exports = /** @lends exports# */{
       /**
        * Encrypt the text.
        * @function
@@ -83,10 +83,11 @@ define("cherimoia/caesar",
         if (sjs.isString(str) && str.length > 0 && shiftpos !== 0) {} else {
           return "";
         }
-        const delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN);
-        const out=[];
-        let p, ch, n, len= str.length;
-        for (n=0; n < len; ++n) {
+        const delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN),
+        out=[],
+        len= str.length;
+        let p, ch;
+        for (let n=0; n < len; ++n) {
           ch = str.charAt(n);
           p= locateChar(ch);
           if (p < 0) {
@@ -111,10 +112,11 @@ define("cherimoia/caesar",
         if (sjs.isString(cipher) && cipher.length > 0 && shiftpos !== 0) {} else {
           return "";
         }
-        const delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN);
-        const out=[];
-        let p, ch, n, len= cipher.length;
-        for (n=0; n < len; ++n) {
+        const delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN),
+        out=[],
+        len= cipher.length;
+        let p, ch;
+        for (let n=0; n < len; ++n) {
           ch= cipher.charAt(n);
           p= locateChar(ch);
           if (p < 0) {
