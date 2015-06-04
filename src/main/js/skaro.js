@@ -491,13 +491,14 @@ define("cherimoia/skarojs",
         let key, ext;
         for(key in extended) {
           ext = extended[key];
-          if ( typeof(ext) !== 'object' ||
-               //ext instanceof wrapper ||
+          if ( ext instanceof exports.ES6Claxx ||
                ext instanceof HTMLElement ||
-               ext === null ) {
+               typeof(ext) !== 'object' ||
+               ext === null ||
+               !original[key]) {
             original[key] = ext;
           } else {
-            if( !original[key] || typeof(original[key]) !== 'object' ) {
+            if (typeof(original[key]) !== 'object' ) {
               original[key] = (ext instanceof Array) ? [] : {};
             }
             this.merge( original[key], ext );
@@ -691,7 +692,12 @@ define("cherimoia/skarojs",
       /**
        * @property {Ramda} R Short cut to Ramda
        */
-      R: R
+      R: R,
+
+      /**
+       * @property {Claxx} Claxx ES6 Class
+       */
+      ES6Claxx: class ES6Claxx {}
 
     };
 
