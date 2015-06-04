@@ -9,16 +9,12 @@
 // this software.
 // Copyright (c) 2013-2015 Ken Leung. All rights reserved.
 
-/**
+"use strict";/**
  * @requires cherimoia/skarojs
  * @module cherimoia/ebus
  */
-define("cherimoia/ebus",
-
-       ['cherimoia/skarojs'],
-
-  function (sjs) { "use strict";
-
+define("cherimoia/ebus", ['cherimoia/skarojs'],
+  function (sjs) {
     /** @alias module:cherimoia/ebus */
     let exports={},
     R = sjs.ramda,
@@ -26,13 +22,13 @@ define("cherimoia/ebus",
     _SEED=0;
 
     //////////////////////////////////////////////////////////////////////////////
-    const mkSubSCR = (topic, selector, target, repeat, args) => {
+    const mkSubSCR = (topic, selector, context, repeat, args) => {
       return {
+        target:  !!context ? context : null,
         id: "sub#" + Number(++_SEED),
         repeat: sjs.boolify(repeat),
         args: args || [],
         action: selector,
-        target: target,
         topic: topic,
         active: true
       };
@@ -47,14 +43,12 @@ define("cherimoia/ebus",
     }
 
     //////////////////////////////////////////////////////////////////////////////
-    /**
-     * @class EventBus
-     */
-    class EventBus {
+    /** @class RvBus */
+    class RvBus extends sjs.ES6Claxx {
       /**
        * Subscribe to 1+ topics, returning a list of subscriber handles.
        * topics => "/hello/*  /goodbye/*"
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method once
        * @param {String} topics - space separated if more than one.
        * @param {Function} selector
@@ -73,7 +67,7 @@ define("cherimoia/ebus",
       /**
        * subscribe to 1+ topics, returning a list of subscriber handles.
        * topics => "/hello/*  /goodbye/*"
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method on
        * @param {String} topics - space separated if more than one.
        * @param {Function} selector
@@ -91,7 +85,7 @@ define("cherimoia/ebus",
 
       /**
        * Trigger event on this topic.
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method fire
        * @param {String} topic
        * @param {Object} msg
@@ -108,7 +102,7 @@ define("cherimoia/ebus",
 
       /**
        * Resume actions on this handle.
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method resume
        * @param {Object} - handler id
        */
@@ -121,7 +115,7 @@ define("cherimoia/ebus",
 
       /**
        * Pause actions on this handle.
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method pause
        * @param {Object} - handler id
        */
@@ -135,7 +129,7 @@ define("cherimoia/ebus",
       /**
        * Stop actions on this handle.
        * Unsubscribe.
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method off
        * @param {Object} - handler id
        */
@@ -148,7 +142,7 @@ define("cherimoia/ebus",
 
       /**
        * Remove all subscribers.
-       * @memberof module:cherimoia/ebus~EventBus
+       * @memberof module:cherimoia/ebus~RvBus
        * @method removeAll
        */
       removeAll() {
@@ -159,26 +153,20 @@ define("cherimoia/ebus",
       /**
        * @private
        */
-      pkGetSubcr(id) {
-        return this.allSubs[id];
-      }
-
-      /**
-       * @private
-       */
       pkListen(repeat, topics, selector, target, more) {
-        const ts= topics.trim().split(/\s+/);
+        const ts= topics.trim().split(/\s+/),
         // for each topic, subscribe to it.
-        const rc= R.map((t) => {
+        rc= R.map(t => {
           return this.pkAddSub(repeat,t,selector,target,more);
         }, ts);
-        return R.reject((z)=> { return z.length===0; }, rc);
+        return R.reject( z => { return z.length===0; }, rc);
       }
 
       /**
        * Register a subscriber to the topic leaf node, creating the path
        * when necessary.
-       * @private
+       * @method pkAddSub
+       * @protected
        */
       pkAddSub(repeat, topic, selector, target, more) {
         const tkns= sjs.safeSplit(topic,'/');
@@ -293,22 +281,84 @@ define("cherimoia/ebus",
        * @private
        */
       constructor() {
+        super();
         this.rootNode = mkTreeNode();
         this.allSubs = {};
       }
 
     };
 
+    //////////////////////////////////////////////////////////////////////////////
     /**
-     * @method reify
-     * @return {EventBus}
+     * @class EventBus
      */
-    exports.reify= () => { return new EventBus(); },
+    class EventBus extends RvBus {
+      /**
+       * @method pkAddSub
+       * @protected
+       */
+      pkAddSub(repeat, topic, selector, target, more) {
+        const rc= mkSubSCR(topic=topic.trim(),
+                           selector,
+                           target, repeat, more),
+        node= R.reduce((memo, z) => {
+          return this.pkDoSub(memo,z);
+        },
+        this.rootNode,
+        [topic]);
 
-    /**
-     * @property {EventBus} EventBus
-     */
-    exports.EventBus= EventBus;
+        this.allSubs[rc.id] = rc;
+        node.subs.push(rc);
+        return rc.id;
+      }
+
+      /**
+       * Trigger event on this topic.
+       * @memberof module:cherimoia/ebus~EventBus
+       * @method fire
+       * @param {String} topic
+       * @param {Object} msg
+       * @return {Boolean}
+       */
+      fire(topic, msg) {
+        return this.pkDoPub(topic=topic.trim(),
+                            this.rootNode,
+                            [topic],
+                            0, msg || {} );
+      }
+
+      /**
+       * @private
+       */
+      constructor() {
+        super();
+      }
+    }
+
+    exports= {
+      /**
+       * @method reifyRvBus
+       * @return {RvBus}
+       */
+      reifyRvBus() {
+        return new RvBus();
+      },
+      /**
+       * @method reify
+       * @return {EventBus}
+       */
+      reify() {
+        return new EventBus();
+      },
+      /**
+       * @property {EventBus} EventBus
+       */
+      EventBus: EventBus,
+      /**
+       * @property {RvBus} RvBus
+       */
+      RvBus: RvBus
+    };
 
     return exports;
 });
