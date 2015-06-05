@@ -203,6 +203,8 @@
     <!--
     <dependency org="org.scalatest" name="scalatest_2.11" rev="2.2.0"  conf="libjar->default"/>
     -->
+
+    <dependency org="com.google.jstestdriver" name="jstestdriver" rev="1.3.5" conf="libjar->default"/>
     <dependency org="net.mikera" name="cljunit" rev="0.3.1" conf="libjar->default"/>
     <dependency org="junit" name="junit" rev="4.12"  conf="libjar->default"/>
     <dependency org="com.googlecode.jslint4java" name="jslint4java" rev="2.0.5"  conf="libjar->default"/>

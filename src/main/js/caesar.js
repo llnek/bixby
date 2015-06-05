@@ -8,23 +8,17 @@
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
 // Copyright (c) 2013-2015 Ken Leung. All rights reserved.
-
-/**
+"use strict";/**
  * @requires cherimoia/skarojs
  * @module cherimoia/caesar
  */
-define("cherimoia/caesar",
-
-  ['cherimoia/skarojs'],
-
-  function (sjs) { "use strict";
-
+define("cherimoia/caesar", ['cherimoia/skarojs'],
+  function (sjs) {
     const VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
-                "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",
+                  "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",
     VISCHS_LEN=  VISCHS.length;
 
     /////////////////////////////////////////////////////////////////////////////
-    //
     const identifyChar = (pos) => VISCHS.charAt(pos);
     const locateChar = (ch) => {
       for (let n= 0; n < VISCHS_LEN; ++n) {
