@@ -12,11 +12,12 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanJSLib: '') {
-  ant.delete ( dir: "${buildDir}/skarojs", quiet: true)
+  ant.delete ( dir: "${buildDir}/js", quiet: true)
+  cleanLocalJs()
 }
 
 target (cleanJSLibTest: '') {
-  ant.delete ( dir: "${buildTestDir}/skarojs", quiet: true)
+  ant.delete ( dir: "${buildTestDir}/js", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -34,13 +35,15 @@ target (runJSLibTest: '') {
 //////////////////////////////////////////////////////////////////////////////
 //
 def doCompileJSLibTest() {
-
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
 def doRunJSLibTest() {
+}
 
+def cleanLocalJs() {
+  ant.delete ( dir: "${srcDir}/js/${bldDir}", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,21 +51,32 @@ def doRunJSLibTest() {
 target (buildJSLib: '') {
   depends (cleanJSLib, checkTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building module ${gantProjectName}#skarojs"
+  println "Building module ${gantProjectName}#skaro+js"
   println "##############################################################################"
-  doCompileJSLib()
+  dir= "${srcDir}/js"
+  new File(dir + "/cherimoia").listFiles().each { f ->
+    doCompileJSLib(dir, f);
+  }
+  cleanLocalJs()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def doCompileJSLib() {
-
-  ant.exec (executable: 'babel', dir: "${basedir}") {
-    arg(value: "${srcDir}/js")
+def doCompileJSLib(dir,f) {
+  par= f.getParentFile().getName()
+  mid= par + "/" + f.getName()
+  out="${buildDir}"
+  ant.exec (executable: 'babel', dir: "${dir}") {
+    arg(value: "--modules")
+    arg(value: "amd")
+    arg(value: "--module-ids")
+    arg(value: "${mid}")
     arg(value: '--out-dir')
-    arg(value: "${buildDir}/skarojs")
+    arg(value: "${out}")
   }
-
+  ant.replace(file: "${dir}/${out}/${mid}",token:"/*@@",value:"")
+  ant.replace(file: "${dir}/${out}/${mid}",token:"@@*/",value:"")
+  ant.move(file: "${dir}/${out}/${mid}",todir: "${buildDir}/js/${par}")
 }
 
 //////////////////////////////////////////////////////////////////////////////
