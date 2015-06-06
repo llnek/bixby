@@ -53,34 +53,60 @@ target (buildJSLib: '') {
   println "##############################################################################"
   println "Building module ${gantProjectName}#skaro+js"
   println "##############################################################################"
-  dir= "${srcDir}/js"
-  new File(dir + "/cherimoia").listFiles().each { f ->
-    doCompileJSLib(dir, f);
-  }
+  root= new File("${srcDir}/js")
+  jsWalkTree(new Stack(), root)
   cleanLocalJs()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def doCompileJSLib(dir,f) {
-  par= f.getParentFile().getName()
-  mid= par + "/" + f.getName()
-  out="${buildDir}"
+def jsWalkTree( stk,seed) {
+  top=null;if (seed != null) { top=seed } else { top=stk.peek() }
+  skip="${bldDir}";path=null;fid="";mid="";
+  top.eachFile { f ->
+    if (skip == f.getName()) {}
+    else
+    if (f.isDirectory()) {
+      stk.push(f)
+      jsWalkTree( stk,null)
+    } else {
+      if (stk.empty()) { path="" } else {
+        path = stk.collect({ c -> c.getName() }).toArray(new ArrayList()).join('/')
+      }
+      mid= fid= f.getName()
+      if (path.length() > 0) {
+        mid=path + "/" + fid
+      }
+      babelFile(mid)
+      //println "f = " + f.getName()
+      //println "path = " + path + "/" + fid
+    }
+  }
+  if (!stk.empty()) { stk.pop(); }
+}
+//////////////////////////////////////////////////////////////////////////////
+//
+def babelFile(mid) {
+  out="${buildDir}/js"
+  dir= "${srcDir}/js"
   ant.exec (executable: 'babel', dir: "${dir}") {
     arg(value: "--modules")
     arg(value: "amd")
     arg(value: "--module-ids")
     arg(value: "${mid}")
     arg(value: '--out-dir')
-    arg(value: "${out}")
+    arg(value: "${bldDir}")
   }
-  ant.replace(file: "${dir}/${out}/${mid}",token:"/*@@",value:"")
-  ant.replace(file: "${dir}/${out}/${mid}",token:"@@*/",value:"")
-  ant.move(file: "${dir}/${out}/${mid}",todir: "${buildDir}/js/${par}")
+  ant.replace(file: "${dir}/${bldDir}/${mid}",token:"/*@@",value:"")
+  ant.replace(file: "${dir}/${bldDir}/${mid}",token:"@@*/",value:"")
+  des=new File(out,mid).getParentFile()
+  des.mkdirs()
+  des2=des.toString()
+  ant.move(file: "${dir}/${bldDir}/${mid}",todir: "${des2}")
 }
 
 //////////////////////////////////////////////////////////////////////////////
-//
+//EOF
 
 
 
