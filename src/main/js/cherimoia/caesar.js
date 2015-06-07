@@ -10,11 +10,11 @@
 // Copyright (c) 2013-2015 Ken Leung. All rights reserved.
 
 "use strict";/**
- * @requires cherimoia/skarojs
+ * @requires cherimoia/skaro
  * @module cherimoia/caesar
  */
 
-import sjs from "cherimoia/skarojs";
+import sjs from "cherimoia/skaro";
 
 const VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
               "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",

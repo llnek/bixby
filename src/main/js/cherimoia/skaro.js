@@ -14,7 +14,7 @@
  * @requires console/dbg
  * @requires ramda
  * @requires CryptoJS
- * @module cherimoia/skarojs
+ * @module cherimoia/skaro
  */
 
 import global from "global/window";
@@ -100,7 +100,7 @@ _mixer = function (other) {
 };
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-/** @alias module:cherimoia/skarojs */
+/** @alias module:cherimoia/skaro */
 const xbox = /** @lends xbox# */{
 /*
   strPadRight(str,len, pad){
