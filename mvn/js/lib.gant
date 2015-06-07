@@ -89,16 +89,22 @@ def jsWalkTree( stk,seed) {
 def babelFile(mid) {
   out="${buildDir}/js"
   dir= "${srcDir}/js"
-  ant.exec (executable: 'babel', dir: "${dir}") {
-    arg(value: "--modules")
-    arg(value: "amd")
-    arg(value: "--module-ids")
-    arg(value: "${mid}")
-    arg(value: '--out-dir')
-    arg(value: "${bldDir}")
+  if (mid.endsWith(".js")) {
+    ant.exec (executable: 'babel', dir: "${dir}") {
+      arg(value: "--modules")
+      arg(value: "amd")
+      arg(value: "--module-ids")
+      arg(value: "${mid}")
+      arg(value: '--out-dir')
+      arg(value: "${bldDir}")
+    }
+    ant.replace(file: "${dir}/${bldDir}/${mid}",token:"/*@@",value:"")
+    ant.replace(file: "${dir}/${bldDir}/${mid}",token:"@@*/",value:"")
+  } else {
+    des=new File(dir, "${bldDir}/${mid}").getParentFile()
+    des2=des.toString()
+    ant.copy(file:"${dir}/${mid}", todir: "${des2}")
   }
-  ant.replace(file: "${dir}/${bldDir}/${mid}",token:"/*@@",value:"")
-  ant.replace(file: "${dir}/${bldDir}/${mid}",token:"@@*/",value:"")
   des=new File(out,mid).getParentFile()
   des.mkdirs()
   des2=des.toString()
