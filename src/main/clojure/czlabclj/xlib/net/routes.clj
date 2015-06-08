@@ -135,7 +135,7 @@
                 (var-set cg (inc @cg))
                 (var-set phs (conj! @phs [ @cg @gn ] ))
                 (var-set ts  (str "({" @gn "}[^/]+)")))
-              (let [c (StringUtils/countMatches @ts "(") ]
+              (let [c (StringUtils/countMatches ^String @ts "(") ]
                 (if (> c 0)
                   (var-set cg (+ @cg c)))))
             (.append buff @ts))))
