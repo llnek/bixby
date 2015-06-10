@@ -1,5 +1,6 @@
 build.output.folder/
 alchemy.dir/
+a.out/
 targets/
 target/
 #lib/

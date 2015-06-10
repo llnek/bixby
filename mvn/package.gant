@@ -273,7 +273,7 @@ target (clean4Distro: '') {
 }
 
 def copyJsFiles() {
-  ant.copy (todir: "${packDir}/public/vendors/cherimoia") {
+  ant.copy (todir: "${packDir}/public/vendors") {
     fileset (dir: "${buildDir}/js") {
       include (name: '**/*.js')
     }
