@@ -292,7 +292,7 @@ class EventBus extends RvBus {
    */
   fire(topic, msg) {
     return _run.call(this, topic,
-                      this.root.tree[topic], msg || {});
+                     this.root.tree[topic], msg || {});
   }
 
   /**

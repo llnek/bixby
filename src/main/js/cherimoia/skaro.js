@@ -521,7 +521,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isUndef(obj) {
+  isundef(obj) {
     return obj === void 0;
   },
 
@@ -531,7 +531,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isNull(obj) {
+  isnull(obj) {
     return obj === null;
   },
 
@@ -541,7 +541,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isNumber(obj) {
+  isnum(obj) {
     return toString.call(obj) === '[object Number]';
   },
 
@@ -551,7 +551,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isDate(obj) {
+  isdate(obj) {
     return toString.call(obj) === '[object Date]';
   },
 
@@ -561,7 +561,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isFunction(obj) {
+  isfunc(obj) {
     return toString.call(obj) === '[object Function]';
   },
 
@@ -571,7 +571,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isString(obj) {
+  isstr(obj) {
     return toString.call(obj) === '[object String]';
   },
 
@@ -581,7 +581,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isArray(obj) {
+  isarr(obj) {
     return !!obj && toString.call(obj) === '[object Array]';
   },
 
@@ -591,7 +591,7 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isObject(obj) {
+  isobj(obj) {
     const type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
   },
@@ -603,8 +603,8 @@ const xbox = /** @lends xbox# */{
    * @param {Object} obj
    * @return {Boolean}
    */
-  isEmpty(obj) {
-    if (this.isObject(obj)) {
+  isempty(obj) {
+    if (this.isobj(obj)) {
       return Object.keys(obj).length === 0;
     }
 

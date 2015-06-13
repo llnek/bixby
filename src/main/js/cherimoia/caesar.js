@@ -76,7 +76,7 @@ const xbox = /** @lends xbox# */{
    */
   encrypt(str,shiftpos) {
 
-    if (sjs.isString(str) && str.length > 0 && shiftpos !== 0) {} else {
+    if (sjs.isstr(str) && str.length > 0 && shiftpos !== 0) {} else {
       return "";
     }
     const delta = sjs.xmod(Math.abs(shiftpos), VISCHS_LEN),
@@ -105,7 +105,7 @@ const xbox = /** @lends xbox# */{
    */
   decrypt(cipher,shiftpos) {
 
-    if (sjs.isString(cipher) && cipher.length > 0 && shiftpos !== 0) {} else {
+    if (sjs.isstr(cipher) && cipher.length > 0 && shiftpos !== 0) {} else {
       return "";
     }
     const delta = sjs.xmod(Math.abs(shiftpos),VISCHS_LEN),
