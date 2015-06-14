@@ -123,7 +123,7 @@ const _run = function(topic, node, msg) {
     if (z.active &&
         sjs.echt(z.action)) {
       // pass along any extra parameters, if any.
-      z.action.apply(z.target, [topic, msg].concat(z.args));
+      z.action.apply(z.target, [msg,topic].concat(z.args));
       // if once only, kill it.
       if (!z.repeat) {
         delete this.subs[z.id];
