@@ -29,8 +29,7 @@
             TemplateScalarModel
             TemplateSequenceModel
             TemplateMethodModel
-            Configuration
-            DefaultObjectWrapper]
+            Configuration DefaultObjectWrapper]
            [java.io File Writer StringWriter]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
