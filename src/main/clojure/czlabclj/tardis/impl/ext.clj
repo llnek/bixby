@@ -41,7 +41,7 @@
         [czlabclj.tardis.io.jetty]
         [czlabclj.tardis.io.socket]
         [czlabclj.tardis.mvc.filters]
-
+        [czlabclj.tardis.mvc.ftlshim]
         [czlabclj.tardis.impl.dfts
          :rename
          {enabled? blockmeta-enabled?} ]
@@ -247,10 +247,11 @@
 (defn- makeAppContainer ""
 
   ^Container
-  [^czlabclj.tardis.impl.dfts.PODMeta pod]
+  [^czlabclj.tardis.impl.dfts.PODMeta pod options]
 
   (log/info "Creating an app-container: " (.id ^Identifiable pod))
-  (let [ftlCfg (Configuration.)
+  (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
+        ftlCfg (GenFtlConfig :root pub)
         impl (MakeMMap) ]
     (with-meta
       (reify
@@ -279,11 +280,8 @@
         (loadTemplate [_ tpath ctx]
           (let [tpl (nsb tpath)
                 ts (str (if (.startsWith tpl "/") "" "/") tpl)
-                ^Template tp (.getTemplate ftlCfg ts)
-                out (StringWriter.) ]
-            (when-not (nil? tp) (.process tp ctx out))
-            (.flush out)
-            [ (XData. (.toString out))
+                out (RenderFtl ftlCfg  ts ctx)]
+            [ (XData. out)
               (cond
                 (.endsWith tpl ".html")
                 "text/html"
@@ -334,15 +332,10 @@
         Startable
 
         (start [this]
-          (let [pub (io/file (.getAppDir this) DN_PUBLIC DN_PAGES)
-                ^czlabclj.tardis.core.sys.Rego
+          (let [^czlabclj.tardis.core.sys.Rego
                 srg (.getf impl K_SVCS)
                 main (.getf impl :main-app) ]
             (log/info "Container starting all services...")
-            (when (.exists pub)
-              (doto ftlCfg
-                (.setDirectoryForTemplateLoading pub)
-                (.setObjectWrapper (DefaultObjectWrapper.))))
             (doseq [[k v] (seq* srg) ]
               (log/info "Service: " k " about to start...")
               (.start ^Startable v))
@@ -450,7 +443,7 @@
         apps (.lookup root K_APPS)
         ps {K_APPDIR (File. (.toURI url))
             K_APP_CZLR cl }
-        c (makeAppContainer pod)]
+        c (makeAppContainer pod ps)]
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)

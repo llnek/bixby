@@ -183,6 +183,7 @@ def clj_MVC() {
     arg (value: 'czlabclj.tardis.mvc.assets')
     arg (value: 'czlabclj.tardis.mvc.comms')
     arg (value: 'czlabclj.tardis.mvc.filters')
+    arg (value: 'czlabclj.tardis.mvc.ftlshim')
   }
 }
 
