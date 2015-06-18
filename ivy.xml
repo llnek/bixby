@@ -83,7 +83,7 @@
     <dependency org="ant-contrib" name="ant-contrib" rev="1.0b3"  conf="libjar->default">
       <exclude org="ant"/>
     </dependency>
-    <dependency org="org.codehaus.gant" name="gant_groovy2.3" rev="1.9.11"  conf="libjar->default"/>
+    <dependency org="org.codehaus.gant" name="gant_groovy2.4" rev="1.9.12"  conf="libjar->default"/>
 
     <!-- jdbc stuff
     <dependency org="com.j256.ormlite" name="ormlite-core" rev="4.42" conf="libjar->default"/>
