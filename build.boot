@@ -134,7 +134,36 @@
   :buildDebug true
   :basedir (System/getProperty "user.dir"))
 
-(import '[org.apache.commons.io FileUtils])
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(require '[clojure.tools.logging :as log]
+         '[clojure.java.io :as io]
+         '[clojure.string :as cstr])
+
+(import '[org.apache.commons.exec CommandLine DefaultExecutor]
+        '[org.apache.commons.io FileUtils]
+        '[java.util Map HashMap Stack]
+        '[java.io File])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private bldDir (atom "z.out"))
+(def ^:private prj (atom "0"))
+(def ^:private cljBuildDir  (atom (str "./" @bldDir "/clojure.org")))
+(def ^:private gantBuildDir (atom (str "./" @bldDir "/" @prj)))
+
+(def ^:private distribDir (atom (str @gantBuildDir "/distrib")))
+(def ^:private buildDir (atom (str @gantBuildDir "/build")))
+
+(def ^:private libDir (atom (str @gantBuildDir "/lib")))
+(def ^:private qaDir (atom (str @gantBuildDir "/test")))
+
+(def ^:private testDir (atom (str (get-env :basedir) "/src/test")))
+(def ^:private srcDir (atom (str (get-env :basedir) "/src/main")))
+(def ^:private packDir (atom (str @gantBuildDir "/pack")))
+
+(def ^:private reportTestDir (atom (str @qaDir "/reports")))
+(def ^:private buildTestDir (atom (str @qaDir "/classes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,6 +171,51 @@
   (if (.exists dir)
     (FileUtils/cleanDirectory dir)
     (.mkdirs dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- deleteDir "" [^File dir]
+  (when (.exists dir)
+    (FileUtils/deleteDirectory dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- clean4Build ""
+  [& args]
+  (cleanDir (io/file (get-env :basedir)
+                     (get-env :target-path))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- preBuild ""
+  [& args]
+  (let [basedir (get-env :basedir)]
+    (doseq [s [(str @distribDir "/boot")
+               (str @distribDir "/exec")
+               (str @libDir "/libjar")
+               @qaDir
+               @buildDir]]
+      (.mkdirs (io/file s)))
+    ;; get rid of debug logging during build!
+    (FileUtils/copyFileToDirectory (io/file basedir "log4j.properties")
+                                   (io/file @buildDir))
+    (FileUtils/copyFileToDirectory (io/file basedir "logback.xml")
+                                   (io/file @buildDir))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- runCmd ""
+
+  [cmd workDir args]
+
+  (let [xtor (DefaultExecutor.)
+        cli (CommandLine. cmd)]
+    (.setWorkingDirectory xtor (io/file workDir))
+    (doseq [a (or args [])]
+      (.addArgument cli a))
+    (.execute xtor cli)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -157,15 +231,17 @@
                  mid "--out-dir" @bldDir])
         (spit fp
               (-> (slurp (io/file dir @bldDir mid))
-                  (.replaceAll "\/\*@@" "")
-                  (.replaceAll "@@\*\/" ""))))
+                  (.replaceAll "\\/\\*@@" "")
+                  (.replaceAll "@@\\*\\/" ""))))
       (let [des (io/file dir @bldDir mid)]
         (FileUtils/copyFileToDirectory (io/file dir mid)
                                        (.getParentFile des))))
     (FileUtils/moveFileToDirectory fp
-                                   (-> (io/file out mid)
-                                       (.getParentFile)
-                                       (.mkdirs)))))
+                                   (doto (-> (io/file out mid)
+                                             (.getParentFile))
+                                       (.mkdirs))
+                                   true)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,9 +260,9 @@
           (.push stk f)
           (jsWalkTree stk nil))
         :else
-        (let [path (if (stk.empty())
+        (let [path (if (.empty stk)
                      ""
-                     (cstr/join "/" (.collect stk #(.getName %))))
+                     (cstr/join "/" (for [x (.toArray stk)] (.getName x))))
               fid (.getName f)]
           (-> (if (> (.length path) 0)
                 (str path "/" fid)
@@ -201,9 +277,14 @@
 
   []
 
-  (let [root (io/file @srcDir "js")]
-    (jsWalkTree (Stack.) root)
-    (cleanDir )))
+  (let [ljs (io/file @srcDir "js" @bldDir)
+        root (io/file @srcDir "js")]
+    (cleanDir ljs)
+    (try
+      (jsWalkTree (Stack.) root)
+      (finally
+        (deleteDir ljs)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -216,12 +297,23 @@
 (deftask dev
   "dev-mode"
   []
-  (comp (javac) (aot)))
+  ((comp preBuild clean4Build)))
+  ;;(comp (javac) (aot)))
+
+(deftask babeljs
+  ""
+  []
+  (buildJSLib))
 
 (deftask play
   "test only"
   []
   (println (get-env)))
+
+(deftask hi
+  "test only"
+  []
+  (println "bonjour!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
