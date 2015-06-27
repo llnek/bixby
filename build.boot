@@ -1,5 +1,4 @@
 (set-env!
-  :source-paths #{"src/main/java"}
   :dependencies '[
 
     [bouncycastle/bcprov-jdk15on "152" ]
@@ -35,6 +34,7 @@
 
     [org.apache.commons/commons-compress "1.9" ]
     [org.apache.commons/commons-lang3 "3.4" ]
+    [org.apache.commons/commons-exec "1.3" ]
     [commons-net/commons-net "3.3" ]
     [commons-io/commons-io "2.4" ]
 
@@ -53,14 +53,14 @@
     [org.apache.ant/ant-apache-log4j "1.9.5" :exclusions [log4j]]
 
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
-    ;;[org.codehaus.gant/gant_groovy2.4 "1.9.12" ]
+    [org.codehaus.gant/gant_groovy2.4 "1.9.12" ]
 
     [com.jolbox/bonecp "0.8.0.RELEASE" ]
 
     [org.apache.httpcomponents/httpcore-nio "4.4" ]
     [org.apache.httpcomponents/httpcore "4.4" ]
     [org.apache.httpcomponents/httpclient "4.4" ]
-    [io.netty/netty-all "4.0.28.Final" ]
+    [io.netty/netty-all "4.0.29.Final" ]
 
     [com.corundumstudio.socketio/netty-socketio "1.7.7" :exclusions [io.netty]]
 
@@ -127,5 +127,101 @@
     [junit/junit "4.12"  ]
     [com.googlecode.jslint4java/jslint4java "2.0.5" ]
 
-  ])
+  ]
 
+  :source-paths #{"src/main/java" "src/main/clojure"}
+  :buildVersion "0.9.0-SNAPSHOT"
+  :buildDebug true
+  :basedir (System/getProperty "user.dir"))
+
+(import '[org.apache.commons.io FileUtils])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cleanDir "" [^File dir]
+  (if (.exists dir)
+    (FileUtils/cleanDirectory dir)
+    (.mkdirs dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- babelFile "" [mid]
+  (let [out (io/file @buildDir "js")
+        dir (io/file @srcDir "js")
+        fp (io/file dir @bldDir mid)]
+    (if (.endsWith mid ".js")
+      (do
+        (runCmd "babel"
+                dir
+                ["--modules" "amd" "--module-ids"
+                 mid "--out-dir" @bldDir])
+        (spit fp
+              (-> (slurp (io/file dir @bldDir mid))
+                  (.replaceAll "\/\*@@" "")
+                  (.replaceAll "@@\*\/" ""))))
+      (let [des (io/file dir @bldDir mid)]
+        (FileUtils/copyFileToDirectory (io/file dir mid)
+                                       (.getParentFile des))))
+    (FileUtils/moveFileToDirectory fp
+                                   (-> (io/file out mid)
+                                       (.getParentFile)
+                                       (.mkdirs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- jsWalkTree ""
+
+  [^Stack stk seed]
+
+  (let [top (if-not (nil? seed) seed (.peek stk))
+        skip @bldDir]
+    (doseq [f (.listFiles top)]
+      (cond
+        (= skip (.getName f))
+        nil
+        (.isDirectory f)
+        (do
+          (.push stk f)
+          (jsWalkTree stk nil))
+        :else
+        (let [path (if (stk.empty())
+                     ""
+                     (cstr/join "/" (.collect stk #(.getName %))))
+              fid (.getName f)]
+          (-> (if (> (.length path) 0)
+                (str path "/" fid)
+                fid)
+              (babelFile )))))
+    (when-not (.empty stk)
+      (.pop stk))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- buildJSLib ""
+
+  []
+
+  (let [root (io/file @srcDir "js")]
+    (jsWalkTree (Stack.) root)
+    (cleanDir )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+
+(task-options!
+  aot {:all true})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask dev
+  "dev-mode"
+  []
+  (comp (javac) (aot)))
+
+(deftask play
+  "test only"
+  []
+  (println (get-env)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
