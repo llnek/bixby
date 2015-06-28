@@ -145,7 +145,7 @@
         '[org.apache.commons.io FileUtils]
         '[java.util Map HashMap Stack]
         '[java.io File]
-        '[org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac]
+        '[org.apache.tools.ant.taskdefs Copy Jar Zip ExecTask Javac]
         '[org.apache.tools.ant.listener TimestampedLogger]
         '[org.apache.tools.ant.types Reference FileSet Path DirSet]
         '[org.apache.tools.ant Project Target Task]
@@ -176,6 +176,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- boolify "" [expr dft] (if expr true false))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fileSet ""
+
+  [args]
+
+  (let [fs (doto (FileSet.)
+                 (.setDir (io/file (first args)))) ]
+    (doseq [n (last args)]
+      (case (first n)
+        :include (-> (.createInclude fs)
+                     (.setName (last n)))
+        :exclude (-> (.createExclude fs)
+                     (.setName (last n)))
+        nil))
+    fs
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -256,7 +274,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAntJavac ""
+(defn AntJavac ""
 
   [options]
 
@@ -284,6 +302,46 @@
         (-> (.createExclude ct)
             (.setName (last p)))
         :else nil))
+    pj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntCopy ""
+
+  [toDir res]
+
+  (let [tk (Copy.)
+        pj (ProjAntTask tk) ]
+    (doto tk
+      (.setTaskName "copy-task")
+      (.setTodir (io/file toDir)))
+    (doseq [r res]
+      (case (first r)
+        :fileset
+        (->> (fileSet (rest r))
+             (.addFileset tk))
+        nil))
+    pj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntJar ""
+
+  [jarFile res]
+
+  (let [tk (Jar.)
+        pj (ProjAntTask tk) ]
+    (doto tk
+      (.setTaskName "jar-task")
+      (.setDestFile (io/file jarFile)))
+    (doseq [r res]
+      (case (first r)
+        :fileset
+        (->> (fileSet (rest r))
+             (.addFileset tk))
+        nil))
     pj
   ))
 
@@ -440,7 +498,7 @@
                  :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}
                  :files [[:include "com/zotohlab/frwk/**/*.java"]]
                  }]
-    (-> (MakeAntJavac options)
+    (-> (AntJavac options)
         (ExecProj))
   ))
 
@@ -473,25 +531,59 @@
   []
   (comp (uber) (juber)))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- compileFrwk
   ""
   []
+
   (->> {:srcdir (str @srcDir "/java")
         :files [[:include "com/zotohlab/frwk/**/*.java"]]}
        (merge COMPILE_OPTS)
-       (AntJavac ))
+       (AntJavac)
+       (ExecProj))
 
   (->> [[:fileset (str @srcDir "/java/com/zotohlab/frwk")
          [[:exclude "**/*.java"]]]]
-       (AntCopy (str @buildDir "/com/zotohlab/frwk")))
+       (AntCopy (str @buildDir "/com/zotohlab/frwk"))
+       (ExecProj))
 
   (->> [[:fileset @buildDir
          [[:include "com/zotohlab/frwk/**"]
           [:exclude "**/log4j.properties"]
           [:exclude "**/logback.xml"]
           [:exclude "demo/**"]]]]
-       (AntJar (str @distribDir "/exec/frwk-" @buildVersion ".jar"))))
+       (AntJar (str @distribDir "/exec/frwk-" (get-env :buildVersion) ".jar"))
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- compileWFlow
+  ""
+  []
+
+  (->> {:srcdir (str @srcDir "/java")
+        :files [[:include "com/zotohlab/wflow/**/*.java"]
+                [:include "com/zotohlab/server/**/*.java"]]}
+       (merge COMPILE_OPTS)
+       (AntJavac)
+       (ExecProj))
+
+  (->> [[:fileset (str @srcDir "/java/com/zotohlab/server")
+         [[:exclude "**/*.java"]]]
+        [:fileset (str @srcDir "/java/com/zotohlab/wflow")
+         [[:exclude "**/*.java"]]]]
+       (AntCopy (str @buildDir "/com/zotohlab/wflow"))
+       (ExecProj))
+
+  (->> [[:fileset @buildDir
+         [[:include "com/zotohlab/server/**"]
+          [:include "com/zotohlab/wflow/**"]
+          [:exclude "**/log4j.properties"]
+          [:exclude "**/logback.xml"]
+          [:exclude "demo/**"]]]]
+       (AntJar (str @distribDir "/exec/wflow-" (get-env :buildVersion) ".jar"))
+       (ExecProj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -500,7 +592,11 @@
   []
   ((comp preBuild clean4Build))
   (boot (resolve-jars))
-  (compileAndJar {}))
+  (compileFrwk)
+  (compileWFlow))
+
+
+
 
 (deftask babeljs
   ""
