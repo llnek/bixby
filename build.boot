@@ -138,15 +138,23 @@
 ;;
 (require '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
-         '[clojure.string :as cstr])
+         '[clojure.string :as cstr]
+         '[boot.core :as bcore])
 
 (import '[org.apache.commons.exec CommandLine DefaultExecutor]
         '[org.apache.commons.io FileUtils]
         '[java.util Map HashMap Stack]
-        '[java.io File])
+        '[java.io File]
+        '[org.apache.tools.ant.taskdefs Ant Zip ExecTask Javac]
+        '[org.apache.tools.ant.listener TimestampedLogger]
+        '[org.apache.tools.ant.types Reference FileSet Path DirSet]
+        '[org.apache.tools.ant Project Target Task]
+        '[org.apache.tools.ant.types PatternSet$NameEntry]
+        '[org.apache.tools.ant.taskdefs Javac$ImplementationSpecificArgument])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(def ^:private buildDebug (atom true))
 (def ^:private bldDir (atom "z.out"))
 (def ^:private prj (atom "0"))
 (def ^:private cljBuildDir  (atom (str "./" @bldDir "/clojure.org")))
@@ -167,6 +175,128 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- boolify "" [expr dft] (if expr true false))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExecProj ""
+
+  [^Project pj]
+
+  (.executeTarget pj "mi6"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ProjAntTask ""
+
+  ^Project
+  [^Task taskObj]
+
+  (let [lg (doto (TimestampedLogger.)
+             (.setOutputPrintStream System/out)
+             (.setErrorPrintStream System/err)
+             (.setMessageOutputLevel Project/MSG_INFO))
+        pj (doto (Project.)
+             (.setName "boot-clj")
+             (.init))
+        tg (doto (Target.)
+             (.setName "mi6")) ]
+    (doto pj
+      (.addTarget tg)
+      (.addBuildListener lg))
+    (doto taskObj
+      (.setProject pj)
+      (.setOwningTarget tg))
+    (.addTask tg taskObj)
+    pj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def COMPILE_OPTS {:srcdir (str @srcDir "/java")
+                   :destdir @buildDir
+                   :target "1.8"
+                   :debug @buildDebug
+                   :fork true
+                   :debuglevel "lines,vars,source"
+                   :cp [[:location (str @srcDir "/clojure")]
+                        [:location @cljBuildDir]
+                        [:location @buildDir]
+                        [:fileset @libDir [[:include "*.jar"]]] ]
+                   :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}
+                   :files []
+                   })
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setClassPath ""
+
+  [^Path root paths]
+
+  (doseq [p paths]
+    (case (first p)
+      :location
+      (doto (.createPath root)
+        (.setLocation (io/file (last p))))
+      :refid
+      (doto (.createPath root)
+        (.setRefid (last p)))
+      :fileset
+      (let [fs (doto (FileSet.) (.setDir (io/file (nth p 1))))]
+        (doseq [n (last p)]
+          (case (first n)
+            :include (-> (.createInclude fs)
+                         (.setName (last n)))
+            :exclude (-> (.createExclude fs)
+                         (.setName (last n)))
+            nil))
+        (.addFileset root fs))
+      nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeAntJavac ""
+
+  [options]
+
+  (let [ct (Javac.)
+        pj (ProjAntTask ct) ]
+    (doto ct
+      (.setDebugLevel (:debuglevel options))
+      (.setFork (true? (:fork options)))
+      (.setDebug (:debug options))
+      (.setTarget (:target options))
+      (.setIncludeantruntime false)
+      (.setTaskName "javac")
+      (.setSrcdir (Path. pj (:srcdir options)))
+      (.setDestdir (io/file (:destdir options))))
+    (-> (.createCompilerArg ct)
+        (.setLine (:line (:compilerarg options))))
+    (-> (.createClasspath ct)
+        (setClassPath (:cp options)))
+    (doseq [p (:files options)]
+      (cond
+        (= :include (first p))
+        (-> (.createInclude ct)
+            (.setName (last p)))
+        (= :exclude (first p))
+        (-> (.createExclude ct)
+            (.setName (last p)))
+        :else nil))
+    pj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro minitask
+  [func & forms]
+  `(do
+     (println (str ~func ":"))
+     ~@forms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- cleanDir "" [^File dir]
   (if (.exists dir)
     (FileUtils/cleanDirectory dir)
@@ -182,25 +312,30 @@
 ;;
 (defn- clean4Build ""
   [& args]
-  (cleanDir (io/file (get-env :basedir)
-                     (get-env :target-path))))
+  (minitask
+    "clean4Build"
+    (cleanDir (io/file (get-env :basedir)
+                       (get-env :target-path)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- preBuild ""
   [& args]
-  (let [basedir (get-env :basedir)]
-    (doseq [s [(str @distribDir "/boot")
-               (str @distribDir "/exec")
-               (str @libDir "/libjar")
-               @qaDir
-               @buildDir]]
-      (.mkdirs (io/file s)))
-    ;; get rid of debug logging during build!
-    (FileUtils/copyFileToDirectory (io/file basedir "log4j.properties")
-                                   (io/file @buildDir))
-    (FileUtils/copyFileToDirectory (io/file basedir "logback.xml")
-                                   (io/file @buildDir))
+  (minitask
+    "preBuild"
+    (let [basedir (get-env :basedir)]
+      (doseq [s [(str @distribDir "/boot")
+                 (str @distribDir "/exec")
+                 (str @libDir)
+                 @qaDir
+                 @buildDir]]
+        (.mkdirs (io/file s)))
+      ;; get rid of debug logging during build!
+      (FileUtils/copyFileToDirectory (io/file basedir "log4j.properties")
+                                     (io/file @buildDir))
+      (FileUtils/copyFileToDirectory (io/file basedir "logback.xml")
+                                     (io/file @buildDir)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,22 +423,97 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- compileAndJar ""
 
+  [options]
+
+  (let [options {:srcdir (str @srcDir "/java")
+                 :destdir @buildDir
+                 :target "1.8"
+                 :debug @buildDebug
+                 :fork true
+                 :debuglevel "lines,vars,source"
+                 :cp [[:location (str @srcDir "/clojure")]
+                      [:location @cljBuildDir]
+                      [:location @buildDir]
+                      [:fileset @libDir [[:include "*.jar"]]] ]
+                 :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}
+                 :files [[:include "com/zotohlab/frwk/**/*.java"]]
+                 }]
+    (-> (MakeAntJavac options)
+        (ExecProj))
+  ))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (task-options!
+  uber {:as-jars true}
   aot {:all true})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask juber
+  "my own uber"
+  []
+  (bcore/with-pre-wrap fileset
+    (let [odir (io/file @libDir)]
+      (println "copying jars to " @libDir)
+      (doseq [f (seq (output-files fileset))]
+        (FileUtils/copyFileToDirectory
+          (io/file (:dir f) (:path f))
+          odir)))
+    fileset
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask resolve-jars
+  ""
+  []
+  (comp (uber) (juber)))
+
+
+(defn- compileFrwk
+  ""
+  []
+  (->> {:srcdir (str @srcDir "/java")
+        :files [[:include "com/zotohlab/frwk/**/*.java"]]}
+       (merge COMPILE_OPTS)
+       (AntJavac ))
+
+  (->> [[:fileset (str @srcDir "/java/com/zotohlab/frwk")
+         [[:exclude "**/*.java"]]]]
+       (AntCopy (str @buildDir "/com/zotohlab/frwk")))
+
+  (->> [[:fileset @buildDir
+         [[:include "com/zotohlab/frwk/**"]
+          [:exclude "**/log4j.properties"]
+          [:exclude "**/logback.xml"]
+          [:exclude "demo/**"]]]]
+       (AntJar (str @distribDir "/exec/frwk-" @buildVersion ".jar"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask dev
   "dev-mode"
   []
-  ((comp preBuild clean4Build)))
-  ;;(comp (javac) (aot)))
+  ((comp preBuild clean4Build))
+  (boot (resolve-jars))
+  (compileAndJar {}))
 
 (deftask babeljs
   ""
   []
   (buildJSLib))
+
+(deftask deps
+  "test only"
+  []
+  (fn [nextguy]
+    (fn [files]
+      (nextguy files)
+      )))
 
 (deftask play
   "test only"
