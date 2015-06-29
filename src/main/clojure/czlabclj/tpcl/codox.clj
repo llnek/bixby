@@ -12,7 +12,7 @@
 (ns ^{:doc "Call and execute the codox document generator."
       :author "kenl" }
 
-  czlabclj.xlib.util.codox
+  czlabclj.tpcl.codox
 
   (:gen-class)
 

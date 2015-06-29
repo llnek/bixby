@@ -145,18 +145,24 @@
         '[org.apache.commons.io FileUtils]
         '[java.util Map HashMap Stack]
         '[java.io File]
-        '[org.apache.tools.ant.taskdefs Copy Jar Zip ExecTask Javac]
+        '[org.apache.tools.ant.taskdefs Java Copy Jar Zip ExecTask Javac]
         '[org.apache.tools.ant.listener TimestampedLogger]
-        '[org.apache.tools.ant.types Reference FileSet Path DirSet]
+        '[org.apache.tools.ant.types Reference
+          Commandline$Argument
+          PatternSet$NameEntry
+          Environment$Variable FileSet Path DirSet]
         '[org.apache.tools.ant Project Target Task]
-        '[org.apache.tools.ant.types PatternSet$NameEntry]
         '[org.apache.tools.ant.taskdefs Javac$ImplementationSpecificArgument])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(def ^:private buildVersion (atom (get-env :buildVersion)))
+(def ^:private basedir (atom (get-env :basedir)))
+(def ^:private bldDir (atom "b.out"))
+
 (def ^:private buildDebug (atom true))
-(def ^:private bldDir (atom "z.out"))
 (def ^:private prj (atom "0"))
+
 (def ^:private cljBuildDir  (atom (str "./" @bldDir "/clojure.org")))
 (def ^:private gantBuildDir (atom (str "./" @bldDir "/" @prj)))
 
@@ -166,8 +172,8 @@
 (def ^:private libDir (atom (str @gantBuildDir "/lib")))
 (def ^:private qaDir (atom (str @gantBuildDir "/test")))
 
-(def ^:private testDir (atom (str (get-env :basedir) "/src/test")))
-(def ^:private srcDir (atom (str (get-env :basedir) "/src/main")))
+(def ^:private testDir (atom (str @basedir "/src/test")))
+(def ^:private srcDir (atom (str @basedir "/src/main")))
 (def ^:private packDir (atom (str @gantBuildDir "/pack")))
 
 (def ^:private reportTestDir (atom (str @qaDir "/reports")))
@@ -231,19 +237,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def COMPILE_OPTS {:srcdir (str @srcDir "/java")
-                   :destdir @buildDir
-                   :target "1.8"
-                   :debug @buildDebug
+(def COMPILE_OPTS {:debug @buildDebug
                    :fork true
-                   :debuglevel "lines,vars,source"
-                   :cp [[:location (str @srcDir "/clojure")]
-                        [:location @cljBuildDir]
-                        [:location @buildDir]
-                        [:fileset @libDir [[:include "*.jar"]]] ]
-                   :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}
-                   :files []
-                   })
+                   :cp [[:location @buildDir]
+                        [:fileset @libDir [[:include "*.jar"]]] ] })
+
+(def JAVAC_OPTS (merge {:srcdir (str @srcDir "/java")
+                        :destdir @buildDir
+                        :target "1.8"
+                        :debuglevel "lines,vars,source"
+                        :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}}
+                        COMPILE_OPTS))
+
+(def CLJC_OPTS (update-in COMPILE_OPTS [:cp]
+                          (fn [cps]
+                            (-> cps
+                                (conj [:location @cljBuildDir])
+                                (conj [:location (str @srcDir "/clojure")])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -347,6 +357,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AntJava ""
+
+  [clazz options]
+
+  ;;(println "java options:\n" options)
+  (let [tk (Java.)
+        pj (ProjAntTask tk) ]
+    (doto tk
+      (.setFailonerror (true? (:failonerror options)))
+      (.setMaxmemory (get options :maxmemory "1024m"))
+      (.setTaskName "java")
+      (.setFork (true? (:fork options)))
+      (.setClassname clazz))
+    (doseq [[k v] (:sysprops options)]
+      (->> (doto (Environment$Variable.)
+                 (.setKey (name k))
+                 (.setValue (str v)))
+           (.addSysproperty tk)))
+    (-> (.createClasspath tk)
+        (setClassPath (:cp options)))
+    (doseq [a (:args options)]
+      (-> (.createArg tk)
+          (.setValue (str a))))
+    pj
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro minitask
   [func & forms]
   `(do
@@ -372,7 +410,17 @@
   [& args]
   (minitask
     "clean4Build"
-    (cleanDir (io/file (get-env :basedir)
+    (cleanDir (io/file @basedir (get-env :target-path)))
+    (cleanDir (io/file @basedir @gantBuildDir))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cleanBoot ""
+  [& args]
+  (minitask
+    "cleanBoot"
+    (cleanDir (io/file @basedir
                        (get-env :target-path)))
   ))
 
@@ -382,7 +430,7 @@
   [& args]
   (minitask
     "preBuild"
-    (let [basedir (get-env :basedir)]
+    (let []
       (doseq [s [(str @distribDir "/boot")
                  (str @distribDir "/exec")
                  (str @libDir)
@@ -390,9 +438,9 @@
                  @buildDir]]
         (.mkdirs (io/file s)))
       ;; get rid of debug logging during build!
-      (FileUtils/copyFileToDirectory (io/file basedir "log4j.properties")
+      (FileUtils/copyFileToDirectory (io/file @basedir "log4j.properties")
                                      (io/file @buildDir))
-      (FileUtils/copyFileToDirectory (io/file basedir "logback.xml")
+      (FileUtils/copyFileToDirectory (io/file @basedir "logback.xml")
                                      (io/file @buildDir)))
   ))
 
@@ -511,7 +559,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask juber
+(deftask juberXX
   "my own uber"
   []
   (bcore/with-pre-wrap fileset
@@ -524,6 +572,19 @@
     fileset
   ))
 
+(deftask juber
+  "my own uber"
+  []
+  (bcore/with-pre-wrap fileset
+    (let [from (io/file @basedir (get-env :target-path))
+          jars (output-files fileset)
+          to (io/file @basedir @libDir)]
+      (println "copying (" (count jars) ") jar-files to " to)
+      (doseq [j (seq jars)]
+        (FileUtils/copyFileToDirectory (io/file (:dir j) (:path j))
+                                       to)))
+    fileset
+  ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask resolve-jars
@@ -539,7 +600,7 @@
 
   (->> {:srcdir (str @srcDir "/java")
         :files [[:include "com/zotohlab/frwk/**/*.java"]]}
-       (merge COMPILE_OPTS)
+       (merge JAVAC_OPTS)
        (AntJavac)
        (ExecProj))
 
@@ -553,7 +614,7 @@
           [:exclude "**/log4j.properties"]
           [:exclude "**/logback.xml"]
           [:exclude "demo/**"]]]]
-       (AntJar (str @distribDir "/exec/frwk-" (get-env :buildVersion) ".jar"))
+       (AntJar (str @distribDir "/exec/frwk-" @buildVersion ".jar"))
        (ExecProj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -565,7 +626,7 @@
   (->> {:srcdir (str @srcDir "/java")
         :files [[:include "com/zotohlab/wflow/**/*.java"]
                 [:include "com/zotohlab/server/**/*.java"]]}
-       (merge COMPILE_OPTS)
+       (merge JAVAC_OPTS)
        (AntJavac)
        (ExecProj))
 
@@ -582,7 +643,262 @@
           [:exclude "**/log4j.properties"]
           [:exclude "**/logback.xml"]
           [:exclude "demo/**"]]]]
-       (AntJar (str @distribDir "/exec/wflow-" (get-env :buildVersion) ".jar"))
+       (AntJar (str @distribDir "/exec/wflow-" @buildVersion ".jar"))
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- compileSkaro
+  ""
+  []
+
+  (->> {:srcdir (str @srcDir "/java")
+        :files [[:include "com/zotohlab/skaro/**/*.java"]
+                [:include "com/zotohlab/mock/**/*.java"]
+                [:include "com/zotohlab/tpcl/**/*.java"]]}
+       (merge JAVAC_OPTS)
+       (AntJavac)
+       (ExecProj))
+
+  (doseq [d ["skaro" "mock" "tpcl"]]
+    (->> [[:fileset (str @srcDir "/java/com/zotohlab/" d)
+           [[:exclude "**/*.java"]]]]
+         (AntCopy (str @buildDir "/com/zotohlab/" d))
+         (ExecProj)))
+
+  (->> [[:fileset @buildDir
+         [[:include "com/zotohlab/skaro/loaders/**"] ]]]
+       (AntJar (str @distribDir "/boot/cls-" @buildVersion ".jar"))
+       (ExecProj))
+
+  (->> [[:fileset @buildDir
+         [[:include "com/zotohlab/skaro/**"]
+          [:include "com/zotohlab/mock/**"]
+          [:include "com/zotohlab/tpcl/**"]
+          [:exclude "**/log4j.properties"]
+          [:exclude "**/logback.xml"]
+          [:exclude "demo/**"]]]]
+       (AntJar (str @distribDir "/exec/gfy-" @buildVersion ".jar"))
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- compileJavaDemo
+  ""
+  []
+
+  (->> {:srcdir (str @srcDir "/java")
+        :files [[:include "demo/**/*.java"]]}
+       (merge JAVAC_OPTS)
+       (AntJavac)
+       (ExecProj))
+
+  (doseq [d ["splits" "flows" ]]
+    (->> [[:fileset (str @srcDir "/java/demo/" d)
+           [[:exclude "**/*.java"]]]]
+         (AntCopy (str @buildDir "/demo/" d))
+         (ExecProj))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtCljNsps
+  ""
+  [& dirs]
+  (reduce
+    (fn [memo dir]
+      (let [nsp (cstr/replace dir #"\/" ".")]
+        (concat
+          memo
+          (map #(str nsp "." (cstr/replace (.getName %) #"\.[^\.]+$" ""))
+               (filter #(and (.isFile %)(.endsWith (.getName %) ".clj"))
+                       (.listFiles (io/file @srcDir "clojure" dir)))))))
+    []
+    dirs
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljJMX
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/xlib/jmx")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljCrypto
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/xlib/crypto")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljDbio
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/xlib/dbio")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljNet
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/xlib/netty"
+                          "czlabclj/xlib/net")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljUtil
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/xlib/util"
+                          "czlabclj/xlib/i18n")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cljXLib
+  ""
+  []
+
+  ((comp cljJMX cljNet cljDbio cljCrypto cljUtil))
+
+  (->> [[:fileset (str @srcDir "/clojure/czlabclj/xlib")
+         [[:exclude "**/*.clj"]]]]
+       (AntCopy (str @buildDir "/czlabclj/xlib"))
+       (ExecProj))
+
+  (->> [[:fileset @buildDir
+         [[:include "czlabclj/xlib/**"]
+          [:exclude "**/log4j.properties"]
+          [:exclude "**/logback.xml"]
+          [:exclude "demo/**"]]]]
+       (AntJar (str @distribDir "/exec/xlib-" @buildVersion ".jar"))
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisMain
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/impl")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisMvc
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/mvc")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisAuth
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/auth")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisIO
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/io")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisEtc
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/etc")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisCore
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "czlabclj/tardis/core")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tardisAll
+  ""
+  []
+
+  ((comp tardisMain tardisMvc tardisIO tardisAuth tardisEtc tardisCore))
+
+  (->> [[:fileset (str @srcDir "/clojure/czlabclj/tardis")
+         [[:exclude "**/*.meta"]
+          [:exclude "**/*.clj"]]]]
+       (AntCopy (str @buildDir "/czlabclj/tardis"))
+       (ExecProj))
+
+  (->> [[:fileset @buildDir
+         [[:include "czlabclj/tardis/**"] ]]]
+       (AntJar (str @distribDir "/exec/tardis-" @buildVersion ".jar"))
        (ExecProj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -592,8 +908,14 @@
   []
   ((comp preBuild clean4Build))
   (boot (resolve-jars))
+  (cleanBoot)
   (compileFrwk)
-  (compileWFlow))
+  (compileWFlow)
+  (compileSkaro)
+  (compileJavaDemo)
+  (cljXLib)
+  (tardisAll)
+  )
 
 
 
