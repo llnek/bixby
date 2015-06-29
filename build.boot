@@ -317,6 +317,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AntJavaDoc ""
+  [])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntDelete ""
+  [])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn AntCopy ""
 
   [toDir res]
@@ -516,7 +526,7 @@
 ;;
 (defn- buildJSLib ""
 
-  []
+  [& args]
 
   (let [ljs (io/file @srcDir "js" @bldDir)
         root (io/file @srcDir "js")]
@@ -806,6 +816,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- cljDemo
+  ""
+  [& args]
+  (->> {:sysprops {:clojure.compile.warn-on-reflection true
+                   :clojure.compile.path @buildDir}
+        :args (fmtCljNsps "demo.file"
+                          "demo.fork"
+                          "demo.http"
+                          "demo.jetty"
+                          "demo.jms"
+                          "demo.mvc"
+                          "demo.pop3"
+                          "demo.steps"
+                          "demo.tcpip"
+                          "demo.timer")
+        :maxmemory "2048m" }
+       (merge CLJC_OPTS )
+       (AntJava "clojure.lang.Compile")
+       (ExecProj))
+  (->> [[:fileset (str @srcDir "/clojure/demo")
+         [[:exclude "**/*.clj"]]]]
+       (AntCopy (str @buildDir "/demo"))
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- tardisMain
   ""
   [& args]
@@ -903,6 +939,190 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- distroInit ""
+  []
+  (let [root (io/file @basedir @packDir)]
+    (cleanDir root)
+    (doseq [d ["conf" ["dist" "boot"] ["dist" "exec"] "bin"
+               ["etc" "ems"] "lib" "logs" "docs" "pods" "tmp" "apps"]]
+      (.mkdirs (if (vector? d) (apply io/file root d) (io/file root d))))
+    (spit (io/file root "VERSION") @buildVersion)
+    (->> [[:fileset (str @basedir "/etc") []]]
+         (AntCopy (str @packDir "/etc"))
+         (ExecProj))
+    (->> [[:fileset (str @basedir "/etc/conf") []]]
+         (AntCopy (str @packDir "/conf"))
+         (ExecProj))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packRes ""
+  []
+  (->> [[:fileset (str @srcDir "/clojure")
+         [[:include "**/*.meta"] ]]]
+       (AntCopy {:todir (str @packDir "/etc/ems") :flatten true} )
+       (ExecProj))
+  (->> [[:fileset (str @basedir "/etc") []]]
+       (AntCopy {:todir (str @packDir "/etc") } )
+       (ExecProj)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packDocs ""
+  []
+  (AntDelete {:dir (str @packDir "/docs/jsdoc") :quiet true} )
+  (.mkdirs (io/file @packDir "docs" "jsdoc"))
+  (AntDelete {:dir (str @packDir "/docs/api")  :quiet true} )
+  (.mkdirs (io/file @packDir "docs" "api"))
+
+  (->> [[:fileset {:dir (str @basedir "/docs")
+                   :erroronmissingdir false }
+         [[:exclude "dummy.txt"] ]]]
+       (AntCopy {:todir (str @packDir "/docs") }))
+
+  (copyJsFiles)
+
+  (AntExec {:executable "jsdoc"
+            :dir @basedir
+            :spawn true
+            :args ["-c"
+                   "mvn/js/jsdoc-conf.json"
+                   "-d"
+                   (str @packDir "/docs/jsdoc")]})
+
+  (->> [[:fileset {:dir (str @srcDir "/java") }
+         [[:include "**/*.java"]
+          [:exclude "demo/**"]]]]
+    (AntJavaDoc {:destdir (str @packDir "/docs/api")
+                 :access "protected"
+                 :author true
+                 :nodeprecated false
+                 :nodeprecatedlist false
+                 :noindex false
+                 :nonavbar false
+                 :notree false
+                 :source "1.8"
+                 :splitindex true
+                 :use true
+                 :version true
+                 :cp [] }))
+
+  (AntJava {:classname  "clojure.lang.Compile"
+            :fork  true
+            :failonerror true
+            :maxmemory "2048m"
+            :cp []
+            :sysprops {:clojure.compile.warn-on-reflection true
+                       :clojure.compile.path @buildDir}
+            :args ["czlabclj.xlib.util.codox"] })
+
+  (AntJava {:classname "czlabclj.xlib.util.codox"
+            :fork true
+            :failonerror true
+            :classpath []
+            :args [@basedir
+                   (str @srcDir "/clojure")
+                   (str @packDir "/docs/api")] }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packSrc ""
+  []
+
+  (->> [[:fileset {:dir (str @srcDir "/clojure") } []]]
+       (AntCopy {:todir (str @packDir "/src/main/clojure") } ))
+
+  (->> [[:fileset {:dir (str @srcDir "/java") } []]]
+       (AntCopy {:todir (str @packDir "/src/main/java") } )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packLics ""
+  []
+
+  (->> [[:fileset {:dir (str @basedir "/lics")
+                   :erroronmissingdir false}
+         []]]
+       (AntCopy {:todir (str @packDir "/lics") } ))
+
+  (->> [[:fileset {:dir @basedir }
+         [[:include "*.html"]
+          [:include "*.txt"]
+          [:include "*.md"]]]]
+       (AntCopy {:todir @packDir :flatten true} )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packDist ""
+  []
+
+  (->> [[:fileset {:dir (str @distribDir "/exec") }
+         [[:include "*.jar"]]]]
+       (AntCopy {:todir (str @packDir "/dist/exec") } ))
+
+  (->> [[:fileset {:dir (str @distribDir "/boot") }
+         [[:include "*.jar"]]]]
+       (AntCopy {:todir (str @packDir "/dist/boot") } ))
+
+  (->> [[:fileset {:dir @cljBuildDir}
+         [[:include "clojure/**"]]]
+        [:fileset {:dir @buildDir}
+         [[:include "clojure/**"]]]]
+       (AntJar {:destfile (str @packDir "/dist/exec/clj-" @buildVersion ".jar") }))
+
+  (copyJsFiles))
+
+target (packLibs: '') {
+  ant.copy (todir: "${packDir}/lib") {
+    fileset (dir: "${libDir}/libjar")
+  }
+}
+
+target (packBin: '') {
+  ant.copy (todir: "${packDir}/bin") {
+    fileset (dir: "${basedir}/bin", erroronmissingdir: false) {
+      exclude (name: '.svn')
+    }
+  }
+  ant.chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-all
+target (packAll: '') {
+  ant.delete (dir: "${packDir}/tmp")
+  ant.mkdir (dir: "${packDir}/tmp")
+  ant.tar (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+           compression: 'gzip') {
+    tarfileset (dir: "${packDir}") {
+      exclude (name: 'apps/**')
+      exclude (name: 'bin/**')
+    }
+    tarfileset (dir: "${packDir}", filemode: '755') {
+      include (name: 'bin/**')
+    }
+  }
+  /*
+  ant.gzip (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+        src: "${distribDir}/${PID}.tar")
+  ant.zip (destfile: "${distribDir}/${PID}-${buildVersion}.zip") {
+    fileset (dir: "${packDir}")
+  }
+  */
+}
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask pack
+  ""
+  []
+  (distroInit)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftask dev
   "dev-mode"
   []
@@ -915,6 +1135,8 @@
   (compileJavaDemo)
   (cljXLib)
   (tardisAll)
+  (cljDemo)
+  (buildJSLib)
   )
 
 
