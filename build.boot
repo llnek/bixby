@@ -136,23 +136,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[clojure.tools.logging :as log]
-         '[clojure.java.io :as io]
-         '[clojure.string :as cstr]
-         '[boot.core :as bcore])
+(require [clojure.tools.logging :as log]
+         [clojure.java.io :as io]
+         [clojure.string :as cstr]
+         [czlabclj.tpcl.antlib :as ant]
+         [boot.core :as bcore])
 
-(import '[org.apache.commons.exec CommandLine DefaultExecutor]
-        '[org.apache.commons.io FileUtils]
-        '[java.util Map HashMap Stack]
-        '[java.io File]
-        '[org.apache.tools.ant.taskdefs Java Copy Jar Zip ExecTask Javac]
-        '[org.apache.tools.ant.listener TimestampedLogger]
-        '[org.apache.tools.ant.types Reference
-          Commandline$Argument
-          PatternSet$NameEntry
-          Environment$Variable FileSet Path DirSet]
-        '[org.apache.tools.ant Project Target Task]
-        '[org.apache.tools.ant.taskdefs Javac$ImplementationSpecificArgument])
+(import [org.apache.commons.exec CommandLine DefaultExecutor]
+        [org.apache.commons.io FileUtils]
+        [java.util Map HashMap Stack]
+        [java.io File]
+        [org.apache.tools.ant Project Target Task])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,367 +173,29 @@
 (def ^:private reportTestDir (atom (str @qaDir "/reports")))
 (def ^:private buildTestDir (atom (str @qaDir "/classes")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fileSet ""
-
-  [args]
-
-  (let [fs (doto (FileSet.)
-                 (.setDir (io/file (first args)))) ]
-    (doseq [n (last args)]
-      (case (first n)
-        :include (-> (.createInclude fs)
-                     (.setName (last n)))
-        :exclude (-> (.createExclude fs)
-                     (.setName (last n)))
-        nil))
-    fs
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ExecProj ""
-
-  [^Project pj]
-
-  (.executeTarget pj "mi6"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTask ""
+(def COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
 
-  ^Project
-  [^Task taskObj]
-
-  (let [lg (doto (TimestampedLogger.)
-             (.setOutputPrintStream System/out)
-             (.setErrorPrintStream System/err)
-             (.setMessageOutputLevel Project/MSG_INFO))
-        pj (doto (Project.)
-             (.setName "boot-clj")
-             (.init))
-        tg (doto (Target.)
-             (.setName "mi6")) ]
-    (doto pj
-      (.addTarget tg)
-      (.addBuildListener lg))
-    (doto taskObj
-      (.setProject pj)
-      (.setOwningTarget tg))
-    (.addTask tg taskObj)
-    pj
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def COMPILE_OPTS {:debug @buildDebug
-                   :fork true
-                   :cp [[:location @buildDir]
-                        [:fileset @libDir [[:include "*.jar"]]] ] })
+                   :fork true})
+
+(def CPATH [[:location @buildDir]
+            [:fileset @libDir [[:include "*.jar"]]]])
 
 (def JAVAC_OPTS (merge {:srcdir (str @srcDir "/java")
                         :destdir @buildDir
                         :target "1.8"
-                        :debugLevel "lines,vars,source"
-                        :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}}
+                        :debugLevel "lines,vars,source"}
                         COMPILE_OPTS))
 
-(def CLJC_OPTS (update-in COMPILE_OPTS [:cp]
-                          (fn [cps]
-                            (-> cps
-                                (conj [:location @cljBuildDir])
-                                (conj [:location (str @srcDir "/clojure")])))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setClassPath ""
-
-  [^Path root paths]
-
-  (doseq [p paths]
-    (case (first p)
-      :location
-      (doto (.createPath root)
-        (.setLocation (io/file (last p))))
-      :refid
-      (doto (.createPath root)
-        (.setRefid (last p)))
-      :fileset
-      (let [fs (doto (FileSet.) (.setDir (io/file (nth p 1))))]
-        (doseq [n (last p)]
-          (case (first n)
-            :include (-> (.createInclude fs)
-                         (.setName (last n)))
-            :exclude (-> (.createExclude fs)
-                         (.setName (last n)))
-            nil))
-        (.addFileset root fs))
-      nil)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntJavac ""
-
-  [options]
-
-  (let [ct (Javac.)
-        pj (ProjAntTask ct) ]
-    (.setTaskName ct "javac")
-    (doto ct
-      (.setDebugLevel (:debuglevel options))
-      (.setFork (true? (:fork options)))
-      (.setDebug (:debug options))
-      (.setTarget (:target options))
-      (.setIncludeantruntime false)
-      (.setSrcdir (Path. pj (:srcdir options)))
-      (.setDestdir (io/file (:destdir options))))
-    (-> (.createCompilerArg ct)
-        (.setLine (:line (:compilerarg options))))
-    (-> (.createClasspath ct)
-        (setClassPath (:cp options)))
-    (doseq [p (:files options)]
-      (cond
-        (= :include (first p))
-        (-> (.createInclude ct)
-            (.setName (last p)))
-        (= :exclude (first p))
-        (-> (.createExclude ct)
-            (.setName (last p)))
-        :else nil))
-    pj
-  ))
-
-(def boolean-class
-(.getReturnType (.getMethod (.getClass "") "isEmpty"
-                            (make-array java.lang.Class 0)
-                            )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- method? ""
-  [^Class cz ^String m]
-  []
-  (println "cz = " cz)
-  (println "m = " m)
-  (let [arr (make-array java.lang.Class 1)]
-    (some
-      (fn [z]
-        (try
-          (aset arr 0 z)
-          [(.getMethod cz m arr) z]
-          (catch Exception _)))
-      [org.apache.tools.ant.types.Path
-       java.io.File
-       boolean-class
-       java.lang.Boolean
-       java.lang.String])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- XXcoerce ""
-  [pj mz v]
-  (let [vz (class v)
-    rc (cond
-      (= mz org.apache.tools.ant.types.Path)
-      (Path. pj (str v))
-      (= mz java.lang.Boolean)
-      (if (= mz vz) v (= "true" (str v)))
-      (= mz boolean-class)
-      (if (= mz vz) v (= "true" (str v)))
-      (= mz java.lang.String)
-      (if (= mz vz) v (str v))
-      (= mz java.io.File)
-      (if (= mz vz) v (io/file (str v)))
-      :else nil)]
-(println "mz = " mz)
-(println "vz = " vz)
-    (println "coerce returns " rc)
-    rc
-  ))
-
-(defn- capstr ""
-  [s]
-  (str (.toUpperCase (.substring s 0 1))
-       (.substring s 1)))
-
-(defmulti coerce (fn [_ a b] [a (class b)]))
-
-(defmethod coerce [Integer Integer]
-  [_ pz v]
-  v)
-
-(defmethod coerce [Integer Long]
-  [_ pz v]
-  (.intValue v))
-
-(defmethod coerce [Integer String]
-  [_ pz v]
-  (Integer/parseInt v (int 10)))
-
-(defmethod coerce [Long String]
-  [_ pz v]
-  (Long/parseLong v (int 10)))
-
-(defmethod coerce [Long Long]
-  [_ pz v]
-  v)
-
-(defmethod coerce [Path String]
-  [pj pz v]
-  (Path. pj v))
-
-(defmethod coerce [File String]
-  [_ pz v]
-  (io/file v))
-
-(defmethod coerce :default [pj pz v]
-  (throw (Exception. "expect class " pz)))
-
-(defn- koerce ""
-
-  [pj pz v]
-
-  (cond
-    (or (= boolean-class pz)
-        (= Boolean pz))
-    (= "true" (str v))
-
-    (= String pz)
-    (str v)
-
-    :else
-    (coerce pj pz v)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntJavac2 ""
-
-  [options]
-(println options)
-  (let [arr (object-array 1)
-        opts (-> options
-                 (dissoc :compilerarg)
-                 (dissoc :files)
-                 (dissoc :cp))
-        ct (Javac.)
-        cz (.getClass ct)
-        pj (ProjAntTask ct) ]
-(println opts)
-    (.setTaskName ct "javac2")
-    (doseq [[k v] opts]
-      (println "key = " (name k))
-      (let [m (str "set" (capstr (name k)))
-            rc (method? cz m)]
-        (when (nil? rc) (throw (Exception.
-                                 (str m " is No Good!!!!"
-                                      "\ngot " (.getName (.getClass v))
-                                      ))))
-        (println "m = " m)
-        (aset arr 0 (koerce pj (last rc) v))
-        (.invoke (first rc) ct arr)
-      ))
-    (-> (.createCompilerArg ct)
-        (.setLine (:line (:compilerarg options))))
-    (-> (.createClasspath ct)
-        (setClassPath (:cp options)))
-    (doseq [p (:files options)]
-      (cond
-        (= :include (first p))
-        (-> (.createInclude ct)
-            (.setName (last p)))
-        (= :exclude (first p))
-        (-> (.createExclude ct)
-            (.setName (last p)))
-        :else nil))
-    pj
-  ))
+(def CJPATH (-> CPATH
+                (conj [:location @cljBuildDir])
+                (conj [:location (str @srcDir "/clojure")])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJavaDoc ""
-  [])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntDelete ""
-  [])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntCopy ""
-
-  [toDir res]
-
-  (let [tk (Copy.)
-        pj (ProjAntTask tk) ]
-    (doto tk
-      (.setTaskName "copy-task")
-      (.setTodir (io/file toDir)))
-    (doseq [r res]
-      (case (first r)
-        :fileset
-        (->> (fileSet (rest r))
-             (.addFileset tk))
-        nil))
-    pj
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntJar ""
-
-  [jarFile res]
-
-  (let [tk (Jar.)
-        pj (ProjAntTask tk) ]
-    (doto tk
-      (.setTaskName "jar-task")
-      (.setDestFile (io/file jarFile)))
-    (doseq [r res]
-      (case (first r)
-        :fileset
-        (->> (fileSet (rest r))
-             (.addFileset tk))
-        nil))
-    pj
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntJava ""
-
-  [clazz options]
-
-  ;;(println "java options:\n" options)
-  (let [tk (Java.)
-        pj (ProjAntTask tk) ]
-    (doto tk
-      (.setFailonerror (true? (:failonerror options)))
-      (.setMaxmemory (get options :maxmemory "1024m"))
-      (.setTaskName "java")
-      (.setFork (true? (:fork options)))
-      (.setClassname clazz))
-    (doseq [[k v] (:sysprops options)]
-      (->> (doto (Environment$Variable.)
-                 (.setKey (name k))
-                 (.setValue (str v)))
-           (.addSysproperty tk)))
-    (-> (.createClasspath tk)
-        (setClassPath (:cp options)))
-    (doseq [a (:args options)]
-      (-> (.createArg tk)
-          (.setValue (str a))))
-    pj
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro minitask
+(defmacro minitask ""
   [func & forms]
   `(do
      (println (str ~func ":"))
@@ -614,7 +270,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- babelFile "" [mid]
+(defn- babelFile ""
+  [mid]
   (let [out (io/file @buildDir "js")
         dir (io/file @srcDir "js")
         fp (io/file dir @bldDir mid)]
@@ -683,49 +340,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- compileAndJar ""
-
-  [options]
-
-  (let [options {:srcdir (str @srcDir "/java")
-                 :destdir @buildDir
-                 :target "1.8"
-                 :debug @buildDebug
-                 :fork true
-                 :debuglevel "lines,vars,source"
-                 :cp [[:location (str @srcDir "/clojure")]
-                      [:location @cljBuildDir]
-                      [:location @buildDir]
-                      [:fileset @libDir [[:include "*.jar"]]] ]
-                 :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}
-                 :files [[:include "com/zotohlab/frwk/**/*.java"]]
-                 }]
-    (-> (AntJavac options)
-        (ExecProj))
-  ))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (task-options!
   uber {:as-jars true}
   aot {:all true})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask juberXX
-  "my own uber"
-  []
-  (bcore/with-pre-wrap fileset
-    (let [odir (io/file @libDir)]
-      (println "copying jars to " @libDir)
-      (doseq [f (seq (output-files fileset))]
-        (FileUtils/copyFileToDirectory
-          (io/file (:dir f) (:path f))
-          odir)))
-    fileset
-  ))
-
 (deftask juber
   "my own uber"
   []
@@ -739,6 +359,7 @@
                                        to)))
     fileset
   ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask resolve-jars

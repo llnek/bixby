@@ -1,104 +1,263 @@
-;; This library is distributed in  the hope that it will be useful but without
-;; any  warranty; without  even  the  implied  warranty of  merchantability or
-;; fitness for a particular purpose.
-;; The use and distribution terms for this software are covered by the Eclipse
-;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
-;; can be found in the file epl-v10.html at the root of this distribution.
-;; By using this software in any  fashion, you are agreeing to be bound by the
-;; terms of this license. You  must not remove this notice, or any other, from
-;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+(set-env!
+  :dependencies '[
 
-(ns ^{:doc ""
-      :author "kenl" }
+    [bouncycastle/bcprov-jdk15on "152" ]
+    [bouncycastle/bcmail-jdk15on "152" ]
+    [bouncycastle/bcpkix-jdk15on "152" ]
+    [org.jasypt/jasypt "1.9.2" ]
+    [org.mindrot/jbcrypt "0.3m" ]
 
-  antlib.tasks
+    [org.slf4j/slf4j-api "1.7.10" ]
+    [log4j/log4j "1.2.17" ]
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr]
-            [boot.core :as bcore])
+    [ch.qos.logback/logback-classic "1.1.3" ]
+    [ch.qos.logback/logback-core "1.1.3" ]
 
-  (:import [org.apache.commons.exec CommandLine DefaultExecutor]
-           [org.apache.commons.io FileUtils]
-           [java.util Map HashMap Stack]
-           [java.io File]
-           [org.apache.tools.ant.taskdefs Javadoc Java Copy Jar Zip ExecTask Javac]
-           [org.apache.tools.ant.listener TimestampedLogger]
-           [org.apache.tools.ant.types Reference
-            Commandline$Argument
-            PatternSet$NameEntry
-            Environment$Variable FileSet Path DirSet]
-           [org.apache.tools.ant Project Target Task]
-           [org.apache.tools.ant.taskdefs Javadoc$AccessType
-            Javac$ImplementationSpecificArgument]))
+    [net.sourceforge.jregex/jregex "1.2_01" ]
+    [net.sf.jopt-simple/jopt-simple "4.6" ]
+    [com.google.guava/guava "18.0" ]
+    [com.google.code.findbugs/jsr305 "2.0.3" ]
+    [joda-time/joda-time "2.7" ]
+    [org.zeroturnaround/zt-exec "1.6" ]
+    [org.zeroturnaround/zt-zip "1.7" ]
+    [org.apache.axis/axis "1.4" ]
+    [org.apache.axis/axis-jaxrpc "1.4" ]
+    [org.jetlang/jetlang "0.2.12" ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* true)
+    [org.jdom/jdom2 "2.0.6" ]
+
+    [com.fasterxml.jackson.core/jackson-core "2.4.4" ]
+    [com.fasterxml.jackson.core/jackson-databind "2.4.4" ]
+    [com.fasterxml.jackson.core/jackson-annotations "2.4.4" ]
+
+    [com.google.code.gson/gson "2.3.1" ]
+
+    [org.apache.commons/commons-compress "1.9" ]
+    [org.apache.commons/commons-lang3 "3.4" ]
+    [org.apache.commons/commons-exec "1.3" ]
+    [commons-net/commons-net "3.3" ]
+    [commons-io/commons-io "2.4" ]
+
+    [commons-logging/commons-logging "1.2" ]
+    [org.apache.commons/commons-email "1.4" ]
+    [commons-codec/commons-codec "1.10" ]
+    [commons-fileupload/commons-fileupload "1.3.1" ]
+    [commons-dbutils/commons-dbutils "1.6" ]
+    [com.sun.mail/javax.mail "1.5.3" ]
+
+    [org.apache.ivy/ivy "2.4.0" ]
+    [org.apache.ant/ant "1.9.5" ]
+    [org.apache.ant/ant-launcher "1.9.5" ]
+    [org.apache.ant/ant-junit4 "1.9.5" ]
+    [org.apache.ant/ant-junit "1.9.5" ]
+    [org.apache.ant/ant-apache-log4j "1.9.5" :exclusions [log4j]]
+
+    [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
+    [org.codehaus.gant/gant_groovy2.4 "1.9.12" ]
+
+    [com.jolbox/bonecp "0.8.0.RELEASE" ]
+
+    [org.apache.httpcomponents/httpcore-nio "4.4" ]
+    [org.apache.httpcomponents/httpcore "4.4" ]
+    [org.apache.httpcomponents/httpclient "4.4" ]
+    [io.netty/netty-all "4.0.29.Final" ]
+
+    [com.corundumstudio.socketio/netty-socketio "1.7.7" :exclusions [io.netty]]
+
+    [org.eclipse.jetty/jetty-xml "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-server "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-continuation "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-servlet "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-server "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-util "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-security "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-webapp "9.2.11.v20150529"  ]
+    [org.eclipse.jetty.websocket/websocket-api "9.2.11.v20150529"  ]
+    [org.eclipse.jetty.websocket/websocket-common "9.2.11.v20150529"  ]
+    [org.eclipse.jetty.websocket/websocket-servlet "9.2.11.v20150529"  ]
+    [org.eclipse.jetty.websocket/websocket-client "9.2.11.v20150529"  ]
+    [org.eclipse.jetty.websocket/websocket-server "9.2.11.v20150529"  ]
+
+    [org.codehaus.groovy/groovy-all "2.4.3" ]
+
+    [com.sun.tools/tools "1.8.0"  ]
+    [org.javassist/javassist "3.19.0-GA"  ]
+
+    [com.github.spullara.mustache.java/compiler "0.9.0" ]
+
+    [org.freemarker/freemarker "2.3.22" ]
+
+    [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
+
+    [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
+    [com.h2database/h2 "1.4.187" ]
+    [org.postgresql/postgresql "9.4-1201-jdbc41" ]
+
+    [org.clojure/math.numeric-tower "0.0.4" ]
+    [org.clojure/math.combinatorics "0.0.8" ]
+    [org.clojure/tools.logging "0.3.1" ]
+    [org.clojure/tools.nrepl "0.2.8" ]
+    [org.clojure/tools.reader "0.8.16" ]
+    [org.clojure/data.codec "0.1.0" ]
+    [org.clojure/data.csv "0.1.2" ]
+    [org.clojure/java.jdbc "0.3.6" ]
+    [org.clojure/java.data "0.1.1" ]
+    [org.clojure/java.jmx "0.3.0" ]
+    [org.clojure/data.json "0.2.6" ]
+    [org.clojure/data.xml "0.0.8" ]
+    [org.clojure/core.cache "0.6.3" ]
+    [org.clojure/core.match "0.2.2" ]
+    [org.clojure/tools.cli "0.3.1" ]
+    [org.clojure/data.generators "0.1.2" ]
+    [org.clojure/core.async "0.1.346.0-17112a-alpha" ]
+    [org.clojure/core.logic "0.8.10" ]
+    [org.clojure/algo.monads "0.1.5" ]
+    [org.clojure/algo.generic "0.1.2" ]
+    [org.clojure/core.memoize "0.5.7" ]
+    [codox/codox.core "0.8.12" ]
+
+    [org.clojure/clojure "1.6.0" ]
+    [org.clojure/clojurescript "0.0-3058" ]
+
+    [org.apache.shiro/shiro-core "1.2.3" ]
+    [org.mozilla/rhino "1.7.6" ]
+    [jline/jline "1.0" ]
+
+    [net.mikera/cljunit "0.3.1" ]
+    [junit/junit "4.12"  ]
+    [com.googlecode.jslint4java/jslint4java "2.0.5" ]
+
+  ]
+
+  :source-paths #{"src/main/java" "src/main/clojure"}
+  :buildVersion "0.9.0-SNAPSHOT"
+  :buildDebug true
+  :basedir (System/getProperty "user.dir"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntFileSet "Create a FileSet Object."
+(require '[clojure.tools.logging :as log]
+         '[clojure.java.io :as io]
+         '[clojure.string :as cstr]
+         '[boot.core :as bcore])
 
-  ^FileSet
-  [options nested]
+(import '[org.apache.commons.exec CommandLine DefaultExecutor]
+        '[org.apache.commons.io FileUtils]
+        '[java.util Map HashMap Stack]
+        '[java.io File]
+        '[org.apache.tools.ant.taskdefs Java Copy Jar Zip ExecTask Javac]
+        '[org.apache.tools.ant.listener TimestampedLogger]
+        '[org.apache.tools.ant.types Reference
+          Commandline$Argument
+          PatternSet$NameEntry
+          Environment$Variable FileSet Path DirSet]
+        '[org.apache.tools.ant Project Target Task]
+        '[org.apache.tools.ant.taskdefs Javac$ImplementationSpecificArgument])
 
-  (let [fs (FileSet.)]
-    (doseq [[k v] options]
-      (case k
-        :erroronmissingdir (.setsetErrorOnMissingDir fs v)
-        :dir (.setDir fs (io/file v))
-        nil))
-    (doseq [p nested]
-      (case (first p)
-        :include (-> ^PatternSet$NameEntry
-                     (.createInclude fs)
-                     (.setName (str (last p))))
-        :exclude (-> ^PatternSet$NameEntry
-                     (.createExclude fs)
-                     (.setName (str (last p))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private buildVersion (atom (get-env :buildVersion)))
+(def ^:private basedir (atom (get-env :basedir)))
+(def ^:private bldDir (atom "b.out"))
+
+(def ^:private buildDebug (atom true))
+(def ^:private prj (atom "0"))
+
+(def ^:private cljBuildDir  (atom (str "./" @bldDir "/clojure.org")))
+(def ^:private gantBuildDir (atom (str "./" @bldDir "/" @prj)))
+
+(def ^:private distribDir (atom (str @gantBuildDir "/distrib")))
+(def ^:private buildDir (atom (str @gantBuildDir "/build")))
+
+(def ^:private libDir (atom (str @gantBuildDir "/lib")))
+(def ^:private qaDir (atom (str @gantBuildDir "/test")))
+
+(def ^:private testDir (atom (str @basedir "/src/test")))
+(def ^:private srcDir (atom (str @basedir "/src/main")))
+(def ^:private packDir (atom (str @gantBuildDir "/pack")))
+
+(def ^:private reportTestDir (atom (str @qaDir "/reports")))
+(def ^:private buildTestDir (atom (str @qaDir "/classes")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fileSet ""
+
+  [args]
+
+  (let [fs (doto (FileSet.)
+                 (.setDir (io/file (first args)))) ]
+    (doseq [n (last args)]
+      (case (first n)
+        :include (-> (.createInclude fs)
+                     (.setName (last n)))
+        :exclude (-> (.createExclude fs)
+                     (.setName (last n)))
         nil))
     fs
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExecTarget "Run and execute a target."
+(defn ExecProj ""
 
-  [^Target target]
+  [^Project pj]
 
-  (.executeTarget (.getProject target) target))
+  (.executeTarget pj "mi6"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTasks "Bootstrap ant tasks with a target & project."
+(defn ProjAntTask ""
 
-  ^Target
-  [^String target & tasks]
+  ^Project
+  [^Task taskObj]
 
   (let [lg (doto (TimestampedLogger.)
              (.setOutputPrintStream System/out)
              (.setErrorPrintStream System/err)
              (.setMessageOutputLevel Project/MSG_INFO))
         pj (doto (Project.)
-             (.setName "proj-anonymous")
+             (.setName "boot-clj")
              (.init))
         tg (doto (Target.)
-             (.setName (or target "mi6"))) ]
+             (.setName "mi6")) ]
     (doto pj
       (.addTarget tg)
       (.addBuildListener lg))
-    (doseq [t tasks]
-      (doto t
-        (.setProject pj)
-        (.setOwningTarget tg))
-      (.addTask tg t))
-    tg
+    (doto taskObj
+      (.setProject pj)
+      (.setOwningTarget tg))
+    (.addTask tg taskObj)
+    pj
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetClassPath "Build a nested Path structure for classpath."
+(def COMPILE_OPTS {:debug @buildDebug
+                   :fork true
+                   :cp [[:location @buildDir]
+                        [:fileset @libDir [[:include "*.jar"]]] ] })
+
+(def JAVAC_OPTS (merge {:srcdir (str @srcDir "/java")
+                        :destdir @buildDir
+                        :target "1.8"
+                        :debugLevel "lines,vars,source"
+                        :compilerarg {:line "-Xlint:deprecation -Xlint:unchecked"}}
+                        COMPILE_OPTS))
+
+(def CLJC_OPTS (update-in COMPILE_OPTS [:cp]
+                          (fn [cps]
+                            (-> cps
+                                (conj [:location @cljBuildDir])
+                                (conj [:location (str @srcDir "/clojure")])))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- setClassPath ""
 
   [^Path root paths]
 
@@ -108,123 +267,218 @@
       (doto (.createPath root)
         (.setLocation (io/file (last p))))
       :refid
-      (throw (Exception. "path:refid not supported."))
-      ;;(doto (.createPath root) (.setRefid (last p)))
+      (doto (.createPath root)
+        (.setRefid (last p)))
       :fileset
-      (->> (AntFileSet (nth p 1) (nth p 2))
-           (.addFileset root))
+      (let [fs (doto (FileSet.) (.setDir (io/file (nth p 1))))]
+        (doseq [n (last p)]
+          (case (first n)
+            :include (-> (.createInclude fs)
+                         (.setName (last n)))
+            :exclude (-> (.createExclude fs)
+                         (.setName (last n)))
+            nil))
+        (.addFileset root fs))
       nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJavac "Ant javac task."
+(defn AntJavac ""
 
-  ^Task
-  [^Project pj options nested]
+  [options]
 
-  (let [tk (doto (Javac.)
-                 (.setTaskName "javac"))]
-    (doto tk
-      (.setIncludeantruntime (true? :includeantruntime options))
+  (let [ct (Javac.)
+        pj (ProjAntTask ct) ]
+    (.setTaskName ct "javac")
+    (doto ct
       (.setDebugLevel (:debuglevel options))
       (.setFork (true? (:fork options)))
       (.setDebug (:debug options))
       (.setTarget (:target options))
+      (.setIncludeantruntime false)
       (.setSrcdir (Path. pj (:srcdir options)))
       (.setDestdir (io/file (:destdir options))))
+    (-> (.createCompilerArg ct)
+        (.setLine (:line (:compilerarg options))))
+    (-> (.createClasspath ct)
+        (setClassPath (:cp options)))
+    (doseq [p (:files options)]
+      (cond
+        (= :include (first p))
+        (-> (.createInclude ct)
+            (.setName (last p)))
+        (= :exclude (first p))
+        (-> (.createExclude ct)
+            (.setName (last p)))
+        :else nil))
+    pj
+  ))
 
-    (doseq [p nested]
-      (case (first p)
-        :compilerarg
-        (when-let [line (:line (last p))]
-          (-> (.createCompilerArg tk)
-              (.setLine line)))
-        :classpath
-        (-> (.createClasspath tk)
-            (SetClassPath (last p)))
-        :files
-        (doseq [n (last p)]
-          (case (first n)
-            :include
-            (-> (.createInclude tk)
-                (.setName (last n)))
-            :exclude
-            (-> (.createExclude tk)
-                (.setName (last n)))
-            nil))
-        nil))
-    tk
+(def boolean-class
+(.getReturnType (.getMethod (.getClass "") "isEmpty"
+                            (make-array java.lang.Class 0)
+                            )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- method? ""
+  [^Class cz ^String m]
+  []
+  (println "cz = " cz)
+  (println "m = " m)
+  (let [arr (make-array java.lang.Class 1)]
+    (some
+      (fn [z]
+        (try
+          (aset arr 0 z)
+          [(.getMethod cz m arr) z]
+          (catch Exception _)))
+      [org.apache.tools.ant.types.Path
+       java.io.File
+       boolean-class
+       java.lang.Boolean
+       java.lang.String])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- XXcoerce ""
+  [pj mz v]
+  (let [vz (class v)
+    rc (cond
+      (= mz org.apache.tools.ant.types.Path)
+      (Path. pj (str v))
+      (= mz java.lang.Boolean)
+      (if (= mz vz) v (= "true" (str v)))
+      (= mz boolean-class)
+      (if (= mz vz) v (= "true" (str v)))
+      (= mz java.lang.String)
+      (if (= mz vz) v (str v))
+      (= mz java.io.File)
+      (if (= mz vz) v (io/file (str v)))
+      :else nil)]
+(println "mz = " mz)
+(println "vz = " vz)
+    (println "coerce returns " rc)
+    rc
+  ))
+
+(defn- capstr ""
+  [s]
+  (str (.toUpperCase (.substring s 0 1))
+       (.substring s 1)))
+
+(defmulti coerce (fn [_ a b] [a (class b)]))
+
+(defmethod coerce [Integer Integer]
+  [_ pz v]
+  v)
+
+(defmethod coerce [Integer Long]
+  [_ pz v]
+  (.intValue v))
+
+(defmethod coerce [Integer String]
+  [_ pz v]
+  (Integer/parseInt v (int 10)))
+
+(defmethod coerce [Long String]
+  [_ pz v]
+  (Long/parseLong v (int 10)))
+
+(defmethod coerce [Long Long]
+  [_ pz v]
+  v)
+
+(defmethod coerce [Path String]
+  [pj pz v]
+  (Path. pj v))
+
+(defmethod coerce [File String]
+  [_ pz v]
+  (io/file v))
+
+(defmethod coerce :default [pj pz v]
+  (throw (Exception. "expect class " pz)))
+
+(defn- koerce ""
+
+  [pj pz v]
+
+  (cond
+    (or (= boolean-class pz)
+        (= Boolean pz))
+    (= "true" (str v))
+
+    (= String pz)
+    (str v)
+
+    :else
+    (coerce pj pz v)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntJavac2 ""
+
+  [options]
+(println options)
+  (let [arr (object-array 1)
+        opts (-> options
+                 (dissoc :compilerarg)
+                 (dissoc :files)
+                 (dissoc :cp))
+        ct (Javac.)
+        cz (.getClass ct)
+        pj (ProjAntTask ct) ]
+(println opts)
+    (.setTaskName ct "javac2")
+    (doseq [[k v] opts]
+      (println "key = " (name k))
+      (let [m (str "set" (capstr (name k)))
+            rc (method? cz m)]
+        (when (nil? rc) (throw (Exception.
+                                 (str m " is No Good!!!!"
+                                      "\ngot " (.getName (.getClass v))
+                                      ))))
+        (println "m = " m)
+        (aset arr 0 (koerce pj (last rc) v))
+        (.invoke (first rc) ct arr)
+      ))
+    (-> (.createCompilerArg ct)
+        (.setLine (:line (:compilerarg options))))
+    (-> (.createClasspath ct)
+        (setClassPath (:cp options)))
+    (doseq [p (:files options)]
+      (cond
+        (= :include (first p))
+        (-> (.createInclude ct)
+            (.setName (last p)))
+        (= :exclude (first p))
+        (-> (.createExclude ct)
+            (.setName (last p)))
+        :else nil))
+    pj
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJavaDoc "Ant javadoc task."
-
-  ^Task
-  [^Project options nested]
-
-  (let [tk (doto (Javadoc.)
-                 (.setTaskName "javadoc"))]
-    (doto tk
-      (.setDestdir (io/file (:destdir options)))
-      (.setAccess (doto (Javadoc$AccessType.)
-                        (.setValue (:access options))))
-      (.setAuthor (true? (:author options)))
-      (.setNodeprecated (true? (:nodeprecated options)))
-      (.setNodeprecatedlist (true? (:nodeprecatedlist options)))
-      (.setNoindex (true? (:noindex options)))
-      (.setNonavbar (true? (:nonavbar options)))
-      (.setNotree (true? (:notree options)))
-      (.setSource (or (:source options) "1.8"))
-      (.setSplitindex (true? (:splitindex options)))
-      (.setUse (true? (:use options)))
-      (.setVersion (true? (:version options))))
-
-    (doseq [p nested]
-      (case (first p)
-        :classpath
-        (-> (.createClasspath tk)
-            (SetClassPath (last p)))
-        :fileset
-        (->> (AntFileSet (nth p 1) (nth p 2))
-           (.addFileset tk))
-        nil))
-    tk
-  ))
+(defn AntJavaDoc ""
+  [])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntDelete "Ant delete task."
-
-  [^Project pj options nested]
-
-  (let [tk (doto (Delete.)
-                 (.setTaskName "delete"))]
-    (when-let [[k v] (find options :file)]
-      (.setFile tk (io/file v)))
-    (when-let [[k v] (find options :dir)]
-      (.setDir tk (io/file v)))
-    (doto tk
-      (.setQuiet (not (false? (:quiet options)))))
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet (nth p 1) (nth p 2))
-           (.addFileset tk))
-        nil))
-    tk
-  ))
+(defn AntDelete ""
+  [])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntCopy "Ant copy task."
+(defn AntCopy ""
 
-  [^Project pj options nested]
+  [toDir res]
 
-  (let [tk (doto (Copy.)
-                 (.setTaskName "copy"))]
+  (let [tk (Copy.)
+        pj (ProjAntTask tk) ]
     (doto tk
+      (.setTaskName "copy-task")
       (.setTodir (io/file toDir)))
     (doseq [r res]
       (case (first r)
@@ -501,7 +755,7 @@
   (->> {:srcdir (str @srcDir "/java")
         :files [[:include "com/zotohlab/frwk/**/*.java"]]}
        (merge JAVAC_OPTS)
-       (AntJavac)
+       (AntJavac2)
        (ExecProj))
 
   (->> [[:fileset (str @srcDir "/java/com/zotohlab/frwk")
@@ -847,163 +1101,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- packRes ""
-  []
-  (->> [[:fileset (str @srcDir "/clojure")
-         [[:include "**/*.meta"] ]]]
-       (AntCopy {:todir (str @packDir "/etc/ems") :flatten true} )
-       (ExecProj))
-  (->> [[:fileset (str @basedir "/etc") []]]
-       (AntCopy {:todir (str @packDir "/etc") } )
-       (ExecProj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packDocs ""
-  []
-  (AntDelete {:dir (str @packDir "/docs/jsdoc") :quiet true} )
-  (.mkdirs (io/file @packDir "docs" "jsdoc"))
-  (AntDelete {:dir (str @packDir "/docs/api")  :quiet true} )
-  (.mkdirs (io/file @packDir "docs" "api"))
-
-  (->> [[:fileset {:dir (str @basedir "/docs")
-                   :erroronmissingdir false }
-         [[:exclude "dummy.txt"] ]]]
-       (AntCopy {:todir (str @packDir "/docs") }))
-
-  (copyJsFiles)
-
-  (AntExec {:executable "jsdoc"
-            :dir @basedir
-            :spawn true
-            :args ["-c"
-                   "mvn/js/jsdoc-conf.json"
-                   "-d"
-                   (str @packDir "/docs/jsdoc")]})
-
-  (->> [[:fileset {:dir (str @srcDir "/java") }
-         [[:include "**/*.java"]
-          [:exclude "demo/**"]]]]
-    (AntJavaDoc {:destdir (str @packDir "/docs/api")
-                 :access "protected"
-                 :author true
-                 :nodeprecated false
-                 :nodeprecatedlist false
-                 :noindex false
-                 :nonavbar false
-                 :notree false
-                 :source "1.8"
-                 :splitindex true
-                 :use true
-                 :version true
-                 :cp [] }))
-
-  (AntJava {:classname  "clojure.lang.Compile"
-            :fork  true
-            :failonerror true
-            :maxmemory "2048m"
-            :cp []
-            :sysprops {:clojure.compile.warn-on-reflection true
-                       :clojure.compile.path @buildDir}
-            :args ["czlabclj.xlib.util.codox"] })
-
-  (AntJava {:classname "czlabclj.xlib.util.codox"
-            :fork true
-            :failonerror true
-            :classpath []
-            :args [@basedir
-                   (str @srcDir "/clojure")
-                   (str @packDir "/docs/api")] }))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packSrc ""
-  []
-
-  (->> [[:fileset {:dir (str @srcDir "/clojure") } []]]
-       (AntCopy {:todir (str @packDir "/src/main/clojure") } ))
-
-  (->> [[:fileset {:dir (str @srcDir "/java") } []]]
-       (AntCopy {:todir (str @packDir "/src/main/java") } )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packLics ""
-  []
-
-  (->> [[:fileset {:dir (str @basedir "/lics")
-                   :erroronmissingdir false}
-         []]]
-       (AntCopy {:todir (str @packDir "/lics") } ))
-
-  (->> [[:fileset {:dir @basedir }
-         [[:include "*.html"]
-          [:include "*.txt"]
-          [:include "*.md"]]]]
-       (AntCopy {:todir @packDir :flatten true} )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packDist ""
-  []
-
-  (->> [[:fileset {:dir (str @distribDir "/exec") }
-         [[:include "*.jar"]]]]
-       (AntCopy {:todir (str @packDir "/dist/exec") } ))
-
-  (->> [[:fileset {:dir (str @distribDir "/boot") }
-         [[:include "*.jar"]]]]
-       (AntCopy {:todir (str @packDir "/dist/boot") } ))
-
-  (->> [[:fileset {:dir @cljBuildDir}
-         [[:include "clojure/**"]]]
-        [:fileset {:dir @buildDir}
-         [[:include "clojure/**"]]]]
-       (AntJar {:destfile (str @packDir "/dist/exec/clj-" @buildVersion ".jar") }))
-
-  (copyJsFiles))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packLibs ""
-  []
-
-  (->> [[:fileset {:dir (str @libDir "/libjar") } []]]
-    (AntCopy {:todir (str @packDir "/lib") })))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packBin ""
-  []
-
-  (->> [[:fileset {:dir (str @basedir "/bin")
-                   :erroronmissingdir false}
-         [[:exclude ".svn"]]]]
-       (AntCopy {:todir (str @packDir "/bin") }))
-
-  (AntChmod {:dir (str @packDir "/bin")
-             :perm "755"
-             :includes "*"}))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packAll ""
-  []
-  (AntDelete {:dir (str @packDir "/tmp") })
-  (.mkdirs (io/file @packDir "tmp"))
-
-  (->> [[:tarfileset {:dir @packDir}
-         [[:exclude "apps/**"]
-          [:exclude "bin/**"]]]
-        [:tarfileset {:dir @packDir :filemode "755"}
-         [[:include "bin/**"]]]]
-       (AntTar {:destfile (str @distribDir
-                               @PID "-"
-                               @buildVersion ".tar.gz")
-                :compression "gzip"})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (deftask pack
   ""
   []
@@ -1019,13 +1116,13 @@
   (boot (resolve-jars))
   (cleanBoot)
   (compileFrwk)
-  (compileWFlow)
-  (compileSkaro)
-  (compileJavaDemo)
-  (cljXLib)
-  (tardisAll)
-  (cljDemo)
-  (buildJSLib)
+  ;;(compileWFlow)
+  ;;(compileSkaro)
+  ;;(compileJavaDemo)
+  ;;(cljXLib)
+  ;;(tardisAll)
+  ;;(cljDemo)
+  ;;(buildJSLib)
   )
 
 
