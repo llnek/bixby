@@ -157,8 +157,8 @@
 (def ^:private buildDebug (atom true))
 (def ^:private prj (atom "0"))
 
-(def ^:private cljBuildDir  (atom (str "./" @bldDir "/clojure.org")))
-(def ^:private gantBuildDir (atom (str "./" @bldDir "/" @prj)))
+(def ^:private cljBuildDir  (atom (str @basedir "/" @bldDir "/clojure.org")))
+(def ^:private gantBuildDir (atom (str @basedir "/" @bldDir "/" @prj)))
 
 (def ^:private distribDir (atom (str @gantBuildDir "/distrib")))
 (def ^:private buildDir (atom (str @gantBuildDir "/build")))
@@ -246,7 +246,7 @@
   (minitask
     "clean-build"
     (cleanDir (io/file @basedir (get-env :target-path)))
-    (cleanDir (io/file @basedir @gantBuildDir))
+    (cleanDir (io/file @gantBuildDir))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,7 +387,7 @@
   (bcore/with-pre-wrap fileset
     (let [from (io/file @basedir (get-env :target-path))
           jars (output-files fileset)
-          to (io/file @basedir @libDir)]
+          to (io/file @libDir)]
       (doseq [j (seq jars)]
         (let [pj (ant/AntProject)]
           (-> (ant/ProjAntTasks pj
@@ -734,7 +734,7 @@
 ;;
 (defn- distroInit ""
   []
-  (let [root (io/file @basedir @packDir)
+  (let [root (io/file @packDir)
         pj (ant/AntProject)]
     (cleanDir root)
     (doseq [d ["conf" ["dist" "boot"] ["dist" "exec"] "bin"
@@ -793,15 +793,7 @@
                             [[:exclude "dummy.txt"]]]]
                (ant/AntCopy pj {:todir (str @packDir "/docs")}))
 
-        t2 (copyJsFiles pj)
-
-        t3  (->> [[:args ["-c" "mvn/js/jsdoc-conf.json"
-                          "-d" (str @packDir "/docs/jsdoc") ]]]
-                 (ant/AntExec pj {:executable "jsdoc"
-                                  :dir @basedir
-                                  :spawn true}))
-
-        t4  (->> [[:fileset {:dir (str @srcDir "/java")}
+        t2  (->> [[:fileset {:dir (str @srcDir "/java")}
                             [[:exclude "demo/**"]
                              [:include "**/*.java"]]]
                   [:classpath CPATH]]
@@ -819,21 +811,27 @@
                                   :use true
                                   :version true}))
 
-        t5  (->> [[:arg ["czlabclj.tpcl.codox"]]
-                  [:sysprops CLJC_SYSPROPS]
-                  [:classpath CJPATH]]
-                 (ant/AntJava pj {:classname "clojure.lang.Compile"
-                                  :fork true
-                                  :failonerror true
-                                  :maxmemory "2048m"}))
+        t3  (->> (concat [[:args ["czlabclj.tpcl.codox"]]]
+                           CJNESTED)
+                 (ant/AntJava pj CLJC_OPTS))
 
-        t6  (->> [[:args [@basedir
+        t4  (->> [[:args [@basedir
                           (str @srcDir "/clojure")
                           (str @packDir "/docs/api")]]
                   [:classpath CJPATH]]
-                 (ant/AntJava pj {:classname "czlabclj.xlib.util.codox"
+                 (ant/AntJava pj {:classname "czlabclj.tpcl.codox"
                                   :fork true
-                                  :failonerror true})) ]
+                                  :failonerror true}))
+
+        t5 (copyJsFiles pj)
+
+        t6  (->> [[:args ["-c" "mvn/js/jsdoc-conf.json"
+                          "-d" (str @packDir "/docs/jsdoc") ]]]
+                 (ant/AntExec pj {:executable "jsdoc"
+                                  :dir @basedir
+                                  :spawn true})) ]
+
+
     (-> (ant/ProjAntTasks pj
                           "pack-docs"
                           t1 t2 t3 t4 t5 t6)
@@ -911,7 +909,7 @@
   [& args]
 
   (let [pj (ant/AntProject)
-        t1  (->> [[:fileset {:dir (str @libDir "/libjar")} []]]
+        t1  (->> [[:fileset {:dir @libDir} []]]
                  (ant/AntCopy pj {:todir (str @packDir "/lib")})) ]
     (-> (ant/ProjAntTasks pj "pack-libs" t1)
         (ant/ExecTarget))
@@ -941,13 +939,13 @@
 
   [& args]
 
-  (cleanDir (io/file @packDir "/tmp"))
+  (cleanDir (io/file @packDir "tmp"))
   (let [pj (ant/AntProject)
         t1  (->> [[:tarfileset {:dir @packDir}
                                [[:exclude "apps/**"]
                                 [:exclude "bin/**"]]]
                   [:tarfileset {:dir @packDir
-                                :filemode "755"}
+                                :mode "755"}
                                [[:include "bin/**"]]]]
                  (ant/AntTar pj {:destFile (str @distribDir
                                                 "/"

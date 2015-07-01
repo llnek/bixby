@@ -33,7 +33,7 @@
             Environment$Variable FileSet Path DirSet]
            [org.apache.tools.ant Project Target Task]
            [org.apache.tools.ant.taskdefs Javadoc$AccessType
-            Tar$TarFileSet
+            Tar$TarFileSet Tar$TarCompressionMethod
             Javac$ImplementationSpecificArgument]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,6 +152,7 @@
 
   (let []
     (setOptions pj fs options)
+    (.setProject fs pj)
     (doseq [p nested]
       (case (first p)
         :include (-> ^PatternSet$NameEntry
@@ -173,6 +174,7 @@
 
   (let [fs (FileSet.)]
     (setOptions pj fs options)
+    (.setProject fs pj)
     (doseq [p nested]
       (case (first p)
         :include (-> ^PatternSet$NameEntry
@@ -440,7 +442,10 @@
   (let [tk (doto (Tar.)
                  (.setProject pj)
                  (.setTaskName "tar"))]
-    (setOptions pj tk options)
+    (when-let [[k v] (find options :compression)]
+          (.setCompression tk (doto (Tar$TarCompressionMethod.)
+                               (.setValue (str v)))))
+    (setOptions pj tk options #{:compression})
     (doseq [p nested]
       (case (first p)
         :tarfileset
