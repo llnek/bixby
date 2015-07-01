@@ -110,7 +110,7 @@ def doRunXLibTest() {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildXLib: '') {
-  depends (cleanXLib, checkTpcl, resolve, preBuild)
+  depends (cleanXLib, resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#clojure.xlib"
   println "##############################################################################"

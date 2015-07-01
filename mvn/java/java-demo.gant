@@ -21,7 +21,7 @@ target (cleanJavaDemo: '') {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildJavaDemo: '') {
-  depends (cleanJavaDemo, checkTpcl, resolve, preBuild)
+  depends (cleanJavaDemo,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#skaro.java.demo"
   println "##############################################################################"

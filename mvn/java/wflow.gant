@@ -21,7 +21,7 @@ target (cleanWFlow: '') {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildWFlow: '') {
-  depends (cleanWFlow, checkTpcl, resolve, preBuild)
+  depends (cleanWFlow,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#java.wflow"
   println "##############################################################################"

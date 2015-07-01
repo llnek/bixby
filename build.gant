@@ -67,6 +67,7 @@ includeTargets << new File ('mvn/java/java-demo.gant')
 
 includeTargets << new File ('mvn/clj/tardis.gant')
 includeTargets << new File ('mvn/clj/xlib.gant')
+includeTargets << new File ('mvn/clj/tpcl.gant')
 includeTargets << new File ('mvn/clj/clj-demo.gant')
 
 includeTargets << new File ('mvn/js/lib.gant')
@@ -106,12 +107,12 @@ target (report: '') {
 
 target (clean4Build: '') {
   depends(cleanJavaFrwk, cleanWFlow, cleanGally,
-  cleanXLib, cleanTardis,
+  cleanXLib, cleanTpcl, cleanTardis,
   cleanJavaDemo,cleanCljDemo)
 }
 
 target (buildr : '') {
-  depends (clean4Build, checkTpcl, resolve, preBuild)
+  depends (clean4Build,  resolve, preBuild)
   println "##############################################################################"
   println "#"
   println "Building project ${gantProjectName}"
@@ -124,7 +125,7 @@ target (buildr : '') {
 //
 def compileAndJar() {
   depends(buildJavaFrwk, buildWFlow, buildGally,
-  buildXLib, buildTardis,
+  buildXLib, buildTpcl, buildTardis,
   buildJavaDemo, buildCljDemo, buildJSLib)
 }
 
@@ -150,9 +151,6 @@ target (cleanAll: '') {
   ant.delete ( dir: "${distribDir}" , quiet: true)
   ant.delete ( dir: "${libDir}" , quiet: true)
   ant.mkdir (dir: "${gantBuildDir}")
-}
-
-target (checkTpcl: '') {
 }
 
 target (preTest: '') {

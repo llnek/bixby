@@ -12,57 +12,47 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // clean
-target (cleanCljDemo: '') {
-  ant.delete (quiet: true, includeemptydirs: true) {
-    fileset (dir: "${buildDir}/demo") {
-      include (name: '**/*')
-      exclude (name: 'splits/**')
-      exclude (name: 'flows/**')
-    }
-  }
+target (cleanTpcl: '') {
+  ant.delete ( dir: "${buildDir}/czlabclj/tpcl", quiet: true)
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // build
-target (buildCljDemo: '') {
-  depends (cleanCljDemo,  resolve, preBuild)
+target (buildTpcl: '') {
+  depends (cleanTpcl, resolve, preBuild)
   println "##############################################################################"
-  println "Building module ${gantProjectName}#clojure.tardis.demo"
+  println "Building module ${gantProjectName}#clojure.tpcl"
   println "##############################################################################"
-  doCompileCljDemo()
+  doCompileTpcl()
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def doCompileCljDemo() {
+def doCompileTpcl() {
 
-  cljDemo()
+  cljTpcl()
 
-  ant.copy (todir: "${buildDir}/demo") {
-    fileset (dir: "${srcDir}/clojure/demo") {
+  ant.copy (todir: "${buildDir}/czlabclj/tpcl") {
+    fileset (dir: "${srcDir}/clojure/czlabclj/tpcl") {
       exclude (name: '**/*.clj')
       exclude (name: '**/.svn')
     }
   }
 
-  if (false) {
-    // no need to jar them
-    ant.jar (destfile: "${distribDir}/exec/demo-clj-${buildVersion}.jar") {
-      fileset (dir: "${buildDir}") {
-        include (name: 'demo/**')
-        exclude (name: 'demo/splits/**')
-        exclude (name: 'demo/flows/**')
-        exclude (name: '**/log4j.properties')
-        exclude (name: '**/logback.xml')
-      }
+  ant.jar (destfile: "${distribDir}/exec/tpcl-${buildVersion}.jar") {
+    fileset (dir: "${buildDir}") {
+      include (name: 'czlabclj/tpcl/**')
+      exclude (name: '**/log4j.properties')
+      exclude (name: '**/logback.xml')
+      exclude (name: 'demo/**')
+    }
   }
 
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 //
-def cljDemo() {
+def cljTpcl() {
   //println "cljhhh_Demo:"
   ant.java (classname: 'clojure.lang.Compile',
         fork: true,
@@ -71,16 +61,8 @@ def cljDemo() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'demo.file.core')
-    arg (value: 'demo.fork.core')
-    arg (value: 'demo.http.core')
-    arg (value: 'demo.jetty.core')
-    arg (value: 'demo.jms.core')
-    arg (value: 'demo.mvc.core')
-    arg (value: 'demo.pop3.core')
-    arg (value: 'demo.steps.core')
-    arg (value: 'demo.tcpip.core')
-    arg (value: 'demo.timer.core')
+    arg (value: 'czlabclj.tpcl.antlib')
+    //arg (value: 'czlabclj.tpcl.codox')
   }
 }
 

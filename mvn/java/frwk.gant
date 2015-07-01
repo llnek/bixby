@@ -79,7 +79,7 @@ def doRunJavaFrwkTest() {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildJavaFrwk: '') {
-  depends (cleanJavaFrwk, checkTpcl, resolve, preBuild)
+  depends (cleanJavaFrwk,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#java.frwk"
   println "##############################################################################"

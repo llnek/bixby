@@ -20,7 +20,7 @@ target (cleanTardis: '') {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildTardis: '') {
-  depends (cleanTardis, checkTpcl, resolve, preBuild)
+  depends (cleanTardis,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#clojure.tardis"
   println "##############################################################################"

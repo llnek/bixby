@@ -39,10 +39,10 @@
     (let [^WebSockEvent ev (.event ^Job j)
           res (.getResultObj ev)
           data (.getData ev)
-          stuff (if (and (notnil? data)
-                         (.hasContent data))
-                  (.content data)
-                  nil) ]
+          ^bytes stuff (if (and (notnil? data)
+                                (.hasContent data))
+                         (.content data)
+                         nil) ]
       (cond
         (instance? String stuff)
         (println "Got poked by websocket-text: " stuff)

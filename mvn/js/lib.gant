@@ -49,7 +49,7 @@ def cleanLocalJs() {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildJSLib: '') {
-  depends (cleanJSLib, checkTpcl, resolve, preBuild)
+  depends (cleanJSLib,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#skaro+js"
   println "##############################################################################"

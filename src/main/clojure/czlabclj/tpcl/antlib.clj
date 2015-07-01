@@ -24,7 +24,7 @@
            [java.lang.reflect Method]
            [java.io File]
            [org.apache.tools.ant.taskdefs Javadoc Java Copy
-            Chmod Concat
+            Chmod Concat Move
             Delete Jar Zip ExecTask Javac]
            [org.apache.tools.ant.listener TimestampedLogger]
            [org.apache.tools.ant.types Reference
@@ -166,7 +166,7 @@
 
   [^Target target]
 
-  (.executeTarget (.getProject target) target))
+  (.executeTarget (.getProject target) (.getName target)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -182,8 +182,8 @@
         tg (doto (Target.)
              (.setName (or target "mi6"))) ]
     (doto pj
-      (.addTarget tg)
-      (.addBuildListener lg))
+      (.addOrReplaceTarget tg))
+      ;;(.addBuildListener lg))
     (doseq [t tasks]
       (doto ^Task
         t
@@ -373,6 +373,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AntMove "Ant move task."
+
+  ^Task
+  [^Project pj options nested]
+
+  (let [tk (doto (Move.)
+                 (.setProject pj)
+                 (.setTaskName "move"))]
+    (setOptions pj tk options)
+    (doseq [p nested]
+      (case (first p)
+        :fileset
+        (->> (AntFileSet pj (nth p 1) (nth p 2))
+             (.addFileset tk))
+        nil))
+    tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn AntJar "Ant jar task."
 
   ^Task
@@ -430,7 +450,7 @@
                (.setMessageOutputLevel Project/MSG_INFO))]
     (doto (Project.)
       (.setName "project-x")
-      (.addBuildListener pj lg))
+      (.addBuildListener lg))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

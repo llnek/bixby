@@ -21,7 +21,7 @@ target (cleanGally: '') {
 //////////////////////////////////////////////////////////////////////////////
 // build
 target (buildGally: '') {
-  depends (cleanGally, checkTpcl, resolve, preBuild)
+  depends (cleanGally,  resolve, preBuild)
   println "##############################################################################"
   println "Building module ${gantProjectName}#java.skaro"
   println "##############################################################################"
