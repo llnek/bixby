@@ -116,7 +116,7 @@
     [org.clojure/core.memoize "0.5.7" ]
     [codox/codox.core "0.8.12" ]
 
-    [org.clojure/clojure "1.6.0" ]
+    [org.clojure/clojure "1.7.0" ]
     [org.clojure/clojurescript "0.0-3058" ]
 
     [org.apache.shiro/shiro-core "1.2.3" ]
@@ -733,18 +733,19 @@
 ;;
 (defn- distroInit ""
   []
-  (let [root (io/file @basedir @packDir)]
+  (let [root (io/file @basedir @packDir)
+        pj (ant/AntProject)]
     (cleanDir root)
     (doseq [d ["conf" ["dist" "boot"] ["dist" "exec"] "bin"
                ["etc" "ems"] "lib" "logs" "docs" "pods" "tmp" "apps"]]
       (.mkdirs (if (vector? d) (apply io/file root d) (io/file root d))))
     (spit (io/file root "VERSION") @buildVersion)
-    (->> [[:fileset (str @basedir "/etc") []]]
-         (AntCopy (str @packDir "/etc"))
-         (ExecProj))
-    (->> [[:fileset (str @basedir "/etc/conf") []]]
-         (AntCopy (str @packDir "/conf"))
-         (ExecProj))
+    (let [t1 (->> [[:fileset {:dir (str @basedir "/etc")} []]]
+                  (ant/AntCopy pj {:todir (str @packDir "/etc")}))
+          t2 (->> [[:fileset {:dir (str @basedir "/etc/conf")} []]]
+                  (ant/AntCopy pj {:todir (str @packDir "/conf")})) ]
+      (-> (ant/ProjAntTasks pj "distro-init" t1 t2)
+          (ant/ExecTarget)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -754,6 +755,168 @@
   []
   (distroInit)
   )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- copyJsFiles ""
+  [^Project pj & args]
+
+  (->> [[:fileset {:dir (str @buildDir "/js")}
+                  [[:include "**/*.js"]]]]
+       (ant/AntCopy pj {:todir (str @packDir "/public/vendors")})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packRes ""
+  [^Project pj & args]
+
+  (->> [[:fileset {:dir (str @srcDir "/clojure")}
+                  [[:include "**/*.meta"]]]]
+       (ant/AntCopy pj {:todir (str @packDir "/etc/ems")
+                        :flatten true}))
+
+  (->> [[:fileset {:dir (str @basedir "/etc")} []]]
+       (ant/AntCopy pj {:todir (str @packDir "/etc")})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- packDocs ""
+  [^Project pj & args]
+
+  (cleanDir (io/file @packDir "docs" "jsdoc"))
+  (cleanDir (io/file @packDir "docs" "api"))
+
+  (->> [[:fileset {:dir (str @basedir "/docs")
+                   :errorOnMissingDir false}
+         [[:exclude "dummy.txt"]]]]
+       (ant/AntCopy pj {:todir (str @packDir "/docs")}))
+
+  copyJsFiles()
+
+  (->> [[:args "-c" "mvn/js/jsdoc-conf.json"
+         "-d" "${packDir}/docs/jsdoc" ]]
+       (ant/AntExec pj {:executable "jsdoc"
+                        :dir @basedir
+                        :spawn true}))
+
+  (->> [[:fileset {:dir (str @srcDir "/java")}
+                  [[:exclude "demo/**"]
+                   [:include "**/*.java"]]]
+        [:classpath CPATH]]
+       (ant/AntJavadoc pj
+                       {:destdir (str @packDir "/docs/api")
+                        :access "protected"
+                        :author true
+                        :nodeprecated false
+                        :nodeprecatedlist false
+                        :noindex false
+                        :nonavbar false
+                        :notree false
+                        :source "1.8"
+                        :splitindex true
+                        :use true
+                        :version true}))
+
+  (->> [[:arg ["czlabclj.tpcl.codox"]]
+        [:sysprops CLJC_SYSPROPS]
+        [:classpath CJPATH]]
+       (ant/AntJava pj {:classname "clojure.lang.Compile"
+                        :fork true
+                        :failonerror true
+                        :maxmemory "2048m"}))
+
+  (->> [[:args [@basedir
+                (str @srcDir "/clojure")
+                (str @packDir "/docs/api")]]
+        [:classpath CJPATH]]
+       (ant/AntJava pj {:classname "czlabclj.xlib.util.codox"
+                        :fork true
+                        :failonerror true})))
+
+(defn- packSrc ""
+  [^Project pj & args]
+
+  (->> [[:fileset {:dir (str @srcDir "/clojure")} []]]
+       (ant/AntCopy pj {:todir (str @packDir "/src/main/clojure")}))
+
+  (->> [[:fileset {:dir (str @srcDir "/java")} []]]
+       (ant/AntCopy pj {:todir (str @packDir "/src/main/java")})))
+
+
+(defn- packLics ""
+  [^Project pj & args]
+
+  (->> [[:fileset {:dir (str @basedir "/lics")
+                   :errorOnMissingDir false} []]]
+       (ant/AntCopy pj {:todir (str @packDir "/lics")}))
+
+  (->> [[:fileset {:dir @basedir}
+                  [[:include "*.html"]
+                   [:include "*.txt"]
+                   [:include "*.md"]]]]
+       (ant/AntCopy pj {:todir @packDir
+                        :flatten true})))
+
+(defn- packDist ""
+  [^Project pj & args]
+
+  (->> [[:fileset {:dir (str @distribDir "/exec")}
+                  [[:include "*.jar"]]]]
+       (ant/AntCopy pj {:todir (str @packDir "/dist/exec")}))
+
+  (->> [[:fileset {:dir (str @distribDir "/boot") }
+                  [[:include "*.jar"]]]]
+       (ant/AntCopy pj {:todir (str @packDir "/dist/boot")}))
+
+  (->> [[:fileset {:dir @cljBuildDir}
+                  [[:include "clojure/**"]]]
+        [:fileset {:dir @buildDir}
+                  [[:include "clojure/**"]]]]
+       (ant/AntJar pj {:destFile (str @packDir
+                                      "/dist/exec/clj-"
+                                      @buildVersion
+                                      ".jar")}))
+  (copyJsFiles))
+
+
+target (packLibs: '') {
+  ant.copy (todir: "${packDir}/lib") {
+    fileset (dir: "${libDir}/libjar")
+  }
+}
+
+target (packBin: '') {
+  ant.copy (todir: "${packDir}/bin") {
+    fileset (dir: "${basedir}/bin", erroronmissingdir: false) {
+      exclude (name: '.svn')
+    }
+  }
+  ant.chmod (dir: "${packDir}/bin", perm: '755', includes: '*')
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// pack-all
+target (packAll: '') {
+  ant.delete (dir: "${packDir}/tmp")
+  ant.mkdir (dir: "${packDir}/tmp")
+  ant.tar (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+           compression: 'gzip') {
+    tarfileset (dir: "${packDir}") {
+      exclude (name: 'apps/**')
+      exclude (name: 'bin/**')
+    }
+    tarfileset (dir: "${packDir}", filemode: '755') {
+      include (name: 'bin/**')
+    }
+  }
+  /*
+  ant.gzip (destfile: "${distribDir}/${PID}-${buildVersion}.tar.gz",
+        src: "${distribDir}/${PID}.tar")
+  ant.zip (destfile: "${distribDir}/${PID}-${buildVersion}.zip") {
+    fileset (dir: "${packDir}")
+  }
+  */
+}
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

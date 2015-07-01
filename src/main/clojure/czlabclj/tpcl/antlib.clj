@@ -24,7 +24,7 @@
            [java.lang.reflect Method]
            [java.io File]
            [org.apache.tools.ant.taskdefs Javadoc Java Copy
-            Chmod Concat Move
+            Chmod Concat Move Mkdir
             Delete Jar Zip ExecTask Javac]
            [org.apache.tools.ant.listener TimestampedLogger]
            [org.apache.tools.ant.types Reference
@@ -98,8 +98,11 @@
 (defmethod koerce [primitiveLong Long] [_ _ ^Long v] v)
 (defmethod koerce [Long Long] [_ _ ^Long v] v)
 
+(defmethod koerce [Path File] [^Project pj _ ^File v] (Path. pj (.getCanonicalPath v)))
 (defmethod koerce [Path String] [^Project pj _ ^String v] (Path. pj v))
+
 (defmethod koerce [File String] [_ _ ^String v] (io/file v))
+(defmethod koerce [File File] [_ _ v] v)
 
 (defmethod koerce :default [_ pz _] (Exception. (str "expected class " pz)))
 
@@ -256,6 +259,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AntMkdir "Ant mkdir task."
+
+  ^Task
+  [^Project pj options]
+
+  (let [tk (doto (Mkdir.)
+                 (.setProject pj)
+                 (.setTaskName "mkdir"))]
+    (setOptions pj tk options)
+    tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn AntChmod "Ant chmod task."
 
   ^Task
@@ -309,7 +326,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJavaDoc "Ant javadoc task."
+(defn AntJavadoc "Ant javadoc task."
 
   ^Task
   [^Project pj options nested]
