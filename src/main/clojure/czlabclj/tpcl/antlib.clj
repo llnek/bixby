@@ -24,7 +24,7 @@
            [java.lang.reflect Method]
            [java.io File]
            [org.apache.tools.ant.taskdefs Javadoc Java Copy
-            Chmod Concat Move Mkdir
+            Chmod Concat Move Mkdir Tar
             Delete Jar Zip ExecTask Javac]
            [org.apache.tools.ant.listener TimestampedLogger]
            [org.apache.tools.ant.types Reference
@@ -33,6 +33,7 @@
             Environment$Variable FileSet Path DirSet]
            [org.apache.tools.ant Project Target Task]
            [org.apache.tools.ant.taskdefs Javadoc$AccessType
+            Tar$TarFileSet
             Javac$ImplementationSpecificArgument]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,6 +142,27 @@
             (throw (Exception. (str m " not found in class " pojo))))
           (aset arr 0 (coerce pj (last rc) v))
           (.invoke ^Method (first rc) pojo arr)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntTarFileSet "Create a TarFileSet Object."
+
+  ^Tar$TarFileSet
+  [^Project pj ^Tar$TarFileSet fs options nested]
+
+  (let []
+    (setOptions pj fs options)
+    (doseq [p nested]
+      (case (first p)
+        :include (-> ^PatternSet$NameEntry
+                     (.createInclude fs)
+                     (.setName (str (last p))))
+        :exclude (-> ^PatternSet$NameEntry
+                     (.createExclude fs)
+                     (.setName (str (last p))))
+        nil))
+    fs
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -404,6 +426,25 @@
         :fileset
         (->> (AntFileSet pj (nth p 1) (nth p 2))
              (.addFileset tk))
+        nil))
+    tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntTar "Ant tar task."
+
+  ^Task
+  [^Project pj options nested]
+
+  (let [tk (doto (Tar.)
+                 (.setProject pj)
+                 (.setTaskName "tar"))]
+    (setOptions pj tk options)
+    (doseq [p nested]
+      (case (first p)
+        :tarfileset
+        (AntTarFileSet pj (.createTarFileSet tk) (nth p 1) (nth p 2))
         nil))
     tk
   ))
