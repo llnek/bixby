@@ -215,38 +215,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cleanDir "" [^File dir]
-  (let [pj (ant/AntProject)]
-    (if (.exists dir)
-      (-> (ant/ProjAntTasks pj
-                            ""
-                            (->> [[:fileset {:dir (.getCanonicalPath dir)}
-                                  [[:include "**/*"]]]]
-                                 (ant/AntDelete pj {:includeEmptyDirs true})))
-          (ant/ExecTarget))
-      (.mkdirs dir))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- deleteDir "" [^File dir]
-  (when (.exists dir)
-    (let [pj (ant/AntProject)]
-      (-> (ant/ProjAntTasks pj
-                            ""
-                            (->> [[:fileset {:dir (.getCanonicalPath dir)} []]]
-                                 (ant/AntDelete pj {:includeEmptyDirs true})))
-          (ant/ExecTarget)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- clean4Build ""
   [& args]
   (minitask
     "clean-build"
-    (cleanDir (io/file @basedir (get-env :target-path)))
-    (cleanDir (io/file @gantBuildDir))
+    (ant/CleanDir (io/file @basedir (get-env :target-path)))
+    (ant/CleanDir (io/file @gantBuildDir))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,7 +229,7 @@
   [& args]
   (minitask
     "clean-boot"
-    (cleanDir (io/file @basedir
+    (ant/CleanDir (io/file @basedir
                        (get-env :target-path)))
   ))
 
@@ -366,11 +340,11 @@
 
   (let [ljs (io/file @srcDir "js" @bldDir)
         root (io/file @srcDir "js")]
-    (cleanDir ljs)
+    (ant/CleanDir ljs)
     (try
       (jsWalkTree (Stack.) root)
       (finally
-        (deleteDir ljs)))
+        (ant/DeleteDir ljs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -554,7 +528,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/xlib/jmx")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/xlib/jmx")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -564,7 +538,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/xlib/crypto")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/xlib/crypto")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -574,7 +548,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/xlib/dbio")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/xlib/dbio")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -584,7 +558,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/xlib/netty"
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/xlib/netty"
                                    "czlabclj/xlib/net")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
@@ -595,7 +569,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/xlib/util"
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/xlib/util"
                                    "czlabclj/xlib/i18n")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
@@ -633,7 +607,7 @@
   ""
   [& args]
   (let [pj (ant/AntProject)
-        t1 (->> (concat [[:args (fmtCljNsps "demo/file" "demo/fork" "demo/http"
+        t1 (->> (concat [[:argvalues (fmtCljNsps "demo/file" "demo/fork" "demo/http"
                                             "demo/jetty" "demo/jms" "demo/mvc"
                                             "demo/pop3" "demo/steps"
                                             "demo/tcpip" "demo/timer")]]
@@ -653,7 +627,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/impl")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/impl")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -663,7 +637,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/mvc")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/mvc")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -673,7 +647,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/auth")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/auth")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -682,7 +656,7 @@
 (defn- tardisIO
   ""
   [^Project pj & args]
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/io")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/io")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -692,7 +666,7 @@
   ""
   [^Project pj & args]
 
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/etc")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/etc")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -701,7 +675,7 @@
 (defn- tardisCore
   ""
   [^Project pj & args]
-  (->> (concat [[:args (fmtCljNsps "czlabclj/tardis/core")]]
+  (->> (concat [[:argvalues (fmtCljNsps "czlabclj/tardis/core")]]
                CJNESTED)
        (ant/AntJava pj CLJC_OPTS)))
 
@@ -736,7 +710,7 @@
   []
   (let [root (io/file @packDir)
         pj (ant/AntProject)]
-    (cleanDir root)
+    (ant/CleanDir root)
     (doseq [d ["conf" ["dist" "boot"] ["dist" "exec"] "bin"
                ["etc" "ems"] "lib" "logs" "docs" "pods" "tmp" "apps"]]
       (.mkdirs (if (vector? d) (apply io/file root d) (io/file root d))))
@@ -784,8 +758,8 @@
 
   [& args]
 
-  (cleanDir (io/file @packDir "docs" "jsdoc"))
-  (cleanDir (io/file @packDir "docs" "api"))
+  (ant/CleanDir (io/file @packDir "docs" "jsdoc"))
+  (ant/CleanDir (io/file @packDir "docs" "api"))
   (let [pj (ant/AntProject)
 
         t1  (->> [[:fileset {:dir (str @basedir "/docs")
@@ -811,13 +785,13 @@
                                   :use true
                                   :version true}))
 
-        t3  (->> (concat [[:args ["czlabclj.tpcl.codox"]]]
+        t3  (->> (concat [[:argvalues ["czlabclj.tpcl.codox"]]]
                            CJNESTED)
                  (ant/AntJava pj CLJC_OPTS))
 
-        t4  (->> [[:args [@basedir
-                          (str @srcDir "/clojure")
-                          (str @packDir "/docs/api")]]
+        t4  (->> [[:argvalues [@basedir
+                               (str @srcDir "/clojure")
+                               (str @packDir "/docs/api")]]
                   [:classpath CJPATH]]
                  (ant/AntJava pj {:classname "czlabclj.tpcl.codox"
                                   :fork true
@@ -825,7 +799,7 @@
 
         t5 (copyJsFiles pj)
 
-        t6  (->> [[:args ["-c" "mvn/js/jsdoc-conf.json"
+        t6  (->> [[:argvalues ["-c" "mvn/js/jsdoc-conf.json"
                           "-d" (str @packDir "/docs/jsdoc") ]]]
                  (ant/AntExec pj {:executable "jsdoc"
                                   :dir @basedir
@@ -939,7 +913,7 @@
 
   [& args]
 
-  (cleanDir (io/file @packDir "tmp"))
+  (ant/CleanDir (io/file @packDir "tmp"))
   (let [pj (ant/AntProject)
         t1  (->> [[:tarfileset {:dir @packDir}
                                [[:exclude "apps/**"]
