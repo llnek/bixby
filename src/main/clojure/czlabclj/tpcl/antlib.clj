@@ -24,7 +24,7 @@
            [java.lang.reflect Method]
            [java.io File]
            [org.apache.tools.ant.taskdefs Javadoc Java Copy
-            Chmod Concat Move Mkdir Tar Replace
+            Chmod Concat Move Mkdir Tar Replace ExecuteOn
             Delete Jar Zip ExecTask Javac]
            [org.apache.tools.ant.listener TimestampedLogger]
            [org.apache.tools.ant.types Reference
@@ -188,6 +188,20 @@
         nil))
     fs
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- parse-nested ""
+
+  [tk nested]
+
+  (doseq [p nested]
+    (case (first p)
+      :fileset
+      (->> (AntFileSet pj (nth p 1) (nth p 2))
+            (.addFileset tk))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -599,6 +613,26 @@
         (doseq [a (last p)]
           (-> (.createArg tk)
               (.setLine (str a))))
+        nil))
+    tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntApply "Ant apply task."
+
+  ^Task
+  [^Project pj options nested]
+
+  (let [tk (doto (ExecuteOn.)
+                 (.setProject pj)
+                 (.setTaskName "apply"))]
+    (setOptions pj tk options)
+    (doseq [p nested]
+      (case (first p)
+        :fileset
+        (->> (AntFileSet pj (nth p 1) (nth p 2))
+             (.addFileset tk))
         nil))
     tk
   ))
