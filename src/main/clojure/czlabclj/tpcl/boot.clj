@@ -78,13 +78,15 @@
               (for [x (.toArray stk)] (.getName x)))
           fid (.getName f)
           paths (conj p fid) ]
-      (if-let [rc (cfgtor f paths)]
-        (if (.isDirectory f)
-          (do
-            (.push stk f)
-            (walk-tree cfgtor stk nil))
-          (when (.endsWith fid ".js")
-            (Babel (:work-dir rc) (:args rc)))))))
+      (cond
+        (.isDirectory f)
+        (when (cfgtor f :dir true)
+          (.push stk f)
+          (walk-tree cfgtor stk nil))
+        :else
+        (when-let [rc (cfgtor f :paths paths)]
+          (Babel (:work-dir rc) (:args rc))
+          (cfgtor f :paths paths :postgen true)))))
 
   (when-not (.empty stk) (.pop stk)))
 

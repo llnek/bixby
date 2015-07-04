@@ -273,36 +273,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- babelFile ""
-  [mid]
+(defn- babel->cb ""
+
+  [f & {:keys [postgen dir paths]
+        :or {:postgen false
+             :dir false
+             :paths []}
+        :as args }]
+
   (let [out (io/file @buildDir "js")
         dir (io/file @srcDir "js")
-        pj (ant/AntProject)
-        fp (io/file dir @bldDir mid)]
-    (if (.endsWith mid ".js")
-      (do
-        (runCmd "babel"
-                dir
-                ["--modules" "amd" "--module-ids"
-                 mid "--out-dir" @bldDir])
-        (spit fp
-              (-> (slurp (io/file dir @bldDir mid))
+        mid (cstr/join "/" paths)
+        des (-> (io/file out mid)
+                (.getParentFile)) ]
+    (cond
+      postgen
+      (let [bf (io/file dir @bldDir mid)]
+        (spit bf
+              (-> (slurp bf)
                   (.replaceAll "\\/\\*@@" "")
-                  (.replaceAll "@@\\*\\/" ""))))
-      (let [des (io/file dir @bldDir mid)]
-        (-> (ant/ProjAntTasks pj
-                              ""
-                              (ant/AntCopy pj {:todir (.getCanonicalPath (.getParentFile des))
-                                               :file (.getCanonicalPath (io/file dir mid))} []))
-            (ant/ExecTarget))))
+                  (.replaceAll "@@\\*\\/" "")))
+        (ant/MoveFile bf (doto des (.mkdirs))))
 
-    (-> (ant/ProjAntTasks pj
-                          ""
-                          (ant/AntMove pj {:todir (.getCanonicalPath (doto (-> (io/file out mid)
-                                                                               (.getParentFile))
-                                                                           (.mkdirs)))
-                                           :file (.getCanonicalPath fp)} []))
-        (ant/ExecTarget))
+      (.isDirectory f)
+      (if (= @bldDir (.getName f))
+        nil
+        {})
+
+      :else
+      (if-not (.endsWith mid ".js")
+        (do
+          (ant/CopyFile (io/file dir mid)
+                        (doto des (.mkdirs)))
+          nil)
+        {:work-dir dir
+         :args ["--modules"
+                "amd"
+                "--module-ids"
+                mid
+                "--out-dir"
+                @bldDir] }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,21 +325,7 @@
         root (io/file @srcDir "js")]
     (ant/CleanDir ljs)
     (try
-      (bt/BabelTree root
-                    (fn [f path]
-                      (cond
-                        (= @bldDir (.getName f))
-                        false
-                        (.isDirectory f)
-                        true
-                        :else
-                        {:work-dir root
-                         :args ["--modules"
-                                "amd"
-                                "--module-ids"
-                                (cstr/join "/" paths)
-                                "--out-dir"
-                                @bldDir] })))
+      (bt/BabelTree root #'babel->cb)
       (finally
         (ant/DeleteDir ljs)))
   ))
