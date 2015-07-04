@@ -175,7 +175,9 @@
   [^Project pj options nested]
 
   (let [fs (FileSet.)]
-    (setOptions pj fs options)
+    (setOptions pj
+                fs
+                (merge {:errorOnMissingDir false} options))
     (.setProject fs pj)
     (doseq [p nested]
       (case (first p)

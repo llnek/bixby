@@ -140,6 +140,7 @@
          '[clojure.java.io :as io]
          '[clojure.string :as cstr]
          '[czlabclj.tpcl.antlib :as ant]
+         '[czlabclj.tpcl.boot :as bt]
          '[boot.core :as bcore])
 
 (import [org.apache.commons.exec CommandLine DefaultExecutor]
@@ -306,34 +307,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- jsWalkTree ""
-
-  [^Stack stk seed]
-
-  (let [top (if-not (nil? seed) seed (.peek stk))
-        skip @bldDir]
-    (doseq [f (.listFiles top)]
-      (cond
-        (= skip (.getName f))
-        nil
-        (.isDirectory f)
-        (do
-          (.push stk f)
-          (jsWalkTree stk nil))
-        :else
-        (let [path (if (.empty stk)
-                     ""
-                     (cstr/join "/" (for [x (.toArray stk)] (.getName x))))
-              fid (.getName f)]
-          (-> (if (> (.length path) 0)
-                (str path "/" fid)
-                fid)
-              (babelFile )))))
-    (when-not (.empty stk)
-      (.pop stk))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- buildJSLib ""
 
   [& args]
@@ -342,7 +315,21 @@
         root (io/file @srcDir "js")]
     (ant/CleanDir ljs)
     (try
-      (jsWalkTree (Stack.) root)
+      (bt/BabelTree root
+                    (fn [f path]
+                      (cond
+                        (= @bldDir (.getName f))
+                        false
+                        (.isDirectory f)
+                        true
+                        :else
+                        {:work-dir root
+                         :args ["--modules"
+                                "amd"
+                                "--module-ids"
+                                (cstr/join "/" paths)
+                                "--out-dir"
+                                @bldDir] })))
       (finally
         (ant/DeleteDir ljs)))
   ))
@@ -405,12 +392,6 @@
     (-> (ant/ProjAntTasks pj "compile-frwk" t1 t2 t3)
         (ant/ExecTarget))
   ))
-
-(defn- ExecProj [& args])
-(defn- AntJavac [& args])
-(defn- AntJar [& args])
-(defn- AntCopy [& args])
-(defn- AntJava [& args])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
