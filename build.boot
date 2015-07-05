@@ -178,7 +178,6 @@
 (def ^:private buildDebug (atom true))
 (def ^:private prj (atom "0"))
 
-(def ^:private cljBuildDir  (atom (fp! @basedir @bldDir "clojure.org")))
 (def ^:private gantBuildDir (atom (fp! @basedir @bldDir @prj)))
 
 (def ^:private distribDir (atom (fp! @gantBuildDir "distrib")))
@@ -212,7 +211,6 @@
                         COMPILE_OPTS))
 
 (def CJPATH (-> CPATH
-                (conj [:location @cljBuildDir])
                 (conj [:location (fp! @srcDir "clojure")])))
 
 (def CLJC_OPTS {:classname "clojure.lang.Compile"
@@ -238,8 +236,17 @@
   [& args]
   (minitask
     "clean-build!"
-    (ant/CleanDir (io/file @basedir (get-env :target-path)))
-    (ant/CleanDir (io/file @gantBuildDir))
+    (let [pj (ant/AntProject)]
+      (ant/CleanDir (io/file @basedir (get-env :target-path)))
+      (ant/RunAntTasks*
+        pj
+        ""
+        (ant/AntDelete
+          pj
+          {}
+          [[:fileset {:dir @gantBuildDir}
+                     [[:include "**/*"]
+                      [:exclude "build/clojure/**"]]]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -946,9 +953,7 @@
         pj
         {:destFile (fp! @packDir
                         (str "dist/exec/clj-" @buildVersion ".jar"))}
-        [[:fileset {:dir @cljBuildDir}
-                   [[:include "clojure/**"]]]
-         [:fileset {:dir @buildDir}
+        [[:fileset {:dir @buildDir}
                    [[:include "clojure/**"]]]])
 
       (copyJsFiles pj))
@@ -1079,13 +1084,19 @@
   (packLibs)
   (packAll))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask babeljs
   ""
   []
   (buildJSLib))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask poo
+  ""
+  []
+  (clean4Build))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
