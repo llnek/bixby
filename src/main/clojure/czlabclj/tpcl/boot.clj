@@ -16,6 +16,7 @@
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
+            [boot.core :as boot]
             [clojure.string :as cstr]
             [czlabclj.tpcl.antlib :as ant])
 

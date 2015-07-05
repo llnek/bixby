@@ -346,6 +346,27 @@
 
   (RunAntTasks pj target tasks))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro ^:private ant-task
+
+  ""
+  [sym docstr func]
+
+  (let [s (str func)
+        tm (cstr/lower-case
+             (.substring s (+ 1 (.lastIndexOf s "."))))]
+
+    `(defn ~sym ~docstr [pj# options# nested#]
+       (let [tk# (doto (new ~func)
+                     (.setProject pj#)
+                     (.setTaskName ~tm))]
+        (setOptions pj# tk# options#)
+        (maybeCfgNested pj# tk# nested#)
+        tk#
+      ))
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn AntDelete "Ant delete task."
@@ -399,33 +420,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntExec "Ant exec task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (ExecTask.)
-                 (.setProject pj)
-                 (.setTaskName "exec"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntExec "Ant Exec task." ExecTask)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntConcat "Ant concat task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Concat.)
-                 (.setProject pj)
-                 (.setTaskName "concat"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntConcat "Ant concat task." Concat)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -443,48 +442,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntReplace "Ant replace task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Replace.)
-                 (.setProject pj)
-                 (.setTaskName "replace"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntReplace "Ant replace task." Replace)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntChmod "Ant chmod task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Chmod.)
-                 (.setProject pj)
-                 (.setTaskName "chmod"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntChmod "Ant chmod task." Chmod)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJavac "Ant javac task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Javac.)
-                 (.setProject pj)
-                 (.setTaskName "javac"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntJavac "Ant javac task." Javac)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -507,33 +473,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntCopy "Ant copy task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Copy.)
-                 (.setProject pj)
-                 (.setTaskName "copy"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntCopy "Ant copy task." Copy)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntMove "Ant move task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Move.)
-                 (.setProject pj)
-                 (.setTaskName "move"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntMove "Ant move task." Move)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -586,48 +530,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJar "Ant jar task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Jar.)
-                 (.setProject pj)
-                 (.setTaskName "jar"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntJar "Ant jar task." Jar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJava "Ant java task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (Java.)
-                 (.setProject pj)
-                 (.setTaskName "java"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntJava "Ant java task." Java)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntApply "Ant apply task."
-
-  ^Task
-  [^Project pj options nested]
-
-  (let [tk (doto (ExecuteOn.)
-                 (.setProject pj)
-                 (.setTaskName "apply"))]
-    (setOptions pj tk options)
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
+(ant-task AntApply "Ant apply task." ExecuteOn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

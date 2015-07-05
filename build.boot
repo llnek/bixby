@@ -114,7 +114,13 @@
     [org.clojure/algo.monads "0.1.5" ]
     [org.clojure/algo.generic "0.1.2" ]
     [org.clojure/core.memoize "0.5.7" ]
+
     [codox/codox.core "0.8.12" ]
+    [boot/base "2.1.2"]
+    [boot/core "2.1.2"]
+    [boot/pod "2.1.2"]
+    [boot/worker "2.1.2"]
+    [boot/aether "2.1.2"]
 
     [org.clojure/clojure "1.7.0" ]
     [org.clojure/clojurescript "0.0-3058" ]
@@ -581,6 +587,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- cljTpcl
+  ""
+  []
+
+  (let [pj (ant/AntProject)]
+    (ant/RunAntTasks*
+      pj
+      "compile-tpcl"
+      (ant/AntJava
+        pj
+        CLJC_OPTS
+        (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+                                            "czlabclj/tpcl")]]
+                CJNESTED))
+      (ant/AntCopy
+        pj
+        {:todir (fp! @buildDir "czlabclj/tpcl")}
+        [[:fileset {:dir (fp! @srcDir "clojure/czlabclj/tpcl")}
+                   [[:exclude "**/*.clj"]]]])
+      (ant/AntJar
+        pj
+        {:destFile (fp! @distribDir
+                        (str "exec/tpcl-" @buildVersion ".jar"))}
+        [[:fileset {:dir @buildDir}
+                   [[:include "czlabclj/tpcl/**"]
+                    [:exclude "**/log4j.properties"]
+                    [:exclude "**/logback.xml"]
+                    [:exclude "demo/**"]]]]))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- cljDemo
   ""
   [& args]
@@ -1023,6 +1061,7 @@
   (cljXLib)
   (tardisAll)
   (cljDemo)
+  (cljTpcl)
   (buildJSLib))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
