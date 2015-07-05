@@ -17,7 +17,7 @@
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cstr]
-            [czlabclj.tpcl.antlib])
+            [czlabclj.tpcl.antlib :as ant])
 
   (:import [java.util Stack]
            [java.io File]))
@@ -36,8 +36,11 @@
       (let [nsp (cstr/replace dir #"\/" ".")]
         (concat
           memo
-          (map #(str nsp "." (cstr/replace (.getName %) #"\.[^\.]+$" ""))
-               (filter #(and (.isFile %)(.endsWith (.getName %) ".clj"))
+          (map #(str nsp
+                     "."
+                     (cstr/replace (.getName %) #"\.[^\.]+$" ""))
+               (filter #(and (.isFile %)
+                             (.endsWith (.getName %) ".clj"))
                        (.listFiles (io/file root dir)))))))
     []
     dirs
@@ -49,21 +52,16 @@
 
   [workingDir args]
 
-  (let [pj (ant/AntProject)
-        t1 (->> [[:args args ]]
-                (ant/AntExec pj {:executable "babel"
-                                 :dir workingDir})) ]
-    (-> (ant/ProjAntTasks pj "babel" t1)
-        (ant/ExecTarget))
+  (let [pj (ant/AntProject)]
+    (ant/RunAntTasks*
+      pj
+      "babel"
+      (ant/AntExec
+        pj
+        {:executable "babel"
+         :dir workingDir}
+        [[:argvalues args ]]))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn BabelTree ""
-
-  [rootDir cfgtor]
-
-  (walk-tree cfgtor (Stack.) (io/file rootDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,16 +69,16 @@
 
   [cfgtor ^Stack stk seed]
 
-  (doseq [f (-> (if-not (nil? seed) seed (.peek stk))
+  (doseq [f (-> (or seed (.peek stk))
                 (.listFiles))]
     (let [p (if (.empty stk)
-              []
+              '()
               (for [x (.toArray stk)] (.getName x)))
           fid (.getName f)
-          paths (conj p fid) ]
+          paths (conj (into [] p) fid) ]
       (cond
         (.isDirectory f)
-        (when (cfgtor f :dir true)
+        (when-not (nil? (cfgtor f :dir true))
           (.push stk f)
           (walk-tree cfgtor stk nil))
         :else
@@ -89,6 +87,14 @@
           (cfgtor f :paths paths :postgen true)))))
 
   (when-not (.empty stk) (.pop stk)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BabelTree ""
+
+  [rootDir cfgtor]
+
+  (walk-tree cfgtor (Stack.) (io/file rootDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -34,7 +34,7 @@
             Environment$Variable FileSet Path DirSet]
            [org.apache.tools.ant Project Target Task]
            [org.apache.tools.ant.taskdefs Javadoc$AccessType
-            Replace.Replacefilter Replace.NestedString
+            Replace$Replacefilter Replace$NestedString
             Tar$TarFileSet Tar$TarCompressionMethod
             Javac$ImplementationSpecificArgument]))
 
@@ -68,10 +68,11 @@
   (let [arr (make-array java.lang.Class 1)]
     (some
       (fn [^Class z]
-        (aset  #^"[Ljava.lang.Class;" arr 0 z)
+        (aset #^"[Ljava.lang.Class;" arr 0 z)
         (try
           [(.getMethod cz m arr) z]
           (catch Exception _)))
+      ;;add more types when needed
       [java.lang.String
        java.io.File
        primitiveBool
@@ -84,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti koerce "Best attempt to convert a value." (fn [_ a b] [a (class b)]))
+(defmulti ^:private koerce "Best attempt to convert a value." (fn [_ a b] [a (class b)]))
 
 (defmethod koerce [primitiveInt String] [_ _ ^String v] (Integer/parseInt v (int 10)))
 (defmethod koerce [Integer String] [_ _ ^String v] (Integer/parseInt v (int 10)))
@@ -130,7 +131,7 @@
 ;;
 (defn- setOptions "Use reflection and invoke setters."
 
-  ([^Project pj ^Object pojo options]
+  ([pj pojo options]
   (setOptions pj pojo options #{}))
 
   ([^Project pj ^Object pojo options skips]
@@ -147,7 +148,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntTarFileSet "Create a TarFileSet Object."
+(declare maybeCfgNested)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntTarFileSet "Configure a TarFileSet Object."
 
   ^Tar$TarFileSet
   [^Project pj ^Tar$TarFileSet fs options nested]
@@ -155,15 +160,7 @@
   (let []
     (setOptions pj fs options)
     (.setProject fs pj)
-    (doseq [p nested]
-      (case (first p)
-        :include (-> ^PatternSet$NameEntry
-                     (.createInclude fs)
-                     (.setName (str (last p))))
-        :exclude (-> ^PatternSet$NameEntry
-                     (.createExclude fs)
-                     (.setName (str (last p))))
-        nil))
+    (maybeCfgNested pj fs nested)
     fs
   ))
 
@@ -179,131 +176,8 @@
                 fs
                 (merge {:errorOnMissingDir false} options))
     (.setProject fs pj)
-    (doseq [p nested]
-      (case (first p)
-        :include (-> ^PatternSet$NameEntry
-                     (.createInclude fs)
-                     (.setName (str (last p))))
-        :exclude (-> ^PatternSet$NameEntry
-                     (.createExclude fs)
-                     (.setName (str (last p))))
-        nil))
+    (maybeCfgNested pj fs nested)
     fs
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- parse-nested ""
-
-  [tk nested]
-
-  (doseq [p nested]
-    (case (first p)
-      :fileset
-      (->> (AntFileSet pj (nth p 1) (nth p 2))
-            (.addFileset tk))
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntProject "Create a new ant project."
-  []
-  (let [lg (doto (TimestampedLogger.)
-               (.setOutputPrintStream System/out)
-               (.setErrorPrintStream System/err)
-               (.setMessageOutputLevel Project/MSG_INFO))]
-    (doto (Project.)
-      (.setName "project-x")
-      (.addBuildListener lg))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ExecTarget "Run and execute a target."
-
-  [^Target target]
-
-  (.executeTarget (.getProject target) (.getName target)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ProjAntTasks "Bootstrap ant tasks with a target & project."
-
-  ^Target
-  [^Project pj ^String target & tasks]
-
-  (let [lg (doto (TimestampedLogger.)
-             (.setOutputPrintStream System/out)
-             (.setErrorPrintStream System/err)
-             (.setMessageOutputLevel Project/MSG_INFO))
-        tg (doto (Target.)
-             (.setName (or target "mi6"))) ]
-    (doto pj
-      (.addOrReplaceTarget tg))
-      ;;(.addBuildListener lg))
-    (doseq [t tasks]
-      (doto ^Task
-        t
-        (.setProject pj)
-        (.setOwningTarget tg))
-      (.addTask tg t))
-    tg
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntDelete "Ant delete task."
-
-  [^Project pj options nested]
-
-  (let [tk (doto (Delete.)
-                 (.setProject pj)
-                 (.setTaskName "delete"))]
-    (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
-    tk
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn CleanDir ""
-
-  [^File dir & {:keys [quiet]
-                :or {:quiet true}}]
-
-  (let [pj (AntProject)]
-    (if (.exists dir)
-      (-> (ProjAntTasks pj
-                        ""
-                        (->> [[:fileset {:dir (.getCanonicalPath dir)}
-                              [[:include "**/*"]]]]
-                             (AntDelete pj {:includeEmptyDirs true
-                                            :quiet quiet})))
-          (ExecTarget))
-      (.mkdirs dir))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn DeleteDir ""
-
-  [^File dir & {:keys [quiet]
-                :or {:quiet true}}]
-
-  (when (.exists dir)
-    (let [pj (AntProject)]
-      (-> (ProjAntTasks pj
-                        ""
-                        (->> [[:fileset {:dir (.getCanonicalPath dir)} []]]
-                             (AntDelete pj {:includeEmptyDirs true
-                                            :quiet quiet})))
-          (ExecTarget)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -326,6 +200,203 @@
       nil)
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeCfgNested ""
+
+  [^Project pj tk nested]
+
+  ;;(println "debug:\n" nested)
+  (doseq [p nested]
+    (case (first p)
+
+      :compilerarg
+      (when-let [^String line (:line (last p))]
+        (-> (.createCompilerArg tk)
+            (.setLine line)))
+
+      :classpath
+      (SetClassPath pj (.createClasspath tk) (last p))
+
+      :sysprops
+      (doseq [[k v] (last p)]
+        (->> (doto (Environment$Variable.)
+                   (.setKey (name k))
+                   (.setValue (str v)))
+             (.addSysproperty tk)))
+
+      :include
+      (-> (.createInclude tk)
+          (.setName (str (last p))))
+
+      :exclude
+      (-> (.createExclude tk)
+          (.setName (str (last p))))
+
+      :fileset
+      (->> (AntFileSet pj (nth p 1) (nth p 2))
+           (.addFileset tk))
+
+      :argvalues
+      (doseq [v (last p)]
+        (-> (.createArg tk)
+            (.setValue (str v))))
+
+      :argpaths
+      (doseq [v (last p)]
+        (-> (.createArg tk)
+            (.setPath (Path. pj (str v)))))
+
+      :arglines
+      (doseq [v (last p)]
+        (-> (.createArg tk)
+            (.setLine (str v))))
+
+      :replacefilter
+      (doto (.createReplacefilter tk)
+            (.setToken (:token (nth p 1)))
+            (.setValue (:value (nth p 1))))
+
+      :replacevalue
+      (-> (.createReplaceValue tk)
+          (.addText (:text (last p))))
+
+      :replacetoken
+      (-> (.createReplaceToken tk)
+          (.addText (:text (last p))))
+
+      :tarfileset
+      (AntTarFileSet pj (.createTarFileSet tk) (nth p 1) (nth p 2))
+
+      nil)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntProject "Create a new ant project."
+  []
+  (let [lg (doto
+             (TimestampedLogger.)
+             (.setOutputPrintStream System/out)
+             (.setErrorPrintStream System/err)
+             (.setMessageOutputLevel Project/MSG_INFO)) ]
+    (doto
+      (Project.)
+      (.setName "project-x")
+      (.addBuildListener lg))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExecTarget "Run and execute a target."
+
+  [^Target target]
+
+  (.executeTarget (.getProject target) (.getName target)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ProjAntTasks "Bootstrap ant tasks with a target & project."
+
+  ^Target
+  [^Project pj ^String target tasks]
+
+  (let [lg (doto (TimestampedLogger.)
+             (.setOutputPrintStream System/out)
+             (.setErrorPrintStream System/err)
+             (.setMessageOutputLevel Project/MSG_INFO))
+        tg (doto (Target.)
+             (.setName (or target "mi6"))) ]
+    (doto pj (.addOrReplaceTarget tg))
+        ;;(.addBuildListener lg))
+    (doseq [t tasks]
+      (doto ^Task
+        t
+        (.setProject pj)
+        (.setOwningTarget tg))
+      (.addTask tg t))
+    tg
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ProjAntTasks* "Bootstrap ant tasks with a target & project."
+
+  ^Target
+  [pj target & tasks]
+
+  (ProjAntTasks pj target tasks))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunAntTasks "Run ant tasks."
+
+  ^Target
+  [pj target tasks]
+
+  (-> (ProjAntTasks pj target tasks)
+      (ExecTarget)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunAntTasks* "Run ant tasks."
+
+  ^Target
+  [pj target & tasks]
+
+  (RunAntTasks pj target tasks))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntDelete "Ant delete task."
+
+  [^Project pj options nested]
+
+  (let [tk (doto (Delete.)
+                 (.setProject pj)
+                 (.setTaskName "delete"))]
+    (->> (merge {:includeEmptyDirs true} options)
+         (setOptions pj tk))
+    (maybeCfgNested pj tk nested)
+    tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CleanDir "Clean an existing dir or create it."
+
+  [^File dir & {:keys [quiet]
+                :or {:quiet true}}]
+
+  (let [pj (AntProject)]
+    (if (.exists dir)
+      (RunAntTasks* pj
+                    ""
+                    (AntDelete
+                      pj
+                      {:quiet quiet}
+                      [[:fileset {:dir dir}
+                                 [[:include "**/*"]]]]))
+      (.mkdirs dir))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DeleteDir "Remove a directory."
+
+  [^File dir & {:keys [quiet]
+                :or {:quiet true}}]
+
+  (when (.exists dir)
+    (let [pj (AntProject)]
+      (RunAntTasks*
+        pj
+        ""
+        (AntDelete pj
+                   {:quiet quiet}
+                   [[:fileset {:dir dir} []]])))
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn AntExec "Ant exec task."
@@ -337,21 +408,7 @@
                  (.setProject pj)
                  (.setTaskName "exec"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :argvalues
-        (doseq [v (last p)]
-          (-> (.createArg tk)
-              (.setValue (str v))))
-        :argpaths
-        (doseq [v (last p)]
-          (-> (.createArg tk)
-              (.setPath (Path. pj (str v)))))
-        :arglines
-        (doseq [v (last p)]
-          (-> (.createArg tk)
-              (.setLine (str v))))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -366,12 +423,7 @@
                  (.setProject pj)
                  (.setTaskName "concat"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -400,25 +452,7 @@
                  (.setProject pj)
                  (.setTaskName "replace"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :replacefilter
-        (doto (.createReplacefilter tk)
-              (.setToken (:token (nth p 1)))
-              (.setValue (:value (nth p 1))))
-        :replacevalue
-        (-> (.createReplaceValue tk)
-            (.addText (:text (last p))))
-        :replacetoken
-        (-> (.createReplaceToken tk)
-            (.addText (:text (last p))))
-        :include
-        (-> (.createInclude tk)
-            (.setName (str (last n))))
-        :exclude
-        (-> (.createExclude tk)
-            (.setName (str (last n))))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -433,12 +467,7 @@
                  (.setProject pj)
                  (.setTaskName "chmod"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -453,25 +482,7 @@
                  (.setProject pj)
                  (.setTaskName "javac"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :compilerarg
-        (when-let [^String line (:line (last p))]
-          (-> (.createCompilerArg tk)
-              (.setLine line)))
-        :classpath
-        (SetClassPath pj (.createClasspath tk) (last p))
-        :files
-        (doseq [n (last p)]
-          (case (first n)
-            :include
-            (-> (.createInclude tk)
-                (.setName (str (last n))))
-            :exclude
-            (-> (.createExclude tk)
-                (.setName (str (last n))))
-            nil))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -485,18 +496,12 @@
   (let [tk (doto (Javadoc.)
                  (.setProject pj)
                  (.setTaskName "javadoc"))]
+
     (when-let [[k v] (find options :access)]
       (.setAccess tk (doto (Javadoc$AccessType.)
                            (.setValue (str v)))))
     (setOptions pj tk options #{:access})
-    (doseq [p nested]
-      (case (first p)
-        :classpath
-        (SetClassPath pj (.createClasspath tk) (last p))
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -511,12 +516,7 @@
                  (.setProject pj)
                  (.setTaskName "copy"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -531,13 +531,38 @@
                  (.setProject pj)
                  (.setTaskName "move"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CopyFile ""
+
+  [file toDir]
+
+  (let [pj (AntProject)]
+    (.mkdirs (io/file toDir))
+    (RunAntTasks*
+      pj
+      ""
+      (AntCopy pj {:file file
+                   :todir toDir} []))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MoveFile ""
+
+  [file toDir]
+
+  (let [pj (AntProject)]
+    (.mkdirs (io/file toDir))
+    (RunAntTasks*
+      pj
+      ""
+      (AntMove pj {:file file
+                   :todir toDir} []))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -550,15 +575,12 @@
   (let [tk (doto (Tar.)
                  (.setProject pj)
                  (.setTaskName "tar"))]
+
     (when-let [[k v] (find options :compression)]
           (.setCompression tk (doto (Tar$TarCompressionMethod.)
                                (.setValue (str v)))))
     (setOptions pj tk options #{:compression})
-    (doseq [p nested]
-      (case (first p)
-        :tarfileset
-        (AntTarFileSet pj (.createTarFileSet tk) (nth p 1) (nth p 2))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -573,12 +595,7 @@
                  (.setProject pj)
                  (.setTaskName "jar"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -593,29 +610,7 @@
                  (.setProject pj)
                  (.setTaskName "java"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :sysprops
-        (doseq [[k v] (last p)]
-          (->> (doto (Environment$Variable.)
-                     (.setKey (name k))
-                     (.setValue (str v)))
-               (.addSysproperty tk)))
-        :classpath
-        (SetClassPath pj (.createClasspath tk) (last p))
-        :argvalues
-        (doseq [a (last p)]
-          (-> (.createArg tk)
-              (.setValue (str a))))
-        :argpaths
-        (doseq [a (last p)]
-          (-> (.createArg tk)
-              (.setPath (Path. pj (str a)))))
-        :arglines
-        (doseq [a (last p)]
-          (-> (.createArg tk)
-              (.setLine (str a))))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
@@ -630,12 +625,7 @@
                  (.setProject pj)
                  (.setTaskName "apply"))]
     (setOptions pj tk options)
-    (doseq [p nested]
-      (case (first p)
-        :fileset
-        (->> (AntFileSet pj (nth p 1) (nth p 2))
-             (.addFileset tk))
-        nil))
+    (maybeCfgNested pj tk nested)
     tk
   ))
 
