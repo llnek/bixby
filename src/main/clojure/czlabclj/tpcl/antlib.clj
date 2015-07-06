@@ -75,11 +75,11 @@
       ;;add more types when needed
       [java.lang.String
        java.io.File
-       primitiveBool
+       Boolean/TYPE
        java.lang.Boolean
-       primitiveInt
+       Integer/TYPE
        java.lang.Integer
-       primitiveLong
+       Long/TYPE
        java.lang.Long
        org.apache.tools.ant.types.Path ])))
 
@@ -117,7 +117,7 @@
   [^Project pj ^Class pz value]
 
   (cond
-    (or (= primitiveBool pz)
+    (or (= Boolean/TYPE pz)
         (= Boolean pz))
     (= "true" (str value))
 
@@ -155,9 +155,11 @@
 (defn AntTarFileSet "Configure a TarFileSet Object."
 
   ^Tar$TarFileSet
-  [^Project pj ^Tar$TarFileSet fs options nested]
+  [^Project pj ^Tar$TarFileSet fs & [options nested]]
 
-  (let []
+  (let [options (or options {})
+        nested (or nested []) ]
+
     (setOptions pj fs options)
     (.setProject fs pj)
     (maybeCfgNested pj fs nested)
@@ -169,9 +171,12 @@
 (defn AntFileSet "Create a FileSet Object."
 
   ^FileSet
-  [^Project pj options nested]
+  [^Project pj & [options nested]]
 
-  (let [fs (FileSet.)]
+  (let [fs (FileSet.)
+        options (or options {})
+        nested (or nested []) ]
+
     (setOptions pj
                 fs
                 (merge {:errorOnMissingDir false} options))
@@ -195,7 +200,9 @@
       (throw (Exception. "path:refid not supported."))
       ;;(doto (.createPath root) (.setRefid (last p)))
       :fileset
-      (->> (AntFileSet pj (nth p 1) (nth p 2))
+      (->> (AntFileSet pj
+                       (if (> (count p) 1)(nth p 1) {})
+                       (if (> (count p) 2)(nth p 2) []))
            (.addFileset root))
       nil)
   ))
@@ -234,7 +241,9 @@
           (.setName (str (last p))))
 
       :fileset
-      (->> (AntFileSet pj (nth p 1) (nth p 2))
+      (->> (AntFileSet pj
+                       (if (> (count p) 1)(nth p 1) {})
+                       (if (> (count p) 2)(nth p 2) []))
            (.addFileset tk))
 
       :argvalues
@@ -266,7 +275,10 @@
           (.addText (:text (last p))))
 
       :tarfileset
-      (AntTarFileSet pj (.createTarFileSet tk) (nth p 1) (nth p 2))
+      (AntTarFileSet pj
+                     (.createTarFileSet tk)
+                     (if (> (count p) 1)(nth p 1) {})
+                     (if (> (count p) 2)(nth p 2) []))
 
       nil)
   ))
@@ -357,12 +369,14 @@
         tm (cstr/lower-case
              (.substring s (+ 1 (.lastIndexOf s "."))))]
 
-    `(defn ~sym ~docstr [pj# options# nested#]
+    `(defn ~sym ~docstr [pj# & [options# nested#]]
        (let [tk# (doto (new ~func)
                      (.setProject pj#)
-                     (.setTaskName ~tm))]
-        (setOptions pj# tk# options#)
-        (maybeCfgNested pj# tk# nested#)
+                     (.setTaskName ~tm))
+             o# (or options# {})
+             n# (or nested# [])]
+        (setOptions pj# tk# o#)
+        (maybeCfgNested pj# tk# n#)
         tk#
       ))
   ))
@@ -371,11 +385,13 @@
 ;;
 (defn AntDelete "Ant delete task."
 
-  [^Project pj options nested]
+  [^Project pj & [options nested]]
 
   (let [tk (doto (Delete.)
                  (.setProject pj)
-                 (.setTaskName "delete"))]
+                 (.setTaskName "delete"))
+        options (or options {})
+        nested (or nested []) ]
     (->> (merge {:includeEmptyDirs true} options)
          (setOptions pj tk))
     (maybeCfgNested pj tk nested)
@@ -415,7 +431,7 @@
         ""
         (AntDelete pj
                    {:quiet quiet}
-                   [[:fileset {:dir dir} []]])))
+                   [[:fileset {:dir dir} ]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,11 +447,13 @@
 (defn AntMkdir "Ant mkdir task."
 
   ^Task
-  [^Project pj options]
+  [^Project pj & [options nested ]]
 
   (let [tk (doto (Mkdir.)
                  (.setProject pj)
-                 (.setTaskName "mkdir"))]
+                 (.setTaskName "mkdir"))
+        options (or options {})
+        nested (or nested []) ]
     (setOptions pj tk options)
     tk
   ))
@@ -457,11 +475,13 @@
 (defn AntJavadoc "Ant javadoc task."
 
   ^Task
-  [^Project pj options nested]
+  [^Project pj & [options nested]]
 
   (let [tk (doto (Javadoc.)
                  (.setProject pj)
-                 (.setTaskName "javadoc"))]
+                 (.setTaskName "javadoc"))
+        options (or options {})
+        nested (or nested []) ]
 
     (when-let [[k v] (find options :access)]
       (.setAccess tk (doto (Javadoc$AccessType.)
@@ -491,7 +511,7 @@
       pj
       ""
       (AntCopy pj {:file file
-                   :todir toDir} []))
+                   :todir toDir} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -506,7 +526,7 @@
       pj
       ""
       (AntMove pj {:file file
-                   :todir toDir} []))
+                   :todir toDir} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -514,11 +534,13 @@
 (defn AntTar "Ant tar task."
 
   ^Task
-  [^Project pj options nested]
+  [^Project pj & [options nested]]
 
   (let [tk (doto (Tar.)
                  (.setProject pj)
-                 (.setTaskName "tar"))]
+                 (.setTaskName "tar"))
+        options (or options {})
+        nested (or nested [])]
 
     (when-let [[k v] (find options :compression)]
           (.setCompression tk (doto (Tar$TarCompressionMethod.)

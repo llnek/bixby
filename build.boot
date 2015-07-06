@@ -146,7 +146,7 @@
          '[clojure.java.io :as io]
          '[clojure.string :as cstr]
          '[czlabclj.tpcl.antlib :as ant]
-         '[czlabclj.tpcl.boot :as bt]
+         '[czlabclj.tpcl.boot :as b]
          '[boot.core :as bcore])
 
 (import '[org.apache.tools.ant Project Target Task]
@@ -154,11 +154,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;(defmacro ^:private fp! "" [& args] `(cstr/join "/" '~args))
-(defn- fp! "" [& args] (cstr/join "/" args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,20 +173,20 @@
 (def ^:private buildDebug (atom true))
 (def ^:private prj (atom "0"))
 
-(def ^:private gantBuildDir (atom (fp! @basedir @bldDir @prj)))
+(def ^:private gantBuildDir (atom (b/fp! @basedir @bldDir @prj)))
 
-(def ^:private distribDir (atom (fp! @gantBuildDir "distrib")))
-(def ^:private buildDir (atom (fp! @gantBuildDir "build")))
+(def ^:private distribDir (atom (b/fp! @gantBuildDir "distrib")))
+(def ^:private buildDir (atom (b/fp! @gantBuildDir "build")))
 
-(def ^:private libDir (atom (fp! @gantBuildDir "lib")))
-(def ^:private qaDir (atom (fp! @gantBuildDir "test")))
+(def ^:private libDir (atom (b/fp! @gantBuildDir "lib")))
+(def ^:private qaDir (atom (b/fp! @gantBuildDir "test")))
 
-(def ^:private testDir (atom (fp! @basedir "src" "test")))
-(def ^:private srcDir (atom (fp! @basedir "src" "main")))
-(def ^:private packDir (atom (fp! @gantBuildDir "pack")))
+(def ^:private testDir (atom (b/fp! @basedir "src" "test")))
+(def ^:private srcDir (atom (b/fp! @basedir "src" "main")))
+(def ^:private packDir (atom (b/fp! @gantBuildDir "pack")))
 
-(def ^:private reportTestDir (atom (fp! @qaDir "reports")))
-(def ^:private buildTestDir (atom (fp! @qaDir "classes")))
+(def ^:private reportTestDir (atom (b/fp! @qaDir "reports")))
+(def ^:private buildTestDir (atom (b/fp! @qaDir "classes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,14 +199,14 @@
 (def CPATH [[:location @buildDir]
             [:fileset {:dir @libDir} [[:include "*.jar"]]]])
 
-(def JAVAC_OPTS (merge {:srcdir (fp! @srcDir "java")
+(def JAVAC_OPTS (merge {:srcdir (b/fp! @srcDir "java")
                         :destdir @buildDir
                         :target "1.8"
                         :debugLevel "lines,vars,source"}
                         COMPILE_OPTS))
 
 (def CJPATH (-> CPATH
-                (conj [:location (fp! @srcDir "clojure")])))
+                (conj [:location (b/fp! @srcDir "clojure")])))
 
 (def CLJC_OPTS {:classname "clojure.lang.Compile"
                 :fork true
@@ -264,8 +259,8 @@
 (defn- preBuild ""
   [& args]
   (let [pj (ant/AntProject)]
-    (doseq [s [(fp! @distribDir "boot")
-               (fp! @distribDir "exec")
+    (doseq [s [(b/fp! @distribDir "boot")
+               (b/fp! @distribDir "exec")
                @libDir
                @qaDir
                @buildDir]]
@@ -275,9 +270,9 @@
       pj
       "pre-build"
       (ant/AntCopy pj {:todir @buildDir
-                       :file (fp! @basedir "log4j.properties")} [])
+                       :file (b/fp! @basedir "log4j.properties")} )
       (ant/AntCopy pj {:todir @buildDir
-                       :file (fp! @basedir "logback.xml")} []))
+                       :file (b/fp! @basedir "logback.xml")} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -350,7 +345,7 @@
         root (io/file @srcDir "js")]
     (ant/CleanDir ljs)
     (try
-      (bt/BabelTree root #'babel->cb)
+      (b/BabelTree root #'babel->cb)
       (finally
         (ant/DeleteDir ljs)))
   ))
@@ -372,12 +367,12 @@
          [:compilerarg COMPILER_ARGS]])
       (ant/AntCopy
         pj
-        {:todir (fp! @buildDir "com/zotohlab/frwk")}
-        [[:fileset {:dir (fp! @srcDir "java/com/zotohlab/frwk")}
+        {:todir (b/fp! @buildDir "com/zotohlab/frwk")}
+        [[:fileset {:dir (b/fp! @srcDir "java/com/zotohlab/frwk")}
          [[:exclude "**/*.java"]]]])
       (ant/AntJar
         pj
-        {:destFile (fp! @distribDir
+        {:destFile (b/fp! @distribDir
                         (str "exec/frwk-" @buildVersion ".jar"))}
         [[:fileset {:dir @buildDir}
                    [[:include "com/zotohlab/frwk/**"]
@@ -404,14 +399,14 @@
          [:compilerarg COMPILER_ARGS]])
       (ant/AntCopy
         pj
-        {:todir (fp! @buildDir "com/zotohlab/wflow")}
-        [[:fileset {:dir (fp! @srcDir "java/com/zotohlab/server")}
+        {:todir (b/fp! @buildDir "com/zotohlab/wflow")}
+        [[:fileset {:dir (b/fp! @srcDir "java/com/zotohlab/server")}
                    [[:exclude "**/*.java"]]]
-         [:fileset {:dir (fp! @srcDir "java/com/zotohlab/wflow")}
+         [:fileset {:dir (b/fp! @srcDir "java/com/zotohlab/wflow")}
                    [[:exclude "**/*.java"]]]])
       (ant/AntJar
         pj
-        {:destFile (fp! @distribDir
+        {:destFile (b/fp! @distribDir
                         (str "exec/wflow-" @buildVersion ".jar"))}
         [[:fileset {:dir @buildDir}
                    [[:include "com/zotohlab/server/**"]
@@ -439,19 +434,19 @@
             (fn [d]
               (ant/AntCopy
                 pj
-                {:todir (fp! @buildDir "com/zotohlab" d)}
-                [[:fileset {:dir (fp! @srcDir "java/com/zotohlab" d)}
+                {:todir (b/fp! @buildDir "com/zotohlab" d)}
+                [[:fileset {:dir (b/fp! @srcDir "java/com/zotohlab" d)}
                            [[:exclude "**/*.java"]]]]))
             ["skaro" "mock" "tpcl"])
         t2 (ant/AntJar
              pj
-             {:destFile (fp! @distribDir
+             {:destFile (b/fp! @distribDir
                              (str "boot/loaders-" @buildVersion ".jar"))}
              [[:fileset {:dir @buildDir}
                         [[:include "com/zotohlab/skaro/loaders/**"] ]]])
         t3 (ant/AntJar
              pj
-             {:destFile (fp! @distribDir
+             {:destFile (b/fp! @distribDir
                              (str "exec/skaroj-" @buildVersion ".jar"))}
              [[:fileset {:dir @buildDir}
               [[:include "com/zotohlab/skaro/**"]
@@ -485,8 +480,8 @@
             (fn [d]
               (ant/AntCopy
                 pj
-                {:todir (fp! @buildDir "demo" d)}
-                [[:fileset {:dir (fp! @srcDir "java/demo" d)}
+                {:todir (b/fp! @buildDir "demo" d)}
+                [[:fileset {:dir (b/fp! @srcDir "java/demo" d)}
                            [[:exclude "**/*.java"]]]]))
             ["splits" "flows" ]) ]
     (ant/RunAntTasks
@@ -504,7 +499,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/xlib/jmx")]]
             CJNESTED)))
 
@@ -517,7 +512,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/xlib/crypto")]]
             CJNESTED)))
 
@@ -530,7 +525,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/xlib/dbio")]]
             CJNESTED)))
 
@@ -543,7 +538,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/xlib/netty"
                                         "czlabclj/xlib/net")]]
             CJNESTED)))
@@ -557,7 +552,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/xlib/util"
                                         "czlabclj/xlib/i18n")]]
             CJNESTED)))
@@ -574,12 +569,12 @@
             [ #'cljUtil #'cljCrypto #'cljDbio #'cljNet #'cljJMX ])
         t2 (ant/AntCopy
              pj
-             {:todir (fp! @buildDir "czlabclj/xlib")}
-             [[:fileset {:dir (fp! @srcDir "clojure/czlabclj/xlib")}
+             {:todir (b/fp! @buildDir "czlabclj/xlib")}
+             [[:fileset {:dir (b/fp! @srcDir "clojure/czlabclj/xlib")}
                         [[:exclude "**/*.clj"]]]])
         t3 (ant/AntJar
              pj
-             {:destFile (fp! @distribDir
+             {:destFile (b/fp! @distribDir
                              (str "exec/xlib-" @buildVersion ".jar"))}
              [[:fileset {:dir @buildDir}
                         [[:include "czlabclj/xlib/**"]
@@ -605,17 +600,17 @@
       (ant/AntJava
         pj
         CLJC_OPTS
-        (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+        (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                             "czlabclj/tpcl")]]
                 CJNESTED))
       (ant/AntCopy
         pj
-        {:todir (fp! @buildDir "czlabclj/tpcl")}
-        [[:fileset {:dir (fp! @srcDir "clojure/czlabclj/tpcl")}
+        {:todir (b/fp! @buildDir "czlabclj/tpcl")}
+        [[:fileset {:dir (b/fp! @srcDir "clojure/czlabclj/tpcl")}
                    [[:exclude "**/*.clj"]]]])
       (ant/AntJar
         pj
-        {:destFile (fp! @distribDir
+        {:destFile (b/fp! @distribDir
                         (str "exec/tpcl-" @buildVersion ".jar"))}
         [[:fileset {:dir @buildDir}
                    [[:include "czlabclj/tpcl/**"]
@@ -636,7 +631,7 @@
       (ant/AntJava
         pj
         CLJC_OPTS
-        (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+        (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                             "demo/file" "demo/fork"
                                             "demo/http" "demo/jetty"
                                             "demo/jms" "demo/mvc"
@@ -645,8 +640,8 @@
                 CJNESTED))
       (ant/AntCopy
         pj
-        {:todir (fp! @buildDir "demo")}
-        [[:fileset {:dir (fp! @srcDir "clojure/demo")}
+        {:todir (b/fp! @buildDir "demo")}
+        [[:fileset {:dir (b/fp! @srcDir "clojure/demo")}
                    [[:exclude "**/*.clj"]]]]))
   ))
 
@@ -659,7 +654,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/impl")]]
             CJNESTED)))
 
@@ -672,7 +667,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/mvc")]]
             CJNESTED)))
 
@@ -685,7 +680,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/auth")]]
             CJNESTED)))
 
@@ -698,7 +693,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/io")]]
             CJNESTED)))
 
@@ -711,7 +706,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/etc")]]
             CJNESTED)))
 
@@ -724,7 +719,7 @@
   (ant/AntJava
     pj
     CLJC_OPTS
-    (concat [[:argvalues (bt/FmtCljNsps (fp! @srcDir "clojure")
+    (concat [[:argvalues (b/FmtCljNsps (b/fp! @srcDir "clojure")
                                         "czlabclj/tardis/core")]]
             CJNESTED)))
 
@@ -740,13 +735,13 @@
                  #'tardisIO #'tardisMvc #'tardisMain ])
         t2 (ant/AntCopy
              pj
-             {:todir (fp! @buildDir "czlabclj/tardis")}
-             [[:fileset {:dir (fp! @srcDir "clojure/czlabclj/tardis")}
+             {:todir (b/fp! @buildDir "czlabclj/tardis")}
+             [[:fileset {:dir (b/fp! @srcDir "clojure/czlabclj/tardis")}
                         [[:exclude "**/*.meta"]
                          [:exclude "**/*.clj"]]]])
         t3 (ant/AntJar
              pj
-             {:destFile (fp! @distribDir
+             {:destFile (b/fp! @distribDir
                              (str "exec/tardis-" @buildVersion ".jar"))}
              [[:fileset {:dir @buildDir}
                         [[:include "czlabclj/tardis/**"] ]]]) ]
@@ -775,12 +770,12 @@
       "distro-init"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "etc")}
-        [[:fileset {:dir (fp! @basedir "etc")} []]])
+        {:todir (b/fp! @packDir "etc")}
+        [[:fileset {:dir (b/fp! @basedir "etc")} ]])
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "conf")}
-        [[:fileset {:dir (fp! @basedir "etc/conf")} []]]))
+        {:todir (b/fp! @packDir "conf")}
+        [[:fileset {:dir (b/fp! @basedir "etc/conf")} ]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -792,8 +787,8 @@
 
   (ant/AntCopy
     pj
-    {:todir (fp! @packDir "public/vendors")}
-    [[:fileset {:dir (fp! @buildDir "js")}
+    {:todir (b/fp! @packDir "public/vendors")}
+    [[:fileset {:dir (b/fp! @buildDir "js")}
                [[:include "**/*.js"]]]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -808,14 +803,14 @@
       "pack-res"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "etc/ems")
+        {:todir (b/fp! @packDir "etc/ems")
          :flatten true}
-        [[:fileset {:dir (fp! @srcDir "clojure")}
+        [[:fileset {:dir (b/fp! @srcDir "clojure")}
                    [[:include "**/*.meta"]]]])
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "etc")}
-        [[:fileset {:dir (fp! @basedir "etc")} []]]))
+        {:todir (b/fp! @packDir "etc")}
+        [[:fileset {:dir (b/fp! @basedir "etc")} []]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -833,12 +828,12 @@
       "pack-docs"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "docs")}
-        [[:fileset {:dir (fp! @basedir "docs")}
+        {:todir (b/fp! @packDir "docs")}
+        [[:fileset {:dir (b/fp! @basedir "docs")}
                    [[:exclude "dummy.txt"]]]])
       (ant/AntJavadoc
         pj
-        {:destdir (fp! @packDir "docs/api")
+        {:destdir (b/fp! @packDir "docs/api")
          :access "protected"
          :author true
          :nodeprecated false
@@ -850,7 +845,7 @@
          :splitindex true
          :use true
          :version true}
-         [[:fileset {:dir (fp! @srcDir "java")}
+         [[:fileset {:dir (b/fp! @srcDir "java")}
                     [[:exclude "demo/**"]
                      [:include "**/*.java"]]]
           [:classpath CPATH]])
@@ -867,8 +862,8 @@
          :fork true
          :failonerror true}
         [[:argvalues [@basedir
-                      (fp! @srcDir "clojure")
-                      (fp! @packDir "docs/api")]]
+                      (b/fp! @srcDir "clojure")
+                      (b/fp! @packDir "docs/api")]]
          [:classpath CJPATH]])
 
       (copyJsFiles pj)
@@ -879,7 +874,7 @@
          :dir @basedir
          :spawn true}
         [[:argvalues ["-c" "mvn/js/jsdoc-conf.json"
-                      "-d" (fp! @packDir "docs/jsdoc") ]]]))
+                      "-d" (b/fp! @packDir "docs/jsdoc") ]]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -894,12 +889,12 @@
       "pack-src"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "src/main/clojure")}
-        [[:fileset {:dir (fp! @srcDir "clojure")} []]])
+        {:todir (b/fp! @packDir "src/main/clojure")}
+        [[:fileset {:dir (b/fp! @srcDir "clojure")} ]])
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "src/main/java")}
-        [[:fileset {:dir (fp! @srcDir "java")} []]]))
+        {:todir (b/fp! @packDir "src/main/java")}
+        [[:fileset {:dir (b/fp! @srcDir "java")} ]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -914,8 +909,8 @@
       "pack-lics"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "lics")}
-        [[:fileset {:dir (fp! @basedir "lics") } []]])
+        {:todir (b/fp! @packDir "lics")}
+        [[:fileset {:dir (b/fp! @basedir "lics") } ]])
 
       (ant/AntCopy
         pj
@@ -939,19 +934,19 @@
 
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "dist/exec")}
-        [[:fileset {:dir (fp! @distribDir "exec")}
+        {:todir (b/fp! @packDir "dist/exec")}
+        [[:fileset {:dir (b/fp! @distribDir "exec")}
                    [[:include "*.jar"]]]])
 
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "dist/boot")}
-        [[:fileset {:dir (fp! @distribDir "boot")}
+        {:todir (b/fp! @packDir "dist/boot")}
+        [[:fileset {:dir (b/fp! @distribDir "boot")}
                    [[:include "*.jar"]]]])
 
       (ant/AntJar
         pj
-        {:destFile (fp! @packDir
+        {:destFile (b/fp! @packDir
                         (str "dist/exec/clj-" @buildVersion ".jar"))}
         [[:fileset {:dir @buildDir}
                    [[:include "clojure/**"]]]])
@@ -971,8 +966,8 @@
       "pack-libs"
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "lib")}
-        [[:fileset {:dir @libDir} []]]))
+        {:todir (b/fp! @packDir "lib")}
+        [[:fileset {:dir @libDir} ]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -988,14 +983,14 @@
 
       (ant/AntCopy
         pj
-        {:todir (fp! @packDir "bin")}
-        [[:fileset {:dir (fp! @basedir "bin")} []]])
+        {:todir (b/fp! @packDir "bin")}
+        [[:fileset {:dir (b/fp! @basedir "bin")} ]])
 
       (ant/AntChmod
         pj
-        {:dir (fp! @packDir "bin")
+        {:dir (b/fp! @packDir "bin")
          :perm "755"
-         :includes "*"} []))
+         :includes "*"} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1012,7 +1007,7 @@
 
       (ant/AntTar
         pj
-        {:destFile (fp! @distribDir
+        {:destFile (b/fp! @distribDir
                         (str @PID "-" @buildVersion ".tar.gz"))
          :compression "gzip"}
         [[:tarfileset {:dir @packDir}
@@ -1037,9 +1032,8 @@
             pj
             ""
             (ant/AntCopy pj
-                         {:file (fp! (:dir j) (:path j))
-                          :todir to}
-                         []))))
+                         {:file (b/fp! (:dir j) (:path j))
+                          :todir to}))))
       (format "copied (%d) jar-files to %s" (count jars) to))
     fileset
   ))

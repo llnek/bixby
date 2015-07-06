@@ -20,11 +20,45 @@
             [clojure.string :as cstr]
             [czlabclj.tpcl.antlib :as ant])
 
-  (:import [java.util Stack]
+  (:import [java.util GregorianCalender
+            Date Stack UUID]
+           [java.text SimpleDateFormat]
            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;(defmacro ^:private fp! "" [& args] `(cstr/join "/" '~args))
+(defn fp! "" [& args] (cstr/join "/" args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FmtTime ""
+
+  [^String fmt]
+
+  (-> (SimpleDateFormat. fmt)
+      (.format (-> (GregorianCalendar.)
+                   (.getTimeInMillis)
+                   (Date.)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RandUUID ""
+  []
+  (UUID/randomUUID))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReplaceFile ""
+
+  [file work]
+
+  (->> (-> (slurp file :encoding "utf-8")
+           (work))
+       (spit f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
