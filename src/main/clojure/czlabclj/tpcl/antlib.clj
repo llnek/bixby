@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -18,41 +18,54 @@
             [clojure.java.io :as io]
             [clojure.string :as cstr])
 
-  (:import [org.apache.commons.exec CommandLine DefaultExecutor]
-           [org.apache.commons.io FileUtils]
-           [java.util Map HashMap Stack]
+  (:import [java.beans Introspector PropertyDescriptor]
            [java.lang.reflect Method]
-           [java.beans Introspector PropertyDescriptor]
+           [java.util Stack]
            [java.io File]
-           [org.apache.tools.ant.taskdefs Javadoc Java Copy
-            Chmod Concat Move Mkdir Tar Replace ExecuteOn
+           [org.apache.tools.ant.taskdefs
+            Javadoc Java Copy Chmod
+            Concat Move Mkdir Tar
+            Replace ExecuteOn
             Delete Jar Zip ExecTask Javac]
-           [org.apache.tools.ant.listener AnsiColorLogger TimestampedLogger]
-           [org.apache.tools.ant.types Reference
+           [org.apache.tools.ant.listener
+            AnsiColorLogger
+            TimestampedLogger]
+           [org.apache.tools.ant.types
             Commandline$Argument
             Commandline$Marker
             PatternSet$NameEntry
-            Environment$Variable FileSet Path DirSet]
-           [org.apache.tools.ant NoBannerLogger Project Target Task]
-           [org.apache.tools.ant.taskdefs Javadoc$AccessType
-            Replace$Replacefilter Replace$NestedString
-            Tar$TarFileSet Tar$TarCompressionMethod
+            Environment$Variable
+            Reference FileSet Path DirSet]
+           [org.apache.tools.ant
+            NoBannerLogger
+            Project Target Task]
+           [org.apache.tools.ant.taskdefs
+            Javadoc$AccessType
+            Replace$Replacefilter
+            Replace$NestedString
+            Tar$TarFileSet
+            Tar$TarCompressionMethod
             Javac$ImplementationSpecificArgument]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+(declare maybeCfgNested)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- capstr "Just capitalize the 1st character."
+
   [^String s]
+
   (str (.toUpperCase (.substring s 0 1))
        (.substring s 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn AntProject "Create a new ant project."
+
   []
+
   (let [lg (doto
              ;;(TimestampedLogger.)
              (AnsiColorLogger.)
@@ -70,13 +83,16 @@
 ;;
 (defn ExecTarget "Run and execute a target."
 
-  [^Target target]
+  [target]
 
   (.executeTarget (.getProject target) (.getName target)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;;create a default project.
 (def ^:private dftprj (atom (AntProject)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;cache ant task names as symbols
 (def ^:private tasks
   (atom (let [arr (atom [])]
           (doseq [[k v] (.getTaskDefinitions @dftprj)]
@@ -84,6 +100,9 @@
               (let [n (str "Ant" (capstr k))]
                 (reset! arr (conj @arr n k)))))
           (partition 2 (map #(symbol %) @arr)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;cache task bean info property descriptors.
 (def ^:private props
   (atom (let [m {"tarfileset" Tar$TarFileSet
                  "fileset" FileSet }
@@ -91,8 +110,7 @@
           (doseq [[k v] (merge m (.getTaskDefinitions @dftprj))]
             (when (or (.isAssignableFrom Task v)
                       (contains? m k))
-              (->> (-> v
-                       (Introspector/getBeanInfo)
+              (->> (-> (Introspector/getBeanInfo v)
                        (.getPropertyDescriptors))
                    (reduce (fn [memo pd]
                              (assoc memo
@@ -104,7 +122,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- method? "Find this setter method via best match."
+
   [^Class cz ^String m]
+
   (let [arr (make-array java.lang.Class 1)]
     (some
       (fn [^Class z]
@@ -154,7 +174,7 @@
 ;;
 (defn- coerce "Best attempt to convert a given value."
 
-  [^Project pj ^Class pz value]
+  [pj pz value]
 
   (cond
     (or (= Boolean/TYPE pz)
@@ -171,11 +191,10 @@
 ;;
 (defn- setOptions "Use reflection and invoke setters."
 
-  ([pj pojo options]
-  (setOptions pj pojo options #{}))
+  [pj pojo options & [skips]]
 
-  ([^Project pj ^Object pojo options skips]
   (let [arr (object-array 1)
+        skips (or skips #{})
         cz (.getClass pojo)
         ps (get @props cz) ]
     (doseq [[k v] options]
@@ -191,15 +210,14 @@
             (let [m (str "set" (capstr (name k)))
                   rc (method? cz m)]
               (when (nil? rc)
-                (throw (Exception. (str m " not found in class " pojo))))
+                (throw (Exception. (str m " !found in " pojo))))
               (aset arr 0 (coerce pj (last rc) v))
               (.invoke (first rc) pojo arr)))
           ;;else
-          (throw (Exception. (str "unknown property " (name k) ", task " cz)))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(declare maybeCfgNested)
+          (throw (Exception. (str "property "
+                                  (name k)
+                                  " !found in task " cz))))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -262,7 +280,7 @@
 ;;
 (defn- maybeCfgNested ""
 
-  [^Project pj tk nested]
+  [pj tk nested]
 
   ;;(println "debug:\n" nested)
   (doseq [p nested]
@@ -333,6 +351,7 @@
 
       nil)
   ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- xxx-preopts ""
@@ -377,7 +396,8 @@
 
   (let [{:keys [pre-options tname
                 task options nested] } tobj
-        pre-options (or pre-options xxx-preopts)]
+        pre-options (or pre-options
+                        xxx-preopts)]
     (->> (doto ^Task
            task
            (.setProject pj)
@@ -396,9 +416,8 @@
   ^Target
   [^String target tasks]
 
-  (let [;;pj (AntProject)
-        pj @dftprj
-        tg (Target.)]
+  (let [tg (Target.)
+        pj @dftprj]
     (.setName tg (or target ""))
     (.addOrReplaceTarget pj tg)
     (doseq [t tasks]
@@ -470,48 +489,10 @@
   [pj]
   `(do ~@(map (fn [[a b]] `(ant-task ~pj ~a "" ~b)) (deref tasks))))
 
-(decl-ant-tasks @dftprj)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro ^:private Xant-task
+(decl-ant-tasks @dftprj)
 
-  ""
-  [sym docstr func]
-
-  (let [s (str func)
-        tm (cstr/lower-case
-             (.substring s (+ 1 (.lastIndexOf s "."))))]
-
-    `(defn ~sym ~docstr [pj# & [options# nested#]]
-       (let [tk# (doto (new ~func)
-                     (.setProject pj#)
-                     (.setTaskName ~tm))
-             o# (or options# {})
-             n# (or nested# [])]
-        (setOptions pj# tk# o#)
-        (maybeCfgNested pj# tk# n#)
-        tk#
-      ))
-  ))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(comment
-(ant-task AntReplace "" Replace)
-(ant-task AntApply "" ExecuteOn)
-(ant-task AntExec "" ExecTask)
-(ant-task AntConcat "" Concat)
-(ant-task AntChmod "" Chmod)
-(ant-task AntJavac "" Javac)
-(ant-task AntJava "" Java)
-(ant-task AntMkdir "" Mkdir)
-(ant-task AntDelete "" Delete)
-(ant-task AntCopy "" Copy)
-(ant-task AntMove "" Move)
-(ant-task AntJar "" Jar)
-(ant-task AntTar "" Tar tar-preopts)
-(ant-task AntJavadoc "" Javadoc jdoc-preopts)
-)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn CleanDir "Clean an existing dir or create it."
@@ -573,3 +554,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
