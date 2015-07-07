@@ -473,7 +473,7 @@
 
   [tk options]
 
-  [(merge {:includeEmptyDirs true} options) #{}])
+  [(merge {:includeEmptyDirs true } options) #{}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -655,7 +655,8 @@
   (if (.exists dir)
     (RunTasks* (AntDelete
                     {:quiet quiet}
-                    [[:fileset {:dir dir}
+                    [[:fileset {:followSymlinks false
+                                :dir dir}
                                [[:include "**/*"]]]]))
     ;;else
     (.mkdirs dir)
@@ -670,7 +671,8 @@
 
   (when (.exists dir)
     (RunTasks*
-      (AntDelete {:quiet quiet}
+      (AntDelete {:followSymlinks false
+                  :quiet quiet}
                  [[:fileset {:dir dir} ]]))
   ))
 
