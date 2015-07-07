@@ -20,7 +20,7 @@
             [clojure.string :as cstr]
             [czlabclj.tpcl.antlib :as ant])
 
-  (:import [java.util GregorianCalender
+  (:import [java.util GregorianCalendar
             Date Stack UUID]
            [java.text SimpleDateFormat]
            [java.io File]))
@@ -58,7 +58,7 @@
 
   (->> (-> (slurp file :encoding "utf-8")
            (work))
-       (spit f)))
+       (spit file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,12 +87,10 @@
 
   [workingDir args]
 
-  (let [pj (ant/AntProject)]
+  (let []
     (ant/RunAntTasks*
-      pj
       "babel"
       (ant/AntExec
-        pj
         {:executable "babel"
          :dir workingDir}
         [[:argvalues args ]]))

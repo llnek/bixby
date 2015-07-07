@@ -22,17 +22,18 @@
            [org.apache.commons.io FileUtils]
            [java.util Map HashMap Stack]
            [java.lang.reflect Method]
+           [java.beans Introspector PropertyDescriptor]
            [java.io File]
            [org.apache.tools.ant.taskdefs Javadoc Java Copy
             Chmod Concat Move Mkdir Tar Replace ExecuteOn
             Delete Jar Zip ExecTask Javac]
-           [org.apache.tools.ant.listener TimestampedLogger]
+           [org.apache.tools.ant.listener AnsiColorLogger TimestampedLogger]
            [org.apache.tools.ant.types Reference
             Commandline$Argument
             Commandline$Marker
             PatternSet$NameEntry
             Environment$Variable FileSet Path DirSet]
-           [org.apache.tools.ant Project Target Task]
+           [org.apache.tools.ant NoBannerLogger Project Target Task]
            [org.apache.tools.ant.taskdefs Javadoc$AccessType
             Replace$Replacefilter Replace$NestedString
             Tar$TarFileSet Tar$TarCompressionMethod
@@ -41,25 +42,64 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def primitiveBool
-(.getReturnType (.getMethod java.lang.String "isEmpty"
-                            (make-array java.lang.Class 0)
-                            )))
-(def primitiveLong
-(.getReturnType (.getMethod java.lang.Long "longValue"
-                            (make-array java.lang.Class 0)
-                            )))
-(def primitiveInt
-(.getReturnType (.getMethod java.lang.String "length"
-                            (make-array java.lang.Class 0)
-                            )))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- capstr "Just capitalize the 1st character."
   [^String s]
   (str (.toUpperCase (.substring s 0 1))
        (.substring s 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntProject "Create a new ant project."
+  []
+  (let [lg (doto
+             ;;(TimestampedLogger.)
+             (AnsiColorLogger.)
+             ;;(NoBannerLogger.)
+             (.setOutputPrintStream System/out)
+             (.setErrorPrintStream System/err)
+             (.setMessageOutputLevel Project/MSG_INFO)) ]
+    (doto (Project.)
+      (.init)
+      (.setName "project-x")
+      (.addBuildListener lg))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ExecTarget "Run and execute a target."
+
+  [^Target target]
+
+  (.executeTarget (.getProject target) (.getName target)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private dftprj (atom (AntProject)))
+(def ^:private tasks
+  (atom (let [arr (atom [])]
+          (doseq [[k v] (.getTaskDefinitions @dftprj)]
+            (when (.isAssignableFrom Task v)
+              (let [n (str "Ant" (capstr k))]
+                (reset! arr (conj @arr n k)))))
+          (partition 2 (map #(symbol %) @arr)))))
+(def ^:private props
+  (atom (let [m {"tarfileset" Tar$TarFileSet
+                 "fileset" FileSet }
+              arr (atom {})]
+          (doseq [[k v] (merge m (.getTaskDefinitions @dftprj))]
+            (when (or (.isAssignableFrom Task v)
+                      (contains? m k))
+              (->> (-> v
+                       (Introspector/getBeanInfo)
+                       (.getPropertyDescriptors))
+                   (reduce (fn [memo pd]
+                             (assoc memo
+                                    (keyword (.getName pd)) pd))
+                           {})
+                   (swap! arr assoc v))))
+          @arr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,19 +127,19 @@
 ;;
 (defmulti ^:private koerce "Best attempt to convert a value." (fn [_ a b] [a (class b)]))
 
-(defmethod koerce [primitiveInt String] [_ _ ^String v] (Integer/parseInt v (int 10)))
+(defmethod koerce [Integer/TYPE String] [_ _ ^String v] (Integer/parseInt v (int 10)))
 (defmethod koerce [Integer String] [_ _ ^String v] (Integer/parseInt v (int 10)))
 
-(defmethod koerce [primitiveInt Long] [_ _ ^Long v] (.intValue v))
+(defmethod koerce [Integer/TYPE Long] [_ _ ^Long v] (.intValue v))
 (defmethod koerce [Integer Long] [_ _ ^Long v] (.intValue v))
 
-(defmethod koerce [primitiveInt Integer] [_ _ ^Integer v] v)
+(defmethod koerce [Integer/TYPE Integer] [_ _ ^Integer v] v)
 (defmethod koerce [Integer Integer] [_ _ ^Integer v] v)
 
-(defmethod koerce [primitiveLong String] [_ _ ^String v] (Long/parseLong v (int 10)))
+(defmethod koerce [Long/TYPE String] [_ _ ^String v] (Long/parseLong v (int 10)))
 (defmethod koerce [Long String] [_ _ ^String v] (Long/parseLong v (int 10)))
 
-(defmethod koerce [primitiveLong Long] [_ _ ^Long v] v)
+(defmethod koerce [Long/TYPE Long] [_ _ ^Long v] v)
 (defmethod koerce [Long Long] [_ _ ^Long v] v)
 
 (defmethod koerce [Path File] [^Project pj _ ^File v] (Path. pj (.getCanonicalPath v)))
@@ -136,15 +176,26 @@
 
   ([^Project pj ^Object pojo options skips]
   (let [arr (object-array 1)
-        cz (.getClass pojo)]
+        cz (.getClass pojo)
+        ps (get @props cz) ]
     (doseq [[k v] options]
       (when-not (contains? skips k)
-        (let [m (str "set" (capstr (name k)))
-              rc (method? cz m)]
-          (when (nil? rc)
-            (throw (Exception. (str m " not found in class " pojo))))
-          (aset arr 0 (coerce pj (last rc) v))
-          (.invoke ^Method (first rc) pojo arr)))))))
+        (if-let [pd (get ps k)]
+          (if-let [wm (.getWriteMethod pd)]
+            ;;some cases the beaninfo is erroneous
+            ;;so fall back to use *best-try*
+            (let [pt (.getPropertyType pd)
+                  m (.getName wm)]
+              (aset arr 0 (coerce pj pt v))
+              (.invoke wm pojo arr))
+            (let [m (str "set" (capstr (name k)))
+                  rc (method? cz m)]
+              (when (nil? rc)
+                (throw (Exception. (str m " not found in class " pojo))))
+              (aset arr 0 (coerce pj (last rc) v))
+              (.invoke (first rc) pojo arr)))
+          ;;else
+          (throw (Exception. (str "unknown property " (name k) ", task " cz)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -282,85 +333,148 @@
 
       nil)
   ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- xxx-preopts ""
+  [tk options]
+  [options #{} ])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntProject "Create a new ant project."
-  []
-  (let [lg (doto
-             (TimestampedLogger.)
-             (.setOutputPrintStream System/out)
-             (.setErrorPrintStream System/err)
-             (.setMessageOutputLevel Project/MSG_INFO)) ]
-    (doto
-      (Project.)
-      (.setName "project-x")
-      (.addBuildListener lg))
-  ))
+(defn- delete-pre-opts ""
+
+  [tk options]
+
+  [(merge {:includeEmptyDirs true} options) #{}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExecTarget "Run and execute a target."
+(defn- jdoc-preopts ""
 
-  [^Target target]
+  [tk options]
 
-  (.executeTarget (.getProject target) (.getName target)))
+  (when-let [[k v] (find options :access)]
+    (.setAccess tk
+                (doto (Javadoc$AccessType.)
+                  (.setValue (str v)))))
+  [options #{:access}])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tar-preopts ""
+  [tk options]
+  (when-let [[k v] (find options :compression)]
+    (.setCompression tk
+                     (doto (Tar$TarCompressionMethod.)
+                       (.setValue (str v)))))
+  [options #{:compression}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTasks "Bootstrap ant tasks with a target & project."
+(defn- init-task ""
+
+  [^Project pj ^Target target tobj]
+
+  (let [{:keys [pre-options tname
+                task options nested] } tobj
+        pre-options (or pre-options xxx-preopts)]
+    (->> (doto ^Task
+           task
+           (.setProject pj)
+           (.setOwningTarget target))
+         (.addTask target))
+    (->> (pre-options task options)
+         (apply setOptions pj task))
+    (maybeCfgNested pj task nested)
+    task
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ProjAntTasks ""
 
   ^Target
-  [^Project pj ^String target tasks]
+  [^String target tasks]
 
-  (let [lg (doto (TimestampedLogger.)
-             (.setOutputPrintStream System/out)
-             (.setErrorPrintStream System/err)
-             (.setMessageOutputLevel Project/MSG_INFO))
-        tg (doto (Target.)
-             (.setName (or target "mi6"))) ]
-    (doto pj (.addOrReplaceTarget tg))
-        ;;(.addBuildListener lg))
+  (let [;;pj (AntProject)
+        pj @dftprj
+        tg (Target.)]
+    (.setName tg (or target ""))
+    (.addOrReplaceTarget pj tg)
     (doseq [t tasks]
-      (doto ^Task
-        t
-        (.setProject pj)
-        (.setOwningTarget tg))
-      (.addTask tg t))
+      (init-task pj tg t))
     tg
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTasks* "Bootstrap ant tasks with a target & project."
+(defn ProjAntTasks* ""
 
   ^Target
-  [pj target & tasks]
+  [target & tasks]
 
-  (ProjAntTasks pj target tasks))
+  (ProjAntTasks target tasks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RunAntTasks "Run ant tasks."
 
-  ^Target
-  [pj target tasks]
+  [target tasks]
 
-  (-> (ProjAntTasks pj target tasks)
+  (-> (ProjAntTasks target tasks)
       (ExecTarget)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RunAntTasks* "Run ant tasks."
 
-  ^Target
-  [pj target & tasks]
+  [target & tasks]
 
-  (RunAntTasks pj target tasks))
+  (RunAntTasks target tasks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro ^:private ant-task
+
+  ""
+  [pj sym docstr func & [preopt]]
+
+  (let [s (str func)
+        tm (cstr/lower-case
+             (.substring s (+ 1 (.lastIndexOf s "."))))]
+    ;;(println "task---- " s)
+    `(defn ~sym ~docstr [& [options# nested#]]
+       (let [tk# (doto (.createTask ~pj ~s)
+                     (.setTaskName ~tm))
+             o# (or options# {})
+             n# (or nested# [])
+             r#  {:pre-options ~preopt
+                  :tname ~tm
+                  :task tk#
+                  :options o#
+                  :nested n#} ]
+         (if (nil? ~preopt)
+           (->> (case ~s
+                  "delete" delete-pre-opts
+                  "javadoc" jdoc-preopts
+                  "tar" tar-preopts
+                  nil)
+                (assoc r# :pre-options))
+           ;;else
+           r#)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro decl-ant-tasks ""
+  [pj]
+  `(do ~@(map (fn [[a b]] `(ant-task ~pj ~a "" ~b)) (deref tasks))))
+
+(decl-ant-tasks @dftprj)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro ^:private Xant-task
 
   ""
   [sym docstr func]
@@ -380,24 +494,24 @@
         tk#
       ))
   ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntDelete "Ant delete task."
-
-  [^Project pj & [options nested]]
-
-  (let [tk (doto (Delete.)
-                 (.setProject pj)
-                 (.setTaskName "delete"))
-        options (or options {})
-        nested (or nested []) ]
-    (->> (merge {:includeEmptyDirs true} options)
-         (setOptions pj tk))
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
-
+(comment
+(ant-task AntReplace "" Replace)
+(ant-task AntApply "" ExecuteOn)
+(ant-task AntExec "" ExecTask)
+(ant-task AntConcat "" Concat)
+(ant-task AntChmod "" Chmod)
+(ant-task AntJavac "" Javac)
+(ant-task AntJava "" Java)
+(ant-task AntMkdir "" Mkdir)
+(ant-task AntDelete "" Delete)
+(ant-task AntCopy "" Copy)
+(ant-task AntMove "" Move)
+(ant-task AntJar "" Jar)
+(ant-task AntTar "" Tar tar-preopts)
+(ant-task AntJavadoc "" Javadoc jdoc-preopts)
+)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn CleanDir "Clean an existing dir or create it."
@@ -405,16 +519,14 @@
   [^File dir & {:keys [quiet]
                 :or {:quiet true}}]
 
-  (let [pj (AntProject)]
-    (if (.exists dir)
-      (RunAntTasks* pj
-                    ""
-                    (AntDelete
-                      pj
-                      {:quiet quiet}
-                      [[:fileset {:dir dir}
-                                 [[:include "**/*"]]]]))
-      (.mkdirs dir))
+  (if (.exists dir)
+    (RunAntTasks* ""
+                  (AntDelete
+                    {:quiet quiet}
+                    [[:fileset {:dir dir}
+                               [[:include "**/*"]]]]))
+    ;;else
+    (.mkdirs dir)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -425,79 +537,11 @@
                 :or {:quiet true}}]
 
   (when (.exists dir)
-    (let [pj (AntProject)]
-      (RunAntTasks*
-        pj
-        ""
-        (AntDelete pj
-                   {:quiet quiet}
-                   [[:fileset {:dir dir} ]])))
+    (RunAntTasks*
+      ""
+      (AntDelete {:quiet quiet}
+                 [[:fileset {:dir dir} ]]))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntExec "Ant Exec task." ExecTask)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntConcat "Ant concat task." Concat)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntMkdir "Ant mkdir task."
-
-  ^Task
-  [^Project pj & [options nested ]]
-
-  (let [tk (doto (Mkdir.)
-                 (.setProject pj)
-                 (.setTaskName "mkdir"))
-        options (or options {})
-        nested (or nested []) ]
-    (setOptions pj tk options)
-    tk
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntReplace "Ant replace task." Replace)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntChmod "Ant chmod task." Chmod)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntJavac "Ant javac task." Javac)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntJavadoc "Ant javadoc task."
-
-  ^Task
-  [^Project pj & [options nested]]
-
-  (let [tk (doto (Javadoc.)
-                 (.setProject pj)
-                 (.setTaskName "javadoc"))
-        options (or options {})
-        nested (or nested []) ]
-
-    (when-let [[k v] (find options :access)]
-      (.setAccess tk (doto (Javadoc$AccessType.)
-                           (.setValue (str v)))))
-    (setOptions pj tk options #{:access})
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntCopy "Ant copy task." Copy)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntMove "Ant move task." Move)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -505,13 +549,12 @@
 
   [file toDir]
 
-  (let [pj (AntProject)]
+  (let []
     (.mkdirs (io/file toDir))
     (RunAntTasks*
-      pj
       ""
-      (AntCopy pj {:file file
-                   :todir toDir} ))
+      (AntCopy {:file file
+                :todir toDir} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -520,47 +563,13 @@
 
   [file toDir]
 
-  (let [pj (AntProject)]
+  (let []
     (.mkdirs (io/file toDir))
     (RunAntTasks*
-      pj
       ""
-      (AntMove pj {:file file
-                   :todir toDir} ))
+      (AntMove {:file file
+                :todir toDir} ))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AntTar "Ant tar task."
-
-  ^Task
-  [^Project pj & [options nested]]
-
-  (let [tk (doto (Tar.)
-                 (.setProject pj)
-                 (.setTaskName "tar"))
-        options (or options {})
-        nested (or nested [])]
-
-    (when-let [[k v] (find options :compression)]
-          (.setCompression tk (doto (Tar$TarCompressionMethod.)
-                               (.setValue (str v)))))
-    (setOptions pj tk options #{:compression})
-    (maybeCfgNested pj tk nested)
-    tk
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntJar "Ant jar task." Jar)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntJava "Ant java task." Java)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(ant-task AntApply "Ant apply task." ExecuteOn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
