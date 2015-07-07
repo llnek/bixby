@@ -55,6 +55,7 @@
 ;;
 (defn- capstr "Just capitalize the 1st character."
 
+  ^String
   [^String s]
 
   (str (.toUpperCase (.substring s 0 1))
@@ -64,6 +65,7 @@
 ;;
 (defn AntProject "Create a new ant project."
 
+  ^Project
   []
 
   (let [lg (doto
@@ -83,7 +85,7 @@
 ;;
 (defn ExecTarget "Run and execute a target."
 
-  [target]
+  [^Target target]
 
   (.executeTarget (.getProject target) (.getName target)))
 
@@ -207,6 +209,7 @@
                   m (.getName wm)]
               (aset arr 0 (coerce pj pt v))
               (.invoke wm pojo arr))
+            ;;else
             (let [m (str "set" (capstr (name k)))
                   rc (method? cz m)]
               (when (nil? rc)
@@ -273,8 +276,8 @@
                        (if (> (count p) 1)(nth p 1) {})
                        (if (> (count p) 2)(nth p 2) []))
            (.addFileset root))
-      nil)
-  ))
+      nil))
+  root)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,7 +376,8 @@
   [tk options]
 
   (when-let [[k v] (find options :access)]
-    (.setAccess tk
+    (.setAccess ^Javadoc
+                tk
                 (doto (Javadoc$AccessType.)
                   (.setValue (str v)))))
   [options #{:access}])
@@ -383,7 +387,8 @@
 (defn- tar-preopts ""
   [tk options]
   (when-let [[k v] (find options :compression)]
-    (.setCompression tk
+    (.setCompression ^Tar
+                     tk
                      (doto (Tar$TarCompressionMethod.)
                        (.setValue (str v)))))
   [options #{:compression}])
@@ -392,6 +397,7 @@
 ;;
 (defn- init-task ""
 
+  ^Task
   [^Project pj ^Target target tobj]
 
   (let [{:keys [pre-options tname
@@ -416,8 +422,8 @@
   ^Target
   [^String target tasks]
 
-  (let [tg (Target.)
-        pj @dftprj]
+  (let [^Project pj @dftprj
+        tg (Target.)]
     (.setName tg (or target ""))
     (.addOrReplaceTarget pj tg)
     (doseq [t tasks]
@@ -436,7 +442,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunAntTasks "Run ant tasks."
+(defn RunTarget "Run ant tasks."
 
   [target tasks]
 
@@ -445,11 +451,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunAntTasks* "Run ant tasks."
+(defn RunTarget* "Run ant tasks."
 
   [target & tasks]
 
-  (RunAntTasks target tasks))
+  (RunTarget target tasks))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunTasks "Run ant tasks."
+
+  [tasks]
+
+  (RunTarget "" tasks))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunTasks* "Run ant tasks."
+
+  [& tasks]
+
+  (RunTarget "" tasks))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -487,7 +510,9 @@
 ;;
 (defmacro decl-ant-tasks ""
   [pj]
-  `(do ~@(map (fn [[a b]] `(ant-task ~pj ~a "" ~b)) (deref tasks))))
+  `(do ~@(map (fn [[a b]]
+                `(ant-task ~pj ~a "" ~b))
+              (deref tasks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -501,8 +526,7 @@
                 :or {:quiet true}}]
 
   (if (.exists dir)
-    (RunAntTasks* ""
-                  (AntDelete
+    (RunTasks* (AntDelete
                     {:quiet quiet}
                     [[:fileset {:dir dir}
                                [[:include "**/*"]]]]))
@@ -518,8 +542,7 @@
                 :or {:quiet true}}]
 
   (when (.exists dir)
-    (RunAntTasks*
-      ""
+    (RunTasks*
       (AntDelete {:quiet quiet}
                  [[:fileset {:dir dir} ]]))
   ))
@@ -530,13 +553,9 @@
 
   [file toDir]
 
-  (let []
-    (.mkdirs (io/file toDir))
-    (RunAntTasks*
-      ""
-      (AntCopy {:file file
-                :todir toDir} ))
-  ))
+  (RunTasks*
+    (AntCopy {:file file
+              :todir toDir} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -544,13 +563,9 @@
 
   [file toDir]
 
-  (let []
-    (.mkdirs (io/file toDir))
-    (RunAntTasks*
-      ""
-      (AntMove {:file file
-                :todir toDir} ))
-  ))
+  (RunTasks*
+    (AntMove {:file file
+              :todir toDir} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

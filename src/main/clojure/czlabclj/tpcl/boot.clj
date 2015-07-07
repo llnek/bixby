@@ -88,7 +88,7 @@
   [workingDir args]
 
   (let []
-    (ant/RunAntTasks*
+    (ant/RunTarget*
       "babel"
       (ant/AntExec
         {:executable "babel"

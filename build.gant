@@ -199,7 +199,9 @@ def clj_console() {
 //////////////////////////////////////////////////////////////////////////////
 // public TARGETS
 
-target (repl: '') { clj_console() }
+target (repl: '') {
+  //clj_console()
+}
 
 target (release: '') {
   depends (cleanAll, pubDistro)
