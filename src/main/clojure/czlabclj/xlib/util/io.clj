@@ -400,13 +400,13 @@
             (CloseQ @os)))
         ;;else
         (do
-          (when (c > 0)
+          (when (> c 0)
             (.write ^OutputStream @os bits 0 c)
             (if (and (nil? @fout)
                      (> (+ c cnt) limit))
-              (let [[f o] (SwapBytes os)]
-                (reset! fout f)
-                (reset! os o))))
+              (let [[f o] (SwapBytes @os)]
+                (var-set fout f)
+                (var-set os o))))
           (recur bits
                  (+ c cnt)
                  (.read inp bits)))))
@@ -434,13 +434,13 @@
             (CloseQ @wtr)))
         ;;else
         (do
-          (when (c > 0)
+          (when (> c 0)
             (.write ^Writer @wtr carr 0 c)
             (if (and (nil? @fout)
                      (> (+ c cnt) limit))
-              (let [[f w] (SwapChars wtr)]
-                (reset! fout f)
-                (reset! wtr w))))
+              (let [[f w] (SwapChars @wtr)]
+                (var-set fout f)
+                (var-set wtr w))))
           (recur carr
                  (+ c cnt)
                  (.read rdr carr)))))

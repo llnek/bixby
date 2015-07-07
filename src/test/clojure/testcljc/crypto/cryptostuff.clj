@@ -112,8 +112,8 @@
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
 
-(is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTCS
-                           ^String (first (.keyAliases ROOTCS))
+(is (let [ ^KeyStore$PrivateKeyEntry pke
+          (.keyEntity ROOTCS ^String (first (.keyAliases ROOTCS))
                            HELPME)
        fout (TempFile "" ".p12")
        pk (.getPrivateKey pke)

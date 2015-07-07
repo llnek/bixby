@@ -302,7 +302,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- sqlSelect ""
+(defn- sqlSelect+ ""
 
   [db conn sql pms func post]
 
@@ -324,8 +324,8 @@
 
   [db conn sql pms ]
 
-  (sqlSelect db conn sql pms
-             (partial row2Obj stdInjtor) identity))
+  (sqlSelect+ db conn sql pms
+              (partial row2Obj stdInjtor) identity))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -396,7 +396,7 @@
 ;;
 (defn- doExecWithOutput ""
 
-  [db conn sql pms options]
+  [db metas conn sql pms options]
 
   (sqlExecWithOutput db conn sql pms options))
 
@@ -410,17 +410,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doQuery ""
+(defn- doQuery+ ""
 
   [db metas conn sql pms model]
 
   (let [mcz (metas model) ]
     (when (nil? mcz)
           (DbioError (str "Unknown model " model)))
-    (sqlSelect db conn sql pms
-               (partial row2Obj
-                        (partial modelInjtor mcz))
-               #(postFmtModelRow model %))
+    (sqlSelect+ db conn sql pms
+                (partial row2Obj
+                         (partial modelInjtor mcz))
+                #(postFmtModelRow model %))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,12 +600,12 @@
                            [wc pms]
                            (SqlFilterClause mcz filters) ]
                        (if (hgl? wc)
-                         (doQuery db metaz conn
+                         (doQuery+ db metaz conn
                                    (doExtraSQL (str s " WHERE " wc)
                                                extraSQL)
                                    pms model)
-                         (doQuery db metaz conn
-                                  (doExtraSQL s extraSQL) [] model))))]
+                         (doQuery+ db metaz conn
+                                   (doExtraSQL s extraSQL) [] model))))]
           (runc (getc db) func)))
 
       (metas [_] metaz)
@@ -627,7 +627,7 @@
 
       (select [_ model sql params]
         (let [func (fn [conn]
-                     (doQuery db metaz conn sql params model) )]
+                     (doQuery+ db metaz conn sql params model) )]
           (runc (getc db) func)))
 
       (select [_ sql params]

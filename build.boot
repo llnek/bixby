@@ -96,7 +96,7 @@
     [org.clojure/math.numeric-tower "0.0.4" ]
     [org.clojure/math.combinatorics "0.0.8" ]
     [org.clojure/tools.logging "0.3.1" ]
-    [org.clojure/tools.nrepl "0.2.8" ]
+    [org.clojure/tools.nrepl "0.2.10" ]
     [org.clojure/tools.reader "0.8.16" ]
     [org.clojure/data.codec "0.1.0" ]
     [org.clojure/data.csv "0.1.2" ]
@@ -120,7 +120,7 @@
     [boot/core "2.1.2"]
     [boot/pod "2.1.2"]
     [boot/worker "2.1.2"]
-    [boot/aether "2.1.2"]
+    [boot/aether "2.1.2" ]  ;; this is causing the RELEASE_6 warning
 
     [org.clojure/clojure "1.7.0" ]
     [org.clojure/clojurescript "0.0-3058" ]

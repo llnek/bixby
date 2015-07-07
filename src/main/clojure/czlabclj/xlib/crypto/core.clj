@@ -275,8 +275,8 @@
 
   [^KeyStore ks predicate]
 
-  (loop [rc (transient [])
-         en (.aliases ks) ]
+  (loop [en (.aliases ks)
+         rc (transient []) ]
     (if (.hasMoreElements en)
       (let [n (.nextElement en) ]
         (if (predicate ks n)

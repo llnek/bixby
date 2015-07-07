@@ -196,7 +196,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (some #(>= (.indexOf lc (lcase %)) 0) substrs))
+      (some? (some #(>= (.indexOf lc (lcase %)) 0) substrs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,7 +208,7 @@
   (if (or (empty? substrs)
           (nil? src))
     false
-    (some #(>= (.indexOf src ^String %) 0) substrs)
+    (some? (some #(>= (.indexOf src ^String %) 0) substrs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -222,7 +222,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (some #(.startsWith lc (lcase %)) pfxs))
+      (some? (some #(.startsWith lc (lcase %)) pfxs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -235,7 +235,7 @@
   (if (or (empty? pfxs)
           (nil? src))
     false
-    (some #(.startsWith src %) pfxs)
+    (some? (some #(.startsWith src %) pfxs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,7 +248,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (some #(.equals lc (lcase %)) strs))
+      (some? (some #(.equals lc (lcase %)) strs)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -260,7 +260,7 @@
   (if (or (empty? strs)
           (nil? src))
     false
-    (some #(.equals src %) strs)
+    (some? (some #(.equals src %) strs))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -857,7 +857,9 @@
   [^String path]
 
   (when-not (nil? path)
-    (io/as-url path)
+    (io/as-url (if (.startsWith "file:" path)
+                 path
+                 (str "file://" path)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
