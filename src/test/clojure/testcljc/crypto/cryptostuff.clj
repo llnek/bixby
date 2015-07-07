@@ -102,12 +102,12 @@
 (is (let [ v (MakeCsrReq 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
           (and (= (count v) 2) (> (alength ^bytes (first v)) 0) (> (alength ^bytes (nth v 1)) 0))) )
 
-(is (let [ fout (MakeTmpfile "kenl" ".p12")]
+(is (let [ fout (TempFile "kenl" ".p12")]
       (MakeSSv1PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" HELPME fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
       (> (.length fout) 0)))
 
-(is (let [ fout (MakeTmpfile "" ".jks") ]
+(is (let [ fout (TempFile "" ".jks") ]
       (MakeSSv1JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
@@ -115,7 +115,7 @@
 (is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTCS
                            ^String (first (.keyAliases ROOTCS))
                            HELPME)
-       fout (MakeTmpfile "" ".p12")
+       fout (TempFile "" ".p12")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
             (MakeSSv3PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
@@ -125,14 +125,14 @@
 (is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTKS
                            ^String (first (.keyAliases ROOTKS))
                            HELPME)
-       fout (MakeTmpfile "" ".jks")
+       fout (TempFile "" ".jks")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
             (MakeSSv3JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
-(is (let [ ^File fout (MakeTmpfile "" ".p7b") ]
+(is (let [ ^File fout (TempFile "" ".p7b") ]
         (ExportPkcs7 (ResUrl "com/zotohlab/frwk/crypto/test.pfx") HELPME fout)
           (> (.length fout) 0)))
 

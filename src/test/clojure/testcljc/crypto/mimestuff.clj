@@ -88,7 +88,7 @@
                cs (.getCertificateChain pke)
                pk (.getPrivateKey pke)
                mp (SmimeDigSig  pk cs SHA512 msg)
-               baos (MakeBitOS)
+               baos (ByteOS)
                msg2 (doto (NewMimeMsg "" "")
                       (.setContent (cast Multipart mp))
                       (.saveChanges)
@@ -104,7 +104,7 @@
                cs (.getCertificateChain pke)
                pk (.getPrivateKey pke)
                mp (SmimeDigSig  pk cs SHA512 msg)
-               baos (MakeBitOS)
+               baos (ByteOS)
                msg2 (doto (NewMimeMsg "" "")
                       (.setContent (cast Multipart mp))
                       (.saveChanges)
@@ -123,7 +123,7 @@
                 bp (doto (MimeBodyPart.)
                     (.setDataHandler (DataHandler. s)))
                 ^BodyPart bp2 (SmimeEncrypt (nth cs 0) DES_EDE3_CBC bp)
-                baos (MakeBitOS)
+                baos (ByteOS)
                 msg (doto (NewMimeMsg)
                         (.setContent (.getContent bp2) (.getContentType bp2))
                         (.saveChanges)
@@ -149,7 +149,7 @@
                      (.addBodyPart bp2))
                 msg (doto (NewMimeMsg) (.setContent  mp))
                 ^BodyPart bp3 (SmimeEncrypt (nth cs 0) DES_EDE3_CBC msg)
-                baos (MakeBitOS)
+                baos (ByteOS)
                 msg2 (doto (NewMimeMsg)
                         (.setContent (.getContent bp3) (.getContentType bp3))
                         (.saveChanges)
@@ -182,7 +182,7 @@
             false))))
 
 (is (let [ bp (SmimeCompress "text/plain" (XData. "heeloo world"))
-           baos (MakeBitOS)
+           baos (ByteOS)
            ^XData x (SmimeDecompress bp) ]
           (if (and (not (nil? x))
                     (> (alength ^bytes (.javaBytes x)) 0) )
@@ -190,7 +190,7 @@
             false)))
 
 (is (let [ bp (SmimeCompress "text/plain" "blah-blah" "some-id" (XData. "heeloo world"))
-           baos (MakeBitOS)
+           baos (ByteOS)
            ^XData x (SmimeDecompress bp) ]
           (if (and (not (nil? x))
                     (> (alength ^bytes (.javaBytes x)) 0) )

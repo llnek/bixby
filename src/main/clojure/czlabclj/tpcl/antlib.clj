@@ -39,6 +39,14 @@
            [org.apache.tools.ant
             NoBannerLogger
             Project Target Task]
+           [org.apache.tools.ant.taskdefs.optional.junit
+            FormatterElement$TypeAttribute
+            JUnitTask$SummaryAttribute
+            JUnitTask$ForkMode
+            JUnitTask
+            JUnitTest
+            BatchTest
+            FormatterElement]
            [org.apache.tools.ant.taskdefs
             Javadoc$AccessType
             Replace$Replacefilter
@@ -107,6 +115,9 @@
 ;;cache task bean info property descriptors.
 (def ^:private props
   (atom (let [m {"tarfileset" Tar$TarFileSet
+                 "formatter" FormatterElement
+                 "batchtest" BatchTest
+                 "junittest" JUnitTest
                  "fileset" FileSet }
               arr (atom {})]
           (doseq [[k v] (merge m (.getTaskDefinitions @dftprj))]
@@ -191,6 +202,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- setProp! ""
+
+  [^Method wm pojo k arr]
+
+  (try
+    (.invoke wm pojo arr)
+  (catch Throwable e#
+    (println "failed to set property: "
+             k
+             " for cz "
+             (.getClass pojo))
+    (throw e#))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- setOptions "Use reflection and invoke setters."
 
   [pj pojo options & [skips]]
@@ -208,18 +234,18 @@
             (let [pt (.getPropertyType pd)
                   m (.getName wm)]
               (aset arr 0 (coerce pj pt v))
-              (.invoke wm pojo arr))
+              (setProp! wm pojo k arr))
             ;;else
             (let [m (str "set" (capstr (name k)))
                   rc (method? cz m)]
               (when (nil? rc)
-                (throw (Exception. (str m " !found in " pojo))))
+                (throw (Exception. (str m " not-found in " pojo))))
               (aset arr 0 (coerce pj (last rc) v))
-              (.invoke (first rc) pojo arr)))
+              (setProp! (first rc) pojo k arr)))
           ;;else
           (throw (Exception. (str "property "
                                   (name k)
-                                  " !found in task " cz))))))
+                                  " not-found in task " cz))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,6 +281,67 @@
     (.setProject fs pj)
     (maybeCfgNested pj fs nested)
     fs
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntBatchTest "Configure a BatchTest Object."
+
+  ^BatchTest
+  [^Project pj ^BatchTest bt & [options nested]]
+
+  (let [options (or options {})
+        nested (or nested []) ]
+
+    (setOptions pj bt options)
+    (maybeCfgNested pj bt nested)
+    bt
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntJunitTest "Configure a single JUnit Test Object."
+
+  ^JUnitTask
+  [^Project pj & [options nested]]
+
+  (let [jt (JUnitTest.)
+        options (or options {})
+        nested (or nested []) ]
+
+    (setOptions pj jt options)
+    (maybeCfgNested pj jt nested)
+    jt
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fmtr-preopts ""
+
+  [tk options]
+
+  (when-let [[k v] (find options :type)]
+    (.setType ^FormatterElement
+                tk
+                (doto (FormatterElement$TypeAttribute.)
+                  (.setValue (str v)))))
+
+  [options #{:type}])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AntFormatter "Create a Formatter Object."
+
+  ^FormatterElement
+  [^Project pj & [options nested]]
+
+  (let [fe (FormatterElement.)
+        options (or options {})
+        nested (or nested []) ]
+
+    (apply setOptions pj fe (fmtr-preopts fe options))
+    (.setProject fe pj)
+    fe
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,6 +391,10 @@
                    (.setValue (str v)))
              (.addSysproperty tk)))
 
+      :formatter
+      (->> (AntFormatter pj (last p))
+           (.addFormatter tk))
+
       :include
       (-> (.createInclude tk)
           (.setName (str (last p))))
@@ -313,10 +404,13 @@
           (.setName (str (last p))))
 
       :fileset
-      (->> (AntFileSet pj
-                       (if (> (count p) 1)(nth p 1) {})
-                       (if (> (count p) 2)(nth p 2) []))
-           (.addFileset tk))
+      (let [s (AntFileSet
+                pj
+                (if (> (count p) 1)(nth p 1) {})
+                (if (> (count p) 2)(nth p 2) []))]
+        (if (instance? BatchTest tk)
+          (.addFileSet tk s)
+          (.addFileset tk s)))
 
       :argvalues
       (doseq [v (last p)]
@@ -346,6 +440,18 @@
       (-> (.createReplaceToken tk)
           (.addText (:text (last p))))
 
+      :test
+      (->> (AntJunitTest pj
+                    (if (> (count p) 1)(nth p 1) {})
+                    (if (> (count p) 2)(nth p 2) []))
+           (.addTest tk))
+
+      :batchtest
+      (AntBatchTest pj
+                    (.createBatchTest tk)
+                    (if (> (count p) 1)(nth p 1) {})
+                    (if (> (count p) 2)(nth p 2) []))
+
       :tarfileset
       (AntTarFileSet pj
                      (.createTarFileSet tk)
@@ -368,6 +474,26 @@
   [tk options]
 
   [(merge {:includeEmptyDirs true} options) #{}])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- junit-preopts ""
+
+  [tk options]
+
+  (when-let [[k v] (find options :printsummary)]
+    (.setPrintsummary ^JUnitTask
+                tk
+                (doto (JUnitTask$SummaryAttribute.)
+                  (.setValue (str v)))))
+
+  (when-let [[k v] (find options :forkMode)]
+    (.setForkMode ^JUnitTask
+                tk
+                (doto (JUnitTask$ForkMode.)
+                  (.setValue (str v)))))
+
+  [options #{:forkMode :printsummary}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -498,6 +624,7 @@
          (if (nil? ~preopt)
            (->> (case ~s
                   "delete" delete-pre-opts
+                  "junit" junit-preopts
                   "javadoc" jdoc-preopts
                   "tar" tar-preopts
                   nil)

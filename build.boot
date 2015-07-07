@@ -199,14 +199,24 @@
 (def CPATH [[:location @buildDir]
             [:fileset {:dir @libDir} [[:include "*.jar"]]]])
 
+(def TPATH (->> CPATH
+                (cons [:location @buildTestDir])
+                (into [])))
+
 (def JAVAC_OPTS (merge {:srcdir (b/fp! @srcDir "java")
                         :destdir @buildDir
                         :target "1.8"
                         :debugLevel "lines,vars,source"}
                         COMPILE_OPTS))
 
-(def CJPATH (-> CPATH
-                (conj [:location (b/fp! @srcDir "clojure")])))
+(def CJPATH (->> CPATH
+                 (cons [:location (b/fp! @srcDir "clojure")])
+                 (into [])))
+
+(def TJPATH (->> CJPATH
+                 (concat [[:location (b/fp! @testDir "clojure")]
+                          [:location @buildTestDir]])
+                 (into [])))
 
 (def CLJC_OPTS {:classname "clojure.lang.Compile"
                 :fork true
@@ -915,6 +925,125 @@
       (format "copied (%d) jar-files to %s" (count jars) to))
     fileset
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- preTest ""
+  []
+  (.mkdirs (io/file @reportTestDir))
+  (.mkdirs (io/file @buildTestDir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- compileFrwkTest ""
+  []
+  (ant/RunTarget*
+    "compile-java-test"
+    (ant/AntJavac (merge JAVAC_OPTS
+                         {:srcdir (b/fp! @testDir "java")
+                          :destdir @buildTestDir})
+                  [[:include "**/*.java"]
+                   [:classpath TPATH]
+                   [:compilerarg COMPILER_ARGS]])
+
+    (ant/AntCopy {:todir @buildTestDir}
+                 [[:fileset {:dir (b/fp! @testDir "java") }
+                            [[:exclude "**/*.java"]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- compileCljTest ""
+  []
+  (ant/RunTarget*
+    "compile-clj-test"
+    (ant/AntJava
+      CLJC_OPTS
+      [[:sysprops (assoc CLJC_SYSPROPS :clojure.compile.path @buildTestDir)]
+       [:classpath TJPATH]
+       [:argvalues (b/FmtCljNsps (b/fp! @testDir "clojure")
+                                 "testcljc/util"
+                                 "testcljc/net"
+                                 "testcljc/i18n"
+                                 "testcljc/crypto"
+                                 "testcljc/dbio")]])
+    (ant/AntCopy
+      {:todir @buildTestDir}
+      [[:fileset {:dir (b/fp! @testDir "clojure") }
+                 [[:exclude "**/*.clj"]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- runCljTest ""
+  []
+  (ant/RunTarget*
+    "run-clj-test"
+    (ant/AntJunit
+      {:logFailedTests true
+       :showOutput false
+       :printsummary true
+       :fork true
+       :haltonfailure true}
+      [[:classpath TJPATH]
+       [:formatter {:type "plain"
+                    :useFile false}]
+       [:test {:name "czlab.frwk.util.ClojureJUnit"
+               :todir @reportTestDir}
+              [[:formatter {:type "xml"}]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- runJavaTest ""
+  []
+  (ant/RunTarget*
+    "run-java-test"
+    (ant/AntJunit
+      {:logFailedTests true
+       :showOutput false
+       :printsummary true
+       :fork true
+       :haltonfailure true}
+      [[:classpath TPATH]
+       [:formatter {:type "plain"
+                    :useFile false}]
+       [:batchtest {:todir @reportTestDir}
+                   [[:fileset {:dir @buildTestDir}
+                              [[:include "**/JUTest.*"]]]
+                    [:formatter {:type "xml"}]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- buildCljTest ""
+  []
+  (minitask
+    "preTest"
+    (ant/DeleteDir (io/file (b/fp! @buildTestDir "czlab")))
+    (preTest))
+  (compileFrwkTest)
+  (compileCljTest))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- buildJavaTest ""
+  []
+  (minitask
+    "preTest"
+    (ant/DeleteDir (io/file (b/fp! @buildTestDir "czlab")))
+    (preTest))
+  (compileFrwkTest))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask testclj "test-clj-frwk"
+  []
+  (buildCljTest)
+  (runCljTest))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask testjava "test-java-frwk"
+  []
+  (buildJavaTest)
+  (runJavaTest))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

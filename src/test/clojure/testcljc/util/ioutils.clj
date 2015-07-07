@@ -21,7 +21,7 @@
   (:import  [org.apache.commons.io FileUtils]
             [java.io FileReader File InputStream
                      OutputStream FileOutputStream]
-            [com.zotohlab.frwk.io IOUtils XData XStream]))
+            [com.zotohlab.frwk.io XData XStream]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,26 +30,26 @@
 (def ^:private TMP_FP (File. ^File TMP_DIR (str (CU/juid) ".txt")))
 (eval '(do (FileUtils/writeStringToFile ^File TMP_FP "heeloo" "utf-8")))
 ;; force to use file
-;;(eval '(do (IOUtils/setStreamLimit 2)))
+;;(eval '(do (com.zotohlab.frwk.io.IO/setStreamLimit 2)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftest testutil-ioutils
 
-(is (true? (.exists (IO/MakeTmpfile))))
+(is (true? (.exists (IO/TempFile))))
 
-(is (true? (let [ v (IO/NewlyTmpfile) ]
+(is (true? (let [ v (IO/NewlyTempFile) ]
               (and (.exists ^File (first v)) (nil? (nth v 1))))))
 
-(is (true? (let [ v (IO/NewlyTmpfile true)
+(is (true? (let [ v (IO/NewlyTempFile true)
                   rc (and (.exists ^File (first v)) (instance? OutputStream (nth v 1))) ]
              (when rc (.close ^OutputStream (nth v 1)))
              rc)))
 
 (is (instance? InputStream (IO/Streamify (byte-array 10))))
 
-(is (instance? OutputStream (IO/MakeBitOS)))
+(is (instance? OutputStream (IO/ByteOS)))
 
 (is (= "616263" (IO/HexifyString (CU/Bytesify "abc"))))
 
@@ -70,7 +70,7 @@
                        (IO/CopyStream inp)) ]
              (.exists fp))))
 
-(is (true? (let [ v (IO/NewlyTmpfile false) ]
+(is (true? (let [ v (IO/NewlyTempFile false) ]
                 (with-open [^InputStream inp (IO/OpenFile TMP_FP) ]
                   (with-open [ os (FileOutputStream. ^File (first v)) ]
                     (IO/CopyBytes inp os 4)))
@@ -93,8 +93,6 @@
 
 (is (= "heeloo" (String. (IO/MorphChars (CU/Bytesify "heeloo")))))
 
-(is (false? (with-open [ ^InputStream p1 (IO/OpenFile TMP_FP)]
-                (with-open [ ^InputStream p2 (IO/OpenFile TMP_FP)] (IO/Diff? p1 p2)))))
 
 )
 

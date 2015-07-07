@@ -12,7 +12,7 @@
 
 (ns testcljc.net.netstuff
 
-  (:use [czlabclj.xlib.net.comms]
+  (:use [czlabclj.xlib.net.apache]
         [clojure.test])
 
   (:import  [java.net URL URI]))

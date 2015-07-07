@@ -122,7 +122,6 @@
 
 (is (instance? URL (CU/FmtFileUrl "/tmp/abc.txt")))
 
-(is (and (instance? File (CU/GetTmpDir)) (not (= (CU/MakeTmpDir) (CU/GetTmpDir)))))
 
 (is (true? (do (CU/test-isa "" (Class/forName "java.lang.Long") (Class/forName "java.lang.Number")) true)))
 (is (true? (do (CU/test-isa "" "" (Class/forName "java.lang.Object")) true)))
@@ -162,7 +161,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getf (doto ^czlabclj.xlib.util.core.MutableMap (CU/MakeMMap) (.setf! :1 100)) :1)))
+(is (= 100 (.getf (doto ^czlabclj.xlib.util.core.Muble (CU/MakeMMap) (.setf! :1 100)) :1)))
 
 
 )
