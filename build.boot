@@ -273,9 +273,9 @@
     (ant/RunTarget*
       "pre-build"
       (ant/AntCopy {:todir @buildDir
-                    :file (b/fp! @basedir "log4j.properties")} )
+                    :file (b/fp! @basedir "artifacts" "log4j.properties")} )
       (ant/AntCopy {:todir @buildDir
-                    :file (b/fp! @basedir "logback.xml")} ))
+                    :file (b/fp! @basedir "artifacts" "logback.xml")} ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
