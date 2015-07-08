@@ -5,30 +5,29 @@
     [bouncycastle/bcmail-jdk15on "152" ]
     [bouncycastle/bcpkix-jdk15on "152" ]
     [org.jasypt/jasypt "1.9.2" ]
-    [org.mindrot/jbcrypt "0.3m" ]
+    ;;[org.mindrot/jbcrypt "0.3m" ]
 
-    [org.slf4j/slf4j-api "1.7.10" ]
+    [org.slf4j/slf4j-api "1.7.12" ]
     [log4j/log4j "1.2.17" ]
 
     [ch.qos.logback/logback-classic "1.1.3" ]
     [ch.qos.logback/logback-core "1.1.3" ]
 
     [net.sourceforge.jregex/jregex "1.2_01" ]
-    [net.sf.jopt-simple/jopt-simple "4.6" ]
+    [net.sf.jopt-simple/jopt-simple "4.9" ]
     [com.google.guava/guava "18.0" ]
-    [com.google.code.findbugs/jsr305 "2.0.3" ]
-    [joda-time/joda-time "2.7" ]
-    [org.zeroturnaround/zt-exec "1.6" ]
-    [org.zeroturnaround/zt-zip "1.7" ]
+    [com.google.code.findbugs/jsr305 "3.0.0" ]
+    [joda-time/joda-time "2.8.1" ]
+    [org.zeroturnaround/zt-exec "1.8" ]
+    [org.zeroturnaround/zt-zip "1.8" ]
     [org.apache.axis/axis "1.4" ]
     [org.apache.axis/axis-jaxrpc "1.4" ]
     [org.jetlang/jetlang "0.2.12" ]
 
+    [com.fasterxml.jackson.core/jackson-core "2.5.4" ]
+    [com.fasterxml.jackson.core/jackson-databind "2.5.4" ]
+    [com.fasterxml.jackson.core/jackson-annotations "2.5.4" ]
     [org.jdom/jdom2 "2.0.6" ]
-
-    [com.fasterxml.jackson.core/jackson-core "2.4.4" ]
-    [com.fasterxml.jackson.core/jackson-databind "2.4.4" ]
-    [com.fasterxml.jackson.core/jackson-annotations "2.4.4" ]
 
     [com.google.code.gson/gson "2.3.1" ]
 
@@ -45,7 +44,7 @@
     [commons-dbutils/commons-dbutils "1.6" ]
     [com.sun.mail/javax.mail "1.5.3" ]
 
-    [org.apache.ivy/ivy "2.4.0" ]
+    ;;[org.apache.ivy/ivy "2.4.0" ]
     [org.apache.ant/ant "1.9.5" ]
     [org.apache.ant/ant-launcher "1.9.5" ]
     [org.apache.ant/ant-junit4 "1.9.5" ]
@@ -57,35 +56,35 @@
 
     [com.jolbox/bonecp "0.8.0.RELEASE" ]
 
-    [org.apache.httpcomponents/httpcore-nio "4.4" ]
-    [org.apache.httpcomponents/httpcore "4.4" ]
-    [org.apache.httpcomponents/httpclient "4.4" ]
+    [org.apache.httpcomponents/httpcore-nio "4.4.1" ]
+    [org.apache.httpcomponents/httpcore "4.4.1" ]
+    [org.apache.httpcomponents/httpclient "4.5" ]
     [io.netty/netty-all "4.0.29.Final" ]
 
     [com.corundumstudio.socketio/netty-socketio "1.7.7" :exclusions [io.netty]]
 
-    [org.eclipse.jetty/jetty-xml "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-server "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-continuation "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-servlet "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-server "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-util "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-security "9.2.11.v20150529"  ]
-    [org.eclipse.jetty/jetty-webapp "9.2.11.v20150529"  ]
-    [org.eclipse.jetty.websocket/websocket-api "9.2.11.v20150529"  ]
-    [org.eclipse.jetty.websocket/websocket-common "9.2.11.v20150529"  ]
-    [org.eclipse.jetty.websocket/websocket-servlet "9.2.11.v20150529"  ]
-    [org.eclipse.jetty.websocket/websocket-client "9.2.11.v20150529"  ]
-    [org.eclipse.jetty.websocket/websocket-server "9.2.11.v20150529"  ]
+    [org.eclipse.jetty/jetty-xml "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-server "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-continuation "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-servlet "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-server "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-util "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-security "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-webapp "9.3.0.v20150612"  ]
+    [org.eclipse.jetty.websocket/websocket-api "9.3.0.v20150612"  ]
+    [org.eclipse.jetty.websocket/websocket-common "9.3.0.v20150612"  ]
+    [org.eclipse.jetty.websocket/websocket-servlet "9.3.0.v20150612"  ]
+    [org.eclipse.jetty.websocket/websocket-client "9.3.0.v20150612"  ]
+    [org.eclipse.jetty.websocket/websocket-server "9.3.0.v20150612"  ]
 
     [org.codehaus.groovy/groovy-all "2.4.3" ]
 
     [com.sun.tools/tools "1.8.0"  ]
-    [org.javassist/javassist "3.19.0-GA"  ]
+    [org.javassist/javassist "3.20.0-GA"  ]
 
     [com.github.spullara.mustache.java/compiler "0.9.0" ]
 
-    [org.freemarker/freemarker "2.3.22" ]
+    [org.freemarker/freemarker "2.3.23" ]
 
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
 
@@ -94,18 +93,18 @@
     [org.postgresql/postgresql "9.4-1201-jdbc41" ]
 
     [org.clojure/math.numeric-tower "0.0.4" ]
-    [org.clojure/math.combinatorics "0.0.8" ]
+    [org.clojure/math.combinatorics "0.1.1" ]
     [org.clojure/tools.logging "0.3.1" ]
     [org.clojure/tools.nrepl "0.2.10" ]
-    [org.clojure/tools.reader "0.8.16" ]
+    [org.clojure/tools.reader "0.9.2" ]
     [org.clojure/data.codec "0.1.0" ]
     [org.clojure/data.csv "0.1.2" ]
-    [org.clojure/java.jdbc "0.3.6" ]
+    [org.clojure/java.jdbc "0.3.7" ]
     [org.clojure/java.data "0.1.1" ]
-    [org.clojure/java.jmx "0.3.0" ]
+    [org.clojure/java.jmx "0.3.1" ]
     [org.clojure/data.json "0.2.6" ]
     [org.clojure/data.xml "0.0.8" ]
-    [org.clojure/core.cache "0.6.3" ]
+    [org.clojure/core.cache "0.6.4" ]
     [org.clojure/core.match "0.2.2" ]
     [org.clojure/tools.cli "0.3.1" ]
     [org.clojure/data.generators "0.1.2" ]
@@ -123,10 +122,10 @@
     [boot/aether "2.1.2" ]  ;; this is causing the RELEASE_6 warning
 
     [org.clojure/clojure "1.7.0" ]
-    [org.clojure/clojurescript "0.0-3058" ]
+    [org.clojure/clojurescript "0.0-3308" ]
 
     [org.apache.shiro/shiro-core "1.2.3" ]
-    [org.mozilla/rhino "1.7.6" ]
+    [org.mozilla/rhino "1.7.7" ]
     [jline/jline "1.0" ]
 
     [net.mikera/cljunit "0.3.1" ]
@@ -169,14 +168,12 @@
 (def ^:private basedir (atom (get-env :basedir)))
 (def ^:private PID (atom "skaro"))
 (def ^:private bldDir (atom "b.out"))
-
 (def ^:private buildDebug (atom true))
-(def ^:private prj (atom "0"))
 
-(def ^:private gantBuildDir (atom (b/fp! @basedir @bldDir @prj)))
+(def ^:private gantBuildDir (atom (b/fp! @basedir @bldDir)))
 
 (def ^:private distribDir (atom (b/fp! @gantBuildDir "distrib")))
-(def ^:private buildDir (atom (b/fp! @gantBuildDir "build")))
+(def ^:private buildDir (atom (b/fp! @gantBuildDir "classes")))
 
 (def ^:private libDir (atom (b/fp! @gantBuildDir "lib")))
 (def ^:private qaDir (atom (b/fp! @gantBuildDir "test")))
@@ -248,7 +245,7 @@
           {}
           [[:fileset {:dir @gantBuildDir}
                      [[:include "**/*"]
-                      [:exclude "build/clojure/**"]]]])))
+                      [:exclude "classes/clojure/**"]]]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -364,6 +361,7 @@
       (ant/AntJavac
         JAVAC_OPTS
         [[:include "com/zotohlab/frwk/**/*.java"]
+         [:include "org/**/*.java"]
          [:classpath CPATH]
          [:compilerarg COMPILER_ARGS]])
       (ant/AntCopy
