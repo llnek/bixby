@@ -18,11 +18,11 @@
     [com.google.guava/guava "18.0" ]
     [com.google.code.findbugs/jsr305 "3.0.0" ]
     [joda-time/joda-time "2.8.1" ]
-    [org.zeroturnaround/zt-exec "1.8" ]
-    [org.zeroturnaround/zt-zip "1.8" ]
+    ;;[org.zeroturnaround/zt-exec "1.8" ]
+    ;;[org.zeroturnaround/zt-zip "1.8" ]
     [org.apache.axis/axis "1.4" ]
     [org.apache.axis/axis-jaxrpc "1.4" ]
-    [org.jetlang/jetlang "0.2.12" ]
+    ;;[org.jetlang/jetlang "0.2.12" ]
 
     [com.fasterxml.jackson.core/jackson-core "2.5.4" ]
     [com.fasterxml.jackson.core/jackson-databind "2.5.4" ]
@@ -134,10 +134,10 @@
 
   ]
 
-  :source-paths #{"src/main/java" "src/main/clojure"}
-
+  :source-paths #{"src/main/clojure" "src/main/java"}
   :buildVersion "0.9.0-SNAPSHOT"
   :buildDebug true
+  :bldDir "b.out"
   :PID "skaro"
   :basedir (System/getProperty "user.dir"))
 
@@ -160,31 +160,27 @@
 ;;
 (defmacro minitask ""
   [func & forms]
-  `(do
-     (println (str ~func ":"))
-     ~@forms))
+  `(do (println (str ~func ":")) ~@forms))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private buildVersion (atom (get-env :buildVersion)))
-(def ^:private basedir (atom (get-env :basedir)))
-(def ^:private PID (atom "skaro"))
-(def ^:private bldDir (atom "b.out"))
+(def ^:private basedir (a! (get-env :basedir)))
 
-(def ^:private gantBuildDir (atom (b/fp! @basedir @bldDir)))
+(def ^:private bootBuildDir (a! (b/fp! @basedir
+                                       (get-ent :bldDir))))
 
-(def ^:private distribDir (atom (b/fp! @gantBuildDir "distrib")))
-(def ^:private buildDir (atom (b/fp! @gantBuildDir "classes")))
+(def ^:private testDir (a! (b/fp! @basedir "src" "test")))
+(def ^:private srcDir (a! (b/fp! @basedir "src" "main")))
 
-(def ^:private libDir (atom (b/fp! @gantBuildDir "lib")))
-(def ^:private qaDir (atom (b/fp! @gantBuildDir "test")))
+(def ^:private distribDir (a! (b/fp! @bootBuildDir "distrib")))
+(def ^:private buildDir (a! (b/fp! @bootBuildDir "classes")))
 
-(def ^:private testDir (atom (b/fp! @basedir "src" "test")))
-(def ^:private srcDir (atom (b/fp! @basedir "src" "main")))
-(def ^:private packDir (atom (b/fp! @gantBuildDir "pack")))
+(def ^:private packDir (a! (b/fp! @bootBuildDir "pack")))
+(def ^:private libDir (a! (b/fp! @bootBuildDir "lib")))
+(def ^:private qaDir (a! (b/fp! @bootBuildDir "test")))
 
-(def ^:private reportTestDir (atom (b/fp! @qaDir "reports")))
-(def ^:private buildTestDir (atom (b/fp! @qaDir "classes")))
+(def ^:private reportTestDir (a! (b/fp! @qaDir "reports")))
+(def ^:private buildTestDir (a! (b/fp! @qaDir "classes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -244,7 +240,7 @@
       (ant/RunTasks*
         (ant/AntDelete
           {}
-          [[:fileset {:dir @gantBuildDir}
+          [[:fileset {:dir @bootBuildDir}
                      [[:include "**/*"]
                       [:exclude "classes/clojure/**"]]]])))
   ))
@@ -307,11 +303,12 @@
   (let [out (io/file @buildDir "js")
         dir (io/file @srcDir "js")
         mid (cstr/join "/" paths)
+        bd (get-env :bldDir)
         des (-> (io/file out mid)
                 (.getParentFile)) ]
     (cond
       postgen
-      (let [bf (io/file dir @bldDir mid)]
+      (let [bf (io/file dir bd mid)]
         (spit bf
               (-> (slurp bf)
                   (.replaceAll "\\/\\*@@" "")
@@ -319,7 +316,7 @@
         (ant/MoveFile bf des))
 
       (.isDirectory f)
-      (if (= @bldDir (.getName f))
+      (if (= bd (.getName f))
         nil
         {})
 
@@ -331,10 +328,7 @@
         {:work-dir dir
          :args ["--modules"
                 "amd"
-                "--module-ids"
-                mid
-                "--out-dir"
-                @bldDir] }))
+                "--module-ids" mid "--out-dir" bd] }))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -343,8 +337,8 @@
 
   [& args]
 
-  (let [ljs (io/file @srcDir "js" @bldDir)
-        root (io/file @srcDir "js")]
+  (let [root (io/file @srcDir "js")
+        ljs (io/file root (get-env :bldDir)) ]
     (ant/CleanDir ljs)
     (try
       (b/BabelTree root #'babel->cb)
