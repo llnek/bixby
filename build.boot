@@ -135,8 +135,10 @@
   ]
 
   :source-paths #{"src/main/java" "src/main/clojure"}
+
   :buildVersion "0.9.0-SNAPSHOT"
   :buildDebug true
+  :PID "skaro"
   :basedir (System/getProperty "user.dir"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -168,7 +170,6 @@
 (def ^:private basedir (atom (get-env :basedir)))
 (def ^:private PID (atom "skaro"))
 (def ^:private bldDir (atom "b.out"))
-(def ^:private buildDebug (atom true))
 
 (def ^:private gantBuildDir (atom (b/fp! @basedir @bldDir)))
 
@@ -189,8 +190,8 @@
 ;;
 (def COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
 
-(def COMPILE_OPTS {:includeantruntime false
-                   :debug @buildDebug
+(def COMPILE_OPTS {:debug (get-env :buildDebug)
+                   :includeantruntime false
                    :fork true})
 
 (def CPATH [[:location @buildDir]
@@ -897,7 +898,8 @@
       "pack-all"
       (ant/AntTar
         {:destFile (b/fp! @distribDir
-                          (str @PID "-" @buildVersion ".tar.gz"))
+                          (str (get-env :PID)
+                               "-" @buildVersion ".tar.gz"))
          :compression "gzip"}
         [[:tarfileset {:dir @packDir}
                       [[:exclude "apps/**"]
