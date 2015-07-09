@@ -138,12 +138,10 @@ build_all() {
 
 JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
 DBGOPTS="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
+
+BOOT=$SKARO_HOME/dist/skaro-ld*.jar
 PATCHDIR=$SKARO_HOME/patch/*
-#DISTRO=$SKARO_HOME/dist/exec/*
-BOOT=$SKARO_HOME/dist/boot/*
 LIBDIR=$SKARO_HOME/lib/*
-BCP=$BOOT:$CLASSPATH
-#BCP=$BOOT:$PATCHDIR:$LIBDIR:$CLASSPATH
 
 JAVA_CMD=$JAVA_HOME/bin/java
 BG=false
@@ -223,13 +221,13 @@ if [ $# -eq 1 -a "$1" = "build-all" ]; then
 fi
 
 
-#CMDLINE="$JAVA_CMD -cp $BCP $DBGOPTS $LOGREF $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ "
+#CMDLINE="$JAVA_CMD -cp $BOOT $DBGOPTS $LOGREF $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ "
 cd $SKARO_BIN
 if [ "$BG" = "true" ]; then
-  nohup $JAVA_CMD $VMARGS -cp $BCP $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ &
+  nohup $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@ &
 else
   splash
-  $JAVA_CMD $VMARGS -cp $BCP $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@
+  $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $CLDR $MAINCZ $SKARO_HOME $@
 fi
 cd $CWD
 exit 0

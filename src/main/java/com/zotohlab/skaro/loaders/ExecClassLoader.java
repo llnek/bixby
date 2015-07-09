@@ -28,7 +28,7 @@ public class ExecClassLoader extends AbstractClassLoader {
   }
 
   private void load(String base) {
-    File p= new File(base, "dist/exec");
+    File p= new File(base, "dist");
     if (p.exists() && !_loaded) {
       findUrls(p);
     }
