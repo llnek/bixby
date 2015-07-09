@@ -176,7 +176,7 @@
 (set-env! :distDir (b/fp! (ge :bootBuildDir) "dist"))
 (set-env! :buildDir (b/fp! (ge :bootBuildDir) "classes"))
 (set-env! :packDir (b/fp! (ge :bootBuildDir) "pack"))
-(set-env! :libDir (b/fp! (ge :bootBuildDir) "lib"))
+(set-env! :libDir (b/fp! (ge :basedir) (ge :target-path)))
 (set-env! :qaDir (b/fp! (ge :bootBuildDir) "test"))
 (set-env! :reportTestDir (b/fp! (ge :qaDir) "reports"))
 (set-env! :buildTestDir (b/fp! (ge :qaDir) "classes"))
