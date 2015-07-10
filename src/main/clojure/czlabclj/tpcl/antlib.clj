@@ -47,6 +47,8 @@
             JUnitTest
             BatchTest
             FormatterElement]
+           [org.apache.tools.ant.util FileNameMapper
+            GlobPatternMapper ChainedMapper]
            [org.apache.tools.ant.taskdefs
             Javadoc$AccessType
             Replace$Replacefilter
@@ -316,6 +318,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn AntChainedMapper ""
+
+  ^FileNameMapper
+  [^Project pj & [options nested]]
+
+  (let [cm (ChainedMapper.)]
+    (doseq [n nested]
+      (case (:type n)
+        :glob
+        (->> (doto (GlobPatternMapper.)
+               (.setFrom (:from n))
+               (.setTo (:to n)))
+             (.add cm))
+        nil))
+    cm
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- fmtr-preopts ""
 
   [tk options]
@@ -445,6 +466,18 @@
                     (if (> (count p) 1)(nth p 1) {})
                     (if (> (count p) 2)(nth p 2) []))
            (.addTest tk))
+
+      :chainedmapper
+      (->> (AntChainedMapper pj
+                    (if (> (count p) 1)(nth p 1) {})
+                    (if (> (count p) 2)(nth p 2) []))
+           (.add tk))
+
+      :targetfile
+      (.createTargetfile tk)
+
+      :srcfile
+      (.createSrcfile tk)
 
       :batchtest
       (AntBatchTest pj

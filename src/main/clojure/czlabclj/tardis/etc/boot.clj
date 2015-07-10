@@ -33,8 +33,6 @@
                       ;;(-> (io/file homeDir "apps" appDir)
                           ;;(.getCanonicalPath)))
 
-  (println "cur dir = " (System/getProperty "user.dir"))
-
   (let [args (make-array String 1)]
     (aset #^"[Ljava.lang.String;" args 0 target)
     (App/main args)
