@@ -16,7 +16,7 @@
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
-            [boot.core :as boot]
+            [boot.core :as bcore]
             [clojure.string :as cstr]
             [czlabclj.tpcl.antlib :as ant])
 
@@ -32,6 +32,16 @@
 ;;
 ;;(defmacro ^:private fp! "" [& args] `(cstr/join "/" '~args))
 (defn fp! "" [& args] (cstr/join "/" args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro ge "" [expr] `(bcore/get-env ~expr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro minitask ""
+  [func & forms]
+  `(do (println (str ~func ":")) ~@forms))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
