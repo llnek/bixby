@@ -25,7 +25,7 @@
 
         [czlabclj.xlib.util.dates :only [AddMonths MakeCal]]
         [czlabclj.xlib.util.str :only [ucase nsb hgl? strim]]
-        [czlabclj.tardis.etc.gant]
+        [czlabclj.tardis.etc.boot]
         [czlabclj.tardis.etc.cmd2]
         [czlabclj.xlib.util.meta]
 
@@ -157,9 +157,8 @@
       (let [appId (nth args 1)
             taskId (if (> (count args) 2)
                      (nth args 2)
-                     "devmode") ]
-        ;;(AntBuildApp (GetHomeDir) appId taskId))
-        (ExecGantScript (GetHomeDir) appId taskId))
+                     "dev") ]
+        (ExecBootScript (GetHomeDir) appId taskId))
       (throw (CmdHelpError.)))
   ))
 
@@ -183,8 +182,7 @@
 
   (when-let [args (.getLastResult j)]
     (if (> (count args) 1)
-      ;;(AntBuildApp (GetHomeDir) (nth args 1) "test")
-      (ExecGantScript (GetHomeDir) (nth args 1) "test")
+      (ExecBootScript (GetHomeDir) (nth args 1) "tst")
       (throw (CmdHelpError.)))
   ))
 

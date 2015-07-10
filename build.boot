@@ -115,6 +115,7 @@
     [org.clojure/core.memoize "0.5.7" ]
 
     [codox/codox.core "0.8.12" ]
+    ;; boot/clj stuff
     [boot/base "2.1.2"]
     [boot/core "2.1.2"]
     [boot/pod "2.1.2"]
@@ -239,6 +240,7 @@
         (ant/AntDelete {}
           [[:fileset {:dir (ge :bootBuildDir)}
                      [[:include "**/*"]
+                      [:exclude "pack/**"]
                       [:exclude "classes/clojure/**"]]]])))
   ))
 

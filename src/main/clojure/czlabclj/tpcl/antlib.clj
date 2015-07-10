@@ -671,9 +671,9 @@
 
   (when (.exists dir)
     (RunTasks*
-      (AntDelete {:followSymlinks false
-                  :quiet quiet}
-                 [[:fileset {:dir dir} ]]))
+      (AntDelete {:quiet quiet}
+                 [[:fileset {:followSymlinks false
+                             :dir dir} ]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
