@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -16,12 +16,13 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.i18n.resources :only [GetResource RStr]]
-        [czlabclj.xlib.util.core :only [test-cond MakeMMap]]
-        [czlabclj.xlib.util.consts]
-        [czlabclj.xlib.util.str :only [MakeString]]
-        [czlabclj.xlib.util.scheduler :only [NulScheduler]]
-        [czlabclj.xlib.util.files :only [DirRead?]]
+  (:require [czlabclj.xlib.i18n.resources :refer [GetResource RStr]]
+            [czlabclj.xlib.util.core :refer [test-cond MakeMMap]]
+            [czlabclj.xlib.util.str :refer [MakeString]]
+            [czlabclj.xlib.util.scheduler :refer [NulScheduler]]
+            [czlabclj.xlib.util.files :refer [DirRead?]])
+
+  (:use [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.etc.cmd1])
 

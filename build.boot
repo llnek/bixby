@@ -1051,6 +1051,13 @@
 (defn- jar! ""
   []
 
+  (ant/RunTasks*
+    (ant/AntCopy {:todir (ge :buildDir)}
+                   [[:fileset {:dir (fp! (ge :srcDir) "resources")}]]))
+
+  (b/ReplaceFile (fp! (ge :buildDir) "com/zotohlab/skaro/version.properties")
+                 #(cstr/replace % "@@pom.version@@" (ge :buildVersion)))
+
   (ant/RunTarget* "jar/dist"
     (ant/AntJar
       {:destFile (fp! (ge :distDir)

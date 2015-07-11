@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -16,12 +16,12 @@
 
   (:gen-class)
 
+  (:require [czlabclj.xlib.util.files :refer [DirRead?]]
+            [czlabclj.xlib.i18n.resources :refer :all]
+            [czlabclj.tardis.etc.core :refer :all])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
-
-  (:use [czlabclj.xlib.i18n.resources :only [GetResource]]
-        [czlabclj.xlib.util.files :only [DirRead?]]
-        [czlabclj.tardis.etc.core])
 
   (:import  [java.util ResourceBundle Locale]
             [com.zotohlab.frwk.i18n I18N]
@@ -30,17 +30,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^:private VERPROPS "com/zotohlab/skaro/version.properties")
+(def ^:private RCB "czlabclj/tardis/etc/Resources")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main "Main Entry"
 
   [& args]
 
-  (with-local-vars [rcb (GetResource "czlabclj/tardis/etc/Resources"
-                                     (Locale/getDefault))
+  (with-local-vars [ver (LoadResource VERPROPS)
+                    rcb (GetResource RCB)
                     ok false]
+    (System/setProperty "skaro.version"
+                        (.getString @ver "version"))
     (I18N/setBase @rcb)
-    (when (> (count args) 0)
+    (when-not (empty? args)
       (let [home (io/file (first args))]
         (when (DirRead? home)
           ;;(log/info "set SKARO_HOME=" home)

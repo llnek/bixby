@@ -33,6 +33,7 @@
         :only
         [notnil?
          NiceFPath
+         GetCwd
          IsWindows?
          Stringify
          FlattenNil
@@ -153,13 +154,9 @@
   [^Job j]
 
   (when-let [args (.getLastResult j)]
-    (if (>= (count args) 2)
-      (let [appId (nth args 1)
-            taskId (if (> (count args) 2)
-                     (nth args 2)
-                     "dev") ]
-        (ExecBootScript (GetHomeDir) appId taskId))
-      (throw (CmdHelpError.)))
+    (let [args (drop 1 args)
+          tasks (if (empty? args) ["dev"] args)]
+      (apply ExecBootScript (GetHomeDir) (GetCwd) tasks))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

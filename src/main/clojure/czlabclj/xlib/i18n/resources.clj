@@ -53,7 +53,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmethod LoadResource String
+
+  ^ResourceBundle
+  [^String path]
+
+  (with-open [inp (some-> (GetCldr)
+                          (.getResource path)
+                          (.openStream)) ]
+    (PropertyResourceBundle. inp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn GetResource "Return a resource bundle."
+
+  (^ResourceBundle [^String baseName]
+                   (GetResource baseName (Locale/getDefault) nil))
 
   (^ResourceBundle [^String baseName
                     ^Locale locale]

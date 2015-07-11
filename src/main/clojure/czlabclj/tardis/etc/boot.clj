@@ -27,15 +27,10 @@
 ;;
 (defn ExecBootScript ""
 
-  [^File homeDir ^String appDir ^String target]
+  [^File homeDir ^File appDir & args]
 
-  ;;(System/setProperty "user.dir"
-                      ;;(-> (io/file homeDir "apps" appDir)
-                          ;;(.getCanonicalPath)))
-
-  (let [args (make-array String 1)]
-    (aset #^"[Ljava.lang.String;" args 0 target)
-    (App/main args)
+  (let [pms (into-array String args)]
+    (App/main pms)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
