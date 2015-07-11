@@ -43,7 +43,7 @@
                     rcb (GetResource RCB)
                     ok false]
     (System/setProperty "skaro.version"
-                        (.getString @ver "version"))
+                        (.getString ^ResourceBundle @ver "version"))
     (I18N/setBase @rcb)
     (when-not (empty? args)
       (let [home (io/file (first args))]

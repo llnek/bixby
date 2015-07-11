@@ -30,7 +30,7 @@
         [czlabclj.xlib.util.core
          :only
          [LoadJavaProps test-nestr NiceFPath TryC
-          notnil? NewRandom
+          notnil? NewRandom GetCwd
           ConvLong MakeMMap juid test-nonil]]
         [czlabclj.xlib.util.format :only [ReadEdn]]
         [czlabclj.xlib.util.files
@@ -251,6 +251,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- ignitePod
+
+  [^czlabclj.tardis.core.sys.Elmt co
+   ^czlabclj.tardis.impl.dfts.PODMeta pod]
+
+  (TryC
+    (let [cache (.getAttr co K_CONTAINERS)
+          cid (.id ^Identifiable pod)
+          app (.moniker pod)
+          ctr (MakeContainer pod)]
+      (log/debug "Start pod cid = " cid ", app = " app)
+      (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
+      true)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- maybeStartPod
 
   [^czlabclj.tardis.core.sys.Elmt co
@@ -369,8 +386,8 @@
 
         Startable
         (start [this]
-          (inspectApps this)
-          (startPods this))
+          (->> (inspectApp this (GetCwd))
+               (ignitePod this)))
 
         (stop [this]
             (stopJmx this)
