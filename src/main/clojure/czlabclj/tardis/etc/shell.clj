@@ -16,9 +16,10 @@
 
   (:gen-class)
 
-  (:require [czlabclj.xlib.util.files :refer [DirRead?]]
-            [czlabclj.xlib.i18n.resources :refer :all]
-            [czlabclj.tardis.etc.core :refer :all])
+  (:require [czlabclj.xlib.util.files :refer [DirRead?]])
+
+  (:use [czlabclj.xlib.i18n.resources]
+        [czlabclj.tardis.etc.core])
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
@@ -42,8 +43,8 @@
   (with-local-vars [ver (LoadResource VERPROPS)
                     rcb (GetResource RCB)
                     ok false]
-    (System/setProperty "skaro.version"
-                        (.getString ^ResourceBundle @ver "version"))
+    (->> (.getString ^ResourceBundle @ver "version")
+         (System/setProperty "skaro.version"))
     (I18N/setBase @rcb)
     (when-not (empty? args)
       (let [home (io/file (first args))]
@@ -55,6 +56,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private shell-eof nil)
+;;EOF
 
