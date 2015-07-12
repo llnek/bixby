@@ -18,44 +18,38 @@
             [clojure.java.io :as io]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.cmdline :only [MakeCmdSeqQ CLIConverse]]
-        [czlabclj.xlib.crypto.codec :only [CreateStrongPwd Pwdify]]
-        [czlabclj.xlib.util.guids :only [NewUUid NewWWid]]
-        [czlabclj.xlib.i18n.resources :only [RStr]]
+  (:require [czlabclj.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile]]
+            [czlabclj.xlib.util.cmdline :refer [MakeCmdSeqQ CLIConverse]]
+            [czlabclj.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
+            [czlabclj.xlib.util.guids :refer [NewUUid NewWWid]]
+            [czlabclj.xlib.i18n.resources :refer [RStr]]
+            [czlabclj.xlib.util.dates :refer [AddMonths MakeCal]]
+            [czlabclj.xlib.util.str :refer [ucase nsb hgl? strim]]
+            [czlabclj.xlib.util.core
+             :refer [notnil?
+             NiceFPath
+             GetCwd
+             IsWindows?
+             Stringify
+             FlattenNil
+             ConvLong
+             ResStr]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
 
-        [czlabclj.xlib.util.dates :only [AddMonths MakeCal]]
-        [czlabclj.xlib.util.str :only [ucase nsb hgl? strim]]
-        [czlabclj.tardis.etc.boot]
+            [czlabclj.xlib.crypto.core
+             :refer [AES256_CBC
+             AssertJce
+             PEM_CERT
+             ExportPublicKey
+             ExportPrivateKey
+             DbgProvider
+             MakeKeypair
+             MakeSSv1PKCS12
+             MakeCsrReq]])
+
+  (:use [czlabclj.tardis.etc.boot]
         [czlabclj.tardis.etc.cmd2]
         [czlabclj.xlib.util.meta]
-
-        [czlabclj.xlib.util.core
-        :only
-        [notnil?
-         NiceFPath
-         GetCwd
-         IsWindows?
-         Stringify
-         FlattenNil
-         ConvLong
-         ResStr]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.files
-        :only
-        [ReadOneFile Mkdirs WriteOneFile]]
-
-        [czlabclj.xlib.crypto.core
-        :only
-        [AES256_CBC
-         AssertJce
-         PEM_CERT
-         ExportPublicKey
-         ExportPrivateKey
-         DbgProvider
-         MakeKeypair
-         MakeSSv1PKCS12
-         MakeCsrReq]]
-
         [czlabclj.tardis.core.consts])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
@@ -93,23 +87,15 @@
 
   @SKARO-HOME-DIR)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;not used
-(defn- getBuildFilePath ""
-
-  ^String
-  []
-
-  (NiceFPath (io/file (GetHomeDir) DN_CFG "app" "build.xml")))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Create a new app template.
 (defn- onCreateApp ""
 
   [& args]
 
-  (let [t (re-matches #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-                      (nth args 2))
+  (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+        app (nth args 2)
+        t (re-matches rx app)
         hhh (GetHomeDir)
         hf (ReadEdn (io/file hhh DN_CONF (name K_PROPS)))
         wlg (or (:lang (:webdev hf)) "js")
@@ -121,18 +107,17 @@
                (first t))) ]
     (when (nil? id) (throw (CmdHelpError.)))
     (binding [*SKARO-WEBLANG* wlg]
-      (let [app (nth args 2)]
-        (case (nth args 1)
-          ("mvc" "web")
-          (CreateNetty hhh id app)
+      (case (nth args 1)
+        ("mvc" "web")
+        (CreateNetty hhh id app)
 
-          "jetty"
-          (CreateJetty hhh id app)
+        "jetty"
+        (CreateJetty hhh id app)
 
-          "basic"
-          (CreateBasic hhh id app)
+        "basic"
+        (CreateBasic hhh id app)
 
-          (throw (CmdHelpError.)))))
+        (throw (CmdHelpError.))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -167,7 +152,7 @@
 
   (when-let [args (.getLastResult j)]
     (if (> (count args) 1)
-      (BundleApp (GetHomeDir) (nth args 1))
+      (BundleApp (GetHomeDir) (GetCwd) (nth args 1))
       (throw (CmdHelpError.)))
   ))
 
@@ -178,9 +163,9 @@
   [^Job j]
 
   (when-let [args (.getLastResult j)]
-    (if (> (count args) 1)
-      (ExecBootScript (GetHomeDir) (nth args 1) "tst")
-      (throw (CmdHelpError.)))
+    (let [args (drop 1 args)
+          tasks (if (empty? args) ["tst"] args)]
+      (apply ExecBootScript (GetHomeDir) (GetCwd) tasks))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,7 +183,7 @@
     (if
       ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
-      (RunAppBg home true)
+      (RunAppBg home)
       ;;else
       (when-let [^CliMain m (MakeObj cz)]
         (.run m (object-array [ home ]))))
@@ -215,14 +200,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe generate some demo apps?
-(defn OnDemo "Generate demo apps."
+(defn OnDemos "Generate demo apps."
 
   [^Job j]
 
   (when-let [args (.getLastResult j)]
-    (if (and (> (count args) 1)
-             (= "samples" (nth args 1)))
-      (PublishSamples (GetHomeDir))
+    (if (> (count args) 1)
+      (PublishSamples (nth args 1))
       (throw (CmdHelpError.)))
   ))
 
@@ -508,6 +492,14 @@
 
   [j]
 
+  (println (System/getProperty "skaro.version")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- XXOnVersion "Show the version of system."
+
+  [j]
+
   ;;(log/debug "HomeDir = " (GetHomeDir))
   (let [s (ReadOneFile (io/file (GetHomeDir) "VERSION")) ]
     (if (hgl? s)
@@ -588,6 +580,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private cmd1-eof nil)
+;;EOF
 

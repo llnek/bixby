@@ -14,20 +14,20 @@
 
   czlabclj.tardis.etc.core
 
-  (:require [clojure.tools.logging :as log])
-
   (:require [czlabclj.xlib.i18n.resources :refer [GetResource RStr]]
             [czlabclj.xlib.util.core :refer [test-cond MakeMMap]]
             [czlabclj.xlib.util.str :refer [MakeString]]
             [czlabclj.xlib.util.scheduler :refer [NulScheduler]]
             [czlabclj.xlib.util.files :refer [DirRead?]])
 
+  (:require [clojure.tools.logging :as log])
+
   (:use [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.etc.cmd1])
 
-  (:import  [com.zotohlab.skaro.etc CmdHelpError]
-            [com.zotohlab.frwk.server ServiceHandler ServerLike]
+  (:import  [com.zotohlab.frwk.server ServiceHandler ServerLike]
+            [com.zotohlab.skaro.etc CmdHelpError]
             [com.zotohlab.wflow Activity
              WorkFlowEx Nihil
              Job Switch]
@@ -73,11 +73,10 @@
 ;;
 (defn- drawHelp ""
 
-  [^String fmt arr]
+  [fmt arr]
 
-  (doseq [[k v] (seq arr) ]
-    (print (String/format fmt
-                          (into-array Object [k v]) ))
+  (doseq [[k v] arr]
+    (print (apply format fmt k v))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,9 +86,9 @@
   []
 
   (let [strs (getCmdInfo (I18N/getBase))
+        b (drop-last (drop 1 strs))
         h (take 1 strs)
-        e (take-last 1 strs)
-        b (drop-last (drop 1 strs))]
+        e (take-last 1 strs)]
     (println (MakeString \= 78))
     (drawHelp "> %-35s %s\n" h)
     (println "> -----------------")
@@ -107,8 +106,7 @@
   []
 
   (doto (Switch/apply (DefChoiceExpr
-                        (fn [^Job j]
-                          (keyword (first (.getLastResult j))))))
+                        #(keyword (first (.getLastResult ^Job %)))))
     (.withChoice :new (SimPTask #(OnCreate %)))
     (.withChoice :ide (SimPTask #(OnIDE %)))
     (.withChoice :build (SimPTask #(OnBuild %)))
@@ -116,7 +114,7 @@
     (.withChoice :test (SimPTask #(OnTest %)))
     (.withChoice :debug (SimPTask #(OnDebug %)))
     (.withChoice :start (SimPTask #(OnStart %)))
-    (.withChoice :demo (SimPTask #(OnDemo %)))
+    (.withChoice :demos (SimPTask #(OnDemos %)))
     (.withChoice :generate (SimPTask #(OnGenerate %)))
     (.withChoice :encrypt (SimPTask #(OnEncrypt %)))
     (.withChoice :decrypt (SimPTask #(OnDecrypt %)))
@@ -171,6 +169,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 
