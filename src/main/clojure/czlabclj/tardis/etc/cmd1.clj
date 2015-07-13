@@ -7,16 +7,12 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.etc.cmd1
-
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
 
   (:require [czlabclj.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile]]
             [czlabclj.xlib.util.cmdline :refer [MakeCmdSeqQ CLIConverse]]
@@ -24,6 +20,7 @@
             [czlabclj.xlib.util.guids :refer [NewUUid NewWWid]]
             [czlabclj.xlib.i18n.resources :refer [RStr]]
             [czlabclj.xlib.util.dates :refer [AddMonths MakeCal]]
+            [czlabclj.xlib.util.meta :refer [GetCldr]]
             [czlabclj.xlib.util.str :refer [ucase nsb hgl? strim]]
             [czlabclj.xlib.util.core
              :refer [notnil?
@@ -47,12 +44,17 @@
              MakeSSv1PKCS12
              MakeCsrReq]])
 
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cstr])
+
   (:use [czlabclj.tardis.etc.boot]
         [czlabclj.tardis.etc.cmd2]
         [czlabclj.xlib.util.meta]
         [czlabclj.tardis.core.consts])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
+            [org.projectodd.shimdandy ClojureRuntimeShim]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.skaro.etc CliMain CmdHelpError]
             [com.zotohlab.frwk.crypto PasswordAPI]
@@ -65,6 +67,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some globals
 (def SKARO-RSBUNDLE (atom nil))
 (def SKARO-HOME-DIR (atom nil))
@@ -88,48 +93,17 @@
   @SKARO-HOME-DIR)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Create a new app template.
-(defn- onCreateApp ""
-
-  [& args]
-
-  (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-        app (nth args 2)
-        t (re-matches rx app)
-        hhh (GetHomeDir)
-        hf (ReadEdn (io/file hhh DN_CONF (name K_PROPS)))
-        wlg (or (:lang (:webdev hf)) "js")
-        ;; treat as domain e.g com.acme => app = acme
-        ;; regex gives ["com.acme" ".acme"]
-        id (when-not (nil? t)
-             (if-let [tkn (last t) ]
-               (.substring ^String tkn 1)
-               (first t))) ]
-    (when (nil? id) (throw (CmdHelpError.)))
-    (binding [*SKARO-WEBLANG* wlg]
-      (case (nth args 1)
-        ("mvc" "web")
-        (CreateNetty hhh id app)
-
-        "jetty"
-        (CreateJetty hhh id app)
-
-        "basic"
-        (CreateBasic hhh id app)
-
-        (throw (CmdHelpError.))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
 (defn OnCreate "Create a new app."
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (< (count args) 3)
-      (throw (CmdHelpError.))
-      (apply onCreateApp args))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 1)
+      (CreateApp (first args)
+                 (nth args 1))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -138,10 +112,14 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (let [args (drop 1 args)
-          tasks (if (empty? args) ["dev"] args)]
-      (apply ExecBootScript (GetHomeDir) (GetCwd) tasks))
+  (let [args (.getLastResult j)
+        args (drop 1 args)
+        tasks (if (empty? args)
+                ["dev"]
+                args)]
+    (apply ExecBootScript
+           (GetHomeDir)
+           (GetCwd) tasks)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -150,9 +128,11 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (> (count args) 1)
-      (BundleApp (GetHomeDir) (GetCwd) (nth args 1))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 0)
+      (BundleApp (GetHomeDir)
+                 (GetCwd) (first args))
       (throw (CmdHelpError.)))
   ))
 
@@ -162,10 +142,14 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (let [args (drop 1 args)
-          tasks (if (empty? args) ["tst"] args)]
-      (apply ExecBootScript (GetHomeDir) (GetCwd) tasks))
+  (let [args (.getLastResult j)
+        args (drop 1 args)
+        tasks (if (empty? args)
+                ["tst"]
+                args)]
+    (apply ExecBootScript
+           (GetHomeDir)
+           (GetCwd) tasks)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,27 +158,29 @@
 
   [^Job j]
 
-  (let [cz "czlabclj.tardis.impl.climain.StartViaCLI"
+  (let [rt (ClojureRuntimeShim/newRuntime (GetCldr)
+                                          (.getName (GetCwd)))
+        cz "czlabclj.tardis.impl.climain"
         args (.getLastResult j)
-        s2 (if (> (count args) 1)
-             (nth args 1)
+        args (drop args 1)
+        s2 (if (> (count args) 0)
+             (nth args 0)
              "")
         home (GetHomeDir)]
     (if
       ;; background job is handled differently on windows
       (and (= s2 "bg") (IsWindows?))
       (RunAppBg home)
-      ;;else
-      (when-let [^CliMain m (MakeObj cz)]
-        (.run m (object-array [ home ]))))
-    nil
+      (doto rt
+        (.require cz)
+        (.invoke (str cz "/StartViaCLI") home)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
 (defn OnDebug "Debug the app."
 
-  [j]
+  [^Job j]
 
   (OnStart j))
 
@@ -204,9 +190,10 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (> (count args) 1)
-      (PublishSamples (nth args 1))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 0)
+      (PublishSamples (nth args 0))
       (throw (CmdHelpError.)))
   ))
 
@@ -216,7 +203,7 @@
 
   [len]
 
-  (println (nsb (CreateStrongPwd len))))
+  (println (CreateStrongPwd len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -242,7 +229,7 @@
 
   []
 
-  (println (nsb (NewWWid))))
+  (println (NewWWid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -250,7 +237,7 @@
 
   []
 
-  (println (nsb (NewUUid))))
+  (println (NewUUid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -351,11 +338,11 @@
   (if-let [res (promptQuestions (merge (make-csr-qs @SKARO-RSBUNDLE)
                                        (make-key-qs @SKARO-RSBUNDLE))
                                 "cn") ]
-    (let [^String dn (first res)
+    (let [dn (first res)
           rc (last res)
-          ff (File. ^String (:fn rc))
+          ff (io/file (:fn rc))
           now (Date.) ]
-      (println (str "DN entered: " dn))
+      (println "DN entered: " dn)
       (MakeSSv1PKCS12 dn
                       (Pwdify (:pwd rc))
                       ff
@@ -364,8 +351,8 @@
                       :end (-> (MakeCal now)
                                (AddMonths (ConvLong (:months rc) 12))
                                (.getTime)) })
-      (println (str "Wrote file: " ff))
-  )))
+      (println "Wrote file: " ff))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -374,19 +361,19 @@
   []
 
   (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) "cn") ]
-    (let [^String dn (first res)
+    (let [dn (first res)
           rc (last res)
           [req pkey]
           (MakeCsrReq (ConvLong (:size rc) 1024)
                       dn
                       PEM_CERT) ]
-      (println (str "DN entered: " dn))
-      (let [f1 (File. (str (:fn rc) ".key"))
-            f2 (File. (str (:fn rc) ".csr")) ]
+      (println "DN entered: " dn)
+      (let [f1 (io/file (:fn rc) ".key")
+            f2 (io/file (:fn rc) ".csr") ]
         (WriteOneFile f1 pkey)
-        (println (str "Wrote file: " f1))
+        (println "Wrote file: " f1)
         (WriteOneFile f2 req)
-        (println (str "Wrote file: " f2))))
+        (println "Wrote file: " f2)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,11 +382,12 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (when-not (if (> (count args) 1)
-                (condp = (nth args 1)
-                  "keypair" (if (> (count args) 2)
-                              (do (genKeyPair (nth args 2)) true)
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (when-not (if (> (count args) 0)
+                (condp = (first args)
+                  "keypair" (if (> (count args) 1)
+                              (do (genKeyPair (nth args 1)) true)
                               false)
                   "password" (do (generatePassword 12) true)
                   "serverkey" (do (keyfile) true)
@@ -427,9 +415,10 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (> (count args) 1)
-      (genHash (nth args 1))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 0)
+      (genHash (first args))
       (throw (CmdHelpError.)))
   ))
 
@@ -449,9 +438,10 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (> (count args) 2)
-      (encrypt (nth args 1) (nth args 2))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 1)
+      (encrypt (first args) (nth args 1))
       (throw (CmdHelpError.)))
   ))
 
@@ -471,9 +461,10 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (> (count args) 2)
-      (decrypt (nth args 1) (nth args 2))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (> (count args) 1)
+      (decrypt (first args) (nth args 1))
       (throw (CmdHelpError.)))
   ))
 
@@ -537,10 +528,9 @@
 
   [^String app]
 
-  (let [cwd (io/file (GetHomeDir) DN_BOXX app)
+  (let [ec (Mkdirs (io/file (GetCwd) "eclipse.projfiles"))
         sb (StringBuilder.)
-        ec (Mkdirs (io/file cwd "eclipse.projfiles"))
-         ;;lang "scala"
+        cwd (GetCwd)
         lang "java"
         ulang (ucase lang) ]
     (FileUtils/cleanDirectory ec)
@@ -549,11 +539,13 @@
                        lang
                        "/project.txt")
                   "utf-8")
-          (.replace "${APP.NAME}" app)
-          (.replace (str "${" ulang ".SRC}")
-                    (NiceFPath (io/file cwd "src/main/" lang)))
-          (.replace "${TEST.SRC}"
-                    (NiceFPath (io/file cwd "src" "test" lang)))))
+          (cstr/replace "${APP.NAME}" app)
+          (cstr/replace (str "${" ulang ".SRC}")
+                        (NiceFPath (io/file cwd
+                                            "src" "main" lang)))
+          (cstr/replace "${TEST.SRC}"
+                        (NiceFPath (io/file cwd
+                                            "src" "test" lang)))))
     (scanJars (io/file (GetHomeDir) DN_DIST) sb)
     (scanJars (io/file (GetHomeDir) DN_LIB) sb)
     (scanJars (io/file cwd POD_CLASSES) sb)
@@ -563,7 +555,7 @@
                        lang
                        "/classpath.txt")
                   "utf-8")
-          (.replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
+          (cstr/replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -572,10 +564,11 @@
 
   [^Job j]
 
-  (when-let [args (.getLastResult j)]
-    (if (and (> (count args) 2)
-             (= "eclipse" (nth args 1)))
-      (genEclipseProj (nth args 2))
+  (let [args (.getLastResult j)
+        args (drop args 1)]
+    (if (and (> (count args) 1)
+             (= "eclipse" (nth args 0)))
+      (genEclipseProj (nth args 1))
       (throw (CmdHelpError.)))
   ))
 

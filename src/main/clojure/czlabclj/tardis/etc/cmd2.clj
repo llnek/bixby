@@ -14,11 +14,6 @@
 
   czlabclj.tardis.etc.cmd2
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
-
-  (:use [czlabclj.tardis.core.consts])
-
   (:require [czlabclj.xlib.util.ini :refer [ParseInifile]]
             [czlabclj.xlib.util.str :refer [strim nsb]]
             [czlabclj.xlib.util.guids :refer [NewUUid]]
@@ -43,6 +38,11 @@
               Unzip
               Mkdirs]])
 
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
+
+  (:use [czlabclj.tardis.core.consts])
+
   (:import  [org.apache.commons.io.filefilter FileFileFilter
                                               FileFilterUtils]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -55,12 +55,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:dynamic *SKARO-WEBCSSLANG* "scss")
-(def ^:dynamic *SKARO-WEBLANG* "js")
-
-(declare CreateBasic)
-(declare CreateNetty)
-(declare CreateJetty)
+(declare CreateBasic CreateNetty CreateJetty)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,21 +68,50 @@
       (StringUtils/stripEnd ".")
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Maybe create a new app?
+(defn CreateApp "Create a new app."
+
+  [verb path]
+
+  (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+        t (re-matches rx path)
+        ;; treat as domain e.g com.acme => app = acme
+        ;; regex gives ["com.acme" ".acme"]
+        app (when-not (nil? t)
+              (if-let [tkn (last t) ]
+                (.substring ^String tkn 1)
+                (first t))) ]
+    (when (nil? app) (throw (CmdHelpError.)))
+    (case verb
+      ("mvc" "web")
+      (CreateNetty app path)
+      "jetty"
+      (CreateJetty app path)
+      "basic"
+      (CreateBasic app path)
+      (throw (CmdHelpError.)))
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RunAppBg "Run the application in the background."
 
   [^File hhh]
 
-  (let [progW (NiceFPath (io/file hhh "bin" "skaro.bat"))
-        prog (NiceFPath (io/file hhh "bin" "skaro"))
+  (let [bin (io/file hhh "bin")
+        progW (io/file bin "skaro.bat")
+        prog (io/file bin "skaro")
+        cwd (GetCwd)
         tk (if (IsWindows?)
              (ant/AntExec {:executable "cmd.exe"
-                           :dir hhh}
+                           :dir cwd}
                           [[:argvalues [ "/C" "start" "/B"
-                                        "/MIN" progW "start" ]]])
-             (ant/AntExec {:executable prog
-                           :dir (GetCwd)}
+                                        "/MIN"
+                                        (NiceFPath progW)
+                                        "start" ]]])
+             (ant/AntExec {:executable (NiceFPath prog)
+                           :dir cwd}
                           [[:argvalues [ "start" "bg" ]]])) ]
     (ant/RunTasks* tk)
   ))
@@ -96,10 +120,9 @@
 ;;
 (defn BundleApp "Bundle an app."
 
-  [^File hhhHome ^File app out]
+  [^File hhhHome ^File app ^String out]
 
-  (let [dir (doto (io/file out)
-              (.mkdirs))
+  (let [dir (Mkdirs (io/file out))
         tk (ant/AntZip {:destFile (io/file dir (.getName app) ".zip")
                         :basedir app
                         :excludes "b.out/**"

@@ -109,7 +109,7 @@
                         #(keyword (first (.getLastResult ^Job %)))))
     (.withChoice :new (SimPTask #(OnCreate %)))
     (.withChoice :ide (SimPTask #(OnIDE %)))
-    (.withChoice :build (SimPTask #(OnBuild %)))
+    (.withChoice :make (SimPTask #(OnBuild %)))
     (.withChoice :podify (SimPTask #(OnPodify %)))
     (.withChoice :test (SimPTask #(OnTest %)))
     (.withChoice :debug (SimPTask #(OnDebug %)))
@@ -127,7 +127,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseArgs ""
+(defn- parseArgs "Do nothing right now."
 
   ^Activity
   []
@@ -136,7 +136,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cmdStart ""
+(defn- cmdStart "Make sure cmdline args are ok."
 
   ^Activity
   []
