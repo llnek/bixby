@@ -68,30 +68,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; some globals
-(def SKARO-RSBUNDLE (atom nil))
-(def SKARO-HOME-DIR (atom nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ResBdl "Return the system resource bundle."
-
-  ^ResourceBundle
-  []
-
-  @SKARO-RSBUNDLE)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetHomeDir "Return the home directory."
-
-  ^File
-  []
-
-  @SKARO-HOME-DIR)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
 (defn OnCreate "Create a new app."
@@ -102,7 +78,7 @@
         args (drop args 1)]
     (if (> (count args) 1)
       (CreateApp (first args)
-                 (nth args 1))
+                 (second args))
       (throw (CmdHelpError.)))
   ))
 
@@ -193,7 +169,7 @@
   (let [args (.getLastResult j)
         args (drop args 1)]
     (if (> (count args) 0)
-      (PublishSamples (nth args 0))
+      (PublishSamples (first args))
       (throw (CmdHelpError.)))
   ))
 
@@ -384,19 +360,25 @@
 
   (let [args (.getLastResult j)
         args (drop args 1)]
-    (when-not (if (> (count args) 0)
-                (condp = (first args)
-                  "keypair" (if (> (count args) 1)
-                              (do (genKeyPair (nth args 1)) true)
-                              false)
-                  "password" (do (generatePassword 12) true)
-                  "serverkey" (do (keyfile) true)
-                  "guid" (do (genGuid) true)
-                  "wwid" (do (genWwid) true)
-                  "csr" (do (csrfile) true)
-                  false)
-                false)
-      (throw (CmdHelpError.)))
+    (with-local-vars [rc true]
+      (condp = (first args)
+        "keypair"
+        (if (> (count args) 1)
+          (genKeyPair (second args))
+          (var-set rc false))
+        "password"
+        (generatePassword 12)
+        "serverkey"
+        (keyfile)
+        "guid"
+        (genGuid)
+        "wwid"
+        (genWwid)
+        "csr"
+        (csrfile)
+        (var-set rc false))
+      (when-not @rc)
+        (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -441,7 +423,7 @@
   (let [args (.getLastResult j)
         args (drop args 1)]
     (if (> (count args) 1)
-      (encrypt (first args) (nth args 1))
+      (encrypt (first args) (second args))
       (throw (CmdHelpError.)))
   ))
 
@@ -464,7 +446,7 @@
   (let [args (.getLastResult j)
         args (drop args 1)]
     (if (> (count args) 1)
-      (decrypt (first args) (nth args 1))
+      (decrypt (first args) (second args))
       (throw (CmdHelpError.)))
   ))
 
@@ -491,7 +473,6 @@
 
   [j]
 
-  ;;(log/debug "HomeDir = " (GetHomeDir))
   (let [s (ReadOneFile (io/file (GetHomeDir) "VERSION")) ]
     (if (hgl? s)
       (println s)
@@ -567,8 +548,8 @@
   (let [args (.getLastResult j)
         args (drop args 1)]
     (if (and (> (count args) 1)
-             (= "eclipse" (nth args 0)))
-      (genEclipseProj (nth args 1))
+             (= "eclipse" (first args)))
+      (genEclipseProj (second args))
       (throw (CmdHelpError.)))
   ))
 

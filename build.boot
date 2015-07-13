@@ -52,7 +52,6 @@
     [org.apache.ant/ant-apache-log4j "1.9.5" :exclusions [log4j]]
 
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
-    [org.codehaus.gant/gant_groovy2.4 "1.9.12" ]
 
     [com.jolbox/bonecp "0.8.0.RELEASE" ]
 
@@ -77,7 +76,8 @@
     [org.eclipse.jetty.websocket/websocket-client "9.3.0.v20150612"  ]
     [org.eclipse.jetty.websocket/websocket-server "9.3.0.v20150612"  ]
 
-    [org.codehaus.groovy/groovy-all "2.4.3" ]
+    ;;[org.codehaus.gant/gant_groovy2.4 "1.9.12" ]
+    ;;[org.codehaus.groovy/groovy-all "2.4.3" ]
 
     [com.sun.tools/tools "1.8.0"  ]
     [org.javassist/javassist "3.20.0-GA"  ]
@@ -347,6 +347,8 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/frwk"))
+  (ant/CleanDir (io/file (ge :buildDir) "org"))
   (let [t1 (ant/AntJavac
               (ge :JAVAC_OPTS)
               [[:include "com/zotohlab/frwk/**/*.java"]
@@ -378,6 +380,8 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/server"))
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/wflow"))
   (let [t1 (ant/AntJavac
               (ge :JAVAC_OPTS)
               [[:include "com/zotohlab/wflow/**/*.java"]
@@ -412,6 +416,9 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/skaro"))
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/mock"))
+  (ant/CleanDir (io/file (ge :buildDir) "com/zotohlab/tpcl"))
   (let [t1 (ant/AntJavac
              (ge :JAVAC_OPTS)
              [[:include "com/zotohlab/skaro/**/*.java"]
@@ -456,21 +463,23 @@
   ""
   []
 
-  (let [t1 (ant/AntJavac
-             (ge :JAVAC_OPTS)
-             [[:include "demo/**/*.java"]
-              [:classpath (ge :CPATH) ]
-              [:compilerarg (ge :COMPILER_ARGS) ]])
-        m (map
-            (fn [d]
-              (ant/AntCopy
-                {:todir (fp! (ge :buildDir) "demo" d)}
-                [[:fileset {:dir (fp! (ge :srcDir) "java/demo" d)}
-                           [[:exclude "**/*.java"]]]]))
-            ["splits" "flows" ]) ]
-    (ant/RunTarget
-      "compile/demo"
-      (cons t1 m))
+  (let [dirs ["splits" "flows"]]
+    (doall (map #(ant/CleanDir (fp! (ge :buildDir) "demo" %) dirs)))
+    (let [t1 (ant/AntJavac
+               (ge :JAVAC_OPTS)
+               [[:include "demo/**/*.java"]
+                [:classpath (ge :CPATH) ]
+                [:compilerarg (ge :COMPILER_ARGS) ]])
+          m (map
+              (fn [d]
+                (ant/AntCopy
+                  {:todir (fp! (ge :buildDir) "demo" d)}
+                  [[:fileset {:dir (fp! (ge :srcDir) "java/demo" d)}
+                             [[:exclude "**/*.java"]]]]))
+              dirs) ]
+      (ant/RunTarget
+        "compile/demo"
+        (cons t1 m)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -480,6 +489,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/jmx"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -493,6 +503,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/crypto"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -506,6 +517,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/dbio"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -519,6 +531,8 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/netty"))
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/net"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -533,6 +547,8 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/util"))
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/i18n"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -575,6 +591,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tpcl"))
   (let [t1 (ant/AntJava
               (ge :CLJC_OPTS)
               (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -605,20 +622,24 @@
   ""
   []
 
-  (ant/RunTarget* "clj/demo"
-    (ant/AntJava
-      (ge :CLJC_OPTS)
-      (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                         "demo/file" "demo/fork"
-                                         "demo/http" "demo/jetty"
-                                         "demo/jms" "demo/mvc"
-                                         "demo/pop3" "demo/steps"
-                                         "demo/tcpip" "demo/timer")]]
-              (ge :CJNESTED)))
-    (ant/AntCopy
-      {:todir (fp! (ge :buildDir) "demo")}
-      [[:fileset {:dir (fp! (ge :srcDir) "clojure/demo")}
-                 [[:exclude "**/*.clj"]]]])))
+  (let [dirs ["demo/file" "demo/fork"
+              "demo/http" "demo/jetty"
+              "demo/jms" "demo/mvc"
+              "demo/pop3" "demo/steps"
+              "demo/tcpip" "demo/timer"]]
+    (doall (map #(ant/CleanDir (fp! (ge :buildDir) %)) dirs))
+    (ant/RunTarget* "clj/demo"
+      (ant/AntJava
+        (ge :CLJC_OPTS)
+        (concat [[:argvalues (apply b/FmtCljNsps
+                                    (fp! (ge :srcDir) "clojure")
+                                    dirs)]]
+                (ge :CJNESTED)))
+      (ant/AntCopy
+        {:todir (fp! (ge :buildDir) "demo")}
+        [[:fileset {:dir (fp! (ge :srcDir) "clojure/demo")}
+                   [[:exclude "**/*.clj"]]]]))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -627,6 +648,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/impl"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -640,6 +662,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/mvc"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -653,6 +676,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/auth"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -666,6 +690,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/io"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -679,6 +704,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/etc"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -692,6 +718,7 @@
   ""
   []
 
+  (ant/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/core"))
   (ant/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -1172,10 +1199,10 @@
   []
 
   (bcore/with-pre-wrap fileset
+    (cljTpcl)
     (cljXLib)
     (tardisAll)
     (cljDemo)
-    (cljTpcl)
     fileset
   ))
 

@@ -23,6 +23,7 @@
             [czlabclj.xlib.util.core
              :refer
              [GetUser
+              GetCwd
               juid
               IsWindows?
               NiceFPath]]
@@ -39,19 +40,44 @@
               Mkdirs]])
 
   (:require [clojure.tools.logging :as log]
+            [clojure.string :as cstr]
             [clojure.java.io :as io])
 
   (:use [czlabclj.tardis.core.consts])
 
   (:import  [org.apache.commons.io.filefilter FileFileFilter
                                               FileFilterUtils]
+            [com.zotohlab.skaro.etc CmdHelpError]
             [org.apache.commons.io FilenameUtils FileUtils]
             [org.apache.commons.lang3 StringUtils]
-            [java.util UUID]
+            [java.util ResourceBundle UUID]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; some globals
+(def SKARO-RSBUNDLE (atom nil))
+(def SKARO-HOME-DIR (atom nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ResBdl "Return the system resource bundle."
+
+  ^ResourceBundle
+  []
+
+  @SKARO-RSBUNDLE)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetHomeDir "Return the home directory."
+
+  ^File
+  []
+
+  @SKARO-HOME-DIR)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -76,6 +102,7 @@
 
   (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
         t (re-matches rx path)
+        cwd (GetCwd)
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
         app (when-not (nil? t)
@@ -85,11 +112,11 @@
     (when (nil? app) (throw (CmdHelpError.)))
     (case verb
       ("mvc" "web")
-      (CreateNetty app path)
+      (CreateNetty cwd app path)
       "jetty"
-      (CreateJetty app path)
+      (CreateJetty cwd app path)
       "basic"
-      (CreateBasic app path)
+      (CreateBasic cwd app path)
       (throw (CmdHelpError.)))
   ))
 
@@ -132,14 +159,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- mk-demo-path "" [dn] (str "demo." dn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- genOneJavaDemo ""
 
   [^File demo ^File out]
 
-  (let [dname (.getName demo)
-        dom (str "demo." dname) ]
-    (CreateBasic out dname dom)
-    (let [top (io/file hhh DN_BOXX dname)
+  (let [dname (.getName demo)]
+    (CreateBasic out dname (mk-demo-path dname))
+    (let [top (io/file out dname)
           src (io/file top "src" "main" "java" "demo" dname)]
       (CopyFiles demo (io/file top DN_CONF) "conf")
       (CopyFiles demo src "java")
@@ -154,12 +184,12 @@
   [^File demo ^File out]
 
   (let [dname (.getName demo)
-        dom (str "demo." dname) ]
+        dom (mk-demo-path dname)]
     (case dname
-      "jetty" (CreateJetty dname dom)
-      "mvc" (CreateNetty dname dom)
+      "jetty" (CreateJetty out dname dom)
+      "mvc" (CreateNetty out dname dom)
       (CreateBasic out dname dom))
-    (let [top (io/file hhh DN_BOXX dname)
+    (let [top (io/file out dname)
           src (io/file top "src" "main" "clojure" "demo" dname)]
       (CopyFiles demo (io/file top DN_CONF) "conf")
       (CopyFiles demo src "clj"))
@@ -171,7 +201,7 @@
 
   [^File out]
 
-  (let [top (io/file hhh "src" "main" "java" "demo")
+  (let [top (io/file (GetHomeDir) "src" "main" "java" "demo")
         dss (.listFiles top)]
     (doseq [^File d dss]
       (when (.isDirectory d)
@@ -184,7 +214,7 @@
 
   [^File out]
 
-  (let [top (io/file hhh "src" "main" "clojure" "demo")
+  (let [top (io/file (GetHomeDir) "src" "main" "clojure" "demo")
         dss (.listFiles top)]
     (doseq [^File d dss]
       (when (.isDirectory d)
@@ -197,7 +227,7 @@
 
   [^String output]
 
-  (let [out (doto (io/file output)(.mkdirs))]
+  (let [out (Mkdirs output)]
     (genJavaDemos out)
     (genCljDemos out)
   ))
@@ -220,7 +250,7 @@
 
   (io/file appDir
            "src" "main" "clojure"
-           (.replace appDomain "." "/")))
+           (cstr/replace appDomain "." "/")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -234,7 +264,7 @@
         appDomainPath (cstr/replace appDomain "." "/")
         hhh (GetHomeDir)
         cljd (mkcljd appDir appDomain) ]
-    (.mkdirs (io/file h2db))
+    (Mkdirs h2db)
     (with-local-vars [fp nil ]
       (var-set fp (mkcljfp cljd "core.clj"))
       (ReplaceFile @fp
@@ -268,13 +298,13 @@
       ;; make all the folders
       (doseq [^String s [DN_CONF "docs" "i18n" "modules"
                          META_INF POD_INF "src"]]
-        (.mkdirs (io/file appDir s)))
+        (Mkdirs (io/file appDir s)))
       (doseq [s ["classes" "patch" "lib"]]
-        (.mkdirs (io/file  appDir POD_INF  s)))
+        (Mkdirs (io/file  appDir POD_INF  s)))
       (doseq [s [(str "clojure/" appDomainPath) "java"]]
-        (.mkdirs (io/file appDir "src" "main" s))
-        (.mkdirs (io/file appDir "src" "test" s)))
-      (.mkdirs (io/file appDir "src" "main" "resources"))
+        (Mkdirs (io/file appDir "src" "main" s))
+        (Mkdirs (io/file appDir "src" "test" s)))
+      (Mkdirs (io/file appDir "src" "main" "resources"))
       ;;copy files
       (CopyFileToDir (io/file hhh
                               DN_CFGAPP "build.boot") appDir)
@@ -312,8 +342,6 @@
   [^File appDir appId ^String appDomain]
 
   (let [appDomainPath (cstr/replace appDomain "." "/")
-        csslg *SKARO-WEBCSSLANG*
-        wlg *SKARO-WEBLANG*
         hhh (GetHomeDir)
         wfc (io/file hhh DN_CFGAPP "weblibs.conf")
         wlib (io/file appDir "public/vendors")
@@ -322,9 +350,9 @@
 
     ;; make folders
     (doseq [s ["pages" "media" "scripts" "styles"]]
-      (.mkdirs (io/file appDir "src" "web" "site" s))
-      (.mkdirs (io/file appDir "public" s)))
-    (.mkdirs wlib)
+      (Mkdirs (io/file appDir "src" "web" "site" s))
+      (Mkdirs (io/file appDir "public" s)))
+    (Mkdirs wlib)
 
     ;; copy files
     (let [src (io/file hhh DN_CFG "netty")
@@ -332,7 +360,7 @@
       (CopyFiles src des "ftl")
       (CopyFiles src des "html"))
 
-    (CopyFileToDir (io/file hhhHome DN_CFG "netty" "core.clj")
+    (CopyFileToDir (io/file hhh DN_CFG "netty" "core.clj")
                    (mkcljd appDir appDomain))
 
     (CopyFileToDir (io/file hhh DN_CFGWEB "main.scss")
@@ -346,7 +374,7 @@
                    (io/file appDir "src" "web" "site" "media"))
 
     (FileUtils/copyFile wfc (io/file wlib ".list"))
-    (.mkdirs (io/file appDir "src" "test" "js"))
+    (Mkdirs (io/file appDir "src" "test" "js"))
 
     (doseq [df (:libs wbs) ]
       (let [^String dn (:dir df)
@@ -423,6 +451,5 @@
   (create-mvc-web out appId appDomain "czc.tardis.io/NettyMVC"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private cmd2-eof nil)
+;;EOF
 

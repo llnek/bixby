@@ -682,31 +682,33 @@
 ;;
 (defn CleanDir "Clean an existing dir or create it."
 
-  [^File dir & {:keys [quiet]
-                :or {:quiet true}}]
+  [d & {:keys [quiet]
+        :or {:quiet true}}]
 
-  (if (.exists dir)
-    (RunTasks* (AntDelete
-                    {:quiet quiet}
-                    [[:fileset {:followSymlinks false
-                                :dir dir}
-                               [[:include "**/*"]]]]))
-    ;;else
-    (.mkdirs dir)
+  (let [dir (io/file d)]
+    (if (.exists dir)
+      (RunTasks* (AntDelete
+                      {:quiet quiet}
+                      [[:fileset {:followSymlinks false
+                                  :dir dir}
+                                 [[:include "**/*"]]]]))
+      ;;else
+      (.mkdirs dir))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn DeleteDir "Remove a directory."
 
-  [^File dir & {:keys [quiet]
-                :or {:quiet true}}]
+  [d & {:keys [quiet]
+        :or {:quiet true}}]
 
-  (when (.exists dir)
-    (RunTasks*
-      (AntDelete {:quiet quiet}
-                 [[:fileset {:followSymlinks false
-                             :dir dir} ]]))
+  (let [dir (io/file d)]
+    (when (.exists dir)
+      (RunTasks*
+        (AntDelete {:quiet quiet}
+                   [[:fileset {:followSymlinks false
+                               :dir dir} ]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

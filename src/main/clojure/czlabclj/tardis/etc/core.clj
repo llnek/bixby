@@ -24,6 +24,7 @@
 
   (:use [czlabclj.xlib.util.consts]
         [czlabclj.xlib.util.wfs]
+        [czlabclj.tardis.etc.cmd2]
         [czlabclj.tardis.etc.cmd1])
 
   (:import  [com.zotohlab.frwk.server ServiceHandler ServerLike]
