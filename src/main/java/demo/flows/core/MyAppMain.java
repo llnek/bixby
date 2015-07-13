@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package demo.flows;
+package demo.flows.core;
 
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +21,7 @@ import com.zotohlab.skaro.runtime.AppMain;
  * @author kenl
  */
 
-public class DemoMain implements AppMain {
+public class MyAppMain implements AppMain {
 
   public void contextualize(Container c) {
     Object a= c.getAppConfig();

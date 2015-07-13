@@ -76,8 +76,8 @@
 
   [fmt arr]
 
-  (doseq [[k v] arr]
-    (print (apply format fmt k v))
+  (doseq [a arr]
+    (print (apply format fmt a))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

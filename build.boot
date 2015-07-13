@@ -464,7 +464,7 @@
   []
 
   (let [dirs ["splits" "flows"]]
-    (doall (map #(ant/CleanDir (fp! (ge :buildDir) "demo" %) dirs)))
+    (doall (map #(ant/CleanDir (fp! (ge :buildDir) "demo" %)) dirs))
     (let [t1 (ant/AntJavac
                (ge :JAVAC_OPTS)
                [[:include "demo/**/*.java"]

@@ -168,6 +168,7 @@
   [^File demo ^File out]
 
   (let [dname (.getName demo)]
+    (println (format "generating demo[%s]..." dname))
     (CreateBasic out dname (mk-demo-path dname))
     (let [top (io/file out dname)
           src (io/file top "src" "main" "java" "demo" dname)]
@@ -185,6 +186,7 @@
 
   (let [dname (.getName demo)
         dom (mk-demo-path dname)]
+    (println (format "generating demo[%s]..." dname))
     (case dname
       "jetty" (CreateJetty out dname dom)
       "mvc" (CreateNetty out dname dom)
@@ -192,7 +194,9 @@
     (let [top (io/file out dname)
           src (io/file top "src" "main" "clojure" "demo" dname)]
       (CopyFiles demo (io/file top DN_CONF) "conf")
-      (CopyFiles demo src "clj"))
+      (CopyFiles demo src "clj")
+      (DeleteDir (io/file top "src" "main" "java"))
+      (DeleteDir (io/file top "src" "test" "java")))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,13 +305,14 @@
         (Mkdirs (io/file appDir s)))
       (doseq [s ["classes" "patch" "lib"]]
         (Mkdirs (io/file  appDir POD_INF  s)))
-      (doseq [s [(str "clojure/" appDomainPath) "java"]]
-        (Mkdirs (io/file appDir "src" "main" s))
-        (Mkdirs (io/file appDir "src" "test" s)))
+      (doseq [s [ "clojure" "java"]]
+        (Mkdirs (io/file appDir "src" "main" s appDomainPath))
+        (Mkdirs (io/file appDir "src" "test" s appDomainPath)))
       (Mkdirs (io/file appDir "src" "main" "resources"))
       ;;copy files
-      (CopyFileToDir (io/file hhh
-                              DN_CFGAPP "build.boot") appDir)
+      (doseq [s ["build.boot" "pom.xml"]]
+        (CopyFileToDir (io/file hhh DN_CFGAPP s) appDir))
+
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt" "README.md"]]
         (FileUtils/touch (io/file mfDir s)))
@@ -344,7 +349,7 @@
   (let [appDomainPath (cstr/replace appDomain "." "/")
         hhh (GetHomeDir)
         wfc (io/file hhh DN_CFGAPP "weblibs.conf")
-        wlib (io/file appDir "public/vendors")
+        wlib (io/file appDir "public" "vendors")
         wbs (ReadEdn wfc)
         buf (StringBuilder.)]
 
@@ -397,24 +402,18 @@
 ;;
 (defn- create-mvc-web ""
 
-  [^File out ^String appId ^String appDomain ^String emType ]
+  [^File appDir ^String appId ^String appDomain ^String emType ]
 
   (let [appDomainPath (cstr/replace appDomain "." "/")
-        appDir (io/file out appId)
         hhh (GetHomeDir)
         cfd (io/file appDir DN_CONF) ]
     (with-local-vars [fp nil]
-      (create-app-common out appId appDomain "web")
-      (create-web-common out appId appDomain)
+      (create-app-common appDir appId appDomain "web")
+      (create-web-common appDir appId appDomain)
       ;; copy files
-      (CopyFiles (io/file hhh DN_CFG "netty") cfd DN_CONF)
-      (CopyFileToDir (io/file hhh
-                              DN_CFG
-                              "netty" "static-routes.conf") cfd)
-      (CopyFileToDir (io/file hhh
-                              DN_CFG "netty" "routes.conf") cfd)
+      (CopyFiles (io/file hhh DN_CFG "netty") cfd "conf")
       ;; modify files
-      (var-set fp (io/file appDir DN_CONF "routes.conf"))
+      (var-set fp (io/file cfd "routes.conf"))
       (ReplaceFile @fp
                    #(cstr/replace % "@@APPDOMAIN@@" appDomain))
 
@@ -422,7 +421,7 @@
       (ReplaceFile @fp
                    #(cstr/replace % "@@EMTYPE@@" emType))
 
-      (post-create-app out appId appDomain))
+      (post-create-app appDir appId appDomain))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,8 +430,10 @@
 
   [^File out appId ^String appDomain]
 
-  (create-app-common out appId appDomain "basic")
-  (post-create-app out appId appDomain))
+  (let [appdir (Mkdirs (io/file out appId))]
+    (create-app-common appdir appId appDomain "basic")
+    (post-create-app appdir appId appDomain)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -440,7 +441,9 @@
 
   [^File out appId ^String appDomain]
 
-  (create-mvc-web out appId appDomain "czc.tardis.io/JettyIO"))
+  (let [appdir (Mkdirs (io/file out appId))]
+    (create-mvc-web appdir appId appDomain "czc.tardis.io/JettyIO")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -448,7 +451,9 @@
 
   [^File out appId ^String appDomain]
 
-  (create-mvc-web out appId appDomain "czc.tardis.io/NettyMVC"))
+  (let [appdir (Mkdirs (io/file out appId))]
+    (create-mvc-web appdir appId appDomain "czc.tardis.io/NettyMVC")
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

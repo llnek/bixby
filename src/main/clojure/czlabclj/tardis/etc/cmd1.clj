@@ -75,7 +75,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 1)
       (CreateApp (first args)
                  (second args))
@@ -105,7 +105,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 0)
       (BundleApp (GetHomeDir)
                  (GetCwd) (first args))
@@ -138,7 +138,7 @@
                                           (.getName (GetCwd)))
         cz "czlabclj.tardis.impl.climain"
         args (.getLastResult j)
-        args (drop args 1)
+        args (drop 1 args)
         s2 (if (> (count args) 0)
              (nth args 0)
              "")
@@ -167,7 +167,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 0)
       (PublishSamples (first args))
       (throw (CmdHelpError.)))
@@ -359,7 +359,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (with-local-vars [rc true]
       (condp = (first args)
         "keypair"
@@ -398,7 +398,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 0)
       (genHash (first args))
       (throw (CmdHelpError.)))
@@ -421,7 +421,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 1)
       (encrypt (first args) (second args))
       (throw (CmdHelpError.)))
@@ -444,7 +444,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (> (count args) 1)
       (decrypt (first args) (second args))
       (throw (CmdHelpError.)))
@@ -546,7 +546,7 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop args 1)]
+        args (drop 1 args)]
     (if (and (> (count args) 1)
              (= "eclipse" (first args)))
       (genEclipseProj (second args))
