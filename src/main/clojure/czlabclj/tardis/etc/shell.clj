@@ -18,11 +18,11 @@
 
   (:require [czlabclj.xlib.util.files :refer [DirRead?]])
 
-  (:use [czlabclj.xlib.i18n.resources]
-        [czlabclj.tardis.etc.core])
-
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
+
+  (:use [czlabclj.xlib.i18n.resources]
+        [czlabclj.tardis.etc.core])
 
   (:import  [java.util ResourceBundle Locale]
             [com.zotohlab.frwk.i18n I18N]

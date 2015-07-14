@@ -147,7 +147,7 @@
 ;;
 (defn BundleApp "Bundle an app."
 
-  [^File hhhHome ^File app ^String out]
+  [^File hhh ^File app ^String out]
 
   (let [dir (Mkdirs (io/file out))
         tk (ant/AntZip {:destFile (io/file dir (.getName app) ".zip")
@@ -167,15 +167,15 @@
 
   [^File demo ^File out]
 
-  (let [dname (.getName demo)]
+  (let [dname (.getName demo)
+        top (io/file out dname)
+        src (io/file top "src" "main" "java" "demo" dname)]
     (println (format "generating demo[%s]..." dname))
     (CreateBasic out dname (mk-demo-path dname))
-    (let [top (io/file out dname)
-          src (io/file top "src" "main" "java" "demo" dname)]
-      (CopyFiles demo (io/file top DN_CONF) "conf")
-      (CopyFiles demo src "java")
-      (DeleteDir (io/file top "src" "main" "clojure"))
-      (DeleteDir (io/file top "src" "test" "clojure")))
+    (CopyFiles demo (io/file top DN_CONF) "conf")
+    (CopyFiles demo src "java")
+    (DeleteDir (io/file top "src" "main" "clojure"))
+    (DeleteDir (io/file top "src" "test" "clojure"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,18 +185,18 @@
   [^File demo ^File out]
 
   (let [dname (.getName demo)
-        dom (mk-demo-path dname)]
+        dom (mk-demo-path dname)
+        top (io/file out dname)
+        src (io/file top "src" "main" "clojure" "demo" dname)]
     (println (format "generating demo[%s]..." dname))
     (case dname
       "jetty" (CreateJetty out dname dom)
       "mvc" (CreateNetty out dname dom)
       (CreateBasic out dname dom))
-    (let [top (io/file out dname)
-          src (io/file top "src" "main" "clojure" "demo" dname)]
-      (CopyFiles demo (io/file top DN_CONF) "conf")
-      (CopyFiles demo src "clj")
-      (DeleteDir (io/file top "src" "main" "java"))
-      (DeleteDir (io/file top "src" "test" "java")))
+    (CopyFiles demo (io/file top DN_CONF) "conf")
+    (CopyFiles demo src "clj")
+    (DeleteDir (io/file top "src" "main" "java"))
+    (DeleteDir (io/file top "src" "test" "java"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -340,37 +340,19 @@
   ^Activity
   []
 
-  (letfn
-    [(f1 [^czlabclj.xlib.util.core.Muble x]
-       (let [cl (ExecClassLoader. ^ClassLoader
-                                  (.getf x K_ROOT_CZLR))]
-         (SetCldr cl)
-         (.setf! x K_EXEC_CZLR cl)))
-     (f0 [^czlabclj.xlib.util.core.Muble x
-          ^ClassLoader cur]
-       (.setf! x K_ROOT_CZLR (RootClassLoader. cur))) ]
-    (SimPTask "SetupLoaders"
-      (fn [^Job j]
-        (let [^czlabclj.xlib.util.core.Muble
-              x (.getLastResult j)
-              cz (GetCldr)
-              p (.getParent cz)]
-          (condp instance? cz
-            RootClassLoader
-            (do
-              (.setf! x K_ROOT_CZLR cz)
-              (f1 x))
-
-            ExecClassLoader
-            (do
-              (.setf! x K_ROOT_CZLR p)
-              (.setf! x K_EXEC_CZLR cz))
-
-            (do
-              (f0 x cz)
-              (f1 x)))
-          (log/info "Classloaders configured. using " (type cz))
-        )))
+  (SimPTask "SetupLoaders"
+    (fn [^Job j]
+      (let [^czlabclj.xlib.util.core.Muble
+            x (.getLastResult j)
+            cz (GetCldr)
+            p (.getParent cz)
+            pp (.getParent p)]
+        (test-cond "bad classloaders" (and (instance? RootClassLoader pp)
+                                           (instance? ExecClassLoader p)))
+        (.setf! x K_ROOT_CZLR (.getParent p))
+        (.setf! x K_EXEC_CZLR p)
+        (log/info "Classloaders configured. using " (type cz))
+      ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,7 +389,6 @@
 
   [home]
 
-  (println "Yo !!!!!!!!!!! " home)
   (let [cs (cserver home)
         a (-> (rtStart)
               (.chain (setupLoaders))
@@ -423,28 +404,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftype XStartViaCLI [] CliMain
-
-    (run [_ args]
-      (require 'czlabclj.tardis.impl.climain)
-      (let [home (first args)
-            cs (cserver home)
-            a (-> (rtStart)
-                  (.chain (setupLoaders))
-                  (.chain (loadConf))
-                  (.chain (loadRes))
-                  (.chain (primodial))
-                  (.chain (writePID))
-                  (.chain (hookShutdown))
-                  (.chain (pauseCLI)))]
-        (-> ^ServiceHandler
-            cs
-            (.handle a {:home home})))))
-
-(ns-unmap *ns* '->XStartViaCLI)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private climain-eof nil)
+;;EOF
 

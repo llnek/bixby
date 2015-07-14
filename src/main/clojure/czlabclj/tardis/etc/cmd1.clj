@@ -135,13 +135,13 @@
 
   [^Job j]
 
-  (let [cz (AppClassLoader. (GetCldr))
+  (let [fcz "czlabclj.tardis.impl.climain"
+        func (str fcz "/StartViaCLI")
         cwd (GetCwd)
         rt (ClojureRuntimeShim/newRuntime
-             (doto cz
+             (doto (AppClassLoader. (GetCldr))
                (.configure (NiceFPath cwd)))
-                                          (.getName cwd))
-        cz "czlabclj.tardis.impl.climain"
+             (.getName cwd))
         args (.getLastResult j)
         args (drop 1 args)
         s2 (if (> (count args) 0)
@@ -154,8 +154,8 @@
       (RunAppBg home)
       (try
         (doto rt
-          (.require (into-array String [cz]))
-          (.invoke (str cz "/StartViaCLI") home))
+          (.require (into-array String [fcz]))
+          (.invoke func home))
         (catch Throwable t#
           (.printStackTrace t#))))
   ))
@@ -474,18 +474,6 @@
   [j]
 
   (println (System/getProperty "skaro.version")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- XXOnVersion "Show the version of system."
-
-  [j]
-
-  (let [s (ReadOneFile (io/file (GetHomeDir) "VERSION")) ]
-    (if (hgl? s)
-      (println s)
-      (println "Unknown version."))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

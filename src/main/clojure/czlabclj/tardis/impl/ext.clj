@@ -7,30 +7,38 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.impl.ext
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require [czlabclj.xlib.util.str :refer [ToKW hgl? lcase nsb strim nichts?]]
+            [czlabclj.xlib.dbio.connect :refer [DbioConnectViaPool]]
+            [czlabclj.xlib.i18n.resources :refer [LoadResource]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
+            [czlabclj.xlib.util.wfs :refer [WrapPTask NewJob SimPTask]]
+            [czlabclj.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
+            [czlabclj.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
+            [czlabclj.xlib.util.core
+             :refer [
+             Muble MakeMMap NiceFPath TryCR
+             ConvToJava nbf ConvLong Bytesify]]
+            [czlabclj.xlib.util.scheduler :refer [MakeScheduler]]
+            [czlabclj.xlib.util.process :refer [Coroutine]]
+            [czlabclj.xlib.util.core
+             :refer [
+             NextLong LoadJavaProps SubsVar]]
+            [czlabclj.xlib.util.meta :refer [MakeObj]]
+            [czlabclj.xlib.dbio.core
+             :refer [
+              MakeJdbc MakeMetaCache
+              MakeDbPool MakeSchema]]
+            [czlabclj.xlib.net.routes :refer [LoadRoutes]])
 
-  (:use [czlabclj.xlib.util.str
-         :only [ToKW hgl? lcase nsb strim nichts?]]
+  (:use [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
         [czlabclj.xlib.util.consts]
-        [czlabclj.tardis.io.core :rename {enabled? io-enabled?} ]
-        [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
-        [czlabclj.xlib.i18n.resources :only [LoadResource]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.wfs :only [WrapPTask NewJob SimPTask]]
-        [czlabclj.xlib.util.files
-         :only
-         [ReadOneFile WriteOneFile FileRead?]]
-        [czlabclj.xlib.crypto.codec
-         :only
-         [Pwdify CreateRandomString]]
         [czlabclj.tardis.core.consts]
         [czlabclj.tardis.io.loops]
         [czlabclj.tardis.io.mails]
@@ -43,30 +51,13 @@
         [czlabclj.tardis.mvc.filters]
         [czlabclj.tardis.mvc.ftlshim]
         [czlabclj.tardis.impl.dfts
-         :rename
-         {enabled? blockmeta-enabled?} ]
-
+         :rename {enabled? blockmeta-enabled?} ]
         [czlabclj.tardis.impl.misc]
-        [czlabclj.tardis.core.sys]
+        [czlabclj.tardis.core.sys])
 
-        [czlabclj.xlib.util.core
-         :only
-         [Muble MakeMMap NiceFPath TryCR
-          ConvToJava nbf ConvLong Bytesify]]
-
-        [czlabclj.xlib.util.scheduler :only [MakeScheduler]]
-        [czlabclj.xlib.util.process :only [Coroutine]]
-        [czlabclj.xlib.util.core
-         :only
-         [NextLong LoadJavaProps SubsVar]]
-        [czlabclj.xlib.util.meta :only [MakeObj]]
-
-        [czlabclj.xlib.dbio.core
-         :only
-         [MakeJdbc MakeMetaCache
-          MakeDbPool MakeSchema]]
-
-        [czlabclj.xlib.net.routes :only [LoadRoutes]])
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as cstr]
+            [clojure.java.io :as io])
 
   (:import  [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -432,24 +423,23 @@
 ;;
 (defn MakeContainer "Create an application container."
 
+  ^Container
   [^czlabclj.tardis.core.sys.Elmt pod]
 
   (let [^czlabclj.tardis.impl.dfts.PODMeta pm pod
-        ^URL url (.srcUrl pm)
         ^czlabclj.xlib.util.core.Muble
         ctx (.getCtx pod)
-        cl (.getf ctx K_APP_CZLR)
         ^ComponentRegistry root (.getf ctx K_COMPS)
         apps (.lookup root K_APPS)
-        ps {K_APPDIR (File. (.toURI url))
-            K_APP_CZLR cl }
+        ^URL url (.srcUrl pm)
+        ps {K_APPDIR (File. (.toURI url))}
         c (makeAppContainer pod ps)]
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)
     (CompInitialize c)
     (.start ^Startable c)
-    true
+    c
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -460,7 +450,7 @@
 
   (-> (ReadOneFile (io/file appDir conf))
       (SubsVar)
-      (.replace "${appdir}" (NiceFPath appDir))
+      (cstr/replace "${appdir}" (NiceFPath appDir))
       (ReadEdn)
   ))
 
@@ -721,6 +711,5 @@
     )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private ext-eof nil)
+;;EOF
 

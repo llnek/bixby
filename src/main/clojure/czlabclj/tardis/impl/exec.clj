@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -263,17 +263,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (let [^czlabclj.xlib.util.core.Muble
-        ctx (.getCtx co)
-        rcl (.getf ctx K_EXEC_CZLR)
-        ^URL url
-        (-> ^czlabclj.tardis.impl.dfts.PODMeta
-            co
-            (.srcUrl))
-        cl  (AppClassLoader. rcl) ]
-    (.configure cl (NiceFPath (io/file url)))
-    (.setf! ctx K_APP_CZLR cl)
-  ))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The Execvisor is the master controller of everthing.
