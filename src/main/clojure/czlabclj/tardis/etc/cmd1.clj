@@ -54,6 +54,7 @@
         [czlabclj.tardis.core.consts])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
+            [com.zotohlab.skaro.loaders AppClassLoader]
             [org.projectodd.shimdandy ClojureRuntimeShim]
             [org.apache.commons.lang3 StringUtils]
             [com.zotohlab.skaro.etc CliMain CmdHelpError]
@@ -134,22 +135,29 @@
 
   [^Job j]
 
-  (let [rt (ClojureRuntimeShim/newRuntime (GetCldr)
-                                          (.getName (GetCwd)))
+  (let [cz (AppClassLoader. (GetCldr))
+        cwd (GetCwd)
+        rt (ClojureRuntimeShim/newRuntime
+             (doto cz
+               (.configure (NiceFPath cwd)))
+                                          (.getName cwd))
         cz "czlabclj.tardis.impl.climain"
         args (.getLastResult j)
         args (drop 1 args)
         s2 (if (> (count args) 0)
-             (nth args 0)
+             (first args)
              "")
         home (GetHomeDir)]
-    (if
-      ;; background job is handled differently on windows
-      (and (= s2 "bg") (IsWindows?))
+    ;; background job is handled differently on windows
+    (if (and (= s2 "bg")
+             (IsWindows?))
       (RunAppBg home)
-      (doto rt
-        (.require cz)
-        (.invoke (str cz "/StartViaCLI") home)))
+      (try
+        (doto rt
+          (.require (into-array String [cz]))
+          (.invoke (str cz "/StartViaCLI") home))
+        (catch Throwable t#
+          (.printStackTrace t#))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -34,7 +34,7 @@
         [czlabclj.xlib.util.scheduler :only [NulScheduler]]
         [czlabclj.xlib.util.core
          :only
-         [test-nonil test-cond ConvLong
+         [test-nonil test-cond ConvLong NiceFPath
           Try! PrintMutableObj MakeMMap]]
         [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
         [czlabclj.tardis.core.consts]
@@ -81,13 +81,15 @@
   ^czlabclj.xlib.util.core.Muble
   [^File baseDir]
 
-  (let [cfg (io/file baseDir DN_CFG)
-        home (.getParentFile cfg) ]
+  (let [etc (io/file baseDir DN_CFG)
+        home (.getParentFile etc)
+        cnf (io/file home DN_CONF)]
     (PrecondDir home)
-    (PrecondDir cfg)
+    (PrecondDir etc)
+    (PrecondDir cnf)
     (doto (MakeContext)
       (.setf! K_BASEDIR home)
-      (.setf! K_CFGDIR cfg))
+      (.setf! K_CFGDIR etc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +109,7 @@
       (StopServer (:bootstrap kp)
                   (:channel kp))
       (log/info "Http discarder closed. OK")
-      (when-not (nil? pid) (io/delete-file pid true))
+      ;;(when-not (nil? pid) (io/delete-file pid true))
       (log/info "Containers are shutting down...")
       (log/info "About to stop Skaro...")
       (when-not (nil? execv)
@@ -179,9 +181,7 @@
 
       Versioned
       (version [_]
-        (let [f (File. home "VERSION")
-              v (ReadOneFile f)]
-          (nsb v)))
+        (nsb (System/getProperty "skaro.version")))
 
       Identifiable
       (id [_] K_CLISH))
@@ -243,6 +243,7 @@
             fp (io/file home "skaro.pid")]
         (WriteOneFile fp (ProcessPid))
         (.setf! ctx K_PIDFILE fp)
+        (.deleteOnExit fp)
         (log/info "Wrote skaro.pid - OK.")
       ))
   ))
@@ -386,10 +387,11 @@
             ^File
             home (.getv j :home)
             x (inizContext home)]
-        (log/info "SKARO.Version= " (.version ^Versioned c))
+        (log/info "skaro.home " (NiceFPath home))
+        (log/info "skaro.version= " (.version ^Versioned c))
         ;;(precondDir (File. home ^String DN_BLOCKS))
-        (PrecondDir (io/file home DN_BOXX))
-        (PrecondDir (io/file home DN_CFG))
+        ;;(PrecondDir (io/file home DN_BOXX))
+        ;;(PrecondDir (io/file home DN_CFG))
         ;; a bit of circular referencing here.  the climain object refers to context
         ;; and the context refers back to the climain object.
         (.setf! x K_CLISH c)
@@ -401,7 +403,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype StartViaCLI [] CliMain
+(defn StartViaCLI ""
+
+  [home]
+
+  (println "Yo !!!!!!!!!!! " home)
+  (let [cs (cserver home)
+        a (-> (rtStart)
+              (.chain (setupLoaders))
+              (.chain (loadConf))
+              (.chain (loadRes))
+              (.chain (primodial))
+              (.chain (writePID))
+              (.chain (hookShutdown))
+              (.chain (pauseCLI)))]
+    (-> ^ServiceHandler
+        cs
+        (.handle a {:home home}))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype XStartViaCLI [] CliMain
 
     (run [_ args]
       (require 'czlabclj.tardis.impl.climain)
@@ -419,7 +442,7 @@
             cs
             (.handle a {:home home})))))
 
-(ns-unmap *ns* '->StartViaCLI)
+(ns-unmap *ns* '->XStartViaCLI)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

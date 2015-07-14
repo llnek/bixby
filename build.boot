@@ -138,7 +138,7 @@
   :source-paths #{"src/main/clojure" "src/main/java"}
   :buildVersion "0.9.0-SNAPSHOT"
   :buildDebug true
-  :bldDir "b.out"
+  :bldDir "build"
   :PID "skaro"
   :basedir (System/getProperty "user.dir"))
 
@@ -436,12 +436,12 @@
         ts (into [] (cons t1 m))
         t2 (ant/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "loaders-" (ge :buildVersion) ".jar"))}
+                               (str "skaro-ld-" (ge :buildVersion) ".jar"))}
              [[:fileset {:dir (ge :buildDir) }
                         [[:include "com/zotohlab/skaro/loaders/**"] ]]])
         t3 (ant/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "gly-" (ge :buildVersion) ".jar"))}
+                               (str "skaro-rt-" (ge :buildVersion) ".jar"))}
              [[:fileset {:dir (ge :buildDir) }
               [[:include "com/zotohlab/skaro/**"]
               [:include "com/zotohlab/mock/**"]
@@ -451,7 +451,7 @@
               [:exclude "demo/**"]]]]) ]
 
     (->> (if *genjars*
-           (concat ts [t2 t3])
+           (concat ts [t3])
            ts)
          (ant/RunTarget "compile/skaro"))
   ))
@@ -759,12 +759,10 @@
   (let [root (io/file (ge :packDir)) ]
     (ant/CleanDir root)
     (doseq [d ["conf" "dist" "bin"
-               ["etc" "ems"] "lib" "logs"
-               "docs" "pods" "tmp" "apps"]]
+               ["etc" "ems"] "lib" "docs" ]]
       (.mkdirs (if (vector? d)
                  (apply io/file root d)
                  (io/file root d))))
-    (spit (io/file root "VERSION") (ge :buildVersion))
     (ant/RunTarget*
       "pack/init"
       (ant/AntCopy
@@ -782,7 +780,7 @@
   []
 
   (ant/AntCopy
-    {:todir (fp! (ge :packDir) "public/vendors")}
+    {:todir (fp! (ge :packDir) "src/main/js")}
     [[:fileset {:dir (fp! (ge :buildDir) "js")}
                [[:include "**/*.js"]]]]))
 
@@ -850,7 +848,7 @@
                     (fp! (ge :packDir) "docs/api")]]
        [:classpath (ge :CJPATH) ]])
 
-    (copyJsFiles)
+    ;;(copyJsFiles)
 
     (ant/AntExec
       {:executable "jsdoc"
@@ -873,7 +871,8 @@
       [[:fileset {:dir (fp! (ge :srcDir) "clojure")} ]])
     (ant/AntCopy
       {:todir (fp! (ge :packDir) "src/main/java")}
-      [[:fileset {:dir (fp! (ge :srcDir) "java")} ]])))
+      [[:fileset {:dir (fp! (ge :srcDir) "java")} ]])
+    (copyJsFiles)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -887,11 +886,18 @@
       {:todir (fp! (ge :packDir) "lics")}
       [[:fileset {:dir (fp! (ge :basedir) "lics") } ]])
     (ant/AntCopy
-      {:todir (ge :packDir) :flatten true}
+      {:todir (fp! (ge :packDir) "lics")}
       [[:fileset {:dir (ge :basedir)}
                  [[:include "*.html"]
-                  [:include "*.txt"]
-                  [:include "*.md"]]]])))
+                  [:include "LICENSE"]
+                  [:include "*.txt"] ]]])
+    (ant/AntCopy
+      {:todir (ge :packDir) :flatten true}
+      [[:fileset {:dir (ge :basedir)}
+                 [[:include "README.md"]
+                  [:include "pom.xml"] ]]]))
+  (b/ReplaceFile (io/file (ge :packDir) "pom.xml")
+                 #(cstr/replace % "@@VERSION@@" (ge :buildVersion))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -908,9 +914,7 @@
     (ant/AntCopy
       {:todir (fp! (ge :packDir) "dist")}
       [[:fileset {:dir (ge :distDir) }
-                 [[:include "**/skaro-rt*.jar"]]]])
-
-    (copyJsFiles )))
+                 [[:include "**/skaro-rt*.jar"]]]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -951,21 +955,18 @@
 
   [& args]
 
-  (ant/CleanDir (io/file (ge :packDir) "tmp"))
-  (do
-    (ant/RunTarget*
-      "pack/all"
-      (ant/AntTar
-        {:destFile (fp! (ge :distDir)
-                          (str (ge :PID)
-                               "-" (ge :buildVersion) ".tar.gz"))
-         :compression "gzip"}
-        [[:tarfileset {:dir (ge :packDir)}
-                      [[:exclude "apps/**"]
-                       [:exclude "bin/**"]]]
-         [:tarfileset {:dir (ge :packDir) :mode "755"}
-                      [[:include "bin/**"]]]]))
-  ))
+  (ant/RunTarget*
+    "pack/all"
+    (ant/AntTar
+      {:destFile (fp! (ge :distDir)
+                        (str (ge :PID)
+                             "-" (ge :buildVersion) ".tar.gz"))
+       :compression "gzip"}
+      [[:tarfileset {:dir (ge :packDir)}
+                    [[:exclude "apps/**"]
+                     [:exclude "bin/**"]]]
+       [:tarfileset {:dir (ge :packDir) :mode "755"}
+                    [[:include "bin/**"]]]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1086,11 +1087,6 @@
                  #(cstr/replace % "@@pom.version@@" (ge :buildVersion)))
 
   (ant/RunTarget* "jar/dist"
-    (ant/AntJar
-      {:destFile (fp! (ge :distDir)
-                        (str "skaro-ld-" (ge :buildVersion) ".jar"))}
-      [[:fileset {:dir (ge :buildDir) }
-                 [[:include "com/zotohlab/skaro/loaders/**"] ]]])
     (ant/AntJar
       {:destFile (fp! (ge :distDir)
                         (str "skaro-rt-" (ge :buildVersion) ".jar"))}
@@ -1252,12 +1248,12 @@
   (bcore/with-pre-wrap fileset
     (distroInit)
     (packRes)
-    (packDocs)
     (packSrc)
-    (packLics)
     (packBin)
     (packDist)
     (packLibs)
+    (packDocs)
+    (packLics)
     (packAll)
     fileset))
 

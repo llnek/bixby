@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -17,19 +17,20 @@
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.util.core :only [notnil? Muble]]
-        [czlabclj.xlib.util.str :only [ToKW]]
-        [czlabclj.tardis.core.consts]
-        [czlabclj.tardis.core.sys]
-        [czlabclj.xlib.i18n.resources :only [RStr]]
-        [czlabclj.xlib.util.files
-         :only
-         [FileRead? DirReadWrite? ]]
-        [czlabclj.xlib.util.core
-         :only
-         [NextLong test-cond MakeMMap test-nestr]] )
+  (:use [czlabclj.tardis.core.consts]
+        [czlabclj.tardis.core.sys])
 
-  (:import  [com.zotohlab.frwk.core Versioned 
+  (:require [czlabclj.xlib.util.core :refer [notnil? Muble]]
+            [czlabclj.xlib.util.str :refer [ToKW]]
+            [czlabclj.xlib.i18n.resources :refer [RStr]]
+            [czlabclj.xlib.util.files
+             :refer
+             [FileRead? DirReadWrite? ]]
+            [czlabclj.xlib.util.core
+             :refer
+             [NextLong test-cond MakeMMap test-nestr]])
+
+  (:import  [com.zotohlab.frwk.core Versioned
              Identifiable Hierarchial]
             [com.zotohlab.skaro.loaders AppClassLoader]
             [com.zotohlab.frwk.util CU]

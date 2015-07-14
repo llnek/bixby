@@ -1,6 +1,6 @@
-b.out/
 targets/
 target/
+build/
 #lib/
 classes/
 checkouts/

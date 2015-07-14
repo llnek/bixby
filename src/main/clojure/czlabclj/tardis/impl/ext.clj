@@ -447,15 +447,9 @@
     (CompCompose c apps)
     (CompContextualize c ctx)
     (CompConfigure c ps)
-    (if (.isEnabled c)
-      (do
-        (Coroutine #(do
-                      (CompInitialize c)
-                      (.start ^Startable c))
-                   {:classLoader cl
-                    :name (.getName c)})
-        c)
-      nil)
+    (CompInitialize c)
+    (.start ^Startable c)
+    true
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

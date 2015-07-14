@@ -17,24 +17,25 @@
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.util.str :only [nsb strim hgl? ToKW]]
-        [czlabclj.xlib.util.mime :only [SetupCache]]
-        [czlabclj.xlib.util.files :only [Unzip]]
-        [czlabclj.xlib.util.process :only [SafeWait]]
-        [czlabclj.tardis.core.consts]
+  (:use [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.jmx.core]
-        [czlabclj.tardis.impl.dfts :only [MakePodMeta]]
-        [czlabclj.tardis.impl.ext]
-        [czlabclj.xlib.util.core
-         :only
-         [LoadJavaProps test-nestr NiceFPath TryC
-          notnil? NewRandom GetCwd
-          ConvLong MakeMMap juid test-nonil]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.files
-         :only [Mkdirs ReadOneUrl]])
+        [czlabclj.tardis.impl.ext])
+
+  (:require [czlabclj.xlib.util.str :refer [nsb strim hgl? ToKW]]
+            [czlabclj.xlib.util.mime :refer [SetupCache]]
+            [czlabclj.xlib.util.files :refer [Unzip]]
+            [czlabclj.xlib.util.process :refer [SafeWait]]
+            [czlabclj.tardis.impl.dfts :refer [MakePodMeta]]
+            [czlabclj.xlib.util.core
+             :refer
+             [LoadJavaProps test-nestr NiceFPath TryC
+              notnil? NewRandom GetCwd
+              ConvLong MakeMMap juid test-nonil]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
+            [czlabclj.xlib.util.files
+             :refer [Mkdirs ReadOneUrl]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -65,11 +66,6 @@
 
   (homeDir [_] )
   (confDir [_] )
-  (podsDir [_] )
-  (playDir [_] )
-  (logDir [_] )
-  (tmpDir [_] )
-  (dbDir [_] )
   (blocksDir [_] )
   (getStartTime [_] )
   (kill9 [_] )
@@ -101,14 +97,6 @@
               ", version: " ver
               ", main-class: " cz)
 
-    ;;(test-nestr "POD-MainClass" cz)
-    (test-nestr "POD-Version" ver)
-
-    ;;ps.gets("Manifest-Version")
-    ;;.gets("Implementation-Title")
-    ;;.gets("Implementation-Vendor-URL")
-    ;;.gets("Implementation-Vendor")
-
     ;; synthesize the pod meta component and register it
     ;; as a application.
     (let [^czlabclj.tardis.core.sys.Elmt
@@ -133,8 +121,8 @@
 
   (let [app (FilenameUtils/getBaseName (NiceFPath des))
         mf (io/file des MN_FILE) ]
-    (log/info "About to inspect app: " app)
-    (log/info "app-dir: " des)
+    (log/info "app dir : " des)
+    (log/info "inspecting...")
     (TryC
       (PrecondDir (io/file des POD_INF))
       (PrecondDir (io/file des POD_CLASSES))
@@ -145,21 +133,6 @@
       (PrecondDir (io/file des DN_CONF))
       (PrecondFile mf)
       (chkManifest execv app des mf) )
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check all pods in the /apps directory to ensure they are kosher.
-;;
-(defn- inspectApps ""
-
-  [^czlabclj.tardis.core.sys.Elmt co]
-
-  (let [^FileFilter ff DirectoryFileFilter/DIRECTORY
-        ^czlabclj.xlib.util.core.Muble
-        ctx (.getCtx co)
-        ^File pd (.getf ctx K_PLAYDIR) ]
-    (doseq [f (.listFiles pd ff) ]
-      (inspectApp co f))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,55 +174,6 @@
   (log/info "JMX connection terminated."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Scan for pods and deploy them to the /apps directory.  The pod file's
-;; contents are unzipped verbatim to the target subdirectory under /apps.
-;;
-(defn- deployOnePod  ""
-
-  [^File src ^File apps]
-
-  (let [^File app (FilenameUtils/getBaseName (NiceFPath src))
-        des (io/file apps app)]
-    (when-not (.exists des)
-      (Unzip src des))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- undeployOnePod  ""
-
-  [^czlabclj.tardis.core.sys.Elmt co
-   ^String app]
-
-  (let [^czlabclj.xlib.util.core.Muble
-        ctx (.getCtx co)
-        dir (-> ^File (.getf ctx K_PLAYDIR)
-                (io/file app))]
-    (when (.exists dir)
-      (FileUtils/deleteDirectory dir))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- deployPods ""
-
-  [^czlabclj.tardis.core.sys.Elmt co]
-
-  (log/info "Preparing to deploy pods...")
-  (let [^czlabclj.xlib.util.core.Muble
-        ctx (.getCtx co)
-        ^File py (.getf ctx K_PLAYDIR)
-        ^File pd (.getf ctx K_PODSDIR)]
-    (with-local-vars [sum 0]
-      (when (.isDirectory pd)
-        (log/info "Scanning for pods in: " pd)
-        (doseq [f (IO/listFiles pd "pod" false) ]
-          (var-set sum (inc @sum))
-          (deployOnePod f py)))
-      (log/info "Total pods deployed: " @sum))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ignitePod
 
@@ -264,65 +188,6 @@
       (log/debug "Start pod cid = " cid ", app = " app)
       (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
       true)
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- maybeStartPod
-
-  [^czlabclj.tardis.core.sys.Elmt co
-   cset
-   ^czlabclj.tardis.impl.dfts.PODMeta pod]
-
-  (TryC
-    (let [cache (.getAttr co K_CONTAINERS)
-          cid (.id ^Identifiable pod)
-          app (.moniker pod)
-          ctr (if (and (not (empty? cset))
-                       (not (contains? cset app)))
-                nil
-                (MakeContainer pod))]
-      (log/debug "Start pod? cid = " cid
-                 ", app = " app " !! cset = " cset)
-      (if (notnil? ctr)
-        (do
-          (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
-          true)
-        (do
-          (log/info "Execvisor: pod " cid " disabled.")
-          false) ) )
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- startPods ""
-
-  [^czlabclj.tardis.core.sys.Elmt co]
-
-  (log/info "Preparing to start pods...")
-  (let [^czlabclj.xlib.util.core.Muble
-        ctx (.getCtx co)
-        wc (.getf ctx K_PROPS)
-        ^czlabclj.tardis.core.sys.Rego
-        apps
-        (-> ^ComponentRegistry
-            (.getf ctx K_COMPS)
-            (.lookup K_APPS))
-        endorsed (strim (:endorsed (K_APPS wc)))
-         ;; start all apps or only those endorsed.
-        cs (if (or (= "*" endorsed)
-                   (= "" endorsed))
-             #{}
-             (into #{} (StringUtils/split endorsed ",;")))]
-    ;; need this to prevent deadlocks amongst pods
-    ;; when there are dependencies
-    ;; TODO: need to handle this better
-    (with-local-vars [r nil]
-      (doseq [[k v] (seq* apps)]
-        (when @r
-          (SafeWait (* 1000 (Math/max (int 1) (int r)))))
-        (when (maybeStartPod co cs v)
-          (var-set r (-> (NewRandom) (.nextInt 6))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -376,11 +241,6 @@
         (getStartTime [_] START-TIME)
         (homeDir [this] (MaybeDir (.getCtx this) K_BASEDIR))
         (confDir [this] (MaybeDir (.getCtx this) K_CFGDIR))
-        (podsDir [this] (MaybeDir (.getCtx this) K_PODSDIR))
-        (playDir [this] (MaybeDir (.getCtx this) K_PLAYDIR))
-        (logDir [this] (MaybeDir (.getCtx this) K_LOGDIR))
-        (tmpDir [this] (MaybeDir (.getCtx this) K_TMPDIR))
-        (dbDir [this] (MaybeDir (.getCtx this) K_DBSDIR))
         (blocksDir [this] (MaybeDir (.getCtx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
@@ -443,50 +303,25 @@
     (System/setProperty "file.encoding" "utf-8")
 
     (let [^File home (.homeDir exec)
-          bks (Mkdirs (io/file home DN_CFG DN_BLOCKS))
-          apps (Mkdirs (io/file home DN_BOXX))
-          tmp (Mkdirs (io/file home DN_TMP))
-          pods (io/file home DN_PODS)
-          db (io/file home DN_DBS)
-          log (Mkdirs (io/file home DN_LOGS))]
-      ;;(precondDir pods)
-      (PrecondDir apps)
-      ;;(PrecondDir log)
-      ;;(PrecondDir tmp)
-      ;;(precondDir db)
+          bks (io/file home DN_CFG DN_BLOCKS) ]
       (PrecondDir bks)
-
       (doto ctx
-        (.setf! K_PODSDIR pods)
-        (.setf! K_PLAYDIR apps)
-        (.setf! K_LOGDIR log)
-        (.setf! K_DBSDIR db)
-        (.setf! K_TMPDIR tmp)
         (.setf! K_BKSDIR bks)))
 
     (let [^ComponentRegistry
           root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
-          ;;deployer (MakeDeployer)
-          ;;knl (MakeKernel)
           options { :ctx ctx } ]
 
       (.setf! ctx K_COMPS root)
       (.setf! ctx K_EXECV co)
-
-      ;;(.reg root deployer)
-      ;;(.reg root knl)
       (.reg root apps)
       (.reg root bks)
 
       (SynthesizeComponent root options)
       (SynthesizeComponent bks options)
-      (SynthesizeComponent apps options)
-
-      (deployPods co))
-      ;;(SynthesizeComponent deployer options)
-      ;;(SynthesizeComponent knl options))
+      (SynthesizeComponent apps options))
 
     (startJmx co jmx)
   ))
@@ -595,6 +430,5 @@
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private exec-eof nil)
+;;EOF
 
