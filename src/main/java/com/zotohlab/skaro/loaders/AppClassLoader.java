@@ -19,21 +19,22 @@ import java.io.File;
  */
 public class AppClassLoader extends AbstractClassLoader {
 
-  
+
   public AppClassLoader(ExecClassLoader par) {
     super(par);
   }
 
   public void configure(String appDir) {
-    File c= new File(appDir, "POD-INF/classes");
-    File p= new File(appDir, "POD-INF/patch");
-    File b= new File(appDir, "POD-INF/lib");
-   
+    File c= new File(appDir, "build/classes");
+    File p= new File(appDir, "patch");
+    File b= new File(appDir, "target");
+
+    c.mkdirs();
     if (!_loaded) {
       findUrls(p);
       addUrl(c);
       findUrls(b);
-      
+
 //      if ( new File(appDir, "WEB-INF").exists() ) {
 //        addUrl( new File(appDir, "WEB-INF/classes"));
 //        findUrls(new File(appDir, "WEB-INF/lib"));

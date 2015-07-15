@@ -142,41 +142,240 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(task-options!
-  uber {:as-jars true}
-  aot {:all true})
+(defn- collect-paths ""
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask juber
+  [^File top bin]
 
-  "my own uber"
-  []
-
-  (bcore/with-pre-wrap fileset
-
-    (let [from (io/file (ge :basedir)
-                        (ge :target-path))
-          jars (output-files fileset)
-          to (io/file (ge :libDir))]
-      (ant/RunTarget
-        "libjars"
-        (for [j (seq jars)]
-          (ant/AntCopy {:file (fp! (:dir j) (:path j))
-                        :todir to})))
-      (format "copied (%d) jars to %s" (count jars) to))
-
-    fileset
+  (doseq [f (.listFiles top)]
+    (cond
+      (.isDirectory f)
+      (collect-paths f bin)
+      (.endsWith (.getName f) ".clj")
+      (let [p (.getParentFile f)]
+        (when-not (contains? @bin p))
+          (swap! bin assoc p p))
+      :else nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask libjars
+(defn CollectCljPaths ""
 
-  "copy all dependencies (jars) to libdir"
+  [^File root]
+
+  (let [rpath (.getCanonicalPath root)
+        rlen (.length rpath)
+        out (atom [])
+        bin (atom {})]
+    (collect-paths root bin)
+    (doseq [[k v] @bin]
+      (let [kp (.getCanonicalPath ^File k)]
+        (swap! out conj (.substring kp (+ rlen 1)))))
+    (sort @out)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CleanPublic ""
+
   []
 
-  (comp (uber)(juber)))
+  (ant/RunTasks*
+    (ant/AntDelete {}
+      [[:fileset {:dir (fp! (ge :basedir) "public")
+                  :includes "scripts/**,styles/**,pages/**"}]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Clean4Build ""
+
+  []
+
+  (ant/CleanDir (io/file (ge :bootBuildDir)))
+  (ant/CleanDir (io/file (ge :libDir)))
+  (ant/RunTasks*
+    (ant/AntDelete {}
+      [[:fileset {:dir (ge :buildDir)
+                  :excludes "clojure/**"}]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PreBuild ""
+
+  []
+
+  (doseq [s [(ge :bootBuildDir)
+             (ge :patchDir)
+             (ge :libDir)
+             (ge :buildDir)]]
+    (.mkdirs (io/file s))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompileJava ""
+
+  []
+
+  (ant/RunTasks*
+    (ant/AntJavac
+      (ge :JAVAC_OPTS)
+      [[:compilerarg (ge :COMPILER_ARGS)]
+       [:include "**/*.java"]
+       [:classpath (ge :CPATH)]])
+    (ant/AntCopy
+      {:todir (ge :buildDir)}
+      [[:fileset {:dir (fp! (ge :srcDir) "java")
+                  :excludes "**/*.java"}]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompileClj ""
+
+  []
+
+  (let [root (io/file (ge :srcDir) "clojure")
+        ps (CollectCljPaths root)
+        bin (atom '())]
+    (doseq [p ps]
+      (swap! bin concat (partition-all 25 (FmtCljNsps root p))))
+    (doseq [p @bin]
+      (ant/RunTasks*
+        (ant/AntJava
+          (ge :CLJC_OPTS)
+          (concat [[:argvalues p ]] (ge :CJNESTED)))))
+    (ant/RunTasks*
+      (ant/AntCopy
+            {:todir (ge :buildDir)}
+            [[:fileset {:dir root
+                        :excludes "**/*.clj"}]]))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn JarFiles ""
+
+  []
+
+  (ant/RunTasks*
+    (ant/AntJar
+      {:destFile (fp! (ge :libDir)
+                      (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
+      [[:fileset {:dir (ge :buildDir)} ]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn PreTest ""
+
+  []
+
+  (.mkdirs (io/file (ge :buildTestDir)))
+  (.mkdirs (io/file (ge :reportTestDir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompileJavaTest ""
+
+  []
+
+  (ant/RunTasks*
+    (ant/AntJavac (merge (ge :JAVAC_OPTS)
+                         {:srcdir (fp! (ge :tstDir) "java")
+                          :destdir (ge :buildTestDir)})
+                  [[:include "**/*.java"]
+                   [:classpath (ge :TPATH)]
+                   [:compilerarg (ge :COMPILER_ARGS)]])
+    (ant/AntCopy {:todir (ge :buildTestDir)}
+                 [[:fileset {:dir (fp! (ge :tstDir) "java")
+                             :excludes "**/*.java"}]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CompileCljTest ""
+
+  []
+
+  (let [root (io/file (ge :tstDir) "clojure")
+        ps (CollectCljPaths root)
+        bin (atom '())]
+    (doseq [p ps]
+      (swap! bin concat (partition-all 25 (FmtCljNsps root p))))
+    (doseq [p @bin]
+      (ant/RunTasks*
+        (ant/AntJava
+          (ge :CLJC_OPTS)
+          [[:sysprops (assoc (ge :CLJC_SYSPROPS)
+                             :clojure.compile.path (ge :buildTestDir))]
+           [:classpath (ge :TJPATH)]
+           [:argvalues (FmtCljNsps root p)]])))
+    (ant/RunTasks*
+      (ant/AntCopy
+        {:todir (ge :buildTestDir)}
+        [[:fileset {:dir root
+                    :excludes "**/*.clj"}]]))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunCljTest ""
+
+  []
+
+  (ant/RunTasks*
+    (ant/AntJunit
+      {:logFailedTests true
+       :showOutput false
+       :printsummary true
+       :fork true
+       :haltonfailure true}
+      [[:classpath (ge :TJPATH)]
+       [:formatter {:type "plain"
+                    :useFile false}]
+       [:test {:name (str (ge :DOMAIN) ".ClojureJUnit")
+               :todir (ge :reportTestDir)}
+              [[:formatter {:type "xml"}]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RunJavaTest ""
+
+  []
+
+  (ant/RunTasks*
+    (ant/AntJunit
+      {:logFailedTests true
+       :showOutput false
+       :printsummary true
+       :fork true
+       :haltonfailure true}
+      [[:classpath (ge :TPATH)]
+       [:formatter {:type "plain"
+                    :useFile false}]
+       [:batchtest {:todir (ge :reportTestDir)}
+                   [[:fileset {:dir (ge :buildTestDir)}
+                              [[:include "**/JUnit.*"]]]
+                    [:formatter {:type "xml"}]]]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BuildCljTest ""
+
+  []
+
+  (ant/CleanDir (io/file (ge :buildTestDir)))
+  (PreTest)
+  (CompileJavaTest)
+  (CompileCljTest))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BuildJavaTest ""
+
+  []
+
+  (ant/CleanDir (io/file (ge :buildTestDir)))
+  (PreTest)
+  (CompileJavaTest))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,21 +383,25 @@
 
   []
 
-  (set-env! :bootBuildDir (fp! (ge :basedir) (ge :bld)))
+  (set-env! :bld "build")
+  (set-env! :pmode "dev")
 
+  (set-env! :bootBuildDir (fp! (ge :basedir) (ge :bld)))
+  (set-env! :buildDir (fp! (ge :bootBuildDir) "classes"))
   (set-env! :qaDir (fp! (ge :bootBuildDir) "test"))
   (set-env! :docs (fp! (ge :bootBuildDir) "docs"))
 
-  (set-env! :podDir (fp! (ge :basedir) (ge :pod)))
+  (set-env! :patchDir (fp! (ge :basedir) "patch"))
   (set-env! :libDir (fp! (ge :basedir)
                          (ge :target-path)))
 
   (set-env! :srcDir (fp! (ge :basedir) "src" "main"))
   (set-env! :tstDir (fp! (ge :basedir) "src" "test"))
-  (set-env! :buildDir (fp! (ge :podDir) "classes"))
 
   (set-env! :reportTestDir (fp! (ge :qaDir) "reports"))
-  (set-env! :buildTestDir (fp! (ge :qaDir) "classes")) )
+  (set-env! :buildTestDir (fp! (ge :qaDir) "classes"))
+
+  (.mkdirs (io/file (ge :buildDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -249,6 +452,89 @@
 
   (set-env! :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
                        [:classpath (ge :CJPATH)]]) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(task-options!
+  uber {:as-jars true}
+  aot {:all true})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask juber
+
+  "my own uber"
+  []
+
+  (bcore/with-pre-wrap fileset
+
+    (let [from (io/file (ge :basedir)
+                        (ge :target-path))
+          jars (output-files fileset)
+          to (io/file (ge :libDir))]
+      (ant/RunTarget
+        "libjars"
+        (for [j (seq jars)]
+          (ant/AntCopy {:file (fp! (:dir j) (:path j))
+                        :todir to})))
+      (format "copied (%d) jars to %s" (count jars) to))
+
+    fileset
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask libjars
+
+  "copy all dependencies (jars) to libdir"
+  []
+
+  (comp (uber)(juber)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask clean4build
+
+  ""
+  []
+
+  (bcore/with-pre-wrap fileset
+    (Clean4Build)
+    (CleanPublic)
+    (PreBuild)
+    fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask buildr
+
+  ""
+  []
+
+  (bcore/with-pre-wrap fileset
+    (CompileJava)
+    (CompileClj)
+  fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask dev ""
+
+  []
+
+  (comp (clean4build)
+        (libjars)
+        (buildr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask jar! ""
+
+  []
+
+  (bcore/with-pre-wrap fileset
+    (JarFiles)
+  fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

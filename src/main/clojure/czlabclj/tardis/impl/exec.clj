@@ -124,10 +124,7 @@
     (log/info "app dir : " des)
     (log/info "inspecting...")
     (TryC
-      (PrecondDir (io/file des POD_INF))
-      (PrecondDir (io/file des POD_CLASSES))
-      (PrecondDir (io/file des POD_LIB))
-      (PrecondDir (io/file des META_INF))
+      (PrecondDir (io/file des DN_CFG))
       (PrecondFile (io/file des CFG_APP_CF))
       (PrecondFile (io/file des CFG_ENV_CF))
       (PrecondDir (io/file des DN_CONF))

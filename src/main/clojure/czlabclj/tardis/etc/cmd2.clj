@@ -295,32 +295,34 @@
   [^File appDir ^String appId ^String appDomain ^String flavor]
 
   (let [appDomainPath (cstr/replace appDomain "." "/")
-        mfDir (io/file appDir META_INF)
+        mfDir (io/file appDir DN_CFG)
         cfd (io/file appDir DN_CONF)
         hhh (GetHomeDir)]
     (with-local-vars [fp nil ]
       ;; make all the folders
-      (doseq [^String s [DN_CONF "docs" "i18n" "modules"
-                         META_INF POD_INF "src"]]
+      (doseq [^String s [DN_CONF "docs" "i18n"
+                         DN_CFG "modules" "src"
+                         "classes" "patch" "lib"]]
         (Mkdirs (io/file appDir s)))
-      (doseq [s ["classes" "patch" "lib"]]
-        (Mkdirs (io/file  appDir POD_INF  s)))
       (doseq [s [ "clojure" "java"]]
         (Mkdirs (io/file appDir "src" "main" s appDomainPath))
         (Mkdirs (io/file appDir "src" "test" s appDomainPath)))
       (Mkdirs (io/file appDir "src" "main" "resources"))
+
       ;;copy files
       (doseq [s ["build.boot" "pom.xml"]]
         (CopyFileToDir (io/file hhh DN_CFGAPP s) appDir))
+      (FileUtils/touch (io/file appDir "README.md"))
 
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
-                 "LICENSE.txt" "README.md"]]
-        (FileUtils/touch (io/file mfDir s)))
+                 "LICENSE.txt"]]
+        (FileUtils/touch (io/file appDir DN_CFG s)))
       (doseq [s [APP_CF ENV_CF ]]
         (CopyFileToDir (io/file hhh DN_CFGAPP s) cfd))
       (CopyFileToDir (io/file hhh DN_CFGAPP DN_RCPROPS)
                      (io/file  appDir "i18n"))
-      (CopyFileToDir (io/file hhh DN_CFGAPP MF_FP) mfDir)
+      (CopyFileToDir (io/file hhh DN_CFGAPP MF_FP)
+                     (io/file appDir DN_CFG))
       (CopyFileToDir (io/file hhh DN_CFGAPP "core.clj")
                      (mkcljd appDir appDomain))
       ;;modify files, replace placeholders
@@ -328,7 +330,7 @@
       (ReplaceFile @fp
                    #(cstr/replace % "@@USER@@" (GetUser)))
 
-      (var-set fp (io/file mfDir MF_FP))
+      (var-set fp (io/file appDir DN_CFG MF_FP))
       (ReplaceFile @fp
                    #(-> (cstr/replace % "@@APPKEY@@" (NewUUid))
                         (cstr/replace "@@APPMAINCLASS@@"

@@ -29,9 +29,11 @@
 (def ^String SHUTDOWN_URI "/kill9")
 (def ^String POD_PROTOCOL  "pod:" )
 (def ^String META_INF  "META-INF" )
-(def ^String POD_INF  "POD-INF" )
 (def ^String WEB_INF  "WEB-INF" )
 (def ^String MF_FP "MANIFEST.MF")
+
+(def ^String DN_TARGET "target")
+(def ^String DN_BUILD "build")
 
 (def ^String DN_BLOCKS  "ems" )
 (def ^String DN_BOOT "boot" )
@@ -64,10 +66,7 @@
 (def ^String ENV_CF  "env.conf" )
 (def ^String APP_CF  "app.conf" )
 
-(def ^String MN_FILE (str META_INF "/" "MANIFEST.MF"))
-(def ^String POD_CLASSES  (str POD_INF "/" DN_CLASSES))
-(def ^String POD_PATCH  (str POD_INF "/" DN_PATCH))
-(def ^String POD_LIB  (str POD_INF "/" DN_LIB))
+(def ^String MN_FILE (str DN_CFG "/" "MANIFEST.MF"))
 
 (def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))

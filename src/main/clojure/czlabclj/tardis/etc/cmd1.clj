@@ -523,10 +523,11 @@
           (cstr/replace "${TEST.SRC}"
                         (NiceFPath (io/file cwd
                                             "src" "test" lang)))))
+    (.mkdirs (io/file cwd DN_BUILD DN_CLASSES))
     (scanJars (io/file (GetHomeDir) DN_DIST) sb)
     (scanJars (io/file (GetHomeDir) DN_LIB) sb)
-    (scanJars (io/file cwd POD_CLASSES) sb)
-    (scanJars (io/file cwd POD_LIB) sb)
+    (scanJars (io/file cwd DN_BUILD DN_CLASSES) sb)
+    (scanJars (io/file cwd DN_TARGET) sb)
     (WriteOneFile (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang

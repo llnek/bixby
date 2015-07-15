@@ -159,7 +159,11 @@ LIBP="-Djava.library.path=$SKARO_HOME/bin"
 #32G
 #VMARGS="-Xms8192m -Xmx32768m"
 VMARGS="-Xms512m -Xmx7096m $VMXRGS"
-LOG4J=etc/log/logback.xml
+if [ -d "logs" ]; then
+  LOG4J=etc/log/logbacklog.xml
+else
+  LOG4J=etc/log/logback.xml
+fi
 L4JFILE=${SKARO_HOME}/$LOG4J
 L4J=file:${L4JFILE}
 LOGCFG=$L4J
