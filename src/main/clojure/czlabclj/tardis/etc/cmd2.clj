@@ -300,10 +300,11 @@
         hhh (GetHomeDir)]
     (with-local-vars [fp nil ]
       ;; make all the folders
-      (doseq [^String s [DN_CONF "docs" "i18n"
-                         DN_CFG "modules" "src"
-                         "classes" "patch" "lib"]]
+      (doseq [^String s ["i18n" "modules" "logs"
+                         DN_CONF DN_CFG
+                         "src" "build" "patch" "target"]]
         (Mkdirs (io/file appDir s)))
+      (Mkdirs (io/file appDir "build" "classes"))
       (doseq [s [ "clojure" "java"]]
         (Mkdirs (io/file appDir "src" "main" s appDomainPath))
         (Mkdirs (io/file appDir "src" "test" s appDomainPath)))
@@ -333,12 +334,21 @@
       (var-set fp (io/file appDir DN_CFG MF_FP))
       (ReplaceFile @fp
                    #(-> (cstr/replace % "@@APPKEY@@" (NewUUid))
+                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
                         (cstr/replace "@@APPMAINCLASS@@"
                                   (str appDomain ".core.MyAppMain"))))
 
       (var-set fp (io/file appDir "pom.xml"))
       (ReplaceFile @fp
                    #(-> (cstr/replace % "@@APPDOMAIN@@" appDomain)
+                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                        (cstr/replace "@@APPID@@" appId)))
+
+      (var-set fp (io/file appDir "build.boot"))
+      (ReplaceFile @fp
+                   #(-> (cstr/replace % "@@APPDOMAIN@@" appDomain)
+                        (cstr/replace "@@TYPE@@" flavor)
+                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
                         (cstr/replace "@@APPID@@" appId))))
   ))
 
