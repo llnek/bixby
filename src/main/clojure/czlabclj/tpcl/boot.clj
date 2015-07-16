@@ -385,7 +385,8 @@
   []
 
   (set-env! :skaroHome (System/getProperty "skaro.home.dir"))
-  (set-env! :basedir (System/getProperty "skaro.app.dir"))
+  (when (nil? (get-env :basedir))
+    (set-env! :basedir (System/getProperty "skaro.app.dir")))
 
   (set-env! :bld "build")
   (set-env! :pmode "dev")
