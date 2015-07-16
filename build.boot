@@ -127,7 +127,7 @@
 
     [org.apache.shiro/shiro-core "1.2.3" ]
     [org.mozilla/rhino "1.7.7" ]
-    [jline/jline "1.0" ]
+    [jline/jline "2.12.1" ]
 
     [net.mikera/cljunit "0.3.1" ]
     [junit/junit "4.12"  ]
