@@ -16,10 +16,10 @@
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
-            [boot.core :as bcore :refer :all]
+            [boot.core :as bc :refer :all]
             [boot.task.built-in :refer [uber aot]]
-            [clojure.string :as cstr]
-            [czlabclj.tpcl.antlib :as ant])
+            [clojure.string :as cs]
+            [czlabclj.tpcl.antlib :as a])
 
   (:import [java.util GregorianCalendar
             Date Stack UUID]
@@ -31,12 +31,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;(defmacro ^:private fp! "" [& args] `(cstr/join "/" '~args))
-(defn fp! "" [& args] (cstr/join "/" args))
+(defn fp! "" [& args] (cs/join "/" args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro ge "" [expr] `(bcore/get-env ~expr))
+(defmacro ge "" [expr] `(bc/get-env ~expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -57,9 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RandUUID ""
-  []
-  (UUID/randomUUID))
+(defn RandUUID "" [] (UUID/randomUUID))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,12 +76,12 @@
 
   (reduce
     (fn [memo dir]
-      (let [nsp (cstr/replace dir #"\/" ".")]
+      (let [nsp (cs/replace dir "/" ".")]
         (concat
           memo
           (map #(str nsp
                      "."
-                     (cstr/replace (.getName %) #"\.[^\.]+$" ""))
+                     (cs/replace (.getName %) #"\.[^\.]+$" ""))
                (filter #(and (.isFile %)
                              (.endsWith (.getName %) ".clj"))
                        (.listFiles (io/file root dir)))))))
@@ -98,14 +95,12 @@
 
   [workingDir args]
 
-  (let []
-    (ant/RunTarget*
-      "babel"
-      (ant/AntExec
-        {:executable "babel"
-         :dir workingDir}
-        [[:argvalues args ]]))
-  ))
+  (a/RunTarget*
+    "babel"
+    (a/AntExec
+      {:executable "babel"
+       :dir workingDir}
+      [[:argvalues args ]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,13 +139,13 @@
 ;;
 (defn- collect-paths ""
 
-  [^File top bin]
+  [^File top bin fext]
 
   (doseq [f (.listFiles top)]
     (cond
       (.isDirectory f)
-      (collect-paths f bin)
-      (.endsWith (.getName f) ".clj")
+      (collect-paths f bin fext)
+      (.endsWith (.getName f) fext)
       (let [p (.getParentFile f)]
         (when-not (contains? @bin p))
           (swap! bin assoc p p))
@@ -167,7 +162,7 @@
         rlen (.length rpath)
         out (atom [])
         bin (atom {})]
-    (collect-paths root bin)
+    (collect-paths root bin ".clj")
     (doseq [[k v] @bin]
       (let [kp (.getCanonicalPath ^File k)]
         (swap! out conj (.substring kp (+ rlen 1)))))
@@ -180,8 +175,8 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntDelete {}
+  (a/RunTarget* "clean/public"
+    (a/AntDelete {}
       [[:fileset {:dir (fp! (ge :basedir) "public")
                   :includes "scripts/**,styles/**,pages/**"}]])))
 
@@ -191,12 +186,13 @@
 
   []
 
-  (ant/CleanDir (io/file (ge :bootBuildDir)))
-  (ant/CleanDir (io/file (ge :libDir)))
-  (ant/RunTasks*
-    (ant/AntDelete {}
+  (a/RunTarget* "clean/build"
+    (a/AntDelete {:dir (ge :bootBuildDir)
+                  :excludes (str (ge :bld) "/**")})
+    (a/AntDelete {}
       [[:fileset {:dir (ge :buildDir)
-                  :excludes "clojure/**"}]])))
+                  :excludes "clojure/**"}]]))
+  (a/CleanDir (io/file (ge :libDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,11 +200,12 @@
 
   []
 
-  (doseq [s [(ge :bootBuildDir)
-             (ge :patchDir)
-             (ge :libDir)
-             (ge :buildDir)]]
-    (.mkdirs (io/file s))
+  (minitask "prebuild"
+    (doseq [s [(ge :bootBuildDir)
+               (ge :patchDir)
+               (ge :libDir)
+               (ge :buildDir)]]
+      (.mkdirs (io/file s)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -217,13 +214,13 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntJavac
+  (a/RunTarget* "compile/java"
+    (a/AntJavac
       (ge :JAVAC_OPTS)
       [[:compilerarg (ge :COMPILER_ARGS)]
        [:include "**/*.java"]
        [:classpath (ge :CPATH)]])
-    (ant/AntCopy
+    (a/AntCopy
       {:todir (ge :buildDir)}
       [[:fileset {:dir (fp! (ge :srcDir) "java")
                   :excludes "**/*.java"}]])))
@@ -239,16 +236,17 @@
         bin (atom '())]
     (doseq [p ps]
       (swap! bin concat (partition-all 25 (FmtCljNsps root p))))
-    (doseq [p @bin]
-      (ant/RunTasks*
-        (ant/AntJava
-          (ge :CLJC_OPTS)
-          (concat [[:argvalues p ]] (ge :CJNESTED)))))
-    (ant/RunTasks*
-      (ant/AntCopy
-            {:todir (ge :buildDir)}
-            [[:fileset {:dir root
-                        :excludes "**/*.clj"}]]))
+    (minitask "compile/clj"
+      (doseq [p @bin]
+        (a/RunTasks*
+          (a/AntJava
+            (ge :CLJC_OPTS)
+            (concat [[:argvalues p ]] (ge :CJNESTED)))))
+      (a/RunTasks*
+        (a/AntCopy
+              {:todir (ge :buildDir)}
+              [[:fileset {:dir root
+                          :excludes "**/*.clj"}]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -257,8 +255,8 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntJar
+  (a/RunTarget* "jar/files"
+    (a/AntJar
       {:destFile (fp! (ge :libDir)
                       (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
       [[:fileset {:dir (ge :buildDir)} ]])))
@@ -269,8 +267,10 @@
 
   []
 
-  (.mkdirs (io/file (ge :buildTestDir)))
-  (.mkdirs (io/file (ge :reportTestDir))))
+  (minitask "pretest"
+    (.mkdirs (io/file (ge :buildTestDir)))
+    (.mkdirs (io/file (ge :reportTestDir)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -278,14 +278,14 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntJavac (merge (ge :JAVAC_OPTS)
+  (a/RunTarget* "compile/test/java"
+    (a/AntJavac (merge (ge :JAVAC_OPTS)
                          {:srcdir (fp! (ge :tstDir) "java")
                           :destdir (ge :buildTestDir)})
                   [[:include "**/*.java"]
                    [:classpath (ge :TPATH)]
                    [:compilerarg (ge :COMPILER_ARGS)]])
-    (ant/AntCopy {:todir (ge :buildTestDir)}
+    (a/AntCopy {:todir (ge :buildTestDir)}
                  [[:fileset {:dir (fp! (ge :tstDir) "java")
                              :excludes "**/*.java"}]])))
 
@@ -300,19 +300,20 @@
         bin (atom '())]
     (doseq [p ps]
       (swap! bin concat (partition-all 25 (FmtCljNsps root p))))
-    (doseq [p @bin]
-      (ant/RunTasks*
-        (ant/AntJava
-          (ge :CLJC_OPTS)
-          [[:sysprops (assoc (ge :CLJC_SYSPROPS)
-                             :clojure.compile.path (ge :buildTestDir))]
-           [:classpath (ge :TJPATH)]
-           [:argvalues (FmtCljNsps root p)]])))
-    (ant/RunTasks*
-      (ant/AntCopy
-        {:todir (ge :buildTestDir)}
-        [[:fileset {:dir root
-                    :excludes "**/*.clj"}]]))
+    (minitask "compile/test/clj"
+      (doseq [p @bin]
+        (a/RunTasks*
+          (a/AntJava
+            (ge :CLJC_OPTS)
+            [[:sysprops (assoc (ge :CLJC_SYSPROPS)
+                               :clojure.compile.path (ge :buildTestDir))]
+             [:classpath (ge :TJPATH)]
+             [:argvalues p]])))
+      (a/RunTasks*
+        (a/AntCopy
+          {:todir (ge :buildTestDir)}
+          [[:fileset {:dir root
+                      :excludes "**/*.clj"}]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -321,8 +322,8 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntJunit
+  (a/RunTarget* "run/test/clj"
+    (a/AntJunit
       {:logFailedTests true
        :showOutput false
        :printsummary true
@@ -341,8 +342,8 @@
 
   []
 
-  (ant/RunTasks*
-    (ant/AntJunit
+  (a/RunTarget* "run/test/java"
+    (a/AntJunit
       {:logFailedTests true
        :showOutput false
        :printsummary true
@@ -362,7 +363,7 @@
 
   []
 
-  (ant/CleanDir (io/file (ge :buildTestDir)))
+  (a/CleanDir (io/file (ge :buildTestDir)))
   (PreTest)
   (CompileJavaTest)
   (CompileCljTest))
@@ -373,7 +374,7 @@
 
   []
 
-  (ant/CleanDir (io/file (ge :buildTestDir)))
+  (a/CleanDir (io/file (ge :buildTestDir)))
   (PreTest)
   (CompileJavaTest))
 
@@ -464,44 +465,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask juber
+(deftask testjava "test java"
 
-  "my own uber"
   []
 
-  (bcore/with-pre-wrap fileset
+  (bc/with-pre-wrap fileset
+    (BuildJavaTest)
+    (RunJavaTest)
+    fileset))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask testclj "test clj"
+
+  []
+
+  (bc/with-pre-wrap fileset
+    (BuildCljTest)
+    (RunCljTest)
+    fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask juber "my own uber"
+
+  []
+
+  (bc/with-pre-wrap fileset
     (let [from (io/file (ge :basedir)
                         (ge :target-path))
           jars (output-files fileset)
           to (io/file (ge :libDir))]
-      (ant/RunTarget
-        "libjars"
+      (a/RunTarget
+        "juber"
         (for [j (seq jars)]
-          (ant/AntCopy {:file (fp! (:dir j) (:path j))
+          (a/AntCopy {:file (fp! (:dir j) (:path j))
                         :todir to})))
       (format "copied (%d) jars to %s" (count jars) to))
-
     fileset
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask libjars
+(deftask libjars "resolve all dependencies (jars)"
 
-  "copy all dependencies (jars) to libdir"
   []
 
   (comp (uber)(juber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask clean4build
+(deftask clean4build "clean,pre-build"
 
-  ""
   []
 
-  (bcore/with-pre-wrap fileset
+  (bc/with-pre-wrap fileset
     (Clean4Build)
     (CleanPublic)
     (PreBuild)
@@ -509,19 +527,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask buildr
+(deftask buildr "compile"
 
-  ""
   []
 
-  (bcore/with-pre-wrap fileset
+  (bc/with-pre-wrap fileset
     (CompileJava)
     (CompileClj)
   fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask dev ""
+(deftask dev "clean,resolve,build"
 
   []
 
@@ -531,11 +548,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask jar! ""
+(deftask jar! "jar!"
 
   []
 
-  (bcore/with-pre-wrap fileset
+  (bc/with-pre-wrap fileset
     (JarFiles)
   fileset))
 

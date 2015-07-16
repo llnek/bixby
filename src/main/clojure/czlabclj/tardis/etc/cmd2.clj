@@ -311,6 +311,15 @@
       (Mkdirs (io/file appDir "src" "main" "resources"))
 
       ;;copy files
+
+      (CopyFileToDir (io/file hhh DN_CFGAPP "test.clj")
+                     (io/file appDir "src/test/clojure" appDomainPath))
+
+      (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
+        (CopyFileToDir (io/file hhh DN_CFGAPP s)
+                       (io/file appDir "src/test/java" appDomainPath)))
+
+
       (doseq [s ["build.boot" "pom.xml"]]
         (CopyFileToDir (io/file hhh DN_CFGAPP s) appDir))
       (FileUtils/touch (io/file appDir "README.md"))
@@ -326,7 +335,19 @@
                      (io/file appDir DN_CFG))
       (CopyFileToDir (io/file hhh DN_CFGAPP "core.clj")
                      (mkcljd appDir appDomain))
+
       ;;modify files, replace placeholders
+      (var-set fp (io/file appDir
+                           "src/test/clojure" appDomainPath "test.clj"))
+      (ReplaceFile @fp
+                   #(cstr/replace % "@@APPDOMAIN@@" appDomain))
+
+      (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
+        (var-set fp (io/file appDir
+                             "src/test/java" appDomainPath s))
+        (ReplaceFile @fp
+                     #(cstr/replace % "@@APPDOMAIN@@" appDomain)))
+
       (var-set fp (io/file cfd APP_CF))
       (ReplaceFile @fp
                    #(cstr/replace % "@@USER@@" (GetUser)))

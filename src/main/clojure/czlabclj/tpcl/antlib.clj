@@ -717,6 +717,7 @@
 
   [file toDir]
 
+  (.mkdirs (io/file toDir))
   (RunTasks*
     (AntCopy {:file file
               :todir toDir} )))
@@ -727,6 +728,7 @@
 
   [file toDir]
 
+  (.mkdirs (io/file toDir))
   (RunTasks*
     (AntMove {:file file
               :todir toDir} )))
