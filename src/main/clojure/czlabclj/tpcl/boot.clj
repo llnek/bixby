@@ -31,15 +31,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn fp! "" [& args] (cs/join "/" args))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmacro ge "" [expr] `(bc/get-env ~expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn se! ""
+(defn fp! "" [& args] (cs/join "/" args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn se! "local version of set-env!"
   [options k dv]
   (if-let [v (get options k)]
     (if (fn? v)
@@ -83,21 +83,22 @@
 ;;
 (defn FmtCljNsps "Format list of namespaces."
 
-  [root & dirs]
+  [root & paths]
 
-  (reduce
-    (fn [memo dir]
-      (let [nsp (cs/replace dir "/" ".")]
-        (concat
-          memo
-          (map #(str nsp
-                     "."
-                     (cs/replace (.getName %) #"\.[^\.]+$" ""))
-               (filter #(and (.isFile %)
-                             (.endsWith (.getName %) ".clj"))
-                       (.listFiles (io/file root dir)))))))
-    []
-    dirs
+  (let [bn #(cs/replace (.getName %) #"\.[^\.]+$" "")
+        dot #(cs/replace % "/" ".")
+        ffs #(and (.isFile %)
+                  (.endsWith (.getName %) ".clj"))]
+    (reduce
+      (fn [memo path]
+        (let [nsp (dot path)]
+          (concat
+            memo
+            (map #(str nsp "." (bn %))
+                 (filter ffs
+                         (.listFiles (io/file root path)))))))
+      []
+      paths)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
