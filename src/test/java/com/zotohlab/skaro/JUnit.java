@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package czlab.frwk.util;
+package com.zotohlab.skaro;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,13 +35,11 @@ import com.zotohlab.wflow.Split;
 import com.zotohlab.wflow.Switch;
 import com.zotohlab.wflow.While;
 
-public class JUTest {
-
-  //public JUTest() {}
+public class JUnit {
 
   public static junit.framework.Test suite()     {
         return
-        new JUnit4TestAdapter(JUTest.class);
+        new JUnit4TestAdapter(JUnit.class);
     }
 
     @BeforeClass

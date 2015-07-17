@@ -45,11 +45,11 @@
     [com.sun.mail/javax.mail "1.5.3" ]
 
     ;;[org.apache.ivy/ivy "2.4.0" ]
-    [org.apache.a/ant "1.9.5" ]
-    [org.apache.a/ant-launcher "1.9.5" ]
-    [org.apache.a/ant-junit4 "1.9.5" ]
-    [org.apache.a/ant-junit "1.9.5" ]
-    [org.apache.a/ant-apache-log4j "1.9.5" :exclusions [log4j]]
+    [org.apache.ant/ant "1.9.5" ]
+    [org.apache.ant/ant-launcher "1.9.5" ]
+    [org.apache.ant/ant-junit4 "1.9.5" ]
+    [org.apache.ant/ant-junit "1.9.5" ]
+    [org.apache.ant/ant-apache-log4j "1.9.5" :exclusions [log4j]]
 
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
 
@@ -139,21 +139,19 @@
   :buildVersion "0.9.0-SNAPSHOT"
   :buildDebug true
   :DOMAIN "com.zotohlab.skaro"
-  :PID "skaro"
-  :basedir (System/getProperty "user.dir"))
+  :PID "skaro")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-
-(import '[org.apache.tools.ant Project Target Task]
-        '[java.io File])
-
-(require '[clojure.tools.logging :as log]
+(require '[czlabclj.tpcl.boot :as b :refer :all]
+         '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
          '[czlabclj.tpcl.antlib :as a]
-         '[czlabclj.tpcl.boot :as b :refer :all]
          '[boot.core :as bc])
+
+(import '[org.apache.tools.ant Project Target Task]
+        '[java.io File])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -162,65 +160,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(b/BootEnvVars)
-
-(set-env! :bootBuildDir (fp! (ge :basedir) (ge :bld)))
-(set-env! :tstDir (fp! (ge :basedir) "src" "test"))
-(set-env! :srcDir (fp! (ge :basedir) "src" "main"))
-(set-env! :distDir (fp! (ge :bootBuildDir) "dist"))
-(set-env! :buildDir (fp! (ge :bootBuildDir) "classes"))
-(set-env! :packDir (fp! (ge :bootBuildDir) "pack"))
-(set-env! :libDir (fp! (ge :basedir) (ge :target-path)))
-(set-env! :qaDir (fp! (ge :bootBuildDir) "test"))
-(set-env! :reportTestDir (fp! (ge :qaDir) "reports"))
-(set-env! :buildTestDir (fp! (ge :qaDir) "classes"))
+(b/BootEnvVars
+  {:basedir (System/getProperty "user.dir")
+   :distDir #(set-env! %2 (fp! (ge :bootBuildDir) "dist"))
+   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "pack"))}
+  [:distDir :packDir])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(set-env! :COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
-
-(set-env! :COMPILE_OPTS {:debug (ge :buildDebug)
-                         :includeantruntime false
-                         :fork true})
-
-(set-env! :CPATH [[:location (ge :buildDir)]
-                  [:fileset {:dir (ge :libDir)}
-                            [[:include "*.jar"]]]])
-
-(set-env! :TPATH (->> (ge :CPATH)
-                      (cons [:location (ge :buildTestDir)])
-                      (into [])))
-
-(set-env! :JAVAC_OPTS (merge {:srcdir (fp! (ge :srcDir) "java")
-                              :destdir (ge :buildDir)
-                              :target "1.8"
-                              :debugLevel "lines,vars,source"}
-                              (ge :COMPILE_OPTS)))
-
-(set-env! :CJPATH (->> (ge :CPATH)
-                       (cons [:location (fp! (ge :srcDir) "clojure")])
-                       (into [])))
-
-(set-env! :TJPATH (->> (ge :CJPATH)
-                       (concat [[:location (fp! (ge :tstDir) "clojure")]
-                                [:location (ge :buildTestDir)]])
-                       (into [])))
-
-(set-env! :CLJC_OPTS {:classname "clojure.lang.Compile"
-                      :fork true
-                      :failonerror true
-                      :maxmemory "2048m"})
-
-(set-env! :CLJC_SYSPROPS {:clojure.compile.warn-on-reflection true
-                          :clojure.compile.path (ge :buildDir) })
-
-(set-env! :CJNESTED_RAW [[:sysprops (assoc (ge :CLJC_SYSPROPS)
-                                           :clojure.compile.warn-on-reflection
-                                           false)]
-                         [:classpath (ge :CJPATH)]])
-
-(set-env! :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
-                     [:classpath (ge :CJPATH)]])
+(b/BootEnvPaths
+  {:CPATH [[:location (ge :buildDir)]
+           [:fileset {:dir (ge :libDir)
+                      :includes "*.jar"}]]
+   :CJNESTED_RAW
+   #(set-env! %2 [[:sysprops (-> (ge :CLJC_SYSPROPS)
+                                 (assoc (ge :warn-reflection) false))]
+                  [:classpath (ge :CJPATH)]])}
+  [:CJNESTED_RAW])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -235,14 +191,11 @@
   (minitask
     "clean/build"
     (do
-      (a/CleanDir (io/file (ge :basedir)
-                             (ge :target-path)))
+      (a/CleanDir (ge :libDir))
       (a/RunTasks*
         (a/AntDelete {}
-          [[:fileset {:dir (ge :bootBuildDir)}
-                     [[:include "**/*"]
-                      [:exclude "pack/**"]
-                      [:exclude "classes/clojure/**"]]]])))
+          [[:fileset {:dir (ge :bootBuildDir)
+                      :excludes "pack/**,classes/clojure/**"}]])))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,8 +204,7 @@
   [& args]
   (minitask
     "clean/boot"
-    (a/CleanDir (io/file (ge :basedir)
-                           (ge :target-path)))
+    (a/CleanDir (ge :libDir))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -268,22 +220,9 @@
     ;; get rid of debug logging during build!
     (a/RunTarget* "pre-build"
       (a/AntCopy {:todir (ge :buildDir)}
-                   [[:fileset {:dir (fp! (ge :basedir) "artifacts")}
-                              [[:include "log4j.properties"]
-                               [:include "logback.xml"]]]]))
+                  [[:fileset {:dir (fp! (ge :basedir) "artifacts")
+                              :includes "log4j.properties,logback.xml"}]]))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- runCmd ""
-
-  [cmd workDir args]
-
-  (a/RunTarget* cmd
-    (a/AntExec {:executable cmd
-                  :dir workDir
-                  :spawn false}
-                 [[:args (or args [])]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -302,18 +241,15 @@
         des (-> (io/file out mid)
                 (.getParentFile)) ]
     (cond
-      postgen
+      (true? postgen)
       (let [bf (io/file dir bd mid)]
-        (spit bf
-              (-> (slurp bf)
-                  (.replaceAll "\\/\\*@@" "")
-                  (.replaceAll "@@\\*\\/" "")))
+        (b/ReplaceFile bf
+                       #(-> (cs/replace % "/*@@" "")
+                            (cs/replace "@@*/" "")))
         (a/MoveFile bf des))
 
       (.isDirectory f)
-      (if (= bd (.getName f))
-        nil
-        {})
+      (if (= bd (.getName f)) nil {})
 
       :else
       (if-not (.endsWith mid ".js")
@@ -348,8 +284,8 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/frwk"))
-  (a/CleanDir (io/file (ge :buildDir) "org"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/frwk"))
+  (a/CleanDir (fp! (ge :buildDir) "org"))
   (let [t1 (a/AntJavac
               (ge :JAVAC_OPTS)
               [[:include "com/zotohlab/frwk/**/*.java"]
@@ -358,16 +294,14 @@
                [:compilerarg (ge :COMPILER_ARGS) ]])
         t2 (a/AntCopy
               {:todir (fp! (ge :buildDir) "com/zotohlab/frwk")}
-              [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/frwk")}
-               [[:exclude "**/*.java"]]]])
+              [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/frwk")
+                          :excludes "**/*.java"}]])
         t3 (a/AntJar
               {:destFile (fp! (ge :distDir)
-                                (str "frwk-" (ge :buildVersion) ".jar"))}
-              [[:fileset {:dir (ge :buildDir) }
-                         [[:include "com/zotohlab/frwk/**"]
-                          [:exclude "**/log4j.properties"]
-                          [:exclude "**/logback.xml"]
-                          [:exclude "demo/**"]]]]) ]
+                              (str "frwk-" (ge :buildVersion) ".jar"))}
+              [[:fileset {:dir (ge :buildDir)
+                          :includes "com/zotohlab/frwk/**"
+                          :excludes "**/log4j.properties,**/logback.xml,demo/**"}]]) ]
     (->> (if *genjars*
            [t1 t2 t3]
            [t1 t2])
@@ -381,8 +315,8 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/server"))
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/wflow"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/server"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/wflow"))
   (let [t1 (a/AntJavac
               (ge :JAVAC_OPTS)
               [[:include "com/zotohlab/wflow/**/*.java"]
@@ -391,19 +325,16 @@
                [:compilerarg (ge :COMPILER_ARGS) ]])
         t2 (a/AntCopy
               {:todir (fp! (ge :buildDir) "com/zotohlab/wflow")}
-              [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/server")}
-                         [[:exclude "**/*.java"]]]
-               [:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/wflow")}
-                         [[:exclude "**/*.java"]]]])
+              [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/server")
+                          :excludes "**/*.java"}]
+               [:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab/wflow")
+                          :excludes "**/*.java"}]])
         t3 (a/AntJar
               {:destFile (fp! (ge :distDir)
                               (str "wflow-" (ge :buildVersion) ".jar"))}
-              [[:fileset {:dir (ge :buildDir)}
-                         [[:include "com/zotohlab/server/**"]
-                          [:include "com/zotohlab/wflow/**"]
-                          [:exclude "**/log4j.properties"]
-                          [:exclude "**/logback.xml"]
-                          [:exclude "demo/**"]]]]) ]
+              [[:fileset {:dir (ge :buildDir)
+                          :includes "com/zotohlab/server/**,com/zotohlab/wflow/**"
+                          :excludes "**/log4j.properties,**/logback.xml,demo/**"}]]) ]
     (->> (if *genjars*
            [t1 t2 t3]
            [t1 t2])
@@ -417,9 +348,9 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/skaro"))
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/mock"))
-  (a/CleanDir (io/file (ge :buildDir) "com/zotohlab/tpcl"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/skaro"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/mock"))
+  (a/CleanDir (fp! (ge :buildDir) "com/zotohlab/tpcl"))
   (let [t1 (a/AntJavac
              (ge :JAVAC_OPTS)
              [[:include "com/zotohlab/skaro/**/*.java"]
@@ -431,26 +362,25 @@
             (fn [d]
               (a/AntCopy
                 {:todir (fp! (ge :buildDir) "com/zotohlab" d)}
-                [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab" d)}
-                           [[:exclude "**/*.java"]]]]))
+                [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab" d)
+                            :excludes "**/*.java"}]]))
             ["skaro" "mock" "tpcl"])
         ts (into [] (cons t1 m))
         t2 (a/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "skaro-ld-" (ge :buildVersion) ".jar"))}
-             [[:fileset {:dir (ge :buildDir) }
-                        [[:include "com/zotohlab/skaro/loaders/**"] ]]])
+                             (str "skaro-ld-" (ge :buildVersion) ".jar"))}
+             [[:fileset {:dir (ge :buildDir)
+                         :includes "com/zotohlab/skaro/loaders/**"}]])
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "skaro-rt-" (ge :buildVersion) ".jar"))}
-             [[:fileset {:dir (ge :buildDir) }
-              [[:include "com/zotohlab/skaro/**"]
-              [:include "com/zotohlab/mock/**"]
-              [:include "com/zotohlab/tpcl/**"]
-              [:exclude "**/log4j.properties"]
-              [:exclude "**/logback.xml"]
-              [:exclude "demo/**"]]]]) ]
-
+                             (str "skaro-rt-" (ge :buildVersion) ".jar"))}
+             [[:fileset {:dir (ge :buildDir)
+                         :includes (str "com/zotohlab/skaro/**,"
+                                        "com/zotohlab/mock/**,"
+                                        "com/zotohlab/tpcl/**")
+                         :excludes (str "**/log4j.properties,"
+                                        "**/logback.xml,"
+                                        "demo/**")}]]) ]
     (->> (if *genjars*
            (concat ts [t3])
            ts)
@@ -475,12 +405,10 @@
               (fn [d]
                 (a/AntCopy
                   {:todir (fp! (ge :buildDir) "demo" d)}
-                  [[:fileset {:dir (fp! (ge :srcDir) "java/demo" d)}
-                             [[:exclude "**/*.java"]]]]))
+                  [[:fileset {:dir (fp! (ge :srcDir) "java/demo" d)
+                              :excludes "**/*.java"}]]))
               dirs) ]
-      (a/RunTarget
-        "compile/demo"
-        (cons t1 m)))
+      (a/RunTarget "compile/demo" (cons t1 m)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -490,7 +418,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/jmx"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/jmx"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -504,7 +432,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/crypto"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/crypto"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -518,7 +446,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/dbio"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/dbio"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -532,8 +460,8 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/netty"))
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/net"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/netty"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/net"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -548,8 +476,8 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/util"))
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/xlib/i18n"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/util"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/xlib/i18n"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -569,16 +497,16 @@
             [ #'cljUtil #'cljCrypto #'cljDbio #'cljNet #'cljJMX ])
         t2 (a/AntCopy
              {:todir (fp! (ge :buildDir) "czlabclj/xlib")}
-             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/xlib")}
-                        [[:exclude "**/*.clj"]]]])
+             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/xlib")
+                         :excludes "**/*.clj"}]])
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "xlib-" (ge :buildVersion) ".jar"))}
-             [[:fileset {:dir (ge :buildDir) }
-                        [[:include "czlabclj/xlib/**"]
-                         [:exclude "**/log4j.properties"]
-                         [:exclude "**/logback.xml"]
-                         [:exclude "demo/**"]]]]) ]
+                             (str "xlib-" (ge :buildVersion) ".jar"))}
+             [[:fileset {:dir (ge :buildDir)
+                         :includes "czlabclj/xlib/**"
+                         :excludes (str "**/log4j.properties,"
+                                        "**/logback.xml,"
+                                        "demo/**")}]]) ]
     (->> (if *genjars*
            (concat m [t2 t3])
            m)
@@ -592,7 +520,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tpcl"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tpcl"))
   (let [t1 (a/AntJava
               (ge :CLJC_OPTS)
               (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -600,16 +528,16 @@
                       (ge :CJNESTED_RAW)))
         t2 (a/AntCopy
               {:todir (fp! (ge :buildDir) "czlabclj/tpcl")}
-              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tpcl")}
-                         [[:exclude "**/*.clj"]]]])
+              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tpcl")
+                          :excludes "**/*.clj"}]])
         t3 (a/AntJar
               {:destFile (fp! (ge :distDir)
-                                (str "tpcl-" (ge :buildVersion) ".jar"))}
-              [[:fileset {:dir (ge :buildDir) }
-                         [[:include "czlabclj/tpcl/**"]
-                          [:exclude "**/log4j.properties"]
-                          [:exclude "**/logback.xml"]
-                          [:exclude "demo/**"]]]]) ]
+                              (str "tpcl-" (ge :buildVersion) ".jar"))}
+              [[:fileset {:dir (ge :buildDir)
+                          :includes "czlabclj/tpcl/**"
+                          :excludes (str "**/log4j.properties,"
+                                         "**/logback.xml,"
+                                         "demo/**")}]]) ]
     (->> (if *genjars*
            [t1 t2 t3]
            [t1 t2])
@@ -638,8 +566,8 @@
                 (ge :CJNESTED)))
       (a/AntCopy
         {:todir (fp! (ge :buildDir) "demo")}
-        [[:fileset {:dir (fp! (ge :srcDir) "clojure/demo")}
-                   [[:exclude "**/*.clj"]]]]))
+        [[:fileset {:dir (fp! (ge :srcDir) "clojure/demo")
+                    :excludes "**/*.clj"}]]))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,7 +577,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/impl"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/impl"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -663,7 +591,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/mvc"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/mvc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -677,7 +605,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/auth"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/auth"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -691,7 +619,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/io"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/io"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -705,7 +633,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/etc"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/etc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -719,7 +647,7 @@
   ""
   []
 
-  (a/CleanDir (io/file (ge :buildDir) "czlabclj/tardis/core"))
+  (a/CleanDir (fp! (ge :buildDir) "czlabclj/tardis/core"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
@@ -738,15 +666,14 @@
                  #'tardisIO #'tardisMvc #'tardisMain ])
         t2 (a/AntCopy
              {:todir (fp! (ge :buildDir) "czlabclj/tardis")}
-             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tardis")}
-                        [[:exclude "**/*.meta"]
-                         [:exclude "**/*.clj"]]]])
+             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tardis")
+                         :excludes "**/*.meta,**/*.clj"}]])
         ts (into [] (concat m [t2]))
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
-                               (str "tardis-" (ge :buildVersion) ".jar"))}
-             [[:fileset {:dir (ge :buildDir) }
-                        [[:include "czlabclj/tardis/**"] ]]]) ]
+                             (str "tardis-" (ge :buildVersion) ".jar"))}
+             [[:fileset {:dir (ge :buildDir)
+                         :includes "czlabclj/tardis/**"}]]) ]
     (->> (if *genjars*
            (conj ts t3)
            ts)
@@ -782,8 +709,8 @@
 
   (a/AntCopy
     {:todir (fp! (ge :packDir) "src/main/js")}
-    [[:fileset {:dir (fp! (ge :buildDir) "js")}
-               [[:include "**/*.js"]]]]))
+    [[:fileset {:dir (fp! (ge :buildDir) "js")
+                :includes "**/*.js"}]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -796,11 +723,11 @@
     (a/AntCopy
       {:todir (fp! (ge :packDir) "etc/ems")
        :flatten true}
-      [[:fileset {:dir (fp! (ge :srcDir) "clojure")}
-                 [[:include "**/*.meta"]]]])
+      [[:fileset {:dir (fp! (ge :srcDir) "clojure")
+                  :includes "**/*.meta"}]])
     (a/AntCopy
       {:todir (fp! (ge :packDir) "etc")}
-      [[:fileset {:dir (fp! (ge :basedir) "etc")} []]])))
+      [[:fileset {:dir (fp! (ge :basedir) "etc")} ]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -808,15 +735,15 @@
 
   []
 
-  (a/CleanDir (io/file (ge :packDir) "docs" "jsdoc"))
-  (a/CleanDir (io/file (ge :packDir) "docs" "api"))
+  (a/CleanDir (fp! (ge :packDir) "docs" "jsdoc"))
+  (a/CleanDir (fp! (ge :packDir) "docs" "api"))
 
   (a/RunTarget*
     "pack/docs"
     (a/AntCopy
       {:todir (fp! (ge :packDir) "docs")}
-      [[:fileset {:dir (fp! (ge :basedir) "docs")}
-                 [[:exclude "dummy.txt"]]]])
+      [[:fileset {:dir (fp! (ge :basedir) "docs")
+                  :excludes "dummy.txt"}]])
     (a/AntJavadoc
       {:destdir (fp! (ge :packDir) "docs/api")
        :access "protected"
@@ -830,9 +757,9 @@
        :splitindex true
        :use true
        :version true}
-       [[:fileset {:dir (fp! (ge :srcDir) "java")}
-                  [[:exclude "demo/**"]
-                   [:include "**/*.java"]]]
+       [[:fileset {:dir (fp! (ge :srcDir) "java")
+                   :excludes "demo/**"
+                   :includes "**/*.java"}]
         [:classpath (ge :CPATH) ]])
 
     (a/AntJava
@@ -849,15 +776,12 @@
                     (fp! (ge :packDir) "docs/api")]]
        [:classpath (ge :CJPATH) ]])
 
-    ;;(copyJsFiles)
-
     (a/AntExec
       {:executable "jsdoc"
        :dir (ge :basedir)
        :spawn true}
       [[:argvalues ["-c" "mvn/js/jsdoc-conf.json"
                     "-d" (fp! (ge :packDir) "docs/jsdoc") ]]])))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -888,16 +812,13 @@
       [[:fileset {:dir (fp! (ge :basedir) "lics") } ]])
     (a/AntCopy
       {:todir (fp! (ge :packDir) "lics")}
-      [[:fileset {:dir (ge :basedir)}
-                 [[:include "*.html"]
-                  [:include "LICENSE"]
-                  [:include "*.txt"] ]]])
+      [[:fileset {:dir (ge :basedir)
+                  :includes "*.html,*.txt,LICENSE"}]])
     (a/AntCopy
       {:todir (ge :packDir) :flatten true}
-      [[:fileset {:dir (ge :basedir)}
-                 [[:include "README.md"]
-                  [:include "pom.xml"] ]]]))
-  (b/ReplaceFile (io/file (ge :packDir) "pom.xml")
+      [[:fileset {:dir (ge :basedir)
+                  :includes "README.md,pom.xml"}]]))
+  (b/ReplaceFile (fp! (ge :packDir) "pom.xml")
                  #(cs/replace % "@@VERSION@@" (ge :buildVersion))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -910,12 +831,12 @@
     "pack/dist"
     (a/AntCopy
       {:todir (fp! (ge :packDir) "dist")}
-      [[:fileset {:dir (ge :distDir) }
-                 [[:include "**/skaro-ld*.jar"]]]])
+      [[:fileset {:dir (ge :distDir)
+                  :includes "**/skaro-ld*.jar"}]])
     (a/AntCopy
       {:todir (fp! (ge :packDir) "dist")}
-      [[:fileset {:dir (ge :distDir) }
-                 [[:include "**/skaro-rt*.jar"]]]])))
+      [[:fileset {:dir (ge :distDir)
+                  :includes "**/skaro-rt*.jar"}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -923,13 +844,11 @@
 
   []
 
-  (do
-    (a/RunTarget*
-      "pack/lib"
-      (a/AntCopy
-        {:todir (fp! (ge :packDir) "lib")}
-        [[:fileset {:dir (ge :libDir)} ]]))
-  ))
+  (a/RunTarget*
+    "pack/lib"
+    (a/AntCopy
+      {:todir (fp! (ge :packDir) "lib")}
+      [[:fileset {:dir (ge :libDir)} ]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -937,18 +856,16 @@
 
   []
 
-  (do
-    (a/RunTarget*
-      "pack/bin"
-      (a/AntCopy
-        {:todir (fp! (ge :packDir) "bin")}
-        [[:fileset {:dir (fp! (ge :basedir) "bin")} ]])
+  (a/RunTarget*
+    "pack/bin"
+    (a/AntCopy
+      {:todir (fp! (ge :packDir) "bin")}
+      [[:fileset {:dir (fp! (ge :basedir) "bin")} ]])
 
-      (a/AntChmod
-        {:dir (fp! (ge :packDir) "bin")
-         :perm "755"
-         :includes "*"} ))
-  ))
+    (a/AntChmod
+      {:dir (fp! (ge :packDir) "bin")
+       :perm "755"
+       :includes "*"} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -960,14 +877,14 @@
     "pack/all"
     (a/AntTar
       {:destFile (fp! (ge :distDir)
-                        (str (ge :PID)
-                             "-" (ge :buildVersion) ".tar.gz"))
+                      (str (ge :PID)
+                           "-" (ge :buildVersion) ".tar.gz"))
        :compression "gzip"}
-      [[:tarfileset {:dir (ge :packDir)}
-                    [[:exclude "apps/**"]
-                     [:exclude "bin/**"]]]
-       [:tarfileset {:dir (ge :packDir) :mode "755"}
-                    [[:include "bin/**"]]]])))
+      [[:tarfileset {:dir (ge :packDir)
+                     :excludes "apps/**,bin/**"}]
+       [:tarfileset {:dir (ge :packDir)
+                     :mode "755"
+                     :includes "bin/**"}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -978,111 +895,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- compileFrwkTest ""
-  []
-  (a/RunTarget*
-    "compile/java#test"
-    (a/AntJavac (merge (ge :JAVAC_OPTS)
-                         {:srcdir (fp! (ge :tstDir) "java")
-                          :destdir (ge :buildTestDir)})
-                  [[:include "**/*.java"]
-                   [:classpath (ge :TPATH)]
-                   [:compilerarg (ge :COMPILER_ARGS)]])
-
-    (a/AntCopy {:todir (ge :buildTestDir)}
-                 [[:fileset {:dir (fp! (ge :tstDir) "java") }
-                            [[:exclude "**/*.java"]]]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- compileCljTest ""
-  []
-  (a/RunTarget*
-    "compile/clj#test"
-    (a/AntJava
-      (ge :CLJC_OPTS)
-      [[:sysprops (assoc (ge :CLJC_SYSPROPS)
-                         :clojure.compile.path (ge :buildTestDir))]
-       [:classpath (ge :TJPATH)]
-       [:argvalues (b/FmtCljNsps (fp! (ge :tstDir) "clojure")
-                                 "testcljc/util"
-                                 "testcljc/net"
-                                 "testcljc/i18n"
-                                 "testcljc/crypto"
-                                 "testcljc/dbio")]])
-    (a/AntCopy
-      {:todir (ge :buildTestDir)}
-      [[:fileset {:dir (fp! (ge :tstDir) "clojure") }
-                 [[:exclude "**/*.clj"]]]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- runCljTest ""
-  []
-  (a/RunTarget*
-    "run/clj#test"
-    (a/AntJunit
-      {:logFailedTests true
-       :showOutput false
-       :printsummary true
-       :fork true
-       :haltonfailure true}
-      [[:classpath (ge :TJPATH)]
-       [:formatter {:type "plain"
-                    :useFile false}]
-       [:test {:name "czlab.frwk.util.ClojureJUnit"
-               :todir (ge :reportTestDir)}
-              [[:formatter {:type "xml"}]]]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- runJavaTest ""
-  []
-  (a/RunTarget*
-    "run/java#test"
-    (a/AntJunit
-      {:logFailedTests true
-       :showOutput false
-       :printsummary true
-       :fork true
-       :haltonfailure true}
-      [[:classpath (ge :TPATH)]
-       [:formatter {:type "plain"
-                    :useFile false}]
-       [:batchtest {:todir (ge :reportTestDir)}
-                   [[:fileset {:dir (ge :buildTestDir)}
-                              [[:include "**/JUTest.*"]]]
-                    [:formatter {:type "xml"}]]]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- buildCljTest ""
-  []
-  (minitask
-    "preTest"
-    (a/DeleteDir (io/file (fp! (ge :buildTestDir) "czlab")))
-    (preTest))
-  (compileFrwkTest)
-  (compileCljTest))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- buildJavaTest ""
-  []
-  (minitask
-    "preTest"
-    (a/DeleteDir (io/file (fp! (ge :buildTestDir) "czlab")))
-    (preTest))
-  (compileFrwkTest))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- jar! ""
+(defn- jarf! ""
   []
 
   (a/RunTasks*
-    (a/AntCopy {:todir (ge :buildDir)}
-                   [[:fileset {:dir (fp! (ge :srcDir) "resources")}]]))
+    (a/AntCopy
+      {:todir (ge :buildDir)}
+      [[:fileset {:dir (fp! (ge :srcDir) "resources")}]]))
 
   (b/ReplaceFile (fp! (ge :buildDir) "com/zotohlab/skaro/version.properties")
                  #(cs/replace % "@@pom.version@@" (ge :buildVersion)))
@@ -1090,12 +909,12 @@
   (a/RunTarget* "jar/dist"
     (a/AntJar
       {:destFile (fp! (ge :distDir)
-                        (str "skaro-rt-" (ge :buildVersion) ".jar"))}
-      [[:fileset {:dir (ge :buildDir) }
-                 [[:exclude "**/log4j.properties"]
-                  [:exclude "**/logback.xml"]
-                  [:exclude "js/**"]
-                  [:exclude "demo/**"]]]])))
+                      (str "skaro-rt-" (ge :buildVersion) ".jar"))}
+      [[:fileset {:dir (ge :buildDir)
+                  :excludes (str "**/log4j.properties,"
+                                 "**/logback.xml,"
+                                 "js/**,"
+                                 "demo/**")}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1114,64 +933,6 @@
     ((comp preBuild clean4Build))
     fileset
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask testclj
-
-  "test clj frwk"
-  []
-
-  (bc/with-pre-wrap fileset
-    (buildCljTest)
-    (runCljTest)
-    fileset
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask testjava
-
-  "test java frwk"
-  []
-
-  (bc/with-pre-wrap fileset
-    (buildJavaTest)
-    (runJavaTest)
-    fileset
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask juber
-
-  "my own uber"
-  []
-
-  (bc/with-pre-wrap fileset
-
-    (let [from (io/file (ge :basedir)
-                        (ge :target-path))
-          jars (output-files fileset)
-          to (io/file (ge :libDir))]
-      (a/RunTarget
-        "libjars"
-        (for [j (seq jars)]
-          (a/AntCopy {:file (fp! (:dir j) (:path j))
-                        :todir to})))
-      (format "copied (%d) jars to %s" (count jars) to))
-
-    fileset
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask libjars
-
-  "copy all dependencies (jars) to libdir"
-  []
-
-  (comp (uber) (juber)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1223,13 +984,13 @@
   []
 
   (bc/with-pre-wrap fileset
-    (jar!)
+    (jarf!)
     fileset
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask dev
+(deftask mydev
   "dev-mode"
   []
 
@@ -1263,42 +1024,8 @@
 (deftask release
   ""
   []
-  (comp (dev) (pack)))
+  (comp (mydev) (pack)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask poo
-  ""
-  []
-  (a/RunTasks*
-    (a/AntDelete
-      {}
-      [[:fileset {:dir "/tmp/public"
-                  :includes "pages/**,ig/**"}]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask deps
-  "test only"
-  []
-  (fn [nextguy]
-    (fn [files]
-      (nextguy files)
-      )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask play
-  "test only"
-  []
-  (println (get-env)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask hi
-  "test only"
-  []
-  (println "bonjour!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

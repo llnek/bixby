@@ -39,6 +39,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn se! ""
+  [options k dv]
+  (if-let [v (get options k)]
+    (if (fn? v)
+      (v options k)
+      (set-env! k v))
+    (set-env! k dv)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro minitask ""
   [func & forms]
   `(do (println (str ~func ":")) ~@forms))
@@ -380,83 +391,109 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn RunCmd ""
+
+  [cmd workDir args]
+
+  (a/RunTarget* cmd
+    (a/AntExec {:executable cmd
+                :dir workDir
+                :spawn false}
+                [[:argvalues (or args [])]])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn BootEnvVars ""
 
-  []
+  [& [options extras]]
 
-  (set-env! :skaroHome (System/getProperty "skaro.home.dir"))
-  (when (nil? (get-env :basedir))
-    (set-env! :basedir (System/getProperty "skaro.app.dir")))
+  (let [options (or options {})
+        extras (or extras [])]
 
-  (set-env! :bld "build")
-  (set-env! :pmode "dev")
+    (se! options :warn-reflection :clojure.compile.warn-on-reflection)
+    (se! options :skaroHome (System/getProperty "skaro.home.dir"))
+    (se! options :basedir (System/getProperty "skaro.app.dir"))
 
-  (set-env! :bootBuildDir (fp! (ge :basedir) (ge :bld)))
-  (set-env! :buildDir (fp! (ge :bootBuildDir) "classes"))
-  (set-env! :qaDir (fp! (ge :bootBuildDir) "test"))
-  (set-env! :docs (fp! (ge :bootBuildDir) "docs"))
+    (se! options :bld "build")
+    (se! options :pmode "dev")
 
-  (set-env! :patchDir (fp! (ge :basedir) "patch"))
-  (set-env! :libDir (fp! (ge :basedir)
-                         (ge :target-path)))
+    (se! options :bootBuildDir (fp! (ge :basedir) (ge :bld)))
+    (se! options :buildDir (fp! (ge :bootBuildDir) "classes"))
+    (se! options :qaDir (fp! (ge :bootBuildDir) "test"))
+    (se! options :docs (fp! (ge :bootBuildDir) "docs"))
 
-  (set-env! :srcDir (fp! (ge :basedir) "src" "main"))
-  (set-env! :tstDir (fp! (ge :basedir) "src" "test"))
+    (se! options :patchDir (fp! (ge :basedir) "patch"))
+    (se! options :libDir (fp! (ge :basedir)
+                              (ge :target-path)))
 
-  (set-env! :reportTestDir (fp! (ge :qaDir) "reports"))
-  (set-env! :buildTestDir (fp! (ge :qaDir) "classes"))
+    (se! options :srcDir (fp! (ge :basedir) "src" "main"))
+    (se! options :tstDir (fp! (ge :basedir) "src" "test"))
 
-  (.mkdirs (io/file (ge :buildDir))))
+    (se! options :reportTestDir (fp! (ge :qaDir) "reports"))
+    (se! options :buildTestDir (fp! (ge :qaDir) "classes"))
+
+    (doseq [k extras]
+      (se! options k nil))
+
+    (.mkdirs (io/file (ge :buildDir)))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn BootEnvPaths ""
 
-  []
+  [& [options extras]]
 
-  (set-env! :COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
+  (let [options (or options {})
+        extras (or extras [])]
 
-  (set-env! :COMPILE_OPTS {:debug (ge :buildDebug)
-                           :includeantruntime false
-                           :fork true})
+    (se! options :COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
 
-  (set-env! :CPATH [[:location (ge :buildDir)]
-                    [:fileset {:dir (ge :libDir)
-                               :includes "**/*.jar"}]
-                    [:fileset {:dir (fp! (ge :skaroHome) "dist")
-                               :includes "**/*.jar"} ]
-                    [:fileset {:dir (fp! (ge :skaroHome) "lib")
-                               :includes "**/*.jar"} ]] )
+    (se! options :COMPILE_OPTS {:debug (ge :buildDebug)
+                                :includeantruntime false
+                                :fork true})
 
-  (set-env! :TPATH (->> (ge :CPATH)
-                        (cons [:location (ge :buildTestDir)])
-                        (into [])))
+    (se! options :CPATH [[:location (ge :buildDir)]
+                         [:fileset {:dir (ge :libDir)
+                                    :includes "**/*.jar"}]
+                         [:fileset {:dir (fp! (ge :skaroHome) "dist")
+                                    :includes "**/*.jar"} ]
+                         [:fileset {:dir (fp! (ge :skaroHome) "lib")
+                                    :includes "**/*.jar"} ]] )
 
-  (set-env! :JAVAC_OPTS (merge {:srcdir (fp! (ge :srcDir) "java")
-                                :destdir (ge :buildDir)
-                                :target "1.8"
-                                :debugLevel "lines,vars,source"}
-                                (ge :COMPILE_OPTS)))
+    (se! options :TPATH (->> (ge :CPATH)
+                             (cons [:location (ge :buildTestDir)])
+                             (into [])))
 
-  (set-env! :CJPATH (->> (ge :CPATH)
-                         (cons [:location (fp! (ge :srcDir) "clojure")])
-                         (into [])))
+    (se! options :JAVAC_OPTS (merge {:srcdir (fp! (ge :srcDir) "java")
+                                     :destdir (ge :buildDir)
+                                     :target "1.8"
+                                     :debugLevel "lines,vars,source"}
+                                    (ge :COMPILE_OPTS)))
 
-  (set-env! :TJPATH (->> (ge :CJPATH)
-                         (concat [[:location (fp! (ge :tstDir) "clojure")]
-                                  [:location (ge :buildTestDir)]])
-                         (into [])))
+    (se! options :CJPATH (->> (ge :CPATH)
+                              (cons [:location (fp! (ge :srcDir) "clojure")])
+                              (into [])))
 
-  (set-env! :CLJC_OPTS {:classname "clojure.lang.Compile"
-                        :fork true
-                        :failonerror true
-                        :maxmemory "2048m"})
+    (se! options :TJPATH (->> (ge :CJPATH)
+                              (concat [[:location (fp! (ge :tstDir) "clojure")]
+                                       [:location (ge :buildTestDir)]])
+                              (into [])))
 
-  (set-env! :CLJC_SYSPROPS {:clojure.compile.warn-on-reflection true
-                            :clojure.compile.path (ge :buildDir) })
+    (se! options :CLJC_OPTS {:classname "clojure.lang.Compile"
+                             :fork true
+                             :failonerror true
+                             :maxmemory "2048m"})
 
-  (set-env! :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
-                       [:classpath (ge :CJPATH)]]) )
+    (se! options :CLJC_SYSPROPS {:clojure.compile.path (ge :buildDir)
+                                 (ge :warn-reflection) true})
+
+    (se! options :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
+                            [:classpath (ge :CJPATH)]])
+
+    (doseq [k extras]
+        (se! options k nil))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

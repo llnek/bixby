@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013, Ken Leung. All rights reserved.
 
-package czlab.frwk.util;
+package com.zotohlab.skaro;
 
 import mikera.cljunit.ClojureTest;
 import java.util.Arrays;
