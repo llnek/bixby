@@ -163,8 +163,7 @@
 (b/BootEnvVars
   {:basedir (System/getProperty "user.dir")
    :distDir #(set-env! %2 (fp! (ge :bootBuildDir) "dist"))
-   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "pack"))}
-  [:distDir :packDir])
+   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "pack"))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -175,8 +174,7 @@
    :CJNESTED_RAW
    #(set-env! %2 [[:sysprops (-> (ge :CLJC_SYSPROPS)
                                  (assoc (ge :warn-reflection) false))]
-                  [:classpath (ge :CJPATH)]])}
-  [:CJNESTED_RAW])
+                  [:classpath (ge :CJPATH)]])})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -272,7 +270,7 @@
         ljs (io/file root (ge :bld)) ]
     (a/CleanDir ljs)
     (try
-      (b/BabelTree root #'babel->cb)
+      (b/BabelTree root babel->cb)
       (finally
         (a/DeleteDir ljs)))
   ))

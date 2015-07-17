@@ -14,10 +14,6 @@
 
   czlabclj.tpcl.antlib
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
-
   (:import [java.beans Introspector PropertyDescriptor]
            [java.lang.reflect Method]
            [java.util Stack]
@@ -55,7 +51,11 @@
             Replace$NestedString
             Tar$TarFileSet
             Tar$TarCompressionMethod
-            Javac$ImplementationSpecificArgument]))
+            Javac$ImplementationSpecificArgument])
+
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -100,39 +100,44 @@
   (.executeTarget (.getProject target) (.getName target)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getBeanInfo ""
+  [cz]
+  (->> (-> (Introspector/getBeanInfo cz)
+           (.getPropertyDescriptors))
+       (reduce (fn [memo pd]
+                 (assoc memo
+                        (keyword (.getName pd)) pd))
+               {})
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create a default project.
 (def ^:private dftprj (atom (AntProject)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;cache ant task names as symbols
-(def ^:private tasks
-  (atom (let [arr (atom [])]
-          (doseq [[k v] (.getTaskDefinitions @dftprj)]
-            (when (.isAssignableFrom Task v)
-              (let [n (str "Ant" (capstr k))]
-                (reset! arr (conj @arr n k)))))
-          (partition 2 (map #(symbol %) @arr)))))
+;;cache ant task names as symbols, and cache bean-info of class.
+(let [beans (atom {})
+      syms (atom [])]
+  (doseq [[k v] (.getTaskDefinitions @dftprj)]
+    (when (.isAssignableFrom Task v)
+      (let [n (str "Ant" (capstr k))]
+        (reset! syms (conj @syms n k)))
+      (swap! beans assoc v (getBeanInfo v))))
+  (def ^:private tasks (atom (partition 2 (map #(symbol %) @syms))))
+  (def ^:private props (atom @beans)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;cache task bean info property descriptors.
-(def ^:private props
-  (atom (let [m {"tarfileset" Tar$TarFileSet
-                 "formatter" FormatterElement
-                 "batchtest" BatchTest
-                 "junittest" JUnitTest
-                 "fileset" FileSet }
-              arr (atom {})]
-          (doseq [[k v] (merge m (.getTaskDefinitions @dftprj))]
-            (when (or (.isAssignableFrom Task v)
-                      (contains? m k))
-              (->> (-> (Introspector/getBeanInfo v)
-                       (.getPropertyDescriptors))
-                   (reduce (fn [memo pd]
-                             (assoc memo
-                                    (keyword (.getName pd)) pd))
-                           {})
-                   (swap! arr assoc v))))
-          @arr)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeListProps
+
+  "Dynanically add bean info for non-task classes."
+  [cz]
+
+  (let [b (getBeanInfo cz)]
+    (swap! props assoc cz b)
+    b
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -226,7 +231,8 @@
   (let [arr (object-array 1)
         skips (or skips #{})
         cz (.getClass pojo)
-        ps (get @props cz) ]
+        ps (or (get @props cz)
+               (maybeListProps cz)) ]
     (doseq [[k v] options]
       (when-not (contains? skips k)
         (if-let [pd (get ps k)]
@@ -343,9 +349,9 @@
 
   (when-let [[k v] (find options :type)]
     (.setType ^FormatterElement
-                tk
-                (doto (FormatterElement$TypeAttribute.)
-                  (.setValue (str v)))))
+              tk
+              (doto (FormatterElement$TypeAttribute.)
+                (.setValue (str v)))))
 
   [options #{:type}])
 
@@ -554,7 +560,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-task ""
+(defn- init-task "Reify and configure actual ant tasks."
 
   ^Task
   [^Project pj ^Target target tobj]
@@ -576,10 +582,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTasks ""
+(defn ProjAntTasks
+
+  "Bind all the tasks to a target and a project."
 
   ^Target
   [^String target tasks]
+
+  {:pre [(coll? tasks)]}
 
   (let [^Project pj @dftprj
         tg (Target.)]
@@ -592,7 +602,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProjAntTasks* ""
+(defn ProjAntTasks*
+
+  "Bind all the tasks to a target and a project."
 
   ^Target
   [target & tasks]
@@ -637,11 +649,12 @@
 ;;
 (defmacro ^:private ant-task
 
-  ""
+  "Generate wrapper function for ant task."
+
   [pj sym docstr func & [preopt]]
 
   (let [s (str func)
-        tm (cstr/lower-case
+        tm (cs/lower-case
              (.substring s (+ 1 (.lastIndexOf s "."))))]
     ;;(println "task---- " s)
     `(defn ~sym ~docstr [& [options# nested#]]
@@ -656,6 +669,9 @@
                   :nested n#} ]
          (if (nil? ~preopt)
            (->> (case ~s
+                  ;;certain classes need special handling of properties
+                  ;;due to type mismatch or property name
+                  ;;inconsistencies.
                   "delete" delete-pre-opts
                   "junit" junit-preopts
                   "javadoc" jdoc-preopts

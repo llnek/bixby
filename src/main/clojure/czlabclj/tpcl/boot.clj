@@ -14,10 +14,10 @@
 
   czlabclj.tpcl.boot
 
-  (:require [clojure.tools.logging :as log]
+  (:require [boot.task.built-in :refer [uber aot]]
+            [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [boot.core :as bc :refer :all]
-            [boot.task.built-in :refer [uber aot]]
             [clojure.string :as cs]
             [czlabclj.tpcl.antlib :as a])
 
@@ -74,6 +74,8 @@
 (defn ReplaceFile ""
 
   [file work]
+
+  {:pre [(fn? work)]}
 
   (->> (-> (slurp file :encoding "utf-8")
            (work))
@@ -145,6 +147,8 @@
 
   [rootDir cfgtor]
 
+  {:pre [(fn? cfgtor)]}
+
   (walk-tree cfgtor (Stack.) (io/file rootDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -200,7 +204,7 @@
 
   (a/RunTarget* "clean/build"
     (a/AntDelete {:dir (ge :bootBuildDir)
-                  :excludes (str (ge :bld) "/**")})
+                  :excludes (str (ge :cout) "/**")})
     (a/AntDelete {}
       [[:fileset {:dir (ge :buildDir)
                   :excludes "clojure/**"}]]))
@@ -406,20 +410,20 @@
 ;;
 (defn BootEnvVars ""
 
-  [& [options extras]]
+  [& [options]]
 
-  (let [options (or options {})
-        extras (or extras [])]
+  (let [options (or options {})]
 
     (se! options :warn-reflection :clojure.compile.warn-on-reflection)
     (se! options :skaroHome (System/getProperty "skaro.home.dir"))
     (se! options :basedir (System/getProperty "skaro.app.dir"))
 
+    (se! options :cout "classes")
     (se! options :bld "build")
     (se! options :pmode "dev")
 
     (se! options :bootBuildDir (fp! (ge :basedir) (ge :bld)))
-    (se! options :buildDir (fp! (ge :bootBuildDir) "classes"))
+    (se! options :buildDir (fp! (ge :bootBuildDir) (ge :cout)))
     (se! options :qaDir (fp! (ge :bootBuildDir) "test"))
     (se! options :docs (fp! (ge :bootBuildDir) "docs"))
 
@@ -431,10 +435,11 @@
     (se! options :tstDir (fp! (ge :basedir) "src" "test"))
 
     (se! options :reportTestDir (fp! (ge :qaDir) "reports"))
-    (se! options :buildTestDir (fp! (ge :qaDir) "classes"))
+    (se! options :buildTestDir (fp! (ge :qaDir) (ge :cout)))
 
-    (doseq [k extras]
-      (se! options k nil))
+    (doseq [k (keys options)]
+      (when (nil? (get-env k))
+        (se! options k nil)))
 
     (.mkdirs (io/file (ge :buildDir)))
   ))
@@ -443,10 +448,9 @@
 ;;
 (defn BootEnvPaths ""
 
-  [& [options extras]]
+  [& [options]]
 
-  (let [options (or options {})
-        extras (or extras [])]
+  (let [options (or options {})]
 
     (se! options :COMPILER_ARGS {:line "-Xlint:deprecation -Xlint:unchecked"})
 
@@ -492,8 +496,9 @@
     (se! options :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
                             [:classpath (ge :CJPATH)]])
 
-    (doseq [k extras]
-        (se! options k nil))
+    (doseq [k (keys options)]
+      (when (nil? (get-env k))
+        (se! options k nil)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
