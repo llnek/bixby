@@ -143,7 +143,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlabclj.tpcl.boot :as b :refer :all]
+(require '[czlabclj.tpcl.boot :as b :refer :all :exclude [dev]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
@@ -990,7 +990,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask mydev
+(deftask dev
   "dev-mode"
   []
 
@@ -1024,7 +1024,7 @@
 (deftask release
   ""
   []
-  (comp (mydev) (pack)))
+  (comp (dev) (pack)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
