@@ -204,9 +204,9 @@
 
   (a/RunTarget* "clean/build"
     (a/AntDelete {:dir (ge :bootBuildDir)
-                  :excludes (str (ge :cout) "/**")})
+                  :excludes (str (ge :czz) "/**")})
     (a/AntDelete {}
-      [[:fileset {:dir (ge :buildDir)
+      [[:fileset {:dir (ge :czzDir)
                   :excludes "clojure/**"}]]))
   (a/CleanDir (io/file (ge :libDir))))
 
@@ -220,7 +220,10 @@
     (doseq [s [(ge :bootBuildDir)
                (ge :patchDir)
                (ge :libDir)
-               (ge :buildDir)]]
+               (ge :qaDir)
+               (ge :wzzDir)
+               (ge :czzDir)
+               (ge :jzzDir)]]
       (.mkdirs (io/file s)))
   ))
 
@@ -237,7 +240,7 @@
        [:include "**/*.java"]
        [:classpath (ge :CPATH)]])
     (a/AntCopy
-      {:todir (ge :buildDir)}
+      {:todir (ge :jzzDir)}
       [[:fileset {:dir (fp! (ge :srcDir) "java")
                   :excludes "**/*.java"}]])))
 
@@ -260,7 +263,7 @@
             (concat [[:argvalues p ]] (ge :CJNESTED)))))
       (a/RunTasks*
         (a/AntCopy
-              {:todir (ge :buildDir)}
+              {:todir (ge :czzDir)}
               [[:fileset {:dir root
                           :excludes "**/*.clj"}]])))
   ))
@@ -273,9 +276,18 @@
 
   (a/RunTarget* "jar/files"
     (a/AntJar
+          {:destFile (fp! (ge :libDir)
+                          (str "java-" (ge :buildVersion) ".jar"))}
+          [[:fileset {:dir (ge :jzzDir)} ]])
+    (a/AntJar
+              {:destFile (fp! (ge :libDir)
+                              (str "clj-" (ge :buildVersion) ".jar"))}
+              [[:fileset {:dir (ge :czzDir)} ]])
+    (a/AntJar
       {:destFile (fp! (ge :libDir)
                       (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
-      [[:fileset {:dir (ge :buildDir)} ]])))
+      [[:fileset {:dir (ge :jzzDir)} ]
+       [:fileset {:dir (ge :czzDir)}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -419,11 +431,19 @@
     (se! options :basedir (System/getProperty "skaro.app.dir"))
 
     (se! options :cout "classes")
+    (se! options :jzz "javaout")
+    (se! options :czz "cljout")
+    (se! options :wzz "webout")
+
     (se! options :bld "build")
     (se! options :pmode "dev")
 
     (se! options :bootBuildDir (fp! (ge :basedir) (ge :bld)))
-    (se! options :buildDir (fp! (ge :bootBuildDir) (ge :cout)))
+
+    (se! options :jzzDir (fp! (ge :bootBuildDir) (ge :jzz)))
+    (se! options :czzDir (fp! (ge :bootBuildDir) (ge :czz)))
+    (se! options :wzzDir (fp! (ge :bootBuildDir) (ge :wzz)))
+
     (se! options :qaDir (fp! (ge :bootBuildDir) "test"))
     (se! options :docs (fp! (ge :bootBuildDir) "docs"))
 
@@ -441,7 +461,6 @@
       (when (nil? (get-env k))
         (se! options k nil)))
 
-    (.mkdirs (io/file (ge :buildDir)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -458,7 +477,8 @@
                                 :includeantruntime false
                                 :fork true})
 
-    (se! options :CPATH [[:location (ge :buildDir)]
+    (se! options :CPATH [[:location (ge :jzzDir)]
+                         [:location (ge :czzDir)]
                          [:fileset {:dir (ge :libDir)
                                     :includes "**/*.jar"}]
                          [:fileset {:dir (fp! (ge :skaroHome) "dist")
@@ -471,7 +491,7 @@
                              (into [])))
 
     (se! options :JAVAC_OPTS (merge {:srcdir (fp! (ge :srcDir) "java")
-                                     :destdir (ge :buildDir)
+                                     :destdir (ge :jzzDir)
                                      :target "1.8"
                                      :debugLevel "lines,vars,source"}
                                     (ge :COMPILE_OPTS)))
@@ -490,7 +510,7 @@
                              :failonerror true
                              :maxmemory "2048m"})
 
-    (se! options :CLJC_SYSPROPS {:clojure.compile.path (ge :buildDir)
+    (se! options :CLJC_SYSPROPS {:clojure.compile.path (ge :czzDir)
                                  (ge :warn-reflection) true})
 
     (se! options :CJNESTED [[:sysprops (ge :CLJC_SYSPROPS)]
