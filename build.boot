@@ -143,7 +143,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlabclj.tpcl.boot :as b :refer :all :exclude [dev]]
+(require '[czlabclj.tpcl.boot :as b :refer :all :exclude [dev jar!]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
@@ -162,8 +162,7 @@
 ;;
 (b/BootEnvVars
   {:basedir (System/getProperty "user.dir")
-   :distDir #(set-env! %2 (fp! (ge :bootBuildDir) "dist"))
-   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "pack"))})
+   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "p"))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -187,37 +186,18 @@
 ;;
 (defn- clean4Build ""
   [& args]
-  (minitask
-    "clean/build"
-    (do
-      (a/CleanDir (ge :libDir))
-      (a/RunTasks*
-        (a/AntDelete {}
-          [[:fileset {:dir (ge :bootBuildDir)
-                      :excludes "pack/**,classes/clojure/**"}]])))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- cleanBoot ""
-  [& args]
-  (minitask
-    "clean/boot"
-    (a/CleanDir (ge :libDir))
-  ))
+  (a/CleanDir (ge :packDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- preBuild ""
   [& args]
-  (let [fs [[:fileset {:dir (fp! (ge :basedir) "artifacts")
-                       :includes "log4j.properties,logback.xml"}]] ]
-    (.mkdirs (io/file (ge :distDir)))
-    ;; get rid of debug logging during build!
-    (a/RunTarget* "pre-build"
-      (a/AntCopy {:todir (ge :jzzDir)} fs)
-      (a/AntCopy {:todir (ge :czzDir)} fs))
-  ))
+  ;; get rid of debug logging during build!
+  (a/RunTarget* "pre/build"
+    (a/AntCopy
+      {:todir (ge :jzzDir)}
+      [[:fileset {:dir (fp! (ge :basedir) "artifacts")
+                  :includes "log4j.properties,logback.xml"}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -360,7 +340,10 @@
                 [[:fileset {:dir (fp! (ge :srcDir) "java/com/zotohlab" d)
                             :excludes "**/*.java"}]]))
             ["skaro" "mock" "tpcl"])
-        ts (into [] (cons t1 m))
+        tr (a/AntCopy
+              {:todir (ge :jzzDir)}
+              [[:fileset {:dir (fp! (ge :srcDir) "resources")}]])
+        ts (conj (into [] (cons t1 m)) tr)
         t2 (a/AntJar
              {:destFile (fp! (ge :distDir)
                              (str "skaro-ld-" (ge :buildVersion) ".jar"))}
@@ -827,11 +810,7 @@
     (a/AntCopy
       {:todir (fp! (ge :packDir) "dist")}
       [[:fileset {:dir (ge :distDir)
-                  :includes "**/skaro-ld*.jar"}]])
-    (a/AntCopy
-      {:todir (fp! (ge :packDir) "dist")}
-      [[:fileset {:dir (ge :distDir)
-                  :includes "**/skaro-rt*.jar"}]])))
+                  :includes "**/skaro*.jar"}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -890,32 +869,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- jarf! ""
-  []
-
-  (a/RunTasks*
-    (a/AntCopy
-      {:todir (ge :jzzDir)}
-      [[:fileset {:dir (fp! (ge :srcDir) "resources")}]]))
-
-  (b/ReplaceFile (fp! (ge :jzzDir) "com/zotohlab/skaro/version.properties")
-                 #(cs/replace % "@@pom.version@@" (ge :buildVersion)))
-
-  (a/RunTarget* "jar/dist"
-    (a/AntJar
-      {:destFile (fp! (ge :distDir)
-                      (str "skaro-rt-" (ge :buildVersion) ".jar"))}
-      [[:fileset {:dir (ge :jzzDir)
-                        :excludes (str "**/log4j.properties,"
-                                       "**/logback.xml,"
-                                       "demo/**")}]
-       [:fileset {:dir (ge :czzDir)
-                  :excludes (str "**/log4j.properties,"
-                                 "**/logback.xml,"
-                                 "demo/**")}]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;;  task defs below !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -928,7 +881,7 @@
   []
 
   (bc/with-pre-wrap fileset
-    ((comp preBuild clean4Build))
+    ((comp preBuild PreBuild clean4Build Clean4Build))
     fileset
   ))
 
@@ -976,13 +929,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask jarfiles
+(deftask jar!
 
   "jar all classes"
   []
 
   (bc/with-pre-wrap fileset
-    (jarf!)
+    (b/ReplaceFile (fp! (ge :jzzDir) "com/zotohlab/skaro/version.properties")
+                   #(cs/replace % "@@pom.version@@" (ge :buildVersion)))
+    (JarFiles)
     fileset
   ))
 
@@ -997,7 +952,7 @@
         (javacmp)
         (cljcmp)
         (babel)
-        (jarfiles)))
+        (jar!)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

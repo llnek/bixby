@@ -189,7 +189,7 @@
 ;;
 (defn CleanPublic ""
 
-  []
+  [& args]
 
   (a/RunTarget* "clean/public"
     (a/AntDelete {}
@@ -200,7 +200,7 @@
 ;;
 (defn Clean4Build ""
 
-  []
+  [& args]
 
   (a/RunTarget* "clean/build"
     (a/AntDelete {:dir (ge :bootBuildDir)
@@ -214,11 +214,11 @@
 ;;
 (defn PreBuild ""
 
-  []
+  [& args]
 
   (minitask "prebuild"
     (doseq [s [(ge :bootBuildDir)
-               (ge :patchDir)
+               (ge :distDir)
                (ge :libDir)
                (ge :qaDir)
                (ge :wzzDir)
@@ -242,7 +242,10 @@
     (a/AntCopy
       {:todir (ge :jzzDir)}
       [[:fileset {:dir (fp! (ge :srcDir) "java")
-                  :excludes "**/*.java"}]])))
+                  :excludes "**/*.java"}]])
+    (a/AntCopy
+      {:todir (ge :jzzDir)}
+      [[:fileset {:dir (fp! (ge :srcDir) "resources")}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -274,20 +277,24 @@
 
   []
 
-  (a/RunTarget* "jar/files"
-    (a/AntJar
-          {:destFile (fp! (ge :libDir)
-                          (str "java-" (ge :buildVersion) ".jar"))}
-          [[:fileset {:dir (ge :jzzDir)} ]])
-    (a/AntJar
-              {:destFile (fp! (ge :libDir)
-                              (str "clj-" (ge :buildVersion) ".jar"))}
-              [[:fileset {:dir (ge :czzDir)} ]])
-    (a/AntJar
-      {:destFile (fp! (ge :libDir)
-                      (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
-      [[:fileset {:dir (ge :jzzDir)} ]
-       [:fileset {:dir (ge :czzDir)}]])))
+  (let [j [:fileset {:dir (ge :jzzDir)
+                     :excludes "**/log4j.properties,**/logback.xml"} ]
+        c [:fileset {:dir (ge :czzDir)
+                     :excludes "**/log4j.properties,**/logback.xml"} ] ]
+    (a/RunTarget* "jar/files"
+      (a/AntJar
+        {:destFile (fp! (ge :distDir)
+                        (str "java-" (ge :buildVersion) ".jar"))}
+        [j])
+      (a/AntJar
+        {:destFile (fp! (ge :distDir)
+                        (str "clj-" (ge :buildVersion) ".jar"))}
+        [c])
+      (a/AntJar
+        {:destFile (fp! (ge :distDir)
+                        (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
+        [j c]))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -430,10 +437,10 @@
     (se! options :skaroHome (System/getProperty "skaro.home.dir"))
     (se! options :basedir (System/getProperty "skaro.app.dir"))
 
-    (se! options :cout "classes")
-    (se! options :jzz "javaout")
-    (se! options :czz "cljout")
-    (se! options :wzz "webout")
+    (se! options :cout "z")
+    (se! options :jzz "j")
+    (se! options :czz "c")
+    (se! options :wzz "w")
 
     (se! options :bld "build")
     (se! options :pmode "dev")
@@ -444,10 +451,10 @@
     (se! options :czzDir (fp! (ge :bootBuildDir) (ge :czz)))
     (se! options :wzzDir (fp! (ge :bootBuildDir) (ge :wzz)))
 
-    (se! options :qaDir (fp! (ge :bootBuildDir) "test"))
+    (se! options :distDir (fp! (ge :bootBuildDir) "d"))
+    (se! options :qaDir (fp! (ge :bootBuildDir) "t"))
     (se! options :docs (fp! (ge :bootBuildDir) "docs"))
 
-    (se! options :patchDir (fp! (ge :basedir) "patch"))
     (se! options :libDir (fp! (ge :basedir)
                               (ge :target-path)))
 
