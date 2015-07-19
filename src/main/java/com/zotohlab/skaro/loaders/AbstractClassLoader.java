@@ -43,7 +43,7 @@ public abstract class AbstractClassLoader extends URLClassLoader {
   }
 
   public AbstractClassLoader addUrl(File f) {
-    try {
+    if (f.exists()) try {
       addURL( f.toURI().toURL() );
     } catch (MalformedURLException e) {
       e.printStackTrace();

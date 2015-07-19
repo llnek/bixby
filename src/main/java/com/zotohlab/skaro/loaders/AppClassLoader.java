@@ -25,14 +25,18 @@ public class AppClassLoader extends AbstractClassLoader {
   }
 
   public void configure(String appDir) {
-    File c= new File(appDir, "build/classes");
+    File j= new File(appDir, "build/j");
+    File c= new File(appDir, "build/c");
+    File d= new File(appDir, "build/d");
     File p= new File(appDir, "patch");
     File b= new File(appDir, "target");
 
     c.mkdirs();
     if (!_loaded) {
       findUrls(p);
+      addUrl(j);
       addUrl(c);
+      findUrls(d);
       findUrls(b);
 
 //      if ( new File(appDir, "WEB-INF").exists() ) {

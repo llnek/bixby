@@ -16,6 +16,8 @@
 
   (:require [boot.task.built-in :refer [uber aot]]
             [clojure.tools.logging :as log]
+            [clojure.data.json :as js]
+            [cemerick.pomegranate :as pom]
             [clojure.java.io :as io]
             [boot.core :as bc :refer :all]
             [clojure.string :as cs]
@@ -472,6 +474,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn BootSyncCPath ""
+
+  [& paths]
+
+  (doseq [p paths]
+    (pom/add-classpath p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn BootEnvPaths ""
 
   [& [options]]
@@ -526,7 +537,43 @@
     (doseq [k (keys options)]
       (when (nil? (get-env k))
         (se! options k nil)))
+
+    (BootSyncCPath (str (ge :jzzDir) "/"))
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BootSpit ""
+
+  [^String s file]
+
+  (spit file s :encoding "utf-8"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BootSpitJson ""
+
+  [json file]
+
+  (BootSpit (js/write-str json) file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BootSlurp ""
+
+  ^String
+  [file]
+
+  (slurp file :encoding "utf-8"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn BootSlurpJson ""
+
+  [file]
+
+  (-> (BootSlurp file)
+      (js/read-str :key-fn keyword)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
