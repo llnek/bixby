@@ -88,17 +88,11 @@
 (defn RStr "Return the string value for this key,
            pms may contain values for positional substitutions."
 
-  (^String
-    [^ResourceBundle bundle
-     ^String pkey]
+  ^String
+  [^ResourceBundle bundle ^String pkey & pms]
 
-    (RStr bundle pkey []))
-
-  (^String
-    [^ResourceBundle bundle
-    ^String pkey
-    pms]
-
+  (if (empty? pkey)
+    ""
     (let [kv (nsb (.getString bundle pkey))
           pc (count pms) ]
       ;;(log/debug "RStr key = " pkey ", value = "kv)
@@ -108,9 +102,17 @@
          (recur (StringUtils/replace src
                                      "{}"
                                      (nsb (nth pms pos)) 1)
-                (inc pos)))))))
+                (inc pos)))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn RStr* ""
 
-(def ^:private resources-eof nil)
+  [^ResourceBundle bundle & pms]
+
+  (map #(apply RStr bundle (first %) (drop 1 %)) pms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 

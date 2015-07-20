@@ -199,12 +199,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FlattenNil "Get rid of any nil(s) in a sequence."
+(defmacro FlattenNil "Get rid of any nil(s) in a sequence."
 
   ;; a vector
   [somesequence]
 
-  (into [] (remove nil? somesequence)))
+  `(into [] (remove nil? ~somesequence)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1262,7 +1262,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro raise! ""
+
+  [cz & [p1 p2]]
+
+  (cond
+    (= String (class p1))
+    (if (and (class p2)
+             (.isAssignableFrom Throwable (class p2)))
+      `(throw (new ~cz ^String ~p1 ^Throwable ~p2))
+      `(throw (new ~cz ^String p1)))
+    (and (class p1)
+         (.isAssignableFrom Throwable (class p1)))
+    `(throw (new ~cz ^Throwable p1))
+    :else
+    `(throw (new ~cz))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (ns-unmap *ns* '->TypeNichts)
 (ns-unmap *ns* '->MubleObj)
-(def ^:private core-eof nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 

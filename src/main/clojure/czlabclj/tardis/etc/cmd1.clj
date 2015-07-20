@@ -25,6 +25,7 @@
             [czlabclj.xlib.util.core
              :refer [notnil?
              NiceFPath
+             raise!
              GetCwd
              IsWindows?
              Stringify
@@ -43,6 +44,8 @@
              MakeKeypair
              MakeSSv1PKCS12
              MakeCsrReq]])
+
+  (:refer-clojure :rename {first fst second snd last lst})
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
@@ -78,9 +81,8 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 1)
-      (CreateApp (first args)
-                 (second args))
-      (throw (CmdHelpError.)))
+      (CreateApp (fst args) (snd args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,13 +92,9 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop 1 args)
-        tasks (if (empty? args)
-                ["dev"]
-                args)]
-    (apply ExecBootScript
-           (GetHomeDir)
-           (GetCwd) tasks)
+        args (drop 1 args)]
+    (->> (if (empty? args) ["dev"] args)
+         (apply ExecBootScript (GetHomeDir) (GetCwd)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,8 +107,8 @@
         args (drop 1 args)]
     (if (> (count args) 0)
       (BundleApp (GetHomeDir)
-                 (GetCwd) (first args))
-      (throw (CmdHelpError.)))
+                 (GetCwd) (fst args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,13 +118,9 @@
   [^Job j]
 
   (let [args (.getLastResult j)
-        args (drop 1 args)
-        tasks (if (empty? args)
-                ["tst"]
-                args)]
-    (apply ExecBootScript
-           (GetHomeDir)
-           (GetCwd) tasks)
+        args (drop 1 args)]
+    (->> (if (empty? args) ["tst"] args)
+         (apply ExecBootScript (GetHomeDir) (GetCwd) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,7 +139,7 @@
         args (.getLastResult j)
         args (drop 1 args)
         s2 (if (> (count args) 0)
-             (first args)
+             (fst args)
              "")
         home (GetHomeDir)]
     ;; background job is handled differently on windows
@@ -177,8 +171,8 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 0)
-      (PublishSamples (first args))
-      (throw (CmdHelpError.)))
+      (PublishSamples (fst args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -322,10 +316,10 @@
   (if-let [res (promptQuestions (merge (make-csr-qs @SKARO-RSBUNDLE)
                                        (make-key-qs @SKARO-RSBUNDLE))
                                 "cn") ]
-    (let [dn (first res)
-          rc (last res)
-          ff (io/file (:fn rc))
-          now (Date.) ]
+    (let [dn (fst res)
+          rc (lst res)
+          now (Date.)
+          ff (io/file (:fn rc))]
       (println "DN entered: " dn)
       (MakeSSv1PKCS12 dn
                       (Pwdify (:pwd rc))
@@ -345,8 +339,8 @@
   []
 
   (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) "cn") ]
-    (let [dn (first res)
-          rc (last res)
+    (let [dn (fst res)
+          rc (lst res)
           [req pkey]
           (MakeCsrReq (ConvLong (:size rc) 1024)
                       dn
@@ -369,10 +363,10 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (with-local-vars [rc true]
-      (condp = (first args)
+      (condp = (fst args)
         "keypair"
         (if (> (count args) 1)
-          (genKeyPair (second args))
+          (genKeyPair (snd args))
           (var-set rc false))
         "password"
         (generatePassword 12)
@@ -386,7 +380,7 @@
         (csrfile)
         (var-set rc false))
       (when-not @rc)
-        (throw (CmdHelpError.)))
+        (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -396,7 +390,7 @@
   [text]
 
   (let [^PasswordAPI p (Pwdify text) ]
-    (println (first (.hashed p)))
+    (println (fst (.hashed p)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -408,8 +402,8 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 0)
-      (genHash (first args))
-      (throw (CmdHelpError.)))
+      (genHash (fst args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,8 +425,8 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 1)
-      (encrypt (first args) (second args))
-      (throw (CmdHelpError.)))
+      (encrypt (fst args) (snd args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -454,8 +448,8 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 1)
-      (decrypt (first args) (second args))
-      (throw (CmdHelpError.)))
+      (decrypt (fst args) (snd args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -481,7 +475,7 @@
 
   [j]
 
-  (throw (CmdHelpError.)))
+  (raise! CmdHelpError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -491,7 +485,7 @@
 
   (let [sep (System/getProperty "line.separator")
         fs (IO/listFiles dir "jar" false) ]
-    (doseq [f (seq fs) ]
+    (doseq [f fs]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""
                       (NiceFPath f)
@@ -519,10 +513,10 @@
           (cstr/replace "${APP.NAME}" app)
           (cstr/replace (str "${" ulang ".SRC}")
                         (NiceFPath (io/file cwd
-                                            "src" "main" lang)))
+                                            "src/main" lang)))
           (cstr/replace "${TEST.SRC}"
                         (NiceFPath (io/file cwd
-                                            "src" "test" lang)))))
+                                            "src/test" lang)))))
     (.mkdirs (io/file cwd DN_BUILD DN_CLASSES))
     (scanJars (io/file (GetHomeDir) DN_DIST) sb)
     (scanJars (io/file (GetHomeDir) DN_LIB) sb)
@@ -545,9 +539,9 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (and (> (count args) 1)
-             (= "eclipse" (first args)))
-      (genEclipseProj (second args))
-      (throw (CmdHelpError.)))
+             (= "eclipse" (fst args)))
+      (genEclipseProj (snd args))
+      (raise! CmdHelpError))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

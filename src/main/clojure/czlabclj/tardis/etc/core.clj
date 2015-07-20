@@ -14,7 +14,7 @@
 
   czlabclj.tardis.etc.core
 
-  (:require [czlabclj.xlib.i18n.resources :refer [GetResource RStr]]
+  (:require [czlabclj.xlib.i18n.resources :refer [GetResource RStr RStr*]]
             [czlabclj.xlib.util.core :refer [test-cond MakeMMap]]
             [czlabclj.xlib.util.str :refer [MakeString]]
             [czlabclj.xlib.util.scheduler :refer [NulScheduler]]
@@ -45,30 +45,31 @@
 
   [rcb]
 
-  [[(RStr rcb "usage.cmdline") ""]
-   [(RStr rcb "usage.new") (RStr rcb "usage.new.desc")]
-   [(RStr rcb "usage.podify")  (RStr rcb "usage.podify.desc")]
+  (partition 2
+    (RStr* rcb
+           [ "usage.cmdline"] []
+           ["usage.new"] ["usage.new.desc"]
+           ["usage.podify"] ["usage.podify.desc"]
+           ["usage.ide"] [ "usage.ide.desc"]
+           [ "usage.build"] [ "usage.build.desc"]
+           [ "usage.test"] [ "usage.test.desc"]
 
-   [(RStr rcb "usage.ide") (RStr rcb "usage.ide.desc")]
-   [(RStr rcb "usage.build") (RStr rcb "usage.build.desc")]
-   [(RStr rcb "usage.test") (RStr rcb "usage.test.desc")]
+           [ "usage.debug"] ["usage.debug.desc"]
+           [ "usage.start"] [ "usage.start.desc"]
 
-   [(RStr rcb "usage.debug") (RStr rcb "usage.debug.desc")]
-   [(RStr rcb "usage.start") (RStr rcb "usage.start.desc")]
+           [ "usage.gen.keypair"] [ "usage.gen.keypair.desc"]
+           [ "usage.gen.key"] [ "usage.gen.key.desc"]
+           [ "usage.gen.pwd"] [ "usage.gen.pwd.desc"]
+           [ "usage.gen.csr"] [ "usage.gen.csr.desc"]
+           [ "usage.gen.guid"] [ "usage.gen.guid.desc"]
+           [ "usage.encrypt"] [ "usage.encrypt.desc"]
+           [ "usage.decrypt"] [ "usage.decrypt.desc"]
+           [ "usage.hash"] [ "usage.hash.desc"]
+           [ "usage.testjce"] ["usage.testjce.desc"]
 
-   [(RStr rcb "usage.gen.keypair") (RStr rcb "usage.gen.keypair.desc")]
-   [(RStr rcb "usage.gen.key") (RStr rcb "usage.gen.key.desc")]
-   [(RStr rcb "usage.gen.pwd") (RStr rcb "usage.gen.pwd.desc")]
-   [(RStr rcb "usage.gen.csr") (RStr rcb "usage.gen.csr.desc")]
-   [(RStr rcb "usage.gen.guid") (RStr rcb "usage.gen.guid.desc")]
-   [(RStr rcb "usage.encrypt") (RStr rcb "usage.encrypt.desc")]
-   [(RStr rcb "usage.decrypt") (RStr rcb "usage.decrypt.desc")]
-   [(RStr rcb "usage.hash") (RStr rcb "usage.hash.desc")]
-   [(RStr rcb "usage.testjce") (RStr rcb "usage.testjce.desc")]
-
-   [(RStr rcb "usage.demo") (RStr rcb "usage.demo.desc")]
-   [(RStr rcb "usage.version") (RStr rcb "usage.version.desc")]
-   [(RStr rcb "usage.help") ""]])
+           [ "usage.demo"] [ "usage.demo.desc"]
+           [ "usage.version"] [ "usage.version.desc"]
+           [ "usage.help"] [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,7 +153,7 @@
 ;;
 (defn BootAndRun ""
 
-  [^File home ^ResourceBundle rcb args]
+  [^File home ^ResourceBundle rcb & args]
 
   (let [wf (reify WorkFlowEx
              (startWith [_]

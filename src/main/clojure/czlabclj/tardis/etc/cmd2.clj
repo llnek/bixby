@@ -26,6 +26,7 @@
               GetCwd
               juid
               IsWindows?
+              raise!
               NiceFPath]]
             [czlabclj.xlib.util.files
              :refer
@@ -38,6 +39,8 @@
               CopyFiles
               Unzip
               Mkdirs]])
+
+  (:refer-clojure :rename {first fst second snd last lst})
 
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr]
@@ -174,8 +177,8 @@
     (CreateBasic out dname (mk-demo-path dname))
     (CopyFiles demo (io/file top DN_CONF) "conf")
     (CopyFiles demo src "java")
-    (DeleteDir (io/file top "src" "main" "clojure"))
-    (DeleteDir (io/file top "src" "test" "clojure"))
+    ;;(DeleteDir (io/file top "src" "main" "clojure"))
+    ;;(DeleteDir (io/file top "src" "test" "clojure"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -195,8 +198,8 @@
       (CreateBasic out dname dom))
     (CopyFiles demo (io/file top DN_CONF) "conf")
     (CopyFiles demo src "clj")
-    (DeleteDir (io/file top "src" "main" "java"))
-    (DeleteDir (io/file top "src" "test" "java"))
+    ;;(DeleteDir (io/file top "src" "main" "java"))
+    ;;(DeleteDir (io/file top "src" "test" "java"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,7 +307,6 @@
                          DN_CONF DN_CFG
                          "src" "build" "patch" "target"]]
         (Mkdirs (io/file appDir s)))
-      (Mkdirs (io/file appDir "build" "classes"))
       (doseq [s [ "clojure" "java"]]
         (Mkdirs (io/file appDir "src" "main" s appDomainPath))
         (Mkdirs (io/file appDir "src" "test" s appDomainPath)))
@@ -318,7 +320,6 @@
       (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
         (CopyFileToDir (io/file hhh DN_CFGAPP s)
                        (io/file appDir "src/test/java" appDomainPath)))
-
 
       (doseq [s ["build.boot" "pom.xml"]]
         (CopyFileToDir (io/file hhh DN_CFGAPP s) appDir))

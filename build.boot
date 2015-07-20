@@ -471,6 +471,7 @@
   ""
   []
 
+  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib"))
   (let [m (map
             #(apply % [])
             [ #'cljUtil #'cljCrypto #'cljDbio #'cljNet #'cljJMX ])
@@ -488,7 +489,7 @@
                                         "demo/**")}]]) ]
     (->> (if *genjars*
            (concat m [t2 t3])
-           m)
+           (concat m [t2]))
          (a/RunTarget "clj/xlib"))
   ))
 
