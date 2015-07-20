@@ -35,6 +35,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn TrimL "" [^String src ^String s] (StringUtils/stripStart src s))
+(defn TrimR "" [^String src ^String s] (StringUtils/stripEnd src s))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn HasNocase? "Returns true if this sub-string
                  is inside this bigger string."
 

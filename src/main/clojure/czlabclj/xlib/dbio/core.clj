@@ -1096,6 +1096,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn DbioSetFlds "Set many field values."
+
+  [pojo fld value & fvs]
+
+  (->> (map (fn [a] [(keyword (first a)) (last a)]) (partition 2 fvs))
+       (flatten)
+       (apply assoc pojo (keyword fld) value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn DbioSetFld "Set value to a field."
 
   [pojo fld value]

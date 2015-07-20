@@ -7,19 +7,21 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.core.sys
 
+  (:require [czlabclj.xlib.util.core :refer [Muble MakeMMap NiceFPath]]
+            [czlabclj.xlib.util.files :refer [ReadOneFile ReadOneUrl]])
+
   (:require [clojure.tools.logging :as log]
+            [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.util.core :only [Muble MakeMMap NiceFPath]]
-        [czlabclj.xlib.util.files :only [ReadOneFile ReadOneUrl]]
-        [czlabclj.tardis.core.consts])
+  (:use [czlabclj.tardis.core.consts])
 
   (:import  [org.apache.commons.io FilenameUtils FileUtils]
             [java.io File]
@@ -110,14 +112,14 @@
                           4. initialize"
 
   ^czlabclj.tardis.core.sys.Elmt
-  [c options]
+  [co options]
 
   (let [{:keys [props rego ctx]} options]
-    (when-not (nil? ctx) (CompContextualize c ctx))
-    (when-not (nil? rego) (CompCompose c rego))
-    (when-not (nil? props) (CompConfigure c props))
-    (CompInitialize c)
-    c
+    (when-not (nil? ctx) (CompContextualize co ctx))
+    (when-not (nil? rego) (CompCompose co rego))
+    (when-not (nil? props) (CompConfigure co props))
+    (CompInitialize co)
+    co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,12 +146,12 @@
   ^String
   [^File appDir ^String confile]
 
-  (let [cs (-> (io/file appDir DN_CONF confile)
-               (ReadOneFile))
-        rc (StringUtils/replace cs
-                                "${appdir}"
-                                (NiceFPath appDir)) ]
-    (log/debug "[" confile "]\n" rc)
+  (let [s (-> (io/file appDir
+                       DN_CONF confile)
+              (ReadOneFile))
+        rc (cs/replace s
+                       "${appdir}" (NiceFPath appDir)) ]
+    (log/debug "[" confile "]" rc)
     rc
   ))
 
@@ -202,6 +204,5 @@
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private sys-eof nil)
+;;EOF
 

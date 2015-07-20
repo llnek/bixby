@@ -7,18 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.auth.model
 
+  (:require [czlabclj.xlib.i18n.resources :refer [RStr]]
+            [czlabclj.xlib.util.str :refer [ToKW]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.i18n.resources :only [RStr]]
-        [czlabclj.xlib.util.str :only [ToKW]]
-        [czlabclj.xlib.dbio.drivers]
+  (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.postgresql]
         [czlabclj.xlib.dbio.h2]
@@ -107,7 +108,7 @@
       :oracle Oracle
       (DbioError (RStr (I18N/getBase)
                        "db.unknown"
-                       [ (name dbtype) ])))
+                       (name dbtype))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,6 +145,5 @@
   (spit file (GenerateAuthPluginDDL dbtype) :encoding "utf-8"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private model-eof nil)
+;;EOF
 

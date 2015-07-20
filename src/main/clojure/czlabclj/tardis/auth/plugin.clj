@@ -7,28 +7,30 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.auth.plugin
 
+  (:require [czlabclj.xlib.dbio.connect :refer [DbioConnectViaPool]]
+            [czlabclj.xlib.i18n.resources :refer [RStr]]
+            [czlabclj.xlib.util.core
+             :refer
+             [TryC notnil? Stringify
+              MakeMMap juid
+              test-nonil LoadJavaProps]]
+            [czlabclj.xlib.crypto.codec :refer [Pwdify]]
+            [czlabclj.xlib.util.str :refer [nsb hgl? strim]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
+            [czlabclj.xlib.net.comms :refer [GetFormFields]])
+
   (:require [clojure.tools.logging :as log]
+            [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.dbio.connect :only [DbioConnectViaPool]]
-        [czlabclj.xlib.i18n.resources :only [RStr]]
-        [czlabclj.xlib.util.core
-         :only
-         [TryC notnil? Stringify
-          MakeMMap juid
-          test-nonil LoadJavaProps]]
-        [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.xlib.util.str :only [nsb hgl? strim]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.net.comms :only [GetFormFields]]
-        [czlabclj.tardis.core.consts]
+  (:use [czlabclj.tardis.core.consts]
         [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.webss]
@@ -107,8 +109,7 @@
   [^SQLr sql ^String role ^String desc]
 
   (.insert sql (-> (DbioCreateObj :czc.tardis.auth/AuthRole)
-                   (DbioSetFld :name role)
-                   (DbioSetFld :desc desc))
+                   (DbioSetFlds :name role :desc desc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
