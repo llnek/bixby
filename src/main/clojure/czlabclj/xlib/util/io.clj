@@ -7,18 +7,18 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Util functions related to stream/io."
       :author "kenl" }
 
   czlabclj.xlib.util.io
 
+  (:require [czlabclj.xlib.util.core :refer [Try!]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cstr])
-
-  (:use [czlabclj.xlib.util.core :only [Try!]])
 
   (:import  [java.util.zip GZIPInputStream GZIPOutputStream]
             [java.io ByteArrayInputStream
@@ -488,6 +488,5 @@
       (IOUtils/toCharArray (Streamify bits) charSet))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private io-eof nil)
+;;EOF
 

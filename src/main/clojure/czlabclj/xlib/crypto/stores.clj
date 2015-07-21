@@ -7,21 +7,21 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.crypto.stores
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.crypto.core
+             :refer
+             [NewAlias CertAliases PKeyAliases
+              GetPkcsStore GetJksStore]]
+            [czlabclj.xlib.util.core :refer [ThrowBadArg]]
+            [czlabclj.xlib.util.str :refer [nsb hgl?]])
 
-  (:use [czlabclj.xlib.crypto.core
-         :only
-         [NewAlias CertAliases PKeyAliases
-          GetPkcsStore GetJksStore]]
-        [czlabclj.xlib.util.core :only [ThrowBadArg]]
-        [czlabclj.xlib.util.str :only [nsb hgl?]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [java.security.cert CertificateFactory X509Certificate Certificate]
             [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI Crypto]
@@ -150,7 +150,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private stores-eof nil)
+;;EOF
 
 

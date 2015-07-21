@@ -7,20 +7,20 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.netty.request
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core
+            :refer
+            [notnil? Try! TryC SafeGetJsonString
+             SafeGetJsonBool SafeGetJsonInt]]
+            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
-  (:use [czlabclj.xlib.util.core
-        :only
-        [notnil? Try! TryC SafeGetJsonString
-         SafeGetJsonBool SafeGetJsonInt]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [io.netty.handler.codec.http HttpMessage HttpContent HttpRequest]
             [io.netty.buffer Unpooled]
@@ -86,6 +86,5 @@
   HTTP-REQ-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private request-eof nil)
+;;EOF
 

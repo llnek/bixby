@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 
 (ns ^{:doc ""
@@ -15,19 +15,20 @@
 
   czlabclj.xlib.dbio.sql
 
+  (:require [czlabclj.xlib.util.meta :refer [BytesClass CharsClass]]
+            [czlabclj.xlib.util.str
+             :refer
+             [sname ucase lcase hgl?
+              AddDelim! nsb strim]]
+            [czlabclj.xlib.util.io :refer [ReadChars ReadBytes ]]
+            [czlabclj.xlib.util.core
+             :refer
+             [FlattenNil notnil? NowJTstamp nnz]]
+            [czlabclj.xlib.util.dates :refer [GmtCal]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.meta :only [BytesClass CharsClass]]
-        [czlabclj.xlib.util.str
-         :only
-         [sname ucase lcase hgl?
-          AddDelim! nsb strim]]
-        [czlabclj.xlib.util.io :only [ReadChars ReadBytes ]]
-        [czlabclj.xlib.util.core
-         :only
-         [FlattenNil notnil? NowJTstamp nnz]]
-        [czlabclj.xlib.dbio.core]
-        [czlabclj.xlib.util.dates :only [GmtCal]])
+  (:use [czlabclj.xlib.dbio.core])
 
   (:import  [com.zotohlab.frwk.dbio MetaCache
              SQLr DBIOError OptLockError]
@@ -658,6 +659,5 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private sql-eof nil)
+;;EOF
 

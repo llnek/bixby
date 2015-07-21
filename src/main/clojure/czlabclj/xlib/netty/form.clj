@@ -7,19 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.netty.form
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [ThrowIOE notnil? Bytesify]]
+            [czlabclj.xlib.util.io :refer [NewlyTempFile CloseQ ByteOS]]
+            [czlabclj.xlib.netty.io :refer [GetHdr]]
+            [czlabclj.xlib.util.str :refer [lcase strim nsb hgl?]])
 
-  (:use [czlabclj.xlib.util.core :only [ThrowIOE notnil? Bytesify]]
-        [czlabclj.xlib.util.io :only [NewlyTempFile CloseQ ByteOS]]
-        [czlabclj.xlib.netty.io :only [GetHdr]]
-        [czlabclj.xlib.util.str :only [lcase strim nsb hgl?]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [java.io OutputStream IOException File ByteArrayOutputStream]
             [io.netty.buffer Unpooled]
@@ -241,6 +241,5 @@
   HTTP-FORMPOST-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private form-eof nil)
+;;EOF
 

@@ -7,19 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "This is a utility class that provides various MIME related functionality."
       :author "kenl" }
 
   czlabclj.xlib.util.mime
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [Bytesify Try! IntoMap]]
+            [czlabclj.xlib.util.meta :refer [BytesClass]]
+            [czlabclj.xlib.util.str :refer [lcase ucase nsb hgl?]]
+            [czlabclj.xlib.util.io :refer [Streamify]])
 
-  (:use [czlabclj.xlib.util.core :only [Bytesify Try! IntoMap]]
-        [czlabclj.xlib.util.meta :only [BytesClass]]
-        [czlabclj.xlib.util.str :only [lcase ucase nsb hgl?]]
-        [czlabclj.xlib.util.io :only [Streamify]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [org.apache.commons.lang3 StringUtils]
             [java.io IOException InputStream File]
@@ -278,6 +278,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private mime-eof nil)
+;;EOF
 

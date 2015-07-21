@@ -28,7 +28,6 @@
               IsWindows?
               prn!!
               prn!
-              raise!
               NiceFPath]]
             [czlabclj.xlib.util.files
              :refer
@@ -114,7 +113,7 @@
               (if-let [tkn (last t) ]
                 (TrimL tkn ".")
                 (first t))) ]
-    (when (nil? app) (raise! CmdHelpError))
+    (when (nil? app) (throw (CmdHelpError.)))
     (case verb
       ("mvc" "web")
       (CreateNetty cwd app path)
@@ -122,7 +121,7 @@
       (CreateJetty cwd app path)
       "basic"
       (CreateBasic cwd app path)
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

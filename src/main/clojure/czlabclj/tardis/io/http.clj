@@ -7,24 +7,33 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.http
 
+  (:require [czlabclj.xlib.util.str :refer [lcase hgl? nsb strim]]
+            [czlabclj.xlib.util.core
+             :refer
+             [Muble
+              notnil?
+              juid
+              TryC
+              spos?
+              NextLong
+              ToJavaInt
+              SubsVar
+              MakeMMap
+              test-cond
+              Stringify]]
+            [czlabclj.xlib.net.comms :refer [ParseBasicAuth]]
+            [czlabclj.xlib.crypto.codec :refer [Pwdify]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
-        [czlabclj.xlib.util.core
-         :only
-         [Muble notnil? juid TryC spos? NextLong
-          ToJavaInt SubsVar
-          MakeMMap test-cond Stringify]]
-        [czlabclj.xlib.crypto.ssl]
-        [czlabclj.xlib.net.comms :only [ParseBasicAuth]]
-        [czlabclj.xlib.crypto.codec :only [Pwdify]]
+  (:use [czlabclj.xlib.crypto.ssl]
         [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core]
@@ -302,6 +311,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private http-eof nil)
+;;EOF
 

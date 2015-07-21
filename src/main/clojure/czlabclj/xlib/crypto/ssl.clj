@@ -7,20 +7,20 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.crypto.ssl
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.crypto.stores :refer [MakeCryptoStore]]
+            [czlabclj.xlib.util.core :refer [NewRandom]]
+            [czlabclj.xlib.crypto.core
+             :refer
+             [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
 
-  (:use [czlabclj.xlib.crypto.stores :only [MakeCryptoStore]]
-        [czlabclj.xlib.util.core :only [NewRandom]]
-        [czlabclj.xlib.crypto.core
-         :only
-         [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [javax.net.ssl X509TrustManager TrustManager]
             [javax.net.ssl SSLEngine SSLContext]
@@ -70,6 +70,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private ssl-eof nil)
+;;EOF
 

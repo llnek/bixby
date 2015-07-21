@@ -14,11 +14,11 @@
 
   demo.pop3.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
+            [czlabclj.xlib.util.core :refer [notnil?]]
+            [czlabclj.xlib.util.str :refer [nsb]])
 
-  (:use [czlabclj.xlib.util.process :only [DelayExec]]
-        [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [org.apache.commons.io IOUtils]
@@ -76,6 +76,5 @@
   (dispose [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

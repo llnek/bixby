@@ -14,11 +14,11 @@
 
   czlabclj.xlib.i18n.resources
 
+  (:require [czlabclj.xlib.util.meta :refer [GetCldr]]
+            [czlabclj.xlib.util.str :refer [nsb]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
-
-  (:use [czlabclj.xlib.util.meta :only [GetCldr]]
-        [czlabclj.xlib.util.str :only [nsb]])
 
   (:import  [java.util PropertyResourceBundle ResourceBundle Locale]
             [org.apache.commons.lang3 StringUtils]

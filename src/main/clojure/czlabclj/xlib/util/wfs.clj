@@ -7,22 +7,23 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.util.wfs
 
+  (:require [czlabclj.xlib.util.scheduler
+             :refer
+             [NulScheduler MakeScheduler]]
+            [czlabclj.xlib.util.core
+             :refer
+             [Cast? Muble MakeMMap NextLong]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.scheduler
-         :only
-         [NulScheduler MakeScheduler]]
-        [czlabclj.xlib.util.consts]
-        [czlabclj.xlib.util.core
-         :only
-         [Cast? Muble MakeMMap NextLong]])
+  (:use [czlabclj.xlib.util.consts])
 
   (:import  [com.zotohlab.wflow If FlowNode Activity
              CounterExpr BoolExpr Nihil
@@ -211,6 +212,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private wfs-eof nil)
+;;EOF
 

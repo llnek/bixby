@@ -7,23 +7,27 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.loops
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [NextLong
+              spos?
+              Muble
+              TryC]]
+            [czlabclj.xlib.util.process :refer [Coroutine SafeWait]]
+            [czlabclj.xlib.util.dates :refer [ParseDate]]
+            [czlabclj.xlib.util.meta :refer [GetCldr]]
+            [czlabclj.xlib.util.str :refer [nsb hgl? strim]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [NextLong spos? Muble TryC]]
-        [czlabclj.xlib.util.process :only [Coroutine SafeWait]]
-        [czlabclj.xlib.util.dates :only [ParseDate]]
-        [czlabclj.xlib.util.meta :only [GetCldr]]
-        [czlabclj.xlib.util.str :only [nsb hgl? strim]]
-        [czlabclj.tardis.core.sys]
+  (:use [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core])
 
   (:import  [java.util Date Timer TimerTask]
@@ -340,6 +344,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private loops-eof nil)
+;;EOF
 

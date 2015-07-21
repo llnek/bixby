@@ -7,19 +7,20 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.dbio.h2
 
+  (:require [czlabclj.xlib.util.core :refer [test-nonil test-nestr]]
+            [czlabclj.xlib.util.str :refer [nsb]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.util.core :only [test-nonil test-nestr]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.dbio.drivers]
+  (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core])
 
   (:import  [org.apache.commons.lang3 StringUtils]
@@ -118,7 +119,7 @@
 ;;
 (defn CloseH2Db "Close an existing H2 database."
 
-  [^File dbFileDir 
+  [^File dbFileDir
    ^String dbid
    ^String user
    ^PasswordAPI pwdObj]
@@ -139,6 +140,5 @@
 
 ;;(println (GetDDL (MakeMetaCache testschema) (H2.) ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private h2-eof nil)
+;;EOF
 

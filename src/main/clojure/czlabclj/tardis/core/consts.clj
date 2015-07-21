@@ -35,11 +35,12 @@
 (def ^String DN_TARGET "target")
 (def ^String DN_BUILD "build")
 
+(def ^String DN_CLASSES "classes" )
+(def ^String DN_BIN "bin" )
 (def ^String DN_BLOCKS  "ems" )
 (def ^String DN_BOOT "boot" )
 (def ^String DN_EXEC "exec" )
 (def ^String DN_CONF "conf" )
-(def ^String DN_CLASSES "classes" )
 (def ^String DN_LIB "lib" )
 
 (def ^String DN_CFGAPP "etc/app" )

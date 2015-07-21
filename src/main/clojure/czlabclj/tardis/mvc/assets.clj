@@ -7,23 +7,26 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.mvc.assets
 
+  (:require [czlabclj.xlib.util.core :refer [Try! notnil? NiceFPath]]
+            [czlabclj.xlib.util.mime :refer [GuessContentType]]
+            [czlabclj.xlib.util.str :refer [lcase nsb]]
+            [czlabclj.xlib.util.files
+             :refer
+             [ReadFileBytes
+              WriteOneFile]]
+            [czlabclj.xlib.util.io :refer [Streamify]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [Try! notnil? NiceFPath]]
-        [czlabclj.xlib.util.mime :only [GuessContentType]]
-        [czlabclj.xlib.util.str :only [lcase nsb]]
-        [czlabclj.xlib.netty.io]
-        [czlabclj.xlib.util.files
-         :only [ReadFileBytes WriteOneFile]]
-        [czlabclj.xlib.util.io :only [Streamify]]
-        [czlabclj.tardis.io.http])
+  (:use [czlabclj.tardis.io.http]
+        [czlabclj.xlib.netty.io])
 
   (:import  [io.netty.handler.codec.http HttpRequest HttpResponse
              HttpResponseStatus
@@ -237,6 +240,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private assets-eof nil)
+;;EOF
 

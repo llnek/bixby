@@ -7,20 +7,20 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "General file related utilities."
       :author "kenl" }
 
   czlabclj.xlib.util.files
 
+  (:require [czlabclj.xlib.util.core :refer [notnil?]]
+            [czlabclj.xlib.util.str :refer [nsb]]
+            [czlabclj.xlib.util.meta :refer [IsBytes?]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cstr])
-
-  (:use [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.meta :only [IsBytes?]])
 
   (:import  [org.apache.commons.io.filefilter FileFileFilter
                                               FileFilterUtils]
@@ -314,6 +314,5 @@
   (doto f (.mkdirs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private files-eof nil)
+;;EOF
 

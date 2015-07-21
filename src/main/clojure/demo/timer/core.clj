@@ -14,12 +14,12 @@
 
   demo.timer.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
+            [czlabclj.xlib.util.core :refer [notnil?]]
+            [czlabclj.xlib.util.str :refer [nsb]]
+            [czlabclj.xlib.util.wfs :refer [SimPTask]])
 
-  (:use [czlabclj.xlib.util.process :only [DelayExec]]
-        [czlabclj.xlib.util.core :only [notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
             [java.util.concurrent.atomic AtomicInteger]
@@ -49,7 +49,6 @@
         (println "-----> once-only!!: " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 
 

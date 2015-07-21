@@ -14,6 +14,28 @@
 
   czlabclj.tardis.impl.exec
 
+  (:require [czlabclj.xlib.util.str :refer [nsb strim hgl? ToKW]]
+            [czlabclj.xlib.util.mime :refer [SetupCache]]
+            [czlabclj.xlib.util.files :refer [Unzip]]
+            [czlabclj.xlib.util.process :refer [SafeWait]]
+            [czlabclj.tardis.impl.dfts :refer [MakePodMeta]]
+            [czlabclj.xlib.util.core
+             :refer
+             [LoadJavaProps
+              test-nestr
+              NiceFPath
+              TryC
+              notnil?
+              NewRandom
+              GetCwd
+              ConvLong
+              MakeMMap
+              juid
+              test-nonil]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
+            [czlabclj.xlib.util.files
+             :refer [Mkdirs ReadOneUrl]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
@@ -22,20 +44,6 @@
         [czlabclj.tardis.impl.dfts]
         [czlabclj.xlib.jmx.core]
         [czlabclj.tardis.impl.ext])
-
-  (:require [czlabclj.xlib.util.str :refer [nsb strim hgl? ToKW]]
-            [czlabclj.xlib.util.mime :refer [SetupCache]]
-            [czlabclj.xlib.util.files :refer [Unzip]]
-            [czlabclj.xlib.util.process :refer [SafeWait]]
-            [czlabclj.tardis.impl.dfts :refer [MakePodMeta]]
-            [czlabclj.xlib.util.core
-             :refer
-             [LoadJavaProps test-nestr NiceFPath TryC
-              notnil? NewRandom GetCwd
-              ConvLong MakeMMap juid test-nonil]]
-            [czlabclj.xlib.util.format :refer [ReadEdn]]
-            [czlabclj.xlib.util.files
-             :refer [Mkdirs ReadOneUrl]])
 
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
@@ -279,7 +287,7 @@
         jmx  (K_JMXMGM cf) ]
 
     (SetupCache (-> (io/file base DN_CFG
-                             "app" "mime.properties")
+                             "app/mime.properties")
                     (io/as-url)))
 
     (log/info "Initializing component: ExecVisor: " co)

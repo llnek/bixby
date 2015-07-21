@@ -7,20 +7,26 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.core
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [NextLong
+              notnil?
+              ThrowIOE
+              MakeMMap
+              ConvToJava
+              TryC]]
+            [czlabclj.xlib.util.str :refer [nsb strim]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [NextLong notnil? ThrowIOE MakeMMap ConvToJava TryC]]
-        [czlabclj.xlib.util.str :only [nsb strim]]
-        [czlabclj.xlib.util.wfs]
+  (:use [czlabclj.xlib.util.wfs]
         [czlabclj.tardis.core.sys])
 
   (:import  [com.zotohlab.frwk.server Component
@@ -351,6 +357,5 @@
 (derive :czc.tardis.io/SocketIO :czc.tardis.io/Emitter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

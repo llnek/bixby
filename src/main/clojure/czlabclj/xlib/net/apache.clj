@@ -7,20 +7,21 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.net.apache
 
+  (:require [czlabclj.xlib.util.str
+             :refer [lcase hgl? strim Embeds? HasNocase?]]
+            [czlabclj.xlib.util.core :refer [ThrowIOE Try!]]
+            [czlabclj.xlib.util.mime :refer [GetCharset]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.str
-         :only [lcase hgl? strim Embeds? HasNocase?]]
-        [czlabclj.xlib.util.core :only [ThrowIOE Try!]]
-        [czlabclj.xlib.net.comms]
-        [czlabclj.xlib.util.mime :only [GetCharset]])
+  (:use [czlabclj.xlib.net.comms])
 
   (:import  [org.apache.http Header StatusLine HttpEntity HttpResponse]
             [java.security.cert X509Certificate CertificateException]
@@ -213,6 +214,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private apache-eof nil)
+;;EOF
 

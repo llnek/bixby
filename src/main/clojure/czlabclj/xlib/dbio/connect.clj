@@ -7,18 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.dbio.connect
 
+  (:require [czlabclj.xlib.util.core :refer [Try!]]
+            [czlabclj.xlib.util.str :refer [nsb]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [Try!]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.dbio.core]
+  (:use [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.composite]
         [czlabclj.xlib.dbio.simple])
         ;;[czlabclj.xlib.dbio.sqlserver]
@@ -98,6 +99,5 @@
     (newSimpleSQLr [this] (SimpleSQLr this)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private connect-eof nil)
+;;EOF
 

@@ -7,18 +7,18 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Functions to enable console questions."
       :author "kenl" }
 
   czlabclj.xlib.util.cmdline
 
+  (:require [ czlabclj.xlib.util.core :refer [IntoMap IsWindows?] ]
+            [ czlabclj.xlib.util.str :refer [strim nsb Has?] ])
+
   (:require [clojure.tools.logging :as log]
             [ clojure.string :as cstr ])
-
-  (:use [ czlabclj.xlib.util.core :only [IntoMap IsWindows?] ]
-        [ czlabclj.xlib.util.str :only [strim nsb Has?] ])
 
   (:import  [java.io BufferedOutputStream
              InputStreamReader OutputStreamWriter]
@@ -171,6 +171,5 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private cmdline-eof nil)
+;;EOF
 

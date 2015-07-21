@@ -14,12 +14,12 @@
 
   demo.tcpip.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
+            [czlabclj.xlib.util.core :refer [Try! notnil?]]
+            [czlabclj.xlib.util.str :refer [nsb]]
+            [czlabclj.xlib.util.wfs :refer [SimPTask]])
 
-  (:use [czlabclj.xlib.util.process :only [DelayExec]]
-        [czlabclj.xlib.util.core :only [Try! notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
             [com.zotohlab.wflow WorkFlow Job FlowNode PTask Delay]
@@ -97,7 +97,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 
 

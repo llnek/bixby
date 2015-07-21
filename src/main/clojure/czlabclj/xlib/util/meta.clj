@@ -7,17 +7,17 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Utility functions for class related or reflection related operations."
       :author "kenl" }
 
   czlabclj.xlib.util.meta
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.str :refer [EqAny? hgl?]]
+            [czlabclj.xlib.util.core :refer [test-nonil]])
 
-  (:use [czlabclj.xlib.util.str :only [EqAny? hgl?]]
-        [czlabclj.xlib.util.core :only [test-nonil]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [java.lang.reflect Member Field Method Modifier]))
 
@@ -355,6 +355,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private meta-eof nil)
+;;EOF
 

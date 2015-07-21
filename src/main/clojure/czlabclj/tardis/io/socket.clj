@@ -7,24 +7,28 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.socket
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [NextLong
+              test-posnum
+              ConvLong
+              spos?]]
+            [czlabclj.xlib.util.process :refer [Coroutine]]
+            [czlabclj.xlib.util.meta :refer [GetCldr]]
+            [czlabclj.xlib.util.io :refer [CloseQ]]
+            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [NextLong test-posnum ConvLong spos?]]
-        [czlabclj.tardis.io.core]
-        [czlabclj.tardis.core.sys]
-        [czlabclj.xlib.util.process :only [Coroutine]]
-        [czlabclj.xlib.util.meta :only [GetCldr]]
-        [czlabclj.xlib.util.io :only [CloseQ]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]])
+  (:use [czlabclj.tardis.io.core]
+        [czlabclj.tardis.core.sys])
 
   (:import  [java.net InetAddress ServerSocket Socket]
             [com.zotohlab.frwk.core Identifiable]
@@ -145,6 +149,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private socket-eof nil)
+;;EOF
 

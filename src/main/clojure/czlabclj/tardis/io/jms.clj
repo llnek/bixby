@@ -7,21 +7,27 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.jms
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [NextLong
+              ThrowIOE
+              Muble
+              MakeMMap
+              juid
+              TryC]]
+            [czlabclj.xlib.crypto.codec :refer [Pwdify]]
+            [czlabclj.xlib.util.str :refer [hgl? nsb]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [NextLong ThrowIOE Muble MakeMMap juid TryC]]
-        [czlabclj.xlib.crypto.codec :only [Pwdify]]
-        [czlabclj.xlib.util.str :only [hgl? nsb]]
-        [czlabclj.tardis.core.sys]
+  (:use [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core])
 
   (:import  [java.util Hashtable Properties ResourceBundle]
@@ -235,6 +241,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private jms-eof nil)
+;;EOF
 

@@ -7,19 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.net.comms
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.str
+             :refer [lcase hgl? strim Embeds? HasNocase?]]
+            [czlabclj.xlib.util.core :refer [ThrowIOE Try!]]
+            [czlabclj.xlib.util.mime :refer [GetCharset]])
 
-  (:use [czlabclj.xlib.util.str
-         :only [lcase hgl? strim Embeds? HasNocase?]]
-        [czlabclj.xlib.util.core :only [ThrowIOE Try!]]
-        [czlabclj.xlib.util.mime :only [GetCharset]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [java.security.cert X509Certificate CertificateException]
             [javax.net.ssl SSLContext SSLEngine X509TrustManager
@@ -249,8 +249,7 @@
       {} )
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (ns-unmap *ns* '->HTTPMsgInfo)
-(def ^:private comms-eof nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 

@@ -14,11 +14,11 @@
 
   czlabclj.tardis.mvc.ftlshim
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.walk :as cw :only [postwalk]])
+  (:require [clojure.walk :as cw :refer [postwalk]]
+            [czlabclj.xlib.util.core :refer [ThrowBadArg]])
 
-  (:use [czlabclj.xlib.util.core :only [ThrowBadArg]])
+  (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io])
 
   (:import [freemarker.template TemplateMethodModelEx
             TemplateBooleanModel
@@ -156,6 +156,5 @@
     (str out)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private ftlshim-eof nil)
+;;EOF
 

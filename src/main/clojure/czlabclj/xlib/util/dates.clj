@@ -7,19 +7,20 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Date related utilities."
       :author "kenl" }
 
   czlabclj.xlib.util.dates
 
+  (:require [czlabclj.xlib.util.str :refer [Has? HasAny? nichts? nsb]]
+            [czlabclj.xlib.util.core :refer [Try!]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.str :only [Has? HasAny? nichts? nsb]]
-        [czlabclj.xlib.util.consts]
-        [czlabclj.xlib.util.core :only [Try!]])
+  (:use [czlabclj.xlib.util.consts])
 
   (:import  [java.text ParsePosition SimpleDateFormat]
             [java.util Locale TimeZone SimpleTimeZone
@@ -283,6 +284,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private dates-eof nil)
+;;EOF
 

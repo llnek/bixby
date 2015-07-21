@@ -7,20 +7,21 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.jmx.bean
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [ThrowBadArg MakeMMap notnil? TryC]]
+            [czlabclj.xlib.util.str :refer [HasAny?]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.meta]
-        [czlabclj.xlib.util.core
-         :only
-         [ThrowBadArg MakeMMap notnil? TryC]]
-        [czlabclj.xlib.util.str :only [HasAny?]])
+  (:use [czlabclj.xlib.util.meta])
 
   (:import  [java.lang Exception IllegalArgumentException]
             [org.apache.commons.lang3 StringUtils]
@@ -431,6 +432,5 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private bean-eof nil)
+;;EOF
 

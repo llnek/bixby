@@ -7,30 +7,27 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.crypto.core
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr]
-            [czlabclj.xlib.util.mime
-             :as mime
-             :only [MaybeStream IsCompressed?
-                    IsEncrypted? IsSigned? ]])
+  (:require [czlabclj.xlib.util.dates :refer [PlusMonths]]
+            [czlabclj.xlib.util.files :refer [WriteOneFile]]
+            [czlabclj.xlib.util.mime :as mime]
+            [czlabclj.xlib.util.io
+             :refer
+             [Streamify ByteOS ResetStream!]]
+            [czlabclj.xlib.util.core
+             :refer
+             [NextInt ThrowIOE ThrowBadArg NewRandom
+              Bytesify TryC Try! notnil? juid GetClassname]]
+            [czlabclj.xlib.util.str :refer [lcase ucase strim nsb hgl?]])
 
-  (:use [czlabclj.xlib.util.dates :only [PlusMonths]]
-        [czlabclj.xlib.util.files :only [WriteOneFile]]
-        [czlabclj.xlib.util.io
-         :only
-         [Streamify ByteOS ResetStream!]]
-        [czlabclj.xlib.util.core
-         :only
-         [NextInt ThrowIOE ThrowBadArg NewRandom
-          Bytesify TryC Try! notnil? juid GetClassname]]
-        [czlabclj.xlib.util.str :only [lcase ucase strim nsb hgl?]])
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as cstr])
 
   (:import  [org.bouncycastle.pkcs.jcajce JcaPKCS10CertificationRequestBuilder]
             [org.bouncycastle.operator OperatorCreationException ContentSigner]
@@ -1504,8 +1501,7 @@
 
   (nth (SSLTrustMgrFactory/getTrustManagers) 0))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (ns-unmap *ns* '->CertDesc)
-(def ^:private core-eof nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 

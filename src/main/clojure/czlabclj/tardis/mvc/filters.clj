@@ -7,32 +7,38 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.mvc.filters
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [notnil?
+              spos?
+              ToJavaInt
+              Muble
+              Try!
+              NiceFPath]]
+            [czlabclj.tardis.io.http :refer [HttpBasicConfig]]
+            [czlabclj.tardis.mvc.assets
+             :refer
+             [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
+            [czlabclj.xlib.util.str :refer [hgl? nsb strim]]
+            [czlabclj.xlib.util.meta :refer [MakeObj]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [notnil? spos? ToJavaInt Muble Try! NiceFPath]]
-        [czlabclj.xlib.netty.filters]
+  (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.io.triggers]
-        [czlabclj.tardis.io.http :only [HttpBasicConfig]]
         [czlabclj.tardis.io.netty]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.core.consts]
-        [czlabclj.tardis.mvc.assets
-         :only
-         [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
         [czlabclj.tardis.mvc.comms]
-        [czlabclj.xlib.util.str :only [hgl? nsb strim]]
-        [czlabclj.xlib.util.meta :only [MakeObj]]
         [czlabclj.xlib.net.routes])
 
   (:import  [org.apache.commons.lang3 StringUtils]
@@ -311,6 +317,5 @@
   (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private filters-eof nil)
+;;EOF
 

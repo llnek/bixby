@@ -7,19 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.util.format
 
+  (:require [czlabclj.xlib.util.files :refer [ReadOneUrl]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
             [clojure.data.json :as js])
-
-  (:use [czlabclj.xlib.util.files :only [ReadOneUrl]])
 
   (:import  [java.net URL]
             [java.io File]))
@@ -92,6 +92,5 @@
            (js/read-str data :key-fn keyfn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private format-eof nil)
+;;EOF
 

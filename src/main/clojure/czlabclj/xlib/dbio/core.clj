@@ -7,28 +7,28 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.dbio.core
 
+  (:require [czlabclj.xlib.util.str
+             :refer
+             [lcase ucase strim Embeds?
+              AddDelim! nsb HasNocase? hgl?]]
+            [czlabclj.xlib.util.format :refer [WriteEdnString]]
+            [czlabclj.xlib.util.core
+             :refer
+             [TryC Try! RootCause StripNSPath
+              Interject notnil? nnz nbf juid]]
+            [czlabclj.xlib.util.meta :refer [ForName]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr]
             [clojure.set :as cset]
             [czlabclj.xlib.crypto.codec :as codec ])
-
-  (:use [czlabclj.xlib.util.str
-         :only
-         [lcase ucase strim Embeds?
-          AddDelim! nsb HasNocase? hgl?]]
-        [czlabclj.xlib.util.format :only [WriteEdnString]]
-        [czlabclj.xlib.util.core
-         :only
-         [TryC Try! RootCause StripNSPath
-          Interject notnil? nnz nbf juid]]
-        [czlabclj.xlib.util.meta :only [ForName]])
 
   (:import  [java.util HashMap GregorianCalendar
              TimeZone Properties]
@@ -1094,15 +1094,27 @@
 
   (with-meta {} { :typeid modelid } ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn DbioSetFlds "Set many field values."
 
   [pojo fld value & fvs]
 
-  (->> (map (fn [a] [(keyword (first a)) (last a)]) (partition 2 fvs))
-       (flatten)
-       (apply assoc pojo (keyword fld) value)))
+  (apply assoc pojo fld value fvs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbioSetFld* "Set many field values."
+
+  [pojo fvs]
+
+  {:pre [(map? fvs)]}
+
+  (if-not (empty? fvs)
+    (let [a (flatten (seq fvs))]
+      (apply DbioSetFlds pojo (first a)(second a) (drop 2 a)))
+    pojo
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1110,7 +1122,7 @@
 
   [pojo fld value]
 
-  (assoc pojo (keyword fld) value))
+  (assoc pojo fld value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1118,7 +1130,7 @@
 
   [pojo fld]
 
-  (dissoc pojo (keyword fld)))
+  (dissoc pojo fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1126,7 +1138,7 @@
 
   [pojo fld]
 
-  (get pojo (keyword fld)))
+  (get pojo fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1406,6 +1418,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

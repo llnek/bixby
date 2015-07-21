@@ -7,41 +7,50 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.impl.climain
 
+  (:require [czlabclj.xlib.netty.discarder :refer [MakeDiscardHTTPD]]
+            [czlabclj.xlib.util.str :refer [lcase hgl? nsb strim]]
+            [czlabclj.xlib.util.ini :refer [ParseInifile]]
+            [czlabclj.xlib.util.io :refer [CloseQ]]
+            [czlabclj.xlib.util.process
+             :refer
+             [ProcessPid
+              SafeWait
+              ThreadFunc]]
+            [czlabclj.xlib.i18n.resources :refer [GetResource]]
+            [czlabclj.xlib.util.meta :refer [SetCldr GetCldr]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]]
+            [czlabclj.xlib.util.files
+             :refer
+             [ReadOneFile
+              WriteOneFile]]
+            [czlabclj.xlib.util.scheduler :refer [NulScheduler]]
+            [czlabclj.xlib.util.core
+             :refer
+             [test-nonil
+              test-cond
+              ConvLong
+              NiceFPath
+              Try!
+              PrintMutableObj
+              MakeMMap]]
+            [czlabclj.tardis.impl.exec :refer [MakeExecvisor]]
+            [czlabclj.xlib.netty.io :refer [StopServer]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.netty.discarder :only [MakeDiscardHTTPD]]
-        [czlabclj.xlib.util.str :only [lcase hgl? nsb strim]]
-        [czlabclj.xlib.util.ini :only [ParseInifile]]
+  (:use [czlabclj.tardis.core.consts]
         [czlabclj.xlib.util.consts]
-        [czlabclj.xlib.util.io :only [CloseQ]]
-        [czlabclj.xlib.util.process
-         :only
-         [ProcessPid SafeWait ThreadFunc]]
-        [czlabclj.xlib.i18n.resources :only [GetResource]]
-        [czlabclj.xlib.util.meta :only [SetCldr GetCldr]]
-        [czlabclj.xlib.util.format :only [ReadEdn]]
-        [czlabclj.xlib.util.files
-         :only
-         [ReadOneFile WriteOneFile]]
-        [czlabclj.xlib.util.scheduler :only [NulScheduler]]
-        [czlabclj.xlib.util.core
-         :only
-         [test-nonil test-cond ConvLong NiceFPath
-          Try! PrintMutableObj MakeMMap]]
-        [czlabclj.tardis.impl.exec :only [MakeExecvisor]]
-        [czlabclj.tardis.core.consts]
         [czlabclj.tardis.core.sys]
         [czlabclj.xlib.util.wfs]
-        [czlabclj.tardis.impl.dfts]
-        [czlabclj.xlib.netty.io :only [StopServer]])
+        [czlabclj.tardis.impl.dfts])
 
   (:import  [io.netty.channel Channel ChannelFuture
              ChannelFutureListener]
@@ -82,11 +91,14 @@
   [^File baseDir]
 
   (let [etc (io/file baseDir DN_CFG)
-        home (.getParentFile etc)
-        cnf (io/file home DN_CONF)]
+        home (.getParentFile etc)]
+    ;;(PrecondDir (io/file home DN_PATCH))
+    (PrecondDir (io/file home DN_CONF))
+    (PrecondDir (io/file home DN_DIST))
+    (PrecondDir (io/file home DN_LIB))
+    (PrecondDir (io/file home DN_BIN))
     (PrecondDir home)
     (PrecondDir etc)
-    (PrecondDir cnf)
     (doto (MakeContext)
       (.setf! K_BASEDIR home)
       (.setf! K_CFGDIR etc))
@@ -105,7 +117,7 @@
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
-      (log/info "Shutting down the http discarder...")
+      (log/info "Closing the http discarder...")
       (StopServer (:bootstrap kp)
                   (:channel kp))
       (log/info "Http discarder closed. OK")
@@ -371,9 +383,6 @@
             x (inizContext home)]
         (log/info "skaro.home " (NiceFPath home))
         (log/info "skaro.version= " (.version ^Versioned c))
-        ;;(precondDir (File. home ^String DN_BLOCKS))
-        ;;(PrecondDir (io/file home DN_BOXX))
-        ;;(PrecondDir (io/file home DN_CFG))
         ;; a bit of circular referencing here.  the climain object refers to context
         ;; and the context refers back to the climain object.
         (.setf! x K_CLISH c)

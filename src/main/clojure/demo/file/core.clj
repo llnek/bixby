@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 
 (ns ^:no-doc
@@ -15,10 +15,10 @@
 
   demo.file.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [Try!]]
+            [czlabclj.xlib.util.str :refer [nsb]])
 
-  (:use [czlabclj.xlib.util.core :only [Try!]]
-        [czlabclj.xlib.util.str :only [nsb]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask ]
             [com.zotohlab.skaro.core Container]
@@ -66,6 +66,5 @@
       (println "Content: " (slurp f :encoding "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

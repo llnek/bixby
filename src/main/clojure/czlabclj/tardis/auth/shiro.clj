@@ -7,16 +7,16 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.auth.shiro
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.crypto.codec :refer [Pwdify]])
 
-  (:use [czlabclj.xlib.crypto.codec :only [Pwdify]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
             [org.apache.shiro.authc.credential CredentialsMatcher]
@@ -52,6 +52,5 @@
 (ns-unmap *ns* '->PwdMatcher)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private shiro-eof nil)
+;;EOF
 

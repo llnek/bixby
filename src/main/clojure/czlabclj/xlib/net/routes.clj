@@ -7,19 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.net.routes
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [Muble MakeMMap test-nestr]]
+            [czlabclj.xlib.util.str
+             :refer [lcase ucase nsb nichts? hgl?]]
+            [czlabclj.xlib.util.ini :refer [ParseInifile]])
 
-  (:use [czlabclj.xlib.util.core :only [Muble MakeMMap test-nestr]]
-        [czlabclj.xlib.util.str
-         :only [lcase ucase nsb nichts? hgl?]]
-        [czlabclj.xlib.util.ini :only [ParseInifile]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.google.gson JsonObject]
@@ -238,6 +238,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private routes-eof nil)
+;;EOF
 

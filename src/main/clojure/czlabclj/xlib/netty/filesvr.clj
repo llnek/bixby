@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
@@ -16,16 +16,17 @@
 
   (:gen-class)
 
+  (:require [czlabclj.xlib.util.files :refer [SaveFile GetFile]]
+            [czlabclj.xlib.util.core
+             :refer
+             [SafeGetJsonBool SafeGetJsonString juid notnil? ]]
+            [czlabclj.xlib.util.str :refer [strim nsb hgl?]]
+            [czlabclj.xlib.netty.filters :refer [ReifyHTTPPipe]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.util.files :only [SaveFile GetFile]]
-        [czlabclj.xlib.util.core
-         :only
-         [SafeGetJsonBool SafeGetJsonString juid notnil? ]]
-        [czlabclj.xlib.util.str :only [strim nsb hgl?]]
-        [czlabclj.xlib.netty.io]
-        [czlabclj.xlib.netty.filters :only [ReifyHTTPPipe]])
+  (:use [czlabclj.xlib.netty.io])
 
   (:import  [io.netty.handler.codec.http
              HttpHeaders$Names
@@ -174,6 +175,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private filesvr-eof nil)
+;;EOF
 

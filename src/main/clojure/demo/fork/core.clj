@@ -14,11 +14,11 @@
 
   demo.fork.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [Try!]]
+            [czlabclj.xlib.util.str :refer [nsb]]
+            [czlabclj.xlib.util.wfs :refer [SimPTask]])
 
-  (:use [czlabclj.xlib.util.core :only [Try!]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs :only [SimPTask]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.wflow Job WorkFlow FlowNode PTask Split]
             [java.lang StringBuilder]
@@ -100,6 +100,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

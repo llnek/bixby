@@ -7,31 +7,32 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.mvc.comms
 
+  (:require [czlabclj.xlib.util.core :refer [Muble Try! NiceFPath]]
+            [czlabclj.xlib.util.wfs :refer [SimPTask]]
+            [czlabclj.tardis.mvc.assets
+             :refer
+             [MakeWebAsset GetLocalFile]]
+            [czlabclj.xlib.util.str :refer [hgl? nsb strim]]
+            [czlabclj.xlib.util.meta :refer [MakeObj]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlabclj.xlib.util.core :only [Muble Try! NiceFPath]]
-        [czlabclj.xlib.util.consts]
+  (:use [czlabclj.xlib.util.consts]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.io.triggers]
         [czlabclj.tardis.io.http]
         [czlabclj.tardis.io.netty]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.core.sys]
-        [czlabclj.xlib.util.wfs :only [SimPTask]]
-        [czlabclj.tardis.core.consts]
-        [czlabclj.tardis.mvc.assets
-         :only
-         [MakeWebAsset GetLocalFile]]
-        [czlabclj.xlib.util.str :only [hgl? nsb strim]]
-        [czlabclj.xlib.util.meta :only [MakeObj]])
+        [czlabclj.tardis.core.consts])
 
   (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.skaro.mvc HTTPErrorHandler
@@ -334,6 +335,5 @@
 (ns-unmap *ns* '->AssetHandler)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private comms-eof nil)
+;;EOF
 

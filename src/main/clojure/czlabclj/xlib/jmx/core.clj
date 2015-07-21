@@ -7,18 +7,19 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.jmx.core
 
+  (:require [czlabclj.xlib.util.core :refer [MakeMMap Try! TryC]]
+            [czlabclj.xlib.util.str :refer [hgl? ]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [MakeMMap Try! TryC]]
-        [czlabclj.xlib.util.str :only [hgl? ]]
-        [czlabclj.xlib.jmx.names]
+  (:use [czlabclj.xlib.jmx.names]
         [czlabclj.xlib.jmx.bean])
 
   (:import  [java.net InetAddress MalformedURLException]
@@ -181,6 +182,5 @@
       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

@@ -25,10 +25,14 @@
             [czlabclj.xlib.i18n.resources :refer [RStr]]
             [czlabclj.xlib.util.files
              :refer
-             [FileRead? DirReadWrite? ]]
+             [FileRead?
+              DirReadWrite? ]]
             [czlabclj.xlib.util.core
              :refer
-             [NextLong test-cond MakeMMap test-nestr]])
+             [NextLong
+              test-cond
+              MakeMMap
+              test-nestr]])
 
   (:import  [com.zotohlab.frwk.core Versioned
              Identifiable Hierarchial]
@@ -138,7 +142,7 @@
         (has [this cid]
           (let [cache (.getf impl :cache)
                 c (get cache cid) ]
-            (notnil? c)))
+            (some? c)))
 
         (lookup [this cid]
           (let [cache (.getf impl :cache)
@@ -216,7 +220,6 @@
       { :typeid (ToKW "czc.tardis.impl" "PODMeta") }
 
   )))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

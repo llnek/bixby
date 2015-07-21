@@ -7,23 +7,27 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.webss
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.str :refer [nsb hgl? AddDelim!]]
+            [czlabclj.xlib.util.core
+             :refer
+             [Muble
+              ConvLong
+              notnil?
+              juid
+              MakeMMap
+              Stringify
+              Bytesify]]
+            [czlabclj.xlib.crypto.core :refer [GenMac]]
+            [czlabclj.xlib.net.comms :refer [GetFormFields]])
 
-  (:use [czlabclj.xlib.util.str :only [nsb hgl? AddDelim!]]
-        [czlabclj.xlib.util.core
-         :only
-         [Muble ConvLong notnil? juid
-          MakeMMap Stringify Bytesify]]
-        [czlabclj.xlib.crypto.core :only [GenMac]]
-        ;;[czlabclj.xlib.util.guids :only [NewUUid]]
-        [czlabclj.xlib.net.comms :only [GetFormFields]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.skaro.runtime ExpiredError AuthError]
             [org.apache.commons.lang3 StringUtils]
@@ -274,6 +278,5 @@
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private webss-eof nil)
+;;EOF
 

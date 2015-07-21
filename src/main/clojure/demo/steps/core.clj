@@ -14,11 +14,11 @@
 
   demo.steps.core
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.core :refer [RandomBoolValue notnil?]]
+            [czlabclj.xlib.util.str :refer [nsb]]
+            [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core :only [RandomBoolValue notnil?]]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs])
+  (:use [czlabclj.xlib.util.wfs])
 
   (:import  [com.zotohlab.wflow FlowNode Switch If
              Activity Split While PTask
@@ -164,7 +164,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 
 

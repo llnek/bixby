@@ -7,30 +7,37 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.netty
 
+  (:require [czlabclj.xlib.net.routes :refer [MakeRouteCracker RouteCracker]]
+            [czlabclj.xlib.util.str :refer [lcase hgl? nsb strim nichts?]]
+            [czlabclj.xlib.util.core
+             :refer
+             [Try!
+              Stringify
+              ThrowIOE
+              Muble
+              NextLong
+              MakeMMap
+              notnil?
+              ConvLong]]
+            [czlabclj.tardis.io.webss :refer [MakeWSSession]]
+            [czlabclj.xlib.util.mime :refer [GetCharset]])
+
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.net.routes :only [MakeRouteCracker RouteCracker]]
-        [czlabclj.xlib.util.str :only [lcase hgl? nsb strim nichts?]]
-        [czlabclj.xlib.util.core
-         :only
-         [Try! Stringify ThrowIOE Muble NextLong
-          MakeMMap notnil? ConvLong]]
-        [czlabclj.xlib.netty.filters]
+  (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io]
         [czlabclj.tardis.core.sys]
         [czlabclj.tardis.io.core]
         [czlabclj.tardis.io.http]
-        [czlabclj.tardis.io.triggers]
-        [czlabclj.tardis.io.webss :only [MakeWSSession]]
-        [czlabclj.xlib.util.mime :only [GetCharset]])
+        [czlabclj.tardis.io.triggers])
 
   (:import  [java.io Closeable File IOException RandomAccessFile]
             [java.net HttpCookie URI URL InetSocketAddress]
@@ -609,6 +616,5 @@
   (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private netty-eof nil)
+;;EOF
 

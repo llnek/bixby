@@ -7,23 +7,26 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.tardis.io.basicauth
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.str :refer [lcase strim nsb hgl? ]]
+            [czlabclj.xlib.util.core
+             :refer
+             [NormalizeEmail
+              Stringify
+              notnil?
+              TryC]]
+            [czlabclj.xlib.util.format :refer [ReadJson WriteJson]]
+            [czlabclj.tardis.io.http :refer [ScanBasicAuth]]
+            [czlabclj.xlib.crypto.codec :refer [CaesarDecrypt]]
+            [czlabclj.xlib.net.comms :refer [GetFormFields]])
 
-  (:use [czlabclj.xlib.util.str :only [lcase strim nsb hgl? ]]
-        [czlabclj.xlib.util.core
-         :only
-         [NormalizeEmail Stringify notnil? TryC]]
-        [czlabclj.xlib.util.format :only [ReadJson WriteJson]]
-        [czlabclj.tardis.io.http :only [ScanBasicAuth]]
-        [czlabclj.xlib.crypto.codec :only [CaesarDecrypt]]
-        [czlabclj.xlib.net.comms :only [GetFormFields]])
+  (:require [clojure.tools.logging :as log])
 
   (:import  [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
@@ -56,7 +59,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackFormFields "Parse a standard login-like form with userid,password,email"
+(defn- crackFormFields
+
+  "Parse a standard login-like form with userid,password,email"
 
   [^HTTPEvent evt]
 
@@ -67,7 +72,7 @@
       (with-local-vars [rc (transient {})]
         (doseq [^ULFileItem x (GetFormFields data)]
           (let [fm (.getFieldNameLC x)
-                fv (nsb (.getString x))]
+                fv (nsb x)]
             (log/debug "form-field=" fm ", value=" fv)
             (when-let [v (get PMS fm)]
               (var-set rc (assoc! @rc (first v)
@@ -180,6 +185,5 @@
       (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private basicauth-eof nil)
+;;EOF
 

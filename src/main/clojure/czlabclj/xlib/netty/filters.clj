@@ -7,24 +7,25 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013-2014, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Netty Request Pipeline."
       :author "kenl" }
 
   czlabclj.xlib.netty.filters
 
+  (:require [czlabclj.xlib.util.core
+             :refer
+             [ThrowIOE MakeMMap notnil? spos?
+              TryC Try! SafeGetJsonObject
+              SafeGetJsonInt SafeGetJsonString]]
+            [czlabclj.xlib.util.str
+             :refer
+             [lcase ucase strim nsb hgl?]])
+
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.core
-         :only
-         [ThrowIOE MakeMMap notnil? spos?
-          TryC Try! SafeGetJsonObject
-          SafeGetJsonInt SafeGetJsonString]]
-        [czlabclj.xlib.util.str
-         :only
-         [lcase ucase strim nsb hgl?]]
-        [czlabclj.xlib.netty.request]
+  (:use [czlabclj.xlib.netty.request]
         [czlabclj.xlib.netty.io]
         [czlabclj.xlib.netty.form])
 
@@ -311,6 +312,5 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private filters-eof nil)
+;;EOF
 

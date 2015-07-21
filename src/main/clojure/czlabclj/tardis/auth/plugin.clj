@@ -18,9 +18,13 @@
             [czlabclj.xlib.i18n.resources :refer [RStr]]
             [czlabclj.xlib.util.core
              :refer
-             [TryC notnil? Stringify
-              MakeMMap juid
-              test-nonil LoadJavaProps]]
+             [TryC
+              notnil?
+              Stringify
+              MakeMMap
+              juid
+              test-nonil
+              LoadJavaProps]]
             [czlabclj.xlib.crypto.codec :refer [Pwdify]]
             [czlabclj.xlib.util.str :refer [nsb hgl? strim]]
             [czlabclj.xlib.util.format :refer [ReadEdn]]
@@ -148,18 +152,19 @@
    roleObjs : a list of roles to be assigned to the account."
 
   [^SQLr sql ^String user
-   ^PasswordAPI pwdObj options roleObjs]
+   ^PasswordAPI pwdObj & [options roleObjs]]
 
-  (let [[p s] (.hashed pwdObj)
+  (let [roleObjs (or roleObjs [])
+        options (or options {})
+        [p s] (.hashed pwdObj)
         acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
-                             (DbioSetFld :email (strim (:email options)))
-                             (DbioSetFld :acctid (strim user))
-                            ;;(dbio-set-fld :salt s)
-                             (DbioSetFld :passwd  p))) ]
+                             (DbioSetFld* (merge {:acctid (strim user)
+                                                  :passwd  p}
+                                                 options)))) ]
     ;; Currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
     ;; assumed ok for the account to remain inserted.
-    (doseq [r (seq roleObjs) ]
+    (doseq [r roleObjs]
       (DbioSetM2M { :as :roles :with sql } acc r))
     (log/debug "Created new account into db: "
                acc
@@ -198,8 +203,7 @@
     (if (.validateHash (Pwdify pwd "")
                        (:passwd acct))
       acct
-      (throw (AuthError. (RStr (I18N/getBase)
-                               "auth.bad.pwd"))))
+      (throw (AuthError. (RStr (I18N/getBase) "auth.bad.pwd"))))
     (throw (UnknownUser. user))
   ))
 
@@ -219,8 +223,7 @@
 
   (let [[p s] (.hashed pwdObj)
         u (-> userObj
-              (DbioSetFld :passwd p)
-              (DbioSetFld :salt s)) ]
+              (DbioSetFlds :passwd p :salt s)) ]
     (.update sql u)
   ))
 
@@ -234,12 +237,12 @@
 
   [^SQLr sql userObj details]
 
+  {:pre [(map? details)]}
+
   (if (empty? details)
     userObj
-    (with-local-vars [u userObj]
-      (doseq [[f v] (seq details)]
-        (var-set u (DbioSetFld @u f v)))
-      (.update sql @u))
+    (->> (DbioSetFld* userObj details)
+         (.update sql))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,7 +300,7 @@
 
   [^File appDir ^String appKey]
 
-  (-> (io/file appDir "conf" "shiro.ini")
+  (-> (io/file appDir "conf/shiro.ini")
       (io/as-url )
       (.toString)
       (IniSecurityManagerFactory. )
@@ -522,7 +525,7 @@
 
   (let [appDir (io/file (first args))
         ^Properties mf
-        (LoadJavaProps (io/file appDir "META-INF" "MANIFEST.MF"))
+        (LoadJavaProps (io/file appDir "etc/MANIFEST.MF"))
         pkey (-> (.getProperty mf "Implementation-Vendor-Id")
                  (.toCharArray))
         ^String cmd (nth args 1)
@@ -561,7 +564,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private plugin-eof nil)
+;;EOF
 
 

@@ -25,7 +25,6 @@
             [czlabclj.xlib.util.core
              :refer [notnil?
              NiceFPath
-             raise!
              GetCwd
              IsWindows?
              Stringify
@@ -82,7 +81,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (CreateApp (fst args) (snd args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +107,7 @@
     (if (> (count args) 0)
       (BundleApp (GetHomeDir)
                  (GetCwd) (fst args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,7 +171,7 @@
         args (drop 1 args)]
     (if (> (count args) 0)
       (PublishSamples (fst args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -380,7 +379,7 @@
         (csrfile)
         (var-set rc false))
       (when-not @rc)
-        (raise! CmdHelpError))
+        (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -403,7 +402,7 @@
         args (drop 1 args)]
     (if (> (count args) 0)
       (genHash (fst args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -426,7 +425,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (encrypt (fst args) (snd args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -449,7 +448,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (decrypt (fst args) (snd args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -475,7 +474,7 @@
 
   [j]
 
-  (raise! CmdHelpError))
+  (throw (CmdHelpError.)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -541,7 +540,7 @@
     (if (and (> (count args) 1)
              (= "eclipse" (fst args)))
       (genEclipseProj (snd args))
-      (raise! CmdHelpError))
+      (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
