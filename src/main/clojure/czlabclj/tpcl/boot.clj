@@ -495,7 +495,8 @@
                                 :includeantruntime false
                                 :fork true})
 
-    (se! options :CPATH [[:location (ge :jzzDir)]
+    (se! options :CPATH [[:location (fp! (ge :srcDir) "artifacts")]
+                         [:location (ge :jzzDir)]
                          [:location (ge :czzDir)]
                          [:fileset {:dir (ge :libDir)
                                     :includes "**/*.jar"}]

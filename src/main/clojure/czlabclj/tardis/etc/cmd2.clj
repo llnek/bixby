@@ -305,9 +305,16 @@
       (doseq [s [ "clojure" "java"]]
         (Mkdirs (io/file appDir "src/main" s appDomainPath))
         (Mkdirs (io/file appDir "src/test" s appDomainPath)))
+
       (Mkdirs (io/file appDir "src/main/resources"))
+      (Mkdirs (io/file appDir "src/main/artifacts"))
 
       ;;copy files
+
+      (CopyFile (io/file hhh DN_CFG "log/log4jbuild.properties")
+                (io/file appDir "src/main/artifacts/log4j.properties"))
+      (CopyFile (io/file hhh DN_CFG "log/logback4build.xml")
+                (io/file appDir "src/main/artifacts/logback.xml"))
 
       (CopyFileToDir (io/file hhh DN_CFGAPP "test.clj")
                      (io/file appDir "src/test/clojure" appDomainPath))

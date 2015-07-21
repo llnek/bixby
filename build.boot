@@ -168,7 +168,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (b/BootEnvPaths
-  {:CPATH [[:location (ge :jzzDir)]
+  {:CPATH [[:location (fp! (ge :basedir) "artifacts")]
+           [:location (ge :jzzDir)]
            [:location (ge :czzDir)]
            [:fileset {:dir (ge :libDir)
                       :includes "*.jar"}]]
@@ -191,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- preBuild ""
+(defn- XXpreBuild ""
   [& args]
   ;; get rid of debug logging during build!
   (a/RunTarget* "pre/build"
@@ -883,7 +884,7 @@
   []
 
   (bc/with-pre-wrap fileset
-    ((comp preBuild PreBuild clean4Build Clean4Build))
+    ((comp PreBuild clean4Build Clean4Build))
     fileset
   ))
 
