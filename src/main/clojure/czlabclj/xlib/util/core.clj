@@ -208,6 +208,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro RNil "Get rid of any nil(s) in a sequence."
+
+  [somesequence]
+
+  `(remove nil? ~somesequence))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn Interject "Run the function on the current field value,
                  replacing the key with the returned value."
 
