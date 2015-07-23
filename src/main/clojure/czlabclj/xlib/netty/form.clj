@@ -15,7 +15,7 @@
   czlabclj.xlib.netty.form
 
   (:require [czlabclj.xlib.util.core :refer [ThrowIOE notnil? Bytesify]]
-            [czlabclj.xlib.util.io :refer [NewlyTempFile CloseQ ByteOS]]
+            [czlabclj.xlib.util.io :refer [OpenTempFile TempFile CloseQ ByteOS]]
             [czlabclj.xlib.netty.io :refer [GetHdr]]
             [czlabclj.xlib.util.str :refer [lcase strim nsb hgl?]])
 
@@ -69,12 +69,10 @@
             fnm (.getFilename fu) ]
         (when (.isCompleted fu)
           (if (instance? DiskFileUpload fu)
-            (let [[^File fp _]
-                  (NewlyTempFile)]
+            (let [fp (TempFile)]
               (.renameTo ^DiskFileUpload fu fp)
               (.add fis (ULFileItem. nm  ct fnm  (XData. fp))))
-            (let [[^File fp ^OutputStream os]
-                  (NewlyTempFile true)]
+            (let [[fp ^OutputStream os] (OpenTempFile)]
               (try
                 (NettyFW/slurpByteBuf (.content fu) os)
                 (finally (CloseQ os)))

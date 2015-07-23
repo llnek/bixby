@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Netty Request Pipeline."
+(ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.netty.filters
@@ -63,7 +63,7 @@
             RequestFilter
             Expect100Filter AuxHttpFilter
             ErrorSinkFilter]
-           [com.zotohlab.frwk.netty NettyFW]
+           [com.zotohlab.frwk.netty SimpleInboundFilter]
            [com.zotohlab.frwk.core CallableWithArgs]
            [com.zotohlab.frwk.io XData]
            [com.zotohlab.frwk.net SSLTrustMgrFactory]
@@ -71,6 +71,228 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleInboundMsg ""
+
+  [^ChannelHandlerContext ctx
+   ^Channel ch
+   obj]
+
+  (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
+  (SetAKey ch XDATA_KEY (XData.))
+  (HandleMsgChunk ctx ch obj))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; the decoder is annotated as sharable,  acts like the singleton.
+(defonce ^:private HTTP-REQ-FILTER
+  (proxy [RequestFilter][]
+    (channelRead0 [c obj]
+      (let [^ChannelHandlerContext ctx c
+            ch (.channel ctx)
+            ^Object msg obj ]
+        (log/debug "channelRead0# called with msg: " (type msg))
+        (cond
+          (instance? HttpRequest msg)
+          (handleInboundMsg ctx ch msg)
+
+          (instance? HttpContent msg)
+          (HandleMsgChunk ctx ch msg)
+
+          :else
+          (do
+            (log/error "Unexpected inbound msg: " (type msg))
+            (ReferenceCountUtil/retain msg)
+            (.fireChannelRead ctx msg)))))))
+
+(defn ReifyReqFilterSingleton "" ^ChannelHandler [] HTTP-REQ-FILTER)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;FORM POST HANDLER
+(defn- resetAKeys ""
+  [^Channel ch]
+  (let [^HttpPostRequestDecoder
+        dc (GetAKey ch FORMDEC_KEY)
+        ^ULFormItems
+        fis (GetAKey ch FORMITMS_KEY)]
+    (DelAKey ch FORMITMS_KEY)
+    (DelAKey ch FORMDEC_KEY)
+    (when (some? fis) (.destroy fis))
+    (when (some? dc) (.destroy dc))
+    (ResetAKeys ch)
+  ))
+
+(defn- writeHttpData "Parse and eval form fields."
+
+  [^ChannelHandlerContext ctx
+   ^InterfaceHttpData data
+   ^ULFormItems fis ]
+
+  (let [dt (.getHttpDataType data)
+        nm (.name dt) ]
+    (cond
+      (= InterfaceHttpData$HttpDataType/FileUpload dt)
+      (let [^FileUpload fu data
+            ct (.getContentType fu)
+            fnm (.getFilename fu) ]
+        (when (.isCompleted fu)
+          (if (instance? DiskFileUpload fu)
+            (let [fp (TempFile)]
+              (.renameTo ^DiskFileUpload fu fp)
+              (.add fis (ULFileItem. nm  ct fnm  (XData. fp))))
+            (let [[fp ^OutputStream os] (OpenTempFile)]
+              (try
+                (SlurpByteBuf (.content fu) os)
+                (finally (CloseQ os)))
+              (.add fis (ULFileItem. nm  ct fnm  (XData. fp)))))))
+
+      (= InterfaceHttpData$HttpDataType/Attribute dt)
+      (let [^Attribute attr data
+            baos (ByteOS)]
+        (SlurpByteBuf (.content attr) baos)
+        (.add fis (ULFileItem. nm (.toByteArray baos))))
+
+      :else
+      (ThrowIOE "Bad POST: unknown http data."))
+  ))
+
+
+(defn- readHttpDataChunkByChunk ""
+
+  [^ChannelHandlerContext ctx
+   ^HttpPostRequestDecoder dc
+   ^ULFormItems fis ]
+
+  (try
+    (while (.hasNext dc)
+      (when-let [^InterfaceHttpData
+                 data (.next dc) ]
+        (try
+          (writeHttpData ctx data fis)
+          (finally
+            (.release data)))))
+    (catch HttpPostRequestDecoder$EndOfDataDecoderException _ )
+    ;;eat it => indicates end of content chunk by chunk
+  ))
+
+
+(defn- splitBodyParams ""
+
+  ^ULFormItems
+  [^String body]
+
+  (log/debug "About to split form body *************************\n"
+  body
+  "\n****************************************************************")
+
+  (let [tkns (StringUtils/split body \&)
+        fis (ULFormItems.) ]
+    (when-not (empty? tkns)
+      (areduce tkns n memo nil
+        (let [t (nsb (aget tkns n))
+              ss (StringUtils/split t \=) ]
+          (when-not (empty? ss)
+            (let [fi (URLDecoder/decode (aget ss 0) "utf-8")
+                  fv (if (> (alength ss) 1)
+                         (URLDecoder/decode  (aget ss 1) "utf-8")
+                         "") ]
+              (.add fis (ULFileItem. fi (Bytesify fv)))))
+          nil)))
+    fis
+  ))
+
+
+(defn- finzAndDone ""
+
+  [^ChannelHandlerContext ctx ^Channel ch ^XData xs]
+
+  (let [info (GetAKey ch MSGINFO_KEY)
+        itms (splitBodyParams (if (.hasContent xs)
+                                (.stringify xs) "")) ]
+    (resetAKeys ch)
+    (.resetContent xs itms)
+    (FireMsgToNext ctx info xs)
+  ))
+
+(defn- handleFormChunk  ""
+  [^ChannelHandlerContext ctx
+   ^Channel ch
+   ^HttpMessage msg]
+  (let [^HttpPostRequestDecoder
+        dc (GetAKey ch FORMDEC_KEY)
+        ^ULFormItems
+        fis (GetAKey ch FORMITMS_KEY)]
+    (if (nil? dc)
+      (HandleMsgChunk ctx ch msg)
+      (with-local-vars [err nil]
+        (when (instance? HttpContent msg)
+          (let [^HttpContent hc msg
+                ct (.content hc) ]
+            (when (and (some? ct)
+                       (.isReadable ct))
+              (try
+                (.offer dc hc)
+                (readHttpDataChunkByChunk ctx ch dc fis)
+                (catch Throwable e#
+                  (var-set err e#)
+                  (.fireExceptionCaught ctx e#))))))
+        (when (and (nil? @err)
+                   (instance? LastHttpContent msg))
+          (let [^XData xs (GetAKey ch XDATA_KEY)
+                info (GetAKey ch MSGINFO_KEY) ]
+            (DelAKey ch FORMITMS_KEY)
+            (.resetContent xs fis)
+            (resetAKeys ch)
+            (.fireChannelRead ctx {:info info
+                                   :payload xs})))))
+  ))
+
+
+(defn- handleFormPost ""
+  [^ChannelHandlerContext ctx
+   ^Channel ch
+   ^HttpMessage msg]
+  (let [info (GetAKey ch MSGINFO_KEY)
+        ctype (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
+                  nsb strim lcase) ]
+    (doto ch
+      (SetAKey FORMITMS_KEY (ULFormItems.))
+      (SetAKey XDATA_KEY (XData.)))
+    (if (< (.indexOf ctype "multipart") 0)
+      (do ;; nothing to decode
+        (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
+        (HandleMsgChunk ctx ch msg))
+      (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
+                   (HttpPostRequestDecoder. msg)) ]
+        (SetAKey ch FORMDEC_KEY dc)
+        (handleFormChunk ctx ch msg)))
+  ))
+
+
+(defonce ^:private XXX
+  (proxy [FormPostFilter][]
+    (channelRead0 [c obj]
+      (let [^ChannelHandlerContext ctx c
+            ch (.channel ctx)
+            ^Object msg obj ]
+        (log/debug "channelRead0# called with msg: " (type msg))
+        (cond
+          (instance? HttpRequest msg)
+          (handleFormPost ctx ch msg)
+
+          (instance? HttpContent msg)
+          (handleFormChunk ctx ch msg)
+
+          :else
+          (do
+            (log/error "Unexpected inbound msg: " (type msg))
+            (ReferenceCountUtil/retain msg)
+            (.fireChannelRead ctx msg)))))))
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,13 +332,13 @@
   []
 
   (reify CallableWithArgs
-    (run [_ args]
+    (run [_ a1 args]
       ;; args === array of objects
-      (let [^ChannelHandlerContext ctx (aget args 0)
-            ^String op (aget args 1) ]
+      (let [^ChannelHandlerContext ctx a1
+            ^String op (aget args 0) ]
         (condp = op
-          "setContentLength" (setContentLength ctx (aget args 2))
-          "appendHeaders" (appendHeaders ctx (aget args 2))
+          "setContentLength" (setContentLength ctx (aget args 1))
+          "appendHeaders" (appendHeaders ctx (aget args 1))
           nil)))
   ))
 

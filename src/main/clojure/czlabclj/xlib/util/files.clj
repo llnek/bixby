@@ -22,10 +22,14 @@
             [clojure.java.io :as io]
             [clojure.string :as cstr])
 
+  (:use [czlabclj.xlib.util.io])
+
   (:import  [org.apache.commons.io.filefilter FileFileFilter
                                               FileFilterUtils]
             [org.apache.commons.lang3 StringUtils]
-            [java.io File FileInputStream
+            [org.apache.commons.io FileUtils]
+            [java.io File FileFilter
+             FileInputStream
              FileOutputStream InputStream OutputStream]
             [java.util ArrayList]
             [java.net URL URI]
@@ -312,6 +316,40 @@
   [^File f]
 
   (doto f (.mkdirs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ListAnyFiles "Look for files with certain extension,
+                    such as \"java\", \"xml\""
+
+  [dir exts &[recurse?]]
+
+  {:pre [(coll? exts)]}
+
+  (FileUtils/listFiles
+    (io/file dir)
+    #^"[Ljava.lang.String;"
+    (into-array String exts) (some? recurse?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ListFiles "Look for files with certain extension, such as \"java\", \"xml\""
+
+  [dir ext &[recurse?]]
+
+  (ListAnyFiles dir [ext] recurse?))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ListDirs "List sub-directories"
+
+  [dir]
+
+  (->> (reify FileFilter
+         (accept [_ f] (.isDirectory f)))
+       (.listFiles (io/file dir))
+       (into [])
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

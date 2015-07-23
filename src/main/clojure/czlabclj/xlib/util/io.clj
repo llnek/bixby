@@ -14,7 +14,7 @@
 
   czlabclj.xlib.util.io
 
-  (:require [czlabclj.xlib.util.core :refer [Try!]])
+  (:require [czlabclj.xlib.util.core :refer [spos? Try!]])
 
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
@@ -41,8 +41,42 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+(def ^:private _wd (atom (File. (System/getProperty "java.io.tmpdir"))))
+(def ^:private _slimit (atom (* 4 1024 1024)))
 (def ^:private ^chars HEX_CHS (.toCharArray "0123456789ABCDEF"))
-(def ^:private SZ_10MEG (* 1024 1024 10))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn StreamLimit
+
+  "Beyond this limit, data will be swapped out to disk (temp file)"
+
+  ^long
+  []
+  @_slimit)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetStreamLimit! ""
+  ^long
+  [limit]
+  (when (spos? limit)
+    (reset! _slimit limit))
+  @_slimit)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WorkDir "" ^File [] @_wd)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetWorkDir! ""
+
+  ^File
+  [dir]
+  (->> (doto (io/file dir) (.mkdirs))
+       (reset! _wd))
+  @_wd)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,32 +151,6 @@
       (.flush))
     (.toByteArray baos)
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn TempFile "Create a temp file in the temp dir."
-
-  (^File [] (TempFile "" ""))
-
-  (^File [^String pfx
-          ^String sux]
-    (File/createTempFile (if (cstr/blank? pfx) "tmp-" pfx)
-                         (if (cstr/blank? sux) ".dat" sux)
-                         (IO/workDir))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn NewlyTempFile "Create a new temp file,
-                     optionally open it for write as stream.
-                     Returns a [file, ostream] tuple."
-
-  ([] (NewlyTempFile false))
-
-  ([open]
-   (let [f (TempFile) ]
-     (if open
-       [ f (FileOutputStream. f) ]
-       [ f nil ]))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -297,13 +305,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn TempFile ""
+
+  ^File
+  [ &[pfx sux] ]
+
+  (File/createTempFile (or pfx "tmp-") (or sux ".dat")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn OpenTempFile "Returns a Tuple(2) [ File, OutputStream? ]"
+
+  []
+
+  (let [fp (TempFile)]
+    [fp (FileOutputStream. fp)]
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn CopyStream "Copy content from this input-stream to a temp file."
 
   ^File
   [^InputStream inp]
 
   (let [[^File fp ^OutputStream os]
-        (NewlyTempFile true) ]
+        (OpenTempFile) ]
     (try
       (IOUtils/copy inp os)
       (finally
@@ -353,7 +380,7 @@
   [^ByteArrayOutputStream baos]
 
   (let [[^File fp ^OutputStream os]
-        (NewlyTempFile true) ]
+        (OpenTempFile) ]
     (doto os
       (.write (.toByteArray baos))
       (.flush))
@@ -369,7 +396,7 @@
   [^CharArrayWriter wtr]
 
   (let [[^File fp ^OutputStream out]
-        (NewlyTempFile true)
+        (OpenTempFile)
         w (OutputStreamWriter. out "utf-8") ]
     (doto w
       (.write (.toCharArray wtr))

@@ -16,7 +16,7 @@ package com.zotohlab.frwk.core;
  */
 public interface CallableWithArgs {
 
-  public Object run( Object[] args);
+  public Object run( Object a1, Object...  args);
 
 }
 
