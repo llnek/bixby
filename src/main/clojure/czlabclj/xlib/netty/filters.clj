@@ -75,31 +75,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleInboundMsg ""
+(defmulti HandleInboundMsg "" (fn [a b c & args] (class c)))
+(defmethod HandleInboundMsg AuxHttpFilter
 
   [^ChannelHandlerContext ctx
    ^Channel ch
+   handler
    obj]
 
   (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
   (SetAKey ch XDATA_KEY (XData.))
-  (HandleMsgChunk ctx ch obj))
+  (HandleMsgChunk ctx ch handler obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; the decoder is annotated as sharable,  acts like the singleton.
 (defonce ^:private HTTP-REQ-FILTER
   (proxy [RequestFilter][]
-    (channelRead0 [c obj]
+    (channelRead0 [c msg]
       (let [^ChannelHandlerContext ctx c
-            ch (.channel ctx)
-            ^Object msg obj ]
+            ch (.channel ctx)]
         (log/debug "channelRead0# called with msg: " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (handleInboundMsg ctx ch msg)
+          (HandleInboundMsg ctx ch this msg)
 
           (instance? HttpContent msg)
-          (HandleMsgChunk ctx ch msg)
+          (HandleMsgChunk ctx ch this msg)
 
           :else
           (do
@@ -107,12 +108,20 @@
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))))
 
-(defn ReifyReqFilterSingleton "" ^ChannelHandler [] HTTP-REQ-FILTER)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReifyRequestFilterSingleton ""
+  ^ChannelHandler
+  [] HTTP-REQ-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;FORM POST HANDLER
-(defn- resetAKeys ""
-  [^Channel ch]
+;;
+(defmethod ResetAKeys FormPostFilter
+
+  [^ChannelHandlerContext ctx
+   ^Channel ch
+   handler]
+
   (let [^HttpPostRequestDecoder
         dc (GetAKey ch FORMDEC_KEY)
         ^ULFormItems
@@ -121,10 +130,12 @@
     (DelAKey ch FORMDEC_KEY)
     (when (some? fis) (.destroy fis))
     (when (some? dc) (.destroy dc))
-    (ResetAKeys ch)
+    (ClearAKeys ch)
   ))
 
-(defn- writeHttpData "Parse and eval form fields."
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- writeHttpData "Parse and eval form fields"
 
   [^ChannelHandlerContext ctx
    ^InterfaceHttpData data
@@ -140,25 +151,29 @@
         (when (.isCompleted fu)
           (if (instance? DiskFileUpload fu)
             (let [fp (TempFile)]
-              (.renameTo ^DiskFileUpload fu fp)
-              (.add fis (ULFileItem. nm  ct fnm  (XData. fp))))
+              (-> ^DiskFileUpload fu (.renameTo fp))
+              (->> (ULFileItem. nm ct fnm (XData. fp))
+                   (.add fis)))
             (let [[fp ^OutputStream os] (OpenTempFile)]
               (try
                 (SlurpByteBuf (.content fu) os)
                 (finally (CloseQ os)))
-              (.add fis (ULFileItem. nm  ct fnm  (XData. fp)))))))
+              (->> (ULFileItem. nm ct fnm (XData. fp))
+                   (.add fis ))))))
 
       (= InterfaceHttpData$HttpDataType/Attribute dt)
       (let [^Attribute attr data
             baos (ByteOS)]
         (SlurpByteBuf (.content attr) baos)
-        (.add fis (ULFileItem. nm (.toByteArray baos))))
+        (->> (ULFileItem. nm (.toByteArray baos))
+             (.add fis )))
 
       :else
       (ThrowIOE "Bad POST: unknown http data."))
   ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- readHttpDataChunkByChunk ""
 
   [^ChannelHandlerContext ctx
@@ -177,15 +192,16 @@
     ;;eat it => indicates end of content chunk by chunk
   ))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- splitBodyParams ""
 
   ^ULFormItems
   [^String body]
 
-  (log/debug "About to split form body *************************\n"
+  (log/debug "About to split form body >>>>>>>>>>>>>>>>>>>\n"
   body
-  "\n****************************************************************")
+  "\n<<<<<<<<<<<<<<<<<<<<<<<<<")
 
   (let [tkns (StringUtils/split body \&)
         fis (ULFormItems.) ]
@@ -198,34 +214,42 @@
                   fv (if (> (alength ss) 1)
                          (URLDecoder/decode  (aget ss 1) "utf-8")
                          "") ]
-              (.add fis (ULFileItem. fi (Bytesify fv)))))
+              (->> (ULFileItem. fi (Bytesify fv))
+                   (.add fis))))
           nil)))
     fis
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod FinzAndDone FormPostFilter
 
-(defn- finzAndDone ""
-
-  [^ChannelHandlerContext ctx ^Channel ch ^XData xs]
+  [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
 
   (let [info (GetAKey ch MSGINFO_KEY)
         itms (splitBodyParams (if (.hasContent xs)
                                 (.stringify xs) "")) ]
-    (resetAKeys ch)
+    (ResetAKeys ctx ch handler)
     (.resetContent xs itms)
     (FireMsgToNext ctx info xs)
   ))
 
-(defn- handleFormChunk  ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti HandleFormChunk  "" (fn [a b c & args] (class c)))
+(defmethod HandleFormChunk  FormPostFilter
+
   [^ChannelHandlerContext ctx
    ^Channel ch
-   ^HttpMessage msg]
+   handler
+   msg]
+
   (let [^HttpPostRequestDecoder
         dc (GetAKey ch FORMDEC_KEY)
         ^ULFormItems
         fis (GetAKey ch FORMITMS_KEY)]
     (if (nil? dc)
-      (HandleMsgChunk ctx ch msg)
+      (HandleMsgChunk ctx ch handler msg)
       (with-local-vars [err nil]
         (when (instance? HttpContent msg)
           (let [^HttpContent hc msg
@@ -244,16 +268,20 @@
                 info (GetAKey ch MSGINFO_KEY) ]
             (DelAKey ch FORMITMS_KEY)
             (.resetContent xs fis)
-            (resetAKeys ch)
-            (.fireChannelRead ctx {:info info
-                                   :payload xs})))))
+            (ResetAKeys ctx ch handler)
+            (FireMsgToNext ctx info xs)))))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti HandleFormPost "" (fn [a b c & args] (class c)))
+(defmethod HandleFormPost FormPostFilter
 
-(defn- handleFormPost ""
   [^ChannelHandlerContext ctx
    ^Channel ch
+   handler
    ^HttpMessage msg]
+
   (let [info (GetAKey ch MSGINFO_KEY)
         ctype (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
                   nsb strim lcase) ]
@@ -263,15 +291,16 @@
     (if (< (.indexOf ctype "multipart") 0)
       (do ;; nothing to decode
         (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
-        (HandleMsgChunk ctx ch msg))
+        (HandleMsgChunk ctx ch handler msg))
       (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
                    (HttpPostRequestDecoder. msg)) ]
         (SetAKey ch FORMDEC_KEY dc)
-        (handleFormChunk ctx ch msg)))
+        (HandleFormChunk ctx ch handler msg)))
   ))
 
-
-(defonce ^:private XXX
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defonce ^:private HTTP-FORMPOST-FILTER
   (proxy [FormPostFilter][]
     (channelRead0 [c obj]
       (let [^ChannelHandlerContext ctx c
@@ -291,38 +320,9 @@
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))))
 
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setContentLength ""
-
-  [^ChannelHandlerContext ctx clen]
-
-  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-        olen (:clen info) ]
-    (when-not (== olen clen)
-      (log/warn "Content-length read from headers = " olen ", new clen = " clen)
-      (NettyFW/setAttr ctx NettyFW/MSGINFO_KEY (assoc info :clen clen)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- appendHeaders ""
-
-  [^ChannelHandlerContext ctx
-   ^HttpHeaders hds]
-
-  (let [info (NettyFW/getAttr ctx NettyFW/MSGINFO_KEY)
-        old (:headers info)
-        nnw (ExtractHeaders hds) ]
-    (NettyFW/setAttr ctx
-                     NettyFW/MSGINFO_KEY
-                     (assoc info
-                            :headers
-                            (merge {} old nnw)))
-  ))
+(defn ReifyFormPostFilterSingleton ""
+  ^ChannelHandler
+  [] HTTP-FORMPOST-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -335,10 +335,11 @@
     (run [_ a1 args]
       ;; args === array of objects
       (let [^ChannelHandlerContext ctx a1
+            ch (.channel ctx)
             ^String op (aget args 0) ]
         (condp = op
-          "setContentLength" (setContentLength ctx (aget args 1))
-          "appendHeaders" (appendHeaders ctx (aget args 1))
+          "setContentLength" (SetContentLength ch (aget args 1))
+          "appendHeaders" (AppendHeaders ch (aget args 1))
           nil)))
   ))
 
@@ -360,37 +361,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onFormPost "" [^ChannelHandlerContext ctx info]
-  (NettyFW/setAttr ctx
-                   NettyFW/MSGINFO_KEY (assoc info :formpost true))
+(defn- onFormPost ""
+
+  [^Channel ch info]
+
+  (SetAKey ch MSGINFO_KEY (assoc info :formpost true))
   (ReifyFormPostFilterSingleton))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- doDemux "Detect and handle a FORM post or a normal request."
 
   [^ChannelHandlerContext ctx
    ^HttpRequest req
    ^czlabclj.xlib.util.core.Muble impl]
 
-  (let [info (ExtractMsgInfo req)
+  (let [info (MapMsgInfo req)
         {:keys [method uri]}
         info
         ch (.channel ctx)]
     (log/debug "Demux of message\n{}\n\n{}" req info)
-    (doto ctx
-      (NettyFW/setAttr NettyFW/MSGFUNC_KEY (reifyMsgFunc))
-      (NettyFW/setAttr NettyFW/MSGINFO_KEY info))
+    (doto ch
+      (SetAKey MSGFUNC_KEY (reifyMsgFunc))
+      (SetAKey MSGINFO_KEY info))
     (.setf! impl :delegate nil)
     (if (.startsWith (nsb uri) "/favicon.")
       (do
         ;; ignore this crap
-        (NettyFW/replyXXX ch 404)
+        (ReplyXXX ch 404)
         (.setf! impl :ignore true))
       (do
         (Expect100Filter/handle100 ctx req)
         (.setf! impl
                 :delegate
-                (if (IsFormPost req method)
-                  (onFormPost ctx info)
+                (if (IsFormPost? req method)
+                  (onFormPost ch info)
                   (ReifyRequestFilterSingleton)))))
     (when-let [d (.getf impl :delegate) ]
       (-> ^AuxHttpFilter d
@@ -399,7 +404,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyHttpFilter "Filter to sort out standard request or formpost."
+(defn- reifyHttpFilter "Filter to sort out standard request or formpost"
 
   ^ChannelHandler
   []
@@ -416,7 +421,7 @@
             (instance? HttpRequest msg)
             (doDemux ctx msg impl)
 
-            (notnil? d)
+            (some? d)
             (-> ^AuxHttpFilter d
                 (.channelReadXXX ctx msg))
 
@@ -424,12 +429,12 @@
             nil ;; ignore
 
             :else
-            (ThrowIOE (str "Fatal error while reading http message. " (type msg)))))))
+            (ThrowIOE (str "Error while reading message: " (type msg)))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- exitHttpDemuxFilter "Send msg upstream and remove the filter."
+(defn- exitHttpDemuxFilter "Send msg upstream and remove the filter"
 
   [^ChannelHandlerContext ctx msg]
 
@@ -440,62 +445,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeHttpDemuxFilter "First level filter, detects websock or normal http."
+(defn MakeHttpDemuxFilter "Level 1 filter, detects websock/normal http"
 
-  (^ChannelHandler [options ] (MakeHttpDemuxFilter options {}))
+  ^ChannelHandler
+  [options & [hack]]
 
-  (^ChannelHandler [options hack]
+  (let [ws (:wsock options)
+        uri (:uri ws)
+        hack (or hack {})
+        tmp (MakeMMap) ]
+    (proxy [ChannelInboundHandlerAdapter][]
+      (channelRead [c msg]
+        (log/debug "HttpDemuxFilter got this msg: " (type msg))
+        (let [^ChannelHandlerContext ctx c
+              pipe (.pipeline ctx)
+              ch (.channel ctx) ]
+          (cond
+            (and (instance? HttpRequest msg)
+                 (IsWEBSock? msg))
+            (do
+              ;; wait for full request
+              (log/debug "Got a websock req - let's wait for full msg.")
+              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
+              (.setf! tmp :wait4wsock true)
+              (ReferenceCountUtil/release msg))
 
-    (let [ws (:wsock options)
-          uri (:uri ws)
-          tmp (MakeMMap) ]
-      (proxy [ChannelInboundHandlerAdapter][]
-        (channelRead [c obj]
-          (log/debug "HttpDemuxFilter got this msg " (type obj))
-          (let [^ChannelHandlerContext ctx c
-                ^Object msg obj
-                pipe (.pipeline ctx)
-                ch (.channel ctx) ]
-            (cond
-              (and (instance? HttpRequest msg)
-                   (IsWEBSock msg))
-              (do
-                ;; wait for full request
-                (log/debug "Got a websock req - let's wait for full msg.")
-                (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-                (.setf! tmp :wait4wsock true)
-                (ReferenceCountUtil/release msg))
-
-              (true? (.getf tmp :wait4wsock))
-              (try
-                (when (instance? LastHttpContent msg)
-                  (log/debug "Got a wsock upgrade request for uri "
-                             uri
-                             ", swapping to netty's websock handler.")
-                  (.addAfter pipe
-                             "HttpResponseEncoder"
-                             "WebSocketServerProtocolHandler"
-                             (WebSocketServerProtocolHandler. uri))
-                  ;; maybe do something extra when wsock? caller decide...
-                  (-> (or (:onwsock hack) (constantly nil))
-                      (apply ctx hack options []))
-                  (exitHttpDemuxFilter ctx (.getf tmp :wsreq)))
-                (finally
-                  (ReferenceCountUtil/release msg)))
-
-              :else
-              (do
-                (log/debug "Standard http request - swap in our own http handler.")
+            (true? (.getf tmp :wait4wsock))
+            (try
+              (when (instance? LastHttpContent msg)
+                (log/debug "Got a wsock upgrade request for uri "
+                           uri
+                           ", swapping to netty's websock handler.")
                 (.addAfter pipe
-                           "HttpDemuxFilter"
-                           "ReifyHttpFilter"
-                           (reifyHttpFilter))
-                ;; maybe do something extra? caller decide...
-                (-> (or (:onhttp hack) (constantly nil))
+                           "HttpResponseEncoder"
+                           "WebSocketServerProtocolHandler"
+                           (WebSocketServerProtocolHandler. uri))
+                ;; maybe do something extra when wsock? caller decide...
+                (-> (or (:onwsock hack) (constantly nil))
                     (apply ctx hack options []))
-                (log/debug "Added new handler - reifyHttpFilter to the chain")
-                (exitHttpDemuxFilter ctx msg))))))
-  )))
+                (exitHttpDemuxFilter ctx (.getf tmp :wsreq)))
+              (finally
+                (ReferenceCountUtil/release msg)))
+
+            :else
+            (do
+              (log/debug "Basic http request - swap in our own http handler.")
+              (.addAfter pipe
+                         "HttpDemuxFilter"
+                         "ReifyHttpFilter"
+                         (reifyHttpFilter))
+              ;; maybe do something extra? caller decide...
+              (-> (or (:onhttp hack) (constantly nil))
+                  (apply ctx hack options []))
+              (log/debug "Added new handler - reifyHttpFilter to the chain")
+              (exitHttpDemuxFilter ctx msg))))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

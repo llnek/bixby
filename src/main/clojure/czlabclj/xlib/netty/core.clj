@@ -439,21 +439,30 @@
                     (catch Throwable _ "???"))
                (.refCnt ^ReferenceCounted obj))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResetAKeys ""
+(defn ClearAKeys "Clear out channel attributes"
 
   [^Channel ch]
 
   (let [^ByteBuf buf (GetAKey ch CBUF_KEY)]
-    (when-not (nil? buf)
-      (.release buf))
+    (when (some? buf) (.release buf))
     (DelAKey ch MSGFUNC_KEY)
     (DelAKey ch MSGINFO_KEY)
     (DelAKey ch CBUF_KEY)
     (DelAKey ch XDATA_KEY)
     (DelAKey ch XOS_KEY)
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ResetAKeys "Clear ch attributes" (fn [a b c & args] (class c)))
+(defmethod ResetAKeys :default
+
+  [^ChannelHandlerContext ctx ^Channel ch handler]
+
+  (ClearAKeys ch))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -503,6 +512,35 @@
     []
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetContentLength ""
+
+  [^Channel ch clen]
+
+  (let [info (GetAKey ch MSGINFO_KEY)
+        olen (:clen info) ]
+    (when-not (== olen clen)
+      (log/warn "ContentLength from headers = " olen ", new clen = " clen)
+      (SetAKey ch MSGINFO_KEY (assoc info :clen clen)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AppendHeaders ""
+
+  [^ChannelHandlerContext ctx
+   ^HttpHeaders hds]
+
+  (let [info (GetAKey ch MSGINFO_KEY)
+        old (:headers info)
+        nnw (MapHeaders hds) ]
+    (SetAKeys ch
+              MSGINFO_KEY
+              (assoc info
+                     :headers (merge {} old nnw)))
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn FireMsgToNext ""
@@ -510,8 +548,6 @@
   (log/debug "Fire fully decoded message to the next handler")
   (.fireChannelRead ctx {:info info :payload data}))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; HANDLE MESSAGE CHUNK (HttpContent)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- tooMuchData? ""
@@ -531,6 +567,8 @@
       false)
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- switchBufToFile ""
 
   ^OutputStream
@@ -546,6 +584,8 @@
     os
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- flushToFile ""
 
   [^OutputStream os chunc]
@@ -562,18 +602,24 @@
       (.flush os))
   ))
 
-(defn- finzAndDone ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti FinzAndDone "" (fn [a b c & args] (class c)))
+(defmethod FinzAndDone :default
 
-  [^ChannelHandlerContext ctx ^Channel ch ^XData xs]
+  [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
 
   (let [info (GetAKey ch MSGINFO_KEY)]
-    (ResetAKeys ch)
+    (ResetAKeys ctx ch handler)
     (FireMsgToNext ctx info xs)
   ))
 
-(defn- maybeFinzMsgChunk ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti FinzMsgChunk "" (fn [a b c & args] (class c)))
+(defmethod FinzMsgChunk :default
 
-  [^ChannelHandlerContext ctx ^Channel ch msg]
+  [^ChannelHandlerContext ctx ^Channel ch handler msg]
 
   (when (instance? LastHttpContent msg)
     (log/debug "Got the final last-http-content chunk, end of message")
@@ -588,12 +634,15 @@
           (.resetContent xs baos))
         (IOUtils/closeQuietly os))
       (.run func ctx (object-array ["setContentLength" (.size xs)]))
-      (finzAndDone ctx ch xs))
+      (FinzAndDone ctx ch handler xs))
   ))
 
-(defn HandleMsgChunk ""
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti HandleMsgChunk "" (fn [a b c & args] (class c)))
+(defmethod HandleMsgChunk :default
 
-  [^ChannelHandlerContext ctx ^Channel ch msg]
+  [^ChannelHandlerContext ctx ^Channel ch handler msg]
 
   (when (instance? HttpContent msg)
     (log/debug "Got a valid http-content chunk, part of a message.")
@@ -612,10 +661,11 @@
             (do
               (.retain chk)
               (.addComponent cbuf cc)
-              (.writerIndex cbuf (+ (.writerIndex cbuf) (.readableBytes cc))))
+              (.writerIndex cbuf (+ (.writerIndex cbuf)
+                                    (.readableBytes cc))))
             (flushToFile @os chk)))))
     ;;is this the last chunk?
-    (maybeFinzMsgChunk ctx ch msg)
+    (FinzMsgChunk ctx ch handler msg)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -664,14 +714,16 @@
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
       (TryC
-        (let [pwd (when-not (nil? pwdStr) (.toCharArray pwdStr))
+        (let [pwd (when (some? pwdStr) (.toCharArray pwdStr))
               x (SSLContext/getInstance flavor)
               ks (KeyStore/getInstance ^String
                                        (if (.endsWith keyUrlStr ".jks")
                                          "JKS"
                                          "PKCS12"))
-              t (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
-              k (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm)) ]
+              t (->> (TrustManagerFactory/getDefaultAlgorithm)
+                     (TrustManagerFactory/getInstance))
+              k (->> (KeyManagerFactory/getDefaultAlgorithm)
+                     (KeyManagerFactory/getInstance)) ]
           (with-open [inp (-> (URL. keyUrlStr)
                               (.openStream)) ]
             (.load ks inp pwd)
@@ -687,15 +739,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLClientHShake "Create a client side handler for SSL"
+(defn SSLClientHShake "Create a client-side handler for SSL"
 
   ^ChannelHandler
   [options]
 
   (TryC
     (let [^String flavor (or (:flavor options) "TLS")
+          m (SSLTrustMgrFactory/getTrustManagers)
           ctx (doto (SSLContext/getInstance flavor)
-                    (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
+                    (.init nil m nil)) ]
       (SslHandler. (doto (.createSSLEngine ctx)
                          (.setUseClientMode true))))
   ))
@@ -703,9 +756,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- demuxSvrType "" [a & args] (class a))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmulti ^Channel StartServer "Start a Netty server." demuxSvrType)
 (defmulti ^Channel StopServer "Stop a Netty server." demuxSvrType)
 
@@ -762,8 +812,8 @@
   [^Bootstrap bs ^Channel ch]
 
   (FutureCB (.close ch)
-            #(let [gp (.group bs) ]
-                (when (some? gp) (Try! (.shutdownGracefully gp))))))
+            #(when-let [gp (.group bs) ]
+                (Try! (.shutdownGracefully gp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -791,10 +841,10 @@
       (.channel NioServerSocketChannel)
       (.option ChannelOption/SO_REUSEADDR true)
       (.option ChannelOption/SO_BACKLOG
-               (int (or (:backlog options) 100)))
+               (or (:backlog options) 100))
       (.childOption ChannelOption/SO_RCVBUF
-                    (int (or (:rcvBuf options)
-                             (* 2 1024 1024))))
+                    (or (:rcvBuf options)
+                        (* 2 1024 1024)))
       (.childOption ChannelOption/TCP_NODELAY true)
       (.childHandler (.configure cfg options)))
   ))
@@ -812,11 +862,9 @@
       (.channel NioDatagramChannel)
       (.option ChannelOption/TCP_NODELAY true)
       (.option ChannelOption/SO_RCVBUF
-               (int (or (:rcvBuf options)
-                        (* 2 1024 1024)))))
+               (or (:rcvBuf options)
+                        (* 2 1024 1024))))
   ))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
