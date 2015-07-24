@@ -14,7 +14,7 @@
 
   czlabclj.xlib.netty.snooper
 
-  (:require [czlabclj.xlib.util.core :refer [notnil? ]]
+  (:require [czlabclj.xlib.util.core :refer [Try! notnil? ]]
             [czlabclj.xlib.util.str :refer [strim nsb hgl?]]
             [czlabclj.xlib.netty.filters :refer [ReifyHTTPPipe]])
 
@@ -201,7 +201,11 @@
   ^PipelineConfigurator
   []
 
-  (ReifyHTTPPipe "NettySnooper" snooperHandler))
+  (ReifyHTTPPipe
+    (fn [^ChannelPipeline pipe options]
+      (.addLast pipe "NettySnooper" (snooperHandler options))
+      (.addLast pipe ErrorFilter/getName (SharedErrorSinkFilter))
+      (Try! (.remove pipe "HttpObjectAggregator")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

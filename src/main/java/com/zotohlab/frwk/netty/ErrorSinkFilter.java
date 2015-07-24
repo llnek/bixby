@@ -11,19 +11,13 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.netty.NettyFW.getAttr;
-import static com.zotohlab.frwk.netty.NettyFW.replyXXX;
-import static com.zotohlab.frwk.util.CU.nsb;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.AttributeKey;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
-
-import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
+
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * Last in the pipeline to catch all errors.
@@ -32,39 +26,14 @@ import static org.slf4j.LoggerFactory.*;
  */
 @SuppressWarnings("rawtypes")
 @ChannelHandler.Sharable
-public class ErrorSinkFilter extends SimpleChannelInboundHandler {
+public abstract class ErrorSinkFilter extends SimpleChannelInboundHandler {
 
-  public static final AttributeKey<String> MSGTYPE = AttributeKey.valueOf("MSGTYPE");
-  
-  private static final ErrorSinkFilter shared = new ErrorSinkFilter();
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(ErrorSinkFilter.class.getSimpleName(), shared);
-    return pipe;
-  }
-
+  public static String getName() { return "ErrorSinkFilter"; }
+  
   protected ErrorSinkFilter() {}
-
-  @Override
-  protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-    maybeHandleError(ctx);
-  }
-
-  public void exceptionCaught(ChannelHandlerContext ctx, Throwable t) throws Exception {
-    tlog().error("", t);
-    maybeHandleError(ctx);
-  }
-
-  private void maybeHandleError(ChannelHandlerContext ctx) throws Exception {
-    Object obj = getAttr(ctx, MSGTYPE);
-    if ("wsock".equals( nsb(obj)))
-    {}
-    else {
-      replyXXX(ctx.channel(), 500);
-    }
-  }
 
 }
 

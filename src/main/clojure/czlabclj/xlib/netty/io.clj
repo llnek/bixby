@@ -81,6 +81,7 @@
 (defonce ^AttributeKey CBUF_KEY (AttributeKey/valueOf "cbuffer"))
 (defonce ^AttributeKey XDATA_KEY (AttributeKey/valueOf "xdata"))
 (defonce ^AttributeKey XOS_KEY (AttributeKey/valueOf "ostream"))
+(defonce ^AttributeKey MSGTYPE_KEY (AttributeKey/valueOf "msgtype"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -89,8 +90,7 @@
   [^ChannelFuture cf func]
 
   (->> (reify ChannelFutureListener
-         (operationComplete [_ ff]
-           (Try! (apply func (.isSuccess ^ChannelFuture ff) []))))
+         (operationComplete [_ ff] (Try! (func ff))))
        (.addListener cf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

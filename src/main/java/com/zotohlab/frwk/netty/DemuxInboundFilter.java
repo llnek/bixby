@@ -7,22 +7,28 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.netty;
 
-import io.netty.channel.ChannelHandler;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
+
+import io.netty.channel.ChannelInboundHandlerAdapter;
+
 
 /**
- * Handle 100-continue.
- * 
+ * Wrapper so that we can do some reference count debugging.
+ *
  * @author kenl
  */
-@ChannelHandler.Sharable
-public abstract class Expect100Filter extends SimpleInboundFilter {
+public abstract class DemuxInboundFilter extends ChannelInboundHandlerAdapter {
 
-  protected Expect100Filter() {}
+  private static Logger _log = getLogger(lookup().lookupClass());
+  public Logger tlog() { return _log; }
 
+  protected DemuxInboundFilter() {}
+  
 }
-
-
