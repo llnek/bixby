@@ -12,20 +12,13 @@
 package com.zotohlab.frwk.netty;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-
-import java.io.IOException;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
 public abstract class RequestFilter extends AuxHttpFilter {
-
-  public abstract void handleInboundMsg
-      (ChannelHandlerContext ctx, Object msg)
-      throws IOException;
-
+	
   protected RequestFilter() {}
 
 }

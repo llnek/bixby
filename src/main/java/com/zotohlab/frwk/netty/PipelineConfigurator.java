@@ -11,16 +11,15 @@
 
 package com.zotohlab.frwk.netty;
 
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-
-import java.util.Map;
-
-import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
 
 
 /**
@@ -33,7 +32,7 @@ public abstract class PipelineConfigurator {
   private static Logger _log=getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
-  public ChannelHandler configure(final Map<?,?> options) {
+  public ChannelHandler configure(final Object  options) {
     return new ChannelInitializer<Channel>() {
       public void initChannel(Channel ch) {
         mkInitor(ch.pipeline(), options);
@@ -41,14 +40,15 @@ public abstract class PipelineConfigurator {
     };
   }
 
-  protected void mkInitor(ChannelPipeline pipe, Map<?,?> options) {
+  protected abstract void assemble(ChannelPipeline pipe, Object  options);
+
+  protected void mkInitor(ChannelPipeline pipe, Object  options) {
     assemble(pipe, options);
     NettyFW.dbgPipelineHandlers(pipe);
   }
 
-  protected abstract void assemble(ChannelPipeline pipe, Map<?,?> options);
-
   protected PipelineConfigurator() {}
+
 }
 
 

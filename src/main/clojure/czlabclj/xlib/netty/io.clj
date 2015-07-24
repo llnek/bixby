@@ -15,84 +15,90 @@
   czlabclj.xlib.netty.io
 
   (:require [czlabclj.xlib.util.core
-             :refer
-             [ThrowIOE MakeMMap notnil? spos?
-              TryC Try! SafeGetJsonObject
-              SafeGetJsonInt SafeGetJsonString]]
+             :refer [Try!
+                     TryC
+                     RNil
+                     ThrowIOE
+                     spos?
+                     bool!]]
+            [czlabclj.xlib.util.io
+             :refer [CloseQ
+                     StreamLimit
+                     OpenTempFile
+                     ByteOS]]
             [czlabclj.xlib.util.str
-             :refer
-             [lcase ucase strim nsb hgl?]])
+             :refer [lcase
+                     ucase
+                     strim
+                     nsb
+                     hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as cs])
 
-  (:import  [io.netty.channel ChannelHandlerContext ChannelPipeline
-             ChannelInboundHandlerAdapter ChannelFuture
-             ChannelOption ChannelFutureListener
-             Channel ChannelHandler]
-            [io.netty.handler.ssl SslHandler]
-            [io.netty.buffer Unpooled]
-            [io.netty.channel.socket.nio NioDatagramChannel
-             NioServerSocketChannel]
-            [io.netty.channel.nio NioEventLoopGroup]
-            [org.apache.commons.lang3 StringUtils]
+  (:import  [io.netty.buffer CompositeByteBuf ByteBuf ByteBufHolder Unpooled]
+            [io.netty.util CharsetUtil AttributeKey ReferenceCounted]
+            [io.netty.handler.codec.http.websocketx WebSocketFrame]
+            [io.netty.bootstrap Bootstrap ServerBootstrap]
             [java.net URL InetAddress InetSocketAddress]
-            [java.io InputStream IOException]
-            [java.util Map Map$Entry]
-            [io.netty.handler.codec.http HttpHeaders HttpMessage
+            [com.zotohlab.frwk.netty PipelineConfigurator]
+            [com.zotohlab.frwk.net SSLTrustMgrFactory]
+            [com.zotohlab.frwk.core CallableWithArgs]
+            [com.zotohlab.frwk.io XData]
+            [io.netty.channel.nio NioEventLoopGroup]
+            [java.io File ByteArrayOutputStream OutputStream]
+            [io.netty.channel.socket.nio
+             NioDatagramChannel
+             NioServerSocketChannel]
+            [javax.net.ssl
+             KeyManagerFactory SSLContext
+             SSLEngine TrustManagerFactory]
+            [java.security KeyStore SecureRandom]
+            [io.netty.handler.ssl SslHandler]
+            [io.netty.channel Channel ChannelFuture
+             ChannelHandlerContext ChannelPipeline
+             ChannelHandler ChannelOption
+             ChannelFutureListener]
+            [io.netty.handler.codec.http HttpVersion
+             FullHttpResponse LastHttpContent
              HttpHeaders$Values
              HttpHeaders$Names
-             LastHttpContent DefaultFullHttpResponse
-             DefaultFullHttpRequest HttpContent
-             HttpRequest HttpResponse FullHttpRequest
-             QueryStringDecoder HttpResponseStatus
-             HttpRequestDecoder HttpVersion
-             HttpResponseEncoder]
-           [io.netty.bootstrap Bootstrap ServerBootstrap]
-           [io.netty.util CharsetUtil ReferenceCountUtil]
-           [io.netty.handler.codec.http.websocketx
-            WebSocketServerProtocolHandler]
-           [io.netty.handler.stream ChunkedWriteHandler]
-           [javax.net.ssl KeyManagerFactory SSLContext
-            SSLEngine TrustManagerFactory]
-           [java.security KeyStore SecureRandom]
-           [com.zotohlab.frwk.netty PipelineConfigurator
-            RequestFilter
-            Expect100Filter AuxHttpFilter
-            ErrorSinkFilter]
-           [com.zotohlab.frwk.netty NettyFW]
-           [com.zotohlab.frwk.core CallableWithArgs]
-           [com.zotohlab.frwk.io XData]
-           [com.zotohlab.frwk.net SSLTrustMgrFactory]
-           [com.google.gson JsonObject JsonPrimitive] ))
+             HttpMessage HttpResponse
+             DefaultFullHttpResponse
+             DefaultHttpResponse HttpContent
+             HttpRequest HttpResponseStatus
+             HttpHeaders QueryStringDecoder]
+            [java.util Map$Entry]
+            [io.netty.handler.stream ChunkedWriteHandler]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
+(defonce ^AttributeKey FORMDEC_KEY  (AttributeKey/valueOf "formdecoder"))
+(defonce ^AttributeKey FORMITMS_KEY (AttributeKey/valueOf "formitems"))
+(defonce ^AttributeKey MSGFUNC_KEY (AttributeKey/valueOf "msgfunc"))
+(defonce ^AttributeKey MSGINFO_KEY (AttributeKey/valueOf "msginfo"))
+(defonce ^AttributeKey CBUF_KEY (AttributeKey/valueOf "cbuffer"))
+(defonce ^AttributeKey XDATA_KEY (AttributeKey/valueOf "xdata"))
+(defonce ^AttributeKey XOS_KEY (AttributeKey/valueOf "ostream"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FutureCB "Register a callback upon operation completion."
+(defn FutureCB "Register a callback upon operation completion"
 
   [^ChannelFuture cf func]
 
-  (.addListener cf (reify ChannelFutureListener
-                     (operationComplete [_ ff]
-                       (Try! (apply func (.isSuccess ^ChannelFuture ff) []))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn CloseFuture "Close the channel."
-
-  [^ChannelFuture cf]
-
-  (.addListener cf ChannelFutureListener/CLOSE))
+  (->> (reify ChannelFutureListener
+         (operationComplete [_ ff]
+           (Try! (apply func (.isSuccess ^ChannelFuture ff) []))))
+       (.addListener cf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn WriteLastContent "Write out the last content flag."
 
   ^ChannelFuture
-  [^Channel ch flush?]
+  [^Channel ch & [flush?]]
 
   (log/debug "Writing last http-content out to client.")
   (if flush?
@@ -100,128 +106,594 @@
     (.write ch LastHttpContent/EMPTY_LAST_CONTENT)
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractHeaders "Return the headers in a map."
+(defn DbgNettyDone ""
 
-  [^HttpHeaders hdrs]
+  ^ChannelFutureListener
+  [msg]
 
-  (with-local-vars [rc (transient {})]
-    (doseq [^String n (.names hdrs) ]
-      (var-set rc (assoc! @rc
-                          (lcase n)
-                          (vec (.getAll hdrs n)))))
-    (persistent! @rc)
+  (reify ChannelFutureListener
+    (operationComplete [_ _]
+      (log/debug "netty-op-complete: {}" msg))
   ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeHttpReply ""
+
+  ^HttpResponse
+  [ & [code]]
+
+  (let [code (or code 200)]
+    (DefaultHttpResponse. HttpVersion/HTTP_1_1
+                          (HttpResponseStatus/valueOf code))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeFullHttpReply ""
+
+  ^FullHttpResponse
+  [ & [status payload]]
+
+  (let
+    [status (or status 200)
+     p (cond
+         (instance? String payload)
+         (Unpooled/copiedBuffer ^String payload CharsetUtil/UTF_8)
+         (instance? ByteBuf payload)
+         payload
+         :else nil)]
+    (if (nil? p)
+      (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
+                                (HttpResponseStatus/valueOf status))
+      (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
+                                (HttpResponseStatus/valueOf status) p))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetAKey ""
+
+  [^Channel ch ^AttributeKey akey  aval]
+
+  (-> ch (.attr akey) (.set aval)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DelAKey ""
+
+  [^Channel ch ^AttributeKey akey]
+
+  (-> ch (.attr akey) (.remove)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetAKey ""
+
+  ^Object
+  [^Channel ch ^AttributeKey akey]
+
+  (-> ch (.attr akey) (.get)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MapHeaders ""
+  [^HttpHeaders hdrs]
+  (reduce (fn [memo n]
+            (let [rc (RNil (.getAll hdrs ^String n))]
+              (if (empty? rc)
+                memo
+                (assoc memo (lcase n) (into [] rc)))))
+          {}
+          (.names hdrs)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddHdr "Add the header value."
+(defn AddHeader "Add the header value"
 
-  [^HttpMessage msg ^String nm
-   ^String value]
+  [^HttpMessage msg
+   ^String nm ^String value]
 
   (HttpHeaders/addHeader msg nm value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetHdr "Set the header value."
+(defn SetHeader "Set the header value"
 
-  [^HttpMessage msg ^String nm
-   ^String value]
+  [^HttpMessage msg
+   ^String nm ^String value]
 
   (HttpHeaders/setHeader msg nm value))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHdr "Get the header value."
+(defn GetHeader "Get the header value"
 
   ^String
   [^HttpMessage msg ^String nm]
 
   (HttpHeaders/getHeader msg nm))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractParams "Return the parameters in a map."
+(defn SlurpByteBuf ""
+
+  [^ByteBuf buf ^OutputStream os]
+
+  (let [len (if (nil? buf) 0 (.readableBytes buf))]
+    (if (> len 0)
+      (.readBytes buf os (int len))
+      (.flush os))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SlurpBytes ""
+
+  ^bytes
+  [^ByteBuf buf]
+
+  (let [baos (ByteOS)]
+    (SlurpByteBuf buf baos)
+    (.toByteArray baos)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MaybeSSL? ""
+
+  [^ChannelHandlerContext ctx]
+
+  (-> ctx (.pipeline) (.get SslHandler) (some?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MapParams ""
 
   [^QueryStringDecoder decr]
 
-  (with-local-vars [rc (transient {})]
-    (doseq [^Map$Entry en
-            (-> decr (.parameters)(.entrySet))]
-      (var-set rc (assoc! @rc
-                          (.getKey en)
-                          (vec (.getValue en)))))
-    (persistent! @rc)
-  ))
+  (reduce (fn [memo ^Map$Entry en]
+            (let [rc (RNil (.getValue en))]
+              (if (empty? rc)
+                memo
+                (assoc memo (.getKey en) (into [] rc)))))
+          {}
+          (-> decr (.parameters) (.entrySet))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExtractMsgInfo "Pick out pertinent information from the message,
-                      can be request or response."
+(defn MapMsgInfo ""
 
   [^HttpMessage msg]
 
-  (with-local-vars [rc (transient {})]
-    (var-set rc (assoc! @rc :isChunked (HttpHeaders/isTransferEncodingChunked msg)))
-    (var-set rc (assoc! @rc :keepAlive (HttpHeaders/isKeepAlive msg)))
-    (var-set rc (assoc! @rc :host (HttpHeaders/getHeader msg "Host" "")))
-    (var-set rc (assoc! @rc :protocol (nsb (.getProtocolVersion msg))))
-    (var-set rc (assoc! @rc :clen (HttpHeaders/getContentLength msg  0)))
-    (var-set rc (assoc! @rc :uri2 ""))
-    (var-set rc (assoc! @rc :uri ""))
-    (var-set rc (assoc! @rc :status ""))
-    (var-set rc (assoc! @rc :method ""))
-    (var-set rc (assoc! @rc :query ""))
-    (var-set rc (assoc! @rc :wsock false))
-    (var-set rc (assoc! @rc :code 0))
-    (var-set rc (assoc! @rc :params {}))
-    (var-set rc (assoc! @rc :headers (ExtractHeaders (.headers msg))))
+  (with-local-vars
+    [info
+      {"is-chunked" (HttpHeaders/isTransferEncodingChunked msg)
+       "keep-alive" (HttpHeaders/isKeepAlive msg)
+       "host" (HttpHeaders/getHeader msg "Host" "")
+       "protocol" (-> msg (.getProtocolVersion) (.toString))
+       "clen" (HttpHeaders/getContentLength msg 0)
+       "uri2" ""
+       "query" ""
+       "wsock" false
+       "uri" ""
+       "status" ""
+       "code" 0
+       "method" ""
+       "params" {}
+       "headers" (MapHeaders (.headers msg)) }]
     (cond
       (instance? HttpResponse msg)
-      (let [s (.getStatus ^HttpResponse msg) ]
-        (var-set rc (assoc! @rc :status (nsb (.reasonPhrase s))))
-        (var-set rc (assoc! @rc :code (.code s))))
-
+      (let [s (-> ^HttpResponse msg (.getStatus))]
+        (->> (merge @info {"status" (nsb (.reasonPhrase s))
+                           "code"  (.code s)})
+             (var-set info)))
       (instance? HttpRequest msg)
-      (let [mo (HttpHeaders/getHeader msg "X-HTTP-Method-Override")
-            ^HttpRequest req  msg
+      (let [mo (GetHeader msg "X-HTTP-Method-Override")
+            ^HttpRequest req msg
             uriStr (nsb (.getUri req))
-            pos (.indexOf uriStr (int \?))
-            md (-> req (.getMethod)(.name))
-            mt (if (hgl? mo) mo md)
-            dc (QueryStringDecoder. uriStr) ]
-        (var-set rc (assoc! @rc :method (ucase mt)))
-        (var-set rc (assoc! @rc :params (ExtractParams dc)))
-        (var-set rc (assoc! @rc :uri (.path dc)))
-        (var-set rc (assoc! @rc :uri2 uriStr))
+            pos (.indexOf uriStr "?")
+            md (-> req (.getMethod) (.name))
+            mt (if-not (empty? mo) mo md)
+            dc (QueryStringDecoder. uriStr)]
+        (->> (-> (merge @info {"method" (ucase mt)
+                               "uri" (.path dc)
+                               "uri2" uriStr})
+                 (assoc "params" (MapParams dc)))
+             (var-set info))
         (when (>= pos 0)
-          (var-set rc (assoc! @rc :query (.substring uriStr pos)))))
-
+          (->> (assoc @info "query" (.substring uriStr pos))
+               (var-set info))))
       :else nil)
-    (persistent! @rc)
+    @info
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AddWriteChunker ""
+
+  ^ChannelPipeline
+  [^ChannelPipeline pipe]
+
+  (doto pipe
+    (.addLast  "ChunkedWriteHandler"  (ChunkedWriteHandler.))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetMethod ""
+
+  ^String
+  [^HttpRequest req]
+
+  (let [mo (GetHeader req "X-HTTP-Method-Override")
+        mt (-> req (.getMethod) (.name) (ucase))]
+    (if-not (empty? mo)
+      mo
+      mt)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetUriPath ""
+
+  ^String
+  [^HttpRequest req]
+
+  (-> (QueryStringDecoder. (.getUri req)) (.path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SockItDown ""
+
+  ^long
+  [^ByteBuf cbuf ^OutputStream out lastSum]
+
+  (let [cnt (if (nil? cbuf) 0 (.readableBytes cbuf))]
+    (loop [bits (byte-array 4096)
+           total cnt]
+      (when (> total 0)
+        (let [len (Math/min (int 4096) (int total))]
+          (.readBytes cbuf bits 0 len)
+          (.write out bits 0 len)
+          (recur bits (- total len)))))
+    (.flush out)
+    (+ lastSum cnt)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SwapFileBacked ""
+
+  ^OutputStream
+  [^XData x ^OutputStream out lastSum]
+
+  (if (> lastSum (StreamLimit))
+    (let [[fp os] (OpenTempFile)]
+      (.resetContent x fp)
+      os)
+    out
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CloseCF ""
+
+  [^ChannelFuture cf & [keepAlive?] ]
+
+  (when (and (some? cf)
+             (not (bool! keepAlive?)))
+    (.addListener cf (ChannelFutureListener/CLOSE))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ReplyXXX  ""
+
+  [^Channel ch status & [keepAlive?] ]
+
+  (let [rsp (MakeFullHttpReply status)]
+    (log/debug "Return HTTP status {} back to client" status)
+    (CloseCF (.writeAndFlush ch rsp) (bool! keepAlive?))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SendRedirect ""
+  [^Channel ch permanent ^String targetUrl]
+  (let [rsp (MakeFullHttpReply (if permanent 301 307))]
+    (log/debug "Redirecting to -> {}" targetUrl)
+    (HttpHeaders/setHeader rsp "location" targetUrl)
+    (CloseCF (.writeAndFlush ch rsp))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Continue100 ""
+  [^ChannelHandlerContext ctx]
+  (-> ctx
+      (.channel)
+      (.writeAndFlush (MakeFullHttpReply 100))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbgRefCount ""
+  [obj]
+  (when (instance? ReferenceCounted obj)
+    (log/debug "Object {}: has ref-count = {}"
+               (try (.toString ^Object obj)
+                    (catch Throwable _ "???"))
+               (.refCnt ^ReferenceCounted obj))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ClearAKeys "Clear out channel attributes"
+
+  [^Channel ch]
+
+  (let [^ByteBuf buf (GetAKey ch CBUF_KEY)]
+    (when (some? buf) (.release buf))
+    (DelAKey ch MSGFUNC_KEY)
+    (DelAKey ch MSGINFO_KEY)
+    (DelAKey ch CBUF_KEY)
+    (DelAKey ch XDATA_KEY)
+    (DelAKey ch XOS_KEY)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti ResetAKeys "Clear ch attributes" (fn [a b c & args] (class c)))
+(defmethod ResetAKeys :default
+
+  [^ChannelHandlerContext ctx ^Channel ch handler]
+
+  (ClearAKeys ch))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetHeaderNames ""
+
+  [info]
+
+  (if-let [hds (get info "headers")]
+    (keys hds)
+    #{}
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetHeaderValues ""
+
+  [info header]
+
+  {:pre [(some? header)]}
+
+  (if-let [hds (get info "headers")]
+    (or (get hds (lcase header)) [])
+    []
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetParameters ""
+
+  [info]
+
+  (if-let [hds (get info "params")]
+    (keys hds)
+    #{}
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetParameterValues ""
+
+  [info pm]
+
+  {:pre [(some? pm)]}
+
+  (if-let [pms (get info "params")]
+    (or (get pms pm) [])
+    []
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLServerHShake "Create a server-side handler for SSL."
+(defn SetContentLength ""
+
+  [^Channel ch clen]
+
+  (let [info (GetAKey ch MSGINFO_KEY)
+        olen (:clen info) ]
+    (when-not (== olen clen)
+      (log/warn "ContentLength from headers = {}, new clen = {}" olen clen)
+      (SetAKey ch MSGINFO_KEY (assoc info :clen clen)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AppendHeaders ""
+
+  [^Channel ch ^HttpHeaders hds]
+
+  (let [info (GetAKey ch MSGINFO_KEY)
+        old (:headers info)
+        nnw (MapHeaders hds) ]
+    (SetAKey ch
+             MSGINFO_KEY
+             (assoc info
+                    :headers (merge {} old nnw)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FlushContent ""
+
+  [^OutputStream os ^ByteBufHolder chunc]
+
+  (when-let [buf (.content chunc)]
+    (SlurpByteBuf buf os)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn FireMsgToNext ""
+
+  [^ChannelHandlerContext ctx info data]
+
+  (log/debug "Fire fully decoded message to the next handler")
+  (.fireChannelRead ctx {:info info :payload data}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- tooMuchData? ""
+
+  [^ByteBuf content ^ByteBufHolder chunc]
+
+  (if-let [buf (.content chunc)]
+    (> (.readableBytes content)
+       (- (StreamLimit) (.readableBytes buf)))
+    false
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- switchBufToFile ""
+
+  ^OutputStream
+  [^ChannelHandlerContext ctx ^Channel ch ^CompositeByteBuf bbuf]
+
+  (let [^XData xs (GetAKey ch XDATA_KEY)
+        [fp os] (OpenTempFile)]
+    (SlurpByteBuf bbuf os)
+    (.resetContent xs fp)
+    (SetAKey ch XOS_KEY os)
+    os
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti FinzHttpContent "" (fn [a b c & args] (class c)))
+(defmethod FinzHttpContent :default
+
+  [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
+
+  (let [info (GetAKey ch MSGINFO_KEY)]
+    (ResetAKeys ctx ch handler)
+    (FireMsgToNext ctx info xs)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti HandleLastContent "" (fn [a b c & args] (class c)))
+(defmethod HandleLastContent :default
+
+  [^ChannelHandlerContext ctx ^Channel ch handler msg]
+
+  (when (instance? LastHttpContent msg)
+    (log/debug "Got the final last-http-content chunk, end of message")
+    (let [^CallableWithArgs func (GetAKey ch MSGFUNC_KEY)
+          ^OutputStream os (GetAKey ch XOS_KEY)
+          ^ByteBuf cbuf (GetAKey ch CBUF_KEY)
+          ^XData xs (GetAKey ch XDATA_KEY)]
+      (AppendHeaders ch (-> ^LastHttpContent msg (.trailingHeaders)))
+      (if (nil? os)
+        (let [baos (ByteOS)]
+          (SlurpByteBuf cbuf baos)
+          (.resetContent xs baos))
+        (CloseQ os))
+      (SetContentLength ch (.size xs))
+      (FinzHttpContent ctx ch handler xs))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti HandleHttpContent "" (fn [a b c & args] (class c)))
+(defmethod HandleHttpContent :default
+
+  [^ChannelHandlerContext ctx ^Channel ch handler msg]
+
+  (when (instance? HttpContent msg)
+    (log/debug "Got a valid http-content chunk, part of a message")
+    (with-local-vars [os nil]
+      (let [^CompositeByteBuf cbuf (GetAKey ch CBUF_KEY)
+            ^XData xs (GetAKey ch XDATA_KEY)
+            ^HttpContent chk msg
+            cc (.content chk)]
+        (var-set os (GetAKey ch XOS_KEY))
+        ;;if we have not done already, may be see if we need to switch to file
+        (when (and (not (.hasContent xs))
+                   (tooMuchData? cbuf msg))
+          (var-set os (switchBufToFile ctx ch cbuf)))
+        (when (.isReadable cc)
+          (if (nil? @os)
+            (do
+              (.retain chk)
+              (.addComponent cbuf cc)
+              (.writerIndex cbuf (+ (.writerIndex cbuf)
+                                    (.readableBytes cc))))
+            (FlushContent @os chk)))))
+    ;;is this the last chunk?
+    (HandleLastContent ctx ch handler msg)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsFormPost? "Detects if this request is a http form post"
+
+  [^HttpMessage msg ^String method]
+
+  (let [ct (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
+               nsb lcase) ]
+    (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
+         (or (>= (.indexOf ct "multipart/form-data") 0)
+             (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsWEBSock? "Detects if request is a websocket request"
+
+  [^HttpRequest req]
+
+  (let [^String cn (-> (GetHeader req HttpHeaders$Names/CONNECTION)
+                        nsb lcase)
+        ^String ws (-> (GetHeader req HttpHeaders$Names/UPGRADE)
+                        nsb lcase)
+        ^String mo (-> (GetHeader req "X-HTTP-Method-Override")
+                        nsb strim ucase) ]
+    (and (>= (.indexOf ws "websocket") 0)
+         (>= (.indexOf cn "upgrade") 0)
+         (= "GET" (if-not (hgl? mo)
+                    (-> (.getMethod req)
+                        (.name)
+                        (ucase))
+                    mo)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SSLServerHShake "Create a server-side handler for SSL"
 
   ^ChannelHandler
   [options]
 
-  (let [^String keyUrlStr (:serverKey options)
+  (let [^String flavor (or (:flavor options) "TLS")
+        ^String keyUrlStr (:serverKey options)
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
       (TryC
-        (let [pwd (when-not (nil? pwdStr) (.toCharArray pwdStr))
-              x (SSLContext/getInstance "TLS")
+        (let [pwd (when (some? pwdStr) (.toCharArray pwdStr))
+              x (SSLContext/getInstance flavor)
               ks (KeyStore/getInstance ^String
                                        (if (.endsWith keyUrlStr ".jks")
                                          "JKS"
                                          "PKCS12"))
-              t (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
-              k (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm)) ]
+              t (->> (TrustManagerFactory/getDefaultAlgorithm)
+                     (TrustManagerFactory/getInstance))
+              k (->> (KeyManagerFactory/getDefaultAlgorithm)
+                     (KeyManagerFactory/getInstance)) ]
           (with-open [inp (-> (URL. keyUrlStr)
                               (.openStream)) ]
             (.load ks inp pwd)
@@ -237,86 +709,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLClientHShake "Create a client side handler for SSL."
+(defn SSLClientHShake "Create a client-side handler for SSL"
 
   ^ChannelHandler
   [options]
 
   (TryC
-    (let [ctx (doto (SSLContext/getInstance "TLS")
-                    (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)) ]
+    (let [^String flavor (or (:flavor options) "TLS")
+          m (SSLTrustMgrFactory/getTrustManagers)
+          ctx (doto (SSLContext/getInstance flavor)
+                    (.init nil m nil)) ]
       (SslHandler. (doto (.createSSLEngine ctx)
                          (.setUseClientMode true))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- demux-server-type ""
-
-  [a & args]
-
-  (cond
-    (instance? ServerBootstrap a)
-    :tcp-server
-    (instance? Bootstrap a)
-    :udp-server
-    :else
-    (ThrowIOE "Unknown server type")))
+(defn- demuxSvrType "" [a & args] (class a))
+(defmulti ^Channel StartServer "Start a Netty server" demuxSvrType)
+(defmulti ^Channel StopServer "Stop a Netty server" demuxSvrType)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^Channel StartServer "Start a Netty server." demux-server-type)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti ^Channel StopServer "Stop a Netty server." demux-server-type)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsFormPost "Detects if this request is a http form post."
-
-  [^HttpMessage msg ^String method]
-
-  (let [ct (-> (GetHdr msg HttpHeaders$Names/CONTENT_TYPE)
-               nsb strim lcase) ]
-    (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
-         (or (>= (.indexOf ct "multipart/form-data") 0)
-             (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsWEBSock "Detects if request is a websocket request."
-
-  [^HttpRequest req]
-
-  (let [^String cn (-> (GetHdr req HttpHeaders$Names/CONNECTION)
-                       nsb strim lcase)
-        ^String ws (-> (GetHdr req HttpHeaders$Names/UPGRADE)
-                       nsb strim lcase)
-        ^String mo (-> (GetHdr req "X-HTTP-Method-Override")
-                       nsb strim) ]
-    (and (>= (.indexOf ws "websocket") 0)
-         (>= (.indexOf cn "upgrade") 0)
-         (= "GET" (if-not (hgl? mo)
-                    (-> (.getMethod req)
-                        (.name))
-                    mo)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod StartServer :tcp-server
+(defmethod StartServer ServerBootstrap
 
   ^Channel
-  [^ServerBootstrap bs
-   ^String host
-   port]
+  [^ServerBootstrap bs ^String host port]
 
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
-    (log/debug "Netty-TCP-server: running on host " ip ", port " port)
+    (log/debug "NettyTCPServer: running on host {}:{}" ip port)
     (try
       (-> (.bind bs ip (int port))
           (.sync)
@@ -327,46 +750,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod StartServer :udp-server
+(defmethod StartServer Bootstrap
 
   ^Channel
-  [^Bootstrap bs
-   ^String host
-   port]
+  [^Bootstrap bs ^String host port]
 
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
-    (log/debug "Netty-UDP-server: running on host " ip ", port " port)
+    (log/debug "NettyUDPServer: running on host {}:{}" ip port)
     (-> (.bind bs ip (int port))
         (.channel))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod StopServer :tcp-server
+(defmethod StopServer ServerBootstrap
 
-  [^ServerBootstrap bs
-   ^Channel ch]
+  [^ServerBootstrap bs ^Channel ch]
 
   (FutureCB (.close ch)
-            (fn [_]
-              (let [gc (.childGroup bs)
-                    gp (.group bs) ]
-                (when-not (nil? gc) (Try! (.shutdownGracefully gc)))
-                (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
+            #(let [gc (.childGroup bs)
+                   gp (.group bs) ]
+               (when (some? gc) (Try! (.shutdownGracefully gc)))
+               (when (some? gp) (Try! (.shutdownGracefully gp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod StopServer :udp-server
+(defmethod StopServer Bootstrap
 
-  [^Bootstrap bs
-   ^Channel ch]
+  [^Bootstrap bs ^Channel ch]
 
   (FutureCB (.close ch)
-            (fn [_]
-              (let [gp (.group bs) ]
-                (when-not (nil? gp) (Try! (.shutdownGracefully gp)))))))
+            #(when-let [gp (.group bs) ]
+                (Try! (.shutdownGracefully gp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -382,43 +799,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InitTCPServer "Create and configure a TCP Netty Server."
+(defn InitTCPServer "Create and configure a TCP Netty Server"
 
   ^ServerBootstrap
-  [^PipelineConfigurator cfg
-   options]
+  [^PipelineConfigurator cfg options]
 
-  (doto (ServerBootstrap.)
-    (.group (getEventGroup (:bossThreads options))
-            (getEventGroup (:workerThreads options)))
-    (.channel NioServerSocketChannel)
-    (.option ChannelOption/SO_REUSEADDR true)
-    (.option ChannelOption/SO_BACKLOG
-             (int (or (:backlog options) 100)))
-    (.childOption ChannelOption/SO_RCVBUF
-                  (int (or (:rcvBuf options)
-                           (* 2 1024 1024))))
-    (.childOption ChannelOption/TCP_NODELAY true)
-    (.childHandler (.configure cfg options))
+  (let [thds (:threads options)]
+    (doto (ServerBootstrap.)
+      (.group (getEventGroup (or (:boss thds) 4))
+              (getEventGroup (or (:worker thds) 6)))
+      (.channel NioServerSocketChannel)
+      (.option ChannelOption/SO_REUSEADDR true)
+      (.option ChannelOption/SO_BACKLOG
+               (or (:backlog options) 100))
+      (.childOption ChannelOption/SO_RCVBUF
+                    (or (:rcvBuf options)
+                        (* 2 1024 1024)))
+      (.childOption ChannelOption/TCP_NODELAY true)
+      (.childHandler (.configure cfg options)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InitUDPServer "Create and configure a UDP Netty Server."
+(defn InitUDPServer "Create and configure a UDP Netty Server"
 
   ^Bootstrap
-  [^PipelineConfigurator cfg
-   options]
+  [^PipelineConfigurator cfg options]
 
-  (doto (Bootstrap.)
-    (.group (getEventGroup (:bossThreads options)))
-    (.channel NioDatagramChannel)
-    (.option ChannelOption/TCP_NODELAY true)
-    (.option ChannelOption/SO_RCVBUF
-             (int (or (:rcvBuf options)
-                      (* 2 1024 1024))))
+  (let [thds (:threads options)]
+    (doto (Bootstrap.)
+      (.group (getEventGroup (or (:boss thds) 4)))
+      (.channel NioDatagramChannel)
+      (.option ChannelOption/TCP_NODELAY true)
+      (.option ChannelOption/SO_RCVBUF
+               (or (:rcvBuf options) (* 2 1024 1024)))
+      (.handler (.configure cfg options)))
   ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-

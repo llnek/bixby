@@ -11,41 +11,12 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.io.IO.streamLimit;
-import static com.zotohlab.frwk.netty.NettyFW.CBUF_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.MSGFUNC_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.MSGINFO_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.XDATA_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.XOS_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.delAttr;
-import static com.zotohlab.frwk.netty.NettyFW.getAttr;
-import static com.zotohlab.frwk.netty.NettyFW.setAttr;
-import static com.zotohlab.frwk.netty.NettyFW.slurpByteBuf;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpContent;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import io.netty.handler.ssl.SslHandler;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Map;
-
-import static java.lang.invoke.MethodHandles.*;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
 
-import static org.slf4j.LoggerFactory.*;
-
-import com.zotohlab.frwk.core.CallableWithArgs;
-import com.zotohlab.frwk.io.IO;
-import com.zotohlab.frwk.io.XData;
+import io.netty.channel.ChannelHandlerContext;
 
 
 /**
@@ -61,131 +32,7 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   public String getName() { 
     return getClass().getSimpleName(); 
   }
-
-  public void resetAttrs(ChannelHandlerContext ctx) {
-    resetAttrs(ctx.channel());
-  }
   
-  /** Clean up any attached attributes.
-   */
-  public void resetAttrs(Channel ch) {
-
-    ByteBuf buf= (ByteBuf) getAttr(ch, CBUF_KEY);
-    if (buf != null) { buf.release(); }
-
-    delAttr(ch,MSGFUNC_KEY);
-    delAttr(ch,MSGINFO_KEY);
-    delAttr(ch,CBUF_KEY);
-    delAttr(ch,XDATA_KEY);
-    delAttr(ch,XOS_KEY);
-  }
-
-  public void handleMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
-
-    if (msg instanceof HttpContent) {
-      tlog().debug("Got a valid http-content chunk, part of a message.");
-    } else { return; }
-
-    CompositeByteBuf cbuf = (CompositeByteBuf) getAttr(ctx, CBUF_KEY);
-    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
-    XData xs = (XData) getAttr(ctx, XDATA_KEY);
-    HttpContent chk = (HttpContent) msg;
-    // if we have not done already, may be see if we need to switch to file.
-    if ( !xs.hasContent() && tooMuchData(cbuf, msg)) {
-      os = switchBufToFile(ctx, cbuf);
-    }
-    ByteBuf cc= chk.content();
-    if (cc.isReadable()) {
-      if (os == null) {
-        chk.retain();
-        cbuf.addComponent( cc);
-        cbuf.writerIndex( cbuf.writerIndex() + cc.readableBytes() );
-      } else {
-        flushToFile(os, chk);
-      }
-    }
-    // is this the last chunk?
-    maybeFinzMsgChunk(ctx, msg);
-  }
-
-  protected void maybeFinzMsgChunk(ChannelHandlerContext ctx, Object msg) throws IOException {
-
-    if (msg instanceof LastHttpContent) {
-      tlog().debug("Got the final last-http-content chunk, end of message.");
-    } else  { return; }
-
-    CallableWithArgs func= (CallableWithArgs) getAttr(ctx, MSGFUNC_KEY) ;
-    OutputStream os = (OutputStream) getAttr(ctx, XOS_KEY);
-    ByteBuf cbuf = (ByteBuf) getAttr(ctx, CBUF_KEY);
-    XData xs = (XData) getAttr(ctx, XDATA_KEY);
-
-    addMoreHeaders(ctx, ((LastHttpContent ) msg).trailingHeaders());
-    if (os == null) {
-      OutputStream baos = new ByteArrayOutputStream();
-      slurpByteBuf(cbuf, baos);
-      xs.resetContent(baos);
-    } else {
-      org.apache.commons.io.IOUtils.closeQuietly(os);
-      os=null;
-    }
-    func.run(new Object[]{ ctx, "setContentLength", xs.size() });
-    // all done.
-    finzAndDone(ctx, xs);
-  }
-
-  protected void finzAndDone(ChannelHandlerContext ctx, XData xs)
-      throws IOException {
-    tlog().debug("fire fully decoded message to the next handler");
-    Map<?,?> info = (Map<?,?>) getAttr(ctx, MSGINFO_KEY);
-    resetAttrs(ctx);
-    ctx.fireChannelRead( new DemuxedMsg(info, xs));
-  }
-
-  protected boolean tooMuchData(ByteBuf content, Object chunc) {
-    ByteBuf buf= null;
-    boolean rc=false;
-    if (chunc instanceof WebSocketFrame) { buf = ((WebSocketFrame) chunc).content(); }
-    else
-    if (chunc instanceof HttpContent) { buf = ((HttpContent) chunc).content(); }
-    if (buf != null) {
-      rc = content.readableBytes() > streamLimit() - buf.readableBytes();
-    }
-    return rc;
-  }
-
-  protected OutputStream switchBufToFile(ChannelHandlerContext ctx, CompositeByteBuf bbuf)
-    throws IOException {
-    XData xs = (XData) getAttr(ctx, XDATA_KEY);
-    Object[] fos = IO.newTempFile(true);
-    OutputStream os = (OutputStream) fos[1];
-    File fp = (File) fos[0];
-    slurpByteBuf(bbuf, os);
-    os.flush();
-    xs.resetContent(fp);
-    setAttr(ctx, XOS_KEY, os);
-    return os;
-  }
-
-  protected void flushToFile(OutputStream os , Object chunc) throws IOException {
-    ByteBuf buf = null;
-    if (chunc instanceof WebSocketFrame) { buf = ((WebSocketFrame) chunc).content(); }
-    else
-    if (chunc instanceof HttpContent) { buf = ((HttpContent) chunc).content(); }
-    if (buf != null) {
-      slurpByteBuf(buf, os);
-      os.flush();
-    }
-  }
-
-  protected void addMoreHeaders(ChannelHandlerContext ctx, HttpHeaders hds) {
-    CallableWithArgs func= (CallableWithArgs) getAttr(ctx, MSGFUNC_KEY) ;
-    func.run(new Object[]{ ctx, "appendHeaders", hds });
-  }
-
-  protected boolean maybeSSL(ChannelHandlerContext ctx) {
-    return ctx.pipeline().get(SslHandler.class) != null;
-  }
-
   @SuppressWarnings("unchecked")
   public void channelReadXXX(ChannelHandlerContext ctx, Object msg) throws Exception {
     channelRead0(ctx, msg);

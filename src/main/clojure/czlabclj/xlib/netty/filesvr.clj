@@ -56,8 +56,8 @@
         kalive (:keepAlive info)
         clen (.size xdata) ]
     (doto res
-      (SetHdr HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
-      (SetHdr HttpHeaders$Names/CONNECTION
+      (SetHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
+      (SetHeader HttpHeaders$Names/CONNECTION
                  (if kalive
                    HttpHeaders$Values/KEEP_ALIVE
                    HttpHeaders$Values/CLOSE))

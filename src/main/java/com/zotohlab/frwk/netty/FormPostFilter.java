@@ -11,45 +11,13 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.netty.NettyFW.FORMDEC_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.FORMITMS_KEY;
-import static com.zotohlab.frwk.netty.NettyFW.delAttr;
-import static com.zotohlab.frwk.netty.NettyFW.getAttr;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
-
-import java.io.IOException;
-
-import com.zotohlab.frwk.net.ULFormItems;
 
 /**
  * @author kenl
  */
 @ChannelHandler.Sharable
 public abstract class FormPostFilter extends AuxHttpFilter {
-
-  // special handler for inbound FORM post.
-  public abstract void handleFormPost(ChannelHandlerContext ctx , Object msg)
-    throws IOException;
-
-  public abstract void handleFormChunk(ChannelHandlerContext ctx, Object msg)
-    throws IOException;
-
-  public void resetAttrs(Channel ch) {
-    HttpPostRequestDecoder dc = (HttpPostRequestDecoder) getAttr(ch, FORMDEC_KEY);
-    ULFormItems fis = (ULFormItems) getAttr(ch, FORMITMS_KEY);
-    delAttr(ch, FORMITMS_KEY);
-    delAttr(ch, FORMDEC_KEY);
-    if (fis != null) {
-      fis.destroy();
-    }
-    if (dc != null) {
-      dc.destroy();
-    }
-    super.resetAttrs(ch);
-  }
 
   protected FormPostFilter() {}
 

@@ -15,33 +15,35 @@
   czlabclj.xlib.netty.filters
 
   (:require [czlabclj.xlib.util.core
-             :refer
-             [ThrowIOE MakeMMap notnil? spos?
-              TryC Try! SafeGetJsonObject
-              SafeGetJsonInt SafeGetJsonString]]
+             :refer [ThrowIOE
+                     MakeMMap
+                     notnil?
+                     spos?
+                     Bytesify
+                     TryC Try!
+                     SafeGetJsonObject
+                     SafeGetJsonInt
+                     SafeGetJsonString]]
             [czlabclj.xlib.util.str
-             :refer
-             [lcase ucase strim nsb hgl?]])
+             :refer [lcase
+                     ucase
+                     strim
+                     nsb
+                     hgl?]])
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.netty.request]
-        [czlabclj.xlib.netty.io]
-        [czlabclj.xlib.netty.form])
+  (:use [czlabclj.xlib.netty.io]
+        [czlabclj.xlib.util.io])
 
-  (:import  [io.netty.channel ChannelHandlerContext ChannelPipeline
+  (:import  [java.io File ByteArrayOutputStream InputStream IOException]
+            [io.netty.channel ChannelHandlerContext ChannelPipeline
              ChannelInboundHandlerAdapter ChannelFuture
              ChannelOption ChannelFutureListener
              Channel ChannelHandler]
-            [io.netty.handler.ssl SslHandler]
-            [io.netty.buffer Unpooled]
-            [io.netty.channel.socket.nio NioDatagramChannel
-             NioServerSocketChannel]
-            [io.netty.channel.nio NioEventLoopGroup]
             [org.apache.commons.lang3 StringUtils]
-            [java.net URL InetAddress InetSocketAddress]
-            [java.io InputStream IOException]
-            [java.util Map Map$Entry]
+            [io.netty.buffer Unpooled]
+            [java.net URLDecoder URL ]
             [io.netty.handler.codec.http HttpHeaders HttpMessage
              HttpHeaders$Values
              HttpHeaders$Names
@@ -51,23 +53,23 @@
              QueryStringDecoder HttpResponseStatus
              HttpRequestDecoder HttpVersion
              HttpResponseEncoder]
-           [io.netty.bootstrap Bootstrap ServerBootstrap]
-           [io.netty.util CharsetUtil ReferenceCountUtil]
-           [io.netty.handler.codec.http.websocketx
-            WebSocketServerProtocolHandler]
-           [io.netty.handler.stream ChunkedWriteHandler]
-           [javax.net.ssl KeyManagerFactory SSLContext
-            SSLEngine TrustManagerFactory]
-           [java.security KeyStore SecureRandom]
-           [com.zotohlab.frwk.netty PipelineConfigurator
-            RequestFilter
-            Expect100Filter AuxHttpFilter
-            ErrorSinkFilter]
-           [com.zotohlab.frwk.netty SimpleInboundFilter]
-           [com.zotohlab.frwk.core CallableWithArgs]
-           [com.zotohlab.frwk.io XData]
-           [com.zotohlab.frwk.net SSLTrustMgrFactory]
-           [com.google.gson JsonObject JsonPrimitive] ))
+            [io.netty.handler.codec.http.multipart InterfaceHttpData
+             DefaultHttpDataFactory
+             HttpPostRequestDecoder Attribute
+             HttpPostRequestDecoder$EndOfDataDecoderException
+             FileUpload DiskFileUpload
+             InterfaceHttpData$HttpDataType]
+            [io.netty.util ReferenceCountUtil]
+            [io.netty.handler.codec.http.websocketx
+             WebSocketServerProtocolHandler]
+            [io.netty.handler.stream ChunkedWriteHandler]
+            [com.zotohlab.frwk.netty PipelineConfigurator
+             FormPostFilter SimpleInboundFilter
+             ErrorSinkFilter RequestFilter
+             Expect100Filter AuxHttpFilter]
+            [com.zotohlab.frwk.core CallableWithArgs]
+            [com.zotohlab.frwk.io XData]
+            [com.zotohlab.frwk.net ULFileItem ULFormItems]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -85,10 +87,10 @@
 
   (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
   (SetAKey ch XDATA_KEY (XData.))
-  (HandleMsgChunk ctx ch handler obj))
+  (HandleHttpContent ctx ch handler obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; the decoder is annotated as sharable,  acts like the singleton.
+;;
 (defonce ^:private HTTP-REQ-FILTER
   (proxy [RequestFilter][]
     (channelRead0 [c msg]
@@ -100,7 +102,7 @@
           (HandleInboundMsg ctx ch this msg)
 
           (instance? HttpContent msg)
-          (HandleMsgChunk ctx ch this msg)
+          (HandleHttpContent ctx ch this msg)
 
           :else
           (do
@@ -122,10 +124,10 @@
    ^Channel ch
    handler]
 
-  (let [^HttpPostRequestDecoder
-        dc (GetAKey ch FORMDEC_KEY)
-        ^ULFormItems
-        fis (GetAKey ch FORMITMS_KEY)]
+  (let [^ULFormItems
+        fis (GetAKey ch FORMITMS_KEY)
+        ^HttpPostRequestDecoder
+        dc (GetAKey ch FORMDEC_KEY)]
     (DelAKey ch FORMITMS_KEY)
     (DelAKey ch FORMDEC_KEY)
     (when (some? fis) (.destroy fis))
@@ -212,7 +214,7 @@
           (when-not (empty? ss)
             (let [fi (URLDecoder/decode (aget ss 0) "utf-8")
                   fv (if (> (alength ss) 1)
-                         (URLDecoder/decode  (aget ss 1) "utf-8")
+                         (URLDecoder/decode (aget ss 1) "utf-8")
                          "") ]
               (->> (ULFileItem. fi (Bytesify fv))
                    (.add fis))))
@@ -222,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod FinzAndDone FormPostFilter
+(defmethod FinzHttpContent FormPostFilter
 
   [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
 
@@ -244,12 +246,12 @@
    handler
    msg]
 
-  (let [^HttpPostRequestDecoder
-        dc (GetAKey ch FORMDEC_KEY)
-        ^ULFormItems
-        fis (GetAKey ch FORMITMS_KEY)]
+  (let [^ULFormItems
+        fis (GetAKey ch FORMITMS_KEY)
+        ^HttpPostRequestDecoder
+        dc (GetAKey ch FORMDEC_KEY)]
     (if (nil? dc)
-      (HandleMsgChunk ctx ch handler msg)
+      (HandleHttpContent ctx ch handler msg)
       (with-local-vars [err nil]
         (when (instance? HttpContent msg)
           (let [^HttpContent hc msg
@@ -291,7 +293,7 @@
     (if (< (.indexOf ctype "multipart") 0)
       (do ;; nothing to decode
         (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
-        (HandleMsgChunk ctx ch handler msg))
+        (HandleHttpContent ctx ch handler msg))
       (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
                    (HttpPostRequestDecoder. msg)) ]
         (SetAKey ch FORMDEC_KEY dc)
@@ -302,17 +304,16 @@
 ;;
 (defonce ^:private HTTP-FORMPOST-FILTER
   (proxy [FormPostFilter][]
-    (channelRead0 [c obj]
+    (channelRead0 [c msg]
       (let [^ChannelHandlerContext ctx c
-            ch (.channel ctx)
-            ^Object msg obj ]
+            ch (.channel ctx)]
         (log/debug "channelRead0# called with msg: " (type msg))
         (cond
           (instance? HttpRequest msg)
-          (handleFormPost ctx ch msg)
+          (HandleFormPost ctx ch msg)
 
           (instance? HttpContent msg)
-          (handleFormChunk ctx ch msg)
+          (HandleFormChunk ctx ch msg)
 
           :else
           (do
@@ -320,28 +321,11 @@
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn ReifyFormPostFilterSingleton ""
   ^ChannelHandler
   [] HTTP-FORMPOST-FILTER)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- reifyMsgFunc ""
-
-  ^CallableWithArgs
-  []
-
-  (reify CallableWithArgs
-    (run [_ a1 args]
-      ;; args === array of objects
-      (let [^ChannelHandlerContext ctx a1
-            ch (.channel ctx)
-            ^String op (aget args 0) ]
-        (condp = op
-          "setContentLength" (SetContentLength ch (aget args 1))
-          "appendHeaders" (AppendHeaders ch (aget args 1))
-          nil)))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -382,7 +366,7 @@
         ch (.channel ctx)]
     (log/debug "Demux of message\n{}\n\n{}" req info)
     (doto ch
-      (SetAKey MSGFUNC_KEY (reifyMsgFunc))
+      ;;(SetAKey MSGFUNC_KEY (reifyMsgFunc))
       (SetAKey MSGINFO_KEY info))
     (.setf! impl :delegate nil)
     (if (.startsWith (nsb uri) "/favicon.")
