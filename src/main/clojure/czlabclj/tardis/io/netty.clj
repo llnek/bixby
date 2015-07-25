@@ -538,29 +538,22 @@
    ^czlabclj.tardis.core.sys.Elmt src
    options]
 
-  (proxy [SimpleChannelInboundHandler] []
-    (channelRead0 [ctx msg]
-      (let [ch (.channel ^ChannelHandlerContext ctx)
+  (log/debug "netty pipeline dispatcher, emitter = " (type co))
+  (proxy [AuxHttpFilter] []
+    (channelRead0 [c msg]
+      (let [ch (-> ^ChannelHandlerContext c (.channel))
             cfg (.getAttr src :emcfg)
             ts (:waitMillis cfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [^czlabclj.tardis.io.core.WaitEventHolder
-                w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt) ]
+                w
+                (-> (MakeNettyTrigger ch evt co)
+                    (MakeAsyncWaitHolder  evt)) ]
             (.timeoutMillis w ts)
             (.hold co w)))
         (.dispatch co evt {})))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nettyInitor ""
-
-  ^PipelineConfigurator
-  [^czlabclj.tardis.core.sys.Elmt co]
-
-  (log/debug "tardis netty pipeline initor called with emitter = " (type co))
-  (ReifyHTTPPipe "NettyDispatcher" #(msgDispatcher co co %)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -571,7 +564,14 @@
   (let [^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         options (.getAttr co :emcfg)
-        bs (InitTCPServer (nettyInitor co) options) ]
+        bs (InitTCPServer
+             (ReifyPipeCfgtor
+               (fn [p options]
+                 (-> ^ChannelPipeline p
+                     (.addBefore (ErrorSinkFilter/getName)
+                                 "MsgDispatcher"
+                                 #(msgDispatcher co co options)))))
+             options) ]
     (.setAttr! co :netty  { :bootstrap bs })
     co
   ))

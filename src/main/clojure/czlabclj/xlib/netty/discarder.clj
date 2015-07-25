@@ -19,73 +19,51 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.netty.io])
+  (:use [czlabclj.xlib.netty.filters]
+        [czlabclj.xlib.netty.io])
 
-  (:import  [com.zotohlab.frwk.netty PipelineConfigurator ErrorSinkFilter]
+  (:import  [com.zotohlab.frwk.netty
+             AuxHttpFilter
+             PipelineConfigurator ErrorSinkFilter]
             [io.netty.channel ChannelHandlerContext Channel
-             ChannelPipeline SimpleChannelInboundHandler ChannelHandler]
-            [java.io IOException ]
-            [io.netty.buffer Unpooled]
-            [io.netty.handler.codec.http HttpHeaders
-             HttpContent
-             HttpRequest HttpObjectAggregator
-             LastHttpContent HttpRequestDecoder
-             HttpResponseEncoder]
-            [io.netty.bootstrap ServerBootstrap]
-            [com.zotohlab.frwk.netty NettyFW]
-            [com.google.gson JsonObject]))
+             ChannelPipeline ChannelHandler]
+            [io.netty.handler.codec.http LastHttpContent ]
+            [io.netty.bootstrap ServerBootstrap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- discardHandler ""
-
-  ^ChannelHandler
-  [callback]
-
-  (proxy [SimpleChannelInboundHandler][]
-    (channelRead0 [c msg]
-      (let [ch (-> ^ChannelHandlerContext c
-                   (.channel))]
-        (when (instance? LastHttpContent msg)
-          (NettyFW/replyXXX ch 200)
-          (when (fn? callback)
-            (Try! (apply callback []))))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- discarder "Netty pipeline with standard handlers."
+(defn- discarder "Netty pipeline with standard handlers"
 
   ^PipelineConfigurator
   [callback]
 
-  (proxy [PipelineConfigurator][]
-    (assemble [p options]
-      (let [ssl (SSLServerHShake options)
-            ^ChannelPipeline pipe p]
-        (when-not (nil? ssl) (.addLast pipe "ssl" ssl))
-        (doto pipe
-          (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpObjectAggregator"
-                    (HttpObjectAggregator. (int 1048576)))
-          (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "Discarder" (discardHandler callback))
-          (ErrorSinkFilter/addLast ))))
-  ))
+  (ReifyPipeCfgtor
+    (fn [^ChannelPipeline pipe options]
+      (.addBefore pipe
+                  (ErrorSinkFilter/getName)
+                  "discarder"
+                  (proxy [AuxHttpFilter][]
+                    (channelRead0 [c msg]
+                      (let [ch (-> ^ChannelHandlerContext
+                                   c (.channel))]
+                        (when (instance? LastHttpContent msg)
+                          (ReplyXXX ch 200)
+                          (Try! (apply callback []))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeDiscardHTTPD "Discards the request, just returns 200 OK"
 
-  ([^String host port callback] (MakeDiscardHTTPD host port {} callback))
-  ([^String host port options callback]
-    (let [bs (InitTCPServer (discarder callback) options)
-          ch (StartServer bs host port) ]
-      {:bootstrap bs :channel ch})))
+  [host port callback options]
+
+  {:pre [(fn? callback)]}
+
+  (let [bs (InitTCPServer (discarder callback) options)
+        ch (StartServer bs host port) ]
+    {:bootstrap bs :channel ch}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

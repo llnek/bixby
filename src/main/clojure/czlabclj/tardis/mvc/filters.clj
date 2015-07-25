@@ -255,10 +255,15 @@
   ^PipelineConfigurator
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (log/debug "MVC netty pipeline initor called with emitter = " (type co))
+  (log/debug "netty pipeline initor, emitter = " (type co))
   (let [h mvcInitorOnHttp
         w mvcInitorOnWS]
-    (ReifyHTTPPipe "MVCDispatcher"
+    (ReifyPipeCfgtor
+      (fn [pipe options]
+        (doto pipe
+          (.addAfter "HttpRequestDecoder" "RouteFilter" (routeFilter co))
+
+    (ReifyPipeCfgtor "MVCDispatcher"
                    (fn [_] (mvcDispatcher co))
                    (fn [^ChannelPipeline pipe options]
                      (doto pipe

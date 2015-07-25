@@ -18,41 +18,44 @@
 
   (:require [czlabclj.xlib.util.files :refer [SaveFile GetFile]]
             [czlabclj.xlib.util.core
-             :refer
-             [SafeGetJsonBool SafeGetJsonString juid notnil? ]]
-            [czlabclj.xlib.util.str :refer [strim nsb hgl?]]
-            [czlabclj.xlib.netty.filters :refer [ReifyHTTPPipe]])
+             :refer [SafeGetJsonBool
+                     ConvInt
+                     SafeGetJsonString juid notnil? ]]
+            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
   (:require [clojure.tools.logging :as log]
+            [clojure.java.io :as io]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.netty.io])
+  (:use [czlabclj.xlib.netty.filters]
+        [czlabclj.xlib.netty.io])
 
   (:import  [io.netty.handler.codec.http
+             HttpResponse
              HttpHeaders$Names
              HttpHeaders$Values
              HttpHeaders LastHttpContent]
-            [com.zotohlab.frwk.netty PipelineConfigurator DemuxedMsg]
+            [com.zotohlab.frwk.netty
+             AuxHttpFilter ErrorSinkFilter
+             PipelineConfigurator]
             [java.io IOException File]
             [io.netty.channel ChannelHandlerContext
              Channel ChannelPipeline
              SimpleChannelInboundHandler ChannelHandler]
             [io.netty.bootstrap ServerBootstrap]
             [io.netty.handler.stream ChunkedStream]
-            [com.zotohlab.frwk.netty NettyFW]
-            [com.zotohlab.frwk.io XData]
-            [com.google.gson JsonObject]))
+            [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; file handlers
+;;
 (defn- replyGetVFile ""
 
   [^Channel ch info ^XData xdata]
 
-  (let [res (NettyFW/makeHttpReply 200)
+  (let [res (MakeHttpReply 200)
         kalive (:keepAlive info)
         clen (.size xdata) ]
     (doto res
@@ -65,56 +68,52 @@
       (HttpHeaders/setContentLength clen))
     (log/debug "Flushing file of " clen " bytes. to client.")
     (doto ch
-      (NettyFW/writeOnly res)
-      (NettyFW/writeOnly (ChunkedStream. (.stream xdata))))
-    (-> (NettyFW/writeFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
-        (NettyFW/closeCF kalive))
+      (.write res)
+      (.write (ChunkedStream. (.stream xdata))))
+    (-> (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
+        (CloseCF kalive))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- filePutter ""
+(defn- fPutter ""
 
   [^File vdir ^Channel ch
    info
    fname xdata]
 
-  (try
-    (SaveFile vdir fname xdata)
-    (NettyFW/replyXXX ch 200)
-    (catch Throwable e#
-      (log/error e# "")
-      (NettyFW/replyXXX ch 500))
+  (let [rc (try
+             (SaveFile vdir fname xdata) 200
+             (catch Throwable e# (log/error e# "") 500))]
+    (ReplyXXX ch rc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fileGetter ""
+(defn- fGetter ""
 
-  [^File vdir ^Channel ch
-   info fname]
+  [^File vdir ^Channel ch info fname]
 
   (let [xdata (GetFile vdir fname) ]
     (if (.hasContent xdata)
       (replyGetVFile ch info xdata)
-      (NettyFW/replyXXX ch 204))
+      (ReplyXXX ch 204))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fileHandler ""
+(defn- fHandler ""
 
   ^ChannelHandler
   [options]
 
-  (proxy [SimpleChannelInboundHandler][]
-    (channelRead0 [c m]
-      (let [vdir (File. ^String (:vdir options))
+  (proxy [AuxHttpFilter][]
+    (channelRead0 [c msg]
+      (let [vdir (io/file (:vdir options))
             ch (-> ^ChannelHandlerContext c
                    (.channel))
-            ^DemuxedMsg msg m
-            xs (.payload msg)
-            info (.info msg)
+            xs (:payload msg)
+            info (:info msg)
             ^String mtd (:method info)
             ^String uri (:uri info)
             pos (.lastIndexOf uri (int \/))
@@ -124,55 +123,49 @@
         (cond
           (or (= mtd "POST")
               (= mtd "PUT"))
-          (filePutter vdir ch info nm xs)
+          (fPutter vdir ch info nm xs)
 
           (or (= mtd "HEAD")
               (= mtd "GET"))
-          (fileGetter vdir ch info nm)
+          (fGetter vdir ch info nm)
 
           :else
-          (NettyFW/replyXXX ch 405))))
+          (ReplyXXX ch 405))))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- fileCfgtor ""
-
-  ^PipelineConfigurator
-  []
-
-  (ReifyHTTPPipe "FileServer" fileHandler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
 ;;
-(defn MakeMemFileServer "A file server which can get/put files."
+(defn MakeMemFileServer "A file server which can get/put files"
 
-  ;; returns netty objects if you want to do clean up
-  [^String host port options]
+  [host port vdir options]
 
-  (let [bs (InitTCPServer (fileCfgtor) options)
-        ch (StartServer bs host (int port)) ]
+  (let [bs (InitTCPServer
+             (ReifyPipeCfgtor
+               (fn [^ChannelPipeline pipe options]
+                 (.addBefore pipe
+                             (ErrorSinkFilter/getName)
+                             "fsvr"
+                             (fHandler options))))
+             (merge {} options {:vdir vdir}))
+        ch (StartServer bs host port) ]
     {:bootstrap bs :channel ch}
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filesvr host port vdir
-(defn -main "Start a basic file server."
+(defn -main "Start a basic file server"
 
-  [& args]
+  [ & args ]
 
-  (with-local-vars [opts (transient {})]
-    (cond
-      (< (count args) 3)
-      (println "usage: filesvr host port <rootdir>")
+  (when (< (count args) 3)
+    (println "usage: filesvr host port <rootdir>"))
 
-      :else
-      (var-set opts (assoc! @opts :vdir (str (nth args 2)))))
-    (MakeMemFileServer (nth args 0)
-                       (Integer/parseInt (nth args 1))
-                       (persistent! @opts))
-  ))
+  ;; 64meg max file size
+  (MakeMemFileServer (nth args 0)
+                     (ConvInt (nth args 1) 80)
+                     (nth args 2)
+                     {}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

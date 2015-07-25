@@ -15,50 +15,50 @@
   czlabclj.xlib.netty.snooper
 
   (:require [czlabclj.xlib.util.core :refer [Try! notnil? ]]
-            [czlabclj.xlib.util.str :refer [strim nsb hgl?]]
-            [czlabclj.xlib.netty.filters :refer [ReifyHTTPPipe]])
+            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
   (:require [clojure.tools.logging :as log]
             [clojure.string :as cstr])
 
-  (:use [czlabclj.xlib.netty.io])
+  (:use [czlabclj.xlib.netty.filters]
+        [czlabclj.xlib.netty.io])
 
   (:import  [io.netty.util Attribute AttributeKey CharsetUtil]
-            [io.netty.buffer Unpooled]
             [java.util Map$Entry]
             [io.netty.channel ChannelHandlerContext
-             Channel ChannelPipeline
-             SimpleChannelInboundHandler
-             ChannelHandler]
+             Channel ChannelPipeline ChannelHandler]
             [io.netty.handler.codec.http HttpHeaders
              HttpHeaders$Names HttpHeaders$Values
-             HttpVersion
-             HttpContent DefaultFullHttpResponse
+             HttpVersion FullHttpResponse
+             HttpContent
              HttpResponseStatus CookieDecoder
              ServerCookieEncoder Cookie
              HttpRequest QueryStringDecoder
              LastHttpContent]
-            [com.zotohlab.frwk.netty PipelineConfigurator]
-            [io.netty.bootstrap ServerBootstrap]
-            [com.zotohlab.frwk.netty NettyFW]
+            [com.zotohlab.frwk.netty
+             AuxHttpFilter ErrorSinkFilter
+             PipelineConfigurator]
             [com.zotohlab.frwk.io XData]
-            [com.google.gson JsonObject]))
+            [io.netty.bootstrap ServerBootstrap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 (def ^:private KALIVE (AttributeKey. "keepalive"))
+(def ^:private CBUF (AttributeKey. "cookies"))
+(def ^:private MBUF (AttributeKey. "msg"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- writeReply "Reply back a string."
+(defn- writeReply "Reply back a string"
 
   [^ChannelHandlerContext ctx
-   ^StringBuilder cookieBuf
-   ^StringBuilder buf
+   ^Channel ch
    ^HttpContent curObj ]
 
-  (let [res (NettyFW/makeFullHttpReply 200 (nsb buf))
+  (let [^StringBuilder cookieBuf (GetAKey ch CBUF)
+        ^StringBuilder buf (GetAKey ch MBUF)
+        res (MakeFullHttpReply 200 (nsb buf))
         hds (.headers res)
         clen (-> (.content res)(.readableBytes)) ]
     (-> hds (.set HttpHeaders$Names/CONTENT_LENGTH (str clen)))
@@ -66,7 +66,7 @@
                             "text/plain; charset=UTF-8"))
     (-> hds
         (.set HttpHeaders$Names/CONNECTION
-              (if (-> (.attr ctx KALIVE)(.get))
+              (if (GetAKey ch KALIVE)
                   HttpHeaders$Values/KEEP_ALIVE
                   HttpHeaders$Values/CLOSE)))
     (let [cs (CookieDecoder/decode (nsb cookieBuf)) ]
@@ -79,26 +79,27 @@
         (doseq [^Cookie v (seq cs) ]
           (-> hds (.add HttpHeaders$Names/SET_COOKIE
                         (ServerCookieEncoder/encode v))))))
-    ;; incase of reuse, clean up the buffers
-    (.setLength cookieBuf 0)
-    (.setLength buf 0)
     (.write ctx res)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleReq "Introspect the inbound request."
+(defn- handleReq "Introspect the inbound request"
 
   [^ChannelHandlerContext ctx
-   ^StringBuilder cookieBuf
-   ^StringBuilder buf
    ^HttpRequest req ]
 
   (let [dc (QueryStringDecoder. (.getUri req))
         ka (HttpHeaders/isKeepAlive req)
+        ch (-> ^ChannelHandlerContext
+               ctx (.channel))
+        cookieBuf (StringBuilder.)
+        buf (StringBuilder.)
         headers (.headers req)
         pms (.parameters dc) ]
-    (-> (.attr ctx KALIVE)(.set ka))
+    (SetAKey ch CBUF cookieBuf)
+    (SetAKey ch KALIVE ka)
+    (SetAKey ch MBUF buf)
     (doto buf
           (.append "WELCOME TO THE WILD WILD WEB SERVER\r\n")
           (.append "===================================\r\n")
@@ -134,19 +135,22 @@
             pms)
     (.append buf "\r\n")
     (.append cookieBuf (nsb (.get headers "cookie")))
-
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handlec "Handle the request content."
+(defn- handleCnt "Handle the request content"
 
   [^ChannelHandlerContext ctx
-   ^StringBuilder cookieBuf
-   ^StringBuilder buf
    ^HttpContent msg]
 
-  (let [content (.content msg) ]
+  (let [ch (-> ^ChannelHandlerContext
+                       ctx (.channel))
+        ^StringBuilder
+        cookieBuf (GetAKey ch CBUF)
+        ^StringBuilder
+        buf (GetAKey ch MBUF)
+        content (.content msg) ]
     (when (.isReadable content)
       (doto buf
         (.append "CONTENT: ")
@@ -169,29 +173,7 @@
                   buf
                   (.names thds))
           (.append buf "\r\n")))
-      (writeReply ctx cookieBuf buf msg))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- snooperHandler ""
-
-  ^ChannelHandler
-  [options]
-
-  (let [cookies (StringBuilder.)
-        buf (StringBuilder.) ]
-    (proxy [SimpleChannelInboundHandler][]
-      (channelRead0 [ ctx msg ]
-        (cond
-          (instance? HttpRequest msg)
-          (handleReq ctx cookies buf msg)
-
-          (instance? HttpContent msg)
-          (handlec ctx cookies buf msg)
-
-          :else
-          nil)))
+      (writeReply ctx ch msg))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,20 +183,28 @@
   ^PipelineConfigurator
   []
 
-  (ReifyHTTPPipe
+  (ReifyPipeCfgtor
     (fn [^ChannelPipeline pipe options]
-      (.addLast pipe "NettySnooper" (snooperHandler options))
-      (.addLast pipe ErrorFilter/getName (SharedErrorSinkFilter))
-      (Try! (.remove pipe "HttpObjectAggregator")))))
+      (.addBefore pipe
+                  (ErrorSinkFilter/getName)
+                  "snooper"
+                  (proxy [AuxHttpFilter][]
+                    (channelRead0 [c msg]
+                      (cond
+                        (instance? HttpRequest msg)
+                        (handleReq c msg)
+                        (instance? HttpContent msg)
+                        (handleCnt c msg)
+                        :else nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSnoopHTTPD "Sample Snooper HTTPD."
+(defn MakeSnoopHTTPD "Sample Snooper HTTPD"
 
-  [^String host port options]
+  [host port options]
 
   (let [bs (InitTCPServer (snooper) options)
-        ch (StartServer bs host (int port)) ]
+        ch (StartServer bs host  port) ]
     {:bootstrap bs :channel ch}
   ))
 

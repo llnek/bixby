@@ -102,7 +102,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ErrorSinkFilterSingleton ""
+(defn SharedErrorSinkFilter ""
   ^ChannelHandler
   [] ERROR-FILTER)
 
@@ -134,7 +134,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Expect100FilterSingleton ""
+(defn SharedExpect100Filter ""
   ^ChannelHandler
   [] EXPECT-100-FILTER)
 
@@ -175,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RequestFilterSingleton ""
+(defn SharedRequestFilter ""
   ^ChannelHandler
   [] HTTP-REQ-FILTER)
 
@@ -386,7 +386,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FormPostFilterSingleton ""
+(defn SharedFormPostFilter ""
   ^ChannelHandler
   [] HTTP-FORMPOST-FILTER)
 
@@ -408,95 +408,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- gFilter ""
+(defn- demuxRequest ""
 
-  [^ChannelHandlerContext ctx
-   ^Channel ch
-   ^HttpRequest req
-   info]
+  [^ChannelPipeline pipe ctx ch msg]
 
-  (if (IsFormPost? req (:method info))
-    (do
-      (SetAKey ch MSGINFO_KEY (assoc info :formpost true))
-      (FormPostFilterSingleton))
-    (RequestFilterSingleton)
+  (let [info (MapMsgInfo msg)
+        uri (nsb (:uri info))
+        mtd (:method info)]
+    (log/debug "demux message=>\n{}\n\n{}" msg info)
+    (SetAKey ch MSGINFO_KEY info)
+    (if (.startsWith uri "/favicon.")
+      (do ;; ignore
+        (ReplyXXX ch 404)
+        false)
+      (do
+        (maybeHandle100 ctx msg)
+        (->> (if (IsFormPost? msg mtd)
+               (do
+                 (SetAKey ch MSGINFO_KEY (assoc info :formpost true))
+                 (SharedFormPostFilter))
+               (SharedRequestFilter))
+             (.addAfter pipe "InboundDemuxer" "requestFilter" ))
+        true))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyReqDemuxer "Filter to sort out standard request or formpost"
+(defn- dropDemuxer ""
 
-  ^ChannelHandler
-  []
+  [^ChannelPipeline pipe ^ChannelHandlerContext ctx msg]
 
-  (let [impl (MakeMMap {:delegate nil
-                        :ignore false}) ]
-    (proxy [AuxHttpFilter][]
-      (channelRead0 [c msg]
-        (let [d (.getf impl :delegate)
-              e (.getf impl :ignore) ]
-          (log/debug "ReqDemuxer# msg = {}, delegate = {}" (type msg) d)
-          (cond
-            (instance? HttpRequest msg)
-            (let [^ChannelHandlerContext ctx c
-                  ch (.channel ctx)
-                  info (MapMsgInfo msg)]
-                (log/debug "demux message=>\n{}\n\n{}" msg info)
-                (SetAKey ch MSGINFO_KEY info)
-                (.setf! impl :delegate nil)
-                (if (.startsWith (nsb (:uri info))
-                                 "/favicon.")
-                  (do ;; ignore this crap
-                    (ReplyXXX ch 404)
-                    (.setf! impl :ignore true))
-                  (do
-                    (maybeHandle100 ctx msg)
-                    (.setf! impl
-                            :delegate (gFilter ctx ch msg info))))
-                (when-let [d (.getf impl :delegate) ]
-                  (-> ^AuxHttpFilter d
-                      (.channelReadXXX ctx msg))))
-
-            (some? d)
-            (-> ^AuxHttpFilter d
-                (.channelReadXXX c msg))
-
-            (true? e)
-            nil ;; ignore
-
-            :else
-            (ThrowIOE (str "Error while reading message: " (type msg)))))))
-  ))
+  (.fireChannelRead ctx msg)
+  (.remove pipe "InboundDemuxer"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InboundDemuxer "Level 1 filter, detects websock/normal http"
+(defn- inboundDemuxer "Level 1 filter, detects websock/normal http"
 
   ^ChannelHandler
   [options]
 
-  (let [ex (fn [p c msg]
-             (-> ^ChannelHandlerContext c (.fireChannelRead msg))
-             (-> ^ChannelPipeline p (.remove "InboundDemuxer")))
-        ws (:wsock options)
-        uri (:uri ws)
+  (let [uri (get-in options [:wsock :uri])
         tmp (MakeMMap) ]
     (proxy [DemuxInboundFilter][]
       (channelRead [c msg]
         (let [^ChannelHandlerContext ctx c
               pipe (.pipeline ctx)
               ch (.channel ctx) ]
-          (log/debug "InboundDemuxer got this msg: " (type msg))
+          (log/debug "inboundDemuxer got this msg: " (type msg))
           (cond
-            (and (instance? HttpRequest msg)
-                 (IsWEBSock? msg))
-            (do ;; wait for full request
-              (log/debug "Got a websock req - let's wait for full msg.")
-              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-              (.setf! tmp :wait4wsock true)
-              (ReferenceCountUtil/release msg))
+            (instance? HttpRequest msg)
+            (if (IsWEBSock? msg)
+              (do
+                (log/debug "got a websock req - let's wait for full msg")
+                (.setf! tmp :wsreq (fakeFullHttpRequest msg))
+                (ReferenceCountUtil/release msg))
+              (do
+                (log/debug "basic http request - swap in our req-filter")
+                (if-not (demuxRequest pipe ctx ch msg)
+                  (.setf! tmp :ignore true)
+                  (dropDemuxer pipe ctx msg))))
 
-            (true? (.getf tmp :wait4wsock))
+            (some? (.getf tmp :wsreq))
             (try
               (when (instance? LastHttpContent msg)
                 (log/debug "websock upgrade request for uri " uri)
@@ -504,23 +477,20 @@
                            "HttpResponseEncoder"
                            "WebSocketServerProtocolHandler"
                            (WebSocketServerProtocolHandler. uri))
-                (ex pipe ctx (.getf tmp :wsreq)))
+                (dropDemuxer pipe ctx (.getf tmp :wsreq)))
               (finally
                 (ReferenceCountUtil/release msg)))
 
+            (true? (.getf tmp :ignore))
+            (ReferenceCountUtil/release msg)
+
             :else
-            (do
-              (log/debug "Basic http request - swap in our req-filter")
-              (.addAfter pipe
-                         "InboundDemuxer"
-                         "RequestDemuxer"
-                         (reifyReqDemuxer))
-              (ex pipe ctx msg))))))
+            (ThrowIOE (str "Error while reading message: " (type msg)))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyHTTPPipe "Create a customized netty pipeline"
+(defn ReifyPipeCfgtor "Create a customized netty pipeline"
 
   ^PipelineConfigurator
   [cfgtor]
@@ -532,9 +502,10 @@
         (when (some? ssl) (.addLast pipe "ssl" ssl))
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "HttpObjectAggregator" (HttpObjectAggregator. (int 65536)))
+          (.addLast "InboundDemuxer" (inboundDemuxer options))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
-          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.)))
+          (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
+          (.addLast (ErrorSinkFilter/getName) (SharedErrorSinkFilter)))
         (cfgtor pipe options)
         pipe))
   ))
