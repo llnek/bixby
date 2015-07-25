@@ -434,12 +434,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- dropDemuxer ""
+(defn- wsockFilter ""
 
-  [^ChannelPipeline pipe ^ChannelHandlerContext ctx msg]
+  ^ChannelHandler
+  [options]
 
-  (.fireChannelRead ctx msg)
-  (.remove pipe "InboundDemuxer"))
+  (let [uri (get-in options [:wsock :uri])
+        tmp (MakeMMap) ]
+    (proxy [DemuxInboundFilter][]
+      (channelRead [c msg]
+        (let [^ChannelHandlerContext ctx c
+              pipe (.pipeline ctx)
+              ch (.channel ctx) ]
+          (log/debug "wsockFilter got this msg: " (type msg))
+          (cond
+            (and (instance? HttpRequest msg)
+                 (IsWEBSock? msg))
+            (do
+              (log/debug "got a websock req - let's wait for full msg")
+              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
+              (ReferenceCountUtil/release msg))
+
+            :else
+            (do
+              (.fireChannelRead ctx msg)
+              (.remove pipe "wsockFilter"))
+
+            (some? (.getf tmp :wsreq))
+            (try
+              (when (instance? LastHttpContent msg)
+                (log/debug "websock upgrade request for uri " uri)
+                (.addAfter pipe
+                           "HttpResponseEncoder"
+                           "WebSocketServerProtocolHandler"
+                           (WebSocketServerProtocolHandler. uri))
+                (dropDemuxer pipe ctx (.getf tmp :wsreq)))
+              (finally
+                (ReferenceCountUtil/release msg)))
+
+            (true? (.getf tmp :ignore))
+            (ReferenceCountUtil/release msg)
+
+            :else
+            (ThrowIOE (str "Error while reading message: " (type msg)))))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- wsockFilter ""
+
+  ^ChannelHandler
+  [options]
+
+  (let [tmp (MakeMMap) ]
+    (proxy [DemuxInboundFilter][]
+      (channelRead [c msg]
+        (let [^ChannelHandlerContext ctx c
+              pipe (.pipeline ctx)
+              ch (.channel ctx) ]
+          (cond
+            (instance? HttpRequest msg)
+            (let [uri (-> ^HttpRequest msg (.getUri))]
+              (log/debug "got a websock req - let's wait for full msg")
+              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
+              (.setf! tmp :wsuri uri)
+              (ReferenceCountUtil/release msg))
+
+            (some? (.getf tmp :wsreq))
+            (try
+              (when (instance? LastHttpContent msg)
+                (let [path (->> (.getf tmp :wsuri)
+                                (QueryStringDecoder. )
+                                (.path))]
+                (log/debug "websock upgrade request for uri " path)
+                (.addAfter pipe
+                           "HttpResponseEncoder"
+                           "WebSocketServerProtocolHandler"
+                           (WebSocketServerProtocolHandler. path))
+                (->> (.getf tmp :wsreq)
+                     (.fireChannelRead ctx))
+                (.remove pipe "wsockFilter")))
+              (finally
+                (ReferenceCountUtil/release msg)))
+
+            :else
+            (ThrowIOE (str "Error while reading message: " (type msg)))))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -456,18 +536,45 @@
               pipe (.pipeline ctx)
               ch (.channel ctx) ]
           (log/debug "inboundDemuxer got this msg: " (type msg))
+          (if (and (instance? HttpRequest msg)
+                   (IsWEBSock? msg))
+            (.addAfter pipe
+                       "InboundDemuxer"
+                       "wsockFilter" (wsockFilter options))
+            (.addAfter pipe
+                       "InboundDemuxer"
+                       "httpFilter" (httpFilter options)))
+          (.fireChannelRead ctx msg)
+          (.remove pipe "InboundDemuxer"))))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- wsockFilter ""
+
+  ^ChannelHandler
+  [options]
+
+  (let [uri (get-in options [:wsock :uri])
+        tmp (MakeMMap) ]
+    (proxy [DemuxInboundFilter][]
+      (channelRead [c msg]
+        (let [^ChannelHandlerContext ctx c
+              pipe (.pipeline ctx)
+              ch (.channel ctx) ]
+          (log/debug "wsockFilter got this msg: " (type msg))
           (cond
-            (instance? HttpRequest msg)
-            (if (IsWEBSock? msg)
-              (do
-                (log/debug "got a websock req - let's wait for full msg")
-                (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-                (ReferenceCountUtil/release msg))
-              (do
-                (log/debug "basic http request - swap in our req-filter")
-                (if-not (demuxRequest pipe ctx ch msg)
-                  (.setf! tmp :ignore true)
-                  (dropDemuxer pipe ctx msg))))
+            (and (instance? HttpRequest msg)
+                 (IsWEBSock? msg))
+            (do
+              (log/debug "got a websock req - let's wait for full msg")
+              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
+              (ReferenceCountUtil/release msg))
+
+            :else
+            (do
+              (.fireChannelRead ctx msg)
+              (.remove pipe "wsockFilter"))
 
             (some? (.getf tmp :wsreq))
             (try
