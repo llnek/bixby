@@ -56,8 +56,9 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
   private static final int FLASH_LEN = FLASH_CHS.length;
 
   private static final AttributeKey<Integer> HINT = AttributeKey.valueOf("flash-hint");
-  private static final FlashFilter shared = new FlashFilter();
-
+  public static final FlashFilter shared = new FlashFilter();
+  public static String getName() { return "FlashFilter"; }
+  
   public static ChannelPipeline addBefore(ChannelPipeline pipe, String name) {
     pipe.addBefore(name, FlashFilter.class.getSimpleName(), shared);
     return pipe;

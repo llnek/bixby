@@ -37,10 +37,11 @@
   [^Object lock func & args]
 
   (CU/syncExec lock
-                      (reify CallableWithArgs
-                        (run [_ _]
-                          (apply func args)))
-  ))
+               (first args)
+               (reify CallableWithArgs
+                      (run [_ a1 args]
+                        (apply func a1 args)))
+               args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

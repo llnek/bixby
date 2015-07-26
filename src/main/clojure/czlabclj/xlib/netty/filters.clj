@@ -39,6 +39,7 @@
   (:import  [java.io File ByteArrayOutputStream InputStream IOException]
             [io.netty.channel ChannelHandlerContext ChannelPipeline
              ChannelInboundHandlerAdapter ChannelFuture
+             ChannelDuplexHandler
              ChannelOption ChannelFutureListener
              Channel ChannelHandler]
             [org.apache.commons.lang3 StringUtils]
@@ -53,6 +54,9 @@
              QueryStringDecoder HttpResponseStatus
              HttpRequestDecoder HttpVersion
              HttpObjectAggregator HttpResponseEncoder]
+            [io.netty.handler.timeout IdleState
+             IdleStateEvent
+             IdleStateHandler]
             [io.netty.handler.codec.http.multipart InterfaceHttpData
              DefaultHttpDataFactory
              HttpPostRequestDecoder Attribute
@@ -64,7 +68,7 @@
              WebSocketServerProtocolHandler]
             [io.netty.handler.stream ChunkedWriteHandler]
             [com.zotohlab.frwk.netty PipelineConfigurator
-             FormPostFilter SimpleInboundFilter
+             SimpleInboundFilter
              DemuxInboundFilter
              ErrorSinkFilter RequestFilter
              Expect100Filter AuxHttpFilter]
@@ -76,6 +80,28 @@
 ;;(set! *warn-on-reflection* false)
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyIdleStateFilter ""
+
+  ^ChannelHandler
+  []
+
+  (proxy [ChannelDuplexHandler][]
+    (userEventTriggered[ctx msg]
+      (when-let [^IdleStateEvent
+                 evt (if (instance? IdleStateEvent msg)
+                       msg
+                       nil) ]
+        (condp == (.state evt)
+          IdleState/READER_IDLE
+          (-> (.channel ^ChannelHandlerContext ctx)
+              (.close))
+          IdleState/WRITER_IDLE
+          nil ;; (.writeAndFlush ch (PingMessage.))
+          (log/warn "Not sure what is going on here?"))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -140,48 +166,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti HandleInboundMsg "" (fn [a b c & args] (class c)))
-(defmethod HandleInboundMsg AuxHttpFilter
+(defn HandleHttpMessage
 
   [^ChannelHandlerContext ctx
    ^Channel ch
-   handler
    obj]
 
   (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
   (SetAKey ch XDATA_KEY (XData.))
-  (HandleHttpContent ctx ch handler obj))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defonce ^:private HTTP-REQ-FILTER
-  (proxy [RequestFilter][]
-    (channelRead0 [c msg]
-      (let [^ChannelHandlerContext ctx c
-            ch (.channel ctx)]
-        (log/debug "channelRead0# called with msg: " (type msg))
-        (cond
-          (instance? HttpRequest msg)
-          (HandleInboundMsg ctx ch this msg)
-
-          (instance? HttpContent msg)
-          (HandleHttpContent ctx ch this msg)
-
-          :else
-          (do
-            (log/error "Unexpected inbound msg: " (type msg))
-            (ReferenceCountUtil/retain msg)
-            (.fireChannelRead ctx msg)))))))
+  (HandleHttpContent ctx ch :http obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SharedRequestFilter ""
-  ^ChannelHandler
-  [] HTTP-REQ-FILTER)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ResetAKeys FormPostFilter
+(defmethod ResetAKeys :formpost
 
   [^ChannelHandlerContext ctx
    ^Channel ch
@@ -287,7 +284,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod FinzHttpContent FormPostFilter
+(defmethod FinzHttpContent :formpost
 
   [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
 
@@ -301,12 +298,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti HandleFormPart "" (fn [a b c & args] (class c)))
-(defmethod HandleFormPart FormPostFilter
+(defn HandleFormPart
 
   [^ChannelHandlerContext ctx
    ^Channel ch
-   handler
    msg]
 
   (let [^ULFormItems
@@ -314,7 +309,7 @@
         ^HttpPostRequestDecoder
         dc (GetAKey ch FORMDEC_KEY)]
     (if (nil? dc)
-      (HandleHttpContent ctx ch handler msg)
+      (HandleHttpContent ctx ch :formpost msg)
       (with-local-vars [err nil]
         (when (instance? HttpContent msg)
           (let [^HttpContent hc msg
@@ -333,18 +328,16 @@
                 info (GetAKey ch MSGINFO_KEY) ]
             (DelAKey ch FORMITMS_KEY)
             (.resetContent xs fis)
-            (ResetAKeys ctx ch handler)
+            (ResetAKeys ctx ch :formpost)
             (FireMsgToNext ctx info xs)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti HandleFormPost "" (fn [a b c & args] (class c)))
-(defmethod HandleFormPost FormPostFilter
+(defn HandleFormPost
 
   [^ChannelHandlerContext ctx
    ^Channel ch
-   handler
    ^HttpMessage msg]
 
   (let [info (GetAKey ch MSGINFO_KEY)
@@ -356,39 +349,22 @@
     (if (< (.indexOf ctype "multipart") 0)
       (do ;; nothing to decode
         (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
-        (HandleHttpContent ctx ch handler msg))
+        (HandleHttpContent ctx ch :formpost msg))
       (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
                    (HttpPostRequestDecoder. msg)) ]
         (SetAKey ch FORMDEC_KEY dc)
-        (HandleFormPart ctx ch handler msg)))
+        (HandleFormPart ctx ch msg)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defonce ^:private HTTP-FORMPOST-FILTER
-  (proxy [FormPostFilter][]
-    (channelRead0 [c msg]
-      (let [^ChannelHandlerContext ctx c
-            ch (.channel ctx)]
-        (log/debug "channelRead0# called with msg: " (type msg))
-        (cond
-          (instance? HttpRequest msg)
-          (HandleFormPost ctx ch msg)
+(defn FireAndQuit ""
 
-          (instance? HttpContent msg)
-          (HandleFormPart ctx ch msg)
+  [^ChannelPipeline pipe ^ChannelHandlerContext ctx
+   ^String handler msg]
 
-          :else
-          (do
-            (log/error "Unexpected inbound msg: " (type msg))
-            (ReferenceCountUtil/retain msg)
-            (.fireChannelRead ctx msg)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SharedFormPostFilter ""
-  ^ChannelHandler
-  [] HTTP-FORMPOST-FILTER)
+  (.fireChannelRead ctx msg)
+  (.remove pipe handler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -408,192 +384,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- demuxRequest ""
+(defonce ^:private HTTP-FILTER
+  (proxy [RequestFilter][]
+    (channelRead0 [c msg]
+      (let [^ChannelHandlerContext ctx c
+            pipe (.pipeline ctx)
+            ch (.channel ctx)]
+        (cond
+          (instance? HttpRequest msg)
+          (let [info (MapMsgInfo msg)
+                ff (->> (:method info)
+                        (IsFormPost? msg)) ]
+            (->> (assoc info :formpost ff)
+                 (SetAKey ch MSGINFO_KEY ))
+            (maybeHandle100 ctx msg)
+            (if ff
+              (HandleFormPost ctx ch msg)
+              (HandleHttpMessage ctx ch msg)))
 
-  [^ChannelPipeline pipe ctx ch msg]
+          (instance? HttpContent msg)
+          (let [info (GetAKey ch MSGINFO_KEY)]
+            (if (:formpost info)
+              (HandleFormPart ctx ch msg)
+              (HandleHttpContent ctx ch msg)))
 
-  (let [info (MapMsgInfo msg)
-        uri (nsb (:uri info))
-        mtd (:method info)]
-    (log/debug "demux message=>\n{}\n\n{}" msg info)
-    (SetAKey ch MSGINFO_KEY info)
-    (if (.startsWith uri "/favicon.")
-      (do ;; ignore
-        (ReplyXXX ch 404)
-        false)
-      (do
-        (maybeHandle100 ctx msg)
-        (->> (if (IsFormPost? msg mtd)
-               (do
-                 (SetAKey ch MSGINFO_KEY (assoc info :formpost true))
-                 (SharedFormPostFilter))
-               (SharedRequestFilter))
-             (.addAfter pipe "InboundDemuxer" "requestFilter" ))
-        true))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- wsockFilter ""
-
-  ^ChannelHandler
-  [options]
-
-  (let [uri (get-in options [:wsock :uri])
-        tmp (MakeMMap) ]
-    (proxy [DemuxInboundFilter][]
-      (channelRead [c msg]
-        (let [^ChannelHandlerContext ctx c
-              pipe (.pipeline ctx)
-              ch (.channel ctx) ]
-          (log/debug "wsockFilter got this msg: " (type msg))
-          (cond
-            (and (instance? HttpRequest msg)
-                 (IsWEBSock? msg))
-            (do
-              (log/debug "got a websock req - let's wait for full msg")
-              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-              (ReferenceCountUtil/release msg))
-
-            :else
-            (do
-              (.fireChannelRead ctx msg)
-              (.remove pipe "wsockFilter"))
-
-            (some? (.getf tmp :wsreq))
-            (try
-              (when (instance? LastHttpContent msg)
-                (log/debug "websock upgrade request for uri " uri)
-                (.addAfter pipe
-                           "HttpResponseEncoder"
-                           "WebSocketServerProtocolHandler"
-                           (WebSocketServerProtocolHandler. uri))
-                (dropDemuxer pipe ctx (.getf tmp :wsreq)))
-              (finally
-                (ReferenceCountUtil/release msg)))
-
-            (true? (.getf tmp :ignore))
-            (ReferenceCountUtil/release msg)
-
-            :else
-            (ThrowIOE (str "Error while reading message: " (type msg)))))))
-  ))
+          :else
+          (do
+            (log/error "Unexpected inbound msg: " (type msg))
+            (ReferenceCountUtil/retain msg)
+            (.fireChannelRead ctx msg)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wsockFilter ""
-
-  ^ChannelHandler
-  [options]
-
-  (let [tmp (MakeMMap) ]
-    (proxy [DemuxInboundFilter][]
-      (channelRead [c msg]
-        (let [^ChannelHandlerContext ctx c
-              pipe (.pipeline ctx)
-              ch (.channel ctx) ]
-          (cond
-            (instance? HttpRequest msg)
-            (let [uri (-> ^HttpRequest msg (.getUri))]
-              (log/debug "got a websock req - let's wait for full msg")
-              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-              (.setf! tmp :wsuri uri)
-              (ReferenceCountUtil/release msg))
-
-            (some? (.getf tmp :wsreq))
-            (try
-              (when (instance? LastHttpContent msg)
-                (let [path (->> (.getf tmp :wsuri)
-                                (QueryStringDecoder. )
-                                (.path))]
-                (log/debug "websock upgrade request for uri " path)
-                (.addAfter pipe
-                           "HttpResponseEncoder"
-                           "WebSocketServerProtocolHandler"
-                           (WebSocketServerProtocolHandler. path))
-                (->> (.getf tmp :wsreq)
-                     (.fireChannelRead ctx))
-                (.remove pipe "wsockFilter")))
-              (finally
-                (ReferenceCountUtil/release msg)))
-
-            :else
-            (ThrowIOE (str "Error while reading message: " (type msg)))))))
-  ))
+(defn SharedHttpFilter "" ^ChannelHandler [] HTTP-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inboundDemuxer "Level 1 filter, detects websock/normal http"
+(defonce ^:private WSOCK-FILTER
+  (proxy [DemuxInboundFilter][]
+    (channelRead [c msg]
+      (let [^ChannelHandlerContext ctx c
+            pipe (.pipeline ctx)
+            ch (.channel ctx) ]
+        (cond
+          (and (instance? HttpRequest msg)
+               (IsWEBSock? msg))
+          (let [uri (-> ^HttpRequest msg (.getUri))]
+            (log/debug "got a websock req - let's wait for full msg")
+            (->> {:wsreq (fakeFullHttpRequest msg)
+                  :wsuri uri}
+              (SetAKey ch TOBJ_KEY))
+            (ReferenceCountUtil/release msg))
 
-  ^ChannelHandler
-  [options]
+          (some? (:wsreq (GetAKey ch TOBJ_KEY)))
+          (try
+            (when (instance? LastHttpContent msg)
+              (let [tmp (GetAKey ch TOBJ_KEY)
+                    path (->> ^String (:wsuri tmp)
+                              (QueryStringDecoder. )
+                              (.path))]
+              (log/debug "websock upgrade request for uri " path)
+              (.addAfter pipe
+                         "HttpResponseEncoder"
+                         "WebSocketServerProtocolHandler"
+                         (WebSocketServerProtocolHandler. path))
+              (->> (:wsreq tmp)
+                   (FireAndQuit pipe ctx "wsockFilter"))))
+            (finally
+              (ReferenceCountUtil/release msg)))
 
-  (let [uri (get-in options [:wsock :uri])
-        tmp (MakeMMap) ]
-    (proxy [DemuxInboundFilter][]
-      (channelRead [c msg]
-        (let [^ChannelHandlerContext ctx c
-              pipe (.pipeline ctx)
-              ch (.channel ctx) ]
-          (log/debug "inboundDemuxer got this msg: " (type msg))
-          (if (and (instance? HttpRequest msg)
-                   (IsWEBSock? msg))
-            (.addAfter pipe
-                       "InboundDemuxer"
-                       "wsockFilter" (wsockFilter options))
-            (.addAfter pipe
-                       "InboundDemuxer"
-                       "httpFilter" (httpFilter options)))
-          (.fireChannelRead ctx msg)
-          (.remove pipe "InboundDemuxer"))))
-  ))
+          :else
+          ;;msg not released so no need to retain
+          (FireAndQuit pipe ctx "WSockFilter"  msg))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wsockFilter ""
-
-  ^ChannelHandler
-  [options]
-
-  (let [uri (get-in options [:wsock :uri])
-        tmp (MakeMMap) ]
-    (proxy [DemuxInboundFilter][]
-      (channelRead [c msg]
-        (let [^ChannelHandlerContext ctx c
-              pipe (.pipeline ctx)
-              ch (.channel ctx) ]
-          (log/debug "wsockFilter got this msg: " (type msg))
-          (cond
-            (and (instance? HttpRequest msg)
-                 (IsWEBSock? msg))
-            (do
-              (log/debug "got a websock req - let's wait for full msg")
-              (.setf! tmp :wsreq (fakeFullHttpRequest msg))
-              (ReferenceCountUtil/release msg))
-
-            :else
-            (do
-              (.fireChannelRead ctx msg)
-              (.remove pipe "wsockFilter"))
-
-            (some? (.getf tmp :wsreq))
-            (try
-              (when (instance? LastHttpContent msg)
-                (log/debug "websock upgrade request for uri " uri)
-                (.addAfter pipe
-                           "HttpResponseEncoder"
-                           "WebSocketServerProtocolHandler"
-                           (WebSocketServerProtocolHandler. uri))
-                (dropDemuxer pipe ctx (.getf tmp :wsreq)))
-              (finally
-                (ReferenceCountUtil/release msg)))
-
-            (true? (.getf tmp :ignore))
-            (ReferenceCountUtil/release msg)
-
-            :else
-            (ThrowIOE (str "Error while reading message: " (type msg)))))))
-  ))
+(defn SharedWSockFilter "" ^ChannelHandler [] WSOCK-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -609,7 +475,8 @@
         (when (some? ssl) (.addLast pipe "ssl" ssl))
         (doto pipe
           (.addLast "HttpRequestDecoder" (HttpRequestDecoder.))
-          (.addLast "InboundDemuxer" (inboundDemuxer options))
+          (.addLast "WSockFilter" (SharedWSockFilter))
+          (.addLast "HttpFilter" (SharedHttpFilter))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
           (.addLast (ErrorSinkFilter/getName) (SharedErrorSinkFilter)))

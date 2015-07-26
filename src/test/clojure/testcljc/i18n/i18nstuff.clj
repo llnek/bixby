@@ -25,7 +25,7 @@
 
 (is (= "hello joe, how is your dawg"
        (let [ rs (LoadResource (ResUrl "com/zotohlab/frwk/i18n/Resources_en.properties")) ]
-           (RStr rs "test" [ "joe", "dawg" ]))))
+           (RStr rs "test"  "joe" "dawg" ))))
 
 )
 

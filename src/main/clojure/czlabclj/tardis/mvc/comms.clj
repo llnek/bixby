@@ -75,16 +75,16 @@
                     none "if-none-match"
                     modd true ]
     (cond
-      (HasHeader? info @unmod)
-      (when-let [s (GetHeader info @unmod)]
+      (HasInHeader? info @unmod)
+      (when-let [s (GetInHeader info @unmod)]
         (Try!
           (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
                     lastTm)
             (var-set modd false))))
 
-      (HasHeader? info @none)
+      (HasInHeader? info @none)
       (var-set modd (not= eTag
-                          (GetHeader info @none)))
+                          (GetInHeader info @none)))
 
       :else nil)
     @modd
@@ -233,7 +233,7 @@
         (when-not (nil? rc)
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
-        (SetHdr @rsp "content-type" @ctype)
+        (SetHeader @rsp "content-type" @ctype)
         (HttpHeaders/setContentLength @rsp
                                       (if (nil? @bits)
                                         0

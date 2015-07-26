@@ -39,10 +39,7 @@
 
 (is (true? (.exists (IO/TempFile))))
 
-(is (true? (let [ v (IO/NewlyTempFile) ]
-              (and (.exists ^File (first v)) (nil? (nth v 1))))))
-
-(is (true? (let [ v (IO/NewlyTempFile true)
+(is (true? (let [ v (IO/OpenTempFile)
                   rc (and (.exists ^File (first v)) (instance? OutputStream (nth v 1))) ]
              (when rc (.close ^OutputStream (nth v 1)))
              rc)))
@@ -70,11 +67,11 @@
                        (IO/CopyStream inp)) ]
              (.exists fp))))
 
-(is (true? (let [ v (IO/NewlyTempFile false) ]
+(is (true? (let [ v (IO/TempFile) ]
                 (with-open [^InputStream inp (IO/OpenFile TMP_FP) ]
-                  (with-open [ os (FileOutputStream. ^File (first v)) ]
+                  (with-open [ os (FileOutputStream. ^File v) ]
                     (IO/CopyBytes inp os 4)))
-                (>= (.length ^File (first v)) 4))))
+                (>= (.length ^File v) 4))))
 
 (is (true? (.isDiskFile (IO/MakeXData true))))
 (is (false? (.isDiskFile (IO/MakeXData))))

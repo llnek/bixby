@@ -17,9 +17,9 @@ import io.netty.channel.ChannelHandler;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public abstract class FormPostFilter extends AuxHttpFilter {
+public abstract class MessageFilter extends AuxHttpFilter {
 
-  protected FormPostFilter() {}
+  protected MessageFilter() {}
 
 }
 

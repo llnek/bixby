@@ -107,7 +107,7 @@
                           { :start (Date.) :end ENDDT :keylen 1024 })
       (> (.length fout) 0)))
 
-(is (let [ fout (TempFile "" ".jks") ]
+(is (let [ fout (TempFile "x" ".jks") ]
       (MakeSSv1JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
@@ -115,7 +115,7 @@
 (is (let [ ^KeyStore$PrivateKeyEntry pke
           (.keyEntity ROOTCS ^String (first (.keyAliases ROOTCS))
                            HELPME)
-       fout (TempFile "" ".p12")
+       fout (TempFile "x" ".p12")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
             (MakeSSv3PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
@@ -125,14 +125,14 @@
 (is (let [ ^KeyStore$PrivateKeyEntry pke (.keyEntity ROOTKS
                            ^String (first (.keyAliases ROOTKS))
                            HELPME)
-       fout (TempFile "" ".jks")
+       fout (TempFile "x" ".jks")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
             (MakeSSv3JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
-(is (let [ ^File fout (TempFile "" ".p7b") ]
+(is (let [ ^File fout (TempFile "x" ".p7b") ]
         (ExportPkcs7 (ResUrl "com/zotohlab/frwk/crypto/test.pfx") HELPME fout)
           (> (.length fout) 0)))
 

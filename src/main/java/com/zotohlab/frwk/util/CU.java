@@ -164,9 +164,9 @@ public enum CU {
     return loadClass(cz).getDeclaredConstructor().newInstance();  
   }
     
-  public static Object syncExec (Object syncObj, CallableWithArgs r) throws Exception {
+  public static Object syncExec (Object syncObj, CallableWithArgs  r, Object a1, Object... args) throws Exception {
     synchronized(syncObj) {
-      return r.run(new Object[]{});
+      return r.run(a1, args);
     }
   }
 

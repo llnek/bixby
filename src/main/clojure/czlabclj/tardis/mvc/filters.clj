@@ -70,19 +70,13 @@
              IdleStateEvent
              IdleStateHandler]
             [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter
-             SimpleInboundFilter
-             DemuxedMsg PipelineConfigurator
+             SimpleInboundFilter DemuxInboundFilter
+             MessageFilter PipelineConfigurator
              FlashFilter]
             [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; leiningen compile throws errors, probably compiling twice ???
-(try
-(def ^:private GOOD_FLAG (AttributeKey/valueOf "good-msg"))
-(catch Throwable e#))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -91,7 +85,7 @@
   ^ChannelHandler
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (proxy [SimpleInboundFilter] []
+  (proxy [MessageFilter] []
     (channelRead0 [c msg]
       ;;(log/debug "mvc route filter called with message = " (type msg))
       (cond
@@ -101,26 +95,26 @@
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
-              cfg {:method (NettyFW/getMethod req)
-                   :uri (NettyFW/getUriPath req)}
+              cfg {:method (GetMethod req)
+                   :uri (GetUriPath req)}
               [r1 r2 r3 r4]
               (.crack ck cfg) ]
-          (-> (.attr ctx GOOD_FLAG)(.remove))
+          (DelAKey ch TOBJ_KEY)
           (cond
             (and r1 (hgl? r4))
-            (NettyFW/sendRedirect ch false ^String r4)
+            (SendRedirect ch false r4)
 
             (= r1 true)
             (do
               ;;(log/debug "mvc route filter MATCHED with uri = " (.getUri req))
-              (-> (.attr ctx GOOD_FLAG)(.set "matched"))
+              (SetAKey ch TOBJ_KEY {:matched true})
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
 
             :else
             (do
-              (log/debug "Failed to match uri: " (.getUri req))
-              (NettyFW/replyXXX ch 404 false))))
+              (log/debug "Failed to match uri: " (:uri cfg))
+              (ReplyXXX ch 404 false))))
 
         (instance? HttpResponse msg)
         (do
@@ -128,31 +122,32 @@
           (.fireChannelRead ^ChannelHandlerContext c msg))
 
         :else
+        ;;what is this doing? I forgot...
         (let [^ChannelHandlerContext ctx c
-              flag (-> (.attr ctx GOOD_FLAG)(.get)) ]
-          (if (notnil? flag)
+              ch (.channel ctx)
+              flag (:matched (GetAKey ch TOBJ_KEY))]
+          (if (true? flag)
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "routeFilter: skipping unwanted msg")))
-      ))
+            (log/debug "routeFilter: skipping unwanted msg")))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcDispatcher ""
+(defn- mvcDisp ""
 
   ^ChannelHandler
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (proxy [SimpleInboundFilter] []
+  (proxy [MessageFilter] []
     (channelRead0 [c msg]
       ;;(log/debug "mvc netty handler called with message = " (type msg))
       (let [^czlabclj.xlib.net.routes.RouteCracker
             rcc (.getAttr co :cracker)
             ^ChannelHandlerContext ctx c
             ch (.channel ctx)
-            info (.info ^DemuxedMsg msg)
+            info (:info msg)
             [r1 r2 r3 r4] (.crack rcc info)
             ^czlabclj.xlib.net.routes.RouteInfo ri r2]
         (if
@@ -171,28 +166,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyIdleStateFilter ""
-
-  ^ChannelHandler
-  []
-
-  (proxy [ChannelDuplexHandler][]
-    (userEventTriggered[ctx msg]
-      (when-let [^IdleStateEvent
-                 evt (if (instance? IdleStateEvent msg)
-                       msg
-                       nil) ]
-        (condp == (.state evt)
-          IdleState/READER_IDLE
-          (-> (.channel ^ChannelHandlerContext ctx)
-              (.close))
-          IdleState/WRITER_IDLE
-          nil ;; (.writeAndFlush ch (PingMessage.))
-          (log/warn "Not sure what is going on here?"))))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- wsockDispatcher ""
 
   ^ChannelHandler
@@ -200,10 +173,9 @@
    ^czlabclj.tardis.core.sys.Elmt co
    options]
 
-  (let [handlerFn (-> (:wsock options)
-                      (:handler )) ]
+  (let [handlerFn (get-in options [:wsock :handler])]
     (log/debug "wsockDispatcher has user function: " handlerFn)
-    (proxy [SimpleInboundFilter] []
+    (proxy [MessageFilter] []
       (channelRead0 [ctx msg]
         (let [ch (.channel ^ChannelHandlerContext ctx)
               opts {:router handlerFn}
@@ -215,37 +187,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcInitorOnHttp "Jiggle the pipeline upon a http request."
+(defn- wsockJiggler "Jiggle the pipeline upon a websocket request"
 
-  ^ChannelPipeline
-  [^ChannelHandlerContext ctx hack options]
+  ^ChannelHandler
+  [co options]
 
-  (let [pipe (.pipeline ctx)
-        co (:emitter hack) ]
-    (doto pipe
-      (.addAfter "HttpResponseEncoder"
-                 "ChunkedWriteHandler" (ChunkedWriteHandler.))
-      (NettyFW/dbgPipelineHandlers))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mvcInitorOnWS "Jiggle the pipeline upon a websocket request."
-
-  ^ChannelPipeline
-  [^ChannelHandlerContext ctx hack options]
-
-  (let [pipe (.pipeline ctx)
-        co (:emitter hack) ]
-    (-> (.attr ctx ErrorSinkFilter/MSGTYPE)
-        (.set "wsock"))
-    (doto pipe
-      (.addBefore "ErrorSinkFilter"
-                  "WSOCKDispatcher"
-                  (wsockDispatcher co co options))
-      (.remove "RouteFilter")
-      (.remove "MVCDispatcher")
-      (NettyFW/dbgPipelineHandlers ))
+  (let [disp (wsockDispatcher co co options)]
+    (proxy [DemuxInboundFilter][]
+      (channelRead [c msg]
+        (let [^ChannelHandlerContext ctx c
+              pipe (.pipeline ctx)
+              ch (.channel ctx)
+              tmp (GetAKey ch TOBJ_KEY)]
+          (when (some? (:wsreq tmp))
+            (Try! (.remove pipe "ChunkedWriteHandler"))
+            (Try! (.remove pipe "MVCDispatcher"))
+            (Try! (.remove pipe "RouteFilter"))
+            (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
+            (SetAKey ch MSGTYPE_KEY "wsock"))
+        (FireAndQuit pipe ctx "WSockJiggler" msg))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,37 +213,25 @@
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
-  [^czlabclj.tardis.core.sys.Elmt co]
+  [^czlabclj.tardis.core.sys.Elmt co options]
 
-  (log/debug "netty pipeline initor, emitter = " (type co))
-  (let [h mvcInitorOnHttp
-        w mvcInitorOnWS]
+  (let [wsock (wsockJiggler co options)
+        router (routeFilter co)
+        disp (mvcDisp co)]
+    (log/debug "netty pipeline initor, emitter = " (type co))
     (ReifyPipeCfgtor
-      (fn [pipe options]
-        (doto pipe
-          (.addAfter "HttpRequestDecoder" "RouteFilter" (routeFilter co))
-
-    (ReifyPipeCfgtor "MVCDispatcher"
-                   (fn [_] (mvcDispatcher co))
-                   (fn [^ChannelPipeline pipe options]
-                     (doto pipe
-                       (.addAfter "HttpRequestDecoder",
-                                  "RouteFilter"
-                                  (routeFilter co))
-                       (.addAfter "RouteFilter",
-                                  "HttpDemuxFilter"
-                                  (MakeHttpDemuxFilter options
-                                                       {:onwsock w
-                                                        :onhttp h
-                                                        :emitter co}))
-                       (.remove "ChunkedWriteHandler"))
-                     (when-let [h (cond (.get pipe "ssl")
-                                        "ssl"
-                                        (.get pipe "HttpRequestDecoder")
-                                        "HttpRequestDecoder"
-                                        :else nil)]
-                       (FlashFilter/addBefore pipe ^String h))
-                     pipe))
+      (fn [p _]
+        (let [^ChannelPipeline pipe p]
+          (.addAfter pipe "HttpRequestDecoder" "RouteFilter" router)
+          (.addAfter pipe "WSockFilter" "WSockJiggler" wsock)
+          (.addBefore pipe (ErrorSinkFilter/getName) "MVCDispatcher" disp)
+          (when-let [h (cond
+                         (.get pipe "ssl")
+                         "ssl"
+                         (.get pipe "HttpRequestDecoder")
+                         "HttpRequestDecoder"
+                         :else nil)]
+            (.addBefore pipe ^String h (FlashFilter/getName) FlashFilter/shared)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,7 +244,7 @@
         ctr (.parent ^Hierarchial co)
         rts (.getAttr ctr :routes)
         options (.getAttr co :emcfg)
-        bs (InitTCPServer (mvcInitor co) options) ]
+        bs (InitTCPServer (mvcInitor co options) options) ]
     (.setAttr! co :cracker (MakeRouteCracker rts))
     (.setAttr! co :netty  { :bootstrap bs })
     co

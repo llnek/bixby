@@ -188,7 +188,7 @@
    info
    ^HttpResponse rsp ]
 
-  (let [s (nsb (GetHeader info "range"))]
+  (let [s (nsb (GetInHeader info "range"))]
     (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
         (.process rsp))
@@ -221,8 +221,8 @@
         (when (= HttpResponseStatus/NOT_MODIFIED
                  (.getStatus rsp))
               (var-set clen 0))
-        (AddHdr rsp "Accept-Ranges" "bytes")
-        (SetHdr rsp "Content-Type" @ct)
+        (AddHeader rsp "Accept-Ranges" "bytes")
+        (SetHeader rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.writeAndFlush ch rsp))
         (when-not (or (= (:method info) "HEAD")

@@ -82,6 +82,7 @@
 (defonce ^AttributeKey XDATA_KEY (AttributeKey/valueOf "xdata"))
 (defonce ^AttributeKey XOS_KEY (AttributeKey/valueOf "ostream"))
 (defonce ^AttributeKey MSGTYPE_KEY (AttributeKey/valueOf "msgtype"))
+(defonce ^AttributeKey TOBJ_KEY (AttributeKey/valueOf "tmpobj"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -439,12 +440,13 @@
     (DelAKey ch CBUF_KEY)
     (DelAKey ch XDATA_KEY)
     (DelAKey ch XOS_KEY)
+    (DelAKey ch TOBJ_KEY)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ResetAKeys "Clear ch attributes" (fn [a b c & args] (class c)))
-(defmethod ResetAKeys :default
+(defmethod ResetAKeys :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler]
 
@@ -575,7 +577,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti FinzHttpContent "" (fn [a b c & args] (class c)))
-(defmethod FinzHttpContent :default
+(defmethod FinzHttpContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
 
@@ -587,7 +589,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti HandleLastContent "" (fn [a b c & args] (class c)))
-(defmethod HandleLastContent :default
+(defmethod HandleLastContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler msg]
 
@@ -610,7 +612,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti HandleHttpContent "" (fn [a b c & args] (class c)))
-(defmethod HandleHttpContent :default
+(defmethod HandleHttpContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler msg]
 

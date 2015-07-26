@@ -69,7 +69,7 @@
              ChunkedStream ChunkedWriteHandler]
             [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
             [com.zotohlab.frwk.netty NettyFW
-             DemuxedMsg
+             MessageFilter
              ErrorSinkFilter PipelineConfigurator]
             [io.netty.handler.codec.http.websocketx
              WebSocketFrame
@@ -153,7 +153,7 @@
    ^HTTPEvent evt
    ^HttpResponse rsp ]
 
-  (let [ct (GetHdr rsp "content-type")
+  (let [ct (GetHeader rsp "content-type")
         rv (.getHeaderValue evt "range") ]
     (if-not (HTTPRangeInput/isAcceptable rv)
       (ChunkedFile. raf)
@@ -186,14 +186,14 @@
       (doseq [[nm vs] (seq hdrs)]
         (when-not (= "content-length" (lcase nm))
           (doseq [vv (seq vs)]
-            (AddHdr rsp nm vv))))
+            (AddHeader rsp nm vv))))
       (doseq [s cks]
-        (AddHdr rsp HttpHeaders$Names/SET_COOKIE s) )
+        (AddHeader rsp HttpHeaders$Names/SET_COOKIE s) )
       (cond
         (and (>= code 300)
              (< code 400))
         (when-not (cstr/blank? loc)
-          (SetHdr rsp "Location" loc))
+          (SetHeader rsp "Location" loc))
 
         (and (>= code 200)
              (< code 300)
@@ -203,7 +203,7 @@
                     (condp instance? data
                       WebAsset
                       (let [^WebAsset ws data]
-                        (SetHdr rsp "content-type" (.contentType ws))
+                        (SetHeader rsp "content-type" (.contentType ws))
                         (var-set raf
                                  (RandomAccessFile. (.getFile ws)
                                                     "r"))
@@ -233,7 +233,7 @@
         :else nil)
 
       (when (.isKeepAlive evt)
-        (SetHdr rsp "Connection" "keep-alive"))
+        (SetHeader rsp "Connection" "keep-alive"))
 
       (log/debug "Writing out " @clen " bytes back to client");
       (HttpHeaders/setContentLength rsp @clen)
@@ -251,7 +251,7 @@
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
           (log/debug "Keep-alive == false, closing channel.  bye.")
-          (CloseFuture wf))))
+          (CloseCF wf))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -351,7 +351,7 @@
 
   [info]
 
-  (let [v (nsb (GetHeader info "Cookie"))
+  (let [v (nsb (GetInHeader info "Cookie"))
         cc (URLCodec. "utf-8")
         cks (if (hgl? v)
               (CookieDecoder/decode v)
@@ -410,7 +410,7 @@
         (hasData [_] (notnil? xdata))
         (data [_] xdata)
 
-        (contentType [_] (GetHeader info "content-type"))
+        (contentType [_] (GetInHeader info "content-type"))
         (contentLength [_] (info "clen"))
 
         (encoding [this]  (GetCharset (.contentType this)))
@@ -422,17 +422,17 @@
             (get (:headers info) (lcase nm))
             []))
 
-        (getHeaderValue [_ nm] (GetHeader info nm))
-        (hasHeader [_ nm] (HasHeader? info nm))
+        (getHeaderValue [_ nm] (GetInHeader info nm))
+        (hasHeader [_ nm] (HasInHeader? info nm))
 
         (getParameterValues [this nm]
           (if (.hasParameter this nm)
             (get (:params info) nm)
             []))
 
-        (getParameterValue [_ nm] (GetParameter info nm))
+        (getParameterValue [_ nm] (GetInParameter info nm))
         (getParameters [_] (vec (keys (:params info))))
-        (hasParameter [_ nm] (HasParam? info nm))
+        (hasParameter [_ nm] (HasInParam? info nm))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
         (localHost [_] (.getHostName laddr))
@@ -444,14 +444,14 @@
         (queryString [_] (:query info))
         (host [_] (:host info))
 
-        (remotePort [_] (ConvLong (GetHeader info "remote_port") 0))
-        (remoteAddr [_] (nsb (GetHeader info "remote_addr")))
+        (remotePort [_] (ConvLong (GetInHeader info "remote_port") 0))
+        (remoteAddr [_] (nsb (GetInHeader info "remote_addr")))
         (remoteHost [_] "")
 
         (scheme [_] (if sslFlag "https" "http"))
 
-        (serverPort [_] (ConvLong (GetHeader info "server_port") 0))
-        (serverName [_] (nsb (GetHeader info "server_name")))
+        (serverPort [_] (ConvLong (GetInHeader info "server_port") 0))
+        (serverName [_] (nsb (GetInHeader info "server_name")))
 
         (isSSL [_] sslFlag)
 
@@ -509,11 +509,10 @@
       (let [^czlabclj.xlib.net.routes.RouteInfo
             ri (if (> (count args) 2)
                  (nth args 2)
-                 nil)
-            ^DemuxedMsg req msg ]
+                 nil)]
         (makeHttpEvent co ch ssl
-                       (.payload req)
-                       (.info req)
+                       (:payload msg)
+                       (:info msg)
                        (if (nil? ri) false (.isSecure? ri)))))
   ))
 
@@ -539,7 +538,7 @@
    options]
 
   (log/debug "netty pipeline dispatcher, emitter = " (type co))
-  (proxy [AuxHttpFilter] []
+  (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
             cfg (.getAttr src :emcfg)
@@ -564,13 +563,14 @@
   (let [^czlabclj.tardis.core.sys.Elmt
         ctr (.parent ^Hierarchial co)
         options (.getAttr co :emcfg)
+        disp (msgDispatcher co co options)
         bs (InitTCPServer
              (ReifyPipeCfgtor
                (fn [p options]
                  (-> ^ChannelPipeline p
                      (.addBefore (ErrorSinkFilter/getName)
                                  "MsgDispatcher"
-                                 #(msgDispatcher co co options)))))
+                                 disp))))
              options) ]
     (.setAttr! co :netty  { :bootstrap bs })
     co

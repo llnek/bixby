@@ -308,9 +308,14 @@
 (defn TempFile ""
 
   ^File
-  [ &[pfx sux] ]
+  [ & [pfx sux] ]
 
-  (File/createTempFile (or pfx "tmp-") (or sux ".dat")))
+  (let [pfx (or pfx "tmp-")
+        sux (or sux ".dat")]
+    (File/createTempFile
+      (if (> (count pfx) 2) pfx "tmp-")
+      (if (> (count pfx) 2) sux ".dat"))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

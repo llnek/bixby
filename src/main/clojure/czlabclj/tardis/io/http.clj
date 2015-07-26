@@ -256,7 +256,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasHeader? "Returns true if header exists."
+(defn HasInHeader? "Returns true if header exists."
 
   ;; boolean
   [info ^String header]
@@ -269,7 +269,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasParam? "Returns true if parameter exists."
+(defn HasInParam? "Returns true if parameter exists."
 
   ;; boolean
   [info ^String param]
@@ -282,12 +282,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetParameter "Get the named parameter."
+(defn GetInParameter "Get the named parameter."
 
   ^String
   [info ^String param]
 
-  (if-let [arr (if (HasParam? info param)
+  (if-let [arr (if (HasInParam? info param)
                  ((:params info) param)
                  nil) ]
     (if (> (count arr) 0)
@@ -297,12 +297,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHeader "Get the named header."
+(defn GetInHeader "Get the named header."
 
   ^String
   [info ^String header]
 
-  (if-let [arr (if (HasHeader? info header)
+  (if-let [arr (if (HasInHeader? info header)
                  ((:headers info) (lcase header))
                  nil) ]
     (if (> (count arr) 0)
