@@ -31,7 +31,8 @@
                      nsb
                      hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log]
+            [clojure.string :as cs])
 
   (:use [czlabclj.xlib.netty.io]
         [czlabclj.xlib.util.io])
@@ -80,6 +81,14 @@
 ;;(set! *warn-on-reflection* false)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DbgPipelineHandlers ""
+
+  [^ChannelPipeline pipe]
+
+  (log/debug "ChannelPipeline: handlers= {}"
+             (cs/join "|" (.names pipe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -406,7 +415,7 @@
           (let [info (GetAKey ch MSGINFO_KEY)]
             (if (:formpost info)
               (HandleFormPart ctx ch msg)
-              (HandleHttpContent ctx ch msg)))
+              (HandleHttpContent ctx ch :http msg)))
 
           :else
           (do

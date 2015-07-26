@@ -11,12 +11,9 @@
 
 package com.zotohlab.frwk.netty;
 
-import io.netty.channel.ChannelHandler;
-
 /**
  * @author kenl
  */
-@ChannelHandler.Sharable
 public abstract class RequestFilter extends AuxHttpFilter {
 	
   protected RequestFilter() {}

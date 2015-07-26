@@ -271,25 +271,25 @@
 
   (with-local-vars
     [info
-      {"is-chunked" (HttpHeaders/isTransferEncodingChunked msg)
-       "keep-alive" (HttpHeaders/isKeepAlive msg)
-       "host" (HttpHeaders/getHeader msg "Host" "")
-       "protocol" (-> msg (.getProtocolVersion) (.toString))
-       "clen" (HttpHeaders/getContentLength msg 0)
-       "uri2" ""
-       "query" ""
-       "wsock" false
-       "uri" ""
-       "status" ""
-       "code" 0
-       "method" ""
-       "params" {}
-       "headers" (MapHeaders (.headers msg)) }]
+      {:is-chunked (HttpHeaders/isTransferEncodingChunked msg)
+       :keep-alive (HttpHeaders/isKeepAlive msg)
+       :host (HttpHeaders/getHeader msg "Host" "")
+       :protocol (-> msg (.getProtocolVersion) (.toString))
+       :clen (HttpHeaders/getContentLength msg 0)
+       :uri2 ""
+       :query ""
+       :wsock false
+       :uri ""
+       :status ""
+       :code 0
+       :method ""
+       :params {}
+       :headers (MapHeaders (.headers msg)) }]
     (cond
       (instance? HttpResponse msg)
       (let [s (-> ^HttpResponse msg (.getStatus))]
-        (->> (merge @info {"status" (nsb (.reasonPhrase s))
-                           "code"  (.code s)})
+        (->> (merge @info {:status (nsb (.reasonPhrase s))
+                           :code  (.code s)})
              (var-set info)))
       (instance? HttpRequest msg)
       (let [mo (GetHeader msg "X-HTTP-Method-Override")
@@ -299,13 +299,13 @@
             md (-> req (.getMethod) (.name))
             mt (if-not (empty? mo) mo md)
             dc (QueryStringDecoder. uriStr)]
-        (->> (-> (merge @info {"method" (ucase mt)
-                               "uri" (.path dc)
-                               "uri2" uriStr})
-                 (assoc "params" (MapParams dc)))
+        (->> (-> (merge @info {:method (ucase mt)
+                               :uri (.path dc)
+                               :uri2 uriStr})
+                 (assoc :params (MapParams dc)))
              (var-set info))
         (when (>= pos 0)
-          (->> (assoc @info "query" (.substring uriStr pos))
+          (->> (assoc @info :query (.substring uriStr pos))
                (var-set info))))
       :else nil)
     @info
@@ -445,7 +445,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ResetAKeys "Clear ch attributes" (fn [a b c & args] (class c)))
+(defmulti ResetAKeys "Clear ch attributes" (fn [a b c & args] c))
 (defmethod ResetAKeys :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler]
@@ -508,8 +508,9 @@
 
   (let [info (GetAKey ch MSGINFO_KEY)
         olen (:clen info) ]
-    (when-not (== olen clen)
-      (log/warn "ContentLength from headers = {}, new clen = {}" olen clen)
+    (when (or (nil? olen)
+              (not (== olen clen)))
+      (log/warn "ContentLength from headers = " olen ", new clen = " clen)
       (SetAKey ch MSGINFO_KEY (assoc info :clen clen)))
   ))
 
@@ -576,7 +577,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti FinzHttpContent "" (fn [a b c & args] (class c)))
+(defmulti FinzHttpContent "" (fn [a b c & args] c))
 (defmethod FinzHttpContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
@@ -588,7 +589,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti HandleLastContent "" (fn [a b c & args] (class c)))
+(defmulti HandleLastContent "" (fn [a b c & args]  c))
 (defmethod HandleLastContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler msg]
@@ -611,7 +612,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti HandleHttpContent "" (fn [a b c & args] (class c)))
+(defmulti HandleHttpContent "" (fn [a b c & args]  c))
 (defmethod HandleHttpContent :http
 
   [^ChannelHandlerContext ctx ^Channel ch handler msg]
@@ -727,21 +728,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- demuxSvrType "" [a & args] (class a))
-(defmulti ^Channel StartServer "Start a Netty server" demuxSvrType)
-(defmulti ^Channel StopServer "Stop a Netty server" demuxSvrType)
-
+(defmulti ^Channel StartServer "Start a Netty server"
+(fn [a b c] (class a)))
+(defmulti ^Channel StopServer "Stop a Netty server"
+(fn [a b] (class a)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod StartServer ServerBootstrap
 
   ^Channel
-  [^ServerBootstrap bs ^String host port]
+  [^ServerBootstrap bs ^String host ^long port]
 
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
-    (log/debug "NettyTCPServer: running on host {}:{}" ip port)
+    (log/debug "NettyTCPServer: running on host " ip ":" port)
     (try
       (-> (.bind bs ip (int port))
           (.sync)
@@ -755,7 +756,7 @@
 (defmethod StartServer Bootstrap
 
   ^Channel
-  [^Bootstrap bs ^String host port]
+  [^Bootstrap bs ^String host ^long port]
 
   (let [ip (if (hgl? host)
              (InetAddress/getByName host)
@@ -808,15 +809,15 @@
 
   (let [thds (:threads options)]
     (doto (ServerBootstrap.)
-      (.group (getEventGroup (or (:boss thds) 4))
-              (getEventGroup (or (:worker thds) 6)))
+      (.group (getEventGroup (int (or (:boss thds) 4)))
+              (getEventGroup (int (or (:worker thds) 6))))
       (.channel NioServerSocketChannel)
       (.option ChannelOption/SO_REUSEADDR true)
       (.option ChannelOption/SO_BACKLOG
-               (or (:backlog options) 100))
+               (int (or (:backlog options) 100)))
       (.childOption ChannelOption/SO_RCVBUF
-                    (or (:rcvBuf options)
-                        (* 2 1024 1024)))
+                    (int (or (:rcvBuf options)
+                         (* 2 1024 1024))))
       (.childOption ChannelOption/TCP_NODELAY true)
       (.childHandler (.configure cfg options)))
   ))
@@ -830,11 +831,11 @@
 
   (let [thds (:threads options)]
     (doto (Bootstrap.)
-      (.group (getEventGroup (or (:boss thds) 4)))
+      (.group (getEventGroup (int (or (:boss thds) 4))))
       (.channel NioDatagramChannel)
       (.option ChannelOption/TCP_NODELAY true)
       (.option ChannelOption/SO_RCVBUF
-               (or (:rcvBuf options) (* 2 1024 1024)))
+               (int (or (:rcvBuf options) (* 2 1024 1024))))
       (.handler (.configure cfg options)))
   ))
 

@@ -20,7 +20,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
@@ -31,7 +30,6 @@ import io.netty.util.CharsetUtil;
  *
  * @author kenl
  */
-@ChannelHandler.Sharable
 public class FlashFilter extends InboundAdapter {
 
   private static Logger _log = getLogger(lookup().lookupClass());

@@ -16,6 +16,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 
@@ -24,6 +25,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  *
  * @author kenl
  */
+@ChannelHandler.Sharable
 public abstract class InboundAdapter extends ChannelInboundHandlerAdapter {
 
   private static Logger _log = getLogger(lookup().lookupClass());

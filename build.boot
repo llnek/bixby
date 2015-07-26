@@ -58,7 +58,7 @@
     [org.apache.httpcomponents/httpcore-nio "4.4.1" ]
     [org.apache.httpcomponents/httpcore "4.4.1" ]
     [org.apache.httpcomponents/httpclient "4.5" ]
-    [io.netty/netty-all "4.0.29.Final" ]
+    [io.netty/netty-all "4.0.30.Final" ]
 
     [com.corundumstudio.socketio/netty-socketio "1.7.7" :exclusions [io.netty]]
 
@@ -970,7 +970,7 @@
     (packBin)
     (packDist)
     (packLibs)
-    (packDocs)
+    ;;(packDocs)
     (packLics)
     (packAll)
     fileset))

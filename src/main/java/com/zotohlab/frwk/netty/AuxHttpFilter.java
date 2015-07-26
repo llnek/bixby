@@ -16,12 +16,15 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
 
+import io.netty.channel.ChannelHandler;
+
 
 /**
  * Base class for handling inbound messages.
  * 
  * @author kenl
  */
+@ChannelHandler.Sharable
 public abstract class AuxHttpFilter extends SimpleInboundFilter {
 
   private static Logger _log = getLogger(lookup().lookupClass());
