@@ -16,8 +16,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
 
-import io.netty.channel.ChannelHandlerContext;
-
 
 /**
  * Base class for handling inbound messages.
@@ -29,22 +27,8 @@ public abstract class AuxHttpFilter extends SimpleInboundFilter {
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
-  public String getName() { 
-    return getClass().getSimpleName(); 
-  }
+  protected AuxHttpFilter() {}
   
-  @SuppressWarnings("unchecked")
-  public void channelReadXXX(ChannelHandlerContext ctx, Object msg) throws Exception {
-    channelRead0(ctx, msg);
-  }
-
-  public void XXXchannelReadComplete(ChannelHandlerContext ctx)
-      throws Exception                    {
-    tlog().debug("{}.channelRead - complete called().", getClass().getSimpleName() );
-    //super.channelReadComplete(ctx);
-    ctx.flush();
-  }
-
 }
 
 

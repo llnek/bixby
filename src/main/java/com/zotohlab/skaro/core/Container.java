@@ -12,8 +12,7 @@
 package com.zotohlab.skaro.core;
 
 import java.io.File;
-import java.util.List;
-import java.util.Map;
+import java.util.Iterator;
 
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Named;
@@ -28,13 +27,13 @@ import com.zotohlab.frwk.server.ServiceProvider;
  */
 public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
-  public List<?> loadTemplate (String tpl, Map<?,?> ctx);
+  public Iterator<?> loadTemplate (String tpl, Object ctx);
   public boolean isEnabled();
 
   public EventBus eventBus();
   
-  public Map<String,?> getEnvConfig();
-  public Map<String,?> getAppConfig();
+  public Object getEnvConfig();
+  public Object getAppConfig();
 
   public byte[] getAppKeyBits();
   public String getAppKey();

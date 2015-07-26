@@ -11,16 +11,14 @@
 
 package com.zotohlab.frwk.server;
 
-import java.util.Map;
-
 /**
  * @author kenl
  *
  */
 public interface Emitter {
 
-  public Map<String,?> getConfig();
   public ServerLike container();
+  public Object getConfig();
 
 }
 

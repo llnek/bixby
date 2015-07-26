@@ -28,7 +28,7 @@ public class NulEmitter implements Emitter{
   }
   
   @Override
-  public Map<String, ?> getConfig() {
+  public Object getConfig() {
     return _cfg;
   }
 

@@ -32,15 +32,9 @@ public interface ByteBuffer<T> {
 
   public void readBytes(byte[] dst, int dstIndex, int length);
 
-  public int readUnsignedByte();
-
   public int readShort();
 
-  public int readUnsignedShort();
-
   public int readInt();
-
-  public long readUnsignedInt();
 
   public long readLong();
 
@@ -49,10 +43,6 @@ public interface ByteBuffer<T> {
   public float readFloat();
 
   public double readDouble();
-
-  public String readString();
-
-  public String[] readStrings(int numOfStrings);
 
   ByteBuffer<T> writeByte(byte b);
 
@@ -69,10 +59,6 @@ public interface ByteBuffer<T> {
   public ByteBuffer<T> writeFloat(float value);
 
   public ByteBuffer<T> writeDouble(double value);
-
-  public ByteBuffer<T> writeString(String message);
-
-  public ByteBuffer<T> writeStrings(String[] message);
 
   public T getImpl();
 

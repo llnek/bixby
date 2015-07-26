@@ -44,6 +44,7 @@
 
   (:import  [com.zotohlab.skaro.runtime AuthError UnknownUser DuplicateUser]
             [com.zotohlab.skaro.etc PluginFactory Plugin PluginError]
+            [org.apache.commons.lang3.tuple ImmutablePair]
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
             [org.apache.commons.codec.binary Base64]
             [com.zotohlab.skaro.core Container]
@@ -156,10 +157,10 @@
 
   (let [roleObjs (or roleObjs [])
         options (or options {})
-        [p s] (.hashed pwdObj)
+        ps (.hashed pwdObj)
         acc (.insert sql (-> (DbioCreateObj :czc.tardis.auth/LoginAccount)
                              (DbioSetFld* (merge {:acctid (strim user)
-                                                  :passwd  p}
+                                                  :passwd  (.getLeft ps)}
                                                  options)))) ]
     ;; Currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
@@ -221,9 +222,10 @@
 
   [^SQLr sql userObj ^PasswordAPI pwdObj ]
 
-  (let [[p s] (.hashed pwdObj)
+  (let [ps (.hashed pwdObj)
         u (-> userObj
-              (DbioSetFlds :passwd p :salt s)) ]
+              (DbioSetFlds :passwd (.getLeft ps)
+                           :salt (.getRight ps))) ]
     (.update sql u)
   ))
 

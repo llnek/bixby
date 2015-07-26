@@ -69,7 +69,7 @@
             [io.netty.handler.stream ChunkedWriteHandler]
             [com.zotohlab.frwk.netty PipelineConfigurator
              SimpleInboundFilter
-             DemuxInboundFilter
+             InboundAdapter
              ErrorSinkFilter RequestFilter
              Expect100Filter AuxHttpFilter]
             [com.zotohlab.frwk.core CallableWithArgs]
@@ -421,7 +421,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defonce ^:private WSOCK-FILTER
-  (proxy [DemuxInboundFilter][]
+  (proxy [InboundAdapter][]
     (channelRead [c msg]
       (let [^ChannelHandlerContext ctx c
             pipe (.pipeline ctx)

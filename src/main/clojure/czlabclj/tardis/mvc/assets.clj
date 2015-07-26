@@ -39,7 +39,6 @@
              ChannelFutureListener ChannelFuture
              ChannelPipeline ChannelHandlerContext]
             [io.netty.handler.stream ChunkedStream ChunkedFile]
-            [com.zotohlab.frwk.netty NettyFW]
             [com.google.gson JsonObject JsonArray]
             [org.apache.commons.io FileUtils]
             [com.zotohlab.skaro.mvc WebContent
@@ -232,11 +231,11 @@
                         (log/debug "Channel-future-op-cmp: " % " , file = " fname)
                         (Try! (when (notnil? @raf) (.close ^Closeable @raf)))
                         (when-not (:keepAlive info)
-                          (NettyFW/closeChannel ch))))
+                          (.close ch))))
         (catch Throwable e#
           (Try! (when-not (nil? @raf)(.close ^Closeable @raf)))
           (log/error e# "")
-          (Try! (NettyFW/closeChannel ch))) ))
+          (Try! (.close ch))) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

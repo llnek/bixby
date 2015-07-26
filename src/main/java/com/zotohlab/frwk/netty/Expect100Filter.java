@@ -23,6 +23,8 @@ public abstract class Expect100Filter extends SimpleInboundFilter {
 
   protected Expect100Filter() {}
 
+  public static String getName() { return "Expect100Filter"; }
+  
 }
 
 

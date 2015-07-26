@@ -28,6 +28,7 @@
             [org.bouncycastle.crypto.generators DESedeKeyGenerator]
             [org.jasypt.encryption.pbe StandardPBEStringEncryptor]
             [org.apache.commons.codec.binary Base64]
+            [org.apache.commons.lang3.tuple ImmutablePair]
             [javax.crypto.spec SecretKeySpec]
             [org.jasypt.util.text StrongTextEncryptor]
             [java.io ByteArrayOutputStream]
@@ -532,15 +533,15 @@
 
   (stronglyHashed [_]
     (if (nil? pwdStr)
-      [""  ""]
+      (ImmutablePair/of ""  "")
       (let [s (BCrypt/gensalt 12) ]
-        [ (BCrypt/hashpw pwdStr s) s ] )))
+        (ImmutablePair/of (BCrypt/hashpw pwdStr s) s ))))
 
   (hashed [_]
     (if (nil? pwdStr)
-      ["" ""]
+      (ImmutablePair/of "" "")
       (let [s (BCrypt/gensalt 10) ]
-        [ (BCrypt/hashpw pwdStr s) s ] )))
+        (ImmutablePair/of (BCrypt/hashpw pwdStr s) s))))
 
   (validateHash [this pwdHashed]
     (BCrypt/checkpw (.text this) pwdHashed))

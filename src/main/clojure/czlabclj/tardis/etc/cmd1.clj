@@ -14,7 +14,7 @@
 
   czlabclj.tardis.etc.cmd1
 
-  (:require [czlabclj.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile]]
+  (:require [czlabclj.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile ListFiles]]
             [czlabclj.xlib.util.cmdline :refer [MakeCmdSeqQ CLIConverse]]
             [czlabclj.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
             [czlabclj.xlib.util.guids :refer [NewUUid NewWWid]]
@@ -56,6 +56,7 @@
         [czlabclj.tardis.core.consts])
 
   (:import  [java.util Map Calendar ResourceBundle Properties Date]
+            [org.apache.commons.lang3.tuple ImmutablePair]
             [com.zotohlab.skaro.loaders AppClassLoader]
             [org.projectodd.shimdandy ClojureRuntimeShim]
             [org.apache.commons.lang3 StringUtils]
@@ -65,8 +66,7 @@
             [org.apache.commons.codec.binary Hex]
             [com.zotohlab.wflow Job]
             [java.io File]
-            [java.security KeyPair PublicKey PrivateKey]
-            [com.zotohlab.frwk.io IO]))
+            [java.security KeyPair PublicKey PrivateKey]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -389,7 +389,7 @@
   [text]
 
   (let [^PasswordAPI p (Pwdify text) ]
-    (println (fst (.hashed p)))
+    (println (.getLeft (.hashed p)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,7 +483,7 @@
   [^File dir ^StringBuilder out]
 
   (let [sep (System/getProperty "line.separator")
-        fs (IO/listFiles dir "jar" false) ]
+        fs (ListFiles dir "jar" false) ]
     (doseq [f fs]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""

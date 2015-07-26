@@ -30,7 +30,6 @@
   (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [java.io OutputStream IOException]
             [java.util List Timer TimerTask]
-            [com.zotohlab.frwk.netty NettyFW]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.frwk.core Identifiable]))
 

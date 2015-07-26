@@ -11,8 +11,6 @@
 
 package com.zotohlab.skaro.runtime;
 
-import java.util.Map;
-
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Initializable;
 import com.zotohlab.frwk.core.Startable;
@@ -23,7 +21,7 @@ import com.zotohlab.skaro.core.Container;
  */
 public interface AppMain extends Disposable, Initializable, Startable {
 
-  public void configure(Map<String,?> options);
+  public void configure(Object options);
 
   public void contextualize(Container c);
 

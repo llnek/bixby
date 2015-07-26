@@ -14,6 +14,7 @@ package com.zotohlab.frwk.netty;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 import io.netty.channel.Channel;
@@ -44,7 +45,7 @@ public abstract class PipelineConfigurator {
 
   protected void mkInitor(ChannelPipeline pipe, Object  options) {
     assemble(pipe, options);
-    NettyFW.dbgPipelineHandlers(pipe);
+    tlog().debug("ChannelPipeline: handlers= {}", StringUtils.join(pipe.names(), "|"));
   }
 
   protected PipelineConfigurator() {}

@@ -11,7 +11,6 @@
 
 package demo.flows.core;
 
-import java.util.Map;
 import java.util.Objects;
 
 import com.zotohlab.skaro.core.Container;
@@ -38,7 +37,7 @@ public class MyAppMain implements AppMain {
     System.out.println("Demo a set of workflow control features..." );
   }
 
-  public void configure(Map<String,?> j) {
+  public void configure(Object  j) {
     System.out.println("configure: config=");
     System.out.println(Objects.toString(j));
   }

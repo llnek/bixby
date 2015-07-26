@@ -11,14 +11,12 @@
 
 package com.zotohlab.frwk.dbio;
 
-import java.util.List;
-
 /**
  * @author kenl
  */
 public interface Schema {
 
-  public List<?> getModels();
+  public Iterable<?> getModels();
 
 }
 

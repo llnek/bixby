@@ -12,7 +12,6 @@
 package com.zotohlab.frwk.dbio;
 
 import java.sql.Connection;
-import java.util.Map;
 
 /**
  * Abstraction of a database interface.
@@ -25,7 +24,7 @@ public interface DBAPI {
 
   public MetaCache getMetaCache();
 
-  public Map<?,?> vendor();
+  public Object vendor();
 
   public void finz();
 

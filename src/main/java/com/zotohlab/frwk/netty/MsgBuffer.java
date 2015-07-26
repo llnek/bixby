@@ -62,11 +62,6 @@ public class MsgBuffer implements ByteBuffer<ByteBuf> {
   }
 
   @Override
-  public int readUnsignedByte() {
-    return buffer.readUnsignedByte();
-  }
-
-  @Override
   public byte[] readBytes(int length) {
     byte[] bytes = new byte[length];
     buffer.readBytes(bytes);
@@ -89,18 +84,8 @@ public class MsgBuffer implements ByteBuffer<ByteBuf> {
   }
 
   @Override
-  public int readUnsignedShort() {
-    return buffer.readUnsignedShort();
-  }
-
-  @Override
   public int readShort() {
     return buffer.readShort();
-  }
-
-  @Override
-  public long readUnsignedInt() {
-    return buffer.readUnsignedInt();
   }
 
   @Override
@@ -123,15 +108,6 @@ public class MsgBuffer implements ByteBuffer<ByteBuf> {
     return buffer.readChar();
   }
 
-  @Override
-  public String readString() {
-    return NettyFW.readString(buffer);
-  }
-
-  @Override
-  public String[] readStrings(int numOfStrings) {
-    return NettyFW.readStrings(buffer, numOfStrings);
-  }
 
   @Override
   public ByteBuffer<ByteBuf> writeByte(byte b) {
@@ -178,18 +154,6 @@ public class MsgBuffer implements ByteBuffer<ByteBuf> {
   @Override
   public ByteBuffer<ByteBuf> writeDouble(double value) {
     buffer.writeDouble(value);
-    return this;
-  }
-
-  @Override
-  public ByteBuffer<ByteBuf> writeString(String message) {
-    buffer.writeBytes( NettyFW.writeString(message));
-    return this;
-  }
-
-  @Override
-  public ByteBuffer<ByteBuf> writeStrings(String[] messages) {
-    buffer.writeBytes( NettyFW.writeStrings(messages));
     return this;
   }
 

@@ -69,8 +69,8 @@
             [io.netty.handler.timeout IdleState
              IdleStateEvent
              IdleStateHandler]
-            [com.zotohlab.frwk.netty NettyFW ErrorSinkFilter
-             SimpleInboundFilter DemuxInboundFilter
+            [com.zotohlab.frwk.netty ErrorSinkFilter
+             SimpleInboundFilter InboundAdapter
              MessageFilter PipelineConfigurator
              FlashFilter]
             [jregex Matcher Pattern]))
@@ -193,7 +193,7 @@
   [co options]
 
   (let [disp (wsockDispatcher co co options)]
-    (proxy [DemuxInboundFilter][]
+    (proxy [InboundAdapter][]
       (channelRead [c msg]
         (let [^ChannelHandlerContext ctx c
               pipe (.pipeline ctx)

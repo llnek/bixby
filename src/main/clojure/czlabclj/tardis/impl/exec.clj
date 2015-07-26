@@ -16,7 +16,7 @@
 
   (:require [czlabclj.xlib.util.str :refer [nsb strim hgl? ToKW]]
             [czlabclj.xlib.util.mime :refer [SetupCache]]
-            [czlabclj.xlib.util.files :refer [Unzip]]
+            [czlabclj.xlib.util.files :refer [ListFiles Unzip]]
             [czlabclj.xlib.util.process :refer [SafeWait]]
             [czlabclj.tardis.impl.dfts :refer [MakePodMeta]]
             [czlabclj.xlib.util.core
@@ -54,7 +54,6 @@
             [java.util.zip ZipFile]
             [java.net URL]
             [java.util Date]
-            [com.zotohlab.frwk.io IO]
             [com.zotohlab.frwk.core Startable Disposable
              Versioned Hierarchial Identifiable]
             [com.zotohlab.frwk.server Component ComponentRegistry]))
@@ -395,7 +394,7 @@
   (let [^czlabclj.xlib.util.core.Muble
         ctx (.getCtx co)
         ^File bDir (.getf ctx K_BKSDIR)
-        fs (IO/listFiles bDir "meta" false) ]
+        fs (ListFiles bDir "meta" false) ]
     (doseq [^File f fs ]
       (let [^czlabclj.tardis.core.sys.Elmt
             b (-> (makeBlockMeta (io/as-url f))

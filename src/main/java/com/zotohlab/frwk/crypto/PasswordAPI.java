@@ -11,7 +11,7 @@
 
 package com.zotohlab.frwk.crypto;
 
-import java.util.List;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 /**
  *
@@ -29,8 +29,8 @@ public interface PasswordAPI {
   /**
    * A tuple(2) ['hashed value' 'salt']
    */
-  public List<String> stronglyHashed();
-  public List<String> hashed();
+  public ImmutablePair<String,String> stronglyHashed();
+  public ImmutablePair<String,String> hashed();
 
   public String encoded();
   public String text();

@@ -11,8 +11,6 @@
 
 package com.zotohlab.frwk.dbio;
 
-import java.util.Map;
-
 /**
  * @author kenl
  */
@@ -21,7 +19,7 @@ public interface MetaCache {
   /**
    * Returns a map of { type -&gt; model-def , type -&gt; model-def, ... }
    */
-  public Map<?,?> getMetas();
+  public Object getMetas();
 
 }
 

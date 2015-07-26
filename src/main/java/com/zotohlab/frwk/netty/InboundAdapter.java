@@ -7,33 +7,28 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.netty;
 
-import java.util.Map;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
-import com.zotohlab.frwk.io.XData;
+import org.slf4j.Logger;
+
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 
 /**
+ * Wrapper so that we can do some reference count debugging.
+ *
  * @author kenl
  */
-public class DemuxedMsg {
+public abstract class InboundAdapter extends ChannelInboundHandlerAdapter {
 
-  // payload is body of message
-  // info is the headers
-  private Map<?,?> _info;
-  private XData _payload;
+  private static Logger _log = getLogger(lookup().lookupClass());
+  public Logger tlog() { return _log; }
 
-  public DemuxedMsg(Map<?,?> info, XData payload) {
-    _payload = payload;
-    _info = info;
-  }
-
-  public XData payload() { return _payload; }
-  public Map<?,?> info() { return _info; }
-
+  protected InboundAdapter() {}
+  
 }
-
-

@@ -68,7 +68,7 @@
             [io.netty.handler.stream ChunkedFile
              ChunkedStream ChunkedWriteHandler]
             [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
-            [com.zotohlab.frwk.netty NettyFW
+            [com.zotohlab.frwk.netty
              MessageFilter
              ErrorSinkFilter PipelineConfigurator]
             [io.netty.handler.codec.http.websocketx
@@ -175,7 +175,7 @@
         res (.getResultObj evt)
         cks (csToNetty (.getf res :cookies))
         code (.getf res :code)
-        rsp (NettyFW/makeHttpReply code)
+        rsp (MakeHttpReply code)
         loc (nsb (.getf res :redirect))
         data (.getf res :data)
         hdrs (.getf res :hds) ]
@@ -269,7 +269,7 @@
         (Try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [rsp (NettyFW/makeHttpReply 500) ]
+      (let [rsp (MakeHttpReply 500) ]
         (try
           (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException _
@@ -311,7 +311,7 @@
                      textF
                      (.text ^TextWebSocketFrame msg)
                      (instance? BinaryWebSocketFrame msg)
-                     (NettyFW/slurpByteBuf (.content ^BinaryWebSocketFrame msg))
+                     (SlurpBytes (.content ^BinaryWebSocketFrame msg))
                      :else nil))
     (with-meta
       (reify

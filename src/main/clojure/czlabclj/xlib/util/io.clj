@@ -31,7 +31,7 @@
              OutputStream Reader Writer]
             [java.nio ByteBuffer CharBuffer]
             [java.nio.charset Charset]
-            [com.zotohlab.frwk.io IO XData XStream]
+            [com.zotohlab.frwk.io XData XStream]
             [org.apache.commons.codec.binary Base64]
             [org.apache.commons.lang3 StringUtils]
             [org.apache.commons.io IOUtils]
@@ -484,11 +484,11 @@
 
   (^XData
     [^InputStream inp]
-    (slurp-bytes inp (IO/streamLimit)))
+    (slurp-bytes inp (StreamLimit)))
 
   (^XData
     [^InputStream inp usefile]
-    (slurp-bytes inp (if usefile 1 (IO/streamLimit)))))
+    (slurp-bytes inp (if usefile 1 (StreamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -496,11 +496,11 @@
 
   (^XData
     [^Reader rdr]
-    (slurp-chars rdr (IO/streamLimit)))
+    (slurp-chars rdr (StreamLimit)))
 
   (^XData
     [^Reader rdr usefile]
-    (slurp-chars rdr (if usefile 1 (IO/streamLimit)))))
+    (slurp-chars rdr (if usefile 1 (StreamLimit)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

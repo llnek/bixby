@@ -11,9 +11,6 @@
 
 package com.zotohlab.frwk.netty;
 
-import static com.zotohlab.frwk.netty.NettyFW.delAttr;
-import static com.zotohlab.frwk.netty.NettyFW.getAttr;
-import static com.zotohlab.frwk.netty.NettyFW.setAttr;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -21,10 +18,10 @@ import org.slf4j.Logger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
 import io.netty.util.CharsetUtil;
@@ -35,7 +32,7 @@ import io.netty.util.CharsetUtil;
  * @author kenl
  */
 @ChannelHandler.Sharable
-public class FlashFilter extends ChannelInboundHandlerAdapter {
+public class FlashFilter extends InboundAdapter {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
@@ -60,12 +57,12 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
   public static String getName() { return "FlashFilter"; }
   
   public static ChannelPipeline addBefore(ChannelPipeline pipe, String name) {
-    pipe.addBefore(name, FlashFilter.class.getSimpleName(), shared);
+    pipe.addBefore(name, getName(), shared);
     return pipe;
   }
   
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(FlashFilter.class.getSimpleName(), shared);
+    pipe.addLast(getName(), shared);
     return pipe;
   }
 
@@ -74,13 +71,15 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     ByteBuf bbuf = (msg instanceof ByteBuf) ? (ByteBuf)msg : null;
+    Channel ch = ctx.channel();
+    
     if (bbuf == null || !bbuf.isReadable()) {
       return;
     }
     
     tlog().debug("FlashFilter:channelRead called.");
 
-    Integer hint = (Integer) getAttr(ctx,HINT);
+    Integer hint = (Integer) ch.attr(HINT).get();
     if (hint==null) {
       hint= new Integer(0);
     }
@@ -96,12 +95,12 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
         hint += 1;
         if (hint == FLASH_LEN) {
           //matched!
-          finito(ctx, msg, true);
+          finito(ctx, ch, msg, true);
           state= 1;
           break;
         }
       } else {
-        finito(ctx,msg,false);
+        finito(ctx, ch, msg,false);
         state= 0;
         break;
       }
@@ -110,15 +109,17 @@ public class FlashFilter extends ChannelInboundHandlerAdapter {
     if (state < 0) {
       // not done testing yet...
       if (hint < FLASH_LEN) {
-        setAttr(ctx, HINT, hint);
+        ch.attr(HINT).set(hint);
       }
     }
 
   }
 
-  private void finito(ChannelHandlerContext ctx, Object msg, boolean success) {
+  private void finito(ChannelHandlerContext ctx,
+		  Channel ch,
+		  Object msg, boolean success) {
 
-    delAttr(ctx, HINT);
+    ch.attr(HINT).remove();
 
     if (success) {
 

@@ -12,7 +12,6 @@
 package com.zotohlab.frwk.dbio;
 
 import java.sql.Connection;
-import java.util.Map;
 
 /**
  * @author kenl
@@ -23,7 +22,7 @@ public interface JDBCPool {
 
   public void shutdown();
 
-  public Map<?,?> vendor();
+  public Object  vendor();
 
   public String dbUrl();
 }

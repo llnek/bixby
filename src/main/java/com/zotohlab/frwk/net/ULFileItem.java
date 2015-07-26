@@ -11,11 +11,13 @@
 
 package com.zotohlab.frwk.net;
 
-import static com.zotohlab.frwk.io.IO.newTempFile;
 import static com.zotohlab.frwk.util.CU.nsb;
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,11 +27,7 @@ import java.io.UnsupportedEncodingException;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
 import org.apache.commons.io.IOUtils;
-
-import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
-
 
 import com.zotohlab.frwk.io.XData;
 
@@ -187,10 +185,10 @@ public class ULFileItem implements FileItem , Serializable {
     } else {
       _ds= new XData();
       try {
-        Object[] fos= newTempFile(true);
-        _ds.resetContent( fos[0]);
+    	  File fp = File.createTempFile("tmp-", ".dat");
+        _ds.resetContent( fp);
         _ds.setDeleteFile(true);
-        _os = (OutputStream) fos[1];
+        _os = new FileOutputStream(fp);
       }
       catch (Throwable e) {
         tlog().error("", e);

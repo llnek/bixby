@@ -11,39 +11,38 @@
 
 package com.zotohlab.frwk.dbio;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Iterator;
 
 /**
  * @author kenl
  */
 public interface SQLr {
 
-  public List<?> findSome(Object modeldef, Map<String,Object> filters, Map<?,?> extras);
+  public Iterator<?> findSome(Object modeldef, Object  filters, Object  extras);
 
-  public List<?> findSome(Object modeldef, Map<String,Object> filters);
+  public Iterator<?> findSome(Object modeldef, Object  filters);
 
-  public List<?> findAll(Object modeldef, Map<?,?> extras);
+  public Iterator<?> findAll(Object modeldef, Object extras);
 
-  public List<?> findAll(Object modeldef);
+  public Iterator<?> findAll(Object modeldef);
 
-  public Object findOne(Object modeldef, Map<String,Object> filters);
+  public Object findOne(Object modeldef, Object  filters);
 
   public Object update(Object obj);
   public Object delete(Object obj);
   public Object insert(Object obj);
 
-  public List<?> select(Object modeldef, String sql, List<?> params);
-  public List<?> select(String sql, List<?> params);
+  public Iterator<?> select(Object modeldef, String sql, Iterator<?> params);
+  public Iterator<?> select(String sql, Iterator<?> params);
 
-  public Object execWithOutput(String sql, List<?> params);
-  public Object exec(String sql, List<?> params);
+  public Object execWithOutput(String sql, Iterator<?> params);
+  public Object exec(String sql, Iterator<?> params);
 
   public int countAll(Object modeldef);
 
   public void purge(Object modeldef);
 
-  public Map<?,?> metas();
+  public Object  metas();
 
 }
 

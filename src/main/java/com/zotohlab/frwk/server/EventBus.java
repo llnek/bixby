@@ -11,8 +11,6 @@
 
 package com.zotohlab.frwk.server;
 
-import java.util.Map;
-
 import com.zotohlab.frwk.core.Hierarchial;
 
 
@@ -21,7 +19,7 @@ import com.zotohlab.frwk.core.Hierarchial;
  */
 public interface EventBus extends Hierarchial {
 
-  public void onEvent(Event evt, Map<?,?> options );
+  public void onEvent(Event evt, Object  options );
 
 }
 

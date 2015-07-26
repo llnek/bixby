@@ -17,16 +17,14 @@ import static org.slf4j.LoggerFactory.getLogger;
 import org.slf4j.Logger;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * Last in the pipeline to catch all errors.
  * 
  * @author kenl
  */
-@SuppressWarnings("rawtypes")
 @ChannelHandler.Sharable
-public abstract class ErrorSinkFilter extends SimpleChannelInboundHandler {
+public abstract class ErrorSinkFilter extends SimpleInboundFilter {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }

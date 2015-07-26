@@ -44,7 +44,6 @@
             [com.zotohlab.skaro.runtime AuthError]
             [com.zotohlab.skaro.core Container]
             [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.frwk.netty NettyFW]
             [java.util Date]
             [java.io File]
             [com.zotohlab.frwk.io XData]
@@ -218,7 +217,7 @@
    ^Channel ch
    code ]
 
-  (with-local-vars [rsp (NettyFW/makeHttpReply code)
+  (with-local-vars [rsp (MakeHttpReply code)
                     bits nil wf nil
                     ctype "text/plain"]
     (try
@@ -242,9 +241,9 @@
         (when-not (nil? @bits)
           (var-set wf (.writeAndFlush ch
                                       (Unpooled/wrappedBuffer ^bytes @bits))))
-        (NettyFW/closeCF @wf false))
+        (CloseCF @wf false))
       (catch Throwable e#
-        (NettyFW/closeChannel ch)))
+        (.close ch)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
