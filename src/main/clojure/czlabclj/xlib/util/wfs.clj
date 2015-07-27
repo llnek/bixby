@@ -25,7 +25,7 @@
 
   (:use [czlabclj.xlib.util.consts])
 
-  (:import  [com.zotohlab.wflow If FlowNode Activity
+  (:import  [com.zotohlab.wflow If FlowDot Activity
              CounterExpr BoolExpr Nihil
              ChoiceExpr Job WorkFlow WorkFlowEx
              WHandler FlowError
@@ -196,7 +196,7 @@
       (handleError [_ e]
         (with-local-vars [done false]
           (when-let [^FlowError fe (Cast? FlowError e)]
-          (when-let [n (.getLastNode fe)]
+          (when-let [n (.getLastDot fe)]
           (when-let [w (Cast? WorkFlowEx (-> (.job n)(.wflow)))]
             (var-set done true)
             (.onError ^WorkFlowEx w (.getCause fe)))))

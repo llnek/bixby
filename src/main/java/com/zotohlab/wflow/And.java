@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -27,13 +27,13 @@ public class And extends Merge {
     this("",body);
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new AndNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new AndDot(cur, this);
   }
 
-  public void realize(FlowNode n) {
-    AndNode s = (AndNode)n;
-    FlowNode x=s.next();
+  public void realize(FlowDot n) {
+    AndDot s = (AndDot)n;
+    FlowDot x=s.next();
     s.withBranches(_branches);
     if (_body != null) {
       s.withBody( _body.reify( x));
@@ -43,21 +43,21 @@ public class And extends Merge {
 }
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class AndNode extends MergeNode {
+class AndDot extends MergeDot {
 
-  public AndNode(FlowNode c, And a) {
+  public AndDot(FlowDot c, And a) {
     super(c,a);
   }
 
-  public FlowNode eval(Job j) {
+  public FlowDot eval(Job j) {
     int nv= _cntr.incrementAndGet();
-    FlowNode rc= null;
+    FlowDot rc= null;
 
-    tlog().debug("AndNode: size={}, cntr={}, join={}",
+    tlog().debug("AndDot: size={}, cntr={}, join={}",
         size(),  nv, getDef().getName());
 
     // all branches have returned, proceed...
@@ -69,10 +69,10 @@ class AndNode extends MergeNode {
   }
 
   private void done() {
-    tlog().debug("AndNode: all branches have returned.");
-    realize();    
+    tlog().debug("AndDot: all branches have returned");
+    realize();
   }
-  
+
 }
 
 

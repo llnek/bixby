@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.mvc;
 
@@ -36,8 +36,8 @@ class ByteRange {
   private int _servedHeader = 0;
   private int _servedRange = 0;
 
-  public ByteRange (RandomAccessFile file, boolean wantHeader, long start, long end,
-    String cType) {
+  public ByteRange (RandomAccessFile file,
+      boolean wantHeader, long start, long end, String cType) {
 
     _header= new byte[0];
     _file= file;
@@ -80,7 +80,8 @@ class ByteRange {
       }
       int c = _file.read( out, pos, (int)maxToRead);
       if (c < 0) {
-        throw new IOException("error while reading file : no more to read ! length=" +
+        throw new IOException("error while reading file : " +
+            "no more to read ! length=" +
             _file.length() +
             ", seek=" + ( _start + _servedRange));
       }
@@ -90,9 +91,16 @@ class ByteRange {
     return count;
   }
 
-  private byte[] fmtHeader(long flen) throws UnsupportedEncodingException {
-    String s= "--" + HTTPRangeInput.DEF_BD + "\r\n" + "content-type: " + _cType + "\r\n" +
-      "content-range: bytes " + _start + "-" + _end + "/" + flen + "\r\n\r\n";
+  private byte[] fmtHeader(long flen)
+    throws UnsupportedEncodingException {
+
+    String s= "--" + HTTPRangeInput.DEF_BD + "\r\n" +
+      "content-type: " + _cType + "\r\n" +
+      "content-range: bytes " +
+      _start + "-" + _end +
+      "/" + flen +
+      "\r\n\r\n";
+
     return s.getBytes("utf-8");
   }
 

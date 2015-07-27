@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.netty;
 
@@ -34,7 +34,7 @@ public class FlashFilter extends InboundAdapter {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
-  
+
   @SuppressWarnings("unused")
   private static final String _XML = "<cross-domain-policy><allow-access-from domain=\"*\" to-ports=\"*\" /></cross-domain-policy>";
   private static final String XML= "<?xml version=\"1.0\"?>\r\n"
@@ -53,12 +53,12 @@ public class FlashFilter extends InboundAdapter {
   private static final AttributeKey<Integer> HINT = AttributeKey.valueOf("flash-hint");
   public static final FlashFilter shared = new FlashFilter();
   public static String getName() { return "FlashFilter"; }
-  
+
   public static ChannelPipeline addBefore(ChannelPipeline pipe, String name) {
     pipe.addBefore(name, getName(), shared);
     return pipe;
   }
-  
+
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
     pipe.addLast(getName(), shared);
     return pipe;
@@ -70,11 +70,11 @@ public class FlashFilter extends InboundAdapter {
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     ByteBuf bbuf = (msg instanceof ByteBuf) ? (ByteBuf)msg : null;
     Channel ch = ctx.channel();
-    
+
     if (bbuf == null || !bbuf.isReadable()) {
       return;
     }
-    
+
     tlog().debug("FlashFilter:channelRead called.");
 
     Integer hint = (Integer) ch.attr(HINT).get();
@@ -114,8 +114,8 @@ public class FlashFilter extends InboundAdapter {
   }
 
   private void finito(ChannelHandlerContext ctx,
-		  Channel ch,
-		  Object msg, boolean success) {
+      Channel ch,
+      Object msg, boolean success) {
 
     ch.attr(HINT).remove();
 
@@ -127,7 +127,7 @@ public class FlashFilter extends InboundAdapter {
 
     } else {
 
-      tlog().debug("FlashFilter:channelRead: finito!.");
+      tlog().debug("FlashFilter:channelRead: removing self. finito!");
       ctx.fireChannelRead(msg);
       ctx.pipeline().remove(this);
     }

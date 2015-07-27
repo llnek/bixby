@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -44,12 +44,12 @@ public class PTask extends Activity {
     this("",w);
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new PTaskNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new PTaskDot(cur, this);
   }
 
-  public void realize(FlowNode n) {
-    PTaskNode s= (PTaskNode) n;
+  public void realize(FlowDot n) {
+    PTaskDot s= (PTaskDot) n;
     s.withWork(_work);
   }
 
@@ -59,28 +59,28 @@ public class PTask extends Activity {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class PTaskNode extends FlowNode {
+class PTaskDot extends FlowDot {
 
-  public PTaskNode(FlowNode c, PTask a) {
+  public PTaskDot(FlowDot c, PTask a) {
     super(c,a);
   }
 
-  public PTaskNode withWork(Work w) {
+  public PTaskDot withWork(Work w) {
     _work=w;
     return this;
   }
 
-  public FlowNode eval(Job j) {
-    //tlog.debug("PTaskNode: {} about to exec work.", this.id )
+  public FlowDot eval(Job j) {
+    //tlog.debug("PTaskDot: {} about to exec work.", this.id )
     Object a= _work.on(this,j);
-    FlowNode rc= next();
+    FlowDot rc= next();
 
     if (a instanceof Nihil) {
-      rc = new NihilNode( j );
+      rc = new NihilDot( j );
     }
     else
     if (a instanceof Activity) {

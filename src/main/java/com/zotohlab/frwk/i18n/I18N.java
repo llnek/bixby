@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.i18n;
 
@@ -27,7 +27,7 @@ public enum I18N {
 
   private static Map<Object,ResourceBundle> _bundles= new HashMap<>();
   private static ResourceBundle _base;
-  
+
   private static Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
@@ -47,10 +47,10 @@ public enum I18N {
     tlog().info("Setting a resource bundle, bkey = {}", bkey);
     _bundles.put(bkey,b);
   }
-  
+
   public static void clsBundle(String bkey) {
     _bundles.remove(bkey);
   }
-  
+
 }
 

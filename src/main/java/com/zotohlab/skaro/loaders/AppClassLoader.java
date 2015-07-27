@@ -7,18 +7,16 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.loaders;
 
-//import org.apache.commons.io.{FileUtils=>FUT}
 import java.io.File;
 
 /**
  * @author kenl
  */
 public class AppClassLoader extends AbstractClassLoader {
-
 
   public AppClassLoader(ExecClassLoader par) {
     super(par);
@@ -38,11 +36,6 @@ public class AppClassLoader extends AbstractClassLoader {
       addUrl(c);
       findUrls(d);
       findUrls(b);
-
-//      if ( new File(appDir, "WEB-INF").exists() ) {
-//        addUrl( new File(appDir, "WEB-INF/classes"));
-//        findUrls(new File(appDir, "WEB-INF/lib"));
-//      }
     }
     _loaded=true;
   }

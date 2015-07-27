@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.mvc;
 
@@ -27,9 +27,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static java.lang.invoke.MethodHandles.*;
-
 import org.slf4j.Logger;
-
 import static org.slf4j.LoggerFactory.*;
 
 
@@ -62,7 +60,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
   }
 
   public long process(HttpResponse rsp) {
-    HttpHeaders.addHeader(rsp,"accept-ranges", "bytes");
+    HttpHeaders.addHeader(rsp, "accept-ranges", "bytes");
     if (_bad) {
       rsp.setStatus(HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
       HttpHeaders.setHeader(rsp, "content-range", "bytes " + "0-" + (_clen-1) + "/" + _clen);
@@ -124,7 +122,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       String[] rvs= (pos < 0) ?  null : s.substring(pos+6).trim().split(",");
       List<Long[]> ranges= new ArrayList<>();
 
-          _clen= _file.length();
+      _clen= _file.length();
 
       if (rvs != null) for (int n=0; n < rvs.length; ++n) {
           String rs= rvs[n].trim();
@@ -151,8 +149,8 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       _bad = (_ranges.length == 0);
     }
     catch (Throwable e) {
-        _bad = true;
-     tlog().error("", e);
+      _bad = true;
+      tlog().error("", e);
     }
   }
 

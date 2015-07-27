@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.crypto;
 
@@ -22,14 +22,25 @@ public interface PasswordAPI {
 
   /**
    * Does this password hashed to match the target?
+   *
+   * @param targetHashed
+   * @return
    */
   public boolean validateHash(String targetHashed);
   public char[] toCharArray();
 
   /**
    * A tuple(2) ['hashed value' 'salt']
+   *
+   * @return
    */
   public ImmutablePair<String,String> stronglyHashed();
+
+  /**
+   * A tuple(2) ['hashed value' 'salt']
+   *
+   * @return
+   */
   public ImmutablePair<String,String> hashed();
 
   public String encoded();

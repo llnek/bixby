@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.netty;
 
@@ -25,7 +25,7 @@ import io.netty.channel.ChannelPipeline;
 
 /**
  * Use to configure the Netty Pipeline.
- * 
+ *
  * @author kenl
  */
 public abstract class PipelineConfigurator {
@@ -45,7 +45,7 @@ public abstract class PipelineConfigurator {
 
   protected void mkInitor(ChannelPipeline pipe, Object  options) {
     assemble(pipe, options);
-    tlog().debug("ChannelPipeline: handlers= {}", StringUtils.join(pipe.names(), "|"));
+    tlog().debug("ChannelPipeline: assembled handlers= {}", StringUtils.join(pipe.names(), "|"));
   }
 
   protected PipelineConfigurator() {}

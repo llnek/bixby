@@ -7,9 +7,12 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.util;
+
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -17,9 +20,8 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.invoke.MethodHandles.*;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
 
 
 /**
@@ -44,7 +46,7 @@ public class TCore implements RejectedExecutionHandler {
     _trace=traceable;
     _paused=true;
   }
-  
+
   public TCore (String id, int tds) {
     this(id, tds, true);
   }
@@ -61,15 +63,15 @@ public class TCore implements RejectedExecutionHandler {
   public void dispose() {
     stop();
     //_scd.shutdownNow()
-    _scd.shutdown();    
+    _scd.shutdown();
     if (_trace) {
-      tlog().debug("Core \"{}\"  disposed and shut down." , _id );      
+      tlog().debug("Core \"{}\"  disposed and shut down." , _id );
     }
   }
 
   public void schedule(Runnable work) {
     if (! _paused) {
-      _scd.execute(work);      
+      _scd.execute(work);
     }
   }
 
@@ -79,16 +81,21 @@ public class TCore implements RejectedExecutionHandler {
   }
 
   public String toString() {
-    return "Core \"" + _id + "\" with threads = " + _tds;    
+    return "Core \"" + _id + "\" with threads = " + _tds;
   }
-  
+
   private void activate() {
 //    _scd= Executors.newCachedThreadPool( new TFac(_id) )
     _scd= new ThreadPoolExecutor( _tds, _tds, 5000L,
         TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
-        new TFac(_id) , this );
+        new BasicThreadFactory.Builder()
+        .priority(Thread.NORM_PRIORITY)
+        .namingPattern(_id + "-%d")
+        .daemon(false)
+        .build(),
+        this );
     if (_trace) {
-      tlog().debug("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");      
+      tlog().debug("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");
     }
   }
 

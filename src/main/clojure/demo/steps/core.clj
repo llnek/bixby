@@ -20,7 +20,7 @@
 
   (:use [czlabclj.xlib.util.wfs])
 
-  (:import  [com.zotohlab.wflow FlowNode Switch If
+  (:import  [com.zotohlab.wflow FlowDot Switch If
              Activity Split While PTask
              WorkFlow Job]
             [com.zotohlab.skaro.core Container]))

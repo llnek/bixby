@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -25,12 +25,12 @@ public class Or extends Merge {
     this("",b);
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new OrNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new OrDot(cur, this);
   }
 
-  public void realize(FlowNode n) {
-    OrNode s= (OrNode) n;
+  public void realize(FlowDot n) {
+    OrDot s= (OrDot) n;
     if (_body != null) {
       s.withBody( _body.reify(s.next() ));
     }
@@ -41,20 +41,20 @@ public class Or extends Merge {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class OrNode extends MergeNode {
+class OrDot extends MergeDot {
 
-  public OrNode(FlowNode c, Or a) {
+  public OrDot(FlowDot c, Or a) {
     super(c,a);
   }
 
-  public FlowNode eval(Job j) {
+  public FlowDot eval(Job j) {
     int nv= _cntr.incrementAndGet();
-    FlowNode rc= this;
-    FlowNode nx= next();
+    FlowDot rc= this;
+    FlowDot nx= next();
 
     if (size() == 0) {
       // 'or' of nothing, nothing to do
@@ -81,10 +81,10 @@ class OrNode extends MergeNode {
   }
 
   private void done() {
-    tlog().debug("OrNode: all branches have returned.");
-    realize();    
+    tlog().debug("OrDot: all branches have returned.");
+    realize();
   }
-  
+
 }
 
 

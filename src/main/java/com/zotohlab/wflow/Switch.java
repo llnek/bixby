@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -51,14 +51,14 @@ public class Switch extends Activity {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new SwitchNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new SwitchDot(cur, this);
   }
 
-  public void realize(FlowNode n) {
-    Map<Object,FlowNode> t= new HashMap<>();
-    SwitchNode p= (SwitchNode) n;
-    FlowNode nxt= p.next();
+  public void realize(FlowDot n) {
+    Map<Object,FlowDot> t= new HashMap<>();
+    SwitchDot p= (SwitchDot) n;
+    FlowDot nxt= p.next();
 
     for (Map.Entry<Object,Activity> en: _choices.entrySet()) {
       t.put(en.getKey(), en.getValue().reify(nxt) );
@@ -79,42 +79,42 @@ public class Switch extends Activity {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class SwitchNode extends FlowNode {
+class SwitchDot extends FlowDot {
 
-  private Map<Object,FlowNode> _cs = new HashMap<>();
+  private Map<Object,FlowDot> _cs = new HashMap<>();
   private ChoiceExpr _expr= null;
-  private FlowNode _def = null;
+  private FlowDot _def = null;
 
-  public SwitchNode withChoices(Map<Object,FlowNode> cs) {
+  public SwitchDot withChoices(Map<Object,FlowDot> cs) {
     _cs.putAll(cs);
     return this;
   }
 
-  public SwitchNode(FlowNode c, Activity a) {
+  public SwitchDot(FlowDot c, Activity a) {
     super(c,a);
   }
 
-  public SwitchNode withDef(FlowNode c) {
+  public SwitchDot withDef(FlowDot c) {
     _def=c;
     return this;
   }
 
-  public SwitchNode withExpr(ChoiceExpr e) {
+  public SwitchDot withExpr(ChoiceExpr e) {
     _expr=e;
     return this;
   }
 
-  public Map<Object,FlowNode> choices() { return  _cs; }
+  public Map<Object,FlowDot> choices() { return  _cs; }
 
-  public FlowNode defn() { return  _def; }
+  public FlowDot defn() { return  _def; }
 
-  public FlowNode eval(Job j) {
+  public FlowDot eval(Job j) {
     Object m= _expr.choice(j);
-    FlowNode a= null;
+    FlowDot a= null;
 
     if (m != null) {
       a = _cs.get(m);

@@ -7,22 +7,23 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.netty;
+
+import static java.lang.invoke.MethodHandles.lookup;
+import static org.slf4j.LoggerFactory.getLogger;
+
+import org.slf4j.Logger;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCounted;
 
-import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
-import static org.slf4j.LoggerFactory.*;
-
 
 /**
  * Wrapper so that we can do some reference count debugging.
- * 
+ *
  * @author kenl
  */
 @SuppressWarnings("rawtypes")
@@ -33,21 +34,15 @@ public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
+    super.channelRead(ctx, obj);
     try {
-      super.channelRead(ctx, obj);
       if (obj instanceof ReferenceCounted) {
         ReferenceCounted c = (ReferenceCounted) obj ;
-        String os = "???";
-        try {
-          os= c.toString();
-        } catch (Throwable t) {}
-        tlog().debug("Object {}: after channelRead() has ref-count = {}" , os, c.refCnt());
+        tlog().debug("Object {}: after channelRead() has ref-count = {}" ,
+            c.toString(), c.refCnt());
       }
     }
-    catch (Exception e) {
-      //tlog().error("Oh No! contexthandler=" + ctx.name() + "\n", e);
-      throw e;
-    }
+    catch (Throwable t) {}
   }
 
 }

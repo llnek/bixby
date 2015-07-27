@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -25,30 +25,30 @@ public class Nihil  extends Activity {
 
   public Nihil() {}
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new NihilNode(cur.job());
+  public FlowDot reifyDot(FlowDot cur) {
+    return new NihilDot(cur.job());
   }
 
-  public FlowNode reify(Job j) throws Exception {
-    return new NihilNode(j);    
+  public FlowDot reify(Job j) throws Exception {
+    return new NihilDot(j);
   }
-  
-  public void realize(FlowNode p) {}
+
+  public void realize(FlowDot p) {}
 
 }
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class NihilNode extends FlowNode {
+class NihilDot extends FlowDot {
 
-  public FlowNode eval(Job j) { return this; }
-  public FlowNode next() { return this; }
+  public FlowDot eval(Job j) { return this; }
+  public FlowDot next() { return this; }
 
-  public NihilNode(Job j) {
+  public NihilDot(Job j) {
     super(j);
   }
 

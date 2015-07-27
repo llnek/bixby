@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -18,7 +18,7 @@ package com.zotohlab.wflow;
  */
 @FunctionalInterface
 public interface Work {
-  public Object on(FlowNode cur, Job j);
+  public Object on(FlowDot cur, Job j);
 }
 
 

@@ -21,7 +21,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
             [com.zotohlab.frwk.io XData]
             [com.zotohlab.skaro.io WebSockEvent
                                    WebSockResult]

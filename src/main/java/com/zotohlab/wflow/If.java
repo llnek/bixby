@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -42,13 +42,13 @@ public class If extends Conditional {
     this(expr, then, null );
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new IfNode(cur,this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new IfDot(cur,this);
   }
 
-  public void realize(FlowNode n) {
-    IfNode s= (IfNode) n;
-    FlowNode nx= s.next();
+  public void realize(FlowDot n) {
+    IfDot s= (IfDot) n;
+    FlowDot nx= s.next();
     s.withElse( (_elseCode ==null) ? nx : _elseCode.reify(nx) );
     s.withThen( _thenCode.reify(nx));
     s.withTest( expr());
@@ -58,33 +58,33 @@ public class If extends Conditional {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class IfNode extends ConditionalNode {
+class IfDot extends ConditionalDot {
 
-  public IfNode(FlowNode c, If a) {
+  public IfDot(FlowDot c, If a) {
     super(c,a);
   }
 
-  private FlowNode _then= null;
-  private FlowNode _else= null;
+  private FlowDot _then= null;
+  private FlowDot _else= null;
 
-  public IfNode withElse(FlowNode n ) {
+  public IfDot withElse(FlowDot n ) {
     _else=n;
     return this;
   }
 
-  public IfNode withThen(FlowNode n ) {
+  public IfDot withThen(FlowDot n ) {
     _then=n;
     return this;
   }
 
-  public FlowNode eval(Job j) {
+  public FlowDot eval(Job j) {
     boolean b = test(j);
     //tlog().debug("If: test {}", (b) ? "OK" : "FALSE");
-    FlowNode rc = b ? _then : _else;
+    FlowDot rc = b ? _then : _else;
     realize();
     return rc;
   }

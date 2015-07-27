@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.dbio;
 
@@ -21,7 +21,7 @@ public enum DBIOLocal {
 ;
 
   /**
-  * A cache of { database1 -> connection pool , database2 -> connection pool , ... }
+  * A cache of { database1 - connection pool , database2 - connection pool , ... }
   */
   private static ThreadLocal<Map<Object,JDBCPool>> _cache=new ThreadLocal<Map<Object,JDBCPool>>() {
     protected Map<Object,JDBCPool> initialValue() {

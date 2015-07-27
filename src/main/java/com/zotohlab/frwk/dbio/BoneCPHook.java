@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.dbio;
 
@@ -21,7 +21,7 @@ import com.jolbox.bonecp.hooks.AbstractConnectionHook;
 
 /**
  * To debug BoneCP if necessary.
- * 
+ *
  * @author kenl
  */
 public class BoneCPHook extends AbstractConnectionHook {
@@ -29,14 +29,10 @@ public class BoneCPHook extends AbstractConnectionHook {
   private static final Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
 
-  /**
-   */
   public void onCheckOut(ConnectionHandle h) {
     tlog().debug("BoneCP: checking out a connection =======================> {}", h);
   }
 
-  /**
-   */
   public void onCheckIn(ConnectionHandle h) {
     tlog().debug("BoneCP: checking in a connection   =======================> {}", h);
   }

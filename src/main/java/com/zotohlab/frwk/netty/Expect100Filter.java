@@ -13,7 +13,7 @@ package com.zotohlab.frwk.netty;
 
 /**
  * Handle 100-continue.
- * 
+ *
  * @author kenl
  */
 public abstract class Expect100Filter extends AuxHttpFilter {
@@ -21,7 +21,7 @@ public abstract class Expect100Filter extends AuxHttpFilter {
   protected Expect100Filter() {}
 
   public static String getName() { return "Expect100Filter"; }
-  
+
 }
 
 

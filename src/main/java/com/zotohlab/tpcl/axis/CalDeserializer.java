@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.tpcl.axis;
 
@@ -37,7 +37,7 @@ public class CalDeserializer extends CalendarDeserializer {
   public static Logger tlog() { return _log; }
 
   private static final long serialVersionUID = 1L;
-  
+
   public CalDeserializer(Class<?> javaType, QName xmlType) {
     super(javaType,xmlType);
   }

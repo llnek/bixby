@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.crypto;
 
@@ -24,7 +24,7 @@ public enum Crypto {
 
   /**
    * Get the private key entry, or null.
-   * 
+   *
    * @param ks
    * @param n
    * @param pwd
@@ -35,14 +35,14 @@ public enum Crypto {
    */
   public static KeyStore.PrivateKeyEntry getPKey(KeyStore ks, String n, char[] pwd)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
-    
+
     Object obj = ks.getEntry(n, new KeyStore.PasswordProtection(pwd));
     return obj instanceof KeyStore.PrivateKeyEntry ? (KeyStore.PrivateKeyEntry) obj : null;
   }
 
   /**
    * Get the certificate entry, or null.
-   * 
+   *
    * @param ks
    * @param n
    * @return
@@ -52,7 +52,7 @@ public enum Crypto {
    */
   public static KeyStore.TrustedCertificateEntry getCert(KeyStore ks, String n)
       throws UnrecoverableEntryException, NoSuchAlgorithmException, KeyStoreException {
-    
+
     Object obj = ks.getEntry(n, null);
     return obj instanceof KeyStore.TrustedCertificateEntry ? (KeyStore.TrustedCertificateEntry) obj : null;
   }

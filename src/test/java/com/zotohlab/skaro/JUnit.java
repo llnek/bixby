@@ -26,7 +26,7 @@ import org.junit.Test;
 import com.zotohlab.server.FlowServer;
 import com.zotohlab.server.NulCore;
 import com.zotohlab.wflow.Activity;
-import com.zotohlab.wflow.FlowNode;
+import com.zotohlab.wflow.FlowDot;
 import com.zotohlab.wflow.For;
 import com.zotohlab.wflow.If;
 import com.zotohlab.wflow.Job;
@@ -70,17 +70,17 @@ public class JUnit {
       final AtomicInteger out= new AtomicInteger(0);
       int testValue=10;
       Activity a,b,c;
-      a=PTask.apply( (FlowNode n, Job j) -> {
+      a=PTask.apply( (FlowDot n, Job j) -> {
         out.set(10);
         //System.out.println("All Right! " + System.currentTimeMillis());
         return null;
       });
-      b=PTask.apply( (FlowNode n, Job j) -> {
+      b=PTask.apply( (FlowDot n, Job j) -> {
         //System.out.println("Dude! " + System.currentTimeMillis());
         try { Thread.sleep(2000);  } catch (Exception e) {}
         return null;
       });
-      c=PTask.apply( (FlowNode n, Job j) -> {
+      c=PTask.apply( (FlowDot n, Job j) -> {
         //System.out.println("Yo! " + System.currentTimeMillis());
         try { Thread.sleep(3000);  } catch (Exception e) {}
         return null;
@@ -90,17 +90,17 @@ public class JUnit {
       //try { Thread.sleep(5000);  } catch (Exception e) {}
       assertEquals(testValue, out.get());
 
-      a=PTask.apply( (FlowNode n, Job j) -> {
+      a=PTask.apply( (FlowDot n, Job j) -> {
         out.set(10);
         //System.out.println("All Right! " + System.currentTimeMillis());
         return null;
       });
-      b=PTask.apply( (FlowNode n, Job j) -> {
+      b=PTask.apply( (FlowDot n, Job j) -> {
         //System.out.println("Dude! " + System.currentTimeMillis());
         try { Thread.sleep(2000);  } catch (Exception e) {}
         return null;
       });
-      c=PTask.apply( (FlowNode n, Job j) -> {
+      c=PTask.apply( (FlowDot n, Job j) -> {
         //System.out.println("Yo! " + System.currentTimeMillis());
         try { Thread.sleep(3000);  } catch (Exception e) {}
         return null;
@@ -111,17 +111,17 @@ public class JUnit {
       assertEquals(testValue, out.get());
 
 
-      a=PTask.apply( (FlowNode n, Job j) -> {
+      a=PTask.apply( (FlowDot n, Job j) -> {
         out.set(10);
         //System.out.println("****All Right! " + System.currentTimeMillis());
         return null;
       });
-      b=PTask.apply( (FlowNode n, Job j) -> {
+      b=PTask.apply( (FlowDot n, Job j) -> {
         //System.out.println("Dude! " + System.currentTimeMillis());
         //try { Thread.sleep(2000);  } catch (Exception e) {}
         return null;
       });
-      c=PTask.apply( (FlowNode n, Job j) -> {
+      c=PTask.apply( (FlowDot n, Job j) -> {
        // System.out.println("Yo! " + System.currentTimeMillis());
         //try { Thread.sleep(3000);  } catch (Exception e) {}
         return null;
@@ -139,11 +139,11 @@ public class JUnit {
       AtomicInteger out= new AtomicInteger(0);
       int testValue=10;
       Activity a;
-      Activity t= new PTask( (FlowNode n, Job j)-> {
+      Activity t= new PTask( (FlowDot n, Job j)-> {
         out.set(10);
         return null;
       });
-      Activity e= new PTask( (FlowNode n, Job j)-> {
+      Activity e= new PTask( (FlowDot n, Job j)-> {
         out.set(20);
         return null;
       });
@@ -154,11 +154,11 @@ public class JUnit {
       assertEquals(testValue, out.get());
 
       testValue=20;
-      t= new PTask( (FlowNode n, Job j)-> {
+      t= new PTask( (FlowDot n, Job j)-> {
         out.set(10);
         return null;
       });
-      e= new PTask( (FlowNode n, Job j)-> {
+      e= new PTask( (FlowDot n, Job j)-> {
         out.set(20);
         return null;
       });
@@ -177,11 +177,11 @@ public class JUnit {
       AtomicInteger out= new AtomicInteger(0);
       final int testValue=10;
       Activity a=null;
-      a= PTask.apply( (FlowNode cur, Job j) -> {
+      a= PTask.apply( (FlowDot cur, Job j) -> {
           out.set(10);
           return null;
       });
-      Activity dummy= new PTask( (FlowNode n, Job j)-> {
+      Activity dummy= new PTask( (FlowDot n, Job j)-> {
         return null;
       });
       a=Switch.apply((Job j) -> {
@@ -209,7 +209,7 @@ public class JUnit {
       AtomicInteger out= new AtomicInteger(0);
       final int testValue=10;
       Activity a=null;
-      a= PTask.apply( (FlowNode cur, Job j) -> {
+      a= PTask.apply( (FlowDot cur, Job j) -> {
           //System.out.println("index = " + j.getv(For.JS_INDEX));
           out.incrementAndGet();
           return null;
@@ -226,7 +226,7 @@ public class JUnit {
       AtomicInteger out= new AtomicInteger(0);
       final int testValue=10;
       Activity a=null;
-      a= PTask.apply( (FlowNode cur, Job j) -> {
+      a= PTask.apply( (FlowDot cur, Job j) -> {
           int v= (int) j.getv("count");
           j.setv("count", (v+1));
           out.getAndIncrement();

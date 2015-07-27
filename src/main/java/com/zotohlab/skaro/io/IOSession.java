@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.io;
 
@@ -17,9 +17,7 @@ package com.zotohlab.skaro.io;
 public interface IOSession {
 
   public void handleResult(IOEvent ev, IOResult res);
-
   public void handleEvent(IOEvent ev);
-
   public Object getImpl();
 
 }

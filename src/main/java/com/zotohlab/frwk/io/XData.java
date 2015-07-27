@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.io;
 
@@ -37,9 +37,9 @@ public class XData implements Serializable {
 
   private static final Logger _log= getLogger(lookup().lookupClass());
   public static Logger tlog() { return _log; }
-  
+
   private static final long serialVersionUID = -8637175588593032279L;
-  
+
   private String _encoding ="utf-8";
   private Object _data = null;
   private boolean _cls=true;
@@ -53,7 +53,7 @@ public class XData implements Serializable {
     this(null);
   }
 
-  public void setEncoding(String enc) { _encoding=enc; }
+  public XData setEncoding(String enc) { _encoding=enc;  return this; }
   public String getEncoding() { return _encoding; }
 
   /**

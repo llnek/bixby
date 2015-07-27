@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.server;
 
@@ -18,15 +18,15 @@ package com.zotohlab.frwk.server;
 public class NonEvent implements Event {
 
   private Emitter _emit;
-  
+
   public NonEvent(NulEmitter em) {
     _emit=em;
   }
-  
+
   public NonEvent(ServerLike s) {
     this(new NulEmitter(s));
   }
-  
+
   @Override
   public Object getId() {
     return "nada";

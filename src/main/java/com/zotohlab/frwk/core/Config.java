@@ -7,12 +7,11 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.core;
 
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -20,7 +19,7 @@ import java.util.Set;
  */
 public interface Config {
 
-  public List<?> getSequence( String name);
+  public Iterable<?> getSequence( String name);
   public Config getChild( String name);
 
   public boolean contains( String name);

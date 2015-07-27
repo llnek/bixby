@@ -32,5 +32,5 @@ public abstract class InboundAdapter extends ChannelInboundHandlerAdapter {
   public Logger tlog() { return _log; }
 
   protected InboundAdapter() {}
-  
+
 }

@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.net;
 
@@ -42,7 +42,7 @@ public class ULFileItem implements FileItem , Serializable {
   public Logger tlog() { return _log; }
 
   private static final long serialVersionUID= 2214937997601489203L;
-  
+
   private transient OutputStream _os;
   private byte[] _fieldBits;
   private String _filename = "";
@@ -64,6 +64,13 @@ public class ULFileItem implements FileItem , Serializable {
     _filename= fileName;
   }
 
+  /**
+   *
+   * @param field
+   * @param contentType
+   * @param fileName
+   * @param file
+   */
   public ULFileItem(String field, String contentType, String fileName, XData file) {
     _ctype= nsb(contentType);
     _field= field;
@@ -72,6 +79,11 @@ public class ULFileItem implements FileItem , Serializable {
     _ds=file;
   }
 
+  /**
+   *
+   * @param field
+   * @param value
+   */
   public ULFileItem(String field, byte[] value) {
     _ctype= "";
     _field= field;
@@ -92,6 +104,7 @@ public class ULFileItem implements FileItem , Serializable {
       _ds.destroy();
     }
     _ds=null;
+    _os=null;
   }
 
   public  FileItemHeaders getHeaders() { return null; }
@@ -185,9 +198,8 @@ public class ULFileItem implements FileItem , Serializable {
     } else {
       _ds= new XData();
       try {
-    	  File fp = File.createTempFile("tmp-", ".dat");
-        _ds.resetContent( fp);
-        _ds.setDeleteFile(true);
+        File fp = File.createTempFile("tmp-", ".dat");
+        _ds.resetContent(fp,true);
         _os = new FileOutputStream(fp);
       }
       catch (Throwable e) {

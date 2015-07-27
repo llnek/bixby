@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.util;
 
@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author kenl
  */
 @SuppressWarnings("unused")
+@Deprecated
 public class TFac implements ThreadFactory {
 
-  private ClassLoader _cl = Thread.currentThread().getContextClassLoader();
   private ThreadFactory _fac = Executors.defaultThreadFactory();
   private AtomicInteger _seq= new AtomicInteger(0);
 
@@ -43,11 +43,12 @@ public class TFac implements ThreadFactory {
   }
 
   public Thread newThread(Runnable r) {
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
     Thread t = _fac.newThread(r);
     t.setName(mkTname());
     t.setPriority(Thread.NORM_PRIORITY);
     t.setDaemon(false);
-    t.setContextClassLoader(_cl);
+    t.setContextClassLoader(cl);
     return t;
   }
 

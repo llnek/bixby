@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -15,7 +15,6 @@ import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import org.slf4j.Logger;
-
 import com.zotohlab.frwk.core.Named;
 
 
@@ -62,29 +61,27 @@ public abstract class Activity implements Named {
    * @param cur current step.
    * @return a *runtime* version of this Activity.
    */
-  public FlowNode reify(FlowNode cur) {
-    FlowNode n= reifyNode(cur);
+  public FlowDot reify(FlowDot cur) {
+    FlowDot n= reifyDot(cur);
     n.realize();
     return n;
   }
 
-  public FlowNode reify(Job j) throws Exception {
+  public FlowDot reify(Job j) throws Exception {
     throw new IllegalAccessException("Should not be called");
   }
-
-  protected abstract FlowNode reifyNode(FlowNode cur) ;
-  protected abstract void realize(FlowNode p);
 
   public String toString() {
     return "Activity##(" + getClass().getName() + ")";
   }
 
-  /*
-  public void finalize() throws Throwable {
+  public void XXXfinalize() throws Throwable {
     super.finalize();
-    //tlog().debug("Activity: " + getClass().getName() + " finz'ed");
+    tlog().debug("Activity: " + getClass().getName() + " finz'ed");
   }
-  */
+
+  protected abstract FlowDot reifyDot(FlowDot cur) ;
+  protected abstract void realize(FlowDot p);
 
 }
 

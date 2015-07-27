@@ -20,7 +20,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:import  [com.zotohlab.wflow Job WorkFlow FlowNode PTask Split]
+  (:import  [com.zotohlab.wflow Job WorkFlow FlowDot PTask Split]
             [java.lang StringBuilder]
             [com.zotohlab.skaro.core Container]))
 

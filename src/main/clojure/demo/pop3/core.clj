@@ -20,7 +20,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
             [org.apache.commons.io IOUtils]
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]

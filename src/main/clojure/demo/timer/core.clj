@@ -21,7 +21,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
             [java.util.concurrent.atomic AtomicInteger]
             [java.util Date]
             [com.zotohlab.skaro.io TimerEvent]

@@ -7,13 +7,12 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.io;
 
 
 import java.net.HttpCookie;
-import java.util.List;
 import java.util.Set;
 
 import com.zotohlab.frwk.io.XData;
@@ -25,7 +24,7 @@ public interface HTTPEvent  extends IOEvent {
 
   public HttpCookie getCookie(String name);
 
-  public List<HttpCookie> getCookies();
+  public Iterable<HttpCookie> getCookies();
 
   public boolean isKeepAlive();
 
@@ -41,12 +40,12 @@ public interface HTTPEvent  extends IOEvent {
 
   public String contextPath();
 
-  public List<String> getHeaderValues(String nm);
+  public Iterable<String> getHeaderValues(String nm);
   public Set<String> getHeaders();
   public String getHeaderValue(String nm);
   public boolean hasHeader(String nm);
 
-  public List<String> getParameterValues(String nm);
+  public Iterable<String> getParameterValues(String nm);
   public Set<String> getParameters();
   public String getParameterValue(String nm);
   public boolean hasParameter(String nm);

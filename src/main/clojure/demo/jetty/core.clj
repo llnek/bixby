@@ -20,7 +20,7 @@
 
   (:require [clojure.tools.logging :as log])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowNode PTask]
+  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
             [com.zotohlab.skaro.io HTTPEvent HTTPResult]
             [com.zotohlab.skaro.core Container]))
 

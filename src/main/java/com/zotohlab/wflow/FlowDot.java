@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -27,14 +27,14 @@ import com.zotohlab.wflow.Delay;
  *
  */
 @SuppressWarnings("unused")
-public abstract class FlowNode implements RunnableWithId {
+public abstract class FlowDot implements RunnableWithId {
 
   private static Logger _log = getLogger(lookup().lookupClass());
   public Logger tlog() { return _log; }
 
   private long _pid = CU.nextSeqLong();
-  
-  private FlowNode _nextStep;
+
+  private FlowDot _nextStep;
   protected Job _job;
   private Activity _defn;
 
@@ -42,25 +42,26 @@ public abstract class FlowNode implements RunnableWithId {
    * @param c
    * @param a
    */
-  protected FlowNode(FlowNode c, Activity a) {
+  protected FlowDot(FlowDot c, Activity a) {
     this( c.job() );
     _nextStep=c;
     _defn=a;
   }
 
-  protected FlowNode(Job j) {
+  protected FlowDot(Job j) {
     _job=j;
     _defn= new Nihil();
   }
 
-  public FlowNode next() { return _nextStep; }
+  public FlowDot next() { return _nextStep; }
   public Activity getDef() { return _defn; }
   public Object id() { return _pid; }
 
-  public abstract FlowNode eval(Job j);
+  public abstract FlowDot eval(Job j);
 
   protected void postRealize() {}
-  protected FlowNode realize() {
+
+  protected FlowDot realize() {
     getDef().realize(this);
     postRealize();
     return this;
@@ -69,9 +70,10 @@ public abstract class FlowNode implements RunnableWithId {
   protected Schedulable core() {
     return _job.container().core();
   }
-  
+
   public Job job() { return _job; }
-  public void setNext(FlowNode n) {
+
+  public void setNext(FlowDot n) {
     _nextStep=n;
   }
 
@@ -84,11 +86,13 @@ public abstract class FlowNode implements RunnableWithId {
     ServiceHandler svc = null;
     Activity err= null,
              d= getDef();
-    FlowNode rc= null;
+    FlowDot rc= null;
+
     core().dequeue(this);
+
     try {
       if (d.hasName()) {
-        tlog().debug("FlowNode##{} :eval().", d.getName());
+        tlog().debug("FlowDot##{} :eval()", d.getName());
       }
       rc= eval( _job );
     } catch (Throwable e) {
@@ -96,34 +100,34 @@ public abstract class FlowNode implements RunnableWithId {
         svc= (ServiceHandler)par;
       }
       if (svc != null) {
-        Object ret= svc.handleError(new FlowError(this,"",e)); 
+        Object ret= svc.handleError(new FlowError(this,"",e));
         if (ret instanceof Activity) {
           err= (Activity)ret;
         }
       }
-      if (err == null) { 
+      if (err == null) {
         tlog().error("",e);
         err= Nihil.apply();
       }
-      rc= err.reify( new NihilNode( _job) );  
+      rc= err.reify( new NihilDot( _job) );
     }
 
     if (rc==null) {
-      tlog().debug("FlowNode: rc==null => skip.");
+      tlog().debug("FlowDot: rc==null => skip");
       // indicate skip, happens with joins
     } else {
       runAfter(rc);
     }
   }
 
-  private void runAfter(FlowNode rc) {
-    FlowNode np= rc.next();
+  private void runAfter(FlowDot rc) {
+    FlowDot np= rc.next();
 
-    if (rc instanceof DelayNode) {
-      core().postpone( np, ((DelayNode) rc).delayMillis() );
+    if (rc instanceof DelayDot) {
+      core().postpone( np, ((DelayDot) rc).delayMillis() );
     }
     else
-    if (rc instanceof NihilNode) {
+    if (rc instanceof NihilDot) {
       rc.job().finz();
       //end
     }
@@ -132,12 +136,10 @@ public abstract class FlowNode implements RunnableWithId {
     }
   }
 
-  /*
-  public void finalize() throws Throwable {
+  public void XXXfinalize() throws Throwable {
     super.finalize();
-    //tlog().debug("FlowNode: " + getClass().getName() + " finz'ed");
+    tlog().debug("FlowDot: " + getClass().getName() + " finz'ed");
   }
-  */
 
 }
 

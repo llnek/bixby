@@ -13,13 +13,13 @@ package com.zotohlab.frwk.netty;
 
 /**
  * Last in the pipeline to catch all errors.
- * 
+ *
  * @author kenl
  */
 public abstract class ErrorSinkFilter extends AuxHttpFilter {
 
   public static String getName() { return "ErrorSinkFilter"; }
-  
+
   protected ErrorSinkFilter() {}
 
 }

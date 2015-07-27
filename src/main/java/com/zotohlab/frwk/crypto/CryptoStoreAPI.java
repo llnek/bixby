@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.crypto;
 
@@ -18,8 +18,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
- *  Abstraction on top of a java key store.
- *  
+ * Abstraction on top of a java key store.
+ *
  * @author kenl
  *
  */
@@ -27,15 +27,15 @@ public interface CryptoStoreAPI {
 
   /**
    * Add a private key.
-   * 
+   *
    * @param keyBits
    * @param pwdObj
    */
   public void addKeyEntity(byte[] keyBits, PasswordAPI pwdObj);
-  
+
   /**
    * Add a certificate.
-   * 
+   *
    * @param certBits
    */
   public void addCertEntity(byte[] certBits);
@@ -46,14 +46,35 @@ public interface CryptoStoreAPI {
   public Iterable<String> certAliases();
   public Iterable<String> keyAliases();
 
+  /**
+   *
+   * @param alias
+   * @param pwdObj
+   * @return
+   */
   public KeyStore.PrivateKeyEntry keyEntity(String alias, PasswordAPI pwdObj);
+
+  /**
+   *
+   * @param alias
+   * @return
+   */
   public KeyStore.TrustedCertificateEntry certEntity(String alias);
+
+  /**
+   *
+   * @param alias
+   */
   public void removeEntity(String alias);
 
   public Iterable<X509Certificate> intermediateCAs();
   public Iterable<X509Certificate> rootCAs();
   public Iterable<X509Certificate> trustedCerts();
 
+  /**
+   *
+   * @param pkcs7Bits
+   */
   public void addPKCS7Entity(byte[] pkcs7Bits);
 
 }

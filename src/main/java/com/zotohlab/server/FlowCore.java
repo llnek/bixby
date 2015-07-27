@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.server;
 
@@ -24,53 +24,52 @@ import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.frwk.util.TCore;
 
 /**
- * 
+ *
  * @author kenl
  *
  */
 @SuppressWarnings({ "rawtypes", "unchecked"})
 public class FlowCore implements Schedulable, Activable {
 
+  public static FlowCore apply() { return new FlowCore(); }
+
   private Timer _timer;
   private Map _holdQ;
   private Map _runQ;
   private TCore _core;
   private String _id;
-  
-  public static FlowCore apply() { return new FlowCore(); }
-  
+
   private FlowCore() {
     _id= "FlowScheduler#" + CU.nextSeqInt();
   }
-  
+
   public void activate(Object options) {
-    assert(options instanceof Properties);
     Properties props= (Properties) options;
-    boolean b = (boolean) props.getOrDefault("trace", true);
-    int t = (int) props.getOrDefault("threads", 1);    
-    _core = new TCore(_id, t,b);
+    _core = new TCore(_id,
+        (int) props.getOrDefault("threads", 1),
+        (boolean) props.getOrDefault("trace", true));
     _timer= new Timer (_id, true);
     _holdQ= new ConcurrentHashMap();
     _runQ= new ConcurrentHashMap();
     _core.start();
   }
-  
+
   public void deactivate() {
     _timer.cancel();
     _holdQ.clear();
     _runQ.clear();
     _core.stop();
   }
-  
+
   private void addTimer(Runnable w, long delay) {
     FlowCore me= this;
     _timer.schedule(new TimerTask() {
       public void run() {
         me.wakeup(w);
-      }      
+      }
     }, delay);
   }
-  
+
   private Object xrefPid(Runnable w) {
     if (w instanceof Identifiable) {
       return ((Identifiable)w).id();
@@ -78,7 +77,7 @@ public class FlowCore implements Schedulable, Activable {
       return null;
     }
   }
-  
+
   @Override
   public void postpone(Runnable w, long delayMillis) {
     if (delayMillis < 0L) {
@@ -108,12 +107,12 @@ public class FlowCore implements Schedulable, Activable {
       _runQ.put(pid,w);
     }
   }
-  
+
   @Override
   public void run(Runnable w) {
     if (w != null) {
       preRun(w);
-      _core.schedule(w);      
+      _core.schedule(w);
     }
   }
 
@@ -122,7 +121,7 @@ public class FlowCore implements Schedulable, Activable {
     if (pid != null && w != null) {
       _runQ.remove(pid,w);
       _holdQ.put(pid, w);
-    }    
+    }
   }
 
   @Override
@@ -154,6 +153,6 @@ public class FlowCore implements Schedulable, Activable {
   public void reschedule(Runnable w) {
     run(w);
   }
-  
 
 }
+

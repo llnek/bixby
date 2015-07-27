@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.server;
 
@@ -22,11 +22,11 @@ public class NulEmitter implements Emitter{
 
   private static final Map<String,?> _cfg = new HashMap<>();
   private ServerLike _server;
-  
+
   public NulEmitter(ServerLike s) {
     _server=s;
   }
-  
+
   @Override
   public Object getConfig() {
     return _cfg;
@@ -37,7 +37,7 @@ public class NulEmitter implements Emitter{
     return _server;
   }
 
-  
+
 
 }
 

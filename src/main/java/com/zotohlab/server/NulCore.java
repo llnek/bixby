@@ -14,7 +14,7 @@ package com.zotohlab.server;
 import com.zotohlab.frwk.util.Schedulable;
 
 /**
- * 
+ *
  * @author kenl
  *
  */
@@ -22,14 +22,14 @@ public class NulCore implements Schedulable {
 
   public static NulCore apply() { return new NulCore(); }
   //private String _id;
-  
+
   private NulCore() {
-    //_id= "NulScheduler#" + CoreUtils.nextSeqInt();    
+    //_id= "NulScheduler#" + CoreUtils.nextSeqInt();
   }
-  
+
   @Override
   public void postpone(Runnable w, long delayMillis) {
-    if (delayMillis > 0L) 
+    if (delayMillis > 0L)
     try {
       Thread.sleep(delayMillis);
     } catch (Throwable e)

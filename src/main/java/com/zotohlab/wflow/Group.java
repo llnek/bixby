@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -52,8 +52,8 @@ class Group extends Composite {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new GroupNode(cur,this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new GroupDot(cur,this);
   }
 
 }
@@ -64,21 +64,21 @@ class Group extends Composite {
  * @author kenl
  *
  */
-class GroupNode extends CompositeNode {
+class GroupDot extends CompositeDot {
 
-  public GroupNode(FlowNode c, Group a) {
+  public GroupDot(FlowDot c, Group a) {
     super(c,a);
   }
 
-  public FlowNode eval(Job j) {
-    FlowNode rc= null;
+  public FlowDot eval(Job j) {
+    FlowDot rc= null;
 
     if ( ! inner().isEmpty()) {
       //tlog().debug("Group: {} element(s.)",  _inner.size() );
-      FlowNode n=inner().next();
+      FlowDot n=inner().next();
       Activity d=n.getDef();
       if (d.hasName()) {
-        tlog().debug("FlowNode##{} :eval().", d.getName());
+        tlog().debug("FlowDot##{} :eval().", d.getName());
       }
       rc = n.eval(j);
     } else {

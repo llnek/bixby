@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -40,26 +40,26 @@ public abstract class Merge  extends Activity {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-abstract class MergeNode extends FlowNode {
+abstract class MergeDot extends FlowDot {
 
   protected AtomicInteger _cntr=new AtomicInteger(0);
-  protected FlowNode _body = null;
+  protected FlowDot _body = null;
   private int _branches= 0;
 
-  protected MergeNode(FlowNode c, Merge a) {
+  protected MergeDot(FlowDot c, Merge a) {
     super(c,a);
   }
 
-  public MergeNode withBody(FlowNode body) {
+  public MergeDot withBody(FlowDot body) {
     _body=body;
     return this;
   }
 
-  public MergeNode withBranches(int n) {
+  public MergeDot withBranches(int n) {
     _branches=n;
     return this;
   }
@@ -73,21 +73,21 @@ abstract class MergeNode extends FlowNode {
 }
 
 /**
- * 
+ *
  * @author kenl
  *
  */
 class NullJoin extends Merge {
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new MergeNode(cur, this){
-      public FlowNode eval(Job j) {
+  public FlowDot reifyDot(FlowDot cur) {
+    return new MergeDot(cur, this){
+      public FlowDot eval(Job j) {
         return null;
-      }      
+      }
     };
   }
 
-  public void realize(FlowNode cur) {}
+  public void realize(FlowDot cur) {}
 
   public NullJoin() {
     super(null);

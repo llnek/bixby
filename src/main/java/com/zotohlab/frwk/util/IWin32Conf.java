@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.util;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * Handle windows config file in INI format.
- * 
+ *
  * @author kenl
  */
 public interface IWin32Conf {
@@ -27,16 +27,16 @@ public interface IWin32Conf {
 
   public String getString(Object sectionName, Object property, String dft);
   public String getString(Object sectionName, Object property);
-  
+
   public long getLong(Object sectionName, Object property, long dft);
   public long getLong(Object sectionName, Object property);
-  
+
   public int getInt(Object sectionName, Object property, int dft);
   public int getInt(Object sectionName, Object property);
-  
+
   public boolean getBool(Object sectionName, Object property, boolean dft);
   public boolean getBool(Object sectionName, Object property);
-    
+
   public double getDouble(Object sectionName, Object property, double dft);
   public double getDouble(Object sectionName, Object property);
 

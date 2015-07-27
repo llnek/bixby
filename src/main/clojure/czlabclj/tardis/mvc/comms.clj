@@ -39,7 +39,7 @@
              MVCUtils WebAsset WebContent]
             [com.zotohlab.frwk.core Hierarchial Identifiable]
             [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.wflow FlowNode Activity
+            [com.zotohlab.wflow FlowDot Activity
              Job WHandler PTask Work]
             [com.zotohlab.skaro.runtime AuthError]
             [com.zotohlab.skaro.core Container]

@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -38,8 +38,8 @@ abstract class Composite extends Activity {
     return _innards;
   }
 
-  public void realize(FlowNode fp) {
-    CompositeNode p= (CompositeNode) fp;
+  public void realize(FlowDot fp) {
+    CompositeDot p= (CompositeDot) fp;
     p.reifyInner( listChildren() );
   }
 
@@ -51,9 +51,9 @@ abstract class Composite extends Activity {
  * @author kenl
  *
  */
-abstract class CompositeNode extends FlowNode {
+abstract class CompositeDot extends FlowDot {
 
-  protected CompositeNode(FlowNode c, Activity a) {
+  protected CompositeDot(FlowDot c, Activity a) {
     super(c,a);
   }
 
@@ -83,23 +83,23 @@ class Innards {
   public boolean isEmpty() { return  _acts.size() == 0; }
 
   private List<Activity> _acts= new ArrayList<>();
-  private FlowNode _outer;
+  private FlowDot _outer;
 
-  public Innards(FlowNode c, Iterable<Activity> a) {
+  public Innards(FlowDot c, Iterable<Activity> a) {
     this(c);
     for (Activity n: a) {
     	_acts.add(n);
     }
   }
 
-  public Innards(FlowNode outer) {
+  public Innards(FlowDot outer) {
     _outer= outer;
   }
 
-  public FlowNode next() {
+  public FlowDot next() {
     return _acts.size() > 0
       ? _acts.remove(0).reify(_outer)
-    :
+      :
       null;
   }
 

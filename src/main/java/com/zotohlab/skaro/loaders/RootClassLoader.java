@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.loaders;
 
@@ -19,14 +19,14 @@ import java.io.File;
 public class RootClassLoader extends AbstractClassLoader {
 
   private String _baseDir="";
-  
+
   public RootClassLoader(ClassLoader par) {
     super(par);
     configure(System.getProperty("skaro.home",""));
   }
 
   public String baseDir() { return _baseDir; }
-  
+
   public void configure(String baseDir) {
     if (baseDir != null && baseDir.length() > 0) {
       load( baseDir);
@@ -35,7 +35,6 @@ public class RootClassLoader extends AbstractClassLoader {
 
   private void load(String baseDir) {
 
-//    File d= new File(baseDir, "dist/exec");
     File p= new File(baseDir, "patch");
     File b= new File(baseDir, "lib");
 
@@ -43,7 +42,7 @@ public class RootClassLoader extends AbstractClassLoader {
       findUrls(p).findUrls(b);
     }
 
-    _baseDir=baseDir;    
+    _baseDir=baseDir;
     _loaded=true;
   }
 

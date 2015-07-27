@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -42,12 +42,12 @@ public class Delay extends Activity {
     this("", 0L);
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new DelayNode(cur,this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new DelayDot(cur,this);
   }
 
-  public void realize(FlowNode fp) {
-    DelayNode p= (DelayNode) fp;
+  public void realize(FlowDot fp) {
+    DelayDot p= (DelayDot) fp;
     p.withDelay(_delayMillis);
   }
 
@@ -60,20 +60,20 @@ public class Delay extends Activity {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class DelayNode extends FlowNode {
+class DelayDot extends FlowDot {
 
   public long delayMillis() { return _delayMillis; }
-  public FlowNode eval(Job j) { return this; }
+  public FlowDot eval(Job j) { return this; }
 
-  public DelayNode(FlowNode c, Delay a) {
+  public DelayDot(FlowDot c, Delay a) {
     super(c,a);
   }
 
-  public FlowNode withDelay(long millis) {
+  public FlowDot withDelay(long millis) {
     _delayMillis=millis;
     return this;
   }

@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.skaro.core;
 
@@ -26,11 +26,11 @@ import com.zotohlab.frwk.server.ServiceProvider;
  */
 public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
-  public Iterable<?> loadTemplate (String tpl, Object ctx);
+  public Object loadTemplate (String tpl, Object ctx);
   public boolean isEnabled();
 
   public EventBus eventBus();
-  
+
   public Object getEnvConfig();
   public Object getAppConfig();
 

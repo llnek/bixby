@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.frwk.util;
 
@@ -63,7 +63,7 @@ public enum CU {
 //      String[] rc= StringUtils.split(",;,;,;", ",;");
       String rc= new Locale("en").toString();
       rc=null;
-      
+
     } catch (Throwable t) {
       t.printStackTrace();
     }
@@ -105,7 +105,7 @@ public enum CU {
 
   /**
    * Shuffle characters in this string.
-   * 
+   *
    * @param s
    * @return
    */
@@ -155,15 +155,15 @@ public enum CU {
   }
 
   public static Class<?> loadClass(String cz) throws ClassNotFoundException {
-    return Thread.currentThread().getContextClassLoader().loadClass(cz);  
+    return Thread.currentThread().getContextClassLoader().loadClass(cz);
   }
-  
-  public static Object dftCtor(String cz) throws InstantiationException, IllegalAccessException, 
-  IllegalArgumentException, InvocationTargetException, 
+
+  public static Object dftCtor(String cz) throws InstantiationException, IllegalAccessException,
+  IllegalArgumentException, InvocationTargetException,
   NoSuchMethodException, SecurityException, ClassNotFoundException  {
-    return loadClass(cz).getDeclaredConstructor().newInstance();  
+    return loadClass(cz).getDeclaredConstructor().newInstance();
   }
-    
+
   public static Object syncExec (Object syncObj, CallableWithArgs  r, Object a1, Object... args) throws Exception {
     synchronized(syncObj) {
       return r.run(a1, args);
@@ -172,6 +172,6 @@ public enum CU {
 
   public static long nextSeqLong() { return _sn.incrementAndGet(); }
   public static int nextSeqInt() { return _si.incrementAndGet(); }
-  
+
 }
 

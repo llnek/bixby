@@ -22,7 +22,7 @@
   (:require [clojure.tools.logging :as log])
 
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
-            [com.zotohlab.wflow WorkFlow Job FlowNode PTask Delay]
+            [com.zotohlab.wflow WorkFlow Job FlowDot PTask Delay]
             [com.zotohlab.skaro.io SocketEvent]
             [com.zotohlab.skaro.core Container]
             [java.net Socket]

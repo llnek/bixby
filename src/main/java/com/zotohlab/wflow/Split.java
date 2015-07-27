@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -89,24 +89,24 @@ public class Split extends Composite {
     return this;
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new SplitNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new SplitDot(cur, this);
   }
 
-  public  void realize(FlowNode n) {
-    SplitNode p= (SplitNode) n;
+  public  void realize(FlowDot n) {
+    SplitDot p= (SplitDot) n;
     Merge m= _theMerge;
 
     if ( m == null) {      m = new NullJoin();    }
     m.withBranches( size() );
-    
-    FlowNode s = m.reify(p.next() );
+
+    FlowDot s = m.reify(p.next() );
     p.withBranches( new Innards(s, listChildren() ) );
 
     if (m instanceof NullJoin) {
         p.fallThrough();
     }
-    
+
   }
 
 
@@ -114,20 +114,20 @@ public class Split extends Composite {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class SplitNode extends CompositeNode {
+class SplitDot extends CompositeDot {
 
-  public SplitNode(FlowNode c, Split a) {
+  public SplitDot(FlowDot c, Split a) {
     super(c,a);
   }
 
   private boolean _fallThru=false;
 
-  public FlowNode eval(Job j) {
-    FlowNode rc= null;
+  public FlowDot eval(Job j) {
+    FlowDot rc= null;
 
     while ( !inner().isEmpty() ) {
       rc = inner().next();
@@ -137,18 +137,18 @@ class SplitNode extends CompositeNode {
     realize();
 
     if (_fallThru) {
-      //tlog().debug("SplitNode: falling falling falling through.");
+      //tlog().debug("SplitDot: falling falling falling through.");
     }
-    
+
     return _fallThru ? next() : null;
   }
 
-  public SplitNode withBranches(Innards w) {
+  public SplitDot withBranches(Innards w) {
     setInner(w);
     return this;
   }
 
-  public SplitNode fallThrough() {
+  public SplitDot fallThrough() {
     _fallThru=true;
     return this;
   }

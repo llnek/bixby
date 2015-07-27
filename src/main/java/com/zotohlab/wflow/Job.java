@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -21,7 +21,7 @@ import com.zotohlab.frwk.server.ServerLike;
  * @author kenl
  */
 public interface Job extends Gettable , Settable, Identifiable {
-  
+
   public void setLastResult( Object v) ;
 
   public void clrLastResult() ;
@@ -29,9 +29,9 @@ public interface Job extends Gettable , Settable, Identifiable {
   public Object getLastResult() ;
 
   public ServerLike container();
-    
+
   public void finz();
-  
+
   public Event event() ;
 
   public WorkFlow wflow();

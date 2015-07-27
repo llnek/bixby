@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.server;
 
@@ -31,7 +31,7 @@ import com.zotohlab.frwk.util.CU;
 import com.zotohlab.frwk.util.Schedulable;
 import com.zotohlab.wflow.Activity;
 import com.zotohlab.wflow.FlowError;
-import com.zotohlab.wflow.FlowNode;
+import com.zotohlab.wflow.FlowDot;
 import com.zotohlab.wflow.Job;
 import com.zotohlab.wflow.Nihil;
 import com.zotohlab.wflow.PTask;
@@ -54,25 +54,25 @@ public class FlowServer implements ServerLike, ServiceHandler {
   protected NulEmitter _mock;
   private JobCreator _jctor;
   private Schedulable _sch;
-  
+
   public static void main(String[] args) {
     try {
       FlowServer s= new FlowServer(NulCore.apply()).start();
       Activity a, b, c,d,e,f;
-      a= PTask.apply((FlowNode cur, Job job)-> {
+      a= PTask.apply((FlowDot cur, Job job)-> {
           System.out.println("A");
           return null;
       });
-      b= PTask.apply((FlowNode cur, Job job) -> {
+      b= PTask.apply((FlowDot cur, Job job) -> {
           System.out.println("B");
           return null;
       });
       c= a.chain(b);
-      d= PTask.apply((FlowNode cur, Job job) -> {
+      d= PTask.apply((FlowDot cur, Job job) -> {
           System.out.println("D");
           return null;
       });
-      e= PTask.apply((FlowNode cur, Job job) -> {
+      e= PTask.apply((FlowDot cur, Job job) -> {
           System.out.println("E");
           return null;
       });
@@ -117,7 +117,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
     WorkFlowEx ex = null;
     if (t instanceof FlowError) {
       FlowError fe = (FlowError)t;
-      FlowNode n=fe.getLastNode();
+      FlowDot n=fe.getLastDot();
       Object obj = null;
       if (n != null) {
         obj= n.job().wflow();
@@ -126,11 +126,11 @@ public class FlowServer implements ServerLike, ServiceHandler {
         ex= (WorkFlowEx)obj;
         t= fe.getCause();
       }
-    }    
+    }
     if (ex != null) {
-      return ex.onError(t);      
-    } else {      
-      return null;      
+      return ex.onError(t);
+    } else {
+      return null;
     }
   }
 
@@ -140,7 +140,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
     if (work instanceof WHandler) {
       final WHandler h = (WHandler)work;
       wf=() -> {
-          return PTask.apply( (FlowNode cur, Job j) -> {
+          return PTask.apply( (FlowDot cur, Job j) -> {
             return h.run(j);
           });
       };
@@ -158,7 +158,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
     else
     if (work instanceof Activity) {
       wf = () -> {
-        return (Activity) work;        
+        return (Activity) work;
       };
     }
 
@@ -166,7 +166,7 @@ public class FlowServer implements ServerLike, ServiceHandler {
       throw new FlowError("no valid workflow to handle.");
     }
 
-    FlowNode end= Nihil.apply().reify( _jctor.newJob(wf));
+    FlowDot end= Nihil.apply().reify( _jctor.newJob(wf));
     core().run( wf.startWith().reify(end));
     return null;
   }
@@ -188,12 +188,12 @@ class JobCreator {
   public Job newJob(WorkFlow wf) {
     return newJob(wf, new NonEvent(_server._mock));
   }
-  
+
   public Job newJob(WorkFlow wf, final Event evt) {
     return new Job() {
       private Map<Object,Object> _m= new HashMap<>();
       private long _id= CU.nextSeqLong();
-      
+
       @Override
       public Object getv(Object key) {
         return key==null ? null : _m.get(key);

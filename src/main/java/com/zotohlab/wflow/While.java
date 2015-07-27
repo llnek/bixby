@@ -7,7 +7,7 @@
 // By using this software in any  fashion, you are agreeing to be bound by the
 // terms of this license. You  must not remove this notice, or any other, from
 // this software.
-// Copyright (c) 2013, Ken Leung. All rights reserved.
+// Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 package com.zotohlab.wflow;
 
@@ -37,12 +37,12 @@ public class While extends Conditional {
     this("", expr, b);
   }
 
-  public FlowNode reifyNode(FlowNode cur) {
-    return new WhileNode(cur, this);
+  public FlowDot reifyDot(FlowDot cur) {
+    return new WhileDot(cur, this);
   }
 
-  public void realize(FlowNode n) {
-    WhileNode p= (WhileNode) n;
+  public void realize(FlowDot n) {
+    WhileDot p= (WhileDot) n;
     assert(_body != null);
     p.withBody(_body.reify(p));
     p.withTest( expr() );
@@ -54,37 +54,37 @@ public class While extends Conditional {
 
 
 /**
- * 
+ *
  * @author kenl
  *
  */
-class WhileNode extends ConditionalNode {
+class WhileDot extends ConditionalDot {
 
-  public WhileNode(FlowNode c, While a) {
+  public WhileDot(FlowDot c, While a) {
     super(c,a);
   }
 
-  public FlowNode eval(Job j) {
-    FlowNode n, rc = this;
+  public FlowDot eval(Job j) {
+    FlowDot n, rc = this;
 
     if ( ! test(j)) {
-      //tlog().debug("WhileNode: test-condition == false")
+      //tlog().debug("WhileDot: test-condition == false")
       rc= next();
       realize();
     } else {
-      //tlog().debug("WhileNode: looping - eval body")
+      //tlog().debug("WhileDot: looping - eval body")
       //normally n is null, but if it is not
       //switch the body to it.
       n= _body.eval(j);
       if (n != null) {
 
-        if (n instanceof DelayNode) {
-          ((DelayNode) n).setNext(rc);
+        if (n instanceof DelayDot) {
+          ((DelayDot) n).setNext(rc);
           rc=n;
         }
         else
         if (n != this){
-          tlog().error("WhileNode##{}.body should not return anything.",
+          tlog().error("WhileDot##{}.body should not return anything.",
               getDef().getName());
           // let's not do this now
           //_body = n;
@@ -95,12 +95,12 @@ class WhileNode extends ConditionalNode {
     return rc;
   }
 
-  public WhileNode withBody(FlowNode b) {
+  public WhileDot withBody(FlowDot b) {
     _body=b;
     return this;
   }
 
-  private FlowNode _body = null;
+  private FlowDot _body = null;
 }
 
 
