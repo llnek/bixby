@@ -746,11 +746,9 @@
              (InetAddress/getByName host)
              (InetAddress/getLocalHost)) ]
     (log/debug "nettyTCPServer: running on host %s:%s" ip port)
-    (try
-      (-> (.bind bs ip (int port))
-          (.sync)
-          (.channel))
-      (catch InterruptedException e# (ThrowIOE e#)))
+    (-> (.bind bs ip (int port))
+        (.sync)
+        (.channel))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

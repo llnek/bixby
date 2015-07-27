@@ -102,7 +102,7 @@ public abstract class FlowNode implements RunnableWithId {
         }
       }
       if (err == null) { 
-        //tlog().error("",e);
+        tlog().error("",e);
         err= Nihil.apply();
       }
       rc= err.reify( new NihilNode( _job) );  

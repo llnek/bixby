@@ -12,7 +12,6 @@
 package com.zotohlab.skaro.core;
 
 import java.io.File;
-import java.util.Iterator;
 
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Named;
@@ -27,7 +26,7 @@ import com.zotohlab.frwk.server.ServiceProvider;
  */
 public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
-  public Iterator<?> loadTemplate (String tpl, Object ctx);
+  public Iterable<?> loadTemplate (String tpl, Object ctx);
   public boolean isEnabled();
 
   public EventBus eventBus();

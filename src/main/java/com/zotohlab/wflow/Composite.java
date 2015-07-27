@@ -13,7 +13,6 @@ package com.zotohlab.wflow;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Iterator;
 
 /**
  * @author kenl
@@ -35,8 +34,8 @@ abstract class Composite extends Activity {
     _innards.add(a);
   }
 
-  public Iterator<Activity> listChildren() {
-    return _innards.listIterator();
+  public Iterable<Activity> listChildren() {
+    return _innards;
   }
 
   public void realize(FlowNode fp) {
@@ -58,7 +57,7 @@ abstract class CompositeNode extends FlowNode {
     super(c,a);
   }
 
-  public void reifyInner( Iterator<Activity> c) {
+  public void reifyInner( Iterable<Activity> c) {
     _inner=new Innards(this,c);
   }
 
@@ -86,10 +85,10 @@ class Innards {
   private List<Activity> _acts= new ArrayList<>();
   private FlowNode _outer;
 
-  public Innards(FlowNode c, Iterator<Activity> a) {
+  public Innards(FlowNode c, Iterable<Activity> a) {
     this(c);
-    while (a.hasNext()) {
-      _acts.add(a.next());
+    for (Activity n: a) {
+    	_acts.add(n);
     }
   }
 

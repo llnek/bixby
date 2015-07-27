@@ -13,7 +13,6 @@ package com.zotohlab.frwk.crypto;
 
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
-import java.util.Iterator;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -44,16 +43,16 @@ public interface CryptoStoreAPI {
   public TrustManagerFactory trustManagerFactory();
   public KeyManagerFactory keyManagerFactory();
 
-  public Iterator<String> certAliases();
-  public Iterator<String> keyAliases();
+  public Iterable<String> certAliases();
+  public Iterable<String> keyAliases();
 
   public KeyStore.PrivateKeyEntry keyEntity(String alias, PasswordAPI pwdObj);
   public KeyStore.TrustedCertificateEntry certEntity(String alias);
   public void removeEntity(String alias);
 
-  public Iterator<X509Certificate> intermediateCAs();
-  public Iterator<X509Certificate> rootCAs();
-  public Iterator<X509Certificate> trustedCerts();
+  public Iterable<X509Certificate> intermediateCAs();
+  public Iterable<X509Certificate> rootCAs();
+  public Iterable<X509Certificate> trustedCerts();
 
   public void addPKCS7Entity(byte[] pkcs7Bits);
 

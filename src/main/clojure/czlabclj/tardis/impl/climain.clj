@@ -140,8 +140,8 @@
   (log/info "Enabling remote shutdown")
   (let [port (ConvLong (System/getProperty "skaro.kill.port") 4444)
         rc (MakeDiscardHTTPD "127.0.0.1"
-                             port {}
-                             #(stopCLI ctx)) ]
+                             port
+                             #(stopCLI ctx) {}) ]
     (.setf! ctx K_KILLPORT rc)
   ))
 

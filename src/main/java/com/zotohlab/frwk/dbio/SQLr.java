@@ -11,20 +11,18 @@
 
 package com.zotohlab.frwk.dbio;
 
-import java.util.Iterator;
-
 /**
  * @author kenl
  */
 public interface SQLr {
 
-  public Iterator<?> findSome(Object modeldef, Object  filters, Object  extras);
+  public Iterable<?> findSome(Object modeldef, Object  filters, Object  extras);
 
-  public Iterator<?> findSome(Object modeldef, Object  filters);
+  public Iterable<?> findSome(Object modeldef, Object  filters);
 
-  public Iterator<?> findAll(Object modeldef, Object extras);
+  public Iterable<?> findAll(Object modeldef, Object extras);
 
-  public Iterator<?> findAll(Object modeldef);
+  public Iterable<?> findAll(Object modeldef);
 
   public Object findOne(Object modeldef, Object  filters);
 
@@ -32,11 +30,11 @@ public interface SQLr {
   public Object delete(Object obj);
   public Object insert(Object obj);
 
-  public Iterator<?> select(Object modeldef, String sql, Iterator<?> params);
-  public Iterator<?> select(String sql, Iterator<?> params);
+  public Iterable<?> select(Object modeldef, String sql, Iterable<?> params);
+  public Iterable<?> select(String sql, Iterable<?> params);
 
-  public Object execWithOutput(String sql, Iterator<?> params);
-  public Object exec(String sql, Iterator<?> params);
+  public Object execWithOutput(String sql, Iterable<?> params);
+  public Object exec(String sql, Iterable<?> params);
 
   public int countAll(Object modeldef);
 
