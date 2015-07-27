@@ -29,8 +29,8 @@
             [czlabclj.tardis.io.webss :refer [MakeWSSession]]
             [czlabclj.xlib.util.mime :refer [GetCharset]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr])
+  (:require [czlabclj.xlib.util.logging :as log]
+            [clojure.string :as cs])
 
   (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io]
@@ -192,7 +192,7 @@
       (cond
         (and (>= code 300)
              (< code 400))
-        (when-not (cstr/blank? loc)
+        (when-not (cs/blank? loc)
           (SetHeader rsp "Location" loc))
 
         (and (>= code 200)
@@ -537,7 +537,7 @@
    ^czlabclj.tardis.core.sys.Elmt src
    options]
 
-  (log/debug "netty pipeline dispatcher, emitter = " (type co))
+  (log/debug "netty pipeline dispatcher, emitter = %s" (type co))
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
@@ -582,7 +582,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (log/info "IOESStart: NettyIO: " (.id ^Identifiable co))
+  (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
   (let [cfg (.getAttr co :emcfg)
         host (nsb (:host cfg))
         port (:port cfg)
@@ -599,7 +599,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (log/info "IOESStop NettyIO: " (.id ^Identifiable co))
+  (log/info "IOESStop NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}
         (.getAttr co :netty) ]
     (StopServer  bootstrap channel)
@@ -612,7 +612,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (log/info "CompInitialize: NettyIO: " (.id ^Identifiable co))
+  (log/info "CompInitialize: NettyIO: %s" (.id ^Identifiable co))
   (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -17,6 +17,7 @@
   (:require [czlabclj.xlib.util.core
              :refer [ThrowIOE
                      MakeMMap
+                     Cast?
                      notnil?
                      spos?
                      Bytesify
@@ -31,7 +32,7 @@
                      nsb
                      hgl?]])
 
-  (:require [clojure.tools.logging :as log]
+  (:require [czlabclj.xlib.util.logging :as log]
             [clojure.string :as cs])
 
   (:use [czlabclj.xlib.netty.io]
@@ -55,9 +56,6 @@
              QueryStringDecoder HttpResponseStatus
              HttpRequestDecoder HttpVersion
              HttpObjectAggregator HttpResponseEncoder]
-            [io.netty.handler.timeout IdleState
-             IdleStateEvent
-             IdleStateHandler]
             [io.netty.handler.codec.http.multipart InterfaceHttpData
              DefaultHttpDataFactory
              HttpPostRequestDecoder Attribute
@@ -71,7 +69,7 @@
             [com.zotohlab.frwk.netty PipelineConfigurator
              SimpleInboundFilter
              InboundAdapter
-             ErrorSinkFilter RequestFilter
+             ErrorSinkFilter MessageFilter
              Expect100Filter AuxHttpFilter]
             [com.zotohlab.frwk.core CallableWithArgs]
             [com.zotohlab.frwk.io XData]
@@ -87,30 +85,7 @@
 
   [^ChannelPipeline pipe]
 
-  (log/debug "ChannelPipeline: handlers= {}"
-             (cs/join "|" (.names pipe))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- reifyIdleStateFilter ""
-
-  ^ChannelHandler
-  []
-
-  (proxy [ChannelDuplexHandler][]
-    (userEventTriggered[ctx msg]
-      (when-let [^IdleStateEvent
-                 evt (if (instance? IdleStateEvent msg)
-                       msg
-                       nil) ]
-        (condp == (.state evt)
-          IdleState/READER_IDLE
-          (-> (.channel ^ChannelHandlerContext ctx)
-              (.close))
-          IdleState/WRITER_IDLE
-          nil ;; (.writeAndFlush ch (PingMessage.))
-          (log/warn "Not sure what is going on here?"))))
-  ))
+  (log/debug "ChannelPipeline: handlers= %s" (cs/join "|" (.names pipe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -137,9 +112,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SharedErrorSinkFilter ""
-  ^ChannelHandler
-  [] ERROR-FILTER)
+(defn SharedErrorSinkFilter "" ^ChannelHandler [] ERROR-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -169,9 +142,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SharedExpect100Filter ""
-  ^ChannelHandler
-  [] EXPECT-100-FILTER)
+(defn SharedExpect100Filter "" ^ChannelHandler [] EXPECT-100-FILTER)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -270,9 +241,9 @@
   ^ULFormItems
   [^String body]
 
-  (log/debug "About to split form body >>>>>>>>>>>>>>>>>>>\n"
-  body
-  "\n<<<<<<<<<<<<<<<<<<<<<<<<<")
+  (log/debug "about to split form body %s%s%s"
+             ">>>>>>>>>>>>>>>>>>>\n"
+             "\n<<<<<<<<<<<<<<<<<<<<<<<<<" body)
 
   (let [tkns (StringUtils/split body \&)
         fis (ULFormItems.) ]
@@ -370,10 +341,14 @@
 (defn FireAndQuit ""
 
   [^ChannelPipeline pipe ^ChannelHandlerContext ctx
-   ^String handler msg]
+   handler msg]
 
+  (log/debug "fireAndQuit: about to remove handler: %s" handler)
   (.fireChannelRead ctx msg)
-  (.remove pipe handler))
+  (if (instance? ChannelHandler handler)
+    (.remove pipe ^ChannelHandler handler)
+    (.remove pipe (nsb handler))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -394,7 +369,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defonce ^:private HTTP-FILTER
-  (proxy [RequestFilter][]
+  (proxy [MessageFilter][]
     (channelRead0 [c msg]
       (let [^ChannelHandlerContext ctx c
             pipe (.pipeline ctx)
@@ -419,7 +394,7 @@
 
           :else
           (do
-            (log/error "Unexpected inbound msg: " (type msg))
+            (log/error "unexpected inbound msg: %s" (type msg))
             (ReferenceCountUtil/retain msg)
             (.fireChannelRead ctx msg)))))))
 
@@ -458,13 +433,13 @@
                          "WebSocketServerProtocolHandler"
                          (WebSocketServerProtocolHandler. path))
               (->> (:wsreq tmp)
-                   (FireAndQuit pipe ctx "wsockFilter"))))
+                   (FireAndQuit pipe ctx this ))))
             (finally
               (ReferenceCountUtil/release msg)))
 
           :else
           ;;msg not released so no need to retain
-          (FireAndQuit pipe ctx "WSockFilter"  msg))))))
+          (FireAndQuit pipe ctx this  msg))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

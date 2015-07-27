@@ -11,15 +11,12 @@
 
 package com.zotohlab.frwk.netty;
 
-import io.netty.channel.ChannelHandler;
-
 /**
  * Handle 100-continue.
  * 
  * @author kenl
  */
-@ChannelHandler.Sharable
-public abstract class Expect100Filter extends SimpleInboundFilter {
+public abstract class Expect100Filter extends AuxHttpFilter {
 
   protected Expect100Filter() {}
 

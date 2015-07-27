@@ -11,23 +11,12 @@
 
 package com.zotohlab.frwk.netty;
 
-import static java.lang.invoke.MethodHandles.lookup;
-import static org.slf4j.LoggerFactory.getLogger;
-
-import org.slf4j.Logger;
-
-import io.netty.channel.ChannelHandler;
-
 /**
  * Last in the pipeline to catch all errors.
  * 
  * @author kenl
  */
-@ChannelHandler.Sharable
-public abstract class ErrorSinkFilter extends SimpleInboundFilter {
-
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+public abstract class ErrorSinkFilter extends AuxHttpFilter {
 
   public static String getName() { return "ErrorSinkFilter"; }
   

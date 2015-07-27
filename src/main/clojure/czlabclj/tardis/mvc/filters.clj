@@ -29,7 +29,7 @@
             [czlabclj.xlib.util.str :refer [hgl? nsb strim]]
             [czlabclj.xlib.util.meta :refer [MakeObj]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io]
@@ -87,7 +87,7 @@
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
-      ;;(log/debug "mvc route filter called with message = " (type msg))
+      (log/debug "mvc route filter called with message = %s" (type msg))
       (cond
         (instance? HttpRequest msg)
         (let [^czlabclj.xlib.net.routes.RouteCracker
@@ -106,14 +106,14 @@
 
             (= r1 true)
             (do
-              ;;(log/debug "mvc route filter MATCHED with uri = " (.getUri req))
+              (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
               (SetAKey ch TOBJ_KEY {:matched true})
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
 
             :else
             (do
-              (log/debug "Failed to match uri: " (:uri cfg))
+              (log/debug "failed to match uri: %s" (:uri cfg))
               (ReplyXXX ch 404 false))))
 
         (instance? HttpResponse msg)
@@ -142,7 +142,7 @@
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
-      ;;(log/debug "mvc netty handler called with message = " (type msg))
+      (log/debug "mvc netty handler called with message = %s" (type msg))
       (let [^czlabclj.xlib.net.routes.RouteCracker
             rcc (.getAttr co :cracker)
             ^ChannelHandlerContext ctx c
@@ -153,14 +153,15 @@
         (if
           (= r1 true)
           (let [^HTTPEvent evt (IOESReifyEvent co ch msg ri) ]
-            (log/debug "Matched one route: " (.getPath ri)
-                       " , and static = " (.isStatic? ri))
+            (log/debug "matched one route: %s, %s%s"
+                       (.getPath ri)
+                       "and static = " (.isStatic? ri))
             (if (.isStatic? ri)
               (ServeStatic ri co r3 ch info evt)
               (ServeRoute ri co r3 ch evt)))
           ;;else
           (do
-            (log/debug "Failed to match uri: " (:uri info))
+            (log/debug "failed to match uri: %s" (:uri info))
             (ServeError co ch 404)) )))
   ))
 
@@ -174,7 +175,7 @@
    options]
 
   (let [handlerFn (get-in options [:wsock :handler])]
-    (log/debug "wsockDispatcher has user function: " handlerFn)
+    (log/debug "wsockDispatcher has user function: %s" handlerFn)
     (proxy [MessageFilter] []
       (channelRead0 [ctx msg]
         (let [ch (.channel ^ChannelHandlerContext ctx)
@@ -205,7 +206,7 @@
             (Try! (.remove pipe "RouteFilter"))
             (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
             (SetAKey ch MSGTYPE_KEY "wsock"))
-        (FireAndQuit pipe ctx "WSockJiggler" msg))))
+        (FireAndQuit pipe ctx this msg))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,7 +219,7 @@
   (let [wsock (wsockJiggler co options)
         router (routeFilter co)
         disp (mvcDisp co)]
-    (log/debug "netty pipeline initor, emitter = " (type co))
+    (log/debug "netty pipeline initor, emitter = %s" (type co))
     (ReifyPipeCfgtor
       (fn [p _]
         (let [^ChannelPipeline pipe p]
@@ -256,7 +257,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co cfg]
 
-  (log/info "CompConfigure: NetttyMVC: " (.id ^Identifiable co))
+  (log/info "CompConfigure: NetttyMVC: %s" (.id ^Identifiable co))
   (.setAttr! co :emcfg (HttpBasicConfig co cfg))
   co)
 
@@ -266,7 +267,7 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (log/info "CompInitialize: NetttyMVC: " (.id ^Identifiable co))
+  (log/info "CompInitialize: NetttyMVC: %s" (.id ^Identifiable co))
   (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
