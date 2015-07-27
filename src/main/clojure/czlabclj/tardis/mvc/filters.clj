@@ -95,11 +95,13 @@
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
+              old (GetAKey ch TOBJ_KEY)
               cfg {:method (GetMethod req)
                    :uri (GetUriPath req)}
               [r1 r2 r3 r4]
               (.crack ck cfg) ]
-          (DelAKey ch TOBJ_KEY)
+          (->> (merge old {:matched false})
+               (SetAKey ch TOBJ_KEY))
           (cond
             (and r1 (hgl? r4))
             (SendRedirect ch false r4)
@@ -107,7 +109,8 @@
             (= r1 true)
             (do
               (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
-              (SetAKey ch TOBJ_KEY {:matched true})
+              (->> (merge old {:matched true})
+                   (SetAKey ch TOBJ_KEY))
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
 
@@ -122,7 +125,6 @@
           (.fireChannelRead ^ChannelHandlerContext c msg))
 
         :else
-        ;;what is this doing? I forgot...
         (let [^ChannelHandlerContext ctx c
               ch (.channel ctx)
               flag (:matched (GetAKey ch TOBJ_KEY))]
@@ -130,7 +132,7 @@
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "routeFilter: skipping unwanted msg")))))
+            (log/debug "routeFilter: skipping unwanted msg: " (type msg))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,6 +206,7 @@
             (Try! (.remove pipe "ChunkedWriteHandler"))
             (Try! (.remove pipe "MVCDispatcher"))
             (Try! (.remove pipe "RouteFilter"))
+            (Try! (.remove pipe "HttpFilter"))
             (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
             (SetAKey ch MSGTYPE_KEY "wsock"))
         (FireAndQuit pipe ctx this msg))))

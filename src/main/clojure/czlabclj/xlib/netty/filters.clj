@@ -347,8 +347,8 @@
   (.fireChannelRead ctx msg)
   (if (instance? ChannelHandler handler)
     (.remove pipe ^ChannelHandler handler)
-    (.remove pipe (nsb handler))
-  ))
+    (.remove pipe (nsb handler)))
+  (DbgPipelineHandlers pipe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -413,10 +413,11 @@
         (cond
           (and (instance? HttpRequest msg)
                (IsWEBSock? msg))
-          (let [uri (-> ^HttpRequest msg (.getUri))]
+          (let [uri (-> ^HttpRequest msg (.getUri))
+                old (GetAKey ch TOBJ_KEY)]
             (log/debug "got a websock req - let's wait for full msg")
-            (->> {:wsreq (fakeFullHttpRequest msg)
-                  :wsuri uri}
+            (->> (merge old {:wsreq (fakeFullHttpRequest msg)
+                             :wsuri uri})
               (SetAKey ch TOBJ_KEY))
             (ReferenceCountUtil/release msg))
 
