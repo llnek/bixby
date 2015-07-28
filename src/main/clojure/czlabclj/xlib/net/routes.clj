@@ -14,16 +14,20 @@
 
   czlabclj.xlib.net.routes
 
-  (:require [czlabclj.xlib.util.core :refer [Muble MakeMMap test-nestr]]
+  (:require [czlabclj.xlib.util.core
+             :refer [Muble
+                     MakeMMap
+                     test-cond
+                     test-nestr]]
             [czlabclj.xlib.util.str
-             :refer [lcase ucase nsb nichts? hgl?]]
-            [czlabclj.xlib.util.ini :refer [ParseInifile]])
+             :refer [strim lcase ucase nsb nichts? hgl?]]
+            [czlabclj.xlib.util.files :refer [ReadOneFile]]
+            [czlabclj.xlib.util.format :refer [ReadEdn]])
 
   (:require [clojure.tools.logging :as log])
 
   (:import  [org.apache.commons.lang3 StringUtils]
             [com.google.gson JsonObject]
-            [com.zotohlab.frwk.util IWin32Conf]
             [java.io File]
             [jregex Matcher Pattern]
             [java.util StringTokenizer]))
@@ -60,10 +64,9 @@
 ;;
 (defn- make-route-info ""
 
-  [route verb handler]
+  [route verbs handler]
 
-  (let [verbList (ucase verb)
-        impl (MakeMMap) ]
+  (let [impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -82,16 +85,16 @@
         (isStatic? [_] (.getf impl :static))
         (getHandler [_] handler)
         (getPath [_] route)
-        (getVerbs [_] verbList)
+        (getVerbs [_] verbs)
         (isSecure? [_] (.getf impl :secure))
 
         (resemble? [_ mtd path]
           (let [^Pattern rg (.getf impl :regex)
-                um (ucase mtd)
+                um (keyword (lcase mtd))
                 m (.matcher rg path) ]
             (if (and (.matches m)
-                     (or (= "*" verbList)
-                         (>= (.indexOf verbList um) 0)))
+                     (or (contains? verbs :all)
+                         (contains? verbs um)))
               m
               nil)))
 
@@ -151,32 +154,35 @@
 ;;
 (defn- mkRoute ""
 
-  [stat path ^IWin32Conf cfile]
+  [stat rt]
 
-  (let [secure (.getString cfile path :secure "")
-        tpl (.getString cfile path :template "")
-        verb (.getString cfile path :verb "")
-        mpt (.getString cfile path :mount "")
-        pipe (.getString cfile path :pipe "")
+  {:pre [(map? rt)]}
+
+  (let [uri (strim (get rt :uri ""))
+        secure (get rt :secure false)
+        tpl (get rt :template "")
+        verb (get rt :verb #{})
+        mpt (get rt :mount "")
+        pipe (get rt :pipe "")
         ^czlabclj.xlib.util.core.Muble
-        rc (make-route-info path
+        rc (make-route-info uri
                             (if (and stat
-                                     (nichts? verb))
-                              "GET"
+                                     (empty? verb))
+                              #{:get}
                               verb)
                             pipe) ]
-    (.setf! rc :secure (= "true" (lcase secure)))
+    (.setf! rc :secure secure)
     (if stat
       (do
         (.setf! rc :mountPoint mpt)
         (.setf! rc :static true)
         (test-nestr "static-route mount point" mpt))
       (do
-        (test-nestr "http method for route" verb)
+        (test-cond "http method for route" (not-empty verb))
         (test-nestr "pipeline for route" pipe)))
     (when (hgl? tpl)
       (.setf! rc :template tpl))
-    (initRoute rc path)
+    (initRoute rc uri)
     rc
   ))
 
@@ -189,11 +195,12 @@
   [^File file]
 
   (let [stat (-> file (.getName)(.startsWith "static-"))
-        cf (ParseInifile file) ]
+        s (str "[ " (ReadOneFile file) " ]")
+        rs (ReadEdn s) ]
     (with-local-vars [rc (transient []) ]
-      (doseq [s (.sectionKeys cf) ]
-        ;;(log/debug "route key === " s)
-        (var-set rc (conj! @rc (mkRoute stat s cf))))
+      (doseq [s rs]
+        (log/debug "route def === " s)
+        (var-set rc (conj! @rc (mkRoute stat s))))
       (persistent! @rc)
   )))
 
