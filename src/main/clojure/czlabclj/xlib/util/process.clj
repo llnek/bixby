@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "OS Process related utilities."
+(ns ^{:doc "OS Process related utilities"
       :author "kenl" }
 
   czlabclj.xlib.util.process

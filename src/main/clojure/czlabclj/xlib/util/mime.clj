@@ -9,26 +9,29 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "This is a utility class that provides various MIME related functionality."
+(ns ^{:doc "This is a utility class that provides
+           various MIME related functionality"
       :author "kenl" }
 
   czlabclj.xlib.util.mime
 
-  (:require [czlabclj.xlib.util.core :refer [Bytesify Try! IntoMap]]
-            [czlabclj.xlib.util.meta :refer [BytesClass]]
-            [czlabclj.xlib.util.str :refer [lcase ucase nsb hgl?]]
-            [czlabclj.xlib.util.io :refer [Streamify]])
+  (:require
+    [czlabclj.xlib.util.core :refer [Bytesify Try! IntoMap]]
+    [czlabclj.xlib.util.meta :refer [BytesClass]]
+    [czlabclj.xlib.util.str :refer [lcase ucase nsb hgl?]]
+    [czlabclj.xlib.util.io :refer [Streamify]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
-            [java.io IOException InputStream File]
-            [java.net URL]
-            [org.apache.commons.codec.net URLCodec]
-            [java.util.regex Pattern Matcher]
-            [java.util Properties]
-            [javax.mail Message]
-            [com.zotohlab.frwk.mime MimeFileTypes]))
+  (:import
+    [org.apache.commons.lang3 StringUtils]
+    [java.io IOException InputStream File]
+    [java.net URL]
+    [org.apache.commons.codec.net URLCodec]
+    [java.util.regex Pattern Matcher]
+    [java.util Properties]
+    [javax.mail Message]
+    [com.zotohlab.frwk.mime MimeFileTypes]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -117,10 +120,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MimeCache "Cache of most MIME types."
-
+(defn MimeCache "Cache of most MIME types"
   []
-
   @_mime_cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +134,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetCharset "Get charset from this content-type string."
+(defn GetCharset "Get charset from this content-type string"
 
   ^String
   [^String cType]
@@ -152,7 +153,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsSigned? "Returns true if this content-type indicates signed."
+(defn IsSigned? "Returns true if this content-type indicates signed"
 
   [^String cType]
 
@@ -163,7 +164,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsEncrypted? "Returns true if this content-type indicates encrypted."
+(defn IsEncrypted? "Returns true if this content-type indicates encrypted"
 
   [^String cType]
 
@@ -173,7 +174,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsCompressed? "Returns true if this content-type indicates compressed."
+(defn IsCompressed? "Returns true if this content-type
+                     indicates compressed"
 
   [^String cType]
 
@@ -184,7 +186,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsMDN? "Returns true if this content-type indicates MDN."
+(defn IsMDN? "Returns true if this content-type indicates MDN"
 
   [^String cType]
 
@@ -195,7 +197,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeStream "Turn this object into some form of stream, if possible."
+(defn MaybeStream "Turn this object into some form of stream, if possible"
 
   ^InputStream
   [^Object obj]
@@ -208,65 +210,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UrlDecode "URL decode this string."
+(defn UrlDecode "URL decode this string"
 
   ^String
   [^String u]
 
-  (when-not (nil? u)
+  (when (some? u)
     (Try! (-> (URLCodec. "utf-8")(.decode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UrlEncode "URL encode this string."
+(defn UrlEncode "URL encode this string"
 
   ^String
   [^String u]
 
-  (when-not (nil? u)
+  (when (some? u)
     (Try! (-> (URLCodec. "utf-8")(.encode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GuessMimeType "Guess the MIME type of file."
+(defn GuessMimeType "Guess the MIME type of file"
 
-  (^String [^File file]
-           (GuessMimeType file ""))
+  ^String
+  [^File file & [dft]]
 
-  (^String [^File file
-            ^String dft]
-           (let [^Matcher
-                 mc (.matcher _extRegex
-                              (lcase (.getName file)))
-                 ex (if (.matches mc)
-                      (.group mc 1)
-                      "")
-                 p (if (hgl? ex)
-                     ((keyword ex) (MimeCache))) ]
-             (if (hgl? p) p dft))) )
+  (let [^Matcher
+        mc (->> (lcase (.getName file))
+                (.matcher _extRegex))
+        ex (if (.matches mc)
+             (.group mc 1) "")
+        p (if (hgl? ex)
+            ((keyword ex) (MimeCache))) ]
+   (if (hgl? p) p (nsb dft))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GuessContentType "Guess the content-type of file."
+(defn GuessContentType "Guess the content-type of file"
 
-  (^String [^File file
-            ^String enc
-            ^String dft]
-           (let [mt (GuessMimeType file)
-                 ct (if (hgl? mt) mt dft) ]
-             (if (not (.startsWith ct "text/"))
-               ct
-               (str ct "; charset=" enc))))
+  ^String
+  [^File file & [enc dft]]
 
-  (^String [^File file]
-           (GuessContentType file
-                             "utf-8" "application/octet-stream" )))
+  (let [dft (or dft "application/octet-stream" )
+        enc (or enc "utf-8")
+        mt (GuessMimeType file)
+        ct (if (hgl? mt) mt dft) ]
+    (if-not (.startsWith ct "text/")
+      ct
+      (str ct "; charset=" enc))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetupCache "Load file mime-types as a map."
+(defn SetupCache "Load file mime-types as a map"
 
   [^URL fileUrl]
 

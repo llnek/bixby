@@ -9,25 +9,28 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Utility functions for class related or reflection related operations."
+(ns ^{:doc "Utility functions for class related or
+           reflection related operations"
       :author "kenl" }
 
   czlabclj.xlib.util.meta
 
-  (:require [czlabclj.xlib.util.str :refer [EqAny? hgl?]]
-            [czlabclj.xlib.util.core :refer [test-nonil]])
+  (:require
+    [czlabclj.xlib.util.str :refer [EqAny? hgl?]]
+    [czlabclj.xlib.util.core :refer [test-nonil]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
-  (:import  [java.lang.reflect Member Field Method Modifier]))
+  (:import
+    [java.lang.reflect Member Field Method Modifier]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IsChild? "Returns true if clazz is subclass of this base class."
-  (fn [a b]
+(defmulti IsChild? "true if clazz is subclass of this base class"
+  (fn [_ b]
     (if (instance? Class b)
       :class
       :object)))
@@ -54,7 +57,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BytesClass "Return the java class for byte[]."
+(defn BytesClass "Return the java class for byte[]"
 
   ^Class
   []
@@ -63,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CharsClass "Return the java class for char[]."
+(defn CharsClass "Return the java class for char[]"
 
   ^Class
   []
@@ -72,123 +75,131 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsBoolean? "True if class is Boolean."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) ["boolean" "Boolean" "java.lang.Boolean"] ))
+(defmacro ^:private isXXX? ""
+  [classObj classes]
+  `(EqAny? (.getName ^Class ~classObj) ~classes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsVoid? "True if class is Void."
+(defn IsBoolean? "True if class is Boolean"
 
-  [^Class classObj]
+  [classObj]
 
-  (EqAny? (.getName classObj) ["void" "Void" "java.lang.Void"] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsChar? "True if class is Char."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) [ "char" "Char" "java.lang.Character" ] ))
+  (isXXX? classObj ["boolean" "Boolean" "java.lang.Boolean"] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsInt? "True if class is Int."
+(defn IsVoid? "True if class is Void"
 
-  [^Class classObj]
+  [classObj]
 
-  (EqAny? (.getName classObj) [ "int" "Int" "java.lang.Integer" ] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsLong? "True if class is Long."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) [ "long" "Long" "java.lang.Long" ] ))
+  (isXXX? classObj ["void" "Void" "java.lang.Void"] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsFloat? "True if class is Float."
+(defn IsChar? "True if class is Char"
 
-  [^Class classObj]
+  [classObj]
 
-  (EqAny? (.getName classObj) [ "float" "Float" "java.lang.Float" ]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsDouble? "True if class is Double."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) [ "double" "Double" "java.lang.Double" ]))
+  (isXXX? classObj [ "char" "Char" "java.lang.Character" ] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsByte? "True if class is Byte."
+(defn IsInt? "True if class is Int"
 
-  [^Class classObj]
+  [classObj]
 
-  (EqAny? (.getName classObj) [ "byte" "Byte" "java.lang.Byte" ]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsShort? "True if class is Short."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) [ "short" "Short" "java.lang.Short" ]))
+  (isXXX? classObj [ "int" "Int" "java.lang.Integer" ] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsString? "True if class is String."
+(defn IsLong? "True if class is Long"
 
-  [^Class classObj]
+  [classObj]
 
-  (EqAny? (.getName classObj) [ "String" "java.lang.String" ]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn IsObject? "True if class is Object."
-
-  [^Class classObj]
-
-  (EqAny? (.getName classObj) [ "Object" "java.lang.Object" ]))
+  (isXXX? classObj [ "long" "Long" "java.lang.Long" ] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsBytes? "True if class is byte[]."
+(defn IsFloat? "True if class is Float"
 
-  [^Class classObj]
+  [classObj]
+
+  (isXXX? classObj [ "float" "Float" "java.lang.Float" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsDouble? "True if class is Double"
+
+  [classObj]
+
+  (isXXX? classObj [ "double" "Double" "java.lang.Double" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsByte? "True if class is Byte"
+
+  [classObj]
+
+  (isXXX? classObj [ "byte" "Byte" "java.lang.Byte" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsShort? "True if class is Short"
+
+  [classObj]
+
+  (isXXX? classObj [ "short" "Short" "java.lang.Short" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsString? "True if class is String"
+
+  [classObj]
+
+  (isXXX? classObj [ "String" "java.lang.String" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsObject? "True if class is Object"
+
+  [classObj]
+
+  (isXXX? classObj [ "Object" "java.lang.Object" ]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn IsBytes? "True if class is byte[]"
+
+  [classObj]
 
   (= classObj (BytesClass)) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ForName "Load a java class by name."
+(defn ForName "Load a java class by name"
 
-  (^Class [^String z] (ForName z nil))
+  ^Class
+  [^String z & [cl]]
 
-  (^Class [^String z ^ClassLoader cl]
-          (if (nil? cl)
-            (java.lang.Class/forName z)
-            (java.lang.Class/forName z true cl))) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetCldr "Get the current classloader."
-
-  (^ClassLoader [] (GetCldr nil))
-
-  (^ClassLoader [^ClassLoader cl]
-                (or cl (.getContextClassLoader (Thread/currentThread)))))
+  (if (nil? cl)
+    (java.lang.Class/forName z)
+    (->> ^ClassLoader cl
+         (java.lang.Class/forName z true))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetCldr "Set current classloader."
+(defn GetCldr "Get the current classloader"
+
+  ^ClassLoader
+  [ & [cl] ]
+
+  (or cl (.getContextClassLoader (Thread/currentThread))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetCldr "Set current classloader"
 
   [^ClassLoader cl]
 
@@ -197,15 +208,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn LoadClass "Load this class by name."
+(defn LoadClass "Load this class by name"
 
-  (^Class [^String clazzName]
-          (LoadClass clazzName nil))
+  ^Class
+  [^String clazzName & [cl]]
 
-  (^Class [^String clazzName ^ClassLoader cl]
-          (if-not (hgl? clazzName)
-            nil
-            (.loadClass (GetCldr cl) clazzName))))
+  (if-not (hgl? clazzName)
+    nil
+    (.loadClass (GetCldr cl) clazzName)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -242,7 +253,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CtorObj "Call the default contructor."
+(defn CtorObj "Call the default contructor"
 
   ^Object
   [^Class cz]
@@ -254,20 +265,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeObj "Make an object of this class by
-               calling the default constructor."
+               calling the default constructor"
 
-  (^Object [^String clazzName]
-           (MakeObj clazzName nil))
+  ^Object
+  [^String clazzName & [cl]]
 
-  (^Object [^String clazzName
-            ^ClassLoader cl]
-           (if-not (hgl? clazzName)
-             nil
-             (CtorObj (LoadClass clazzName cl)))) )
+  (if-not (hgl? clazzName)
+    nil
+    (CtorObj (LoadClass clazzName cl))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListParents "List all parent classes."
+(defn ListParents "List all parent classes"
 
   [^Class javaClass]
 
@@ -286,7 +296,7 @@
 ;;
 (defn- iterXXX ""
 
-  [^Class cz ^long level getDeclXXX bin ]
+  [^Class cz ^long level getDeclXXX bin]
 
   (let [props (getDeclXXX cz) ]
     (reduce (fn [sum ^Member m]
@@ -333,7 +343,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn ListMethods "List all methods belonging to this class,
-                   including inherited ones."
+                   including inherited ones"
 
   [^Class javaClass]
 
