@@ -14,42 +14,46 @@
 
   czlabclj.xlib.util.process
 
-  (:require [czlabclj.xlib.util.core :refer [Try! TryC]]
-            [czlabclj.xlib.util.meta :refer [GetCldr]]
-            [czlabclj.xlib.util.str :refer [nsb hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [Try! TryC]]
+    [czlabclj.xlib.util.meta :refer [GetCldr]]
+    [czlabclj.xlib.util.str :refer [nsb hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:import  [java.lang.management ManagementFactory]
-            [java.util.concurrent Callable]
-            [java.util TimerTask Timer]
-            [com.zotohlab.frwk.util CU]
-            [com.zotohlab.frwk.core CallableWithArgs]
-            [java.lang Thread Runnable]))
+  (:import
+    [java.lang.management ManagementFactory]
+    [java.util.concurrent Callable]
+    [java.util TimerTask Timer]
+    [com.zotohlab.frwk.util CU]
+    [com.zotohlab.frwk.core CallableWithArgs]
+    [java.lang Thread Runnable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SyncBlockExec "Run this function synchronously."
+(defn SyncBlockExec "Run this function synchronously"
 
   [^Object lock func & args]
 
-  (CU/syncExec lock
-               (first args)
-               (reify CallableWithArgs
-                      (run [_ a1 args]
-                        (apply func a1 args)))
-               args))
+  (CU/syncExec
+    lock
+    (first args)
+    (reify CallableWithArgs
+      (run [_ a1 args]
+        (apply func a1 args)))
+    args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- asyncExecThread "Execute this runnable in a separate thread."
+(defn- asyncExecThread "Execute this runnable in a separate thread"
 
   [^Runnable r options]
 
-  (when-not (nil? r)
+  (when (some? r)
     (let [c (or (:classLoader options)
                 (GetCldr))
           d (true? (:daemon options))
@@ -59,7 +63,7 @@
       (.setDaemon t d)
       (when (hgl? n)
         (.setName t (str "(" n ") " (.getName t))))
-      (log/debug "asyncExecThread: start thread#"
+      (log/debug "asyncExecThread: start thread#%s%s%s"
                  (.getName t)
                  ", daemon = " d)
       (.start t))
@@ -67,60 +71,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsyncExec "Run the code (runnable) in a separate thread."
+(defn AsyncExec "Run the code (runnable) in a separate thread"
 
-  ([^Runnable runable] (AsyncExec runable (GetCldr)))
+  ([^Runnable runable]
+   (AsyncExec runable (GetCldr)))
 
   ([^Runnable runable arg]
-   (asyncExecThread runable (if (instance? ClassLoader arg)
-                              {:classLoader arg}
-                              (if (map? arg) arg {})))))
+   (asyncExecThread
+     runable
+     (if (instance? ClassLoader arg)
+       {:classLoader arg}
+       (if (map? arg) arg {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Coroutine "Run this function asynchronously."
+(defn Coroutine "Run this function asynchronously"
 
-  ([func] (Coroutine func nil))
+  [func & [options]]
 
-  ([func options]
-   (let [r (reify Runnable
-             (run [_]
-               (TryC (when (fn? func) (func)))
-               (log/debug "Coroutine thread#"
-                          (-> (Thread/currentThread)
-                              (.getName))
-                          ": (run) is done."))) ]
-     (AsyncExec r options))))
+  {:pre [(fn? func)]}
+
+  (-> (reify Runnable
+       (run [_]
+         (TryC (func))))
+      (AsyncExec options)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThreadFunc "Run this function in a separate thread."
+(defn ThreadFunc "Run this function in a separate thread"
 
-  (^Thread
-    [func start arg]
-    (let [t (Thread. (reify Runnable
-                       (run [_] (apply func []))))]
-      (with-local-vars [daemon false cl nil]
-        (when (instance? ClassLoader arg)
-          (var-set cl arg))
-        (when (map? arg)
-          (var-set cl (:classLoader arg))
-          (when (true? (:daemon arg))
-            (var-set daemon true)))
-        (when-not (nil? @cl)
-          (.setContextClassLoader t @cl))
-        (.setDaemon t (true? @daemon)))
+  ^Thread
+  [func start & [arg]]
+
+  {:pre [(fn? func)]}
+
+  (let
+    [t (-> (reify
+             Runnable
+             (run [_] (func)))
+           (Thread. ))]
+    (with-local-vars [daemon false cl nil]
+      (when (instance? ClassLoader arg)
+        (var-set cl arg))
+      (when (map? arg)
+        (var-set cl (:classLoader arg))
+        (when (true? (:daemon arg))
+          (var-set daemon true)))
+      (when (some? @cl)
+        (.setContextClassLoader t ^ClassLoader @cl))
+      (.setDaemon t (true? @daemon))
       (when start (.start t))
-      (log/debug "ThreadFunc thread#"
+      (log/debug "threadFunc: thread#%s%s%s"
                  (.getName t)
-                 ", daemon = " (.isDaemon t))
-      t))
-
-  (^Thread [func start] (ThreadFunc func start nil)))
+                 ", daemon = " (.isDaemon t)))
+    t
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeWait "Block current thread for some millisecs."
+(defn SafeWait "Block current thread for some millisecs"
 
   [millisecs]
 
@@ -129,7 +139,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProcessPid "Get the current process pid."
+(defn ProcessPid "Get the current process pid"
 
   ^String
   []
@@ -143,15 +153,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DelayExec "Run this function after some delay."
+(defn DelayExec "Run this function after some delay"
 
   [func delayMillis]
+
+  {:pre [(fn? func)]}
 
   (-> (Timer. true)
       (.schedule (proxy [TimerTask][]
                    (run []
-                     (apply func [])))
-                 (long delayMillis))))
+                     (func)))
+                 (long delayMillis))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

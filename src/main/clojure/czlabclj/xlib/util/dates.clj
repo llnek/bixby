@@ -18,7 +18,7 @@
             [czlabclj.xlib.util.core :refer [Try!]])
 
   (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr])
+            [clojure.string :as cs])
 
   (:use [czlabclj.xlib.util.consts])
 
@@ -100,8 +100,8 @@
   ^Date
   [^String tstr ^String fmt]
 
-  (when-not (or (cstr/blank? tstr)
-                (cstr/blank? fmt))
+  (when-not (or (cs/blank? tstr)
+                (cs/blank? fmt))
     (.parse (SimpleDateFormat. fmt) tstr)
   ))
 
@@ -142,7 +142,7 @@
 
   (^String
     [^Date dt fmt ^TimeZone tz]
-    (if (or (nil? dt) (cstr/blank? fmt))
+    (if (or (nil? dt) (cs/blank? fmt))
       ""
       (let [df (SimpleDateFormat. fmt) ]
         (when-not (nil? tz) (.setTimeZone df tz))
@@ -276,11 +276,11 @@
   ^String
   [^Calendar cal]
 
-  (cstr/join ""
-             ["{" (.. cal (getTimeZone) (getDisplayName) )  "} "
-              "{" (.. cal (getTimeZone) (getID)) "} "
-              "[" (.getTimeInMillis cal) "] "
-              (FmtCal cal) ]
+  (cs/join ""
+           ["{" (.. cal (getTimeZone) (getDisplayName) )  "} "
+            "{" (.. cal (getTimeZone) (getID)) "} "
+            "[" (.getTimeInMillis cal) "] "
+            (FmtCal cal) ]
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

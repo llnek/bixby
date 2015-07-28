@@ -14,42 +14,41 @@
 
   czlabclj.xlib.util.wfs
 
-  (:require [czlabclj.xlib.util.scheduler
-             :refer
-             [NulScheduler MakeScheduler]]
-            [czlabclj.xlib.util.core
-             :refer
-             [Cast? Muble MakeMMap NextLong]])
+  (:require
+    [czlabclj.xlib.util.scheduler :refer [NulScheduler MakeScheduler]]
+    [czlabclj.xlib.util.core :refer [Cast? Muble MakeMMap NextLong]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.util.consts])
 
-  (:import  [com.zotohlab.wflow If FlowDot Activity
-             CounterExpr BoolExpr Nihil
-             ChoiceExpr Job WorkFlow WorkFlowEx
-             WHandler FlowError
-             PTask Work]
-            [com.zotohlab.frwk.server Event ServerLike
-             NonEvent NulEmitter
-             ServiceHandler]
-            [com.zotohlab.frwk.util Schedulable]
-            [com.zotohlab.frwk.core Activable Disposable]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
+  (:import
+    [com.zotohlab.wflow If FlowDot Activity
+     CounterExpr BoolExpr Nihil
+     ChoiceExpr Job WorkFlow WorkFlowEx
+     WHandler FlowError
+     PTask Work]
+    [com.zotohlab.frwk.server Event ServerLike
+     NonEvent NulEmitter
+     ServiceHandler]
+    [com.zotohlab.frwk.util Schedulable]
+    [com.zotohlab.frwk.core Activable Disposable]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewJob "Create a new job for downstream processing."
+(defn NewJob "Create a new job for downstream processing"
 
-  (^Job [^ServerLike parObj ^WorkFlow wf]
-        (NewJob parObj wf (NonEvent. parObj)))
+  (^Job
+    [^ServerLike parObj ^WorkFlow wf]
+    (NewJob parObj wf (NonEvent. parObj)))
 
-  (^Job [^ServerLike parObj
-         ^WorkFlow wfw
-         ^Event evt]
+  (^Job
+    [^ServerLike parObj
+     ^WorkFlow wfw ^Event evt]
     (let [impl (MakeMMap)
           jid (NextLong) ]
       (reify
@@ -69,7 +68,6 @@
         (getLastResult [this] (.getf this JS_LAST))
         (clrLastResult [this] (.clrf! this JS_LAST))
         (finz [_] )
-          ;;(log/debug "Job##" jid " has been served.")
         (setv [this k v] (.setf! this k v))
         (unsetv [this k] (.clrf! this k))
         (getv [this k] (.getf this k))
@@ -80,63 +78,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefPTask "Given a function(arity 2), return a PTask."
+(defn DefPTask "Given a function(arity 2), return a PTask"
 
-  (^PTask [func] (DefPTask "" func))
+  (^PTask
+    [func]
+    (DefPTask "" func))
 
-  (^PTask [^String nm func]
-    (PTask. nm (reify Work
-                 (on [_ fw job]
-                   (apply func fw job []))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SimPTask "Given a function(arity 1), return a PTask."
-
-  (^PTask [func] (SimPTask "" func))
-
-  (^PTask [^String nm func]
-    (PTask. nm (reify Work (on [_ fw job] (apply func job []))))))
+  (^PTask
+    [^String nm func]
+    (PTask. nm
+            (reify Work
+              (on [_ fw job]
+                (func fw job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefBoolExpr "Given a function(arity 1), return a BoolExpr."
+(defn SimPTask "Given a function(arity 1), return a PTask"
+
+  (^PTask
+    [func]
+    (SimPTask "" func))
+
+  (^PTask
+    [^String nm func]
+    (PTask. nm (reify Work (on [_ fw job] (func job))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn DefBoolExpr "Given a function(arity 1), return a BoolExpr"
 
   ^BoolExpr
   [func]
 
-  (reify BoolExpr (ptest [_ j] (apply func j []))))
+  (reify BoolExpr (ptest [_ j] (func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefChoiceExpr "Given a function(arity 1), return a ChoiceExpr."
+(defn DefChoiceExpr "Given a function(arity 1), return a ChoiceExpr"
 
   ^ChoiceExpr
   [func]
 
-  (reify ChoiceExpr (choice [_ j] (apply func j []))))
+  (reify ChoiceExpr (choice [_ j] (func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefCounterExpr "Given a function(arity 1), return a CounterExpr."
+(defn DefCounterExpr "Given a function(arity 1), return a CounterExpr"
 
   ^CounterExpr
   [func]
 
-  (reify CounterExpr (gcount [_ j] (apply func j []))))
+  (reify CounterExpr (gcount [_ j] (func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WrapPTask "Wrap a PTask around this WHandler."
+(defn WrapPTask "Wrap a PTask around this WHandler"
 
   ^Activity
   [^WHandler wf]
 
-  (SimPTask (fn [^Job j] (.run wf j))))
+  (SimPTask (fn [j] (.run wf j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToWorkFlow "Coerce argument into a WorkFlow object."
+(defn ToWorkFlow "Coerce argument into a WorkFlow object"
 
   ^WorkFlow
   [arg]
@@ -163,8 +168,9 @@
 
     :else
     (do
-      (log/warn "unknown object type "
-                (type arg) ", cannot cast to WorkFlow.")
+      (log/warn "unknown object type %s%s"
+                (type arg)
+                ", cannot cast to WorkFlow")
       nil)
   ))
 
@@ -189,18 +195,19 @@
               opts (or opts {})]
           (doseq [[k v] (seq opts)]
             (.setv j k v))
-          (.run cpu (.reify (.startWith w)
-                            (-> (Nihil/apply)
-                                (.reify j))))))
+          (->> (-> (Nihil/apply) (.reify j))
+               (.reify (.startWith w))
+               (.run cpu))))
 
       (handleError [_ e]
-        (with-local-vars [done false]
+        (with-local-vars [ret nil]
           (when-let [^FlowError fe (Cast? FlowError e)]
-          (when-let [n (.getLastDot fe)]
-          (when-let [w (Cast? WorkFlowEx (-> (.job n)(.wflow)))]
-            (var-set done true)
-            (.onError ^WorkFlowEx w (.getCause fe)))))
-          (when-not @done nil)))
+            (when-let [n (.getLastDot fe)]
+              (when-let [w (Cast? WorkFlowEx (-> (.job n)
+                                                 (.wflow)))]
+                (->> (.onError ^WorkFlowEx w (.getCause fe))
+                     (var-set ret)))))
+          @ret))
 
       Disposable
 

@@ -9,27 +9,30 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "A Scheduler with pooled threads."
+(ns ^{:doc "A Scheduler with pooled threads"
       :author "kenl" }
 
   czlabclj.xlib.util.scheduler
 
-  (:require [czlabclj.xlib.util.core :refer [NextInt juid MakeMMap]]
-            [czlabclj.xlib.util.str :refer [Format hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [NextInt juid MakeMMap]]
+    [czlabclj.xlib.util.str :refer [hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:import  [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
-            [com.zotohlab.frwk.core Activable Identifiable Named]
-            [java.util.concurrent ConcurrentHashMap]
-            [java.util Map Properties Timer TimerTask]))
+  (:import
+    [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
+    [com.zotohlab.frwk.core Activable Identifiable Named]
+    [java.util.concurrent ConcurrentHashMap]
+    [java.util Map Properties Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NulScheduler "Make a Singly threaded Scheduler."
+(defn NulScheduler "Make a Singly threaded Scheduler"
 
   ^Schedulable
   []
@@ -43,8 +46,6 @@
 
       (run [this w]
         (when-let [^Runnable r w]
-          ;;(.preRun this r)
-          ;;(log/debug "mock scheduler: nothing to schedule - just run it.")
           (.run r)))
 
       (postpone [this w delayMillis]
@@ -77,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- xrefPID "Returns the id of this runnable or nil."
+(defn- xrefPID "Returns the id of this runnable or nil"
 
   [runable]
 
@@ -88,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- preRun  "Stuff to do before running the task."
+(defn- preRun  "Stuff to do before running the task"
 
   [^Map hQ ^Map rQ w]
 
@@ -99,7 +100,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- addTimer "Schedule a timer task."
+(defn- addTimer "Schedule a timer task"
 
   [^Timer timer ^TimerTask task
    ^long delay]
@@ -108,13 +109,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSCD "Make a Scheduler."
+(defn- mkSCD "Make a Scheduler"
 
   ^Schedulable
   [^String named]
 
   (let [jid (if-not (hgl? named)
-              (Format "xlib#core-%03d" (NextInt))
+              (format "xlib#core-%03d" (NextInt))
               (str named "#core"))
         holdQ (ConcurrentHashMap.)
         runQ (ConcurrentHashMap.)
@@ -153,7 +154,7 @@
           (.hold this (xrefPID w) w))
 
         (hold [_ pid w]
-          (when-not (nil? pid)
+          (when (some? pid)
             (.remove runQ pid)
             (.put holdQ pid w) ))
 
@@ -161,13 +162,13 @@
           (.wakeAndRun this (xrefPID w) w))
 
         (wakeAndRun [this pid w]
-          (when-not (nil? pid)
+          (when (some? pid)
             (.remove holdQ pid)
             (.put runQ pid w)
             (.run this w) ))
 
         (reschedule [this w]
-          (when-not (nil? w)
+          (when (some? w)
             (.run this w)))
 
         (dispose [_]
@@ -175,7 +176,7 @@
             (.cancel ^Timer @timer)
             (.clear holdQ)
             (.clear runQ)
-            (when-not (nil? c) (.dispose c))))
+            (when (some? c) (.dispose c))))
 
         Activable
 
@@ -198,7 +199,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeScheduler "Make a Scheduler."
+(defn MakeScheduler "Make a Scheduler"
 
   (^Schedulable [] (MakeScheduler ""))
   (^Schedulable [^String named] (mkSCD named)))

@@ -11,6 +11,7 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.frwk.core.CallableWithArgs;
 
 /**
  *
@@ -18,6 +19,5 @@ package com.zotohlab.wflow;
  *
  */
 @FunctionalInterface
-public interface WHandler {
-  public Object run(Job j);
+public interface WHandler extends CallableWithArgs {
 }
