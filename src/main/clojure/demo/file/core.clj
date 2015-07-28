@@ -44,10 +44,10 @@
 ;;
 (deftype DemoGen [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.file.core)
     (let [^Service p (-> ^ServiceProvider
-                         (.container j)
+                         (.container ^Job j)
                          (.getService :default-sample))
           s (str "Current time is " (Date.)) ]
       (spit (File. (nsb (.getv p :targetFolder))
@@ -58,9 +58,9 @@
 ;;
 (deftype DemoPick [] WHandler
 
-  (run [_   j]
+  (run [_  j _]
     (require 'demo.file.core)
-    (let [f (-> ^FileEvent (.event j)
+    (let [f (-> ^FileEvent (.event ^Job j)
                 (.getFile)) ]
       (println "Picked up new file: " f)
       (println "Content: " (slurp f :encoding "utf-8")))))

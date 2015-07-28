@@ -18,6 +18,5 @@ import com.zotohlab.frwk.core.CallableWithArgs;
  * @author kenl
  *
  */
-@FunctionalInterface
 public interface WHandler extends CallableWithArgs {
 }

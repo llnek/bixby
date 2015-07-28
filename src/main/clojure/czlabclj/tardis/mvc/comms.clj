@@ -324,7 +324,7 @@
 ;;
 (deftype AssetHandler [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'czlabclj.tardis.mvc.comms)
     (let [^HTTPEvent evt (.event ^Job j)]
       (HandleStatic (.emitter evt)

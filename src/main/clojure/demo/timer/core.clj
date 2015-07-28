@@ -41,7 +41,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.timer.core)
     (let [^TimerEvent ev (.event ^Job j) ]
       (if (.isRepeating ev)

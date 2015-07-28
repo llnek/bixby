@@ -34,7 +34,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.http.websock)
     (let [^WebSockEvent ev (.event ^Job j)
           res (.getResultObj ev)

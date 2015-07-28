@@ -40,7 +40,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.jms.core)
     (let [^JMSEvent ev (.event ^Job j)
           ^TextMessage msg (.getMsg ev) ]

@@ -42,7 +42,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.pop3.core)
     (let [^EmailEvent ev (.event ^Job j)
           ^MimeMessage msg (.getMsg ev)

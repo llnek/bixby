@@ -43,7 +43,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.mvc.core)
     (let [^HTTPEvent ev (.event ^Job j)
           res (.getResultObj ev) ]

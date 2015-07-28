@@ -41,7 +41,7 @@
 ;;
 (deftype Demo [] WHandler
 
-  (run [_  j]
+  (run [_  j _]
     (require 'demo.http.core)
     (let [^HTTPEvent ev (.event ^Job j)
           res (.getResultObj ev) ]
