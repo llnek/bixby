@@ -23,7 +23,7 @@
   (:use [czlabclj.xlib.util.consts])
 
   (:import
-    [com.zotohlab.wflow If FlowDot Activity
+    [com.zotohlab.wflow FlowDot Activity
      CounterExpr BoolExpr Nihil
      ChoiceExpr Job WorkFlow WorkFlowEx
      WHandler FlowError
@@ -52,24 +52,15 @@
         jid (NextLong) ]
     (reify
 
-      Muble
-
-      (setf! [_ k v] (.setf! impl k v))
-      (clear! [_] (.clear! impl))
-      (seq* [_] (.seq* impl))
-      (toEDN [_] (.toEDN impl))
-      (getf [_ k] (.getf impl k))
-      (clrf! [_ k] (.clrf! impl k))
-
       Job
 
-      (setLastResult [this v] (.setf! this JS_LAST v))
-      (getLastResult [this] (.getf this JS_LAST))
-      (clrLastResult [this] (.clrf! this JS_LAST))
-      (finz [_] )
-      (setv [this k v] (.setf! this k v))
-      (unsetv [this k] (.clrf! this k))
-      (getv [this k] (.getf this k))
+      (setLastResult [this v] (.setf! impl JS_LAST v))
+      (getLastResult [this] (.getf impl JS_LAST))
+      (clrLastResult [this] (.clrf! impl JS_LAST))
+      (clear [_] (.clear! impl))
+      (setv [this k v] (.setf! impl k v))
+      (unsetv [this k] (.clrf! impl k))
+      (getv [this k] (.getf impl k))
       (container [_] par)
       (wflow [_] wfw)
       (event [_] evt)
@@ -78,7 +69,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefPTask "Given a function(arity 2), return a PTask"
+(defn DefPTask
+
+  "Given a function(arity 2), return a PTask"
 
   (^PTask
     [func]
@@ -93,7 +86,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SimPTask "Given a function(arity 1), return a PTask"
+(defn SimPTask
+
+  "Given a function(arity 1), return a PTask"
 
   (^PTask
     [func]
@@ -105,7 +100,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefBoolExpr "Given a function(arity 1), return a BoolExpr"
+(defn DefBoolExpr
+
+  "Given a function(arity 1), return a BoolExpr"
 
   ^BoolExpr
   [func]
@@ -114,7 +111,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefChoiceExpr "Given a function(arity 1), return a ChoiceExpr"
+(defn DefChoiceExpr
+
+  "Given a function(arity 1), return a ChoiceExpr"
 
   ^ChoiceExpr
   [func]
@@ -123,7 +122,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefCounterExpr "Given a function(arity 1), return a CounterExpr"
+(defn DefCounterExpr
+
+  "Given a function(arity 1), return a CounterExpr"
 
   ^CounterExpr
   [func]
@@ -132,7 +133,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WrapPTask "Wrap a PTask around this WHandler"
+(defn WrapPTask
+
+  "Wrap a PTask around this WHandler"
 
   ^Activity
   [^WHandler wf]
@@ -141,7 +144,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToWorkFlow "Coerce argument into a WorkFlow object"
+(defn ToWorkFlow
+
+  "Coerce argument into a WorkFlow object"
 
   ^WorkFlow
   [arg]
@@ -176,10 +181,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc FlowServer "A server that handles WorkFlows."
+(defn ^:no-doc FlowServer
+
+  "A server that handles WorkFlows"
 
   ^ServerLike
-  [^Schedulable cpu options]
+  [^Schedulable cpu & [options]]
 
   (let [options (or options {})]
     (-> ^Activable
@@ -193,9 +200,10 @@
         (let [w (ToWorkFlow arg)
               j (NewJob this w)
               opts (or opts {})]
-          (doseq [[k v] (seq opts)]
+          (doseq [[k v] opts]
             (.setv j k v))
-          (->> (-> (Nihil/apply) (.reify j))
+          (->> (-> (Nihil/apply)
+                   (.reify j))
                (.reify (.startWith w))
                (.run cpu))))
 

@@ -128,7 +128,7 @@ public abstract class FlowDot implements RunnableWithId {
     }
     else
     if (rc instanceof NihilDot) {
-      rc.job().finz();
+      rc.job().clear();
       //end
     }
     else {

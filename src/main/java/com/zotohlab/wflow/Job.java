@@ -30,7 +30,7 @@ public interface Job extends Gettable , Settable, Identifiable {
 
   public ServerLike container();
 
-  public void finz();
+  public void clear();
 
   public Event event() ;
 

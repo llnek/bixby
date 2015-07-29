@@ -43,8 +43,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasNocase? "Returns true if this sub-string
-                 is inside this bigger string"
+(defn HasNocase?
+
+  "true if this sub-string is inside this bigger string"
 
   [^String bigs ^String s]
 
@@ -52,8 +53,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Embeds? "Returns true if this sub-string
-              is inside this bigger string"
+(defn Embeds?
+
+  "true if this sub-string is inside this bigger string"
 
   [^String bigs ^String s]
 
@@ -61,8 +63,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Has? "Returns true if this character
-           is inside this string"
+(defn Has?
+
+  "true if this character is inside this string"
 
   [^String bigs ^Character ch]
 
@@ -70,7 +73,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro sname "Safely get the name of this object"
+(defmacro sname
+
+  "Safely get the name of this object"
 
   ^String
   [n]
@@ -79,8 +84,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nsb "Returns empty string if obj is null,
-           or obj.toString"
+(defn nsb
+
+  "empty string if obj is null, or obj.toString"
 
   ^String
   [^Object obj]
@@ -94,7 +100,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro ToKW "Concatenate all args and return it as a keyword"
+(defmacro ToKW
+
+  "Concatenate all args and return it as a keyword"
 
   [& args]
 
@@ -102,7 +110,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nsn "Returns (null) if obj is null, or obj.toString"
+(defn nsn
+
+  "(null) if obj is null, or obj.toString"
 
   ^String
   [^Object obj]
@@ -111,7 +121,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Same? "Returns true if these 2 strings are the same"
+(defn Same?
+
+  "true if these 2 strings are the same"
 
   [^String a ^String b]
 
@@ -132,7 +144,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro hgl? "Returns true if this string is not empty"
+(defmacro hgl?
+
+  "true if this string is not empty"
 
   [s]
 
@@ -140,7 +154,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro nichts?  "Returns true if this string is empty"
+(defmacro nichts?
+
+  "true if this string is empty"
 
   [s]
 
@@ -148,7 +164,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn strim "Safely trim this string - handles null"
+(defn strim
+
+  "Safely trim this string - handles null"
 
   ^String
   [s]
@@ -157,8 +175,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddDelim! "Append to a string-builder, optionally
-                 inserting a delimiter if the buffer is not empty"
+(defn AddDelim!
+
+  "Append to a string-builder, optionally
+   inserting a delimiter if the buffer is not empty"
 
   ^StringBuilder
   [^StringBuilder buf ^String delim ^String item]
@@ -172,8 +192,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Splunk "Split a large string into chucks,
-              each chunk having a specific length"
+(defn Splunk
+
+  "Split a large string into chunks, each chunk having a specific length"
 
   [^String largeString chunkLength]
 
@@ -192,8 +213,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasicAny? "Tests String.indexOf() against
-                 a list of possible args. (ignoring case)"
+(defn HasicAny?
+
+  "Match against a list of possible args. (ignoring case)"
 
   [^String src substrs]
 

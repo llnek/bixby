@@ -214,8 +214,8 @@ class JobCreator {
       }
 
       @Override
-      public void finz() {
-        FlowServer.tlog().debug("job##{} has been served.", _id);
+      public void clear() {
+    	  	_m.clear();
       }
 
       @Override
