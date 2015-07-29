@@ -14,7 +14,7 @@
 
   czlabclj.tardis.mvc.assets
 
-  (:require [czlabclj.xlib.util.core :refer [Try! notnil? NiceFPath]]
+  (:require [czlabclj.xlib.util.core :refer [try! notnil? NiceFPath]]
             [czlabclj.xlib.util.mime :refer [GuessContentType]]
             [czlabclj.xlib.util.str :refer [lcase nsb]]
             [czlabclj.xlib.util.files
@@ -229,13 +229,13 @@
                   (var-set wf (.writeAndFlush ch @inp)))
         (FutureCB @wf #(do
                         (log/debug "Channel-future-op-cmp: " % " , file = " fname)
-                        (Try! (when (notnil? @raf) (.close ^Closeable @raf)))
+                        (try! (when (notnil? @raf) (.close ^Closeable @raf)))
                         (when-not (:keepAlive info)
                           (.close ch))))
         (catch Throwable e#
-          (Try! (when-not (nil? @raf)(.close ^Closeable @raf)))
+          (try! (when-not (nil? @raf)(.close ^Closeable @raf)))
           (log/error e# "")
-          (Try! (.close ch))) ))
+          (try! (.close ch))) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

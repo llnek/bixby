@@ -9,36 +9,38 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Functions to load and query a .ini file."
+(ns ^{:doc "Functions to load and query a .ini file"
       :author "kenl" }
 
   czlabclj.xlib.util.ini
 
-  (:require [czlabclj.xlib.util.core
-             :refer
-             [ThrowBadData ThrowIOE
-              ConvBool ConvInt ConvLong ConvDouble]]
-            [czlabclj.xlib.util.files :refer [FileRead?]]
-            [czlabclj.xlib.util.str :refer [sname nsb strim]])
+  (:require
+    [czlabclj.xlib.util.core
+     :refer [ThrowBadData ThrowIOE
+             ConvBool ConvInt ConvLong ConvDouble]]
+    [czlabclj.xlib.util.files :refer [FileRead?]]
+    [czlabclj.xlib.util.str :refer [sname nsb strim]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs])
 
-  (:import  [com.zotohlab.frwk.util NCOrderedMap]
-            [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.frwk.util IWin32Conf]
-            [java.net URL]
-            [java.io File IOException
-             InputStreamReader LineNumberReader PrintStream]
-            [java.util Map]))
+  (:import
+    [com.zotohlab.frwk.util NCOrderedMap]
+    [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.frwk.util IWin32Conf]
+    [java.net URL]
+    [java.io File IOException
+     InputStreamReader LineNumberReader PrintStream]
+    [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^IWin32Conf ParseInifile "Parse a INI config file." class)
+(defmulti ^IWin32Conf ParseInifile "Parse a INI config file" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,7 +76,7 @@
    ^String line]
 
   (let [s (strim (StringUtils/strip line "[]")) ]
-    (when (cstr/blank? s) (throwBadIni rdr))
+    (when (cs/blank? s) (throwBadIni rdr))
     (when-not (.containsKey ncmap s)
       (.put ncmap s (NCOrderedMap.)))
     s
@@ -95,7 +97,7 @@
           nm (if (> pos 0)
                (strim (.substring line 0 pos))
                "" ) ]
-      (when (cstr/blank? nm) (throwBadIni rdr))
+      (when (cs/blank? nm) (throwBadIni rdr))
       (.put kvs nm (strim (.substring line (+ pos 1)))) )
   ))
 
@@ -111,7 +113,7 @@
 
   (let [ln (strim line) ]
     (cond
-      (or (cstr/blank? ln) (.startsWith ln "#"))
+      (or (cs/blank? ln) (.startsWith ln "#"))
       curSec
 
       (.matches ln "^\\[.*\\]$")
@@ -223,7 +225,7 @@
   ^IWin32Conf
   [fpath]
 
-  (when-not (nil? fpath)
+  (when (some? fpath)
     (ParseInifile (io/file fpath))
   ))
 
@@ -265,7 +267,7 @@
   ^IWin32Conf
   [^URL fileUrl]
 
-  (when-not (nil? fileUrl)
+  (when (some? fileUrl)
     (parseFile fileUrl)
   ))
 

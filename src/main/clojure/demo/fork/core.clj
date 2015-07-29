@@ -14,7 +14,7 @@
 
   demo.fork.core
 
-  (:require [czlabclj.xlib.util.core :refer [Try!]]
+  (:require [czlabclj.xlib.util.core :refer [try!]]
             [czlabclj.xlib.util.str :refer [nsb]]
             [czlabclj.xlib.util.wfs :refer [SimPTask]])
 

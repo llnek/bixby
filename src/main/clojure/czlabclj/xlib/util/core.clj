@@ -9,36 +9,38 @@
 ;; this software.
 ;; Copyright (c) 2013, Ken Leung. All rights reserved.
 
-(ns ^{:doc "General utilties."
+(ns ^{:doc "General utilties"
       :author "kenl" }
 
   czlabclj.xlib.util.core
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr]
-            [clojure.core :as ccore]
-            [clojure.edn :as edn])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs]
+    [clojure.core :as ccore]
+    [clojure.edn :as edn])
 
-  (:import  [java.util.zip DataFormatException Deflater Inflater]
-            [java.util.concurrent.atomic AtomicLong AtomicInteger]
-            [com.zotohlab.frwk.util CrappyDataError]
-            [java.security SecureRandom]
-            [com.google.gson JsonObject JsonElement]
-            [java.net URL]
-            [java.nio.charset Charset]
-            [java.io InputStream File FileInputStream
-             ByteArrayInputStream
-             ByteArrayOutputStream]
-            [java.util Map Properties Date Calendar
-             HashMap HashSet ArrayList
-             GregorianCalendar TimeZone]
-            [java.sql Timestamp]
-            [java.rmi.server UID]
-            [org.apache.commons.lang3.text StrSubstitutor]
-            [org.apache.commons.lang3 StringUtils]
-            [org.apache.commons.io IOUtils FilenameUtils]
-            [org.apache.commons.lang3 SerializationUtils]))
+  (:import
+    [java.util.zip DataFormatException Deflater Inflater]
+    [java.util.concurrent.atomic AtomicLong AtomicInteger]
+    [com.zotohlab.frwk.util CrappyDataError]
+    [java.security SecureRandom]
+    [com.google.gson JsonObject JsonElement]
+    [java.net URL]
+    [java.nio.charset Charset]
+    [java.io InputStream File FileInputStream
+     ByteArrayInputStream
+     ByteArrayOutputStream]
+    [java.util Map Properties Date Calendar
+     HashMap HashSet ArrayList
+     GregorianCalendar TimeZone]
+    [java.sql Timestamp]
+    [java.rmi.server UID]
+    [org.apache.commons.lang3.text StrSubstitutor]
+    [org.apache.commons.lang3 StringUtils]
+    [org.apache.commons.io IOUtils FilenameUtils]
+    [org.apache.commons.lang3 SerializationUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,12 +48,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ^String NiceFPath
-  "Convert the path into nice format (no) backslash." class)
+  "Convert the path into nice format (no) backslash" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ^Properties LoadJavaProps
-  "Load java properties from input-stream." class)
+  "Load java properties from input-stream" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -62,7 +64,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro TryCR "Catch exception,log it and return a default value."
+(defmacro trycr
+
+  "Catch exception,log it and return a default value"
 
   [defv & exprs]
 
@@ -70,15 +74,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro TryC "Catch exception and log it."
+(defmacro tryc
+
+  "Catch exception and log it"
 
   [& exprs]
 
-  `(TryCR nil ~@exprs))
+  `(trycr nil ~@exprs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro Try! "Eat all exceptions."
+(defmacro try!
+
+  "Eat all exceptions"
 
   [& exprs]
 
@@ -86,7 +94,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro Inst? "Same as clojure's instance?."
+(defmacro trylet!
+
+  "Try and skip error"
+
+  [bindings & body]
+
+  `(try! (let ~bindings ~@body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro tryletc
+
+  "Try and log error"
+
+  [bindings & body]
+
+  `(tryc (let ~bindings ~@body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro Inst?
+
+  "Same as clojure's instance?"
 
   [a b]
 
@@ -94,8 +124,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro Cast? "If object is an instance of this type,
-                 return it else nil."
+(defmacro Cast?
+
+  "If object is an instance of this type,
+   return it else nil"
 
   [someType obj]
 
@@ -104,7 +136,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro notnil? "True is x is not nil."
+(defmacro notnil?
+
+  "True is x is not nil"
 
   [x]
 
@@ -146,7 +180,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc NilNichts "If object is nil, return a NICHTS."
+(defn ^:no-doc NilNichts
+
+  "If object is nil, return a NICHTS"
 
   ^Object
   [obj]
@@ -155,7 +191,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc IsNichts? "Returns true if the object is the NICHTS."
+(defn ^:no-doc IsNichts?
+
+  "Returns true if the object is the NICHTS"
 
   [obj]
 
@@ -163,7 +201,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThrowUOE "Force throw an unsupported operation exception."
+(defn ThrowUOE
+
+  "Force throw an unsupported operation exception"
 
   [^String msg]
 
@@ -171,7 +211,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThrowBadArg "Force throw a bad parameter exception."
+(defn ThrowBadArg
+
+  "Force throw a bad parameter exception"
 
   [^String msg]
 
@@ -179,7 +221,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ThrowIOE "Throw an IO Exception." class)
+(defmulti ThrowIOE "Throw an IO Exception" class)
 
 (defmethod ThrowIOE Throwable
   [^Throwable t]
@@ -191,7 +233,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThrowBadData "Throw an Bad Data Exception."
+(defn ThrowBadData
+
+  "Throw an Bad Data Exception"
 
   [^String msg]
 
@@ -199,7 +243,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro FlattenNil "Get rid of any nil(s) in a sequence."
+(defmacro FlattenNil
+
+  "Get rid of any nil(s) in a sequence"
 
   ;; a vector
   [somesequence]
@@ -208,7 +254,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro RNil "Get rid of any nil(s) in a sequence."
+(defmacro RNil
+
+  "Get rid of any nil(s) in a sequence"
 
   [somesequence]
 
@@ -216,8 +264,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Interject "Run the function on the current field value,
-                 replacing the key with the returned value."
+(defn Interject
+
+  "Run the function on the current field value,
+   replacing the key with the returned value"
 
   [pojo field func]
 
@@ -227,7 +277,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro spos? "Safely test positive number."
+(defmacro spos?
+
+  "Safely test positive number"
 
   [e]
 
@@ -250,7 +302,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ndz "Returns 0.0 if param is nil."
+(defn ndz
+
+  "Returns 0.0 if param is nil"
 
   ^double
   [d]
@@ -259,7 +313,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nnz "Returns 0 is param is nil."
+(defn nnz
+
+  "Returns 0 is param is nil"
 
   ^long
   [n]
@@ -268,7 +324,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nbf "Returns false if param is nil."
+(defn nbf
+
+  "Returns false if param is nil"
 
   ;; boolean
   [b]
@@ -277,8 +335,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonObject "If the field is a JsonObject,
-                         return it else nil."
+(defn SafeGetJsonObject
+
+  "If the field is a JsonObject, return it else nil"
 
   ^JsonObject
   [^JsonObject json ^String field]
@@ -291,8 +350,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonString "If the field is a String,
-                         return it else nil"
+(defn SafeGetJsonString
+
+  "If the field is a String, return it else nil"
 
   ^String
   [^JsonObject json ^String field]
@@ -305,8 +365,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonDouble "If the field is a double,
-                         return it else nil"
+(defn SafeGetJsonDouble
+
+  "If the field is a double, return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -318,8 +379,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonInt "If the field is an int,
-                      return it else nil"
+(defn SafeGetJsonInt
+
+  "If the field is an int, return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -331,8 +393,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeGetJsonBool "If the field is a boolean,
-                       return it else nil"
+(defn SafeGetJsonBool
+
+  "If the field is a boolean, return it else nil"
 
   [^JsonObject json ^String field]
 
@@ -344,7 +407,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MatchChar? "Returns true if this char is inside this set of chars."
+(defn MatchChar?
+
+  "Returns true if this char is inside this set of chars"
 
   ;; boolean
   [ch setOfChars]
@@ -353,29 +418,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SysVar "Get value for this system property."
+(defn SysVar
+
+  "Get value for this system property"
 
   ^String
   [^String propname]
 
-  (when-not (nil? propname)
+  (when (some? propname)
     (System/getProperty propname)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn EnvVar "Get value for this env var."
+(defn EnvVar
+
+  "Get value for this env var"
 
   ^String
   [^String envname]
 
-  (when-not (nil? envname)
+  (when (some? envname)
     (System/getenv envname)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn juid "Generate a unique id using std java."
+(defn juid
+
+  "Generate a unique id using std java"
 
   ^String
   []
@@ -384,7 +455,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RandomSign "Randomly choose a sign, positive or negative."
+(defn RandomSign
+
+  "Randomly choose a sign, positive or negative"
 
   []
 
@@ -392,7 +465,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RandomBoolValue "Randomly choose a boolean value."
+(defn RandomBoolValue
+
+  "Randomly choose a boolean value"
 
   []
 
@@ -400,7 +475,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewRandom "Return a new random object."
+(defn NewRandom
+
+  "Return a new random object"
 
   (^SecureRandom [] (NewRandom 4))
 
@@ -409,7 +486,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NowJTstamp "Return a java sql Timestamp."
+(defn NowJTstamp
+
+  "Return a java sql Timestamp"
 
   ^Timestamp
   []
@@ -418,7 +497,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NowDate "Return a java Date."
+(defn NowDate
+
+  "Return a java Date"
 
   ^Date
   []
@@ -427,7 +508,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NowCal "Return a Gregorian Calendar."
+(defn NowCal
+
+  "Return a Gregorian Calendar"
 
   ^Calendar
   []
@@ -436,7 +519,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToCharset "Return a java Charset of the encoding."
+(defn ToCharset
+
+  "Return a java Charset of the encoding"
 
   (^Charset [^String enc] (Charset/forName enc))
 
@@ -465,7 +550,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SubsVar "Replaces all system & env variables in the value."
+(defn SubsVar
+
+  "Replaces all system & env variables in the value"
 
   ^String
   [^String value]
@@ -478,7 +565,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SubsSVar "Expand any sys-var found inside the string value."
+(defn SubsSVar
+
+  "Expand any sys-var found inside the string value"
 
   ^String
   [^String value]
@@ -490,7 +579,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SubsEVar "Expand any env-var found inside the string value."
+(defn SubsEVar
+
+  "Expand any env-var found inside the string value"
 
   ^String
   [^String value]
@@ -502,7 +593,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SubsProps "Expand any env & sys vars found inside the property values."
+(defn SubsProps
+
+  "Expand any env & sys vars found inside the property values"
 
   ^Properties
   [^Properties props]
@@ -516,7 +609,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SysProp "Get the value of a system property."
+(defn SysProp
+
+  "Get the value of a system property"
 
   ^String
   [^String prop]
@@ -525,7 +620,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HomeDir "Get the user's home directory."
+(defn HomeDir
+
+  "Get the user's home directory"
 
   ^File
   []
@@ -534,7 +631,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetUser "Get the current user login name."
+(defn GetUser
+
+  "Get the current user login name"
 
   ^String
   []
@@ -543,7 +642,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetCwd "Get the current dir."
+(defn GetCwd
+
+  "Get the current dir"
 
   ^File
   []
@@ -552,7 +653,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn TrimLastPathSep "Get rid of trailing dir paths."
+(defn TrimLastPathSep
+
+  "Get rid of trailing dir paths"
 
   ^String
   [path]
@@ -561,29 +664,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Serialize "Object serialization."
+(defn Serialize
+
+  "Object serialization"
 
   ^bytes
   [obj]
 
-  (when-not (nil? obj)
+  (when (some? obj)
     (SerializationUtils/serialize obj)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Deserialize "Object deserialization."
+(defn Deserialize
+
+  "Object deserialization"
 
   ^Object
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (SerializationUtils/deserialize bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetClassname "Get the object's class name."
+(defn GetClassname
+
+  "Get the object's class name"
 
   ^String
   [^Object obj]
@@ -595,7 +704,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FilePath "Get the file path."
+(defn FilePath
+
+  "Get the file path"
 
   ^String
   [^File aFile]
@@ -607,16 +718,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsWindows? "Returns true if platform is windows."
+(defn IsWindows?
+
+  "Returns true if platform is windows"
 
   []
 
-  (>= (.indexOf (cstr/lower-case (SysProp "os.name"))
+  (>= (.indexOf (cs/lower-case (SysProp "os.name"))
                 "windows") 0 ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsUnix? "Returns true if platform is *nix."
+(defn IsUnix?
+
+  "Returns true if platform is *nix"
 
   []
 
@@ -624,48 +739,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ConvLong "Parse string as a long value."
+(defn ConvLong
 
-  ^long
-  [^String s dftLongVal]
+  "Parse string as a long value"
 
-  (try
-    (Long/parseLong s)
-    (catch Throwable _ dftLongVal)
-  ))
+  (^long
+    [^String s dftLongVal]
+    (try
+      (Long/parseLong s)
+      (catch Throwable _ dftLongVal)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ConvInt "Parse string as an int value."
+  (^long
+    [^String s]
+    (ConvLong s 0)))
 
-  ^java.lang.Integer
-  [^String s dftIntVal]
-
-  (try
-    (Integer/parseInt s)
-    (catch Throwable _ (int dftIntVal))
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ConvDouble "Parse string as a double value."
+(defn ConvInt
 
-  ^double
-  [^String s dftDblVal]
+  "Parse string as an int value"
 
-  (try
-    (Double/parseDouble s)
-    (catch Throwable _ dftDblVal)
-  ))
+  (^java.lang.Integer
+    [^String s dftIntVal]
+    (try
+      (Integer/parseInt s)
+      (catch Throwable _ (int dftIntVal))))
+
+  (^java.lang.Integer
+    [^String s]
+    (ConvInt s 0)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ConvBool "Parse string as a boolean value."
+(defn ConvDouble
+
+  "Parse string as a double value"
+
+  (^double
+    [^String s dftDblVal]
+    (try
+      (Double/parseDouble s)
+      (catch Throwable _ dftDblVal)))
+
+  (^double
+      [^String s]
+      (ConvDouble s 0.0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ConvBool
+
+  "Parse string as a boolean value"
 
   ^Boolean
   [^String s]
 
-  (ccore/contains? _BOOLS (cstr/lower-case (nsb s))))
+  (ccore/contains? _BOOLS (cs/lower-case (nsb s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -695,57 +826,67 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Stringify "Make a string from bytes."
+(defn Stringify
+
+  "Make a string from bytes"
 
   (^String [^bytes bits]
            (Stringify bits "utf-8"))
 
   (^String [^bytes bits
             ^String encoding]
-           (when-not (nil? bits)
+           (when (some? bits)
              (String. bits encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Bytesify "Get bytes with the right encoding."
+(defn Bytesify
+
+  "Get bytes with the right encoding"
 
   (^bytes [^String s]
           (Bytesify s "utf-8"))
 
   (^bytes [^String s
            ^String encoding]
-          (when-not (nil? s)
+          (when (some? s)
             (.getBytes s encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResStream "Load the resource as stream."
+(defn ResStream
+
+  "Load the resource as stream"
 
   (^InputStream [^String rcPath]
                 (ResStream rcPath nil))
 
   (^InputStream [^String rcPath
                  ^ClassLoader czLoader]
-                (when-not (nil? rcPath)
+                (when (some? rcPath)
                   (.getResourceAsStream (get-czldr czLoader)
                                         rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResUrl "Load the resource as URL."
+(defn ResUrl
+
+  "Load the resource as URL"
 
   (^URL [^String rcPath]
         (ResUrl rcPath nil))
 
   (^URL [^String rcPath
          ^ClassLoader czLoader]
-        (when-not (nil? rcPath)
+        (when (some? rcPath)
           (.getResource (get-czldr czLoader)
                         rcPath))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResStr "Load the resource as string."
+(defn ResStr
+
+  "Load the resource as string"
 
   (^String [^String rcPath
             ^String encoding]
@@ -763,7 +904,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResBytes "Load the resource as byte[]."
+(defn ResBytes
+
+  "Load the resource as byte[]"
 
   (^bytes [^String rcPath]
           (ResBytes rcPath nil))
@@ -775,12 +918,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Deflate "Compress the given byte[]."
+(defn Deflate
+
+  "Compress the given byte[]"
 
   ^bytes
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (let [buf (byte-array 1024)
           cpz (Deflater.) ]
       (doto cpz
@@ -802,12 +947,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Inflate "Decompress the given byte[]."
+(defn Inflate
+
+  "Decompress the given byte[]"
 
   ^bytes
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (let [buf (byte-array 1024)
           decr (Inflater.)
           baos (ByteArrayOutputStream. (alength bits)) ]
@@ -826,7 +973,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Normalize "Normalize a filepath, hex-code all non-alpha characters."
+(defn Normalize
+
+  "Normalize a filepath, hex-code all non-alpha characters"
 
   ^String
   [^String fname]
@@ -844,7 +993,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NowMillis "Return the current time in milliseconds."
+(defn NowMillis
+
+  "Return the current time in milliseconds"
 
   ^long
   []
@@ -853,7 +1004,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetFPath "Return the file path only."
+(defn GetFPath
+
+  "Return the file path only"
 
   ^String
   [^String fileUrlPath]
@@ -864,12 +1017,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtFileUrl "Return the file path as URL."
+(defn FmtFileUrl
+
+  "Return the file path as URL"
 
   ^URL
   [^String path]
 
-  (when-not (nil? path)
+  (when (some? path)
     (io/as-url (if (.startsWith "file:" path)
                  path
                  (str "file://" path)))
@@ -879,7 +1034,8 @@
 ;; test and assert funcs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmulti test-isa "Tests if object is subclass of parent."
+(defmulti test-isa
+  "Tests if object is subclass of parent"
   (fn [a b c]
     (if
       (instance? Class b) :class
@@ -891,7 +1047,7 @@
 
   [^String param ^Class childz ^Class parz]
 
-  (assert (and (notnil? childz) (.isAssignableFrom parz childz))
+  (assert (and (some? childz) (.isAssignableFrom parz childz))
           (str "" param " not-isa " (.getName parz))
   ))
 
@@ -901,23 +1057,27 @@
 
   [^String param ^Object obj ^Class parz]
 
-  (assert (and (notnil? obj) (.isAssignableFrom parz (.getClass obj)))
+  (assert (and (some? obj) (.isAssignableFrom parz (.getClass obj)))
           (str "" param " not-isa " (.getName parz))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn test-nonil "Assert object is not null."
+(defn test-nonil
+
+  "Assert object is not null"
 
   [^String param obj]
 
-  (assert (notnil? obj)
+  (assert (some? obj)
           (str "" param " is null.")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn test-cond "Assert a condition."
+(defn test-cond
+
+  "Assert a condition"
 
   [^String msg cnd ]
 
@@ -927,7 +1087,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn test-nestr "Assert string is not empty."
+(defn test-nestr
+
+  "Assert string is not empty"
 
   [^String param v]
 
@@ -937,7 +1099,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti test-nonegnum "Assert number is not negative."
+(defmulti test-nonegnum
+
+  "Assert number is not negative"
+
   (fn [a b]
     (condp instance? b
       Double  :double
@@ -948,7 +1113,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti test-posnum "Assert number is positive."
+(defmulti test-posnum
+
+  "Assert number is positive"
+
   (fn [a b]
     (condp instance? b
       Double  :double
@@ -999,7 +1167,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn test-neseq "Assert sequence is not empty."
+(defn test-neseq
+
+  "Assert sequence is not empty"
 
   [^String param v]
 
@@ -1009,12 +1179,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RootCause "Dig into error and find the root exception."
+(defn RootCause
+
+  "Dig into error and find the root exception"
 
   ^Throwable
   [root]
 
-  (loop [r root t (if-not (nil? root) (.getCause ^Throwable root)) ]
+  (loop [r root t (if (some? root) (.getCause ^Throwable root)) ]
     (if (nil? t)
       r
       (recur t (.getCause t)))
@@ -1022,7 +1194,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RootCauseMsg "Dig into error and find the root exception message."
+(defn RootCauseMsg
+
+  "Dig into error and find the root exception message"
 
   [root]
 
@@ -1034,7 +1208,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GenNumbers "Return a list of random int numbers between a range."
+(defn GenNumbers
+
+  "Return a list of random int numbers between a range"
 
   ^clojure.lang.IPersistentCollection
   [start end howMany]
@@ -1059,7 +1235,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SortJoin "Sort a list of strings and then concatenate them."
+(defn SortJoin
+
+  "Sort a list of strings and then concatenate them"
 
   ([ss]
    (SortJoin "" ss))
@@ -1067,11 +1245,13 @@
   ([sep ss]
    (if (nil? ss)
      ""
-     (cstr/join sep (sort ss)))))
+     (cs/join sep (sort ss)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IntoMap "Convert Java Map into Clojure Map."
+(defn IntoMap
+
+  "Convert Java Map into Clojure Map"
 
   [^java.util.Map props]
 
@@ -1085,7 +1265,7 @@
 ;;
 (defprotocol Muble
 
-  "A Mutable Interface."
+  "A Mutable Interface"
 
   (setf! [_ k v] )
   (seq* [_] )
@@ -1112,38 +1292,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeMMap "Create a mutable object."
+(defn MakeMMap
 
-  (^czlabclj.xlib.util.core.Muble
-    [opts]
-    (let [m (MakeMMap)]
-      (doseq [[k v] (seq opts)]
-        (.setf! m k v))
-      m))
+  "Create a mutable object"
 
-  (^czlabclj.xlib.util.core.Muble
-    []
-    (MubleObj. {} )))
+  ^czlabclj.xlib.util.core.Muble
+  [ & [opts] ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn PrintMutableObj "Print out this mutable object."
-
-  ([^czlabclj.xlib.util.core.Muble ctx dbg ]
-   (let [buf (StringBuilder.) ]
-     (.append buf "\n")
-     (doseq [[k v] (.seq* ctx) ]
-       (.append buf (str k " = " v "\n")))
-     (.append buf "\n")
-     (when-let [s (str buf) ]
-       (if dbg (log/debug s)(log/info s)))))
-
-  ([ctx]
-   (PrintMutableObj ctx false)))
+  (let [opts (or opts {})
+        m (MubleObj. {})]
+    (doseq [[k v] (seq opts)]
+      (.setf! m k v))
+    m
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn StripNSPath "Remove the leading colon."
+(defn PrintMutableObj
+
+  "Print out this mutable object"
+
+  [^czlabclj.xlib.util.core.Muble ctx & [dbg] ]
+
+  (let [buf (StringBuilder.) ]
+    (.append buf "\n")
+    (doseq [[k v] (.seq* ctx) ]
+      (.append buf (str k " = " v "\n")))
+    (.append buf "\n")
+    (when-let [s (str buf) ]
+      (if dbg (log/debug s)(log/info s)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn StripNSPath
+
+  "Remove the leading colon"
 
   ^String
   [path]
@@ -1156,14 +1340,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NormalizeEmail "Normalize an email address."
+(defn NormalizeEmail
+
+  "Normalize an email address"
 
   ^String
   [^String email]
 
   (cond
 
-    (cstr/blank? email)
+    (cs/blank? email)
     email
 
     (or (not (> (.indexOf email (int \@)) 0))
@@ -1173,7 +1359,7 @@
 
     :else
     (let [ss (StringUtils/split email "@" 2) ]
-      (str (aget ss 0) "@" (cstr/lower-case (aget ss 1))))
+      (str (aget ss 0) "@" (cs/lower-case (aget ss 1))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1243,7 +1429,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ConvToJava "Convert a clojure object to a Java object."
+(defn ConvToJava
+
+  "Convert a clojure object to a Java object"
 
   ^Object
   [obj]
@@ -1257,7 +1445,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NextInt "Return a sequence number (integer)."
+(defn NextInt
+
+  "Return a sequence number (integer)"
 
   ^Integer
   []
@@ -1266,7 +1456,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NextLong "Return a sequence number (long)."
+(defn NextLong
+
+  "Return a sequence number (long)"
 
   ^long
   []

@@ -14,7 +14,7 @@
 
   czlabclj.xlib.netty.discarder
 
-  (:require [czlabclj.xlib.util.core :refer [notnil? Try!]]
+  (:require [czlabclj.xlib.util.core :refer [notnil? try!]]
             [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
   (:require [clojure.tools.logging :as log])
@@ -51,7 +51,7 @@
                                    c (.channel))]
                         (when (instance? LastHttpContent msg)
                           (ReplyXXX ch 200)
-                          (Try! (apply callback []))))))))))
+                          (try! (apply callback []))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

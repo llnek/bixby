@@ -14,8 +14,9 @@
 
   czlabclj.xlib.util.countries
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr ]))
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -263,16 +264,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindCountry "Return the full country name."
+(defn FindCountry
+
+  "Return the full country name"
 
   ^String
   [^String code]
 
-  (_CCODES (cstr/upper-case code)))
+  (_CCODES (cs/upper-case code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListCodes"List all the country codes."
+(defn ListCodes
+
+  "List all the country codes"
 
   []
 
@@ -280,15 +285,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsUSA? "Returns true if the code is US."
+(defn IsUSA?
+
+  "Returns true if the code is US"
 
   [^String code]
 
-  (= "US" (cstr/upper-case code)))
+  (= "US" (cs/upper-case code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindCountryCode "Return the country code."
+(defn FindCountryCode
+
+  "Return the country code"
 
   ^String
   [^String country]
@@ -358,7 +367,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListStates "List all the abbreviated states."
+(defn ListStates
+
+  "List all the abbreviated states"
 
   []
 
@@ -366,16 +377,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindState "Return the full state name."
+(defn FindState
+
+  "Return the full state name"
 
   ^String
   [^String code]
 
-  (_STATES (cstr/upper-case code)))
+  (_STATES (cs/upper-case code)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindStateCode "Return the abbreviated state code."
+(defn FindStateCode
+
+  "Return the abbreviated state code"
 
   ^String
   [^String state]

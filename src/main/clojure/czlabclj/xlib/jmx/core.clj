@@ -14,7 +14,7 @@
 
   czlabclj.xlib.jmx.core
 
-  (:require [czlabclj.xlib.util.core :refer [MakeMMap Try! TryC]]
+  (:require [czlabclj.xlib.util.core :refer [MakeMMap try! tryc]]
             [czlabclj.xlib.util.str :refer [hgl? ]])
 
   (:require [clojure.tools.logging :as log])
@@ -136,7 +136,7 @@
       (reset [_]
         (let [^MBeanServer bs (.getf impl :beanSvr) ]
           (doseq [nm @objNames]
-            (Try!
+            (try!
                (.unregisterMBean bs nm)) )
           (reset! objNames [])))
 
@@ -172,10 +172,10 @@
         (let [^JMXConnectorServer c (.getf impl :conn)
               ^Registry r (.getf impl :rmi) ]
           (.reset this)
-          (when-not (nil? c) (TryC (.stop c)))
+          (when-not (nil? c) (tryc (.stop c)))
           (.setf! impl :conn nil)
           (when-not (nil? r)
-            (TryC
+            (tryc
               (UnicastRemoteObject/unexportObject r true)))
           (.setf! impl :rmi nil)))
 

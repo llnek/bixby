@@ -20,7 +20,7 @@
               MakeMMap
               Stringify
               notnil?
-              Try!]]
+              ]]
             [czlabclj.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])

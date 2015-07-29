@@ -9,40 +9,45 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "General file related utilities."
+(ns ^{:doc "General file related utilities"
       :author "kenl" }
 
   czlabclj.xlib.util.files
 
-  (:require [czlabclj.xlib.util.core :refer [notnil?]]
-            [czlabclj.xlib.util.str :refer [nsb]]
-            [czlabclj.xlib.util.meta :refer [IsBytes?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [notnil?]]
+    [czlabclj.xlib.util.str :refer [nsb]]
+    [czlabclj.xlib.util.meta :refer [IsBytes?]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs])
 
   (:use [czlabclj.xlib.util.io])
 
-  (:import  [org.apache.commons.io.filefilter FileFileFilter
-                                              FileFilterUtils]
-            [org.apache.commons.lang3 StringUtils]
-            [org.apache.commons.io FileUtils]
-            [java.io File FileFilter
-             FileInputStream
-             FileOutputStream InputStream OutputStream]
-            [java.util ArrayList]
-            [java.net URL URI]
-            [org.apache.commons.io IOUtils  FileUtils]
-            [java.util.zip ZipFile ZipEntry]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [org.apache.commons.io.filefilter
+     FileFileFilter FileFilterUtils]
+    [org.apache.commons.lang3 StringUtils]
+    [org.apache.commons.io FileUtils]
+    [java.io File FileFilter
+     FileInputStream
+     FileOutputStream InputStream OutputStream]
+    [java.util ArrayList]
+    [java.net URL URI]
+    [org.apache.commons.io IOUtils  FileUtils]
+    [java.util.zip ZipFile ZipEntry]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FileReadWrite? "Returns true if file is readable & writable."
+(defn FileReadWrite?
+
+  "Returns true if file is readable & writable"
 
   [^File fp]
 
@@ -54,7 +59,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FileOK? "Returns true if file exists."
+(defn FileOK?
+
+  "Returns true if file exists"
 
   [^File fp]
 
@@ -63,7 +70,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FileRead? "Returns true if file is readable."
+(defn FileRead?
+
+  "Returns true if file is readable"
 
   [^File fp]
 
@@ -74,7 +83,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DirReadWrite? "Returns true if directory is readable and writable."
+(defn DirReadWrite?
+
+  "Returns true if directory is readable and writable"
 
   [^File dir]
 
@@ -86,7 +97,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DirRead? "Returns true if directory is readable."
+(defn DirRead?
+
+  "Returns true if directory is readable"
 
   [^File dir]
 
@@ -97,7 +110,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CanExec? "Returns true if file or directory is executable."
+(defn CanExec?
+
+  "Returns true if file or directory is executable"
 
   [^File fp]
 
@@ -107,12 +122,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParentPath "Get the path to the parent directory."
+(defn ParentPath
+
+  "Get the path to the parent directory"
 
   ^String
   [^String path]
 
-  (if (cstr/blank? path)
+  (if (cs/blank? path)
     path
     (.getParent (File. path))
   ))
@@ -155,7 +172,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Unzip "Unzip contents of zip file to a target folder."
+(defn Unzip
+
+  "Unzip contents of zip file to a target folder"
 
   [^File src ^File des]
 
@@ -168,7 +187,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFiles "Copy all files with *ext* to the destination folder."
+(defn CopyFiles
+
+  "Copy all files with *ext* to the destination folder"
 
   [^File srcDir ^File destDir ext]
 
@@ -182,7 +203,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFileToDir "Copy a file to the target folder."
+(defn CopyFileToDir "Copy a file to the target folder"
 
   [^File fp ^File dir]
 
@@ -190,7 +211,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFile "Copy a file."
+(defn CopyFile
+
+  "Copy a file"
 
   [^File fp ^File target]
 
@@ -198,7 +221,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyToDir "Copy source folder to be a subfolder of target folder."
+(defn CopyToDir
+
+  "Copy source folder to be a subfolder of target folder"
 
   [^File dir ^File targetDir]
 
@@ -206,7 +231,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyDirFiles "Copy all contents in source folder to target folder."
+(defn CopyDirFiles
+
+  "Copy all contents in source folder to target folder"
 
   [^File dir ^File targetDir]
 
@@ -214,7 +241,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteDir "Erase the folder."
+(defn DeleteDir
+
+  "Erase the folder"
 
   [^File dir]
 
@@ -222,7 +251,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CleanDir "Remove contents in this folder."
+(defn CleanDir
+
+  "Remove contents in this folder"
 
   [^File dir]
 
@@ -230,7 +261,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteOneFile "Write data to file."
+(defn WriteOneFile
+
+  "Write data to file"
 
   ([^File fout ^Object data ^String enc]
    (if (IsBytes? (class data))
@@ -242,7 +275,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadFileBytes "Read bytes from a file."
+(defn ReadFileBytes
+
+  "Read bytes from a file"
 
   ^bytes
   [^File fp]
@@ -251,7 +286,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadOneFile "Read data from a file."
+(defn ReadOneFile
+
+  "Read data from a file"
 
   (^String [^File fp] (ReadOneFile fp "utf-8"))
 
@@ -259,7 +296,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadOneUrl "Read data from a URL."
+(defn ReadOneUrl
+
+  "Read data from a URL"
 
   (^String [^URL url] (ReadOneUrl url "utf-8"))
 
@@ -267,11 +306,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SaveFile "Save a file to a directory."
+(defn SaveFile
+
+  "Save a file to a directory"
 
   [^File dir ^String fname ^XData xdata]
 
-  ;;(log/debug "Saving file: " fname)
+  ;;(log/debug "saving file: %s" fname)
   (let [fp (io/file dir fname) ]
     (io/delete-file fp true)
     (if-not (.isDiskFile xdata)
@@ -281,12 +322,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetFile "Get a file from a directory."
+(defn GetFile
+
+  "Get a file from a directory"
 
   ^XData
   [^File dir ^String fname]
 
-  ;;(log/debug "Getting file: " fname)
+  ;;(log/debug "getting file: %s" fname)
   (let [fp (io/file dir fname)
         xs (XData.) ]
     (if (FileRead? fp)
@@ -319,8 +362,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListAnyFiles "Look for files with certain extension,
-                    such as \"java\", \"xml\""
+(defn ListAnyFiles
+
+  "Look for files with certain extensions, without the dot"
 
   [dir exts &[recurse?]]
 
@@ -333,15 +377,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListFiles "Look for files with certain extension, such as \"java\", \"xml\""
+(defmacro ListFiles
+
+  "Look for files with certain extension, with the dot"
 
   [dir ext &[recurse?]]
 
-  (ListAnyFiles dir [ext] recurse?))
+  `(ListAnyFiles ~dir [~ext] ~recurse?))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListDirs "List sub-directories"
+(defn ListDirs
+
+  "List sub-directories"
 
   [dir]
 

@@ -14,7 +14,7 @@
 
   czlabclj.xlib.netty.snooper
 
-  (:require [czlabclj.xlib.util.core :refer [Try! notnil? ]]
+  (:require [czlabclj.xlib.util.core :refer [notnil? ]]
             [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
   (:require [clojure.tools.logging :as log]

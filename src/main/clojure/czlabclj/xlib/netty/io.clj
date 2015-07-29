@@ -15,8 +15,8 @@
   czlabclj.xlib.netty.io
 
   (:require [czlabclj.xlib.util.core
-             :refer [Try!
-                     TryC
+             :refer [try!
+                     tryletc
                      RNil
                      ThrowIOE
                      spos?
@@ -91,7 +91,7 @@
   [^ChannelFuture cf func]
 
   (->> (reify ChannelFutureListener
-         (operationComplete [_ ff] (Try! (func ff))))
+         (operationComplete [_ ff] (try! (func ff))))
        (.addListener cf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -689,8 +689,7 @@
         ^String keyUrlStr (:serverKey options)
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
-      (TryC
-        (let [pwd (when (some? pwdStr) (.toCharArray pwdStr))
+      (tryletc [pwd (when (some? pwdStr) (.toCharArray pwdStr))
               x (SSLContext/getInstance flavor)
               ks (KeyStore/getInstance ^String
                                        (if (.endsWith keyUrlStr ".jks")
@@ -710,7 +709,7 @@
                    (.getTrustManagers t)
                    (SecureRandom/getInstance "SHA1PRNG"))
             (SslHandler. (doto (.createSSLEngine x)
-                           (.setUseClientMode false)))))))
+                           (.setUseClientMode false))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -720,13 +719,12 @@
   ^ChannelHandler
   [options]
 
-  (TryC
-    (let [^String flavor (or (:flavor options) "TLS")
-          m (SSLTrustMgrFactory/getTrustManagers)
-          ctx (doto (SSLContext/getInstance flavor)
-                    (.init nil m nil)) ]
-      (SslHandler. (doto (.createSSLEngine ctx)
-                         (.setUseClientMode true))))
+  (tryletc [^String flavor (or (:flavor options) "TLS")
+        m (SSLTrustMgrFactory/getTrustManagers)
+        ctx (doto (SSLContext/getInstance flavor)
+                  (.init nil m nil)) ]
+    (SslHandler. (doto (.createSSLEngine ctx)
+                       (.setUseClientMode true)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -775,8 +773,8 @@
   (FutureCB (.close ch)
             #(let [gc (.childGroup bs)
                    gp (.group bs) ]
-               (when (some? gc) (Try! (.shutdownGracefully gc)))
-               (when (some? gp) (Try! (.shutdownGracefully gp))))))
+               (when (some? gc) (try! (.shutdownGracefully gc)))
+               (when (some? gp) (try! (.shutdownGracefully gp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -786,7 +784,7 @@
 
   (FutureCB (.close ch)
             #(when-let [gp (.group bs) ]
-                (Try! (.shutdownGracefully gp)))))
+                (try! (.shutdownGracefully gp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

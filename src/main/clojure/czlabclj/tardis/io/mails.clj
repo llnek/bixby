@@ -19,7 +19,7 @@
              [NextLong
               spos?
               ThrowIOE
-              TryC
+              tryc
               notnil?]]
             [czlabclj.xlib.crypto.codec :refer [Pwdify]]
             [czlabclj.xlib.util.str :refer [hgl? nsb]])
@@ -48,7 +48,7 @@
 
   [^Folder fd]
 
-  (TryC
+  (tryc
     (when-not (nil? fd)
       (when (.isOpen fd) (.close fd true)))
   ))
@@ -62,7 +62,7 @@
   (let [^Store conn (.getAttr co :store)
         ^Folder fd (.getAttr co :folder) ]
     (closeFolder fd)
-    (TryC
+    (tryc
       (when-not (nil? conn) (.close conn)) )
     (.setAttr! co :store nil)
     (.setAttr! co :folder nil)

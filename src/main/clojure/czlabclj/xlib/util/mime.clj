@@ -16,7 +16,7 @@
   czlabclj.xlib.util.mime
 
   (:require
-    [czlabclj.xlib.util.core :refer [Bytesify Try! IntoMap]]
+    [czlabclj.xlib.util.core :refer [Bytesify try! IntoMap]]
     [czlabclj.xlib.util.meta :refer [BytesClass]]
     [czlabclj.xlib.util.str :refer [lcase ucase nsb hgl?]]
     [czlabclj.xlib.util.io :refer [Streamify]])
@@ -216,7 +216,7 @@
   [^String u]
 
   (when (some? u)
-    (Try! (-> (URLCodec. "utf-8")(.decode u)))
+    (try! (-> (URLCodec. "utf-8")(.decode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -227,7 +227,7 @@
   [^String u]
 
   (when (some? u)
-    (Try! (-> (URLCodec. "utf-8")(.encode u)))
+    (try! (-> (URLCodec. "utf-8")(.encode u)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -257,7 +257,7 @@
   (let [dft (or dft "application/octet-stream" )
         enc (or enc "utf-8")
         mt (GuessMimeType file)
-        ct (if (hgl? mt) mt dft) ]
+        ^String ct (if (hgl? mt) mt dft) ]
     (if-not (.startsWith ct "text/")
       ct
       (str ct "; charset=" enc))

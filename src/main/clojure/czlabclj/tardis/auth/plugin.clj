@@ -18,7 +18,7 @@
             [czlabclj.xlib.i18n.resources :refer [RStr]]
             [czlabclj.xlib.util.core
              :refer
-             [TryC
+             [tryc
               notnil?
               Stringify
               MakeMMap
@@ -477,7 +477,7 @@
             (log/debug "Current user session " sss)
             (log/debug "Current user object " cur)
             (when-not (.isAuthenticated cur)
-              (TryC
+              (tryc
                 ;;(.setRememberMe token true)
                 (.login cur token)
                 (log/debug "User [" user "] logged in successfully.")))

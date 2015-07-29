@@ -23,7 +23,7 @@
             [czlabclj.xlib.util.core
              :refer
              [NextInt ThrowIOE ThrowBadArg NewRandom
-              Bytesify TryC Try! notnil? juid GetClassname]]
+              Bytesify tryc try! notnil? juid GetClassname]]
             [czlabclj.xlib.util.str :refer [lcase ucase strim nsb hgl?]])
 
   (:require [clojure.tools.logging :as log]
@@ -246,7 +246,7 @@
 
   [^PrintStream os]
 
-  (Try! (.list _BCProvider os)))
+  (try! (.list _BCProvider os)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -937,7 +937,7 @@
 
   (^String [^String cType]
            (if (hgl? cType)
-             (nsb (TryC (MimeUtility/javaCharset (-> (ContentType. cType)
+             (nsb (tryc (MimeUtility/javaCharset (-> (ContentType. cType)
                                                      (.getParameter "charset")))))
              ""))
 

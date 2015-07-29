@@ -40,41 +40,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewJob "Create a new job for downstream processing"
+(defn NewJob
 
-  (^Job
-    [^ServerLike parObj ^WorkFlow wf]
-    (NewJob parObj wf (NonEvent. parObj)))
+  "Create a new job for downstream processing"
 
-  (^Job
-    [^ServerLike parObj
-     ^WorkFlow wfw ^Event evt]
-    (let [impl (MakeMMap)
-          jid (NextLong) ]
-      (reify
+  ^Job
+  [^ServerLike par ^WorkFlow wfw & [evt]]
 
-        Muble
+  (let [^Event evt (or evt (NonEvent. par))
+        impl (MakeMMap)
+        jid (NextLong) ]
+    (reify
 
-        (setf! [_ k v] (.setf! impl k v))
-        (clear! [_] (.clear! impl))
-        (seq* [_] (.seq* impl))
-        (toEDN [_] (.toEDN impl))
-        (getf [_ k] (.getf impl k))
-        (clrf! [_ k] (.clrf! impl k))
+      Muble
 
-        Job
+      (setf! [_ k v] (.setf! impl k v))
+      (clear! [_] (.clear! impl))
+      (seq* [_] (.seq* impl))
+      (toEDN [_] (.toEDN impl))
+      (getf [_ k] (.getf impl k))
+      (clrf! [_ k] (.clrf! impl k))
 
-        (setLastResult [this v] (.setf! this JS_LAST v))
-        (getLastResult [this] (.getf this JS_LAST))
-        (clrLastResult [this] (.clrf! this JS_LAST))
-        (finz [_] )
-        (setv [this k v] (.setf! this k v))
-        (unsetv [this k] (.clrf! this k))
-        (getv [this k] (.getf this k))
-        (container [_] parObj)
-        (wflow [_] wfw)
-        (event [_] evt)
-        (id [_] jid)))))
+      Job
+
+      (setLastResult [this v] (.setf! this JS_LAST v))
+      (getLastResult [this] (.getf this JS_LAST))
+      (clrLastResult [this] (.clrf! this JS_LAST))
+      (finz [_] )
+      (setv [this k v] (.setf! this k v))
+      (unsetv [this k] (.clrf! this k))
+      (getv [this k] (.getf this k))
+      (container [_] par)
+      (wflow [_] wfw)
+      (event [_] evt)
+      (id [_] jid))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -201,11 +201,14 @@
 
       (handleError [_ e]
         (with-local-vars [ret nil]
-          (when-let [^FlowError fe (Cast? FlowError e)]
+          (when-let [^FlowError
+                     fe (Cast? FlowError e)]
             (when-let [n (.getLastDot fe)]
-              (when-let [w (Cast? WorkFlowEx (-> (.job n)
-                                                 (.wflow)))]
-                (->> (.onError ^WorkFlowEx w (.getCause fe))
+              (when-let [w (Cast? WorkFlowEx
+                                  (-> (.job n)
+                                      (.wflow)))]
+                (->> (.onError ^WorkFlowEx
+                               w (.getCause fe))
                      (var-set ret)))))
           @ret))
 

@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.connect
 
-  (:require [czlabclj.xlib.util.core :refer [Try!]]
+  (:require [czlabclj.xlib.util.core :refer [try!]]
             [czlabclj.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])

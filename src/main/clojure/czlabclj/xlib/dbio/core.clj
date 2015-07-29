@@ -21,7 +21,7 @@
             [czlabclj.xlib.util.format :refer [WriteEdnString]]
             [czlabclj.xlib.util.core
              :refer
-             [TryC Try! RootCause StripNSPath
+             [tryc try! trylet! RootCause StripNSPath
               Interject notnil? nnz nbf juid]]
             [czlabclj.xlib.util.meta :refer [ForName]])
 
@@ -753,7 +753,7 @@
 
   [jdbc]
 
-  (TryC (.close (MakeConnection jdbc))))
+  (tryc (.close (MakeConnection jdbc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -819,8 +819,8 @@
 
   (with-local-vars [rc false]
     (log/debug "Testing the existence of table " table)
-    (Try!
-      (let [mt (.getMetaData conn)
+
+      (trylet! [mt (.getMetaData conn)
             tbl (cond
                   (.storesUpperCaseIdentifiers mt)
                   (ucase table)
@@ -830,7 +830,7 @@
         (with-open [res (.getColumns mt nil nil tbl nil) ]
           (when (and (notnil? res) (.next res))
             (var-set rc true)))
-      ))
+      )
     @rc
   ))
 
@@ -855,13 +855,12 @@
   [^Connection conn ^String table]
 
   (with-local-vars [rc false ]
-    (Try!
-      (let [sql (str "SELECT COUNT(*) FROM  "
+      (trylet! [sql (str "SELECT COUNT(*) FROM  "
                      (ucase table)) ]
         (with-open [stmt (.createStatement conn)
                     res (.executeQuery stmt sql) ]
           (when (and (notnil? res) (.next res))
-            (var-set rc (> (.getInt res (int 1)) 0))))))
+            (var-set rc (> (.getInt res (int 1)) 0)))))
     @rc
   ))
 
@@ -954,7 +953,7 @@
       ;;Clojure CLJ-1347
       ;;finalize won't work *correctly* in reified objects - document
       ;;(finalize [this]
-        ;;(Try!
+        ;;(try!
           ;;(log/debug "DbPool finalize() called.")
           ;;(.shutdown this)))
 

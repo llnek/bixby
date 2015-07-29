@@ -16,7 +16,7 @@
 
   (:require [czlabclj.xlib.util.str
              :refer [lcase hgl? strim Embeds? HasNocase?]]
-            [czlabclj.xlib.util.core :refer [ThrowIOE Try!]]
+            [czlabclj.xlib.util.core :refer [ThrowIOE]]
             [czlabclj.xlib.util.mime :refer [GetCharset]])
 
   (:require [clojure.tools.logging :as log])

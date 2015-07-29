@@ -26,7 +26,7 @@
               MakeMMap
               notnil?
               test-nestr
-              TryC
+              tryc
               SubsVar]]
             [czlabclj.xlib.util.str :refer [nsb hgl? nsn]])
 
@@ -100,7 +100,7 @@
         cf (case action
              :FP-CREATED
              (if-not (nil? des)
-               (TryC
+               (tryc
                  (FileUtils/moveFileToDirectory f des false)
                  (io/file des origFname))
                f)

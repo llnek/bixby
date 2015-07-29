@@ -9,22 +9,25 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Functions to enable console questions."
+(ns ^{:doc "Functions to enable console questions"
       :author "kenl" }
 
   czlabclj.xlib.util.cmdline
 
-  (:require [ czlabclj.xlib.util.core :refer [IntoMap IsWindows?] ]
-            [ czlabclj.xlib.util.str :refer [strim nsb Has?] ])
+  (:require
+    [czlabclj.xlib.util.core :refer [IntoMap IsWindows?] ]
+    [czlabclj.xlib.util.str :refer [strim nsb Has?] ])
 
-  (:require [clojure.tools.logging :as log]
-            [ clojure.string :as cstr ])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
-  (:import  [java.io BufferedOutputStream
-             InputStreamReader OutputStreamWriter]
-            [java.io Reader Writer]
-            [java.util Map HashMap]
-            [org.apache.commons.lang3 StringUtils]))
+  (:import
+    [java.io BufferedOutputStream
+     InputStreamReader OutputStreamWriter]
+    [java.io Reader Writer]
+    [java.util Map HashMap]
+    [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -33,7 +36,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeCmdSeqQ "Make a command line question."
+(defn MakeCmdSeqQ
+
+  "Make a command line question"
 
   [^String questionId
    ^String questionLine
@@ -51,7 +56,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- readData "Read user input."
+(defn- readData
+
+  "Read user input"
 
   ^String
   [^Writer cout ^Reader cin]
@@ -94,7 +101,7 @@
         q (:qline cmdQ)]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
-    (when-not (cstr/blank? chs)
+    (when-not (cs/blank? chs)
       (if (Has? chs \n)
         (.write cout (str (if (.startsWith chs "\n")
                             "[" "[\n")
@@ -103,7 +110,7 @@
                             "]" "\n]" ) ))
         (.write cout (str "[" chs "]"))))
     ;; defaults ?
-    (when-not (cstr/blank? dft)
+    (when-not (cs/blank? dft)
       (.write cout (str "(" dft ")")) )
     (doto cout (.write " ")(.flush))
     ;; get the input from user
@@ -111,7 +118,7 @@
     (let [rc (readData cout cin) ]
       (if (nil? rc)
         (do (.write cout "\n") nil)
-        (onResp (if (cstr/blank? rc) dft rc) props)
+        (onResp (if (cs/blank? rc) dft rc) props)
       ))
   ))
 
@@ -121,7 +128,7 @@
 
   [cout cin cmdQ props]
 
-  (if-not (nil? cmdQ)
+  (if (some? cmdQ)
     (popQQ cout cin cmdQ props)
     ""
   ))
@@ -136,13 +143,15 @@
   (loop [rc (popQ cout cin (cmdQNs start) props) ]
     (cond
       (nil? rc) {}
-      (cstr/blank? rc) (IntoMap props)
+      (cs/blank? rc) (IntoMap props)
       :else (recur (popQ cout cin (cmdQNs rc) props)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CLIConverse "Prompt a sequence of questions via console."
+(defn CLIConverse
+
+  "Prompt a sequence of questions via console"
 
   ;; map
   [cmdQs question1]

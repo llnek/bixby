@@ -20,7 +20,6 @@
              [Muble
               notnil?
               juid
-              TryC
               spos?
               NextLong
               ToJavaInt

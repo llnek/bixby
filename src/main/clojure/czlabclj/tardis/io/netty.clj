@@ -18,7 +18,7 @@
             [czlabclj.xlib.util.str :refer [lcase hgl? nsb strim nichts?]]
             [czlabclj.xlib.util.core
              :refer
-             [Try!
+             [try!
               Stringify
               ThrowIOE
               Muble
@@ -265,8 +265,8 @@
 
     (resumeWithResult [_ res]
       (if (instance? WebSockEvent evt)
-        (Try! (netty-ws-reply ch evt src) )
-        (Try! (nettyReply ch evt src) ) ))
+        (try! (netty-ws-reply ch evt src) )
+        (try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
       (let [rsp (MakeHttpReply 500) ]

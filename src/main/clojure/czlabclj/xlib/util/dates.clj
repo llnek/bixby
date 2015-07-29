@@ -9,31 +9,36 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Date related utilities."
+(ns ^{:doc "Date related utilities"
       :author "kenl" }
 
   czlabclj.xlib.util.dates
 
-  (:require [czlabclj.xlib.util.str :refer [Has? HasAny? nichts? nsb]]
-            [czlabclj.xlib.util.core :refer [Try!]])
+  (:require
+    [czlabclj.xlib.util.str :refer [Has? HasAny? nichts? nsb]]
+    [czlabclj.xlib.util.core :refer [try!]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cs])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
   (:use [czlabclj.xlib.util.consts])
 
-  (:import  [java.text ParsePosition SimpleDateFormat]
-            [java.util Locale TimeZone SimpleTimeZone
-             Date Calendar GregorianCalendar]
-            [java.sql Timestamp]
-            [org.apache.commons.lang3 StringUtils]))
+  (:import
+    [java.text ParsePosition SimpleDateFormat]
+    [java.util Locale TimeZone SimpleTimeZone
+     Date Calendar GregorianCalendar]
+    [java.sql Timestamp]
+    [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn LeapYear? "Return true if this is a leap year."
+(defn LeapYear?
+
+  "Return true if this is a leap year"
 
   [year]
 
@@ -59,7 +64,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hastz? "Returns true if this datetime string contains some timezone info."
+(defn- hastz?
+
+  "Returns true if this datetime string contains some timezone info"
 
   [^String dateStr]
 
@@ -85,17 +92,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseTimestamp "Convert string into a valid Timestamp object.
+(defn ParseTimestamp
+
+  "Convert string into a valid Timestamp object
   *tstr* conforming to the format \"yyyy-mm-dd hh:mm:ss.[fff...]\""
 
   ^Timestamp
   [^String tstr]
 
-  (Try! (Timestamp/valueOf tstr) ))
+  (try! (Timestamp/valueOf tstr) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseDate "Convert string into a Date object."
+(defn ParseDate
+
+  "Convert string into a Date object"
 
   ^Date
   [^String tstr ^String fmt]
@@ -107,12 +118,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseIso8601 "Parses datetime in ISO8601 format."
+(defn- parseIso8601
+
+  "Parses datetime in ISO8601 format"
 
   ^Date
   [^String tstr]
 
-  (when-not (nichts? tstr)
+  (when-not (empty? tstr)
     (let [fmt (if (Has? tstr \:)
                 (if (Has? tstr \.) DT_FMT_MICRO DT_FMT )
                 DATE_FMT ) ]
@@ -121,7 +134,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtTimestamp "Convert Timestamp into a string value."
+(defn FmtTimestamp
+
+  "Convert Timestamp into a string value"
 
   ^String
   [^Timestamp ts]
@@ -130,7 +145,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtDate "Convert Date into string value."
+(defn FmtDate
+
+  "Convert Date into string value"
 
   (^String
     [^Date dt]
@@ -145,12 +162,14 @@
     (if (or (nil? dt) (cs/blank? fmt))
       ""
       (let [df (SimpleDateFormat. fmt) ]
-        (when-not (nil? tz) (.setTimeZone df tz))
+        (when (some? tz) (.setTimeZone df tz))
         (.format df dt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtGMT "Convert Date object into a string - GMT timezone."
+(defn FmtGMT
+
+  "Convert Date object into a string - GMT timezone"
 
   ^String
   [^Date dt]
@@ -164,7 +183,7 @@
   ^Calendar
   [^Calendar cal calendarField amount]
 
-  (when-not (nil? cal)
+  (when (some? cal)
     (doto (GregorianCalendar. (.getTimeZone cal))
       (.setTime (.getTime cal))
       (.add (int calendarField) ^long amount))
@@ -181,7 +200,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddYears "Add n more years to the calendar."
+(defn AddYears
+
+  "Add n more years to the calendar"
 
   ^Calendar
   [^Calendar cal yrs]
@@ -190,7 +211,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddMonths "Add n more months to the calendar."
+(defn AddMonths
+
+  "Add n more months to the calendar"
 
   ^Calendar
   [^Calendar cal mts]
@@ -199,7 +222,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddDays "Add n more days to the calendar."
+(defn AddDays
+
+  "Add n more days to the calendar"
 
   ^Calendar
   [^Calendar cal days]
@@ -208,7 +233,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PlusMonths "Add n months."
+(defn PlusMonths
+
+  "Add n months"
 
   ^Date
   [months]
@@ -220,7 +247,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PlusYears "Add n years."
+(defn PlusYears
+
+  "Add n years"
 
   ^Date
   [years]
@@ -232,7 +261,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PlusDays "Add n days."
+(defn PlusDays
+
+  "Add n days"
 
   ^Date
   [days]
@@ -244,20 +275,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtCal "Formats time to yyyy-MM-ddThh:mm:ss."
+(defn FmtCal
+
+  "Formats time to yyyy-MM-ddThh:mm:ss"
 
   ^String
   [^Calendar cal]
 
-  (java.lang.String/format (Locale/getDefault)
-                           "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
-                           (into-array Object
-                                       [(.get cal Calendar/YEAR)
-                                        (+ 1 (.get cal Calendar/MONTH))
-                                        (.get cal Calendar/DAY_OF_MONTH)
-                                        (.get cal Calendar/HOUR_OF_DAY)
-                                        (.get cal Calendar/MINUTE)
-                                        (.get cal Calendar/SECOND) ] )
+  (java.lang.String/format
+    (Locale/getDefault)
+    "%1$04d-%2$02d-%3$02dT%4$02d:%5$02d:%6$02d"
+    (into-array Object
+                [(.get cal Calendar/YEAR)
+                 (+ 1 (.get cal Calendar/MONTH))
+                 (.get cal Calendar/DAY_OF_MONTH)
+                 (.get cal Calendar/HOUR_OF_DAY)
+                 (.get cal Calendar/MINUTE)
+                 (.get cal Calendar/SECOND) ] )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -271,7 +305,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DebugCal "Debug show a calendar's internal data."
+(defn DebugCal
+
+  "Debug show a calendar's internal data"
 
   ^String
   [^Calendar cal]

@@ -20,7 +20,7 @@
               spos?
               ToJavaInt
               Muble
-              Try!
+              try!
               NiceFPath]]
             [czlabclj.tardis.io.http :refer [HttpBasicConfig]]
             [czlabclj.tardis.mvc.assets
@@ -203,10 +203,10 @@
               ch (.channel ctx)
               tmp (GetAKey ch TOBJ_KEY)]
           (when (some? (:wsreq tmp))
-            (Try! (.remove pipe "ChunkedWriteHandler"))
-            (Try! (.remove pipe "MVCDispatcher"))
-            (Try! (.remove pipe "RouteFilter"))
-            (Try! (.remove pipe "HttpFilter"))
+            (try! (.remove pipe "ChunkedWriteHandler"))
+            (try! (.remove pipe "MVCDispatcher"))
+            (try! (.remove pipe "RouteFilter"))
+            (try! (.remove pipe "HttpFilter"))
             (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
             (SetAKey ch MSGTYPE_KEY "wsock"))
         (FireAndQuit pipe ctx this msg))))

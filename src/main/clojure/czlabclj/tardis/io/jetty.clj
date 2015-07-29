@@ -20,11 +20,11 @@
              [Muble
               notnil?
               juid
-              TryC
+              tryc
               spos?
               NextLong
               ToJavaInt
-              Try!
+              try!
               MakeMMap
               test-cond
               Stringify]]
@@ -159,7 +159,7 @@
       (catch Throwable e#
         (log/error e# ""))
       (finally
-        (Try! (when-not (isServletKeepAlive req) (.close os)))
+        (try! (when-not (isServletKeepAlive req) (.close os)))
         (-> (ContinuationSupport/getContinuation req)
             (.complete))) )
   ))
@@ -317,7 +317,7 @@
 
   (when-let [c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
-      (TryC
+      (tryc
         (.suspend c rsp)
         (dispREQ co c req rsp) ))
   ))
@@ -367,7 +367,7 @@
   (log/info "IOESStop: JettyIO: " (.id ^Identifiable co))
   (let [^Server svr (.getAttr co :jetty) ]
     (when-not (nil? svr)
-      (TryC
+      (tryc
           (.stop svr) ))
     (IOESStopped co)
   ))

@@ -24,7 +24,7 @@
              [LoadJavaProps
               test-nestr
               NiceFPath
-              TryC
+              tryletc tryc
               notnil?
               NewRandom
               GetCwd
@@ -130,7 +130,7 @@
         mf (io/file des MN_FILE) ]
     (log/info "app dir : " des)
     (log/info "inspecting...")
-    (TryC
+    (tryc
       (PrecondDir (io/file des DN_CFG))
       (PrecondFile (io/file des CFG_APP_CF))
       (PrecondFile (io/file des CFG_ENV_CF))
@@ -147,8 +147,7 @@
   [^czlabclj.tardis.core.sys.Elmt co cfg]
 
   (log/info "JMX config " cfg)
-  (TryC
-    (let [^czlabclj.xlib.util.core.Muble
+    (tryletc [^czlabclj.xlib.util.core.Muble
           ctx (.getCtx co)
           port (or (:port cfg) 7777)
           host (nsb (:host cfg))
@@ -158,7 +157,7 @@
       (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
       (.setf! ctx K_JMXSVR jmx)
       (log/info "JMXserver listening on: " host " "  port))
-  ))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Kill the internal JMX server.
@@ -167,14 +166,13 @@
 
   [^czlabclj.tardis.core.sys.Elmt co]
 
-  (TryC
-    (let [^czlabclj.xlib.util.core.Muble
+    (tryletc [^czlabclj.xlib.util.core.Muble
           ctx (.getCtx co)
           ^Startable
           jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx)
         (.stop jmx))
-      (.setf! ctx K_JMXSVR nil)))
+      (.setf! ctx K_JMXSVR nil))
   (log/info "JMX connection terminated."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,15 +182,14 @@
   [^czlabclj.tardis.core.sys.Elmt co
    ^czlabclj.tardis.impl.dfts.PODMeta pod]
 
-  (TryC
-    (let [cache (.getAttr co K_CONTAINERS)
+    (tryletc [cache (.getAttr co K_CONTAINERS)
           cid (.id ^Identifiable pod)
           app (.moniker pod)
           ctr (MakeContainer pod)]
       (log/debug "Start pod cid = " cid ", app = " app)
       (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
       true)
-  ))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

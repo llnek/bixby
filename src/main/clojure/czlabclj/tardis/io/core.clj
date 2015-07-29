@@ -21,7 +21,7 @@
               ThrowIOE
               MakeMMap
               ConvToJava
-              TryC]]
+              tryc]]
             [czlabclj.xlib.util.str :refer [nsb strim]])
 
   (:require [clojure.tools.logging :as log])
@@ -304,7 +304,7 @@
         (resume [this] (IOESResume this))
 
         (dispatch [_ ev options]
-          (TryC
+          (tryc
             (-> (.eventBus parObj)
                 (.onEvent ev options))))
 

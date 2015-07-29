@@ -37,7 +37,6 @@
               test-cond
               ConvLong
               NiceFPath
-              Try!
               PrintMutableObj
               MakeMMap]]
             [czlabclj.tardis.impl.exec :refer [MakeExecvisor]]

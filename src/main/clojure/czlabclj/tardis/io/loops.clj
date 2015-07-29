@@ -19,7 +19,7 @@
              [NextLong
               spos?
               Muble
-              TryC]]
+              tryc]]
             [czlabclj.xlib.util.process :refer [Coroutine SafeWait]]
             [czlabclj.xlib.util.dates :refer [ParseDate]]
             [czlabclj.xlib.util.meta :refer [GetCldr]]
@@ -52,7 +52,7 @@
    func]
 
   (let [tt (proxy [TimerTask][] (run []
-                                  (TryC (apply func []))))
+                                  (tryc (apply func []))))
         [^Date dw ^long ds] delays]
     (when (instance? Date dw)
       (.schedule tm tt dw intv))
@@ -130,7 +130,7 @@
   [^czlabclj.tardis.core.sys.Elmt co]
 
   (let [^Timer t (.getAttr co :timer) ]
-    (TryC
+    (tryc
         (when-not (nil? t) (.cancel t)) )
   ))
 
@@ -306,7 +306,7 @@
 
   [co & args]
 
-  (TryC (LoopableOneLoop co) )
+  (tryc (LoopableOneLoop co) )
   (SafeWait (first args) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

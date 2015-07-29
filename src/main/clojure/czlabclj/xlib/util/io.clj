@@ -9,34 +9,37 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Util functions related to stream/io."
+(ns ^{:doc "Util functions related to stream/io"
       :author "kenl" }
 
   czlabclj.xlib.util.io
 
-  (:require [czlabclj.xlib.util.core :refer [spos? Try!]])
+  (:require
+    [czlabclj.xlib.util.core :refer [spos? try!]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cstr])
 
-  (:import  [java.util.zip GZIPInputStream GZIPOutputStream]
-            [java.io ByteArrayInputStream
-             ByteArrayOutputStream DataInputStream
-             DataInputStream DataOutputStream
-             FileInputStream FileOutputStream
-             CharArrayWriter OutputStreamWriter
-             File InputStream InputStreamReader
-             Closeable
-             OutputStream Reader Writer]
-            [java.nio ByteBuffer CharBuffer]
-            [java.nio.charset Charset]
-            [com.zotohlab.frwk.io XData XStream]
-            [org.apache.commons.codec.binary Base64]
-            [org.apache.commons.lang3 StringUtils]
-            [org.apache.commons.io IOUtils]
-            [org.xml.sax InputSource]
-            [java.nio.charset Charset]))
+  (:import
+    [java.util.zip GZIPInputStream GZIPOutputStream]
+    [java.io ByteArrayInputStream
+     ByteArrayOutputStream DataInputStream
+     DataInputStream DataOutputStream
+     FileInputStream FileOutputStream
+     CharArrayWriter OutputStreamWriter
+     File InputStream InputStreamReader
+     Closeable
+     OutputStream Reader Writer]
+    [java.nio ByteBuffer CharBuffer]
+    [java.nio.charset Charset]
+    [com.zotohlab.frwk.io XData XStream]
+    [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.lang3 StringUtils]
+    [org.apache.commons.io IOUtils]
+    [org.xml.sax InputSource]
+    [java.nio.charset Charset]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -80,11 +83,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti WriteBytes "Write this long value out as byte[]." class)
+(defn ByteOS "Make a byte array output stream"
+
+  ^ByteArrayOutputStream
+  []
+
+  (ByteArrayOutputStream. (int 4096)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToBytes "Convert char[] to byte[]."
+(defmulti WriteBytes "Write this long value out as byte[]" class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ToBytes "Convert char[] to byte[]"
 
   ^bytes
   [^chars chArray ^String encoding]
@@ -95,7 +107,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToChars "Convert byte[] to char[]."
+(defn ToChars "Convert byte[] to char[]"
 
   ^chars
   [^bytes byteArray ^String encoding]
@@ -106,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadLong "Return a long by scanning the byte[]."
+(defn ReadLong "Return a long by scanning the byte[]"
 
   [^bytes byteArray]
 
@@ -116,7 +128,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadInt "Return an int by scanning the byte[]."
+(defn ReadInt "Return an int by scanning the byte[]"
 
   [^bytes byteArray]
 
@@ -131,7 +143,7 @@
   ^bytes
   [nnum]
 
-  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
+  (with-open [baos (ByteOS)]
     (doto (DataOutputStream. baos)
       (.writeInt (int nnum))
       (.flush))
@@ -145,7 +157,7 @@
   ^bytes
   [nnum]
 
-  (with-open [baos (ByteArrayOutputStream. (int 4096)) ]
+  (with-open [baos (ByteOS) ]
     (doto (DataOutputStream. baos)
       (.writeLong ^long nnum)
       (.flush))
@@ -154,36 +166,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Streamify "Wrapped these bytes in an input-stream."
+(defn Streamify "Wrapped these bytes in an input-stream"
 
   ^InputStream
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (ByteArrayInputStream. bits)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CloseQ "Quietly close this object."
+(defn CloseQ "Quietly close this object"
 
   [obj]
 
   (when (instance? Closeable obj)
-    (Try! (.close ^Closeable obj))))
+    (try! (.close ^Closeable obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ByteOS "Make a byte array output stream."
-
-  ^ByteArrayOutputStream
-  []
-
-  (ByteArrayOutputStream. (int 4096)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn HexifyChars "Turn bytes into hex chars."
+(defn HexifyChars "Turn bytes into hex chars"
 
   ^chars
   [^bytes bits]
@@ -203,27 +206,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HexifyString "Turn bytes into hex string."
+(defn HexifyString "Turn bytes into hex string"
 
   ^String
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (String. (HexifyChars bits))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti OpenFile "Open this file path." class)
+(defmulti OpenFile "Open this file path" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Gzip "Gzip these bytes."
+(defn Gzip "Gzip these bytes"
 
   ^bytes
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (let [baos (ByteOS)]
       (with-open [g (GZIPOutputStream. baos)]
         (.write g bits 0 (alength bits)))
@@ -232,22 +235,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Gunzip "Gunzip these bytes."
+(defn Gunzip "Gunzip these bytes"
 
   ^bytes
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (IOUtils/toByteArray (GZIPInputStream. (Streamify bits)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResetStream! "Call reset on this input stream."
+(defn ResetStream! "Call reset on this input stream"
 
   [^InputStream inp]
 
-  (Try! (when-not (nil? inp) (.reset inp)) ))
+  (try! (when (some? inp) (.reset inp)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -256,7 +259,7 @@
   ^XStream
   [^String fp]
 
-  (when-not (nil? fp)
+  (when (some? fp)
     (XStream. (io/file fp))
   ))
 
@@ -267,33 +270,33 @@
   ^XStream
   [^File f]
 
-  (when-not (nil? f) (XStream. f)))
+  (when (some? f) (XStream. f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FromGZB64 "Unzip content which is base64 encoded + gziped."
+(defn FromGZB64 "Unzip content which is base64 encoded + gziped"
 
   ^bytes
   [^String gzb64]
 
-  (when-not (nil? gzb64)
+  (when (some? gzb64)
     (Gunzip (Base64/decodeBase64 gzb64))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToGZB64 "Zip content and then base64 encode it."
+(defn ToGZB64 "Zip content and then base64 encode it"
 
   ^String
   [^bytes bits]
 
-  (when-not (nil? bits)
+  (when (some? bits)
     (Base64/encodeBase64String (Gzip bits))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Available "Get the available bytes in this stream."
+(defn Available "Get the available bytes in this stream"
 
   ;; int
   [^InputStream inp]
@@ -329,7 +332,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyStream "Copy content from this input-stream to a temp file."
+(defn CopyStream "Copy content from this input-stream to a temp file"
 
   ^File
   [^InputStream inp]
@@ -345,7 +348,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyBytes "Copy x number of bytes from the source input-stream."
+(defn CopyBytes "Copy x number of bytes from the source input-stream"
 
   [^InputStream src ^OutputStream out bytesToCopy]
 
@@ -355,32 +358,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResetSource! "Reset an input source."
+(defn ResetSource! "Reset an input source"
 
   [^InputSource inpsrc]
 
-  (when-not (nil? inpsrc)
+  (when (some? inpsrc)
     (let [rdr (.getCharacterStream inpsrc)
           ism (.getByteStream inpsrc) ]
-      (Try! (when-not (nil? ism) (.reset ism)) )
-      (Try! (when-not (nil? rdr) (.reset rdr)) ))
+      (try! (when (some? ism) (.reset ism)) )
+      (try! (when (some? rdr) (.reset rdr)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeXData "Return a newly created XData."
+(defn MakeXData "Return a newly created XData"
 
-  (^XData [] (MakeXData false))
+  ^XData
+  [ &[usefile] ]
 
-  (^XData [usefile]
-          (if usefile
-            (XData. (TempFile))
-            (XData.)) ))
+  (if usefile
+    (XData. (TempFile))
+    (XData.)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SwapBytes "Swap bytes in buffer to file,
-                 returning a [File,OStream] tuple."
+                 returning a [File,OStream] tuple"
 
   [^ByteArrayOutputStream baos]
 
@@ -396,7 +400,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SwapChars "Swap chars in writer to file,
-                 returning a [File,OWriter] tuple."
+                 returning a [File,OWriter] tuple"
 
   [^CharArrayWriter wtr]
 
@@ -417,15 +421,15 @@
   ^XData
   [^InputStream inp limit]
 
-  (with-local-vars [os (ByteOS)
-                    fout nil]
+  (with-local-vars
+    [os (ByteOS) fout nil]
     (loop [bits (byte-array 4096)
            cnt 0
            c (.read inp bits)]
       (if
         (< c 0)
         (try
-          (if-not (nil? @fout)
+          (if (some? @fout)
             (XData. @fout)
             (XData. @os))
           (finally
@@ -451,15 +455,16 @@
   ^XData
   [^Reader rdr limit]
 
-  (with-local-vars [wtr (CharArrayWriter. (int 4096))
-                    fout nil]
+  (with-local-vars
+    [wtr (CharArrayWriter. (int 4096))
+     fout nil]
     (loop [carr (char-array 4096)
            cnt 0
            c (.read rdr carr)]
       (if
         (< c 0)
         (try
-          (if-not (nil? @fout)
+          (if (some? @fout)
             (XData. @fout)
             (XData. @wtr))
           (finally
@@ -480,31 +485,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadBytes "Read bytes and return a XData."
+(defn ReadBytes "Read bytes and return a XData"
 
-  (^XData
-    [^InputStream inp]
-    (slurp-bytes inp (StreamLimit)))
+  ^XData
+  [^InputStream inp & [usefile]]
 
-  (^XData
-    [^InputStream inp usefile]
-    (slurp-bytes inp (if usefile 1 (StreamLimit)))))
+  (slurp-bytes inp (if usefile 1 (StreamLimit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadChars "Read chars and return a XData."
+(defn ReadChars "Read chars and return a XData"
 
-  (^XData
-    [^Reader rdr]
-    (slurp-chars rdr (StreamLimit)))
+  ^XData
+  [^Reader rdr & [usefile]]
 
-  (^XData
-    [^Reader rdr usefile]
-    (slurp-chars rdr (if usefile 1 (StreamLimit)))))
+  (slurp-chars rdr (if usefile 1 (StreamLimit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MorphChars "Convert these bytes to chars."
+(defn MorphChars "Convert these bytes to chars"
 
   (^chars
     [^bytes bits]
@@ -512,10 +511,6 @@
 
   (^chars
     [^bytes bits ^Charset charSet]
-;;    (1 to min(b.length, count)).foreach { (i) =>
-;;      val b1 = b(i-1)
-;;      ch(i-1) = (if (b1 < 0) { 256 + b1 } else b1 ).asInstanceOf[Char]
-;;    }
     (when-not (nil? bits)
       (IOUtils/toCharArray (Streamify bits) charSet))) )
 

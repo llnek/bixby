@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.composite
 
-  (:require [czlabclj.xlib.util.core :refer [test-nonil notnil? Try!]]
+  (:require [czlabclj.xlib.util.core :refer [test-nonil notnil? try!]]
             [czlabclj.xlib.util.str :refer [hgl?]])
 
   (:require [clojure.tools.logging :as log])
@@ -54,7 +54,7 @@
                   (log/warn e# "")
                   (throw e#))) )))))
 
-    (rollback [_ conn] (Try! (.rollback ^Connection conn)))
+    (rollback [_ conn] (try! (.rollback ^Connection conn)))
     (commit [_ conn] (.commit ^Connection conn))
 
     (begin [_]

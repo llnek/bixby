@@ -14,19 +14,21 @@
 
   czlabclj.xlib.util.guids
 
-  (:require [czlabclj.xlib.util.core
-             :refer
-             [NextInt NowMillis TryC NewRandom]]
-            [czlabclj.xlib.util.str :refer [nsb Left Right]]
-            [czlabclj.xlib.util.io :refer [ReadInt ReadLong]])
+  (:require
+    [czlabclj.xlib.util.core
+     :refer [NextInt NowMillis tryletc tryc NewRandom]]
+    [czlabclj.xlib.util.str :refer [nsb Left Right]]
+    [czlabclj.xlib.util.io :refer [ReadInt ReadLong]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:import  [java.lang StringBuilder]
-            [java.net InetAddress]
-            [java.util UUID]
-            [java.lang Math]
-            [java.security SecureRandom]))
+  (:import
+    [java.lang StringBuilder]
+    [java.net InetAddress]
+    [java.util UUID]
+    [java.lang Math]
+    [java.security SecureRandom]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -91,20 +93,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeSetIP
+(defn- maybeSetIP ""
 
   ^long
   []
 
-  (TryC
-    (let [neta (InetAddress/getLocalHost)
-          b (.getAddress neta) ]
-      (if (.isLoopbackAddress neta)
-        (.nextLong (NewRandom))
-        (if (== 4 (alength b))
-          (long (ReadInt b))
-          (ReadLong b))
-      ))
+  (tryletc [neta (InetAddress/getLocalHost)
+            b (.getAddress neta) ]
+    (if (.isLoopbackAddress neta)
+      (.nextLong (NewRandom))
+      (if (== 4 (alength b))
+        (long (ReadInt b))
+        (ReadLong b))
+    )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,7 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewUUid "RFC4122, version 4 form."
+(defn NewUUid "RFC4122, version 4 form"
 
   ^String
   []
@@ -124,7 +125,7 @@
 ;;
 (defn ^:no-doc MyOwnNewUUid
 
-  "RFC4122, version 4 form."
+  "RFC4122, version 4 form"
 
   ^String
   []
@@ -149,7 +150,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewWWid "Return a new guid based on time and ip-address."
+(defn NewWWid "Return a new guid based on time and ip-address"
 
   ^String
   []

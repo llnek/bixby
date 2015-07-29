@@ -14,7 +14,7 @@
 
   czlabclj.tardis.mvc.comms
 
-  (:require [czlabclj.xlib.util.core :refer [Muble Try! NiceFPath]]
+  (:require [czlabclj.xlib.util.core :refer [Muble try! NiceFPath]]
             [czlabclj.xlib.util.wfs :refer [SimPTask]]
             [czlabclj.tardis.mvc.assets
              :refer
@@ -76,7 +76,7 @@
     (cond
       (HasInHeader? info @unmod)
       (when-let [s (GetInHeader info @unmod)]
-        (Try!
+        (try!
           (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
                     lastTm)
             (var-set modd false))))

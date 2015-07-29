@@ -26,7 +26,7 @@
              Muble
              MakeMMap
              NiceFPath
-             TryCR
+             trycr
              ConvToJava
              nbf
              ConvLong
@@ -683,7 +683,7 @@
       (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED."))
       ;;(test-nestr "Main-Class" mCZ)
 
-      (with-local-vars [obj (TryCR nil (when (hgl? mCZ) (MakeObj mCZ)))]
+      (with-local-vars [obj (trycr nil (when (hgl? mCZ) (MakeObj mCZ)))]
         (when (nil? @obj)
           (log/warn "Failed to create main class: " mCZ)
           (var-set obj (mkDftAppMain)))

@@ -15,7 +15,7 @@
   demo.http.core
 
   (:require [czlabclj.xlib.util.process :refer [DelayExec]]
-            [czlabclj.xlib.util.core :refer [Try!]]
+            [czlabclj.xlib.util.core :refer [try!]]
             [czlabclj.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])

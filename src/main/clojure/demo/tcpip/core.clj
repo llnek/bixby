@@ -15,7 +15,7 @@
   demo.tcpip.core
 
   (:require [czlabclj.xlib.util.process :refer [DelayExec]]
-            [czlabclj.xlib.util.core :refer [Try! notnil?]]
+            [czlabclj.xlib.util.core :refer [try! notnil?]]
             [czlabclj.xlib.util.str :refer [nsb]]
             [czlabclj.xlib.util.wfs :refer [SimPTask]])
 
@@ -67,7 +67,7 @@
                       (.write bits)
                       (.flush)))
                   (finally
-                    (Try! (when-not (nil? @ssoc)
+                    (try! (when-not (nil? @ssoc)
                             (.close ^Socket @ssoc)))))
                 nil)))))
   ))

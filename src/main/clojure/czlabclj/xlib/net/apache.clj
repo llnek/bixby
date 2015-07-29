@@ -16,7 +16,7 @@
 
   (:require [czlabclj.xlib.util.str
              :refer [lcase hgl? strim Embeds? HasNocase?]]
-            [czlabclj.xlib.util.core :refer [ThrowIOE Try!]]
+            [czlabclj.xlib.util.core :refer [ThrowIOE try!]]
             [czlabclj.xlib.util.mime :refer [GetCharset]])
 
   (:require [clojure.tools.logging :as log])
@@ -96,7 +96,7 @@
         ct (when-not (nil? ent) (.getContentType ent))
         cv (if (nil? ct) "" (strim (.getValue ct)))
         cl (lcase cv) ]
-    (Try!
+    (try!
       (log/debug "Http-response: content-encoding: "
                  (.getContentEncoding ent)
                  "\n"
@@ -114,7 +114,7 @@
 
   [^HttpResponse rsp ^Throwable exp]
 
-  (Try! (EntityUtils/consumeQuietly (.getEntity rsp)))
+  (try! (EntityUtils/consumeQuietly (.getEntity rsp)))
   (throw exp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

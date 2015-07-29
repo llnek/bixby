@@ -16,7 +16,7 @@
 
   (:require [czlabclj.xlib.util.core
              :refer
-             [ThrowBadArg MakeMMap notnil? TryC]]
+             [ThrowBadArg MakeMMap notnil? tryc]]
             [czlabclj.xlib.util.str :refer [HasAny?]])
 
   (:require [clojure.tools.logging :as log])
@@ -425,7 +425,7 @@
                      "\n(sig) " (seq sig))
           (when (nil? mtd)
             (throwBeanError (str "Unknown operation \"" opName "\"")))
-          (TryC
+          (tryc
             (if (empty? params)
               (.invoke mtd obj (into-array Object []))
               (.invoke mtd obj params)))))

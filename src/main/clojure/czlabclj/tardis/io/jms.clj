@@ -21,7 +21,7 @@
               Muble
               MakeMMap
               juid
-              TryC]]
+              tryc]]
             [czlabclj.xlib.crypto.codec :refer [Pwdify]]
             [czlabclj.xlib.util.str :refer [hgl? nsb]])
 
@@ -235,7 +235,7 @@
 
   (log/info "IOESStop: JMS: " (.id ^Identifiable co))
   (when-let [^Connection c (.getAttr co :conn) ]
-    (TryC (.close c))
+    (tryc (.close c))
     (.setAttr! co :conn nil)
     (IOESStopped co)
   ))

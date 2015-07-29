@@ -15,7 +15,7 @@
   czlabclj.xlib.util.process
 
   (:require
-    [czlabclj.xlib.util.core :refer [Try! TryC]]
+    [czlabclj.xlib.util.core :refer [try! tryc]]
     [czlabclj.xlib.util.meta :refer [GetCldr]]
     [czlabclj.xlib.util.str :refer [nsb hgl?]])
 
@@ -93,7 +93,7 @@
 
   (-> (reify Runnable
        (run [_]
-         (TryC (func))))
+         (tryc (func))))
       (AsyncExec options)
   ))
 
@@ -134,7 +134,7 @@
 
   [millisecs]
 
-  (Try! (when (> millisecs 0)
+  (try! (when (> millisecs 0)
           (Thread/sleep millisecs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

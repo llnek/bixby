@@ -20,7 +20,7 @@
              [NormalizeEmail
               Stringify
               notnil?
-              TryC]]
+              tryletc]]
             [czlabclj.xlib.util.format :refer [ReadJson WriteJson]]
             [czlabclj.tardis.io.http :refer [ScanBasicAuth]]
             [czlabclj.xlib.crypto.codec :refer [CaesarDecrypt]]
@@ -143,14 +143,13 @@
   [info fld shiftCount]
 
   (if (:nonce info)
-    (TryC
-      (let [decr (CaesarDecrypt (get info fld) shiftCount)
+      (tryletc [decr (CaesarDecrypt (get info fld) shiftCount)
             bits (Base64/decodeBase64 decr)
             s (Stringify bits) ]
         (log/debug "info = " info)
         (log/debug "decr = " decr)
         (log/debug "val = " s)
-        (assoc info fld s)))
+        (assoc info fld s))
     info
   ))
 
