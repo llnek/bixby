@@ -32,28 +32,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;(defrecord CmdSeqQ [qid qline choices dft must onok] )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeCmdSeqQ
-
-  "Make a command line question"
-
-  [^String questionId
-   ^String questionLine
-   ^String choices
-   ^String defaultValue
-   mandatory
-   fnOK ]
-
-  {:choices choices
-   :qline questionLine
-   :qid questionId
-   :dft defaultValue
-   :must mandatory
-   :onok fnOK } )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readData
@@ -87,18 +65,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- onAnswer ""
+
+  [^Writer cout
+   cmdQ
+   props
+   answer]
+
+  (let [dft (strim (:default cmdQ))
+        must (:must cmdQ)
+        nxt (:next cmdQ)
+        res (:result cmdQ)]
+    (if
+      (nil? answer)
+      (do
+        (.write cout "\n")
+        nil)
+      ;;else
+      (let [rc (if (empty? answer)
+                 dft
+                 answer)]
+        (cond
+          ;;if required to answer, repeat the question
+          (and (empty? rc)
+               must)
+          (:id cmdQ)
+
+          (keyword? res)
+          (do
+            (swap! props assoc res rc)
+            nxt)
+
+          (fn? res)
+          (let [[n p] (res rc @props)]
+            (reset! props p)
+            n)
+
+          :else :end)))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- popQQ ""
 
   [^Writer cout
    ^Reader cin
    cmdQ
-   ^java.util.Map props]
+   props]
 
   (let [chs (strim (:choices cmdQ))
-        dft (strim (:dft cmdQ))
-        must (:must cmdQ)
-        onResp (:onok cmdQ)
-        q (strim (:qline cmdQ))]
+        dft (strim (:default cmdQ))
+        q (strim (:question cmdQ))
+        must (:must cmdQ)]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
     (when-not (empty? chs)
@@ -114,11 +132,9 @@
       (.write cout (str "(" dft ")")) )
     (doto cout (.write " ")(.flush))
     ;; get the input from user
-    ;; point to next question, blank ends it
-    (let [rc (readData cout cin) ]
-      (if (nil? rc)
-        (do (.write cout "\n") nil)
-        (onResp (if (cs/blank? rc) dft rc) props)))
+    ;; return the next question, :end ends it
+    (->> (readData cout cin)
+         (onAnswer cout cmdQ props))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,21 +145,24 @@
 
   (if (some? cmdQ)
     (popQQ cout cin cmdQ props)
-    ""
+    :end
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cycleQ ""
 
-  ;; map
   [cout cin cmdQNs start props]
 
-  (loop [rc (popQ cout cin (cmdQNs start) props) ]
+  (loop [rc (popQ cout
+                  cin
+                  (cmdQNs start) props) ]
     (cond
+      (= :end rc) @props
       (nil? rc) {}
-      (cs/blank? rc) (IntoMap props)
-      :else (recur (popQ cout cin (cmdQNs rc) props)))
+      :else (recur (popQ cout
+                         cin
+                         (cmdQNs rc) props)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,31 +171,45 @@
 
   "Prompt a sequence of questions via console"
 
-  ;; map
   [cmdQs question1]
 
-  (let [cout (OutputStreamWriter. (BufferedOutputStream. (System/out)))
+  {:pre [(map? cmdQs)]}
+
+  (let [cout (->> (BufferedOutputStream. (System/out))
+                  (OutputStreamWriter. ))
         kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
-        cin (InputStreamReader. (System/in)) ]
+        cin (InputStreamReader. (System/in))
+        func (partial cycleQ cout cin) ]
     (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
-    (cycleQ cout cin cmdQs question1 (HashMap.))
+    (->
+      (reduce
+        (fn [memo k]
+          (assoc memo k (assoc (get cmdQs k) :id k)))
+        {}
+        (keys cmdQs))
+      (func question1 (atom {})))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (comment
-(def q1 (MakeCmdSeqQ "q1" "hello ken" "q|b|c" "c" true
-           (fn [a ps]
-             (do (.put ps "a1" a) "q2")) ) )
-(def q2 (MakeCmdSeqQ "q2" "hello paul" "" "" false
-           (fn [a ps]
-             (do (.put ps "a2" a) "q3"))) )
-(def q3 (MakeCmdSeqQ "q3" "hello joe" "z" "" false
-           (fn [a ps]
-             (do (.put ps "a3" a) "" ))) )
-(def QM { "q1" q1 "q2" q2 "q3" q3 })
-)
+(def QM
+  {:q1 {:question "hello ken"
+        :choices "q|b|c"
+        :default "c"
+        :required true
+        :result :a1
+        :next :q2}
 
+   :q2 {:question "hello paul"
+        :result :a2
+        :next :q3}
+
+   :q3 {:question "hello joe"
+        :choices "2"
+        :result (fn [answer result]
+                  [:end (assoc result :zzz answer)])}})
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

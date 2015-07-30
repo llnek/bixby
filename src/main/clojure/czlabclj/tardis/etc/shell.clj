@@ -49,7 +49,7 @@
     (when-let [home (io/file (first args))]
       (when (DirRead? home)
         (var-set ok true)
-        (apply BootAndRun home rcb (drop 1 args))))
+        (apply BootAndRun home @rcb (drop 1 args))))
     (when-not @ok (Usage))
   ))
 

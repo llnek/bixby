@@ -160,7 +160,9 @@
                (-> (cmdStart)
                    (.chain (parseArgs))
                    (.chain (execArgs))))
-             (onError [_ e] (Usage)))]
+             (onError [_ e]
+               (Usage)
+               (Nihil/apply)))]
     (reset! SKARO-HOME-DIR home)
     (reset! SKARO-RSBUNDLE rcb)
     (-> ^ServiceHandler

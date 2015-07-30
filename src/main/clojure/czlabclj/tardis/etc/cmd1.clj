@@ -15,7 +15,7 @@
   czlabclj.tardis.etc.cmd1
 
   (:require [czlabclj.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile ListFiles]]
-            [czlabclj.xlib.util.cmdline :refer [MakeCmdSeqQ CLIConverse]]
+            [czlabclj.xlib.util.cmdline :refer [CLIConverse]]
             [czlabclj.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
             [czlabclj.xlib.util.guids :refer [NewUUid NewWWid]]
             [czlabclj.xlib.i18n.resources :refer [RStr]]
@@ -218,78 +218,86 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-csr-qs "Set of questions to capture the DN information."
+(defn- make-csr-qs
+
+  "Set of questions to capture the DN information"
 
   [^ResourceBundle rcb]
 
-  { "fname"
-    (MakeCmdSeqQ "fname" (RStr rcb "cmd.save.file")
-                 "" "csr-req" true
-                 #(do (.put ^Map %2 "fn" %1) ""))
+  {:fname {:question (RStr rcb "cmd.save.file")
+           :default "csr-req"
+           :required true
+           :next :end
+           :result :fn}
 
-    "size"
-    (MakeCmdSeqQ "size" (RStr rcb "cmd.key.size")
-                 "" "1024" true
-                 #(do (.put ^Map %2 "size" %1) "fname"))
+   :size {:question (RStr rcb "cmd.key.size")
+          :default "1024"
+          :required true
+          :next :fname
+          :result :size}
 
-    "c"
-    (MakeCmdSeqQ "c" (RStr rcb "cmd.dn.c")
-                 "" "US" true
-                 #(do (.put ^Map %2 "c" %1) "size"))
+   :c {:question (RStr rcb "cmd.dn.c")
+       :default "US"
+       :required true
+       :next :size
+       :result :c}
 
-    "st"
-    (MakeCmdSeqQ "st" (RStr rcb "cmd.dn.st")
-                 "" "" true
-                 #(do (.put ^Map %2 "st" %1) "c"))
+   :st {:question (RStr rcb "cmd.dn.st")
+        :required true
+        :next :c
+        :result :st}
 
-    "loc"
-    (MakeCmdSeqQ "loc" (RStr rcb "cmd.dn.loc")
-                 "" "" true
-                 #(do (.put ^Map %2 "l" %1) "st"))
+   :loc {:question (RStr rcb "cmd.dn.loc")
+         :required true
+         :next :st
+         :result :l }
 
-    "o"
-    (MakeCmdSeqQ "o" (RStr rcb "cmd.dn.org")
-                 "" "" true
-                 #(do (.put ^Map %2 "o" %1) "loc"))
+   :o {:question (RStr rcb "cmd.dn.org")
+       :required true
+       :next :loc
+       :result :o }
 
-    "ou"
-    (MakeCmdSeqQ "ou" (RStr rcb "cmd.dn.ou")
-                 "" "" true
-                 #(do (.put ^Map %2 "ou" %1) "o"))
+   :ou {:question (RStr rcb "cmd.dn.ou")
+        :required true
+        :next :o
+        :result :ou }
 
-    "cn"
-    (MakeCmdSeqQ "cn" (RStr rcb "cmd.dn.cn")
-                 "" "" true
-                 #(do (.put ^Map %2 "cn" %1) "ou"))
-  })
+   :cn {:question (RStr rcb "cmd.dn.cn")
+        :required true
+        :next :ou
+        :result :cn }
+   })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-key-qs "Set of questions to save info to file."
+(defn- make-key-qs
+
+  "Set of questions to save info to file"
 
   [^ResourceBundle rcb]
 
-  {
-    "fname"
-    (MakeCmdSeqQ "fname" (RStr rcb "cmd.save.file")
-                 "" "test.p12" true
-                 #(do (.put ^Map %2 "fn" %1) ""))
+  {:fname {:question (RStr rcb "cmd.save.file")
+           :default "test.p12"
+           :required true
+           :next :end
+           :result :fn }
 
-    "pwd"
-    (MakeCmdSeqQ "pwd" (RStr rcb "cmd.key.pwd")
-                 "" "" true
-                 #(do (.put ^Map %2 "pwd" %1) "fname"))
+   :pwd {:question (RStr rcb "cmd.key.pwd")
+         :required true
+         :next :fname
+         :result :pwd }
 
-    "duration"
-    (MakeCmdSeqQ "duration" (RStr rcb "cmd.key.duration")
-                 "" "12" true
-                 #(do (.put ^Map %2 "months" %1) "pwd"))
+   :duration {:question (RStr rcb "cmd.key.duration")
+              :default "12"
+              :required true
+              :next :pwd
+              :result :months }
 
-    "size"
-    (MakeCmdSeqQ "size" (RStr rcb "cmd.key.size")
-                 "" "1024" true
-                 #(do (.put ^Map %2 "size" %1) "duration"))
-
+   :size {:question (RStr rcb "cmd.key.size")
+          :default "1024"
+          :required true
+          :next :duration
+          :result :size }
    })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -314,7 +322,7 @@
 
   (if-let [res (promptQuestions (merge (make-csr-qs @SKARO-RSBUNDLE)
                                        (make-key-qs @SKARO-RSBUNDLE))
-                                "cn") ]
+                                :cn) ]
     (let [dn (fst res)
           rc (lst res)
           now (Date.)
@@ -337,7 +345,7 @@
 
   []
 
-  (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) "cn") ]
+  (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           [req pkey]

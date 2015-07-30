@@ -53,6 +53,12 @@
             Tar$TarCompressionMethod
             Javac$ImplementationSpecificArgument])
 
+  ;;put here but not used, reason is to trick compiler
+  ;;to drag in the files and compile it without
+  ;;reflection warnings
+  (:use [flatland.ordered.set]
+        [flatland.ordered.map])
+
   (:require [clojure.tools.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cs]))
