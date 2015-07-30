@@ -7,22 +7,28 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns
 
   testcljc.util.win32ini
 
-  (:require [czlabclj.xlib.util.core :as CU]
-            [czlabclj.xlib.util.ini :as WI])
+  (:require
+    [czlabclj.xlib.util.core :as CU]
+    [czlabclj.xlib.util.ini :as WI])
 
   (:use [clojure.test])
 
-  (:import  [com.zotohlab.frwk.util IWin32Conf]))
+  (:import
+    [com.zotohlab.frwk.util IWin32Conf]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^IWin32Conf ^:private INIFILE (WI/ParseInifile (CU/ResUrl "com/zotohlab/frwk/util/sample.ini")))
+
+;;(println "->>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+;;(.dbgShow INIFILE)
+;;(println "-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -33,7 +39,7 @@
 (is (map? (.getSection INIFILE "operating systems")))
 (is (map? (.getSection INIFILE "boot loader")))
 
-(is (true? (.endsWith ^String (.getString INIFILE "boot loader" "default") "WINDOWS")))
+(is (true? (.endsWith (.getString INIFILE "boot loader" "default") "WINDOWS")))
 
 (is (true? (= (.getLong INIFILE "boot loader" "timeout") 30)))
 

@@ -33,8 +33,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro lcase "Lowercase string" [s] `(cs/lower-case ~s))
-(defmacro ucase "Uppercase string" [s] `(cs/upper-case ~s))
+(defmacro lcase "Lowercase string" [s] `(if (nil? ~s) "" (cs/lower-case ~s)))
+(defmacro ucase "Uppercase string" [s] `(if (nil? ~s) "" (cs/upper-case ~s)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -86,7 +86,7 @@
 ;;
 (defn nsb
 
-  "empty string if obj is null, or obj.toString"
+  "Empty string if obj is null, or obj.toString"
 
   ^String
   [^Object obj]
@@ -160,7 +160,7 @@
 
   [s]
 
-  `(not (hgl? ~s)))
+  `(empty? ~s))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

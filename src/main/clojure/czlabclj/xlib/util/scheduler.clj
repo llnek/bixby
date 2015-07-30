@@ -16,7 +16,7 @@
 
   (:require
     [czlabclj.xlib.util.core :refer [NextInt juid MakeMMap]]
-    [czlabclj.xlib.util.str :refer [hgl?]])
+    [czlabclj.xlib.util.str :refer [ToKW hgl?]])
 
   (:require
     [czlabclj.xlib.util.logging :as log])
@@ -32,7 +32,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NulScheduler "Make a Singly threaded Scheduler"
+(defn NulScheduler
+
+  "Make a Singly threaded Scheduler"
 
   ^Schedulable
   []
@@ -72,13 +74,15 @@
       (activate [_ options] )
       (deactivate [_] ))
 
-    { :typeid (keyword "czc.frwk.util/NulScheduler") }
+    { :typeid (ToKW "czc.frwk.util" "NulScheduler") }
 
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- xrefPID "Returns the id of this runnable or nil"
+(defn- xrefPID
+
+  "Returns the id of this runnable or nil"
 
   [runable]
 
@@ -89,7 +93,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- preRun  "Stuff to do before running the task"
+(defn- preRun
+
+  "Stuff to do before running the task"
 
   [^Map hQ ^Map rQ w]
 
@@ -100,7 +106,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- addTimer "Schedule a timer task"
+(defn- addTimer
+
+  "Schedule a timer task"
 
   [^Timer timer ^TimerTask task
    ^long delay]
@@ -109,7 +117,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSCD "Make a Scheduler"
+(defn- mkSCD
+
+  "Make a Scheduler"
 
   ^Schedulable
   [^String named]
@@ -193,13 +203,15 @@
           (.clear runQ)
           (.stop ^TCore @cpu)))
 
-      { :typeid (keyword "czc.frwk.util/Scheduler") }
+      { :typeid (ToKW "czc.frwk.util" "Scheduler") }
 
   )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeScheduler "Make a Scheduler"
+(defn MakeScheduler
+
+  "Make a Scheduler"
 
   (^Schedulable [] (MakeScheduler ""))
   (^Schedulable [^String named] (mkSCD named)))

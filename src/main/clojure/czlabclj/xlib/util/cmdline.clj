@@ -94,14 +94,14 @@
    cmdQ
    ^java.util.Map props]
 
-  (let [chs (nsb (:choices cmdQ))
-        dft (nsb (:dft cmdQ))
+  (let [chs (strim (:choices cmdQ))
+        dft (strim (:dft cmdQ))
         must (:must cmdQ)
         onResp (:onok cmdQ)
-        q (:qline cmdQ)]
+        q (strim (:qline cmdQ))]
     (.write cout (str q (if must "*" "" ) " ? "))
     ;; choices ?
-    (when-not (cs/blank? chs)
+    (when-not (empty? chs)
       (if (Has? chs \n)
         (.write cout (str (if (.startsWith chs "\n")
                             "[" "[\n")
@@ -110,7 +110,7 @@
                             "]" "\n]" ) ))
         (.write cout (str "[" chs "]"))))
     ;; defaults ?
-    (when-not (cs/blank? dft)
+    (when-not (empty? dft)
       (.write cout (str "(" dft ")")) )
     (doto cout (.write " ")(.flush))
     ;; get the input from user
@@ -118,8 +118,7 @@
     (let [rc (readData cout cin) ]
       (if (nil? rc)
         (do (.write cout "\n") nil)
-        (onResp (if (cs/blank? rc) dft rc) props)
-      ))
+        (onResp (if (cs/blank? rc) dft rc) props)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

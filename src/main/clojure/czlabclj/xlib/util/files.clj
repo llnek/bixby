@@ -47,7 +47,7 @@
 ;;
 (defn FileReadWrite?
 
-  "Returns true if file is readable & writable"
+  "true if file is readable & writable"
 
   [^File fp]
 
@@ -61,7 +61,7 @@
 ;;
 (defn FileOK?
 
-  "Returns true if file exists"
+  "true if file exists"
 
   [^File fp]
 
@@ -72,7 +72,7 @@
 ;;
 (defn FileRead?
 
-  "Returns true if file is readable"
+  "true if file is readable"
 
   [^File fp]
 
@@ -85,7 +85,7 @@
 ;;
 (defn DirReadWrite?
 
-  "Returns true if directory is readable and writable"
+  "true if directory is readable and writable"
 
   [^File dir]
 
@@ -99,7 +99,7 @@
 ;;
 (defn DirRead?
 
-  "Returns true if directory is readable"
+  "true if directory is readable"
 
   [^File dir]
 
@@ -112,7 +112,7 @@
 ;;
 (defn CanExec?
 
-  "Returns true if file or directory is executable"
+  "true if file or directory is executable"
 
   [^File fp]
 
@@ -129,7 +129,7 @@
   ^String
   [^String path]
 
-  (if (cs/blank? path)
+  (if (empty? path)
     path
     (.getParent (File. path))
   ))
@@ -139,6 +139,8 @@
 (defn ReplaceFile ""
 
   [file work]
+
+  {:pre [(fn? work)]}
 
   (->> (-> (slurp file :encoding "utf-8")
            (work))
@@ -189,7 +191,7 @@
 ;;
 (defn CopyFiles
 
-  "Copy all files with *ext* to the destination folder"
+  "Copy all files with *ext* (no dot) to the destination folder"
 
   [^File srcDir ^File destDir ext]
 
@@ -203,7 +205,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyFileToDir "Copy a file to the target folder"
+(defn CopyFileToDir
+
+  "Copy a file to the target folder"
 
   [^File fp ^File dir]
 
@@ -338,6 +342,7 @@
         (.resetContent fp))
       nil)
   ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti Mkdirs "" class)

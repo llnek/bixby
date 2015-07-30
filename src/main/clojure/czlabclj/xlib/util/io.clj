@@ -61,8 +61,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn SetStreamLimit! ""
+
   ^long
   [limit]
+
   (when (spos? limit)
     (reset! _slimit limit))
   @_slimit)
@@ -77,13 +79,16 @@
 
   ^File
   [dir]
+
   (->> (doto (io/file dir) (.mkdirs))
        (reset! _wd))
   @_wd)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ByteOS "Make a byte array output stream"
+(defn ByteOS
+
+  "Make a byte array output stream"
 
   ^ByteArrayOutputStream
   []
@@ -96,7 +101,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToBytes "Convert char[] to byte[]"
+(defn ToBytes
+
+  "Convert char[] to byte[]"
 
   ^bytes
   [^chars chArray ^String encoding]
@@ -107,7 +114,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToChars "Convert byte[] to char[]"
+(defn ToChars
+
+  "Convert byte[] to char[]"
 
   ^chars
   [^bytes byteArray ^String encoding]
@@ -118,7 +127,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadLong "Return a long by scanning the byte[]"
+(defn ReadLong
+
+  "a long by scanning the byte[]"
 
   [^bytes byteArray]
 
@@ -128,7 +139,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadInt "Return an int by scanning the byte[]"
+(defn ReadInt
+
+  "an int by scanning the byte[]"
 
   [^bytes byteArray]
 
@@ -166,7 +179,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Streamify "Wrapped these bytes in an input-stream"
+(defn Streamify
+
+  "Wrapped these bytes in an input-stream"
 
   ^InputStream
   [^bytes bits]
@@ -177,7 +192,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CloseQ "Quietly close this object"
+(defn CloseQ
+
+  "Quietly close this object"
 
   [obj]
 
@@ -186,7 +203,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HexifyChars "Turn bytes into hex chars"
+(defn HexifyChars
+
+  "Turn bytes into hex chars"
 
   ^chars
   [^bytes bits]
@@ -206,7 +225,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HexifyString "Turn bytes into hex string"
+(defn HexifyString
+
+  "Turn bytes into hex string"
 
   ^String
   [^bytes bits]
@@ -221,7 +242,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Gzip "Gzip these bytes"
+(defn Gzip
+
+  "Gzip these bytes"
 
   ^bytes
   [^bytes bits]
@@ -235,7 +258,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Gunzip "Gunzip these bytes"
+(defn Gunzip
+
+  "Gunzip these bytes"
 
   ^bytes
   [^bytes bits]
@@ -246,7 +271,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResetStream! "Call reset on this input stream"
+(defn ResetStream!
+
+  "Call reset on this input stream"
 
   [^InputStream inp]
 
@@ -274,7 +301,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FromGZB64 "Unzip content which is base64 encoded + gziped"
+(defn FromGZB64
+
+  "Unzip content which is base64 encoded + gziped"
 
   ^bytes
   [^String gzb64]
@@ -285,7 +314,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToGZB64 "Zip content and then base64 encode it"
+(defn ToGZB64
+
+  "Zip content and then base64 encode it"
 
   ^String
   [^bytes bits]
@@ -296,7 +327,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Available "Get the available bytes in this stream"
+(defn Available
+
+  "Get the available bytes in this stream"
 
   ;; int
   [^InputStream inp]
@@ -322,7 +355,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OpenTempFile "Returns a Tuple(2) [ File, OutputStream? ]"
+(defn OpenTempFile
+
+  "a Tuple(2) [ File, OutputStream? ]"
 
   []
 
@@ -332,7 +367,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyStream "Copy content from this input-stream to a temp file"
+(defn CopyStream
+
+  "Copy content from this input-stream to a temp file"
 
   ^File
   [^InputStream inp]
@@ -348,7 +385,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CopyBytes "Copy x number of bytes from the source input-stream"
+(defn CopyBytes
+
+  "Copy x number of bytes from the source input-stream"
 
   [^InputStream src ^OutputStream out bytesToCopy]
 
@@ -358,7 +397,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResetSource! "Reset an input source"
+(defn ResetSource!
+
+  "Reset an input source"
 
   [^InputSource inpsrc]
 
@@ -371,7 +412,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeXData "Return a newly created XData"
+(defn MakeXData
+
+  "a newly created XData"
 
   ^XData
   [ &[usefile] ]
@@ -383,8 +426,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SwapBytes "Swap bytes in buffer to file,
-                 returning a [File,OStream] tuple"
+(defn SwapBytes
+
+  "Swap bytes in buffer to file, returning a [File,OStream] tuple"
 
   [^ByteArrayOutputStream baos]
 
@@ -399,8 +443,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SwapChars "Swap chars in writer to file,
-                 returning a [File,OWriter] tuple"
+(defn SwapChars
+
+  "Swap chars in writer to file, returning a [File,OWriter] tuple"
 
   [^CharArrayWriter wtr]
 
@@ -485,7 +530,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadBytes "Read bytes and return a XData"
+(defn ReadBytes
+
+  "Read bytes and return a XData"
 
   ^XData
   [^InputStream inp & [usefile]]
@@ -494,7 +541,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadChars "Read chars and return a XData"
+(defn ReadChars
+
+  "Read chars and return a XData"
 
   ^XData
   [^Reader rdr & [usefile]]
@@ -503,7 +552,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MorphChars "Convert these bytes to chars"
+(defn MorphChars
+
+  "Convert these bytes to chars"
 
   (^chars
     [^bytes bits]

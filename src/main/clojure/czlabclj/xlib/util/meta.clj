@@ -29,7 +29,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IsChild? "true if clazz is subclass of this base class"
+(defmulti IsChild?
+
+  "true if clazz is subclass of this base class"
+
   (fn [_ b]
     (if (instance? Class b)
       :class
@@ -57,7 +60,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BytesClass "Return the java class for byte[]"
+(defn BytesClass
+
+  "java class for byte[]"
 
   ^Class
   []
@@ -66,7 +71,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CharsClass "Return the java class for char[]"
+(defn CharsClass
+
+  "java class for char[]"
 
   ^Class
   []
@@ -80,12 +87,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro ^:private isXXX? ""
+
   [classObj classes]
+
   `(EqAny? (gcn ~classObj) ~classes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsBoolean? "True if class is Boolean"
+(defn IsBoolean?
+
+  "if class is Boolean"
 
   [classObj]
 
@@ -93,7 +104,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsVoid? "True if class is Void"
+(defn IsVoid?
+
+  "if class is Void"
 
   [classObj]
 
@@ -101,7 +114,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsChar? "True if class is Char"
+(defn IsChar?
+
+  "if class is Char"
 
   [classObj]
 
@@ -109,7 +124,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsInt? "True if class is Int"
+(defn IsInt?
+
+  "if class is Int"
 
   [classObj]
 
@@ -117,7 +134,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsLong? "True if class is Long"
+(defn IsLong?
+
+  "if class is Long"
 
   [classObj]
 
@@ -125,7 +144,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsFloat? "True if class is Float"
+(defn IsFloat?
+
+  "if class is Float"
 
   [classObj]
 
@@ -133,7 +154,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsDouble? "True if class is Double"
+(defn IsDouble?
+
+  "if class is Double"
 
   [classObj]
 
@@ -141,7 +164,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsByte? "True if class is Byte"
+(defn IsByte?
+
+  "if class is Byte"
 
   [classObj]
 
@@ -149,7 +174,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsShort? "True if class is Short"
+(defn IsShort?
+
+  "if class is Short"
 
   [classObj]
 
@@ -157,7 +184,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsString? "True if class is String"
+(defn IsString?
+
+  "if class is String"
 
   [classObj]
 
@@ -165,7 +194,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsObject? "True if class is Object"
+(defn IsObject?
+
+  "if class is Object"
 
   [classObj]
 
@@ -173,7 +204,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsBytes? "True if class is byte[]"
+(defn IsBytes?
+
+  "if class is byte[]"
 
   [classObj]
 
@@ -181,7 +214,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ForName "Load a java class by name"
+(defn ForName
+
+  "Load a java class by name"
 
   ^Class
   [^String z & [cl]]
@@ -194,7 +229,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetCldr "Get the current classloader"
+(defn GetCldr
+
+  "Get the current classloader"
 
   ^ClassLoader
   [ & [cl] ]
@@ -203,7 +240,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetCldr "Set current classloader"
+(defn SetCldr
+
+  "Set current classloader"
 
   [^ClassLoader cl]
 
@@ -212,7 +251,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn LoadClass "Load this class by name"
+(defn LoadClass
+
+  "Load this class by name"
 
   ^Class
   [^String clazzName & [cl]]
@@ -226,7 +267,7 @@
 ;;
 (defmulti ^Object MakeObjArgN
 
-  "Instantiate object with arity-n constructor."
+  "Instantiate object with arity-n constructor"
 
   (fn [a & args] (class a)))
 
@@ -257,7 +298,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CtorObj "Call the default contructor"
+(defn CtorObj
+
+  "Call the default contructor"
 
   ^Object
   [^Class cz]
@@ -268,8 +311,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeObj "Make an object of this class by
-               calling the default constructor"
+(defn MakeObj
+
+  "Make an object of this class by calling the default constructor"
 
   ^Object
   [^String clazzName & [cl]]
@@ -281,16 +325,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListParents "List all parent classes"
+(defn ListParents
+
+  "List all parent classes"
 
   [^Class javaClass]
 
-  (let [rc (loop [sum (transient [])
-                  par javaClass ]
-             (if (nil? par)
-               (persistent! sum)
-               (recur (conj! sum par)
-                      (.getSuperclass par)))) ]
+  (let
+    [rc (loop [sum (transient [])
+               par javaClass ]
+          (if (nil? par)
+            (persistent! sum)
+            (recur (conj! sum par)
+                   (.getSuperclass par)))) ]
     ;; since we always add the original class,
     ;; we need to ignore it on return
     (drop 1 rc)
@@ -346,8 +393,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListMethods "List all methods belonging to this class,
-                   including inherited ones"
+(defn ListMethods
+
+  "List all methods belonging to this class, including inherited ones"
 
   [^Class javaClass]
 
@@ -358,8 +406,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListFields "List all fields belonging to this class,
-                  including inherited ones."
+(defn ListFields
+
+  "List all fields belonging to this class, including inherited ones"
 
   [^Class javaClass]
 

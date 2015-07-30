@@ -48,7 +48,7 @@
             [com.zotohlab.frwk.net ULFormItems ULFileItem]
             [org.apache.commons.codec.binary Base64]
             [com.zotohlab.skaro.core Container]
-            [com.zotohlab.frwk.util CrappyDataError]
+            [com.zotohlab.frwk.util BadDataError]
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.crypto PasswordAPI]
             [com.zotohlab.frwk.dbio DBAPI MetaCache
@@ -328,7 +328,7 @@
             csrf (.getXref mvs)
             rb (I18N/getBase)
             si (try (GetSignupInfo evt)
-                    (catch CrappyDataError e# { :e e# }))
+                    (catch BadDataError e# { :e e# }))
             info (or si {})]
         (log/debug "Session csrf = " csrf
                    ", and form token = " (:csrf info))
@@ -394,7 +394,7 @@
             csrf (.getXref mvs)
             rb (I18N/getBase)
             si (try (GetSignupInfo evt)
-                    (catch CrappyDataError e#  { :e e# }))
+                    (catch BadDataError e#  { :e e# }))
             info (or si {} ) ]
         (log/debug "Session csrf = " csrf
                    ", and form token = " (:csrf info))

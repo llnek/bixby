@@ -79,6 +79,7 @@
 
   (^PTask
     [^String nm func]
+    {:pre [(fn? func)]}
     (PTask. nm
             (reify Work
               (on [_ fw job]
@@ -96,6 +97,7 @@
 
   (^PTask
     [^String nm func]
+    {:pre [(fn? func)]}
     (PTask. nm (reify Work (on [_ fw job] (func job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,6 +108,8 @@
 
   ^BoolExpr
   [func]
+
+  {:pre [(fn? func)]}
 
   (reify BoolExpr (ptest [_ j] (func j))))
 
@@ -118,6 +122,8 @@
   ^ChoiceExpr
   [func]
 
+  {:pre [(fn? func)]}
+
   (reify ChoiceExpr (choice [_ j] (func j))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,6 +134,8 @@
 
   ^CounterExpr
   [func]
+
+  {:pre [(fn? func)]}
 
   (reify CounterExpr (gcount [_ j] (func j))))
 

@@ -354,7 +354,7 @@
 
   [pojo indices]
 
-  (Interject pojo :indexes #(merge %2 indices) ) )
+  (Interject pojo :indexes #(merge (get %1 %2) indices) ) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -362,7 +362,7 @@
 
   [pojo uniqs]
 
-  (Interject pojo :uniques #(merge %2 uniqs) ))
+  (Interject pojo :uniques #(merge (get %1 %2) uniqs) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -391,7 +391,7 @@
 
   (let [fd (merge (getDftFldObj fid) fdef)
         k (:id fd)]
-    (Interject pojo :fields #(assoc %2 k fd))
+    (Interject pojo :fields #(assoc (get %1 %2) k fd))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -421,7 +421,7 @@
              ;;else
              (DbioError (str "Invalid assoc def " adef)))
         k (keyword aid)]
-    (Interject pojo :assocs #(assoc %2 k a2))
+    (Interject pojo :assocs #(assoc (get %1 %2) k a2))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

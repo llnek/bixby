@@ -266,7 +266,7 @@
 ;;
 (defn FindCountry
 
-  "Return the full country name"
+  "the full country name"
 
   ^String
   [^String code]
@@ -287,7 +287,7 @@
 ;;
 (defn IsUSA?
 
-  "Returns true if the code is US"
+  "true if the code is US"
 
   [^String code]
 
@@ -297,7 +297,7 @@
 ;;
 (defn FindCountryCode
 
-  "Return the country code"
+  "the country code"
 
   ^String
   [^String country]
@@ -379,7 +379,7 @@
 ;;
 (defn FindState
 
-  "Return the full state name"
+  "the full state name"
 
   ^String
   [^String code]
@@ -390,7 +390,7 @@
 ;;
 (defn FindStateCode
 
-  "Return the abbreviated state code"
+  "the abbreviated state code"
 
   ^String
   [^String state]

@@ -120,7 +120,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MimeCache "Cache of most MIME types"
+(defn MimeCache
+
+  "Cache of most MIME types"
+
   []
   @_mime_cache)
 
@@ -134,7 +137,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetCharset "Get charset from this content-type string"
+(defn GetCharset
+
+  "charset from this content-type string"
 
   ^String
   [^String cType]
@@ -153,7 +158,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsSigned? "Returns true if this content-type indicates signed"
+(defn IsSigned?
+
+  "true if this content-type indicates signed"
 
   [^String cType]
 
@@ -164,7 +171,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsEncrypted? "Returns true if this content-type indicates encrypted"
+(defn IsEncrypted?
+
+  "true if this content-type indicates encrypted"
 
   [^String cType]
 
@@ -174,8 +183,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsCompressed? "Returns true if this content-type
-                     indicates compressed"
+(defn IsCompressed?
+
+  "true if this content-type indicates compressed"
 
   [^String cType]
 
@@ -186,7 +196,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsMDN? "Returns true if this content-type indicates MDN"
+(defn IsMDN?
+
+  "true if this content-type indicates MDN"
 
   [^String cType]
 
@@ -197,7 +209,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeStream "Turn this object into some form of stream, if possible"
+(defn MaybeStream
+
+  "Turn this object into some form of stream, if possible"
 
   ^InputStream
   [^Object obj]
@@ -210,7 +224,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UrlDecode "URL decode this string"
+(defn UrlDecode
+
+  "URL decode this string"
 
   ^String
   [^String u]
@@ -221,7 +237,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UrlEncode "URL encode this string"
+(defn UrlEncode
+
+  "URL encode this string"
 
   ^String
   [^String u]
@@ -232,7 +250,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GuessMimeType "Guess the MIME type of file"
+(defn GuessMimeType
+
+  "Guess the MIME type of file"
 
   ^String
   [^File file & [dft]]
@@ -249,7 +269,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GuessContentType "Guess the content-type of file"
+(defn GuessContentType
+
+  "Guess the content-type of file"
 
   ^String
   [^File file & [enc dft]]
@@ -265,7 +287,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetupCache "Load file mime-types as a map"
+(defn SetupCache
+
+  "Load file mime-types as a map"
 
   [^URL fileUrl]
 

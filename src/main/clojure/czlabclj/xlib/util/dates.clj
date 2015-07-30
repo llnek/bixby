@@ -38,7 +38,7 @@
 ;;
 (defn LeapYear?
 
-  "Return true if this is a leap year"
+  "true if this is a leap year"
 
   [year]
 
@@ -66,7 +66,7 @@
 ;;
 (defn- hastz?
 
-  "Returns true if this datetime string contains some timezone info"
+  "true if this datetime string contains some timezone info"
 
   [^String dateStr]
 
@@ -111,8 +111,8 @@
   ^Date
   [^String tstr ^String fmt]
 
-  (when-not (or (cs/blank? tstr)
-                (cs/blank? fmt))
+  (when-not (or (empty? tstr)
+                (empty? fmt))
     (.parse (SimpleDateFormat. fmt) tstr)
   ))
 
@@ -159,7 +159,7 @@
 
   (^String
     [^Date dt fmt ^TimeZone tz]
-    (if (or (nil? dt) (cs/blank? fmt))
+    (if (or (nil? dt) (empty? fmt))
       ""
       (let [df (SimpleDateFormat. fmt) ]
         (when (some? tz) (.setTimeZone df tz))

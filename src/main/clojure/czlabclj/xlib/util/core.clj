@@ -7,7 +7,7 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "General utilties"
       :author "kenl" }
@@ -24,7 +24,7 @@
   (:import
     [java.util.zip DataFormatException Deflater Inflater]
     [java.util.concurrent.atomic AtomicLong AtomicInteger]
-    [com.zotohlab.frwk.util CrappyDataError]
+    [com.zotohlab.frwk.util BadDataError]
     [java.security SecureRandom]
     [com.google.gson JsonObject JsonElement]
     [java.net URL]
@@ -138,7 +138,7 @@
 ;;
 (defmacro notnil?
 
-  "True is x is not nil"
+  "is x not nil"
 
   [x]
 
@@ -239,7 +239,7 @@
 
   [^String msg]
 
-  (throw (CrappyDataError. msg)))
+  (throw (BadDataError. msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -271,7 +271,9 @@
 
   [pojo field func]
 
-  (let [nv (apply func field (get pojo field) [])]
+  {:pre [(fn? func)]}
+
+  (let [nv (apply func pojo field  [])]
     (assoc pojo field nv)
   ))
 
@@ -288,7 +290,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro bool! "" [e]
+(defmacro bool! ""
+  [e]
   `(if (or (nil? ~e)(false? ~e)) false true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,7 +307,7 @@
 ;;
 (defn ndz
 
-  "Returns 0.0 if param is nil"
+  "0.0 if param is nil"
 
   ^double
   [d]
@@ -315,7 +318,7 @@
 ;;
 (defn nnz
 
-  "Returns 0 is param is nil"
+  "0 is param is nil"
 
   ^long
   [n]
@@ -326,7 +329,7 @@
 ;;
 (defn nbf
 
-  "Returns false if param is nil"
+  "false if param is nil"
 
   ;; boolean
   [b]
@@ -409,7 +412,7 @@
 ;;
 (defn MatchChar?
 
-  "Returns true if this char is inside this set of chars"
+  "true if this char is inside this set of chars"
 
   ;; boolean
   [ch setOfChars]
@@ -477,7 +480,7 @@
 ;;
 (defn NewRandom
 
-  "Return a new random object"
+  "a new random object"
 
   (^SecureRandom [] (NewRandom 4))
 
@@ -488,7 +491,7 @@
 ;;
 (defn NowJTstamp
 
-  "Return a java sql Timestamp"
+  "a java sql Timestamp"
 
   ^Timestamp
   []
@@ -499,7 +502,7 @@
 ;;
 (defn NowDate
 
-  "Return a java Date"
+  "a java Date"
 
   ^Date
   []
@@ -510,7 +513,7 @@
 ;;
 (defn NowCal
 
-  "Return a Gregorian Calendar"
+  "a Gregorian Calendar"
 
   ^Calendar
   []
@@ -521,7 +524,7 @@
 ;;
 (defn ToCharset
 
-  "Return a java Charset of the encoding"
+  "a java Charset of the encoding"
 
   (^Charset [^String enc] (Charset/forName enc))
 
@@ -600,11 +603,14 @@
   ^Properties
   [^Properties props]
 
-  (reduce (fn [^Properties memo k]
-            (.put memo k (SubsVar (.get props k)))
-            memo )
-          (Properties.)
-          (.keySet props)
+  (reduce
+    (fn [^Properties memo k]
+      (.put memo
+            k
+            (SubsVar (.get props k)))
+      memo)
+    (Properties.)
+    (.keySet props)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -720,7 +726,7 @@
 ;;
 (defn IsWindows?
 
-  "Returns true if platform is windows"
+  "true if platform is windows"
 
   []
 
@@ -731,7 +737,7 @@
 ;;
 (defn IsUnix?
 
-  "Returns true if platform is *nix"
+  "true if platform is *nix"
 
   []
 
@@ -830,13 +836,15 @@
 
   "Make a string from bytes"
 
-  (^String [^bytes bits]
-           (Stringify bits "utf-8"))
+  (^String
+    [^bytes bits]
+    (Stringify bits "utf-8"))
 
-  (^String [^bytes bits
-            ^String encoding]
-           (when (some? bits)
-             (String. bits encoding))))
+  (^String
+    [^bytes bits
+     ^String encoding]
+    (when (some? bits)
+      (String. bits encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -844,13 +852,15 @@
 
   "Get bytes with the right encoding"
 
-  (^bytes [^String s]
-          (Bytesify s "utf-8"))
+  (^bytes
+    [^String s]
+    (Bytesify s "utf-8"))
 
-  (^bytes [^String s
-           ^String encoding]
-          (when (some? s)
-            (.getBytes s encoding))))
+  (^bytes
+    [^String s
+     ^String encoding]
+    (when (some? s)
+      (.getBytes s encoding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -858,14 +868,16 @@
 
   "Load the resource as stream"
 
-  (^InputStream [^String rcPath]
-                (ResStream rcPath nil))
+  (^InputStream
+    [^String rcPath]
+    (ResStream rcPath nil))
 
-  (^InputStream [^String rcPath
-                 ^ClassLoader czLoader]
-                (when (some? rcPath)
-                  (.getResourceAsStream (get-czldr czLoader)
-                                        rcPath))) )
+  (^InputStream
+    [^String rcPath
+     ^ClassLoader czLoader]
+    (when (some? rcPath)
+      (-> (get-czldr czLoader)
+          (.getResourceAsStream  rcPath))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -873,14 +885,16 @@
 
   "Load the resource as URL"
 
-  (^URL [^String rcPath]
-        (ResUrl rcPath nil))
+  (^URL
+    [^String rcPath]
+    (ResUrl rcPath nil))
 
-  (^URL [^String rcPath
-         ^ClassLoader czLoader]
-        (when (some? rcPath)
-          (.getResource (get-czldr czLoader)
-                        rcPath))) )
+  (^URL
+    [^String rcPath
+     ^ClassLoader czLoader]
+    (when (some? rcPath)
+      (-> (get-czldr czLoader)
+          (.getResource rcPath))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -888,19 +902,23 @@
 
   "Load the resource as string"
 
-  (^String [^String rcPath
-            ^String encoding]
-           (ResStr rcPath encoding nil))
+  (^String
+    [^String rcPath
+     ^String encoding]
+    (ResStr rcPath encoding nil))
 
-  (^String [^String rcPath]
-           (ResStr rcPath "utf-8" nil))
+  (^String
+    [^String rcPath]
+    (ResStr rcPath "utf-8" nil))
 
-  (^String [^String rcPath
-            ^String encoding
-            ^ClassLoader czLoader]
-           (with-open [inp (ResStream rcPath czLoader) ]
-             (Stringify (IOUtils/toByteArray inp)
-                        encoding ))) )
+  (^String
+    [^String rcPath
+     ^String encoding
+     ^ClassLoader czLoader]
+    (with-open
+      [inp (ResStream rcPath czLoader) ]
+      (-> (IOUtils/toByteArray inp)
+          (Stringify  encoding ))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -908,13 +926,16 @@
 
   "Load the resource as byte[]"
 
-  (^bytes [^String rcPath]
-          (ResBytes rcPath nil))
+  (^bytes
+    [^String rcPath]
+    (ResBytes rcPath nil))
 
-  (^bytes [^String rcPath
-           ^ClassLoader czLoader]
-          (with-open [inp (ResStream rcPath czLoader) ]
-            (IOUtils/toByteArray inp))) )
+  (^bytes
+    [^String rcPath
+     ^ClassLoader czLoader]
+    (with-open
+      [inp (ResStream rcPath czLoader) ]
+      (IOUtils/toByteArray inp))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -932,7 +953,8 @@
         (.setLevel (Deflater/BEST_COMPRESSION))
         (.setInput bits)
         (.finish))
-      (with-open [baos (ByteArrayOutputStream. (alength bits)) ]
+      (with-open
+        [baos (ByteArrayOutputStream. (alength bits)) ]
         (loop []
           (if (.finished cpz)
             (.toByteArray baos)
@@ -980,22 +1002,23 @@
   ^String
   [^String fname]
 
-  (str ""
-       (reduce (fn [^StringBuilder buf ^Character ch]
+  (->> (reduce (fn [^StringBuilder buf ^Character ch]
                  (if (or (java.lang.Character/isLetterOrDigit ch)
                          (ccore/contains? _PUNCS ch))
                    (.append buf ch)
-                   (.append buf (str "0x"
-                                     (Integer/toString (int ch) 16)))))
+                   (.append buf
+                            (str "0x"
+                                 (Integer/toString (int ch) 16)))))
                (StringBuilder.)
                (seq fname))
+       (str "" )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn NowMillis
 
-  "Return the current time in milliseconds"
+  "the current time in milliseconds"
 
   ^long
   []
@@ -1006,7 +1029,7 @@
 ;;
 (defn GetFPath
 
-  "Return the file path only"
+  "the file path only"
 
   ^String
   [^String fileUrlPath]
@@ -1019,7 +1042,7 @@
 ;;
 (defn FmtFileUrl
 
-  "Return the file path as URL"
+  "the file path as URL"
 
   ^URL
   [^String path]
@@ -1035,7 +1058,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmulti test-isa
+
   "Tests if object is subclass of parent"
+
   (fn [a b c]
     (if
       (instance? Class b) :class
@@ -1047,7 +1072,8 @@
 
   [^String param ^Class childz ^Class parz]
 
-  (assert (and (some? childz) (.isAssignableFrom parz childz))
+  (assert (and (some? childz)
+               (.isAssignableFrom parz childz))
           (str "" param " not-isa " (.getName parz))
   ))
 
@@ -1057,7 +1083,8 @@
 
   [^String param ^Object obj ^Class parz]
 
-  (assert (and (some? obj) (.isAssignableFrom parz (.getClass obj)))
+  (assert (and (some? obj)
+               (.isAssignableFrom parz (.getClass obj)))
           (str "" param " not-isa " (.getName parz))
   ))
 
@@ -1070,7 +1097,7 @@
   [^String param obj]
 
   (assert (some? obj)
-          (str "" param " is null.")
+          (str "" param " is null")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1081,9 +1108,7 @@
 
   [^String msg cnd ]
 
-  (assert cnd
-          (str msg)
-  ))
+  (assert cnd (str msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1094,7 +1119,7 @@
   [^String param v]
 
   (assert (not (StringUtils/isEmpty v))
-          (str "" param " is empty.")
+          (str "" param " is empty")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1132,7 +1157,7 @@
   [^String param v]
 
   (assert (>= v 0.0)
-          (str "" param " must be >= 0.")
+          (str "" param " must be >= 0")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1142,7 +1167,7 @@
   [^String param v]
 
   (assert (>= v 0)
-          (str "" param " must be >= 0.")
+          (str "" param " must be >= 0")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1152,7 +1177,7 @@
   [^String param v]
 
   (assert (> v 0.0)
-          (str "" param " must be > 0.")
+          (str "" param " must be > 0")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1162,7 +1187,7 @@
   [^String param v]
 
   (assert (> v 0)
-          (str "" param " must be > 0.")
+          (str "" param " must be > 0")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1174,7 +1199,7 @@
   [^String param v]
 
   (assert (not (nil? (not-empty v)))
-          (str  param  " must be non empty.")
+          (str  param  " must be non empty")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1186,7 +1211,9 @@
   ^Throwable
   [root]
 
-  (loop [r root t (if (some? root) (.getCause ^Throwable root)) ]
+  (loop [r root
+         t (if (some? root)
+             (.getCause ^Throwable root)) ]
     (if (nil? t)
       r
       (recur t (.getCause t)))
@@ -1210,12 +1237,13 @@
 ;;
 (defn GenNumbers
 
-  "Return a list of random int numbers between a range"
+  "a list of random int numbers between a range"
 
   ^clojure.lang.IPersistentCollection
   [start end howMany]
 
-  (if (or (>= start end) (< (- end start) howMany) )
+  (if (or (>= start end)
+          (< (- end start) howMany) )
     []
     (loop [_end (if (< end Integer/MAX_VALUE)
                   (+ end 1)
@@ -1320,7 +1348,7 @@
       (.append buf (str k " = " v "\n")))
     (.append buf "\n")
     (when-let [s (str buf) ]
-      (if dbg (log/debug s)(log/info s)))
+      (if dbg (log/debug "%s" s)(log/info "%s" s)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1349,7 +1377,7 @@
 
   (cond
 
-    (cs/blank? email)
+    (empty? email)
     email
 
     (or (not (> (.indexOf email (int \@)) 0))
@@ -1447,7 +1475,7 @@
 ;;
 (defn NextInt
 
-  "Return a sequence number (integer)"
+  "a sequence number (integer)"
 
   ^Integer
   []
@@ -1458,7 +1486,7 @@
 ;;
 (defn NextLong
 
-  "Return a sequence number (long)"
+  "a sequence number (long)"
 
   ^long
   []

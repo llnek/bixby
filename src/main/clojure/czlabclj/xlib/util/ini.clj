@@ -19,21 +19,21 @@
      :refer [ThrowBadData ThrowIOE
              ConvBool ConvInt ConvLong ConvDouble]]
     [czlabclj.xlib.util.files :refer [FileRead?]]
-    [czlabclj.xlib.util.str :refer [sname nsb strim]])
+    [czlabclj.xlib.util.str :refer [nsb strim lcase]])
 
   (:require
     [czlabclj.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs])
 
+  (:use [flatland.ordered.map])
+
   (:import
-    [com.zotohlab.frwk.util NCOrderedMap]
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.util IWin32Conf]
     [java.net URL]
     [java.io File IOException
-     InputStreamReader LineNumberReader PrintStream]
-    [java.util Map]))
+     InputStreamReader LineNumberReader PrintStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -56,7 +56,7 @@
 
   [k]
 
-  (ThrowBadData (str "No such property " k ".")))
+  (ThrowBadData (str "No such property " k)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,22 +64,23 @@
 
   [s]
 
-  (ThrowBadData (str "No such section " s ".")))
+  (ThrowBadData (str "No such section " s )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeSection
 
-  ^String
   [^LineNumberReader rdr
-   ^Map ncmap
+   ncmap
    ^String line]
 
   (let [s (strim (StringUtils/strip line "[]")) ]
-    (when (cs/blank? s) (throwBadIni rdr))
-    (when-not (.containsKey ncmap s)
-      (.put ncmap s (NCOrderedMap.)))
-    s
+    (when (empty? s) (throwBadIni rdr))
+    (let [k (keyword (lcase s))]
+      (when-not (contains? @ncmap k)
+        (->> (assoc @ncmap k (with-meta (sorted-map) {:name s}))
+             (reset! ncmap)))
+      k)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,53 +88,43 @@
 (defn- maybeLine
 
   [^LineNumberReader rdr
-   ^Map ncmap
-   ^Map section
+   ncmap
+   section
    ^String line]
 
-  (let [^Map kvs (.get ncmap section) ]
+  (let [kvs (get @ncmap section) ]
     (when (nil? kvs) (throwBadIni rdr))
     (let [pos (.indexOf line (int \=))
           nm (if (> pos 0)
                (strim (.substring line 0 pos))
                "" ) ]
-      (when (cs/blank? nm) (throwBadIni rdr))
-      (.put kvs nm (strim (.substring line (+ pos 1)))) )
+      (when (empty? nm) (throwBadIni rdr))
+      (let [k (keyword (lcase nm))]
+        (->> (assoc kvs k [ nm  (strim (.substring line (+ pos 1))) ])
+             (swap! ncmap assoc section)))
+      section)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- evalOneLine
 
-  ^String
   [^LineNumberReader rdr
-   ^Map ncmap
-   ^String line
-   ^String curSec]
+   ncmap
+   curSec
+   ^String line]
 
   (let [ln (strim line) ]
     (cond
-      (or (cs/blank? ln) (.startsWith ln "#"))
+      (or (empty? ln)
+          (.startsWith ln "#"))
       curSec
 
       (.matches ln "^\\[.*\\]$")
       (maybeSection rdr ncmap ln)
 
       :else
-      (do (maybeLine rdr ncmap curSec ln) curSec))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- hasKV ""
-
-  [^Map m k]
-
-  (let [kn (sname k) ]
-    (if (or (nil? kn)
-            (nil? m))
-      nil
-      (.containsKey m kn))
+      (maybeLine rdr ncmap curSec ln))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,81 +132,86 @@
 (defn- getKV ""
 
   ^String
-  [^IWin32Conf cf s k err]
+  [sects s k err]
 
-  (let [kn (sname k)
-        sn (sname s)
-        ^Map mp (.getSection cf sn) ]
+  (let [sn (keyword (lcase s))
+        kn (keyword (lcase k))
+        mp (get sects sn)]
     (cond
-      (nil? mp) (when err (throwBadMap sn))
-      (nil? k) (when err (throwBadKey ""))
-      (not (hasKV mp k)) (when err (throwBadKey kn))
-      :else (nsb (.get mp kn)))
+      (nil? mp) (when err (throwBadMap s))
+      (nil? k) (when err (throwBadKey k))
+      (not (contains? mp kn)) (when err (throwBadKey k))
+      :else (nsb (last (get mp kn))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- makeWinini ""
 
-  [^Map sects]
+  [sects]
 
   (reify IWin32Conf
 
-    (sectionKeys [_] (.keySet sects))
+    (sectionKeys [_]
+      (reduce
+        #(conj %1 (:name (meta %2)))
+        #{}
+        (vals sects)))
 
     (getSection [_ sect]
-      (when-let [sn (sname sect)]
-      (when-let [m (.get sects sn)]
-        (into {} m))))
+      (let [sn (keyword (lcase sect))]
+        (reduce #(assoc %1 (first %2) (last %2))
+                (sorted-map)
+                (or (vals (get sects sn)) []))))
 
     (getString [this section property]
-      (nsb (getKV this section property true)))
+      (nsb (getKV sects section property true)))
 
     (getString [this section property dft]
-      (if-let [rc (getKV this section property false) ]
+      (if-let [rc (getKV sects section property false) ]
         rc
         dft))
 
     (getLong [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvLong rc 0)
+      (if-let [rc (getKV sects section property false) ]
+        (ConvLong rc)
         dft))
 
     (getLong [this section property]
-      (ConvLong (getKV this section property true) 0))
+      (ConvLong (getKV sects section property true) 0))
 
     (getInt [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvInt rc 0)
+      (if-let [rc (getKV sects section property false) ]
+        (ConvInt rc dft)
         dft))
 
     (getInt [this section property]
-      (ConvInt (getKV this section property true) 0))
+      (ConvInt (getKV sects section property true) ))
 
     (getDouble [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvDouble rc 0.0)
+      (if-let [rc (getKV sects section property false) ]
+        (ConvDouble rc dft)
         dft))
 
     (getDouble [this section property]
-      (ConvDouble (getKV this section property true) 0.0))
+      (ConvDouble (getKV sects section property true) ))
 
     (getBool [this section property dft]
-      (if-let [rc (getKV this section property false) ]
-        (ConvBool rc false)
+      (if-let [rc (getKV sects section property false) ]
+        (ConvBool rc dft)
         dft))
 
     (getBool [this section property]
-      (ConvBool (getKV this section property true) false))
+      (ConvBool (getKV sects section property true) ))
 
     (dbgShow [_]
       (let [buf (StringBuilder.)]
-        (doseq [[k v] (seq sects)]
-          (.append buf (str "[" (sname k) "]\n"))
-          (doseq [[x y] (seq v)]
-            (.append buf (str (sname x) "=" y)))
+        (doseq [v (vals sects)]
+          (.append buf (str "[" (:name (meta v)) "]\n"))
+          (doseq [[x y] (vals v)]
+            (.append buf (str x "=" y "\n")))
           (.append buf "\n"))
-        (println buf)))
+        (println (.toString buf))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,16 +244,17 @@
   [^URL fUrl]
 
   (with-open [inp (.openStream fUrl) ]
-    (loop [rdr (LineNumberReader. (io/reader inp :encoding "utf-8"))
-           total (NCOrderedMap.)
-           curSec ""
-           line (.readLine rdr)  ]
+    (loop [rdr (->> (io/reader inp :encoding "utf-8")
+                    (LineNumberReader. ))
+           total (atom (sorted-map))
+           line (.readLine rdr)
+           curSec nil]
       (if (nil? line)
-        (makeWinini total)
-        (recur rdr total
-               (evalOneLine rdr total line curSec)
-               (.readLine rdr) )
-      ))
+        (makeWinini @total)
+        (recur rdr
+               total
+               (.readLine rdr)
+               (evalOneLine rdr total curSec line))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

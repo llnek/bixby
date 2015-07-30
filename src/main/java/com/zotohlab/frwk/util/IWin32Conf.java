@@ -20,24 +20,24 @@ import java.util.Set;
  */
 public interface IWin32Conf {
 
-  public Map<?,?> getSection(Object sectionName);
+  public Map<?,?> getSection(String sectionName);
   public Set<?> sectionKeys();
 
   public void dbgShow();
 
-  public String getString(Object sectionName, Object property, String dft);
-  public String getString(Object sectionName, Object property);
+  public String getString(String sectionName, String property, String dft);
+  public String getString(String sectionName, String property);
 
-  public long getLong(Object sectionName, Object property, long dft);
-  public long getLong(Object sectionName, Object property);
+  public long getLong(String sectionName, String property, long dft);
+  public long getLong(String sectionName, String property);
 
-  public int getInt(Object sectionName, Object property, int dft);
-  public int getInt(Object sectionName, Object property);
+  public int getInt(String sectionName, String property, int dft);
+  public int getInt(String sectionName, String property);
 
-  public boolean getBool(Object sectionName, Object property, boolean dft);
-  public boolean getBool(Object sectionName, Object property);
+  public boolean getBool(String sectionName, String property, boolean dft);
+  public boolean getBool(String sectionName, String property);
 
-  public double getDouble(Object sectionName, Object property, double dft);
-  public double getDouble(Object sectionName, Object property);
+  public double getDouble(String sectionName, String property, double dft);
+  public double getDouble(String sectionName, String property);
 
 }

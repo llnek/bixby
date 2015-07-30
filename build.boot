@@ -113,7 +113,7 @@
     [org.clojure/algo.monads "0.1.5" ]
     [org.clojure/algo.generic "0.1.2" ]
     [org.clojure/core.memoize "0.5.7" ]
-
+    [org.flatland/ordered "1.5.3"]
     [com.cemerick/pomegranate "0.3.0"]
     [codox/codox.core "0.8.12" ]
     ;; boot/clj stuff

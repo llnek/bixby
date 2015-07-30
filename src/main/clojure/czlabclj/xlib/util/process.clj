@@ -35,21 +35,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SyncBlockExec "Run this function synchronously"
+(defn SyncBlockExec
+
+  "Run this function synchronously"
 
   [^Object lock func & args]
 
   (CU/syncExec
     lock
-    (first args)
     (reify CallableWithArgs
-      (run [_ a1 args]
-        (apply func a1 args)))
-    args))
+      (run [_ a1 pms]
+        (apply func a1 pms)))
+    (first args)
+    (drop 1 args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- asyncExecThread "Execute this runnable in a separate thread"
+(defn- asyncExecThread
+
+  "Execute this runnable in a separate thread"
 
   [^Runnable r options]
 
@@ -71,7 +75,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsyncExec "Run the code (runnable) in a separate thread"
+(defn AsyncExec
+
+  "Run the code (runnable) in a separate thread"
 
   ([^Runnable runable]
    (AsyncExec runable (GetCldr)))
@@ -85,7 +91,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Coroutine "Run this function asynchronously"
+(defn Coroutine
+
+  "Run this function asynchronously"
 
   [func & [options]]
 
@@ -99,7 +107,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ThreadFunc "Run this function in a separate thread"
+(defn ThreadFunc
+
+  "Run this function in a separate thread"
 
   ^Thread
   [func start & [arg]]
@@ -130,7 +140,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SafeWait "Block current thread for some millisecs"
+(defn SafeWait
+
+  "Block current thread for some millisecs"
 
   [millisecs]
 
@@ -139,7 +151,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ProcessPid "Get the current process pid"
+(defn ProcessPid
+
+  "Get the current process pid"
 
   ^String
   []
@@ -153,7 +167,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DelayExec "Run this function after some delay"
+(defn DelayExec
+
+  "Run this function after some delay"
 
   [func delayMillis]
 

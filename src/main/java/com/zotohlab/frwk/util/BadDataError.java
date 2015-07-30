@@ -14,15 +14,15 @@ package com.zotohlab.frwk.util;
 /**
  * @author kenl
  */
-public class CrappyDataError extends RuntimeException {
+public class BadDataError extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public CrappyDataError(Throwable t) {
+  public BadDataError(Throwable t) {
     super(t);
   }
 
-  public CrappyDataError(String msg) {
+  public BadDataError(String msg) {
     super(msg);
   }
 

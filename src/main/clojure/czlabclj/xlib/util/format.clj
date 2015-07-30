@@ -32,7 +32,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteEdnString "Convert clojure object into EDN format"
+(defn WriteEdnString
+
+  "Convert clojure object into EDN format"
 
   ^String
   [obj]
@@ -69,7 +71,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteJson "Convert into JSON"
+(defn WriteJson
+
+  "Convert into JSON"
 
   ^String
   [data]
@@ -78,7 +82,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadJsonKW "Parse JSON into object with keys mapped to keywords"
+(defn ReadJsonKW
+
+  "Parse JSON into object with keys mapped to keywords"
 
   [^String data]
 
@@ -86,7 +92,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReadJson "Parse JSON into object"
+(defn ReadJson
+
+  "Parse JSON into object"
 
   (^String [^String data] (js/read-str data))
   (^String [^String data keyfn]

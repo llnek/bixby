@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Ways to generate an unique id."
+(ns ^{:doc "Ways to generate an unique id"
       :author "kenl" }
 
   czlabclj.xlib.util.guids
@@ -34,7 +34,7 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;pre-shuffle the chars in string.
+;;pre-shuffle the chars in string
 ;;"0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz"
 (def ^:private ^String _SS "YcQnPuzVAvpi7taGj1XwoJbIK3smye96NlHrR2DZS0CUxkLF5O4g8fBTqMEdhW")
 (def ^:private ^chars  _CHARS (.toCharArray _SS))
@@ -114,7 +114,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewUUid "RFC4122, version 4 form"
+(defn NewUUid
+
+  "RFC4122, version 4 form"
 
   ^String
   []
@@ -150,7 +152,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewWWid "Return a new guid based on time and ip-address"
+(defn NewWWid
+
+  "A new guid based on time and ip-address"
 
   ^String
   []
