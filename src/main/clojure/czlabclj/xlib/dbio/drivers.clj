@@ -14,23 +14,25 @@
 
   czlabclj.xlib.dbio.drivers
 
-  (:require [czlabclj.xlib.util.str
-             :refer [lcase ucase hgl? AddDelim! nsb]])
+  (:require
+    [czlabclj.xlib.util.str
+         :refer [lcase ucase hgl? AddDelim! nsb]])
 
   (:use [czlabclj.xlib.dbio.core])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
-  (:import  [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]
-            [java.util Map HashMap]))
+  (:import
+    [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getcolname ""
+(defn- gcn ""
 
   ^String
   [flds fid]
@@ -41,18 +43,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getNotNull  ""
+(defmacro getNotNull  ""
 
-  ^String
   [db]
 
   "NOT NULL")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getNull  ""
+(defmacro getNull  ""
 
-  ^String
   [db]
 
   "NULL")
@@ -68,20 +68,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- nullClause ""
+(defmacro nullClause ""
 
   [db opt?]
 
-  (if opt? (getNull db) (getNotNull db)))
+  `(if ~opt? (getNull ~db) (getNotNull ~db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genSep ""
+(defmacro genSep ""
 
   ^String
   [db]
 
-  (if *USE_DDL_SEP* DDL_SEP ""))
+  `(if *USE_DDL_SEP* DDL_SEP ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -132,6 +132,7 @@
 
   ^String
   [db]
+
   (str ";\n" (genSep db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -359,17 +360,17 @@
 
   (let [m (CollectDbXXX :indexes cache mcz)
         bf (StringBuilder.) ]
-    (doseq [[nm nv] (seq m) ]
-      (let [cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols)
-          (DbioError (str "Cannot have empty index: " nm)))
-        (.append bf (str "CREATE INDEX "
-                         (lcase (str table "_" (name nm)))
-                         " ON " table
-                         " ( "
-                         (cstr/join "," cols)
-                         " )"
-                         (GenExec db) "\n\n" ))))
+    (doseq [[nm nv] m
+            :let [cols (map #(gcn flds %) nv) ]]
+      (when (empty? cols)
+        (DbioError (str "Cannot have empty index: " nm)))
+      (.append bf (str "CREATE INDEX "
+                       (lcase (str table "_" (name nm)))
+                       " ON " table
+                       " ( "
+                       (cs/join "," cols)
+                       " )"
+                       (GenExec db) "\n\n" )))
     (.toString bf)
   ))
 
@@ -381,12 +382,12 @@
 
   (let [m (CollectDbXXX :uniques cache mcz)
         bf (StringBuilder.) ]
-    (doseq [[nm nv] (seq m) ]
-      (let [cols (map #(getcolname flds %) nv) ]
-        (when (empty? cols)
-          (DbioError (str "Illegal empty unique: " (name nm))))
-        (AddDelim! bf ",\n"
-            (str (GetPad db) "UNIQUE(" (cstr/join "," cols) ")"))))
+    (doseq [[nm nv] m
+            :let [cols (map #(gcn flds %) nv) ]]
+      (when (empty? cols)
+        (DbioError (str "Illegal empty unique: " (name nm))))
+      (AddDelim! bf ",\n"
+          (str (GetPad db) "UNIQUE(" (cs/join "," cols) ")")))
     (.toString bf)
   ))
 
@@ -398,7 +399,7 @@
 
   (str (GetPad db)
        "PRIMARY KEY("
-       (ucase (nsb (cstr/join "," pks)) )
+       (ucase (nsb (cs/join "," pks)) )
        ")"
   ))
 
@@ -413,7 +414,7 @@
         inx (StringBuilder.) ]
     (with-local-vars [pkeys (transient #{}) ]
       ;; 1st do the columns
-      (doseq [[fid fld] (seq flds) ]
+      (doseq [[fid fld] flds]
         (let [cn (ucase (:column fld))
               dt (:domain fld)
               col (case dt
@@ -459,7 +460,9 @@
         e (GenEnd db table)
         s1 (str b (first d) e)
         inx (last d) ]
-    (str s1 (if (hgl? inx) inx "") (GenGrant db table))
+    (str s1
+         (if (hgl? inx) inx "")
+         (GenGrant db table))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -469,16 +472,17 @@
   ^String
   [^MetaCache metaCache db ]
 
-  (binding [*DDL_BVS* (HashMap.) ]
+  (binding [*DDL_BVS* (atom {})]
     (let [ms (.getMetas metaCache)
           drops (StringBuilder.)
           body (StringBuilder.) ]
-      (doseq [[id tdef] (seq ms) ]
-        (let [^String tbl (:table tdef) ]
-          (when (and (not (:abstract tdef)) (hgl? tbl))
-            (log/debug "Model Id: " (name id) " table: " tbl)
-            (-> drops (.append (GenDrop db (ucase tbl) )))
-            (-> body (.append (genOneTable db ms tdef))))))
+      (doseq [[id tdef] ms
+              :let [tbl (:table tdef) ]]
+        (when (and (not (:abstract tdef))
+                   (hgl? tbl))
+          (log/debug "Model Id: %s table: %s" (name id) tbl)
+          (-> drops (.append (GenDrop db (ucase tbl) )))
+          (-> body (.append (genOneTable db ms tdef)))))
       (str "" drops body (GenEndSQL db)))
   ))
 

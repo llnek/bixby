@@ -14,33 +14,36 @@
 
   czlabclj.xlib.dbio.h2
 
-  (:require [czlabclj.xlib.util.core :refer [test-nonil test-nestr]]
-            [czlabclj.xlib.util.str :refer [nsb]])
+  (:require
+    [czlabclj.xlib.util.core :refer [test-nonil test-nestr]]
+    [czlabclj.xlib.util.str :refer [nsb]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs]
+    [clojure.java.io :as io])
 
   (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.frwk.dbio DBIOError]
-            [com.zotohlab.frwk.crypto PasswordAPI]
-            [java.io File]
-            [java.sql DriverManager Connection Statement]))
+  (:import
+    [com.zotohlab.frwk.dbio DBIOError]
+    [com.zotohlab.frwk.crypto PasswordAPI]
+    [java.io File]
+    [java.sql DriverManager Connection Statement]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def H2-SERVER-URL "jdbc:h2:tcp://host/path/db" )
-(def H2-DRIVER "org.h2.Driver" )
+(defonce H2-SERVER-URL "jdbc:h2:tcp://host/path/db" )
+(defonce H2-DRIVER "org.h2.Driver" )
 
-(def H2-MEM-URL "jdbc:h2:mem:{{dbid}};DB_CLOSE_DELAY=-1" )
-(def H2-FILE-URL "jdbc:h2:{{path}};MVCC=TRUE" )
+(defonce H2-MEM-URL "jdbc:h2:mem:{{dbid}};DB_CLOSE_DELAY=-1" )
+(defonce H2-FILE-URL "jdbc:h2:{{path}};MVCC=TRUE" )
 
-(def H2_MVCC ";MVCC=TRUE" )
+(defonce H2_MVCC ";MVCC=TRUE" )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; H2
@@ -89,7 +92,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeH2Db "Create a H2 database."
+(defn MakeH2Db
+
+  "Create a H2 database"
 
   [^File dbFileDir
    ^String dbid
@@ -99,11 +104,12 @@
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
+
   (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
         pwd (nsb pwdObj)
-        dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
-    (log/debug "Creating H2: " dbUrl)
+        dbUrl (cs/replace H2-FILE-URL "{{path}}" u) ]
+    (log/debug "Creating H2: %s" dbUrl)
     (.mkdir dbFileDir)
     (with-open [c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
@@ -117,7 +123,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CloseH2Db "Close an existing H2 database."
+(defn CloseH2Db
+
+  "Close an existing H2 database"
 
   [^File dbFileDir
    ^String dbid
@@ -127,11 +135,12 @@
   (test-nonil "file-dir" dbFileDir)
   (test-nestr "db-id" dbid)
   (test-nestr "user" user)
+
   (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
         pwd (nsb pwdObj)
-        dbUrl (StringUtils/replace H2-FILE-URL "{{path}}" u) ]
-    (log/debug "Closing H2: " dbUrl)
+        dbUrl (cs/replace H2-FILE-URL "{{path}}" u) ]
+    (log/debug "Closing H2: %s" dbUrl)
     (with-open [c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
       (with-open [s (.createStatement c1) ]

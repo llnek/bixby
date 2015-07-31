@@ -14,22 +14,27 @@
 
   czlabclj.xlib.dbio.simple
 
-  (:require [czlabclj.xlib.util.str :refer [hgl?]])
+  (:require
+    [czlabclj.xlib.util.str :refer [hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.sql])
 
-  (:import  [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr]
-            [java.sql Connection]))
+  (:import
+    [com.zotohlab.frwk.dbio DBAPI MetaCache SQLr]
+    [java.sql Connection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- openDB "Connect to a database."
+(defn- openDB
+
+  "Connect to a database"
 
   ^Connection
   [^DBAPI db]
@@ -42,14 +47,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SimpleSQLr "Non transactional SQL object."
+(defn SimpleSQLr
+
+  "Non transactional SQL object"
 
   ^SQLr
   [^DBAPI db]
 
-  (ReifySQLr db
-             #(openDB %)
-             (fn [^Connection c f] (with-open [c c] (f c)))
+  (ReifySQLr
+    db
+    #(openDB %)
+    (fn [^Connection c f] (with-open [c c] (f c)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

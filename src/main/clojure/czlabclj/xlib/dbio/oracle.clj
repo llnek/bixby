@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.oracle
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core])
@@ -63,7 +63,7 @@
 
   [db table fld]
 
-  (.put ^Map *DDL_BVS* table (:column fld))
+  (swap! *DDL_BVS* assoc table (:column fld))
   (GenInteger db fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,7 +72,7 @@
 
   [db table fld]
 
-  (.put ^Map *DDL_BVS* table (:column fld))
+  (swap! *DDL_BVS* assoc table (:column fld))
   (GenLong db fld))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,9 +81,8 @@
 
   [db]
 
-  (let [m (into {} *DDL_BVS*)
-        bf (StringBuilder.) ]
-    (doseq [en (seq m) ]
+  (let [bf (StringBuilder.) ]
+    (doseq [en (deref *DDL_BVS*)]
       (doto bf
         (.append (createSequence db (first en)))
         (.append (createSequenceTrigger db
@@ -101,7 +100,6 @@
   (str "DROP TABLE " table " CASCADE CONSTRAINTS PURGE" (GenExec db) "\n\n"))
 
 ;;(println (GetDDL (MakeMetaCache testschema) (Oracle.) ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

@@ -14,35 +14,37 @@
 
   czlabclj.xlib.crypto.codec
 
-  (:require [czlabclj.xlib.util.core
-             :refer
-             [NewRandom Bytesify Stringify ThrowBadArg]]
-            [czlabclj.xlib.util.io :refer [ByteOS]]
-            [czlabclj.xlib.util.str :refer [nichts? nsb]])
+  (:require
+    [czlabclj.xlib.util.core
+        :refer [NewRandom Bytesify Stringify ThrowBadArg]]
+    [czlabclj.xlib.util.io :refer [ByteOS]]
+    [czlabclj.xlib.util.str :refer [nichts? nsb]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.math.numeric-tower :as math])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.math.numeric-tower :as math])
 
-  (:import  [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
-            [org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher]
-            [org.bouncycastle.crypto.generators DESedeKeyGenerator]
-            [org.jasypt.encryption.pbe StandardPBEStringEncryptor]
-            [org.apache.commons.codec.binary Base64]
-            [org.apache.commons.lang3.tuple ImmutablePair]
-            [javax.crypto.spec SecretKeySpec]
-            [org.jasypt.util.text StrongTextEncryptor]
-            [java.io ByteArrayOutputStream]
-            [java.security Key KeyFactory SecureRandom]
-            [java.security.spec PKCS8EncodedKeySpec
-                                X509EncodedKeySpec]
-            [javax.crypto Cipher]
-            [com.zotohlab.frwk.crypto PasswordAPI]
-            [org.mindrot.jbcrypt BCrypt]
-            [org.bouncycastle.crypto KeyGenerationParameters]
-            [org.bouncycastle.crypto.engines BlowfishEngine
-             AESEngine RSAEngine DESedeEngine]
-            [org.bouncycastle.crypto.modes CBCBlockCipher]
-            [org.apache.commons.lang3 StringUtils]))
+  (:import
+    [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
+    [org.bouncycastle.crypto.paddings PaddedBufferedBlockCipher]
+    [org.bouncycastle.crypto.generators DESedeKeyGenerator]
+    [org.jasypt.encryption.pbe StandardPBEStringEncryptor]
+    [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.lang3.tuple ImmutablePair]
+    [javax.crypto.spec SecretKeySpec]
+    [org.jasypt.util.text StrongTextEncryptor]
+    [java.io ByteArrayOutputStream]
+    [java.security Key KeyFactory SecureRandom]
+    [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
+    [javax.crypto Cipher]
+    [com.zotohlab.frwk.crypto PasswordAPI]
+    [org.mindrot.jbcrypt BCrypt]
+    [org.bouncycastle.crypto KeyGenerationParameters]
+    [org.bouncycastle.crypto.engines
+     BlowfishEngine
+     AESEngine RSAEngine DESedeEngine]
+    [org.bouncycastle.crypto.modes CBCBlockCipher]
+    [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -79,7 +81,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ensureKeySize "Given an algo, make sure the key has enough bits."
+(defn- ensureKeySize
+
+  "Given an algo, make sure the key has enough bits"
 
   ^bytes
   [^bytes keyBits ^String algo]
@@ -96,7 +100,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- keyAsBits "Given the algo, sanitize the key, chop length if necessary."
+(defn- keyAsBits
+
+  "Given the algo, sanitize the key, chop length if necessary"
 
   ^bytes
   [^bytes pwd ^String algo]
@@ -126,7 +132,7 @@
 ;;
 (defprotocol BaseCryptor
 
-  "Methods supported by a crypto object."
+  "Methods supported by a crypto object"
 
   (decrypt [_ ^bytes pkey ^String cipherText]
            [_ ^String cipherText] )

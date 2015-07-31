@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.mysql
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core]))
@@ -66,7 +66,6 @@
   (str "DROP TABLE IF EXISTS " table (GenExec db) "\n\n"))
 
 ;;(println (GetDDL (MakeMetaCache testschema) (MySQL.) ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

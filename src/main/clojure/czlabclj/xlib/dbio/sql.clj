@@ -9,38 +9,37 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "kenl" }
 
   czlabclj.xlib.dbio.sql
 
-  (:require [czlabclj.xlib.util.meta :refer [BytesClass CharsClass]]
-            [czlabclj.xlib.util.str
-             :refer
-             [sname ucase lcase hgl?
-              AddDelim! nsb strim]]
-            [czlabclj.xlib.util.io :refer [ReadChars ReadBytes ]]
-            [czlabclj.xlib.util.core
-             :refer
-             [FlattenNil notnil? NowJTstamp nnz]]
-            [czlabclj.xlib.util.dates :refer [GmtCal]])
+  (:require
+    [czlabclj.xlib.util.meta :refer [BytesClass CharsClass]]
+    [czlabclj.xlib.util.str
+        :refer [sname ucase lcase hgl? AddDelim! nsb strim]]
+    [czlabclj.xlib.util.io :refer [ReadChars ReadBytes ]]
+    [czlabclj.xlib.util.core
+        :refer [FlattenNil notnil? NowJTstamp nnz]]
+    [czlabclj.xlib.util.dates :refer [GmtCal]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.core])
 
-  (:import  [com.zotohlab.frwk.dbio MetaCache
-             SQLr DBIOError OptLockError]
-            [java.util Calendar GregorianCalendar TimeZone]
-            [java.math BigDecimal BigInteger]
-            [java.io Reader InputStream]
-            [com.zotohlab.frwk.dbio DBAPI]
-            [com.zotohlab.frwk.io XData]
-            [java.sql ResultSet Types SQLException
-             DatabaseMetaData ResultSetMetaData
-             Date Timestamp Blob Clob
-             Statement PreparedStatement Connection]))
+  (:import
+    [java.util Calendar GregorianCalendar TimeZone]
+    [com.zotohlab.frwk.dbio MetaCache
+        SQLr DBIOError OptLockError]
+    [java.math BigDecimal BigInteger]
+    [java.io Reader InputStream]
+    [com.zotohlab.frwk.dbio DBAPI]
+    [com.zotohlab.frwk.io XData]
+    [java.sql ResultSet Types SQLException
+        DatabaseMetaData ResultSetMetaData
+        Date Timestamp Blob Clob
+        Statement PreparedStatement Connection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -72,23 +71,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SqlFilterClause "[sql-filter string, values]"
+(defn SqlFilterClause
+
+  "[sql-filter string, values]"
 
   [mcz filters]
 
-  (let [flds (:fields (meta mcz))
-        wc (reduce #(let [k (first %2)
-                          fld (get flds k)
-                          c (if (nil? fld)
-                              (sname k)
-                              (:column fld)) ]
-                      (AddDelim! %1 " AND "
-                                 (str (ese c)
-                                      (if (nil? (last %2))
-                                        " IS NULL "
-                                        " = ? "))))
-                   (StringBuilder.)
-                   (seq filters)) ]
+  (let
+    [flds (:fields (meta mcz))
+     wc (reduce
+          #(let [k (first %2)
+                 fld (get flds k)
+                 c (if (nil? fld)
+                     (sname k)
+                     (:column fld)) ]
+             (AddDelim! %1
+                        " AND "
+                        (str (ese c)
+                             (if (nil? (last %2))
+                               " IS NULL "
+                               " = ? "))))
+          (StringBuilder.)
+          (seq filters)) ]
     [ (nsb wc) (FlattenNil (vals filters)) ]
   ))
 
@@ -111,8 +115,8 @@
               Reader obj
               nil) ]
     (cond
-      (notnil? rdr) (with-open [r rdr] (ReadChars r))
-      (notnil? inp) (with-open [p inp] (ReadBytes p))
+      (some? rdr) (with-open [r rdr] (ReadChars r))
+      (some? inp) (with-open [p inp] (ReadBytes p))
       :else obj)
   ))
 
@@ -130,7 +134,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- modelInjtor "Row is a transient object."
+(defn- modelInjtor
+
+  "Row is a transient object"
 
   [mcz row cn ct cv]
 
@@ -143,8 +149,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stdInjtor "Generic resultset, no model defined.
-                  Row is a transient object."
+(defn- stdInjtor
+
+  "Generic resultset, no model defined
+   Row is a transient object"
 
   [row cn ct cv]
 
@@ -152,16 +160,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- row2Obj "Convert a jdbc row into object."
+(defn- row2Obj
+
+  "Convert a jdbc row into object"
 
   [finj ^ResultSet rs ^ResultSetMetaData rsmeta]
 
   (with-local-vars [row (transient {}) ]
-    (doseq [pos (range 1 (inc (.getColumnCount rsmeta))) ]
-      (let [cn (.getColumnName rsmeta (int pos))
-            ct (.getColumnType rsmeta (int pos))
-            cv (readOneCol ct (int pos) rs) ]
-        (var-set row (finj @row cn ct cv))))
+    (doseq [pos (range 1 (inc (.getColumnCount rsmeta)))
+            :let [cn (.getColumnName rsmeta (int pos))
+                  ct (.getColumnType rsmeta (int pos))
+                  cv (readOneCol ct (int pos) rs) ]]
+      (var-set row (finj @row cn ct cv)))
     (persistent! @row)
   ))
 
@@ -211,10 +221,13 @@
 
   [^String sqlstr token cmd]
 
-  (loop [stop false sql sqlstr]
+  (loop
+    [stop false
+     sql sqlstr]
     (if stop
       sql
-      (let [pos (.indexOf (lcase sql) (sname token))
+      (let [pos (.indexOf (lcase sql)
+                          (sname token))
             rc (if (< pos 0)
                  []
                  [(.substring sql 0 pos)
@@ -224,8 +237,7 @@
           (recur false (str (first rc)
                             " WITH ("
                             cmd
-                            ") " (last rc)) ))
-      ))
+                            ") " (last rc)) ))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -263,7 +275,7 @@
                                 sql
                                 Statement/RETURN_GENERATED_KEYS)
              (.prepareStatement conn sql)) ]
-    (log/debug "Building SQLStmt: {}" sql)
+    (log/debug "Building SQLStmt: %s" sql)
     (doseq [n (range 0 (count params)) ]
       (setBindVar ps (inc n) (nth params n)))
     ps
@@ -307,8 +319,9 @@
 
   [db conn sql pms func post]
 
-  (with-open [stmt (buildStmt db conn sql pms)
-              rs (.executeQuery stmt) ]
+  (with-open
+    [stmt (buildStmt db conn sql pms)
+     rs (.executeQuery stmt) ]
     (let [rsmeta (.getMetaData rs) ]
       (loop [sum (transient [])
              ok (.next rs) ]
@@ -339,41 +352,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- insertFlds "Format sql string for insert."
+(defn- insertFlds
+
+  "Format sql string for insert"
 
   [sb1 sb2 obj flds]
 
-  (with-local-vars [ps (transient []) ]
-    (doseq [[k v] (seq obj) ]
-      (let [fdef (flds k) ]
-        (when (and (notnil? fdef)
-                   (not (:auto fdef))
-                   (not (:system fdef)))
-          (AddDelim! sb1 "," (ese (Colname fdef)))
-          (AddDelim! sb2 "," (if (nil? v) "NULL" "?"))
-          (when-not (nil? v)
-            (var-set ps (conj! @ps v))))))
+  (with-local-vars
+    [ps (transient []) ]
+    (doseq [[k v] obj
+            :let [fdef (flds k) ]]
+      (when (and (some? fdef)
+                 (not (:auto fdef))
+                 (not (:system fdef)))
+        (AddDelim! sb1 "," (ese (Colname fdef)))
+        (AddDelim! sb2 "," (if (nil? v) "NULL" "?"))
+        (when (some? v)
+          (var-set ps (conj! @ps v)))))
     (persistent! @ps)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- updateFlds "Format sql string for update."
+(defn- updateFlds
+
+  "Format sql string for update"
 
   [^StringBuilder sb1 obj flds]
 
-  (with-local-vars [ps (transient []) ]
-    (doseq [[k v] (seq obj) ]
-      (let [fdef (flds k) ]
-        (when (and (notnil? fdef)
-                   (:updatable fdef)
-                   (not (:auto fdef))
-                   (not (:system fdef)) )
-          (doto sb1
-            (AddDelim! "," (ese (Colname fdef)))
-            (.append (if (nil? v) "=NULL" "=?")))
-          (when-not (nil? v)
-            (var-set ps (conj! @ps v))))))
+  (with-local-vars
+    [ps (transient []) ]
+    (doseq [[k v]  obj
+            :let [fdef (flds k) ]]
+      (when (and (some? fdef)
+                 (:updatable fdef)
+                 (not (:auto fdef))
+                 (not (:system fdef)) )
+        (doto sb1
+          (AddDelim! "," (ese (Colname fdef)))
+          (.append (if (nil? v) "=NULL" "=?")))
+        (when (some? v)
+          (var-set ps (conj! @ps v)))))
     (persistent! @ps)
   ))
 
@@ -438,10 +457,13 @@
 
   [db metas conn model]
 
-  (let [rc (doQuery db metas conn
-                    (str "SELECT COUNT(*) FROM "
-                         (ese (Tablename model metas)))
-                    [] ) ]
+  (let
+    [rc (doQuery db
+                 metas
+                 conn
+                 (str "SELECT COUNT(*) FROM "
+                      (ese (Tablename model metas)))
+                 [])]
     (if (empty? rc)
       0
       (last (first (seq (first rc)))))
@@ -476,7 +498,9 @@
           verid (:verid info)
           p (if lock [rowid verid] [rowid] )
           w (fmtUpdateWhere lock mcz)
-          cnt (doExec db metas conn
+          cnt (doExec db
+                      metas
+                      conn
                       (str "DELETE FROM "
                            (ese table)
                            " WHERE " w) p) ]
@@ -504,7 +528,9 @@
           now (NowJTstamp)
           pms (insertFlds s1 s2 obj flds) ]
       (when (> (.length s1) 0)
-        (let [out (doExecWithOutput db metas conn
+        (let [out (doExecWithOutput db
+                                    metas
+                                    conn
                                     (str "INSERT INTO "
                                          (ese table)
                                          "(" s1
@@ -514,11 +540,11 @@
                                     pkey)]
           (if (empty? out)
             (DbioError (str "Insert requires row-id to be returned."))
-            (log/debug "Exec-with-out " out))
+            (log/debug "Exec-with-out %s" out))
           (let [wm {:rowid (:1 out) :verid 0} ]
             (when-not (number? (:rowid wm))
                     (DbioError (str "RowID data-type must be Long.")))
-                  (vary-meta obj MergeMeta wm)))))
+            (vary-meta obj MergeMeta wm)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -542,18 +568,25 @@
           nver (inc cver)
           pms (updateFlds sb1 obj flds) ]
       (when (> (.length sb1) 0)
-        (with-local-vars [ ps (transient pms) ]
-          (-> (AddDelim! sb1 "," (ese (Colname :last-modify mcz)))
+        (with-local-vars
+          [ ps (transient pms) ]
+          (-> (AddDelim! sb1
+                         ","
+                         (ese (Colname :last-modify mcz)))
               (.append "=?"))
           (var-set ps (conj! @ps now))
           (when lock ;; up the version
-            (-> (AddDelim! sb1 "," (ese (Colname :verid mcz)))
+            (-> (AddDelim! sb1
+                           ","
+                           (ese (Colname :verid mcz)))
                 (.append "=?"))
             (var-set ps (conj! @ps nver)))
           ;; for the where clause
           (var-set ps (conj! @ps rowid))
           (when lock (var-set  ps (conj! @ps cver)))
-          (let [cnt (doExec db metas conn
+          (let [cnt (doExec db
+                            metas
+                            conn
                             (str "UPDATE "
                                  (ese table)
                                  " SET "
@@ -577,86 +610,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifySQLr "Create a SQLr."
+(defn ReifySQLr
+
+  "Create a SQLr"
 
   ^SQLr
   [^DBAPI db getc runc]
 
-  (let [metaz (-> db (.getMetaCache)(.getMetas))]
-    (reify SQLr
+  {:pre [(fn? getc) (fn? runc)]}
 
-      (findSome [this  model filters] (.findSome this model filters {} ))
+  (let
+    [metaz (-> db
+               (.getMetaCache)
+               (.getMetas))]
+    (reify
 
-      (findAll [this model extra] (.findSome this model {} extra))
-      (findAll [this model] (.findAll this model {}))
+      SQLr
+
+      (findSome [this model filters]
+        (.findSome this model filters {} ))
+
+      (findAll [this model extra]
+        (.findSome this model {} extra))
+
+      (findAll [this model]
+        (.findAll this model {}))
 
       (findOne [this model filters]
         (when-let [rset (.findSome this model filters {})]
           (when-not (empty? rset) (first rset))))
 
       (findSome [_ model filters extraSQL]
-        (let [func (fn [conn]
-                     (let [mcz (metaz model)
-                           s (str "SELECT * FROM " (GTable mcz))
-                           [wc pms]
-                           (SqlFilterClause mcz filters) ]
-                       (if (hgl? wc)
-                         (doQuery+ db metaz conn
-                                   (doExtraSQL (str s " WHERE " wc)
-                                               extraSQL)
-                                   pms model)
-                         (doQuery+ db metaz conn
-                                   (doExtraSQL s extraSQL) [] model))))]
+        (let
+          [func #(let
+                   [mcz (metaz model)
+                    s (str "SELECT * FROM "
+                           (GTable mcz))
+                    [wc pms]
+                    (SqlFilterClause mcz filters) ]
+                   (if (hgl? wc)
+                     (doQuery+ db metaz %1
+                               (doExtraSQL (str s " WHERE " wc)
+                                           extraSQL)
+                               pms model)
+                     (doQuery+ db metaz %1
+                               (doExtraSQL s extraSQL) [] model)))]
           (runc (getc db) func)))
 
       (metas [_] metaz)
 
       (update [_ obj]
-        (let [func (fn [conn]
-                     (doUpdate db metaz conn obj) )]
-          (runc (getc db) func)))
+        (->> #(doUpdate db metaz %1 obj)
+             (runc (getc db) )))
 
       (delete [_ obj]
-        (let [func (fn [conn]
-                     (doDelete db metaz conn obj) )]
-          (runc (getc db) func)))
+        (->> #(doDelete db metaz %1 obj)
+             (runc (getc db) )))
 
       (insert [_ obj]
-        (let [func (fn [conn]
-                     (doInsert db metaz conn obj))]
-          (runc (getc db) func)))
+        (->> #(doInsert db metaz %1 obj)
+             (runc (getc db) )))
 
       (select [_ model sql params]
-        (let [func (fn [conn]
-                     (doQuery+ db metaz conn sql params model) )]
-          (runc (getc db) func)))
+        (->> #(doQuery+ db metaz %1 sql params model)
+             (runc (getc db) )))
 
       (select [_ sql params]
-        (let [func (fn [conn]
-                     (doQuery db metaz conn sql params) )]
-          (runc (getc db) func)))
+        (->> #(doQuery db metaz %1 sql params)
+             (runc (getc db) )))
 
       (execWithOutput [_ sql pms]
-        (let [func (fn [conn]
-                     (doExecWithOutput db metaz conn
-                                       sql pms {:pkey COL_ROWID} ))]
-          (runc (getc db) func)))
+        (->> #(doExecWithOutput db metaz %1
+                                sql pms {:pkey COL_ROWID})
+             (runc (getc db) )))
 
       (exec [_ sql pms]
-        (let [func (fn [conn]
-                     (doExec db metaz conn sql pms) )]
-          (runc (getc db) func)))
+        (->> #(doExec db metaz %1 sql pms)
+             (runc (getc db) )))
 
       (countAll [_ model]
-        (let [func (fn [conn]
-                     (doCount db metaz conn model) )]
-          (runc (getc db) func)))
+        (->> #(doCount db metaz %1 model)
+             (runc (getc db) )))
 
       (purge [_ model]
-        (let [func (fn [conn]
-                     (doPurge db metaz conn model) )]
-          (runc (getc db) func)))
-  )))
+        (->> #(doPurge db metaz %1 model)
+             (runc (getc db) ))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

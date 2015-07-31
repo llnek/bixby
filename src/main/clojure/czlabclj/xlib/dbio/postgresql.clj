@@ -14,7 +14,7 @@
 
   czlabclj.xlib.dbio.postgresql
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.drivers]
         [czlabclj.xlib.dbio.core :as dbcore]))
@@ -24,8 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def POSTGRESQL-URL "jdbc:postgresql://{{host}}:{{port}}/{{db}}" )
-(def POSTGRESQL-DRIVER "org.postgresql.Driver")
+(defonce POSTGRESQL-URL "jdbc:postgresql://{{host}}:{{port}}/{{db}}" )
+(defonce POSTGRESQL-DRIVER "org.postgresql.Driver")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,8 +70,6 @@
 
 ;;(def XXX (.getMetas (MakeMetaCache testschema)))
 ;;(println (GetDDL (MakeMetaCache testschema) (Postgresql.) ))
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 
