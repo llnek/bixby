@@ -14,65 +14,57 @@
 
   czlabclj.xlib.netty.filters
 
-  (:require [czlabclj.xlib.util.core
-             :refer [ThrowIOE
-                     MakeMMap
-                     Cast?
-                     notnil?
-                     spos?
-                     Bytesify
-                     SafeGetJsonObject
-                     SafeGetJsonInt
-                     SafeGetJsonString]]
-            [czlabclj.xlib.util.str
-             :refer [lcase
-                     ucase
-                     strim
-                     nsb
-                     hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [ThrowIOE MakeMMap
+     Cast? notnil? spos? Bytesify
+     SafeGetJsonObject SafeGetJsonInt SafeGetJsonString]]
+    [czlabclj.xlib.util.str :refer [lcase ucase
+     strim nsb hgl?]])
 
-  (:require [czlabclj.xlib.util.logging :as log]
-            [clojure.string :as cs])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
   (:use [czlabclj.xlib.netty.io]
         [czlabclj.xlib.util.io])
 
-  (:import  [java.io File ByteArrayOutputStream InputStream IOException]
-            [io.netty.channel ChannelHandlerContext ChannelPipeline
-             ChannelInboundHandlerAdapter ChannelFuture
-             ChannelDuplexHandler
-             ChannelOption ChannelFutureListener
-             Channel ChannelHandler]
-            [org.apache.commons.lang3 StringUtils]
-            [io.netty.buffer Unpooled]
-            [java.net URLDecoder URL ]
-            [io.netty.handler.codec.http HttpHeaders HttpMessage
-             HttpHeaders$Values
-             HttpHeaders$Names
-             LastHttpContent DefaultFullHttpResponse
-             DefaultFullHttpRequest HttpContent
-             HttpRequest HttpResponse FullHttpRequest
-             QueryStringDecoder HttpResponseStatus
-             HttpRequestDecoder HttpVersion
-             HttpObjectAggregator HttpResponseEncoder]
-            [io.netty.handler.codec.http.multipart InterfaceHttpData
-             DefaultHttpDataFactory
-             HttpPostRequestDecoder Attribute
-             HttpPostRequestDecoder$EndOfDataDecoderException
-             FileUpload DiskFileUpload
-             InterfaceHttpData$HttpDataType]
-            [io.netty.util ReferenceCountUtil]
-            [io.netty.handler.codec.http.websocketx
+  (:import
+    [java.io File ByteArrayOutputStream InputStream IOException]
+    [io.netty.channel ChannelHandlerContext ChannelPipeline
+     ChannelInboundHandlerAdapter ChannelFuture
+     ChannelDuplexHandler
+     ChannelOption ChannelFutureListener
+     Channel ChannelHandler]
+    [org.apache.commons.lang3 StringUtils]
+    [io.netty.buffer Unpooled]
+    [java.net URLDecoder URL ]
+    [io.netty.handler.codec.http HttpHeaders HttpMessage
+     HttpHeaders$Values
+     HttpHeaders$Names
+     LastHttpContent DefaultFullHttpResponse
+     DefaultFullHttpRequest HttpContent
+     HttpRequest HttpResponse FullHttpRequest
+     QueryStringDecoder HttpResponseStatus
+     HttpRequestDecoder HttpVersion
+     HttpObjectAggregator HttpResponseEncoder]
+    [io.netty.handler.codec.http.multipart InterfaceHttpData
+     DefaultHttpDataFactory
+     HttpPostRequestDecoder Attribute
+     HttpPostRequestDecoder$EndOfDataDecoderException
+     FileUpload DiskFileUpload
+     InterfaceHttpData$HttpDataType]
+    [io.netty.util ReferenceCountUtil]
+    [io.netty.handler.codec.http.websocketx
              WebSocketServerProtocolHandler]
-            [io.netty.handler.stream ChunkedWriteHandler]
-            [com.zotohlab.frwk.netty PipelineConfigurator
-             SimpleInboundFilter
-             InboundAdapter
-             ErrorSinkFilter MessageFilter
-             Expect100Filter AuxHttpFilter]
-            [com.zotohlab.frwk.core CallableWithArgs]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.net ULFileItem ULFormItems]))
+    [io.netty.handler.stream ChunkedWriteHandler]
+    [com.zotohlab.frwk.netty PipelineConfigurator
+     SimpleInboundFilter
+     InboundAdapter
+     ErrorSinkFilter MessageFilter
+     Expect100Filter AuxHttpFilter]
+    [com.zotohlab.frwk.core CallableWithArgs]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.net ULFileItem ULFormItems]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -84,7 +76,7 @@
 
   [^ChannelPipeline pipe]
 
-  (log/debug "ChannelPipeline: handlers= %s" (cs/join "|" (.names pipe))))
+  (log/debug "pipeline: handlers= %s" (cs/join "|" (.names pipe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,7 +86,7 @@
 
   (let [ch (.channel ctx)
         v (GetAKey ch MSGTYPE_KEY)]
-    (when-not (= "wsock" v)
+    (when (not= "wsock" v)
       (ReplyXXX ch 500))
   ))
 
@@ -123,9 +115,9 @@
              (HttpHeaders/is100ContinueExpected msg))
     (-> (->> (MakeFullHttpReply HttpResponseStatus/CONTINUE)
              (.writeAndFlush ctx))
-        (FutureCB (fn [^ChannelFuture f]
-                    (when-not (.isSuccess f)
-                      (.fireExceptionCaught ctx (.cause f))))))
+        (FutureCB #(let [^ChannelFuture f %1]
+                     (when-not (.isSuccess f)
+                       (.fireExceptionCaught ctx (.cause f))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleHttpMessage
+(defn HandleHttpMessage ""
 
   [^ChannelHandlerContext ctx
    ^Channel ch
@@ -176,7 +168,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- writeHttpData "Parse and eval form fields"
+(defn- writeHttpData
+
+  "Parse and eval form fields"
 
   [^ChannelHandlerContext ctx
    ^InterfaceHttpData data
@@ -195,6 +189,7 @@
               (-> ^DiskFileUpload fu (.renameTo fp))
               (->> (ULFileItem. nm ct fnm (XData. fp))
                    (.add fis)))
+            ;else
             (let [[fp ^OutputStream os] (OpenTempFile)]
               (try
                 (SlurpByteBuf (.content fu) os)
@@ -265,7 +260,9 @@
 ;;
 (defmethod FinzHttpContent :formpost
 
-  [^ChannelHandlerContext ctx ^Channel ch handler ^XData xs]
+  [^ChannelHandlerContext ctx
+   ^Channel ch
+   handler ^XData xs]
 
   (let [info (GetAKey ch MSGINFO_KEY)
         itms (splitBodyParams (if (.hasContent xs)
@@ -277,7 +274,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleFormPart
+(defn HandleFormPart ""
 
   [^ChannelHandlerContext ctx
    ^Channel ch
@@ -313,22 +310,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleFormPost
+(defn HandleFormPost ""
 
   [^ChannelHandlerContext ctx
    ^Channel ch
    ^HttpMessage msg]
 
   (let [info (GetAKey ch MSGINFO_KEY)
-        ctype (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
-                  nsb strim lcase) ]
+        ctype (->> HttpHeaders$Names/CONTENT_TYPE
+                   (GetHeader msg)
+                   nsb
+                   strim
+                   lcase) ]
     (doto ch
+      (SetAKey CBUF_KEY (Unpooled/compositeBuffer 1024))
       (SetAKey FORMITMS_KEY (ULFormItems.))
       (SetAKey XDATA_KEY (XData.)))
     (if (< (.indexOf ctype "multipart") 0)
-      (do ;; nothing to decode
-        (SetAKey ch CBUF_KEY (Unpooled/compositeBuffer 1024))
-        (HandleHttpContent ctx ch :formpost msg))
+      (HandleHttpContent ctx ch :formpost msg)
+      ;else
       (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
                    (HttpPostRequestDecoder. msg)) ]
         (SetAKey ch FORMDEC_KEY dc)
@@ -427,7 +427,7 @@
                     path (->> ^String (:wsuri tmp)
                               (QueryStringDecoder. )
                               (.path))]
-              (log/debug "websock upgrade request for uri " path)
+              (log/debug "websock upgrade request for uri %s" path)
               (.addAfter pipe
                          "HttpResponseEncoder"
                          "WebSocketServerProtocolHandler"

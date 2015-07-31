@@ -14,44 +14,48 @@
 
   czlabclj.xlib.net.apache
 
-  (:require [czlabclj.xlib.util.str
-             :refer [lcase hgl? strim Embeds? HasNocase?]]
-            [czlabclj.xlib.util.core :refer [ThrowIOE try!]]
-            [czlabclj.xlib.util.mime :refer [GetCharset]])
+  (:require
+    [czlabclj.xlib.util.str
+          :refer [lcase hgl? strim Embeds? HasNocase?]]
+    [czlabclj.xlib.util.core :refer [ThrowIOE try!]]
+    [czlabclj.xlib.util.mime :refer [GetCharset]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.net.comms])
 
-  (:import  [org.apache.http Header StatusLine HttpEntity HttpResponse]
-            [java.security.cert X509Certificate CertificateException]
-            [javax.net.ssl SSLContext SSLEngine X509TrustManager
-             TrustManagerFactorySpi TrustManager
-             ManagerFactoryParameters]
-            [org.apache.commons.codec.binary Base64]
-            [java.security KeyStoreException KeyStore
-             InvalidAlgorithmParameterException]
-            [com.zotohlab.tpcl.apache ApacheHttpClient ]
-            [com.zotohlab.frwk.net SSLTrustMgrFactory]
-            [com.zotohlab.frwk.io XData]
-            [org.apache.commons.lang3 StringUtils]
-            [org.apache.http.client.config RequestConfig]
-            [org.apache.http.client HttpClient]
-            [org.apache.http.client.methods HttpGet HttpPost]
-            [org.apache.http.impl.client HttpClientBuilder]
-            [java.io File IOException]
-            [org.apache.http.util EntityUtils]
-            [java.net URL URI]
-            [org.apache.http.params HttpConnectionParams]
-            [org.apache.http.entity InputStreamEntity]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [org.apache.http Header StatusLine HttpEntity HttpResponse]
+    [java.security.cert X509Certificate CertificateException]
+    [javax.net.ssl SSLContext SSLEngine X509TrustManager
+           TrustManagerFactorySpi TrustManager
+           ManagerFactoryParameters]
+    [org.apache.commons.codec.binary Base64]
+    [java.security KeyStoreException KeyStore
+           InvalidAlgorithmParameterException]
+    [com.zotohlab.tpcl.apache ApacheHttpClient ]
+    [com.zotohlab.frwk.net SSLTrustMgrFactory]
+    [com.zotohlab.frwk.io XData]
+    [org.apache.commons.lang3 StringUtils]
+    [org.apache.http.client.config RequestConfig]
+    [org.apache.http.client HttpClient]
+    [org.apache.http.client.methods HttpGet HttpPost]
+    [org.apache.http.impl.client HttpClientBuilder]
+    [java.io File IOException]
+    [org.apache.http.util EntityUtils]
+    [java.net URL URI]
+    [org.apache.http.params HttpConnectionParams]
+    [org.apache.http.entity InputStreamEntity]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; internal functions to support apache http client.
-(defn- mkApacheClientHandle ""
+;;
+(defn- mkApacheClientHandle
+
+  "Internal functions to support apache http client"
 
   ^HttpClient
   []
@@ -73,7 +77,7 @@
   ^bytes
   [^HttpEntity ent]
 
-  (when-not (nil? ent)
+  (when (some? ent)
     (EntityUtils/toByteArray ent)
   ))
 
@@ -93,13 +97,12 @@
   [^HttpResponse rsp]
 
   (let [ent (.getEntity rsp)
-        ct (when-not (nil? ent) (.getContentType ent))
+        ct (when (some? ent) (.getContentType ent))
         cv (if (nil? ct) "" (strim (.getValue ct)))
         cl (lcase cv) ]
     (try!
-      (log/debug "Http-response: content-encoding: "
+      (log/debug "response: content-encoding: %s\n%s%s"
                  (.getContentEncoding ent)
-                 "\n"
                  "Content-type: " cv))
     (let [bits (get-bits ent)
           clen (if (nil? bits) 0 (alength bits)) ]
@@ -124,7 +127,7 @@
   [^HttpResponse rsp]
 
   ;;TODO - handle redirect
-  (processError rsp (ThrowIOE "Redirect not supported.")) )
+  (processError rsp (ThrowIOE "Redirect not supported")) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,16 +153,19 @@
 ;;
 (defn- doPOST ""
 
-  [^URL targetUrl ^String contentType ^XData rdata beforeSendFunc]
+  [^URL targetUrl
+   ^String contentType
+   ^XData rdata beforeSendFunc]
 
   (let [^HttpClient cli (mkApacheClientHandle) ]
     (try
-      (let [ent (InputStreamEntity. (.stream rdata) (.size rdata))
+      (let [ent (InputStreamEntity. (.stream rdata)
+                                    (.size rdata))
             p (HttpPost. (.toURI targetUrl)) ]
         (.setEntity p (doto ent
                             (.setContentType contentType)
                             (.setChunked true)))
-        (when (fn? beforeSendFunc) (beforeSendFunc p))
+        (beforeSendFunc p)
         (processReply (.execute cli p)))
       (finally
         (.. cli getConnectionManager shutdown)))
@@ -174,7 +180,7 @@
   (let [^HttpClient cli (mkApacheClientHandle) ]
     (try
       (let [g (HttpGet. (.toURI targetUrl)) ]
-        (when (fn? beforeSendFunc) (beforeSendFunc g))
+        (beforeSendFunc g)
         (processReply (.execute cli g)))
       (finally
         (.. cli getConnectionManager shutdown)))
@@ -182,29 +188,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SyncPost "Perform a http-post on the target url."
+(defn SyncPost
 
-  ([^URL targetUrl contentType
-    ^XData rdata]
-   (SyncPost targetUrl contentType rdata nil))
+  "Perform a http-post on the target url"
 
-  ([^URL targetUrl contentType
-    ^XData rdata b4SendFn]
-   (doPOST targetUrl contentType rdata b4SendFn)))
+  [^URL targetUrl ^String contentType
+   ^XData rdata & [b4SendFn]]
+
+  (doPOST targetUrl
+          contentType
+          rdata
+          (or b4SendFn (constantly nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SyncGet "Perform a http-get on the target url."
+(defn SyncGet
 
-  ([^URL targetUrl]
-   (SyncGet targetUrl nil))
+  "Perform a http-get on the target url"
 
-  ([^URL targetUrl b4SendFn]
-   (doGET targetUrl b4SendFn)))
+  [^URL targetUrl & [b4SendFn]]
+
+  (doGET targetUrl (or b4SendFn (constantly nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSimpleClientSSL "Simple minded, trusts everyone."
+(defn MakeSimpleClientSSL
+
+  "Simple minded, trusts everyone"
 
   ^SSLContext
   []

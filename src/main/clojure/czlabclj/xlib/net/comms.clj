@@ -14,35 +14,36 @@
 
   czlabclj.xlib.net.comms
 
-  (:require [czlabclj.xlib.util.str
+  (:require
+    [czlabclj.xlib.util.str
              :refer [lcase hgl? strim Embeds? HasNocase?]]
-            [czlabclj.xlib.util.core :refer [ThrowIOE]]
-            [czlabclj.xlib.util.mime :refer [GetCharset]])
+    [czlabclj.xlib.util.core :refer [ThrowIOE]]
+    [czlabclj.xlib.util.mime :refer [GetCharset]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
-  (:import  [java.security.cert X509Certificate CertificateException]
-            [javax.net.ssl SSLContext SSLEngine X509TrustManager
-             TrustManagerFactorySpi TrustManager
-             ManagerFactoryParameters]
-            [org.apache.commons.codec.binary Base64]
-            [java.security KeyStoreException KeyStore
-             InvalidAlgorithmParameterException]
-            [com.zotohlab.tpcl.apache ApacheHttpClient ]
-            [com.zotohlab.frwk.net SSLTrustMgrFactory]
-            [com.zotohlab.frwk.io XData]
-            [org.apache.commons.lang3 StringUtils]
-            [java.io File IOException]
-            [java.net URL URI]
-            [com.zotohlab.frwk.net ULFormItems ULFileItem]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [java.security.cert X509Certificate CertificateException]
+    [javax.net.ssl SSLContext SSLEngine X509TrustManager
+         TrustManagerFactorySpi TrustManager
+         ManagerFactoryParameters]
+    [org.apache.commons.codec.binary Base64]
+    [java.security KeyStoreException KeyStore
+         InvalidAlgorithmParameterException]
+    [com.zotohlab.tpcl.apache ApacheHttpClient ]
+    [com.zotohlab.frwk.net SSLTrustMgrFactory]
+    [com.zotohlab.frwk.io XData]
+    [org.apache.commons.lang3 StringUtils]
+    [java.io File IOException]
+    [java.net URL URI]
+    [com.zotohlab.frwk.net ULFormItems ULFileItem]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-
 (def ^:private ^String AUTH "Authorization")
 (def ^:private ^String BASIC "Basic")
 
@@ -52,19 +53,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defrecord HTTPMsgInfo
-  [^String protocol
-   ^String method
-   ^String uri
-  is-chunked
-  keep-alive
-  clen
-  headers
-  params])
+(defn GetFormUploads
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn GetFormUploads "Only return file uploads."
+  "Only return file uploads"
 
   [^ULFormItems items]
 
@@ -73,7 +64,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetFormFields "Only return the form fields."
+(defn GetFormFields
+
+  "Only return the form fields"
 
   [^ULFormItems items]
 
@@ -82,7 +75,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseBasicAuth "Parse line looking for basic authentication info."
+(defn ParseBasicAuth
+
+  "Parse line looking for basic authentication info"
 
   [^String line]
 
@@ -112,7 +107,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseIE "Parse user agent line looking for IE."
+(defn ParseIE
+
+  "Parse user agent line looking for IE"
 
   [^String line]
 
@@ -137,7 +134,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseChrome "Parse user agent line looking for chrome."
+(defn ParseChrome
+
+  "Parse user agent line looking for chrome"
 
   [^String line]
 
@@ -152,7 +151,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseKindle "Parse header line looking for Kindle."
+(defn ParseKindle
+
+  "Parse header line looking for Kindle"
 
   [^String line]
 
@@ -167,7 +168,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseAndroid "Parse header line looking for Android."
+(defn ParseAndroid
+
+  "Parse header line looking for Android"
 
   [^String line]
 
@@ -182,7 +185,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseFFox "Parse header line looking for Firefox."
+(defn ParseFFox
+
+  "Parse header line looking for Firefox"
 
   [^String line]
 
@@ -197,7 +202,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseSafari "Parse header line looking for Safari."
+(defn ParseSafari
+
+  "Parse header line looking for Safari"
 
   [^String line]
 
@@ -218,7 +225,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ParseUserAgentLine "Retuns a map of browser/device attributes."
+(defn ParseUserAgentLine
+
+  "Retuns a map of browser/device attributes"
 
   [^String agentLine]
 
@@ -249,7 +258,6 @@
       {} )
   ))
 
-(ns-unmap *ns* '->HTTPMsgInfo)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

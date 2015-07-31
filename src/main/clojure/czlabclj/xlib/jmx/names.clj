@@ -14,11 +14,13 @@
 
   czlabclj.xlib.jmx.names
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
-            [javax.management ObjectName]))
+  (:import
+    [org.apache.commons.lang3 StringUtils]
+    [javax.management ObjectName]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -26,27 +28,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeObjectName "domain: com.acme
-                      beanName: mybean
-                      paths: [ \"a=b\" \"c=d\" ]"
-  (^ObjectName [^String domain
-                ^String beanName
-                paths]
-               (let [sb (StringBuilder.)
-                     cs (seq paths) ]
-                 (doto sb
-                   (.append domain)
-                   (.append ":")
-                   (.append (cstr/join "," cs)))
-                 (when-not (empty? cs) (.append sb ","))
-                 (doto sb
-                   (.append "name=")
-                   (.append beanName))
-                 (ObjectName. (.toString sb))))
+(defn MakeObjectName
 
-  (^ObjectName [^String domain
-                ^String beanName]
-               (MakeObjectName domain beanName [])) )
+  "paths: [ \"a=b\" \"c=d\" ]
+   domain: com.acme
+   beanName: mybean"
+
+  ^ObjectName
+  [^String domain ^String beanName & [paths]]
+
+  (let [paths (or paths [])
+        sb (StringBuilder.)
+        cs (seq paths) ]
+    (doto sb
+      (.append domain)
+      (.append ":")
+      (.append (cs/join "," cs)))
+    (when-not (empty? cs) (.append sb ","))
+    (doto sb
+      (.append "name=")
+      (.append beanName))
+    (ObjectName. (.toString sb))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

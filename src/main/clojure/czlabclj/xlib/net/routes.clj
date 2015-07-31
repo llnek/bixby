@@ -14,23 +14,22 @@
 
   czlabclj.xlib.net.routes
 
-  (:require [czlabclj.xlib.util.core
-             :refer [Muble
-                     MakeMMap
-                     test-cond
-                     test-nestr]]
-            [czlabclj.xlib.util.str
-             :refer [strim lcase ucase nsb nichts? hgl?]]
-            [czlabclj.xlib.util.files :refer [ReadOneFile]]
-            [czlabclj.xlib.util.format :refer [ReadEdn]])
+  (:require
+    [czlabclj.xlib.util.core
+        :refer [Muble MakeMMap test-cond test-nestr]]
+    [czlabclj.xlib.util.str
+        :refer [ToKW strim lcase ucase nsb nichts? hgl?]]
+    [czlabclj.xlib.util.files :refer [ReadOneFile]]
+    [czlabclj.xlib.util.format :refer [ReadEdn]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
-            [com.google.gson JsonObject]
-            [java.io File]
-            [jregex Matcher Pattern]
-            [java.util StringTokenizer]))
+  (:import
+    [org.apache.commons.lang3 StringUtils]
+    [com.google.gson JsonObject]
+    [java.io File]
+    [jregex Matcher Pattern]
+    [java.util StringTokenizer]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -102,8 +101,9 @@
           (let [ph (.getf impl :placeHolders)
                 ^Matcher mmc mc
                 gc (.groupCount mmc) ]
-            (with-local-vars [rc (transient {})
-                              r2 "" ]
+            (with-local-vars
+              [rc (transient {})
+               r2 "" ]
               (doseq [h (seq ph) ]
                 (var-set r2 (last h))
                 (var-set rc
@@ -112,7 +112,7 @@
                                  (nsb (.group mmc ^String @r2)))))
               (persistent! @rc)))) )
 
-      { :typeid :czc.net/RouteInfo } )
+      { :typeid (ToKW "czc.net" "RouteInfo") })
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,13 +124,15 @@
 
   (let [tknz (StringTokenizer. path "/" true)
         buff (StringBuilder.) ]
-    (with-local-vars [cg 0 gn ""
-                      ts ""
-                      phs (transient []) ]
+    (with-local-vars
+      [cg 0 gn ""
+       ts ""
+       phs (transient []) ]
       (while (.hasMoreTokens tknz)
         (var-set ts (.nextToken tknz))
         (if (= @ts "/")
           (.append buff "/")
+          ;else
           (do
             (if (.startsWith ^String @ts ":")
               (do
@@ -138,12 +140,13 @@
                 (var-set cg (inc @cg))
                 (var-set phs (conj! @phs [ @cg @gn ] ))
                 (var-set ts  (str "({" @gn "}[^/]+)")))
+              ;else
               (let [c (StringUtils/countMatches ^String @ts "(") ]
                 (if (> c 0)
                   (var-set cg (+ @cg c)))))
             (.append buff @ts))))
       (let [pp (.toString buff) ]
-        (log/info "Route added: " path " \nCanonicalized to: " pp)
+        (log/info "Route added: %s\nCanonicalized to: %s" path pp)
         (.setf! rc :regex (Pattern. pp))
         (.setf! rc :path pp))
       (.setf! rc :placeHolders (persistent! @phs))
@@ -158,25 +161,27 @@
 
   {:pre [(map? rt)]}
 
-  (let [uri (strim (get rt :uri ""))
-        secure (get rt :secure false)
-        tpl (get rt :template "")
-        verb (get rt :verb #{})
-        mpt (get rt :mount "")
-        pipe (get rt :pipe "")
-        ^czlabclj.xlib.util.core.Muble
-        rc (make-route-info uri
-                            (if (and stat
-                                     (empty? verb))
-                              #{:get}
-                              verb)
-                            pipe) ]
+  (let
+    [uri (strim (get rt :uri ""))
+     secure (get rt :secure false)
+     tpl (get rt :template "")
+     verb (get rt :verb #{})
+     mpt (get rt :mount "")
+     pipe (get rt :pipe "")
+     ^czlabclj.xlib.util.core.Muble
+     rc (make-route-info
+          uri
+          (if (and stat (empty? verb))
+              #{:get}
+              verb)
+          pipe) ]
     (.setf! rc :secure secure)
     (if stat
       (do
         (.setf! rc :mountPoint mpt)
         (.setf! rc :static true)
         (test-nestr "static-route mount point" mpt))
+      ;else
       (do
         (test-cond "http method for route" (not-empty verb))
         (test-nestr "pipeline for route" pipe)))
@@ -188,40 +193,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; path can be /host.com/abc/:id1/gg/:id2
-;;
-(defn LoadRoutes ""
+(defn LoadRoutes
+
+  "Path can be /host.com/abc/:id1/gg/:id2"
 
   [^File file]
 
-  (let [stat (-> file (.getName)(.startsWith "static-"))
+  (let [stat (-> file
+                 (.getName)
+                 (.startsWith "static-"))
         s (str "[ " (ReadOneFile file) " ]")
         rs (ReadEdn s) ]
-    (with-local-vars [rc (transient []) ]
+    (with-local-vars
+      [rc (transient []) ]
       (doseq [s rs]
-        (log/debug "route def === " s)
+        (log/debug "route def === %s" s)
         (var-set rc (conj! @rc (mkRoute stat s))))
-      (persistent! @rc)
-  )))
+      (persistent! @rc))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; [ri mc] routeinfo matcher
-(defn- seek-route "Returns [routeinfo, matcher]."
+;;
+(defn- seek-route
+
+
+  "[routeinfo, matcher]"
 
   [mtd uri rts]
 
-  (when-not (nil? rts)
-    (some (fn [^czlabclj.xlib.net.routes.RouteInfo ri]
-            (let [m (.resemble? ri mtd uri) ]
-              (when-not (nil? m) [ri m])))
+  (when (some? rts)
+    (some #(let [m (-> ^czlabclj.xlib.net.routes.RouteInfo
+                       %1
+                       (.resemble? mtd uri)) ]
+             (when (some? m) [%1 m]))
           (seq rts))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; router cracker
-(defn MakeRouteCracker "Create a url route cracker."
+;;
+(defn MakeRouteCracker
 
-  ;; returns [true? RouteInfo? Matcher? Redirect?]
+  "Create a url route cracker,
+   returns [true? RouteInfo? Matcher? Redirect?]"
 
   ^czlabclj.xlib.net.routes.RouteCracker
   [routes]

@@ -14,62 +14,51 @@
 
   czlabclj.xlib.netty.io
 
-  (:require [czlabclj.xlib.util.core
-             :refer [try!
-                     tryletc
-                     RNil
-                     ThrowIOE
-                     spos?
-                     bool!]]
-            [czlabclj.xlib.util.io
-             :refer [CloseQ
-                     StreamLimit
-                     OpenTempFile
-                     ByteOS]]
-            [czlabclj.xlib.util.str
-             :refer [lcase
-                     ucase
-                     strim
-                     nsb
-                     hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [try! tryletc trycr
+     RNil ThrowIOE spos? bool!]]
+    [czlabclj.xlib.util.io :refer [CloseQ
+     StreamLimit OpenTempFile ByteOS]]
+    [czlabclj.xlib.util.str :refer [lcase ucase
+     strim nsb hgl?]])
 
-  (:require [czlabclj.xlib.util.logging :as log]
-            [clojure.string :as cs])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
-  (:import  [io.netty.buffer CompositeByteBuf ByteBuf ByteBufHolder Unpooled]
-            [io.netty.util CharsetUtil AttributeKey ReferenceCounted]
-            [io.netty.handler.codec.http.websocketx WebSocketFrame]
-            [io.netty.bootstrap Bootstrap ServerBootstrap]
-            [java.net URL InetAddress InetSocketAddress]
-            [com.zotohlab.frwk.netty PipelineConfigurator]
-            [com.zotohlab.frwk.net SSLTrustMgrFactory]
-            [com.zotohlab.frwk.core CallableWithArgs]
-            [com.zotohlab.frwk.io XData]
-            [io.netty.channel.nio NioEventLoopGroup]
-            [java.io File ByteArrayOutputStream OutputStream]
-            [io.netty.channel.socket.nio
-             NioDatagramChannel
-             NioServerSocketChannel]
-            [javax.net.ssl
-             KeyManagerFactory SSLContext
-             SSLEngine TrustManagerFactory]
-            [java.security KeyStore SecureRandom]
-            [io.netty.handler.ssl SslHandler]
-            [io.netty.channel Channel ChannelFuture
-             ChannelHandlerContext ChannelPipeline
-             ChannelHandler ChannelOption
-             ChannelFutureListener]
-            [io.netty.handler.codec.http HttpVersion
-             FullHttpResponse LastHttpContent
-             HttpHeaders$Values
-             HttpHeaders$Names
-             HttpMessage HttpResponse
-             DefaultFullHttpResponse
-             DefaultHttpResponse HttpContent
-             HttpRequest HttpResponseStatus
-             HttpHeaders QueryStringDecoder]
-            [java.util Map$Entry]
-            [io.netty.handler.stream ChunkedWriteHandler]))
+  (:import
+    [io.netty.buffer CompositeByteBuf ByteBuf ByteBufHolder Unpooled]
+    [io.netty.util CharsetUtil AttributeKey ReferenceCounted]
+    [io.netty.handler.codec.http.websocketx WebSocketFrame]
+    [io.netty.bootstrap Bootstrap ServerBootstrap]
+    [java.net URL InetAddress InetSocketAddress]
+    [com.zotohlab.frwk.netty PipelineConfigurator]
+    [com.zotohlab.frwk.net SSLTrustMgrFactory]
+    [com.zotohlab.frwk.core CallableWithArgs]
+    [com.zotohlab.frwk.io XData]
+    [io.netty.channel.nio NioEventLoopGroup]
+    [java.io File ByteArrayOutputStream OutputStream]
+    [io.netty.channel.socket.nio
+     NioDatagramChannel NioServerSocketChannel]
+    [javax.net.ssl KeyManagerFactory
+     SSLContext SSLEngine TrustManagerFactory]
+    [java.security KeyStore SecureRandom]
+    [io.netty.handler.ssl SslHandler]
+    [io.netty.channel Channel ChannelFuture
+     ChannelHandlerContext ChannelPipeline
+     ChannelHandler ChannelOption
+     ChannelFutureListener]
+    [io.netty.handler.codec.http HttpVersion
+     FullHttpResponse LastHttpContent
+     HttpHeaders$Values
+     HttpHeaders$Names
+     HttpMessage HttpResponse
+     DefaultFullHttpResponse
+     DefaultHttpResponse HttpContent
+     HttpRequest HttpResponseStatus
+     HttpHeaders QueryStringDecoder]
+    [java.util Map$Entry]
+    [io.netty.handler.stream ChunkedWriteHandler]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -86,9 +75,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FutureCB "Register a callback upon operation completion"
+(defn FutureCB
+
+  "Register a callback upon operation completion"
 
   [^ChannelFuture cf func]
+
+  {:pre [(fn? func)]}
 
   (->> (reify ChannelFutureListener
          (operationComplete [_ ff] (try! (func ff))))
@@ -96,7 +89,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WriteLastContent "Write out the last content flag"
+(defn WriteLastContent
+
+  "Write out the last content flag"
 
   ^ChannelFuture
   [^Channel ch & [flush?]]
@@ -126,10 +121,9 @@
   ^HttpResponse
   [ & [code]]
 
-  (let [code (or code 200)]
-    (DefaultHttpResponse. HttpVersion/HTTP_1_1
-                          (HttpResponseStatus/valueOf code))
-  ))
+  (DefaultHttpResponse.
+    HttpVersion/HTTP_1_1
+    (HttpResponseStatus/valueOf (or code 200))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,17 +178,19 @@
 
   [^HttpHeaders hdrs]
 
-  (reduce (fn [memo n]
-            (let [rc (RNil (.getAll hdrs ^String n))]
-              (if (empty? rc)
-                memo
-                (assoc memo (lcase n) (into [] rc)))))
-          {}
-          (.names hdrs)))
+  (reduce
+    #(let [rc (RNil (.getAll hdrs ^String %2))]
+       (if (empty? rc)
+         %1
+         (assoc %1 (lcase %2) (into [] rc))))
+    {}
+    (.names hdrs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddHeader "Add the header value"
+(defn AddHeader
+
+  "Add the header value"
 
   [^HttpMessage msg
    ^String nm ^String value]
@@ -203,7 +199,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetHeader "Set the header value"
+(defn SetHeader
+
+  "Set the header value"
 
   [^HttpMessage msg
    ^String nm ^String value]
@@ -212,7 +210,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHeader "Get the header value"
+(defn GetHeader
+
+  "Get the header value"
 
   ^String
   [^HttpMessage msg ^String nm]
@@ -257,13 +257,14 @@
 
   [^QueryStringDecoder decr]
 
-  (reduce (fn [memo ^Map$Entry en]
-            (let [rc (RNil (.getValue en))]
-              (if (empty? rc)
-                memo
-                (assoc memo (.getKey en) (into [] rc)))))
-          {}
-          (-> decr (.parameters) (.entrySet))))
+  (reduce
+    (fn [memo ^Map$Entry en]
+      (let [rc (RNil (.getValue en))]
+        (if (empty? rc)
+          memo
+          (assoc memo (.getKey en) (into [] rc)))))
+    {}
+    (-> decr (.parameters) (.entrySet))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -348,11 +349,14 @@
   ^long
   [^ByteBuf cbuf ^OutputStream out lastSum]
 
-  (let [cnt (if (nil? cbuf) 0 (.readableBytes cbuf))]
+  (let [cnt (if (nil? cbuf)
+              0
+              (.readableBytes cbuf))]
     (loop [bits (byte-array 4096)
            total cnt]
       (when (> total 0)
-        (let [len (Math/min (int 4096) (int total))]
+        (let [len (Math/min (int 4096)
+                            (int total))]
           (.readBytes cbuf bits 0 len)
           (.write out bits 0 len)
           (recur bits (- total len)))))
@@ -426,8 +430,7 @@
 
   (when (instance? ReferenceCounted obj)
     (log/debug "object %s: has ref-count = %s"
-               (try (.toString ^Object obj)
-                    (catch Throwable _ "???"))
+               (trycr "???" (nsb obj))
                (.refCnt ^ReferenceCounted obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -524,12 +527,10 @@
   [^Channel ch ^HttpHeaders hds]
 
   (let [info (GetAKey ch MSGINFO_KEY)
-        old (:headers info)
         nnw (MapHeaders hds) ]
     (SetAKey ch
              MSGINFO_KEY
-             (assoc info
-                    :headers (merge {} old nnw)))
+             (update info :headers #(merge %1 nnw)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -599,11 +600,11 @@
 
   (when (instance? LastHttpContent msg)
     (log/debug "got the final last-http-content chunk, end of message")
-    (let [^CallableWithArgs func (GetAKey ch MSGFUNC_KEY)
-          ^OutputStream os (GetAKey ch XOS_KEY)
+    (let [^OutputStream os (GetAKey ch XOS_KEY)
           ^ByteBuf cbuf (GetAKey ch CBUF_KEY)
           ^XData xs (GetAKey ch XDATA_KEY)]
-      (AppendHeaders ch (-> ^LastHttpContent msg (.trailingHeaders)))
+      (AppendHeaders ch (-> ^LastHttpContent
+                            msg (.trailingHeaders)))
       (if (nil? os)
         (let [baos (ByteOS)]
           (SlurpByteBuf cbuf baos)
@@ -646,12 +647,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsFormPost? "Detects if this request is a http form post"
+(defn IsFormPost?
+
+  "Detects if this request is a http form post"
 
   [^HttpMessage msg ^String method]
 
-  (let [ct (-> (GetHeader msg HttpHeaders$Names/CONTENT_TYPE)
-               nsb lcase) ]
+  (let [ct (->> HttpHeaders$Names/CONTENT_TYPE
+                (GetHeader msg)
+                nsb
+                lcase) ]
     (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
          (or (>= (.indexOf ct "multipart/form-data") 0)
              (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
@@ -659,16 +664,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn IsWEBSock? "Detects if request is a websocket request"
+(defn IsWEBSock?
+
+  "Detects if request is a websocket request"
 
   [^HttpRequest req]
 
-  (let [^String cn (-> (GetHeader req HttpHeaders$Names/CONNECTION)
+  (let [^String cn (->> HttpHeaders$Names/CONNECTION
+                        (GetHeader req)
+                         nsb lcase)
+        ^String ws (->> HttpHeaders$Names/UPGRADE
+                        (GetHeader req)
                         nsb lcase)
-        ^String ws (-> (GetHeader req HttpHeaders$Names/UPGRADE)
-                        nsb lcase)
-        ^String mo (-> (GetHeader req "X-HTTP-Method-Override")
-                        nsb strim ucase) ]
+        ^String mo (->> "X-HTTP-Method-Override"
+                        (GetHeader req)
+                        nsb
+                        strim ucase) ]
     (and (>= (.indexOf ws "websocket") 0)
          (>= (.indexOf cn "upgrade") 0)
          (= "GET" (if-not (hgl? mo)
@@ -680,7 +691,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLServerHShake "Create a server-side handler for SSL"
+(defn SSLServerHShake
+
+  "Create a server-side handler for SSL"
 
   ^ChannelHandler
   [options]
@@ -689,40 +702,45 @@
         ^String keyUrlStr (:serverKey options)
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
-      (tryletc [pwd (when (some? pwdStr) (.toCharArray pwdStr))
-              x (SSLContext/getInstance flavor)
-              ks (KeyStore/getInstance ^String
-                                       (if (.endsWith keyUrlStr ".jks")
-                                         "JKS"
-                                         "PKCS12"))
-              t (->> (TrustManagerFactory/getDefaultAlgorithm)
-                     (TrustManagerFactory/getInstance))
-              k (->> (KeyManagerFactory/getDefaultAlgorithm)
-                     (KeyManagerFactory/getInstance)) ]
-          (with-open [inp (-> (URL. keyUrlStr)
-                              (.openStream)) ]
-            (.load ks inp pwd)
-            (.init t ks)
-            (.init k ks pwd)
-            (.init x
-                   (.getKeyManagers k)
-                   (.getTrustManagers t)
-                   (SecureRandom/getInstance "SHA1PRNG"))
-            (SslHandler. (doto (.createSSLEngine x)
-                           (.setUseClientMode false))))))
+      (tryletc
+        [pwd (when (some? pwdStr) (.toCharArray pwdStr))
+         x (SSLContext/getInstance flavor)
+         ks (KeyStore/getInstance ^String
+                                  (if (.endsWith keyUrlStr ".jks")
+                                    "JKS"
+                                    "PKCS12"))
+         t (->> (TrustManagerFactory/getDefaultAlgorithm)
+                (TrustManagerFactory/getInstance))
+         k (->> (KeyManagerFactory/getDefaultAlgorithm)
+               (KeyManagerFactory/getInstance)) ]
+        (with-open [inp (-> (URL. keyUrlStr)
+                            (.openStream)) ]
+          (.load ks inp pwd)
+          (.init t ks)
+          (.init k ks pwd)
+          (.init x
+                 (.getKeyManagers k)
+                 (.getTrustManagers t)
+                 (SecureRandom/getInstance "SHA1PRNG"))
+          (SslHandler. (doto
+                         (.createSSLEngine x)
+                         (.setUseClientMode false))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SSLClientHShake "Create a client-side handler for SSL"
+(defn SSLClientHShake
+
+  "Create a client-side handler for SSL"
 
   ^ChannelHandler
   [options]
 
-  (tryletc [^String flavor (or (:flavor options) "TLS")
-        m (SSLTrustMgrFactory/getTrustManagers)
-        ctx (doto (SSLContext/getInstance flavor)
-                  (.init nil m nil)) ]
+  (tryletc
+    [^String flavor (or (:flavor options) "TLS")
+     m (SSLTrustMgrFactory/getTrustManagers)
+     ctx (doto (SSLContext/getInstance flavor)
+           (.init nil m nil)) ]
     (SslHandler. (doto (.createSSLEngine ctx)
                        (.setUseClientMode true)))
   ))
@@ -800,16 +818,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn InitTCPServer "Create and configure a TCP Netty Server"
+(defn InitTCPServer
+
+  "Create and configure a TCP Netty Server"
 
   ^ServerBootstrap
   [^PipelineConfigurator cfg options]
 
-  (let [thds (:threads options)
+  (let [wk (get-in options [:threads :worker])
+        bo (get-in options [:threads :boss])
         bk (:backlog options)
-        rb (:rcvBuf options)
-        wk (:worker thds)
-        bo (:boss thds)]
+        rb (:rcvBuf options) ]
     (doto (ServerBootstrap.)
       (.group (getEventGroup (int (or bo 4)))
               (getEventGroup (int (or wk 6))))
@@ -830,9 +849,8 @@
   ^Bootstrap
   [^PipelineConfigurator cfg options]
 
-  (let [thds (:threads options)
-        rb (:rcvBuf options)
-        bo (:boss thds)]
+  (let [bo (get-in options [:threads :boss])
+        rb (:rcvBuf options)]
     (doto (Bootstrap.)
       (.group (getEventGroup (int (or bo 4))))
       (.channel NioDatagramChannel)

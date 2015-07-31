@@ -7,30 +7,33 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^{:doc "Locale resources."
       :author "kenl" }
 
   czlabclj.xlib.i18n.resources
 
-  (:require [czlabclj.xlib.util.meta :refer [GetCldr]]
-            [czlabclj.xlib.util.str :refer [nsb]])
+  (:require
+    [czlabclj.xlib.util.meta :refer [GetCldr]]
+    [czlabclj.xlib.util.str :refer [nsb]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
-  (:import  [java.util PropertyResourceBundle ResourceBundle Locale]
-            [org.apache.commons.lang3 StringUtils]
-            [java.io File FileInputStream]
-            [java.net URL]))
+  (:import
+    [java.util PropertyResourceBundle ResourceBundle Locale]
+    [org.apache.commons.lang3 StringUtils]
+    [java.io File FileInputStream]
+    [java.net URL]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti LoadResource "Load properties file with localized strings." class)
+(defmulti LoadResource "Load properties file with localized strings" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,35 +61,43 @@
   ^ResourceBundle
   [^String path]
 
-  (with-open [inp (some-> (GetCldr)
-                          (.getResource path)
-                          (.openStream)) ]
+  (with-open
+    [inp (some-> (GetCldr)
+                 (.getResource path)
+                 (.openStream)) ]
     (PropertyResourceBundle. inp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetResource "Return a resource bundle."
+(defn GetResource
 
-  (^ResourceBundle [^String baseName]
-                   (GetResource baseName (Locale/getDefault) nil))
+  "A resource bundle"
 
-  (^ResourceBundle [^String baseName
-                    ^Locale locale]
-                   (GetResource baseName locale nil))
+  (^ResourceBundle
+    [^String baseName]
+    (GetResource baseName (Locale/getDefault) nil))
 
-  (^ResourceBundle [^String baseName
-                    ^Locale locale
-                    ^ClassLoader cl]
-                   (if (or (nil? baseName)
-                           (nil? locale))
-                     nil
-                     (ResourceBundle/getBundle baseName
-                                               locale (GetCldr cl))) ))
+  (^ResourceBundle
+    [^String baseName
+     ^Locale locale]
+    (GetResource baseName locale nil))
+
+  (^ResourceBundle
+    [^String baseName
+     ^Locale locale
+     ^ClassLoader cl]
+    (if (or (nil? baseName)
+            (nil? locale))
+      nil
+      (ResourceBundle/getBundle baseName
+                                locale (GetCldr cl))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RStr "Return the string value for this key,
-           pms may contain values for positional substitutions."
+(defn RStr
+
+  "The string value for this key,
+   pms may contain values for positional substitutions"
 
   ^String
   [^ResourceBundle bundle ^String pkey & pms]
@@ -95,7 +106,7 @@
     ""
     (let [kv (nsb (.getString bundle pkey))
           pc (count pms) ]
-      ;;(log/debug "RStr key = " pkey ", value = "kv)
+      ;;(log/debug "RStr key = %s, value = %s" pkey kv)
       (loop [src kv pos 0 ]
         (if (>= pos pc)
          src

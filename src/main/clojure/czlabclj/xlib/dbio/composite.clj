@@ -14,16 +14,18 @@
 
   czlabclj.xlib.dbio.composite
 
-  (:require [czlabclj.xlib.util.core :refer [test-nonil notnil? try!]]
-            [czlabclj.xlib.util.str :refer [hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [test-nonil notnil? try!]]
+    [czlabclj.xlib.util.str :refer [hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.dbio.core]
         [czlabclj.xlib.dbio.sql])
 
-  (:import  [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]
-            [java.sql Connection]))
+  (:import
+    [com.zotohlab.frwk.dbio Transactable SQLr MetaCache DBAPI]
+    [java.sql Connection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -31,7 +33,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CompositeSQLr "A composite supports transactions."
+(defn CompositeSQLr
+
+  "A composite supports transactions"
 
   ^Transactable
   [^DBAPI db ]
@@ -41,9 +45,9 @@
     (execWith [this func]
       (with-local-vars [rc nil]
         (with-open [conn (.begin this) ]
-          (let [runc (fn [c f] (f c))
-                getc (fn [_] conn)
-                s (ReifySQLr db getc runc)]
+          (let [s (ReifySQLr db
+                             #(conn)
+                             #(%2 %1)) ]
             (try
               (var-set rc (func s))
               (.commit this conn)

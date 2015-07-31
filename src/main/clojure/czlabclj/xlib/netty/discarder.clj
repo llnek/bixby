@@ -14,48 +14,50 @@
 
   czlabclj.xlib.netty.discarder
 
-  (:require [czlabclj.xlib.util.core :refer [notnil? try!]]
-            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
+  (:require
+    [czlabclj.xlib.util.core :refer [notnil? try!]]
+    [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io])
 
-  (:import  [com.zotohlab.frwk.netty
-             AuxHttpFilter
-             PipelineConfigurator ErrorSinkFilter]
-            [io.netty.channel ChannelHandlerContext Channel
-             ChannelPipeline ChannelHandler]
-            [io.netty.handler.codec.http LastHttpContent ]
-            [io.netty.bootstrap ServerBootstrap]))
+  (:import
+    [com.zotohlab.frwk.netty
+     AuxHttpFilter
+     PipelineConfigurator ErrorSinkFilter]
+    [io.netty.channel ChannelHandlerContext Channel
+     ChannelPipeline ChannelHandler]
+    [io.netty.handler.codec.http LastHttpContent ]
+    [io.netty.bootstrap ServerBootstrap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- discarder "Netty pipeline with standard handlers"
+(defn- discarder ""
 
   ^PipelineConfigurator
   [callback]
 
   (ReifyPipeCfgtor
-    (fn [^ChannelPipeline pipe options]
-      (.addBefore pipe
-                  (ErrorSinkFilter/getName)
-                  "discarder"
-                  (proxy [AuxHttpFilter][]
-                    (channelRead0 [c msg]
-                      (let [ch (-> ^ChannelHandlerContext
-                                   c (.channel))]
-                        (when (instance? LastHttpContent msg)
-                          (ReplyXXX ch 200)
-                          (try! (apply callback []))))))))))
+    #(->> (proxy [AuxHttpFilter][]
+            (channelRead0 [c msg]
+              (when (instance? LastHttpContent msg)
+                (-> (-> ^ChannelHandlerContext
+                        c (.channel))
+                    (ReplyXXX  200))
+                (try! (callback)))))
+          (.addBefore ^ChannelPipeline %1
+                      (ErrorSinkFilter/getName) "discarder"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeDiscardHTTPD "Discards the request, just returns 200 OK"
+(defn MakeDiscardHTTPD
+
+  "Discards the request, just returns 200 OK"
 
   [host port callback options]
 

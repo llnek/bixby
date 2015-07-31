@@ -16,35 +16,37 @@
 
   (:gen-class)
 
-  (:require [czlabclj.xlib.util.files :refer [SaveFile GetFile]]
-            [czlabclj.xlib.util.core
-             :refer [SafeGetJsonBool
-                     ConvInt
-                     SafeGetJsonString juid notnil? ]]
-            [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
+  (:require
+    [czlabclj.xlib.util.files :refer [SaveFile GetFile]]
+    [czlabclj.xlib.util.core
+     :refer [SafeGetJsonBool ConvInt trycr
+             SafeGetJsonString juid notnil? ]]
+    [czlabclj.xlib.util.str :refer [strim nsb hgl?]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs])
 
   (:use [czlabclj.xlib.netty.filters]
         [czlabclj.xlib.netty.io])
 
-  (:import  [io.netty.handler.codec.http
-             HttpResponse
-             HttpHeaders$Names
-             HttpHeaders$Values
-             HttpHeaders LastHttpContent]
-            [com.zotohlab.frwk.netty
-             AuxHttpFilter ErrorSinkFilter
-             PipelineConfigurator]
-            [java.io IOException File]
-            [io.netty.channel ChannelHandlerContext
-             Channel ChannelPipeline
-             SimpleChannelInboundHandler ChannelHandler]
-            [io.netty.bootstrap ServerBootstrap]
-            [io.netty.handler.stream ChunkedStream]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [io.netty.handler.codec.http
+     HttpResponse
+     HttpHeaders$Names
+     HttpHeaders$Values
+     HttpHeaders LastHttpContent]
+    [com.zotohlab.frwk.netty
+     AuxHttpFilter ErrorSinkFilter
+     PipelineConfigurator]
+    [java.io IOException File]
+    [io.netty.channel ChannelHandlerContext
+     Channel ChannelPipeline
+     SimpleChannelInboundHandler ChannelHandler]
+    [io.netty.bootstrap ServerBootstrap]
+    [io.netty.handler.stream ChunkedStream]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -66,7 +68,7 @@
                    HttpHeaders$Values/CLOSE))
       (HttpHeaders/setTransferEncodingChunked )
       (HttpHeaders/setContentLength clen))
-    (log/debug "Flushing file of " clen " bytes. to client.")
+    (log/debug "Flushing file of %s bytes to client" clen)
     (doto ch
       (.write res)
       (.write (ChunkedStream. (.stream xdata))))
@@ -82,10 +84,9 @@
    info
    fname xdata]
 
-  (let [rc (try
-             (SaveFile vdir fname xdata) 200
-             (catch Throwable e# (log/error e# "") 500))]
-    (ReplyXXX ch rc)
+  (->> (trycr 500
+              (do (SaveFile vdir fname xdata) 200))
+       (ReplyXXX ch )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,17 +110,20 @@
 
   (proxy [AuxHttpFilter][]
     (channelRead0 [c msg]
-      (let [vdir (io/file (:vdir options))
-            ch (-> ^ChannelHandlerContext c
+      (let [ch (-> ^ChannelHandlerContext c
                    (.channel))
+            vdir (io/file (:vdir options))
             xs (:payload msg)
             info (:info msg)
             ^String mtd (:method info)
             ^String uri (:uri info)
             pos (.lastIndexOf uri (int \/))
-            p (if (< pos 0) uri (.substring uri (inc pos)))
-            nm (if (cstr/blank? p) (str (juid) ".dat") p) ]
-        (log/debug "Method = " mtd ", Uri = " uri ", File = " nm)
+            p (if (< pos 0)
+                uri
+                (.substring uri
+                            (inc pos)))
+            nm (if (empty? p) (str (juid) ".dat") p) ]
+        (log/debug "method = %s, uri = %s, file = %s" mtd uri nm)
         (cond
           (or (= mtd "POST")
               (= mtd "PUT"))
@@ -136,17 +140,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
 ;;
-(defn MakeMemFileServer "A file server which can get/put files"
+(defn MakeMemFileServer
+
+  "A file server which can get/put files"
 
   [host port vdir options]
 
   (let [bs (InitTCPServer
              (ReifyPipeCfgtor
-               (fn [^ChannelPipeline pipe options]
-                 (.addBefore pipe
-                             (ErrorSinkFilter/getName)
-                             "fsvr"
-                             (fHandler options))))
+               #(.addBefore ^ChannelPipeline %1
+                            (ErrorSinkFilter/getName)
+                            "memfsvr"
+                            (fHandler %2)))
              (merge {} options {:vdir vdir}))
         ch (StartServer bs host port) ]
     {:bootstrap bs :channel ch}
@@ -163,7 +168,7 @@
 
   ;; 64meg max file size
   (MakeMemFileServer (nth args 0)
-                     (ConvInt (nth args 1) 80)
+                     (ConvInt (nth args 1) 8080)
                      (nth args 2)
                      {}))
 

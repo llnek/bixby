@@ -14,25 +14,28 @@
 
   czlabclj.xlib.netty.client
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cs])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
-  (:require [czlabclj.xlib.util.io :refer [StreamLimit]])
+  (:require
+    [czlabclj.xlib.util.io :refer [StreamLimit]])
 
-  (:import  [com.zotohlab.frwk.netty PipelineConfigurator]
-            [io.netty.bootstrap Bootstrap]
-            [io.netty.buffer Unpooled]
-            [io.netty.channel Channel
-             ChannelFuture ChannelOption]
-            [io.netty.channel.nio NioEventLoopGroup]
-            [io.netty.channel.socket.nio NioSocketChannel]
-            [io.netty.handler.codec.http DefaultHttpRequest
-             HttpHeaders HttpMethod HttpRequest HttpVersion]
-            [io.netty.handler.stream ChunkedStream]
-            [io.netty.util AttributeKey]
-            [java.io IOException]
-            [java.net InetSocketAddress URL]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [com.zotohlab.frwk.netty PipelineConfigurator]
+    [io.netty.bootstrap Bootstrap]
+    [io.netty.buffer Unpooled]
+    [io.netty.channel Channel
+     ChannelFuture ChannelOption]
+    [io.netty.channel.nio NioEventLoopGroup]
+    [io.netty.channel.socket.nio NioSocketChannel]
+    [io.netty.handler.codec.http DefaultHttpRequest
+     HttpHeaders HttpMethod HttpRequest HttpVersion]
+    [io.netty.handler.stream ChunkedStream]
+    [io.netty.util AttributeKey]
+    [java.io IOException]
+    [java.net InetSocketAddress URL]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -40,7 +43,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defonce ^AttributeKey URL_KEY  (AttributeKey/valueOf "targetUrl"))
+(defonce ^:private ^AttributeKey URL_KEY  (AttributeKey/valueOf "targetUrl"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,11 +73,8 @@
         port  (if (< pnum 0) (if ssl 443 80) pnum)
         sock (InetSocketAddress. host (int port))
         ^ChannelFuture
-        cf  (try
-              (-> (.connect bs sock)
+        cf  (-> (.connect bs sock)
                   (.sync))
-              (catch InterruptedException e#
-                (throw (IOException. "Connect failed: " e#))))
         ch (.channel cf)]
 
     (when-not (.isSuccess cf)
@@ -93,10 +93,10 @@
   ^ChannelFuture
   [^Channel ch ^String op ^XData xs options]
 
-  (let [options (or options {})
-        mo (or (str (:override options)) "")
+  (let [mo (or (:override options) "")
         clen (if (some? xs) (.size xs) 0)
-        ^URL url (-> (.attr ch URL_KEY) (.get))
+        ^URL url (-> (.attr ch URL_KEY)
+                     (.get))
         req (DefaultHttpRequest. HttpVersion/HTTP_1_1
                                  (HttpMethod/valueOf op)
                                  (.toString url)) ]
@@ -110,13 +110,14 @@
       (do
         (HttpHeaders/setHeader req "content-type"  "application/octet-stream")
         (HttpHeaders/setContentLength req clen))
+      ;else
       (HttpHeaders/setContentLength req 0))
 
-    (when (> (count mo) 0)
+    (when-not (empty? mo)
       (HttpHeaders/setHeader req "X-HTTP-Method-Override"  mo))
 
     (log/debug "Netty client: about to flush out request (headers)")
-    (log/debug "Netty client: content has length {}" clen)
+    (log/debug "Netty client: content has length %s" clen)
 
     (with-local-vars [cf (.write ch req)]
       (when (> clen 0)

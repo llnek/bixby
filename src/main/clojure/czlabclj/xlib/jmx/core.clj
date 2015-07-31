@@ -14,25 +14,29 @@
 
   czlabclj.xlib.jmx.core
 
-  (:require [czlabclj.xlib.util.core :refer [MakeMMap try! tryc]]
-            [czlabclj.xlib.util.str :refer [hgl? ]])
+  (:require
+    [czlabclj.xlib.util.core :refer [MakeMMap try! tryc]]
+    [czlabclj.xlib.util.str :refer [hgl? ]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
   (:use [czlabclj.xlib.jmx.names]
         [czlabclj.xlib.jmx.bean])
 
-  (:import  [java.net InetAddress MalformedURLException]
-            [java.lang.management ManagementFactory]
-            [java.rmi NoSuchObjectException]
-            [com.zotohlab.frwk.core Startable]
-            [java.rmi.registry LocateRegistry Registry]
-            [java.rmi.server UnicastRemoteObject]
-            [javax.management DynamicMBean
-             JMException MBeanServer ObjectName]
-            [javax.management.remote JMXConnectorServer
-             JMXConnectorServerFactory JMXServiceURL]
-            [org.apache.commons.lang3 StringUtils]))
+  (:import
+    [java.net InetAddress MalformedURLException]
+    [java.lang.management ManagementFactory]
+    [java.rmi NoSuchObjectException]
+    [com.zotohlab.frwk.core Startable]
+    [java.rmi.registry LocateRegistry Registry]
+    [java.rmi.server UnicastRemoteObject]
+    [javax.management DynamicMBean
+        JMException MBeanServer ObjectName]
+    [javax.management.remote JMXConnectorServer
+        JMXConnectorServerFactory JMXServiceURL]
+    [org.apache.commons.lang3 StringUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -65,14 +69,15 @@
 
   [^czlabclj.xlib.util.core.Muble impl]
 
-  (let [hn (-> (InetAddress/getLocalHost)(.getHostName))
+  (let [hn (-> (InetAddress/getLocalHost)
+               (.getHostName))
         ^long regoPort (.getf impl :regoPort)
         ^long port (.getf impl :port)
         ^String host (.getf impl :host)
         endpt (-> "service:jmx:rmi://{{h}}:{{s}}/jndi/rmi://:{{r}}/jmxrmi"
-                  (StringUtils/replace "{{h}}" (if (hgl? host) host hn))
-                  (StringUtils/replace "{{s}}" (str "" port))
-                  (StringUtils/replace "{{r}}" (str "" regoPort)))
+                  (cs/replace "{{h}}" (if (hgl? host) host hn))
+                  (cs/replace "{{s}}" (str "" port))
+                  (cs/replace "{{r}}" (str "" regoPort)))
         url (try
               (JMXServiceURL. endpt)
               (catch Throwable e#
@@ -104,7 +109,7 @@
     (.registerMBean svr mbean objName)
     (catch Throwable e#
       (mkJMXrror (str "Failed to register bean: " objName) e#)))
-  (log/info "Registered jmx-bean: " objName)
+  (log/info "registered jmx-bean: %s" objName)
   objName)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,26 +131,30 @@
   ^czlabclj.xlib.jmx.core.JMXServer
   [^String host]
 
-  (let [impl (MakeMMap {:regoPort 7777
-                        :port 0})
-        objNames (atom []) ]
+  (let
+    [impl (MakeMMap {:regoPort 7777
+                     :port 0})
+     objNames (atom []) ]
     (reify
 
       JMXServer
 
       (reset [_]
-        (let [^MBeanServer bs (.getf impl :beanSvr) ]
+        (let [^MBeanServer
+              bs (.getf impl :beanSvr) ]
           (doseq [nm @objNames]
             (try!
                (.unregisterMBean bs nm)) )
           (reset! objNames [])))
 
       (dereg [_ objName]
-        (let [^MBeanServer bs (.getf impl :beanSvr) ]
+        (let [^MBeanServer
+              bs (.getf impl :beanSvr) ]
           (.unregisterMBean bs objName)))
 
       (reg [_ obj domain nname paths]
-        (let [^MBeanServer bs (.getf impl :beanSvr) ]
+        (let [^MBeanServer
+              bs (.getf impl :beanSvr) ]
           (try
             (reset! objNames
                     (conj @objNames
@@ -172,14 +181,13 @@
         (let [^JMXConnectorServer c (.getf impl :conn)
               ^Registry r (.getf impl :rmi) ]
           (.reset this)
-          (when-not (nil? c) (tryc (.stop c)))
+          (when (some? c) (tryc (.stop c)))
           (.setf! impl :conn nil)
-          (when-not (nil? r)
+          (when (some? r)
             (tryc
               (UnicastRemoteObject/unexportObject r true)))
-          (.setf! impl :rmi nil)))
-
-      )))
+          (.setf! impl :rmi nil))))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
