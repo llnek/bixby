@@ -14,32 +14,35 @@
 
   czlabclj.xlib.crypto.stores
 
-  (:require [czlabclj.xlib.crypto.core
-             :refer
-             [NewAlias CertAliases PKeyAliases
-              GetPkcsStore GetJksStore]]
-            [czlabclj.xlib.util.core :refer [ThrowBadArg]]
-            [czlabclj.xlib.util.str :refer [nsb hgl?]])
+  (:require
+    [czlabclj.xlib.crypto.core
+     :refer [NewAlias CertAliases PKeyAliases
+             GetPkcsStore GetJksStore]]
+    [czlabclj.xlib.util.core :refer [ThrowBadArg]]
+    [czlabclj.xlib.util.str :refer [nsb hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlabclj.xlib.util.logging :as log])
 
-  (:import  [java.security.cert CertificateFactory X509Certificate Certificate]
-            [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI Crypto]
-            [java.io File FileInputStream IOException InputStream]
-            [javax.net.ssl KeyManagerFactory TrustManagerFactory]
-            [java.security KeyStore PrivateKey
-             KeyStore$TrustedCertificateEntry
-             KeyStore$ProtectionParameter
-             KeyStore$PasswordProtection
-             KeyStore$PrivateKeyEntry]
-            [javax.security.auth.x500 X500Principal]))
+  (:import
+    [java.security.cert CertificateFactory X509Certificate Certificate]
+    [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI Crypto]
+    [java.io File FileInputStream IOException InputStream]
+    [javax.net.ssl KeyManagerFactory TrustManagerFactory]
+    [java.security KeyStore PrivateKey
+     KeyStore$TrustedCertificateEntry
+     KeyStore$ProtectionParameter
+     KeyStore$PasswordProtection
+     KeyStore$PrivateKeyEntry]
+    [javax.security.auth.x500 X500Principal]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onNewKey "Insert private key & certs into this keystore."
+(defn- onNewKey
+
+  "Insert private key & certs into this keystore"
 
   [^KeyStore keystore
    ^String nm
@@ -67,7 +70,8 @@
         (let [^X509Certificate cert (.getTrustedCertificate ce)
               issuer (.getIssuerX500Principal cert)
               subj (.getSubjectX500Principal cert)
-              matched (and (not (nil? issuer)) (= issuer subj)) ]
+              matched (and (some? issuer)
+                           (= issuer subj)) ]
           (if (or (and root (not matched)) (and tca matched))
             (recur en rc)
             (recur en (conj! rc cert))))
@@ -89,7 +93,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeCryptoStore "Create a crypto store."
+(defn MakeCryptoStore
+
+  "Create a crypto store"
 
   ^CryptoStoreAPI
   [^KeyStore keystore ^PasswordAPI passwdObj]

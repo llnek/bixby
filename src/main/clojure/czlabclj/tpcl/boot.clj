@@ -14,19 +14,20 @@
 
   czlabclj.tpcl.boot
 
-  (:require [boot.task.built-in :refer [uber aot]]
-            [clojure.tools.logging :as log]
-            [clojure.data.json :as js]
-            [cemerick.pomegranate :as pom]
-            [clojure.java.io :as io]
-            [boot.core :as bc :refer :all]
-            [clojure.string :as cs]
-            [czlabclj.tpcl.antlib :as a])
+  (:require
+    [boot.task.built-in :refer [uber aot]]
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.data.json :as js]
+    [cemerick.pomegranate :as pom]
+    [clojure.java.io :as io]
+    [boot.core :as bc :refer :all]
+    [clojure.string :as cs]
+    [czlabclj.tpcl.antlib :as a])
 
-  (:import [java.util GregorianCalendar
-            Date Stack UUID]
-           [java.text SimpleDateFormat]
-           [java.io File]))
+  (:import
+    [java.util GregorianCalendar Date Stack UUID]
+    [java.text SimpleDateFormat]
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -41,8 +42,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn se! "local version of set-env!"
+(defn se!
+
+  "Local version of set-env!"
+
   [options k dv]
+
   (if-let [v (get options k)]
     (if (fn? v)
       (v options k)
@@ -53,7 +58,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro minitask ""
+
   [func & forms]
+
   `(do (println (str ~func ":")) ~@forms))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,7 +92,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FmtCljNsps "Format list of namespaces."
+(defn FmtCljNsps
+
+  "Format list of namespaces"
 
   [root & paths]
 
@@ -107,7 +116,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Babel "Run babel on the given arguments."
+(defn Babel
+
+  "Run babel on the given arguments"
 
   [workingDir args]
 
@@ -131,16 +142,15 @@
               (for [x (.toArray stk)] (.getName x)))
           fid (.getName f)
           paths (conj (into [] p) fid) ]
-      (cond
+      (if
         (.isDirectory f)
-        (when-not (nil? (cfgtor f :dir true))
+        (when (some? (cfgtor f :dir true))
           (.push stk f)
           (walk-tree cfgtor stk nil))
-        :else
+        ;else
         (when-let [rc (cfgtor f :paths paths)]
           (Babel (:work-dir rc) (:args rc))
           (cfgtor f :paths paths :postgen true)))))
-
   (when-not (.empty stk) (.pop stk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,7 +594,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask testjava "test java"
+(deftask testjava
+
+  "test java"
 
   []
 
@@ -595,7 +607,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask testclj "test clj"
+(deftask testclj
+
+  "test clj"
 
   []
 
@@ -606,7 +620,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask juber "my own uber"
+(deftask juber
+
+  "my own uber"
 
   []
 
@@ -626,7 +642,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask libjars "resolve all dependencies (jars)"
+(deftask libjars
+
+  "resolve all dependencies (jars)"
 
   []
 
@@ -634,7 +652,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask clean4build "clean,pre-build"
+(deftask clean4build
+
+  "clean,pre-build"
 
   []
 
@@ -646,7 +666,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask buildr "compile"
+(deftask buildr
+
+  "compile"
 
   []
 
@@ -657,7 +679,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask dev "clean,resolve,build"
+(deftask dev
+
+  "clean,resolve,build"
 
   []
 
@@ -667,7 +691,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask jar! "jar!"
+(deftask jar!
+
+  "jar!"
 
   []
 

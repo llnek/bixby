@@ -14,52 +14,59 @@
 
   czlabclj.xlib.crypto.ssl
 
-  (:require [czlabclj.xlib.crypto.stores :refer [MakeCryptoStore]]
-            [czlabclj.xlib.util.core :refer [NewRandom]]
-            [czlabclj.xlib.crypto.core
-             :refer
-             [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
+  (:require
+    [czlabclj.xlib.crypto.stores :refer [MakeCryptoStore]]
+    [czlabclj.xlib.util.core :refer [NewRandom]]
+    [czlabclj.xlib.crypto.core
+     :refer [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:import  [javax.net.ssl X509TrustManager TrustManager]
-            [javax.net.ssl SSLEngine SSLContext]
-            [com.zotohlab.frwk.net SSLTrustMgrFactory]
-            [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI]
-            [java.net URL]
-            [javax.net.ssl KeyManagerFactory TrustManagerFactory]))
+  (:import
+    [javax.net.ssl X509TrustManager TrustManager]
+    [javax.net.ssl SSLEngine SSLContext]
+    [com.zotohlab.frwk.net SSLTrustMgrFactory]
+    [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI]
+    [java.net URL]
+    [javax.net.ssl KeyManagerFactory TrustManagerFactory]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSslContext "Make a server-side SSLContext."
+(defn MakeSslContext
 
-  (^SSLContext
-    [^URL keyUrl ^PasswordAPI pwdObj]
-    (MakeSslContext keyUrl pwdObj "TLS"))
+  "Make a server-side SSLContext"
 
-  (^SSLContext
-    [^URL keyUrl
-     ^PasswordAPI pwdObj ^String flavor]
-    (let [ks (with-open [inp (.openStream keyUrl) ]
-               (if (PkcsFile? keyUrl)
-                 (GetPkcsStore inp pwdObj)
-                 (GetJksStore inp pwdObj)))
-          cs (MakeCryptoStore ks pwdObj)
-          tmf (.trustManagerFactory cs)
-          kmf (.keyManagerFactory cs)
-          ctx (SSLContext/getInstance flavor) ]
-      (.init ctx
-             (.getKeyManagers kmf)
-             (.getTrustManagers tmf)
-             (NewRandom))
-      ctx)))
+  ^SSLContext
+  [^URL keyUrl
+   ^PasswordAPI pwdObj & [^String flavor] ]
+
+  (let
+    [ks (with-open
+          [inp (.openStream keyUrl) ]
+          (if (PkcsFile? keyUrl)
+            (GetPkcsStore inp pwdObj)
+            (GetJksStore inp pwdObj)))
+     cs (MakeCryptoStore ks pwdObj)
+     tmf (.trustManagerFactory cs)
+     kmf (.keyManagerFactory cs)
+     ctx (->> (or flavor "TLS")
+              (SSLContext/getInstance )) ]
+    (.init ctx
+           (.getKeyManagers kmf)
+           (.getTrustManagers tmf)
+           (NewRandom))
+    ctx
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSslClientCtx "Make a client-side SSLContext."
+(defn MakeSslClientCtx
+
+  "Make a client-side SSLContext"
 
   ^SSLContext
   [ssl]

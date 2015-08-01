@@ -9,7 +9,7 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-(ns ^{:doc "Call and execute the codox document generator."
+(ns ^{:doc "Call and execute the codox document generator"
       :author "kenl" }
 
   czlabclj.tpcl.codox
@@ -19,14 +19,14 @@
   (:require [codox.main :refer :all]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; codox gives a bunch of reflection warnings.  I don't like to see them.
+;; codox gives a bunch of reflection warnings.  I don't like to see them
 (set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -main "Run the codox document generator."
+(defn -main "Run the codox document generator"
 
-  [& args]
+  [ & args ]
 
   (require 'codox.main)
   (if (> (count args) 0)
@@ -39,6 +39,5 @@
 
 (set! *warn-on-reflection* true)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private codox-eof nil)
+;;EOF
 

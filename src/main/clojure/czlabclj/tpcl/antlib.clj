@@ -14,44 +14,45 @@
 
   czlabclj.tpcl.antlib
 
-  (:import [java.beans Introspector PropertyDescriptor]
-           [java.lang.reflect Method]
-           [java.util Stack]
-           [java.io File]
-           [org.apache.tools.ant.taskdefs
-            Javadoc Java Copy Chmod
-            Concat Move Mkdir Tar
-            Replace ExecuteOn
-            Delete Jar Zip ExecTask Javac]
-           [org.apache.tools.ant.listener
-            AnsiColorLogger
-            TimestampedLogger]
-           [org.apache.tools.ant.types
-            Commandline$Argument
-            Commandline$Marker
-            PatternSet$NameEntry
-            Environment$Variable
-            Reference FileSet Path DirSet]
-           [org.apache.tools.ant
-            NoBannerLogger
-            Project Target Task]
-           [org.apache.tools.ant.taskdefs.optional.junit
-            FormatterElement$TypeAttribute
-            JUnitTask$SummaryAttribute
-            JUnitTask$ForkMode
-            JUnitTask
-            JUnitTest
-            BatchTest
-            FormatterElement]
-           [org.apache.tools.ant.util FileNameMapper
-            GlobPatternMapper ChainedMapper]
-           [org.apache.tools.ant.taskdefs
-            Javadoc$AccessType
-            Replace$Replacefilter
-            Replace$NestedString
-            Tar$TarFileSet
-            Tar$TarCompressionMethod
-            Javac$ImplementationSpecificArgument])
+  (:import
+    [java.beans Introspector PropertyDescriptor]
+    [java.lang.reflect Method]
+    [java.util Stack]
+    [java.io File]
+    [org.apache.tools.ant.taskdefs
+     Javadoc Java Copy Chmod
+     Concat Move Mkdir Tar
+     Replace ExecuteOn
+     Delete Jar Zip ExecTask Javac]
+    [org.apache.tools.ant.listener
+     AnsiColorLogger
+     TimestampedLogger]
+    [org.apache.tools.ant.types
+     Commandline$Argument
+     Commandline$Marker
+     PatternSet$NameEntry
+     Environment$Variable
+     Reference FileSet Path DirSet]
+    [org.apache.tools.ant
+     NoBannerLogger
+     Project Target Task]
+    [org.apache.tools.ant.taskdefs.optional.junit
+     FormatterElement$TypeAttribute
+     JUnitTask$SummaryAttribute
+     JUnitTask$ForkMode
+     JUnitTask
+     JUnitTest
+     BatchTest
+     FormatterElement]
+    [org.apache.tools.ant.util FileNameMapper
+     GlobPatternMapper ChainedMapper]
+    [org.apache.tools.ant.taskdefs
+     Javadoc$AccessType
+     Replace$Replacefilter
+     Replace$NestedString
+     Tar$TarFileSet
+     Tar$TarCompressionMethod
+     Javac$ImplementationSpecificArgument])
 
   ;;put here but not used, reason is to trick compiler
   ;;to drag in the files and compile it without
@@ -59,9 +60,10 @@
   (:use [flatland.ordered.set]
         [flatland.ordered.map])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cs]))
+  (:require
+    [czlabclj.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -69,7 +71,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- capstr "Just capitalize the 1st character."
+(defn- capstr
+
+  "Just capitalize the 1st character"
 
   ^String
   [^String s]
@@ -79,7 +83,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntProject "Create a new ant project."
+(defn AntProject
+
+  "Create a new ant project"
 
   ^Project
   []
@@ -99,7 +105,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExecTarget "Run and execute a target."
+(defn ExecTarget
+
+  "Run and execute a target"
 
   [^Target target]
 
@@ -137,7 +145,8 @@
 ;;
 (defn- maybeListProps
 
-  "Dynanically add bean info for non-task classes."
+  "Dynanically add bean info for non-task classes"
+
   [cz]
 
   (let [b (getBeanInfo cz)]
@@ -147,7 +156,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- method? "Find this setter method via best match."
+(defn- method?
+
+  "Find this setter method via best match"
 
   [^Class cz ^String m]
 
@@ -198,7 +209,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- coerce "Best attempt to convert a given value."
+(defn- coerce
+
+  "Best attempt to convert a given value"
 
   [pj pz value]
 
@@ -230,7 +243,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- setOptions "Use reflection and invoke setters."
+(defn- setOptions
+
+  "Use reflection and invoke setters"
 
   [pj pojo options & [skips]]
 
@@ -264,7 +279,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntTarFileSet "Configure a TarFileSet Object."
+(defn AntTarFileSet
+
+  "Configure a TarFileSet Object"
 
   ^Tar$TarFileSet
   [^Project pj ^Tar$TarFileSet fs & [options nested]]
@@ -280,7 +297,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntFileSet "Create a FileSet Object."
+(defn AntFileSet
+
+  "Create a FileSet Object"
 
   ^FileSet
   [^Project pj & [options nested]]
@@ -299,7 +318,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntBatchTest "Configure a BatchTest Object."
+(defn AntBatchTest
+
+  "Configure a BatchTest Object"
 
   ^BatchTest
   [^Project pj ^BatchTest bt & [options nested]]
@@ -314,7 +335,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntJunitTest "Configure a single JUnit Test Object."
+(defn AntJunitTest
+
+  "Configure a single JUnit Test Object"
 
   ^JUnitTask
   [^Project pj & [options nested]]
@@ -363,7 +386,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AntFormatter "Create a Formatter Object."
+(defn AntFormatter
+
+  "Create a Formatter Object"
 
   ^FormatterElement
   [^Project pj & [options nested]]
@@ -379,7 +404,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetClassPath "Build a nested Path structure for classpath."
+(defn SetClassPath
+
+  "Build a nested Path structure for classpath"
 
   [^Project pj ^Path root paths]
 
@@ -566,7 +593,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-task "Reify and configure actual ant tasks."
+(defn- init-task
+
+  "Reify and configure actual ant tasks"
 
   ^Task
   [^Project pj ^Target target tobj]
@@ -590,7 +619,7 @@
 ;;
 (defn ProjAntTasks
 
-  "Bind all the tasks to a target and a project."
+  "Bind all the tasks to a target and a project"
 
   ^Target
   [^String target tasks]
@@ -610,7 +639,7 @@
 ;;
 (defn ProjAntTasks*
 
-  "Bind all the tasks to a target and a project."
+  "Bind all the tasks to a target and a project"
 
   ^Target
   [target & tasks]
@@ -619,7 +648,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunTarget "Run ant tasks."
+(defn RunTarget
+
+  "Run ant tasks"
 
   [target tasks]
 
@@ -628,7 +659,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunTarget* "Run ant tasks."
+(defn RunTarget*
+
+  "Run ant tasks"
 
   [target & tasks]
 
@@ -637,7 +670,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunTasks "Run ant tasks."
+(defn RunTasks
+
+  "Run ant tasks"
 
   [tasks]
 
@@ -645,7 +680,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunTasks* "Run ant tasks."
+(defn RunTasks*
+
+  "Run ant tasks"
 
   [& tasks]
 
@@ -655,7 +692,7 @@
 ;;
 (defmacro ^:private ant-task
 
-  "Generate wrapper function for ant task."
+  "Generate wrapper function for ant task"
 
   [pj sym docstr func & [preopt]]
 
@@ -702,7 +739,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CleanDir "Clean an existing dir or create it."
+(defn CleanDir
+
+  "Clean an existing dir or create it"
 
   [d & {:keys [quiet]
         :or {:quiet true}}]
@@ -720,7 +759,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteDir "Remove a directory."
+(defn DeleteDir
+
+  "Remove a directory"
 
   [d & {:keys [quiet]
         :or {:quiet true}}]
