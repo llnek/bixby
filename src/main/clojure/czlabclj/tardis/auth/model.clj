@@ -14,28 +14,32 @@
 
   czlabclj.tardis.auth.model
 
-  (:require [czlabclj.xlib.i18n.resources :refer [RStr]]
-            [czlabclj.xlib.util.str :refer [ToKW]])
+  (:require
+    [czlabclj.xlib.i18n.resources :refer [RStr]]
+    [czlabclj.xlib.util.str :refer [ToKW]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:use [czlabclj.xlib.dbio.drivers]
-        [czlabclj.xlib.dbio.core]
-        [czlabclj.xlib.dbio.postgresql]
-        [czlabclj.xlib.dbio.h2]
-        [czlabclj.xlib.dbio.mysql]
-        [czlabclj.xlib.dbio.sqlserver]
-        [czlabclj.xlib.dbio.oracle])
+  (:use
+    [czlabclj.xlib.dbio.drivers]
+    [czlabclj.xlib.dbio.core]
+    [czlabclj.xlib.dbio.postgresql]
+    [czlabclj.xlib.dbio.h2]
+    [czlabclj.xlib.dbio.mysql]
+    [czlabclj.xlib.dbio.sqlserver]
+    [czlabclj.xlib.dbio.oracle])
 
-  (:import  [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
-            [java.sql Connection]
-            [java.io File]
-            [com.zotohlab.frwk.i18n I18N]))
+  (:import
+    [com.zotohlab.frwk.dbio JDBCInfo JDBCPool Schema]
+    [java.sql Connection]
+    [java.io File]
+    [com.zotohlab.frwk.i18n I18N]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^String ^:private _NSP "czc.tardis.auth")
+(def ^:private ^String _NSP "czc.tardis.auth")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -47,10 +51,10 @@
     :state {:null false}
     :zip {:null false}
     :country {:null false} })
-  (WithDbIndexes { :i1 #{ :city :state :country }
-    :i2 #{ :zip :country }
-    :state #{ :state }
-    :zip #{ :zip } } ))
+  (WithDbIndexes { :i1 [ :city :state :country ]
+    :i2 [ :zip :country ]
+    :state [ :state ]
+    :zip [ :zip ] } ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -59,7 +63,7 @@
     { :name { :column "role_name" :null false }
       :desc { :column "description" :null false } })
   (WithDbUniques
-    { :u1 #{ :name } }) )
+    { :u1 [ :name ] }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -76,7 +80,7 @@
               :cascade true
               :other (ToKW _NSP "StdAddress") } })
   (WithDbUniques
-    { :u2 #{ :acctid } }) )
+    { :u2 [ :acctid ] }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -86,15 +90,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def AUTH-MCACHE
+(defonce AUTH-MCACHE
+
   (-> (reify Schema
-        (getModels [_] [StdAddress AuthRole
-                        LoginAccount AccountRole] ))
+        (getModels [_]
+          [StdAddress AuthRole LoginAccount AccountRole] ))
       (MakeMetaCache )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GenerateAuthPluginDDL "Generate db ddl for the auth-plugin."
+(defn GenerateAuthPluginDDL
+
+  "Generate db ddl for the auth-plugin"
 
   ^String
   [dbtype]
@@ -113,7 +120,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ApplyAuthPluginDDL "Upload the auth-plugin ddl to db." class)
+(defmulti ApplyAuthPluginDDL "Upload the auth-plugin ddl to db" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,7 +145,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ExportAuthPluginDDL "Output the auth-plugin ddl to file."
+(defn ExportAuthPluginDDL
+
+  "Output the auth-plugin ddl to file"
 
   [dbtype ^File file]
 

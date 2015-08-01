@@ -31,6 +31,8 @@
     [clojure.set :as cset]
     [czlabclj.xlib.crypto.codec :as codec ])
 
+  (:use [flatland.ordered.set])
+
   (:import
     [java.util HashMap GregorianCalendar
          TimeZone Properties]
@@ -409,7 +411,15 @@
 
   {:pre [(map? pojo) (map? indices)]}
 
-  (Interject pojo :indexes #(merge (%2 %1) indices) ) )
+  ;;turn indices from array to set
+  (let [m (reduce
+            #(assoc %1
+                    (first %2)
+                    (into (ordered-set) (last %2)))
+            {}
+            indices)]
+    (Interject pojo :indexes #(merge (%2 %1) m))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -421,7 +431,14 @@
 
   {:pre [(map? pojo) (map? uniqs)]}
 
-  (Interject pojo :uniques #(merge (%2 %1) uniqs) ))
+  (let [m (reduce
+            #(assoc %1
+                    (first %2)
+                    (into (ordered-set) (last %2)))
+            {}
+            uniqs)]
+    (Interject pojo :uniques #(merge (%2 %1) m))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

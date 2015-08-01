@@ -22,22 +22,25 @@
    :exposes-methods { }
    :state myState)
 
-  (:require [czlabclj.xlib.crypto.codec :refer [Pwdify]])
+  (:require
+    [czlabclj.xlib.crypto.codec :refer [Pwdify]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
   (:use [czlabclj.tardis.auth.plugin]
         [czlabclj.xlib.dbio.connect]
         [czlabclj.xlib.dbio.core])
 
-  (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
-            [org.apache.shiro.authc AuthenticationException
-             AuthenticationToken SimpleAccount]
-            [org.apache.shiro.subject PrincipalCollection]
-            [org.apache.shiro.realm AuthorizingRealm]
-            [com.zotohlab.frwk.dbio DBAPI]
-            [org.apache.shiro.realm CachingRealm]
-            [java.util Collection]))
+  (:import
+    [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+    [org.apache.shiro.authc AuthenticationException
+    AuthenticationToken SimpleAccount]
+    [org.apache.shiro.subject PrincipalCollection]
+    [org.apache.shiro.realm AuthorizingRealm]
+    [com.zotohlab.frwk.dbio DBAPI]
+    [org.apache.shiro.realm CachingRealm]
+    [java.util Collection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -95,5 +98,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

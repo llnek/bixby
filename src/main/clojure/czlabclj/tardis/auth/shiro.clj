@@ -14,17 +14,20 @@
 
   czlabclj.tardis.auth.shiro
 
-  (:require [czlabclj.xlib.crypto.codec :refer [Pwdify]])
+  (:require
+    [czlabclj.xlib.crypto.codec :refer [Pwdify]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlabclj.xlib.util.logging :as log])
 
-  (:import  [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
-            [org.apache.shiro.authc.credential CredentialsMatcher]
-            [org.apache.shiro.realm AuthorizingRealm]
-            [org.apache.shiro.authc AuthenticationException
-             AuthenticationToken AuthenticationInfo SimpleAccount]
-            [com.zotohlab.frwk.crypto PasswordAPI]
-            [com.zotohlab.frwk.dbio DBAPI]))
+  (:import
+    [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
+    [org.apache.shiro.authc.credential CredentialsMatcher]
+    [org.apache.shiro.realm AuthorizingRealm]
+    [org.apache.shiro.authc AuthenticationException
+    AuthenticationToken AuthenticationInfo SimpleAccount]
+    [com.zotohlab.frwk.crypto PasswordAPI]
+    [com.zotohlab.frwk.dbio DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -50,7 +53,6 @@
   ))
 
 (ns-unmap *ns* '->PwdMatcher)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

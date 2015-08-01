@@ -39,10 +39,10 @@
     :zip {:null false}
     :country {:null false}
                    })
-  (WithDbIndexes { :i1 #{ :city :state :country }
-    :i2 #{ :zip :country }
-    :state #{ :state }
-    :zip #{ :zip } } ))
+  (WithDbIndexes { :i1 [ :city :state :country ]
+    :i2 [ :zip :country ]
+    :state [ :state ]
+    :zip [ :zip ] } ))
 
 (DefModel Person
   (WithDbFields {
@@ -55,8 +55,8 @@
   (WithDbAssocs {
     :spouse { :kind :O2O :other (DbioScopeType "Person") }
                    })
-  (WithDbIndexes { :i1 #{ :first_name :last_name }
-    :i2 #{ :bday }
+  (WithDbIndexes { :i1 [ :first_name :last_name ]
+    :i2 [ :bday ]
     } ))
 
 (DefJoined EmpDepts
@@ -75,7 +75,7 @@
   (WithDbAssocs {
     :depts { :kind :M2M :joined (DbioScopeType "EmpDepts") }
                    })
-  (WithDbIndexes { :i1 #{ :login }
+  (WithDbIndexes { :i1 [ :login ]
     } ))
 
 (DefModel Department
@@ -86,7 +86,7 @@
     :emps { :kind :M2M :joined (DbioScopeType "EmpDepts") }
                    })
   (WithDbUniques {
-    :u1 #{ :dname }
+    :u1 [ :dname ]
     } ))
 
 (DefModel Company
@@ -101,7 +101,7 @@
     :hq { :kind :O2O :other (DbioScopeType "Address") }
                    })
   (WithDbUniques {
-    :u1 #{ :cname }
+    :u1 [ :cname ]
     } ))
 
 (def METAC (atom nil))
@@ -441,10 +441,7 @@
 )
 
 ;;(use-fixtures :each init-test)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def ^:private dbstuff-eof nil)
-
 ;;(clojure.test/run-tests 'testcljc.dbio.dbstuff)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 
