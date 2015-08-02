@@ -29,7 +29,7 @@ set NETTY=-Dio.netty.eventLoopThreads=16
 set JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
 set VMXRGS=-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m
 set CLDR=-Djava.system.class.loader=com.zotohlab.skaro.loaders.ExecClassLoader
-set MAINCZ=czlabclj.tardis.etc.core
+set MAINCZ=czlab.tardis.etc.core
 
 if NOT EXIST %L4JFILE% SET LOGREF=
 

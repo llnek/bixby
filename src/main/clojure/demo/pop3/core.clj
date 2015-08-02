@@ -14,9 +14,9 @@
 
   demo.pop3.core
 
-  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
-            [czlabclj.xlib.util.core :refer [notnil?]]
-            [czlabclj.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.process :refer [DelayExec]]
+            [czlab.xlib.util.core :refer [notnil?]]
+            [czlab.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])
 
@@ -59,7 +59,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlabclj.tardis.core.sys.CljAppMain
+(deftype MyAppMain [] czlab.tardis.core.sys.CljAppMain
 
   (contextualize [_ ctr] )
 

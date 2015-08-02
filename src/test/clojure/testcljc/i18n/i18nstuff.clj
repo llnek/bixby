@@ -14,8 +14,8 @@
 
   testcljc.i18n.i18nstuff
 
-  (:use [czlabclj.xlib.i18n.resources]
-        [czlabclj.xlib.util.core]
+  (:use [czlab.xlib.i18n.resources]
+        [czlab.xlib.util.core]
         [clojure.test]))
 
 

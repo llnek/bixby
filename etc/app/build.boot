@@ -15,10 +15,10 @@
 (require '[clojure.string :as cs]
          '[clojure.java.io :as io]
          '[boot.core :as bc]
-         '[czlabclj.tpcl.boot
+         '[czlab.tpcl.boot
            :as b
            :refer :all]
-         '[czlabclj.tpcl.antlib :as a])
+         '[czlab.tpcl.antlib :as a])
 
 (import '[java.io File])
 

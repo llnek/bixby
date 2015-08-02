@@ -14,7 +14,7 @@
 
   testcljc.util.byteutils
 
-  (:require [czlabclj.xlib.util.io :as BU])
+  (:require [czlab.xlib.util.io :as BU])
   (:use [clojure.test])
   (:import  [java.nio.charset Charset]))
 

@@ -14,7 +14,7 @@
 
   testcljc.util.metautils
 
-  (:require [czlabclj.xlib.util.meta :as MU])
+  (:require [czlab.xlib.util.meta :as MU])
 
   (:use [clojure.test]))
 

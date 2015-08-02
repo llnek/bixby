@@ -14,11 +14,11 @@
 
   demo.steps.core
 
-  (:require [czlabclj.xlib.util.core :refer [RandomBoolValue notnil?]]
-            [czlabclj.xlib.util.str :refer [nsb]]
+  (:require [czlab.xlib.util.core :refer [RandomBoolValue notnil?]]
+            [czlab.xlib.util.str :refer [nsb]]
             [clojure.tools.logging :as log])
 
-  (:use [czlabclj.xlib.util.wfs])
+  (:use [czlab.xlib.util.wfs])
 
   (:import  [com.zotohlab.wflow FlowDot Switch If
              Activity Split While PTask

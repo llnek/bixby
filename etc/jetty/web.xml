@@ -50,7 +50,7 @@
 
   <servlet>
     <servlet-name>HelloServlet</servlet-name>
-    <servlet-class>czlabclj.tardis.io.WEBServlet</servlet-class>
+    <servlet-class>czlab.tardis.io.WEBServlet</servlet-class>
     <async-supported>true</async-supported>
   </servlet>
 

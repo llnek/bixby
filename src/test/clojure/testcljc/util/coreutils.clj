@@ -13,7 +13,7 @@
 
   testcljc.util.coreutils
 
-  (:require [czlabclj.xlib.util.core :as CU])
+  (:require [czlab.xlib.util.core :as CU])
 
   (:use [clojure.test])
 
@@ -65,8 +65,8 @@
 (is (instance? Charset (CU/ToCharset "utf-16")))
 (is (instance? Charset (CU/ToCharset)))
 
-(is (= "/c:/temp/abc.txt" (CU/NiceFPath (File. "/c:\\temp\\abc.txt"))))
-(is (= "/c:/temp/abc.txt" (CU/NiceFPath "/c:\\temp\\abc.txt")))
+(is (= "/c:/temp/abc.txt" (CU/FPath (File. "/c:\\temp\\abc.txt"))))
+(is (= "/c:/temp/abc.txt" (CU/FPath "/c:\\temp\\abc.txt")))
 
 (is (= (str "hello" VAR_PATH "world" VAR_USER) (CU/SubsVar "hello${PATH}world${user.name}")))
 (is (= (str "hello" VAR_PATH) (CU/SubsEVar "hello${PATH}")))
@@ -161,7 +161,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getf (doto ^czlabclj.xlib.util.core.Muble (CU/MakeMMap) (.setf! :1 100)) :1)))
+(is (= 100 (.getf (doto ^czlab.xlib.util.core.Muble (CU/MakeMMap) (.setf! :1 100)) :1)))
 
 
 )

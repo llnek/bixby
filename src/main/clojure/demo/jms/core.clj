@@ -14,9 +14,9 @@
 
   demo.jms.core
 
-  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
-            [czlabclj.xlib.util.core :refer [notnil?]]
-            [czlabclj.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.process :refer [DelayExec]]
+            [czlab.xlib.util.core :refer [notnil?]]
+            [czlab.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])
 

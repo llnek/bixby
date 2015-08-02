@@ -13,13 +13,13 @@
 
   testcljc.dbio.dbstuff
 
-  (:use [czlabclj.xlib.util.files :only [WriteOneFile]]
-        [czlabclj.xlib.crypto.codec]
-        [czlabclj.xlib.util.core]
-        [czlabclj.xlib.dbio.drivers]
-        [czlabclj.xlib.dbio.connect]
-        [czlabclj.xlib.dbio.core]
-        [czlabclj.xlib.dbio.h2]
+  (:use [czlab.xlib.util.files :only [WriteOneFile]]
+        [czlab.xlib.crypto.codec]
+        [czlab.xlib.util.core]
+        [czlab.xlib.dbio.drivers]
+        [czlab.xlib.dbio.connect]
+        [czlab.xlib.dbio.core]
+        [czlab.xlib.dbio.h2]
         [clojure.test])
 
   (:import [org.apache.commons.lang3 StringUtils]

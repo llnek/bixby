@@ -140,10 +140,10 @@ target (packDocs: '') {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.util.codox')
+    arg (value: 'czlab.xlib.util.codox')
   }
 
-  ant.java(classname: "czlabclj.xlib.util.codox",
+  ant.java(classname: "czlab.xlib.util.codox",
            fork:true,
            failonerror:true) {
     classpath(refid:'compilePathId')

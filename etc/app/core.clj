@@ -7,7 +7,7 @@
   @@APPDOMAIN@@.core
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
-  (:use [czlabclj.xlib.util.wfs])
+  (:use [czlab.xlib.util.wfs])
   (:import  [com.zotohlab.wflow FlowNode Activity Job
                                 Pipeline PDelegate
                                 PTask Work]))
@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlabclj.tardis.impl.ext.CljAppMain
+(deftype MyAppMain [] czlab.tardis.impl.ext.CljAppMain
 
   (contextualize [_ container]
     (log/info "My AppMain contextualized by container " container))

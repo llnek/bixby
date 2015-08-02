@@ -13,7 +13,7 @@
 
   testcljc.util.strutils
 
-  (:require [czlabclj.xlib.util.str :as SU])
+  (:require [czlab.xlib.util.str :as SU])
 
   (:use [clojure.test]))
 

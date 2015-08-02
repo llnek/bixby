@@ -14,9 +14,9 @@
 
   demo.fork.core
 
-  (:require [czlabclj.xlib.util.core :refer [try!]]
-            [czlabclj.xlib.util.str :refer [nsb]]
-            [czlabclj.xlib.util.wfs :refer [SimPTask]])
+  (:require [czlab.xlib.util.core :refer [try!]]
+            [czlab.xlib.util.str :refer [nsb]]
+            [czlab.xlib.util.wfs :refer [SimPTask]])
 
   (:require [clojure.tools.logging :as log])
 

@@ -13,7 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanXLib: '') {
-  ant.delete ( dir: "${buildDir}/czlabclj/xlib", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.xlib", quiet: true)
 }
 
 target (cleanXLibTest: '') {
@@ -127,8 +127,8 @@ def doCompileXLib() {
   clj_Net()
   clj_JMX()
 
-  ant.copy (todir: "${buildDir}/czlabclj/xlib") {
-    fileset (dir: "${srcDir}/clojure/czlabclj/xlib") {
+  ant.copy (todir: "${buildDir}/czlab.xlib") {
+    fileset (dir: "${srcDir}/clojure/czlab.xlib") {
       exclude (name: '**/*.clj')
       exclude (name: '**/.svn')
     }
@@ -136,7 +136,7 @@ def doCompileXLib() {
 
   ant.jar (destfile: "${distribDir}/exec/xlib-${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
-      include (name: 'czlabclj/xlib/**')
+      include (name: 'czlab.xlib/**')
       exclude (name: '**/log4j.properties')
       exclude (name: '**/logback.xml')
       exclude (name: 'demo/**')
@@ -156,24 +156,24 @@ def clj_Util() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.util.format')
-    arg (value: 'czlabclj.xlib.util.core')
-    arg (value: 'czlabclj.xlib.util.cmdline')
-    arg (value: 'czlabclj.xlib.util.consts')
-    arg (value: 'czlabclj.xlib.util.countries')
-    arg (value: 'czlabclj.xlib.util.dates')
-    arg (value: 'czlabclj.xlib.util.files')
-    arg (value: 'czlabclj.xlib.util.guids')
-    arg (value: 'czlabclj.xlib.util.io')
-    arg (value: 'czlabclj.xlib.util.meta')
-    arg (value: 'czlabclj.xlib.util.mime')
-    arg (value: 'czlabclj.xlib.util.process')
-    arg (value: 'czlabclj.xlib.util.str')
-    arg (value: 'czlabclj.xlib.util.ini')
-    arg (value: 'czlabclj.xlib.util.wfs')
-    arg (value: 'czlabclj.xlib.util.scheduler')
-    arg (value: 'czlabclj.xlib.i18n.resources')
-    //arg (value: 'czlabclj.xlib.util.codox')
+    arg (value: 'czlab.xlib.util.format')
+    arg (value: 'czlab.xlib.util.core')
+    arg (value: 'czlab.xlib.util.cmdline')
+    arg (value: 'czlab.xlib.util.consts')
+    arg (value: 'czlab.xlib.util.countries')
+    arg (value: 'czlab.xlib.util.dates')
+    arg (value: 'czlab.xlib.util.files')
+    arg (value: 'czlab.xlib.util.guids')
+    arg (value: 'czlab.xlib.util.io')
+    arg (value: 'czlab.xlib.util.meta')
+    arg (value: 'czlab.xlib.util.mime')
+    arg (value: 'czlab.xlib.util.process')
+    arg (value: 'czlab.xlib.util.str')
+    arg (value: 'czlab.xlib.util.ini')
+    arg (value: 'czlab.xlib.util.wfs')
+    arg (value: 'czlab.xlib.util.scheduler')
+    arg (value: 'czlab.xlib.i18n.resources')
+    //arg (value: 'czlab.xlib.util.codox')
 
   }
 }
@@ -189,10 +189,10 @@ def clj_Crypto() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.crypto.codec')
-    arg (value: 'czlabclj.xlib.crypto.core')
-    arg (value: 'czlabclj.xlib.crypto.stores')
-    arg (value: 'czlabclj.xlib.crypto.ssl')
+    arg (value: 'czlab.xlib.crypto.codec')
+    arg (value: 'czlab.xlib.crypto.core')
+    arg (value: 'czlab.xlib.crypto.stores')
+    arg (value: 'czlab.xlib.crypto.ssl')
   }
 }
 
@@ -207,9 +207,9 @@ def clj_JMX() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.jmx.names')
-    arg (value: 'czlabclj.xlib.jmx.bean')
-    arg (value: 'czlabclj.xlib.jmx.core')
+    arg (value: 'czlab.xlib.jmx.names')
+    arg (value: 'czlab.xlib.jmx.bean')
+    arg (value: 'czlab.xlib.jmx.core')
   }
 }
 
@@ -224,16 +224,16 @@ def clj_Net() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.net.apache')
-    arg (value: 'czlabclj.xlib.net.comms')
-    arg (value: 'czlabclj.xlib.net.routes')
-    arg (value: 'czlabclj.xlib.netty.request')
-    arg (value: 'czlabclj.xlib.netty.form')
-    arg (value: 'czlabclj.xlib.netty.filters')
-    arg (value: 'czlabclj.xlib.netty.io')
-    arg (value: 'czlabclj.xlib.netty.filesvr')
-    arg (value: 'czlabclj.xlib.netty.discarder')
-    arg (value: 'czlabclj.xlib.netty.snooper')
+    arg (value: 'czlab.xlib.net.apache')
+    arg (value: 'czlab.xlib.net.comms')
+    arg (value: 'czlab.xlib.net.routes')
+    arg (value: 'czlab.xlib.netty.request')
+    arg (value: 'czlab.xlib.netty.form')
+    arg (value: 'czlab.xlib.netty.filters')
+    arg (value: 'czlab.xlib.netty.io')
+    arg (value: 'czlab.xlib.netty.filesvr')
+    arg (value: 'czlab.xlib.netty.discarder')
+    arg (value: 'czlab.xlib.netty.snooper')
   }
 }
 
@@ -248,17 +248,17 @@ def clj_DBIO() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlabclj.xlib.dbio.core')
-    arg (value: 'czlabclj.xlib.dbio.sql')
-    arg (value: 'czlabclj.xlib.dbio.simple')
-    arg (value: 'czlabclj.xlib.dbio.composite')
-    arg (value: 'czlabclj.xlib.dbio.connect')
-    arg (value: 'czlabclj.xlib.dbio.drivers')
-    arg (value: 'czlabclj.xlib.dbio.sqlserver')
-    arg (value: 'czlabclj.xlib.dbio.h2')
-    arg (value: 'czlabclj.xlib.dbio.oracle')
-    arg (value: 'czlabclj.xlib.dbio.mysql')
-    arg (value: 'czlabclj.xlib.dbio.postgresql')
+    arg (value: 'czlab.xlib.dbio.core')
+    arg (value: 'czlab.xlib.dbio.sql')
+    arg (value: 'czlab.xlib.dbio.simple')
+    arg (value: 'czlab.xlib.dbio.composite')
+    arg (value: 'czlab.xlib.dbio.connect')
+    arg (value: 'czlab.xlib.dbio.drivers')
+    arg (value: 'czlab.xlib.dbio.sqlserver')
+    arg (value: 'czlab.xlib.dbio.h2')
+    arg (value: 'czlab.xlib.dbio.oracle')
+    arg (value: 'czlab.xlib.dbio.mysql')
+    arg (value: 'czlab.xlib.dbio.postgresql')
   }
 }
 

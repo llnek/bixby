@@ -15,8 +15,8 @@
 
   demo.file.core
 
-  (:require [czlabclj.xlib.util.core :refer [try!]]
-            [czlabclj.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.core :refer [try!]]
+            [czlab.xlib.util.str :refer [nsb]])
 
   (:require [clojure.tools.logging :as log])
 

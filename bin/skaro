@@ -149,7 +149,7 @@ BG=false
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
 CLDR=" -Djava.system.class.loader=com.zotohlab.skaro.loaders.ExecClassLoader"
-MAINCZ=czlabclj.tardis.etc.shell
+MAINCZ=czlab.tardis.etc.shell
 
 LIBP="-Djava.library.path=$SKARO_HOME/bin"
 #48G
@@ -175,7 +175,7 @@ KILLPORT="-Dskaro.kill.port=$KPORT"
 NETTY=-Dio.netty.eventLoopThreads=16
 
 show_proc() {
-    pid=$( ps -ef | grep czlabclj.tardis.etc.shell | grep -v grep | awk '{print $2}' )
+    pid=$( ps -ef | grep czlab.tardis.etc.shell | grep -v grep | awk '{print $2}' )
     if [ -n "$pid" ]; then
       echo "skaro is running with process-id: ${pid}."
     else
@@ -183,7 +183,7 @@ show_proc() {
     fi
 }
 stop_proc() {
-    pid=$( ps -ef | grep czlabclj.tardis.etc.shell | grep -v grep | awk '{print $2}' )
+    pid=$( ps -ef | grep czlab.tardis.etc.shell | grep -v grep | awk '{print $2}' )
     if [ -n "$pid" ]; then
       #kill $pid
       cd /tmp

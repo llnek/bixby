@@ -144,11 +144,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlabclj.tpcl.boot :as b :refer :all :exclude [dev jar!]]
+(require '[czlab.tpcl.boot :as b :refer :all :exclude [dev jar!]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
-         '[czlabclj.tpcl.antlib :as a]
+         '[czlab.tpcl.antlib :as a]
          '[boot.core :as bc])
 
 (import '[org.apache.tools.ant Project Target Task]
@@ -398,11 +398,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/jmx"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/jmx"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/xlib/jmx")]]
+                                       "czlab/xlib/jmx")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -412,11 +412,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/crypto"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/crypto"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/xlib/crypto")]]
+                                       "czlab/xlib/crypto")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -426,11 +426,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/dbio"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/dbio"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/xlib/dbio")]]
+                                       "czlab/xlib/dbio")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -440,13 +440,13 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/netty"))
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/net"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/netty"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/net"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/xlib/netty"
-                                       "czlabclj/xlib/net")]]
+                                       "czlab/xlib/netty"
+                                       "czlab/xlib/net")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -456,13 +456,13 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/util"))
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib/i18n"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/util"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib/i18n"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/xlib/util"
-                                       "czlabclj/xlib/i18n")]]
+                                       "czlab/xlib/util"
+                                       "czlab/xlib/i18n")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -472,19 +472,19 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/xlib"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/xlib"))
   (let [m (map
             #(apply % [])
             [ #'cljUtil #'cljCrypto #'cljDbio #'cljNet #'cljJMX ])
         t2 (a/AntCopy
-             {:todir (fp! (ge :czzDir) "czlabclj/xlib")}
-             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/xlib")
+             {:todir (fp! (ge :czzDir) "czlab/xlib")}
+             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/xlib")
                          :excludes "**/*.clj"}]])
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
                              (str "xlib-" (ge :buildVersion) ".jar"))}
              [[:fileset {:dir (ge :czzDir)
-                         :includes "czlabclj/xlib/**"
+                         :includes "czlab/xlib/**"
                          :excludes (str "**/log4j.properties,"
                                         "**/logback.xml,"
                                         "demo/**")}]]) ]
@@ -501,21 +501,21 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tpcl"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tpcl"))
   (let [t1 (a/AntJava
               (ge :CLJC_OPTS)
               (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                                 "czlabclj/tpcl")]]
+                                                 "czlab/tpcl")]]
                       (ge :CJNESTED_RAW)))
         t2 (a/AntCopy
-              {:todir (fp! (ge :czzDir) "czlabclj/tpcl")}
-              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tpcl")
+              {:todir (fp! (ge :czzDir) "czlab/tpcl")}
+              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/tpcl")
                           :excludes "**/*.clj"}]])
         t3 (a/AntJar
               {:destFile (fp! (ge :distDir)
                               (str "tpcl-" (ge :buildVersion) ".jar"))}
               [[:fileset {:dir (ge :czzDir)
-                          :includes "czlabclj/tpcl/**"
+                          :includes "czlab/tpcl/**"
                           :excludes (str "**/log4j.properties,"
                                          "**/logback.xml,"
                                          "demo/**")}]]) ]
@@ -558,11 +558,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/impl"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/impl"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/impl")]]
+                                       "czlab/tardis/impl")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -572,11 +572,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/mvc"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/mvc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/mvc")]]
+                                       "czlab/tardis/mvc")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -586,11 +586,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/auth"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/auth"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/auth")]]
+                                       "czlab/tardis/auth")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -600,11 +600,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/io"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/io"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/io")]]
+                                       "czlab/tardis/io")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -614,11 +614,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/etc"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/etc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/etc")]]
+                                       "czlab/tardis/etc")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -628,11 +628,11 @@
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlabclj/tardis/core"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/core"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlabclj/tardis/core")]]
+                                       "czlab/tardis/core")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -646,15 +646,15 @@
                 [#'tardisCore #'tardisEtc #'tardisAuth
                  #'tardisIO #'tardisMvc #'tardisMain ])
         t2 (a/AntCopy
-             {:todir (fp! (ge :czzDir) "czlabclj/tardis")}
-             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlabclj/tardis")
+             {:todir (fp! (ge :czzDir) "czlab/tardis")}
+             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/tardis")
                          :excludes "**/*.meta,**/*.clj"}]])
         ts (into [] (concat m [t2]))
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
                              (str "tardis-" (ge :buildVersion) ".jar"))}
              [[:fileset {:dir (ge :czzDir)
-                         :includes "czlabclj/tardis/**"}]]) ]
+                         :includes "czlab/tardis/**"}]]) ]
     (->> (if *genjars*
            (conj ts t3)
            ts)
@@ -745,11 +745,11 @@
 
     (a/AntJava
       (ge :CLJC_OPTS)
-      (concat [[:argvalues ["czlabclj.tpcl.codox"]]]
+      (concat [[:argvalues ["czlab.tpcl.codox"]]]
               (ge :CJNESTED_RAW)))
 
     (a/AntJava
-      {:classname "czlabclj.tpcl.codox"
+      {:classname "czlab.tpcl.codox"
        :fork true
        :failonerror true}
       [[:argvalues [(ge :basedir)

@@ -14,10 +14,10 @@
 
   demo.http.websock
 
-  (:require [czlabclj.xlib.util.process :refer [DelayExec]]
-            [czlabclj.xlib.util.core :refer [notnil?]]
-            [czlabclj.xlib.util.str :refer [nsb]]
-            [czlabclj.xlib.util.meta :refer [IsBytes?]])
+  (:require [czlab.xlib.util.process :refer [DelayExec]]
+            [czlab.xlib.util.core :refer [notnil?]]
+            [czlab.xlib.util.str :refer [nsb]]
+            [czlab.xlib.util.meta :refer [IsBytes?]])
 
   (:require [clojure.tools.logging :as log])
 

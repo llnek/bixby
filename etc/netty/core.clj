@@ -8,9 +8,9 @@
 
   (:require [clojure.tools.logging :as log :only (info warn error debug)])
 
-  (:use [czlabclj.tardis.core.constants]
-        [czlabclj.xlib.util.str :only [nsb]]
-        [czlabclj.xlib.util.wfs])
+  (:use [czlab.tardis.core.constants]
+        [czlab.xlib.util.str :only [nsb]]
+        [czlab.xlib.util.wfs])
 
   (:import [com.zotohlab.wflow FlowNode Activity
                                Pipeline Job
@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlabclj.tardis.impl.ext.CljAppMain
+(deftype MyAppMain [] czlab.tardis.impl.ext.CljAppMain
 
   (contextualize [_ container]
     (log/info "My AppMain contextualized by container " container))

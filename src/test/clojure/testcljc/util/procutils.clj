@@ -14,8 +14,8 @@
 
   testcljc.util.procutils
 
-  (:require [czlabclj.xlib.util.core :as CU]
-            [czlabclj.xlib.util.process :as PU])
+  (:require [czlab.xlib.util.core :as CU]
+            [czlab.xlib.util.process :as PU])
 
   (:use [clojure.test])
 
