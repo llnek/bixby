@@ -1,0 +1,19 @@
+{
+
+  :info {
+
+    :blockType "czc.skaro.io/SocketIO"
+    :version "1.0"
+    :name "SocketIO"
+
+  }
+
+  :conf {
+
+    :host ""
+    :port 8080
+    :handler ""
+
+  }
+
+}

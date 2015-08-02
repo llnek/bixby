@@ -37,7 +37,7 @@ public class ClojureJUnit extends ClojureTest {
                 "testcljc.crypto.cryptostuff",
                 "testcljc.crypto.mimestuff",
                 "testcljc.dbio.dbstuff"
-                //"testcljc.tardis.auth"
+                //"testcljc.skaro.auth"
 
         });
     }

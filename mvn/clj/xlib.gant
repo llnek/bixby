@@ -79,7 +79,7 @@ def doCompileXLibTest() {
     arg (value: 'testcljc.crypto.cryptostuff')
     arg (value: 'testcljc.crypto.mimestuff')
     arg (value: 'testcljc.dbio.dbstuff')
-    //arg (value: 'testcljc.tardis.auth')
+    //arg (value: 'testcljc.skaro.auth')
   }
   ant.copy (todir: "${buildTestDir}") {
     fileset (dir: "${testDir}/clojure") {

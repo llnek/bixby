@@ -12,10 +12,10 @@
 
 (ns
 
-  testcljc.tardis.auth
+  testcljc.skaro.auth
 
-  (:use [czlab.tardis.auth.plugin]
-        [czlab.tardis.auth.model]
+  (:use [czlab.skaro.auth.plugin]
+        [czlab.skaro.auth.model]
         [czlab.xlib.crypto.codec]
         [czlab.xlib.util.core]
         [czlab.xlib.dbio.drivers]
@@ -31,7 +31,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def METAC (atom (MakeMetaCache (czlab.tardis.auth.model.AuthPluginSchema.))))
+(def METAC (atom (MakeMetaCache (czlab.skaro.auth.model.AuthPluginSchema.))))
 (def JDBC (atom nil))
 (def DB (atom nil))
 (def ROLES (atom nil))
@@ -65,7 +65,7 @@
                   sql
                   (fn [^SQLr tx]
                     (.findAll tx
-                              :czc.tardis.auth/AuthRole
+                              :czc.skaro.auth/AuthRole
                               {}))) ]
                               ;;TODO
                               ;;"order by role_name desc"))) ]
@@ -76,7 +76,7 @@
     (let [ ^Transactable sql (.newCompositeSQLr ^DBAPI @DB)
            rs (.execWith
                 sql
-                (fn [^SQLr tx] (.findAll tx :czc.tardis.auth/AuthRole ))) ]
+                (fn [^SQLr tx] (.findAll tx :czc.skaro.auth/AuthRole ))) ]
       (reduce (fn [sum r]
                 (assoc sum (:name r) r))
               {}
@@ -131,7 +131,7 @@
                  (GetLoginAccount tx user pwd))) ]
       (not (nil? u)))))
 
-(deftest testtardis-auth
+(deftest testskaro.auth
 
   (is (do (init-test nil) true))
 
@@ -152,6 +152,6 @@
 
 (def ^:private auth-eof nil)
 
-;;(clojure.test/run-tests 'testcljc.tardis.auth)
+;;(clojure.test/run-tests 'testcljc.skaro.auth)
 
 

@@ -65,7 +65,7 @@ includeTargets << new File ('mvn/java/wflow.gant')
 includeTargets << new File ('mvn/java/frwk.gant')
 includeTargets << new File ('mvn/java/java-demo.gant')
 
-includeTargets << new File ('mvn/clj/tardis.gant')
+includeTargets << new File ('mvn/clj/skaro.gant')
 includeTargets << new File ('mvn/clj/xlib.gant')
 includeTargets << new File ('mvn/clj/tpcl.gant')
 includeTargets << new File ('mvn/clj/clj-demo.gant')

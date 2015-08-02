@@ -29,7 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlab.tardis.impl.ext.CljAppMain
+(deftype MyAppMain [] czlab.skaro.impl.ext.CljAppMain
 
   (contextualize [_ container]
     (log/info "My AppMain contextualized by container " container))

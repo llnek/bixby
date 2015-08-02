@@ -1,0 +1,26 @@
+{
+
+  :info {
+
+    :blockType "czc.skaro.io/JMS"
+    :version "1.0"
+    :name "JMS"
+
+  }
+
+  :conf {
+
+    :contextFactory "com.zotohlab.mock.jms.MockContextFactory"
+    :providerUrl "java://aaa"
+    :connFactory "tcf"
+    :destination "topic.abc"
+    :jndiUser "root"
+    :jndiPwd "root"
+    :jmsUser "anonymous"
+    :jmsPwd "anonymous"
+    :intervalSecs 5
+    :handler ""
+
+  }
+
+}

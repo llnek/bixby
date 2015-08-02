@@ -59,7 +59,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlab.tardis.core.sys.CljAppMain
+(deftype MyAppMain [] czlab.skaro.core.sys.CljAppMain
 
   (contextualize [_ ctr] )
 

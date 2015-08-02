@@ -13,7 +13,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // clean
 target (cleanTardis: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro., quiet: true)
   //delete ( dir: "${qaDir}/czlab", quiet: true)
 }
 
@@ -22,38 +22,38 @@ target (cleanTardis: '') {
 target (buildTardis: '') {
   depends (cleanTardis,  resolve, preBuild)
   println "##############################################################################"
-  println "Building module ${gantProjectName}#clojure.tardis"
+  println "Building module ${gantProjectName}#clojure.skaro.
   println "##############################################################################"
   doCompileTardis()
 }
 
 target (cTardisJar: '') {
-  ant.delete (file: "${distribDir}/exec/tardis-${buildVersion}.jar", quiet: true)
+  ant.delete (file: "${distribDir}/exec/skaro.${buildVersion}.jar", quiet: true)
   doJarTardis()
 }
 
 target (cTardisCore: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/core", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.core", quiet: true)
   clj_Core()
 }
 target (cTardisEtc: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/etc", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.etc", quiet: true)
   clj_Etc()
 }
 target (cTardisAuth: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/auth", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.auth", quiet: true)
   clj_Auth()
 }
 target (cTardisIO: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/io", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.io", quiet: true)
   clj_IO()
 }
 target (cTardisMVC: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/mvc", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.mvc", quiet: true)
   clj_MVC()
 }
 target (cTardisMain: '') {
-  ant.delete ( dir: "${buildDir}/czlab.tardis/impl", quiet: true)
+  ant.delete ( dir: "${buildDir}/czlab.skaro.impl", quiet: true)
   clj_Main()
 }
 
@@ -73,17 +73,17 @@ def doCompileTardis() {
 
 def doJarTardis() {
 
-  ant.copy (todir: "${buildDir}/czlab.tardis") {
-    fileset (dir: "${srcDir}/clojure/czlab.tardis") {
+  ant.copy (todir: "${buildDir}/czlab.skaro.) {
+    fileset (dir: "${srcDir}/clojure/czlab.skaro.) {
       exclude (name: '**/*.meta')
       exclude (name: '**/*.clj')
       exclude (name: '**/.svn')
     }
   }
 
-  ant.jar (destfile: "${distribDir}/exec/tardis-${buildVersion}.jar") {
+  ant.jar (destfile: "${distribDir}/exec/skaro.${buildVersion}.jar") {
     fileset (dir: "${buildDir}") {
-      include (name: 'czlab.tardis/**')
+      include (name: 'czlab.skaro.**')
     }
   }
 
@@ -100,8 +100,8 @@ def clj_Core() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.core.consts')
-    arg (value: 'czlab.tardis.core.sys')
+    arg (value: 'czlab.skaro.core.consts')
+    arg (value: 'czlab.skaro.core.sys')
   }
 }
 
@@ -116,12 +116,12 @@ def clj_Etc() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.etc.cmd2')
-    arg (value: 'czlab.tardis.etc.task')
-    arg (value: 'czlab.tardis.etc.gant')
-    arg (value: 'czlab.tardis.etc.cmd1')
-    arg (value: 'czlab.tardis.etc.core')
-    arg (value: 'czlab.tardis.etc.shell')
+    arg (value: 'czlab.skaro.etc.cmd2')
+    arg (value: 'czlab.skaro.etc.task')
+    arg (value: 'czlab.skaro.etc.gant')
+    arg (value: 'czlab.skaro.etc.cmd1')
+    arg (value: 'czlab.skaro.etc.core')
+    arg (value: 'czlab.skaro.etc.shell')
   }
 }
 
@@ -136,10 +136,10 @@ def clj_Auth() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.auth.model')
-    arg (value: 'czlab.tardis.auth.realm')
-    arg (value: 'czlab.tardis.auth.shiro')
-    arg (value: 'czlab.tardis.auth.plugin')
+    arg (value: 'czlab.skaro.auth.model')
+    arg (value: 'czlab.skaro.auth.realm')
+    arg (value: 'czlab.skaro.auth.shiro')
+    arg (value: 'czlab.skaro.auth.plugin')
   }
 }
 
@@ -154,18 +154,18 @@ def clj_IO() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.io.core')
-    arg (value: 'czlab.tardis.io.socket')
-    arg (value: 'czlab.tardis.io.files')
-    arg (value: 'czlab.tardis.io.http')
-    arg (value: 'czlab.tardis.io.jms')
-    arg (value: 'czlab.tardis.io.loops')
-    arg (value: 'czlab.tardis.io.mails')
-    arg (value: 'czlab.tardis.io.netty')
-    arg (value: 'czlab.tardis.io.jetty')
-    arg (value: 'czlab.tardis.io.triggers')
-    arg (value: 'czlab.tardis.io.webss')
-    arg (value: 'czlab.tardis.io.basicauth')
+    arg (value: 'czlab.skaro.io.core')
+    arg (value: 'czlab.skaro.io.socket')
+    arg (value: 'czlab.skaro.io.files')
+    arg (value: 'czlab.skaro.io.http')
+    arg (value: 'czlab.skaro.io.jms')
+    arg (value: 'czlab.skaro.io.loops')
+    arg (value: 'czlab.skaro.io.mails')
+    arg (value: 'czlab.skaro.io.netty')
+    arg (value: 'czlab.skaro.io.jetty')
+    arg (value: 'czlab.skaro.io.triggers')
+    arg (value: 'czlab.skaro.io.webss')
+    arg (value: 'czlab.skaro.io.basicauth')
   }
 }
 
@@ -180,10 +180,10 @@ def clj_MVC() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.mvc.assets')
-    arg (value: 'czlab.tardis.mvc.comms')
-    arg (value: 'czlab.tardis.mvc.filters')
-    arg (value: 'czlab.tardis.mvc.ftlshim')
+    arg (value: 'czlab.skaro.mvc.assets')
+    arg (value: 'czlab.skaro.mvc.comms')
+    arg (value: 'czlab.skaro.mvc.filters')
+    arg (value: 'czlab.skaro.mvc.ftlshim')
   }
 }
 
@@ -198,11 +198,11 @@ def clj_Main() {
         classpathref: 'compilePathId') {
     sysproperty (key: 'clojure.compile.warn-on-reflection', value: true)
     sysproperty (key: 'clojure.compile.path', value: "${buildDir}")
-    arg (value: 'czlab.tardis.impl.climain')
-    arg (value: 'czlab.tardis.impl.dfts')
-    arg (value: 'czlab.tardis.impl.ext')
-    arg (value: 'czlab.tardis.impl.exec')
-    arg (value: 'czlab.tardis.impl.misc')
+    arg (value: 'czlab.skaro.impl.climain')
+    arg (value: 'czlab.skaro.impl.dfts')
+    arg (value: 'czlab.skaro.impl.ext')
+    arg (value: 'czlab.skaro.impl.exec')
+    arg (value: 'czlab.skaro.impl.misc')
   }
 }
 

@@ -553,112 +553,112 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisMain
+(defn- skaroMain
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/impl"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/impl"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/impl")]]
+                                       "czlab/skaro/impl")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisMvc
+(defn- skaroMvc
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/mvc"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/mvc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/mvc")]]
+                                       "czlab/skaro/mvc")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisAuth
+(defn- skaroAuth
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/auth"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/auth"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/auth")]]
+                                       "czlab/skaro/auth")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisIO
+(defn- skaroIO
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/io"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/io"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/io")]]
+                                       "czlab/skaro/io")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisEtc
+(defn- skaroEtc
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/etc"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/etc"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/etc")]]
+                                       "czlab/skaro/etc")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisCore
+(defn- skaroCore
 
   ""
   []
 
-  (a/CleanDir (fp! (ge :czzDir) "czlab/tardis/core"))
+  (a/CleanDir (fp! (ge :czzDir) "czlab/skaro/core"))
   (a/AntJava
     (ge :CLJC_OPTS)
     (concat [[:argvalues (b/FmtCljNsps (fp! (ge :srcDir) "clojure")
-                                       "czlab/tardis/core")]]
+                                       "czlab/skaro/core")]]
             (ge :CJNESTED))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- tardisAll
+(defn- skaroAll
 
   ""
   []
 
   (let [m (map #(apply % [])
-                [#'tardisCore #'tardisEtc #'tardisAuth
-                 #'tardisIO #'tardisMvc #'tardisMain ])
+                [#'skaroCore #'skaroEtc #'skaroAuth
+                 #'skaroIO #'skaroMvc #'skaroMain ])
         t2 (a/AntCopy
-             {:todir (fp! (ge :czzDir) "czlab/tardis")}
-             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/tardis")
+             {:todir (fp! (ge :czzDir) "czlab/skaro")}
+             [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/skaro")
                          :excludes "**/*.meta,**/*.clj"}]])
         ts (into [] (concat m [t2]))
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
-                             (str "tardis-" (ge :buildVersion) ".jar"))}
+                             (str "skaro-" (ge :buildVersion) ".jar"))}
              [[:fileset {:dir (ge :czzDir)
-                         :includes "czlab/tardis/**"}]]) ]
+                         :includes "czlab/skaro/**"}]]) ]
     (->> (if *genjars*
            (conj ts t3)
            ts)
-         (a/RunTarget "clj/tardis"))
+         (a/RunTarget "clj/skaro"))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -913,7 +913,7 @@
   (bc/with-pre-wrap fileset
     (cljTpcl)
     (cljXLib)
-    (tardisAll)
+    (skaroAll)
     (cljDemo)
     fileset
   ))

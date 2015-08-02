@@ -27,7 +27,7 @@ target (cleanCljDemo: '') {
 target (buildCljDemo: '') {
   depends (cleanCljDemo,  resolve, preBuild)
   println "##############################################################################"
-  println "Building module ${gantProjectName}#clojure.tardis.demo"
+  println "Building module ${gantProjectName}#clojure.skaro.demo"
   println "##############################################################################"
   doCompileCljDemo()
 }
