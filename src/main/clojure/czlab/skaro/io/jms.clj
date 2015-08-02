@@ -89,14 +89,14 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/JMS
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: JMS: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
         p2 (:jmsPwd cfg) ]
-    (.setAttr! co :emcfg
+    (.setf! co :emcfg
     (-> cfg
         (assoc :jndiPwd (Pwdify p1 pkey))
         (assoc :jmsPwd (Pwdify p2 pkey))))
@@ -109,11 +109,11 @@
 
   ^Connection
 
-  [^czlab.skaro.core.sys.Elmt co
+  [^czlab.xlib.util.core.Muble co
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         ^String des (:destination cfg)
         jp (nsb (:jmsPwd cfg))
         ^String ju (:jmsUser cfg)
@@ -138,11 +138,11 @@
 
   ^Connection
 
-  [^czlab.skaro.core.sys.Elmt co
+  [^czlab.xlib.util.core.Muble co
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         des (nsb (:destination cfg))
         ju (nsb (:jmsUser cfg))
         jp (nsb (:jmsPwd cfg))
@@ -166,11 +166,11 @@
 (defn- inizQueue ""
 
   ^Connection
-  [^czlab.skaro.core.sys.Elmt co
+  [^czlab.xlib.util.core.Muble co
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         des (nsb (:destination cfg))
         ju (nsb (:jmsUser cfg))
         jp (nsb (:jmsPwd cfg))
@@ -191,10 +191,10 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JMS
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStart: JMS: " (.id ^Identifiable co))
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         cf (nsb (:contextFactory cfg))
         ju (nsb (:jndiUser cfg))
         jp (nsb (:jndiPwd cfg))
@@ -222,7 +222,7 @@
               nil) ]
       (when (nil? c)
         (ThrowIOE "Unsupported JMS Connection Factory"))
-      (.setAttr! co :conn c)
+      (.setf! co :conn c)
       (.start c)
       (IOESStarted co))
   ))
@@ -231,12 +231,12 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JMS
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStop: JMS: " (.id ^Identifiable co))
-  (when-let [^Connection c (.getAttr co :conn) ]
+  (when-let [^Connection c (.getf co :conn) ]
     (tryc (.close c))
-    (.setAttr! co :conn nil)
+    (.setf! co :conn nil)
     (IOESStopped co)
   ))
 

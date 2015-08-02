@@ -85,7 +85,7 @@
 ;;
 (defn HttpBasicConfig "Basic http config."
 
-  [^czlab.skaro.core.sys.Elmt co cfg]
+  [^czlab.xlib.util.core.Muble co cfg]
 
   (let [kfile (SubsVar (nsb (:serverKey cfg)))
         socto (:sockTimeOut cfg)
@@ -144,12 +144,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/HTTP
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: HTTP: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
-    (.setAttr! co :emcfg c2)
+    (.setf! co :emcfg c2)
     co
   ))
 

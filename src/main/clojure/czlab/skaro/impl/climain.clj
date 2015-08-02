@@ -36,6 +36,7 @@
              [test-nonil
               test-cond
               ConvLong
+              Muble
               FPath
               PrintMutableObj
               MakeMMap]]
@@ -62,7 +63,7 @@
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.wflow Job WorkFlow
              Activity Nihil]
-            [com.zotohlab.skaro.core ConfigError]
+            [com.zotohlab.skaro.core Context ConfigError]
             [com.zotohlab.skaro.etc CliMain]
             [io.netty.bootstrap ServerBootstrap]
             [com.google.gson JsonObject]
@@ -152,7 +153,8 @@
   [^File home]
 
   (let [cpu (NulScheduler)
-        impl (MakeMMap)]
+        impl (MakeMMap)
+        ctxt (atom (MakeMMap)) ]
     (-> ^Activable
         cpu
         (.activate { :threads 1 }))
@@ -178,13 +180,18 @@
 
       (core [_] cpu)
 
-      Elmt
+      Context
 
-      (setCtx! [_ x] (.setf! impl :ctx x))
-      (getCtx [_] (.getf impl :ctx))
-      (setAttr! [_ a v] (.setf! impl a v) )
-      (clrAttr! [_ a] (.clrf! impl a) )
-      (getAttr [_ a] (.getf impl a) )
+      (setx [_ x] (reset! ctxt x))
+      (getx [_] @ctxt)
+
+      Muble
+
+      (setf! [_ a v] (.setf! impl a v) )
+      (clrf! [_ a] (.clrf! impl a) )
+      (getf [_ a] (.getf impl a) )
+      (seq* [_] )
+      (clear! [_] (.clear! impl))
       (toEDN [_ ] (.toEDN impl))
 
       Hierarchial
@@ -375,7 +382,7 @@
 
   (SimPTask "RtStart"
     (fn [^Job j]
-      (let [^czlab.skaro.core.sys.Elmt
+      (let [^czlab.xlib.util.core.Muble
             c (.container j)
             ^File
             home (.getv j :home)
@@ -385,8 +392,8 @@
         ;; a bit of circular referencing here.  the climain object refers to context
         ;; and the context refers back to the climain object.
         (.setf! x K_CLISH c)
-        (.setCtx! c x)
-        (log/info "Home directory looks ok.")
+        (-> ^Context c (.setx x))
+        (log/info "home directory looks ok")
         (.setLastResult j x)
       ))
   ))

@@ -93,13 +93,13 @@
 ;;
 (defn AddETag "Add a ETag."
 
-  [^czlab.skaro.core.sys.Elmt
+  [^czlab.xlib.util.core.Muble
    src info
    ^File file
    ^HTTPResult res]
 
   (let [lastTm (.lastModified file)
-        cfg (.getAttr src :emcfg)
+        cfg (.getf src :emcfg)
         maxAge (:maxAgeSecs cfg)
         eTag  (str "\""  lastTm  "-"
                    (.hashCode file)  "\"")]
@@ -181,9 +181,9 @@
                          (.getAppDir))
         ps (FPath (io/file appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
-        cfg (.getAttr ^czlab.skaro.core.sys.Elmt
-                      src
-                      :emcfg)
+        cfg (.getf ^czlab.xlib.util.core.Muble
+                   src
+                   :emcfg)
         ckAccess (:fileAccessCheck cfg)
         fpath (nsb (:path options))
         info (:info options) ]
@@ -213,7 +213,7 @@
 ;;
 (defn ServeError "Reply back an error."
 
-  [^czlab.skaro.core.sys.Elmt src
+  [^czlab.xlib.util.core.Muble src
    ^Channel ch
    code ]
 
@@ -221,7 +221,7 @@
                     bits nil wf nil
                     ctype "text/plain"]
     (try
-      (let [cfg (.getAttr src :emcfg)
+      (let [cfg (.getf src :emcfg)
             h (:errorHandler cfg)
             ^HTTPErrorHandler
             cb (if (hgl? h) (MakeObj h) nil)
@@ -275,7 +275,7 @@
                                              "{}"
                                              (.group mc (int i)) 1))))
         (var-set mp (FPath (File. ^String @mp)))
-        (let [cfg (.getAttr ^czlab.skaro.core.sys.Elmt src :emcfg)
+        (let [cfg (.getf ^czlab.xlib.util.core.Muble src :emcfg)
               ^czlab.skaro.io.core.EmitAPI co src
               ^czlab.skaro.io.core.WaitEventHolder
               w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
@@ -293,7 +293,7 @@
 (defn ServeRoute "Handle a match route."
 
   [^czlab.xlib.net.routes.RouteInfo ri
-   ^czlab.skaro.core.sys.Elmt src
+   ^czlab.xlib.util.core.Muble src
    ^Matcher mc
    ^Channel ch
    ^HTTPEvent evt]
@@ -306,7 +306,7 @@
         (ServeError src ch 403)))
     (when @ok
       (let [^czlab.skaro.io.core.EmitAPI co src
-            cfg (.getAttr src :emcfg)
+            cfg (.getf src :emcfg)
             pms (.collect ri mc)
             options {:router (.getHandler ri)
                      :params (merge {} pms)
@@ -332,7 +332,6 @@
                     (.getv ^Job j EV_OPTS)))))
 
 (ns-unmap *ns* '->AssetHandler)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

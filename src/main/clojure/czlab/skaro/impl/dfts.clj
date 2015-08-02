@@ -32,6 +32,7 @@
              [NextLong
               test-cond
               MakeMMap
+              Muble
               test-nestr]])
 
   (:import  [com.zotohlab.frwk.core Versioned
@@ -41,7 +42,7 @@
             [com.zotohlab.frwk.i18n I18N]
             [com.zotohlab.frwk.server Component
              ComponentRegistry RegistryError ServiceError]
-            [com.zotohlab.skaro.core ConfigError]
+            [com.zotohlab.skaro.core Context ConfigError]
             [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,20 +113,26 @@
 
   [regoType regoId ver parObj]
 
-  (let [impl (MakeMMap {:cache {} })]
+  (let [impl (MakeMMap {:cache {} })
+        ctxt (atom (MakeMMap)) ]
     (test-cond "registry type" (keyword? regoType))
     (test-cond "registry id" (keyword? regoId))
     (test-nestr "registry version" ver)
     (with-meta
       (reify
 
-        Elmt
+        Context
 
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
+        (setx [_ x] (reset! ctxt x))
+        (getx [_] @ctxt)
+
+        Muble
+
+        (setf! [_ a v] (.setf! impl a v) )
+        (clrf! [_ a] (.clrf! impl a) )
+        (getf [_ a] (.getf impl a) )
+        (seq* [_] )
+        (clear! [_] (.clear! impl))
         (toEDN [_] (.toEDN impl))
 
         Hierarchial
@@ -171,7 +178,7 @@
             (.setf! impl :cache (assoc cache cid c))))
 
         Rego
-          (seq* [_]
+          (iter* [_]
             (let [cache (.getf impl :cache) ]
               (seq cache))) )
 
@@ -186,19 +193,26 @@
   [app ver podType appid pathToPOD]
 
   (let [pid (str podType "#" (NextLong))
-        impl (MakeMMap) ]
+        impl (MakeMMap)
+        ctxt (atom (MakeMMap)) ]
+
     (log/info "PODMeta: " app ", " ver ", "
               podType ", " appid ", " pathToPOD )
     (with-meta
       (reify
 
-        Elmt
+        Context
 
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
+        (setx [_ x] (reset! ctxt x))
+        (getx [_] @ctxt)
+
+        Muble
+
+        (setf! [_ a v] (.setf! impl a v) )
+        (clrf! [_ a] (.clrf! impl a) )
+        (getf [_ a] (.getf impl a) )
+        (seq* [_])
+        (clear! [_] (.clear! impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component

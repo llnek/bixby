@@ -345,24 +345,24 @@
   [^String challengeStr]
 
   (DefBoolExpr
-    #(let
-       [^Job job %1
-        ^czlab.xlib.util.core.Muble
-        ctr (.container job)
-        ^czlab.skaro.auth.plugin.AuthPlugin
-        pa (:auth (.getf ctr K_PLUGINS))
-        ^HTTPEvent evt (.event job)
-        ^czlab.skaro.io.webss.WebSS
-        mvs (.getSession evt)
-        csrf (.getXref mvs)
-        rb (I18N/getBase)
-        si (try (GetSignupInfo evt)
-                (catch BadDataError e# { :e e# }))
-        info (or si {})]
+    (fn [^Job job]
+      (let
+        [^czlab.xlib.util.core.Muble
+         ctr (.container job)
+         ^HTTPEvent
+         evt (.event job)
+         ^czlab.skaro.io.webss.WebSS
+         mvs (.getSession evt)
+         rb (I18N/getBase)
+         csrf (.getXref mvs)
+         ^czlab.skaro.auth.plugin.AuthPlugin
+         pa (:auth (.getf ctr K_PLUGINS))
+         si (try (GetSignupInfo evt)
+                 (catch BadDataError e# {:e e#}))
+         info (or si {})]
         (log/debug "Session csrf = %s%s%s"
                    csrf
                    ", and form token = " (:csrf info))
-        (test-nonil "AuthPlugin" pa)
         (cond
           (some? (:e info))
           (do
@@ -402,7 +402,7 @@
             (.setLastResult job
                             {:error
                              (AuthError. (RStr rb "auth.bad.req")) })
-            false)))
+            false))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -423,8 +423,10 @@
          mvs (.getSession evt)
          csrf (.getXref mvs)
          rb (I18N/getBase)
+         ^czlab.skaro.auth.plugin.AuthPlugin
+         pa (:auth (.getf ctr K_PLUGINS))
          si (try (GetSignupInfo evt)
-                 (catch BadDataError e#  { :e e# }))
+                 (catch BadDataError e#  {:e e#}))
          info (or si {}) ]
         (log/debug "session csrf = %s%s%s"
                    csrf
@@ -444,9 +446,7 @@
 
           (and (hgl? (:credential info))
                (hgl? (:principal info)))
-          (let
-            [^czlab.skaro.auth.plugin.AuthPlugin
-             pa (:auth (.getf ctr K_PLUGINS))]
+          (do
             (.setLastResult job {:account (.login pa (:principal info)
                                                      (:credential info)) })
             (some? (:account (.getLastResult job))))

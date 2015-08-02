@@ -20,6 +20,7 @@
               notnil?
               ThrowIOE
               MakeMMap
+              Muble
               ConvToJava
               tryc]]
             [czlab.xlib.util.str :refer [nsb strim]])
@@ -35,7 +36,7 @@
             [java.util.concurrent ConcurrentHashMap]
             [com.zotohlab.frwk.core Versioned Hierarchial
              Identifiable Disposable Startable]
-            [com.zotohlab.skaro.core Container]
+            [com.zotohlab.skaro.core Context Container]
             [com.zotohlab.wflow WorkFlow Job Nihil Activity]
             [com.google.gson JsonObject JsonArray]
             [java.util Map]))
@@ -157,9 +158,9 @@
 ;;
 (defmethod IOESStarted :default
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (when-let [cfg (.getAttr co :emcfg)]
+  (when-let [cfg (.getf co :emcfg)]
     (log/info "Emitter config:\n" (pr-str cfg))
     (log/info "Emitter " (:typeid (meta co)) " started - OK")
   ))
@@ -238,17 +239,24 @@
 
   ;; holds all the events from this source.
   (let [backlog (ConcurrentHashMap.)
-        impl (MakeMMap) ]
+        impl (MakeMMap)
+        ctxt (atom (MakeMMap)) ]
+
     (with-meta
       (reify
 
-        Elmt
+        Context
 
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
+        (setx [_ x] (reset! ctxt x))
+        (getx [_] @ctxt)
+
+        Muble
+
+        (setf! [_ a v] (.setf! impl a v) )
+        (clrf! [_ a] (.clrf! impl a) )
+        (getf [_ a] (.getf impl a) )
+        (seq* [_])
+        (clear! [_] (.clear! impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component
@@ -331,8 +339,8 @@
   [co arg]
 
   ;; arg is Container here
-  (when-let [^czlab.skaro.core.sys.Elmt c arg ]
-    (CompCloneContext co (.getCtx c))
+  (when-let [^Context c arg ]
+    (CompCloneContext co (.getx c))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

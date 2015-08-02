@@ -79,11 +79,11 @@
 ;;
 (defn- configTimerTask ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         intv (:intervalMillis cfg)
-        t (.getAttr co :timer)
+        t (.getf co :timer)
         ds (:delayMillis cfg)
         dw (:delayWhen cfg)
         func #(LoopableWakeup co) ]
@@ -97,7 +97,7 @@
 ;;
 (defn CfgLoopable ""
 
-  [^czlab.skaro.core.sys.Elmt co cfg]
+  [^czlab.xlib.util.core.Muble co cfg]
 
   (let [intv (:intervalSecs cfg)
         ds (:delaySecs cfg)
@@ -118,18 +118,18 @@
 ;;
 (defn- start-timer ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (.setAttr! co :timer (Timer. true))
+  (.setf! co :timer (Timer. true))
   (LoopableSchedule co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- kill-timer ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (let [^Timer t (.getAttr co :timer) ]
+  (let [^Timer t (.getf co :timer) ]
     (tryc
         (when-not (nil? t) (.cancel t)) )
   ))
@@ -166,12 +166,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/RepeatingTimer
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: RepeatingTimer: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg)]
-    (.setAttr! co :emcfg c2)
+    (.setf! co :emcfg c2)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,13 +242,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/OnceTimer
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: OnceTimer: " (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg) ]
-    (.setAttr! co :emcfg (dissoc c2 :intervalMillis))
+    (.setf! co :emcfg (dissoc c2 :intervalMillis))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -289,14 +289,14 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/ThreadedTimer
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         intv (:intervalMillis cfg)
         loopy (atom true)
         cl (GetCldr) ]
     (log/info "Threaded one timer - interval = " intv)
-    (.setAttr! co :loopy loopy)
+    (.setf! co :loopy loopy)
     (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
   ))
 
@@ -313,17 +313,17 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/ThreadedTimer
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStart: ThreadedTimer: " (.id ^Identifiable co))
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         intv (:intervalMillis cfg)
         ds (:delayMillis cfg)
         dw (:delayWhen cfg)
         loopy (atom true)
         cl (GetCldr)
         func #(LoopableSchedule co) ]
-    (.setAttr! co :loopy loopy)
+    (.setf! co :loopy loopy)
     (if (or (number? ds)
             (instance? Date dw))
       (configTimer (Timer.) [dw ds] func)
@@ -335,10 +335,10 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/ThreadedTimer
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStop ThreadedTimer: " (.id ^Identifiable co))
-  (let [loopy (.getAttr co :loopy) ]
+  (let [loopy (.getf co :loopy) ]
     (reset! loopy false)
     (IOESStopped co)
   ))

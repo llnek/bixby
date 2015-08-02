@@ -28,6 +28,7 @@
 
   (:import
     [org.apache.commons.io FilenameUtils FileUtils]
+    [com.zotohlab.skaro.core Context]
     [java.io File]
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.core Hierarchial Identifiable Versioned]))
@@ -51,28 +52,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Elmt
-
-  "Element API"
-
-  (setCtx! [_ ctx] )
-  (getCtx [_] )
-  (setAttr! [_ a v] )
-  (clrAttr! [_ a] )
-  (toEDN [_])
-  (getAttr [_ a] ) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defprotocol Rego
 
   "Registry API"
 
-  (seq* [_] ))
+  (iter* [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.skaro.core.sys.Elmt
+(defmulti ^czlab.xlib.util.core.Muble
           CompContextualize
 
   "Contextualize a component"
@@ -81,7 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.skaro.core.sys.Elmt
+(defmulti ^czlab.xlib.util.core.Muble
           CompCompose
 
   "Compose a component within a registry"
@@ -90,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.skaro.core.sys.Elmt
+(defmulti ^czlab.xlib.util.core.Muble
           CompConfigure
 
   "Configure a component with options"
@@ -99,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.skaro.core.sys.Elmt
+(defmulti ^czlab.xlib.util.core.Muble
           CompInitialize
 
   "Initialize a component"
@@ -117,7 +105,7 @@
    3. configure
    4. initialize"
 
-  ^czlab.skaro.core.sys.Elmt
+  ^czlab.xlib.util.core.Muble
   [co options]
 
   (let [{:keys [props rego ctx]} options]
@@ -171,16 +159,15 @@
 
   "Shallow copy"
 
-  ^czlab.skaro.core.sys.Elmt
+  ^czlab.xlib.util.core.Muble
 
-  [^czlab.skaro.core.sys.Elmt co
-   ^czlab.xlib.util.core.Muble ctx]
+  [^Context co ^czlab.xlib.util.core.Muble ctx]
 
   (when (some? ctx)
     (let [x (MakeContext) ]
       (doseq [[k v] (.seq* ctx) ]
         (.setf! x k v))
-      (.setCtx! co x)))
+      (.setx co x)))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

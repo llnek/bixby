@@ -30,6 +30,7 @@
               GetCwd
               ConvLong
               MakeMMap
+              Muble
               juid
               test-nonil]]
             [czlab.xlib.util.format :refer [ReadEdn]]
@@ -48,6 +49,7 @@
   (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
             [org.apache.commons.io FilenameUtils FileUtils]
             [com.zotohlab.skaro.loaders AppClassLoader]
+            [com.zotohlab.skaro.core Context]
             [org.apache.commons.lang3 StringUtils]
             [java.io File FileFilter]
             [java.security SecureRandom]
@@ -84,13 +86,13 @@
 
   ^czlab.skaro.impl.dfts.PODMeta
 
-  [^czlab.skaro.core.sys.Elmt
+  [^czlab.xlib.util.core.Muble
    execv
    app
    ^File des mf]
 
   (let [^czlab.xlib.util.core.Muble
-        ctx (.getCtx execv)
+        ctx (-> ^Context execv (.getx))
         ^ComponentRegistry
         apps (-> ^ComponentRegistry
                  (.getf ctx K_COMPS)
@@ -106,13 +108,13 @@
 
     ;; synthesize the pod meta component and register it
     ;; as a application.
-    (let [^czlab.skaro.core.sys.Elmt
+    (let [^czlab.xlib.util.core.Muble
           m (-> (MakePodMeta app ver
                              cz vid
                              (io/as-url des))
                 (SynthesizeComponent { :ctx ctx }))
           ^czlab.xlib.util.core.Muble
-          cx (.getCtx m) ]
+          cx (-> ^Context m (.getx)) ]
       (.setf! cx K_EXECV execv)
       (.reg apps m)
       m)
@@ -144,11 +146,11 @@
 ;;
 (defn- startJmx ""
 
-  [^czlab.skaro.core.sys.Elmt co cfg]
+  [^czlab.xlib.util.core.Muble co cfg]
 
   (log/info "JMX config " cfg)
     (tryletc [^czlab.xlib.util.core.Muble
-          ctx (.getCtx co)
+          ctx (-> ^Context co (.getx))
           port (or (:port cfg) 7777)
           host (nsb (:host cfg))
           jmx (MakeJmxServer host) ]
@@ -164,10 +166,10 @@
 ;;
 (defn- stopJmx ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
     (tryletc [^czlab.xlib.util.core.Muble
-          ctx (.getCtx co)
+          ctx (-> ^Context co (.getx))
           ^Startable
           jmx (.getf ctx K_JMXSVR) ]
       (when-not (nil? jmx)
@@ -179,15 +181,15 @@
 ;;
 (defn- ignitePod
 
-  [^czlab.skaro.core.sys.Elmt co
+  [^czlab.xlib.util.core.Muble co
    ^czlab.skaro.impl.dfts.PODMeta pod]
 
-    (tryletc [cache (.getAttr co K_CONTAINERS)
+    (tryletc [cache (.getf co K_CONTAINERS)
           cid (.id ^Identifiable pod)
           app (.moniker pod)
           ctr (MakeContainer pod)]
       (log/debug "Start pod cid = " cid ", app = " app)
-      (.setAttr! co K_CONTAINERS (assoc cache cid ctr))
+      (.setf! co K_CONTAINERS (assoc cache cid ctr))
       true)
   )
 
@@ -195,15 +197,15 @@
 ;;
 (defn- stopPods ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "Preparing to stop pods...")
-  (let [cs (.getAttr co K_CONTAINERS) ]
+  (let [cs (.getf co K_CONTAINERS) ]
     (doseq [[k v] (seq cs) ]
       (.stop ^Startable v))
     (doseq [[k v] (seq cs) ]
       (.dispose ^Disposable v))
-    (.setAttr! co K_CONTAINERS {})
+    (.setf! co K_CONTAINERS {})
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -214,7 +216,9 @@
   [parObj]
 
   (log/info "Creating execvisor, parent = " parObj)
-  (let [impl (MakeMMap {K_CONTAINERS {}}) ]
+  (let [impl (MakeMMap {K_CONTAINERS {}})
+        ctxt (atom (MakeMMap)) ]
+
     (with-meta
       (reify
 
@@ -227,22 +231,26 @@
         Identifiable
         (id [_] K_EXECV )
 
-        Elmt
+        Context
+        (setx [_ x] (reset! ctxt x))
+        (getx [_] @ctxt)
 
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
+        Muble
+
+        (setf! [_ a v] (.setf! impl a v) )
+        (clrf! [_ a] (.clrf! impl a) )
+        (getf [_ a] (.getf impl a) )
+        (seq* [_] )
+        (clear! [_] (.clear! impl))
         (toEDN [_ ] (.toEDN impl))
 
         ExecVisor
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
-        (homeDir [this] (MaybeDir (.getCtx this) K_BASEDIR))
-        (confDir [this] (MaybeDir (.getCtx this) K_CFGDIR))
-        (blocksDir [this] (MaybeDir (.getCtx this) K_BKSDIR))
+        (homeDir [this] (MaybeDir (.getx this) K_BASEDIR))
+        (confDir [this] (MaybeDir (.getx this) K_CFGDIR))
+        (blocksDir [this] (MaybeDir (.getx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
         Startable
@@ -262,7 +270,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/PODMeta
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   co)
 
@@ -271,11 +279,11 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/ExecVisor
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (let [^czlab.skaro.impl.exec.ExecVisor exec co
         ^czlab.xlib.util.core.Muble
-        ctx (.getCtx co)
+        ctx (-> ^Context co (.getx))
         ^File base (.getf ctx K_BASEDIR)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
@@ -324,7 +332,9 @@
   ;; url points to block-meta file
   [^URL url]
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MakeMMap)
+        ctxt (atom (MakeMMap)) ]
+
     ;;(.setf! impl :id (keyword (juid)))
     (with-meta
       (reify
@@ -332,13 +342,18 @@
         Hierarchial
         (parent [_] nil)
 
-        Elmt
+        Context
 
-        (setCtx! [_ x] (.setf! impl :ctx x))
-        (getCtx [_] (.getf impl :ctx))
-        (setAttr! [_ a v] (.setf! impl a v) )
-        (clrAttr! [_ a] (.clrf! impl a) )
-        (getAttr [_ a] (.getf impl a) )
+        (setx [_ x] (reset! ctxt x))
+        (getx [_] @ctxt)
+
+        Muble
+
+        (setf! [_ a v] (.setf! impl a v) )
+        (clrf! [_ a] (.clrf! impl a) )
+        (getf [_ a] (.getf impl a) )
+        (seq* [_] )
+        (clear! [_] (.clear! impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component
@@ -366,7 +381,7 @@
 
   [^czlab.skaro.impl.dfts.EmitMeta block]
 
-  (let [^czlab.skaro.core.sys.Elmt co block
+  (let [^czlab.xlib.util.core.Muble co block
         url (.metaUrl block)
         cfg (ReadEdn url)
         info (:info cfg)
@@ -374,8 +389,8 @@
     (test-nonil "Invalid block-meta file, no info section." info)
     (test-nonil "Invalid block-meta file, no conf section." conf)
     (log/info "Initializing EmitMeta: " url)
-    (.setAttr! co :metaInfo info)
-    (.setAttr! co :dftOptions conf)
+    (.setf! co :metaInfo info)
+    (.setf! co :dftOptions conf)
     co
   ))
 
@@ -386,14 +401,14 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/BlocksRegistry
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (let [^czlab.xlib.util.core.Muble
-        ctx (.getCtx co)
+        ctx (-> ^Context co (.getx))
         ^File bDir (.getf ctx K_BKSDIR)
         fs (ListFiles bDir "meta" false) ]
     (doseq [^File f fs ]
-      (let [^czlab.skaro.core.sys.Elmt
+      (let [^czlab.xlib.util.core.Muble
             b (-> (makeBlockMeta (io/as-url f))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
@@ -404,7 +419,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/SystemRegistry
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "CompInitialize: SystemRegistry: " (.id ^Identifiable co))
   co
@@ -414,7 +429,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/AppsRegistry
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "CompInitialize: AppsRegistry: " (.id ^Identifiable co))
   co

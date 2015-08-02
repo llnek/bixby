@@ -520,12 +520,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/NettyIO
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: NettyIO: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
-    (.setAttr! co :emcfg c2)
+    (.setf! co :emcfg c2)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -534,14 +534,14 @@
 
   ^ChannelHandler
   [^czlab.skaro.io.core.EmitAPI co
-   ^czlab.skaro.core.sys.Elmt src
+   ^czlab.xlib.util.core.Muble src
    options]
 
   (log/debug "netty pipeline dispatcher, emitter = %s" (type co))
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
-            cfg (.getAttr src :emcfg)
+            cfg (.getf src :emcfg)
             ts (:waitMillis cfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
@@ -558,11 +558,11 @@
 ;;
 (defn- init-netty ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (let [^czlab.skaro.core.sys.Elmt
+  (let [^czlab.xlib.util.core.Muble
         ctr (.parent ^Hierarchial co)
-        options (.getAttr co :emcfg)
+        options (.getf co :emcfg)
         disp (msgDispatcher co co options)
         bs (InitTCPServer
              (ReifyPipeCfgtor
@@ -572,7 +572,7 @@
                                  "MsgDispatcher"
                                  disp))))
              options) ]
-    (.setAttr! co :netty  { :bootstrap bs })
+    (.setf! co :netty  { :bootstrap bs })
     co
   ))
 
@@ -580,16 +580,16 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/NettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         host (nsb (:host cfg))
         port (:port cfg)
-        nes (.getAttr co :netty)
+        nes (.getf co :netty)
         bs (:bootstrap nes)
         ch (StartServer bs host port) ]
-    (.setAttr! co :netty (assoc nes :channel ch))
+    (.setf! co :netty (assoc nes :channel ch))
     (IOESStarted co)
   ))
 
@@ -597,11 +597,11 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/NettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStop NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}
-        (.getAttr co :netty) ]
+        (.getf co :netty) ]
     (StopServer  bootstrap channel)
     (IOESStopped co)
   ))
@@ -610,7 +610,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/NettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "CompInitialize: NettyIO: %s" (.id ^Identifiable co))
   (init-netty co))

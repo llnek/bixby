@@ -89,12 +89,12 @@
 ;;
 (defn- postPoll "Only look for new files."
 
-  [^czlab.skaro.core.sys.Elmt
+  [^czlab.xlib.util.core.Muble
    co
    ^File f action]
 
   (let [^czlab.skaro.io.core.EmitAPI src co
-        cfg (.getAttr co :emcfg)
+        cfg (.getf co :emcfg)
         ^File des (:recvFolder cfg)
         origFname (.getName f)
         cf (case action
@@ -113,10 +113,10 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/FilePicker
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "ComConfigure: FilePicker: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)
+  (let [cfg (merge (.getf co :dftOptions) cfg0)
         root (SubsVar (nsb (:targetFolder cfg)))
         dest (SubsVar (nsb (:recvFolder cfg)))
         mask (nsb (:fmask cfg))
@@ -124,7 +124,7 @@
     (log/info "Monitoring folder: " root)
     (log/info "Rcv folder: " (nsn dest))
     (test-nestr "file-root-folder" root)
-    (.setAttr! co :emcfg
+    (.setf! co :emcfg
       (-> c2
         (assoc :targetFolder (Mkdirs (io/file root)))
         (assoc :fmask
@@ -149,10 +149,10 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/FilePicker
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "ComInitialize FilePicker: " (.id ^Identifiable co))
-  (let [cfg (.getAttr co :emcfg)
+  (let [cfg (.getf co :emcfg)
         obs (FileAlterationObserver. ^File (:targetFolder cfg)
                                      ^FileFilter (:fmask cfg))
         intv (:intervalMillis cfg)
@@ -166,7 +166,7 @@
                 (postPoll co f :FP-DELETED))) ]
     (.addListener obs lnr)
     (.addObserver mon obs)
-    (.setAttr! co :monitor mon)
+    (.setf! co :monitor mon)
     (log/info "FilePicker's apache io monitor created - OK.")
     co
   ))
@@ -175,9 +175,9 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/FilePicker
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (when-let [mon (.getAttr co :monitor) ]
+  (when-let [mon (.getf co :monitor) ]
     (log/info "FilePicker's apache io monitor starting...")
     (.start ^FileAlterationMonitor mon)
   ))

@@ -189,13 +189,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/JettyIO
 
-  [^czlab.skaro.core.sys.Elmt co cfg0]
+  [^czlab.xlib.util.core.Muble co cfg0]
 
   (log/info "CompConfigure: JettyIO: " (.id ^Identifiable co))
-  (let [cfg (merge (.getAttr co :dftOptions) cfg0)]
-    (.setAttr! co :emcfg
+  (let [cfg (merge (.getf co :dftOptions) cfg0)]
+    (.setf! co :emcfg
                (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
-    (.setAttr! co K_APP_CZLR (get cfg K_APP_CZLR))
+    (.setf! co K_APP_CZLR (get cfg K_APP_CZLR))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,17 +226,17 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/JettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
 
-        ^czlab.skaro.core.sys.Elmt
+        ^czlab.xlib.util.core.Muble
         ctr (.parent ^Hierarchial co)
-        rts (.getAttr ctr :routes)
+        rts (.getf ctr :routes)
 
-        cfg (.getAttr co :emcfg)
+        cfg (.getf co :emcfg)
         keyfile (:serverKey cfg)
         ^String host (:host cfg)
         port (:port cfg)
@@ -257,8 +257,8 @@
     (.setName cc (juid))
     (doto svr
       (.setConnectors (into-array Connector [cc])))
-    (.setAttr! co :jetty svr)
-    (.setAttr! co :cracker (MakeRouteCracker rts))
+    (.setf! co :jetty svr)
+    (.setf! co :cracker (MakeRouteCracker rts))
     co
   ))
 
@@ -266,12 +266,12 @@
 ;;
 (defn- dispREQ ""
 
-  [^czlab.skaro.core.sys.Elmt co
+  [^czlab.xlib.util.core.Muble co
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
   (let [^czlab.xlib.net.routes.RouteCracker
-        ck (.getAttr co :cracker)
+        ck (.getf co :cracker)
         cfg {:method (ucase (.getMethod req))
              :uri (.getRequestURI req)}
         [r1 r2 r3 r4]
@@ -286,7 +286,7 @@
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
             wss (MakeWSSession co ssl)
-            cfg (.getAttr co :emcfg)
+            cfg (.getf co :emcfg)
             wm (:waitMillis cfg)
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
@@ -326,16 +326,16 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStart: JettyIO: " (.id ^Identifiable co))
-  (let [^czlab.skaro.core.sys.Elmt
+  (let [^czlab.xlib.util.core.Muble
         ctr (.parent ^Hierarchial co)
-        ^Server jetty (.getAttr co :jetty)
-        ^File app (.getAttr ctr K_APPDIR)
+        ^Server jetty (.getf co :jetty)
+        ^File app (.getf ctr K_APPDIR)
         ^File rcpath (io/file app DN_PUBLIC)
         rcpathStr (io/as-url  rcpath)
-        cfg (.getAttr co :emcfg)
+        cfg (.getf co :emcfg)
         cp (:contextPath cfg)
         ctxs (ContextHandlerCollection.)
         c2 (ContextHandler.)
@@ -349,7 +349,7 @@
         (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
-    (.setClassLoader c2 ^ClassLoader (.getAttr co K_APP_CZLR))
+    (.setClassLoader c2 ^ClassLoader (.getf co K_APP_CZLR))
     (.setContextPath c2 (strim cp))
     (.setHandler c2 myHandler)
     (.setHandlers ctxs (into-array Handler [c1 c2]))
@@ -362,10 +362,10 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JettyIO
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "IOESStop: JettyIO: " (.id ^Identifiable co))
-  (let [^Server svr (.getAttr co :jetty) ]
+  (let [^Server svr (.getf co :jetty) ]
     (when-not (nil? svr)
       (tryc
           (.stop svr) ))

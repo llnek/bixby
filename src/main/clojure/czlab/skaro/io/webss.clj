@@ -118,9 +118,9 @@
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
       (log/debug "Session appears to be kosher, about to set-cookie!")
-      (let [^czlab.skaro.core.sys.Elmt
+      (let [^czlab.xlib.util.core.Muble
             src (.emitter evt)
-            cfg (.getAttr src :emcfg)
+            cfg (.getf src :emcfg)
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
                                          (:maxIdleSecs cfg))
@@ -168,9 +168,9 @@
       (do
         (log/debug "Request contains no session cookie, invalidate the session.")
         (.invalidate! mvs))
-      (let [^czlab.skaro.core.sys.Elmt
+      (let [^czlab.xlib.util.core.Muble
             src netty
-            cfg (.getAttr src :emcfg)
+            cfg (.getf src :emcfg)
             cookie (nsb (.getValue ck))
             pos (.indexOf cookie (int \-))
             [rc1 rc2] (if (< pos 0)

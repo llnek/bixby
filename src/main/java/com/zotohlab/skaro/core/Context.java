@@ -11,11 +11,13 @@
 
 package com.zotohlab.skaro.core;
 
-import com.zotohlab.frwk.core.Gettable;
-
 /**
  * @author kenl
  */
-public interface Context extends Gettable {
+public interface Context  {
+  
+  public void setx(Object ctx);
+  public Object getx();
+  
 }
 

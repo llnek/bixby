@@ -83,7 +83,7 @@
 (defn- routeFilter ""
 
   ^ChannelHandler
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
@@ -91,7 +91,7 @@
       (cond
         (instance? HttpRequest msg)
         (let [^czlab.xlib.net.routes.RouteCracker
-              ck (.getAttr co :cracker)
+              ck (.getf co :cracker)
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
@@ -140,13 +140,13 @@
 (defn- mvcDisp ""
 
   ^ChannelHandler
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc netty handler called with message = %s" (type msg))
       (let [^czlab.xlib.net.routes.RouteCracker
-            rcc (.getAttr co :cracker)
+            rcc (.getf co :cracker)
             ^ChannelHandlerContext ctx c
             ch (.channel ctx)
             info (:info msg)
@@ -173,7 +173,7 @@
 
   ^ChannelHandler
   [^czlab.skaro.io.core.EmitAPI em
-   ^czlab.skaro.core.sys.Elmt co
+   ^czlab.xlib.util.core.Muble co
    options]
 
   (let [handlerFn (get-in options [:wsock :handler])]
@@ -217,7 +217,7 @@
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
-  [^czlab.skaro.core.sys.Elmt co options]
+  [^czlab.xlib.util.core.Muble co options]
 
   (let [wsock (wsockJiggler co options)
         router (routeFilter co)
@@ -242,15 +242,15 @@
 ;;
 (defn- initNetty ""
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
-  (let [^czlab.skaro.core.sys.Elmt
+  (let [^czlab.xlib.util.core.Muble
         ctr (.parent ^Hierarchial co)
-        rts (.getAttr ctr :routes)
-        options (.getAttr co :emcfg)
+        rts (.getf ctr :routes)
+        options (.getf co :emcfg)
         bs (InitTCPServer (mvcInitor co options) options) ]
-    (.setAttr! co :cracker (MakeRouteCracker rts))
-    (.setAttr! co :netty  { :bootstrap bs })
+    (.setf! co :cracker (MakeRouteCracker rts))
+    (.setf! co :netty  { :bootstrap bs })
     co
   ))
 
@@ -258,17 +258,17 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/NettyMVC
 
-  [^czlab.skaro.core.sys.Elmt co cfg]
+  [^czlab.xlib.util.core.Muble co cfg]
 
   (log/info "CompConfigure: NetttyMVC: %s" (.id ^Identifiable co))
-  (.setAttr! co :emcfg (HttpBasicConfig co cfg))
+  (.setf! co :emcfg (HttpBasicConfig co cfg))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompInitialize :czc.skaro.io/NettyMVC
 
-  [^czlab.skaro.core.sys.Elmt co]
+  [^czlab.xlib.util.core.Muble co]
 
   (log/info "CompInitialize: NetttyMVC: %s" (.id ^Identifiable co))
   (initNetty co))
