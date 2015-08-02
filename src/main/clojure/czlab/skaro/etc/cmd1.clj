@@ -14,66 +14,56 @@
 
   czlab.skaro.etc.cmd1
 
-  (:require [czlab.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile ListFiles]]
-            [czlab.xlib.util.cmdline :refer [CLIConverse]]
-            [czlab.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
-            [czlab.xlib.util.guids :refer [NewUUid NewWWid]]
-            [czlab.xlib.i18n.resources :refer [RStr]]
-            [czlab.xlib.util.dates :refer [AddMonths MakeCal]]
-            [czlab.xlib.util.meta :refer [GetCldr]]
-            [czlab.xlib.util.str :refer [ucase nsb hgl? strim]]
-            [czlab.xlib.util.core
-             :refer [notnil?
-             FPath
-             GetCwd
-             IsWindows?
-             Stringify
-             FlattenNil
-             ConvLong
-             ResStr]]
-            [czlab.xlib.util.format :refer [ReadEdn]]
-
-            [czlab.xlib.crypto.core
-             :refer [AES256_CBC
-             AssertJce
-             PEM_CERT
-             ExportPublicKey
-             ExportPrivateKey
-             DbgProvider
-             MakeKeypair
-             MakeSSv1PKCS12
-             MakeCsrReq]])
+  (:require
+    [czlab.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile ListFiles]]
+    [czlab.xlib.util.cmdline :refer [CLIConverse]]
+    [czlab.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
+    [czlab.xlib.util.guids :refer [NewUUid NewWWid]]
+    [czlab.xlib.i18n.resources :refer [RStr]]
+    [czlab.xlib.util.dates :refer [AddMonths MakeCal]]
+    [czlab.xlib.util.meta :refer [GetCldr]]
+    [czlab.xlib.util.str :refer [ucase hgl? strim]]
+    [czlab.xlib.util.core
+    :refer [notnil? FPath GetCwd
+    IsWindows? Stringify FlattenNil ConvLong ResStr]]
+    [czlab.xlib.util.format :refer [ReadEdn]]
+    [czlab.xlib.crypto.core
+    :refer [AES256_CBC AssertJce PEM_CERT ExportPublicKey
+    ExportPrivateKey DbgProvider MakeKeypair MakeSSv1PKCS12 MakeCsrReq]])
 
   (:refer-clojure :rename {first fst second snd last lst})
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io]
-            [clojure.string :as cstr])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs])
 
   (:use [czlab.skaro.etc.boot]
         [czlab.skaro.etc.cmd2]
         [czlab.xlib.util.meta]
         [czlab.skaro.core.consts])
 
-  (:import  [java.util Map Calendar ResourceBundle Properties Date]
-            [org.apache.commons.lang3.tuple ImmutablePair]
-            [com.zotohlab.skaro.loaders AppClassLoader]
-            [org.projectodd.shimdandy ClojureRuntimeShim]
-            [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.skaro.etc CliMain CmdHelpError]
-            [com.zotohlab.frwk.crypto PasswordAPI]
-            [org.apache.commons.io FileUtils]
-            [org.apache.commons.codec.binary Hex]
-            [com.zotohlab.wflow Job]
-            [java.io File]
-            [java.security KeyPair PublicKey PrivateKey]))
+  (:import
+    [java.util Map Calendar ResourceBundle Properties Date]
+    [org.apache.commons.lang3.tuple ImmutablePair]
+    [com.zotohlab.skaro.loaders AppClassLoader]
+    [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.skaro.etc CliMain CmdHelpError]
+    [com.zotohlab.frwk.crypto PasswordAPI]
+    [org.apache.commons.io FileUtils]
+    [org.apache.commons.codec.binary Hex]
+    [com.zotohlab.wflow Job]
+    [java.io File]
+    [java.security KeyPair PublicKey PrivateKey]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn OnCreate "Create a new app."
+(defn OnCreate
+
+  "Create a new app"
 
   [^Job j]
 
@@ -86,7 +76,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
-(defn OnBuild "Build the app."
+(defn OnBuild
+
+  "Build the app"
 
   [^Job j]
 
@@ -98,13 +90,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
-(defn OnPodify "Package the app."
+(defn OnPodify
+
+  "Package the app"
 
   [^Job j]
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
-    (if (> (count args) 0)
+    (if-not (empty? args)
       (BundleApp (GetHomeDir)
                  (GetCwd) (fst args))
       (throw (CmdHelpError.)))
@@ -112,32 +106,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
-(defn OnTest "Test the app."
+(defn OnTest
+
+  "Test the app"
 
   [^Job j]
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["tst"] args)
-         (apply ExecBootScript (GetHomeDir) (GetCwd) ))
+         (apply ExecBootScript
+                (GetHomeDir) (GetCwd) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
-(defn OnStart "Start and run the app."
+(defn OnStart
+
+  "Start and run the app"
 
   [^Job j]
 
   (let [fcz "czlab.skaro.impl.climain"
         func (str fcz "/StartViaCLI")
         cwd (GetCwd)
-        rt (ClojureRuntimeShim/newRuntime
-             (doto (AppClassLoader. (GetCldr))
-               (.configure (FPath cwd)))
-             (.getName cwd))
+        rt (-> (doto
+                 (AppClassLoader. (GetCldr))
+                 (.configure cwd))
+               (CliMain/newrt (.getName cwd)))
         args (.getLastResult j)
         args (drop 1 args)
-        s2 (if (> (count args) 0)
+        s2 (if-not (empty? args)
              (fst args)
              "")
         home (GetHomeDir)]
@@ -155,7 +154,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
-(defn OnDebug "Debug the app."
+(defn OnDebug
+
+  "Debug the app"
 
   [^Job j]
 
@@ -163,20 +164,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe generate some demo apps?
-(defn OnDemos "Generate demo apps."
+(defn OnDemos
+
+  "Generate demo apps"
 
   [^Job j]
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
-    (if (> (count args) 0)
+    (if-not (empty? args)
       (PublishSamples (fst args))
       (throw (CmdHelpError.)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- generatePassword "Generate a random password."
+(defn- generatePassword
+
+  "Generate a random password"
 
   [len]
 
@@ -184,7 +189,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genKeyPair "Generate a keypair."
+(defn- genKeyPair
+
+  "Generate a keypair"
 
   [^String lenStr]
 
@@ -218,14 +225,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-csr-qs
+(defn- makeCsrQs
 
   "Set of questions to capture the DN information"
 
   [^ResourceBundle rcb]
 
   {:fname {:question (RStr rcb "cmd.save.file")
-           :default "csr-req"
+           :default "csr"
            :required true
            :next :end
            :result :fn}
@@ -270,7 +277,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- make-key-qs
+(defn- makeKeyQs
 
   "Set of questions to save info to file"
 
@@ -311,41 +318,47 @@
                       (if (hgl? v)
                         (str (ucase (name %)) "=" v)))
                    [ :c :st :l :o :ou :cn ]) ]
-      [(cstr/join "," (FlattenNil ssn)) rc])
+      [(cs/join "," (FlattenNil ssn)) rc])
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- keyfile "Maybe generate a server key file?"
+(defn- keyfile
+
+  "Maybe generate a server key file?"
 
   []
 
-  (if-let [res (promptQuestions (merge (make-csr-qs @SKARO-RSBUNDLE)
-                                       (make-key-qs @SKARO-RSBUNDLE))
+  (if-let [res (promptQuestions (merge (makeCsrQs @SKARO-RSBUNDLE)
+                                       (makeKeyQs @SKARO-RSBUNDLE))
                                 :cn) ]
     (let [dn (fst res)
           rc (lst res)
           now (Date.)
           ff (io/file (:fn rc))]
       (println "DN entered: " dn)
-      (MakeSSv1PKCS12 dn
-                      (Pwdify (:pwd rc))
-                      ff
-                      {:keylen (ConvLong (:size rc) 1024)
-                      :start now
-                      :end (-> (MakeCal now)
-                               (AddMonths (ConvLong (:months rc) 12))
-                               (.getTime)) })
+      (MakeSSv1PKCS12
+        dn
+        (Pwdify (:pwd rc))
+        ff
+        {:keylen (ConvLong (:size rc) 1024)
+         :start now
+         :end (-> (MakeCal now)
+                  (AddMonths (ConvLong (:months rc)
+                                       12))
+                  (.getTime)) })
       (println "Wrote file: " ff))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- csrfile "Maybe generate a CSR?"
+(defn- csrfile
+
+  "Maybe generate a CSR?"
 
   []
 
-  (if-let [res (promptQuestions (make-csr-qs @SKARO-RSBUNDLE) :cn) ]
+  (if-let [res (promptQuestions (makeCsrQs @SKARO-RSBUNDLE) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           [req pkey]
@@ -363,7 +376,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnGenerate "Generate a bunch of stuff."
+(defn OnGenerate
+
+  "Generate a bunch of stuff"
 
   [^Job j]
 
@@ -402,13 +417,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHash "Generate a hash."
+(defn OnHash
+
+  "Generate a hash"
 
   [^Job j]
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
-    (if (> (count args) 0)
+    (if-not (empty? args)
       (genHash (fst args))
       (throw (CmdHelpError.)))
   ))
@@ -425,7 +442,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnEncrypt "Encrypt the data."
+(defn OnEncrypt
+
+  "Encrypt the data"
 
   [^Job j]
 
@@ -448,7 +467,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnDecrypt "Decrypt the cypher."
+(defn OnDecrypt
+
+  "Decrypt the cypher"
 
   [^Job j]
 
@@ -461,7 +482,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnTestJCE "Test if JCE (crypto) is ok."
+(defn OnTestJCE
+
+  "Test if JCE (crypto) is ok"
 
   [j]
 
@@ -470,7 +493,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnVersion "Show the version of system."
+(defn OnVersion
+
+  "Show the version of system"
 
   [j]
 
@@ -478,7 +503,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHelp "Show help."
+(defn OnHelp
+
+  "Show help"
 
   [j]
 
@@ -517,29 +544,32 @@
                        lang
                        "/project.txt")
                   "utf-8")
-          (cstr/replace "${APP.NAME}" app)
-          (cstr/replace (str "${" ulang ".SRC}")
-                        (FPath (io/file cwd
-                                            "src/main" lang)))
-          (cstr/replace "${TEST.SRC}"
-                        (FPath (io/file cwd
-                                            "src/test" lang)))))
+          (cs/replace "${APP.NAME}" app)
+          (cs/replace (str "${" ulang ".SRC}")
+                      (FPath (io/file cwd
+                                      "src/main" lang)))
+          (cs/replace "${TEST.SRC}"
+                      (FPath (io/file cwd
+                                      "src/test" lang)))))
     (.mkdirs (io/file cwd DN_BUILD DN_CLASSES))
     (scanJars (io/file (GetHomeDir) DN_DIST) sb)
     (scanJars (io/file (GetHomeDir) DN_LIB) sb)
     (scanJars (io/file cwd DN_BUILD DN_CLASSES) sb)
     (scanJars (io/file cwd DN_TARGET) sb)
-    (WriteOneFile (io/file ec ".classpath")
+    (WriteOneFile
+      (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
                        "/classpath.txt")
                   "utf-8")
-          (cstr/replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
+          (cs/replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnIDE "Generate IDE project files."
+(defn OnIDE
+
+  "Generate IDE project files"
 
   [^Job j]
 

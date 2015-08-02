@@ -44,8 +44,7 @@
           pc (.getCredentials inf)
           tstPwd (Pwdify (if (instance? String pwd)
                            pwd
-                           (String. ^chars pwd))
-                         "")
+                           (String. ^chars pwd)))
           acc (-> (.getPrincipals inf)
                   (.getPrimaryPrincipal))]
       (and (= (:acctid acc) uid)

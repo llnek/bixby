@@ -14,27 +14,29 @@
 
   czlab.skaro.etc.core
 
-  (:require [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
-            [czlab.xlib.util.core :refer [test-cond MakeMMap]]
-            [czlab.xlib.util.str :refer [MakeString]]
-            [czlab.xlib.util.scheduler :refer [NulScheduler]]
-            [czlab.xlib.util.files :refer [DirRead?]])
+  (:require
+    [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
+    [czlab.xlib.util.core :refer [test-cond MakeMMap]]
+    [czlab.xlib.util.str :refer [MakeString]]
+    [czlab.xlib.util.scheduler :refer [NulScheduler]]
+    [czlab.xlib.util.files :refer [DirRead?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
         [czlab.skaro.etc.cmd2]
         [czlab.skaro.etc.cmd1])
 
-  (:import  [com.zotohlab.frwk.server ServiceHandler ServerLike]
-            [com.zotohlab.skaro.etc CmdHelpError]
-            [com.zotohlab.wflow Activity
-             WorkFlowEx Nihil
-             Job Switch]
-            [com.zotohlab.frwk.i18n I18N]
-            [java.util ResourceBundle List Locale]
-            [java.io File]))
+  (:import
+    [com.zotohlab.frwk.server ServiceHandler ServerLike]
+    [com.zotohlab.skaro.etc CmdHelpError]
+    [com.zotohlab.wflow Activity
+    WorkFlowEx Nihil Job Switch]
+    [com.zotohlab.frwk.i18n I18N]
+    [java.util ResourceBundle List Locale]
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -129,7 +131,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseArgs "Do nothing right now."
+(defn- parseArgs
+
+  "Do nothing right now"
 
   ^Activity
   []
@@ -138,7 +142,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cmdStart "Make sure cmdline args are ok."
+(defn- cmdStart
+
+  "Make sure cmdline args are ok"
 
   ^Activity
   []

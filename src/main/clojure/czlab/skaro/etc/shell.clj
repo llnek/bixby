@@ -16,17 +16,20 @@
 
   (:gen-class)
 
-  (:require [czlab.xlib.util.files :refer [DirRead?]])
+  (:require
+    [czlab.xlib.util.files :refer [DirRead?]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
   (:use [czlab.xlib.i18n.resources]
         [czlab.skaro.etc.core])
 
-  (:import  [java.util ResourceBundle Locale]
-            [com.zotohlab.frwk.i18n I18N]
-            [java.io File]))
+  (:import
+    [java.util ResourceBundle Locale]
+    [com.zotohlab.frwk.i18n I18N]
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -40,17 +43,18 @@
 
   [& args]
 
-  (with-local-vars [ver (LoadResource VERPROPS)
-                    rcb (GetResource RCB)
-                    ok false]
-    (->> (.getString ^ResourceBundle @ver "version")
-         (System/setProperty "skaro.version"))
-    (I18N/setBase @rcb)
-    (when-let [home (io/file (first args))]
-      (when (DirRead? home)
-        (var-set ok true)
-        (apply BootAndRun home @rcb (drop 1 args))))
-    (when-not @ok (Usage))
+  (let
+    [ver (LoadResource VERPROPS)
+     rcb (GetResource RCB)]
+    (with-local-vars [ok false]
+      (->> (.getString ver "version")
+           (System/setProperty "skaro.version"))
+      (I18N/setBase rcb)
+      (when-let [home (io/file (first args))]
+        (when (DirRead? home)
+          (var-set ok true)
+          (apply BootAndRun home rcb (drop 1 args))))
+      (when-not @ok (Usage)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

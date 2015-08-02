@@ -60,39 +60,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.xlib.util.core.Muble
-          CompContextualize
-
-  "Contextualize a component"
-
-  (fn [a arg] (:typeid (meta a))))
+(defmulti CompContextualize
+  "Contextualize a component" (fn [a arg] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.xlib.util.core.Muble
-          CompCompose
-
-  "Compose a component within a registry"
-
-  (fn [a rego] (:typeid (meta a))))
+(defmulti CompCompose
+  "Compose a component" (fn [a rego] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.xlib.util.core.Muble
-          CompConfigure
-
-  "Configure a component with options"
-
-  (fn [a options] (:typeid (meta a))))
+(defmulti CompConfigure
+  "Configure a component" (fn [a options] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ^czlab.xlib.util.core.Muble
-          CompInitialize
-
-  "Initialize a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti CompInitialize
+  "Init a component" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,7 +133,7 @@
                  #(cs/replace %
                               "${appdir}"
                               (FPath appDir)))) ]
-    (log/debug "[%s]" confile rc)
+    (log/debug "[%s]\n%s" confile rc)
     rc
   ))
 

@@ -14,48 +14,37 @@
 
   czlab.skaro.etc.cmd2
 
-  (:require [czlab.xlib.util.ini :refer [ParseInifile]]
-            [czlab.xlib.util.str :refer [strim nsb TrimL TrimR]]
-            [czlab.xlib.util.guids :refer [NewUUid]]
-            [czlab.xlib.util.format :refer [ReadEdn]]
-            [czlab.xlib.util.files :refer [ReplaceFile]]
-            [czlab.tpcl.antlib :as ant]
-            [czlab.xlib.util.core
-             :refer
-             [GetUser
-              GetCwd
-              juid
-              IsWindows?
-              prn!!
-              prn!
-              FPath]]
-            [czlab.xlib.util.files
-             :refer
-             [ReadOneFile
-              WriteOneFile
-              CopyFileToDir
-              DeleteDir
-              CopyFile
-              CopyToDir
-              CopyFiles
-              Unzip
-              Mkdirs]])
+  (:require
+    [czlab.xlib.util.ini :refer [ParseInifile]]
+    [czlab.xlib.util.str :refer [strim TrimL TrimR]]
+    [czlab.xlib.util.guids :refer [NewUUid]]
+    [czlab.xlib.util.format :refer [ReadEdn]]
+    [czlab.xlib.util.files :refer [ReplaceFile]]
+    [czlab.tpcl.antlib :as ant]
+    [czlab.xlib.util.core
+    :refer [GetUser GetCwd juid
+    IsWindows? prn!! prn! FPath]]
+    [czlab.xlib.util.files
+    :refer [ReadOneFile WriteOneFile CopyFileToDir
+    DeleteDir CopyFile CopyToDir CopyFiles Unzip Mkdirs]])
 
   ;;(:refer-clojure :rename {first fst second snd })
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.string :as cstr]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs]
+    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts])
 
-  (:import  [org.apache.commons.io.filefilter FileFileFilter
-                                              FileFilterUtils]
-            [com.zotohlab.skaro.etc CmdHelpError]
-            [org.apache.commons.io FilenameUtils FileUtils]
-            [org.apache.commons.lang3 StringUtils]
-            [java.util ResourceBundle UUID]
-            [java.io File]))
+  (:import
+    [org.apache.commons.io.filefilter
+    FileFileFilter FileFilterUtils]
+    [com.zotohlab.skaro.etc CmdHelpError]
+    [org.apache.commons.io FilenameUtils FileUtils]
+    [org.apache.commons.lang3 StringUtils]
+    [java.util ResourceBundle UUID]
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -67,7 +56,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ResBdl "Return the system resource bundle."
+(defn ResBdl
+
+  "Return the system resource bundle"
 
   ^ResourceBundle
   []
@@ -76,7 +67,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetHomeDir "Return the home directory."
+(defn GetHomeDir
+
+  "Return the home directory"
 
   ^File
   []
@@ -93,14 +86,16 @@
 
   [appDomain]
 
-  (-> (nsb appDomain)
+  (-> (str appDomain)
       (TrimL ".")
       (TrimR ".")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn CreateApp "Create a new app."
+(defn CreateApp
+
+  "Create a new app"
 
   [verb path]
 
@@ -109,7 +104,7 @@
         cwd (GetCwd)
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
-        app (when-not (nil? t)
+        app (when (some? t)
               (if-let [tkn (last t) ]
                 (TrimL tkn ".")
                 (first t))) ]
@@ -126,43 +121,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RunAppBg "Run the application in the background."
+(defn RunAppBg
+
+  "Run the application in the background"
 
   [^File hhh]
 
-  (let [progW (io/file hhh "bin/skaro.bat")
-        prog (io/file hhh "bin/skaro")
-        cwd (GetCwd)
-        tk (if (IsWindows?)
-             (ant/AntExec {:executable "cmd.exe"
-                           :dir cwd}
-                          [[:argvalues [ "/C" "start" "/B"
-                                        "/MIN"
-                                        (FPath progW)
-                                        "start" ]]])
-             (ant/AntExec {:executable (FPath prog)
-                           :dir cwd}
-                          [[:argvalues [ "start" "bg" ]]])) ]
+  (let
+    [progW (io/file hhh "bin/skaro.bat")
+     prog (io/file hhh "bin/skaro")
+     cwd (GetCwd)
+     tk (if (IsWindows?)
+          (ant/AntExec
+            {:executable "cmd.exe"
+             :dir cwd}
+            [[:argvalues ["/C" "start" "/B"
+                          "/MIN"
+                          (FPath progW) "start" ]]])
+          (ant/AntExec
+            {:executable (FPath prog)
+             :dir cwd}
+            [[:argvalues [ "start" "bg" ]]])) ]
     (ant/RunTasks* tk)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BundleApp "Bundle an app."
+(defn BundleApp
+
+  "Bundle an app"
 
   [^File hhh ^File app ^String out]
 
-  (let [dir (Mkdirs (io/file out))
-        tk (ant/AntZip {:destFile (io/file dir (.getName app) ".zip")
-                        :basedir app
-                        :excludes "build/**"
-                        :includes "**/*"}) ]
+  (let
+    [dir (Mkdirs (io/file out))
+     tk (ant/AntZip
+          {:destFile (io/file dir (.getName app) ".zip")
+           :basedir app
+           :excludes "build/**"
+           :includes "**/*"}) ]
     (ant/RunTasks* tk)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro mk-demo-path "" [dn] `(str "demo." ~dn))
+(defmacro mkDemoPath "" [dn] `(str "demo." ~dn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -173,7 +176,7 @@
   (let [top (io/file out (.getName demo))
         dn (.getName top)]
     (prn!! "Generating demo[%s]..." dn)
-    (CreateBasic out dn (mk-demo-path dn))
+    (CreateBasic out dn (mkDemoPath dn))
     (CopyFiles demo
                (io/file top DN_CONF) "conf")
     (CopyFiles demo
@@ -188,9 +191,10 @@
 
   [^File demo ^File out]
 
-  (let [top (io/file out (.getName demo))
-        dn (.getName top)
-        dom (mk-demo-path dn)]
+  (let
+    [top (io/file out (.getName demo))
+     dn (.getName top)
+     dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
     (case dn
       "jetty" (CreateJetty out dn dom)
@@ -210,7 +214,8 @@
 
   [^File out]
 
-  (let [top (io/file (GetHomeDir) "src/main/java/demo")
+  (let [top (io/file (GetHomeDir)
+                     "src/main/java/demo")
         dss (.listFiles top)]
     (doseq [^File d dss
             :when (.isDirectory d)]
@@ -223,7 +228,8 @@
 
   [^File out]
 
-  (let [top (io/file (GetHomeDir) "src/main/clojure/demo")
+  (let [top (io/file (GetHomeDir)
+                     "src/main/clojure/demo")
         dss (.listFiles top)]
     (doseq [^File d dss
             :when (.isDirectory d)]
@@ -232,7 +238,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PublishSamples "Unzip all samples."
+(defn PublishSamples
+
+  "Unzip all samples"
 
   [^String output]
 
@@ -259,40 +267,45 @@
 
   (io/file appDir
            "src/main/clojure"
-           (cstr/replace appDomain "." "/")))
+           (cs/replace appDomain "." "/")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- post-create-app ""
+(defn- postCreateApp ""
 
   [^File appDir ^String appId ^String appDomain]
 
-  (let [h2db (str (if (IsWindows?) "/c:/temp/" "/tmp/") (juid))
-        h2dbUrl (str h2db "/" appId
+  (let [h2db (str (if (IsWindows?)
+                    "/c:/temp/"
+                    "/tmp/")
+                  (juid))
+        h2dbUrl (str h2db
+                     "/"
+                     appId
                      ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
-        appDomainPath (cstr/replace appDomain "." "/")
+        appDomainPath (cs/replace appDomain "." "/")
         hhh (GetHomeDir)
         cljd (mkcljd appDir appDomain) ]
     (Mkdirs h2db)
     (with-local-vars [fp nil]
       (var-set fp (mkcljfp cljd "core.clj"))
       (ReplaceFile @fp
-                   #(-> (cstr/replace % "@@APPDOMAIN@@" appDomain)
-                        (cstr/replace "@@USER@@" (GetUser))))
+                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                        (cs/replace "@@USER@@" (GetUser))))
 
       (var-set fp (io/file appDir CFG_ENV_CF))
       (ReplaceFile @fp
-                   #(-> (cstr/replace % "@@H2DBPATH@@" h2dbUrl)
-                        (cstr/replace "@@APPDOMAIN@@" appDomain))))
+                   #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
+                        (cs/replace "@@APPDOMAIN@@" appDomain))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- create-app-common ""
+(defn- createAppCommon ""
 
   [^File appDir ^String appId ^String appDomain ^String flavor]
 
-  (let [appDomainPath (cstr/replace appDomain "." "/")
+  (let [appDomainPath (cs/replace appDomain "." "/")
         mfDir (io/file appDir DN_CFG)
         cfd (io/file appDir DN_CONF)
         hhh (GetHomeDir)]
@@ -343,46 +356,46 @@
       (var-set fp (io/file appDir
                            "src/test/clojure" appDomainPath "test.clj"))
       (ReplaceFile @fp
-                   #(cstr/replace % "@@APPDOMAIN@@" appDomain))
+                   #(cs/replace % "@@APPDOMAIN@@" appDomain))
 
       (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
         (var-set fp (io/file appDir
                              "src/test/java" appDomainPath s))
         (ReplaceFile @fp
-                     #(cstr/replace % "@@APPDOMAIN@@" appDomain)))
+                     #(cs/replace % "@@APPDOMAIN@@" appDomain)))
 
       (var-set fp (io/file cfd APP_CF))
       (ReplaceFile @fp
-                   #(cstr/replace % "@@USER@@" (GetUser)))
+                   #(cs/replace % "@@USER@@" (GetUser)))
 
       (var-set fp (io/file appDir DN_CFG MF_FP))
       (ReplaceFile @fp
-                   #(-> (cstr/replace % "@@APPKEY@@" (NewUUid))
-                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cstr/replace "@@APPMAINCLASS@@"
-                                  (str appDomain ".core.MyAppMain"))))
+                   #(-> (cs/replace % "@@APPKEY@@" (NewUUid))
+                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                        (cs/replace "@@APPMAINCLASS@@"
+                                    (str appDomain ".core.MyAppMain"))))
 
       (var-set fp (io/file appDir "pom.xml"))
       (ReplaceFile @fp
-                   #(-> (cstr/replace % "@@APPDOMAIN@@" appDomain)
-                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cstr/replace "@@APPID@@" appId)))
+                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                        (cs/replace "@@APPID@@" appId)))
 
       (var-set fp (io/file appDir "build.boot"))
       (ReplaceFile @fp
-                   #(-> (cstr/replace % "@@APPDOMAIN@@" appDomain)
-                        (cstr/replace "@@TYPE@@" flavor)
-                        (cstr/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cstr/replace "@@APPID@@" appId))))
+                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                        (cs/replace "@@TYPE@@" flavor)
+                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                        (cs/replace "@@APPID@@" appId))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- create-web-common ""
+(defn- createWebCommon ""
 
   [^File appDir appId ^String appDomain]
 
-  (let [appDomainPath (cstr/replace appDomain "." "/")
+  (let [appDomainPath (cs/replace appDomain "." "/")
         hhh (GetHomeDir)
         wfc (io/file hhh DN_CFGAPP "weblibs.conf")
         wlib (io/file appDir "public/vendors")
@@ -435,28 +448,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- create-mvc-web ""
+(defn- createMvcWeb ""
 
   [^File appDir ^String appId ^String appDomain ^String emType ]
 
-  (let [appDomainPath (cstr/replace appDomain "." "/")
+  (let [appDomainPath (cs/replace appDomain "." "/")
         hhh (GetHomeDir)
         cfd (io/file appDir DN_CONF) ]
     (with-local-vars [fp nil]
-      (create-app-common appDir appId appDomain "web")
-      (create-web-common appDir appId appDomain)
+      (createAppCommon appDir appId appDomain "web")
+      (createWebCommon appDir appId appDomain)
       ;; copy files
       (CopyFiles (io/file hhh DN_CFG "netty") cfd "conf")
       ;; modify files
       (var-set fp (io/file cfd "routes.conf"))
       (ReplaceFile @fp
-                   #(cstr/replace % "@@APPDOMAIN@@" appDomain))
+                   #(cs/replace % "@@APPDOMAIN@@" appDomain))
 
       (var-set fp (io/file cfd ENV_CF))
       (ReplaceFile @fp
-                   #(cstr/replace % "@@EMTYPE@@" emType))
+                   #(cs/replace % "@@EMTYPE@@" emType))
 
-      (post-create-app appDir appId appDomain))
+      (postCreateApp appDir appId appDomain))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -466,8 +479,8 @@
   [^File out appId ^String appDomain]
 
   (let [appdir (Mkdirs (io/file out appId))]
-    (create-app-common appdir appId appDomain "basic")
-    (post-create-app appdir appId appDomain)
+    (createAppCommon appdir appId appDomain "basic")
+    (postCreateApp appdir appId appDomain)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -477,7 +490,7 @@
   [^File out appId ^String appDomain]
 
   (let [appdir (Mkdirs (io/file out appId))]
-    (create-mvc-web appdir appId appDomain "czc.skaro.io/JettyIO")
+    (createMvcWeb appdir appId appDomain "czc.skaro.io/JettyIO")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -487,7 +500,7 @@
   [^File out appId ^String appDomain]
 
   (let [appdir (Mkdirs (io/file out appId))]
-    (create-mvc-web appdir appId appDomain "czc.skaro.io/NettyMVC")
+    (createMvcWeb appdir appId appDomain "czc.skaro.io/NettyMVC")
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

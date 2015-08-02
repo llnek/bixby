@@ -27,7 +27,7 @@ public class ExecClassLoader extends AbstractClassLoader {
     configure(c.baseDir());
   }
 
-  private void load(String base) {
+  private void load(File base) {
     File p= new File(base, "dist");
     if (p.exists() && !_loaded) {
       findUrls(p);
@@ -35,8 +35,8 @@ public class ExecClassLoader extends AbstractClassLoader {
     _loaded=true;
   }
 
-  public void configure(String baseDir) {
-    if (baseDir != null && baseDir.length() > 0) {
+  public void configure(File baseDir) {
+    if (baseDir != null) {
       load(baseDir);
     }
   }

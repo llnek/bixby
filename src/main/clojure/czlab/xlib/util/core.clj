@@ -114,6 +114,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro do->false "Do and return false" [& exprs] `(do ~@exprs false))
+(defmacro do->nil "Do and return nil" [& exprs] `(do ~@exprs nil))
+(defmacro do->true "Do and return true" [& exprs] `(do ~@exprs true))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro Inst?
 
   "Same as clojure's instance?"

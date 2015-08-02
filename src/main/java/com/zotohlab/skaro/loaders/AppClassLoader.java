@@ -22,7 +22,7 @@ public class AppClassLoader extends AbstractClassLoader {
     super(par);
   }
 
-  public void configure(String appDir) {
+  public void configure(File appDir) {
     File j= new File(appDir, "build/j");
     File c= new File(appDir, "build/c");
     File d= new File(appDir, "build/d");

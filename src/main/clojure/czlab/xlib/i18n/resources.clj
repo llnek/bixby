@@ -33,13 +33,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti LoadResource "Load properties file with localized strings" class)
+(defmulti^ResourceBundle LoadResource
+  "Load properties file with localized strings" class)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod LoadResource File
 
-  ^ResourceBundle
   [^File aFile]
 
   (LoadResource (io/as-url aFile)))
@@ -48,7 +48,6 @@
 ;;
 (defmethod LoadResource URL
 
-  ^ResourceBundle
   [^URL url]
 
   (with-open [inp (.openStream url) ]
@@ -58,7 +57,6 @@
 ;;
 (defmethod LoadResource String
 
-  ^ResourceBundle
   [^String path]
 
   (with-open

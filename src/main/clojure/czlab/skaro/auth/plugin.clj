@@ -19,9 +19,9 @@
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.core
     :refer [tryc notnil? Stringify
-            MakeMMap juid test-nonil LoadJavaProps]]
+    MakeMMap do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
-    [czlab.xlib.util.str :refer [nsb hgl? strim]]
+    [czlab.xlib.util.str :refer [hgl? strim]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.net.comms :refer [GetFormFields]])
 
@@ -171,9 +171,9 @@
     ;; assumed ok for the account to remain inserted.
     (doseq [r roleObjs]
       (DbioSetM2M { :as :roles :with sql } acc r))
-    (log/debug "Created new account into db: %s%s%s"
+    (log/debug "created new account into db: %s%s%s"
                acc
-               "\nwith meta "
+               "\nwith meta\n"
                (meta acc))
     acc
   ))
@@ -211,7 +211,7 @@
   [^SQLr sql ^String user ^String pwd]
 
   (if-let [acct (FindLoginAccount sql user)]
-    (if (.validateHash (Pwdify pwd "")
+    (if (.validateHash (Pwdify pwd)
                        (:passwd acct))
       acct
       (throw (AuthError. (RStr (I18N/getBase) "auth.bad.pwd"))))
@@ -248,7 +248,7 @@
 (defn UpdateLoginAccount
 
   "Update account details
-   details : a set of properties such as email address"
+   details: a set of properties such as email address"
 
   [^SQLr sql userObj details]
 
@@ -360,49 +360,41 @@
          si (try (GetSignupInfo evt)
                  (catch BadDataError e# {:e e#}))
          info (or si {})]
-        (log/debug "Session csrf = %s%s%s"
+        (log/debug "session csrf = %s%s%s"
                    csrf
                    ", and form token = " (:csrf info))
         (cond
           (some? (:e info))
-          (do
-            (.setLastResult job {:error (AuthError. (nsb (:e info))) })
-            false)
+          (do->false
+            (->> {:error (AuthError. ^Throwable (:e info))}
+                 (.setLastResult job)))
 
           (and (hgl? challengeStr)
-               (not= challengeStr (nsb (:captcha info))))
-          (do
-            (.setLastResult job
-                            {:error
-                             (AuthError. (RStr rb "auth.bad.cha")) })
-            false)
+               (not= challengeStr (:captcha info)))
+          (do->false
+            (->> {:error (AuthError. (RStr rb "auth.bad.cha")) }
+                 (.setLastResult job)))
 
-          (not= csrf (nsb (:csrf info)))
-          (do
-            (.setLastResult job
-                            {:error
-                             (AuthError. (RStr rb "auth.bad.tkn")) })
-            false)
+          (not= csrf (:csrf info))
+          (do->false
+            (->> {:error (AuthError. (RStr rb "auth.bad.tkn")) }
+                 (.setLastResult job)))
 
           (and (hgl? (:credential info))
                (hgl? (:principal info))
                (hgl? (:email info)))
           (if (.hasAccount pa info)
-            (do
-              (.setLastResult job {:error
-                                   (DuplicateUser. ^String
-                                                   (:principal info)) })
-              false)
-            (do
-              (.setLastResult job {:account (.addAccount pa info) })
-              true))
+            (do->false
+              (->> {:error (DuplicateUser. (str (:principal info)))}
+                   (.setLastResult job )))
+            (do->true
+              (->> {:account (.addAccount pa info)}
+                   (.setLastResult job))))
 
           :else
-          (do
-            (.setLastResult job
-                            {:error
-                             (AuthError. (RStr rb "auth.bad.req")) })
-            false))))
+          (do->false
+            (->> {:error (AuthError. (RStr rb "auth.bad.req"))}
+                 (.setLastResult job))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -433,30 +425,27 @@
                    ", and form token = " (:csrf info))
         (cond
           (some? (:e info))
-          (do
-            (.setLastResult job {:error (AuthError. (nsb (:e info))) })
-            false)
+          (do->false
+            (->> {:error (AuthError. ^Throwable (:e info))}
+                 (.setLastResult job)))
 
-          (not= csrf (nsb (:csrf info)))
-          (do
-            (.setLastResult job
-                            {:error
-                             (AuthError. (RStr rb "auth.bad.tkn")) })
-            false)
+          (not= csrf (:csrf info))
+          (do->false
+            (->> {:error (AuthError. (RStr rb "auth.bad.tkn"))}
+                 (.setLastResult job)))
 
           (and (hgl? (:credential info))
                (hgl? (:principal info)))
           (do
-            (.setLastResult job {:account (.login pa (:principal info)
-                                                     (:credential info)) })
+            (->> {:account (.login pa (:principal info)
+                                      (:credential info)) }
+                 (.setLastResult job))
             (some? (:account (.getLastResult job))))
 
           :else
-          (do
-            (.setLastResult job
-                            {:error
-                             (AuthError. (RStr rb "auth.bad.req")) })
-            false))))
+          (do->false
+            (->> {:error (AuthError. (RStr rb "auth.bad.req")) }
+                 (.setLastResult job))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -501,7 +490,8 @@
       (login [_ user pwd]
         (binding [*JDBC-POOL* (.acquireDbPool ctr "")
                   *META-CACHE* AUTH-MCACHE ]
-          (let [token (UsernamePasswordToken. ^String user ^String pwd)
+          (let [token (UsernamePasswordToken.
+                        ^String user ^String pwd)
                 cur (SecurityUtils/getSubject)
                 sss (.getSession cur) ]
             (log/debug "Current user session %s" sss)
@@ -564,7 +554,7 @@
         cfg ((keyword db) (:jdbc (:databases env))) ]
     (when (some? cfg)
       (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
-            t (MatchJdbcUrl (nsb (:url cfg))) ]
+            t (MatchJdbcUrl (str (:url cfg))) ]
         (cond
           (= "init-db" cmd)
           (ApplyAuthPluginDDL j)
@@ -579,7 +569,6 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; home gen-sql alias outfile
 ;; home init-db alias
 (defn -main "Main Entry"

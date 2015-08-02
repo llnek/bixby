@@ -11,12 +11,22 @@
 
 package com.zotohlab.skaro.etc;
 
-import com.zotohlab.frwk.core.CallableWithArgs;
+import org.projectodd.shimdandy.ClojureRuntimeShim;
 
 /**
  * @author kenl
  */
-public interface CliMain extends CallableWithArgs {
+public enum CliMain  {
+;
+	
+	/**
+	 * 
+	 * @param cl
+	 * @param name
+	 */
+	public static ClojureRuntimeShim newrt(ClassLoader cl, String name) {
+		return ClojureRuntimeShim.newRuntime(cl, name);
+	}
 }
 
 
