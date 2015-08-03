@@ -14,34 +14,32 @@
 
   czlab.skaro.io.jms
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [NextLong
-              ThrowIOE
-              Muble
-              MakeMMap
-              juid
-              tryc]]
-            [czlab.xlib.crypto.codec :refer [Pwdify]]
-            [czlab.xlib.util.str :refer [hgl? nsb]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [NextLong ThrowIOE
+    Muble MakeMMap juid tryc]]
+    [czlab.xlib.crypto.codec :refer [Pwdify]]
+    [czlab.xlib.util.str :refer [hgl? ]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.core])
 
-  (:import  [java.util Hashtable Properties ResourceBundle]
-            [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.frwk.core Identifiable]
-            [javax.jms Connection ConnectionFactory
-             Destination Connection
-             Message MessageConsumer MessageListener Queue
-             QueueConnection QueueConnectionFactory QueueReceiver
-             QueueSession Session Topic TopicConnection
-             TopicConnectionFactory TopicSession TopicSubscriber]
-            [javax.naming Context InitialContext]
-            [java.io IOException]
-            [com.zotohlab.skaro.io JMSEvent]))
+  (:import
+    [java.util Hashtable Properties ResourceBundle]
+    [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.frwk.core Identifiable]
+    [javax.jms Connection ConnectionFactory
+    Destination Connection
+    Message MessageConsumer MessageListener Queue
+    QueueConnection QueueConnectionFactory QueueReceiver
+    QueueSession Session Topic TopicConnection
+    TopicConnectionFactory TopicSession TopicSubscriber]
+    [javax.naming Context InitialContext]
+    [java.io IOException]
+    [com.zotohlab.skaro.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -52,7 +50,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: JMS: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: JMS: %s" (.id ^Identifiable co))
   (let [msg (first args)
         eeid (NextLong)
         impl (MakeMMap)]
@@ -72,9 +70,8 @@
         (emitter [_] co)
         (getMsg [_] msg))
 
-      { :typeid :czc.skaro.io/JMSEvent }
-
-  )))
+      { :typeid :czc.skaro.io/JMSEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,7 +79,7 @@
 
   [^czlab.skaro.io.core.EmitAPI co msg]
 
-      ;;if (msg!=null) block { () => msg.acknowledge() }
+  ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (IOESReifyEvent co msg) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,7 +88,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: JMS: " (.id ^Identifiable co))
+  (log/info "compConfigure: JMS: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
@@ -115,7 +112,7 @@
 
   (let [cfg (.getf co :emcfg)
         ^String des (:destination cfg)
-        jp (nsb (:jmsPwd cfg))
+        jp (str (:jmsPwd cfg))
         ^String ju (:jmsUser cfg)
         c (.lookup ctx des)
         ^Connection
@@ -128,7 +125,7 @@
           (.createConsumer c)
           (.setMessageListener (reify MessageListener
                                  (onMessage [_ m] (onMsg co m)))))
-      (ThrowIOE "Object not of Destination type."))
+      (ThrowIOE "Object not of Destination type"))
     conn
   ))
 
@@ -143,16 +140,16 @@
    ^TopicConnectionFactory cf]
 
   (let [cfg (.getf co :emcfg)
-        des (nsb (:destination cfg))
-        ju (nsb (:jmsUser cfg))
-        jp (nsb (:jmsPwd cfg))
+        des (str (:destination cfg))
+        ju (str (:jmsUser cfg))
+        jp (str (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createTopicConnection cf ju (if (hgl? jp) jp nil))
                (.createTopicConnection cf))
         s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
         t (.lookup ctx des) ]
     (when-not (instance? Topic t)
-      (ThrowIOE "Object not of Topic type."))
+      (ThrowIOE "Object not of Topic type"))
     (-> (if (:durable cfg)
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
@@ -171,16 +168,16 @@
    ^QueueConnectionFactory cf]
 
   (let [cfg (.getf co :emcfg)
-        des (nsb (:destination cfg))
-        ju (nsb (:jmsUser cfg))
-        jp (nsb (:jmsPwd cfg))
+        des (str (:destination cfg))
+        ju (str (:jmsUser cfg))
+        jp (str (:jmsPwd cfg))
         conn (if (hgl? ju)
                (.createQueueConnection cf ju (if (hgl? jp) jp nil))
                (.createQueueConnection cf))
         s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
         q (.lookup ctx des) ]
     (when-not (instance? Queue q)
-      (ThrowIOE "Object not of Queue type."))
+      (ThrowIOE "Object not of Queue type"))
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m)))))
@@ -193,11 +190,11 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStart: JMS: " (.id ^Identifiable co))
+  (log/info "IOESStart: JMS: %s" (.id ^Identifiable co))
   (let [cfg (.getf co :emcfg)
-        cf (nsb (:contextFactory cfg))
-        ju (nsb (:jndiUser cfg))
-        jp (nsb (:jndiPwd cfg))
+        cf (str (:contextFactory cfg))
+        ju (str (:jndiUser cfg))
+        jp (str (:jndiPwd cfg))
         pl (:providerUrl cfg)
         vars (Hashtable.) ]
 
@@ -213,7 +210,7 @@
         (.put vars "jndi.password" jp)))
 
     (let [ctx (InitialContext. vars)
-          obj (->> (nsb (:connFactory cfg))
+          obj (->> (str (:connFactory cfg))
                    (.lookup ctx))
           c (condp instance? obj
               QueueConnectionFactory (inizQueue co ctx obj)
@@ -233,7 +230,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStop: JMS: " (.id ^Identifiable co))
+  (log/info "IOESStop: JMS: %s" (.id ^Identifiable co))
   (when-let [^Connection c (.getf co :conn) ]
     (tryc (.close c))
     (.setf! co :conn nil)

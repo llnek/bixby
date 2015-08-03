@@ -14,38 +14,38 @@
 
   czlab.skaro.mvc.assets
 
-  (:require [czlab.xlib.util.core :refer [try! notnil? FPath]]
-            [czlab.xlib.util.mime :refer [GuessContentType]]
-            [czlab.xlib.util.str :refer [lcase nsb]]
-            [czlab.xlib.util.files
-             :refer
-             [ReadFileBytes
-              WriteOneFile]]
-            [czlab.xlib.util.io :refer [Streamify]])
+  (:require
+    [czlab.xlib.util.core :refer [try! notnil? FPath]]
+    [czlab.xlib.util.mime :refer [GuessContentType]]
+    [czlab.xlib.util.str :refer [lcase nsb]]
+    [czlab.xlib.util.files
+    :refer [ReadFileBytes WriteOneFile]]
+    [czlab.xlib.util.io :refer [Streamify]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.io.http]
         [czlab.xlib.netty.io])
 
-  (:import  [io.netty.handler.codec.http HttpRequest HttpResponse
-             HttpResponseStatus
-             CookieDecoder ServerCookieEncoder
-             DefaultHttpResponse HttpVersion
-             HttpMethod
-             HttpHeaders LastHttpContent
-             HttpHeaders Cookie QueryStringDecoder]
-            [io.netty.channel Channel ChannelHandler
-             ChannelFutureListener ChannelFuture
-             ChannelPipeline ChannelHandlerContext]
-            [io.netty.handler.stream ChunkedStream ChunkedFile]
-            [com.google.gson JsonObject JsonArray]
-            [org.apache.commons.io FileUtils]
-            [com.zotohlab.skaro.mvc WebContent
-             WebAsset
-             HTTPRangeInput AssetCache]
-            [java.io Closeable RandomAccessFile File]
-            [java.util Map HashMap]))
+  (:import
+    [io.netty.handler.codec.http HttpRequest HttpResponse
+    HttpResponseStatus
+    CookieDecoder ServerCookieEncoder
+    DefaultHttpResponse HttpVersion
+    HttpMethod
+    HttpHeaders LastHttpContent
+    HttpHeaders Cookie QueryStringDecoder]
+    [io.netty.channel Channel ChannelHandler
+    ChannelFutureListener ChannelFuture
+    ChannelPipeline ChannelHandlerContext]
+    [io.netty.handler.stream ChunkedStream ChunkedFile]
+    [com.google.gson JsonObject JsonArray]
+    [org.apache.commons.io FileUtils]
+    [com.zotohlab.skaro.mvc WebContent
+    WebAsset
+    HTTPRangeInput AssetCache]
+    [java.io Closeable RandomAccessFile File]
+    [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -56,12 +56,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetCacheAssetsFlag "Toggle caching of assers,"
+(defn SetCacheAssetsFlag
+
+  "Toggle caching of assers"
 
   [cacheFlag]
 
   (reset! cache-assets-flag (if cacheFlag true false))
-  (log/info "Web Assets caching is set to " @cache-assets-flag))
+  (log/info "web assets caching is set to %s" @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,7 +95,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeCache "Cache certain files..."
+(defn- maybeCache
+
+  "cache certain files..."
 
   [^File fp]
 
@@ -149,11 +153,11 @@
 
   (if-let [wa (fetchAsset file) ]
     (do
-      (log/debug "Asset-cache: cached new file: " fp)
+      (log/debug "asset-cache: cached new file: %s" fp)
       (.put cache fp wa)
       wa)
     (do
-      (log/warn "Asset-cache: failed to read/find file: " fp)
+      (log/warn "asset-cache: failed to read/find file: %s" fp)
       nil)
   ))
 
@@ -215,7 +219,9 @@
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
           (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
-      (log/debug "Serving file: " fname " with clen= " @clen ", ctype= " @ct)
+      (log/debug (str "serving file: %s with "
+                      "clen= %s, ctype= %s")
+                 fname @clen @ct)
       (try
         (when (= HttpResponseStatus/NOT_MODIFIED
                  (.getStatus rsp))
@@ -228,12 +234,12 @@
                       (== 0 @clen))
                   (var-set wf (.writeAndFlush ch @inp)))
         (FutureCB @wf #(do
-                        (log/debug "Channel-future-op-cmp: " % " , file = " fname)
-                        (try! (when (notnil? @raf) (.close ^Closeable @raf)))
+                        (log/debug "channel-future-op-cmp: %s, file = %s" %1 fname)
+                        (try! (when (some? @raf) (.close ^Closeable @raf)))
                         (when-not (:keepAlive info)
                           (.close ch))))
         (catch Throwable e#
-          (try! (when-not (nil? @raf)(.close ^Closeable @raf)))
+          (try! (when (some? @raf)(.close ^Closeable @raf)))
           (log/error e# "")
           (try! (.close ch))) ))
   ))

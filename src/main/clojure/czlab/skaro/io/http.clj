@@ -14,23 +14,15 @@
 
   czlab.skaro.io.http
 
-  (:require [czlab.xlib.util.str :refer [lcase hgl? nsb strim]]
-            [czlab.xlib.util.core
-             :refer
-             [Muble
-              notnil?
-              juid
-              spos?
-              NextLong
-              ToJavaInt
-              SubsVar
-              MakeMMap
-              test-cond
-              Stringify]]
-            [czlab.xlib.net.comms :refer [ParseBasicAuth]]
-            [czlab.xlib.crypto.codec :refer [Pwdify]])
+  (:require
+    [czlab.xlib.util.str :refer [lcase hgl? strim]]
+    [czlab.xlib.util.core
+    :refer [Muble notnil? juid spos? NextLong
+    ToJavaInt SubsVar MakeMMap test-cond Stringify]]
+    [czlab.xlib.net.comms :refer [ParseBasicAuth]]
+    [czlab.xlib.crypto.codec :refer [Pwdify]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.crypto.ssl]
         [czlab.skaro.core.consts]
@@ -39,30 +31,31 @@
         [czlab.skaro.io.webss]
         [czlab.skaro.io.triggers])
 
-  (:import  [java.util.concurrent ConcurrentHashMap]
-            [java.net URL]
-            [java.util List Map HashMap ArrayList]
-            [java.io File]
-            [com.zotohlab.frwk.crypto PasswordAPI]
-            [com.zotohlab.frwk.util NCMap]
-            [javax.servlet.http Cookie HttpServletRequest]
-            [java.net HttpCookie]
-            [com.google.gson JsonObject JsonArray]
-            [com.zotohlab.frwk.server Emitter Component]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.core Versioned Hierarchial
-             Identifiable
-             Disposable Startable]
-            [org.apache.commons.codec.binary Base64]
-            [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.skaro.io IOSession
-             ServletEmitter]
-            [javax.servlet.http HttpServletRequest
-             HttpServletResponse]
-            [com.zotohlab.skaro.io WebSockResult
-             HTTPResult
-             HTTPEvent JettyUtils]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [java.util.concurrent ConcurrentHashMap]
+    [java.net URL]
+    [java.util List Map HashMap ArrayList]
+    [java.io File]
+    [com.zotohlab.frwk.crypto PasswordAPI]
+    [com.zotohlab.frwk.util NCMap]
+    [javax.servlet.http Cookie HttpServletRequest]
+    [java.net HttpCookie]
+    [com.google.gson JsonObject JsonArray]
+    [com.zotohlab.frwk.server Emitter Component]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.core Versioned Hierarchial
+    Identifiable
+    Disposable Startable]
+    [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.skaro.io IOSession
+    ServletEmitter]
+    [javax.servlet.http HttpServletRequest
+    HttpServletResponse]
+    [com.zotohlab.skaro.io WebSockResult
+    HTTPResult
+    HTTPEvent JettyUtils]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -72,22 +65,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ScanBasicAuth "Scan and parse if exists basic authentication."
+(defn ScanBasicAuth
+
+  "Scan and parse if exists basic authentication"
 
   ;; returns map
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
-    (ParseBasicAuth (nsb (.getHeaderValue evt AUTH)))
+    (ParseBasicAuth (str (.getHeaderValue evt AUTH)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HttpBasicConfig "Basic http config."
+(defn HttpBasicConfig
+
+  "Basic http config"
 
   [^czlab.xlib.util.core.Muble co cfg]
 
-  (let [kfile (SubsVar (nsb (:serverKey cfg)))
+  (let [kfile (SubsVar (str (:serverKey cfg)))
         socto (:sockTimeOut cfg)
         fv (:sslType cfg)
         cp (:contextPath cfg)
@@ -146,7 +143,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: HTTP: " (.id ^Identifiable co))
+  (log/info "compConfigure: HTTP: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
     (.setf! co :emcfg c2)
@@ -155,7 +152,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeWSockResult "Create a WebSocket result object."
+(defn MakeWSockResult
+
+  "Create a WebSocket result object"
 
   ^WebSockResult
   [co]
@@ -184,7 +183,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeHttpResult "Create a HttpResult object."
+(defn MakeHttpResult
+
+  "Create a HttpResult object"
 
   ^HTTPResult
   [co]
@@ -255,33 +256,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasInHeader? "Returns true if header exists."
+(defn HasInHeader?
+
+  "Returns true if header exists"
 
   ;; boolean
   [info ^String header]
 
   (if-let [h (:headers info) ]
     (and (> (count h) 0)
-         (notnil? (get h (lcase header))))
+         (some? (get h (lcase header))))
     false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasInParam? "Returns true if parameter exists."
+(defn HasInParam?
+
+  "true if parameter exists"
 
   ;; boolean
   [info ^String param]
 
   (if-let [p (:params info) ]
     (and (> (count p) 0)
-         (notnil? (get p param)))
+         (some? (get p param)))
     false
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetInParameter "Get the named parameter."
+(defn GetInParameter
+
+  "Get the named parameter"
 
   ^String
   [info ^String param]
@@ -296,7 +303,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetInHeader "Get the named header."
+(defn GetInHeader
+
+  "Get the named header"
 
   ^String
   [info ^String header]

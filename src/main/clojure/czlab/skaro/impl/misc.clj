@@ -14,11 +14,13 @@
 
   czlab.skaro.impl.misc
 
-  (:require [czlab.xlib.util.wfs :refer [SimPTask]])
+  (:require
+    [czlab.xlib.util.wfs :refer [SimPTask]])
 
-  (:import  [com.zotohlab.wflow Activity Job
-             FlowError PTask Work]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
+  (:import
+    [com.zotohlab.wflow Activity Job
+    FlowError PTask Work]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -51,7 +53,7 @@
       (mkWork s)
       (throw (FlowError. (str "Unhandled event-type \""
                               (:typeid (meta evt))
-                              "\"."))))
+                              "\""))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

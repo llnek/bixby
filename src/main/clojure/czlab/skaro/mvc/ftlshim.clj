@@ -14,23 +14,26 @@
 
   czlab.skaro.mvc.ftlshim
 
-  (:require [clojure.walk :as cw :refer [postwalk]]
-            [czlab.xlib.util.core :refer [ThrowBadArg]])
+  (:require
+    [clojure.walk :as cw :refer [postwalk]]
+    [czlab.xlib.util.core :refer [ThrowBadArg]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
-  (:import [freemarker.template TemplateMethodModelEx
-            TemplateBooleanModel
-            TemplateCollectionModel
-            TemplateDateModel
-            TemplateHashModelEx
-            TemplateNumberModel
-            TemplateScalarModel
-            TemplateSequenceModel
-            TemplateMethodModel
-            Configuration DefaultObjectWrapper]
-           [java.io File Writer StringWriter]))
+  (:import
+    [freemarker.template TemplateMethodModelEx
+    TemplateBooleanModel
+    TemplateCollectionModel
+    TemplateDateModel
+    TemplateHashModelEx
+    TemplateNumberModel
+    TemplateScalarModel
+    TemplateSequenceModel
+    TemplateMethodModel
+    Configuration DefaultObjectWrapper]
+    [java.io File Writer StringWriter]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -126,7 +129,7 @@
 
   (let [cfg (Configuration.)]
     (when (.exists ^File root)
-      (log/info "Freemarker template source: " root)
+      (log/info "freemarker template source: %s" root)
       (doto cfg
         (.setDirectoryForTemplateLoading root)
         (.setObjectWrapper (DefaultObjectWrapper.)))
@@ -142,7 +145,7 @@
   "Renders a template given by Configuration cfg and a path
    using model as input and writes it to out
    If out is not provided, returns a string
-   If translate-model? is true, map->model is run on the model."
+   If translate-model? is true, map->model is run on the model"
 
   (^String [^Configuration cfg path model]
     (RenderFtl cfg (StringWriter.) path model))

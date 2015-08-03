@@ -14,32 +14,29 @@
 
   czlab.skaro.io.core
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [NextLong
-              notnil?
-              ThrowIOE
-              MakeMMap
-              Muble
-              ConvToJava
-              tryc]]
-            [czlab.xlib.util.str :refer [nsb strim]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [NextLong notnil?
+    ThrowIOE MakeMMap Muble ConvToJava tryc]]
+    [czlab.xlib.util.str :refer [nsb strim]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.util.wfs]
         [czlab.skaro.core.sys])
 
-  (:import  [com.zotohlab.frwk.server Component
-             Emitter
-             ServiceHandler Service]
-            [java.util.concurrent ConcurrentHashMap]
-            [com.zotohlab.frwk.core Versioned Hierarchial
-             Identifiable Disposable Startable]
-            [com.zotohlab.skaro.core Context Container]
-            [com.zotohlab.wflow WorkFlow Job Nihil Activity]
-            [com.google.gson JsonObject JsonArray]
-            [java.util Map]))
+  (:import
+    [com.zotohlab.frwk.server Component
+    Emitter
+    ServiceHandler Service]
+    [java.util.concurrent ConcurrentHashMap]
+    [com.zotohlab.frwk.core Versioned Hierarchial
+    Identifiable Disposable Startable]
+    [com.zotohlab.skaro.core Context Container]
+    [com.zotohlab.wflow WorkFlow Job Nihil Activity]
+    [com.google.gson JsonObject JsonArray]
+    [java.util Map]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -48,7 +45,7 @@
 ;;
 (defprotocol EmitAPI
 
-  "Emitter API."
+  "Emitter API"
 
   (dispatch [_ evt options] )
 
@@ -65,7 +62,7 @@
 ;;
 (defprotocol WaitEventHolder
 
-  "Wrapper to hold an event."
+  "Wrapper to hold an event"
 
   (timeoutMillis [_ millis] )
   (resumeOnResult [_ res] )
@@ -76,7 +73,7 @@
 ;;
 (defprotocol AsyncWaitTrigger
 
-  "Trigger to rerun a waiting event."
+  "Trigger to rerun a waiting event"
 
   (resumeWithResult [_ res] )
   (resumeWithError [_] )
@@ -86,7 +83,7 @@
 ;;
 (defmulti IOESReifyEvent
 
-  "Create an event."
+  "Create an event"
 
   (fn [a & args] (:typeid (meta a))))
 
@@ -94,7 +91,7 @@
 ;;
 (defmulti IOESDispatch
 
-  "Dispatch an event."
+  "Dispatch an event"
 
   (fn [a & args] (:typeid (meta a))))
 
@@ -102,7 +99,7 @@
 ;;
 (defmulti IOESDispose
 
-  "Dispose a component."
+  "Dispose a component"
 
   (fn [a] (:typeid (meta a))))
 
@@ -110,7 +107,7 @@
 ;;
 (defmulti IOESSuspend
 
-  "Suspend a component."
+  "Suspend a component"
 
   (fn [a] (:typeid (meta a))))
 
@@ -118,7 +115,7 @@
 ;;
 (defmulti IOESStart
 
-  "Start a component."
+  "Start a component"
 
   (fn [a] (:typeid (meta a))))
 
@@ -126,7 +123,7 @@
 ;;
 (defmulti IOESStop
 
-  "Stop a component."
+  "Stop a component"
 
   (fn [a] (:typeid (meta a))))
 
@@ -134,7 +131,7 @@
 ;;
 (defmulti IOESResume
 
-  "Resume a component."
+  "Resume a component"
 
   (fn [a] (:typeid (meta a))))
 
@@ -142,7 +139,7 @@
 ;;
 (defmulti IOESStopped
 
-  "Called after a component has stopped."
+  "Called after a component has stopped"
 
   (fn [a] (:typeid (meta a))))
 
@@ -150,7 +147,7 @@
 ;;
 (defmulti IOESStarted
 
-  "Called after a component has started."
+  "Called after a component has started"
 
   (fn [a] (:typeid (meta a))))
 
@@ -161,8 +158,8 @@
   [^czlab.xlib.util.core.Muble co]
 
   (when-let [cfg (.getf co :emcfg)]
-    (log/info "Emitter config:\n" (pr-str cfg))
-    (log/info "Emitter " (:typeid (meta co)) " started - OK")
+    (log/info "emitter config:\n%s" (pr-str cfg))
+    (log/info "emitter %s started - ok" (:typeid (meta co)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,7 +168,7 @@
 
   [co]
 
-  (log/info "Emitter " (:typeid (meta co))  " stopped - OK"))
+  (log/info "emitter %s stopped - ok" (:typeid (meta co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,7 +176,7 @@
 
   [co]
 
-  (log/info "Emitter " (:typeid (meta co))  " disposed - OK"))
+  (log/info "emitter %s disposed - ok" (:typeid (meta co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -206,7 +203,7 @@
   [^Service service traceable]
 
   (when traceable
-    (log/info "Pipeline##" service " created. OK."))
+    (log/info "pipeline## %s created. ok" service))
 
   (reify
 
@@ -220,9 +217,8 @@
     (handle [_ arg options]
       (let [^Job j (when (instance? Job options) options)
             w (ToWorkFlow arg)]
-        (when-not (nil? j)
-          (log/debug "Job##" (.id j)
-                     " is being serviced by " service))
+        (when (some? j)
+          (log/debug "job##%s is being serviced by %s"  (.id j) service))
         (-> ^Emitter service
             (.container)
             (.core)
@@ -233,11 +229,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeEmitter "Create an Emitter."
+(defn MakeEmitter
+
+  "Create an Emitter"
 
   [^Container parObj emId emAlias]
 
-  ;; holds all the events from this source.
+  ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
         impl (MakeMMap)
         ctxt (atom (MakeMMap)) ]
@@ -319,18 +317,17 @@
         (release [_ wevt]
           (when-not (nil? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "Emitter releasing an event with id: " wid)
+              (log/debug "emitter releasing an event with id: %s" wid)
               (.remove backlog wid))))
 
         (hold [_ wevt]
           (when-not (nil? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "Emitter holding an event with id: " wid)
+              (log/debug "emitter holding an event with id: %s" wid)
               (.put backlog wid wevt)))) )
 
-      { :typeid emId }
-
-  )))
+      { :typeid emId })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

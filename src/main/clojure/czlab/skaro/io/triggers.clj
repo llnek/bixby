@@ -14,31 +14,31 @@
 
   czlab.skaro.io.triggers
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [ThrowIOE
-              MakeMMap
-              Stringify
-              notnil?
-              ]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [ThrowIOE MakeMMap Stringify notnil? ]]
+    [czlab.xlib.util.str :refer [nsb]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.io.core])
 
-  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [java.io OutputStream IOException]
-            [java.util List Timer TimerTask]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.core Identifiable]))
+  (:import
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [java.io OutputStream IOException]
+    [java.util List Timer TimerTask]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAsyncWaitHolder "Create a async wait wrapper."
+(defn MakeAsyncWaitHolder
+
+  "Create a async wait wrapper"
 
   [^czlab.skaro.io.core.AsyncWaitTrigger trigger
    ^HTTPEvent event ]
@@ -55,7 +55,7 @@
         (let [^Timer tm (.getf impl :timer)
               ^czlab.skaro.io.core.EmitAPI
               src (.emitter event) ]
-          (when-not (nil? tm) (.cancel tm))
+          (when (some? tm) (.cancel tm))
           (.release src this)
           ;;(.mm-s impl :result res)
           (.resumeWithResult trigger res)))

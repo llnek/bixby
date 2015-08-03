@@ -14,27 +14,26 @@
 
   czlab.skaro.io.basicauth
 
-  (:require [czlab.xlib.util.str :refer [lcase strim nsb hgl? ]]
-            [czlab.xlib.util.core
-             :refer
-             [NormalizeEmail
-              Stringify
-              notnil?
-              tryletc]]
-            [czlab.xlib.util.format :refer [ReadJson WriteJson]]
-            [czlab.skaro.io.http :refer [ScanBasicAuth]]
-            [czlab.xlib.crypto.codec :refer [CaesarDecrypt]]
-            [czlab.xlib.net.comms :refer [GetFormFields]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [Cast? NormalizeEmail Stringify notnil? tryletc]]
+    [czlab.xlib.util.str :refer [lcase strim nsb hgl? ]]
+    [czlab.xlib.util.format :refer [ReadJson WriteJson]]
+    [czlab.skaro.io.http :refer [ScanBasicAuth]]
+    [czlab.xlib.crypto.codec :refer [CaesarDecrypt]]
+    [czlab.xlib.net.comms :refer [GetFormFields]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
-  (:import  [org.apache.commons.codec.binary Base64]
-            [org.apache.commons.lang3 StringUtils]
-            [com.zotohlab.skaro.io HTTPEvent]
-            [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.skaro.core Container]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.net ULFormItems ULFileItem]))
+  (:import
+    [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.skaro.io HTTPEvent]
+    [com.zotohlab.frwk.server Emitter]
+    [com.zotohlab.skaro.core Container]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -65,34 +64,41 @@
 
   [^HTTPEvent evt]
 
-  (when-let [data (when (.hasData evt)
-                    (.content (.data evt)))]
-    (cond
-      (instance? ULFormItems data)
-      (with-local-vars [rc (transient {})]
-        (doseq [^ULFileItem x (GetFormFields data)]
-          (let [fm (.getFieldNameLC x)
-                fv (nsb x)]
-            (log/debug "form-field=" fm ", value=" fv)
-            (when-let [v (get PMS fm)]
-              (var-set rc (assoc! @rc (first v)
-                                  (apply (last v) fv []))))))
-        (persistent! @rc))
-      :else nil)
+  (when-let
+    [^ULFormItems
+     itms (Cast? ULFormItems
+                 (if (.hasData evt)
+                   (.. evt data content))) ]
+    (with-local-vars
+      [rc (transient {})]
+      (doseq [^ULFileItem
+              x (GetFormFields itms)]
+        (let [fm (.getFieldNameLC x)
+              fv (str x)]
+          (log/debug "form-field= %s, value= %s" fm fv)
+          (when-let [v (get PMS fm)]
+            (var-set rc (assoc! @rc (first v)
+                                (apply (last v) fv []))))))
+      (persistent! @rc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackBodyContent "Parse a JSON body."
+(defn- crackBodyContent
+
+  "Parse a JSON body"
 
   [^HTTPEvent evt]
 
-  (when-let [^XData xs (when (.hasData evt) (.data evt)) ]
-    (when-let [json (ReadJson (if (.hasContent xs)
-                                (.stringify xs)
-                                "{}")
-                              #(lcase %)) ]
-      (with-local-vars [rc (transient {})]
+  (when-let [^XData
+             xs (if (.hasData evt) (.data evt)) ]
+    (when-let [json (ReadJson
+                      (if (.hasContent xs)
+                        (.stringify xs)
+                        "{}")
+                      #(lcase %)) ]
+      (with-local-vars
+        [rc (transient {})]
         (doseq [[k v] PMS]
           (when-let [fv (get json k) ]
             (var-set rc (assoc! @rc
@@ -103,11 +109,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackUrlParams "Parse form fields in the Url."
+(defn- crackUrlParams
+
+  "Parse form fields in the Url"
 
   [^HTTPEvent evt]
 
-  (with-local-vars [rc (transient {})]
+  (with-local-vars
+    [rc (transient {})]
     (doseq [[k v]  PMS ]
       (when (.hasParameter evt k)
         (var-set rc (assoc! @rc
@@ -119,7 +128,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeGetAuthInfo "Attempt to parse and get authentication info."
+(defn MaybeGetAuthInfo
+
+  "Attempt to parse and get authentication info"
 
   [^HTTPEvent evt]
 
@@ -143,13 +154,14 @@
   [info fld shiftCount]
 
   (if (:nonce info)
-      (tryletc [decr (CaesarDecrypt (get info fld) shiftCount)
-            bits (Base64/decodeBase64 decr)
-            s (Stringify bits) ]
-        (log/debug "info = " info)
-        (log/debug "decr = " decr)
-        (log/debug "val = " s)
-        (assoc info fld s))
+    (tryletc
+      [decr (CaesarDecrypt (get info fld) shiftCount)
+       bits (Base64/decodeBase64 decr)
+       s (Stringify bits) ]
+      (log/debug "info = %s" info)
+      (log/debug "decr = %s" decr)
+      (log/debug "val = %s" s)
+      (assoc info fld s))
     info
   ))
 

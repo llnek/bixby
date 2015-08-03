@@ -14,16 +14,17 @@
 
   czlab.skaro.mvc.comms
 
-  (:require [czlab.xlib.util.core :refer [Muble try! FPath]]
-            [czlab.xlib.util.wfs :refer [SimPTask]]
-            [czlab.skaro.mvc.assets
-             :refer
-             [MakeWebAsset GetLocalFile]]
-            [czlab.xlib.util.str :refer [hgl? nsb strim]]
-            [czlab.xlib.util.meta :refer [MakeObj]])
+  (:require
+    [czlab.xlib.util.core :refer [Muble try! FPath]]
+    [czlab.xlib.util.wfs :refer [SimPTask]]
+    [czlab.skaro.mvc.assets
+    :refer [MakeWebAsset GetLocalFile]]
+    [czlab.xlib.util.str :refer [hgl? nsb strim]]
+    [czlab.xlib.util.meta :refer [MakeObj]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.netty.io]
@@ -34,32 +35,33 @@
         [czlab.skaro.core.sys]
         [czlab.skaro.core.consts])
 
-  (:import  [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [com.zotohlab.skaro.mvc HTTPErrorHandler
-             MVCUtils WebAsset WebContent]
-            [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.wflow FlowDot Activity
-             Job WHandler PTask Work]
-            [com.zotohlab.skaro.runtime AuthError]
-            [com.zotohlab.skaro.core Container]
-            [org.apache.commons.lang3 StringUtils]
-            [java.util Date]
-            [java.io File]
-            [com.zotohlab.frwk.io XData]
-            [io.netty.handler.codec.http HttpRequest
-             HttpResponseStatus HttpResponse
-             CookieDecoder ServerCookieEncoder
-             DefaultHttpResponse HttpVersion
-             HttpMessage
-             HttpHeaders LastHttpContent
-             HttpHeaders Cookie QueryStringDecoder]
-            [io.netty.buffer Unpooled]
-            [io.netty.channel Channel ChannelHandler
-             ChannelFuture
-             ChannelPipeline ChannelHandlerContext]
-            [com.google.gson JsonObject]
-            [jregex Matcher Pattern]))
+  (:import
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [com.zotohlab.skaro.mvc HTTPErrorHandler
+    MVCUtils WebAsset WebContent]
+    [com.zotohlab.frwk.core Hierarchial Identifiable]
+    [com.zotohlab.frwk.server Emitter]
+    [com.zotohlab.wflow FlowDot Activity
+    Job WHandler PTask Work]
+    [com.zotohlab.skaro.runtime AuthError]
+    [com.zotohlab.skaro.core Container]
+    [org.apache.commons.lang3 StringUtils]
+    [java.util Date]
+    [java.io File]
+    [com.zotohlab.frwk.io XData]
+    [io.netty.handler.codec.http HttpRequest
+    HttpResponseStatus HttpResponse
+    CookieDecoder ServerCookieEncoder
+    DefaultHttpResponse HttpVersion
+    HttpMessage
+    HttpHeaders LastHttpContent
+    HttpHeaders Cookie QueryStringDecoder]
+    [io.netty.buffer Unpooled]
+    [io.netty.channel Channel ChannelHandler
+    ChannelFuture
+    ChannelPipeline ChannelHandlerContext]
+    [com.google.gson JsonObject]
+    [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -91,7 +93,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddETag "Add a ETag."
+(defn AddETag
+
+  "Add a ETag"
 
   [^czlab.xlib.util.core.Muble
    src info
@@ -144,7 +148,7 @@
 
   [src info ^HTTPEvent evt ^File file]
 
-  (log/debug "Serving static file: " (FPath file))
+  (log/debug "serving static file: %s" (FPath file))
   (with-local-vars [crap false]
     (let [^HTTPResult res (.getResultObj evt)]
       (try
@@ -160,8 +164,8 @@
             (var-set crap true)
             (.replyResult evt)))
         (catch Throwable e#
-          (log/error "Failed to get static resource "
-                     (nsb (:uri2 info))
+          (log/error "failed to get static resource %s"
+                     (:uri2 info)
                      e#)
           (when-not @crap
             (.setContent res nil)
@@ -172,7 +176,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleStatic "Handle static file resource."
+(defn HandleStatic
+
+  "Handle static file resource"
 
   [^Emitter src ^HTTPEvent evt options]
 
@@ -187,13 +193,13 @@
         ckAccess (:fileAccessCheck cfg)
         fpath (nsb (:path options))
         info (:info options) ]
-    (log/debug "Request to serve static file: " fpath)
+    (log/debug "request to serve static file: %s" fpath)
     (if (or (.startsWith fpath ps)
             (false? ckAccess))
       (handleStatic2 src info evt
                      (io/file (maybeStripUrlCrap fpath)))
       (do
-        (log/warn "Attempt to access non public file-system: " fpath)
+        (log/warn "attempt to access non public file-system: %s" fpath)
         (.setStatus res 403)
         (.replyResult evt)))
   ))
@@ -211,7 +217,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeError "Reply back an error."
+(defn ServeError
+
+  "Reply back an error"
 
   [^czlab.xlib.util.core.Muble src
    ^Channel ch
@@ -229,7 +237,7 @@
             rc (if (nil? cb)
                  (replyError src code)
                  (.getErrorResponse cb code)) ]
-        (when-not (nil? rc)
+        (when (some? rc)
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
         (SetHeader @rsp "content-type" @ctype)
@@ -238,7 +246,7 @@
                                         0
                                         (alength ^bytes @bits)))
         (var-set wf (.writeAndFlush ch @rsp))
-        (when-not (nil? @bits)
+        (when (some? @bits)
           (var-set wf (.writeAndFlush ch
                                       (Unpooled/wrappedBuffer ^bytes @bits))))
         (CloseCF @wf false))
@@ -248,7 +256,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeStatic "Reply back with a static file content."
+(defn ServeStatic
+
+  "Reply back with a static file content"
 
   [^czlab.xlib.util.core.Muble
    ri
@@ -290,7 +300,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeRoute "Handle a match route."
+(defn ServeRoute
+
+  "Handle a match route"
 
   [^czlab.xlib.net.routes.RouteInfo ri
    ^czlab.xlib.util.core.Muble src

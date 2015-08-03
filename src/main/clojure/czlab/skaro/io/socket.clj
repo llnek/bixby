@@ -14,25 +14,24 @@
 
   czlab.skaro.io.socket
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [NextLong
-              test-posnum
-              ConvLong
-              spos?]]
-            [czlab.xlib.util.process :refer [Coroutine]]
-            [czlab.xlib.util.meta :refer [GetCldr]]
-            [czlab.xlib.util.io :refer [CloseQ]]
-            [czlab.xlib.util.str :refer [strim nsb hgl?]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [NextLong test-posnum ConvLong spos?]]
+    [czlab.xlib.util.process :refer [Coroutine]]
+    [czlab.xlib.util.meta :refer [GetCldr]]
+    [czlab.xlib.util.io :refer [CloseQ]]
+    [czlab.xlib.util.str :refer [strim hgl?]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.io.core]
         [czlab.skaro.core.sys])
 
-  (:import  [java.net InetAddress ServerSocket Socket]
-            [com.zotohlab.frwk.core Identifiable]
-            [com.zotohlab.skaro.io SocketEvent]))
+  (:import
+    [java.net InetAddress ServerSocket Socket]
+    [com.zotohlab.frwk.core Identifiable]
+    [com.zotohlab.skaro.io SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -43,7 +42,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: SocketIO: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: SocketIO: %s" (.id ^Identifiable co))
   (let [^Socket soc (first args)
         eeid (NextLong) ]
     (with-meta
@@ -62,8 +61,8 @@
         (emitter [_] co)
         (dispose [_] (CloseQ soc)))
 
-      { :typeid :czc.skaro.io/SocketEvent }
-  )))
+      { :typeid :czc.skaro.io/SocketEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,7 +70,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: SocketIO: " (.id ^Identifiable co))
+  (log/info "compConfigure: SocketIO: %s" (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         tout (:timeoutMillis cfg)
@@ -93,7 +92,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "CompInitialize: SocketIO: " (.id ^Identifiable co))
+  (log/info "CompInitialize: SocketIO: %s" (.id ^Identifiable co))
   (let [cfg (.getf co :emcfg)
         backlog (:backlog cfg)
         host (:host cfg)
@@ -102,7 +101,7 @@
              (InetAddress/getByName host)
              (InetAddress/getLocalHost))
         soc (ServerSocket. port backlog ip) ]
-    (log/info "Opened Server Socket " soc  " (bound?) " (.isBound soc))
+    (log/info "Opened Server Socket %s (bound?) " soc (.isBound soc))
     (doto soc (.setReuseAddress true))
     (.setf! co :ssocket soc)
   ))
@@ -121,9 +120,9 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStart: SocketIO: " (.id ^Identifiable co))
+  (log/info "IOESStart: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getf co :ssocket)]
-    (when-not (nil? ssoc)
+    (when (some? ssoc)
       (Coroutine #(while (.isBound ssoc)
                     (try
                       (sockItDown co (.accept ssoc))
@@ -141,7 +140,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStop: SocketIO: " (.id ^Identifiable co))
+  (log/info "IOESStop: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getf co :ssocket) ]
     (CloseQ ssoc)
     (.setf! co :ssocket nil)

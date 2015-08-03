@@ -14,23 +14,18 @@
 
   czlab.skaro.io.netty
 
-  (:require [czlab.xlib.net.routes :refer [MakeRouteCracker RouteCracker]]
-            [czlab.xlib.util.str :refer [lcase hgl? nsb strim nichts?]]
-            [czlab.xlib.util.core
-             :refer
-             [try!
-              Stringify
-              ThrowIOE
-              Muble
-              NextLong
-              MakeMMap
-              notnil?
-              ConvLong]]
-            [czlab.skaro.io.webss :refer [MakeWSSession]]
-            [czlab.xlib.util.mime :refer [GetCharset]])
+  (:require
+    [czlab.xlib.net.routes :refer [MakeRouteCracker RouteCracker]]
+    [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
+    [czlab.xlib.util.core
+    :refer [try! Stringify ThrowIOE
+    Muble NextLong MakeMMap notnil? ConvLong]]
+    [czlab.skaro.io.webss :refer [MakeWSSession]]
+    [czlab.xlib.util.mime :refer [GetCharset]])
 
-  (:require [czlab.xlib.util.logging :as log]
-            [clojure.string :as cs])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io]
@@ -39,44 +34,45 @@
         [czlab.skaro.io.http]
         [czlab.skaro.io.triggers])
 
-  (:import  [java.io Closeable File IOException RandomAccessFile]
-            [java.net HttpCookie URI URL InetSocketAddress]
-            [java.net SocketAddress InetAddress]
-            [java.util ArrayList List HashMap Map]
-            [com.google.gson JsonObject]
-            [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult
-             IOSession
-             WebSockEvent WebSockResult]
-            [javax.net.ssl SSLContext]
-            [java.nio.channels ClosedChannelException]
-            [io.netty.handler.codec.http HttpRequest
-             HttpResponse HttpResponseStatus
-             CookieDecoder ServerCookieEncoder
-             DefaultHttpResponse HttpVersion
-             HttpRequestDecoder
-             HttpResponseEncoder DefaultCookie
-             HttpHeaders$Names LastHttpContent
-             HttpHeaders Cookie QueryStringDecoder]
-            [org.apache.commons.codec.net URLCodec]
-            [io.netty.bootstrap ServerBootstrap]
-            [io.netty.channel Channel ChannelHandler
-             ChannelFuture
-             ChannelFutureListener
-             SimpleChannelInboundHandler
-             ChannelPipeline ChannelHandlerContext]
-            [io.netty.handler.stream ChunkedFile
-             ChunkedStream ChunkedWriteHandler]
-            [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
-            [com.zotohlab.frwk.netty
-             MessageFilter
-             ErrorSinkFilter PipelineConfigurator]
-            [io.netty.handler.codec.http.websocketx
-             WebSocketFrame
-             BinaryWebSocketFrame TextWebSocketFrame]
-            [io.netty.buffer ByteBuf Unpooled]
-            [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.frwk.io XData]))
+  (:import
+    [java.io Closeable File IOException RandomAccessFile]
+    [java.net HttpCookie URI URL InetSocketAddress]
+    [java.net SocketAddress InetAddress]
+    [java.util ArrayList List HashMap Map]
+    [com.google.gson JsonObject]
+    [com.zotohlab.frwk.server Emitter]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult
+    IOSession
+    WebSockEvent WebSockResult]
+    [javax.net.ssl SSLContext]
+    [java.nio.channels ClosedChannelException]
+    [io.netty.handler.codec.http HttpRequest
+    HttpResponse HttpResponseStatus
+    CookieDecoder ServerCookieEncoder
+    DefaultHttpResponse HttpVersion
+    HttpRequestDecoder
+    HttpResponseEncoder DefaultCookie
+    HttpHeaders$Names LastHttpContent
+    HttpHeaders Cookie QueryStringDecoder]
+    [org.apache.commons.codec.net URLCodec]
+    [io.netty.bootstrap ServerBootstrap]
+    [io.netty.channel Channel ChannelHandler
+    ChannelFuture
+    ChannelFutureListener
+    SimpleChannelInboundHandler
+    ChannelPipeline ChannelHandlerContext]
+    [io.netty.handler.stream ChunkedFile
+    ChunkedStream ChunkedWriteHandler]
+    [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
+    [com.zotohlab.frwk.netty
+    MessageFilter
+    ErrorSinkFilter PipelineConfigurator]
+    [io.netty.handler.codec.http.websocketx
+    WebSocketFrame
+    BinaryWebSocketFrame TextWebSocketFrame]
+    [io.netty.buffer ByteBuf Unpooled]
+    [com.zotohlab.frwk.core Hierarchial Identifiable]
+    [com.zotohlab.frwk.io XData]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -93,7 +89,7 @@
   ;; browser seems to not like it and mis-interpret it.
   ;; Netty's cookie defaults to 0, which is cool with me.
   (doto (DefaultCookie. (.getName c)
-                        (.encode cc (nsb (.getValue c))))
+                        (.encode cc (str (.getValue c))))
     ;;(.setComment (.getComment c))
     (.setDomain (.getDomain c))
     (.setMaxAge (.getMaxAge c))
@@ -110,7 +106,7 @@
   [^HTTPEvent evt ^ChannelFuture cf]
 
   (when (and (not (.isKeepAlive evt))
-             (notnil? cf))
+             (some? cf))
     (.addListener cf ChannelFutureListener/CLOSE)
   ))
 
@@ -176,7 +172,7 @@
         cks (csToNetty (.getf res :cookies))
         code (.getf res :code)
         rsp (MakeHttpReply code)
-        loc (nsb (.getf res :redirect))
+        loc (str (.getf res :redirect))
         data (.getf res :data)
         hdrs (.getf res :hds) ]
 
@@ -235,28 +231,30 @@
       (when (.isKeepAlive evt)
         (SetHeader rsp "Connection" "keep-alive"))
 
-      (log/debug "Writing out " @clen " bytes back to client");
+      (log/debug "writing out %s bytes back to client" @clen);
       (HttpHeaders/setContentLength rsp @clen)
 
       (.write ch rsp)
-      (log/debug "Wrote response headers out to client")
+      (log/debug "wrote response headers out to client")
 
       (when (and (> @clen 0)
                  (notnil? @payload))
         (.write ch @payload)
-        (log/debug "Wrote response body out to client."))
+        (log/debug "wrote response body out to client"))
 
       (let [wf (WriteLastContent ch true) ]
         (FutureCB wf #(when-not (nil? @raf)
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
-          (log/debug "Keep-alive == false, closing channel.  bye.")
+          (log/debug "keep-alive == false, closing channel, bye")
           (CloseCF wf))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeNettyTrigger "Create a Netty Async Trigger."
+(defn MakeNettyTrigger
+
+  "Create a Netty Async Trigger"
 
   ^czlab.skaro.io.core.AsyncWaitTrigger
   [^Channel ch evt src]
@@ -273,7 +271,7 @@
         (try
           (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException _
-            (log/warn "ClosedChannelException thrown while flushing headers"))
+            (log/warn "closedChannelException thrown while flushing headers"))
           (catch Throwable t# (log/error t# "") )) ))
   ))
 
@@ -284,7 +282,7 @@
   [^Cookie c ^URLCodec cc]
 
   (doto (HttpCookie. (.getName c)
-                     (.decode cc (nsb (.getValue c))))
+                     (.decode cc (str (.getValue c))))
     (.setComment (.getComment c))
     (.setDomain (.getDomain c))
     (.setMaxAge (.getMaxAge c))
@@ -341,9 +339,8 @@
         (replyResult [this] nil)
         (emitter [_] co))
 
-      { :typeid :czc.skaro.io/WebSockEvent }
-
-  )))
+      { :typeid :czc.skaro.io/WebSockEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -351,7 +348,7 @@
 
   [info]
 
-  (let [v (nsb (GetInHeader info "Cookie"))
+  (let [v (str (GetInHeader info "Cookie"))
         cc (URLCodec. "utf-8")
         cks (if (hgl? v)
               (CookieDecoder/decode v)
@@ -445,13 +442,13 @@
         (host [_] (:host info))
 
         (remotePort [_] (ConvLong (GetInHeader info "remote_port") 0))
-        (remoteAddr [_] (nsb (GetInHeader info "remote_addr")))
+        (remoteAddr [_] (str (GetInHeader info "remote_addr")))
         (remoteHost [_] "")
 
         (scheme [_] (if sslFlag "https" "http"))
 
         (serverPort [_] (ConvLong (GetInHeader info "server_port") 0))
-        (serverName [_] (nsb (GetInHeader info "server_name")))
+        (serverName [_] (str (GetInHeader info "server_name")))
 
         (isSSL [_] sslFlag)
 
@@ -472,9 +469,8 @@
               (.resumeOnResult wevt res))))
       )
 
-      { :typeid :czc.skaro.io/HTTPEvent }
-
-  )) )
+      { :typeid :czc.skaro.io/HTTPEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -497,7 +493,7 @@
 
   [^czlab.skaro.io.core.EmitAPI co & args]
 
-  (log/info "IOESReifyEvent: NettyIO: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: NettyIO: %s" (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
         ssl (notnil? (.get (.pipeline ch)
                            "ssl"))
@@ -522,7 +518,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: NettyIO: " (.id ^Identifiable co))
+  (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
     (.setf! co :emcfg c2)
@@ -584,7 +580,7 @@
 
   (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
   (let [cfg (.getf co :emcfg)
-        host (nsb (:host cfg))
+        host (str (:host cfg))
         port (:port cfg)
         nes (.getf co :netty)
         bs (:bootstrap nes)
@@ -612,7 +608,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "CompInitialize: NettyIO: %s" (.id ^Identifiable co))
+  (log/info "compInitialize: NettyIO: %s" (.id ^Identifiable co))
   (init-netty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

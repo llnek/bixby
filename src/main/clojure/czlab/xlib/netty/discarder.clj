@@ -59,7 +59,7 @@
 
   "Discards the request, just returns 200 OK"
 
-  [host port callback options]
+  [host port callback & [options]]
 
   {:pre [(fn? callback)]}
 

@@ -14,25 +14,24 @@
 
   czlab.skaro.io.loops
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [NextLong
-              spos?
-              Muble
-              tryc]]
-            [czlab.xlib.util.process :refer [Coroutine SafeWait]]
-            [czlab.xlib.util.dates :refer [ParseDate]]
-            [czlab.xlib.util.meta :refer [GetCldr]]
-            [czlab.xlib.util.str :refer [nsb hgl? strim]])
+  (:require
+    [czlab.xlib.util.process :refer [Coroutine SafeWait]]
+    [czlab.xlib.util.core
+    :refer [NextLong spos? Muble tryc]]
+    [czlab.xlib.util.dates :refer [ParseDate]]
+    [czlab.xlib.util.meta :refer [GetCldr]]
+    [czlab.xlib.util.str :refer [hgl? strim]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.core])
 
-  (:import  [java.util Date Timer TimerTask]
-            [com.zotohlab.skaro.io TimerEvent]
-            [com.zotohlab.frwk.core Identifiable Startable]))
+  (:import
+    [java.util Date Timer TimerTask]
+    [com.zotohlab.skaro.io TimerEvent]
+    [com.zotohlab.frwk.core Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -131,7 +130,7 @@
 
   (let [^Timer t (.getf co :timer) ]
     (tryc
-        (when-not (nil? t) (.cancel t)) )
+        (when (some? t) (.cancel t)) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +142,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: RepeatingTimer: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: RepeatingTimer: %s" (.id ^Identifiable co))
   (let [eeid (NextLong) ]
     (with-meta
       (reify
@@ -159,8 +158,8 @@
         (emitter [_] co)
         (isRepeating [_] true))
 
-      { :typeid :czc.skaro.io/TimerEvent }
-  )))
+      { :typeid :czc.skaro.io/TimerEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -168,7 +167,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: RepeatingTimer: " (.id ^Identifiable co))
+  (log/info "compConfigure: RepeatingTimer: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg)]
     (.setf! co :emcfg c2)
@@ -180,7 +179,7 @@
 
   [co]
 
-  (log/info "IOESStart: RepeatingTimer: " (.id ^Identifiable co))
+  (log/info "IOESStart: RepeatingTimer: %s" (.id ^Identifiable co))
   (start-timer co)
   (IOESStarted co))
 
@@ -190,7 +189,7 @@
 
   [co]
 
-  (log/info "IOESStop RepeatingTimer: " (.id ^Identifiable co))
+  (log/info "IOESStop RepeatingTimer: %s" (.id ^Identifiable co))
   (kill-timer co)
   (IOESStopped co))
 
@@ -219,7 +218,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: OnceTimer: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: OnceTimer: %s" (.id ^Identifiable co))
   (let [eeid (NextLong) ]
     (with-meta
       (reify
@@ -235,8 +234,8 @@
         (emitter [_] co)
         (isRepeating [_] false))
 
-      { :typeid :czc.skaro.io/TimerEvent }
-  )))
+      { :typeid :czc.skaro.io/TimerEvent })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -244,7 +243,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: OnceTimer: " (.id ^Identifiable co))
+  (log/info "compConfigure: OnceTimer: %s" (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
   (let [cfg (merge (.getf co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg) ]
@@ -257,7 +256,7 @@
 
   [co]
 
-  (log/info "IOESStart OnceTimer: " (.id ^Identifiable co))
+  (log/info "IOESStart OnceTimer: %s" (.id ^Identifiable co))
   (start-timer co)
   (IOESStarted co))
 
@@ -267,7 +266,7 @@
 
   [co]
 
-  (log/info "IOESStop OnceTimer: " (.id ^Identifiable co))
+  (log/info "IOESStop OnceTimer: %s" (.id ^Identifiable co))
   (kill-timer co)
   (IOESStopped co))
 
@@ -295,7 +294,7 @@
         intv (:intervalMillis cfg)
         loopy (atom true)
         cl (GetCldr) ]
-    (log/info "Threaded one timer - interval = " intv)
+    (log/info "Threaded one timer - interval = %s" intv)
     (.setf! co :loopy loopy)
     (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
   ))
@@ -315,7 +314,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStart: ThreadedTimer: " (.id ^Identifiable co))
+  (log/info "IOESStart: ThreadedTimer: %s" (.id ^Identifiable co))
   (let [cfg (.getf co :emcfg)
         intv (:intervalMillis cfg)
         ds (:delayMillis cfg)
@@ -337,7 +336,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStop ThreadedTimer: " (.id ^Identifiable co))
+  (log/info "IOESStop ThreadedTimer: %s" (.id ^Identifiable co))
   (let [loopy (.getf co :loopy) ]
     (reset! loopy false)
     (IOESStopped co)

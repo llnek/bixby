@@ -839,7 +839,9 @@
       (.childOption ChannelOption/SO_RCVBUF
                     (int (or rb (* 2 1024 1024))))
       (.childOption ChannelOption/TCP_NODELAY true)
-      (.childHandler (.configure cfg options)))
+      (.childHandler (.configure
+                       cfg
+                       (or options {}))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -857,7 +859,9 @@
       (.option ChannelOption/TCP_NODELAY true)
       (.option ChannelOption/SO_RCVBUF
                (int (or rb (* 2 1024 1024))))
-      (.handler (.configure cfg options)))
+      (.handler (.configure
+                  cfg
+                  (or options {}))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

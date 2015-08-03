@@ -14,31 +14,23 @@
 
   czlab.skaro.impl.exec
 
-  (:require [czlab.xlib.util.str :refer [nsb strim hgl? ToKW]]
-            [czlab.xlib.util.mime :refer [SetupCache]]
-            [czlab.xlib.util.files :refer [ListFiles Unzip]]
-            [czlab.xlib.util.process :refer [SafeWait]]
-            [czlab.skaro.impl.dfts :refer [MakePodMeta]]
-            [czlab.xlib.util.core
-             :refer
-             [LoadJavaProps
-              test-nestr
-              FPath
-              tryletc tryc
-              notnil?
-              NewRandom
-              GetCwd
-              ConvLong
-              MakeMMap
-              Muble
-              juid
-              test-nonil]]
-            [czlab.xlib.util.format :refer [ReadEdn]]
-            [czlab.xlib.util.files
-             :refer [Mkdirs ReadOneUrl]])
+  (:require
+    [czlab.xlib.util.str :refer [nsb strim hgl? ToKW]]
+    [czlab.xlib.util.mime :refer [SetupCache]]
+    [czlab.xlib.util.files :refer [ListFiles Unzip]]
+    [czlab.xlib.util.process :refer [SafeWait]]
+    [czlab.skaro.impl.dfts :refer [MakePodMeta]]
+    [czlab.xlib.util.core
+    :refer [LoadJavaProps test-nestr FPath tryletc tryc
+    NewRandom GetCwd
+    ConvLong MakeMMap Muble juid test-nonil]]
+    [czlab.xlib.util.format :refer [ReadEdn]]
+    [czlab.xlib.util.files
+    :refer [Mkdirs ReadOneUrl]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
@@ -46,19 +38,20 @@
         [czlab.xlib.jmx.core]
         [czlab.skaro.impl.ext])
 
-  (:import  [org.apache.commons.io.filefilter DirectoryFileFilter]
-            [org.apache.commons.io FilenameUtils FileUtils]
-            [com.zotohlab.skaro.loaders AppClassLoader]
-            [com.zotohlab.skaro.core Context]
-            [org.apache.commons.lang3 StringUtils]
-            [java.io File FileFilter]
-            [java.security SecureRandom]
-            [java.util.zip ZipFile]
-            [java.net URL]
-            [java.util Date]
-            [com.zotohlab.frwk.core Startable Disposable
-             Versioned Hierarchial Identifiable]
-            [com.zotohlab.frwk.server Component ComponentRegistry]))
+  (:import
+    [org.apache.commons.io.filefilter DirectoryFileFilter]
+    [org.apache.commons.io FilenameUtils FileUtils]
+    [com.zotohlab.skaro.loaders AppClassLoader]
+    [com.zotohlab.skaro.core Context]
+    [org.apache.commons.lang3 StringUtils]
+    [java.io File FileFilter]
+    [java.security SecureRandom]
+    [java.util.zip ZipFile]
+    [java.net URL]
+    [java.util Date]
+    [com.zotohlab.frwk.core Startable Disposable
+    Versioned Hierarchial Identifiable]
+    [com.zotohlab.frwk.server Component ComponentRegistry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -71,7 +64,7 @@
 ;;
 (defprotocol ExecVisor
 
-  "ExecVisor API."
+  "ExecVisor API"
 
   (homeDir [_] )
   (confDir [_] )
@@ -81,8 +74,10 @@
   (getUpTimeInMillis [_] ) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check the app's manifest file.
+;;
 (defn- chkManifest
+
+  "Check the app's manifest file"
 
   ^czlab.skaro.impl.dfts.PODMeta
 
@@ -102,12 +97,12 @@
         ver (.getProperty ps "Implementation-Version" "")
         cz (.getProperty ps "Main-Class" "") ]
 
-    (log/info "Checking manifest for app: " app
-              ", version: " ver
-              ", main-class: " cz)
+    (log/info (str "checking manifest for app: "
+                   "%s\nversion: %s\nmain-class: %s")
+              app ver cz)
 
     ;; synthesize the pod meta component and register it
-    ;; as a application.
+    ;; as a application
     (let [^czlab.xlib.util.core.Muble
           m (-> (MakePodMeta app ver
                              cz vid
@@ -121,77 +116,82 @@
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Make sure the app setup is kosher.
-;;
-(defn- inspectApp  ""
+(defn- inspectApp
+
+  "Make sure the app setup is kosher"
 
   ^czlab.skaro.impl.dfts.PODMeta
   [execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (FPath des))
         mf (io/file des MN_FILE) ]
-    (log/info "app dir : " des)
+    (log/info "app dir : %s" des)
     (log/info "inspecting...")
     (tryc
-      (PrecondDir (io/file des DN_CFG))
       (PrecondFile (io/file des CFG_APP_CF))
       (PrecondFile (io/file des CFG_ENV_CF))
       (PrecondDir (io/file des DN_CONF))
+      (PrecondDir (io/file des DN_CFG))
       (PrecondFile mf)
       (chkManifest execv app des mf) )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Basic JMX support.
 ;;
-(defn- startJmx ""
+(defn- startJmx
+
+  "Basic JMX support"
 
   [^czlab.xlib.util.core.Muble co cfg]
 
-  (log/info "JMX config " cfg)
-    (tryletc [^czlab.xlib.util.core.Muble
-          ctx (-> ^Context co (.getx))
-          port (or (:port cfg) 7777)
-          host (nsb (:host cfg))
-          jmx (MakeJmxServer host) ]
-      (.setRegistryPort jmx port)
-      (.start ^Startable jmx)
-      (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
-      (.setf! ctx K_JMXSVR jmx)
-      (log/info "JMXserver listening on: " host " "  port))
-  )
+  (log/info "jmx-config: %s" cfg)
+  (tryletc
+    [^czlab.xlib.util.core.Muble
+     ctx (-> ^Context co (.getx))
+     port (or (:port cfg) 7777)
+     host (nsb (:host cfg))
+     jmx (MakeJmxServer host) ]
+    (.setRegistryPort jmx port)
+    (.start ^Startable jmx)
+    (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
+    (.setf! ctx K_JMXSVR jmx)
+    (log/info "jmx-server listening on: %s:%s" host port)
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Kill the internal JMX server.
 ;;
-(defn- stopJmx ""
+(defn- stopJmx
+
+  "Kill the internal JMX server"
 
   [^czlab.xlib.util.core.Muble co]
 
-    (tryletc [^czlab.xlib.util.core.Muble
-          ctx (-> ^Context co (.getx))
-          ^Startable
-          jmx (.getf ctx K_JMXSVR) ]
-      (when-not (nil? jmx)
-        (.stop jmx))
-      (.setf! ctx K_JMXSVR nil))
-  (log/info "JMX connection terminated."))
+  (tryletc
+    [^czlab.xlib.util.core.Muble
+     ctx (-> ^Context co (.getx))
+     ^Startable
+     jmx (.getf ctx K_JMXSVR) ]
+    (when (some? jmx)
+      (.stop jmx))
+    (.setf! ctx K_JMXSVR nil))
+  (log/info "jmx connection terminated"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ignitePod
+(defn- ignitePod ""
 
   [^czlab.xlib.util.core.Muble co
    ^czlab.skaro.impl.dfts.PODMeta pod]
 
-    (tryletc [cache (.getf co K_CONTAINERS)
-          cid (.id ^Identifiable pod)
-          app (.moniker pod)
-          ctr (MakeContainer pod)]
-      (log/debug "Start pod cid = " cid ", app = " app)
-      (.setf! co K_CONTAINERS (assoc cache cid ctr))
-      true)
-  )
+  (tryletc
+    [cache (.getf co K_CONTAINERS)
+     cid (.id ^Identifiable pod)
+     app (.moniker pod)
+     ctr (MakeContainer pod)]
+    (log/debug "start pod cid = %s, app = %s" cid app)
+    (.setf! co K_CONTAINERS (assoc cache cid ctr))
+    true
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -199,7 +199,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "Preparing to stop pods...")
+  (log/info "preparing to stop pods...")
   (let [cs (.getf co K_CONTAINERS) ]
     (doseq [[k v] (seq cs) ]
       (.stop ^Startable v))
@@ -210,15 +210,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeExecvisor "Create a ExecVisor."
+(defn MakeExecvisor
+
+  "Create a ExecVisor"
 
   ^czlab.skaro.impl.exec.ExecVisor
   [parObj]
 
-  (log/info "Creating execvisor, parent = " parObj)
+  (log/info "creating execvisor, parent = %s" parObj)
   (let [impl (MakeMMap {K_CONTAINERS {}})
         ctxt (atom (MakeMMap)) ]
-
     (with-meta
       (reify
 
@@ -259,12 +260,11 @@
                (ignitePod this)))
 
         (stop [this]
-            (stopJmx this)
-            (stopPods this)) )
+          (stopJmx this)
+          (stopPods this)) )
 
-       { :typeid (ToKW "czc.skaro.impl" "ExecVisor") }
-  )))
-
+       { :typeid (ToKW "czc.skaro.impl" "ExecVisor") })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -275,7 +275,6 @@
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; The Execvisor is the master controller of everthing.
 ;;
 (defmethod CompInitialize :czc.skaro.impl/ExecVisor
 
@@ -284,7 +283,7 @@
   (let [^czlab.skaro.impl.exec.ExecVisor exec co
         ^czlab.xlib.util.core.Muble
         ctx (-> ^Context co (.getx))
-        ^File base (.getf ctx K_BASEDIR)
+        base (.getf ctx K_BASEDIR)
         cf (.getf ctx K_PROPS)
         comps (K_COMPS cf)
         regs (K_REGS cf)
@@ -294,29 +293,30 @@
                              "app/mime.properties")
                     (io/as-url)))
 
-    (log/info "Initializing component: ExecVisor: " co)
+    (log/info "initializing component: ExecVisor: %s" co)
     (test-nonil "conf file: components" comps)
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
 
     (System/setProperty "file.encoding" "utf-8")
 
-    (let [^File home (.homeDir exec)
+    (let [home (.homeDir exec)
           bks (io/file home DN_CFG DN_BLOCKS) ]
       (PrecondDir bks)
       (doto ctx
         (.setf! K_BKSDIR bks)))
 
-    (let [^ComponentRegistry
-          root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
+    (let [root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
           options { :ctx ctx } ]
 
       (.setf! ctx K_COMPS root)
       (.setf! ctx K_EXECV co)
-      (.reg root apps)
-      (.reg root bks)
+
+      (doto ^ComponentRegistry root
+        (.reg apps)
+        (.reg bks))
 
       (SynthesizeComponent root options)
       (SynthesizeComponent bks options)
@@ -371,12 +371,11 @@
                          (:name)))
         (metaUrl [_] url) )
 
-      { :typeid (ToKW "czc.skaro.impl" "EmitMeta") }
-  )))
+      { :typeid (ToKW "czc.skaro.impl" "EmitMeta") })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Description of a Block.
-;;
+;; Description of a Block
 (defmethod CompInitialize :czc.skaro.impl/EmitMeta
 
   [^czlab.skaro.impl.dfts.EmitMeta block]
@@ -386,33 +385,32 @@
         cfg (ReadEdn url)
         info (:info cfg)
         conf (:conf cfg)]
-    (test-nonil "Invalid block-meta file, no info section." info)
-    (test-nonil "Invalid block-meta file, no conf section." conf)
-    (log/info "Initializing EmitMeta: " url)
+    (test-nonil "Invalid block-meta file, no info section" info)
+    (test-nonil "Invalid block-meta file, no conf section" conf)
+    (log/info "initializing EmitMeta: %s" url)
     (.setf! co :metaInfo info)
     (.setf! co :dftOptions conf)
     co
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Blocks are emitters.  each block has a meta data file describing
-;; its functions and features.
-;; This registry loads these meta files and adds them to the registry.
-;;
+;; Blocks are emitters,  each block has a meta data file describing
+;; its functions and features
+;; This registry loads these meta files and adds them to the registry
 (defmethod CompInitialize :czc.skaro.impl/BlocksRegistry
 
   [^czlab.xlib.util.core.Muble co]
 
   (let [^czlab.xlib.util.core.Muble
         ctx (-> ^Context co (.getx))
-        ^File bDir (.getf ctx K_BKSDIR)
+        bDir (.getf ctx K_BKSDIR)
         fs (ListFiles bDir "meta" false) ]
     (doseq [^File f fs ]
       (let [^czlab.xlib.util.core.Muble
             b (-> (makeBlockMeta (io/as-url f))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
-        (log/info "Added one block: " (.id ^Identifiable b)) ))
+        (log/info "added one block: %s" (.id ^Identifiable b)) ))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -421,7 +419,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "CompInitialize: SystemRegistry: " (.id ^Identifiable co))
+  (log/info "compInitialize: SystemRegistry: %s" (.id ^Identifiable co))
   co
 )
 
@@ -431,7 +429,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "CompInitialize: AppsRegistry: " (.id ^Identifiable co))
+  (log/info "compInitialize: AppsRegistry: %s" (.id ^Identifiable co))
   co
 )
 

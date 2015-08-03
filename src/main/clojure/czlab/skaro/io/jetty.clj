@@ -14,24 +14,16 @@
 
   czlab.skaro.io.jetty
 
-  (:require [czlab.xlib.util.str :refer [lcase ucase hgl? nsb strim]]
-            [czlab.xlib.util.core
-             :refer
-             [Muble
-              notnil?
-              juid
-              tryc
-              spos?
-              NextLong
-              ToJavaInt
-              try!
-              MakeMMap
-              test-cond
-              Stringify]]
-            [czlab.xlib.crypto.codec :refer [Pwdify]])
+  (:require
+    [czlab.xlib.util.str :refer [lcase ucase hgl? strim]]
+    [czlab.xlib.util.core
+    :refer [Muble notnil? juid tryc spos?
+    NextLong ToJavaInt try! MakeMMap test-cond Stringify]]
+    [czlab.xlib.crypto.codec :refer [Pwdify]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
   (:use [czlab.xlib.crypto.ssl]
         [czlab.xlib.net.routes]
@@ -42,42 +34,43 @@
         [czlab.skaro.io.webss]
         [czlab.skaro.io.triggers])
 
-  (:import  [org.eclipse.jetty.server Server Connector ConnectionFactory]
-            [java.util.concurrent ConcurrentHashMap]
-            [java.net URL]
-            [jregex Matcher Pattern]
-            [org.apache.commons.io IOUtils]
-            [java.util List Map HashMap ArrayList]
-            [java.io File]
-            [com.zotohlab.frwk.util NCMap]
-            [javax.servlet.http Cookie HttpServletRequest]
-            [java.net HttpCookie]
-            [com.google.gson JsonObject]
-            [org.eclipse.jetty.continuation Continuation
-             ContinuationSupport]
-            [com.zotohlab.frwk.server Component Emitter]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.core Versioned Hierarchial
-             Identifiable Disposable Startable]
-            [org.apache.commons.codec.binary Base64]
-            [org.eclipse.jetty.server Connector HttpConfiguration
-             HttpConnectionFactory SecureRequestCustomizer
-             Server ServerConnector Handler
-             SslConnectionFactory]
-            [org.eclipse.jetty.util.ssl SslContextFactory]
-            [org.eclipse.jetty.util.thread QueuedThreadPool]
-            [org.eclipse.jetty.util.resource Resource]
-            [org.eclipse.jetty.server.handler AbstractHandler
-             ContextHandler
-             ContextHandlerCollection
-             ResourceHandler]
-            [com.zotohlab.skaro.io IOSession ServletEmitter]
-            [org.eclipse.jetty.webapp WebAppContext]
-            [javax.servlet.http HttpServletRequest HttpServletResponse]
-            [com.zotohlab.skaro.io WebSockResult
-             HTTPResult
-             HTTPEvent JettyUtils]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [org.eclipse.jetty.server Server Connector ConnectionFactory]
+    [java.util.concurrent ConcurrentHashMap]
+    [java.net URL]
+    [jregex Matcher Pattern]
+    [org.apache.commons.io IOUtils]
+    [java.util List Map HashMap ArrayList]
+    [java.io File]
+    [com.zotohlab.frwk.util NCMap]
+    [javax.servlet.http Cookie HttpServletRequest]
+    [java.net HttpCookie]
+    [com.google.gson JsonObject]
+    [org.eclipse.jetty.continuation Continuation
+    ContinuationSupport]
+    [com.zotohlab.frwk.server Component Emitter]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.core Versioned Hierarchial
+    Identifiable Disposable Startable]
+    [org.apache.commons.codec.binary Base64]
+    [org.eclipse.jetty.server Connector HttpConfiguration
+    HttpConnectionFactory SecureRequestCustomizer
+    Server ServerConnector Handler
+    SslConnectionFactory]
+    [org.eclipse.jetty.util.ssl SslContextFactory]
+    [org.eclipse.jetty.util.thread QueuedThreadPool]
+    [org.eclipse.jetty.util.resource Resource]
+    [org.eclipse.jetty.server.handler AbstractHandler
+    ContextHandler
+    ContextHandlerCollection
+    ResourceHandler]
+    [com.zotohlab.skaro.io IOSession ServletEmitter]
+    [org.eclipse.jetty.webapp WebAppContext]
+    [javax.servlet.http HttpServletRequest HttpServletResponse]
+    [com.zotohlab.skaro.io WebSockResult
+    HTTPResult
+    HTTPEvent JettyUtils]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -102,10 +95,10 @@
   [^HttpCookie c]
 
   (doto (Cookie. (.getName c) (.getValue c))
-    (.setDomain (nsb (.getDomain c)))
+    (.setDomain (str (.getDomain c)))
     (.setHttpOnly (.isHttpOnly c))
     (.setMaxAge (.getMaxAge c))
-    (.setPath (nsb (.getPath c)))
+    (.setPath (str (.getPath c)))
     (.setSecure (.getSecure c))
     (.setVersion (.getVersion c))
   ))
@@ -139,15 +132,15 @@
              (< code 400))
         (.sendRedirect rsp
                        (.encodeRedirectURL rsp
-                                           (nsb url)))
+                                           (str url)))
         :else
         (let [^XData dd (cond
                           (instance? XData data)
                           data
-                          (notnil? data)
+                          (some? data)
                           (XData. data)
                           :else nil)
-              clen (if (and (notnil? dd)
+              clen (if (and (some? dd)
                             (.hasContent dd))
                      (.size dd)
                      0) ]
@@ -168,7 +161,8 @@
 ;;
 (defn- makeServletTrigger ""
 
-  [^HttpServletRequest req ^HttpServletResponse rsp src]
+  [^HttpServletRequest req
+   ^HttpServletResponse rsp src]
 
   (reify AsyncWaitTrigger
 
@@ -191,7 +185,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: JettyIO: " (.id ^Identifiable co))
+  (log/info "compConfigure: JettyIO: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)]
     (.setf! co :emcfg
                (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
@@ -249,7 +243,7 @@
                 (.setPort port)
                 (.setIdleTimeout (int 30000)))
               (cfgHTTPS svr port keyfile
-                        (if (nil? pwdObj) nil (nsb pwdObj))
+                        (if (nil? pwdObj) nil (str pwdObj))
                         (doto conf
                           (.setSecureScheme "https")
                           (.setSecurePort port)))) ]
@@ -305,7 +299,7 @@
 
       :else
       (do
-        (log/debug "Failed to match uri: " (.getRequestURI req))
+        (log/debug "failed to match uri: %s" (.getRequestURI req))
         (JettyUtils/replyXXX req rsp 404)))
   ))
 
@@ -328,7 +322,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStart: JettyIO: " (.id ^Identifiable co))
+  (log/info "IOESStart: JettyIO: %s" (.id ^Identifiable co))
   (let [^czlab.xlib.util.core.Muble
         ctr (.parent ^Hierarchial co)
         ^Server jetty (.getf co :jetty)
@@ -364,9 +358,9 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "IOESStop: JettyIO: " (.id ^Identifiable co))
+  (log/info "IOESStop: JettyIO: %s" (.id ^Identifiable co))
   (let [^Server svr (.getf co :jetty) ]
-    (when-not (nil? svr)
+    (when (some? svr)
       (tryc
           (.stop svr) ))
     (IOESStopped co)
@@ -408,7 +402,7 @@
 
   [co & args]
 
-  (log/debug "OPESReifyEvent: JettyIO: " (.id ^Identifiable co))
+  (log/debug "OPESReifyEvent: JettyIO: %s" (.id ^Identifiable co))
   (let [^HTTPResult result (MakeHttpResult co)
         ^HttpServletRequest req (first args)
         impl (MakeMMap {:cookies (maybeGetCookies req)})
@@ -504,7 +498,7 @@
                  (< code 400))
             (.handleResult mvs this result)
             :else nil)
-          (when-not (nil? wevt)
+          (when (some? wevt)
             (.resumeOnResult wevt result))))
   )))
 

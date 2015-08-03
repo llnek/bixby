@@ -14,63 +14,63 @@
 
   czlab.skaro.impl.dfts
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys])
 
-  (:require [czlab.xlib.util.core :refer [notnil? Muble]]
-            [czlab.xlib.util.str :refer [ToKW]]
-            [czlab.xlib.i18n.resources :refer [RStr]]
-            [czlab.xlib.util.files
-             :refer
-             [FileRead?
-              DirReadWrite? ]]
-            [czlab.xlib.util.core
-             :refer
-             [NextLong
-              test-cond
-              MakeMMap
-              Muble
-              test-nestr]])
+  (:require
+    [czlab.xlib.util.core :refer [notnil? Muble]]
+    [czlab.xlib.util.str :refer [ToKW]]
+    [czlab.xlib.i18n.resources :refer [RStr]]
+    [czlab.xlib.util.files
+    :refer [FileRead? DirReadWrite? ]]
+    [czlab.xlib.util.core
+    :refer [NextLong test-cond MakeMMap Muble test-nestr]])
 
-  (:import  [com.zotohlab.frwk.core Versioned
-             Identifiable Hierarchial]
-            [com.zotohlab.skaro.loaders AppClassLoader]
-            [com.zotohlab.frwk.util CU]
-            [com.zotohlab.frwk.i18n I18N]
-            [com.zotohlab.frwk.server Component
-             ComponentRegistry RegistryError ServiceError]
-            [com.zotohlab.skaro.core Context ConfigError]
-            [java.io File]))
+  (:import
+    [com.zotohlab.frwk.core Versioned
+    Identifiable Hierarchial]
+    [com.zotohlab.skaro.loaders AppClassLoader]
+    [com.zotohlab.frwk.util CU]
+    [com.zotohlab.frwk.i18n I18N]
+    [com.zotohlab.frwk.server Component
+    ComponentRegistry RegistryError ServiceError]
+    [com.zotohlab.skaro.core Context ConfigError]
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Asserts that the directory is readable & writable.
-;;
-(defn ^:no-doc PrecondDir "Is this folder read-writeable?"
+(defn ^:no-doc PrecondDir
+
+  "Is this folder read-writeable?"
 
   [d]
 
-  (test-cond (RStr (I18N/getBase) "dir.no.rw" [d])
+  (test-cond (RStr (I18N/getBase) "dir.no.rw" d)
              (DirReadWrite? d)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Asserts that the file is readable.
-;;
-(defn ^:no-doc PrecondFile "Is this file readable?"
+;; Asserts that the file is readable
+(defn ^:no-doc PrecondFile
+
+  "Is this file readable?"
 
   [f]
 
-  (test-cond (RStr (I18N/getBase) "file.no.r" [f])
+  (test-cond (RStr (I18N/getBase) "file.no.r" f)
              (FileRead? f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc MaybeDir "Tests if the key maps to a File."
+(defn ^:no-doc MaybeDir
+
+  "Tests if the key maps to a File"
 
   ^File
   [^czlab.xlib.util.core.Muble m kn]
@@ -80,14 +80,14 @@
       String (io/file v)
       File v
       (throw (ConfigError. (RStr (I18N/getBase)
-                                 "skaro.no.dir" [kn]))))
+                                 "skaro.no.dir" kn))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol EmitMeta
 
-  "Metadata for a Emitter."
+  "Metadata for a Emitter"
 
   (enabled? [_] )
   (getName [_])
@@ -97,7 +97,7 @@
 ;;
 (defprotocol PODMeta
 
-  "Metadata for an application bundle."
+  "Metadata for an application bundle"
 
   (typeof [_ ] )
   (moniker [_] )
@@ -105,11 +105,12 @@
   (srcUrl [_ ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A registry is basically a container holding a bunch of components.
+;; A registry is basically a container holding a bunch of components
 ;; A component itself can be a registry which implies that registeries can
-;; ne nested.
-;;
-(defn MakeRegistry "Create a generic component registry."
+;; be nested
+(defn MakeRegistry
+
+  "Create a generic component registry"
 
   [regoType regoId ver parObj]
 
@@ -174,7 +175,7 @@
                 cache (.getf impl :cache) ]
             (when (.has this cid)
               (throw (RegistryError. (RStr (I18N/getBase)
-                                           "skaro.dup.cmp" [cid]))))
+                                           "skaro.dup.cmp" cid))))
             (.setf! impl :cache (assoc cache cid c))))
 
         Rego
@@ -182,13 +183,14 @@
             (let [cache (.getf impl :cache) ]
               (seq cache))) )
 
-      { :typeid (ToKW "czc.skaro.impl" (name regoType)) }
-
-  )))
+      { :typeid (ToKW "czc.skaro.impl" (name regoType)) })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePodMeta "Create metadata for an application bundle."
+(defn MakePodMeta
+
+  "Create metadata for an application bundle"
 
   [app ver podType appid pathToPOD]
 
@@ -196,8 +198,9 @@
         impl (MakeMMap)
         ctxt (atom (MakeMMap)) ]
 
-    (log/info "PODMeta: " app ", " ver ", "
-              podType ", " appid ", " pathToPOD )
+    (log/info "PODMeta: %s,%s,%s,%s,%s"
+              app ver
+              podType appid pathToPOD )
     (with-meta
       (reify
 
@@ -231,9 +234,8 @@
         (appKey [_] appid)
         (typeof [_] podType))
 
-      { :typeid (ToKW "czc.skaro.impl" "PODMeta") }
-
-  )))
+      { :typeid (ToKW "czc.skaro.impl" "PODMeta") })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

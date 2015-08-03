@@ -14,32 +14,29 @@
 
   czlab.skaro.io.webss
 
-  (:require [czlab.xlib.util.str :refer [nsb hgl? AddDelim!]]
-            [czlab.xlib.util.core
-             :refer
-             [Muble
-              ConvLong
-              notnil?
-              juid
-              MakeMMap
-              Stringify
-              Bytesify]]
-            [czlab.xlib.crypto.core :refer [GenMac]]
-            [czlab.xlib.net.comms :refer [GetFormFields]])
+  (:require
+    [czlab.xlib.util.str :refer [hgl? AddDelim!]]
+    [czlab.xlib.util.core
+    :refer [Muble ConvLong
+    notnil? juid MakeMMap Stringify Bytesify]]
+    [czlab.xlib.crypto.core :refer [GenMac]]
+    [czlab.xlib.net.comms :refer [GetFormFields]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
-  (:import  [com.zotohlab.skaro.runtime ExpiredError AuthError]
-            [org.apache.commons.lang3 StringUtils]
-            [org.apache.commons.codec.net URLCodec]
-            [org.apache.commons.codec.binary Base64 Hex]
-            [com.zotohlab.frwk.util CU]
-            [java.net HttpCookie URLDecoder URLEncoder]
-            [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.skaro.io HTTPResult
-             HTTPEvent IOSession]
-            [com.zotohlab.skaro.core Container]
-            [com.zotohlab.frwk.net ULFormItems ULFileItem]))
+  (:import
+    [com.zotohlab.skaro.runtime ExpiredError AuthError]
+    [org.apache.commons.lang3 StringUtils]
+    [org.apache.commons.codec.net URLCodec]
+    [org.apache.commons.codec.binary Base64 Hex]
+    [com.zotohlab.frwk.util CU]
+    [java.net HttpCookie URLDecoder URLEncoder]
+    [com.zotohlab.frwk.server Emitter]
+    [com.zotohlab.skaro.io HTTPResult
+    HTTPEvent IOSession]
+    [com.zotohlab.skaro.core Container]
+    [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -51,13 +48,13 @@
 (def ^:private CS_FLAG :__f184n ) ;; creation time
 (def ^:private LS_FLAG :__f384n ) ;; last access time
 (def ^:private ES_FLAG :__f484n ) ;; expiry time
-(def ^String ^:private NV_SEP "\u0000")
+(defonce ^String ^:private NV_SEP "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol WebSS
 
-  "Web Session API."
+  "Web Session API"
 
   (setMaxInactiveInterval [_ idleSecs] )
   (setAttribute [_ k v] )
@@ -117,7 +114,7 @@
   (let [^czlab.skaro.io.webss.WebSS
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
-      (log/debug "Session appears to be kosher, about to set-cookie!")
+      (log/debug "session appears to be kosher, about to set-cookie!")
       (let [^czlab.xlib.util.core.Muble
             src (.emitter evt)
             cfg (.getf src :emcfg)
@@ -126,16 +123,16 @@
                                          (:maxIdleSecs cfg))
             du1 (when (.isNew? mvs)
                   (resetFlags mvs (:sessionAgeSecs cfg)))
-            data (maybeMacIt evt (nsb mvs) ctr)
+            data (maybeMacIt evt (str mvs) ctr)
             now (System/currentTimeMillis)
             est (.getExpiryTime mvs)
             ck (HttpCookie. SESSION_COOKIE data) ]
         (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
         (doto ck
-          (.setDomain (nsb (:domain cfg)))
+          (.setDomain (str (:domain cfg)))
           (.setSecure (.isSSL? mvs))
           (.setHttpOnly (true? (:hidden cfg)))
-          (.setPath (nsb (:domainPath cfg))))
+          (.setPath (str (:domainPath cfg))))
         (.addCookie res ck)))
   ))
 
@@ -150,8 +147,8 @@
                     (.getAppKeyBits ctr)
                     nil) ]
     (when (not= (GenMac pkey part2) part1)
-      (log/error "Session cookie - broken.")
-      (throw (AuthError. "Bad Session Cookie.")))
+      (log/error "session cookie - broken")
+      (throw (AuthError. "Bad Session Cookie")))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,41 +163,41 @@
         ck (.getCookie evt SESSION_COOKIE) ]
     (if (nil? ck)
       (do
-        (log/debug "Request contains no session cookie, invalidate the session.")
+        (log/debug "request contains no session cookie, invalidate the session")
         (.invalidate! mvs))
       (let [^czlab.xlib.util.core.Muble
             src netty
             cfg (.getf src :emcfg)
-            cookie (nsb (.getValue ck))
+            cookie (str (.getValue ck))
             pos (.indexOf cookie (int \-))
             [rc1 rc2] (if (< pos 0)
                         ["" cookie]
                         [(.substring cookie 0 pos)
                             (.substring cookie (+ pos 1) )] ) ]
         (maybeValidateCookie evt rc1 rc2 (.container netty))
-        (log/debug "Session attributes = " rc2)
+        (log/debug "session attributes = %s" rc2)
         (try
           (doseq [^String nv (.split ^String rc2 NV_SEP) ]
             (let [ss (StringUtils/split nv ":" 2)
                   ^String s1 (aget ss 0)
                   ^String s2 (aget ss 1) ]
-              (log/debug "Session attr name = " s1 ", value = " s2)
+              (log/debug "session attr name = %s, value = %s" s1 s2)
               (if (and (.startsWith s1 "__f")
                        (.endsWith s1 "n"))
                 (.setAttribute mvs (keyword s1) (ConvLong s2 0))
                 (.setAttribute mvs (keyword s1) s2))))
           (catch Throwable _
-            (throw (ExpiredError. "Corrupted cookie."))))
+            (throw (ExpiredError. "Corrupted cookie"))))
         (.setNew! mvs false 0)
         (let [ts (or (.getAttribute mvs LS_FLAG) -1)
               es (or (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
               mi (:maxIdleSecs cfg) ]
           (if (< es now)
-            (throw (ExpiredError. "Session has expired.")))
+            (throw (ExpiredError. "Session has expired")))
           (if (and (> mi 0)
                    (< (+ ts (* 1000 mi)) now))
-            (throw (ExpiredError. "Session has been inactive too long.")))
+            (throw (ExpiredError. "Session has been inactive too long")))
           (.setAttribute mvs LS_FLAG now))
         ))
   ))
@@ -259,7 +256,7 @@
         Object
 
         (toString [this]
-          (nsb (reduce #(AddDelim! %1 NV_SEP
+          (str (reduce #(AddDelim! %1 NV_SEP
                                    (str (name (first %2))
                                         ":"
                                         (last %2)))
@@ -273,9 +270,8 @@
         (handleEvent [this evt] (upstream evt))
         (getImpl [_] nil))
 
-        { :typeid :czc.skaro.io/WebSS }
-
-  )))
+        { :typeid :czc.skaro.io/WebSS })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

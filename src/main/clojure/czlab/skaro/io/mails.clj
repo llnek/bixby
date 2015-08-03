@@ -14,30 +14,28 @@
 
   czlab.skaro.io.mails
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [NextLong
-              spos?
-              ThrowIOE
-              tryc
-              notnil?]]
-            [czlab.xlib.crypto.codec :refer [Pwdify]]
-            [czlab.xlib.util.str :refer [hgl? nsb]])
+  (:require
+    [czlab.xlib.util.core
+    :refer [NextLong spos? ThrowIOE tryc notnil?]]
+    [czlab.xlib.crypto.codec :refer [Pwdify]]
+    [czlab.xlib.util.str :refer [hgl? ]])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.loops ]
         [czlab.skaro.io.core ])
 
-  (:import  [javax.mail Flags Flags$Flag
-             Store Folder
-             Session Provider Provider$Type]
-            [java.util Properties]
-            [javax.mail.internet MimeMessage]
-            [java.io IOException]
-            [com.zotohlab.skaro.io EmailEvent]
-            [com.zotohlab.frwk.core Identifiable]))
+  (:import
+    [javax.mail Flags Flags$Flag
+    Store Folder
+    Session Provider Provider$Type]
+    [java.util Properties]
+    [javax.mail.internet MimeMessage]
+    [java.io IOException]
+    [com.zotohlab.skaro.io EmailEvent]
+    [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -49,7 +47,7 @@
   [^Folder fd]
 
   (tryc
-    (when-not (nil? fd)
+    (when (some? fd)
       (when (.isOpen fd) (.close fd true)))
   ))
 
@@ -63,7 +61,7 @@
         ^Folder fd (.getf co :folder) ]
     (closeFolder fd)
     (tryc
-      (when-not (nil? conn) (.close conn)) )
+      (when (some? conn) (.close conn)) )
     (.setf! co :store nil)
     (.setf! co :folder nil)
   ))
@@ -86,7 +84,7 @@
         (do
           (var-set sun (Provider. Provider$Type/STORE
                                   mock demo "test" "1.0.0"))
-          (log/debug "Using demo store " mock " !!!")
+          (log/debug "using demo store %s!!!" mock)
           (var-set proto mock))
         (do
           (var-set sun (some #(if (= pkey (.getClassName ^Provider %))
@@ -127,11 +125,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
-(def ST_POP3S  "com.sun.mail.pop3.POP3SSLStore" )
-(def ST_POP3  "com.sun.mail.pop3.POP3Store")
-(def POP3_MOCK "demopop3s")
-(def POP3S "pop3s")
-(def POP3C "pop3")
+(defonce ST_POP3S  "com.sun.mail.pop3.POP3SSLStore" )
+(defonce ST_POP3  "com.sun.mail.pop3.POP3Store")
+(defonce POP3_MOCK "demopop3s")
+(defonce POP3S "pop3s")
+(defonce POP3C "pop3")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -139,7 +137,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: POP3: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: POP3: %s" (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -150,13 +148,13 @@
 
   (let [^Session session (.getf co :session)
         cfg (.getf co :emcfg)
-        pwd (nsb (:passwd cfg))
+        pwd (str (:passwd cfg))
         user (:user cfg)
         ^String host (:host cfg)
         ^long port (:port cfg)
         ^String proto (.getf co :proto)
         s (.getStore session proto) ]
-    (when-not (nil? s)
+    (when (some? s)
       (.connect s host port user (if (hgl? pwd)
                                    pwd
                                    nil))
@@ -194,12 +192,12 @@
 
   (let [^Folder fd (.getf co :folder)
         ^Store s (.getf co :store) ]
-    (when (and (notnil? fd)
+    (when (and (some? fd)
                (not (.isOpen fd)))
       (.open fd Folder/READ_WRITE) )
     (when (.isOpen fd)
       (let [cnt (.getMessageCount fd) ]
-        (log/debug "Count of new mail-messages: " cnt)
+        (log/debug "count of new mail-messages: %s" cnt)
         (when (> cnt 0)
           (readPop3 co (.getMessages fd)))))
   ))
@@ -236,9 +234,9 @@
                            (if (false? (:ssl cfg)) false true)))
       (var-set cpy (assoc! @cpy :deleteMsg
                            (true? (:deleteMsg cfg))))
-      (var-set cpy (assoc! @cpy :host (nsb (:host cfg))))
+      (var-set cpy (assoc! @cpy :host (str (:host cfg))))
       (var-set cpy (assoc! @cpy :port (if (spos? port) port 995)))
-      (var-set cpy (assoc! @cpy :user (nsb (:user cfg))))
+      (var-set cpy (assoc! @cpy :user (str (:user cfg))))
       (var-set cpy (assoc! @cpy :passwd
                            (Pwdify (if (nil? pwd) nil pwd) pkey) ))
       (-> (persistent! @cpy)
@@ -251,7 +249,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: POP3: " (.id ^Identifiable co))
+  (log/info "compConfigure: POP3: %s" (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.pop3" "")
         cfg (merge (.getf co :dftOptions) cfg0)
         c2 (stdConfig co cfg) ]
@@ -267,11 +265,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IMAP
-(def ST_IMAPS "com.sun.mail.imap.IMAPSSLStore" )
-(def ST_IMAP "com.sun.mail.imap.IMAPStore" )
-(def IMAP_MOCK "demoimaps")
-(def IMAPS "imaps" )
-(def IMAP "imap" )
+(defonce ST_IMAPS "com.sun.mail.imap.IMAPSSLStore" )
+(defonce ST_IMAP "com.sun.mail.imap.IMAPStore" )
+(defonce IMAP_MOCK "demoimaps")
+(defonce IMAPS "imaps" )
+(defonce IMAP "imap" )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -279,7 +277,7 @@
 
   [co & args]
 
-  (log/info "IOESReifyEvent: IMAP: " (.id ^Identifiable co))
+  (log/info "IOESReifyEvent: IMAP: %s" (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -327,7 +325,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "CompConfigure: IMAP: " (.id ^Identifiable co))
+  (log/info "compConfigure: IMAP: %s" (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.imap" "")
         cfg (merge (.getf co :dftOptions) cfg0)
         c2 (stdConfig co cfg) ]

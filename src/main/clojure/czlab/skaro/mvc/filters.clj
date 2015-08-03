@@ -14,22 +14,17 @@
 
   czlab.skaro.mvc.filters
 
-  (:require [czlab.xlib.util.core
-             :refer
-             [notnil?
-              spos?
-              ToJavaInt
-              Muble
-              try!
-              FPath]]
-            [czlab.skaro.io.http :refer [HttpBasicConfig]]
-            [czlab.skaro.mvc.assets
-             :refer
-             [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
-            [czlab.xlib.util.str :refer [hgl? nsb strim]]
-            [czlab.xlib.util.meta :refer [MakeObj]])
+  (:require
+    [czlab.skaro.mvc.assets
+    :refer [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
+    [czlab.xlib.util.core
+    :refer [notnil? spos? ToJavaInt Muble try! FPath]]
+    [czlab.skaro.io.http :refer [HttpBasicConfig]]
+    [czlab.xlib.util.str :refer [hgl? nsb strim]]
+    [czlab.xlib.util.meta :refer [MakeObj]])
 
-  (:require [czlab.xlib.util.logging :as log])
+  (:require
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io]
@@ -41,39 +36,40 @@
         [czlab.skaro.mvc.comms]
         [czlab.xlib.net.routes])
 
-  (:import  [org.apache.commons.lang3 StringUtils]
-            [io.netty.util ReferenceCountUtil]
-            [java.util Date]
-            [java.io File]
-            [com.zotohlab.frwk.server Emitter]
-            [com.zotohlab.frwk.io XData]
-            [com.google.gson JsonObject]
-            [com.zotohlab.frwk.core Hierarchial Identifiable]
-            [com.zotohlab.skaro.io HTTPEvent]
-            [com.zotohlab.skaro.mvc HTTPErrorHandler
-             MVCUtils WebAsset WebContent]
-            [io.netty.handler.codec.http HttpRequest
-             HttpResponse
-             CookieDecoder ServerCookieEncoder
-             DefaultHttpResponse HttpVersion
-             HttpResponseEncoder HttpRequestDecoder
-             HttpHeaders LastHttpContent
-             HttpHeaders Cookie QueryStringDecoder]
-            [io.netty.bootstrap ServerBootstrap]
-            [io.netty.channel Channel ChannelHandler
-             ChannelDuplexHandler
-             SimpleChannelInboundHandler
-             ChannelPipeline ChannelHandlerContext]
-            [io.netty.handler.stream ChunkedWriteHandler]
-            [io.netty.util AttributeKey]
-            [io.netty.handler.timeout IdleState
-             IdleStateEvent
-             IdleStateHandler]
-            [com.zotohlab.frwk.netty ErrorSinkFilter
-             SimpleInboundFilter InboundAdapter
-             MessageFilter PipelineConfigurator
-             FlashFilter]
-            [jregex Matcher Pattern]))
+  (:import
+    [org.apache.commons.lang3 StringUtils]
+    [io.netty.util ReferenceCountUtil]
+    [java.util Date]
+    [java.io File]
+    [com.zotohlab.frwk.server Emitter]
+    [com.zotohlab.frwk.io XData]
+    [com.google.gson JsonObject]
+    [com.zotohlab.frwk.core Hierarchial Identifiable]
+    [com.zotohlab.skaro.io HTTPEvent]
+    [com.zotohlab.skaro.mvc HTTPErrorHandler
+    MVCUtils WebAsset WebContent]
+    [io.netty.handler.codec.http HttpRequest
+    HttpResponse
+    CookieDecoder ServerCookieEncoder
+    DefaultHttpResponse HttpVersion
+    HttpResponseEncoder HttpRequestDecoder
+    HttpHeaders LastHttpContent
+    HttpHeaders Cookie QueryStringDecoder]
+    [io.netty.bootstrap ServerBootstrap]
+    [io.netty.channel Channel ChannelHandler
+    ChannelDuplexHandler
+    SimpleChannelInboundHandler
+    ChannelPipeline ChannelHandlerContext]
+    [io.netty.handler.stream ChunkedWriteHandler]
+    [io.netty.util AttributeKey]
+    [io.netty.handler.timeout IdleState
+    IdleStateEvent
+    IdleStateHandler]
+    [com.zotohlab.frwk.netty ErrorSinkFilter
+    SimpleInboundFilter InboundAdapter
+    MessageFilter PipelineConfigurator
+    FlashFilter]
+    [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -132,7 +128,7 @@
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "routeFilter: skipping unwanted msg: " (type msg))))))
+            (log/debug "routeFilter: skipping unwanted msg: %s" (type msg))))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,13 +180,15 @@
               opts {:router handlerFn}
               ^WebSockEvent
               evt (IOESReifyEvent co ch msg nil) ]
-          (log/debug "Reified one websocket event")
+          (log/debug "reified one websocket event")
           (.dispatch em evt opts))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wsockJiggler "Jiggle the pipeline upon a websocket request"
+(defn- wsockJiggler
+
+  "Jiggle the pipeline upon a websocket request"
 
   ^ChannelHandler
   [co options]
@@ -260,7 +258,7 @@
 
   [^czlab.xlib.util.core.Muble co cfg]
 
-  (log/info "CompConfigure: NetttyMVC: %s" (.id ^Identifiable co))
+  (log/info "compConfigure: NetttyMVC: %s" (.id ^Identifiable co))
   (.setf! co :emcfg (HttpBasicConfig co cfg))
   co)
 
@@ -270,7 +268,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "CompInitialize: NetttyMVC: %s" (.id ^Identifiable co))
+  (log/info "compInitialize: NetttyMVC: %s" (.id ^Identifiable co))
   (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

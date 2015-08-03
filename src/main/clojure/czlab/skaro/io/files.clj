@@ -14,57 +14,53 @@
 
   czlab.skaro.io.files
 
-  (:require [czlab.skaro.io.loops
-             :refer
-             [LoopableSchedule
-              LoopableOneLoop
-              CfgLoopable]]
-            [czlab.xlib.util.files :refer [Mkdirs]]
-            [czlab.xlib.util.core
-             :refer
-             [NextLong
-              MakeMMap
-              notnil?
-              test-nestr
-              tryc
-              SubsVar]]
-            [czlab.xlib.util.str :refer [nsb hgl? nsn]])
+  (:require
+    [czlab.skaro.io.loops
+    :refer [LoopableSchedule LoopableOneLoop CfgLoopable]]
+    [czlab.xlib.util.files :refer [Mkdirs]]
+    [czlab.xlib.util.core
+    :refer [NextLong MakeMMap
+    notnil? test-nestr tryc SubsVar]]
+    [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
 
-  (:require [clojure.tools.logging :as log]
-            [clojure.java.io :as io])
+  (:require
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io])
 
-  (:use [czlab.skaro.core.sys
-         :rename
-         {seq* rego-seq* has? rego-has? } ]
-        [czlab.skaro.io.core])
+  (:use
+    [czlab.skaro.core.sys
+    :rename {seq* rego-seq* has? rego-has? } ]
+    [czlab.skaro.io.core])
 
-  (:import  [java.io FileFilter File FilenameFilter IOException]
-            [org.apache.commons.lang3 StringUtils]
-            [java.util Properties ResourceBundle]
-            [org.apache.commons.io.filefilter SuffixFileFilter
-             PrefixFileFilter
-             RegexFileFilter FileFileFilter]
-            [org.apache.commons.io FileUtils]
-            [org.apache.commons.io.monitor FileAlterationListener
-             FileAlterationListenerAdaptor
-             FileAlterationMonitor
-             FileAlterationObserver]
-            [com.zotohlab.skaro.io FileEvent]
-            [com.zotohlab.frwk.core Identifiable]))
+  (:import
+    [java.io FileFilter File FilenameFilter IOException]
+    [org.apache.commons.lang3 StringUtils]
+    [java.util Properties ResourceBundle]
+    [org.apache.commons.io.filefilter SuffixFileFilter
+    PrefixFileFilter
+    RegexFileFilter FileFileFilter]
+    [org.apache.commons.io FileUtils]
+    [org.apache.commons.io.monitor FileAlterationListener
+    FileAlterationListenerAdaptor
+    FileAlterationMonitor
+    FileAlterationObserver]
+    [com.zotohlab.skaro.io FileEvent]
+    [com.zotohlab.frwk.core Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Order of args must match.
+;; Order of args must match
 (defmethod IOESReifyEvent :czc.skaro.io/FilePicker
 
   [co & args]
 
-  (let [^File f (nth args 1)
-        fnm (first args)
-        eeid (NextLong)
-        impl (MakeMMap) ]
+  (let
+    [^File f (nth args 1)
+     fnm (first args)
+     eeid (NextLong)
+     impl (MakeMMap) ]
     (with-meta
       (reify
 
@@ -82,12 +78,14 @@
         (getOriginalFileName [_] fnm)
         (getFile [_] f))
 
-      { :typeid :czc.skaro.io/FileEvent }
-  )))
+      { :typeid (ToKW "czc.skaro.io" "FileEvent") })
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postPoll "Only look for new files."
+(defn- postPoll
+
+  "Only look for new files"
 
   [^czlab.xlib.util.core.Muble
    co
@@ -99,13 +97,13 @@
         origFname (.getName f)
         cf (case action
              :FP-CREATED
-             (if-not (nil? des)
+             (if (some? des)
                (tryc
                  (FileUtils/moveFileToDirectory f des false)
                  (io/file des origFname))
                f)
              nil)]
-    (when-not (nil? cf)
+    (when (some? cf)
       (.dispatch src (IOESReifyEvent co origFname cf action) {}))
   ))
 
@@ -115,14 +113,14 @@
 
   [^czlab.xlib.util.core.Muble co cfg0]
 
-  (log/info "ComConfigure: FilePicker: " (.id ^Identifiable co))
+  (log/info "compConfigure: FilePicker: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getf co :dftOptions) cfg0)
-        root (SubsVar (nsb (:targetFolder cfg)))
-        dest (SubsVar (nsb (:recvFolder cfg)))
-        mask (nsb (:fmask cfg))
+        root (SubsVar (str (:targetFolder cfg)))
+        dest (SubsVar (str (:recvFolder cfg)))
+        mask (str (:fmask cfg))
         c2 (CfgLoopable co cfg) ]
-    (log/info "Monitoring folder: " root)
-    (log/info "Rcv folder: " (nsn dest))
+    (log/info "monitoring folder: %s" root)
+    (log/info "rcv folder: %s" (nsn dest))
     (test-nestr "file-root-folder" root)
     (.setf! co :emcfg
       (-> c2
@@ -151,7 +149,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (log/info "ComInitialize FilePicker: " (.id ^Identifiable co))
+  (log/info "compInitialize FilePicker: %s" (.id ^Identifiable co))
   (let [cfg (.getf co :emcfg)
         obs (FileAlterationObserver. ^File (:targetFolder cfg)
                                      ^FileFilter (:fmask cfg))
@@ -167,7 +165,7 @@
     (.addListener obs lnr)
     (.addObserver mon obs)
     (.setf! co :monitor mon)
-    (log/info "FilePicker's apache io monitor created - OK.")
+    (log/info "filePicker's apache io monitor created - ok")
     co
   ))
 
@@ -178,7 +176,7 @@
   [^czlab.xlib.util.core.Muble co]
 
   (when-let [mon (.getf co :monitor) ]
-    (log/info "FilePicker's apache io monitor starting...")
+    (log/info "filePicker's apache io monitor starting...")
     (.start ^FileAlterationMonitor mon)
   ))
 
