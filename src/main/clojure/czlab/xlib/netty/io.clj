@@ -833,9 +833,11 @@
       (.group (getEventGroup (int (or bo 4)))
               (getEventGroup (int (or wk 6))))
       (.channel NioServerSocketChannel)
+      (.option ChannelOption/MAX_MESSAGES_PER_READ Integer/MAX_VALUE)
       (.option ChannelOption/SO_REUSEADDR true)
       (.option ChannelOption/SO_BACKLOG
                (int (or bk 100)))
+      (.childOption ChannelOption/MAX_MESSAGES_PER_READ Integer/MAX_VALUE)
       (.childOption ChannelOption/SO_RCVBUF
                     (int (or rb (* 2 1024 1024))))
       (.childOption ChannelOption/TCP_NODELAY true)
@@ -856,6 +858,7 @@
     (doto (Bootstrap.)
       (.group (getEventGroup (int (or bo 4))))
       (.channel NioDatagramChannel)
+      (.option ChannelOption/MAX_MESSAGES_PER_READ Integer/MAX_VALUE)
       (.option ChannelOption/TCP_NODELAY true)
       (.option ChannelOption/SO_RCVBUF
                (int (or rb (* 2 1024 1024))))
