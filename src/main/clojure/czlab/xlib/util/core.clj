@@ -298,7 +298,7 @@
 ;;
 (defmacro bool! ""
   [e]
-  `(if (or (nil? ~e)(false? ~e)) false true))
+  `(if-let [e# ~e] (if (false? e#) false true) false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

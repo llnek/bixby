@@ -72,7 +72,9 @@
 
   [db opt?]
 
-  `(if ~opt? (getNull ~db) (getNotNull ~db)))
+  `(let [d# ~db]
+    (if ~opt? (getNull d#) (getNotNull d#))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

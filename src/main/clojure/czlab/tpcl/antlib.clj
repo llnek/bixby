@@ -714,7 +714,7 @@
            (->> (case ~s
                   ;;certain classes need special handling of properties
                   ;;due to type mismatch or property name
-                  ;;inconsistencies.
+                  ;;inconsistencies
                   "delete" delete-pre-opts
                   "junit" junit-preopts
                   "javadoc" jdoc-preopts

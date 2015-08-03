@@ -33,8 +33,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro lcase "Lowercase string" [s] `(if (nil? ~s) "" (cs/lower-case ~s)))
-(defmacro ucase "Uppercase string" [s] `(if (nil? ~s) "" (cs/upper-case ~s)))
+(defmacro lcase "Lowercase string" [s] `(if-let [s# ~s] (cs/lower-case s#) ""))
+(defmacro ucase "Uppercase string" [s] `(if-let [s# ~s] (cs/upper-case s#) ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -80,7 +80,7 @@
   ^String
   [n]
 
-  `(when (some? ~n) (name ~n)))
+  `(when-let [n# ~n] (name n#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
