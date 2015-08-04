@@ -33,6 +33,7 @@
   (:import
     [com.zotohlab.frwk.core Versioned
     Identifiable Hierarchial]
+    [com.zotohlab.skaro.runtime RegoAPI PODMeta]
     [com.zotohlab.skaro.loaders AppClassLoader]
     [com.zotohlab.frwk.util CU]
     [com.zotohlab.frwk.i18n I18N]
@@ -82,27 +83,6 @@
       (throw (ConfigError. (RStr (I18N/getBase)
                                  "skaro.no.dir" kn))))
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol EmitMeta
-
-  "Metadata for a Emitter"
-
-  (enabled? [_] )
-  (getName [_])
-  (metaUrl [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol PODMeta
-
-  "Metadata for an application bundle"
-
-  (typeof [_ ] )
-  (moniker [_] )
-  (appKey [_ ] )
-  (srcUrl [_ ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A registry is basically a container holding a bunch of components
@@ -178,8 +158,8 @@
                                            "skaro.dup.cmp" cid))))
             (.setf! impl :cache (assoc cache cid c))))
 
-        Rego
-          (iter* [_]
+        RegoAPI
+          (iter [_]
             (let [cache (.getf impl :cache) ]
               (seq cache))) )
 

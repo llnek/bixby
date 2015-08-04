@@ -70,7 +70,7 @@
     [com.zotohlab.frwk.i18n I18N]
     [java.net URL]
     [java.io File StringWriter]
-    [com.zotohlab.skaro.runtime AppMain]
+    [com.zotohlab.skaro.runtime AppMain RegoAPI PODMeta]
     [com.zotohlab.skaro.etc PluginFactory Plugin]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Morphable Activable
@@ -235,7 +235,7 @@
 (defn- makeAppContainer ""
 
   ^Container
-  [^czlab.skaro.impl.dfts.PODMeta pod options]
+  [^PODMeta pod options]
 
   (log/info "creating an app-container: %s" (.id ^Identifiable pod))
   (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
@@ -326,61 +326,47 @@
         Startable
 
         (start [this]
-          (let [^czlab.skaro.core.sys.Rego
+          (let [^RegoAPI
                 srg (.getf impl K_SVCS)
                 main (.getf impl :main-app) ]
             (log/info "container starting all services...")
-            (doseq [[k v] (iter* srg) ]
+            (doseq [[k v] (.iter srg) ]
               (log/info "service: %s about to start..." k)
               (.start ^Startable v))
             (log/info "container starting main app...")
-            (cond
-              (satisfies? CljAppMain main)    ;; clojure app
-              (-> ^czlab.skaro.core.sys.CljAppMain main
-                  (.start ))
-              (instance? AppMain main) ;; java app
-              (.start ^AppMain main)
-              :else nil)))
+            (when (some? main)
+              (.start ^Startable main))))
 
         (stop [this]
-          (let [^czlab.skaro.core.sys.Rego
+          (let [^RegoAPI
                 srg (.getf impl K_SVCS)
                 pls (.getf this K_PLUGINS)
                 main (.getf impl :main-app) ]
             (log/info "container stopping all services...")
-            (doseq [[k v] (iter* srg) ]
+            (doseq [[k v] (.iter srg) ]
               (.stop ^Startable v))
             (log/info "container stopping all plugins...")
             (doseq [[k v] (seq pls) ]
               (.stop ^Plugin v))
             (log/info "container stopping...")
-            (cond
-              (satisfies? CljAppMain main)
-              (-> ^czlab.skaro.core.sys.CljAppMain main
-                  (.stop ))
-              (instance? AppMain main)
-              (.stop ^AppMain main)
-              :else nil) ))
+            (when (some? main)
+              (.stop ^Startable main))))
 
         Disposable
 
         (dispose [this]
-          (let [^czlab.skaro.core.sys.Rego
+          (let [^RegoAPI
                 srg (.getf impl K_SVCS)
                 pls (.getf this K_PLUGINS)
                 main (.getf impl :main-app) ]
             (log/info "container dispose(): all services")
-            (doseq [[k v] (iter* srg) ]
+            (doseq [[k v] (.iter srg) ]
               (.dispose ^Disposable v))
             (log/info "container dispose(): all plugins")
             (doseq [[k v] (seq pls) ]
               (.dispose ^Disposable v))
-            (cond
-              (satisfies? CljAppMain main)
-              (.dispose ^czlab.skaro.core.sys.CljAppMain main)
-              (instance? AppMain main)
-              (.dispose ^AppMain main)
-              :else nil)
+            (when (some? main)
+              (.dispose ^Disposable main))
             (log/info "container dispose() - main app disposed")
             (releaseSysResources this) ))
 
@@ -434,7 +420,7 @@
   ^Container
   [^czlab.xlib.util.core.Muble pod]
 
-  (let [^czlab.skaro.impl.dfts.PODMeta pm pod
+  (let [^PODMeta pm pod
         ^czlab.xlib.util.core.Muble
         ctx (-> ^Context pod (.getx ))
         ^ComponentRegistry
@@ -491,26 +477,11 @@
 ;;
 (defn- doCljApp ""
 
-  [ctr opts ^czlab.skaro.core.sys.CljAppMain obj]
+  [ctr opts ^AppMain obj]
 
   (.contextualize obj ctr)
   (.configure obj opts)
   (.initialize obj))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doJavaApp ""
-
-  [^czlab.xlib.util.core.Muble ctr
-   ^AppMain obj]
-
-  ;; if java, pass in the conf properties as json,
-  ;; not edn
-  (let [cfg (.getf ctr K_APPCONF)
-        m (ConvToJava cfg) ]
-  (.contextualize obj ctr)
-  (.configure obj m)
-  (.initialize obj)) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -611,7 +582,7 @@
 
   []
 
-  (reify czlab.skaro.core.sys.CljAppMain
+  (reify AppMain
     (contextualize [_ ctr] )
     (initialize [_])
     (configure [_ cfg] )
@@ -637,11 +608,11 @@
           reg (.getf co K_SVCS)
           bus (makeEventBus co)
           cfg (:container env) ]
-      (let [cn (lcase (str (K_COUNTRY (K_LOCALE env)) ))
-            lg (lcase (or (K_LANG (K_LOCALE env)) "en"))
-            loc (if (hgl? cn)
-                    (Locale. lg cn)
-                    (Locale. lg))
+      (let [lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
+            cn (lcase (get-in env [K_LOCALE K_COUNTRY]))
+            loc (if (empty? cn)
+                    (Locale. lg)
+                    (Locale. lg cn))
             res (io/file appDir "i18n"
                          (str "Resources_"
                               (.toString loc) ".properties"))]
@@ -677,7 +648,7 @@
                     sc)
                   (MakeSchema [])) ))
 
-      (when (nichts? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
+      (when (empty? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
       ;;(test-nestr "Main-Class" mCZ)
 
       (with-local-vars
@@ -685,12 +656,11 @@
         (when (nil? @obj)
           (log/warn "failed to create main class: %s" mCZ)
           (var-set obj (mkDftAppMain)))
-        (cond
-          (satisfies? CljAppMain @obj)
-          (doCljApp co app @obj)
+        (if
           (instance? AppMain @obj)
-          (doJavaApp co @obj)
-          :else (throw (ConfigError. (str "Invalid Main Class " mCZ))))
+          (doCljApp co app @obj)
+          ;else
+          (throw (ConfigError. (str "Invalid Main Class " mCZ))))
 
         (.setf! co :main-app @obj)
         (log/info "application main-class %s%s"

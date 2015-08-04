@@ -28,7 +28,7 @@
     :refer [ReadOneFile WriteOneFile]]
     [czlab.xlib.util.scheduler :refer [NulScheduler]]
     [czlab.xlib.util.core
-    :refer [test-nonil test-cond ConvLong
+    :refer [test-nonil test-cond ConvLong SysVar
     Muble FPath PrintMutableObj MakeMMap]]
     [czlab.skaro.impl.exec :refer [MakeExecvisor]]
     [czlab.xlib.netty.io :refer [StopServer]])
@@ -48,12 +48,15 @@
     ChannelFutureListener]
     [com.zotohlab.skaro.loaders AppClassLoader
     RootClassLoader ExecClassLoader]
-    [com.zotohlab.frwk.core Versioned Identifiable
+    [com.zotohlab.skaro.runtime ExecvisorAPI]
+    [com.zotohlab.frwk.core
+    Versioned Identifiable
     Disposable Activable
     Hierarchial Startable]
     [com.zotohlab.frwk.util Schedulable]
     [com.zotohlab.frwk.i18n I18N]
     [com.zotohlab.wflow Job WorkFlow
+    FlowDot
     Activity Nihil]
     [com.zotohlab.skaro.core Context ConfigError]
     [com.zotohlab.skaro.etc CliMain]
@@ -82,7 +85,7 @@
    is shared with other key components"
 
   ^czlab.xlib.util.core.Muble
-  [^File baseDir]
+  [baseDir]
 
   (let [etc (io/file baseDir DN_CFG)
         home (.getParentFile etc)]
@@ -106,7 +109,7 @@
 
   [^czlab.xlib.util.core.Muble ctx]
 
-  (let [^File pid (.getf ctx K_PIDFILE)
+  (let [pid (.getf ctx K_PIDFILE)
         kp (.getf ctx K_KILLPORT)
         execv (.getf ctx K_EXECV) ]
 
@@ -116,7 +119,7 @@
       (log/info "closing the http discarder...")
       (StopServer (:bootstrap kp)
                   (:channel kp))
-      (log/info "http discarder closed. OK")
+      (log/info "http discarder closed. ok")
       ;;(when-not (nil? pid) (io/delete-file pid true))
       (log/info "containers are shutting down...")
       (log/info "about to stop Skaro...")
@@ -136,12 +139,10 @@
   [^czlab.xlib.util.core.Muble ctx]
 
   (log/info "enabling remote shutdown")
-  (let [port (-> (System/getProperty "skaro.kill.port")
-                 (ConvLong  4444))
-        rc (MakeDiscardHTTPD "127.0.0.1"
-                             port
-                             #(stopCLI ctx) {}) ]
-    (.setf! ctx K_KILLPORT rc)
+  (->> (-> (SysVar "skaro.kill.port")
+           (ConvLong  4444)
+           (MakeDiscardHTTPD #(stopCLI ctx)))
+       (.setf! ctx K_KILLPORT )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,9 +152,9 @@
   ^ServerLike
   [^File home]
 
-  (let [cpu (NulScheduler)
+  (let [ctxt (atom (MakeMMap))
         impl (MakeMMap)
-        ctxt (atom (MakeMMap)) ]
+        cpu (NulScheduler) ]
     (-> ^Activable
         cpu
         (.activate {:threads 1}))
@@ -166,12 +167,13 @@
               j (NewJob this w)]
           (doseq [[k v] options]
             (.setv j k v))
-          (.run cpu (.reify (.startWith w)
-                            (-> (Nihil/apply)
-                                (.reify j))))))
+          (.run cpu (->> (NihilDot j)
+                         (.reify (.startWith w))))))
+
       (handleError [_ e] )
 
       Disposable
+
       (dispose [_] (.dispose cpu))
 
       ServerLike
@@ -213,10 +215,9 @@
 
   (SimPTask "PauseCLI"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
+      (let [ctx (.getLastResult j)
             s (.container j)]
-        (log/debug "#### sys loader = "
+        (log/debug "#### sys loader = %s"
                    (-> (ClassLoader/getSystemClassLoader)
                        (.getClass)
                        (.getName)))
@@ -277,19 +278,16 @@
             cl (.getf ctx K_EXEC_CZLR)
             cli (.getf ctx K_CLISH)
             wc (.getf ctx K_PROPS)
-            cz (str (get-in wc [K_COMPS K_EXECV])) ]
-        ;;(test-cond "conf file:exec-visor" (= cz "czlab.skaro.impl.Execvisor"))
-        (log/info "inside primodial() ---------------------------------------------->")
+            cz (get-in wc [K_COMPS K_EXECV]) ]
+        (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
+        (log/info "inside primodial() ----------------------------->")
         (log/info "execvisor = %s" cz)
-        (let [^czlab.xlib.util.core.Muble
-              execv (MakeExecvisor cli)]
+        (let [execv (MakeExecvisor cli)]
           (.setf! ctx K_EXECV execv)
           (SynthesizeComponent execv {:ctx ctx})
           (log/info "execvisor created and synthesized - ok")
           (log/info "*********************************************************")
-          (log/info "*")
-          (log/info "about to start Skaro...")
-          (log/info "*")
+          (log/info "about to start skaro...")
           (log/info "*********************************************************")
           (.start ^Startable execv)
           (log/info "skaro started!"))))
@@ -308,8 +306,8 @@
     (fn [^Job j]
       (let [^czlab.xlib.util.core.Muble
             ctx (.getLastResult j)
-            rc (GetResource "czlab.skaro.etc/Resources"
-                            (.getf ctx K_LOCALE))]
+            rc (-> "czlab.skaro.etc/Resources"
+                   (GetResource (.getf ctx K_LOCALE)))]
         (test-nonil "etc/resouces" rc)
         (.setf! ctx K_RCBUNDLE rc)
         (I18N/setBase rc)
@@ -330,14 +328,15 @@
       (let [^czlab.xlib.util.core.Muble
             ctx (.getLastResult j)
             home (.getf ctx K_BASEDIR)
-            cf (io/file home DN_CONF (name K_PROPS))]
+            cf (io/file home
+                        DN_CONF (name K_PROPS))]
         (log/info "about to parse config file %s" cf)
         (let [w (ReadEdn cf)
-              cn (lcase (str (K_COUNTRY (K_LOCALE w)) ))
-              lg (lcase (or (K_LANG (K_LOCALE w)) "en"))
-              loc (if (hgl? cn)
-                    (Locale. lg cn)
-                    (Locale. lg))]
+              lg (lcase (or (get-in w [K_LOCALE K_LANG]) "en"))
+              cn (lcase (get-in w [K_LOCALE K_COUNTRY]))
+              loc (if (empty? cn)
+                    (Locale. lg)
+                    (Locale. lg cn))]
           (log/info "using locale: %s" loc)
           (doto ctx
             (.setf! K_LOCALE loc)
@@ -378,14 +377,11 @@
 
   (SimPTask "RtStart"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
+      (let [home (.getv j :home)
             c (.container j)
-            home (.getv j :home)
             x (inizContext home)]
         (log/info "skaro.home %s" (FPath home))
         (log/info "skaro.version= %s" (.version ^Versioned c))
-        ;; a bit of circular referencing here.  the climain object refers to context
-        ;; and the context refers back to the climain object.
         (.setf! x K_CLISH c)
         (-> ^Context c (.setx x))
         (log/info "home directory looks ok")

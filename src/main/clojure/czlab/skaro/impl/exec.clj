@@ -39,6 +39,7 @@
         [czlab.skaro.impl.ext])
 
   (:import
+    [com.zotohlab.skaro.runtime ExecvisorAPI PODMeta EmitMeta]
     [org.apache.commons.io.filefilter DirectoryFileFilter]
     [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.loaders AppClassLoader]
@@ -62,24 +63,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol ExecVisor
-
-  "ExecVisor API"
-
-  (homeDir [_] )
-  (confDir [_] )
-  (blocksDir [_] )
-  (getStartTime [_] )
-  (kill9 [_] )
-  (getUpTimeInMillis [_] ) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- chkManifest
 
   "Check the app's manifest file"
 
-  ^czlab.skaro.impl.dfts.PODMeta
+  ^PODMeta
 
   [^czlab.xlib.util.core.Muble
    execv
@@ -120,7 +108,7 @@
 
   "Make sure the app setup is kosher"
 
-  ^czlab.skaro.impl.dfts.PODMeta
+  ^PODMeta
   [execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (FPath des))
@@ -181,7 +169,7 @@
 (defn- ignitePod ""
 
   [^czlab.xlib.util.core.Muble co
-   ^czlab.skaro.impl.dfts.PODMeta pod]
+   ^PODMeta pod]
 
   (tryletc
     [cache (.getf co K_CONTAINERS)
@@ -214,7 +202,7 @@
 
   "Create a ExecVisor"
 
-  ^czlab.skaro.impl.exec.ExecVisor
+  ^ExecvisorAPI
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
@@ -245,7 +233,7 @@
         (clear! [_] (.clear! impl))
         (toEDN [_ ] (.toEDN impl))
 
-        ExecVisor
+        ExecvisorAPI
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
@@ -280,8 +268,7 @@
 
   [^czlab.xlib.util.core.Muble co]
 
-  (let [^czlab.skaro.impl.exec.ExecVisor exec co
-        ^czlab.xlib.util.core.Muble
+  (let [^czlab.xlib.util.core.Muble
         ctx (-> ^Context co (.getx))
         base (.getf ctx K_BASEDIR)
         cf (.getf ctx K_PROPS)
@@ -300,8 +287,10 @@
 
     (System/setProperty "file.encoding" "utf-8")
 
-    (let [home (.homeDir exec)
-          bks (io/file home DN_CFG DN_BLOCKS) ]
+    (let [bks (-> ^ExecvisorAPI
+                   co
+                   (.homeDir)
+                   (io/file DN_CFG DN_BLOCKS)) ]
       (PrecondDir bks)
       (doto ctx
         (.setf! K_BKSDIR bks)))
@@ -365,8 +354,8 @@
 
         EmitMeta
 
-        (enabled? [_] (not (false? (-> (.getf impl :metaInfo)
-                                       (:enabled)))))
+        (isEnabled [_] (not (false? (-> (.getf impl :metaInfo)
+                                        (:enabled)))))
         (getName [_] (-> (.getf impl :metaInfo)
                          (:name)))
         (metaUrl [_] url) )
@@ -378,7 +367,7 @@
 ;; Description of a Block
 (defmethod CompInitialize :czc.skaro.impl/EmitMeta
 
-  [^czlab.skaro.impl.dfts.EmitMeta block]
+  [^EmitMeta block]
 
   (let [^czlab.xlib.util.core.Muble co block
         url (.metaUrl block)

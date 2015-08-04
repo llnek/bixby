@@ -427,29 +427,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SysVar
+(defmacro SysVar
 
   "Get value for this system property"
 
   ^String
-  [^String propname]
+  [propname]
 
-  (when (some? propname)
-    (System/getProperty propname)
-  ))
+  `(when-let [p# ~propname] (System/getProperty p#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn EnvVar
+(defmacro EnvVar
 
   "Get value for this env var"
 
   ^String
-  [^String envname]
+  [envname]
 
-  (when (some? envname)
-    (System/getenv envname)
-  ))
+  `(when-let [e# ~envname] (System/getenv e#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

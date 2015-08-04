@@ -25,6 +25,7 @@
             [java.util.concurrent.atomic AtomicInteger]
             [javax.mail Message Message$RecipientType Multipart]
             [javax.mail.internet MimeMessage]
+            [com.zotohlab.skaro.runtime AppMain]
             [com.zotohlab.skaro.io EmailEvent]
             [com.zotohlab.skaro.core Container]))
 
@@ -59,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlab.skaro.core.sys.CljAppMain
+(deftype MyAppMain [] AppMain
 
   (contextualize [_ ctr] )
 

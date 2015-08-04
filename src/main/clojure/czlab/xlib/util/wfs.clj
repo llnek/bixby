@@ -69,6 +69,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn NihilDot
+
+  "Create a Nihil FlowDot"
+
+  ^FlowDot
+  [^Job job]
+
+  (-> (Nihil/apply) (.reify job)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn DefPTask
 
   "Given a function(arity 2), return a PTask"

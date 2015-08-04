@@ -59,13 +59,14 @@
 
   "Discards the request, just returns 200 OK"
 
-  [host port callback & [options]]
+  ([host port callback & [options]]
+   {:pre [(fn? callback)]}
+   (let [bs (InitTCPServer (discarder callback) options)
+         ch (StartServer bs host port) ]
+     {:bootstrap bs :channel ch}))
 
-  {:pre [(fn? callback)]}
-
-  (let [bs (InitTCPServer (discarder callback) options)
-        ch (StartServer bs host port) ]
-    {:bootstrap bs :channel ch}))
+  ([port callback]
+   (MakeDiscardHTTPD "127.0.0.1" port callback )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
