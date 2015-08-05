@@ -46,7 +46,7 @@
       (with-local-vars [rc nil]
         (with-open [conn (.begin this) ]
           (let [s (ReifySQLr db
-                             #(conn)
+                             (fn [_] conn)
                              #(%2 %1)) ]
             (try
               (var-set rc (func s))

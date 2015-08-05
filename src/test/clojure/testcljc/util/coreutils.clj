@@ -19,6 +19,7 @@
 
   (:import  [java.util Properties Date Calendar]
             [java.sql Timestamp]
+            [com.zotohlab.skaro.core Muble]
             [java.net URL]
             [java.io FileOutputStream File]
             [java.nio.charset Charset]))
@@ -161,7 +162,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getf (doto ^czlab.xlib.util.core.Muble (CU/MakeMMap) (.setf! :1 100)) :1)))
+(is (= 100 (.getv (doto (CU/MakeMMap) (.setv :1 100)) :1)))
 
 
 )

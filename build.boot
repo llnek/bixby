@@ -527,17 +527,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cljDemo
+(defn- cljDemo ""
 
-  ""
   []
 
-  (let [dirs ["demo/file" "demo/fork"
-              "demo/http" "demo/jetty"
-              "demo/jms" "demo/mvc"
-              "demo/pop3" "demo/steps"
-              "demo/tcpip" "demo/timer"]]
-    (doall (map #(a/CleanDir (fp! (ge :czzDir) %)) dirs))
+  (let [dirs (b/CollectCljPaths (io/file (ge :srcDir) "clojure"))
+        dirs (filter #(.startsWith % "demo/") dirs) ]
+    (a/CleanDir (fp! (ge :czzDir) "demo"))
     (a/RunTarget* "clj/demo"
       (a/AntJava
         (ge :CLJC_OPTS)

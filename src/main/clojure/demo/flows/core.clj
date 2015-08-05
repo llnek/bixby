@@ -18,7 +18,7 @@
 
   (:import
     [com.zotohlab.wflow PTask
-    WorkFlow
+    WorkFlow Job
     Activity FlowError If Split Switch While]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,7 +115,7 @@
       (fn [^Job j]
         (let [v (.getv j :vol_count)
               c (if (some? v) v 0) ]
-          (if (== n 2)
+          (if (== c 2)
             (println "step(3'): granted permission for user "
                      "to access/snapshot this volume(id)")
             (println "step(3'): failed to contact vol- server, "
@@ -138,7 +138,7 @@
       (fn [^Job j]
         (let [v (.getv j :wdb_count)
               c (if (some? v) v 0) ]
-          (if (== n 2)
+          (if (== c 2)
             (println "step(4): wrote stuff to database successfully")
             (println "step(4): failed to contact db- server, "
                    "will retry again (" c ")")))))))
@@ -150,9 +150,8 @@
 ;;the workflow
 (defonce ^:private ^Activity
   Provision
-  (-> (save_sdb)
-      (Split/applyAnd )
-      (.includeMany prov_ami prov_vol)))
+  (-> (Split/applyAnd save_sdb)
+      (.includeMany (into-array Activity [prov_ami prov_vol]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this is the final step, after all the work are done, reply back to the caller.

@@ -16,8 +16,9 @@
 
   (:use [czlab.xlib.util.wfs])
 
-  (:mport
-    [com.zotohlab.wflow WorkFlow Activity Split PTask]))
+  (:import
+    [com.zotohlab.wflow WorkFlow
+    Job Activity Split PTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

@@ -299,8 +299,8 @@
       [n (when (.hasMoreElements en)
                (.nextElement en)) ]
       (if (predicate ks n)
-          (recur en (conj! rc n))
-          (recur en rc))
+          (recur (conj! rc n) en)
+          (recur rc en))
       ;else
       (persistent! rc))
   ))
