@@ -23,7 +23,7 @@
     [czlab.xlib.util.core
     :refer [LoadJavaProps test-nestr FPath tryletc tryc
     NewRandom GetCwd
-    ConvLong MakeMMap Muble juid test-nonil]]
+    ConvLong MakeMMap juid test-nonil]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.files
     :refer [Mkdirs ReadOneUrl]])
@@ -43,7 +43,7 @@
     [org.apache.commons.io.filefilter DirectoryFileFilter]
     [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.loaders AppClassLoader]
-    [com.zotohlab.skaro.core Context]
+    [com.zotohlab.skaro.core Muble Context]
     [org.apache.commons.lang3 StringUtils]
     [java.io File FileFilter]
     [java.security SecureRandom]
@@ -69,16 +69,13 @@
 
   ^PODMeta
 
-  [^czlab.xlib.util.core.Muble
-   execv
-   app
-   ^File des mf]
+  [^Muble execv app ^File des mf]
 
-  (let [^czlab.xlib.util.core.Muble
+  (let [^Muble
         ctx (-> ^Context execv (.getx))
         ^ComponentRegistry
         apps (-> ^ComponentRegistry
-                 (.getf ctx K_COMPS)
+                 (.getv ctx K_COMPS)
                  (.lookup K_APPS))
         ps (LoadJavaProps mf)
         vid (.getProperty ps "Implementation-Vendor-Id", "???")
@@ -91,14 +88,14 @@
 
     ;; synthesize the pod meta component and register it
     ;; as a application
-    (let [^czlab.xlib.util.core.Muble
+    (let [^Muble
           m (-> (MakePodMeta app ver
                              cz vid
                              (io/as-url des))
                 (SynthesizeComponent { :ctx ctx }))
-          ^czlab.xlib.util.core.Muble
+          ^Muble
           cx (-> ^Context m (.getx)) ]
-      (.setf! cx K_EXECV execv)
+      (.setv cx K_EXECV execv)
       (.reg apps m)
       m)
   ))
@@ -130,19 +127,18 @@
 
   "Basic JMX support"
 
-  [^czlab.xlib.util.core.Muble co cfg]
+  [^Muble co cfg]
 
   (log/info "jmx-config: %s" cfg)
   (tryletc
-    [^czlab.xlib.util.core.Muble
-     ctx (-> ^Context co (.getx))
+    [^Muble ctx (-> ^Context co (.getx))
      port (or (:port cfg) 7777)
      host (nsb (:host cfg))
      jmx (MakeJmxServer host) ]
     (.setRegistryPort jmx port)
     (.start ^Startable jmx)
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
-    (.setf! ctx K_JMXSVR jmx)
+    (.setv ctx K_JMXSVR jmx)
     (log/info "jmx-server listening on: %s:%s" host port)
   ))
 
@@ -152,32 +148,30 @@
 
   "Kill the internal JMX server"
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (tryletc
-    [^czlab.xlib.util.core.Muble
-     ctx (-> ^Context co (.getx))
+    [^Muble ctx (-> ^Context co (.getx))
      ^Startable
-     jmx (.getf ctx K_JMXSVR) ]
+     jmx (.getv ctx K_JMXSVR) ]
     (when (some? jmx)
       (.stop jmx))
-    (.setf! ctx K_JMXSVR nil))
+    (.setv ctx K_JMXSVR nil))
   (log/info "jmx connection terminated"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ignitePod ""
 
-  [^czlab.xlib.util.core.Muble co
-   ^PODMeta pod]
+  [^Muble co ^PODMeta pod]
 
   (tryletc
-    [cache (.getf co K_CONTAINERS)
+    [cache (.getv co K_CONTAINERS)
      cid (.id ^Identifiable pod)
      app (.moniker pod)
      ctr (MakeContainer pod)]
     (log/debug "start pod cid = %s, app = %s" cid app)
-    (.setf! co K_CONTAINERS (assoc cache cid ctr))
+    (.setv co K_CONTAINERS (assoc cache cid ctr))
     true
   ))
 
@@ -185,15 +179,15 @@
 ;;
 (defn- stopPods ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "preparing to stop pods...")
-  (let [cs (.getf co K_CONTAINERS) ]
+  (let [cs (.getv co K_CONTAINERS) ]
     (doseq [[k v] (seq cs) ]
       (.stop ^Startable v))
     (doseq [[k v] (seq cs) ]
       (.dispose ^Disposable v))
-    (.setf! co K_CONTAINERS {})
+    (.setv co K_CONTAINERS {})
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,11 +220,11 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_] )
-        (clear! [_] (.clear! impl))
+        (setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        (getv [_ a] (.getv impl a) )
+        (seq [_] )
+        (clear [_] (.clear impl))
         (toEDN [_ ] (.toEDN impl))
 
         ExecvisorAPI
@@ -258,7 +252,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/PODMeta
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   co)
 
@@ -266,12 +260,11 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/ExecVisor
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^czlab.xlib.util.core.Muble
-        ctx (-> ^Context co (.getx))
-        base (.getf ctx K_BASEDIR)
-        cf (.getf ctx K_PROPS)
+  (let [^Muble ctx (-> ^Context co (.getx))
+        base (.getv ctx K_BASEDIR)
+        cf (.getv ctx K_PROPS)
         comps (K_COMPS cf)
         regs (K_REGS cf)
         jmx  (K_JMXMGM cf) ]
@@ -293,15 +286,15 @@
                    (io/file DN_CFG DN_BLOCKS)) ]
       (PrecondDir bks)
       (doto ctx
-        (.setf! K_BKSDIR bks)))
+        (.setv K_BKSDIR bks)))
 
     (let [root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
           options { :ctx ctx } ]
 
-      (.setf! ctx K_COMPS root)
-      (.setf! ctx K_EXECV co)
+      (.setv ctx K_COMPS root)
+      (.setv ctx K_EXECV co)
 
       (doto ^ComponentRegistry root
         (.reg apps)
@@ -338,25 +331,25 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_] )
-        (clear! [_] (.clear! impl))
+        (setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        (getv [_ a] (.getv impl a) )
+        (seq [_] )
+        (clear [_] (.clear impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component
-        (id [_] (-> (.getf impl :metaInfo)
+        (id [_] (-> (.getv impl :metaInfo)
                     (:blockType)
                     (keyword)))
-        (version [_] (-> (.getf impl :metaInfo)
+        (version [_] (-> (.getv impl :metaInfo)
                          (:version)))
 
         EmitMeta
 
-        (isEnabled [_] (not (false? (-> (.getf impl :metaInfo)
+        (isEnabled [_] (not (false? (-> (.getv impl :metaInfo)
                                         (:enabled)))))
-        (getName [_] (-> (.getf impl :metaInfo)
+        (getName [_] (-> (.getv impl :metaInfo)
                          (:name)))
         (metaUrl [_] url) )
 
@@ -369,7 +362,7 @@
 
   [^EmitMeta block]
 
-  (let [^czlab.xlib.util.core.Muble co block
+  (let [^Muble co block
         url (.metaUrl block)
         cfg (ReadEdn url)
         info (:info cfg)
@@ -377,8 +370,8 @@
     (test-nonil "Invalid block-meta file, no info section" info)
     (test-nonil "Invalid block-meta file, no conf section" conf)
     (log/info "initializing EmitMeta: %s" url)
-    (.setf! co :metaInfo info)
-    (.setf! co :dftOptions conf)
+    (.setv co :metaInfo info)
+    (.setv co :dftOptions conf)
     co
   ))
 
@@ -388,14 +381,13 @@
 ;; This registry loads these meta files and adds them to the registry
 (defmethod CompInitialize :czc.skaro.impl/BlocksRegistry
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^czlab.xlib.util.core.Muble
-        ctx (-> ^Context co (.getx))
-        bDir (.getf ctx K_BKSDIR)
+  (let [^Muble ctx (-> ^Context co (.getx))
+        bDir (.getv ctx K_BKSDIR)
         fs (ListFiles bDir "meta" false) ]
     (doseq [^File f fs ]
-      (let [^czlab.xlib.util.core.Muble
+      (let [^Muble
             b (-> (makeBlockMeta (io/as-url f))
                   (SynthesizeComponent {}) ) ]
         (.reg ^ComponentRegistry co b)
@@ -406,7 +398,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/SystemRegistry
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "compInitialize: SystemRegistry: %s" (.id ^Identifiable co))
   co
@@ -416,7 +408,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/AppsRegistry
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "compInitialize: AppsRegistry: %s" (.id ^Identifiable co))
   co

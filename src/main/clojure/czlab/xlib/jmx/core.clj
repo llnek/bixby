@@ -30,6 +30,7 @@
     [java.lang.management ManagementFactory]
     [java.rmi NoSuchObjectException]
     [com.zotohlab.frwk.core Startable]
+    [com.zotohlab.skaro.core Muble]
     [java.rmi.registry LocateRegistry Registry]
     [java.rmi.server UnicastRemoteObject]
     [javax.management DynamicMBean
@@ -54,11 +55,11 @@
 ;;
 (defn- startRMI ""
 
-  [^czlab.xlib.util.core.Muble impl]
+  [^Muble impl]
 
-  (let [^long port (.getf impl :regoPort) ]
+  (let [^long port (.getv impl :regoPort) ]
     (try
-      (.setf! impl :rmi (LocateRegistry/createRegistry port))
+      (.setv impl :rmi (LocateRegistry/createRegistry port))
       (catch Throwable e#
         (mkJMXrror (str "Failed to create RMI registry: " port) e#)))
   ))
@@ -67,13 +68,13 @@
 ;;
 (defn- startJMX ""
 
-  [^czlab.xlib.util.core.Muble impl]
+  [^Muble impl]
 
   (let [hn (-> (InetAddress/getLocalHost)
                (.getHostName))
-        ^long regoPort (.getf impl :regoPort)
-        ^long port (.getf impl :port)
-        ^String host (.getf impl :host)
+        ^long regoPort (.getv impl :regoPort)
+        ^long port (.getv impl :port)
+        ^String host (.getv impl :host)
         endpt (-> "service:jmx:rmi://{{h}}:{{s}}/jndi/rmi://:{{r}}/jmxrmi"
                   (cs/replace "{{h}}" (if (hgl? host) host hn))
                   (cs/replace "{{s}}" (str "" port))
@@ -95,8 +96,8 @@
       (catch Throwable e#
         (mkJMXrror (str "Failed to start JMX") e#)))
 
-    (.setf! impl :beanSvr (.getMBeanServer conn))
-    (.setf! impl :conn conn)
+    (.setv impl :beanSvr (.getMBeanServer conn))
+    (.setv impl :conn conn)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,7 +142,7 @@
 
       (reset [_]
         (let [^MBeanServer
-              bs (.getf impl :beanSvr) ]
+              bs (.getv impl :beanSvr) ]
           (doseq [nm @objNames]
             (try!
                (.unregisterMBean bs nm)) )
@@ -149,12 +150,12 @@
 
       (dereg [_ objName]
         (let [^MBeanServer
-              bs (.getf impl :beanSvr) ]
+              bs (.getv impl :beanSvr) ]
           (.unregisterMBean bs objName)))
 
       (reg [_ obj domain nname paths]
         (let [^MBeanServer
-              bs (.getf impl :beanSvr) ]
+              bs (.getv impl :beanSvr) ]
           (try
             (reset! objNames
                     (conj @objNames
@@ -164,29 +165,29 @@
               (mkJMXrror (str "Failed to register object: " obj) e#)))))
 
       ;; jconsole port
-      (setRegistryPort [_ port] (.setf! impl :regoPort port))
+      (setRegistryPort [_ port] (.setv impl :regoPort port))
 
-      (setServerPort[_ port] (.setf! impl :port port))
+      (setServerPort[_ port] (.setv impl :port port))
 
       Startable
 
       (start [_]
-        (let [p1 (.getf impl :regoPort)
-              p2 (.getf impl :port) ]
-          (when-not (> p2 0) (.setf! impl :port (inc p1)))
+        (let [p1 (.getv impl :regoPort)
+              p2 (.getv impl :port) ]
+          (when-not (> p2 0) (.setv impl :port (inc p1)))
           (startRMI impl)
           (startJMX impl)) )
 
       (stop [this]
-        (let [^JMXConnectorServer c (.getf impl :conn)
-              ^Registry r (.getf impl :rmi) ]
+        (let [^JMXConnectorServer c (.getv impl :conn)
+              ^Registry r (.getv impl :rmi) ]
           (.reset this)
           (when (some? c) (tryc (.stop c)))
-          (.setf! impl :conn nil)
+          (.setv impl :conn nil)
           (when (some? r)
             (tryc
               (UnicastRemoteObject/unexportObject r true)))
-          (.setf! impl :rmi nil))))
+          (.setv impl :rmi nil))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

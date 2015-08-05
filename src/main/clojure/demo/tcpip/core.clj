@@ -24,7 +24,7 @@
   (:import  [java.io DataOutputStream DataInputStream BufferedInputStream]
             [com.zotohlab.wflow WorkFlow Job FlowDot PTask Delay]
             [com.zotohlab.skaro.io SocketEvent]
-            [com.zotohlab.skaro.core Container]
+            [com.zotohlab.skaro.core Muble Container]
             [java.net Socket]
             [java.util Date]
             [com.zotohlab.frwk.server ServiceProvider Service]))
@@ -55,9 +55,9 @@
                                 ssoc nil]
                 (println "TCP Client: about to send message" @s)
                 (try
-                  (let [bits (.getBytes ^String @s "utf-8")
-                        port (.getv ^Service @tcp :port)
-                        ^String host (.getv ^Service @tcp :host)
+                  (let [^String host (.getv ^Muble @tcp :host)
+                        bits (.getBytes ^String @s "utf-8")
+                        port (.getv ^Muble @tcp :port)
                         soc (Socket. host (int port))
                         os (.getOutputStream soc) ]
                     (var-set ssoc soc)

@@ -31,6 +31,7 @@
   (:import
     [java.net InetAddress ServerSocket Socket]
     [com.zotohlab.frwk.core Identifiable]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,11 +69,11 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/SocketIO
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: SocketIO: %s" (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         tout (:timeoutMillis cfg)
         blog (:backlog cfg) ]
     (with-local-vars [cpy (transient cfg)]
@@ -83,17 +84,17 @@
       (var-set cpy (assoc! @cpy
                            :timeoutMillis
                            (if (spos? tout) tout 0)))
-      (.setf! co :emcfg (persistent! @cpy)))
+      (.setv co :emcfg (persistent! @cpy)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompInitialize :czc.skaro.io/SocketIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "CompInitialize: SocketIO: %s" (.id ^Identifiable co))
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         backlog (:backlog cfg)
         host (:host cfg)
         port (:port cfg)
@@ -103,7 +104,7 @@
         soc (ServerSocket. port backlog ip) ]
     (log/info "Opened Server Socket %s (bound?) " soc (.isBound soc))
     (doto soc (.setReuseAddress true))
-    (.setf! co :ssocket soc)
+    (.setv co :ssocket soc)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,10 +119,10 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/SocketIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStart: SocketIO: %s" (.id ^Identifiable co))
-  (let [^ServerSocket ssoc (.getf co :ssocket)]
+  (let [^ServerSocket ssoc (.getv co :ssocket)]
     (when (some? ssoc)
       (Coroutine #(while (.isBound ssoc)
                     (try
@@ -129,7 +130,7 @@
                       (catch Throwable e#
                         (log/warn e# "")
                         (CloseQ ssoc)
-                        (.setf! co :ssocket nil))))
+                        (.setv co :ssocket nil))))
                  (GetCldr)))
     (IOESStarted co)
   ))
@@ -138,12 +139,12 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/SocketIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStop: SocketIO: %s" (.id ^Identifiable co))
-  (let [^ServerSocket ssoc (.getf co :ssocket) ]
+  (let [^ServerSocket ssoc (.getv co :ssocket) ]
     (CloseQ ssoc)
-    (.setf! co :ssocket nil)
+    (.setv co :ssocket nil)
     (IOESStopped co)
   ))
 

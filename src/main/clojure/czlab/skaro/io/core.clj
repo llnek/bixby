@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.core
     :refer [NextLong notnil?
-    ThrowIOE MakeMMap Muble ConvToJava tryc]]
+    ThrowIOE MakeMMap ConvToJava tryc]]
     [czlab.xlib.util.str :refer [nsb strim]])
 
   (:require
@@ -27,13 +27,13 @@
         [czlab.skaro.core.sys])
 
   (:import
+    [com.zotohlab.skaro.core Context Container Muble]
     [com.zotohlab.frwk.server Component
     Emitter
     ServiceHandler Service]
     [java.util.concurrent ConcurrentHashMap]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Identifiable Disposable Startable]
-    [com.zotohlab.skaro.core Context Container]
     [com.zotohlab.wflow WorkFlow Job Nihil Activity]
     [com.google.gson JsonObject JsonArray]
     [java.util Map]))
@@ -155,9 +155,9 @@
 ;;
 (defmethod IOESStarted :default
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (when-let [cfg (.getf co :emcfg)]
+  (when-let [cfg (.getv co :emcfg)]
     (log/info "emitter config:\n%s" (pr-str cfg))
     (log/info "emitter %s started - ok" (:typeid (meta co)))
   ))
@@ -250,11 +250,18 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_])
-        (clear! [_] (.clear! impl))
+        (setv [_ k v] (.setv impl (keyword k) v))
+        (getv [_ k]
+          (let [cfg (.getv impl :emcfg)
+                kw (keyword k)
+                v (.getv impl kw) ]
+            (or v (get cfg kw))))
+
+        ;;(setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        ;;(getv [_ a] (.getv impl a) )
+        (seq [_])
+        (clear [_] (.clear impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component
@@ -270,7 +277,7 @@
 
         (container [this] (.parent this))
         (getConfig [_]
-          (when-let [cfg (.getf impl :emcfg)]
+          (when-let [cfg (.getv impl :emcfg)]
             (ConvToJava cfg)))
 
         Disposable
@@ -281,30 +288,23 @@
 
         (start [this]
           (when-let [p (mkPipeline this true)]
-            (.setf! impl :pipe p)
+            (.setv impl :pipe p)
             (IOESStart this)))
 
         (stop [this]
-          (when-let [p (.getf impl :pipe)]
+          (when-let [p (.getv impl :pipe)]
             (.dispose ^Disposable p)
             (IOESStop this)
-            (.clrf! impl :pipe)))
+            (.unsetv impl :pipe)))
 
         Service
 
-        (setv [_ k v] (.setf! impl (keyword k) v))
-        (getv [_ k]
-          (let [cfg (.getf impl :emcfg)
-                kw (keyword k)
-                v (.getf impl kw) ]
-            (or v (get cfg kw))))
-
-        (handler [_] (.getf impl :pipe))
+        (handler [_] (.getv impl :pipe))
 
         EmitAPI
 
-        (enabled? [_] (if (false? (.getf impl :enabled)) false true ))
-        (active? [_] (if (false? (.getf impl :active)) false true))
+        (enabled? [_] (if (false? (.getv impl :enabled)) false true ))
+        (active? [_] (if (false? (.getv impl :active)) false true))
 
         (suspend [this] (IOESSuspend this))
         (resume [this] (IOESResume this))
@@ -315,13 +315,13 @@
                 (.onEvent ev options))))
 
         (release [_ wevt]
-          (when-not (nil? wevt)
+          (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
               (log/debug "emitter releasing an event with id: %s" wid)
               (.remove backlog wid))))
 
         (hold [_ wevt]
-          (when-not (nil? wevt)
+          (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
               (log/debug "emitter holding an event with id: %s" wid)
               (.put backlog wid wevt)))) )

@@ -16,8 +16,7 @@
 
   (:require
     [czlab.xlib.util.process :refer [Coroutine SafeWait]]
-    [czlab.xlib.util.core
-    :refer [NextLong spos? Muble tryc]]
+    [czlab.xlib.util.core :refer [NextLong spos? tryc]]
     [czlab.xlib.util.dates :refer [ParseDate]]
     [czlab.xlib.util.meta :refer [GetCldr]]
     [czlab.xlib.util.str :refer [hgl? strim]])
@@ -31,6 +30,7 @@
   (:import
     [java.util Date Timer TimerTask]
     [com.zotohlab.skaro.io TimerEvent]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.frwk.core Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,11 +78,11 @@
 ;;
 (defn- configTimerTask ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         intv (:intervalMillis cfg)
-        t (.getf co :timer)
+        t (.getv co :timer)
         ds (:delayMillis cfg)
         dw (:delayWhen cfg)
         func #(LoopableWakeup co) ]
@@ -96,7 +96,7 @@
 ;;
 (defn CfgLoopable ""
 
-  [^czlab.xlib.util.core.Muble co cfg]
+  [^Muble co cfg]
 
   (let [intv (:intervalSecs cfg)
         ds (:delaySecs cfg)
@@ -117,18 +117,18 @@
 ;;
 (defn- start-timer ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (.setf! co :timer (Timer. true))
+  (.setv co :timer (Timer. true))
   (LoopableSchedule co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- kill-timer ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^Timer t (.getf co :timer) ]
+  (let [^Timer t (.getv co :timer) ]
     (tryc
         (when (some? t) (.cancel t)) )
   ))
@@ -165,12 +165,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/RepeatingTimer
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: RepeatingTimer: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg)]
-    (.setf! co :emcfg c2)
+    (.setv co :emcfg c2)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,13 +241,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/OnceTimer
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: OnceTimer: %s" (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg) ]
-    (.setf! co :emcfg (dissoc c2 :intervalMillis))
+    (.setv co :emcfg (dissoc c2 :intervalMillis))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,14 +288,14 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/ThreadedTimer
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         intv (:intervalMillis cfg)
         loopy (atom true)
         cl (GetCldr) ]
     (log/info "Threaded one timer - interval = %s" intv)
-    (.setf! co :loopy loopy)
+    (.setv co :loopy loopy)
     (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
   ))
 
@@ -312,17 +312,17 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/ThreadedTimer
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStart: ThreadedTimer: %s" (.id ^Identifiable co))
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         intv (:intervalMillis cfg)
         ds (:delayMillis cfg)
         dw (:delayWhen cfg)
         loopy (atom true)
         cl (GetCldr)
         func #(LoopableSchedule co) ]
-    (.setf! co :loopy loopy)
+    (.setv co :loopy loopy)
     (if (or (number? ds)
             (instance? Date dw))
       (configTimer (Timer.) [dw ds] func)
@@ -334,10 +334,10 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/ThreadedTimer
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStop ThreadedTimer: %s" (.id ^Identifiable co))
-  (let [loopy (.getf co :loopy) ]
+  (let [loopy (.getv co :loopy) ]
     (reset! loopy false)
     (IOESStopped co)
   ))

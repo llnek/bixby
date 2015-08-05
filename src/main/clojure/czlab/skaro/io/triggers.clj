@@ -26,6 +26,7 @@
 
   (:import
     [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [com.zotohlab.skaro.core Muble]
     [java.io OutputStream IOException]
     [java.util List Timer TimerTask]
     [com.zotohlab.frwk.io XData]
@@ -52,7 +53,7 @@
       WaitEventHolder
 
       (resumeOnResult [this res]
-        (let [^Timer tm (.getf impl :timer)
+        (let [^Timer tm (.getv impl :timer)
               ^czlab.skaro.io.core.EmitAPI
               src (.emitter event) ]
           (when (some? tm) (.cancel tm))
@@ -62,7 +63,7 @@
 
       (timeoutMillis [me millis]
         (let [tm (Timer. true) ]
-          (.setf! impl :timer tm)
+          (.setv impl :timer tm)
           (.schedule tm (proxy [TimerTask][]
                           (run [] (.onExpiry me))) ^long millis)))
 
@@ -73,7 +74,7 @@
         (let [^czlab.skaro.io.core.EmitAPI
               src (.emitter event) ]
           (.release src this)
-          (.setf! impl :timer nil)
+          (.setv impl :timer nil)
           (.resumeWithError trigger) ))
   )))
 

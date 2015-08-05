@@ -18,7 +18,7 @@
     [czlab.skaro.mvc.assets
     :refer [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
     [czlab.xlib.util.core
-    :refer [notnil? spos? ToJavaInt Muble try! FPath]]
+    :refer [notnil? spos? ToJavaInt try! FPath]]
     [czlab.skaro.io.http :refer [HttpBasicConfig]]
     [czlab.xlib.util.str :refer [hgl? nsb strim]]
     [czlab.xlib.util.meta :refer [MakeObj]])
@@ -46,6 +46,7 @@
     [com.google.gson JsonObject]
     [com.zotohlab.frwk.core Hierarchial Identifiable]
     [com.zotohlab.skaro.io HTTPEvent]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.mvc HTTPErrorHandler
     MVCUtils WebAsset WebContent]
     [io.netty.handler.codec.http HttpRequest
@@ -79,7 +80,7 @@
 (defn- routeFilter ""
 
   ^ChannelHandler
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
@@ -87,7 +88,7 @@
       (cond
         (instance? HttpRequest msg)
         (let [^czlab.xlib.net.routes.RouteCracker
-              ck (.getf co :cracker)
+              ck (.getv co :cracker)
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
               ch (.channel ctx)
@@ -136,13 +137,13 @@
 (defn- mvcDisp ""
 
   ^ChannelHandler
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc netty handler called with message = %s" (type msg))
       (let [^czlab.xlib.net.routes.RouteCracker
-            rcc (.getf co :cracker)
+            rcc (.getv co :cracker)
             ^ChannelHandlerContext ctx c
             ch (.channel ctx)
             info (:info msg)
@@ -169,7 +170,7 @@
 
   ^ChannelHandler
   [^czlab.skaro.io.core.EmitAPI em
-   ^czlab.xlib.util.core.Muble co
+   ^Muble co
    options]
 
   (let [handlerFn (get-in options [:wsock :handler])]
@@ -215,7 +216,7 @@
 (defn- mvcInitor ""
 
   ^PipelineConfigurator
-  [^czlab.xlib.util.core.Muble co options]
+  [^Muble co options]
 
   (let [wsock (wsockJiggler co options)
         router (routeFilter co)
@@ -240,15 +241,14 @@
 ;;
 (defn- initNetty ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^czlab.xlib.util.core.Muble
-        ctr (.parent ^Hierarchial co)
-        rts (.getf ctr :routes)
-        options (.getf co :emcfg)
+  (let [^Muble ctr (.parent ^Hierarchial co)
+        rts (.getv ctr :routes)
+        options (.getv co :emcfg)
         bs (InitTCPServer (mvcInitor co options) options) ]
-    (.setf! co :cracker (MakeRouteCracker rts))
-    (.setf! co :netty  { :bootstrap bs })
+    (.setv co :cracker (MakeRouteCracker rts))
+    (.setv co :netty  { :bootstrap bs })
     co
   ))
 
@@ -256,17 +256,17 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/NettyMVC
 
-  [^czlab.xlib.util.core.Muble co cfg]
+  [^Muble co cfg]
 
   (log/info "compConfigure: NetttyMVC: %s" (.id ^Identifiable co))
-  (.setf! co :emcfg (HttpBasicConfig co cfg))
+  (.setv co :emcfg (HttpBasicConfig co cfg))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompInitialize :czc.skaro.io/NettyMVC
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "compInitialize: NetttyMVC: %s" (.id ^Identifiable co))
   (initNetty co))

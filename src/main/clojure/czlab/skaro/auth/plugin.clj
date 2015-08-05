@@ -44,7 +44,7 @@
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]
     [org.apache.commons.codec.binary Base64]
-    [com.zotohlab.skaro.core Container]
+    [com.zotohlab.skaro.core Container Muble]
     [com.zotohlab.frwk.util BadDataError]
     [com.zotohlab.frwk.i18n I18N]
     [com.zotohlab.frwk.crypto PasswordAPI]
@@ -347,8 +347,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let
-        [^czlab.xlib.util.core.Muble
-         ctr (.container job)
+        [^Muble ctr (.container job)
          ^HTTPEvent
          evt (.event job)
          ^czlab.skaro.io.webss.WebSS
@@ -356,7 +355,7 @@
          rb (I18N/getBase)
          csrf (.getXref mvs)
          ^czlab.skaro.auth.plugin.AuthPlugin
-         pa (:auth (.getf ctr K_PLUGINS))
+         pa (:auth (.getv ctr K_PLUGINS))
          si (try (GetSignupInfo evt)
                  (catch BadDataError e# {:e e#}))
          info (or si {})]
@@ -407,8 +406,7 @@
   (DefBoolExpr
     (fn [^Job job]
       (let
-        [^czlab.xlib.util.core.Muble
-         ctr (.container job)
+        [^Muble ctr (.container job)
          ^HTTPEvent
          evt (.event job)
          ^czlab.skaro.io.webss.WebSS
@@ -416,7 +414,7 @@
          csrf (.getXref mvs)
          rb (I18N/getBase)
          ^czlab.skaro.auth.plugin.AuthPlugin
-         pa (:auth (.getf ctr K_PLUGINS))
+         pa (:auth (.getv ctr K_PLUGINS))
          si (try (GetSignupInfo evt)
                  (catch BadDataError e#  {:e e#}))
          info (or si {}) ]

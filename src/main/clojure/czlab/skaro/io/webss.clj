@@ -17,8 +17,8 @@
   (:require
     [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.util.core
-    :refer [Muble ConvLong
-    notnil? juid MakeMMap Stringify Bytesify]]
+    :refer [ConvLong notnil?
+    juid MakeMMap Stringify Bytesify]]
     [czlab.xlib.crypto.core :refer [GenMac]]
     [czlab.xlib.net.comms :refer [GetFormFields]])
 
@@ -35,7 +35,7 @@
     [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.io HTTPResult
     HTTPEvent IOSession]
-    [com.zotohlab.skaro.core Container]
+    [com.zotohlab.skaro.core Container Muble]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,9 +115,8 @@
         mvs (.getSession evt) ]
     (when-not (.isNull? mvs)
       (log/debug "session appears to be kosher, about to set-cookie!")
-      (let [^czlab.xlib.util.core.Muble
-            src (.emitter evt)
-            cfg (.getf src :emcfg)
+      (let [^Muble src (.emitter evt)
+            cfg (.getv src :emcfg)
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
                                          (:maxIdleSecs cfg))
@@ -165,9 +164,8 @@
       (do
         (log/debug "request contains no session cookie, invalidate the session")
         (.invalidate! mvs))
-      (let [^czlab.xlib.util.core.Muble
-            src netty
-            cfg (.getf src :emcfg)
+      (let [^Muble src netty
+            cfg (.getv src :emcfg)
             cookie (str (.getValue ck))
             pos (.indexOf cookie (int \-))
             [rc1 rc2] (if (< pos 0)
@@ -215,43 +213,43 @@
     (with-meta
       (reify WebSS
 
-        (setAttribute [_ k v] (.setf! attrs k v))
-        (getAttribute [_ k] (.getf attrs k) )
-        (removeAttribute [_ k] (.clrf! attrs k) )
-        (clear! [_] (.clear! attrs))
-        (listAttributes [_] (.seq* attrs))
+        (setAttribute [_ k v] (.setv attrs k v))
+        (getAttribute [_ k] (.getv attrs k) )
+        (removeAttribute [_ k] (.unsetv attrs k) )
+        (clear! [_] (.clear attrs))
+        (listAttributes [_] (.seq attrs))
 
         (setMaxInactiveInterval [_ idleSecs]
           (when (number? idleSecs)
-            (.setf! impl :maxIdleSecs idleSecs)))
+            (.setv impl :maxIdleSecs idleSecs)))
 
-        (isNull? [_] (== (count (.seq* impl)) 0))
-        (isNew? [_] (.getf impl :newOne))
+        (isNull? [_] (== (count (.seq impl)) 0))
+        (isNew? [_] (.getv impl :newOne))
         (isSSL? [_] ssl)
 
         (invalidate! [_]
-          (.clear! attrs)
-          (.clear! impl))
+          (.clear attrs)
+          (.clear impl))
 
-        (setXref [_ csrf] (.setf! attrs :csrf csrf))
+        (setXref [_ csrf] (.setv attrs :csrf csrf))
         (setNew! [this flag maxAge]
           (if flag
             (do
-              (.clear! attrs)
-              (.clear! impl)
+              (.clear attrs)
+              (.clear impl)
               (resetFlags this maxAge)
-              (.setf! impl :maxIdleSecs 0)
-              (.setf! impl :newOne true))
-            (.setf! impl :newOne false)))
+              (.setv impl :maxIdleSecs 0)
+              (.setv impl :newOne true))
+            (.setv impl :newOne false)))
 
-        (getMaxInactiveInterval [_] (or (.getf impl :maxIdleSecs) 0))
-        (getCreationTime [_] (or (.getf attrs CS_FLAG) 0))
-        (getExpiryTime [_] (or (.getf attrs ES_FLAG) 0))
-        (getXref [_] (.getf attrs :csrf))
-        (getId [_] (.getf attrs SSID_FLAG))
+        (getMaxInactiveInterval [_] (or (.getv impl :maxIdleSecs) 0))
+        (getCreationTime [_] (or (.getv attrs CS_FLAG) 0))
+        (getExpiryTime [_] (or (.getv attrs ES_FLAG) 0))
+        (getXref [_] (.getv attrs :csrf))
+        (getId [_] (.getv attrs SSID_FLAG))
 
-        (getLastAccessedTime [_] (or (.getf attrs LS_FLAG) 0))
-        (getLastError [_] (.getf impl :error))
+        (getLastAccessedTime [_] (or (.getv attrs LS_FLAG) 0))
+        (getLastError [_] (.getv impl :error))
 
         Object
 
@@ -261,7 +259,7 @@
                                         ":"
                                         (last %2)))
                        (StringBuilder.)
-                       (.seq* attrs))))
+                       (.seq attrs))))
           ;;(Base64/encodeBase64String (Bytesify (.toEDN attrs))))
 
         IOSession

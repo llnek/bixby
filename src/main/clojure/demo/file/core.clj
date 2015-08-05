@@ -21,7 +21,7 @@
   (:require [clojure.tools.logging :as log])
 
   (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask ]
-            [com.zotohlab.skaro.core Container]
+            [com.zotohlab.skaro.core Container Muble]
             [com.zotohlab.skaro.io FileEvent]
             [com.zotohlab.frwk.server ServiceProvider Service]
             [java.util.concurrent.atomic AtomicInteger]
@@ -46,7 +46,7 @@
 
   (run [_  j _]
     (require 'demo.file.core)
-    (let [^Service p (-> ^ServiceProvider
+    (let [^Muble p (-> ^ServiceProvider
                          (.container ^Job j)
                          (.getService :default-sample))
           s (str "Current time is " (Date.)) ]

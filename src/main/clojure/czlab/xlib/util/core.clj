@@ -25,6 +25,7 @@
     [java.util.zip DataFormatException Deflater Inflater]
     [java.util.concurrent.atomic AtomicLong AtomicInteger]
     [com.zotohlab.frwk.util BadDataError]
+    [com.zotohlab.skaro.core Muble]
     [java.security SecureRandom]
     [com.google.gson JsonObject JsonElement]
     [java.net URL]
@@ -1293,19 +1294,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Muble
-
-  "A Mutable Interface"
-
-  (setf! [_ k v] )
-  (seq* [_] )
-  (toEDN [_])
-  (getf [_ k] )
-  (clear! [_] )
-  (clrf! [_ k] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (deftype MubleObj
 
   ;;[ ^:volatile-mutable data ]
@@ -1313,12 +1301,12 @@
 
   Muble
 
-  (setf! [_ k v] (set! data (assoc data k v)))
-  (clrf! [_ k] (set! data (dissoc data k)))
+  (setv [_ k v] (set! data (assoc data k v)))
+  (unsetv [_ k] (set! data (dissoc data k)))
   (toEDN [_] (pr-str data))
-  (seq* [_] (seq data))
-  (getf [_ k] (get data k))
-  (clear! [_ ] (set! data {} )) )
+  (seq [_] (seq data))
+  (getv [_ k] (get data k))
+  (clear [_ ] (set! data {} )) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1326,13 +1314,13 @@
 
   "Create a mutable object"
 
-  ^czlab.xlib.util.core.Muble
+  ^Muble
   [ & [opts] ]
 
   (let [opts (or opts {})
         m (MubleObj. {})]
     (doseq [[k v] (seq opts)]
-      (.setf! m k v))
+      (.setv m k v))
     m
   ))
 
@@ -1342,11 +1330,11 @@
 
   "Print out this mutable object"
 
-  [^czlab.xlib.util.core.Muble ctx & [dbg] ]
+  [^Muble ctx & [dbg] ]
 
   (let [buf (StringBuilder.) ]
     (.append buf "\n")
-    (doseq [[k v] (.seq* ctx) ]
+    (doseq [[k v] (.seq ctx) ]
       (.append buf (str k " = " v "\n")))
     (.append buf "\n")
     (when-let [s (str buf) ]

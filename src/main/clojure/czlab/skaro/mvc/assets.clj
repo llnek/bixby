@@ -45,6 +45,7 @@
     WebAsset
     HTTPRangeInput AssetCache]
     [java.io Closeable RandomAccessFile File]
+    [com.zotohlab.skaro.core Muble]
     [java.util Map HashMap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

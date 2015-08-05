@@ -16,8 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong ThrowIOE
-    Muble MakeMMap juid tryc]]
+    :refer [NextLong ThrowIOE MakeMMap juid tryc]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? ]])
 
@@ -39,6 +38,7 @@
     TopicConnectionFactory TopicSession TopicSubscriber]
     [javax.naming Context InitialContext]
     [java.io IOException]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,8 +63,8 @@
 
         JMSEvent
 
-        (bindSession [_ s] (.setf! impl :ios s))
-        (getSession [_] (.getf impl :ios))
+        (bindSession [_ s] (.setv impl :ios s))
+        (getSession [_] (.getv impl :ios))
         (checkAuthenticity [_] false)
         (getId [_] eeid)
         (emitter [_] co)
@@ -86,14 +86,14 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/JMS
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: JMS: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         pkey (:app.pkey cfg)
         p1 (:jndiPwd cfg)
         p2 (:jmsPwd cfg) ]
-    (.setf! co :emcfg
+    (.setv co :emcfg
     (-> cfg
         (assoc :jndiPwd (Pwdify p1 pkey))
         (assoc :jmsPwd (Pwdify p2 pkey))))
@@ -106,11 +106,11 @@
 
   ^Connection
 
-  [^czlab.xlib.util.core.Muble co
+  [^Muble co
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         ^String des (:destination cfg)
         jp (str (:jmsPwd cfg))
         ^String ju (:jmsUser cfg)
@@ -135,11 +135,11 @@
 
   ^Connection
 
-  [^czlab.xlib.util.core.Muble co
+  [^Muble co
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         des (str (:destination cfg))
         ju (str (:jmsUser cfg))
         jp (str (:jmsPwd cfg))
@@ -163,11 +163,11 @@
 (defn- inizQueue ""
 
   ^Connection
-  [^czlab.xlib.util.core.Muble co
+  [^Muble co
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         des (str (:destination cfg))
         ju (str (:jmsUser cfg))
         jp (str (:jmsPwd cfg))
@@ -188,10 +188,10 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JMS
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStart: JMS: %s" (.id ^Identifiable co))
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         cf (str (:contextFactory cfg))
         ju (str (:jndiUser cfg))
         jp (str (:jndiPwd cfg))
@@ -219,7 +219,7 @@
               nil) ]
       (when (nil? c)
         (ThrowIOE "Unsupported JMS Connection Factory"))
-      (.setf! co :conn c)
+      (.setv co :conn c)
       (.start c)
       (IOESStarted co))
   ))
@@ -228,12 +228,12 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JMS
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStop: JMS: %s" (.id ^Identifiable co))
-  (when-let [^Connection c (.getf co :conn) ]
+  (when-let [^Connection c (.getv co :conn) ]
     (tryc (.close c))
-    (.setf! co :conn nil)
+    (.setv co :conn nil)
     (IOESStopped co)
   ))
 

@@ -29,7 +29,7 @@
     [czlab.xlib.util.scheduler :refer [NulScheduler]]
     [czlab.xlib.util.core
     :refer [test-nonil test-cond ConvLong SysVar
-    Muble FPath PrintMutableObj MakeMMap]]
+    FPath PrintMutableObj MakeMMap]]
     [czlab.skaro.impl.exec :refer [MakeExecvisor]]
     [czlab.xlib.netty.io :refer [StopServer]])
 
@@ -58,7 +58,7 @@
     [com.zotohlab.wflow Job WorkFlow
     FlowDot
     Activity Nihil]
-    [com.zotohlab.skaro.core Context ConfigError]
+    [com.zotohlab.skaro.core Muble Context ConfigError]
     [com.zotohlab.skaro.etc CliMain]
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]
@@ -84,7 +84,7 @@
   "The context object has a set of properties, such as home dir, which
    is shared with other key components"
 
-  ^czlab.xlib.util.core.Muble
+  ^Muble
   [baseDir]
 
   (let [etc (io/file baseDir DN_CFG)
@@ -97,8 +97,8 @@
     (PrecondDir home)
     (PrecondDir etc)
     (doto (MakeContext)
-      (.setf! K_BASEDIR home)
-      (.setf! K_CFGDIR etc))
+      (.setv K_BASEDIR home)
+      (.setv K_CFGDIR etc))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,11 +107,11 @@
 
   "Stop all apps and processors"
 
-  [^czlab.xlib.util.core.Muble ctx]
+  [^Muble ctx]
 
-  (let [pid (.getf ctx K_PIDFILE)
-        kp (.getf ctx K_KILLPORT)
-        execv (.getf ctx K_EXECV) ]
+  (let [pid (.getv ctx K_PIDFILE)
+        kp (.getv ctx K_KILLPORT)
+        execv (.getv ctx K_EXECV) ]
 
     (when-not @STOPCLI
       (reset! STOPCLI true)
@@ -136,13 +136,13 @@
 
   "Listen on a port for remote kill command"
 
-  [^czlab.xlib.util.core.Muble ctx]
+  [^Muble ctx]
 
   (log/info "enabling remote shutdown")
   (->> (-> (SysVar "skaro.kill.port")
            (ConvLong  4444)
            (MakeDiscardHTTPD #(stopCLI ctx)))
-       (.setf! ctx K_KILLPORT )
+       (.setv ctx K_KILLPORT )
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,11 +187,11 @@
 
       Muble
 
-      (setf! [_ a v] (.setf! impl a v) )
-      (clrf! [_ a] (.clrf! impl a) )
-      (getf [_ a] (.getf impl a) )
-      (seq* [_] )
-      (clear! [_] (.clear! impl))
+      (setv [_ a v] (.setv impl a v) )
+      (unsetv [_ a] (.unsetv impl a) )
+      (getv [_ a] (.getv impl a) )
+      (seq [_] )
+      (clear [_] (.clear impl))
       (toEDN [_ ] (.toEDN impl))
 
       Hierarchial
@@ -234,9 +234,8 @@
 
   (SimPTask "HookShutDown"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
-            cli (.getf ctx K_CLISH)]
+      (let [^Muble ctx (.getLastResult j)
+            cli (.getv ctx K_CLISH)]
         (.addShutdownHook (Runtime/getRuntime)
                           (ThreadFunc #(stopCLI ctx) false))
         (enableRemoteShutdown ctx)
@@ -252,12 +251,11 @@
 
   (SimPTask "WritePID"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
-            home (.getf ctx K_BASEDIR)
+      (let [^Muble ctx (.getLastResult j)
+            home (.getv ctx K_BASEDIR)
             fp (io/file home "skaro.pid")]
         (WriteOneFile fp (ProcessPid))
-        (.setf! ctx K_PIDFILE fp)
+        (.setv ctx K_PIDFILE fp)
         (.deleteOnExit fp)
         (log/info "wrote skaro.pid - ok")))
   ))
@@ -273,17 +271,16 @@
 
   (SimPTask "Primodial"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
-            cl (.getf ctx K_EXEC_CZLR)
-            cli (.getf ctx K_CLISH)
-            wc (.getf ctx K_PROPS)
+      (let [^Muble ctx (.getLastResult j)
+            cl (.getv ctx K_EXEC_CZLR)
+            cli (.getv ctx K_CLISH)
+            wc (.getv ctx K_PROPS)
             cz (get-in wc [K_COMPS K_EXECV]) ]
         (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
         (log/info "inside primodial() ----------------------------->")
         (log/info "execvisor = %s" cz)
         (let [execv (MakeExecvisor cli)]
-          (.setf! ctx K_EXECV execv)
+          (.setv ctx K_EXECV execv)
           (SynthesizeComponent execv {:ctx ctx})
           (log/info "execvisor created and synthesized - ok")
           (log/info "*********************************************************")
@@ -304,12 +301,11 @@
 
   (SimPTask "LoadResource"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
+      (let [^Muble ctx (.getLastResult j)
             rc (-> "czlab.skaro.etc/Resources"
-                   (GetResource (.getf ctx K_LOCALE)))]
+                   (GetResource (.getv ctx K_LOCALE)))]
         (test-nonil "etc/resouces" rc)
-        (.setf! ctx K_RCBUNDLE rc)
+        (.setv ctx K_RCBUNDLE rc)
         (I18N/setBase rc)
         (log/info "resource bundle found and loaded")))
   ))
@@ -325,9 +321,8 @@
 
   (SimPTask "LoadConf"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            ctx (.getLastResult j)
-            home (.getf ctx K_BASEDIR)
+      (let [^Muble ctx (.getLastResult j)
+            home (.getv ctx K_BASEDIR)
             cf (io/file home
                         DN_CONF (name K_PROPS))]
         (log/info "about to parse config file %s" cf)
@@ -339,8 +334,8 @@
                     (Locale. lg cn))]
           (log/info "using locale: %s" loc)
           (doto ctx
-            (.setf! K_LOCALE loc)
-            (.setf! K_PROPS w)))))
+            (.setv K_LOCALE loc)
+            (.setv K_PROPS w)))))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -356,15 +351,14 @@
 
   (SimPTask "SetupLoaders"
     (fn [^Job j]
-      (let [^czlab.xlib.util.core.Muble
-            x (.getLastResult j)
+      (let [^Muble x (.getLastResult j)
             cz (GetCldr)
             p (.getParent cz)
             pp (.getParent p)]
         (test-cond "bad classloaders" (and (instance? RootClassLoader pp)
                                            (instance? ExecClassLoader p)))
-        (.setf! x K_ROOT_CZLR (.getParent p))
-        (.setf! x K_EXEC_CZLR p)
+        (.setv x K_ROOT_CZLR (.getParent p))
+        (.setv x K_EXEC_CZLR p)
         (log/info "classloaders configured: using %s" (type cz))))
   ))
 
@@ -382,7 +376,7 @@
             x (inizContext home)]
         (log/info "skaro.home %s" (FPath home))
         (log/info "skaro.version= %s" (.version ^Versioned c))
-        (.setf! x K_CLISH c)
+        (.setv x K_CLISH c)
         (-> ^Context c (.setx x))
         (log/info "home directory looks ok")
         (.setLastResult j x)))

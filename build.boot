@@ -643,8 +643,9 @@
   []
 
   (let [m (map #(apply % [])
-                [#'skaroCore #'skaroEtc #'skaroAuth
-                 #'skaroIO #'skaroMvc #'skaroMain ])
+                [#'skaroCore #'skaroIO
+                 #'skaroEtc #'skaroAuth
+                 #'skaroMvc #'skaroMain ])
         t2 (a/AntCopy
              {:todir (fp! (ge :czzDir) "czlab/skaro")}
              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/skaro")

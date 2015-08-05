@@ -15,7 +15,7 @@
   czlab.skaro.mvc.comms
 
   (:require
-    [czlab.xlib.util.core :refer [Muble try! FPath]]
+    [czlab.xlib.util.core :refer [try! FPath]]
     [czlab.xlib.util.wfs :refer [SimPTask]]
     [czlab.skaro.mvc.assets
     :refer [MakeWebAsset GetLocalFile]]
@@ -44,7 +44,7 @@
     [com.zotohlab.wflow FlowDot Activity
     Job WHandler PTask Work]
     [com.zotohlab.skaro.runtime AuthError]
-    [com.zotohlab.skaro.core Container]
+    [com.zotohlab.skaro.core Muble Container]
     [org.apache.commons.lang3 StringUtils]
     [java.util Date]
     [java.io File]
@@ -97,13 +97,10 @@
 
   "Add a ETag"
 
-  [^czlab.xlib.util.core.Muble
-   src info
-   ^File file
-   ^HTTPResult res]
+  [^Muble src info ^File file ^HTTPResult res]
 
   (let [lastTm (.lastModified file)
-        cfg (.getf src :emcfg)
+        cfg (.getv src :emcfg)
         maxAge (:maxAgeSecs cfg)
         eTag  (str "\""  lastTm  "-"
                    (.hashCode file)  "\"")]
@@ -187,9 +184,7 @@
                          (.getAppDir))
         ps (FPath (io/file appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
-        cfg (.getf ^czlab.xlib.util.core.Muble
-                   src
-                   :emcfg)
+        cfg (-> ^Muble src (.getv :emcfg))
         ckAccess (:fileAccessCheck cfg)
         fpath (nsb (:path options))
         info (:info options) ]
@@ -221,15 +216,13 @@
 
   "Reply back an error"
 
-  [^czlab.xlib.util.core.Muble src
-   ^Channel ch
-   code ]
+  [^Muble src ^Channel ch code]
 
   (with-local-vars [rsp (MakeHttpReply code)
                     bits nil wf nil
                     ctype "text/plain"]
     (try
-      (let [cfg (.getf src :emcfg)
+      (let [cfg (.getv src :emcfg)
             h (:errorHandler cfg)
             ^HTTPErrorHandler
             cb (if (hgl? h) (MakeObj h) nil)
@@ -260,9 +253,7 @@
 
   "Reply back with a static file content"
 
-  [^czlab.xlib.util.core.Muble
-   ri
-   ^Emitter src
+  [^Muble ri ^Emitter src
    ^Matcher mc ^Channel ch info ^HTTPEvent evt]
 
   (with-local-vars [ok true mp nil]
@@ -276,7 +267,7 @@
                              (.container src)
                              (.getAppDir))
             ps (FPath (io/file appDir DN_PUBLIC))
-            mpt (nsb (.getf ri :mountPoint))
+            mpt (str (.getv ri :mountPoint))
             gc (.groupCount mc)]
         (var-set mp (.replace mpt "${app.dir}" (FPath appDir)))
         (when (> gc 1)
@@ -285,7 +276,7 @@
                                              "{}"
                                              (.group mc (int i)) 1))))
         (var-set mp (FPath (File. ^String @mp)))
-        (let [cfg (.getf ^czlab.xlib.util.core.Muble src :emcfg)
+        (let [cfg (-> ^Muble src (.getv :emcfg))
               ^czlab.skaro.io.core.EmitAPI co src
               ^czlab.skaro.io.core.WaitEventHolder
               w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
@@ -305,7 +296,7 @@
   "Handle a match route"
 
   [^czlab.xlib.net.routes.RouteInfo ri
-   ^czlab.xlib.util.core.Muble src
+   ^Muble src
    ^Matcher mc
    ^Channel ch
    ^HTTPEvent evt]
@@ -318,7 +309,7 @@
         (ServeError src ch 403)))
     (when @ok
       (let [^czlab.skaro.io.core.EmitAPI co src
-            cfg (.getf src :emcfg)
+            cfg (.getv src :emcfg)
             pms (.collect ri mc)
             options {:router (.getHandler ri)
                      :params (merge {} pms)

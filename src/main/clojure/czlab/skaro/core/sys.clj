@@ -15,7 +15,7 @@
   czlab.skaro.core.sys
 
   (:require
-    [czlab.xlib.util.core :refer [Muble MakeMMap FPath]]
+    [czlab.xlib.util.core :refer [MakeMMap FPath]]
     [czlab.xlib.util.files
     :refer [ChangeFileContent ReadOneFile ReadOneUrl]])
 
@@ -28,7 +28,7 @@
 
   (:import
     [org.apache.commons.io FilenameUtils FileUtils]
-    [com.zotohlab.skaro.core Context]
+    [com.zotohlab.skaro.core Context Muble]
     [java.io File]
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.core Hierarchial Identifiable Versioned]))
@@ -67,7 +67,7 @@
    3. configure
    4. initialize"
 
-  ^czlab.xlib.util.core.Muble
+  ^Muble
   [co options]
 
   (let [{:keys [props rego ctx]} options]
@@ -84,17 +84,17 @@
 
   "Create a context object"
 
-  ^czlab.xlib.util.core.Muble
+  ^Muble
   []
 
   (let [impl (MakeMMap) ]
     (reify Muble
-      (setf! [_ k v] (.setf! impl k v) )
-      (seq* [_] (.seq* impl))
+      (setv [_ k v] (.setv impl k v) )
+      (seq [_] (.seq impl))
       (toEDN [_] (.toEDN impl))
-      (getf [_ k] (.getf impl k) )
-      (clrf! [_ k] (.clrf! impl k) )
-      (clear! [_] (.clear! impl)))
+      (getv [_ k] (.getv impl k) )
+      (unsetv [_ k] (.unsetv impl k) )
+      (clear [_] (.clear impl)))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,14 +121,13 @@
 
   "Shallow copy"
 
-  ^czlab.xlib.util.core.Muble
-
-  [^Context co ^czlab.xlib.util.core.Muble ctx]
+  ^Muble
+  [^Context co ^Muble ctx]
 
   (when (some? ctx)
     (let [x (MakeContext) ]
-      (doseq [[k v] (.seq* ctx) ]
-        (.setf! x k v))
+      (doseq [[k v] (.seq ctx) ]
+        (.setv x k v))
       (.setx co x)))
   co)
 

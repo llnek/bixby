@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.scheduler :refer [NulScheduler MakeScheduler]]
-    [czlab.xlib.util.core :refer [Cast? Muble MakeMMap NextLong]])
+    [czlab.xlib.util.core :refer [Cast? MakeMMap NextLong]])
 
   (:require [czlab.xlib.util.logging :as log])
 
@@ -33,6 +33,7 @@
      ServiceHandler]
     [com.zotohlab.frwk.util Schedulable]
     [com.zotohlab.frwk.core Activable Disposable]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,13 +55,13 @@
 
       Job
 
-      (setLastResult [this v] (.setf! impl JS_LAST v))
-      (getLastResult [this] (.getf impl JS_LAST))
-      (clrLastResult [this] (.clrf! impl JS_LAST))
-      (clear [_] (.clear! impl))
-      (setv [this k v] (.setf! impl k v))
-      (unsetv [this k] (.clrf! impl k))
-      (getv [this k] (.getf impl k))
+      (setLastResult [this v] (.setv impl JS_LAST v))
+      (getLastResult [this] (.getv impl JS_LAST))
+      (clrLastResult [this] (.unsetv impl JS_LAST))
+      (clear [_] (.clear impl))
+      (setv [this k v] (.setv impl k v))
+      (unsetv [this k] (.unsetv impl k))
+      (getv [this k] (.getv impl k))
       (container [_] par)
       (wflow [_] wfw)
       (event [_] evt)

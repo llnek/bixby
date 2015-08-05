@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.str :refer [lcase ucase hgl? strim]]
     [czlab.xlib.util.core
-    :refer [Muble notnil? juid tryc spos?
+    :refer [notnil? juid tryc spos?
     NextLong ToJavaInt try! MakeMMap test-cond Stringify]]
     [czlab.xlib.crypto.codec :refer [Pwdify]])
 
@@ -70,7 +70,7 @@
     [com.zotohlab.skaro.io WebSockResult
     HTTPResult
     HTTPEvent JettyUtils]
-    [com.zotohlab.skaro.core Container]))
+    [com.zotohlab.skaro.core Muble Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -107,17 +107,17 @@
 ;;
 (defn- replyServlet ""
 
-  [^czlab.xlib.util.core.Muble res
+  [^Muble res
    ^HttpServletRequest req
    ^HttpServletResponse rsp
    src]
 
-  (let [^URL url (.getf res :redirect)
+  (let [^URL url (.getv res :redirect)
         os (.getOutputStream rsp)
-        cks (.getf res :cookies)
-        hds (.getf res :hds)
-        code (.getf res :code)
-        data (.getf res :data) ]
+        cks (.getv res :cookies)
+        hds (.getv res :hds)
+        code (.getv res :code)
+        data (.getv res :data) ]
     (try
       (.setStatus rsp code)
       (doseq [[nm vs] hds]
@@ -183,13 +183,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/JettyIO
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: JettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)]
-    (.setf! co :emcfg
-               (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
-    (.setf! co K_APP_CZLR (get cfg K_APP_CZLR))
+  (let [cfg (merge (.getv co :dftOptions) cfg0)]
+    (.setv co :emcfg
+              (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
+    (.setv co K_APP_CZLR (get cfg K_APP_CZLR))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,17 +220,17 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/JettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
 
-        ^czlab.xlib.util.core.Muble
+        ^Muble
         ctr (.parent ^Hierarchial co)
-        rts (.getf ctr :routes)
+        rts (.getv ctr :routes)
 
-        cfg (.getf co :emcfg)
+        cfg (.getv co :emcfg)
         keyfile (:serverKey cfg)
         ^String host (:host cfg)
         port (:port cfg)
@@ -251,8 +251,8 @@
     (.setName cc (juid))
     (doto svr
       (.setConnectors (into-array Connector [cc])))
-    (.setf! co :jetty svr)
-    (.setf! co :cracker (MakeRouteCracker rts))
+    (.setv co :jetty svr)
+    (.setv co :cracker (MakeRouteCracker rts))
     co
   ))
 
@@ -260,12 +260,12 @@
 ;;
 (defn- dispREQ ""
 
-  [^czlab.xlib.util.core.Muble co
+  [^Muble co
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
   (let [^czlab.xlib.net.routes.RouteCracker
-        ck (.getf co :cracker)
+        ck (.getv co :cracker)
         cfg {:method (ucase (.getMethod req))
              :uri (.getRequestURI req)}
         [r1 r2 r3 r4]
@@ -280,7 +280,7 @@
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
             wss (MakeWSSession co ssl)
-            cfg (.getf co :emcfg)
+            cfg (.getv co :emcfg)
             wm (:waitMillis cfg)
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
@@ -320,16 +320,16 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStart: JettyIO: %s" (.id ^Identifiable co))
-  (let [^czlab.xlib.util.core.Muble
+  (let [^Muble
         ctr (.parent ^Hierarchial co)
-        ^Server jetty (.getf co :jetty)
-        ^File app (.getf ctr K_APPDIR)
+        ^Server jetty (.getv co :jetty)
+        ^File app (.getv ctr K_APPDIR)
         ^File rcpath (io/file app DN_PUBLIC)
         rcpathStr (io/as-url  rcpath)
-        cfg (.getf co :emcfg)
+        cfg (.getv co :emcfg)
         cp (:contextPath cfg)
         ctxs (ContextHandlerCollection.)
         c2 (ContextHandler.)
@@ -343,7 +343,7 @@
         (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
-    (.setClassLoader c2 ^ClassLoader (.getf co K_APP_CZLR))
+    (.setClassLoader c2 ^ClassLoader (.getv co K_APP_CZLR))
     (.setContextPath c2 (strim cp))
     (.setHandler c2 myHandler)
     (.setHandlers ctxs (into-array Handler [c1 c2]))
@@ -356,10 +356,10 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStop: JettyIO: %s" (.id ^Identifiable co))
-  (let [^Server svr (.getf co :jetty) ]
+  (let [^Server svr (.getv co :jetty) ]
     (when (some? svr)
       (tryc
           (.stop svr) ))
@@ -415,20 +415,20 @@
 
       HTTPEvent
 
-      (getCookies [_] (vals (.getf impl :cookies)))
+      (getCookies [_] (vals (.getv impl :cookies)))
       (getCookie [_ nm]
-        (when-let [cs (.getf impl :cookies)]
+        (when-let [cs (.getv impl :cookies)]
           (get cs nm)))
 
       (checkAuthenticity [_] false)
       (getId [_] eid)
 
       (bindSession [this s]
-        (.setf! impl :ios s)
+        (.setv impl :ios s)
         (.handleEvent ^IOSession s this))
 
       (isKeepAlive [_] (isServletKeepAlive req))
-      (getSession [_] (.getf impl :ios))
+      (getSession [_] (.getv impl :ios))
       (emitter [_] co)
 
       (hasData [_] false)

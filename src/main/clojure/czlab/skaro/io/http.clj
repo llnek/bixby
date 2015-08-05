@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
     [czlab.xlib.util.core
-    :refer [Muble notnil? juid spos? NextLong
+    :refer [notnil? juid spos? NextLong
     ToJavaInt SubsVar MakeMMap test-cond Stringify]]
     [czlab.xlib.net.comms :refer [ParseBasicAuth]]
     [czlab.xlib.crypto.codec :refer [Pwdify]])
@@ -48,14 +48,14 @@
     Disposable Startable]
     [org.apache.commons.codec.binary Base64]
     [org.apache.commons.lang3 StringUtils]
-    [com.zotohlab.skaro.io IOSession
-    ServletEmitter]
     [javax.servlet.http HttpServletRequest
     HttpServletResponse]
     [com.zotohlab.skaro.io WebSockResult
+    IOSession
+    ServletEmitter
     HTTPResult
     HTTPEvent JettyUtils]
-    [com.zotohlab.skaro.core Container]))
+    [com.zotohlab.skaro.core Muble Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -82,7 +82,7 @@
 
   "Basic http config"
 
-  [^czlab.xlib.util.core.Muble co cfg]
+  [^Muble co cfg]
 
   (let [kfile (SubsVar (str (:serverKey cfg)))
         socto (:sockTimeOut cfg)
@@ -141,12 +141,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/HTTP
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: HTTP: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
-    (.setf! co :emcfg c2)
+    (.setv co :emcfg c2)
     co
   ))
 
@@ -165,18 +165,18 @@
 
       Muble
 
-      (setf! [_ k v] (.setf! impl k v) )
-      (seq* [_] (.seq* impl))
+      (setv [_ k v] (.setv impl k v) )
+      (seq [_] (.seq impl))
       (toEDN [_] (.toEDN impl))
-      (getf [_ k] (.getf impl k) )
-      (clrf! [_ k] (.clrf! impl k) )
-      (clear! [_] (.clear! impl))
+      (getv [_ k] (.getv impl k) )
+      (unsetv [_ k] (.unsetv impl k) )
+      (clear [_] (.clear impl))
 
       WebSockResult
 
-      (isBinary [_] (true? (.getf impl :binary)))
+      (isBinary [_] (true? (.getv impl :binary)))
       (isText [this] (not (.isBinary this)))
-      (getData [_] (XData. (.getf impl :data)))
+      (getData [_] (XData. (.getv impl :data)))
       (emitter [_] co)
 
   )))
@@ -198,61 +198,60 @@
 
       Muble
 
-      (setf! [_ k v] (.setf! impl k v) )
-      (seq* [_] (.seq* impl))
-      (getf [_ k] (.getf impl k) )
-      (clrf! [_ k] (.clrf! impl k) )
+      (setv [_ k v] (.setv impl k v) )
+      (seq [_] (.seq impl))
+      (getv [_ k] (.getv impl k) )
+      (unsetv [_ k] (.unsetv impl k) )
       (toEDN [_] (.toEDN impl))
-      (clear! [_] (.clear! impl))
+      (clear [_] (.clear impl))
 
       HTTPResult
 
-      (setProtocolVersion [_ ver]  (.setf! impl :version ver))
-      (setStatus [_ code] (.setf! impl :code code))
-      (getStatus [_] (.getf impl :code))
+      (setProtocolVersion [_ ver]  (.setv impl :version ver))
+      (setStatus [_ code] (.setv impl :code code))
+      (getStatus [_] (.getv impl :code))
       (emitter [_] co)
 
-      (setRedirect [_ url] (.setf! impl :redirect url))
+      (setRedirect [_ url] (.setv impl :redirect url))
 
       (addCookie [_ c]
-        (when-not (nil? c)
-          (let [a (.getf impl :cookies) ]
-            (.setf! impl :cookies (conj a c)))))
+        (when (some? c)
+          (let [a (.getv impl :cookies) ]
+            (.setv impl :cookies (conj a c)))))
 
       (containsHeader [_ nm]
-        (let [m (.getf impl :hds)
+        (let [m (.getv impl :hds)
               a (get m (lcase nm)) ]
-          (and (notnil? a)
+          (and (some? a)
                (> (count a) 0))))
 
       (removeHeader [_ nm]
-        (let [m (.getf impl :hds)]
-          (.setf! impl :hds (dissoc m (lcase nm)))))
+        (let [m (.getv impl :hds)]
+          (.setv impl :hds (dissoc m (lcase nm)))))
 
       (clearHeaders [_]
-        (.setf! impl :hds {}))
+        (.setv impl :hds {}))
 
       (addHeader [_ nm v]
-        (let [m (.getf impl :hds)
+        (let [m (.getv impl :hds)
               a (or (get m (lcase nm))
                          []) ]
-          (.setf! impl
-                  :hds
-                  (assoc m (lcase nm) (conj a v)))))
+          (.setv impl
+                 :hds
+                 (assoc m (lcase nm) (conj a v)))))
 
       (setHeader [_ nm v]
-        (let [m (.getf impl :hds) ]
-          (.setf! impl
-                  :hds
-                  (assoc m (lcase nm) [v]))))
+        (let [m (.getv impl :hds) ]
+          (.setv impl
+                 :hds
+                 (assoc m (lcase nm) [v]))))
 
-      (setChunked [_ b] (.setf! impl :chunked b))
+      (setChunked [_ b] (.setv impl :chunked b))
 
       (setContent [_ data]
-        (if-not (nil? data)
-          (.setf! impl :data data)) )
-
-  )) )
+        (if (some? data)
+          (.setv impl :data data)) ))
+  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

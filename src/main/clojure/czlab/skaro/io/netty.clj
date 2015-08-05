@@ -19,7 +19,7 @@
     [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
     [czlab.xlib.util.core
     :refer [try! Stringify ThrowIOE
-    Muble NextLong MakeMMap notnil? ConvLong]]
+    NextLong MakeMMap notnil? ConvLong]]
     [czlab.skaro.io.webss :refer [MakeWSSession]]
     [czlab.xlib.util.mime :refer [GetCharset]])
 
@@ -64,6 +64,7 @@
     [io.netty.handler.stream ChunkedFile
     ChunkedStream ChunkedWriteHandler]
     [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.frwk.netty
     MessageFilter
     ErrorSinkFilter PipelineConfigurator]
@@ -167,14 +168,14 @@
   [^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
-  (let [^czlab.xlib.util.core.Muble
+  (let [^Muble
         res (.getResultObj evt)
-        cks (csToNetty (.getf res :cookies))
-        code (.getf res :code)
+        cks (csToNetty (.getv res :cookies))
+        code (.getv res :code)
         rsp (MakeHttpReply code)
-        loc (str (.getf res :redirect))
-        data (.getf res :data)
-        hdrs (.getf res :hds) ]
+        loc (str (.getv res :redirect))
+        data (.getv res :data)
+        hdrs (.getv res :hds) ]
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
@@ -222,8 +223,8 @@
                           (var-set clen (.size xs))
                           (ChunkedStream. (.stream xs)))
                         nil)))
-          (if (and (notnil? @payload)
-                   (notnil? @raf))
+          (if (and (some? @payload)
+                   (some? @raf))
             (var-set clen (.length ^RandomAccessFile @raf))))
 
         :else nil)
@@ -238,12 +239,12 @@
       (log/debug "wrote response headers out to client")
 
       (when (and (> @clen 0)
-                 (notnil? @payload))
+                 (some? @payload))
         (.write ch @payload)
         (log/debug "wrote response body out to client"))
 
       (let [wf (WriteLastContent ch true) ]
-        (FutureCB wf #(when-not (nil? @raf)
+        (FutureCB wf #(when (some? @raf)
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel, bye")
@@ -313,21 +314,22 @@
                      :else nil))
     (with-meta
       (reify
+
         Muble
 
-        (setf! [_ k v] (.setf! impl k v) )
-        (seq* [_] (.seq* impl))
-        (getf [_ k] (.getf impl k) )
+        (setv [_ k v] (.setv impl k v) )
+        (seq [_] (.seq impl))
+        (getv [_ k] (.getv impl k) )
         (toEDN [_] (.toEDN impl))
-        (clrf! [_ k] (.clrf! impl k) )
-        (clear! [_] (.clear! impl))
+        (unsetv [_ k] (.unsetv impl k) )
+        (clear [_] (.clear impl))
 
         Identifiable
         (id [_] eeid)
 
         WebSockEvent
-        (bindSession [_ s] (.setf! impl :ios s))
-        (getSession [_] (.getf impl :ios))
+        (bindSession [_ s] (.setv impl :ios s))
+        (getSession [_] (.getv impl :ios))
         (getSocket [_] ch)
         (getId [_] eeid)
         (checkAuthenticity [_] false)
@@ -382,19 +384,19 @@
 
         Muble
 
-        (setf! [_ k v] (.setf! impl k v) )
-        (seq* [_] (.seq* impl))
-        (getf [_ k] (.getf impl k) )
-        (clrf! [_ k] (.clrf! impl k) )
+        (setv [_ k v] (.setv impl k v) )
+        (seq [_] (.seq impl))
+        (getv [_ k] (.getv impl k) )
+        (unsetv [_ k] (.unsetv impl k) )
         (toEDN [_] (.toEDN impl))
-        (clear! [_] (.clear! impl))
+        (clear [_] (.clear impl))
 
         Identifiable
         (id [_] eeid)
 
         HTTPEvent
-        (bindSession [_ s] (.setf! impl :ios s))
-        (getSession [_] (.getf impl :ios))
+        (bindSession [_ s] (.setv impl :ios s))
+        (getSession [_] (.getv impl :ios))
         (getId [_] eeid)
         (emitter [_] co)
         (checkAuthenticity [_] wantSecure)
@@ -404,7 +406,7 @@
 
         (isKeepAlive [_] (true? (info "keepAlive")))
 
-        (hasData [_] (notnil? xdata))
+        (hasData [_] (some? xdata))
         (data [_] xdata)
 
         (contentType [_] (GetInHeader info "content-type"))
@@ -465,7 +467,7 @@
             (cond
               (and (>= code 200)(< code 400)) (.handleResult mvs this res)
               :else nil)
-            (when-not (nil? wevt)
+            (when (some? wevt)
               (.resumeOnResult wevt res))))
       )
 
@@ -495,8 +497,7 @@
 
   (log/info "IOESReifyEvent: NettyIO: %s" (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
-        ssl (notnil? (.get (.pipeline ch)
-                           "ssl"))
+        ssl (some? (.get (.pipeline ch) "ssl"))
         msg (nth args 1) ]
     (cond
       (instance? WebSocketFrame msg)
@@ -516,12 +517,12 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/NettyIO
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
-    (.setf! co :emcfg c2)
+    (.setv co :emcfg c2)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -530,14 +531,14 @@
 
   ^ChannelHandler
   [^czlab.skaro.io.core.EmitAPI co
-   ^czlab.xlib.util.core.Muble src
+   ^Muble src
    options]
 
   (log/debug "netty pipeline dispatcher, emitter = %s" (type co))
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
-            cfg (.getf src :emcfg)
+            cfg (.getv src :emcfg)
             ts (:waitMillis cfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
@@ -554,11 +555,10 @@
 ;;
 (defn- init-netty ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^czlab.xlib.util.core.Muble
-        ctr (.parent ^Hierarchial co)
-        options (.getf co :emcfg)
+  (let [^Muble ctr (.parent ^Hierarchial co)
+        options (.getv co :emcfg)
         disp (msgDispatcher co co options)
         bs (InitTCPServer
              (ReifyPipeCfgtor
@@ -568,7 +568,7 @@
                                  "MsgDispatcher"
                                  disp))))
              options) ]
-    (.setf! co :netty  { :bootstrap bs })
+    (.setv co :netty  { :bootstrap bs })
     co
   ))
 
@@ -576,16 +576,16 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/NettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         host (str (:host cfg))
         port (:port cfg)
-        nes (.getf co :netty)
+        nes (.getv co :netty)
         bs (:bootstrap nes)
         ch (StartServer bs host port) ]
-    (.setf! co :netty (assoc nes :channel ch))
+    (.setv co :netty (assoc nes :channel ch))
     (IOESStarted co)
   ))
 
@@ -593,11 +593,11 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/NettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "IOESStop NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}
-        (.getf co :netty) ]
+        (.getv co :netty) ]
     (StopServer  bootstrap channel)
     (IOESStopped co)
   ))
@@ -606,7 +606,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/NettyIO
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "compInitialize: NettyIO: %s" (.id ^Identifiable co))
   (init-netty co))

@@ -44,6 +44,7 @@
     FileAlterationListenerAdaptor
     FileAlterationMonitor
     FileAlterationObserver]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io FileEvent]
     [com.zotohlab.frwk.core Identifiable]))
 
@@ -70,8 +71,8 @@
 
         FileEvent
 
-        (bindSession [_ s] (.setf! impl :ios s))
-        (getSession [_] (.getf impl :ios))
+        (bindSession [_ s] (.setv impl :ios s))
+        (getSession [_] (.getv impl :ios))
         (getId [_] eeid)
         (checkAuthenticity [_] false)
         (emitter [_] co)
@@ -87,12 +88,10 @@
 
   "Only look for new files"
 
-  [^czlab.xlib.util.core.Muble
-   co
-   ^File f action]
+  [^Muble co ^File f action]
 
   (let [^czlab.skaro.io.core.EmitAPI src co
-        cfg (.getf co :emcfg)
+        cfg (.getv co :emcfg)
         ^File des (:recvFolder cfg)
         origFname (.getName f)
         cf (case action
@@ -111,10 +110,10 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/FilePicker
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: FilePicker: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getf co :dftOptions) cfg0)
+  (let [cfg (merge (.getv co :dftOptions) cfg0)
         root (SubsVar (str (:targetFolder cfg)))
         dest (SubsVar (str (:recvFolder cfg)))
         mask (str (:fmask cfg))
@@ -122,7 +121,7 @@
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))
     (test-nestr "file-root-folder" root)
-    (.setf! co :emcfg
+    (.setv co :emcfg
       (-> c2
         (assoc :targetFolder (Mkdirs (io/file root)))
         (assoc :fmask
@@ -147,10 +146,10 @@
 ;;
 (defmethod CompInitialize :czc.skaro.io/FilePicker
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (log/info "compInitialize FilePicker: %s" (.id ^Identifiable co))
-  (let [cfg (.getf co :emcfg)
+  (let [cfg (.getv co :emcfg)
         obs (FileAlterationObserver. ^File (:targetFolder cfg)
                                      ^FileFilter (:fmask cfg))
         intv (:intervalMillis cfg)
@@ -164,7 +163,7 @@
                 (postPoll co f :FP-DELETED))) ]
     (.addListener obs lnr)
     (.addObserver mon obs)
-    (.setf! co :monitor mon)
+    (.setv co :monitor mon)
     (log/info "filePicker's apache io monitor created - ok")
     co
   ))
@@ -173,9 +172,9 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/FilePicker
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (when-let [mon (.getf co :monitor) ]
+  (when-let [mon (.getv co :monitor) ]
     (log/info "filePicker's apache io monitor starting...")
     (.start ^FileAlterationMonitor mon)
   ))

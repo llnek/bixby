@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-        :refer [Muble MakeMMap test-cond test-nestr]]
+        :refer [MakeMMap test-cond test-nestr]]
     [czlab.xlib.util.str
         :refer [ToKW strim lcase ucase nsb nichts? hgl?]]
     [czlab.xlib.util.files :refer [ReadOneFile]]
@@ -26,6 +26,7 @@
 
   (:import
     [org.apache.commons.lang3 StringUtils]
+    [com.zotohlab.skaro.core Muble]
     [com.google.gson JsonObject]
     [java.io File]
     [jregex Matcher Pattern]
@@ -71,24 +72,24 @@
 
         Muble
 
-        (setf! [_ k v] (.setf! impl k v) )
-        (seq* [_] (.seq* impl))
-        (getf [_ k] (.getf impl k) )
-        (clrf! [_ k] (.clrf! impl k) )
+        (setv [_ k v] (.setv impl k v) )
+        (seq [_] (.seq impl))
+        (getv [_ k] (.getv impl k) )
+        (unsetv [_ k] (.unsetv impl k) )
         (toEDN [_] (.toEDN impl))
-        (clear! [_] (.clear! impl))
+        (clear [_] (.clear impl))
 
         RouteInfo
 
-        (getTemplate [_] (.getf impl :template))
-        (isStatic? [_] (.getf impl :static))
+        (getTemplate [_] (.getv impl :template))
+        (isStatic? [_] (.getv impl :static))
         (getHandler [_] handler)
         (getPath [_] route)
         (getVerbs [_] verbs)
-        (isSecure? [_] (.getf impl :secure))
+        (isSecure? [_] (.getv impl :secure))
 
         (resemble? [_ mtd path]
-          (let [^Pattern rg (.getf impl :regex)
+          (let [^Pattern rg (.getv impl :regex)
                 um (keyword (lcase mtd))
                 m (.matcher rg path) ]
             (if (and (.matches m)
@@ -98,7 +99,7 @@
               nil)))
 
         (collect [_ mc]
-          (let [ph (.getf impl :placeHolders)
+          (let [ph (.getv impl :placeHolders)
                 ^Matcher mmc mc
                 gc (.groupCount mmc) ]
             (with-local-vars
@@ -119,8 +120,7 @@
 ;;
 (defn- initRoute ""
 
-  [^czlab.xlib.util.core.Muble rc
-   ^String path]
+  [^Muble rc ^String path]
 
   (let [tknz (StringTokenizer. path "/" true)
         buff (StringBuilder.) ]
@@ -147,9 +147,9 @@
             (.append buff @ts))))
       (let [pp (.toString buff) ]
         (log/info "Route added: %s\nCanonicalized to: %s" path pp)
-        (.setf! rc :regex (Pattern. pp))
-        (.setf! rc :path pp))
-      (.setf! rc :placeHolders (persistent! @phs))
+        (.setv rc :regex (Pattern. pp))
+        (.setv rc :path pp))
+      (.setv rc :placeHolders (persistent! @phs))
       rc
   )))
 
@@ -168,25 +168,25 @@
      verb (get rt :verb #{})
      mpt (get rt :mount "")
      pipe (get rt :pipe "")
-     ^czlab.xlib.util.core.Muble
+     ^Muble
      rc (make-route-info
           uri
           (if (and stat (empty? verb))
               #{:get}
               verb)
           pipe) ]
-    (.setf! rc :secure secure)
+    (.setv rc :secure secure)
     (if stat
       (do
-        (.setf! rc :mountPoint mpt)
-        (.setf! rc :static true)
+        (.setv rc :mountPoint mpt)
+        (.setv rc :static true)
         (test-nestr "static-route mount point" mpt))
       ;else
       (do
         (test-cond "http method for route" (not-empty verb))
         (test-nestr "pipeline for route" pipe)))
     (when (hgl? tpl)
-      (.setf! rc :template tpl))
+      (.setv rc :template tpl))
     (initRoute rc uri)
     rc
   ))

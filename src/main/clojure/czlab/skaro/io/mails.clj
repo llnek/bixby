@@ -34,6 +34,7 @@
     [java.util Properties]
     [javax.mail.internet MimeMessage]
     [java.io IOException]
+    [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io EmailEvent]
     [com.zotohlab.frwk.core Identifiable]))
 
@@ -55,22 +56,22 @@
 ;;
 (defn- closeStore ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^Store conn (.getf co :store)
-        ^Folder fd (.getf co :folder) ]
+  (let [^Store conn (.getv co :store)
+        ^Folder fd (.getv co :folder) ]
     (closeFolder fd)
     (tryc
       (when (some? conn) (.close conn)) )
-    (.setf! co :store nil)
-    (.setf! co :folder nil)
+    (.setv co :store nil)
+    (.setv co :folder nil)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resolve-provider ""
 
-  [^czlab.xlib.util.core.Muble co
+  [^Muble co
    protos
    ^String demo ^String mock]
 
@@ -95,8 +96,8 @@
             (ThrowIOE (str "Failed to find store: " pkey) ))
           ))
       (.setProvider session @sun)
-      (.setf! co :proto @proto)
-      (.setf! co :session session))
+      (.setv co :proto @proto)
+      (.setv co :session session))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,25 +145,25 @@
 ;;
 (defn- connectPop3 ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^Session session (.getf co :session)
-        cfg (.getf co :emcfg)
+  (let [^Session session (.getv co :session)
+        cfg (.getv co :emcfg)
         pwd (str (:passwd cfg))
         user (:user cfg)
         ^String host (:host cfg)
         ^long port (:port cfg)
-        ^String proto (.getf co :proto)
+        ^String proto (.getv co :proto)
         s (.getStore session proto) ]
     (when (some? s)
       (.connect s host port user (if (hgl? pwd)
                                    pwd
                                    nil))
-      (.setf! co :store s)
-      (.setf! co :folder (.getDefaultFolder s)))
-    (when-let [^Folder fd (.getf co :folder) ]
-      (.setf! co :folder (.getFolder fd "INBOX")))
-    (let [^Folder fd (.getf co :folder) ]
+      (.setv co :store s)
+      (.setv co :folder (.getDefaultFolder s)))
+    (when-let [^Folder fd (.getv co :folder) ]
+      (.setv co :folder (.getFolder fd "INBOX")))
+    (let [^Folder fd (.getv co :folder) ]
       (when (or (nil? fd)
                 (not (.exists fd)))
         (ThrowIOE "cannot find inbox.")) )
@@ -174,13 +175,13 @@
 
   [^czlab.skaro.io.core.EmitAPI co msgs]
 
-  (let [^czlab.xlib.util.core.Muble src co]
+  (let [^Muble src co]
     (doseq [^MimeMessage mm (seq msgs) ]
       (try
         (doto mm (.getAllHeaders)(.getContent))
         (.dispatch co (IOESReifyEvent co mm) {} )
         (finally
-          (when (.getf src :deleteMsg)
+          (when (.getv src :deleteMsg)
             (.setFlag mm Flags$Flag/DELETED true)))))
   ))
 
@@ -188,10 +189,10 @@
 ;;
 (defn- scanPop3 ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^Folder fd (.getf co :folder)
-        ^Store s (.getf co :store) ]
+  (let [^Folder fd (.getv co :folder)
+        ^Store s (.getv co :store) ]
     (when (and (some? fd)
                (not (.isOpen fd)))
       (.open fd Folder/READ_WRITE) )
@@ -206,7 +207,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.skaro.io/POP3
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (try
     (connectPop3 co)
@@ -221,7 +222,7 @@
 ;;
 (defn- stdConfig ""
 
-  [^czlab.xlib.util.core.Muble co cfg]
+  [^Muble co cfg]
 
   (let [intv (:intervalSecs cfg)
         port (:port cfg)
@@ -247,13 +248,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/POP3
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: POP3: %s" (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.pop3" "")
-        cfg (merge (.getf co :dftOptions) cfg0)
+        cfg (merge (.getv co :dftOptions) cfg0)
         c2 (stdConfig co cfg) ]
-    (.setf! co :emcfg c2)
+    (.setv co :emcfg c2)
     (resolve-provider co
                       (if (:ssl c2)
                         [ST_POP3S POP3S]
@@ -308,7 +309,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.skaro.io/IMAP
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (try
     (connect-imap co)
@@ -323,13 +324,13 @@
 ;;
 (defmethod CompConfigure :czc.skaro.io/IMAP
 
-  [^czlab.xlib.util.core.Muble co cfg0]
+  [^Muble co cfg0]
 
   (log/info "compConfigure: IMAP: %s" (.id ^Identifiable co))
   (let [demo (System/getProperty "skaro.demo.imap" "")
-        cfg (merge (.getf co :dftOptions) cfg0)
+        cfg (merge (.getv co :dftOptions) cfg0)
         c2 (stdConfig co cfg) ]
-    (.setf! co :emcfg c2)
+    (.setv co :emcfg c2)
     (resolve-provider co
                       (if (:ssl c2)
                         [ST_IMAPS IMAPS]

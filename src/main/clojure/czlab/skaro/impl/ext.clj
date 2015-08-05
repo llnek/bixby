@@ -23,7 +23,7 @@
     [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
     [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
     [czlab.xlib.util.core
-    :refer [ Muble MakeMMap FPath Cast?
+    :refer [MakeMMap FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [MakeScheduler]]
     [czlab.xlib.util.process :refer [Coroutine]]
@@ -59,8 +59,8 @@
     [clojure.java.io :as io])
 
   (:import
+    [com.zotohlab.skaro.core Muble Context Container ConfigError]
     [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
-    [com.zotohlab.skaro.core Context Container ConfigError]
     [org.apache.commons.io FilenameUtils FileUtils]
     [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.codec.binary Hex]
@@ -127,11 +127,10 @@
         EventBus
 
         (onEvent [_  evt options]
-          (let [^czlab.xlib.util.core.Muble
-                src (.emitter ^IOEvent evt)
+          (let [^Muble src (.emitter ^IOEvent evt)
                 ^ServiceHandler
                 hr (.handler ^Service src)
-                cfg (.getf src :emcfg)
+                cfg (.getv src :emcfg)
                 c0 (str (:handler cfg))
                 c1 (str (:router options))
                 wf (MakeObj (if (hgl? c1) c1 c0))
@@ -173,7 +172,7 @@
   (let [pkey (.getAppKey ^Container container)
         hid (:handler cfg)
         eid (.id bk)
-        ^czlab.xlib.util.core.Muble
+        ^Muble
         obj (MakeEmitter container eid nm)
         mm (meta obj) ]
     (log/info "about to synthesize an emitter: %s" eid)
@@ -194,9 +193,9 @@
 (defn- maybeGetDBPool ""
 
   ^JDBCPool
-  [^czlab.xlib.util.core.Muble co ^String gid]
+  [^Muble co ^String gid]
 
-  (let [dbs (.getf co K_DBPS)
+  (let [dbs (.getv co K_DBPS)
         dk (if (hgl? gid) gid DEF_DBID) ]
     (get dbs (keyword dk))
   ))
@@ -205,9 +204,9 @@
 ;;
 (defn- maybeGetDBAPI ""
 
-  [^czlab.xlib.util.core.Muble co ^String gid]
+  [^Muble co ^String gid]
 
-  (let [mcache (.getf co K_MCACHE)
+  (let [mcache (.getv co K_MCACHE)
         p (maybeGetDBPool co gid) ]
     (log/debug "acquiring from dbpool: %s" p)
     (if (nil? p)
@@ -219,10 +218,10 @@
 ;;
 (defn- releaseSysResources ""
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
-  (let [^Schedulable sc (.getf co K_SCHEDULER)
-        dbs (.getf co K_DBPS) ]
+  (let [^Schedulable sc (.getv co K_SCHEDULER)
+        dbs (.getv co K_DBPS) ]
     (log/info "container releasing all system resources")
     (when (some? sc) (.dispose sc))
     (doseq [[k v] (seq dbs) ]
@@ -252,24 +251,24 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_])
-        (clear! [_] (.clear! impl))
+        (setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        (getv [_ a] (.getv impl a) )
+        (seq [_])
+        (clear [_] (.clear impl))
         (toEDN [_] (.toEDN impl))
 
         Container
 
         (getAppKeyBits [this] (Bytesify (.getAppKey this)))
-        (getAppDir [this] (.getf this K_APPDIR))
+        (getAppDir [this] (.getv this K_APPDIR))
         (getAppKey [_] (.appKey pod))
         (getName [_] (.moniker pod))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
-        (eventBus [this] (.getf this K_EBUS))
+        (eventBus [this] (.getv this K_EBUS))
 
         (loadTemplate [_ tpath ctx]
           (let [tpl (nsb tpath)
@@ -287,7 +286,7 @@
                 "text/plain") ] ))
 
         (isEnabled [_]
-          (let [env (.getf impl K_ENVCONF)
+          (let [env (.getv impl K_ENVCONF)
                 c (:container env) ]
             (if (false? (:enabled c))
               false
@@ -295,23 +294,23 @@
 
         (getService [_ serviceId]
           (let [^ComponentRegistry
-                srg (.getf impl K_SVCS) ]
+                srg (.getv impl K_SVCS) ]
             (.lookup srg (keyword serviceId))))
 
         (hasService [_ serviceId]
           (let [^ComponentRegistry
-                srg (.getf impl K_SVCS) ]
+                srg (.getv impl K_SVCS) ]
             (.has srg (keyword serviceId))))
 
         (core [this]
-          (.getf this K_SCHEDULER))
+          (.getv this K_SCHEDULER))
 
         (getEnvConfig [_]
-          (let [env (.getf impl K_ENVCONF)]
+          (let [env (.getv impl K_ENVCONF)]
             (ConvToJava env)))
 
         (getAppConfig [_]
-          (let [app (.getf impl K_APPCONF)]
+          (let [app (.getv impl K_APPCONF)]
             (ConvToJava app)))
 
         Component
@@ -327,8 +326,8 @@
 
         (start [this]
           (let [^RegoAPI
-                srg (.getf impl K_SVCS)
-                main (.getf impl :main-app) ]
+                srg (.getv impl K_SVCS)
+                main (.getv impl :main-app) ]
             (log/info "container starting all services...")
             (doseq [[k v] (.iter srg) ]
               (log/info "service: %s about to start..." k)
@@ -339,9 +338,9 @@
 
         (stop [this]
           (let [^RegoAPI
-                srg (.getf impl K_SVCS)
-                pls (.getf this K_PLUGINS)
-                main (.getf impl :main-app) ]
+                srg (.getv impl K_SVCS)
+                pls (.getv this K_PLUGINS)
+                main (.getv impl :main-app) ]
             (log/info "container stopping all services...")
             (doseq [[k v] (.iter srg) ]
               (.stop ^Startable v))
@@ -356,9 +355,9 @@
 
         (dispose [this]
           (let [^RegoAPI
-                srg (.getf impl K_SVCS)
-                pls (.getf this K_PLUGINS)
-                main (.getf impl :main-app) ]
+                srg (.getv impl K_SVCS)
+                pls (.getv this K_PLUGINS)
+                main (.getv impl :main-app) ]
             (log/info "container dispose(): all services")
             (doseq [[k v] (.iter srg) ]
               (.dispose ^Disposable v))
@@ -381,14 +380,14 @@
                               (Hex/encodeHexString )))
 
         (reifyServices [this]
-          (let [env (.getf impl K_ENVCONF)
+          (let [env (.getv impl K_ENVCONF)
                 s (:services env) ]
             (if-not (empty? s)
               (doseq [[k v] (seq s) ]
                 (reifyOneService this k v)))))
 
         (reifyOneService [this nm cfg]
-          (let [^ComponentRegistry srg (.getf impl K_SVCS)
+          (let [^ComponentRegistry srg (.getv impl K_SVCS)
                 svc (nsb (:service cfg))
                 b (:enabled cfg) ]
             (if-not (or (false? b)
@@ -397,9 +396,9 @@
                    (.reg srg )))))
 
         (reifyService [this svc nm cfg]
-          (let [^czlab.xlib.util.core.Muble ctx (.getx this)
+          (let [^Muble ctx (.getx this)
                 ^ComponentRegistry
-                root (.getf ctx K_COMPS)
+                root (.getv ctx K_COMPS)
                 ^ComponentRegistry
                 bks (.lookup root K_BLOCKS)
                 ^ComponentRegistry
@@ -418,16 +417,16 @@
   "Create an application container"
 
   ^Container
-  [^czlab.xlib.util.core.Muble pod]
+  [^Muble pod]
 
   (let [^PODMeta pm pod
-        ^czlab.xlib.util.core.Muble
+        ^Muble
         ctx (-> ^Context pod (.getx ))
         ^ComponentRegistry
-        root (.getf ctx K_COMPS)
+        root (.getv ctx K_COMPS)
         apps (.lookup root K_APPS)
         ^URL url (.srcUrl pm)
-        ps {K_APPDIR (File. (.toURI url))}
+        ps {K_APPDIR (io/file url)}
         c (makeAppContainer pod ps)]
     (CompCompose c apps)
     (CompContextualize c ctx)
@@ -453,7 +452,7 @@
 ;;
 (defmethod CompConfigure :czc.skaro.ext/Container
 
-  [^czlab.xlib.util.core.Muble co props]
+  [^Muble co props]
 
   (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
         appDir (K_APPDIR props)
@@ -465,11 +464,11 @@
     (SynthesizeComponent srg {} )
     ;; store references to key attributes
     (doto co
-      (.setf! K_APPDIR appDir)
-      (.setf! K_SVCS srg)
-      (.setf! K_ENVCONF envConf)
-      (.setf! K_APPCONF appConf)
-      (.setf! K_MFPROPS mf))
+      (.setv K_APPDIR appDir)
+      (.setv K_SVCS srg)
+      (.setv K_ENVCONF envConf)
+      (.setv K_APPCONF appConf)
+      (.setv K_MFPROPS mf))
     (log/info "container: configured app: %s" (.id ^Identifiable co))
   ))
 
@@ -594,18 +593,18 @@
 ;;
 (defmethod CompInitialize :czc.skaro.ext/Container
 
-  [^czlab.xlib.util.core.Muble co]
+  [^Muble co]
 
   (let [pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)
-    (let [^Properties mf (.getf co K_MFPROPS)
+    (let [^Properties mf (.getv co K_MFPROPS)
           cpu (MakeScheduler (str pid))
           mCZ (strim (.get mf "Main-Class"))
-          appDir (.getf co K_APPDIR)
-          env (.getf co K_ENVCONF)
-          app (.getf co K_APPCONF)
+          appDir (.getv co K_APPDIR)
+          env (.getv co K_ENVCONF)
+          app (.getv co K_APPCONF)
           dmCZ (str (:data-model app))
-          reg (.getf co K_SVCS)
+          reg (.getv co K_SVCS)
           bus (makeEventBus co)
           cfg (:container env) ]
       (let [lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
@@ -620,11 +619,11 @@
           (when-let [rb (LoadResource res)]
             (I18N/setBundle (.id ^Identifiable co) rb))))
 
-      (.setf! co K_DBPS (maybeInitDBs co env app))
-      (log/debug "db [dbpools]\n%s" (.getf co K_DBPS))
+      (.setv co K_DBPS (maybeInitDBs co env app))
+      (log/debug "db [dbpools]\n%s" (.getv co K_DBPS))
 
       ;; handle the plugins
-      (.setf! co K_PLUGINS
+      (.setv co K_PLUGINS
                  (persistent! (reduce #(assoc! %1
                                                (keyword (first %2))
                                                (doOnePlugin co
@@ -633,12 +632,12 @@
                                       (transient {})
                                       (seq (:plugins app))) ))
 
-      (.setf! co K_SCHEDULER cpu)
-      (.setf! co K_EBUS bus)
+      (.setv co K_SCHEDULER cpu)
+      (.setv co K_EBUS bus)
 
       ;; build the user data-models or create a default one.
       (log/info "application data-model schema-class: %s" dmCZ)
-      (.setf! co
+      (.setv co
               K_MCACHE
               (MakeMetaCache
                 (if (hgl? dmCZ)
@@ -662,14 +661,14 @@
           ;else
           (throw (ConfigError. (str "Invalid Main Class " mCZ))))
 
-        (.setf! co :main-app @obj)
+        (.setv co :main-app @obj)
         (log/info "application main-class %s%s"
                   (if (hgl? mCZ) mCZ "???")
                   " created and invoked"))
 
       (let [sf (io/file appDir DN_CONF "static-routes.conf")
             rf (io/file appDir DN_CONF "routes.conf") ]
-        (.setf! co :routes
+        (.setv co :routes
                    (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
                                 (if (.exists rf) (LoadRoutes rf) [] ))) ))
 

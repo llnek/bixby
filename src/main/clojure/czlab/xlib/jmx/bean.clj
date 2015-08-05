@@ -28,6 +28,7 @@
     [com.zotohlab.frwk.jmx NameParams]
     [java.lang.reflect Field Method]
     [java.util Arrays]
+    [com.zotohlab.skaro.core Muble]
     [javax.management Attribute AttributeList
        AttributeNotFoundException
        DynamicMBean
@@ -96,12 +97,12 @@
             (when (some? s)
               (let [ps (.getParameterTypes s) ]
                 (when (== 1 (count ps)) (first ps)))))))
-      (getter [_] (.getf impl :getr))
+      (getter [_] (.getv impl :getr))
       (getName [_] prop)
       (desc [_] descn)
-      (setter [_] (.getf impl :setr))
-      (setSetter [_ m] (.setf! impl :setr m))
-      (setGetter [_ m] (.setf! impl :getr m))
+      (setter [_] (.getv impl :setr))
+      (setSetter [_ m] (.setv impl :setr m))
+      (setGetter [_ m] (.setv impl :getr m))
       (isQuery [this]
         (if-let [^Method g (.getter this) ]
           (and (-> g (.getName)

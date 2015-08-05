@@ -22,15 +22,16 @@
         [czlab.skaro.core.sys])
 
   (:require
-    [czlab.xlib.util.core :refer [notnil? Muble]]
+    [czlab.xlib.util.core :refer [notnil?]]
     [czlab.xlib.util.str :refer [ToKW]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.files
     :refer [FileRead? DirReadWrite? ]]
     [czlab.xlib.util.core
-    :refer [NextLong test-cond MakeMMap Muble test-nestr]])
+    :refer [NextLong test-cond MakeMMap test-nestr]])
 
   (:import
+    [com.zotohlab.skaro.core Muble Context ConfigError]
     [com.zotohlab.frwk.core Versioned
     Identifiable Hierarchial]
     [com.zotohlab.skaro.runtime RegoAPI PODMeta]
@@ -39,7 +40,6 @@
     [com.zotohlab.frwk.i18n I18N]
     [com.zotohlab.frwk.server Component
     ComponentRegistry RegistryError ServiceError]
-    [com.zotohlab.skaro.core Context ConfigError]
     [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,9 +74,9 @@
   "Tests if the key maps to a File"
 
   ^File
-  [^czlab.xlib.util.core.Muble m kn]
+  [^Muble m kn]
 
-  (let [v (.getf m kn) ]
+  (let [v (.getv m kn) ]
     (condp instance? v
       String (io/file v)
       File v
@@ -109,11 +109,11 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_] )
-        (clear! [_] (.clear! impl))
+        (setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        (getv [_ a] (.getv impl a) )
+        (seq [_] )
+        (clear [_] (.clear impl))
         (toEDN [_] (.toEDN impl))
 
         Hierarchial
@@ -128,12 +128,12 @@
         ComponentRegistry
 
         (has [this cid]
-          (let [cache (.getf impl :cache)
+          (let [cache (.getv impl :cache)
                 c (get cache cid) ]
             (some? c)))
 
         (lookup [this cid]
-          (let [cache (.getf impl :cache)
+          (let [cache (.getv impl :cache)
                 c (get cache cid) ]
             (if (and (nil? c)
                      (instance? ComponentRegistry parObj))
@@ -144,23 +144,23 @@
           (let [cid (if (nil? c)
                       nil
                       (.id  ^Identifiable c))
-                cache (.getf impl :cache) ]
+                cache (.getv impl :cache) ]
             (when (.has this cid)
-              (.setf! impl :cache (dissoc cache cid)))))
+              (.setv impl :cache (dissoc cache cid)))))
 
         (reg [this c]
           (let [cid (if (nil? c)
                       nil
                       (.id  ^Identifiable c))
-                cache (.getf impl :cache) ]
+                cache (.getv impl :cache) ]
             (when (.has this cid)
               (throw (RegistryError. (RStr (I18N/getBase)
                                            "skaro.dup.cmp" cid))))
-            (.setf! impl :cache (assoc cache cid c))))
+            (.setv impl :cache (assoc cache cid c))))
 
         RegoAPI
           (iter [_]
-            (let [cache (.getf impl :cache) ]
+            (let [cache (.getv impl :cache) ]
               (seq cache))) )
 
       { :typeid (ToKW "czc.skaro.impl" (name regoType)) })
@@ -191,11 +191,11 @@
 
         Muble
 
-        (setf! [_ a v] (.setf! impl a v) )
-        (clrf! [_ a] (.clrf! impl a) )
-        (getf [_ a] (.getf impl a) )
-        (seq* [_])
-        (clear! [_] (.clear! impl))
+        (setv [_ a v] (.setv impl a v) )
+        (unsetv [_ a] (.unsetv impl a) )
+        (getv [_ a] (.getv impl a) )
+        (seq [_])
+        (clear [_] (.clear impl))
         (toEDN [_ ] (.toEDN impl))
 
         Component

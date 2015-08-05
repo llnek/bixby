@@ -11,13 +11,10 @@
 
 package com.zotohlab.frwk.server;
 
-import com.zotohlab.frwk.core.Gettable;
-import com.zotohlab.frwk.core.Settable;
-
 /**
  * @author kenl
  */
-public interface Service extends Component , Gettable , Settable {
+public interface Service extends Component  {
   public ServiceHandler handler();
 }
 
