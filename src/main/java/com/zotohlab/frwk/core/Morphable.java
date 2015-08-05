@@ -14,6 +14,7 @@ package com.zotohlab.frwk.core;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Morphable {
 
   public Object morph();

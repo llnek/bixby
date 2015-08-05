@@ -14,6 +14,7 @@ package com.zotohlab.frwk.core;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Configurable {
 
   public void configure( Object c);

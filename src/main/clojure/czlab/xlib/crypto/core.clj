@@ -23,7 +23,7 @@
     [czlab.xlib.util.core
      :refer [NextInt ThrowIOE ThrowBadArg
      NewRandom Bytesify tryc try!
-     notnil? juid GetClassname]])
+     Cast? juid GetClassname]])
 
   (:require
     [czlab.xlib.util.logging :as log]
@@ -113,7 +113,7 @@
     [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.io FileUtils IOUtils]
     [com.zotohlab.frwk.crypto PasswordAPI
-     Crypto SDataSource]
+     SDataSource]
     [com.zotohlab.frwk.io XData]
     [com.zotohlab.frwk.net SSLTrustMgrFactory]
     [java.lang Math]))
@@ -305,6 +305,29 @@
       (persistent! rc))
   ))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetPKey ""
+
+  ^KeyStore$PrivateKeyEntry
+  [^KeyStore ks ^String n ^chars pwd]
+
+  (let [obj (.getEntry ks n (KeyStore$PasswordProtection. pwd)) ]
+    (Cast? KeyStore$PrivateKeyEntry obj)
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GetCert ""
+
+  ^KeyStore$TrustedCertificateEntry
+  [^KeyStore ks ^String n ^chars pwd]
+
+  (let [obj (.getEntry ks n nil) ]
+    (Cast? KeyStore$TrustedCertificateEntry obj)
+  ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn CertAliases
@@ -336,11 +359,11 @@
 
   [^KeyStore ks ^PasswordAPI pwdObj]
 
-  (when-let [^chars
-             ca (when (some? pwdObj)
+  (when-let [ca (when (some? pwdObj)
                     (.toCharArray pwdObj)) ]
     (doseq [^String a (PKeyAliases ks) ]
-      (when-let [cs (-> (Crypto/getPKey ks a ca)
+      (when-let [cs (-> ^KeyStore$PrivateKeyEntry
+                        (GetPKey ks a ca)
                         (.getCertificateChain )) ]
         (doseq [^Certificate c cs]
           (.setCertificateEntry ks (NewAlias) c))))
@@ -546,12 +569,11 @@
 
   (with-open [inp (.openStream p12File) ]
     (let
-      [^chars
-       ca (when (some? pwdObj)
+      [ca (when (some? pwdObj)
                 (.toCharArray pwdObj))
        ks (doto (GetPkcsStore)
                 (.load inp ca)) ]
-      (Crypto/getPKey ks (str (.nextElement (.aliases ks))) ca))
+      (GetPKey ks (.nextElement (.aliases ks)) ca))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

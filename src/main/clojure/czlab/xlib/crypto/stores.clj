@@ -16,8 +16,8 @@
 
   (:require
     [czlab.xlib.crypto.core
-     :refer [NewAlias CertAliases PKeyAliases
-             GetPkcsStore GetJksStore]]
+    :refer [NewAlias CertAliases PKeyAliases
+    GetPKey GetCert GetPkcsStore GetJksStore]]
     [czlab.xlib.util.core :refer [ThrowBadArg]]
     [czlab.xlib.util.str :refer [nsb hgl?]])
 
@@ -25,14 +25,14 @@
 
   (:import
     [java.security.cert CertificateFactory X509Certificate Certificate]
-    [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI Crypto]
+    [com.zotohlab.frwk.crypto PasswordAPI CryptoStoreAPI]
     [java.io File FileInputStream IOException InputStream]
     [javax.net.ssl KeyManagerFactory TrustManagerFactory]
     [java.security KeyStore PrivateKey
-     KeyStore$TrustedCertificateEntry
-     KeyStore$ProtectionParameter
-     KeyStore$PasswordProtection
-     KeyStore$PrivateKeyEntry]
+    KeyStore$TrustedCertificateEntry
+    KeyStore$ProtectionParameter
+    KeyStore$PasswordProtection
+    KeyStore$PrivateKeyEntry]
     [javax.security.auth.x500 X500Principal]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -65,8 +65,8 @@
          rc (transient []) ]
     (if (not (.hasMoreElements en))
       (persistent! rc)
-      (if-let [ce (Crypto/getCert keystore
-                                  (nsb (.nextElement en))) ]
+      (if-let [^KeyStore$TrustedCertificateEntry
+               ce (GetCert keystore (.nextElement en)) ]
         (let [^X509Certificate cert (.getTrustedCertificate ce)
               issuer (.getIssuerX500Principal cert)
               subj (.getSubjectX500Principal cert)
@@ -107,9 +107,8 @@
       ;; and insert it into the current one.
       (let [ch (.toCharArray ^PasswordAPI pwdObj)
             tmp (doto (mkstore keystore) (.load bits ch))
-            pkey (Crypto/getPKey tmp ^String
-                                      (-> (.aliases tmp)
-                                          (.nextElement)) ch) ]
+            pkey (GetPKey tmp (-> (.aliases tmp)
+                                  (.nextElement)) ch) ]
         (onNewKey this (NewAlias) pkey ch)))
 
     (addCertEntity [_ bits]
@@ -130,10 +129,10 @@
 
     (keyEntity [_ nm pwdObj]
       (let [ca (.toCharArray ^PasswordAPI pwdObj) ]
-        (Crypto/getPKey keystore ^String nm ca)))
+        (GetPKey keystore nm ca)))
 
     (certEntity [_ nm]
-      (Crypto/getCert keystore ^String nm))
+      (GetCert keystore nm))
 
     (removeEntity [_ nm]
       (when (.containsAlias keystore ^String nm)
