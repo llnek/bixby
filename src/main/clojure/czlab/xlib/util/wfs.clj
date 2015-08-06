@@ -46,7 +46,7 @@
   "Create a new job for downstream processing"
 
   ^Job
-  [^ServerLike par ^WorkFlow wfw & [evt]]
+  [^ServerLike par & [evt]]
 
   (let [^Event evt (or evt (NonEvent. par))
         impl (MakeMMap)
@@ -63,7 +63,7 @@
       (unsetv [this k] (.unsetv impl k))
       (getv [this k] (.getv impl k))
       (container [_] par)
-      (wflow [_] wfw)
+      (wflow [_] (.getv impl :wflow))
       (event [_] evt)
       (id [_] jid))
   ))
@@ -218,10 +218,11 @@
 
       (handle [this arg opts]
         (let [w (ToWorkFlow arg)
-              j (NewJob this w)
+              j (NewJob this)
               opts (or opts {})]
           (doseq [[k v] opts]
             (.setv j k v))
+          (.setv j :wflow w)
           (->> (-> (Nihil/apply)
                    (.reify j))
                (.reify (.startWith w))

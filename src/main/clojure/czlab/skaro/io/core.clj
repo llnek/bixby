@@ -16,8 +16,8 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong notnil?
-    ThrowIOE MakeMMap ConvToJava tryc]]
+    :refer [NextLong Cast?
+    ThrowBadArg ThrowIOE MakeMMap ConvToJava tryc]]
     [czlab.xlib.util.str :refer [nsb strim]])
 
   (:require
@@ -215,10 +215,12 @@
 
     ServiceHandler
     (handle [_ arg options]
-      (let [^Job j (when (instance? Job options) options)
+      (let [^Job j (Cast? Job options)
             w (ToWorkFlow arg)]
-        (when (some? j)
-          (log/debug "job##%s is being serviced by %s"  (.id j) service))
+        (if (some? j)
+          (log/debug "job##%s is being serviced by %s"  (.id j) service)
+          (ThrowBadArg "Expected Job, got " (class options)))
+        (.setv j :wflow w)
         (-> ^Emitter service
             (.container)
             (.core)

@@ -158,9 +158,10 @@
 
       (handle [this arg options]
         (let [w (ToWorkFlow arg)
-              j (NewJob this w)]
+              j (NewJob this)]
           (doseq [[k v] options]
             (.setv j k v))
+          (.setv j :wflow w)
           (.run cpu (->> (NihilDot j)
                          (.reify (.startWith w))))))
 

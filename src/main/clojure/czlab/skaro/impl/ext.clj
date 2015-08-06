@@ -23,7 +23,7 @@
     [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
     [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
     [czlab.xlib.util.core
-    :refer [MakeMMap FPath Cast?
+    :refer [MakeMMap juid FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [MakeScheduler]]
     [czlab.xlib.util.process :refer [Coroutine]]
@@ -60,6 +60,8 @@
   (:import
     [com.zotohlab.skaro.core Muble Context Container ConfigError]
     [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
+    [com.zotohlab.skaro.etc CliMain PluginFactory Plugin]
+    [org.projectodd.shimdandy ClojureRuntimeShim]
     [org.apache.commons.io FilenameUtils FileUtils]
     [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.codec.binary Hex]
@@ -70,7 +72,6 @@
     [java.net URL]
     [java.io File StringWriter]
     [com.zotohlab.skaro.runtime AppMain RegoAPI PODMeta]
-    [com.zotohlab.skaro.etc PluginFactory Plugin]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Morphable Activable
     Startable Disposable Identifiable]
@@ -102,10 +103,10 @@
 (defn- mkJob ""
 
   ^Job
-  [container wf evt]
+  [container evt]
 
   (with-meta
-    (NewJob container wf evt)
+    (NewJob container evt)
     {:typeid (ToKW "czc.skaro.impl" "Job") }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,7 +116,7 @@
 (defn- makeEventBus ""
 
   ^EventBus
-  [parObj]
+  [^Muble parObj]
 
   (log/info "about to synthesize an event-bus...")
   (let [impl (MakeMMap) ]
@@ -126,13 +127,17 @@
 
         (onEvent [_ evt options]
           (let [^Muble src (-> ^IOEvent evt (.emitter))
+                ^ClojureRuntimeShim
+                rts (.getv parObj :cljshim)
                 ^ServiceHandler
                 hr (.handler ^Service src)
                 cfg (.getv src :emcfg)
                 c0 (str (:handler cfg))
                 c1 (str (:router options))
-                wf (MakeObj (if (hgl? c1) c1 c0))
-                job (mkJob parObj wf evt) ]
+                wf (->> ^String
+                        (if (hgl? c1) c1 c0)
+                        (.invoke rts))
+                job (mkJob parObj evt) ]
             (log/debug "event type = %s" (type evt))
             (log/debug "event options = %s" options)
             (log/debug "event router = %s" c1)
@@ -585,18 +590,18 @@
           dmCZ (str (:data-model app))
           reg (.getv co K_SVCS)
           bus (makeEventBus co)
-          cfg (:container env) ]
-      (let [lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
-            cn (lcase (get-in env [K_LOCALE K_COUNTRY]))
-            loc (if (empty? cn)
-                    (Locale. lg)
-                    (Locale. lg cn))
-            res (io/file appDir "i18n"
-                         (str "Resources_"
-                              (.toString loc) ".properties"))]
-        (when (FileRead? res)
-          (when-let [rb (LoadResource res)]
-            (I18N/setBundle (.id ^Identifiable co) rb))))
+          cfg (:container env)
+          lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
+          cn (lcase (get-in env [K_LOCALE K_COUNTRY]))
+          loc (if (empty? cn)
+                (Locale. lg)
+                (Locale. lg cn))
+          res (io/file appDir "i18n"
+                       (str "Resources_"
+                            (.toString loc) ".properties")) ]
+      (when (FileRead? res)
+        (when-let [rb (LoadResource res)]
+          (I18N/setBundle (.id ^Identifiable co) rb)))
 
       (.setv co K_DBPS (maybeInitDBs co env app))
       (log/debug "db [dbpools]\n%s" (.getv co K_DBPS))
@@ -652,11 +657,14 @@
       (.activate ^Activable cpu cfg)
 
       (log/info "initialized app: %s" (.id ^Identifiable co))
-      (log/info "container app class-loader: %s"
-                (-> (Thread/currentThread)
-                    (.getContextClassLoader)
-                    (.getClass)
-                    (.getName))))))
+
+      (let [cl (-> (Thread/currentThread)
+                    (.getContextClassLoader)) ]
+        (log/info "container app class-loader: %s"
+                  (-> cl
+                      (.getClass)
+                      (.getName)))
+        (.setv co :cljshim (CliMain/newrt cl (juid)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

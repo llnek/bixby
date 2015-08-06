@@ -284,7 +284,7 @@
           (.hold co w)
           (.dispatch co
                      evt
-                     {:router "czlab.skaro.mvc.comms.AssetHandler"
+                     {:router "czlab.skaro.mvc.comms/AssetHandler"
                       :info info
                       :path @mp}))))
   ))
@@ -325,16 +325,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype AssetHandler [] WHandler
+(def ^:private  AssetHandler!
+  (reify WHandler
+    (run [_  j _]
+      (let [^HTTPEvent evt (.event ^Job j)]
+        (HandleStatic (.emitter evt)
+                      evt
+                      (.getv ^Job j EV_OPTS))))))
 
-  (run [_  j _]
-    (require 'czlab.skaro.mvc.comms)
-    (let [^HTTPEvent evt (.event ^Job j)]
-      (HandleStatic (.emitter evt)
-                    evt
-                    (.getv ^Job j EV_OPTS)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn AssetHandler "" ^WHandler [] AssetHandler!)
 
-(ns-unmap *ns* '->AssetHandler)
+;;(ns-unmap *ns* '->AssetHandler)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 
