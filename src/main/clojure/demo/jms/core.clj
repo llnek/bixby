@@ -7,24 +7,24 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.jms.core
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [notnil?]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [com.zotohlab.skaro.io JMSEvent]
-            [javax.jms TextMessage]
-            [java.util.concurrent.atomic AtomicInteger]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.skaro.io JMSEvent]
+    [javax.jms TextMessage]
+    [java.util.concurrent.atomic AtomicInteger]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -38,19 +38,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.jms.core)
-    (let [^JMSEvent ev (.event ^Job j)
-          ^TextMessage msg (.getMsg ev) ]
-      (println "-> Correlation ID= " (.getJMSCorrelationID msg))
-      (println "-> Msg ID= " (.getJMSMessageID msg))
-      (println "-> Type= " (.getJMSType msg))
-      (println "("
-               (ncount)
-               ") -> Message= "
-               (.getText msg)))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^JMSEvent ev (.event ^Job j)
+            ^TextMessage msg (.getMsg ev) ]
+        (println "-> Correlation ID= " (.getJMSCorrelationID msg))
+        (println "-> Msg ID= " (.getJMSMessageID msg))
+        (println "-> Type= " (.getJMSType msg))
+        (println "("
+                 (ncount)
+                 ") -> Message= "
+                 (.getText msg))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

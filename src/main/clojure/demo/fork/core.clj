@@ -24,7 +24,7 @@
   (:import
     [com.zotohlab.skaro.core Container]
     [com.zotohlab.wflow Job
-    WorkFlow FlowDot PTask Split]
+    Activity WorkFlow FlowDot PTask Split]
     [java.lang StringBuilder]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

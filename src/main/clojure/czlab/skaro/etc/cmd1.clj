@@ -127,8 +127,7 @@
 
   [^Job j]
 
-  (let [fcz "czlab.skaro.impl.climain"
-        func (str fcz "/StartViaCLI")
+  (let [func (str "czlab.skaro.impl.climain/StartViaCLI")
         cwd (GetCwd)
         rt (-> (doto
                  (AppClassLoader. (GetCldr))
@@ -145,12 +144,9 @@
              (IsWindows?))
       (RunAppBg home)
       (try
-        (doto rt
-          (.require (into-array String [fcz]))
-          (.invoke func home))
+        (.callEx rt func (object-array [home]))
         (catch Throwable t#
-          (.printStackTrace t#))))
-  ))
+          (.printStackTrace t#))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?

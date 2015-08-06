@@ -61,7 +61,6 @@
     [com.zotohlab.skaro.core Muble Context Container ConfigError]
     [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
     [com.zotohlab.skaro.etc CliMain PluginFactory Plugin]
-    [org.projectodd.shimdandy ClojureRuntimeShim]
     [org.apache.commons.io FilenameUtils FileUtils]
     [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.codec.binary Hex]
@@ -127,16 +126,15 @@
 
         (onEvent [_ evt options]
           (let [^Muble src (-> ^IOEvent evt (.emitter))
-                ^ClojureRuntimeShim
-                rts (.getv parObj :cljshim)
+                ^CliMain rts (.getv parObj :cljshim)
                 ^ServiceHandler
                 hr (.handler ^Service src)
                 cfg (.getv src :emcfg)
                 c0 (str (:handler cfg))
                 c1 (str (:router options))
-                wf (->> ^String
-                        (if (hgl? c1) c1 c0)
-                        (.invoke rts))
+                wf (trycr nil (->> ^String
+                                   (if (hgl? c1) c1 c0)
+                                   (.call rts)))
                 job (mkJob parObj evt) ]
             (log/debug "event type = %s" (type evt))
             (log/debug "event options = %s" options)
@@ -582,12 +580,15 @@
   (let [pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)
     (let [^Properties mf (.getv co K_MFPROPS)
+          cl (-> (Thread/currentThread)
+                 (.getContextClassLoader))
+          rts (CliMain/newrt cl (juid))
           cpu (MakeScheduler (str pid))
           mCZ (strim (.get mf "Main-Class"))
-          appDir (.getv co K_APPDIR)
           env (.getv co K_ENVCONF)
           app (.getv co K_APPCONF)
           dmCZ (str (:data-model app))
+          appDir (.getv co K_APPDIR)
           reg (.getv co K_SVCS)
           bus (makeEventBus co)
           cfg (:container env)
@@ -603,37 +604,40 @@
         (when-let [rb (LoadResource res)]
           (I18N/setBundle (.id ^Identifiable co) rb)))
 
+      (.setv co :cljshim rts)
+
       (.setv co K_DBPS (maybeInitDBs co env app))
       (log/debug "db [dbpools]\n%s" (.getv co K_DBPS))
 
       ;; handle the plugins
       (.setv co K_PLUGINS
-             (persistent! (reduce #(assoc! %1
-                                           (keyword (first %2))
-                                           (doOnePlugin co
-                                                        (last %2)
-                                                        appDir env app))
-                                  (transient {})
-                                  (seq (:plugins app))) ))
+             (persistent!
+               (reduce
+                 #(assoc! %1
+                          (keyword (first %2))
+                          (doOnePlugin co
+                                       (last %2)
+                                       appDir env app))
+                 (transient {})
+                 (seq (:plugins app))) ))
       (.setv co K_SCHEDULER cpu)
       (.setv co K_EBUS bus)
 
-      ;; build the user data-models or create a default one.
+      ;; build the user data-models or create a default one
       (log/info "application data-model schema-class: %s" dmCZ)
-      (.setv co K_MCACHE
-             (MakeMetaCache
-               (if (hgl? dmCZ)
-                 (let [sc (MakeObj dmCZ) ]
-                   (when-not (instance? Schema sc)
-                     (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
-                   sc)
-                 (MakeSchema [])) ))
+      (let [sc (trycr nil (.call rts dmCZ))]
+        (when (and (some? sc)
+                   (not (instance? Schema sc)))
+          (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
+        (.setv co
+               K_MCACHE
+               (MakeMetaCache (or sc (MakeSchema [])))))
 
       (when (empty? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
       ;;(test-nestr "Main-Class" mCZ)
 
       (with-local-vars
-        [obj (trycr nil (when (hgl? mCZ) (MakeObj mCZ)))]
+        [obj (trycr nil (.call rts mCZ))]
         (when (nil? @obj)
           (log/warn "failed to create main class: %s" mCZ)
           (var-set obj (mkDftAppMain)))
@@ -656,15 +660,12 @@
       ;; start the scheduler
       (.activate ^Activable cpu cfg)
 
-      (log/info "initialized app: %s" (.id ^Identifiable co))
+      (log/info "container app class-loader: %s"
+                (-> cl
+                    (.getClass)
+                    (.getName)))
+      (log/info "initialized app: %s" (.id ^Identifiable co)))))
 
-      (let [cl (-> (Thread/currentThread)
-                    (.getContextClassLoader)) ]
-        (log/info "container app class-loader: %s"
-                  (-> cl
-                      (.getClass)
-                      (.getName)))
-        (.setv co :cljshim (CliMain/newrt cl (juid)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

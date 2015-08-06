@@ -7,25 +7,25 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.timer.core
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [notnil?]]
-            [czlab.xlib.util.str :refer [nsb]]
-            [czlab.xlib.util.wfs :refer [SimPTask]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.wfs :refer [SimPTask]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [java.util.concurrent.atomic AtomicInteger]
-            [java.util Date]
-            [com.zotohlab.skaro.io TimerEvent]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [java.util.concurrent.atomic AtomicInteger]
+    [java.util Date]
+    [com.zotohlab.skaro.io TimerEvent]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -39,14 +39,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.timer.core)
-    (let [^TimerEvent ev (.event ^Job j) ]
-      (if (.isRepeating ev)
-        (println "-----> (" (ncount) ") repeating-update: " (Date.))
-        (println "-----> once-only!!: " (Date.))))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^TimerEvent ev (.event ^Job j) ]
+        (if (.isRepeating ev)
+          (println "-----> (" (ncount) ") repeating-update: " (Date.))
+          (println "-----> once-only!!: " (Date.)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

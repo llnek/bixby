@@ -373,7 +373,7 @@
                    #(-> (cs/replace % "@@APPKEY@@" (NewUUid))
                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
                         (cs/replace "@@APPMAINCLASS@@"
-                                    (str appDomain ".core.MyAppMain"))))
+                                    (str appDomain ".core/MyAppMain"))))
 
       (var-set fp (io/file appDir "pom.xml"))
       (ReplaceFile @fp

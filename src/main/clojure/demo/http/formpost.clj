@@ -18,7 +18,7 @@
 
   (:require
     [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.core :refer [notnil?]]
+    [czlab.xlib.util.core :refer [Cast?]]
     [czlab.xlib.util.str :refer [hgl?]])
 
   (:import

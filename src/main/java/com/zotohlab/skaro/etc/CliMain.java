@@ -16,17 +16,52 @@ import org.projectodd.shimdandy.ClojureRuntimeShim;
 /**
  * @author kenl
  */
-public enum CliMain  {
-;
+public class CliMain  {
+
+  /**
+   * 
+   * @param cl
+   * @param name
+   */
+  public static CliMain newrt(ClassLoader cl, String name) {
+    return new CliMain(ClojureRuntimeShim.newRuntime(cl, name));
+  }
+
+  /**
+   * 
+   * @param func
+   * @param args
+   * @return
+   */
+  public Object callEx(String func, Object... args) {
+    if (func==null || func.length()==0) {
+      return null;
+    }
+    int cnt = args.length;
+    Object ret=null;
+    switch (cnt) {
+    case 0:ret= _shim.invoke(func); break;
+    case 1:ret= _shim.invoke(func, args[0]); break;
+    case 2:ret= _shim.invoke(func, args[0], args[1]); break;
+    case 3:ret= _shim.invoke(func,args[0], args[1],args[2]); break;
+    case 4:ret= _shim.invoke(func,args[0], args[1],args[2], args[3]); break;
+    case 5:ret= _shim.invoke(func,args[0], args[1],args[2], args[3],args[4]); break;
+    case 6:ret= _shim.invoke(func,args[0], args[1],args[2], args[3],args[4], args[5]); break;
+    default:
+      throw new IllegalArgumentException("too many arguments to invoke");
+    }
+    return ret;
+  }
+  
+  public Object call(String func) {
+    return this.callEx(func);
+  }
+  
+  private CliMain(ClojureRuntimeShim s) {
+    _shim=s;    
+  }
 	
-	/**
-	 * 
-	 * @param cl
-	 * @param name
-	 */
-	public static ClojureRuntimeShim newrt(ClassLoader cl, String name) {
-		return ClojureRuntimeShim.newRuntime(cl, name);
-	}
+  private ClojureRuntimeShim _shim;
 }
 
 

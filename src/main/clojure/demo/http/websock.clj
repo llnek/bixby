@@ -52,7 +52,7 @@
           (println "Got poked by websocket-text: " stuff)
 
           (IsBytes? (class stuff))
-          (println "Got poked by websocket-bin: len = " (alength stuff))
+          (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
 
           :else
           (println "Funky data from websocket????"))))))

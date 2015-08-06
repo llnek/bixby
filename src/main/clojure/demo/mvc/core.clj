@@ -7,27 +7,28 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.mvc.core
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [notnil?]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private ^String FMTHtml
+(def ^:private ^String
+  FX
   (str "  <html><head>"
        "<title>Skaro: Test Web</title>"
        "<link rel=\"shortcut icon\" href=\"/public/media/site/favicon.ico\"/>"
@@ -41,16 +42,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.mvc.core)
-    (let [^HTTPEvent ev (.event ^Job j)
-          res (.getResultObj ev) ]
-      (doto res
-        (.setContent FMTHtml)
-        (.setStatus 200))
-      (.replyResult ev))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^HTTPEvent ev (.event ^Job j)
+            res (.getResultObj ev) ]
+        (doto res
+          (.setContent FX)
+          (.setStatus 200))
+        (.replyResult ev)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
