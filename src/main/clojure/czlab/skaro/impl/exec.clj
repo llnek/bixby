@@ -68,11 +68,9 @@
   "Check the app's manifest file"
 
   ^PODMeta
+  [^Context execv app ^File des mf]
 
-  [^Muble execv app ^File des mf]
-
-  (let [^Muble
-        ctx (-> ^Context execv (.getx))
+  (let [^Muble ctx (.getx execv)
         ^ComponentRegistry
         apps (-> ^ComponentRegistry
                  (.getv ctx K_COMPS)
@@ -88,17 +86,15 @@
 
     ;; synthesize the pod meta component and register it
     ;; as a application
-    (let [^Muble
+    (let [^Context
           m (-> (MakePodMeta app ver
                              cz vid
                              (io/as-url des))
-                (SynthesizeComponent { :ctx ctx }))
-          ^Muble
-          cx (-> ^Context m (.getx)) ]
+                (SynthesizeComponent {:ctx ctx}))
+          ^Muble cx (.getx m) ]
       (.setv cx K_EXECV execv)
       (.reg apps m)
-      m)
-  ))
+      m)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- inspectApp
@@ -118,8 +114,7 @@
       (PrecondDir (io/file des DN_CONF))
       (PrecondDir (io/file des DN_CFG))
       (PrecondFile mf)
-      (chkManifest execv app des mf) )
-  ))
+      (chkManifest execv app des mf) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -127,20 +122,19 @@
 
   "Basic JMX support"
 
-  [^Muble co cfg]
+  [^Context co cfg]
 
   (log/info "jmx-config: %s" cfg)
   (tryletc
-    [^Muble ctx (-> ^Context co (.getx))
-     port (or (:port cfg) 7777)
-     host (nsb (:host cfg))
-     jmx (MakeJmxServer host) ]
+    [port (or (:port cfg) 7777)
+     host (str (:host cfg))
+     jmx (MakeJmxServer host)  ]
     (.setRegistryPort jmx port)
-    (.start ^Startable jmx)
+    (-> ^Startable jmx (.start))
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
-    (.setv ctx K_JMXSVR jmx)
-    (log/info "jmx-server listening on: %s:%s" host port)
-  ))
+    (-> ^Muble (.getx co)
+        (.setv K_JMXSVR jmx))
+    (log/info "jmx-server listening on: %s:%s" host port)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,10 +142,10 @@
 
   "Kill the internal JMX server"
 
-  [^Muble co]
+  [^Context co]
 
   (tryletc
-    [^Muble ctx (-> ^Context co (.getx))
+    [^Muble ctx (.getx co)
      ^Startable
      jmx (.getv ctx K_JMXSVR) ]
     (when (some? jmx)
@@ -172,8 +166,7 @@
      ctr (MakeContainer pod)]
     (log/debug "start pod cid = %s, app = %s" cid app)
     (.setv co K_CONTAINERS (assoc cache cid ctr))
-    true
-  ))
+    true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -187,8 +180,7 @@
       (.stop ^Startable v))
     (doseq [[k v] (seq cs) ]
       (.dispose ^Disposable v))
-    (.setv co K_CONTAINERS {})
-  ))
+    (.setv co K_CONTAINERS {})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -206,15 +198,19 @@
       (reify
 
         Versioned
+
         (version [_] "1.0")
 
         Hierarchial
+
         (parent [_] parObj)
 
         Identifiable
+
         (id [_] K_EXECV )
 
         Context
+
         (setx [_ x] (reset! ctxt x))
         (getx [_] @ctxt)
 
@@ -237,6 +233,7 @@
         (kill9 [this] (.stop ^Startable parObj))
 
         Startable
+
         (start [this]
           (->> (inspectApp this (GetCwd))
                (ignitePod this)))
@@ -245,8 +242,7 @@
           (stopJmx this)
           (stopPods this)) )
 
-       { :typeid (ToKW "czc.skaro.impl" "ExecVisor") })
-  ))
+       {:typeid (ToKW "czc.skaro.impl" "ExecVisor") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -291,7 +287,7 @@
     (let [root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
           bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
           apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
-          options { :ctx ctx } ]
+          options {:ctx ctx} ]
 
       (.setv ctx K_COMPS root)
       (.setv ctx K_EXECV co)
@@ -304,8 +300,7 @@
       (SynthesizeComponent bks options)
       (SynthesizeComponent apps options))
 
-    (startJmx co jmx)
-  ))
+    (startJmx co jmx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -322,6 +317,7 @@
       (reify
 
         Hierarchial
+
         (parent [_] nil)
 
         Context
@@ -339,6 +335,7 @@
         (toEDN [_ ] (.toEDN impl))
 
         Component
+
         (id [_] (-> (.getv impl :metaInfo)
                     (:blockType)
                     (keyword)))
@@ -353,11 +350,10 @@
                          (:name)))
         (metaUrl [_] url) )
 
-      { :typeid (ToKW "czc.skaro.impl" "EmitMeta") })
-  ))
+      {:typeid (ToKW "czc.skaro.impl" "EmitMeta") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Description of a Block
+;;description of a emitter
 (defmethod CompInitialize :czc.skaro.impl/EmitMeta
 
   [^EmitMeta block]
@@ -370,10 +366,9 @@
     (test-nonil "Invalid block-meta file, no info section" info)
     (test-nonil "Invalid block-meta file, no conf section" conf)
     (log/info "initializing EmitMeta: %s" url)
-    (.setv co :metaInfo info)
     (.setv co :dftOptions conf)
-    co
-  ))
+    (.setv co :metaInfo info)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Blocks are emitters,  each block has a meta data file describing
@@ -385,20 +380,19 @@
 
   (let [^Muble ctx (-> ^Context co (.getx))
         bDir (.getv ctx K_BKSDIR)
-        fs (ListFiles bDir "meta" false) ]
-    (doseq [^File f fs ]
-      (let [^Muble
-            b (-> (makeBlockMeta (io/as-url f))
-                  (SynthesizeComponent {}) ) ]
-        (.reg ^ComponentRegistry co b)
-        (log/info "added one block: %s" (.id ^Identifiable b)) ))
-  ))
+        fs (ListFiles bDir "edn" false) ]
+    (doseq [^File f fs
+           :let [^Muble
+                 b (-> (makeBlockMeta (io/as-url f))
+                       (SynthesizeComponent {})) ]]
+      (.reg ^ComponentRegistry co b)
+      (log/info "added one block: %s" (.id ^Identifiable b)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod CompInitialize :czc.skaro.impl/SystemRegistry
 
-  [^Muble co]
+  [co]
 
   (log/info "compInitialize: SystemRegistry: %s" (.id ^Identifiable co))
   co
@@ -408,7 +402,7 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/AppsRegistry
 
-  [^Muble co]
+  [co]
 
   (log/info "compInitialize: AppsRegistry: %s" (.id ^Identifiable co))
   co

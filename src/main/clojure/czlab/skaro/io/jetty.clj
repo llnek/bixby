@@ -225,11 +225,9 @@
   (let [conf (doto (HttpConfiguration.)
                (.setRequestHeaderSize 8192)  ;; from jetty examples
                (.setOutputBufferSize (int 32768)))
-
         ^Muble
         ctr (.parent ^Hierarchial co)
-        rts (.getv ctr :routes)
-
+        rts (MaybeLoadRoutes co)
         cfg (.getv co :emcfg)
         keyfile (:serverKey cfg)
         ^String host (:host cfg)

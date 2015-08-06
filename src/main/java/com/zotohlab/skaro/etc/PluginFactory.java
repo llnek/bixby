@@ -16,6 +16,7 @@ import com.zotohlab.skaro.core.Container;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface PluginFactory {
 
   public Plugin createPlugin (Container c);

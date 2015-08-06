@@ -1,0 +1,12 @@
+{:info {:blockType "czc.skaro.io/FilePicker"
+        :version "1.0"
+        :name "FILEPicker" }
+
+ :conf {:targetFolder "/home/dropbox"
+        :recvFolder "/home/joe"
+        ;; reg-ex, blank => all
+        :fmask ""
+        ;; 5mins
+        :intervalSecs 300
+        :delaySecs 0
+        :handler "" } }

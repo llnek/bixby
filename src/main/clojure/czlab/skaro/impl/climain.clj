@@ -89,17 +89,13 @@
 
   (let [etc (io/file baseDir DN_CFG)
         home (.getParentFile etc)]
-    ;;(PrecondDir (io/file home DN_PATCH))
-    (PrecondDir (io/file home DN_CONF))
-    (PrecondDir (io/file home DN_DIST))
-    (PrecondDir (io/file home DN_LIB))
-    (PrecondDir (io/file home DN_BIN))
-    (PrecondDir home)
-    (PrecondDir etc)
+    (map PrecondDir [(io/file home DN_CONF)
+                     (io/file home DN_DIST)
+                     (io/file home DN_LIB)
+                     (io/file home DN_BIN) home etc])
     (doto (MakeContext)
       (.setv K_BASEDIR home)
-      (.setv K_CFGDIR etc))
-  ))
+      (.setv K_CFGDIR etc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -127,8 +123,7 @@
         (.stop ^Startable execv))
       (log/info "skaro stopped")
       (log/info "vm shut down")
-      (log/info "\"goodbye\""))
-  ))
+      (log/info "\"goodbye\""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,8 +137,7 @@
   (->> (-> (SysVar "skaro.kill.port")
            (ConvLong  4444)
            (MakeDiscardHTTPD #(stopCLI ctx)))
-       (.setv ctx K_KILLPORT )
-  ))
+       (.setv ctx K_KILLPORT )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -195,24 +189,22 @@
       (toEDN [_ ] (.toEDN impl))
 
       Hierarchial
+
       (parent [_] nil)
 
       Versioned
+
       (version [_]
-        (str (System/getProperty "skaro.version")))
+        (str (SysVar "skaro.version")))
 
       Identifiable
-      (id [_] K_CLISH))
 
-  ))
+      (id [_] K_CLISH)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- pauseCLI ""
-
-  ^Activity
-  []
-
+(defonce ^:private ^Activity
+  pauseCLI
   (SimPTask "PauseCLI"
     (fn [^Job j]
       (let [ctx (.getLastResult j)
@@ -222,33 +214,25 @@
                        (.getClass)
                        (.getName)))
         (PrintMutableObj ctx)
-        (log/info "container(s) are now running...")))
-  ))
+        (log/info "container(s) are now running...")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hookShutdown ""
-
-  ^Activity
-  []
-
+(defonce ^:private ^Activity
+  hookShutdown
   (SimPTask "HookShutDown"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             cli (.getv ctx K_CLISH)]
-        (.addShutdownHook (Runtime/getRuntime)
-                          (ThreadFunc #(stopCLI ctx) false))
+        (->> (ThreadFunc #(stopCLI ctx) false)
+             (.addShutdownHook (Runtime/getRuntime)))
         (enableRemoteShutdown ctx)
-        (log/info "added shutdown hook")))
-  ))
+        (log/info "added shutdown hook")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- writePID ""
-
-  ^Activity
-  []
-
+(defonce ^:private ^Activity
+  writePID
   (SimPTask "WritePID"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
@@ -257,18 +241,12 @@
         (WriteOneFile fp (ProcessPid))
         (.setv ctx K_PIDFILE fp)
         (.deleteOnExit fp)
-        (log/info "wrote skaro.pid - ok")))
-  ))
+        (log/info "wrote skaro.pid - ok")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- primodial
-
-  "Create and synthesize Execvisor"
-
-  ^Activity
-  []
-
+;;create and synthesize Execvisor
+(defonce ^:private ^Activity
+  primodial
   (SimPTask "Primodial"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
@@ -279,26 +257,20 @@
         (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
         (log/info "inside primodial() ----------------------------->")
         (log/info "execvisor = %s" cz)
-        (let [execv (MakeExecvisor cli)]
+        (let [^Startable execv (MakeExecvisor cli)]
           (.setv ctx K_EXECV execv)
           (SynthesizeComponent execv {:ctx ctx})
           (log/info "execvisor created and synthesized - ok")
           (log/info "*********************************************************")
           (log/info "about to start skaro...")
           (log/info "*********************************************************")
-          (.start ^Startable execv)
-          (log/info "skaro started!"))))
-  ))
+          (.start execv)
+          (log/info "skaro started!"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- loadRes
-
-  "Look for and load the resource bundle"
-
-  ^Activity
-  []
-
+;;look for and load the resource bundle
+(defonce ^:private ^Activity
+  loadRes
   (SimPTask "LoadResource"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
@@ -307,18 +279,12 @@
         (test-nonil "etc/resouces" rc)
         (.setv ctx K_RCBUNDLE rc)
         (I18N/setBase rc)
-        (log/info "resource bundle found and loaded")))
-  ))
+        (log/info "resource bundle found and loaded")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- loadConf
-
-  "Parse skaro.conf"
-
-  ^Activity
-  []
-
+;;parse skaro.conf
+(defonce ^:private ^Activity
+  loadConf
   (SimPTask "LoadConf"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
@@ -335,20 +301,14 @@
           (log/info "using locale: %s" loc)
           (doto ctx
             (.setv K_LOCALE loc)
-            (.setv K_PROPS w)))))
-  ))
+            (.setv K_PROPS w)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- setupLoaders
-
-  "Prepare class loaders.  The root class loader loads all the core libs
-  The exec class loader inherits from the root and is the class loader
-  that runs skaro"
-
-  ^Activity
-  []
-
+;;prepare class loaders.  The root class loader loads all the core libs,
+;;the exec class loader inherits from the root and is the class loader
+;;which runs skaro
+(defonce ^:private ^Activity
+  setupLoaders
   (SimPTask "SetupLoaders"
     (fn [^Job j]
       (let [^Muble x (.getLastResult j)
@@ -357,18 +317,14 @@
             pp (.getParent p)]
         (test-cond "bad classloaders" (and (instance? RootClassLoader pp)
                                            (instance? ExecClassLoader p)))
-        (.setv x K_ROOT_CZLR (.getParent p))
+        (.setv x K_ROOT_CZLR pp)
         (.setv x K_EXEC_CZLR p)
-        (log/info "classloaders configured: using %s" (type cz))))
-  ))
+        (log/info "classloaders configured: using %s" (type cz))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- rtStart ""
-
-  ^Activity
-  []
-
+(defonce ^:private ^Activity
+  rtStart
   (SimPTask "RtStart"
     (fn [^Job j]
       (let [home (.getv j :home)
@@ -379,8 +335,7 @@
         (.setv x K_CLISH c)
         (-> ^Context c (.setx x))
         (log/info "home directory looks ok")
-        (.setLastResult j x)))
-  ))
+        (.setLastResult j x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -388,19 +343,17 @@
 
   [home]
 
-  (let [cs (cserver home)
-        a (-> (rtStart)
-              (.chain (setupLoaders))
-              (.chain (loadConf))
-              (.chain (loadRes))
-              (.chain (primodial))
-              (.chain (writePID))
-              (.chain (hookShutdown))
-              (.chain (pauseCLI)))]
+  (let [a (-> rtStart
+              (.chain setupLoaders)
+              (.chain loadConf)
+              (.chain loadRes)
+              (.chain primodial)
+              (.chain writePID)
+              (.chain hookShutdown)
+              (.chain pauseCLI))]
     (-> ^ServiceHandler
-        cs
-        (.handle a {:home home}))
-  ))
+        (cserver home)
+        (.handle a {:home home}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

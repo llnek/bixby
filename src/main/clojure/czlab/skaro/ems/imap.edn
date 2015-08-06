@@ -1,0 +1,12 @@
+{:info {:blockType "czc.skaro.io/IMAP"
+        :version "1.0"
+        :name "IMAP" }
+
+ :conf {:host "imap.gmail.com"
+        :port 993
+        :deletemsg false
+        :username "joe"
+        :passwd "secret"
+        :intervalSecs 300
+        :delaySecs 0
+        :handler "" } }

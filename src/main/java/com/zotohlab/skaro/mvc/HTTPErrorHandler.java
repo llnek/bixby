@@ -14,6 +14,7 @@ package com.zotohlab.skaro.mvc;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface HTTPErrorHandler {
 
   public WebContent getErrorResponse( int code);

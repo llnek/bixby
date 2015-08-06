@@ -16,6 +16,7 @@ import com.zotohlab.frwk.util.Schedulable;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface ServerLike {
 
   public Schedulable core();

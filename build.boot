@@ -645,7 +645,7 @@
         t2 (a/AntCopy
              {:todir (fp! (ge :czzDir) "czlab/skaro")}
              [[:fileset {:dir (fp! (ge :srcDir) "clojure/czlab/skaro")
-                         :excludes "**/*.meta,**/*.clj"}]])
+                         :excludes "**/*.edn,**/*.clj"}]])
         ts (into [] (concat m [t2]))
         t3 (a/AntJar
              {:destFile (fp! (ge :distDir)
@@ -702,7 +702,7 @@
       {:todir (fp! (ge :packDir) "etc/ems")
        :flatten true}
       [[:fileset {:dir (fp! (ge :srcDir) "clojure")
-                  :includes "**/*.meta"}]])
+                  :includes "**/*.edn"}]])
     (a/AntCopy
       {:todir (fp! (ge :packDir) "etc")}
       [[:fileset {:dir (fp! (ge :basedir) "etc")} ]])))

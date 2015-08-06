@@ -14,6 +14,7 @@ package com.zotohlab.skaro.io;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface IOResult {
 
   public Object emitter();

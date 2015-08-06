@@ -1,0 +1,9 @@
+{:info {:blockType "czc.skaro.io/NettyMVC"
+        :version "1.0"
+        :name "NettyMVC" }
+
+  :conf {:host ""
+         :port 8080
+         :serverKey ""
+         :passwd ""
+         :handler "" } }

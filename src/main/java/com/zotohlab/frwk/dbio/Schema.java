@@ -14,6 +14,7 @@ package com.zotohlab.frwk.dbio;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Schema {
 
   public Iterable<?> getModels();

@@ -38,8 +38,7 @@
             res (.getResultObj evt) ]
         (.setStatus res s)
         (.replyResult evt)
-        nil))
-  ))
+        nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -53,8 +52,7 @@
       (mkWork s)
       (throw (FlowError. (str "Unhandled event-type \""
                               (:typeid (meta evt))
-                              "\""))))
-  ))
+                              "\""))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

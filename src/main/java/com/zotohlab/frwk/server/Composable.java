@@ -14,6 +14,7 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Composable {
 
   public Object compose(ComponentRegistry cm, Object... args);

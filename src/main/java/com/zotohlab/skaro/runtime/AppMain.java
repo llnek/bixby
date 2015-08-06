@@ -11,18 +11,16 @@
 
 package com.zotohlab.skaro.runtime;
 
+import com.zotohlab.frwk.core.Configurable;
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Initializable;
 import com.zotohlab.frwk.core.Startable;
-import com.zotohlab.skaro.core.Container;
+import com.zotohlab.skaro.core.Contextualizable;
 
 /**
  * @author kenl
  */
-public interface AppMain extends Disposable, Initializable, Startable {
-
-  public void contextualize(Container c);
-  public void configure(Object options);
-
+public interface AppMain 
+extends Disposable, Initializable, Startable, Contextualizable, Configurable {
 }
 

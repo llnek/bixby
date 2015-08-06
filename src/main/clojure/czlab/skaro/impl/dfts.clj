@@ -22,13 +22,12 @@
         [czlab.skaro.core.sys])
 
   (:require
-    [czlab.xlib.util.core :refer [notnil?]]
-    [czlab.xlib.util.str :refer [ToKW]]
-    [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.files
-    :refer [FileRead? DirReadWrite? ]]
     [czlab.xlib.util.core
-    :refer [NextLong test-cond MakeMMap test-nestr]])
+    :refer [NextLong test-cond MakeMMap test-nestr]]
+    [czlab.xlib.i18n.resources :refer [RStr]]
+    [czlab.xlib.util.str :refer [ToKW]]
+    [czlab.xlib.util.files
+    :refer [FileRead? DirReadWrite? ]])
 
   (:import
     [com.zotohlab.skaro.core Muble Context ConfigError]
@@ -46,7 +45,7 @@
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  Asserts that the directory is readable & writable.
+;;asserts that the directory is readable & writable.
 (defn ^:no-doc PrecondDir
 
   "Is this folder read-writeable?"
@@ -57,7 +56,7 @@
              (DirReadWrite? d)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Asserts that the file is readable
+;;asserts that the file is readable
 (defn ^:no-doc PrecondFile
 
   "Is this file readable?"
@@ -71,7 +70,7 @@
 ;;
 (defn ^:no-doc MaybeDir
 
-  "Tests if the key maps to a File"
+  "true if the key maps to a File"
 
   ^File
   [^Muble m kn]
@@ -81,24 +80,22 @@
       String (io/file v)
       File v
       (throw (ConfigError. (RStr (I18N/getBase)
-                                 "skaro.no.dir" kn))))
-  ))
+                                 "skaro.no.dir" kn))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A registry is basically a container holding a bunch of components
-;; A component itself can be a registry which implies that registeries can
-;; be nested
+;;a registry is basically a container holding a bunch of components
+;;a component itself can be a registry which implies that registeries can
+;;be nested
 (defn MakeRegistry
 
   "Create a generic component registry"
 
   [regoType regoId ver parObj]
 
+  {:pre [(keyword? regoType) (keyword? regoId)]}
+
   (let [impl (MakeMMap {:cache {} })
         ctxt (atom (MakeMMap)) ]
-    (test-cond "registry type" (keyword? regoType))
-    (test-cond "registry id" (keyword? regoId))
-    (test-nestr "registry version" ver)
     (with-meta
       (reify
 
@@ -122,23 +119,23 @@
 
         Component
 
-        (version [_] ver)
+        (version [_] (str ver))
         (id [_] regoId)
 
         ComponentRegistry
 
-        (has [this cid]
+        (has [_ cid]
           (let [cache (.getv impl :cache)
                 c (get cache cid) ]
             (some? c)))
 
-        (lookup [this cid]
+        (lookup [_ cid]
           (let [cache (.getv impl :cache)
                 c (get cache cid) ]
             (if (and (nil? c)
                      (instance? ComponentRegistry parObj))
-              (.lookup ^ComponentRegistry parObj cid)
-              c)) )
+              (-> ^ComponentRegistry parObj (.lookup cid))
+              c)))
 
         (dereg [this c]
           (let [cid (if (nil? c)
@@ -159,12 +156,12 @@
             (.setv impl :cache (assoc cache cid c))))
 
         RegoAPI
-          (iter [_]
-            (let [cache (.getv impl :cache) ]
-              (seq cache))) )
 
-      { :typeid (ToKW "czc.skaro.impl" (name regoType)) })
-  ))
+        (iter [_]
+          (let [cache (.getv impl :cache) ]
+            (seq cache))) )
+
+      {:typeid (ToKW "czc.skaro.impl" (name regoType))})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,7 +197,7 @@
 
         Component
 
-        (version [_] ver)
+        (version [_] (str ver))
         (id [_] pid )
 
         Hierarchial
@@ -214,8 +211,7 @@
         (appKey [_] appid)
         (typeof [_] podType))
 
-      { :typeid (ToKW "czc.skaro.impl" "PODMeta") })
-  ))
+      {:typeid (ToKW "czc.skaro.impl" "PODMeta") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -151,7 +151,7 @@ public class XData implements Serializable {
   }
 
   public String stringify() throws IOException {
-    return _data instanceof String ? ((String) _data) : new String ( javaBytes(), _encoding );
+    return _data instanceof String ? _data.toString() : new String ( javaBytes(), _encoding );
   }
 
   public InputStream stream() throws IOException {

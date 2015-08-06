@@ -14,9 +14,10 @@ package com.zotohlab.skaro.core;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Contextualizable {
 
-  public void contextualize(Context ctx);
+  public void contextualize(Object ctx);
 
 }
 

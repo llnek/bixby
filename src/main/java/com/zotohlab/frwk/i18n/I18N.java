@@ -44,7 +44,7 @@ public enum I18N {
   }
 
   public static void setBundle(Object bkey, ResourceBundle b) {
-    tlog().info("Setting a resource bundle, bkey = {}", bkey);
+    tlog().info("setting a resource bundle, bkey = {}", bkey);
     _bundles.put(bkey,b);
   }
 

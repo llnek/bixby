@@ -15,11 +15,11 @@
   czlab.skaro.mvc.filters
 
   (:require
+    [czlab.skaro.io.http :refer [MaybeLoadRoutes HttpBasicConfig]]
     [czlab.skaro.mvc.assets
     :refer [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
     [czlab.xlib.util.core
     :refer [notnil? spos? ToJavaInt try! FPath]]
-    [czlab.skaro.io.http :refer [HttpBasicConfig]]
     [czlab.xlib.util.str :refer [hgl? nsb strim]]
     [czlab.xlib.util.meta :refer [MakeObj]])
 
@@ -244,7 +244,7 @@
   [^Muble co]
 
   (let [^Muble ctr (.parent ^Hierarchial co)
-        rts (.getv ctr :routes)
+        rts (MaybeLoadRoutes co)
         options (.getv co :emcfg)
         bs (InitTCPServer (mvcInitor co options) options) ]
     (.setv co :cracker (MakeRouteCracker rts))

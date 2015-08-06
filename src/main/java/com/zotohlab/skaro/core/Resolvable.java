@@ -14,6 +14,7 @@ package com.zotohlab.skaro.core;
 /**
  * @author kenl
  */
+@FunctionalInterface
 public interface Resolvable {
 
   public Object resolve(Context c);

@@ -20,9 +20,11 @@
     :refer [notnil? juid spos? NextLong
     ToJavaInt SubsVar MakeMMap test-cond Stringify]]
     [czlab.xlib.net.comms :refer [ParseBasicAuth]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]])
+    [czlab.xlib.crypto.codec :refer [Pwdify]]
+    [czlab.xlib.net.routes :refer [LoadRoutes]])
 
-  (:require [czlab.xlib.util.logging :as log])
+  (:require [czlab.xlib.util.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlab.xlib.crypto.ssl]
         [czlab.skaro.core.consts]
@@ -316,6 +318,22 @@
       (first arr)
       nil)
   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MaybeLoadRoutes
+
+  [^Muble co]
+
+  (let [^Container ctr (.parent ^Hierarchial co)
+        appDir (.getAppDir ctr)
+        sf (io/file appDir DN_CONF "static-routes.conf")
+        rf (io/file appDir DN_CONF "routes.conf") ]
+    (.setv co
+           :routes
+           (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
+                        (if (.exists rf) (LoadRoutes rf) [] ))))
+    (.getv co :routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

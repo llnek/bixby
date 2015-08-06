@@ -1,0 +1,6 @@
+{:info {:blockType "czc.skaro.io/OnceTimer"
+        :version "1.0"
+        :name "OnceTimer" }
+
+  :conf {:delaySecs 0
+         :handler "" } }
