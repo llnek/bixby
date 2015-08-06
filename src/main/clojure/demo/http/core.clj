@@ -7,29 +7,32 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.http.core
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [try!]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.core :refer [try!]]
+    [czlab.xlib.util.str :refer [hgl?]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^String FMTXml
+(def ^:private
+  FX
   (str "<?xml version = \"1.0\" encoding = \"utf-8\"?>"
        "<hello xmlns=\"http://simple/\">"
        "<world>"
@@ -39,21 +42,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.http.core)
-    (let [^HTTPEvent ev (.event ^Job j)
-          res (.getResultObj ev) ]
-      ;; construct a simple html page back to caller
-      ;; by wrapping it into a stream data object
-      (doto res
-        (.setHeader "content-type" "text/xml")
-        (.setContent FMTXml)
-        (.setStatus 200))
-      ;; associate this result with the orignal event
-      ;; this will trigger the http response
-      (.replyResult ev))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^HTTPEvent ev (.event ^Job j)
+            res (.getResultObj ev) ]
+        ;; construct a simple html page back to caller
+        ;; by wrapping it into a stream data object
+        (doto res
+          (.setHeader "content-type" "text/xml")
+          (.setContent FX)
+          (.setStatus 200))
+        ;; associate this result with the orignal event
+        ;; this will trigger the http response
+        (.replyResult ev)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

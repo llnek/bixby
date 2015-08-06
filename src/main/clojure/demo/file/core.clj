@@ -9,26 +9,28 @@
 ;; this software.
 ;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.file.core
 
-  (:require [czlab.xlib.util.core :refer [try!]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.core :refer [try!]]
+    [clojure.java.io :as io]
+    [czlab.xlib.util.str :refer [hgl?]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask ]
-            [com.zotohlab.skaro.core Container Muble]
-            [com.zotohlab.skaro.io FileEvent]
-            [com.zotohlab.frwk.server ServiceProvider Service]
-            [java.util.concurrent.atomic AtomicInteger]
-            [org.apache.commons.io FileUtils]
-            [java.util Date]
-            [java.lang StringBuilder]
-            [java.io File IOException]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.skaro.core Container Muble]
+    [com.zotohlab.skaro.io FileEvent]
+    [com.zotohlab.frwk.server ServiceProvider Service]
+    [java.util.concurrent.atomic AtomicInteger]
+    [org.apache.commons.io FileUtils]
+    [java.util Date]
+    [java.lang StringBuilder]
+    [java.io File IOException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -42,28 +44,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoGen [] WHandler
+(defn DemoGen ""
 
-  (run [_  j _]
-    (require 'demo.file.core)
-    (let [^Muble p (-> ^ServiceProvider
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^Muble p (-> ^ServiceProvider
                          (.container ^Job j)
                          (.getService :default-sample))
-          s (str "Current time is " (Date.)) ]
-      (spit (File. (nsb (.getv p :targetFolder))
-                   (str "ts-" (ncount) ".txt"))
-            s :encoding "utf-8"))))
+            s (str "Current time is " (Date.)) ]
+        (spit (io/file (.getv p :targetFolder)
+                       (str "ts-" (ncount) ".txt"))
+              s :encoding "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype DemoPick [] WHandler
+(defn DemoPick ""
 
-  (run [_  j _]
-    (require 'demo.file.core)
-    (let [f (-> ^FileEvent (.event ^Job j)
-                (.getFile)) ]
-      (println "Picked up new file: " f)
-      (println "Content: " (slurp f :encoding "utf-8")))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [f (-> ^FileEvent (.event ^Job j)
+                  (.getFile)) ]
+        (println "picked up new file: " f)
+        (println "content: " (slurp f :encoding "utf-8"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

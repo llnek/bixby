@@ -7,58 +7,62 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.http.formpost
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [notnil?]]
-            [czlab.xlib.util.str :refer [nsb]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.core :refer [notnil?]]
+    [czlab.xlib.util.str :refer [hgl?]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-            [java.util ListIterator]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.frwk.net ULFileItem ULFormItems]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [java.util ListIterator]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.frwk.net ULFileItem ULFormItems]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.http.formpost)
-    (let [^HTTPEvent ev (.event  ^Job j)
-          res (.getResultObj ev)
-          data (.data ev)
-          stuff (if (and (notnil? data)
-                         (.hasContent data))
-                  (.content data)
-                  nil) ]
-      (if
-        (instance? ULFormItems stuff)
-        (doseq [^ULFileItem fi (.intern ^ULFormItems stuff)]
-          (println "Fieldname : " (.getFieldName fi))
-          (println "Name : " (.getName fi))
-          (println "Formfield : " (.isFormField fi))
-          (if (.isFormField fi)
-            (println "Field value: " (.getString fi))
-            (when-let [xs (.fileData fi)]
-              (println "Field file = " (.filePath xs)))))
-        ;;else
-        (println "Error: data is not ULFormItems."))
-      (.setStatus res 200)
-      ;; associate this result with the orignal event
-      ;; this will trigger the http response
-      (.replyResult ev))))
+  ^WHandler
+  []
+
+  (reify WHandler
+    (run [_  j _]
+      (let [^HTTPEvent ev (.event  ^Job j)
+            res (.getResultObj ev)
+            data (.data ev)
+            stuff (when (and (some? data)
+                             (.hasContent data))
+                    (.content data)) ]
+        (if-let [^ULFormItems
+                 fis (Cast? ULFormItems stuff)]
+          (doseq [^ULFileItem fi (.intern fis)]
+            (println "Fieldname : " (.getFieldName fi))
+            (println "Name : " (.getName fi))
+            (println "Formfield : " (.isFormField fi))
+            (if (.isFormField fi)
+              (println "Field value: " (.getString fi))
+              (when-let [xs (.fileData fi)]
+                (println "Field file = " (.filePath xs)))))
+          ;;else
+          (println "Error: data is not ULFormItems."))
+        (.setStatus res 200)
+        ;; associate this result with the orignal event
+        ;; this will trigger the http response
+        (.replyResult ev)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

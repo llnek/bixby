@@ -176,15 +176,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WorkFlow
-  (startWith [_]
-    ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
-    ;; a split, which forks off more steps in parallel.
-    (require 'demo.flows.core.start!')
-    (->> (auth-user)
-         (.chain GetProfile)
-         (.chain Provision)
-         (.chain FinalTest))))
+(defn Demo ""
+
+  ^WorkFlow
+  []
+
+  (reify WorkFlow
+    (startWith [_]
+      ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
+      ;; a split, which forks off more steps in parallel.
+      (->> (auth-user)
+           (.chain GetProfile)
+           (.chain Provision)
+           (.chain FinalTest)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

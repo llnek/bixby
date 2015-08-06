@@ -7,51 +7,55 @@
 ;; By using this software in any  fashion, you are agreeing to be bound by the
 ;; terms of this license. You  must not remove this notice, or any other, from
 ;; this software.
-;; Copyright (c) 2013, Ken Leung. All rights reserved.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
 (ns ^:no-doc
     ^{:author "kenl"}
 
   demo.http.websock
 
-  (:require [czlab.xlib.util.process :refer [DelayExec]]
-            [czlab.xlib.util.core :refer [notnil?]]
-            [czlab.xlib.util.str :refer [nsb]]
-            [czlab.xlib.util.meta :refer [IsBytes?]])
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require [clojure.tools.logging :as log])
+  (:require
+    [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.core :refer :all]
+    [czlab.xlib.util.str :refer :all]
+    [czlab.xlib.util.meta :refer [IsBytes?]])
 
-  (:import  [com.zotohlab.wflow WHandler Job FlowDot PTask]
-            [com.zotohlab.frwk.io XData]
-            [com.zotohlab.skaro.io WebSockEvent
-                                   WebSockResult]
-            [com.zotohlab.skaro.core Container]))
+  (:import
+    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [com.zotohlab.frwk.io XData]
+    [com.zotohlab.skaro.io WebSockEvent
+    WebSockResult]
+    [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Demo [] WHandler
+(defn Demo ""
 
-  (run [_  j _]
-    (require 'demo.http.websock)
-    (let [^WebSockEvent ev (.event ^Job j)
-          res (.getResultObj ev)
-          data (.getData ev)
-          ^bytes stuff (if (and (notnil? data)
-                                (.hasContent data))
-                         (.content data)
-                         nil) ]
-      (cond
-        (instance? String stuff)
-        (println "Got poked by websocket-text: " stuff)
+  ^WHandler
+  []
 
-        (IsBytes? (class stuff))
-        (println "Got poked by websocket-bin: len = " (alength stuff))
+  (reify WHandler
+    (run [_  j _]
+      (let [^WebSockEvent ev (.event ^Job j)
+            res (.getResultObj ev)
+            data (.getData ev)
+            stuff (when (and (some? data)
+                             (.hasContent data))
+                    (.content data)) ]
+        (cond
+          (instance? String stuff)
+          (println "Got poked by websocket-text: " stuff)
 
-        :else
-        (println "Funky data from websocket????")))))
+          (IsBytes? (class stuff))
+          (println "Got poked by websocket-bin: len = " (alength stuff))
+
+          :else
+          (println "Funky data from websocket????"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
