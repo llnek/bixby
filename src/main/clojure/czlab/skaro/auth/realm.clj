@@ -66,8 +66,7 @@
                         (:passwd acc)
                         (.getName this)))
       (finally
-        (.finz db)))
-  ))
+        (.finz db)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -84,17 +83,15 @@
         sql (.newSimpleSQLr db) ]
     (try
       (let [rs (DbioGetM2M {:as :roles :with sql } acc) ]
-        (doseq [r (seq rs) ]
+        (doseq [r rs]
           (.addRole rc ^String (:name r)))
         rc)
       (finally
-        (.finz db)))
-  ))
+        (.finz db)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -init []
-  nil)
+(defn -init [] nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

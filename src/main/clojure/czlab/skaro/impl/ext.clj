@@ -15,7 +15,7 @@
   czlab.skaro.impl.ext
 
   (:require
-    [czlab.xlib.util.str :refer [ToKW hgl? lcase nsb strim]]
+    [czlab.xlib.util.str :refer [ToKW stror lcase nsb strim]]
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
     [czlab.xlib.i18n.resources :refer [LoadResource]]
     [czlab.xlib.util.format :refer [ReadEdn]]
@@ -23,7 +23,7 @@
     [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
     [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
     [czlab.xlib.util.core
-    :refer [MakeMMap juid FPath Cast?
+    :refer [MakeMMap doto->> juid FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [MakeScheduler]]
     [czlab.xlib.util.process :refer [Coroutine]]
@@ -133,7 +133,7 @@
                 c0 (str (:handler cfg))
                 c1 (str (:router options))
                 wf (trycr nil (->> ^String
-                                   (if (hgl? c1) c1 c0)
+                                   (stror c1 c0)
                                    (.call rts)))
                 job (mkJob parObj evt) ]
             (log/debug "event type = %s" (type evt))
@@ -195,7 +195,7 @@
   [^Muble co ^String gid]
 
   (let [dbs (.getv co K_DBPS)
-        dk (if (hgl? gid) gid DEF_DBID) ]
+        dk (stror gid DEF_DBID) ]
     (get dbs (keyword dk))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -444,7 +444,6 @@
   (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
         appDir (K_APPDIR props)
         cfgDir (io/file appDir DN_CONF)
-        mf (LoadJavaProps (io/file appDir MN_FILE))
         envConf (parseConfile appDir CFG_ENV_CF)
         appConf (parseConfile appDir CFG_APP_CF) ]
     ;; make registry to store services
@@ -454,8 +453,7 @@
       (.setv K_APPDIR appDir)
       (.setv K_SVCS srg)
       (.setv K_ENVCONF envConf)
-      (.setv K_APPCONF appConf)
-      (.setv K_MFPROPS mf))
+      (.setv K_APPCONF appConf))
     (log/info "container: configured app: %s" (.id ^Identifiable co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -501,9 +499,10 @@
 (defn- doOnePlugin ""
 
   ^Plugin
-  [co ^String v ^File appDir env app]
+  [^Muble co ^String v ^File appDir env app]
 
-  (let [pf (MakeObj v)
+  (let [^CliMain rts (.getv co :cljshim)
+        pf (trycr nil (.call rts v))
         u (when (instance? PluginFactory pf)
             (.createPlugin ^PluginFactory pf
                            ^Container co)) ]
@@ -577,18 +576,18 @@
 
   [^Muble co]
 
-  (let [pid (.id ^Component co)]
+  (let [cl (-> (Thread/currentThread)
+               (.getContextClassLoader))
+        rts (CliMain/newrt cl (juid))
+        appDir (.getv co K_APPDIR)
+        pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)
-    (let [^Properties mf (.getv co K_MFPROPS)
-          cl (-> (Thread/currentThread)
-                 (.getContextClassLoader))
-          rts (CliMain/newrt cl (juid))
-          cpu (MakeScheduler (str pid))
-          mCZ (strim (.get mf "Main-Class"))
+    (.setv co :cljshim rts)
+    (let [cpu (MakeScheduler (str pid))
           env (.getv co K_ENVCONF)
           app (.getv co K_APPCONF)
+          mCZ (strim (get-in app [:info :main]))
           dmCZ (str (:data-model app))
-          appDir (.getv co K_APPDIR)
           reg (.getv co K_SVCS)
           bus (makeEventBus co)
           cfg (:container env)
@@ -604,20 +603,19 @@
         (when-let [rb (LoadResource res)]
           (I18N/setBundle (.id ^Identifiable co) rb)))
 
-      (.setv co :cljshim rts)
-
-      (.setv co K_DBPS (maybeInitDBs co env app))
-      (log/debug "db [dbpools]\n%s" (.getv co K_DBPS))
+      (doto->> (maybeInitDBs co env app)
+               (.setv co K_DBPS )
+               (log/debug "db [dbpools]\n%s" ))
 
       ;; handle the plugins
       (.setv co K_PLUGINS
              (persistent!
                (reduce
-                 #(assoc! %1
-                          (keyword (first %2))
-                          (doOnePlugin co
-                                       (last %2)
-                                       appDir env app))
+                 #(->> (doOnePlugin co
+                                    (last %2)
+                                    appDir env app)
+                       (assoc! %1
+                               (first %2)))
                  (transient {})
                  (seq (:plugins app))) ))
       (.setv co K_SCHEDULER cpu)
@@ -649,13 +647,14 @@
 
         (.setv co :main-app @obj)
         (log/info "application main-class %s%s"
-                  (if (hgl? mCZ) mCZ "???")
+                  (stror mCZ "???")
                   " created and invoked"))
 
       (let [svcs (:services env) ]
         (if (empty? svcs)
           (log/warn "no system service defined in env.conf")
-          (.reifyServices ^czlab.skaro.impl.ext.ContainerAPI co)))
+          (-> ^czlab.skaro.impl.ext.ContainerAPI co
+              (.reifyServices ))))
 
       ;; start the scheduler
       (.activate ^Activable cpu cfg)

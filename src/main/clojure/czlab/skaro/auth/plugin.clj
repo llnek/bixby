@@ -15,11 +15,11 @@
   czlab.skaro.auth.plugin
 
   (:require
+    [czlab.xlib.util.core
+    :refer [tryc notnil? Stringify ce?
+    MakeMMap do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
     [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.core
-    :refer [tryc notnil? Stringify
-    MakeMMap do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? strim]]
     [czlab.xlib.util.format :refer [ReadEdn]]
@@ -39,8 +39,8 @@
         [czlab.xlib.dbio.core])
 
   (:import
+    [com.zotohlab.skaro.etc PluginFactory Plugin AuthPlugin PluginError]
     [com.zotohlab.skaro.runtime AuthError UnknownUser DuplicateUser]
-    [com.zotohlab.skaro.etc PluginFactory Plugin PluginError]
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]
     [org.apache.commons.codec.binary Base64]
@@ -58,30 +58,16 @@
     [org.apache.shiro.authc UsernamePasswordToken]
     [com.zotohlab.wflow If BoolExpr
     Activity Job PTask Work]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
+    [com.zotohlab.skaro.io WebSS HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol AuthPlugin
-
-  "A Plugin that uses Apache Shiro for authentication
-  and authorization of users"
-
-  (checkAction [_ acctObj action])
-  (addAccount [_ options] )
-  (hasAccount [_ options] )
-  (login [_ user pwd] )
-  (getRoles [_ acctObj ] )
-  (getAccount [_ options]))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn AssertPluginOK
 
-  "Test if the plugin has been initialized,
+  "true if the plugin has been initialized,
    by looking into the db"
 
   [^JDBCPool pool]
@@ -89,8 +75,7 @@
   (let [tbl (:table LoginAccount)]
     (when-not (TableExist? pool tbl)
       (DbioError (RStr (I18N/getBase)
-                       "auth.no.table" tbl)))
-  ))
+                       "auth.no.table" tbl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,8 +87,7 @@
   ;; get the default db pool
   (-> (DbioConnectViaPool
         (.acquireDbPool ctr "") AUTH-MCACHE {})
-      (.newSimpleSQLr)
-  ))
+      (.newSimpleSQLr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -114,8 +98,7 @@
   [^SQLr sql ^String role ^String desc]
 
   (.insert sql (-> (DbioCreateObj :czc.skaro.auth/AuthRole)
-                   (DbioSetFlds :name role :desc desc))
-  ))
+                   (DbioSetFlds :name role :desc desc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -135,8 +118,7 @@
                    (:column)
                    (ese))
               " = ?")
-         [(strim role)]
-  ))
+         [(strim role)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,21 +144,23 @@
   (let [roleObjs (or roleObjs [])
         options (or options {})
         ps (.hashed pwdObj)
-        acc (.insert sql (-> (DbioCreateObj :czc.skaro.auth/LoginAccount)
-                             (DbioSetFld* (merge {:acctid (strim user)
-                                                  :passwd  (.getLeft ps)}
-                                                 options)))) ]
-    ;; Currently adding roles to the account is not bound to the
+        acc (->> (-> :czc.skaro.auth/LoginAccount
+                     (DbioCreateObj )
+                     (DbioSetFld*
+                       (merge
+                         {:acctid (strim user)
+                          :passwd  (.getLeft ps)}
+                         options)))
+                 (.insert sql)) ]
+    ;; currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
-    ;; assumed ok for the account to remain inserted.
+    ;; assumed ok for the account to remain inserted
     (doseq [r roleObjs]
       (DbioSetM2M { :as :roles :with sql } acc r))
-    (log/debug "created new account into db: %s%s%s"
-               acc
-               "\nwith meta\n"
-               (meta acc))
-    acc
-  ))
+    (log/debug "created new account %s%s%s%s"
+               "into db: "
+               acc "\nwith meta\n" (meta acc))
+    acc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -188,7 +172,7 @@
 
   (.findOne sql
             :czc.skaro.auth/LoginAccount
-            { :email (strim email) }))
+            {:email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,7 +184,7 @@
 
   (.findOne sql
             :czc.skaro.auth/LoginAccount
-            { :acctid (strim user) }))
+            {:acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,8 +199,7 @@
                        (:passwd acct))
       acct
       (throw (AuthError. (RStr (I18N/getBase) "auth.bad.pwd"))))
-    (throw (UnknownUser. user))
-  ))
+    (throw (UnknownUser. user))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,8 +223,7 @@
         u (-> userObj
               (DbioSetFlds :passwd (.getLeft ps)
                            :salt (.getRight ps))) ]
-    (.update sql u)
-  ))
+    (.update sql u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -257,8 +239,7 @@
   (if (empty? details)
     userObj
     (->> (DbioSetFld* userObj details)
-         (.update sql))
-  ))
+         (.update sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -308,8 +289,7 @@
                    (:column)
                    (ese))
               " =?")
-         [ (strim user) ]
-  ))
+         [ (strim user) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -347,25 +327,26 @@
   (DefBoolExpr
     (fn [^Job job]
       (let
-        [^Muble ctr (.container job)
-         ^HTTPEvent
-         evt (.event job)
-         ^czlab.skaro.io.webss.WebSS
-         mvs (.getSession evt)
+        [^HTTPEvent evt (.event job)
+         si (try
+              (GetSignupInfo evt)
+              (catch
+                BadDataError e# {:e e#}))
+         csrf (-> ^WebSS (.getSession evt)
+                  (.getXref))
          rb (I18N/getBase)
-         csrf (.getXref mvs)
-         ^czlab.skaro.auth.plugin.AuthPlugin
-         pa (:auth (.getv ctr K_PLUGINS))
-         si (try (GetSignupInfo evt)
-                 (catch BadDataError e# {:e e#}))
-         info (or si {})]
+         info (or si {})
+         ^AuthPlugin
+         pa (-> ^Muble (.container job)
+                       (.getv K_PLUGINS)
+                       (:auth )) ]
         (log/debug "session csrf = %s%s%s"
                    csrf
                    ", and form token = " (:csrf info))
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (AuthError. ^Throwable (:e info))}
+            (->> {:error (AuthError. (ce? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)
@@ -393,8 +374,7 @@
           :else
           (do->false
             (->> {:error (AuthError. (RStr rb "auth.bad.req"))}
-                 (.setLastResult job))))))
-  ))
+                 (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -406,25 +386,26 @@
   (DefBoolExpr
     (fn [^Job job]
       (let
-        [^Muble ctr (.container job)
-         ^HTTPEvent
-         evt (.event job)
-         ^czlab.skaro.io.webss.WebSS
-         mvs (.getSession evt)
-         csrf (.getXref mvs)
+        [^HTTPEvent evt (.event job)
+         si (try
+              (GetSignupInfo evt)
+              (catch
+                BadDataError e# {:e e#}))
+         csrf (-> ^WebSS (.getSession evt)
+                        (.getXref ))
          rb (I18N/getBase)
-         ^czlab.skaro.auth.plugin.AuthPlugin
-         pa (:auth (.getv ctr K_PLUGINS))
-         si (try (GetSignupInfo evt)
-                 (catch BadDataError e#  {:e e#}))
-         info (or si {}) ]
+         info (or si {})
+         ^AuthPlugin
+         pa (-> ^Muble (.container job)
+                (.getv K_PLUGINS)
+                (:auth )) ]
         (log/debug "session csrf = %s%s%s"
                    csrf
                    ", and form token = " (:csrf info))
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (AuthError. ^Throwable (:e info))}
+            (->> {:error (AuthError. (ce? (:e info)))}
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
@@ -443,8 +424,7 @@
           :else
           (do->false
             (->> {:error (AuthError. (RStr rb "auth.bad.req")) }
-                 (.setLastResult job))))))
-  ))
+                 (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -454,12 +434,13 @@
   [^Container ctr]
 
   (let [impl (MakeMMap) ]
-    (reify Plugin
+    (reify AuthPlugin
 
       (configure [_ props] )
 
       (initialize [_]
-        (ApplyAuthPluginDDL (.acquireDbPool ctr "")))
+        (-> (.acquireDbPool ctr "")
+            (applyDDL )))
 
       (start [_]
         (AssertPluginOK (.acquireDbPool ctr ""))
@@ -473,25 +454,25 @@
       (dispose [_]
         (log/info "AuthPlugin disposed"))
 
-      AuthPlugin
-
       (checkAction [_ acctObj action] )
 
       (addAccount [_ options]
         (let [pkey (.getAppKey ctr)]
-          (CreateLoginAccount (getSQLr ctr)
-                              (:principal options)
-                              (Pwdify (:credential options) pkey)
-                              options
-                              [])))
+          (CreateLoginAccount
+            (getSQLr ctr)
+            (:principal options)
+            (Pwdify (:credential options) pkey)
+            options
+            [])))
 
       (login [_ user pwd]
         (binding [*JDBC-POOL* (.acquireDbPool ctr "")
                   *META-CACHE* AUTH-MCACHE ]
-          (let [token (UsernamePasswordToken.
-                        ^String user ^String pwd)
-                cur (SecurityUtils/getSubject)
-                sss (.getSession cur) ]
+          (let
+            [token (UsernamePasswordToken.
+                     ^String user ^String pwd)
+             cur (SecurityUtils/getSubject)
+             sss (.getSession cur) ]
             (log/debug "Current user session %s" sss)
             (log/debug "Current user object %s" cur)
             (when-not (.isAuthenticated cur)
@@ -500,8 +481,7 @@
                 (.login cur token)
                 (log/debug "User [%s] logged in successfully" user)))
             (if (.isAuthenticated cur)
-              (.getPrincipal cur)
-              nil))))
+              (.getPrincipal cur)))))
 
       (hasAccount [_ options]
         (let [pkey (.getAppKey ctr)]
@@ -520,21 +500,21 @@
                               (:email options))
             :else nil)))
 
-      (getRoles [_ acct] []))
-  ))
+      (getRoles [_ acct] []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype AuthPluginFactory []
+(defn AuthPluginFactory ""
 
-  PluginFactory
+  ^PluginFactory
+  []
 
-  (createPlugin [_ ctr]
-    (require 'czlab.skaro.auth.plugin)
-    (makeAuthPlugin ctr)
-  ))
+  (reify PluginFactory
+    (createPlugin [_ ctr]
+      (makeAuthPlugin ctr)
+    )))
 
-(ns-unmap *ns* '->AuthPluginFactory)
+;;(ns-unmap *ns* '->AuthPluginFactory)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doMain ""
@@ -542,20 +522,19 @@
   [& args]
 
   (let [appDir (io/file (first args))
-        ^Properties mf
-        (LoadJavaProps (io/file appDir "etc/MANIFEST.MF"))
-        pkey (-> (.getProperty mf "Implementation-Vendor-Id")
-                 (.toCharArray))
-        ^String cmd (nth args 1)
-        ^String db (nth args 2)
+        cmd (nth args 1)
+        db (nth args 2)
         env (ReadEdn (io/file appDir CFG_ENV_CF))
-        cfg ((keyword db) (:jdbc (:databases env))) ]
+        app (ReadEdn (io/file appDir CFG_APP_CF))
+        pkey (-> (str (get-in app [:info :vendor]))
+                 (.toCharArray))
+        cfg ((keyword db) (get-in env [:databases :jdbc])) ]
     (when (some? cfg)
       (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
-            t (MatchJdbcUrl (str (:url cfg))) ]
+            t (MatchJdbcUrl (:url cfg)) ]
         (cond
           (= "init-db" cmd)
-          (ApplyAuthPluginDDL j)
+          (applyDDL j)
 
           (= "gen-sql" cmd)
           (if (> (count args) 3)
@@ -563,8 +542,7 @@
                                  (io/file (nth args 3))))
 
           :else
-          nil)) )
-  ))
+          nil)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; home gen-sql alias outfile

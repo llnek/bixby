@@ -34,7 +34,7 @@
     [java.net HttpCookie URLDecoder URLEncoder]
     [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.io HTTPResult
-    HTTPEvent IOSession]
+    HTTPEvent WebSS IOSession]
     [com.zotohlab.skaro.core Container Muble]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]))
 
@@ -52,35 +52,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol WebSS
-
-  "Web Session API"
-
-  (setMaxInactiveInterval [_ idleSecs] )
-  (setAttribute [_ k v] )
-  (getAttribute [_ k] )
-  (removeAttribute [_ k] )
-  (clear! [_] )
-  (listAttributes [_] )
-  (isNew? [_] )
-  (isNull? [_])
-  (isSSL? [_] )
-  (invalidate! [_] )
-  (setNew! [_ flag maxAge] )
-  (setXref [_ csrf])
-  (getCreationTime [_]  )
-  (getExpiryTime [_])
-  (getId [_] )
-  (getXref [_] )
-  (getLastError [_])
-  (getLastAccessedTime [_] )
-  (getMaxInactiveInterval [_] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- resetFlags ""
 
-  [^czlab.skaro.io.webss.WebSS mvs maxAge]
+  [^WebSS mvs maxAge]
 
   (let [now (System/currentTimeMillis)
         mage (or maxAge 0) ]
@@ -90,8 +64,7 @@
                                    (+ now (* mage 1000))
                                    mage))
     (.setAttribute mvs CS_FLAG now)
-    (.setAttribute mvs LS_FLAG now)
-  ))
+    (.setAttribute mvs LS_FLAG now)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,16 +84,15 @@
 
   [^HTTPEvent evt ^HTTPResult res ]
 
-  (let [^czlab.skaro.io.webss.WebSS
-        mvs (.getSession evt) ]
-    (when-not (.isNull? mvs)
+  (let [^WebSS mvs (.getSession evt) ]
+    (when-not (.isNull mvs)
       (log/debug "session appears to be kosher, about to set-cookie!")
       (let [^Muble src (.emitter evt)
             cfg (.getv src :emcfg)
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
                                          (:maxIdleSecs cfg))
-            du1 (when (.isNew? mvs)
+            du1 (when (.isNew mvs)
                   (resetFlags mvs (:sessionAgeSecs cfg)))
             data (maybeMacIt evt (str mvs) ctr)
             now (System/currentTimeMillis)
@@ -129,11 +101,10 @@
         (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
         (doto ck
           (.setDomain (str (:domain cfg)))
-          (.setSecure (.isSSL? mvs))
+          (.setSecure (.isSSL mvs))
           (.setHttpOnly (true? (:hidden cfg)))
           (.setPath (str (:domainPath cfg))))
-        (.addCookie res ck)))
-  ))
+        (.addCookie res ck)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -147,8 +118,7 @@
                     nil) ]
     (when (not= (GenMac pkey part2) part1)
       (log/error "session cookie - broken")
-      (throw (AuthError. "Bad Session Cookie")))
-  ))
+      (throw (AuthError. "Bad Session Cookie")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -156,14 +126,13 @@
 
   [^HTTPEvent evt ]
 
-  (let [^czlab.skaro.io.webss.WebSS
-        mvs (.getSession evt)
-        ^Emitter netty (.emitter evt)
-        ck (.getCookie evt SESSION_COOKIE) ]
+  (let [ck (.getCookie evt SESSION_COOKIE)
+        ^WebSS mvs (.getSession evt)
+        ^Emitter netty (.emitter evt) ]
     (if (nil? ck)
       (do
         (log/debug "request contains no session cookie, invalidate the session")
-        (.invalidate! mvs))
+        (.invalidate mvs))
       (let [^Muble src netty
             cfg (.getv src :emcfg)
             cookie (str (.getValue ck))
@@ -186,7 +155,7 @@
                 (.setAttribute mvs (keyword s1) s2))))
           (catch Throwable _
             (throw (ExpiredError. "Corrupted cookie"))))
-        (.setNew! mvs false 0)
+        (.setNew mvs false 0)
         (let [ts (or (.getAttribute mvs LS_FLAG) -1)
               es (or (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
@@ -216,23 +185,23 @@
         (setAttribute [_ k v] (.setv attrs k v))
         (getAttribute [_ k] (.getv attrs k) )
         (removeAttribute [_ k] (.unsetv attrs k) )
-        (clear! [_] (.clear attrs))
+        (clear [_] (.clear attrs))
         (listAttributes [_] (.seq attrs))
 
         (setMaxInactiveInterval [_ idleSecs]
           (when (number? idleSecs)
             (.setv impl :maxIdleSecs idleSecs)))
 
-        (isNull? [_] (== (count (.seq impl)) 0))
-        (isNew? [_] (.getv impl :newOne))
-        (isSSL? [_] ssl)
+        (isNull [_] (== (count (.seq impl)) 0))
+        (isNew [_] (.getv impl :newOne))
+        (isSSL [_] ssl)
 
-        (invalidate! [_]
+        (invalidate [_]
           (.clear attrs)
           (.clear impl))
 
         (setXref [_ csrf] (.setv attrs :csrf csrf))
-        (setNew! [this flag maxAge]
+        (setNew [this flag maxAge]
           (if flag
             (do
               (.clear attrs)
@@ -268,8 +237,7 @@
         (handleEvent [this evt] (upstream evt))
         (getImpl [_] nil))
 
-        { :typeid :czc.skaro.io/WebSS })
-  ))
+        { :typeid :czc.skaro.io/WebSS })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

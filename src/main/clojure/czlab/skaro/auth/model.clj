@@ -44,43 +44,44 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (DefModel2 _NSP StdAddress
-  (WithDbFields {
-    :addr1 { :size 255 :null false }
-    :addr2 { }
-    :city { :null false}
-    :state {:null false}
-    :zip {:null false}
-    :country {:null false} })
-  (WithDbIndexes { :i1 [ :city :state :country ]
-    :i2 [ :zip :country ]
-    :state [ :state ]
-    :zip [ :zip ] } ))
+  (WithDbFields
+    {:addr1 {:size 255 :null false }
+     :addr2 { }
+     :city {:null false}
+     :state {:null false}
+     :zip {:null false}
+     :country {:null false} })
+  (WithDbIndexes
+    {:i1 [ :city :state :country ]
+     :i2 [ :zip :country ]
+     :state [ :state ]
+     :zip [ :zip ] } ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (DefModel2 _NSP  AuthRole
   (WithDbFields
-    { :name { :column "role_name" :null false }
-      :desc { :column "description" :null false } })
+    {:name {:column "role_name" :null false }
+     :desc {:column "description" :null false } })
   (WithDbUniques
-    { :u1 [ :name ] }) )
+    {:u1 [ :name ] }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (DefModel2 _NSP LoginAccount
   (WithDbFields
-    { :acctid { :null false }
-      :email { :size 128 }
+    {:acctid {:null false }
+     :email {:size 128 }
       ;;:salt { :size 128 }
-      :passwd { :null false :domain :Password } })
+     :passwd {:null false :domain :Password } })
   (WithDbAssocs
-    { :roles { :kind :M2M
-               :joined (ToKW _NSP "AccountRole") }
-      :addr { :kind :O2O
-              :cascade true
-              :other (ToKW _NSP "StdAddress") } })
+    {:roles {:kind :M2M
+             :joined (ToKW _NSP "AccountRole") }
+     :addr {:kind :O2O
+            :cascade true
+            :other (ToKW _NSP "StdAddress") } })
   (WithDbUniques
-    { :u2 [ :acctid ] }) )
+    {:u2 [ :acctid ] }) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,7 +95,8 @@
 
   (-> (reify Schema
         (getModels [_]
-          [StdAddress AuthRole LoginAccount AccountRole] ))
+          [StdAddress AuthRole
+           LoginAccount AccountRole] ))
       (MakeMetaCache )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,33 +117,31 @@
       :oracle Oracle
       (DbioError (RStr (I18N/getBase)
                        "db.unknown"
-                       (name dbtype))))
-  ))
+                       (name dbtype))))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ApplyAuthPluginDDL "Upload the auth-plugin ddl to db" class)
+(defprotocol PluginDDL
+
+  "Upload the auth-plugin ddl to db"
+
+  (applyDDL [_]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ApplyAuthPluginDDL JDBCInfo
+(extend-protocol PluginDDL
 
-  [^JDBCInfo jdbc]
+  JDBCInfo
+  (applyDDL [this]
+    (when-let [dbtype (MatchJdbcUrl (.getUrl this)) ]
+      (with-open [conn (MakeConnection this) ]
+        (UploadDdl conn (GenerateAuthPluginDDL dbtype)))))
 
-  (when-let [dbtype (MatchJdbcUrl (.getUrl jdbc)) ]
-    (with-open [conn (MakeConnection jdbc) ]
-      (UploadDdl conn (GenerateAuthPluginDDL dbtype)))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ApplyAuthPluginDDL JDBCPool
-
-  [^JDBCPool pool]
-
-  (when-let [dbtype (MatchJdbcUrl (.dbUrl pool)) ]
-    (UploadDdl pool (GenerateAuthPluginDDL dbtype))
-  ))
+  JDBCPool
+  (applyDDL [this]
+    (when-let [dbtype (MatchJdbcUrl (.dbUrl this)) ]
+      (UploadDdl this (GenerateAuthPluginDDL dbtype)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

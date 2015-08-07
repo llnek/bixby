@@ -115,6 +115,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro doto->>
+
+  ""
+
+  [x & forms]
+
+  (let [gx (gensym)]
+    `(let [~gx ~x]
+       ~@(map (fn [f]
+                (if (seq? f)
+                  `(~@f ~gx)
+                  `(~f ~gx)))
+              forms)
+       ~gx)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro do->false "Do and return false" [& exprs] `(do ~@exprs false))
 (defmacro do->nil "Do and return nil" [& exprs] `(do ~@exprs nil))
 (defmacro do->true "Do and return true" [& exprs] `(do ~@exprs true))
@@ -140,6 +157,10 @@
 
   `(let [x# ~obj]
      (if (instance? ~someType x#) x#)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ce? "" ^Throwable [e]  (Cast? Throwable e))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
