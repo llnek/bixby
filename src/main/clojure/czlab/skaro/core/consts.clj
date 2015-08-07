@@ -30,7 +30,6 @@
 (defonce ^String POD_PROTOCOL  "pod:" )
 (defonce ^String META_INF  "META-INF" )
 (defonce ^String WEB_INF  "WEB-INF" )
-(defonce ^String MF_FP "MANIFEST.MF")
 
 (defonce ^String DN_TARGET "target")
 (defonce ^String DN_BUILD "build")
@@ -66,8 +65,6 @@
 
 (defonce ^String ENV_CF  "env.conf" )
 (defonce ^String APP_CF  "app.conf" )
-
-(defonce ^String MN_FILE (str DN_CFG "/" "MANIFEST.MF"))
 
 (defonce ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (defonce ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))

@@ -1,3 +1,0 @@
-Implementation-Vendor-Id: @@APPKEY@@
-Implementation-Version: @@VER@@
-Main-Class: @@APPMAINCLASS@@

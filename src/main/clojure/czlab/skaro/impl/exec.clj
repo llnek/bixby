@@ -68,17 +68,17 @@
   "Check the app's manifest file"
 
   ^PODMeta
-  [^Context execv app ^File des mf]
+  [^Context execv app ^File des]
 
-  (let [^Muble ctx (.getx execv)
+  (let [ps (ReadEdn (io/file des CFG_APP_CF))
+        ^Muble ctx (.getx execv)
         ^ComponentRegistry
         apps (-> ^ComponentRegistry
                  (.getv ctx K_COMPS)
                  (.lookup K_APPS))
-        ps (LoadJavaProps mf)
-        vid (.getProperty ps "Implementation-Vendor-Id", "???")
-        ver (.getProperty ps "Implementation-Version" "")
-        cz (.getProperty ps "Main-Class" "") ]
+        ver (get-in ps [:info :version])
+        vid (get-in ps [:info :vendor])
+        cz (get-in ps [:info :main]) ]
 
     (log/info (str "checking manifest for app: "
                    "%s\nversion: %s\nmain-class: %s")
@@ -104,8 +104,7 @@
   ^PODMeta
   [execv ^File des]
 
-  (let [app (FilenameUtils/getBaseName (FPath des))
-        mf (io/file des MN_FILE) ]
+  (let [app (FilenameUtils/getBaseName (FPath des)) ]
     (log/info "app dir : %s" des)
     (log/info "inspecting...")
     (tryc
@@ -113,8 +112,7 @@
       (PrecondFile (io/file des CFG_ENV_CF))
       (PrecondDir (io/file des DN_CONF))
       (PrecondDir (io/file des DN_CFG))
-      (PrecondFile mf)
-      (chkManifest execv app des mf) )))
+      (chkManifest execv app des) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

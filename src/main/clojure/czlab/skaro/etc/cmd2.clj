@@ -347,8 +347,6 @@
         (CopyFileToDir (io/file hhh DN_CFGAPP s) cfd))
       (CopyFileToDir (io/file hhh DN_CFGAPP DN_RCPROPS)
                      (io/file  appDir "i18n"))
-      (CopyFileToDir (io/file hhh DN_CFGAPP MF_FP)
-                     (io/file appDir DN_CFG))
       (CopyFileToDir (io/file hhh DN_CFGAPP "core.clj")
                      (mkcljd appDir appDomain))
 
@@ -366,14 +364,11 @@
 
       (var-set fp (io/file cfd APP_CF))
       (ReplaceFile @fp
-                   #(cs/replace % "@@USER@@" (GetUser)))
-
-      (var-set fp (io/file appDir DN_CFG MF_FP))
-      (ReplaceFile @fp
-                   #(-> (cs/replace % "@@APPKEY@@" (NewUUid))
+                   #(-> (cs/replace % "@@USER@@" (GetUser)))
+                        (cs/replace "@@APPKEY@@" (NewUUid))
                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
                         (cs/replace "@@APPMAINCLASS@@"
-                                    (str appDomain ".core/MyAppMain"))))
+                                    (str appDomain ".core/MyAppMain")))
 
       (var-set fp (io/file appDir "pom.xml"))
       (ReplaceFile @fp
