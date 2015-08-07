@@ -39,10 +39,12 @@
         [czlab.xlib.dbio.core])
 
   (:import
-    [com.zotohlab.skaro.etc PluginFactory Plugin AuthPlugin PluginError]
-    [com.zotohlab.skaro.runtime AuthError UnknownUser DuplicateUser]
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]
+    [com.zotohlab.skaro.etc PluginFactory
+    Plugin AuthPlugin PluginError]
+    [com.zotohlab.skaro.runtime AuthError
+    UnknownUser DuplicateUser]
     [org.apache.commons.codec.binary Base64]
     [com.zotohlab.skaro.core Container Muble]
     [com.zotohlab.frwk.util BadDataError]
@@ -149,7 +151,7 @@
                      (DbioSetFld*
                        (merge
                          {:acctid (strim user)
-                          :passwd  (.getLeft ps)}
+                          :passwd (.getLeft ps)}
                          options)))
                  (.insert sql)) ]
     ;; currently adding roles to the account is not bound to the

@@ -473,8 +473,8 @@
   ^File
   [^String v ^File appDir]
 
-  (io/file appDir "modules" (.replace v "." "")))
-
+  (->> (cs/replace v #"[\./]+" "")
+       (io/file appDir "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
