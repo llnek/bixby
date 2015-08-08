@@ -17,7 +17,6 @@ import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Named;
 import com.zotohlab.frwk.dbio.DBAPI;
 import com.zotohlab.frwk.dbio.JDBCPool;
-import com.zotohlab.frwk.server.EventBus;
 import com.zotohlab.frwk.server.ServerLike;
 import com.zotohlab.frwk.server.ServiceProvider;
 
@@ -29,7 +28,7 @@ public interface Container extends ServerLike, ServiceProvider, Named, Disposabl
   public Object loadTemplate (String tpl, Object ctx);
   public boolean isEnabled();
 
-  public EventBus eventBus();
+  //public EventBus eventBus();
 
   public Object getEnvConfig();
   public Object getAppConfig();

@@ -80,8 +80,7 @@
   [fmt arr]
 
   (doseq [a arr]
-    (print (apply format fmt a))
-  ))
+    (print (apply format fmt a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -99,8 +98,7 @@
     (drawHelp "> %-35s %s\n" b)
     (println ">")
     (drawHelp "> %-35s %s\n" e)
-    (println (MakeString \= 78))
-  ))
+    (println (MakeString \= 78))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -126,8 +124,7 @@
     (.withChoice :testjce (SimPTask #(OnTestJCE %)))
     (.withChoice :version (SimPTask #(OnVersion %)))
     (.withChoice :help (SimPTask #(OnHelp %)))
-    (.withDft (SimPTask #(OnHelp %)))
-  ))
+    (.withDft (SimPTask #(OnHelp %)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,8 +149,7 @@
   (SimPTask
     (fn [^Job j]
       (let [args (.getLastResult j)]
-        (when (< (count args) 1) (throw (CmdHelpError. "")))))
-  ))
+        (when (< (count args) 1) (throw (CmdHelpError. "")))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -175,8 +171,7 @@
         (FlowServer (NulScheduler) {})
         (.handle wf {:home home
                      :rcb rcb
-                     JS_LAST args}))
-  ))
+                     JS_LAST args}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

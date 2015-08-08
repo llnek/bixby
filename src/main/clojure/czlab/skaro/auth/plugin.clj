@@ -15,10 +15,10 @@
   czlab.skaro.auth.plugin
 
   (:require
-    [czlab.xlib.util.core
-    :refer [tryc notnil? Stringify ce?
-    MakeMMap do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
+    [czlab.xlib.util.core
+    :refer [tryc Stringify ce? MakeMMap
+    do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? strim]]
@@ -39,6 +39,7 @@
         [czlab.xlib.dbio.core])
 
   (:import
+    [org.apache.shiro.config IniSecurityManagerFactory]
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]
     [com.zotohlab.skaro.etc PluginFactory
@@ -54,7 +55,6 @@
     SQLr JDBCPool JDBCInfo]
     [java.io File IOException]
     [java.util Properties]
-    [org.apache.shiro.config IniSecurityManagerFactory]
     [org.apache.shiro SecurityUtils]
     [org.apache.shiro.subject Subject]
     [org.apache.shiro.authc UsernamePasswordToken]
@@ -330,12 +330,13 @@
     (fn [^Job job]
       (let
         [^HTTPEvent evt (.event job)
+         csrf (-> ^WebSS
+                  (.getSession evt)
+                  (.getXref))
          si (try
               (GetSignupInfo evt)
               (catch
                 BadDataError e# {:e e#}))
-         csrf (-> ^WebSS (.getSession evt)
-                  (.getXref))
          rb (I18N/getBase)
          info (or si {})
          ^AuthPlugin
@@ -389,12 +390,13 @@
     (fn [^Job job]
       (let
         [^HTTPEvent evt (.event job)
+         csrf (-> ^WebSS
+                  (.getSession evt)
+                  (.getXref ))
          si (try
               (GetSignupInfo evt)
               (catch
                 BadDataError e# {:e e#}))
-         csrf (-> ^WebSS (.getSession evt)
-                        (.getXref ))
          rb (I18N/getBase)
          info (or si {})
          ^AuthPlugin
@@ -463,13 +465,15 @@
           (CreateLoginAccount
             (getSQLr ctr)
             (:principal options)
-            (Pwdify (:credential options) pkey)
+            (-> (:credential options)
+                (Pwdify pkey))
             options
             [])))
 
       (login [_ user pwd]
-        (binding [*JDBC-POOL* (.acquireDbPool ctr "")
-                  *META-CACHE* AUTH-MCACHE ]
+        (binding
+          [*JDBC-POOL* (.acquireDbPool ctr "")
+           *META-CACHE* AUTH-MCACHE ]
           (let
             [token (UsernamePasswordToken.
                      ^String user ^String pwd)

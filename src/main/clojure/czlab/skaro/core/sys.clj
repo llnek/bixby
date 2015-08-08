@@ -75,8 +75,7 @@
     (when (some? rego) (CompCompose co rego))
     (when (some? props) (CompConfigure co props))
     (CompInitialize co)
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,8 +93,7 @@
       (toEDN [_] (.toEDN impl))
       (getv [_ k] (.getv impl k) )
       (unsetv [_ k] (.unsetv impl k) )
-      (clear [_] (.clear impl)))
-  ))
+      (clear [_] (.clear impl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -112,8 +110,7 @@
                               "${appdir}"
                               (FPath appDir)))) ]
     (log/debug "[%s]\n%s" confile rc)
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

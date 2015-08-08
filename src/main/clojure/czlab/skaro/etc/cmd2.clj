@@ -88,8 +88,7 @@
 
   (-> (str appDomain)
       (TrimL ".")
-      (TrimR ".")
-  ))
+      (TrimR ".")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
@@ -116,8 +115,7 @@
       (CreateJetty cwd app path)
       "basic"
       (CreateBasic cwd app path)
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,8 +140,7 @@
             {:executable (FPath prog)
              :dir cwd}
             [[:argvalues [ "start" "bg" ]]])) ]
-    (ant/RunTasks* tk)
-  ))
+    (ant/RunTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -160,8 +157,7 @@
            :basedir app
            :excludes "build/**"
            :includes "**/*"}) ]
-    (ant/RunTasks* tk)
-  ))
+    (ant/RunTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -182,8 +178,7 @@
     (CopyFiles demo
                (io/file top
                         "src/main/java/demo" dn)
-               "java")
-  ))
+               "java")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -205,8 +200,7 @@
     (CopyFiles demo
                (io/file top
                         "src/main/clojure/demo" dn)
-               "clj")
-  ))
+               "clj")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -219,8 +213,7 @@
         dss (.listFiles top)]
     (doseq [^File d dss
             :when (.isDirectory d)]
-      (genOneJavaDemo d out))
-  ))
+      (genOneJavaDemo d out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -233,8 +226,7 @@
         dss (.listFiles top)]
     (doseq [^File d dss
             :when (.isDirectory d)]
-      (genOneCljDemo d out))
-  ))
+      (genOneCljDemo d out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -244,9 +236,8 @@
 
   [^String output]
 
-  (let [out (Mkdirs output)]
-    ;;(genJavaDemos out)
-    (genCljDemos out)))
+  (->> (Mkdirs output)
+       (genCljDemos )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -295,8 +286,7 @@
       (var-set fp (io/file appDir CFG_ENV_CF))
       (ReplaceFile @fp
                    #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
-                        (cs/replace "@@APPDOMAIN@@" appDomain))))
-  ))
+                        (cs/replace "@@APPDOMAIN@@" appDomain))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -380,8 +370,7 @@
                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
                         (cs/replace "@@TYPE@@" flavor)
                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cs/replace "@@APPID@@" appId))))
-  ))
+                        (cs/replace "@@APPID@@" appId))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -437,8 +426,7 @@
               (.append "\n\n")))))
 
     (WriteOneFile (io/file appDir "public/c/webcommon.css") "")
-    (WriteOneFile (io/file appDir "public/c/webcommon.js") buf)
-  ))
+    (WriteOneFile (io/file appDir "public/c/webcommon.js") buf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -463,8 +451,7 @@
       (ReplaceFile @fp
                    #(cs/replace % "@@EMTYPE@@" emType))
 
-      (postCreateApp appDir appId appDomain))
-  ))
+      (postCreateApp appDir appId appDomain))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -472,10 +459,9 @@
 
   [^File out appId ^String appDomain]
 
-  (let [appdir (Mkdirs (io/file out appId))]
-    (createAppCommon appdir appId appDomain "basic")
-    (postCreateApp appdir appId appDomain)
-  ))
+  (doto (Mkdirs (io/file out appId))
+    (createAppCommon appId appDomain "basic")
+    (postCreateApp appId appDomain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -483,9 +469,8 @@
 
   [^File out appId ^String appDomain]
 
-  (let [appdir (Mkdirs (io/file out appId))]
-    (createMvcWeb appdir appId appDomain "czc.skaro.io/JettyIO")
-  ))
+  (-> (Mkdirs (io/file out appId))
+      (createMvcWeb appId appDomain "czc.skaro.io/JettyIO")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -493,9 +478,8 @@
 
   [^File out appId ^String appDomain]
 
-  (let [appdir (Mkdirs (io/file out appId))]
-    (createMvcWeb appdir appId appDomain "czc.skaro.io/NettyMVC")
-  ))
+  (-> (Mkdirs (io/file out appId))
+      (createMvcWeb appId appDomain "czc.skaro.io/NettyMVC")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

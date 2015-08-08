@@ -111,14 +111,13 @@
   (GetDDL AUTH-MCACHE
     (case dbtype
       (:postgres :postgresql) Postgresql
+      (:sqlserver :mssql) SQLServer
       :mysql MySQL
       :h2 H2
-      (:sqlserver :mssql) SQLServer
       :oracle Oracle
       (DbioError (RStr (I18N/getBase)
                        "db.unknown"
                        (name dbtype))))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

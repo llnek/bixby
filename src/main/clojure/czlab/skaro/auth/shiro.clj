@@ -42,7 +42,7 @@
           pwd (.getCredentials tkn)
           uid (.getPrincipal tkn)
           pc (.getCredentials inf)
-          tstPwd (Pwdify (if (instance? String pwd)
+          tstPwd (Pwdify (if (string? pwd)
                            pwd
                            (String. ^chars pwd)))
           acc (-> (.getPrincipals inf)

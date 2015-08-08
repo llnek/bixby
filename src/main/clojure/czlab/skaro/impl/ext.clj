@@ -37,7 +37,7 @@
     [czlab.skaro.io.core :rename {enabled? io-enabled?} ]
     [czlab.skaro.impl.dfts
     :rename {enabled? blockmeta-enabled?} ]
-    [czlab.xlib.util.consts]
+    ;;[czlab.xlib.util.consts]
     [czlab.skaro.core.consts]
     [czlab.skaro.io.loops]
     [czlab.skaro.io.mails]
@@ -49,7 +49,7 @@
     [czlab.skaro.io.socket]
     [czlab.skaro.mvc.filters]
     [czlab.skaro.mvc.ftlshim]
-    [czlab.skaro.impl.misc]
+    ;;[czlab.skaro.impl.misc]
     [czlab.skaro.core.sys])
 
   (:require
@@ -75,7 +75,7 @@
     Morphable Activable
     Startable Disposable Identifiable]
     [com.zotohlab.frwk.server ComponentRegistry
-    EventBus Service Emitter
+    Service Emitter
     Component ServiceHandler ServiceError]
     [com.zotohlab.skaro.io IOEvent]
     [com.zotohlab.frwk.util Schedulable CU]
@@ -96,59 +96,6 @@
 
   (let [^Container c (.. evt emitter container) ]
     (.getAppKey c)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mkJob ""
-
-  ^Job
-  [container evt]
-
-  (with-meta
-    (NewJob container evt)
-    {:typeid (ToKW "czc.skaro.impl" "Job") }))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A EventBus has the task of creating a job from an event, and delegates
-;; a new Pipline which will handle the job.  The Pipeline internally will
-;; call out to your application workflow  for the actual handling of the job
-(defn- makeEventBus ""
-
-  ^EventBus
-  [^Muble parObj]
-
-  (log/info "about to synthesize an event-bus...")
-  (let [impl (MakeMMap) ]
-    (with-meta
-      (reify
-
-        EventBus
-
-        (onEvent [_ evt options]
-          (let [^Muble src (-> ^IOEvent evt (.emitter))
-                ^CliMain rts (.getv parObj :cljshim)
-                ^ServiceHandler
-                hr (.handler ^Service src)
-                cfg (.getv src :emcfg)
-                c0 (str (:handler cfg))
-                c1 (str (:router options))
-                wf (trycr nil (->> ^String
-                                   (stror c1 c0)
-                                   (.call rts)))
-                job (mkJob parObj evt) ]
-            (log/debug "event type = %s" (type evt))
-            (log/debug "event options = %s" options)
-            (log/debug "event router = %s" c1)
-            (log/debug "io-handler = %s" c0)
-            (try
-              (.setv job EV_OPTS options)
-              (.handle hr wf job)
-              (catch Throwable _
-                (.handle hr (MakeFatalErrorFlow job) job)))))
-
-        (parent [_] parObj))
-
-      {:typeid (ToKW "czc.skaro.impl" "EventBus") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ContainerAPI
@@ -264,8 +211,6 @@
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
-
-        (eventBus [this] (.getv this K_EBUS))
 
         (loadTemplate [_ tpath ctx]
           (let [tpl (str tpath)
@@ -589,7 +534,6 @@
           mCZ (strim (get-in app [:info :main]))
           dmCZ (str (:data-model app))
           reg (.getv co K_SVCS)
-          bus (makeEventBus co)
           cfg (:container env)
           lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
           cn (lcase (get-in env [K_LOCALE K_COUNTRY]))
@@ -619,7 +563,6 @@
                  (transient {})
                  (seq (:plugins app))) ))
       (.setv co K_SCHEDULER cpu)
-      (.setv co K_EBUS bus)
 
       ;; build the user data-models or create a default one
       (log/info "application data-model schema-class: %s" dmCZ)

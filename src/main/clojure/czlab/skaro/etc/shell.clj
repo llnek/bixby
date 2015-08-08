@@ -54,8 +54,7 @@
         (when (DirRead? home)
           (var-set ok true)
           (apply BootAndRun home rcb (drop 1 args))))
-      (when-not @ok (Usage)))
-  ))
+      (when-not @ok (Usage)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

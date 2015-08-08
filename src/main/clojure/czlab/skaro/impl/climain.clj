@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.netty.discarder :refer [MakeDiscardHTTPD]]
-    [czlab.xlib.util.str :refer [lcase hgl? nsb strim]]
+    [czlab.xlib.util.str :refer [lcase hgl? strim]]
     [czlab.xlib.util.ini :refer [ParseInifile]]
     [czlab.xlib.util.io :refer [CloseQ]]
     [czlab.xlib.util.process
@@ -44,6 +44,7 @@
         [czlab.skaro.impl.dfts])
 
   (:import
+    [com.zotohlab.skaro.core Muble Context ConfigError]
     [io.netty.channel Channel ChannelFuture
     ChannelFutureListener]
     [com.zotohlab.skaro.loaders AppClassLoader
@@ -58,7 +59,6 @@
     [com.zotohlab.wflow Job WorkFlow
     FlowDot
     Activity Nihil]
-    [com.zotohlab.skaro.core Muble Context ConfigError]
     [com.zotohlab.skaro.etc CliMain]
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]

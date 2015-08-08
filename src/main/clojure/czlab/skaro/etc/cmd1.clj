@@ -71,8 +71,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (CreateApp (fst args) (snd args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
@@ -85,8 +84,7 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["dev"] args)
-         (apply ExecBootScript (GetHomeDir) (GetCwd)))
-  ))
+         (apply ExecBootScript (GetHomeDir) (GetCwd) []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
@@ -101,8 +99,7 @@
     (if-not (empty? args)
       (BundleApp (GetHomeDir)
                  (GetCwd) (fst args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
@@ -116,8 +113,7 @@
         args (drop 1 args)]
     (->> (if (empty? args) ["tst"] args)
          (apply ExecBootScript
-                (GetHomeDir) (GetCwd) ))
-  ))
+                (GetHomeDir) (GetCwd) []))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
@@ -135,9 +131,7 @@
                (CliMain/newrt (.getName cwd)))
         args (.getLastResult j)
         args (drop 1 args)
-        s2 (if-not (empty? args)
-             (fst args)
-             "")
+        s2 (fst args)
         home (GetHomeDir)]
     ;; background job is handled differently on windows
     (if (and (= s2 "bg")
@@ -170,8 +164,7 @@
         args (drop 1 args)]
     (if-not (empty? args)
       (PublishSamples (fst args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,8 +193,7 @@
     ;;(println "privatekey-bytes= " (Hex/encodeHexString pk))
     ;;(println "publickey-bytes = " (Hex/encodeHexString pu))
     (println "privatekey=\n" (Stringify (ExportPrivateKey pvk PEM_CERT)))
-    (println "publickey=\n" (Stringify (ExportPublicKey puk PEM_CERT)))
-  ))
+    (println "publickey=\n" (Stringify (ExportPublicKey puk PEM_CERT)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -268,8 +260,7 @@
    :cn {:question (RStr rcb "cmd.dn.cn")
         :required true
         :next :ou
-        :result :cn }
-   })
+        :result :cn } })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -300,12 +291,11 @@
           :default "1024"
           :required true
           :next :duration
-          :result :size }
-   })
+          :result :size } })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- promptQuestions ""
+(defn- promptQs ""
 
   [questions start]
 
@@ -314,20 +304,18 @@
                       (if (hgl? v)
                         (str (ucase (name %)) "=" v)))
                    [ :c :st :l :o :ou :cn ]) ]
-      [(cs/join "," (FlattenNil ssn)) rc])
-  ))
+      [(cs/join "," (FlattenNil ssn)) rc])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- keyfile
 
   "Maybe generate a server key file?"
-
   []
 
-  (if-let [res (promptQuestions (merge (makeCsrQs @SKARO-RSBUNDLE)
-                                       (makeKeyQs @SKARO-RSBUNDLE))
-                                :cn) ]
+  (if-let
+    [res (promptQs (merge (makeCsrQs (ResBdl))
+                          (makeKeyQs (ResBdl))) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           now (Date.)
@@ -340,21 +328,19 @@
         {:keylen (ConvLong (:size rc) 1024)
          :start now
          :end (-> (MakeCal now)
-                  (AddMonths (ConvLong (:months rc)
-                                       12))
+                  (AddMonths (ConvLong (:months rc) 12))
                   (.getTime)) })
-      (println "Wrote file: " ff))
-  ))
+      (println "Wrote file: " ff))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- csrfile
 
   "Maybe generate a CSR?"
-
   []
 
-  (if-let [res (promptQuestions (makeCsrQs @SKARO-RSBUNDLE) :cn) ]
+  (if-let
+    [res (promptQs (makeCsrQs (ResBdl)) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           [req pkey]
@@ -367,8 +353,7 @@
         (WriteOneFile f1 pkey)
         (println "Wrote file: " f1)
         (WriteOneFile f2 req)
-        (println "Wrote file: " f2)))
-  ))
+        (println "Wrote file: " f2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -398,8 +383,7 @@
         (csrfile)
         (var-set rc false))
       (when-not @rc)
-        (throw (CmdHelpError.)))
-  ))
+        (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -407,9 +391,11 @@
 
   [text]
 
-  (let [^PasswordAPI p (Pwdify text) ]
-    (println (.getLeft (.hashed p)))
-  ))
+  (->> ^PasswordAPI
+       (Pwdify text)
+       (.hashed )
+       (.getLeft )
+       (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -423,8 +409,7 @@
         args (drop 1 args)]
     (if-not (empty? args)
       (genHash (fst args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -432,9 +417,10 @@
 
   [pkey text]
 
-  (let [^PasswordAPI p (Pwdify text pkey) ]
-    (println (.encoded p))
-  ))
+  (->> ^PasswordAPI
+       (Pwdify text pkey)
+       (.encoded )
+       (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -448,8 +434,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (encrypt (fst args) (snd args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -457,9 +442,10 @@
 
   [pkey secret]
 
-  (let [^PasswordAPI p (Pwdify secret pkey) ]
-    (println (.text p))
-  ))
+  (->> ^PasswordAPI
+       (Pwdify secret pkey)
+       (.text )
+       (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -473,8 +459,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (decrypt (fst args) (snd args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -520,8 +505,7 @@
         (.append (str "<classpathentry  kind=\"lib\" path=\""
                       (FPath f)
                       "\"/>" ))
-        (.append sep)))
-  ))
+        (.append sep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -535,11 +519,11 @@
         lang "java"
         ulang (ucase lang) ]
     (FileUtils/cleanDirectory ec)
-    (WriteOneFile (io/file ec ".project")
+    (WriteOneFile
+      (io/file ec ".project")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
-                       "/project.txt")
-                  "utf-8")
+                       "/project.txt"))
           (cs/replace "${APP.NAME}" app)
           (cs/replace (str "${" ulang ".SRC}")
                       (FPath (io/file cwd
@@ -556,10 +540,8 @@
       (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
                        lang
-                       "/classpath.txt")
-                  "utf-8")
-          (cs/replace "${CLASS.PATH.ENTRIES}" (.toString sb))))
-  ))
+                       "/classpath.txt"))
+          (cs/replace "${CLASS.PATH.ENTRIES}" (str sb))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -574,8 +556,7 @@
     (if (and (> (count args) 1)
              (= "eclipse" (fst args)))
       (genEclipseProj (snd args))
-      (throw (CmdHelpError.)))
-  ))
+      (throw (CmdHelpError.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

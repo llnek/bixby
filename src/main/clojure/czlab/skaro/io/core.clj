@@ -15,28 +15,31 @@
   czlab.skaro.io.core
 
   (:require
+    [czlab.xlib.util.str :refer [ToKW stror strim]]
     [czlab.xlib.util.core
-    :refer [NextLong Cast?
-    ThrowBadArg ThrowIOE MakeMMap ConvToJava tryc]]
-    [czlab.xlib.util.str :refer [nsb strim]])
+    :refer [NextLong Cast? ThrowBadArg
+    trycr ThrowIOE MakeMMap ConvToJava tryc]])
 
   (:require
     [czlab.xlib.util.logging :as log])
 
-  (:use [czlab.xlib.util.wfs]
-        [czlab.skaro.core.sys])
+  (:use [czlab.xlib.util.consts]
+        [czlab.xlib.util.wfs]
+        [czlab.skaro.core.sys]
+        [czlab.skaro.impl.misc]
+        [czlab.skaro.core.consts])
 
   (:import
     [com.zotohlab.skaro.core Context Container Muble]
+    [com.zotohlab.skaro.etc CliMain]
     [com.zotohlab.frwk.server Component
     Emitter
     ServiceHandler Service]
     [java.util.concurrent ConcurrentHashMap]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Identifiable Disposable Startable]
-    [com.zotohlab.wflow WorkFlow Job Nihil Activity]
-    [com.google.gson JsonObject JsonArray]
-    [java.util Map]))
+    [java.util Map]
+    [com.zotohlab.wflow WorkFlow Job Nihil Activity]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -229,6 +232,43 @@
 
     (handleError [_ e])))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkJob ""
+
+  ^Job
+  [container evt]
+
+  (with-meta
+    (NewJob container evt)
+    {:typeid (ToKW "czc.skaro.io" "Job") }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onEvent ""
+
+  [^Muble ctr ^Muble src evt options]
+
+  (let [^CliMain rts (.getv ctr :cljshim)
+        ^ServiceHandler
+        hr (.handler ^Service src)
+        cfg (.getv src :emcfg)
+        c0 (str (:handler cfg))
+        c1 (str (:router options))
+        wf (trycr nil (->> ^String
+                           (stror c1 c0)
+                           (.call rts)))
+        job (mkJob ctr evt) ]
+    (log/debug "event type = %s" (type evt))
+    (log/debug "event options = %s" options)
+    (log/debug "event router = %s" c1)
+    (log/debug "io-handler = %s" c0)
+    (try
+      (.setv job EV_OPTS options)
+      (.handle hr wf job)
+      (catch Throwable _
+        (.handle hr (MakeFatalErrorFlow job) job)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn MakeEmitter
@@ -311,10 +351,9 @@
         (suspend [this] (IOESSuspend this))
         (resume [this] (IOESResume this))
 
-        (dispatch [_ ev options]
+        (dispatch [this ev options]
           (tryc
-            (-> (.eventBus parObj)
-                (.onEvent ev options))))
+            (onEvent parObj this ev options)))
 
         (release [_ wevt]
           (when (some? wevt)
