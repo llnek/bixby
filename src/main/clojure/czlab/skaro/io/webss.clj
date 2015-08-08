@@ -15,10 +15,9 @@
   czlab.skaro.io.webss
 
   (:require
-    [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.util.core
-    :refer [ConvLong notnil?
-    juid MakeMMap Stringify Bytesify]]
+    :refer [ConvLong juid MakeMMap Stringify Bytesify]]
+    [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.crypto.core :refer [GenMac]]
     [czlab.xlib.net.comms :refer [GetFormFields]])
 
@@ -75,8 +74,7 @@
 
   (if (.checkAuthenticity evt)
     (str (GenMac (.getAppKeyBits ctr) data) "-" data)
-    data
-  ))
+    data))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,7 +111,7 @@
   [^HTTPEvent evt ^String part1 ^String part2
    ^Container ctr]
 
-  (when-let [pkey (if (.checkAuthenticity evt)
+  (when-some [pkey (if (.checkAuthenticity evt)
                     (.getAppKeyBits ctr)
                     nil) ]
     (when (not= (GenMac pkey part2) part1)
@@ -165,9 +163,7 @@
           (if (and (> mi 0)
                    (< (+ ts (* 1000 mi)) now))
             (throw (ExpiredError. "Session has been inactive too long")))
-          (.setAttribute mvs LS_FLAG now))
-        ))
-  ))
+          (.setAttribute mvs LS_FLAG now))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -237,7 +233,7 @@
         (handleEvent [this evt] (upstream evt))
         (getImpl [_] nil))
 
-        { :typeid :czc.skaro.io/WebSS })))
+        {:typeid :czc.skaro.io/WebSS })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

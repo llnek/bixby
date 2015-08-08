@@ -637,7 +637,7 @@
         (.findAll this model {}))
 
       (findOne [this model filters]
-        (when-let [rset (.findSome this model filters {})]
+        (when-some [rset (.findSome this model filters {})]
           (when-not (empty? rset) (first rset))))
 
       (findSome [_ model filters extraSQL]

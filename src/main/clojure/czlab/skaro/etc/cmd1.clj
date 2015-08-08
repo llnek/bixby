@@ -84,7 +84,7 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["dev"] args)
-         (apply ExecBootScript (GetHomeDir) (GetCwd) []))))
+         (apply ExecBootScript (GetHomeDir) (GetCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
@@ -113,7 +113,7 @@
         args (drop 1 args)]
     (->> (if (empty? args) ["tst"] args)
          (apply ExecBootScript
-                (GetHomeDir) (GetCwd) []))))
+                (GetHomeDir) (GetCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
@@ -299,7 +299,7 @@
 
   [questions start]
 
-  (when-let [rc (CLIConverse questions start)]
+  (when-some [rc (CLIConverse questions start)]
     (let [ssn (map #(let [v (get rc %) ]
                       (if (hgl? v)
                         (str (ucase (name %)) "=" v)))
@@ -313,7 +313,7 @@
   "Maybe generate a server key file?"
   []
 
-  (if-let
+  (if-some
     [res (promptQs (merge (makeCsrQs (ResBdl))
                           (makeKeyQs (ResBdl))) :cn) ]
     (let [dn (fst res)
@@ -339,7 +339,7 @@
   "Maybe generate a CSR?"
   []
 
-  (if-let
+  (if-some
     [res (promptQs (makeCsrQs (ResBdl)) :cn) ]
     (let [dn (fst res)
           rc (lst res)

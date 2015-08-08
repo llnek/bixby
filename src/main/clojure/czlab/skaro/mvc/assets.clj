@@ -15,7 +15,7 @@
   czlab.skaro.mvc.assets
 
   (:require
-    [czlab.xlib.util.core :refer [try! notnil? FPath]]
+    [czlab.xlib.util.core :refer [try! FPath]]
     [czlab.xlib.util.mime :refer [GuessContentType]]
     [czlab.xlib.util.str :refer [lcase nsb]]
     [czlab.xlib.util.files
@@ -39,7 +39,6 @@
     ChannelFutureListener ChannelFuture
     ChannelPipeline ChannelHandlerContext]
     [io.netty.handler.stream ChunkedStream ChunkedFile]
-    [com.google.gson JsonObject JsonArray]
     [org.apache.commons.io FileUtils]
     [com.zotohlab.skaro.mvc WebContent
     WebAsset
@@ -76,8 +75,7 @@
   (reify
     WebContent
     (contentType [_] cType)
-    (body [_] bits)
-  ))
+    (body [_] bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -91,8 +89,7 @@
       (makeWebContent
         (GuessContentType f "utf-8")
         (WriteOneFile f))
-      nil)
-  ))
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,8 +107,7 @@
           (.endsWith fpath ".jpeg")
           (.endsWith fpath ".png")
           (.endsWith fpath ".js")))
-    false
-  ))
+    false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,8 +125,7 @@
       (getFile [_] file)
       (getTS [_] ts)
       (size [_] (.length file))
-      (getBytes [_] (ReadFileBytes file)))
-  ))
+      (getBytes [_] (ReadFileBytes file)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,8 +137,7 @@
   (if (and (.exists file)
            (.canRead file))
     (MakeWebAsset file)
-    nil
-  ))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,15 +146,14 @@
   ^WebAsset
   [^Map cache fp ^File file]
 
-  (if-let [wa (fetchAsset file) ]
+  (if-some [wa (fetchAsset file) ]
     (do
       (log/debug "asset-cache: cached new file: %s" fp)
       (.put cache fp wa)
       wa)
     (do
       (log/warn "asset-cache: failed to read/find file: %s" fp)
-      nil)
-  ))
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,10 +171,8 @@
               (> (.lastModified file)
                  (.getTS wa)))
         (fetchAndSetAsset cache fp file)
-        wa)
-    )
-    (fetchAsset file)
-  ))
+        wa))
+    (fetchAsset file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -196,8 +187,7 @@
     (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
         (.process rsp))
-      (ChunkedFile. raf))
-  ))
+      (ChunkedFile. raf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -242,8 +232,7 @@
         (catch Throwable e#
           (try! (when (some? @raf)(.close ^Closeable @raf)))
           (log/error e# "")
-          (try! (.close ch))) ))
-  ))
+          (try! (.close ch))) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

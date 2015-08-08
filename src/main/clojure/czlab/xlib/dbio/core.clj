@@ -732,7 +732,7 @@
 
   [kw cache modelid]
 
-  (if-let [mcz (cache modelid) ]
+  (if-some [mcz (cache modelid) ]
     (CollectDbXXX kw cache mcz)
     (log/warn "Unknown database model id: %s" modelid)
   ))
@@ -743,7 +743,7 @@
 
   [kw cache mcz]
 
-  (if-let [par (:parent mcz) ]
+  (if-some [par (:parent mcz) ]
     (merge {} (CollectDbXXX kw cache par)
               (kw mcz))
     (merge {} (kw mcz))

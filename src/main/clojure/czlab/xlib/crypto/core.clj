@@ -295,7 +295,7 @@
 
   (loop [rc (transient [])
          en (.aliases ks) ]
-    (if-let
+    (if-some
       [n (when (.hasMoreElements en)
                (.nextElement en)) ]
       (if (predicate ks n)
@@ -359,10 +359,10 @@
 
   [^KeyStore ks ^PasswordAPI pwdObj]
 
-  (when-let [ca (when (some? pwdObj)
+  (when-some [ca (when (some? pwdObj)
                     (.toCharArray pwdObj)) ]
     (doseq [^String a (PKeyAliases ks) ]
-      (when-let [cs (-> ^KeyStore$PrivateKeyEntry
+      (when-some [cs (-> ^KeyStore$PrivateKeyEntry
                         (GetPKey ks a ca)
                         (.getCertificateChain )) ]
         (doseq [^Certificate c cs]
@@ -1240,7 +1240,7 @@
   ^bytes
   [pkeys ^SMIMEEnveloped ev]
 
-  (let [rc (some #(if-let [cms (smimeDec ^PrivateKey %1 ev) ]
+  (let [rc (some #(if-some [cms (smimeDec ^PrivateKey %1 ev) ]
                      (IOUtils/toByteArray (.getContentStream cms))
                      false)
                  pkeys) ]
@@ -1315,7 +1315,7 @@
                              (.setProvider _BCProvider)
                              (.build ^X509CertificateHolder (.next it))) ]
                   (if (.verify si ci)
-                    (if-let [digest (.getContentDigest si) ]
+                    (if-some [digest (.getContentDigest si) ]
                       (recur c it [sc digest] true)
                       (recur c it nil false))
                     (recur c it nil false))))))
@@ -1622,13 +1622,13 @@
 
   (^czlab.xlib.crypto.core.CertDesc
     [^bytes privateKeyBits ^PasswordAPI pwdObj]
-    (if-let [pkey (ConvPKey privateKeyBits pwdObj) ]
+    (if-some [pkey (ConvPKey privateKeyBits pwdObj) ]
       (DescCertificate (.getCertificate pkey))
       (->CertDesc nil nil nil nil)))
 
   (^czlab.xlib.crypto.core.CertDesc
     [^bytes certBits]
-    (if-let [cert (ConvCert certBits) ]
+    (if-some [cert (ConvCert certBits) ]
       (DescCertificate (.getTrustedCertificate cert))
       (->CertDesc nil nil nil nil))))
 
@@ -1653,7 +1653,7 @@
 
   [^bytes keyBits ^PasswordAPI pwdObj]
 
-  (if-let [pkey (ConvPKey keyBits pwdObj) ]
+  (if-some [pkey (ConvPKey keyBits pwdObj) ]
     (ValidCertificate? (.getCertificate pkey))
     false
   ))
@@ -1666,7 +1666,7 @@
 
   [^bytes certBits]
 
-  (if-let [cert (ConvCert certBits) ]
+  (if-some [cert (ConvCert certBits) ]
     (ValidCertificate? (.getTrustedCertificate cert))
     false
   ))

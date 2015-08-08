@@ -61,7 +61,7 @@
         user (.getPrincipal token)
         sql (.newSimpleSQLr db) ]
     (try
-      (when-let [acc (FindLoginAccount sql user) ]
+      (when-some [acc (FindLoginAccount sql user) ]
         (SimpleAccount. acc
                         (:passwd acc)
                         (.getName this)))

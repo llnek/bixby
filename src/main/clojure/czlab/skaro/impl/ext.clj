@@ -449,7 +449,7 @@
         u (when (instance? PluginFactory pf)
             (.createPlugin ^PluginFactory pf
                            ^Container co)) ]
-    (when-let [^Plugin p (Cast? Plugin u)]
+    (when-some [^Plugin p (Cast? Plugin u)]
       (log/info "calling plugin-factory: %s" v)
       (.configure p { :env env :app app })
       (if (pluginInited? v appDir)
@@ -542,7 +542,7 @@
                        (str "Resources_"
                             (.toString loc) ".properties")) ]
       (when (FileRead? res)
-        (when-let [rb (LoadResource res)]
+        (when-some [rb (LoadResource res)]
           (I18N/setBundle (.id ^Identifiable co) rb)))
 
       (doto->> (maybeInitDBs co env app)

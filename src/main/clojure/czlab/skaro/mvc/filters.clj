@@ -43,7 +43,6 @@
     [java.io File]
     [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.frwk.io XData]
-    [com.google.gson JsonObject]
     [com.zotohlab.frwk.core Hierarchial Identifiable]
     [com.zotohlab.skaro.io HTTPEvent]
     [com.zotohlab.skaro.core Muble]
@@ -129,8 +128,7 @@
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
-            (log/debug "routeFilter: skipping unwanted msg: %s" (type msg))))))
-  ))
+            (log/debug "routeFilter: skipping unwanted msg: %s" (type msg))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -161,8 +159,7 @@
           ;;else
           (do
             (log/debug "failed to match uri: %s" (:uri info))
-            (ServeError co ch 404)) )))
-  ))
+            (ServeError co ch 404)) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -182,8 +179,7 @@
               ^WebSockEvent
               evt (IOESReifyEvent co ch msg nil) ]
           (log/debug "reified one websocket event")
-          (.dispatch em evt opts))))
-  ))
+          (.dispatch em evt opts))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,8 +204,7 @@
             (try! (.remove pipe "HttpFilter"))
             (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
             (SetAKey ch MSGTYPE_KEY "wsock"))
-        (FireAndQuit pipe ctx this msg))))
-  ))
+        (FireAndQuit pipe ctx this msg))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -228,14 +223,13 @@
           (.addAfter pipe "HttpRequestDecoder" "RouteFilter" router)
           (.addAfter pipe "WSockFilter" "WSockJiggler" wsock)
           (.addBefore pipe (ErrorSinkFilter/getName) "MVCDispatcher" disp)
-          (when-let [h (cond
+          (when-some [h (cond
                          (.get pipe "ssl")
                          "ssl"
                          (.get pipe "HttpRequestDecoder")
                          "HttpRequestDecoder"
                          :else nil)]
-            (.addBefore pipe ^String h (FlashFilter/getName) FlashFilter/shared)))))
-  ))
+            (.addBefore pipe ^String h (FlashFilter/getName) FlashFilter/shared)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -249,8 +243,7 @@
         bs (InitTCPServer (mvcInitor co options) options) ]
     (.setv co :cracker (MakeRouteCracker rts))
     (.setv co :netty  { :bootstrap bs })
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -160,10 +160,9 @@
 
   [^Muble co]
 
-  (when-let [cfg (.getv co :emcfg)]
+  (when-some [cfg (.getv co :emcfg)]
     (log/info "emitter config:\n%s" (pr-str cfg))
-    (log/info "emitter %s started - ok" (:typeid (meta co)))
-  ))
+    (log/info "emitter %s started - ok" (:typeid (meta co)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -188,7 +187,6 @@
   [co]
 
   (ThrowIOE "Not Implemented"))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -319,8 +317,7 @@
 
         (container [this] (.parent this))
         (getConfig [_]
-          (when-let [cfg (.getv impl :emcfg)]
-            (ConvToJava cfg)))
+          (.getv impl :emcfg))
 
         Disposable
 
@@ -329,12 +326,12 @@
         Startable
 
         (start [this]
-          (when-let [p (mkPipeline this true)]
+          (when-some [p (mkPipeline this true)]
             (.setv impl :pipe p)
             (IOESStart this)))
 
         (stop [this]
-          (when-let [p (.getv impl :pipe)]
+          (when-some [p (.getv impl :pipe)]
             (.dispose ^Disposable p)
             (IOESStop this)
             (.unsetv impl :pipe)))
@@ -367,8 +364,7 @@
               (log/debug "emitter holding an event with id: %s" wid)
               (.put backlog wid wevt)))) )
 
-      { :typeid emId })
-  ))
+      { :typeid emId })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -377,9 +373,8 @@
   [co arg]
 
   ;; arg is Container here
-  (when-let [^Context c arg ]
-    (CompCloneContext co (.getx c))
-  ))
+  (when-some [^Context c arg ]
+    (CompCloneContext co (.getx c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy.

@@ -196,7 +196,7 @@
 
   [^SQLr sql ^String user ^String pwd]
 
-  (if-let [acct (FindLoginAccount sql user)]
+  (if-some [acct (FindLoginAccount sql user)]
     (if (.validateHash (Pwdify pwd)
                        (:passwd acct))
       acct

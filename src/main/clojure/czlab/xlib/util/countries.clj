@@ -302,7 +302,7 @@
   ^String
   [^String country]
 
-  (when-let [rs (filter #(= (nth % 1) country) _CCODESEQ) ]
+  (when-some [rs (filter #(= (nth % 1) country) _CCODESEQ) ]
     (nth (first rs) 0)
   ))
 
@@ -395,7 +395,7 @@
   ^String
   [^String state]
 
-  (when-let [rs (filter #(= (nth % 1) state) _STATESSEQ) ]
+  (when-some [rs (filter #(= (nth % 1) state) _STATESSEQ) ]
     (nth (first rs) 0)
   ))
 

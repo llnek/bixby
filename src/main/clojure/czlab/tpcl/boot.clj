@@ -48,7 +48,7 @@
 
   [options k dv]
 
-  (if-let [v (get options k)]
+  (if-some [v (get options k)]
     (if (fn? v)
       (v options k)
       (set-env! k v))
@@ -148,7 +148,7 @@
           (.push stk f)
           (walk-tree cfgtor stk nil))
         ;else
-        (when-let [rc (cfgtor f :paths paths)]
+        (when-some [rc (cfgtor f :paths paths)]
           (Babel (:work-dir rc) (:args rc))
           (cfgtor f :paths paths :postgen true)))))
   (when-not (.empty stk) (.pop stk)))

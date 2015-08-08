@@ -47,7 +47,7 @@
             stuff (when (and (some? data)
                              (.hasContent data))
                     (.content data)) ]
-        (if-let [^ULFormItems
+        (if-some [^ULFormItems
                  fis (Cast? ULFormItems stuff)]
           (doseq [^ULFileItem fi (.intern fis)]
             (println "Fieldname : " (.getFieldName fi))
@@ -55,7 +55,7 @@
             (println "Formfield : " (.isFormField fi))
             (if (.isFormField fi)
               (println "Field value: " (.getString fi))
-              (when-let [xs (.fileData fi)]
+              (when-some [xs (.fileData fi)]
                 (println "Field file = " (.filePath xs)))))
           ;;else
           (println "Error: data is not ULFormItems."))

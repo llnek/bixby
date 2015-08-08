@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong spos? ThrowIOE tryc notnil?]]
+    :refer [NextLong spos? ThrowIOE tryc ]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? ]])
 
@@ -49,8 +49,7 @@
 
   (tryc
     (when (some? fd)
-      (when (.isOpen fd) (.close fd true)))
-  ))
+      (when (.isOpen fd) (.close fd true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,8 +63,7 @@
     (tryc
       (when (some? conn) (.close conn)) )
     (.setv co :store nil)
-    (.setv co :folder nil)
-  ))
+    (.setv co :folder nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,12 +91,10 @@
                                  nil)
                              (seq ps)))
           (when (nil? @sun)
-            (ThrowIOE (str "Failed to find store: " pkey) ))
-          ))
+            (ThrowIOE (str "Failed to find store: " pkey) ))))
       (.setProvider session @sun)
       (.setv co :proto @proto)
-      (.setv co :session session))
-  ))
+      (.setv co :session session))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,8 +117,7 @@
         (emitter [_] co)
         (getMsg [_] msg))
 
-      { :typeid :czc.skaro.io/EmailEvent }
-  )))
+      {:typeid :czc.skaro.io/EmailEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
@@ -161,13 +156,12 @@
                                    nil))
       (.setv co :store s)
       (.setv co :folder (.getDefaultFolder s)))
-    (when-let [^Folder fd (.getv co :folder) ]
+    (when-some [^Folder fd (.getv co :folder) ]
       (.setv co :folder (.getFolder fd "INBOX")))
     (let [^Folder fd (.getv co :folder) ]
       (when (or (nil? fd)
                 (not (.exists fd)))
-        (ThrowIOE "cannot find inbox.")) )
-  ))
+        (ThrowIOE "cannot find inbox.")) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -176,14 +170,15 @@
   [^czlab.skaro.io.core.EmitAPI co msgs]
 
   (let [^Muble src co]
-    (doseq [^MimeMessage mm (seq msgs) ]
+    (doseq [^MimeMessage mm  msgs]
       (try
-        (doto mm (.getAllHeaders)(.getContent))
+        (doto mm
+          (.getAllHeaders)
+          (.getContent))
         (.dispatch co (IOESReifyEvent co mm) {} )
         (finally
           (when (.getv src :deleteMsg)
-            (.setFlag mm Flags$Flag/DELETED true)))))
-  ))
+            (.setFlag mm Flags$Flag/DELETED true)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,8 +195,7 @@
       (let [cnt (.getMessageCount fd) ]
         (log/debug "count of new mail-messages: %s" cnt)
         (when (> cnt 0)
-          (readPop3 co (.getMessages fd)))))
-  ))
+          (readPop3 co (.getMessages fd)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,8 +209,7 @@
     (catch Throwable e#
       (log/warn e# ""))
     (finally
-      (closeStore co))
-  ))
+      (closeStore co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -241,8 +234,7 @@
       (var-set cpy (assoc! @cpy :passwd
                            (Pwdify (if (nil? pwd) nil pwd) pkey) ))
       (-> (persistent! @cpy)
-          (dissoc :intervalSecs)))
-  ))
+          (dissoc :intervalSecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -261,8 +253,7 @@
                         [ST_POP3 POP3C])
                       demo
                       POP3_MOCK)
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IMAP
@@ -317,8 +308,7 @@
     (catch Throwable e#
       (log/warn e# ""))
     (finally
-      (closeStore co))
-  ))
+      (closeStore co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -337,8 +327,7 @@
                         [ST_IMAP IMAP])
                       demo
                       IMAP_MOCK)
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

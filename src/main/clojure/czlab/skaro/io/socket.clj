@@ -62,8 +62,7 @@
         (emitter [_] co)
         (dispose [_] (CloseQ soc)))
 
-      { :typeid :czc.skaro.io/SocketEvent })
-  ))
+      {:typeid :czc.skaro.io/SocketEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -84,8 +83,7 @@
       (var-set cpy (assoc! @cpy
                            :timeoutMillis
                            (if (spos? tout) tout 0)))
-      (.setv co :emcfg (persistent! @cpy)))
-  ))
+      (.setv co :emcfg (persistent! @cpy)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,8 +102,7 @@
         soc (ServerSocket. port backlog ip) ]
     (log/info "Opened Server Socket %s (bound?) " soc (.isBound soc))
     (doto soc (.setReuseAddress true))
-    (.setv co :ssocket soc)
-  ))
+    (.setv co :ssocket soc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -132,8 +129,7 @@
                         (CloseQ ssoc)
                         (.setv co :ssocket nil))))
                  (GetCldr)))
-    (IOESStarted co)
-  ))
+    (IOESStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,8 +141,7 @@
   (let [^ServerSocket ssoc (.getv co :ssocket) ]
     (CloseQ ssoc)
     (.setv co :ssocket nil)
-    (IOESStopped co)
-  ))
+    (IOESStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

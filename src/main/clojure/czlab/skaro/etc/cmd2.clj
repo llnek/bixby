@@ -104,7 +104,7 @@
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
         app (when (some? t)
-              (if-let [tkn (last t) ]
+              (if-some [tkn (last t) ]
                 (TrimL tkn ".")
                 (first t))) ]
     (when (nil? app) (throw (CmdHelpError.)))

@@ -133,13 +133,13 @@
 
   JDBCInfo
   (applyDDL [this]
-    (when-let [dbtype (MatchJdbcUrl (.getUrl this)) ]
+    (when-some [dbtype (MatchJdbcUrl (.getUrl this)) ]
       (with-open [conn (MakeConnection this) ]
         (UploadDdl conn (GenerateAuthPluginDDL dbtype)))))
 
   JDBCPool
   (applyDDL [this]
-    (when-let [dbtype (MatchJdbcUrl (.dbUrl this)) ]
+    (when-some [dbtype (MatchJdbcUrl (.dbUrl this)) ]
       (UploadDdl this (GenerateAuthPluginDDL dbtype)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

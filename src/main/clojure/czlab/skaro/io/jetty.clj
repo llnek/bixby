@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.str :refer [lcase ucase hgl? strim]]
     [czlab.xlib.util.core
-    :refer [notnil? juid tryc spos?
+    :refer [juid tryc spos?
     NextLong ToJavaInt try! MakeMMap test-cond Stringify]]
     [czlab.xlib.crypto.codec :refer [Pwdify]])
 
@@ -81,11 +81,10 @@
 
   [^HttpServletRequest req]
 
-  (if-let [v (.getHeader req "connection") ]
+  (if-some [v (.getHeader req "connection") ]
     (>= (.indexOf (lcase v)
                   "keep-alive") 0)
-    false
-  ))
+    false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,8 +99,7 @@
     (.setMaxAge (.getMaxAge c))
     (.setPath (str (.getPath c)))
     (.setSecure (.getSecure c))
-    (.setVersion (.getVersion c))
-  ))
+    (.setVersion (.getVersion c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -154,8 +152,7 @@
       (finally
         (try! (when-not (isServletKeepAlive req) (.close os)))
         (-> (ContinuationSupport/getContinuation req)
-            (.complete))) )
-  ))
+            (.complete))) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -176,8 +173,7 @@
           (log/error e# ""))
         (finally
           (-> (ContinuationSupport/getContinuation req)
-              (.complete)))) )
-  ))
+              (.complete)))) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -189,8 +185,7 @@
   (let [cfg (merge (.getv co :dftOptions) cfg0)]
     (.setv co :emcfg
               (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
-    (.setv co K_APP_CZLR (get cfg K_APP_CZLR))
-  ))
+    (.setv co K_APP_CZLR (get cfg K_APP_CZLR))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -213,8 +208,7 @@
                 (.addConnectionFactory (HttpConnectionFactory. config))) ]
     (doto https
       (.setPort port)
-      (.setIdleTimeout (int 500000)))
-  ))
+      (.setIdleTimeout (int 500000)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -251,8 +245,7 @@
       (.setConnectors (into-array Connector [cc])))
     (.setv co :jetty svr)
     (.setv co :cracker (MakeRouteCracker rts))
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -298,8 +291,7 @@
       :else
       (do
         (log/debug "failed to match uri: %s" (.getRequestURI req))
-        (JettyUtils/replyXXX req rsp 404)))
-  ))
+        (JettyUtils/replyXXX req rsp 404)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -307,12 +299,11 @@
 
   [co ^HttpServletRequest req ^HttpServletResponse rsp]
 
-  (when-let [c (ContinuationSupport/getContinuation req) ]
+  (when-some [c (ContinuationSupport/getContinuation req) ]
     (when (.isInitial c)
       (tryc
         (.suspend c rsp)
-        (dispREQ co c req rsp) ))
-  ))
+        (dispREQ co c req rsp) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -347,8 +338,7 @@
     (.setHandlers ctxs (into-array Handler [c1 c2]))
     (.setHandler jetty ctxs)
     (.start jetty)
-    (IOESStarted co)
-  ))
+    (IOESStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -361,8 +351,7 @@
     (when (some? svr)
       (tryc
           (.stop svr) ))
-    (IOESStopped co)
-  ))
+    (IOESStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -376,8 +365,7 @@
     (.setMaxAge (.getMaxAge c))
     (.setPath (.getPath c))
     (.setSecure (.getSecure c))
-    (.setVersion (.getVersion c))
-  ))
+    (.setVersion (.getVersion c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -386,13 +374,12 @@
   [^HttpServletRequest req]
 
   (with-local-vars [rc (transient {})]
-    (if-let [cs (.getCookies req) ]
-      (doseq [^Cookie c (seq cs) ]
+    (if-some [cs (.getCookies req) ]
+      (doseq [^Cookie c cs]
         (var-set rc (assoc! @rc
                             (.getName c)
                             (cookie-to-javaCookie c)))))
-    (persistent! @rc)
-  ))
+    (persistent! @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -415,7 +402,7 @@
 
       (getCookies [_] (vals (.getv impl :cookies)))
       (getCookie [_ nm]
-        (when-let [cs (.getv impl :cookies)]
+        (when-some [cs (.getv impl :cookies)]
           (get cs nm)))
 
       (checkAuthenticity [_] false)
@@ -442,7 +429,7 @@
           (vec (seq (.getHeaders req nm)))
           []))
 
-      (hasHeader [_ nm] (notnil? (.getHeader req nm)))
+      (hasHeader [_ nm] (some? (.getHeader req nm)))
       (getHeaderValue [_ nm] (.getHeader req nm))
       (getHeaders [_] (vec (seq (.getHeaderNames req))))
 
@@ -497,8 +484,7 @@
             (.handleResult mvs this result)
             :else nil)
           (when (some? wevt)
-            (.resumeOnResult wevt result))))
-  )))
+            (.resumeOnResult wevt result)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

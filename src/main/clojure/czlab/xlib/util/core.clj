@@ -320,7 +320,7 @@
 ;;
 (defmacro bool! ""
   [e]
-  `(if-let [e# ~e] (if (false? e#) false true) false))
+  `(if-some [e# ~e] (if (false? e#) false true) false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -456,7 +456,7 @@
   ^String
   [propname]
 
-  `(when-let [p# ~propname] (System/getProperty p#)))
+  `(when-some [p# ~propname] (System/getProperty p#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -467,7 +467,7 @@
   ^String
   [envname]
 
-  `(when-let [e# ~envname] (System/getenv e#)))
+  `(when-some [e# ~envname] (System/getenv e#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1358,7 +1358,7 @@
     (doseq [[k v] (.seq ctx) ]
       (.append buf (str k " = " v "\n")))
     (.append buf "\n")
-    (when-let [s (str buf) ]
+    (when-some [s (str buf) ]
       (if dbg (log/debug "%s" s)(log/info "%s" s)))
   ))
 

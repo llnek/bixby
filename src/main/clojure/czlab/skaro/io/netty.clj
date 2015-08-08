@@ -19,7 +19,7 @@
     [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
     [czlab.xlib.util.core
     :refer [try! Stringify ThrowIOE
-    NextLong MakeMMap notnil? ConvLong]]
+    NextLong MakeMMap ConvLong]]
     [czlab.skaro.io.webss :refer [MakeWSSession]]
     [czlab.xlib.util.mime :refer [GetCharset]])
 
@@ -97,8 +97,7 @@
     (.setPath (.getPath c))
     ;;(.setDiscard (.getDiscard c))
     (.setVersion 0)
-    (.setHttpOnly (.isHttpOnly c))
-  ))
+    (.setHttpOnly (.isHttpOnly c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,8 +107,7 @@
 
   (when (and (not (.isKeepAlive evt))
              (some? cf))
-    (.addListener cf ChannelFutureListener/CLOSE)
-  ))
+    (.addListener cf ChannelFutureListener/CLOSE)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -118,11 +116,12 @@
   [cookies]
 
   (let [cc (URLCodec. "utf-8") ]
-    (persistent! (reduce #(conj! %1
-                                 (ServerCookieEncoder/encode (javaToCookie %2 cc)))
-                         (transient [])
-                         (seq cookies)))
-  ))
+    (persistent!
+      (reduce
+        #(conj! %1
+                (ServerCookieEncoder/encode (javaToCookie %2 cc)))
+        (transient [])
+        (seq cookies)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -139,8 +138,7 @@
             (BinaryWebSocketFrame. (Unpooled/wrappedBuffer (.javaBytes xs)))
             :else
             (TextWebSocketFrame. (.stringify xs))) ]
-    (.writeAndFlush ch f)
-  ))
+    (.writeAndFlush ch f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,8 +156,7 @@
             n (.process r rsp) ]
         (if (> n 0)
           r
-          nil)))
-  ))
+          nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -180,7 +177,7 @@
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
     (with-local-vars [clen 0 raf nil payload nil]
-      (doseq [[nm vs] (seq hdrs)]
+      (doseq [[nm vs]  hdrs]
         (when-not (= "content-length" (lcase nm))
           (doseq [vv (seq vs)]
             (AddHeader rsp nm vv))))
@@ -248,8 +245,7 @@
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel, bye")
-          (CloseCF wf))))
-  ))
+          (CloseCF wf))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -273,8 +269,7 @@
           (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException _
             (log/warn "closedChannelException thrown while flushing headers"))
-          (catch Throwable t# (log/error t# "") )) ))
-  ))
+          (catch Throwable t# (log/error t# "") )) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -289,8 +284,7 @@
     (.setMaxAge (.getMaxAge c))
     (.setPath (.getPath c))
     (.setVersion (.getVersion c))
-    (.setHttpOnly (.isHttpOnly c))
-  ))
+    (.setHttpOnly (.isHttpOnly c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -341,8 +335,7 @@
         (replyResult [this] nil)
         (emitter [_] co))
 
-      { :typeid :czc.skaro.io/WebSockEvent })
-  ))
+      {:typeid :czc.skaro.io/WebSockEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -356,12 +349,11 @@
               (CookieDecoder/decode v)
               []) ]
     (with-local-vars [rc (transient {})]
-      (doseq [^Cookie c (seq cks) ]
+      (doseq [^Cookie c  cks]
         (var-set rc (assoc! @rc
                             (.getName c)
                             (cookieToJava c cc))))
-      (persistent! @rc))
-  ))
+      (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -471,8 +463,7 @@
               (.resumeOnResult wevt res))))
       )
 
-      { :typeid :czc.skaro.io/HTTPEvent })
-  ))
+      {:typeid :czc.skaro.io/HTTPEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -485,9 +476,9 @@
    ^XData xdata
    info wantSecure]
 
-  (doto (makeHttpEvent2 co ch sslFlag xdata info wantSecure)
-    (.bindSession (MakeWSSession co sslFlag))
-  ))
+  (doto (makeHttpEvent2 co
+                        ch sslFlag xdata info wantSecure)
+    (.bindSession (MakeWSSession co sslFlag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -510,8 +501,7 @@
         (makeHttpEvent co ch ssl
                        (:payload msg)
                        (:info msg)
-                       (if (nil? ri) false (.isSecure? ri)))))
-  ))
+                       (if (nil? ri) false (.isSecure? ri)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -522,8 +512,7 @@
   (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
-    (.setv co :emcfg c2)
-  ))
+    (.setv co :emcfg c2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -548,8 +537,7 @@
                     (MakeAsyncWaitHolder  evt)) ]
             (.timeoutMillis w ts)
             (.hold co w)))
-        (.dispatch co evt {})))
-  ))
+        (.dispatch co evt {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -569,8 +557,7 @@
                                  disp))))
              options) ]
     (.setv co :netty  { :bootstrap bs })
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -586,8 +573,7 @@
         bs (:bootstrap nes)
         ch (StartServer bs host port) ]
     (.setv co :netty (assoc nes :channel ch))
-    (IOESStarted co)
-  ))
+    (IOESStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -599,8 +585,7 @@
   (let [{:keys [bootstrap channel]}
         (.getv co :netty) ]
     (StopServer  bootstrap channel)
-    (IOESStopped co)
-  ))
+    (IOESStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

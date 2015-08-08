@@ -230,10 +230,10 @@
 
       (handleError [_ e]
         (with-local-vars [ret nil]
-          (when-let [^FlowError
+          (when-some [^FlowError
                      fe (Cast? FlowError e)]
-            (when-let [n (.getLastDot fe)]
-              (when-let [w (Cast? WorkFlowEx
+            (when-some [n (.getLastDot fe)]
+              (when-some [w (Cast? WorkFlowEx
                                   (-> (.job n)
                                       (.wflow)))]
                 (->> (.onError ^WorkFlowEx

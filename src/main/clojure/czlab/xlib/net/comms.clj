@@ -81,7 +81,7 @@
 
   [^String line]
 
-  (when-let [s (StringUtils/split line)]
+  (when-some [s (StringUtils/split line)]
     (cond
       (and (== 2 (count s))
            (= "Basic" (first s))

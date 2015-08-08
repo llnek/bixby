@@ -52,7 +52,7 @@
 
   TemplateCollectionModel
   (ftl->clj [obj]
-    (when-let [itr (.iterator obj)]
+    (when-some [itr (.iterator obj)]
       (loop [acc []]
         (if (.hasNext itr)
           (recur (conj acc (ftl->clj (.next itr))))
@@ -103,8 +103,7 @@
 
   (if (keyword? k)
     [(.replace (name k) "-" "_") v]
-    [k v]
-  ))
+    [k v]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -118,8 +117,7 @@
   (cw/postwalk (fn [x] (cond (map? x) (into {} (map strkey x))
                           (fn? x) (fn->method x)
                           :else x))
-            m
-  ))
+            m))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -135,8 +133,7 @@
         (.setObjectWrapper (DefaultObjectWrapper.)))
       (doseq [[k v] (map->model shared)]
         (.setSharedVariable cfg ^String k v)))
-    cfg
-  ))
+    cfg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -153,7 +150,7 @@
   (^String [^Configuration cfg ^Writer out
    ^String path model & {:keys [translate-model?]
                          :or {translate-model? true}}]
-    (when-let [tpl (.getTemplate cfg path)]
+    (when-some [tpl (.getTemplate cfg path)]
       (.process tpl
                 (if translate-model? (map->model model) model) out))
     (str out)))

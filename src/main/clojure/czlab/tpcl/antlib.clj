@@ -256,8 +256,8 @@
                (maybeListProps cz)) ]
     (doseq [[k v] options]
       (when-not (contains? skips k)
-        (if-let [pd (get ps k)]
-          (if-let [wm (.getWriteMethod pd)]
+        (if-some [pd (get ps k)]
+          (if-some [wm (.getWriteMethod pd)]
             ;;some cases the beaninfo is erroneous
             ;;so fall back to use *best-try*
             (let [pt (.getPropertyType pd)
@@ -376,7 +376,7 @@
 
   [tk options]
 
-  (when-let [[k v] (find options :type)]
+  (when-some [[k v] (find options :type)]
     (.setType ^FormatterElement
               tk
               (doto (FormatterElement$TypeAttribute.)
@@ -437,7 +437,7 @@
     (case (first p)
 
       :compilerarg
-      (when-let [^String line (:line (last p))]
+      (when-some [^String line (:line (last p))]
         (-> (.createCompilerArg tk)
             (.setLine line)))
 
@@ -553,13 +553,13 @@
 
   [tk options]
 
-  (when-let [[k v] (find options :printsummary)]
+  (when-some [[k v] (find options :printsummary)]
     (.setPrintsummary ^JUnitTask
                 tk
                 (doto (JUnitTask$SummaryAttribute.)
                   (.setValue (str v)))))
 
-  (when-let [[k v] (find options :forkMode)]
+  (when-some [[k v] (find options :forkMode)]
     (.setForkMode ^JUnitTask
                 tk
                 (doto (JUnitTask$ForkMode.)
@@ -573,7 +573,7 @@
 
   [tk options]
 
-  (when-let [[k v] (find options :access)]
+  (when-some [[k v] (find options :access)]
     (.setAccess ^Javadoc
                 tk
                 (doto (Javadoc$AccessType.)
@@ -584,7 +584,7 @@
 ;;
 (defn- tar-preopts ""
   [tk options]
-  (when-let [[k v] (find options :compression)]
+  (when-some [[k v] (find options :compression)]
     (.setCompression ^Tar
                      tk
                      (doto (Tar$TarCompressionMethod.)

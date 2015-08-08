@@ -16,8 +16,8 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [Cast? NormalizeEmail Stringify notnil? tryletc]]
-    [czlab.xlib.util.str :refer [lcase strim nsb hgl? ]]
+    :refer [Cast? NormalizeEmail Stringify tryletc]]
+    [czlab.xlib.util.str :refer [lcase strim hgl?]]
     [czlab.xlib.util.format :refer [ReadJson WriteJson]]
     [czlab.skaro.io.http :refer [ScanBasicAuth]]
     [czlab.xlib.crypto.codec :refer [CaesarDecrypt]]
@@ -54,7 +54,7 @@
                     USER_PARAM [ :principal #(strim %) ]
                     PWD_PARAM [ :credential #(strim %) ]
                     CSRF_PARAM [ :csrf #(strim %) ]
-                    NONCE_PARAM [ :nonce #(notnil? %) ] })
+                    NONCE_PARAM [ :nonce #(some? %) ] })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -64,11 +64,8 @@
 
   [^HTTPEvent evt]
 
-  (when-let
-    [^ULFormItems
-     itms (Cast? ULFormItems
-                 (if (.hasData evt)
-                   (.. evt data content))) ]
+  (when-some [itms (some-> evt
+                          (.data) (.content))]
     (with-local-vars
       [rc (transient {})]
       (doseq [^ULFileItem
@@ -76,11 +73,11 @@
         (let [fm (.getFieldNameLC x)
               fv (str x)]
           (log/debug "form-field= %s, value= %s" fm fv)
-          (when-let [v (get PMS fm)]
-            (var-set rc (assoc! @rc (first v)
+          (when-some [v (get PMS fm)]
+            (var-set rc (assoc! @rc
+                                (first v)
                                 (apply (last v) fv []))))))
-      (persistent! @rc))
-  ))
+      (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,22 +87,21 @@
 
   [^HTTPEvent evt]
 
-  (when-let [^XData
-             xs (if (.hasData evt) (.data evt)) ]
-    (when-let [json (ReadJson
-                      (if (.hasContent xs)
-                        (.stringify xs)
-                        "{}")
-                      #(lcase %)) ]
+  (when-some [^XData
+              xs (some-> evt (.data)) ]
+    (when-some [json (ReadJson
+                       (if (.hasContent xs)
+                         (.stringify xs)
+                         "{}")
+                       #(lcase %)) ]
       (with-local-vars
         [rc (transient {})]
         (doseq [[k v] PMS]
-          (when-let [fv (get json k) ]
+          (when-some [fv (get json k) ]
             (var-set rc (assoc! @rc
                                 (first v)
                                 (apply (last v) fv [])))))
-        (persistent! @rc)))
-  ))
+        (persistent! @rc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,14 +113,13 @@
 
   (with-local-vars
     [rc (transient {})]
-    (doseq [[k v]  PMS ]
+    (doseq [[k v]  PMS]
       (when (.hasParameter evt k)
         (var-set rc (assoc! @rc
                             (first v)
                             (apply (last v)
                                    (.getParameterValue evt k) [])))))
-    (persistent! @rc)
-  ))
+    (persistent! @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,7 +129,7 @@
 
   [^HTTPEvent evt]
 
-  (when-let [ct (.contentType evt) ]
+  (when-some [ct (.contentType evt) ]
     (cond
       (or (> (.indexOf ct "form-urlencoded") 0)
           (> (.indexOf ct "form-data") 0))
@@ -144,8 +139,7 @@
       (crackBodyContent evt)
 
       :else
-      (crackUrlParams evt))
-  ))
+      (crackUrlParams evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,8 +156,7 @@
       (log/debug "decr = %s" decr)
       (log/debug "val = %s" s)
       (assoc info fld s))
-    info
-  ))
+    info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

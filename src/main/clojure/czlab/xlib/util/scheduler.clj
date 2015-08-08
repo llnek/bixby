@@ -47,7 +47,7 @@
       (dequeue [_ w] )
 
       (run [this w]
-        (when-let [^Runnable r w]
+        (when-some [^Runnable r w]
           (.run r)))
 
       (postpone [this w delayMillis]
@@ -99,7 +99,7 @@
 
   [^Map hQ ^Map rQ w]
 
-  (when-let [pid (xrefPID w) ]
+  (when-some [pid (xrefPID w) ]
     (.remove hQ pid)
     (.put rQ pid w)
   ))
@@ -140,11 +140,11 @@
 
         ;; called by a *running* task to remove itself from the running queue
         (dequeue [_ w]
-          (when-let [pid (xrefPID w)]
+          (when-some [pid (xrefPID w)]
             (.remove runQ pid)))
 
         (run [this w]
-          (when-let [^Runnable r w]
+          (when-some [^Runnable r w]
             (preRun holdQ runQ r)
             (-> ^TCore
                 @cpu

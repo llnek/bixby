@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
     [czlab.xlib.util.core
-    :refer [notnil? juid spos? NextLong
+    :refer [juid spos? NextLong
     ToJavaInt SubsVar MakeMMap test-cond Stringify]]
     [czlab.xlib.net.comms :refer [ParseBasicAuth]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
@@ -75,8 +75,7 @@
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
-    (ParseBasicAuth (str (.getHeaderValue evt AUTH)))
-  ))
+    (ParseBasicAuth (str (.getHeaderValue evt AUTH)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -86,7 +85,7 @@
 
   [^Muble co cfg]
 
-  (let [kfile (SubsVar (str (:serverKey cfg)))
+  (let [kfile (SubsVar (:serverKey cfg))
         socto (:sockTimeOut cfg)
         fv (:sslType cfg)
         cp (:contextPath cfg)
@@ -136,8 +135,7 @@
         (var-set cpy (assoc! @cpy
                              :waitMillis
                              (* 1000 300))))
-      (persistent! @cpy))
-  ))
+      (persistent! @cpy))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,8 +147,7 @@
   (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (HttpBasicConfig co cfg) ]
     (.setv co :emcfg c2)
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,9 +176,7 @@
       (isBinary [_] (true? (.getv impl :binary)))
       (isText [this] (not (.isBinary this)))
       (getData [_] (XData. (.getv impl :data)))
-      (emitter [_] co)
-
-  )))
+      (emitter [_] co) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -252,8 +247,7 @@
 
       (setContent [_ data]
         (if (some? data)
-          (.setv impl :data data)) ))
-  ))
+          (.setv impl :data data)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -264,11 +258,10 @@
   ;; boolean
   [info ^String header]
 
-  (if-let [h (:headers info) ]
+  (if-some [h (:headers info) ]
     (and (> (count h) 0)
          (some? (get h (lcase header))))
-    false
-  ))
+    false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -279,11 +272,10 @@
   ;; boolean
   [info ^String param]
 
-  (if-let [p (:params info) ]
+  (if-some [p (:params info) ]
     (and (> (count p) 0)
          (some? (get p param)))
-    false
-  ))
+    false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -294,13 +286,10 @@
   ^String
   [info ^String param]
 
-  (if-let [arr (if (HasInParam? info param)
-                 ((:params info) param)
-                 nil) ]
-    (if (> (count arr) 0)
-      (first arr)
-      nil)
-  ))
+  (if-some [arr (if (HasInParam? info param)
+                  ((:params info) param)) ]
+    (when (> (count arr) 0)
+      (first arr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -311,13 +300,10 @@
   ^String
   [info ^String header]
 
-  (if-let [arr (if (HasInHeader? info header)
-                 ((:headers info) (lcase header))
-                 nil) ]
-    (if (> (count arr) 0)
-      (first arr)
-      nil)
-  ))
+  (if-some [arr (if (HasInHeader? info header)
+                 ((:headers info) (lcase header))) ]
+    (when (> (count arr) 0)
+      (first arr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

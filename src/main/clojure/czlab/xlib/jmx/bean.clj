@@ -104,7 +104,7 @@
       (setSetter [_ m] (.setv impl :setr m))
       (setGetter [_ m] (.setv impl :getr m))
       (isQuery [this]
-        (if-let [^Method g (.getter this) ]
+        (if-some [^Method g (.getter this) ]
           (and (-> g (.getName)
                    (.startsWith "is"))
                (IsBoolean? (.getType this)))
@@ -250,7 +250,7 @@
           :else nil)))
     (let [rc (persistent! @props) ]
       (doseq [[k ^czlab.xlib.jmx.bean.BPropInfo v] rc ]
-        (when-let [^Class mt (testJmxType (.getType v)) ]
+        (when-some [^Class mt (testJmxType (.getType v)) ]
           (conj! @ba
                  (MBeanAttributeInfo. (.getName v)
                                       (.getName mt)

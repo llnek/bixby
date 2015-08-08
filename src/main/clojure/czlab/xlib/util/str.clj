@@ -33,8 +33,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro lcase "Lowercase string" [s] `(if-let [s# ~s] (cs/lower-case s#) ""))
-(defmacro ucase "Uppercase string" [s] `(if-let [s# ~s] (cs/upper-case s#) ""))
+(defmacro lcase "Lowercase string" [s] `(if-some [s# ~s] (cs/lower-case s#) ""))
+(defmacro ucase "Uppercase string" [s] `(if-some [s# ~s] (cs/upper-case s#) ""))
 (defmacro stror "" [s s2] `(let [s# ~s] (if (empty? s#) ~s2 s#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,7 +81,7 @@
   ^String
   [n]
 
-  `(when-let [n# ~n] (name n#)))
+  `(when-some [n# ~n] (name n#)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

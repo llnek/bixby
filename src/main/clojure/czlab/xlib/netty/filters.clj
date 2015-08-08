@@ -218,7 +218,7 @@
 
   (try
     (while (.hasNext dc)
-      (when-let [^InterfaceHttpData
+      (when-some [^InterfaceHttpData
                  data (.next dc) ]
         (try
           (writeHttpData ctx data fis)

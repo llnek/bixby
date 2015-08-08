@@ -168,12 +168,12 @@
       (nsb (getKV sects section property true)))
 
     (getString [this section property dft]
-      (if-let [rc (getKV sects section property false) ]
+      (if-some [rc (getKV sects section property false) ]
         rc
         dft))
 
     (getLong [this section property dft]
-      (if-let [rc (getKV sects section property false) ]
+      (if-some [rc (getKV sects section property false) ]
         (ConvLong rc)
         dft))
 
@@ -181,7 +181,7 @@
       (ConvLong (getKV sects section property true) 0))
 
     (getInt [this section property dft]
-      (if-let [rc (getKV sects section property false) ]
+      (if-some [rc (getKV sects section property false) ]
         (ConvInt rc dft)
         dft))
 
@@ -189,7 +189,7 @@
       (ConvInt (getKV sects section property true) ))
 
     (getDouble [this section property dft]
-      (if-let [rc (getKV sects section property false) ]
+      (if-some [rc (getKV sects section property false) ]
         (ConvDouble rc dft)
         dft))
 
@@ -197,7 +197,7 @@
       (ConvDouble (getKV sects section property true) ))
 
     (getBool [this section property dft]
-      (if-let [rc (getKV sects section property false) ]
+      (if-some [rc (getKV sects section property false) ]
         (ConvBool rc dft)
         dft))
 

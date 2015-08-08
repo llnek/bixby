@@ -464,7 +464,7 @@
 
   [info]
 
-  (if-let [hds (get info "headers")]
+  (if-some [hds (get info "headers")]
     (keys hds)
     #{}
   ))
@@ -477,7 +477,7 @@
 
   {:pre [(some? header)]}
 
-  (if-let [hds (get info "headers")]
+  (if-some [hds (get info "headers")]
     (or (get hds (lcase header)) [])
     []
   ))
@@ -488,7 +488,7 @@
 
   [info]
 
-  (if-let [hds (get info "params")]
+  (if-some [hds (get info "params")]
     (keys hds)
     #{}
   ))
@@ -501,7 +501,7 @@
 
   {:pre [(some? pm)]}
 
-  (if-let [pms (get info "params")]
+  (if-some [pms (get info "params")]
     (or (get pms pm) [])
     []
   ))
@@ -539,7 +539,7 @@
 
   [^OutputStream os ^ByteBufHolder chunc]
 
-  (when-let [buf (.content chunc)]
+  (when-some [buf (.content chunc)]
     (SlurpByteBuf buf os)
   ))
 
@@ -558,7 +558,7 @@
 
   [^ByteBuf content ^ByteBufHolder chunc]
 
-  (if-let [buf (.content chunc)]
+  (if-some [buf (.content chunc)]
     (> (.readableBytes content)
        (- (StreamLimit) (.readableBytes buf)))
     false
@@ -801,7 +801,7 @@
   [^Bootstrap bs ^Channel ch]
 
   (FutureCB (.close ch)
-            #(when-let [gp (.group bs) ]
+            #(when-some [gp (.group bs) ]
                 (try! (.shutdownGracefully gp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

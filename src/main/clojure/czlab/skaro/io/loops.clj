@@ -56,8 +56,7 @@
     (when (instance? Date dw)
       (.schedule tm tt dw intv))
     (when (number? ds)
-      (.schedule tm tt ds intv))
-  ))
+      (.schedule tm tt ds intv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,8 +70,7 @@
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)
-      (.schedule tm tt ds))
-  ))
+      (.schedule tm tt ds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -89,8 +87,7 @@
     (if (number? intv)
       (config-repeat-timer t [dw ds] intv func)
       (configTimer t [dw ds] func))
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,8 +107,7 @@
         (var-set cpy (assoc! @cpy :intervalMillis (* 1000 intv))))
       (-> (persistent! @cpy)
           (dissoc :delaySecs)
-          (dissoc :intervalSecs)))
-  ))
+          (dissoc :intervalSecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -130,8 +126,7 @@
 
   (let [^Timer t (.getv co :timer) ]
     (tryc
-        (when (some? t) (.cancel t)) )
-  ))
+      (when (some? t) (.cancel t)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Repeating Timer
@@ -158,8 +153,7 @@
         (emitter [_] co)
         (isRepeating [_] true))
 
-      { :typeid :czc.skaro.io/TimerEvent })
-  ))
+      {:typeid :czc.skaro.io/TimerEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -170,8 +164,7 @@
   (log/info "compConfigure: RepeatingTimer: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg)]
-    (.setv co :emcfg c2)
-  ))
+    (.setv co :emcfg c2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -234,8 +227,7 @@
         (emitter [_] co)
         (isRepeating [_] false))
 
-      { :typeid :czc.skaro.io/TimerEvent })
-  ))
+      {:typeid :czc.skaro.io/TimerEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -247,8 +239,7 @@
   ;; get rid of interval millis field, if any
   (let [cfg (merge (.getv co :dftOptions) cfg0)
         c2 (CfgLoopable co cfg) ]
-    (.setv co :emcfg (dissoc c2 :intervalMillis))
-  ))
+    (.setv co :emcfg (dissoc c2 :intervalMillis))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -296,8 +287,7 @@
         cl (GetCldr) ]
     (log/info "Threaded one timer - interval = %s" intv)
     (.setv co :loopy loopy)
-    (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)
-  ))
+    (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -327,8 +317,7 @@
             (instance? Date dw))
       (configTimer (Timer.) [dw ds] func)
       (apply func []))
-    (IOESStarted co)
-  ))
+    (IOESStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -339,8 +328,7 @@
   (log/info "IOESStop ThreadedTimer: %s" (.id ^Identifiable co))
   (let [loopy (.getv co :loopy) ]
     (reset! loopy false)
-    (IOESStopped co)
-  ))
+    (IOESStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

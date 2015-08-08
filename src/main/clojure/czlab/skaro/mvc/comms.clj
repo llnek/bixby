@@ -60,7 +60,6 @@
     [io.netty.channel Channel ChannelHandler
     ChannelFuture
     ChannelPipeline ChannelHandlerContext]
-    [com.google.gson JsonObject]
     [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +76,7 @@
                     modd true ]
     (cond
       (HasInHeader? info @unmod)
-      (when-let [s (GetInHeader info @unmod)]
+      (when-some [s (GetInHeader info @unmod)]
         (try!
           (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
                     lastTm)
@@ -88,8 +87,7 @@
                           (GetInHeader info @none)))
 
       :else nil)
-    @modd
-  ))
+    @modd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,8 +109,7 @@
         (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
     (.setHeader res "cache-control"
                 (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (:useETag cfg) (.setHeader res "etag" eTag))
-  ))
+    (when (:useETag cfg) (.setHeader res "etag" eTag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -136,8 +133,7 @@
         (if (> p3 0)
           (.substring path 0 p3)
           path))
-      path)
-  ))
+      path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -168,8 +164,7 @@
             (.setContent res nil)
             (.setStatus res 500)
             (.replyResult evt))
-          )))
-  ))
+          )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -196,8 +191,7 @@
       (do
         (log/warn "attempt to access non public file-system: %s" fpath)
         (.setStatus res 403)
-        (.replyResult evt)))
-  ))
+        (.replyResult evt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -207,8 +201,7 @@
 
   (let [^Container ctr (.container src)
         appDir (.getAppDir ctr) ]
-    (GetLocalFile appDir (str "pages/errors/" code ".html"))
-  ))
+    (GetLocalFile appDir (str "pages/errors/" code ".html"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -244,8 +237,7 @@
                                       (Unpooled/wrappedBuffer ^bytes @bits))))
         (CloseCF @wf false))
       (catch Throwable e#
-        (.close ch)))
-  ))
+        (.close ch)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -286,8 +278,7 @@
                      evt
                      {:router "czlab.skaro.mvc.comms/AssetHandler"
                       :info info
-                      :path @mp}))))
-  ))
+                      :path @mp}))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -320,8 +311,7 @@
               (MakeNettyTrigger ch evt co) evt)]
         (.timeoutMillis w (:waitMillis cfg))
         (.hold co w)
-        (.dispatch co evt options)))
-  ))
+        (.dispatch co evt options)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

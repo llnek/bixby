@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [ThrowIOE MakeMMap Stringify notnil? ]]
+    :refer [ThrowIOE MakeMMap Stringify ]]
     [czlab.xlib.util.str :refer [nsb]])
 
   (:require
@@ -75,8 +75,7 @@
               src (.emitter event) ]
           (.release src this)
           (.setv impl :timer nil)
-          (.resumeWithError trigger) ))
-  )))
+          (.resumeWithError trigger) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

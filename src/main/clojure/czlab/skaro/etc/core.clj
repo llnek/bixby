@@ -163,6 +163,7 @@
                    (.chain (parseArgs))
                    (.chain (execArgs))))
              (onError [_ e]
+               (.printStackTrace ^Throwable e)
                (Usage)
                (Nihil/apply)))]
     (reset! SKARO-HOME-DIR home)

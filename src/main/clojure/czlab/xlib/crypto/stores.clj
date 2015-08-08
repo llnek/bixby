@@ -49,7 +49,7 @@
    ^KeyStore$PrivateKeyEntry pkey
    ^chars pwd ]
 
-  (when-let [cc (.getCertificateChain pkey) ]
+  (when-some [cc (.getCertificateChain pkey) ]
     (doseq [^Certificate c cc ]
       (.setCertificateEntry keystore (NewAlias) c))
     (.setEntry keystore nm pkey (KeyStore$PasswordProtection. pwd))
@@ -65,7 +65,7 @@
          rc (transient []) ]
     (if (not (.hasMoreElements en))
       (persistent! rc)
-      (if-let [^KeyStore$TrustedCertificateEntry
+      (if-some [^KeyStore$TrustedCertificateEntry
                ce (GetCert keystore (.nextElement en)) ]
         (let [^X509Certificate cert (.getTrustedCertificate ce)
               issuer (.getIssuerX500Principal cert)

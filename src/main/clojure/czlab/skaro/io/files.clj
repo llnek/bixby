@@ -20,7 +20,7 @@
     [czlab.xlib.util.files :refer [Mkdirs]]
     [czlab.xlib.util.core
     :refer [NextLong MakeMMap
-    notnil? test-nestr tryc SubsVar]]
+    test-nestr tryc SubsVar]]
     [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
 
   (:require
@@ -79,8 +79,7 @@
         (getOriginalFileName [_] fnm)
         (getFile [_] f))
 
-      { :typeid (ToKW "czc.skaro.io" "FileEvent") })
-  ))
+      { :typeid (ToKW "czc.skaro.io" "FileEvent") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -103,8 +102,7 @@
                f)
              nil)]
     (when (some? cf)
-      (.dispatch src (IOESReifyEvent co origFname cf action) {}))
-  ))
+      (.dispatch src (IOESReifyEvent co origFname cf action) {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -114,8 +112,8 @@
 
   (log/info "compConfigure: FilePicker: %s" (.id ^Identifiable co))
   (let [cfg (merge (.getv co :dftOptions) cfg0)
-        root (SubsVar (str (:targetFolder cfg)))
-        dest (SubsVar (str (:recvFolder cfg)))
+        root (SubsVar (:targetFolder cfg))
+        dest (SubsVar (:recvFolder cfg))
         mask (str (:fmask cfg))
         c2 (CfgLoopable co cfg) ]
     (log/info "monitoring folder: %s" root)
@@ -137,10 +135,8 @@
                  FileFileFilter/FILE))
         (assoc :recvFolder
                (if (hgl? dest)
-                 (Mkdirs (io/file dest))
-                 nil))))
-    co
-  ))
+                 (Mkdirs (io/file dest))))))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -165,8 +161,7 @@
     (.addObserver mon obs)
     (.setv co :monitor mon)
     (log/info "filePicker's apache io monitor created - ok")
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,10 +169,9 @@
 
   [^Muble co]
 
-  (when-let [mon (.getv co :monitor) ]
+  (when-some [mon (.getv co :monitor) ]
     (log/info "filePicker's apache io monitor starting...")
-    (.start ^FileAlterationMonitor mon)
-  ))
+    (.start ^FileAlterationMonitor mon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

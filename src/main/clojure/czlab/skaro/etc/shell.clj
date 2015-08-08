@@ -50,7 +50,7 @@
       (->> (.getString ver "version")
            (System/setProperty "skaro.version"))
       (I18N/setBase rcb)
-      (when-let [home (io/file (first args))]
+      (when-some [home (io/file (first args))]
         (when (DirRead? home)
           (var-set ok true)
           (apply BootAndRun home rcb (drop 1 args))))

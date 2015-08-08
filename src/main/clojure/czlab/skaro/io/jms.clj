@@ -70,8 +70,7 @@
         (emitter [_] co)
         (getMsg [_] msg))
 
-      { :typeid :czc.skaro.io/JMSEvent })
-  ))
+      {:typeid :czc.skaro.io/JMSEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,8 +96,7 @@
     (-> cfg
         (assoc :jndiPwd (Pwdify p1 pkey))
         (assoc :jmsPwd (Pwdify p2 pkey))))
-    co
-  ))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -126,8 +124,7 @@
           (.setMessageListener (reify MessageListener
                                  (onMessage [_ m] (onMsg co m)))))
       (ThrowIOE "Object not of Destination type"))
-    conn
-  ))
+    conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -155,8 +152,7 @@
           (.createSubscriber s t))
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m))) ))
-    conn
-  ))
+    conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -181,8 +177,7 @@
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m)))))
-    conn
-  ))
+    conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -221,8 +216,7 @@
         (ThrowIOE "Unsupported JMS Connection Factory"))
       (.setv co :conn c)
       (.start c)
-      (IOESStarted co))
-  ))
+      (IOESStarted co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -231,11 +225,10 @@
   [^Muble co]
 
   (log/info "IOESStop: JMS: %s" (.id ^Identifiable co))
-  (when-let [^Connection c (.getv co :conn) ]
+  (when-some [^Connection c (.getv co :conn) ]
     (tryc (.close c))
     (.setv co :conn nil)
-    (IOESStopped co)
-  ))
+    (IOESStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
