@@ -125,9 +125,9 @@
         ComponentRegistry
 
         (has [_ cid]
-          (let [cache (.getv impl :cache)
-                c (get cache cid) ]
-            (some? c)))
+          (-> (.getv impl :cache)
+              (get cid)
+              (some? )))
 
         (lookup [_ cid]
           (let [cache (.getv impl :cache)
@@ -175,7 +175,9 @@
         impl (MakeMMap)
         ctxt (atom (MakeMMap)) ]
 
-    (log/info "PODMeta: %s,%s,%s,%s,%s"
+    (log/info (str "pod-meta: app=%s\n"
+                   "ver=%s\ntype=%s\n"
+                   "key=%s\npath=%s")
               app ver
               podType appid pathToPOD )
     (with-meta

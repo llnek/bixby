@@ -13,10 +13,11 @@ package com.zotohlab.skaro.etc;
 
 import org.projectodd.shimdandy.ClojureRuntimeShim;
 
+
 /**
  * @author kenl
  */
-public class CliMain  {
+public class CliMain {
 
   /**
    * 
@@ -62,6 +63,7 @@ public class CliMain  {
   }
 	
   private ClojureRuntimeShim _shim;
+
 }
 
 

@@ -15,21 +15,19 @@
   czlab.skaro.impl.ext
 
   (:require
-    [czlab.xlib.util.str :refer [ToKW stror lcase nsb strim]]
+    [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
+    [czlab.xlib.util.str :refer [ToKW stror lcase strim]]
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
     [czlab.xlib.i18n.resources :refer [LoadResource]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.wfs :refer [WrapPTask NewJob SimPTask]]
-    [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
     [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
     [czlab.xlib.util.core
     :refer [MakeMMap doto->> juid FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [MakeScheduler]]
-    [czlab.xlib.util.process :refer [Coroutine]]
     [czlab.xlib.util.core
     :refer [NextLong LoadJavaProps SubsVar]]
-    [czlab.xlib.util.meta :refer [MakeObj]]
     [czlab.xlib.dbio.core
     :refer [MakeJdbc MakeMetaCache MakeDbPool MakeSchema]])
 
@@ -94,7 +92,7 @@
   ^String
   [^IOEvent evt]
 
-  (let [^Container c (.. evt emitter container) ]
+  (let [^Container c (.. evt emitter container)]
     (.getAppKey c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,7 +167,7 @@
         dbs (.getv co K_DBPS) ]
     (log/info "container releasing all system resources")
     (when (some? sc) (.dispose sc))
-    (doseq [[k v] (seq dbs) ]
+    (doseq [[k v] dbs]
       (log/debug "shutting down dbpool %s" (name k))
       (.shutdown ^JDBCPool v))))
 
@@ -278,10 +276,10 @@
                 pls (.getv this K_PLUGINS)
                 main (.getv impl :main-app) ]
             (log/info "container stopping all services...")
-            (doseq [[k v] (.iter srg) ]
+            (doseq [[k v] (.iter srg)]
               (.stop ^Startable v))
             (log/info "container stopping all plugins...")
-            (doseq [[k v] (seq pls) ]
+            (doseq [[k v] pls]
               (.stop ^Plugin v))
             (log/info "container stopping...")
             (when (some? main)
@@ -298,7 +296,7 @@
             (doseq [[k v] (.iter srg) ]
               (.dispose ^Disposable v))
             (log/info "container dispose(): all plugins")
-            (doseq [[k v] (seq pls) ]
+            (doseq [[k v] pls]
               (.dispose ^Disposable v))
             (when (some? main)
               (.dispose ^Disposable main))
@@ -607,7 +605,6 @@
                     (.getClass)
                     (.getName)))
       (log/info "initialized app: %s" (.id ^Identifiable co)))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

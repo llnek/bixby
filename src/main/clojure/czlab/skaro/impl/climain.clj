@@ -17,7 +17,6 @@
   (:require
     [czlab.xlib.netty.discarder :refer [MakeDiscardHTTPD]]
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
-    [czlab.xlib.util.ini :refer [ParseInifile]]
     [czlab.xlib.util.io :refer [CloseQ]]
     [czlab.xlib.util.process
     :refer [ProcessPid SafeWait ThreadFunc]]
@@ -118,7 +117,7 @@
       (log/info "http discarder closed. ok")
       ;;(when-not (nil? pid) (io/delete-file pid true))
       (log/info "containers are shutting down...")
-      (log/info "about to stop Skaro...")
+      (log/info "about to stop skaro...")
       (when (some? execv)
         (.stop ^Startable execv))
       (log/info "skaro stopped")

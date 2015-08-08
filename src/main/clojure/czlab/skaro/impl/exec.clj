@@ -15,7 +15,7 @@
   czlab.skaro.impl.exec
 
   (:require
-    [czlab.xlib.util.str :refer [nsb strim hgl? ToKW]]
+    [czlab.xlib.util.str :refer [strim hgl? ToKW]]
     [czlab.xlib.util.mime :refer [SetupCache]]
     [czlab.xlib.util.files :refer [ListFiles Unzip]]
     [czlab.xlib.util.process :refer [SafeWait]]
@@ -88,11 +88,11 @@
     ;; as a application
     (let [^Context
           m (-> (MakePodMeta app ver
-                             cz vid
-                             (io/as-url des))
-                (SynthesizeComponent {:ctx ctx}))
-          ^Muble cx (.getx m) ]
-      (.setv cx K_EXECV execv)
+                             cz vid (io/as-url des))
+                (SynthesizeComponent {:ctx ctx})) ]
+      (-> ^Muble
+          (.getx m)
+          (.setv K_EXECV execv))
       (.reg apps m)
       m)))
 
@@ -174,9 +174,9 @@
 
   (log/info "preparing to stop pods...")
   (let [cs (.getv co K_CONTAINERS) ]
-    (doseq [[k v] (seq cs) ]
+    (doseq [[k v] cs]
       (.stop ^Startable v))
-    (doseq [[k v] (seq cs) ]
+    (doseq [[k v] cs]
       (.dispose ^Disposable v))
     (.setv co K_CONTAINERS {})))
 
@@ -393,8 +393,7 @@
   [co]
 
   (log/info "compInitialize: SystemRegistry: %s" (.id ^Identifiable co))
-  co
-)
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -403,8 +402,7 @@
   [co]
 
   (log/info "compInitialize: AppsRegistry: %s" (.id ^Identifiable co))
-  co
-)
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
