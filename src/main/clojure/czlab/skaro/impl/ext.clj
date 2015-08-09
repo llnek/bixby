@@ -113,9 +113,12 @@
 (defn- makeServiceBlock ""
 
   ^Emitter
-  [^Identifiable bk ctr nm cfg]
+  [^Identifiable bk ctr nm cfg0]
 
   (let [pkey (-> ^Container ctr (.getAppKey))
+        cfg (-> ^Muble bk
+                (.getv :dftOptions)
+                (merge cfg0))
         hid (:handler cfg)
         eid (.id bk)
         obj (MakeEmitter ctr eid nm)

@@ -90,6 +90,7 @@
 
   "Create a generic component registry"
 
+  ^ComponentRegistry
   [regoType regoId ver parObj]
 
   {:pre [(keyword? regoType) (keyword? regoId)]}

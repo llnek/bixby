@@ -263,14 +263,14 @@
         regs (K_REGS cf)
         jmx  (K_JMXMGM cf) ]
 
-    (SetupCache (-> (io/file base DN_CFG
-                             "app/mime.properties")
-                    (io/as-url)))
-
     (log/info "initializing component: ExecVisor: %s" co)
     (test-nonil "conf file: components" comps)
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
+
+    (SetupCache (-> (io/file base DN_CFG
+                             "app/mime.properties")
+                    (io/as-url)))
 
     (System/setProperty "file.encoding" "utf-8")
 
@@ -290,7 +290,7 @@
       (.setv ctx K_COMPS root)
       (.setv ctx K_EXECV co)
 
-      (doto ^ComponentRegistry root
+      (doto root
         (.reg apps)
         (.reg bks))
 
@@ -307,10 +307,9 @@
   ;; url points to block-meta file
   [^URL url]
 
-  (let [impl (MakeMMap)
-        ctxt (atom (MakeMMap)) ]
+  (let [ctxt (atom (MakeMMap))
+        impl (MakeMMap) ]
 
-    ;;(.setf! impl :id (keyword (juid)))
     (with-meta
       (reify
 
@@ -356,16 +355,15 @@
 
   [^EmitMeta block]
 
-  (let [^Muble co block
-        url (.metaUrl block)
-        cfg (ReadEdn url)
-        info (:info cfg)
-        conf (:conf cfg)]
+  (let [url (.metaUrl block)
+        {:keys [info conf]}
+        (ReadEdn url) ]
     (test-nonil "Invalid block-meta file, no info section" info)
     (test-nonil "Invalid block-meta file, no conf section" conf)
     (log/info "initializing EmitMeta: %s" url)
-    (.setv co :dftOptions conf)
-    (.setv co :metaInfo info)
+    (-> ^Muble block
+      (.setv  :dftOptions conf)
+      (.setv  :metaInfo info))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,7 +376,7 @@
 
   (let [^Muble ctx (-> ^Context co (.getx))
         bDir (.getv ctx K_BKSDIR)
-        fs (ListFiles bDir "edn" false) ]
+        fs (ListFiles bDir "edn") ]
     (doseq [^File f fs
            :let [^Muble
                  b (-> (makeBlockMeta (io/as-url f))

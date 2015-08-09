@@ -403,7 +403,7 @@
   (FileUtils/listFiles
     (io/file dir)
     #^"[Ljava.lang.String;"
-    (into-array String exts) (some? recurse?)))
+    (into-array String exts) (true? recurse?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
