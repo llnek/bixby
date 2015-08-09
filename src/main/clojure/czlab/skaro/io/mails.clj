@@ -219,7 +219,7 @@
 
   (let [intv (:intervalSecs cfg)
         port (:port cfg)
-        pkey (:app.pkey cfg)
+        pkey (:appkey cfg)
         pwd (:passwd cfg) ]
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy (assoc! @cpy :intervalMillis

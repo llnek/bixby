@@ -19,10 +19,8 @@
     :refer [ConvLong juid MakeMMap Stringify Bytesify]]
     [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.crypto.core :refer [GenMac]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.net.comms :refer [GetFormFields]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:import
     [com.zotohlab.skaro.runtime ExpiredError AuthError]
@@ -131,18 +129,19 @@
       (do
         (log/debug "request contains no session cookie, invalidate the session")
         (.invalidate mvs))
-      (let [^Muble src netty
+      (let [cookie (str (.getValue ck))
+            ^Muble src netty
             cfg (.getv src :emcfg)
-            cookie (str (.getValue ck))
             pos (.indexOf cookie (int \-))
-            [rc1 rc2] (if (< pos 0)
-                        ["" cookie]
-                        [(.substring cookie 0 pos)
-                            (.substring cookie (+ pos 1) )] ) ]
+            [^String rc1 ^String rc2]
+            (if (< pos 0)
+              ["" cookie]
+              [(.substring cookie 0 pos)
+               (.substring cookie (+ pos 1))] ) ]
         (maybeValidateCookie evt rc1 rc2 (.container netty))
         (log/debug "session attributes = %s" rc2)
         (try
-          (doseq [^String nv (.split ^String rc2 NV_SEP) ]
+          (doseq [^String nv (.split rc2 NV_SEP) ]
             (let [ss (StringUtils/split nv ":" 2)
                   ^String s1 (aget ss 0)
                   ^String s2 (aget ss 1) ]
@@ -178,9 +177,9 @@
     (with-meta
       (reify WebSS
 
+        (removeAttribute [_ k] (.unsetv attrs k) )
         (setAttribute [_ k v] (.setv attrs k v))
         (getAttribute [_ k] (.getv attrs k) )
-        (removeAttribute [_ k] (.unsetv attrs k) )
         (clear [_] (.clear attrs))
         (listAttributes [_] (.seq attrs))
 

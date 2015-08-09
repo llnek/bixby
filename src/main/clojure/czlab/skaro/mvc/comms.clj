@@ -28,7 +28,6 @@
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.netty.io]
-        [czlab.skaro.io.triggers]
         [czlab.skaro.io.http]
         [czlab.skaro.io.netty]
         [czlab.skaro.io.core]

@@ -16,6 +16,8 @@
 
   (:require
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [juid spos? NextLong
     ToJavaInt SubsVar MakeMMap test-cond Stringify]]
@@ -23,26 +25,18 @@
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.net.routes :refer [LoadRoutes]])
 
-  (:require [czlab.xlib.util.logging :as log]
-            [clojure.java.io :as io])
-
   (:use [czlab.xlib.crypto.ssl]
         [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
-        [czlab.skaro.io.webss]
-        [czlab.skaro.io.triggers])
+        [czlab.skaro.io.webss])
 
   (:import
-    [java.util.concurrent ConcurrentHashMap]
     [java.net URL]
-    [java.util List Map HashMap ArrayList]
     [java.io File]
     [com.zotohlab.frwk.crypto PasswordAPI]
-    [com.zotohlab.frwk.util NCMap]
     [javax.servlet.http Cookie HttpServletRequest]
     [java.net HttpCookie]
-    [com.google.gson JsonObject JsonArray]
     [com.zotohlab.frwk.server Emitter Component]
     [com.zotohlab.frwk.io XData]
     [com.zotohlab.frwk.core Versioned Hierarchial
@@ -75,7 +69,7 @@
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
-    (ParseBasicAuth (str (.getHeaderValue evt AUTH)))))
+    (ParseBasicAuth (.getHeaderValue evt AUTH))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -85,19 +79,16 @@
 
   [^Muble co cfg]
 
-  (let [kfile (SubsVar (:serverKey cfg))
-        socto (:sockTimeOut cfg)
-        fv (:sslType cfg)
-        cp (:contextPath cfg)
-        kbs (:limitKB cfg)
-        w (:waitMillis cfg)
-        port (:port cfg)
-        host (:host cfg)
-        tds (:workers cfg)
-        pkey (:app.pkey cfg)
-        ssl (hgl? kfile) ]
+  (let [{:keys [serverKey sockTimeOut
+                sslType contextPath
+                limitKB waitMillis
+                port host workers appkey]}
+        cfg
+        kfile (SubsVar serverKey)
+        ssl (hgl? kfile)  ]
+
     (with-local-vars [cpy (transient cfg)]
-      (when (nil? fv)
+      (when (nil? sslType)
         (var-set cpy (assoc! @cpy :sslType "TLS")))
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
@@ -105,7 +96,7 @@
                              (if ssl 443 80))))
       (when (nil? host)
         (var-set cpy (assoc! @cpy :host "")))
-      (when-not (hgl? cp)
+      (when-not (hgl? contextPath)
         (var-set cpy (assoc! @cpy :contextPath "")))
       (when (hgl? kfile)
         (test-cond "server-key file url"
@@ -114,24 +105,24 @@
                              :serverKey (URL. kfile)))
         (var-set cpy (assoc! @cpy
                              :passwd
-                             (Pwdify (:passwd cfg) pkey))))
-      (when-not (spos? socto)
+                             (Pwdify (:passwd cfg) appkey))))
+      (when-not (spos? sockTimeOut)
         (var-set cpy (assoc! @cpy
                              :sockTimeOut 0)))
       ;; always async *NIO*
       (var-set cpy (assoc! @cpy :async true))
 
-      (when-not (spos? tds)
+      (when-not (spos? workers)
         (var-set cpy (assoc! @cpy
                              :workers 2)))
 
       ;; 4Meg threshold for payload in memory
-      (when-not (spos? kbs)
+      (when-not (spos? limitKB)
         (var-set cpy (assoc! @cpy
                              :limitKB
                              (* 1024 4))))
       ;; 5 mins
-      (when-not (spos? w)
+      (when-not (spos? waitMillis)
         (var-set cpy (assoc! @cpy
                              :waitMillis
                              (* 1000 300))))
@@ -144,10 +135,10 @@
   [^Muble co cfg0]
 
   (log/info "compConfigure: HTTP: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        c2 (HttpBasicConfig co cfg) ]
-    (.setv co :emcfg c2)
-    co))
+  (->> (merge (.getv co :dftOptions) cfg0)
+       (HttpBasicConfig co )
+       (.setv co :emcfg ))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

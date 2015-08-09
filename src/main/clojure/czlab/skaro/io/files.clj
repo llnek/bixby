@@ -17,7 +17,7 @@
   (:require
     [czlab.skaro.io.loops
     :refer [LoopableSchedule LoopableOneLoop CfgLoopable]]
-    [czlab.xlib.util.files :refer [Mkdirs]]
+    [czlab.xlib.util.files :refer [Mkdirs MoveFileToDir]]
     [czlab.xlib.util.core
     :refer [NextLong MakeMMap
     test-nestr tryc SubsVar]]
@@ -39,7 +39,6 @@
     [org.apache.commons.io.filefilter SuffixFileFilter
     PrefixFileFilter
     RegexFileFilter FileFileFilter]
-    [org.apache.commons.io FileUtils]
     [org.apache.commons.io.monitor FileAlterationListener
     FileAlterationListenerAdaptor
     FileAlterationMonitor
@@ -58,8 +57,8 @@
   [co & args]
 
   (let
-    [^File f (nth args 1)
-     fnm (first args)
+    [fnm (first args)
+     f (nth args 1)
      eeid (NextLong)
      impl (MakeMMap) ]
     (with-meta
@@ -71,15 +70,15 @@
 
         FileEvent
 
-        (bindSession [_ s] (.setv impl :ios s))
-        (getSession [_] (.getv impl :ios))
-        (getId [_] eeid)
         (checkAuthenticity [_] false)
+        (bindSession [_ s] )
+        (getSession [_] )
+        (getId [_] eeid)
         (emitter [_] co)
         (getOriginalFileName [_] fnm)
         (getFile [_] f))
 
-      { :typeid (ToKW "czc.skaro.io" "FileEvent") })))
+      {:typeid (ToKW "czc.skaro.io" "FileEvent") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,15 +89,15 @@
   [^Muble co ^File f action]
 
   (let [^czlab.skaro.io.core.EmitAPI src co
-        cfg (.getv co :emcfg)
-        ^File des (:recvFolder cfg)
+        {:keys [recvFolder]}
+        (.getv co :emcfg)
         origFname (.getName f)
         cf (case action
              :FP-CREATED
-             (if (some? des)
+             (if (some? recvFolder)
                (tryc
-                 (FileUtils/moveFileToDirectory f des false)
-                 (io/file des origFname))
+                 (MoveFileToDir f recvFolder false)
+                 (io/file recvFolder origFname))
                f)
              nil)]
     (when (some? cf)
@@ -111,10 +110,12 @@
   [^Muble co cfg0]
 
   (log/info "compConfigure: FilePicker: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        root (SubsVar (:targetFolder cfg))
-        dest (SubsVar (:recvFolder cfg))
-        mask (str (:fmask cfg))
+  (let [{:keys [targetFolder recvFolder fmask]
+         :as cfg}
+        (merge (.getv co :dftOptions) cfg0)
+        root (SubsVar targetFolder)
+        dest (SubsVar recvFolder)
+        mask (str fmask)
         c2 (CfgLoopable co cfg) ]
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))
@@ -145,11 +146,11 @@
   [^Muble co]
 
   (log/info "compInitialize FilePicker: %s" (.id ^Identifiable co))
-  (let [cfg (.getv co :emcfg)
-        obs (FileAlterationObserver. ^File (:targetFolder cfg)
-                                     ^FileFilter (:fmask cfg))
-        intv (:intervalMillis cfg)
-        mon (FileAlterationMonitor. intv)
+  (let [{:keys [targetFolder fmask intervalMillis]}
+        (.getv co :emcfg)
+        obs (FileAlterationObserver. ^File targetFolder
+                                     ^FileFilter fmask)
+        mon (FileAlterationMonitor. intervalMillis)
         lnr (proxy [FileAlterationListenerAdaptor][]
               (onFileCreate [f]
                 (postPoll co f :FP-CREATED))

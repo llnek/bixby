@@ -19,10 +19,8 @@
     [czlab.xlib.util.core :refer [NextLong spos? tryc]]
     [czlab.xlib.util.dates :refer [ParseDate]]
     [czlab.xlib.util.meta :refer [GetCldr]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [hgl? strim]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.core])
@@ -50,9 +48,12 @@
    ^long intv
    func]
 
-  (let [tt (proxy [TimerTask][] (run []
-                                  (tryc (apply func []))))
-        [^Date dw ^long ds] delays]
+  (let [[^Date dw ^long ds]
+        delays
+        tt (proxy [TimerTask][]
+             (run []
+               (tryc (func)))) ]
+
     (when (instance? Date dw)
       (.schedule tm tt dw intv))
     (when (number? ds)
@@ -64,9 +65,12 @@
 
   [^Timer tm delays func]
 
-  (let [tt (proxy [TimerTask][] (run []
-                                  (apply func [])))
-        [^Date dw ^long ds] delays]
+  (let [[^Date dw ^long ds]
+        delays
+        tt (proxy [TimerTask][]
+             (run []
+               (func))) ]
+
     (when (instance? Date dw)
       (.schedule tm tt dw) )
     (when (number? ds)
@@ -78,15 +82,16 @@
 
   [^Muble co]
 
-  (let [cfg (.getv co :emcfg)
-        intv (:intervalMillis cfg)
+  (let [{:keys [intervalMillis
+                delayWhen
+                delayMillis]}
+        (.getv co :emcfg)
         t (.getv co :timer)
-        ds (:delayMillis cfg)
-        dw (:delayWhen cfg)
         func #(LoopableWakeup co) ]
-    (if (number? intv)
-      (config-repeat-timer t [dw ds] intv func)
-      (configTimer t [dw ds] func))
+    (if (number? intervalMillis)
+      (config-repeat-timer t
+                           [delayWhen delayMillis] intervalMillis func)
+      (configTimer t [delayWhen delayMillis] func))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,16 +100,19 @@
 
   [^Muble co cfg]
 
-  (let [intv (:intervalSecs cfg)
-        ds (:delaySecs cfg)
-        dw (:delayWhen cfg) ]
+  (let [{:keys [intervalSecs
+                delaySecs delayWhen]}
+        cfg ]
     (with-local-vars [cpy (transient cfg)]
-      (if (instance? Date dw)
-        (var-set cpy (assoc! @cpy :delayWhen dw))
-        (var-set cpy (assoc! @cpy :delayMillis (* 1000
-                                             (if (spos? ds) ds 3)))))
-      (when (spos? intv)
-        (var-set cpy (assoc! @cpy :intervalMillis (* 1000 intv))))
+      (if (instance? Date delayWhen)
+        (var-set cpy (assoc! @cpy :delayWhen delayWhen))
+        (var-set cpy (assoc! @cpy
+                             :delayMillis
+                             (* 1000
+                                (if (spos? delaySecs) delaySecs 3)))))
+      (when (spos? intervalSecs)
+        (var-set cpy (assoc! @cpy
+                             :intervalMillis (* 1000 intervalSecs))))
       (-> (persistent! @cpy)
           (dissoc :delaySecs)
           (dissoc :intervalSecs)))))
@@ -143,13 +151,15 @@
       (reify
 
         Identifiable
+
         (id [_] eeid)
 
         TimerEvent
+
+        (checkAuthenticity [_] false)
         (bindSession [_ s] nil)
         (getSession [_] nil)
         (getId [_] eeid)
-        (checkAuthenticity [_] false)
         (emitter [_] co)
         (isRepeating [_] true))
 
@@ -162,9 +172,9 @@
   [^Muble co cfg0]
 
   (log/info "compConfigure: RepeatingTimer: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        c2 (CfgLoopable co cfg)]
-    (.setv co :emcfg c2)))
+  (->> (merge (.getv co :dftOptions) cfg0)
+       (CfgLoopable co )
+       (.setv co :emcfg )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -217,13 +227,15 @@
       (reify
 
         Identifiable
+
         (id [_] eeid)
 
         TimerEvent
+
+        (checkAuthenticity [_] false)
         (bindSession [_ s] nil)
         (getSession [_] nil)
         (getId [_] eeid)
-        (checkAuthenticity [_] false)
         (emitter [_] co)
         (isRepeating [_] false))
 
@@ -281,13 +293,16 @@
 
   [^Muble co]
 
-  (let [cfg (.getv co :emcfg)
-        intv (:intervalMillis cfg)
-        loopy (atom true)
-        cl (GetCldr) ]
-    (log/info "Threaded one timer - interval = %s" intv)
+  (let [{:keys [intervalMillis]}
+        (.getv co :emcfg)
+        loopy (atom true) ]
+
+    (log/info "Threaded one timer - interval = %s" intervalMillis)
     (.setv co :loopy loopy)
-    (Coroutine #(while @loopy (LoopableWakeup co intv)) cl)))
+    (Coroutine
+      #(while @loopy
+         (LoopableWakeup co intervalMillis))
+      (GetCldr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -305,18 +320,15 @@
   [^Muble co]
 
   (log/info "IOESStart: ThreadedTimer: %s" (.id ^Identifiable co))
-  (let [cfg (.getv co :emcfg)
-        intv (:intervalMillis cfg)
-        ds (:delayMillis cfg)
-        dw (:delayWhen cfg)
+  (let [{:keys [intervalMillis delayMillis delayWhen]}
+        (.getv co :emcfg)
         loopy (atom true)
-        cl (GetCldr)
         func #(LoopableSchedule co) ]
     (.setv co :loopy loopy)
-    (if (or (number? ds)
-            (instance? Date dw))
-      (configTimer (Timer.) [dw ds] func)
-      (apply func []))
+    (if (or (number? delayMillis)
+            (instance? Date delayWhen))
+      (configTimer (Timer.) [delayWhen delayMillis] func)
+      (func))
     (IOESStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

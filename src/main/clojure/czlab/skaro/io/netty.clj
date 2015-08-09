@@ -17,29 +17,23 @@
   (:require
     [czlab.xlib.net.routes :refer [MakeRouteCracker RouteCracker]]
     [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs]
     [czlab.xlib.util.core
-    :refer [try! Stringify ThrowIOE
-    NextLong MakeMMap ConvLong]]
+    :refer [try! Stringify ThrowIOE NextLong MakeMMap ConvLong]]
     [czlab.skaro.io.webss :refer [MakeWSSession]]
     [czlab.xlib.util.mime :refer [GetCharset]])
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.string :as cs])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
-        [czlab.skaro.io.http]
-        [czlab.skaro.io.triggers])
+        [czlab.skaro.io.http])
 
   (:import
     [java.io Closeable File IOException RandomAccessFile]
     [java.net HttpCookie URI URL InetSocketAddress]
     [java.net SocketAddress InetAddress]
-    [java.util ArrayList List HashMap Map]
-    [com.google.gson JsonObject]
     [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult
     IOSession
@@ -125,7 +119,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- netty-ws-reply ""
+(defn- nettyWSReply ""
 
   [^Channel ch ^WebSockEvent evt src]
 
@@ -165,14 +159,13 @@
   [^Channel ch ^HTTPEvent evt src]
 
   ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
-  (let [^Muble
-        res (.getResultObj evt)
-        cks (csToNetty (.getv res :cookies))
+  (let [^Muble res (.getResultObj evt)
+        cks (.getv res :cookies)
         code (.getv res :code)
-        rsp (MakeHttpReply code)
-        loc (str (.getv res :redirect))
+        loc (.getv res :redirect)
         data (.getv res :data)
-        hdrs (.getv res :hds) ]
+        hdrs (.getv res :hds)
+        rsp (MakeHttpReply code) ]
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
@@ -181,45 +174,45 @@
         (when-not (= "content-length" (lcase nm))
           (doseq [vv (seq vs)]
             (AddHeader rsp nm vv))))
-      (doseq [s cks]
+      (doseq [s (csToNetty cks)]
         (AddHeader rsp HttpHeaders$Names/SET_COOKIE s) )
       (cond
         (and (>= code 300)
              (< code 400))
-        (when-not (cs/blank? loc)
+        (when-not (empty? loc)
           (SetHeader rsp "Location" loc))
 
         (and (>= code 200)
              (< code 300)
              (not= "HEAD" (.method evt)))
         (do
-          (var-set  payload
-                    (condp instance? data
-                      WebAsset
-                      (let [^WebAsset ws data]
-                        (SetHeader rsp "content-type" (.contentType ws))
-                        (var-set raf
-                                 (RandomAccessFile. (.getFile ws)
-                                                    "r"))
-                        (replyOneFile @raf evt rsp))
+          (var-set
+            payload
+            (condp instance? data
+              WebAsset
+              (let [^WebAsset ws data]
+                (SetHeader rsp "content-type" (.contentType ws))
+                (var-set raf
+                         (RandomAccessFile. (.getFile ws) "r"))
+                (replyOneFile @raf evt rsp))
 
-                      File
-                      (do
-                        (var-set raf
-                                 (RandomAccessFile. ^File data "r"))
-                        (replyOneFile @raf evt rsp))
+              File
+              (do
+                (var-set raf
+                         (RandomAccessFile. ^File data "r"))
+                (replyOneFile @raf evt rsp))
 
-                      XData
-                      (let [^XData xs data]
-                        (var-set clen (.size xs))
-                        (ChunkedStream. (.stream xs)))
+              XData
+              (let [^XData xs data]
+                (var-set clen (.size xs))
+                (ChunkedStream. (.stream xs)))
 
-                      ;;else
-                      (if-not (nil? data)
-                        (let [xs (XData. data)]
-                          (var-set clen (.size xs))
-                          (ChunkedStream. (.stream xs)))
-                        nil)))
+              ;;else
+              (if-not (nil? data)
+                (let [xs (XData. data)]
+                  (var-set clen (.size xs))
+                  (ChunkedStream. (.stream xs)))
+                nil)))
           (if (and (some? @payload)
                    (some? @raf))
             (var-set clen (.length ^RandomAccessFile @raf))))
@@ -260,7 +253,7 @@
 
     (resumeWithResult [_ res]
       (if (instance? WebSockEvent evt)
-        (try! (netty-ws-reply ch evt src) )
+        (try! (nettyWSReply ch evt src) )
         (try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
@@ -319,9 +312,11 @@
         (clear [_] (.clear impl))
 
         Identifiable
+
         (id [_] eeid)
 
         WebSockEvent
+
         (bindSession [_ s] (.setv impl :ios s))
         (getSession [_] (.getv impl :ios))
         (getSocket [_] ch)
@@ -343,10 +338,10 @@
 
   [info]
 
-  (let [v (str (GetInHeader info "Cookie"))
+  (let [v (GetInHeader info "Cookie")
         cc (URLCodec. "utf-8")
         cks (if (hgl? v)
-              (CookieDecoder/decode v)
+              (CookieDecoder/decode ^String v)
               []) ]
     (with-local-vars [rc (transient {})]
       (doseq [^Cookie c  cks]
@@ -384,9 +379,11 @@
         (clear [_] (.clear impl))
 
         Identifiable
+
         (id [_] eeid)
 
         HTTPEvent
+
         (bindSession [_ s] (.setv impl :ios s))
         (getSession [_] (.getv impl :ios))
         (getId [_] eeid)
@@ -457,11 +454,12 @@
                 ^czlab.skaro.io.core.WaitEventHolder
                 wevt (.release co this) ]
             (cond
-              (and (>= code 200)(< code 400)) (.handleResult mvs this res)
+              (and (>= code 200)
+                   (< code 400))
+              (.handleResult mvs this res)
               :else nil)
             (when (some? wevt)
-              (.resumeOnResult wevt res))))
-      )
+              (.resumeOnResult wevt res)))))
 
       {:typeid :czc.skaro.io/HTTPEvent })))
 
@@ -510,9 +508,10 @@
   [^Muble co cfg0]
 
   (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        c2 (HttpBasicConfig co cfg) ]
-    (.setv co :emcfg c2)))
+  (->> (merge (.getv co :dftOptions) cfg0)
+       (HttpBasicConfig co )
+       (.setv co :emcfg ))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -527,21 +526,21 @@
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
-            cfg (.getv src :emcfg)
-            ts (:waitMillis cfg)
+            {:keys [waitMillis]}
+            (.getv src :emcfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [^czlab.skaro.io.core.WaitEventHolder
                 w
                 (-> (MakeNettyTrigger ch evt co)
                     (MakeAsyncWaitHolder  evt)) ]
-            (.timeoutMillis w ts)
+            (.timeoutMillis w waitMillis)
             (.hold co w)))
         (.dispatch co evt {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-netty ""
+(defn- initNetty ""
 
   [^Muble co]
 
@@ -550,7 +549,7 @@
         disp (msgDispatcher co co options)
         bs (InitTCPServer
              (ReifyPipeCfgtor
-               (fn [p options]
+               (fn [p _]
                  (-> ^ChannelPipeline p
                      (.addBefore (ErrorSinkFilter/getName)
                                  "MsgDispatcher"
@@ -566,9 +565,8 @@
   [^Muble co]
 
   (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
-  (let [cfg (.getv co :emcfg)
-        host (str (:host cfg))
-        port (:port cfg)
+  (let [{:keys [host port]}
+        (.getv co :emcfg)
         nes (.getv co :netty)
         bs (:bootstrap nes)
         ch (StartServer bs host port) ]
@@ -594,7 +592,7 @@
   [^Muble co]
 
   (log/info "compInitialize: NettyIO: %s" (.id ^Identifiable co))
-  (init-netty co))
+  (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

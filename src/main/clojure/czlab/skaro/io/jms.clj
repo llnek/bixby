@@ -18,10 +18,8 @@
     [czlab.xlib.util.core
     :refer [NextLong ThrowIOE MakeMMap juid tryc]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [hgl? ]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.core])
@@ -63,9 +61,9 @@
 
         JMSEvent
 
-        (bindSession [_ s] (.setv impl :ios s))
-        (getSession [_] (.getv impl :ios))
         (checkAuthenticity [_] false)
+        (bindSession [_ s] )
+        (getSession [_] )
         (getId [_] eeid)
         (emitter [_] co)
         (getMsg [_] msg))
@@ -88,14 +86,13 @@
   [^Muble co cfg0]
 
   (log/info "compConfigure: JMS: %s" (.id ^Identifiable co))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        pkey (:app.pkey cfg)
-        p1 (:jndiPwd cfg)
-        p2 (:jmsPwd cfg) ]
+  (let [{:keys [appkey jndiPwd jmsPwd]
+         :as cfg}
+        (merge (.getv co :dftOptions) cfg0)]
     (.setv co :emcfg
-    (-> cfg
-        (assoc :jndiPwd (Pwdify p1 pkey))
-        (assoc :jmsPwd (Pwdify p2 pkey))))
+           (-> cfg
+               (assoc :jndiPwd (Pwdify jndiPwd appkey))
+               (assoc :jmsPwd (Pwdify jmsPwd appkey))))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,14 +105,14 @@
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [cfg (.getv co :emcfg)
-        ^String des (:destination cfg)
-        jp (str (:jmsPwd cfg))
-        ^String ju (:jmsUser cfg)
-        c (.lookup ctx des)
+  (let [{:keys [destination jmsPwd jmsUser]}
+        (.getv co :emcfg)
+        c (.lookup ctx ^String destination)
         ^Connection
-        conn (if (hgl? ju)
-               (.createConnection cf ju (if (hgl? jp) jp nil))
+        conn (if (hgl? jmsUser)
+               (.createConnection cf
+                                  ^String jmsUser
+                                  ^String (if (hgl? jmsPwd) jmsPwd nil))
                (.createConnection cf)) ]
     (if (instance? Destination c)
       ;;TODO ? ack always ?
@@ -136,18 +133,19 @@
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [cfg (.getv co :emcfg)
-        des (str (:destination cfg))
-        ju (str (:jmsUser cfg))
-        jp (str (:jmsPwd cfg))
-        conn (if (hgl? ju)
-               (.createTopicConnection cf ju (if (hgl? jp) jp nil))
+  (let [{:keys [destination jmsUser
+                durable jmsPwd]}
+        (.getv co :emcfg)
+        conn (if (hgl? jmsUser)
+               (.createTopicConnection cf
+                                       ^String jmsUser
+                                       ^String (if (hgl? jmsPwd) jmsPwd nil))
                (.createTopicConnection cf))
         s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
-        t (.lookup ctx des) ]
+        t (.lookup ctx ^String destination) ]
     (when-not (instance? Topic t)
       (ThrowIOE "Object not of Topic type"))
-    (-> (if (:durable cfg)
+    (-> (if durable
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
         (.setMessageListener (reify MessageListener
@@ -163,15 +161,15 @@
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [cfg (.getv co :emcfg)
-        des (str (:destination cfg))
-        ju (str (:jmsUser cfg))
-        jp (str (:jmsPwd cfg))
-        conn (if (hgl? ju)
-               (.createQueueConnection cf ju (if (hgl? jp) jp nil))
+  (let [{:keys [destination jmsUser jmsPwd]}
+        (.getv co :emcfg)
+        conn (if (hgl? jmsUser)
+               (.createQueueConnection cf
+                                       ^String jmsUser
+                                       ^String (if (hgl? jmsPwd) jmsPwd nil))
                (.createQueueConnection cf))
         s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
-        q (.lookup ctx des) ]
+        q (.lookup ctx ^String destination) ]
     (when-not (instance? Queue q)
       (ThrowIOE "Object not of Queue type"))
     (-> (.createReceiver s ^Queue q)
@@ -186,26 +184,24 @@
   [^Muble co]
 
   (log/info "IOESStart: JMS: %s" (.id ^Identifiable co))
-  (let [cfg (.getv co :emcfg)
-        cf (str (:contextFactory cfg))
-        ju (str (:jndiUser cfg))
-        jp (str (:jndiPwd cfg))
-        pl (:providerUrl cfg)
+  (let [{:keys [contextFactory providerUrl
+                jndiUser jndiPwd connFactory]}
+        (.getv co :emcfg)
         vars (Hashtable.) ]
 
-    (when (hgl? cf)
-      (.put vars Context/INITIAL_CONTEXT_FACTORY cf))
+    (when (hgl? contextFactory)
+      (.put vars Context/INITIAL_CONTEXT_FACTORY contextFactory))
 
-    (when (hgl? pl)
-      (.put vars Context/PROVIDER_URL pl))
+    (when (hgl? providerUrl)
+      (.put vars Context/PROVIDER_URL providerUrl))
 
-    (when (hgl? ju)
-      (.put vars "jndi.user" ju)
-      (when (hgl? jp)
-        (.put vars "jndi.password" jp)))
+    (when (hgl? jndiUser)
+      (.put vars "jndi.user" jndiUser)
+      (when (hgl? jndiPwd)
+        (.put vars "jndi.password" jndiPwd)))
 
     (let [ctx (InitialContext. vars)
-          obj (->> (str (:connFactory cfg))
+          obj (->> (str connFactory)
                    (.lookup ctx))
           c (condp instance? obj
               QueueConnectionFactory (inizQueue co ctx obj)

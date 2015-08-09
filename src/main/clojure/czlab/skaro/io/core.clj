@@ -16,12 +16,10 @@
 
   (:require
     [czlab.xlib.util.str :refer [ToKW stror strim]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
     :refer [NextLong Cast? ThrowBadArg
     trycr ThrowIOE MakeMMap ConvToJava tryc]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
@@ -31,14 +29,16 @@
 
   (:import
     [com.zotohlab.skaro.core Context Container Muble]
+    [java.util.concurrent ConcurrentHashMap]
     [com.zotohlab.skaro.etc CliMain]
+    [com.zotohlab.skaro.io IOEvent]
     [com.zotohlab.frwk.server Component
     Emitter
     ServiceHandler Service]
-    [java.util.concurrent ConcurrentHashMap]
+    [java.util Timer TimerTask]
+    [com.zotohlab.frwk.io XData]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Identifiable Disposable Startable]
-    [java.util Map]
     [com.zotohlab.wflow WorkFlow Job Nihil Activity]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -215,12 +215,12 @@
     (dispose [_] )
 
     ServiceHandler
-    (handle [_ arg options]
-      (let [^Job j (Cast? Job options)
+    (handle [_ arg more]
+      (let [^Job j (Cast? Job more)
             w (ToWorkFlow arg)]
         (if (some? j)
           (log/debug "job##%s is being serviced by %s"  (.id j) service)
-          (ThrowBadArg "Expected Job, got " (class options)))
+          (ThrowBadArg "Expected Job, got " (class more)))
         (.setv j :wflow w)
         (-> ^Emitter service
             (.container)
@@ -228,7 +228,8 @@
             (.run (->> (.reify (Nihil/apply) j)
                        (.reify (.startWith w)))))))
 
-    (handleError [_ e])))
+    (handleError [_ e]
+      (log/error e ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -297,9 +298,7 @@
                 v (.getv impl kw) ]
             (or v (get cfg kw))))
 
-        ;;(setv [_ a v] (.setv impl a v) )
         (unsetv [_ a] (.unsetv impl a) )
-        ;;(getv [_ a] (.getv impl a) )
         (seq [_])
         (clear [_] (.clear impl))
         (toEDN [_ ] (.toEDN impl))
@@ -365,6 +364,52 @@
               (.put backlog wid wevt)))) )
 
       { :typeid emId })))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MakeAsyncWaitHolder
+
+  "Create a async wait wrapper"
+
+  [^czlab.skaro.io.core.AsyncWaitTrigger trigger
+   ^IOEvent event ]
+
+  (let [impl (MakeMMap) ]
+    (reify
+
+      Identifiable
+
+      (id [_] (.getId event))
+
+      WaitEventHolder
+
+      (resumeOnResult [this res]
+        (let [^Timer tm (.getv impl :timer)
+              ^czlab.skaro.io.core.EmitAPI
+              src (.emitter event) ]
+          (when (some? tm) (.cancel tm))
+          (.release src this)
+          ;;(.mm-s impl :result res)
+          (.resumeWithResult trigger res)))
+
+      (timeoutMillis [me millis]
+        (let [tm (Timer. true) ]
+          (.setv impl :timer tm)
+          (.schedule
+            tm
+            (proxy [TimerTask][]
+              (run [] (.onExpiry me))) ^long millis)))
+
+      (timeoutSecs [this secs]
+        (timeoutMillis this (* 1000 secs)))
+
+      (onExpiry [this]
+        (let [^czlab.skaro.io.core.EmitAPI
+              src (.emitter event) ]
+          (.release src this)
+          (.setv impl :timer nil)
+          (.resumeWithError trigger) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -16,14 +16,12 @@
 
   (:require
     [czlab.xlib.util.str :refer [lcase ucase hgl? strim]]
-    [czlab.xlib.util.core
-    :refer [juid tryc spos?
-    NextLong ToJavaInt try! MakeMMap test-cond Stringify]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
+    [clojure.java.io :as io]
+    [czlab.xlib.util.core
+    :refer [juid tryc spos? NextLong
+    ToJavaInt try! MakeMMap test-cond Stringify]]
+    [czlab.xlib.crypto.codec :refer [Pwdify]])
 
   (:use [czlab.xlib.crypto.ssl]
         [czlab.xlib.net.routes]
@@ -31,21 +29,16 @@
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
         [czlab.skaro.io.http]
-        [czlab.skaro.io.webss]
-        [czlab.skaro.io.triggers])
+        [czlab.skaro.io.webss])
 
   (:import
     [org.eclipse.jetty.server Server Connector ConnectionFactory]
-    [java.util.concurrent ConcurrentHashMap]
     [java.net URL]
     [jregex Matcher Pattern]
     [org.apache.commons.io IOUtils]
-    [java.util List Map HashMap ArrayList]
     [java.io File]
-    [com.zotohlab.frwk.util NCMap]
     [javax.servlet.http Cookie HttpServletRequest]
     [java.net HttpCookie]
-    [com.google.gson JsonObject]
     [org.eclipse.jetty.continuation Continuation
     ContinuationSupport]
     [com.zotohlab.frwk.server Component Emitter]
@@ -185,7 +178,8 @@
   (let [cfg (merge (.getv co :dftOptions) cfg0)]
     (.setv co :emcfg
               (HttpBasicConfig co (dissoc cfg K_APP_CZLR)))
-    (.setv co K_APP_CZLR (get cfg K_APP_CZLR))))
+    (.setv co K_APP_CZLR (get cfg K_APP_CZLR))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -222,20 +216,16 @@
         ^Muble
         ctr (.parent ^Hierarchial co)
         rts (MaybeLoadRoutes co)
-        cfg (.getv co :emcfg)
-        keyfile (:serverKey cfg)
-        ^String host (:host cfg)
-        port (:port cfg)
-        pwdObj (:passwd cfg)
-        ws (:workers cfg)
+        {:keys [serverKey host port passwd workers]}
+        (.getv co :emcfg)
          ;;q (QueuedThreadPool. (if (pos? ws) ws 8))
         svr (Server.)
-        cc  (if (nil? keyfile)
+        cc  (if (nil? serverKey)
               (doto (JettyUtils/makeConnector svr conf)
                 (.setPort port)
                 (.setIdleTimeout (int 30000)))
-              (cfgHTTPS svr port keyfile
-                        (if (nil? pwdObj) nil (str pwdObj))
+              (cfgHTTPS svr port serverKey
+                        (if (nil? passwd) nil (str passwd))
                         (doto conf
                           (.setSecureScheme "https")
                           (.setSecurePort port)))) ]
@@ -271,22 +261,20 @@
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
             wss (MakeWSSession co ssl)
-            cfg (.getv co :emcfg)
-            wm (:waitMillis cfg)
+            {:keys [waitMillis]}
+            (.getv co :emcfg)
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
         (.bindSession evt wss)
-        ;;(.setTimeout ct wm)
         (let [^czlab.skaro.io.core.WaitEventHolder
-              w (MakeAsyncWaitHolder (makeServletTrigger req
-                                                         rsp co)
-                                     evt)
-              ^czlab.skaro.io.core.EmitAPI src co]
-          (.timeoutMillis w wm)
-          (.hold src w)
-          (.dispatch src evt {:router (.getHandler ri)
-                              :params (merge {} pms)
-                              :template (.getTemplate ri) })))
+              w (MakeAsyncWaitHolder
+                  (makeServletTrigger req rsp co) evt) ]
+          (.timeoutMillis w waitMillis)
+          (doto ^czlab.skaro.io.core.EmitAPI co
+            (.hold w)
+            (.dispatch evt {:router (.getHandler ri)
+                            :params (merge {} pms)
+                            :template (.getTemplate ri) }))))
 
       :else
       (do
@@ -312,29 +300,31 @@
   [^Muble co]
 
   (log/info "IOESStart: JettyIO: %s" (.id ^Identifiable co))
-  (let [^Muble
-        ctr (.parent ^Hierarchial co)
+  (let [^Muble ctr (.parent ^Hierarchial co)
         ^Server jetty (.getv co :jetty)
         ^File app (.getv ctr K_APPDIR)
-        ^File rcpath (io/file app DN_PUBLIC)
+        rcpath (io/file app DN_PUBLIC)
         rcpathStr (io/as-url  rcpath)
-        cfg (.getv co :emcfg)
-        cp (:contextPath cfg)
+        {:keys [contextPath]}
+        (.getv co :emcfg)
+        myHandler
+        (proxy [AbstractHandler] []
+          (handle [_ _ req rsp]
+            (serviceJetty co req rsp)))
         ctxs (ContextHandlerCollection.)
         c2 (ContextHandler.)
         c1 (ContextHandler.)
-        r1 (ResourceHandler.)
-        myHandler (proxy [AbstractHandler] []
-                    (handle [target baseReq req rsp]
-                      (serviceJetty co req rsp))) ]
+        r1 (ResourceHandler.) ]
+
     ;; static resources are based from resBase, regardless of context
     (-> r1
         (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
     (.setHandler c1 r1)
-    (.setClassLoader c2 ^ClassLoader (.getv co K_APP_CZLR))
-    (.setContextPath c2 (strim cp))
-    (.setHandler c2 myHandler)
+    (doto c2
+      (.setClassLoader ^ClassLoader (.getv co K_APP_CZLR))
+      (.setContextPath (strim contextPath))
+      (.setHandler myHandler))
     (.setHandlers ctxs (into-array Handler [c1 c2]))
     (.setHandler jetty ctxs)
     (.start jetty)

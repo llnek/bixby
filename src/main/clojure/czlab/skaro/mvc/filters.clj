@@ -28,7 +28,6 @@
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io]
-        [czlab.skaro.io.triggers]
         [czlab.skaro.io.netty]
         [czlab.skaro.io.core]
         [czlab.skaro.core.sys]

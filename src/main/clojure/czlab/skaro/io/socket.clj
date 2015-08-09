@@ -20,10 +20,8 @@
     [czlab.xlib.util.process :refer [Coroutine]]
     [czlab.xlib.util.meta :refer [GetCldr]]
     [czlab.xlib.util.io :refer [CloseQ]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [strim hgl?]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.io.core]
         [czlab.skaro.core.sys])
@@ -50,13 +48,15 @@
       (reify
 
         Identifiable
+
         (id [_] eeid)
 
         SocketEvent
-        (bindSession [_ s] nil)
-        (getSession [_] nil)
-        (getId [_] eeid)
+
         (checkAuthenticity [_] false)
+        (bindSession [_ s] )
+        (getSession [_] )
+        (getId [_] eeid)
         (getSockOut [_] (.getOutputStream soc))
         (getSockIn [_] (.getInputStream soc))
         (emitter [_] co)
@@ -72,18 +72,21 @@
 
   (log/info "compConfigure: SocketIO: %s" (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
-        tout (:timeoutMillis cfg)
-        blog (:backlog cfg) ]
+
+  (let [{:keys [timeoutMillis backlog host]
+         :as cfg}
+        (merge (.getv co :dftOptions) cfg0) ]
+
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy (assoc! @cpy :backlog
-                           (if (spos? blog) blog 100)))
+                           (if (spos? backlog) backlog 100)))
       (var-set cpy (assoc! @cpy
-                           :host (strim (:host cfg))))
+                           :host (strim host)))
       (var-set cpy (assoc! @cpy
                            :timeoutMillis
-                           (if (spos? tout) tout 0)))
-      (.setv co :emcfg (persistent! @cpy)))))
+                           (if (spos? timeoutMillis) timeoutMillis 0)))
+      (.setv co :emcfg (persistent! @cpy)))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -92,10 +95,8 @@
   [^Muble co]
 
   (log/info "CompInitialize: SocketIO: %s" (.id ^Identifiable co))
-  (let [cfg (.getv co :emcfg)
-        backlog (:backlog cfg)
-        host (:host cfg)
-        port (:port cfg)
+  (let [{:keys [backlog host port]}
+        (.getv co :emcfg)
         ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost))

@@ -227,6 +227,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn MoveFileToDir
+
+  "Move a file to the target folder"
+
+  [^File fp ^File dir & [mkdir]]
+
+  (FileUtils/moveFileToDirectory
+    fp
+    dir
+    (if (false? mkdir) false true)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn CopyFile
 
   "Copy a file"

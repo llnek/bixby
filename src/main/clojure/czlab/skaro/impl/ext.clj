@@ -127,8 +127,8 @@
     (log/info "config params =\n%s" cfg)
     (SynthesizeComponent obj
                          {:ctx ctr
-                          :props (assoc cfg :app.pkey pkey) })
-    ;;(.setf! obj :app.pkey pkey)
+                          :props (assoc cfg :appkey pkey) })
+    ;;(.setf! obj :appkey pkey)
     (log/info "emitter synthesized - ok. handler => %s" hid)
     obj))
 
