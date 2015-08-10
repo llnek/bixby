@@ -532,7 +532,7 @@
         db (nth args 2)
         env (ReadEdn (io/file appDir CFG_ENV_CF))
         app (ReadEdn (io/file appDir CFG_APP_CF))
-        pkey (-> (str (get-in app [:info :vendor]))
+        pkey (-> (str (get-in app [:info :disposition]))
                  (.toCharArray))
         cfg ((keyword db) (get-in env [:databases :jdbc])) ]
     (when (some? cfg)

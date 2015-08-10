@@ -172,7 +172,7 @@
 
   {:pre [(map? info)]}
 
-  (let [{:keys [vendor version main]
+  (let [{:keys [disposition version main]
          :or {main "noname"
               version "1.0"}}
         info
@@ -184,7 +184,7 @@
                    "ver=%s\ntype=%s\n"
                    "key=%s\npath=%s")
               app version
-              main vendor pathToPOD )
+              main disposition pathToPOD )
     (with-meta
       (reify
 
@@ -215,7 +215,7 @@
 
         (srcUrl [_] pathToPOD)
         (moniker [_] app)
-        (appKey [_] vendor)
+        (appKey [_] disposition)
         (typeof [_] main))
 
       {:typeid (ToKW "czc.skaro.impl" "PODMeta") })))
