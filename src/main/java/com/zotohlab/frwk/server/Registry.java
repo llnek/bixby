@@ -24,5 +24,7 @@ public interface Registry  {
 
   public void reg(Object c);
 
+  public Iterable<?> iter();
+ 
 }
 

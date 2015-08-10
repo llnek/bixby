@@ -31,7 +31,7 @@
     [com.zotohlab.skaro.core Muble Context ConfigError]
     [com.zotohlab.frwk.core Versioned
     Identifiable Hierarchial]
-    [com.zotohlab.skaro.runtime RegoAPI PODMeta]
+    [com.zotohlab.skaro.runtime PODMeta]
     [com.zotohlab.skaro.loaders AppClassLoader]
     [com.zotohlab.frwk.util CU]
     [com.zotohlab.frwk.i18n I18N]
@@ -153,8 +153,6 @@
               (throw (RegistryError. (RStr (I18N/getBase)
                                            "skaro.dup.cmp" cid))))
             (.setv impl :cache (assoc cache cid c))))
-
-        RegoAPI
 
         (iter [_]
           (let [cache (.getv impl :cache) ]

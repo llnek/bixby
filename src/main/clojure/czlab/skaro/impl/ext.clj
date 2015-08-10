@@ -66,7 +66,7 @@
     [com.zotohlab.frwk.i18n I18N]
     [java.net URL]
     [java.io File StringWriter]
-    [com.zotohlab.skaro.runtime AppMain RegoAPI PODMeta]
+    [com.zotohlab.skaro.runtime AppMain PODMeta]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Morphable Activable
     Startable Disposable Identifiable]
@@ -248,7 +248,7 @@
         Startable
 
         (start [this]
-          (let [^RegoAPI
+          (let [^Registry
                 srg (.getv impl K_SVCS)
                 main (.getv impl :main-app) ]
             (log/info "container starting all services...")
@@ -260,7 +260,7 @@
               (.start ^Startable main))))
 
         (stop [this]
-          (let [^RegoAPI
+          (let [^Registry
                 srg (.getv impl K_SVCS)
                 pls (.getv this K_PLUGINS)
                 main (.getv impl :main-app) ]
@@ -277,7 +277,7 @@
         Disposable
 
         (dispose [this]
-          (let [^RegoAPI
+          (let [^Registry
                 srg (.getv impl K_SVCS)
                 pls (.getv this K_PLUGINS)
                 main (.getv impl :main-app) ]
