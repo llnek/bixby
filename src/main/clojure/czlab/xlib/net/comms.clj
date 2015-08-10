@@ -15,12 +15,12 @@
   czlab.xlib.net.comms
 
   (:require
+    [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
     [czlab.xlib.util.str
              :refer [lcase hgl? strim Embeds? HasNocase?]]
-    [czlab.xlib.util.core :refer [ThrowIOE]]
+    [czlab.xlib.util.core :refer [ThrowIOE Bytesify]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.mime :refer [GetCharset]])
-
-  (:require [czlab.xlib.util.logging :as log])
 
   (:import
     [java.security.cert X509Certificate CertificateException]
@@ -28,6 +28,7 @@
          TrustManagerFactorySpi TrustManager
          ManagerFactoryParameters]
     [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.codec.binary Hex]
     [java.security KeyStoreException KeyStore
          InvalidAlgorithmParameterException]
     [com.zotohlab.tpcl.apache ApacheHttpClient ]
@@ -104,6 +105,26 @@
   [^String s]
 
   (StringUtils/stripStart (StringUtils/stripEnd s ";,") ";,"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GenerateNonce ""
+
+  [ & [len] ]
+
+  (-> (CreateRandomString (long (or len 18)))
+      (Bytesify )
+      (Hex/encodeHexString )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn GenerateCsrf ""
+
+  [ & [len] ]
+
+  (-> (CreateRandomString (long (or len 18)))
+      (Bytesify )
+      (Hex/encodeHexString )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -19,7 +19,7 @@
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
     :refer [NextLong Cast? ThrowBadArg
-    trycr ThrowIOE MakeMMap ConvToJava tryc]])
+    trycr ThrowIOE MubleObj ConvToJava tryc]])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
@@ -33,7 +33,7 @@
     [com.zotohlab.skaro.etc CliMain]
     [com.zotohlab.skaro.io IOEvent]
     [com.zotohlab.frwk.server Component
-    Emitter
+    Emitter EventHolder EventTrigger
     ServiceHandler Service]
     [java.util Timer TimerTask]
     [com.zotohlab.frwk.io XData]
@@ -43,44 +43,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol EmitAPI
-
-  "Emitter API"
-
-  (dispatch [_ evt options] )
-
-  (enabled? [_] )
-  (active? [_] )
-
-  (suspend [_] )
-  (resume [_] )
-
-  (release [_ wevt] )
-  (hold [_ wevt] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol WaitEventHolder
-
-  "Wrapper to hold an event"
-
-  (timeoutMillis [_ millis] )
-  (resumeOnResult [_ res] )
-  (onExpiry [_])
-  (timeoutSecs [_ secs] ) )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol AsyncWaitTrigger
-
-  "Trigger to rerun a waiting event"
-
-  (resumeWithResult [_ res] )
-  (resumeWithError [_] )
-  (emitter [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -278,8 +240,8 @@
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
-        impl (MakeMMap)
-        ctxt (atom (MakeMMap)) ]
+        impl (MubleObj)
+        ctxt (atom (MubleObj)) ]
 
     (with-meta
       (reify
@@ -312,11 +274,6 @@
 
         (parent [_] parObj)
 
-        Emitter
-
-        (container [this] (.parent this))
-        (getConfig [_]
-          (.getv impl :emcfg))
 
         Disposable
 
@@ -339,10 +296,14 @@
 
         (handler [_] (.getv impl :pipe))
 
-        EmitAPI
+        Emitter
 
-        (enabled? [_] (if (false? (.getv impl :enabled)) false true ))
-        (active? [_] (if (false? (.getv impl :active)) false true))
+        (container [this] (.parent this))
+        (getConfig [_]
+          (.getv impl :emcfg))
+
+        (isEnabled [_] (not (false? (.getv impl :enabled))))
+        (isActive [_] (not (false? (.getv impl :active))))
 
         (suspend [this] (IOESSuspend this))
         (resume [this] (IOESResume this))
@@ -368,25 +329,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeAsyncWaitHolder
+(defn AsyncWaitHolder
 
   "Create a async wait wrapper"
 
-  [^czlab.skaro.io.core.AsyncWaitTrigger trigger
+  ^EventHolder
+  [^EventTrigger trigger
    ^IOEvent event ]
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MubleObj) ]
     (reify
 
-      Identifiable
+      EventHolder
 
       (id [_] (.getId event))
 
-      WaitEventHolder
-
       (resumeOnResult [this res]
         (let [^Timer tm (.getv impl :timer)
-              ^czlab.skaro.io.core.EmitAPI
               src (.emitter event) ]
           (when (some? tm) (.cancel tm))
           (.release src this)
@@ -399,14 +358,11 @@
           (.schedule
             tm
             (proxy [TimerTask][]
-              (run [] (.onExpiry me))) ^long millis)))
-
-      (timeoutSecs [this secs]
-        (timeoutMillis this (* 1000 secs)))
+              (run [] (.onExpiry me)))
+            (long millis))))
 
       (onExpiry [this]
-        (let [^czlab.skaro.io.core.EmitAPI
-              src (.emitter event) ]
+        (let [src (.emitter event) ]
           (.release src this)
           (.setv impl :timer nil)
           (.resumeWithError trigger) )))))

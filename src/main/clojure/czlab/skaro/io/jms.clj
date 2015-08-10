@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong ThrowIOE MakeMMap juid tryc]]
+    :refer [NextLong ThrowIOE MubleObj juid tryc]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [hgl? ]])
@@ -28,6 +28,7 @@
     [java.util Hashtable Properties ResourceBundle]
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.core Identifiable]
+    [com.zotohlab.frwk.server Emitter]
     [javax.jms Connection ConnectionFactory
     Destination Connection
     Message MessageConsumer MessageListener Queue
@@ -51,7 +52,7 @@
   (log/info "IOESReifyEvent: JMS: %s" (.id ^Identifiable co))
   (let [msg (first args)
         eeid (NextLong)
-        impl (MakeMMap)]
+        impl (MubleObj)]
     (with-meta
       (reify
 
@@ -74,7 +75,7 @@
 ;;
 (defn- onMsg ""
 
-  [^czlab.skaro.io.core.EmitAPI co msg]
+  [^Emitter co msg]
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (IOESReifyEvent co msg) {} ))

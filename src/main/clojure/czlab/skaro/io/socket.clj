@@ -28,6 +28,7 @@
 
   (:import
     [java.net InetAddress ServerSocket Socket]
+    [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.frwk.core Identifiable]
     [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io SocketEvent]))
@@ -109,7 +110,7 @@
 ;;
 (defn- sockItDown ""
 
-  [^czlab.skaro.io.core.EmitAPI co ^Socket soc]
+  [^Emitter co ^Socket soc]
 
   (.dispatch co (IOESReifyEvent co soc) {} ))
 

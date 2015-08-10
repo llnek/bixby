@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.scheduler :refer [NulScheduler MakeScheduler]]
-    [czlab.xlib.util.core :refer [Cast? MakeMMap NextLong]])
+    [czlab.xlib.util.core :refer [Cast? MubleObj NextLong]])
 
   (:require [czlab.xlib.util.logging :as log])
 
@@ -49,7 +49,7 @@
   [^ServerLike par & [evt]]
 
   (let [^Event evt (or evt (NonEvent. par))
-        impl (MakeMMap)
+        impl (MubleObj)
         jid (NextLong) ]
     (reify
 

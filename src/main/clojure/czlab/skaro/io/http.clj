@@ -20,7 +20,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [juid spos? NextLong
-    ToJavaInt SubsVar MakeMMap test-cond Stringify]]
+    ToJavaInt SubsVar MubleObj test-cond Stringify]]
     [czlab.xlib.net.comms :refer [ParseBasicAuth]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.net.routes :refer [LoadRoutes]])
@@ -149,7 +149,7 @@
   ^WebSockResult
   [co]
 
-  (let [impl (MakeMMap {:binary false
+  (let [impl (MubleObj {:binary false
                         :data nil}) ]
     (reify
 
@@ -178,7 +178,7 @@
   ^HTTPResult
   [co]
 
-  (let [impl (MakeMMap {:version "HTTP/1.1"
+  (let [impl (MubleObj {:version "HTTP/1.1"
                         :cookies []
                         :code -1
                         :hds {} })]

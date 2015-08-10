@@ -15,7 +15,7 @@
   czlab.skaro.core.sys
 
   (:require
-    [czlab.xlib.util.core :refer [MakeMMap FPath]]
+    [czlab.xlib.util.core :refer [MubleObj FPath]]
     [czlab.xlib.util.files
     :refer [ChangeFileContent ReadOneFile ReadOneUrl]])
 
@@ -86,7 +86,7 @@
   ^Muble
   []
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MubleObj) ]
     (reify Muble
       (setv [_ k v] (.setv impl k v) )
       (seq [_] (.seq impl))

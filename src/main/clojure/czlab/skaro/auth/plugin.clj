@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
     [czlab.xlib.util.core
-    :refer [tryc Stringify ce? MakeMMap
+    :refer [tryc Stringify ce? MubleObj
     do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
@@ -437,7 +437,7 @@
   ^Plugin
   [^Container ctr]
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MubleObj) ]
     (reify AuthPlugin
 
       (configure [_ props] )

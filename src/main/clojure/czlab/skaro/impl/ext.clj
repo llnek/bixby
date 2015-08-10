@@ -21,9 +21,9 @@
     [czlab.xlib.i18n.resources :refer [LoadResource]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.wfs :refer [WrapPTask NewJob SimPTask]]
-    [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
+    [czlab.xlib.crypto.codec :refer [Pwdify ]]
     [czlab.xlib.util.core
-    :refer [MakeMMap doto->> juid FPath Cast?
+    :refer [MubleObj doto->> juid FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [MakeScheduler]]
     [czlab.xlib.util.core
@@ -35,7 +35,6 @@
     [czlab.skaro.io.core :rename {enabled? io-enabled?} ]
     [czlab.skaro.impl.dfts
     :rename {enabled? blockmeta-enabled?} ]
-    ;;[czlab.xlib.util.consts]
     [czlab.skaro.core.consts]
     [czlab.skaro.io.loops]
     [czlab.skaro.io.mails]
@@ -61,7 +60,6 @@
     [com.zotohlab.skaro.etc CliMain PluginFactory Plugin]
     [org.apache.commons.io FilenameUtils FileUtils]
     [org.apache.commons.lang3 StringUtils]
-    [org.apache.commons.codec.binary Hex]
     [freemarker.template Configuration
     Template DefaultObjectWrapper]
     [java.util Locale Map Properties]
@@ -72,7 +70,7 @@
     [com.zotohlab.frwk.core Versioned Hierarchial
     Morphable Activable
     Startable Disposable Identifiable]
-    [com.zotohlab.frwk.server ComponentRegistry
+    [com.zotohlab.frwk.server Registry
     Service Emitter
     Component ServiceHandler ServiceError]
     [com.zotohlab.skaro.io IOEvent]
@@ -94,18 +92,6 @@
 
   (let [^Container c (.. evt emitter container)]
     (.getAppKey c)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ContainerAPI
-(defprotocol ^:private ContainerAPI
-
-  ""
-
-  (reifyOneService [_ sid cfg] )
-  (reifyService [_ svc sid cfg] )
-  (reifyServices [_] )
-  (generateNonce [_] )
-  (generateCsrf [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Service is an instance of a Block, that is, an instance of an event
@@ -184,8 +170,8 @@
   (log/info "creating an app-container: %s" (.id ^Identifiable pod))
   (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
         ftlCfg (GenFtlConfig :root pub)
-        impl (MakeMMap)
-        ctxt (atom (MakeMMap)) ]
+        impl (MubleObj)
+        ctxt (atom (MubleObj)) ]
     (with-meta
       (reify
 
@@ -232,12 +218,12 @@
               true)))
 
         (getService [_ serviceId]
-          (let [^ComponentRegistry
+          (let [^Registry
                 srg (.getv impl K_SVCS) ]
             (.lookup srg (keyword serviceId))))
 
         (hasService [_ serviceId]
-          (let [^ComponentRegistry
+          (let [^Registry
                 srg (.getv impl K_SVCS) ]
             (.has srg (keyword serviceId))))
 
@@ -304,47 +290,52 @@
             (when (some? main)
               (.dispose ^Disposable main))
             (log/info "container dispose() - main app disposed")
-            (releaseSysResources this) ))
-
-        ContainerAPI
-
-        (generateNonce [_] (-> (CreateRandomString 18)
-                               (Bytesify )
-                               (Hex/encodeHexString )))
-
-        (generateCsrf [_] (-> (CreateRandomString 18)
-                              (Bytesify )
-                              (Hex/encodeHexString )))
-
-        (reifyServices [this]
-          (let [env (.getv impl K_ENVCONF)
-                s (:services env) ]
-            (if-not (empty? s)
-              (doseq [[k v] s]
-                (reifyOneService this k v)))))
-
-        (reifyOneService [this nm cfg]
-          (let [^ComponentRegistry srg (.getv impl K_SVCS)
-                svc (str (:service cfg))
-                b (:enabled cfg) ]
-            (if-not (or (false? b)
-                        (empty? svc))
-              (->> (reifyService this svc nm cfg)
-                   (.reg srg )))))
-
-        (reifyService [this svc nm cfg]
-          (let [^Muble ctx (.getx this)
-                ^ComponentRegistry
-                root (.getv ctx K_COMPS)
-                ^ComponentRegistry
-                bks (.lookup root K_BLOCKS)
-                ^ComponentRegistry
-                bk (.lookup bks (keyword svc)) ]
-            (when (nil? bk)
-              (throw (ServiceError. (str "No such Service: " svc))))
-            (makeServiceBlock bk this nm cfg))) )
+            (releaseSysResources this) )))
 
     {:typeid (ToKW "czc.skaro.ext" "Container") })))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyService ""
+
+  [^Context co svc nm cfg]
+
+  (let [^Muble ctx (.getx co)
+        bks (-> ^Registry
+                (.getv ctx K_COMPS)
+                (.lookup K_BLOCKS))
+        bk (-> ^Registry
+               bks
+               (.lookup (keyword svc))) ]
+    (when (nil? bk)
+      (throw (ServiceError. (str "No such Service: " svc))))
+    (makeServiceBlock bk co nm cfg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyOneService ""
+
+  [^Muble co nm cfg]
+
+  (let [^Registry srg (.getv co K_SVCS)
+        {:keys [service enabled]}
+        cfg ]
+    (if-not (or (false? enabled)
+                (empty? service))
+      (->> (reifyService co service nm cfg)
+           (.reg srg )))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyServices  ""
+
+  [^Muble co]
+
+  (let [env (.getv co K_ENVCONF)
+        s (:services env) ]
+    (if-not (empty? s)
+      (doseq [[k v] s]
+        (reifyOneService co k v)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
@@ -358,7 +349,7 @@
   (let [url (-> ^PODMeta pod (.srcUrl))
         ps {K_APPDIR (io/file url)}
         ^Muble ctx (.getx pod)
-        ^ComponentRegistry
+        ^Registry
         root (.getv ctx K_COMPS)
         apps (.lookup root K_APPS)
         ^Startable
@@ -387,7 +378,7 @@
 
   [^Muble co props]
 
-  (let [srg (MakeRegistry :EventSources K_SVCS "1.0" co)
+  (let [srg (ReifyRegistry :EventSources K_SVCS "1.0" co)
         appDir (K_APPDIR props)
         cfgDir (io/file appDir DN_CONF)
         envConf (parseConfile appDir CFG_ENV_CF)
@@ -597,8 +588,7 @@
       (let [svcs (:services env) ]
         (if (empty? svcs)
           (log/warn "no system service defined in env.conf")
-          (-> ^czlab.skaro.impl.ext.ContainerAPI co
-              (.reifyServices ))))
+          (reifyServices co)))
 
       ;; start the scheduler
       (.activate ^Activable cpu cfg)

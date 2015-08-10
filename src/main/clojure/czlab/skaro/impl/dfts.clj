@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong test-cond MakeMMap test-nestr]]
+    :refer [NextLong test-cond MubleObj test-nestr]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
@@ -36,7 +36,7 @@
     [com.zotohlab.frwk.util CU]
     [com.zotohlab.frwk.i18n I18N]
     [com.zotohlab.frwk.server Component
-    ComponentRegistry RegistryError ServiceError]
+    Registry RegistryError ServiceError]
     [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,17 +84,17 @@
 ;;a registry is basically a container holding a bunch of components
 ;;a component itself can be a registry which implies that registeries can
 ;;be nested
-(defn MakeRegistry
+(defn ReifyRegistry
 
   "Create a generic component registry"
 
-  ^ComponentRegistry
+  ^Registry
   [regoType regoId ver parObj]
 
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
-  (let [impl (MakeMMap {:cache {} })
-        ctxt (atom (MakeMMap)) ]
+  (let [impl (MubleObj {:cache {} })
+        ctxt (atom (MubleObj)) ]
     (with-meta
       (reify
 
@@ -121,7 +121,7 @@
         (version [_] (str ver))
         (id [_] regoId)
 
-        ComponentRegistry
+        Registry
 
         (has [_ cid]
           (-> (.getv impl :cache)
@@ -132,8 +132,8 @@
           (let [cache (.getv impl :cache)
                 c (get cache cid) ]
             (if (and (nil? c)
-                     (instance? ComponentRegistry parObj))
-              (-> ^ComponentRegistry parObj (.lookup cid))
+                     (instance? Registry parObj))
+              (-> ^Registry parObj (.lookup cid))
               c)))
 
         (dereg [this c]
@@ -177,8 +177,8 @@
               version "1.0"}}
         info
         pid (str main "#" (NextLong))
-        impl (MakeMMap)
-        ctxt (atom (MakeMMap)) ]
+        impl (MubleObj)
+        ctxt (atom (MubleObj)) ]
 
     (log/info (str "pod-meta: app=%s\n"
                    "ver=%s\ntype=%s\n"

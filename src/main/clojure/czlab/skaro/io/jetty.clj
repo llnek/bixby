@@ -20,7 +20,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [juid tryc spos? NextLong
-    ToJavaInt try! MakeMMap test-cond Stringify]]
+    ToJavaInt try! MubleObj test-cond Stringify]]
     [czlab.xlib.crypto.codec :refer [Pwdify]])
 
   (:use [czlab.xlib.crypto.ssl]
@@ -32,6 +32,7 @@
         [czlab.skaro.io.webss])
 
   (:import
+    [com.zotohlab.frwk.server Component Emitter EventHolder EventTrigger]
     [org.eclipse.jetty.server Server Connector ConnectionFactory]
     [java.net URL]
     [jregex Matcher Pattern]
@@ -41,7 +42,6 @@
     [java.net HttpCookie]
     [org.eclipse.jetty.continuation Continuation
     ContinuationSupport]
-    [com.zotohlab.frwk.server Component Emitter]
     [com.zotohlab.frwk.io XData]
     [com.zotohlab.frwk.core Versioned Hierarchial
     Identifiable Disposable Startable]
@@ -151,10 +151,11 @@
 ;;
 (defn- makeServletTrigger ""
 
+  ^EventTrigger
   [^HttpServletRequest req
    ^HttpServletResponse rsp src]
 
-  (reify AsyncWaitTrigger
+  (reify EventTrigger
 
     (resumeWithResult [_ res]
       (replyServlet res req rsp src) )
@@ -266,11 +267,10 @@
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
         (.bindSession evt wss)
-        (let [^czlab.skaro.io.core.WaitEventHolder
-              w (MakeAsyncWaitHolder
+        (let [w (AsyncWaitHolder
                   (makeServletTrigger req rsp co) evt) ]
           (.timeoutMillis w waitMillis)
-          (doto ^czlab.skaro.io.core.EmitAPI co
+          (doto ^Emitter co
             (.hold w)
             (.dispatch evt {:router (.getHandler ri)
                             :params (merge {} pms)
@@ -380,7 +380,7 @@
   (log/debug "OPESReifyEvent: JettyIO: %s" (.id ^Identifiable co))
   (let [^HTTPResult result (MakeHttpResult co)
         ^HttpServletRequest req (first args)
-        impl (MakeMMap {:cookies (maybeGetCookies req)})
+        impl (MubleObj {:cookies (maybeGetCookies req)})
         ssl (= "https" (.getScheme req))
         eid (NextLong) ]
     (reify
@@ -462,9 +462,9 @@
 
       (getResultObj [_] result)
       (replyResult [this]
-        (let [^czlab.skaro.io.core.WaitEventHolder
+        (let [^EventHolder
               wevt
-              (-> ^czlab.skaro.io.core.EmitAPI co
+              (-> ^Emitter co
                   (.release this))
               ^IOSession mvs (.getSession this)
               code (.getStatus result) ]

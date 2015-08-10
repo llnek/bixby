@@ -26,6 +26,7 @@
         [czlab.skaro.io.core])
 
   (:import
+    [com.zotohlab.frwk.server Emitter]
     [java.util Date Timer TimerTask]
     [com.zotohlab.skaro.io TimerEvent]
     [com.zotohlab.skaro.core Muble]
@@ -200,7 +201,7 @@
 ;;
 (defmethod LoopableWakeup :czc.skaro.io/RepeatingTimer
 
-  [^czlab.skaro.io.core.EmitAPI co & args]
+  [^Emitter co & args]
 
   (.dispatch co (IOESReifyEvent co) {} ))
 
@@ -277,7 +278,7 @@
 ;;
 (defmethod LoopableWakeup :czc.skaro.io/OnceTimer
 
-  [^czlab.skaro.io.core.EmitAPI co & args]
+  [^Emitter co & args]
 
   (.dispatch co (IOESReifyEvent co) {} )
   (.stop ^Startable co))

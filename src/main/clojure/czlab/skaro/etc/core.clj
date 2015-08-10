@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
-    [czlab.xlib.util.core :refer [test-cond MakeMMap]]
+    [czlab.xlib.util.core :refer [test-cond MubleObj]]
     [czlab.xlib.util.str :refer [MakeString]]
     [czlab.xlib.util.scheduler :refer [NulScheduler]]
     [czlab.xlib.util.files :refer [DirRead?]])

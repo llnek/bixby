@@ -11,30 +11,16 @@
 
 package com.zotohlab.frwk.server;
 
+import com.zotohlab.frwk.core.Identifiable;
+
 /**
  * @author kenl
- *
  */
-public interface Emitter {
+public interface EventHolder extends Identifiable {
 
-  public void dispatch( Event evt , Object options);
+  public void timeoutMillis(long  millis);
+  public void resumeOnResult(Object res);
+  public void onExpiry();
 
-  public ServerLike container();
-  public Object getConfig();
-
-  public boolean isEnabled();
-  public boolean isActive();
-
-  public void suspend();
-  public void resume();
-
-  public EventHolder  release(Object obj);
-  public void hold(EventHolder obj);
-  
 }
-
-
-
-
-
 

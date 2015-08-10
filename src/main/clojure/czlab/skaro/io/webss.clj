@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [ConvLong juid MakeMMap Stringify Bytesify]]
+    :refer [ConvLong juid MubleObj Stringify Bytesify]]
     [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.crypto.core :refer [GenMac]]
     [czlab.xlib.util.logging :as log]
@@ -171,9 +171,9 @@
   ^IOSession
   [co ssl]
 
-  (let [impl (MakeMMap {:maxIdleSecs 0
+  (let [impl (MubleObj {:maxIdleSecs 0
                         :newOne true})
-        attrs (MakeMMap)]
+        attrs (MubleObj)]
     (with-meta
       (reify WebSS
 

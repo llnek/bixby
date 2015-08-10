@@ -19,7 +19,7 @@
     :refer [LoopableSchedule LoopableOneLoop CfgLoopable]]
     [czlab.xlib.util.files :refer [Mkdirs MoveFileToDir]]
     [czlab.xlib.util.core
-    :refer [NextLong MakeMMap
+    :refer [NextLong MubleObj
     test-nestr tryc SubsVar]]
     [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
 
@@ -43,6 +43,7 @@
     FileAlterationListenerAdaptor
     FileAlterationMonitor
     FileAlterationObserver]
+    [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io FileEvent]
     [com.zotohlab.frwk.core Identifiable]))
@@ -60,7 +61,7 @@
     [fnm (first args)
      f (nth args 1)
      eeid (NextLong)
-     impl (MakeMMap) ]
+     impl (MubleObj) ]
     (with-meta
       (reify
 
@@ -88,7 +89,7 @@
 
   [^Muble co ^File f action]
 
-  (let [^czlab.skaro.io.core.EmitAPI src co
+  (let [^Emitter src co
         {:keys [recvFolder]}
         (.getv co :emcfg)
         origFname (.getName f)

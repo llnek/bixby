@@ -34,6 +34,7 @@
     [java.util Properties]
     [javax.mail.internet MimeMessage]
     [java.io IOException]
+    [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io EmailEvent]
     [com.zotohlab.frwk.core Identifiable]))
@@ -167,7 +168,7 @@
 ;;
 (defn- readPop3 ""
 
-  [^czlab.skaro.io.core.EmitAPI co msgs]
+  [^Emitter co msgs]
 
   (let [^Muble src co]
     (doseq [^MimeMessage mm  msgs]

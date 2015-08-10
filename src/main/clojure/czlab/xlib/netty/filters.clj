@@ -15,7 +15,7 @@
   czlab.xlib.netty.filters
 
   (:require
-    [czlab.xlib.util.core :refer [ThrowIOE MakeMMap
+    [czlab.xlib.util.core :refer [ThrowIOE MubleObj
      Cast? notnil? spos? Bytesify
      SafeGetJsonObject SafeGetJsonInt SafeGetJsonString]]
     [czlab.xlib.util.str :refer [lcase ucase

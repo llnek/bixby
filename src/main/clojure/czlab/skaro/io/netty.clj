@@ -20,7 +20,7 @@
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [czlab.xlib.util.core
-    :refer [try! Stringify ThrowIOE NextLong MakeMMap ConvLong]]
+    :refer [try! Stringify ThrowIOE NextLong MubleObj ConvLong]]
     [czlab.skaro.io.webss :refer [MakeWSSession]]
     [czlab.xlib.util.mime :refer [GetCharset]])
 
@@ -31,10 +31,10 @@
         [czlab.skaro.io.http])
 
   (:import
+    [com.zotohlab.frwk.server Emitter EventTrigger EventHolder]
     [java.io Closeable File IOException RandomAccessFile]
     [java.net HttpCookie URI URL InetSocketAddress]
     [java.net SocketAddress InetAddress]
-    [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult
     IOSession
     WebSockEvent WebSockResult]
@@ -242,14 +242,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeNettyTrigger
+(defn NettyTrigger
 
   "Create a Netty Async Trigger"
 
-  ^czlab.skaro.io.core.AsyncWaitTrigger
+  ^EventTrigger
   [^Channel ch evt src]
 
-  (reify AsyncWaitTrigger
+  (reify EventTrigger
 
     (resumeWithResult [_ res]
       (if (instance? WebSockEvent evt)
@@ -283,13 +283,13 @@
 ;;
 (defn- makeWEBSockEvent ""
 
-  [^czlab.skaro.io.core.EmitAPI co
+  [^Emitter co
    ^Channel ch
    ssl
    ^WebSocketFrame msg]
 
   (let [textF (instance? TextWebSocketFrame msg)
-        impl (MakeMMap)
+        impl (MubleObj)
         xdata (XData.)
         eeid (NextLong) ]
     (.resetContent xdata
@@ -355,7 +355,7 @@
 (defn- makeHttpEvent2 ""
 
   ^HTTPEvent
-  [^czlab.skaro.io.core.EmitAPI co
+  [^Emitter co
    ^Channel ch
    sslFlag
    ^XData xdata
@@ -364,7 +364,7 @@
   (let [^InetSocketAddress laddr (.localAddress ch)
         ^HTTPResult res (MakeHttpResult co)
         cookieJar (crackCookies info)
-        impl (MakeMMap)
+        impl (MubleObj)
         eeid (NextLong) ]
     (with-meta
       (reify
@@ -451,7 +451,7 @@
         (replyResult [this]
           (let [^IOSession mvs (.getSession this)
                 code (.getStatus res)
-                ^czlab.skaro.io.core.WaitEventHolder
+                ^EventHolder
                 wevt (.release co this) ]
             (cond
               (and (>= code 200)
@@ -468,7 +468,7 @@
 (defn- makeHttpEvent ""
 
   ^HTTPEvent
-  [^czlab.skaro.io.core.EmitAPI co
+  [^Emitter co
    ^Channel ch
    sslFlag
    ^XData xdata
@@ -482,7 +482,7 @@
 ;;
 (defmethod IOESReifyEvent :czc.skaro.io/NettyIO
 
-  [^czlab.skaro.io.core.EmitAPI co & args]
+  [^Emitter co & args]
 
   (log/info "IOESReifyEvent: NettyIO: %s" (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
@@ -518,7 +518,7 @@
 (defn- msgDispatcher ""
 
   ^ChannelHandler
-  [^czlab.skaro.io.core.EmitAPI co
+  [^Emitter co
    ^Muble src
    options]
 
@@ -530,10 +530,9 @@
             (.getv src :emcfg)
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
-          (let [^czlab.skaro.io.core.WaitEventHolder
-                w
-                (-> (MakeNettyTrigger ch evt co)
-                    (MakeAsyncWaitHolder  evt)) ]
+          (let [w
+                (-> (NettyTrigger ch evt co)
+                    (AsyncWaitHolder  evt)) ]
             (.timeoutMillis w waitMillis)
             (.hold co w)))
         (.dispatch co evt {})))))

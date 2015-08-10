@@ -14,15 +14,15 @@ package com.zotohlab.frwk.server;
 /**
  * @author kenl
  */
-public interface ComponentRegistry  {
+public interface Registry  {
 
-  public Component lookup( Object name);
+  public Object  lookup( Object name);
 
   public boolean has( Object name) ;
 
-  public void dereg(Component c);
+  public void dereg(Object c);
 
-  public void reg(Component c);
+  public void reg(Object c);
 
 }
 

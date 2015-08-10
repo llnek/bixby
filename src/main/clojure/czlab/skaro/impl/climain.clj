@@ -30,7 +30,7 @@
     [czlab.xlib.util.scheduler :refer [NulScheduler]]
     [czlab.xlib.util.core
     :refer [test-nonil test-cond ConvLong SysVar
-    FPath PrintMutableObj MakeMMap]]
+    FPath PrintMutableObj MubleObj]]
     [czlab.skaro.impl.exec :refer [MakeExecvisor]]
     [czlab.xlib.netty.io :refer [StopServer]])
 
@@ -60,8 +60,7 @@
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]
     [com.zotohlab.frwk.server ServerLike
-    ServiceHandler
-    Component ComponentRegistry]
+    ServiceHandler Component ]
     [com.zotohlab.skaro.etc CmdHelpError]
     [java.util ResourceBundle Locale]
     [java.io File]
@@ -143,8 +142,8 @@
   ^ServerLike
   [^File home]
 
-  (let [ctxt (atom (MakeMMap))
-        impl (MakeMMap)
+  (let [ctxt (atom (MubleObj))
+        impl (MubleObj)
         cpu (NulScheduler) ]
     (-> ^Activable
         cpu

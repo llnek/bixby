@@ -37,7 +37,36 @@ public class NulEmitter implements Emitter{
     return _server;
   }
 
+  @Override
+  public void dispatch(Event evt, Object options) {
+  }
 
+  @Override
+  public boolean isEnabled() {
+    return false;
+  }
+
+  @Override
+  public boolean isActive() {
+    return false;
+  }
+
+  @Override
+  public void suspend() {
+  }
+
+  @Override
+  public void resume() {
+  }
+
+  @Override
+  public EventHolder release(Object obj) {
+    return null;
+  }
+
+  @Override
+  public void hold(EventHolder obj) {
+  }
 
 }
 

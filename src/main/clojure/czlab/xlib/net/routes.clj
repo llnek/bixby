@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-        :refer [MakeMMap test-cond test-nestr]]
+        :refer [MubleObj test-cond test-nestr]]
     [czlab.xlib.util.str
         :refer [ToKW strim lcase ucase nsb nichts? hgl?]]
     [czlab.xlib.util.files :refer [ReadOneFile]]
@@ -66,7 +66,7 @@
 
   [route verbs handler]
 
-  (let [impl (MakeMMap) ]
+  (let [impl (MubleObj) ]
     (with-meta
       (reify
 

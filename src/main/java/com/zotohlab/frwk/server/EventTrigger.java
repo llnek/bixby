@@ -13,28 +13,12 @@ package com.zotohlab.frwk.server;
 
 /**
  * @author kenl
- *
  */
-public interface Emitter {
+public interface EventTrigger  {
 
-  public void dispatch( Event evt , Object options);
-
-  public ServerLike container();
-  public Object getConfig();
-
-  public boolean isEnabled();
-  public boolean isActive();
-
-  public void suspend();
-  public void resume();
-
-  public EventHolder  release(Object obj);
-  public void hold(EventHolder obj);
+  public void resumeWithResult(Object res);
+  public void resumeWithError();
+  public Emitter emitter();
   
 }
-
-
-
-
-
 

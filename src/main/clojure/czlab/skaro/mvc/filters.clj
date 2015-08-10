@@ -165,7 +165,7 @@
 (defn- wsockDispatcher ""
 
   ^ChannelHandler
-  [^czlab.skaro.io.core.EmitAPI em
+  [^Emitter em
    ^Muble co
    options]
 

@@ -35,11 +35,11 @@
         [czlab.skaro.core.consts])
 
   (:import
+    [com.zotohlab.frwk.server Emitter EventHolder EventTrigger]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult]
     [com.zotohlab.skaro.mvc HTTPErrorHandler
     MVCUtils WebAsset WebContent]
     [com.zotohlab.frwk.core Hierarchial Identifiable]
-    [com.zotohlab.frwk.server Emitter]
     [com.zotohlab.wflow FlowDot Activity
     Job WHandler PTask Work]
     [com.zotohlab.skaro.runtime AuthError]
@@ -268,16 +268,14 @@
                                              (.group mc (int i)) 1))))
         (var-set mp (FPath (File. ^String @mp)))
         (let [cfg (-> ^Muble src (.getv :emcfg))
-              ^czlab.skaro.io.core.EmitAPI co src
-              ^czlab.skaro.io.core.WaitEventHolder
-              w (MakeAsyncWaitHolder (MakeNettyTrigger ch evt co) evt)]
+              w (AsyncWaitHolder (NettyTrigger ch evt src) evt)]
           (.timeoutMillis w (:waitMillis cfg))
-          (.hold co w)
-          (.dispatch co
-                     evt
-                     {:router "czlab.skaro.mvc.comms/AssetHandler"
-                      :info info
-                      :path @mp}))))))
+          (doto src
+            (.hold w)
+            (.dispatch evt
+                       {:router "czlab.skaro.mvc.comms/AssetHandler"
+                        :info info
+                        :path @mp})))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -298,19 +296,18 @@
         (var-set ok false)
         (ServeError src ch 403)))
     (when @ok
-      (let [^czlab.skaro.io.core.EmitAPI co src
-            cfg (.getv src :emcfg)
+      (let [cfg (.getv src :emcfg)
             pms (.collect ri mc)
             options {:router (.getHandler ri)
                      :params (merge {} pms)
                      :template (.getTemplate ri)}
-            ^czlab.skaro.io.core.WaitEventHolder
             w
-            (MakeAsyncWaitHolder
-              (MakeNettyTrigger ch evt co) evt)]
+            (AsyncWaitHolder
+              (NettyTrigger ch evt src) evt)]
         (.timeoutMillis w (:waitMillis cfg))
-        (.hold co w)
-        (.dispatch co evt options)))))
+        (doto ^Emitter src
+          (.hold  w)
+          (.dispatch  evt options))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -162,7 +162,7 @@
 (is (false? (nil? (:1 (CU/IntoMap dummyProperties)))))
 (is (= 3 (count (CU/IntoMap dummyProperties))))
 
-(is (= 100 (.getv (doto (CU/MakeMMap) (.setv :1 100)) :1)))
+(is (= 100 (.getv (doto (CU/MubleObj) (.setv :1 100)) :1)))
 
 
 )

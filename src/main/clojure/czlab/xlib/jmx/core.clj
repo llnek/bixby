@@ -15,7 +15,7 @@
   czlab.xlib.jmx.core
 
   (:require
-    [czlab.xlib.util.core :refer [MakeMMap try! tryc]]
+    [czlab.xlib.util.core :refer [MubleObj try! tryc]]
     [czlab.xlib.util.str :refer [hgl? ]])
 
   (:require
@@ -133,7 +133,7 @@
   [^String host]
 
   (let
-    [impl (MakeMMap {:regoPort 7777
+    [impl (MubleObj {:regoPort 7777
                      :port 0})
      objNames (atom []) ]
     (reify

@@ -23,7 +23,7 @@
     [czlab.xlib.util.core
     :refer [LoadJavaProps test-nestr FPath tryletc tryc
     NewRandom GetCwd
-    ConvLong MakeMMap juid test-nonil]]
+    ConvLong MubleObj juid test-nonil]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.files
     :refer [Mkdirs ReadOneUrl]])
@@ -52,7 +52,7 @@
     [java.util Date]
     [com.zotohlab.frwk.core Startable Disposable
     Versioned Hierarchial Identifiable]
-    [com.zotohlab.frwk.server Component ComponentRegistry]))
+    [com.zotohlab.frwk.server Component Registry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -79,8 +79,8 @@
     (PrecondDir (io/file des DN_CFG))
     (let [ps (ReadEdn (io/file des CFG_APP_CF))
           ^Muble ctx (.getx execv)
-          ^ComponentRegistry
-          apps (-> ^ComponentRegistry
+          ^Registry
+          apps (-> ^Registry
                    (.getv ctx K_COMPS)
                    (.lookup K_APPS))
           info (:info ps) ]
@@ -175,8 +175,8 @@
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
-  (let [impl (MakeMMap {K_CONTAINERS {}})
-        ctxt (atom (MakeMMap)) ]
+  (let [impl (MubleObj {K_CONTAINERS {}})
+        ctxt (atom (MubleObj)) ]
     (with-meta
       (reify
 
@@ -267,9 +267,9 @@
       (doto ctx
         (.setv K_BKSDIR bks)))
 
-    (let [root (MakeRegistry :SystemRegistry K_COMPS "1.0" co)
-          bks (MakeRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
-          apps (MakeRegistry :AppsRegistry K_APPS "1.0" nil)
+    (let [root (ReifyRegistry :SystemRegistry K_COMPS "1.0" co)
+          bks (ReifyRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
+          apps (ReifyRegistry :AppsRegistry K_APPS "1.0" nil)
           options {:ctx ctx} ]
 
       (.setv ctx K_COMPS root)
@@ -292,8 +292,8 @@
   ;; url points to block-meta file
   [^URL url]
 
-  (let [ctxt (atom (MakeMMap))
-        impl (MakeMMap) ]
+  (let [ctxt (atom (MubleObj))
+        impl (MubleObj) ]
 
     (with-meta
       (reify
@@ -367,7 +367,7 @@
            :let [^Muble
                  b (-> (makeBlockMeta (io/as-url f))
                        (SynthesizeComponent {})) ]]
-      (.reg ^ComponentRegistry co b)
+      (.reg ^Registry co b)
       (log/info "added one block: %s" (.id ^Identifiable b)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

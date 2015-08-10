@@ -15,7 +15,7 @@
   czlab.xlib.util.scheduler
 
   (:require
-    [czlab.xlib.util.core :refer [NextInt juid MakeMMap]]
+    [czlab.xlib.util.core :refer [NextInt juid MubleObj]]
     [czlab.xlib.util.str :refer [ToKW hgl?]])
 
   (:require
@@ -131,7 +131,7 @@
         runQ (ConcurrentHashMap.)
         timer (atom nil)
         cpu (atom nil)
-        impl (MakeMMap) ]
+        impl (MubleObj) ]
     (reset! timer (Timer. jid true))
     (with-meta
       (reify
