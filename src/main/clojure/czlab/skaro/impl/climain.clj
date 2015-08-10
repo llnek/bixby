@@ -18,6 +18,8 @@
     [czlab.xlib.netty.discarder :refer [MakeDiscardHTTPD]]
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
     [czlab.xlib.util.io :refer [CloseQ]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.process
     :refer [ProcessPid SafeWait ThreadFunc]]
     [czlab.xlib.i18n.resources :refer [GetResource]]
@@ -31,10 +33,6 @@
     FPath PrintMutableObj MakeMMap]]
     [czlab.skaro.impl.exec :refer [MakeExecvisor]]
     [czlab.xlib.netty.io :refer [StopServer]])
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts]
         [czlab.xlib.util.consts]
@@ -161,8 +159,9 @@
           (doseq [[k v] options]
             (.setv j k v))
           (.setv j :wflow w)
-          (.run cpu (->> (NihilDot j)
-                         (.reify (.startWith w))))))
+          (->> (NihilDot j)
+               (.reify (.startWith w))
+               (.run cpu ))))
 
       (handleError [_ e] )
 

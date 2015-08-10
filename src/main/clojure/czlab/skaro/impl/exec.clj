@@ -63,56 +63,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- chkManifest
-
-  "Check the app's manifest file"
-
-  ^PODMeta
-  [^Context execv app ^File des]
-
-  (let [ps (ReadEdn (io/file des CFG_APP_CF))
-        ^Muble ctx (.getx execv)
-        ^ComponentRegistry
-        apps (-> ^ComponentRegistry
-                 (.getv ctx K_COMPS)
-                 (.lookup K_APPS))
-        ver (get-in ps [:info :version])
-        vid (get-in ps [:info :vendor])
-        cz (get-in ps [:info :main]) ]
-
-    (log/info (str "checking manifest for app: "
-                   "%s\nversion: %s\nmain-class: %s")
-              app ver cz)
-
-    ;; synthesize the pod meta component and register it
-    ;; as a application
-    (let [^Context
-          m (-> (MakePodMeta app ver
-                             cz vid (io/as-url des))
-                (SynthesizeComponent {:ctx ctx})) ]
-      (-> ^Muble
-          (.getx m)
-          (.setv K_EXECV execv))
-      (.reg apps m)
-      m)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- inspectApp
 
   "Make sure the app setup is kosher"
 
   ^PODMeta
-  [execv ^File des]
+  [^Context execv ^File des]
 
   (let [app (FilenameUtils/getBaseName (FPath des)) ]
     (log/info "app dir : %s" des)
     (log/info "inspecting...")
-    (tryc
-      (PrecondFile (io/file des CFG_APP_CF))
-      (PrecondFile (io/file des CFG_ENV_CF))
-      (PrecondDir (io/file des DN_CONF))
-      (PrecondDir (io/file des DN_CFG))
-      (chkManifest execv app des) )))
+    (PrecondFile (io/file des CFG_APP_CF))
+    (PrecondFile (io/file des CFG_ENV_CF))
+    (PrecondDir (io/file des DN_CONF))
+    (PrecondDir (io/file des DN_CFG))
+    (let [ps (ReadEdn (io/file des CFG_APP_CF))
+          ^Muble ctx (.getx execv)
+          ^ComponentRegistry
+          apps (-> ^ComponentRegistry
+                   (.getv ctx K_COMPS)
+                   (.lookup K_APPS))
+          info (:info ps) ]
+
+      (log/info "checking conf for app: %s\n%s" app info)
+
+      ;; synthesize the pod meta component and register it
+      ;; as a application
+      (let [^Context
+            m (-> (MakePodMeta app
+                               info
+                               (io/as-url des))
+                  (SynthesizeComponent {:ctx ctx})) ]
+        (-> ^Muble
+            (.getx m)
+            (.setv K_EXECV execv))
+        (.reg apps m)
+        m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,7 +148,7 @@
      cid (.id ^Identifiable pod)
      app (.moniker pod)
      ctr (MakeContainer pod)]
-    (log/debug "start pod cid = %s, app = %s" cid app)
+    (log/debug "start pod\ncid = %s\napp = %s" cid app)
     (.setv co K_CONTAINERS (assoc cache cid ctr))
     true))
 
@@ -175,8 +161,7 @@
   (log/info "preparing to stop pods...")
   (let [cs (.getv co K_CONTAINERS) ]
     (doseq [[k v] cs]
-      (.stop ^Startable v))
-    (doseq [[k v] cs]
+      (.stop ^Startable v)
       (.dispose ^Disposable v))
     (.setv co K_CONTAINERS {})))
 
@@ -254,9 +239,9 @@
 ;;
 (defmethod CompInitialize :czc.skaro.impl/ExecVisor
 
-  [^Muble co]
+  [^Context co]
 
-  (let [^Muble ctx (-> ^Context co (.getx))
+  (let [^Muble ctx (.getx co)
         base (.getv ctx K_BASEDIR)
         cf (.getv ctx K_PROPS)
         comps (K_COMPS cf)
@@ -353,15 +338,15 @@
 ;;description of a emitter
 (defmethod CompInitialize :czc.skaro.impl/EmitMeta
 
-  [^EmitMeta block]
+  [^EmitMeta co]
 
-  (let [url (.metaUrl block)
+  (let [url (.metaUrl co)
         {:keys [info conf]}
         (ReadEdn url) ]
     (test-nonil "Invalid block-meta file, no info section" info)
     (test-nonil "Invalid block-meta file, no conf section" conf)
     (log/info "initializing EmitMeta: %s" url)
-    (-> ^Muble block
+    (doto ^Muble co
       (.setv  :dftOptions conf)
       (.setv  :metaInfo info))
     co))
@@ -372,9 +357,10 @@
 ;; This registry loads these meta files and adds them to the registry
 (defmethod CompInitialize :czc.skaro.impl/BlocksRegistry
 
-  [^Muble co]
+  [^Context co]
 
-  (let [^Muble ctx (-> ^Context co (.getx))
+  (log/info "compInitialize: BlocksRegistry: \"%s\"" (.id ^Identifiable co))
+  (let [^Muble ctx (.getx co)
         bDir (.getv ctx K_BKSDIR)
         fs (ListFiles bDir "edn") ]
     (doseq [^File f fs
@@ -390,7 +376,7 @@
 
   [co]
 
-  (log/info "compInitialize: SystemRegistry: %s" (.id ^Identifiable co))
+  (log/info "compInitialize: SystemRegistry: \"%s\"" (.id ^Identifiable co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -399,7 +385,7 @@
 
   [co]
 
-  (log/info "compInitialize: AppsRegistry: %s" (.id ^Identifiable co))
+  (log/info "compInitialize: AppsRegistry: \"%s\"" (.id ^Identifiable co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

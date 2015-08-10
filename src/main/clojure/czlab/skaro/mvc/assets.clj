@@ -15,14 +15,14 @@
   czlab.skaro.mvc.assets
 
   (:require
-    [czlab.xlib.util.core :refer [try! FPath]]
+    [czlab.xlib.util.core :refer [do->nil try! FPath]]
     [czlab.xlib.util.mime :refer [GuessContentType]]
-    [czlab.xlib.util.str :refer [lcase nsb]]
+    [czlab.xlib.util.str :refer [lcase ]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.files
     :refer [ReadFileBytes WriteOneFile]]
     [czlab.xlib.util.io :refer [Streamify]])
-
-  (:require [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.io.http]
         [czlab.xlib.netty.io])
@@ -42,10 +42,9 @@
     [org.apache.commons.io FileUtils]
     [com.zotohlab.skaro.mvc WebContent
     WebAsset
-    HTTPRangeInput AssetCache]
+    HTTPRangeInput ]
     [java.io Closeable RandomAccessFile File]
-    [com.zotohlab.skaro.core Muble]
-    [java.util Map HashMap]))
+    [com.zotohlab.skaro.core Muble]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -53,6 +52,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private cache-assets-flag (atom false))
+(def ^:private asset-cache (atom {}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -62,7 +62,7 @@
 
   [cacheFlag]
 
-  (reset! cache-assets-flag (if cacheFlag true false))
+  (reset! cache-assets-flag (true? cacheFlag))
   (log/info "web assets caching is set to %s" @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,20 +82,19 @@
 (defn GetLocalFile ""
 
   ^WebAsset
-  [^File appDir ^String fname]
+  [appDir fname]
 
-  (let [f (File. appDir fname) ]
-    (if (.canRead f)
+  (let [f (io/file appDir fname) ]
+    (when (.canRead f)
       (makeWebContent
         (GuessContentType f "utf-8")
-        (WriteOneFile f))
-      nil)))
+        (WriteOneFile f)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeCache
 
-  "cache certain files..."
+  "cache certain files"
 
   [^File fp]
 
@@ -134,26 +133,24 @@
   ^WebAsset
   [^File file]
 
-  (if (and (.exists file)
-           (.canRead file))
-    (MakeWebAsset file)
-    nil))
+  (when (and (.exists file)
+             (.canRead file))
+    (MakeWebAsset file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- fetchAndSetAsset ""
 
   ^WebAsset
-  [^Map cache fp ^File file]
+  [^File file]
 
   (if-some [wa (fetchAsset file) ]
-    (do
+    (let [fp (FPath file)]
       (log/debug "asset-cache: cached new file: %s" fp)
-      (.put cache fp wa)
+      (swap! asset-cache assoc fp wa)
       wa)
-    (do
-      (log/warn "asset-cache: failed to read/find file: %s" fp)
-      nil)))
+    (do->nil
+      (log/warn "asset-cache: failed to read/find file: %s" file))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -163,14 +160,12 @@
   [^File file]
 
   (if @cache-assets-flag
-    (let [cache (AssetCache/get)
-          fp (FPath file)
-          ^WebAsset wa (.get cache fp)
-          ^File cf (if (nil? wa) nil (.getFile wa)) ]
+    (let [^WebAsset wa (@asset-cache (FPath file))
+          cf (if (some? wa) (.getFile wa)) ]
       (if (or (nil? cf)
               (> (.lastModified file)
                  (.getTS wa)))
-        (fetchAndSetAsset cache fp file)
+        (fetchAndSetAsset file)
         wa))
     (fetchAsset file)))
 
@@ -183,7 +178,7 @@
    info
    ^HttpResponse rsp ]
 
-  (let [s (nsb (GetInHeader info "range"))]
+  (let [s (str (GetInHeader info "range"))]
     (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
         (.process rsp))
@@ -199,7 +194,8 @@
                           nil
                           (getAsset file))
         fname (.getName file) ]
-    (with-local-vars [raf nil clen 0 inp nil ct "" wf nil]
+    (with-local-vars [raf nil clen 0
+                      inp nil ct "" wf nil]
       (if (nil? asset)
         (do
           (var-set ct (GuessContentType file "utf-8" "text/plain"))

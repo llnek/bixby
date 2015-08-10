@@ -15,19 +15,17 @@
   czlab.skaro.impl.dfts
 
   (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
-
-  (:use [czlab.skaro.core.consts]
-        [czlab.skaro.core.sys])
-
-  (:require
     [czlab.xlib.util.core
     :refer [NextLong test-cond MakeMMap test-nestr]]
     [czlab.xlib.i18n.resources :refer [RStr]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.str :refer [ToKW]]
     [czlab.xlib.util.files
     :refer [FileRead? DirReadWrite? ]])
+
+  (:use [czlab.skaro.core.consts]
+        [czlab.skaro.core.sys])
 
   (:import
     [com.zotohlab.skaro.core Muble Context ConfigError]
@@ -170,17 +168,23 @@
 
   "Create metadata for an application bundle"
 
-  [app ver podType appid pathToPOD]
+  [app info pathToPOD]
 
-  (let [pid (str podType "#" (NextLong))
+  {:pre [(map? info)]}
+
+  (let [{:keys [vendor version main]
+         :or {main "noname"
+              version "1.0"}}
+        info
+        pid (str main "#" (NextLong))
         impl (MakeMMap)
         ctxt (atom (MakeMMap)) ]
 
     (log/info (str "pod-meta: app=%s\n"
                    "ver=%s\ntype=%s\n"
                    "key=%s\npath=%s")
-              app ver
-              podType appid pathToPOD )
+              app version
+              main vendor pathToPOD )
     (with-meta
       (reify
 
@@ -200,7 +204,7 @@
 
         Component
 
-        (version [_] (str ver))
+        (version [_] (str version))
         (id [_] pid )
 
         Hierarchial
@@ -211,8 +215,8 @@
 
         (srcUrl [_] pathToPOD)
         (moniker [_] app)
-        (appKey [_] appid)
-        (typeof [_] podType))
+        (appKey [_] vendor)
+        (typeof [_] main))
 
       {:typeid (ToKW "czc.skaro.impl" "PODMeta") })))
 
