@@ -20,7 +20,7 @@
     [czlab.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
     [czlab.xlib.util.guids :refer [NewUUid NewWWid]]
     [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.dates :refer [AddMonths MakeCal]]
+    [czlab.xlib.util.dates :refer [AddMonths GCal*]]
     [czlab.xlib.util.meta :refer [GetCldr]]
     [czlab.xlib.util.str :refer [ucase hgl? strim]]
     [czlab.xlib.util.core
@@ -327,7 +327,7 @@
         ff
         {:keylen (ConvLong (:size rc) 1024)
          :start now
-         :end (-> (MakeCal now)
+         :end (-> (GCal* now)
                   (AddMonths (ConvLong (:months rc) 12))
                   (.getTime)) })
       (println "Wrote file: " ff))))

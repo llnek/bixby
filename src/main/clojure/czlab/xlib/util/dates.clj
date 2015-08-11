@@ -191,7 +191,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeCal ""
+(defn GCal* ""
 
   ^Calendar
   [date]
@@ -240,7 +240,7 @@
   ^Date
   [months]
 
-  (let [now (MakeCal (Date.)) ]
+  (let [now (GCal* (Date.)) ]
     (-> (AddMonths now months)
         (.getTime))
   ))
@@ -254,7 +254,7 @@
   ^Date
   [years]
 
-  (let [now (MakeCal (Date.)) ]
+  (let [now (GCal* (Date.)) ]
     (-> (AddYears now years)
         (.getTime))
   ))
@@ -268,7 +268,7 @@
   ^Date
   [days]
 
-  (let [now (MakeCal (Date.)) ]
+  (let [now (GCal* (Date.)) ]
     (-> (AddDays now days)
         (.getTime))
   ))
