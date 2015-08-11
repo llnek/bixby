@@ -29,7 +29,7 @@
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.crypto.core
     :refer [AES256_CBC AssertJce PEM_CERT ExportPublicKey
-    ExportPrivateKey DbgProvider MakeKeypair MakeSSv1PKCS12 MakeCsrReq]])
+    ExportPrivateKey DbgProvider AsymKeyPair* SSv1PKCS12* CsrReQ*]])
 
   (:refer-clojure :rename {first fst second snd last lst})
 
@@ -185,7 +185,7 @@
   [^String lenStr]
 
   ;;(DbgProvider java.lang.System/out)
-  (let [kp (MakeKeypair "RSA" (ConvLong lenStr 1024))
+  (let [kp (AsymKeyPair* "RSA" (ConvLong lenStr 1024))
         pvk (.getPrivate kp)
         puk (.getPublic kp)
         pk (.getEncoded pvk)
@@ -321,7 +321,7 @@
           now (Date.)
           ff (io/file (:fn rc))]
       (println "DN entered: " dn)
-      (MakeSSv1PKCS12
+      (SSv1PKCS12*
         dn
         (Pwdify (:pwd rc))
         ff
@@ -344,7 +344,7 @@
     (let [dn (fst res)
           rc (lst res)
           [req pkey]
-          (MakeCsrReq (ConvLong (:size rc) 1024)
+          (CsrReQ* (ConvLong (:size rc) 1024)
                       dn
                       PEM_CERT) ]
       (println "DN entered: " dn)

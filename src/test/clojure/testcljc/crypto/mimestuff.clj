@@ -37,7 +37,7 @@
 ;;
 (def ^:private ROOTPFX (ResBytes "com/zotohlab/frwk/crypto/test.pfx"))
 (def ^PasswordAPI ^:private HELPME (Pwdify "helpme"))
-(def ^CryptoStoreAPI ^:private ROOTCS (MakeCryptoStore
+(def ^CryptoStoreAPI ^:private ROOTCS (CryptoStore*
                                         (InitStore! (GetPkcsStore)
                                                     ROOTPFX HELPME) HELPME))
 

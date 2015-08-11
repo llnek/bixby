@@ -37,9 +37,9 @@
 (def ^:private HELPME (Pwdify "helpme"))
 (def ^:private SECRET (Pwdify "secret"))
 
-(def ^CryptoStoreAPI ^:private ROOTCS (MakeCryptoStore (InitStore! (GetPkcsStore) ROOTPFX HELPME) HELPME))
+(def ^CryptoStoreAPI ^:private ROOTCS (CryptoStore* (InitStore! (GetPkcsStore) ROOTPFX HELPME) HELPME))
 
-(def ^CryptoStoreAPI ^:private ROOTKS (MakeCryptoStore (InitStore! (GetJksStore) ROOTJKS HELPME) HELPME))
+(def ^CryptoStoreAPI ^:private ROOTKS (CryptoStore* (InitStore! (GetJksStore) ROOTJKS HELPME) HELPME))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,7 +70,7 @@
 (is (= "heeloo" (let [ pkey (Bytesify (nsb TESTPWD)) ]
                       (Stringify (BcDecr pkey (BcEncr pkey "heeloo" "AES") "AES")))))
 
-(is (= "heeloo" (let [ kp (MakeKeypair "RSA" 1024)
+(is (= "heeloo" (let [ kp (AsymKeyPair*  "RSA" 1024)
                        pu (.getEncoded (.getPublic kp))
                        pv (.getEncoded (.getPrivate kp)) ]
                       (Stringify (AsymDecr pv (AsymEncr pu (Bytesify "heeloo")))))))
@@ -82,8 +82,8 @@
 (is (.startsWith ^String (.encoded ^PasswordAPI (Pwdify "secret-text")) "CRYPT:"))
 
 
-(is (= "SHA-512" (.getAlgorithm (MakeMsgDigest SHA_512))))
-(is (= "MD5" (.getAlgorithm (MakeMsgDigest MD_5))))
+(is (= "SHA-512" (.getAlgorithm (MsgDigest* SHA_512))))
+(is (= "MD5" (.getAlgorithm (MsgDigest* MD_5))))
 
 (is (> (NextSerial) 0))
 
@@ -92,23 +92,23 @@
 (is (= "PKCS12" (.getType (GetPkcsStore))))
 (is (= "JKS" (.getType (GetJksStore))))
 
-(is (instance? Policy (MakeEasyPolicy)))
+(is (instance? Policy (EasyPolicy*)))
 
 (is (> (.length (GenMac (Bytesify "secret") "heeloo world")) 0))
 (is (> (.length (GenHash "heeloo world")) 0))
 
-(is (not (nil? (MakeKeypair "RSA" 1024))))
+(is (not (nil? (AsymKeyPair* "RSA" 1024))))
 
-(is (let [ v (MakeCsrReq 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
+(is (let [ v (CsrReQ* 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
           (and (= (count v) 2) (> (alength ^bytes (first v)) 0) (> (alength ^bytes (nth v 1)) 0))) )
 
 (is (let [ fout (TempFile "kenl" ".p12")]
-      (MakeSSv1PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" HELPME fout
+      (SSv1PKCS12* "C=AU,ST=NSW,L=Sydney,O=Google" HELPME fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
       (> (.length fout) 0)))
 
 (is (let [ fout (TempFile "x" ".jks") ]
-      (MakeSSv1JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+      (SSv1JKS* "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                           { :start (Date.) :end ENDDT :keylen 1024 })
             (> (.length fout) 0)))
 
@@ -118,7 +118,7 @@
        fout (TempFile "x" ".p12")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
-            (MakeSSv3PKCS12 "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+            (SSv3PKCS12* "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 
@@ -128,7 +128,7 @@
        fout (TempFile "x" ".jks")
        pk (.getPrivateKey pke)
        cs (.getCertificateChain pke) ]
-            (MakeSSv3JKS "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
+            (SSv3JKS* "C=AU,ST=NSW,L=Sydney,O=Google" SECRET fout
                                 { :start (Date.) :end ENDDT :issuerCerts (seq cs) :issuerKey pk })
               (> (.length fout) 0)))
 

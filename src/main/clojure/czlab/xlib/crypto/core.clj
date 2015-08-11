@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.io :refer [Streamify ByteOS ResetStream!]]
-    [czlab.xlib.util.str :refer [lcase ucase strim nsb hgl?]]
+    [czlab.xlib.util.str :refer [lcase ucase strim hgl?]]
     [czlab.xlib.util.files :refer [WriteOneFile]]
     [czlab.xlib.util.dates :refer [PlusMonths]]
     [czlab.xlib.util.mime :as mime]
@@ -231,14 +231,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeMsgDigest
+(defn MsgDigest*
 
   "Get a message digest instance"
 
   ^MessageDigest
   [algo]
 
-  (MessageDigest/getInstance (nsb algo) _BCProvider))
+  (MessageDigest/getInstance (str algo) _BCProvider))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -337,7 +337,7 @@
   [^KeyStore keystore]
 
   (findAliases keystore
-               #(.isCertificateEntry ^KeyStore %1 (nsb %2))))
+               #(.isCertificateEntry ^KeyStore %1 (str %2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -348,7 +348,7 @@
   [^KeyStore keystore]
 
   (findAliases keystore
-               #(.isKeyEntry ^KeyStore %1 (nsb %2))))
+               #(.isKeyEntry ^KeyStore %1 (str %2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -490,13 +490,13 @@
         ks (GetPkcsStore) ]
     (.load ks (Streamify bits) ca)
     (.getEntry ks
-               (nsb (first (PKeyAliases ks)))
+               (str (first (PKeyAliases ks)))
                (KeyStore$PasswordProtection. ca))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeEasyPolicy
+(defn EasyPolicy*
 
   "Make a Policy that enables all permissions"
 
@@ -544,7 +544,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeKeypair
+(defn AsymKeyPair*
 
   "Make a Asymmetric key-pair"
 
@@ -657,15 +657,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeCsrReq
+(defn CsrReQ*
 
   "Make a PKCS10 - csr-request"
 
   [keylen ^String dnStr ^clojure.lang.Keyword fmt]
 
   (log/debug "csrreq: dnStr= %s, key-len= %s" dnStr keylen)
-  (let [csb (JcaContentSignerBuilder. (nsb DEF_ALGO))
-        kp (MakeKeypair (nsb RSA) keylen)
+  (let [csb (JcaContentSignerBuilder. (str DEF_ALGO))
+        kp (AsymKeyPair* (str RSA) keylen)
         rbr (JcaPKCS10CertificationRequestBuilder.
               (X500Principal. dnStr)
               (.getPublic kp))
@@ -739,7 +739,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePkcs12
+(defn Pkcs12*
 
   "Make a PKCS12 object from key and cert"
 
@@ -764,7 +764,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSSv1PKCS12
+(defn SSv1PKCS12*
 
   "Make a SSV1 (root level) type PKCS12 object"
 
@@ -777,14 +777,14 @@
         opts (assoc (merge dft options) :dnStr dnStr)
         keylen (:keylen opts)
         ssv1 (mkSSV1 (GetPkcsStore)
-                     (MakeKeypair (nsb RSA) keylen)
+                     (AsymKeyPair* (str RSA) keylen)
                      pwdObj opts) ]
     (WriteOneFile out ssv1)
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSSv1JKS
+(defn SSv1JKS*
 
   "Make a SSV1 (root level) type JKS object"
 
@@ -797,7 +797,7 @@
         opts (assoc (merge dft options) :dnStr dnStr)
         keylen (:keylen opts)
         jks (mkSSV1 (GetJksStore)
-                    (MakeKeypair (nsb DSA) keylen)
+                    (AsymKeyPair* (str DSA) keylen)
                     pwdObj opts) ]
     (WriteOneFile out jks)
   ))
@@ -820,7 +820,7 @@
                                           ^Date (:end options)
                                           subject
                                           (.getPublic kp))
-        cs (-> (JcaContentSignerBuilder. (nsb (:algo options)))
+        cs (-> (JcaContentSignerBuilder. (str (:algo options)))
                (.setProvider pv)
                (.build issuerKey)) ]
     (-> bdr (.addExtension X509Extension/authorityKeyIdentifier
@@ -852,7 +852,7 @@
         issuerCerts (vec (first issuerObjs))
         [^Certificate cert ^PrivateKey pkey]
         (mkSSV3Cert (.getProvider ks)
-                    (MakeKeypair (.getAlgorithm issuerKey)
+                    (AsymKeyPair* (.getAlgorithm issuerKey)
                                  (:keylen options))
                     [ (first issuerCerts) issuerKey ]
                     options)
@@ -891,7 +891,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSSv3PKCS12
+(defn SSv3PKCS12*
 
   "Make a SSV3 type PKCS12 object"
 
@@ -909,7 +909,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; JKS uses SUN and hence needs to use DSA
 ;;
-(defn MakeSSv3JKS
+(defn SSv3JKS*
 
   "Make a SSV3 JKS object"
 
@@ -943,7 +943,7 @@
                      (.setProvider _BCProvider)
                      (.build)))
 ;;    "SHA1withRSA"
-        cs (-> (JcaContentSignerBuilder. (nsb SHA512))
+        cs (-> (JcaContentSignerBuilder. (str SHA512))
                (.setProvider _BCProvider)
                (.build (.getPrivateKey pkey)))
         ^X509Certificate x509 (first cl) ]
@@ -965,7 +965,7 @@
   (Session/getInstance
     (System/getProperties)
     (when-not (empty? user)
-      (DefaultAuthenticator. user (nsb pwdObj)) )))
+      (DefaultAuthenticator. user (str pwdObj)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1085,13 +1085,13 @@
 
   (if (empty? dft)
     (if (hgl? cType)
-      (nsb (tryc
+      (str (tryc
              (-> (ContentType. cType)
                  (.getParameter "charset")
                  (MimeUtility/javaCharset ))))
       "")
     (let [cs (GetCharset cType) ]
-      (nsb (if (hgl? cs) cs (MimeUtility/javaCharset dft))))) )
+      (str (if (hgl? cs) cs (MimeUtility/javaCharset dft))))) )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1130,7 +1130,7 @@
                            (.setProvider _BCProvider)
                            (.build)))
                   (.setDirectSignature true))
-        cs (-> (JcaContentSignerBuilder. (nsb algo))
+        cs (-> (JcaContentSignerBuilder. (str algo))
                (.setProvider _BCProvider)
                (.build pkey)) ]
     (-> bdr (.setSignedAttributeGenerator
@@ -1481,7 +1481,7 @@
   (let [bdr (JcaSignerInfoGeneratorBuilder. (-> (JcaDigestCalculatorProviderBuilder.)
                                                 (.setProvider _BCProvider)
                                                 (.build)))
-        cs (-> (JcaContentSignerBuilder. (nsb algo))
+        cs (-> (JcaContentSignerBuilder. (str algo))
                (.setProvider _BCProvider)
                (.build pkey))
         gen (CMSSignedDataGenerator.)
@@ -1552,14 +1552,14 @@
   ^String
   [^bytes data ^String algo]
 
-  (let [ hv (-> (MessageDigest/getInstance (nsb algo))
+  (let [ hv (-> (MessageDigest/getInstance (str algo))
                 (.digest data))
          hlen (alength hv)
          tail (dec hlen) ]
     (loop [ret (StringBuilder.)
            i 0 ]
       (if (>= i hlen)
-        (nsb ret)
+        (str ret)
         (let [n (cs/upper-case (Integer/toString (bit-and (aget ^bytes hv i) 0xff) 16)) ]
           (-> ret
               (.append (if (= (.length n) 1) (str "0" n) n))
@@ -1701,7 +1701,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSimpleTrustMgr ""
+(defn SimpleTrustMgr* ""
 
   ^X509TrustManager
   []

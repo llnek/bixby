@@ -15,10 +15,10 @@
   czlab.xlib.crypto.ssl
 
   (:require
-    [czlab.xlib.crypto.stores :refer [MakeCryptoStore]]
+    [czlab.xlib.crypto.stores :refer [CryptoStore*]]
     [czlab.xlib.util.core :refer [NewRandom]]
     [czlab.xlib.crypto.core
-     :refer [PkcsFile? GetJksStore GetPkcsStore MakeSimpleTrustMgr]])
+     :refer [PkcsFile? GetJksStore GetPkcsStore ]])
 
   (:require
     [czlab.xlib.util.logging :as log])
@@ -50,7 +50,7 @@
           (if (PkcsFile? keyUrl)
             (GetPkcsStore inp pwdObj)
             (GetJksStore inp pwdObj)))
-     cs (MakeCryptoStore ks pwdObj)
+     cs (CryptoStore* ks pwdObj)
      tmf (.trustManagerFactory cs)
      kmf (.keyManagerFactory cs)
      ctx (->> (or flavor "TLS")
