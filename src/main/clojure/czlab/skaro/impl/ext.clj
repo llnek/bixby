@@ -107,7 +107,7 @@
                 (merge cfg0))
         hid (:handler cfg)
         eid (.id bk)
-        obj (MakeEmitter ctr eid nm)
+        obj (Emitter* ctr eid nm)
         mm (meta obj) ]
     (log/info "about to synthesize an emitter: %s" eid)
     (log/info "emitter meta: %s" mm)

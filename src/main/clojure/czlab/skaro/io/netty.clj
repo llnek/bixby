@@ -125,7 +125,6 @@
 
   (let [^WebSockResult res (.getResultObj evt)
         ^XData xs (.getData res)
-        bits (.javaBytes xs)
         ^WebSocketFrame
         f (cond
             (.isBinary res)
@@ -160,22 +159,23 @@
 
   ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
   (let [^Muble res (.getResultObj evt)
+        loc (.getv res :redirect)
         cks (.getv res :cookies)
         code (.getv res :code)
-        loc (.getv res :redirect)
         data (.getv res :data)
         hdrs (.getv res :hds)
         rsp (MakeHttpReply code) ]
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
-    (with-local-vars [clen 0 raf nil payload nil]
+    (with-local-vars [clen 0
+                      raf nil payload nil]
       (doseq [[nm vs]  hdrs]
-        (when-not (= "content-length" (lcase nm))
+        (when (not= "content-length" (lcase nm))
           (doseq [vv (seq vs)]
             (AddHeader rsp nm vv))))
       (doseq [s (csToNetty cks)]
-        (AddHeader rsp HttpHeaders$Names/SET_COOKIE s) )
+        (AddHeader rsp HttpHeaders$Names/SET_COOKIE s))
       (cond
         (and (>= code 300)
              (< code 400))
@@ -242,7 +242,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NettyTrigger
+(defn NettyTrigger*
 
   "Create a Netty Async Trigger"
 
@@ -531,8 +531,8 @@
             evt (IOESReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [w
-                (-> (NettyTrigger ch evt co)
-                    (AsyncWaitHolder  evt)) ]
+                (-> (NettyTrigger* ch evt co)
+                    (AsyncWaitHolder*  evt)) ]
             (.timeoutMillis w waitMillis)
             (.hold co w)))
         (.dispatch co evt {})))))

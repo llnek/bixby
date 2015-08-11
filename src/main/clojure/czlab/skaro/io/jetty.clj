@@ -267,7 +267,7 @@
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
         (.bindSession evt wss)
-        (let [w (AsyncWaitHolder
+        (let [w (AsyncWaitHolder*
                   (makeServletTrigger req rsp co) evt) ]
           (.timeoutMillis w waitMillis)
           (doto ^Emitter co

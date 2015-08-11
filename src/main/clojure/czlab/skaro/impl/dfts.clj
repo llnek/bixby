@@ -162,7 +162,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakePodMeta
+(defn PodMeta*
 
   "Create metadata for an application bundle"
 

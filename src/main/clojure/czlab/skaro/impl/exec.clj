@@ -15,22 +15,20 @@
   czlab.skaro.impl.exec
 
   (:require
+    [czlab.xlib.util.files :refer [ListFiles Unzip]]
     [czlab.xlib.util.str :refer [strim hgl? ToKW]]
     [czlab.xlib.util.mime :refer [SetupCache]]
-    [czlab.xlib.util.files :refer [ListFiles Unzip]]
     [czlab.xlib.util.process :refer [SafeWait]]
-    [czlab.skaro.impl.dfts :refer [MakePodMeta]]
+    [czlab.xlib.util.format :refer [ReadEdn]]
+    [czlab.skaro.impl.dfts :refer [PodMeta*]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.core
-    :refer [LoadJavaProps test-nestr FPath tryletc tryc
+    :refer [test-nestr FPath tryletc tryc
     NewRandom GetCwd
     ConvLong MubleObj juid test-nonil]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.files
     :refer [Mkdirs ReadOneUrl]])
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
@@ -44,7 +42,6 @@
     [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.loaders AppClassLoader]
     [com.zotohlab.skaro.core Muble Context]
-    [org.apache.commons.lang3 StringUtils]
     [java.io File FileFilter]
     [java.security SecureRandom]
     [java.util.zip ZipFile]
@@ -90,7 +87,7 @@
       ;; synthesize the pod meta component and register it
       ;; as a application
       (let [^Context
-            m (-> (MakePodMeta app
+            m (-> (PodMeta* app
                                info
                                (io/as-url des))
                   (SynthesizeComponent {:ctx ctx})) ]

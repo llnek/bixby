@@ -268,7 +268,7 @@
                                              (.group mc (int i)) 1))))
         (var-set mp (FPath (File. ^String @mp)))
         (let [cfg (-> ^Muble src (.getv :emcfg))
-              w (AsyncWaitHolder (NettyTrigger ch evt src) evt)]
+              w (AsyncWaitHolder* (NettyTrigger* ch evt src) evt)]
           (.timeoutMillis w (:waitMillis cfg))
           (doto src
             (.hold w)
@@ -302,8 +302,8 @@
                      :params (merge {} pms)
                      :template (.getTemplate ri)}
             w
-            (AsyncWaitHolder
-              (NettyTrigger ch evt src) evt)]
+            (AsyncWaitHolder*
+              (NettyTrigger* ch evt src) evt)]
         (.timeoutMillis w (:waitMillis cfg))
         (doto ^Emitter src
           (.hold  w)

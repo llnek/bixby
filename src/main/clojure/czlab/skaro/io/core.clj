@@ -232,7 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeEmitter
+(defn Emitter*
 
   "Create an Emitter"
 
@@ -329,7 +329,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsyncWaitHolder
+(defn AsyncWaitHolder*
 
   "Create a async wait wrapper"
 
