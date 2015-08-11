@@ -28,6 +28,7 @@
   (:import
     [java.net InetAddress MalformedURLException]
     [java.lang.management ManagementFactory]
+    [com.zotohlab.skaro.runtime JMXServer]
     [java.rmi NoSuchObjectException]
     [com.zotohlab.frwk.core Startable]
     [com.zotohlab.skaro.core Muble]
@@ -115,21 +116,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol JMXServer
+(defn JmxServer* ""
 
-  "JMX Server API"
-
-  (reg [_ obj domain nname paths] )
-  (setRegistryPort [_ port])
-  (setServerPort [_ port])
-  (reset [_] )
-  (dereg [_ nm] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn MakeJmxServer ""
-
-  ^czlab.xlib.jmx.core.JMXServer
+  ^JMXServer
   [^String host]
 
   (let

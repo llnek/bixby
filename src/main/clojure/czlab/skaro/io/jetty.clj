@@ -57,6 +57,7 @@
     ContextHandler
     ContextHandlerCollection
     ResourceHandler]
+    [com.zotohlab.skaro.runtime RouteInfo RouteCracker]
     [com.zotohlab.skaro.io IOSession ServletEmitter]
     [org.eclipse.jetty.webapp WebAppContext]
     [javax.servlet.http HttpServletRequest HttpServletResponse]
@@ -235,7 +236,7 @@
     (doto svr
       (.setConnectors (into-array Connector [cc])))
     (.setv co :jetty svr)
-    (.setv co :cracker (MakeRouteCracker rts))
+    (.setv co :cracker (RouteCracker* rts))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -246,7 +247,7 @@
    ^Continuation ct
    ^HttpServletRequest req rsp]
 
-  (let [^czlab.xlib.net.routes.RouteCracker
+  (let [^RouteCracker
         ck (.getv co :cracker)
         cfg {:method (ucase (.getMethod req))
              :uri (.getRequestURI req)}
@@ -258,7 +259,7 @@
       (JettyUtils/replyRedirect req rsp r4)
 
       (= r1 true)
-      (let [^czlab.xlib.net.routes.RouteInfo ri r2
+      (let [^RouteInfo ri r2
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
             wss (MakeWSSession co ssl)

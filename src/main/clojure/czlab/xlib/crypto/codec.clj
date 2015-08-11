@@ -17,12 +17,10 @@
   (:require
     [czlab.xlib.util.core
         :refer [NewRandom Bytesify Stringify ThrowBadArg]]
-    [czlab.xlib.util.io :refer [ByteOS]]
-    [czlab.xlib.util.str :refer [nichts? nsb]])
-
-  (:require
+    [czlab.xlib.util.meta :refer [CharsClass BytesClass]]
+    [clojure.math.numeric-tower :as math]
     [czlab.xlib.util.logging :as log]
-    [clojure.math.numeric-tower :as math])
+    [czlab.xlib.util.io :refer [ByteOS]])
 
   (:import
     [org.bouncycastle.crypto.params DESedeParameters KeyParameter]
@@ -37,7 +35,7 @@
     [java.security Key KeyFactory SecureRandom]
     [java.security.spec PKCS8EncodedKeySpec X509EncodedKeySpec]
     [javax.crypto Cipher]
-    [com.zotohlab.frwk.crypto PasswordAPI]
+    [com.zotohlab.frwk.crypto Cryptor PasswordAPI]
     [org.mindrot.jbcrypt BCrypt]
     [org.bouncycastle.crypto KeyGenerationParameters]
     [org.bouncycastle.crypto.engines
@@ -127,20 +125,6 @@
 
       pwd)
   ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol BaseCryptor
-
-  "Methods supported by a crypto object"
-
-  (decrypt [_ ^bytes pkey ^String cipherText]
-           [_ ^String cipherText] )
-
-  (encrypt [_ ^bytes pkey ^String text]
-           [_ ^String text] )
-
-  (algo [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; caesar cipher
@@ -239,7 +223,7 @@
   [^String text shiftpos]
 
   (if (or (== shiftpos 0)
-          (nichts? text))
+          (empty? text))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -259,7 +243,7 @@
   [^String text shiftpos]
 
   (if (or (== shiftpos 0)
-          (nichts? text))
+          (empty? text))
     text
     (let [delta (mod (math/abs shiftpos) VISCHS_LEN)
           ca (.toCharArray text)
@@ -276,12 +260,14 @@
   "Decrypt using Jasypt"
 
   ^String
-  [^chars pkey ^String text]
+  [pkey data]
+
+  {:pre [(= (CharsClass) (class pkey))
+         (instance? String data)]}
 
   (-> (doto (StrongTextEncryptor.)
-            (.setPasswordCharArray pkey))
-      (.decrypt text)
-  ))
+            (.setPasswordCharArray ^chars pkey))
+      (.decrypt data)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -290,38 +276,39 @@
   "Encrypt using Jasypt"
 
   ^String
-  [^chars pkey ^String text]
+  [pkey data]
+
+  {:pre [(= (CharsClass) (class pkey))
+         (instance? String data)]}
 
   (-> (doto (StrongTextEncryptor.)
-            (.setPasswordCharArray pkey))
-      (.encrypt text)
-  ))
+            (.setPasswordCharArray ^chars pkey))
+      (.encrypt data)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn JasyptCryptor
+(defn JasyptCryptor*
 
   "Make a cryptor using Jasypt lib"
 
-  ^czlab.xlib.crypto.codec.BaseCryptor
+  ^Cryptor
   []
 
-  (reify BaseCryptor
+  (reify Cryptor
 
-    (decrypt [this cipherText]
-      (.decrypt this C_KEYCS cipherText))
+    (decrypt [this cipher]
+      (.decrypt this C_KEYCS cipher))
 
-    (decrypt [_ pkey cipherText]
-      (jaDecr pkey cipherText))
+    (decrypt [_ pkey cipher]
+      (jaDecr pkey cipher))
 
-    (encrypt [this text]
-      (.encrypt this C_KEYCS text))
+    (encrypt [this data]
+      (.encrypt this C_KEYCS data))
 
-    (encrypt [_ pkey text]
-      (jaEncr pkey text))
+    (encrypt [_ pkey data]
+      (jaEncr pkey data))
 
-    (algo [_] "PBEWithMD5AndTripleDES")
-  ))
+    (algo [_] "PBEWithMD5AndTripleDES")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; java cryptor
@@ -341,15 +328,20 @@
 ;;
 (defn- javaEncr
 
-  "Encrypt using Java, returns a base64 encoded string"
+  "Encrypt using Java"
 
-  ^String
-  [^bytes pkey ^String text ^String algo]
+  ^bytes
+  [pkey data ^String algo]
 
-  (if (empty? text)
-    text
+  {:pre [(= (BytesClass) (class pkey))]}
+
+  (if (empty? data)
+    nil
     (let [c (getCipher pkey Cipher/ENCRYPT_MODE algo)
-          p (Bytesify text)
+          ^bytes
+          p (if (string? data)
+              (Bytesify data)
+              data)
           plen (alength p)
           baos (ByteOS)
           out (byte-array (max 4096 (.getOutputSize c plen)))
@@ -357,22 +349,26 @@
       (when (> n 0) (.write baos out 0 n))
       (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
-      (Base64/encodeBase64String (.toByteArray baos)))
-  ))
+        (.toByteArray baos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- javaDecr
 
-  "Decrypt using Java. Input is a base64 encoded cipher"
+  "Decrypt using Java"
 
-  ^String
-  [^bytes pkey ^String encoded ^String algo]
+  ^bytes
+  [pkey encoded ^String algo]
+
+  {:pre [(= (BytesClass) (class pkey))]}
 
   (if (empty? encoded)
-    encoded
+    nil
     (let [c (getCipher pkey Cipher/DECRYPT_MODE algo)
-          p (Base64/decodeBase64 encoded)
+          ^bytes
+          p (if (string? encoded)
+              (Bytesify encoded)
+              encoded)
           plen (alength p)
           baos (ByteOS)
           out (byte-array (max 4096 (.getOutputSize c plen)))
@@ -380,36 +376,35 @@
       (when (> n 0) (.write baos out 0 n))
       (let [n2 (.doFinal c out 0) ]
         (when (> n2 0) (.write baos out 0 n2)))
-      (Stringify (.toByteArray baos)))
-  ))
+      (.toByteArray baos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn JavaCryptor
+(defn JavaCryptor*
 
   "Make a Standard Java cryptor"
 
-  ^czlab.xlib.crypto.codec.BaseCryptor
+  ^Cryptor
   []
 
-  (reify BaseCryptor
+  (reify Cryptor
 
-    (decrypt [this cipherText]
-      (.decrypt this C_KEYBS cipherText))
+    (decrypt [this cipher]
+      (.decrypt this C_KEYBS cipher))
 
-    (decrypt [this pkey cipherText]
+    (decrypt [this pkey cipher]
       (ensureKeySize pkey (.algo this))
-      (javaDecr pkey cipherText (.algo this)))
+      (javaDecr pkey cipher (.algo this)))
 
-    (encrypt [this clearText]
-      (.encrypt this C_KEYBS clearText))
+    (encrypt [this clear]
+      (.encrypt this C_KEYBS clear))
 
-    (encrypt [this pkey clearText]
+    (encrypt [this pkey clear]
       (ensureKeySize pkey (.algo this))
-      (javaEncr pkey clearText (.algo this)))
+      (javaEncr pkey clear (.algo this)))
 
-    (algo [_] T3_DES) ;;PBEWithMD5AndDES
-  ))
+    (algo [_] T3_DES)))
+    ;;PBEWithMD5AndDES))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BC cryptor
@@ -422,8 +417,7 @@
     "AES" (AESEngine.)
     "RSA" (RSAEngine.)
     "Blowfish" (BlowfishEngine.)
-    nil
-  ))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 1024 - 2048 bits RSA
@@ -431,18 +425,20 @@
 
   "Encrypt using a public key, returns a base64 encoded cipher"
 
-  ^String
-  [^bytes pubKey ^bytes data]
+  ^bytes
+  [^bytes pubKey data]
 
-  (if (nil? data)
-    data
+  (if (empty? data)
+    nil
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePublic (X509EncodedKeySpec. pubKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
-                       (.init Cipher/ENCRYPT_MODE pk))
-          out (.doFinal cipher data) ]
-      (Base64/encodeBase64String out))
-  ))
+                       (.init Cipher/ENCRYPT_MODE pk)) ]
+      (->> ^bytes
+           (if (string? data)
+             (Bytesify  data)
+             data)
+           (.doFinal cipher )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -451,15 +447,19 @@
   "Decrypt using a private key, input is a base64 encoded cipher"
 
   ^bytes
-  [^bytes prvKey ^String cipherText]
+  [^bytes prvKey encoded]
 
-  (when-not (empty? cipherText)
+  (if (empty? encoded)
+    nil
     (let [^Key pk (-> (KeyFactory/getInstance "RSA")
                       (.generatePrivate (PKCS8EncodedKeySpec. prvKey)))
           cipher (doto (Cipher/getInstance "RSA/ECB/PKCS1Padding")
                    (.init Cipher/DECRYPT_MODE pk))]
-      (.doFinal cipher (Base64/decodeBase64 cipherText)) )
-  ))
+      (->> ^bytes
+           (if (string? encoded)
+             (Bytesify encoded)
+             encoded)
+           (.doFinal cipher )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; BC cryptor
@@ -467,25 +467,27 @@
 
   "Decrypt using BouncyCastle"
 
-  ^String
-  [^bytes pkey ^String text ^String algo]
+  ^bytes
+  [pkey encoded ^String algo]
 
-  (if (empty? text)
-    text
+  (if (empty? encoded)
+    nil
     (let [cipher (doto (-> (bcXrefCipherEngine algo)
                            (CBCBlockCipher. )
                            (PaddedBufferedBlockCipher. ))
                    (.init false
                           (KeyParameter. (keyAsBits pkey algo))))
-          p (Base64/decodeBase64 text)
+          ^bytes
+          p (if (string? encoded)
+              (Bytesify encoded)
+              encoded)
           out (byte-array 1024)
           baos (ByteOS)
           c (.processBytes cipher p 0 (alength p) out 0) ]
       (when (> c 0) (.write baos out 0 c))
       (let [c2 (.doFinal cipher out 0) ]
         (when (> c2 0) (.write baos out 0 c2)))
-      (Stringify (.toByteArray baos)))
-  ))
+        (.toByteArray baos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -493,11 +495,11 @@
 
   "Encrypt using BouncyCastle, returning a base64 encoded cipher"
 
-  ^String
-  [^bytes pkey ^String text ^String algo]
+  ^bytes
+  [pkey data ^String algo]
 
-  (if (empty? text)
-    text
+  (if (empty? data)
+    nil
     (let [cipher (doto (-> (bcXrefCipherEngine algo)
                            (CBCBlockCipher. )
                            (PaddedBufferedBlockCipher. ))
@@ -505,41 +507,42 @@
                           (KeyParameter. (keyAsBits pkey algo))))
           out (byte-array 4096)
           baos (ByteOS)
-          p (Bytesify text)
+          ^bytes
+          p (if (string? data)
+              (Bytesify data)
+              data)
           c (.processBytes cipher p 0 (alength p) out 0) ]
       (when (> c 0) (.write baos out 0 c))
       (let [c2 (.doFinal cipher out 0) ]
         (when (> c2 0) (.write baos out 0 c2)) )
-      (Base64/encodeBase64String (.toByteArray baos)))
-  ))
+        (.toByteArray baos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BouncyCryptor
+(defn BouncyCryptor*
 
   "Make a cryptor using BouncyCastle"
 
-  ^czlab.xlib.crypto.codec.BaseCryptor
+  ^Cryptor
   []
 
-  (reify BaseCryptor
+  (reify Cryptor
 
-    (decrypt [this cipherText]
-      (.decrypt this C_KEYBS cipherText))
+    (decrypt [this cipher]
+      (.decrypt this C_KEYBS cipher))
 
-    (decrypt [this pkey cipherText]
+    (decrypt [this pkey cipher]
       (ensureKeySize pkey (.algo this))
-      (BcDecr pkey cipherText (.algo this)))
+      (BcDecr pkey cipher (.algo this)))
 
-    (encrypt [this clearText]
-      (.encrypt this C_KEYBS clearText))
+    (encrypt [this clear]
+      (.encrypt this C_KEYBS clear))
 
-    (encrypt [this pkey clearText]
+    (encrypt [this pkey clear]
       (ensureKeySize pkey (.algo this))
-      (BcEncr pkey clearText (.algo this)))
+      (BcEncr pkey clear (.algo this)))
 
-    (algo [_] T3_DES)
-  ))
+    (algo [_] T3_DES)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; passwords
@@ -579,10 +582,10 @@
     (equals [this obj]
       (and (instance? PasswordAPI obj)
            (= (.toString this)
-              (nsb obj))) )
+              (str obj))) )
 
     (hashCode [this]
-      (.hashCode (nsb (.text this))))
+      (.hashCode (str (.text this))))
 
     PasswordAPI
 
@@ -613,11 +616,11 @@
         (empty? pwdStr)
         ""
         :else
-        (str PWD_PFX (.encrypt (JasyptCryptor)
+        (str PWD_PFX (.encrypt (JasyptCryptor*)
                                (.toCharArray pkey)
                                pwdStr))))
 
-    (text [_] (when-not (empty? pwdStr) (nsb pwdStr) ))
+    (text [_] (when-not (empty? pwdStr) (str pwdStr) ))
 
   ))
 
@@ -632,9 +635,9 @@
 
   (let [pkey (or pkey C_KEY)]
     (if
-      (.startsWith (nsb pwdStr) PWD_PFX)
+      (.startsWith (str pwdStr) PWD_PFX)
       (reifyPassword
-        (.decrypt (JasyptCryptor)
+        (.decrypt (JasyptCryptor*)
                   (.toCharArray pkey)
                   (.substring pwdStr PWD_PFXLEN)) pkey)
       ;else

@@ -36,6 +36,7 @@
         [czlab.xlib.net.routes])
 
   (:import
+    [com.zotohlab.skaro.runtime RouteInfo RouteCracker]
     [org.apache.commons.lang3 StringUtils]
     [io.netty.util ReferenceCountUtil]
     [java.util Date]
@@ -85,7 +86,7 @@
       (log/debug "mvc route filter called with message = %s" (type msg))
       (cond
         (instance? HttpRequest msg)
-        (let [^czlab.xlib.net.routes.RouteCracker
+        (let [^RouteCracker
               ck (.getv co :cracker)
               ^ChannelHandlerContext ctx c
               ^HttpRequest req msg
@@ -139,20 +140,20 @@
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc netty handler called with message = %s" (type msg))
-      (let [^czlab.xlib.net.routes.RouteCracker
+      (let [^RouteCracker
             rcc (.getv co :cracker)
             ^ChannelHandlerContext ctx c
             ch (.channel ctx)
             info (:info msg)
             [r1 r2 r3 r4] (.crack rcc info)
-            ^czlab.xlib.net.routes.RouteInfo ri r2]
+            ^RouteInfo ri r2]
         (if
           (= r1 true)
           (let [^HTTPEvent evt (IOESReifyEvent co ch msg ri) ]
             (log/debug "matched one route: %s, %s%s"
                        (.getPath ri)
-                       "and static = " (.isStatic? ri))
-            (if (.isStatic? ri)
+                       "and static = " (.isStatic ri))
+            (if (.isStatic ri)
               (ServeStatic ri co r3 ch info evt)
               (ServeRoute ri co r3 ch evt)))
           ;;else
@@ -240,7 +241,7 @@
         rts (MaybeLoadRoutes co)
         options (.getv co :emcfg)
         bs (InitTCPServer (mvcInitor co options) options) ]
-    (.setv co :cracker (MakeRouteCracker rts))
+    (.setv co :cracker (RouteCracker* rts))
     (.setv co :netty  { :bootstrap bs })
     co))
 

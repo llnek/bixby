@@ -37,8 +37,9 @@
         [czlab.skaro.impl.ext])
 
   (:import
-    [com.zotohlab.skaro.runtime ExecvisorAPI PODMeta EmitMeta]
     [org.apache.commons.io.filefilter DirectoryFileFilter]
+    [com.zotohlab.skaro.runtime ExecvisorAPI
+    JMXServer PODMeta EmitMeta]
     [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.loaders AppClassLoader]
     [com.zotohlab.skaro.core Muble Context]
@@ -109,8 +110,8 @@
   (tryletc
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
-     jmx (MakeJmxServer host)  ]
-    (.setRegistryPort jmx port)
+     jmx (JmxServer* host)  ]
+    (.setRegistryPort jmx (int port))
     (-> ^Startable jmx (.start))
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
     (-> ^Muble (.getx co)

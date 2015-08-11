@@ -15,7 +15,6 @@
   czlab.skaro.io.netty
 
   (:require
-    [czlab.xlib.net.routes :refer [MakeRouteCracker RouteCracker]]
     [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
@@ -25,6 +24,7 @@
     [czlab.xlib.util.mime :refer [GetCharset]])
 
   (:use [czlab.xlib.netty.filters]
+        [czlab.xlib.net.routes]
         [czlab.xlib.netty.io]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
@@ -32,6 +32,7 @@
 
   (:import
     [com.zotohlab.frwk.server Emitter EventTrigger EventHolder]
+    [com.zotohlab.skaro.runtime RouteCracker RouteInfo]
     [java.io Closeable File IOException RandomAccessFile]
     [java.net HttpCookie URI URL InetSocketAddress]
     [java.net SocketAddress InetAddress]
@@ -492,14 +493,14 @@
       (instance? WebSocketFrame msg)
       (makeWEBSockEvent co ch ssl msg)
       :else
-      (let [^czlab.xlib.net.routes.RouteInfo
+      (let [^RouteInfo
             ri (if (> (count args) 2)
                  (nth args 2)
                  nil)]
         (makeHttpEvent co ch ssl
                        (:payload msg)
                        (:info msg)
-                       (if (nil? ri) false (.isSecure? ri)))))))
+                       (if (nil? ri) false (.isSecure ri)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

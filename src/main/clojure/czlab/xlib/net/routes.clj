@@ -18,16 +18,15 @@
     [czlab.xlib.util.core
         :refer [MubleObj test-cond test-nestr]]
     [czlab.xlib.util.str
-        :refer [ToKW strim lcase ucase nsb nichts? hgl?]]
+        :refer [ToKW strim lcase ucase hgl?]]
     [czlab.xlib.util.files :refer [ReadOneFile]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.format :refer [ReadEdn]])
 
-  (:require [czlab.xlib.util.logging :as log])
-
   (:import
+    [com.zotohlab.skaro.runtime RouteCracker RouteInfo]
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.skaro.core Muble]
-    [com.google.gson JsonObject]
     [java.io File]
     [jregex Matcher Pattern]
     [java.util StringTokenizer]))
@@ -37,33 +36,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol RouteCracker
+(defn- makeRouteInfo ""
 
-  ""
-
-  (routable? [_ msgInfo] )
-  (hasRoutes? [_])
-  (crack [_ msgInfo] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol RouteInfo
-
-  ""
-
-  (getTemplate [_] )
-  (getHandler [_] )
-  (getPath [_] )
-  (isStatic? [_] )
-  (isSecure? [_] )
-  (getVerbs [_] )
-  (resemble? [_ mtd path] )
-  (collect [_ matcher] ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- make-route-info ""
-
+  ^RouteInfo
   [route verbs handler]
 
   (let [impl (MubleObj) ]
@@ -81,14 +56,14 @@
 
         RouteInfo
 
+        (isStatic [_] (true? (.getv impl :static)))
+        (isSecure [_] (true? (.getv impl :secure)))
         (getTemplate [_] (.getv impl :template))
-        (isStatic? [_] (.getv impl :static))
         (getHandler [_] handler)
         (getPath [_] route)
         (getVerbs [_] verbs)
-        (isSecure? [_] (.getv impl :secure))
 
-        (resemble? [_ mtd path]
+        (resemble [_ mtd path]
           (let [^Pattern rg (.getv impl :regex)
                 um (keyword (lcase mtd))
                 m (.matcher rg path) ]
@@ -110,11 +85,10 @@
                 (var-set rc
                          (assoc! rc
                                  @r2
-                                 (nsb (.group mmc ^String @r2)))))
+                                 (str (.group mmc ^String @r2)))))
               (persistent! @rc)))) )
 
-      { :typeid (ToKW "czc.net" "RouteInfo") })
-  ))
+      { :typeid (ToKW "czc.net" "RouteInfo") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -157,6 +131,7 @@
 ;;
 (defn- mkRoute ""
 
+  ^RouteInfo
   [stat rt]
 
   {:pre [(map? rt)]}
@@ -169,7 +144,7 @@
      mpt (get rt :mount "")
      pipe (get rt :pipe "")
      ^Muble
-     rc (make-route-info
+     rc (makeRouteInfo
           uri
           (if (and stat (empty? verb))
               #{:get}
@@ -214,48 +189,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- seek-route
-
+(defn- seekRoute
 
   "[routeinfo, matcher]"
 
   [mtd uri rts]
 
   (when (some? rts)
-    (some #(let [m (-> ^czlab.xlib.net.routes.RouteInfo
+    (some #(let [m (-> ^RouteInfo
                        %1
-                       (.resemble? mtd uri)) ]
+                       (.resemble mtd uri)) ]
              (when (some? m) [%1 m]))
           (seq rts))
   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeRouteCracker
+(defn RouteCracker*
 
   "Create a url route cracker,
    returns [true? RouteInfo? Matcher? Redirect?]"
 
-  ^czlab.xlib.net.routes.RouteCracker
+  ^RouteCracker
   [routes]
 
   (reify RouteCracker
-    (routable? [this msgInfo] (first (crack this msgInfo)))
-    (hasRoutes? [_] (> (count routes) 0))
+    (isRoutable [this msgInfo] (first (.crack this msgInfo)))
+    (hasRoutes [_] (> (count routes) 0))
 
     (crack [_ msgInfo]
       (let [^String mtd (:method msgInfo)
             ^String uri (:uri msgInfo)
-            rc (seek-route mtd uri routes)
+            rc (seekRoute mtd uri routes)
             rt (if (nil? rc)
                   [false nil nil ""]
                   [true (first rc)(last rc) ""] ) ]
         (if (and (false? (first rt))
                  (not (.endsWith uri "/"))
-                 (seek-route mtd (str uri "/") routes))
+                 (seekRoute mtd (str uri "/") routes))
           [true nil nil (str uri "/")]
-          rt)))
-  ))
+          rt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
