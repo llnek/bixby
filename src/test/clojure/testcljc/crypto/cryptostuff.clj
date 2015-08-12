@@ -75,8 +75,8 @@
                        pv (.getEncoded (.getPrivate kp)) ]
                       (Stringify (AsymDecr pv (AsymEncr pu (Bytesify "heeloo")))))))
 
-(is (= (.length ^String (.text (CreateStrongPwd 16))) 16))
-(is (= (.length (CreateRandomString 64)) 64))
+(is (= (.length ^String (.text (StrongPwd* 16))) 16))
+(is (= (.length (RandomStr* 64)) 64))
 
 (is (instance? PasswordAPI (Pwdify "secret-text")))
 (is (.startsWith ^String (.encoded ^PasswordAPI (Pwdify "secret-text")) "CRYPT:"))

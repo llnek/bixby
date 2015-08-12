@@ -29,11 +29,10 @@
 
   [^File homeDir ^File appDir & args]
 
-  (let [pms (into-array String args)]
-    (System/setProperty "skaro.home.dir" (.getCanonicalPath homeDir))
-    (System/setProperty "skaro.app.dir" (.getCanonicalPath appDir))
-    (App/main pms)
-  ))
+  (System/setProperty "skaro.home.dir" (.getCanonicalPath homeDir))
+  (System/setProperty "skaro.app.dir" (.getCanonicalPath appDir))
+  (->> (into-array String args)
+       (App/main )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

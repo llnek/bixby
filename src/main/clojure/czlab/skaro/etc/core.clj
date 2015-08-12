@@ -166,8 +166,8 @@
                (.printStackTrace ^Throwable e)
                (Usage)
                (Nihil/apply)))]
-    (reset! SKARO-HOME-DIR home)
-    (reset! SKARO-RSBUNDLE rcb)
+    (SetGlobals! :homeDir home)
+    (SetGlobals! :rcb rcb)
     (-> ^ServiceHandler
         (FlowServer (NulScheduler) {})
         (.handle wf {:home home

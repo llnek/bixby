@@ -15,7 +15,7 @@
   czlab.xlib.net.comms
 
   (:require
-    [czlab.xlib.crypto.codec :refer [Pwdify CreateRandomString]]
+    [czlab.xlib.crypto.codec :refer [Pwdify RandomStr*]]
     [czlab.xlib.util.str
              :refer [lcase hgl? strim Embeds? HasNocase?]]
     [czlab.xlib.util.core :refer [ThrowIOE Bytesify]]
@@ -112,7 +112,7 @@
 
   [ & [len] ]
 
-  (-> (CreateRandomString (long (or len 18)))
+  (-> (RandomStr* (long (or len 18)))
       (Bytesify )
       (Hex/encodeHexString )))
 
@@ -122,7 +122,7 @@
 
   [ & [len] ]
 
-  (-> (CreateRandomString (long (or len 18)))
+  (-> (RandomStr* (long (or len 18)))
       (Bytesify )
       (Hex/encodeHexString )))
 

@@ -646,7 +646,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateRandomString
+(defn RandomStr*
 
   "Randomly generate some text"
 
@@ -657,7 +657,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateStrongPwd
+(defn StrongPwd*
 
   "Generate a strong password"
 

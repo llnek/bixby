@@ -15,12 +15,15 @@
   czlab.skaro.etc.cmd2
 
   (:require
-    [czlab.xlib.util.ini :refer [ParseInifile]]
     [czlab.xlib.util.str :refer [strim TrimL TrimR]]
+    [czlab.xlib.util.ini :refer [ParseInifile]]
     [czlab.xlib.util.guids :refer [NewUUid]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.files :refer [ReplaceFile]]
-    [czlab.tpcl.antlib :as ant]
+    [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs]
+    [clojure.java.io :as io]
+    [czlab.tpcl.antlib :as a]
     [czlab.xlib.util.core
     :refer [GetUser GetCwd juid
     IsWindows? prn!! prn! FPath]]
@@ -28,21 +31,13 @@
     :refer [ReadOneFile WriteOneFile CopyFileToDir
     DeleteDir CopyFile CopyToDir CopyFiles Unzip Mkdirs]])
 
-  ;;(:refer-clojure :rename {first fst second snd })
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.string :as cs]
-    [clojure.java.io :as io])
-
   (:use [czlab.skaro.core.consts])
 
   (:import
+    [org.apache.commons.io FilenameUtils FileUtils]
     [org.apache.commons.io.filefilter
     FileFileFilter FileFilterUtils]
     [com.zotohlab.skaro.etc CmdHelpError]
-    [org.apache.commons.io FilenameUtils FileUtils]
-    [org.apache.commons.lang3 StringUtils]
     [java.util ResourceBundle UUID]
     [java.io File]))
 
@@ -51,8 +46,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some globals
-(def SKARO-RSBUNDLE (atom nil))
-(def SKARO-HOME-DIR (atom nil))
+(defonce SKARO-PROPS (atom {}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SetGlobals! "" [k v] (swap! SKARO-PROPS assoc k v))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -63,7 +61,7 @@
   ^ResourceBundle
   []
 
-  @SKARO-RSBUNDLE)
+  (:rcb @SKARO-PROPS))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,7 +72,7 @@
   ^File
   []
 
-  @SKARO-HOME-DIR)
+  (:homeDir @SKARO-PROPS))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,7 +105,7 @@
               (if-some [tkn (last t) ]
                 (TrimL tkn ".")
                 (first t))) ]
-    (when (nil? app) (throw (CmdHelpError.)))
+    (when (empty? app) (throw (CmdHelpError.)))
     (case verb
       ("mvc" "web")
       (CreateNetty cwd app path)
@@ -130,17 +128,17 @@
      prog (io/file hhh "bin/skaro")
      cwd (GetCwd)
      tk (if (IsWindows?)
-          (ant/AntExec
+          (a/AntExec
             {:executable "cmd.exe"
              :dir cwd}
             [[:argvalues ["/C" "start" "/B"
                           "/MIN"
                           (FPath progW) "start" ]]])
-          (ant/AntExec
+          (a/AntExec
             {:executable (FPath prog)
              :dir cwd}
             [[:argvalues [ "start" "bg" ]]])) ]
-    (ant/RunTasks* tk)))
+    (a/RunTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,12 +150,12 @@
 
   (let
     [dir (Mkdirs (io/file out))
-     tk (ant/AntZip
+     tk (a/AntZip
           {:destFile (io/file dir (.getName app) ".zip")
            :basedir app
            :excludes "build/**"
            :includes "**/*"}) ]
-    (ant/RunTasks* tk)))
+    (a/RunTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

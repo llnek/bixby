@@ -15,28 +15,28 @@
   czlab.skaro.etc.cmd1
 
   (:require
-    [czlab.xlib.util.files :refer [ReadOneFile Mkdirs WriteOneFile ListFiles]]
+    [czlab.xlib.crypto.codec :refer [StrongPwd* Pwdify]]
+    [czlab.xlib.util.files
+    :refer [ReadOneFile
+    CleanDir Mkdirs WriteOneFile ListFiles]]
     [czlab.xlib.util.cmdline :refer [CLIConverse]]
-    [czlab.xlib.crypto.codec :refer [CreateStrongPwd Pwdify]]
     [czlab.xlib.util.guids :refer [NewUUid NewWWid]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.dates :refer [AddMonths GCal*]]
     [czlab.xlib.util.meta :refer [GetCldr]]
     [czlab.xlib.util.str :refer [ucase hgl? strim]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
+    [clojure.string :as cs]
     [czlab.xlib.util.core
-    :refer [notnil? FPath GetCwd
-    IsWindows? Stringify FlattenNil ConvLong ResStr]]
+    :refer [FPath GetCwd IsWindows?
+    tryc try! Stringify FlattenNil ConvLong ResStr]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.crypto.core
     :refer [AES256_CBC AssertJce PEM_CERT ExportPublicKey
     ExportPrivateKey DbgProvider AsymKeyPair* SSv1PKCS12* CsrReQ*]])
 
   (:refer-clojure :rename {first fst second snd last lst})
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io]
-    [clojure.string :as cs])
 
   (:use [czlab.skaro.etc.boot]
         [czlab.skaro.etc.cmd2]
@@ -47,11 +47,8 @@
     [java.util Map Calendar ResourceBundle Properties Date]
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.skaro.loaders AppClassLoader]
-    [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.skaro.etc CliMain CmdHelpError]
     [com.zotohlab.frwk.crypto PasswordAPI]
-    [org.apache.commons.io FileUtils]
-    [org.apache.commons.codec.binary Hex]
     [com.zotohlab.wflow Job]
     [java.io File]
     [java.security KeyPair PublicKey PrivateKey]))
@@ -112,8 +109,7 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["tst"] args)
-         (apply ExecBootScript
-                (GetHomeDir) (GetCwd) ))))
+         (apply ExecBootScript (GetHomeDir) (GetCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
@@ -137,10 +133,8 @@
     (if (and (= s2 "bg")
              (IsWindows?))
       (RunAppBg home)
-      (try
-        (.callEx rt func (object-array [home]))
-        (catch Throwable t#
-          (.printStackTrace t#))))))
+      (tryc
+        (.callEx rt func (object-array [home]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
@@ -174,7 +168,7 @@
 
   [len]
 
-  (println (CreateStrongPwd len)))
+  (println (StrongPwd* len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -187,11 +181,7 @@
   ;;(DbgProvider java.lang.System/out)
   (let [kp (AsymKeyPair* "RSA" (ConvLong lenStr 1024))
         pvk (.getPrivate kp)
-        puk (.getPublic kp)
-        pk (.getEncoded pvk)
-        pu (.getEncoded puk) ]
-    ;;(println "privatekey-bytes= " (Hex/encodeHexString pk))
-    ;;(println "publickey-bytes = " (Hex/encodeHexString pu))
+        puk (.getPublic kp)]
     (println "privatekey=\n" (Stringify (ExportPrivateKey pvk PEM_CERT)))
     (println "publickey=\n" (Stringify (ExportPublicKey puk PEM_CERT)))))
 
@@ -496,10 +486,10 @@
 ;;
 (defn- scanJars ""
 
-  [^File dir ^StringBuilder out]
+  [^StringBuilder out ^File dir]
 
   (let [sep (System/getProperty "line.separator")
-        fs (ListFiles dir "jar" false) ]
+        fs (ListFiles dir "jar") ]
     (doseq [f fs]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""
@@ -518,7 +508,7 @@
         cwd (GetCwd)
         lang "java"
         ulang (ucase lang) ]
-    (FileUtils/cleanDirectory ec)
+    (CleanDir ec)
     (WriteOneFile
       (io/file ec ".project")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
@@ -532,10 +522,11 @@
                       (FPath (io/file cwd
                                       "src/test" lang)))))
     (.mkdirs (io/file cwd DN_BUILD DN_CLASSES))
-    (scanJars (io/file (GetHomeDir) DN_DIST) sb)
-    (scanJars (io/file (GetHomeDir) DN_LIB) sb)
-    (scanJars (io/file cwd DN_BUILD DN_CLASSES) sb)
-    (scanJars (io/file cwd DN_TARGET) sb)
+    (map (partial scanJars sb)
+         [(io/file (GetHomeDir) DN_DIST)
+          (io/file (GetHomeDir) DN_LIB)
+          (io/file cwd DN_BUILD DN_CLASSES)
+          (io/file cwd DN_TARGET)])
     (WriteOneFile
       (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"

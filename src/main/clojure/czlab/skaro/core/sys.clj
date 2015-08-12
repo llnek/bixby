@@ -16,22 +16,20 @@
 
   (:require
     [czlab.xlib.util.core :refer [MubleObj FPath]]
-    [czlab.xlib.util.files
-    :refer [ChangeFileContent ReadOneFile ReadOneUrl]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
-    [clojure.java.io :as io])
+    [clojure.java.io :as io]
+    [czlab.xlib.util.files
+    :refer [ChangeFileContent
+    ReadOneFile ReadOneUrl]])
 
   (:use [czlab.skaro.core.consts])
 
   (:import
+    [com.zotohlab.frwk.core Hierarchial Identifiable Versioned]
     [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.core Context Muble]
-    [java.io File]
-    [org.apache.commons.lang3 StringUtils]
-    [com.zotohlab.frwk.core Hierarchial Identifiable Versioned]))
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -39,22 +37,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti CompContextualize
-  "Contextualize a component" (fn [a arg] (:typeid (meta a))))
+  "Contextualize a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti CompCompose
-  "Compose a component" (fn [a rego] (:typeid (meta a))))
+  "Compose a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti CompConfigure
-  "Configure a component" (fn [a options] (:typeid (meta a))))
+  "Configure a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti CompInitialize
-  "Init a component" (fn [a] (:typeid (meta a))))
+  "Init a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,9 +69,9 @@
   [co options]
 
   (let [{:keys [props rego ctx]} options]
-    (when (some? ctx) (CompContextualize co ctx))
-    (when (some? rego) (CompCompose co rego))
-    (when (some? props) (CompConfigure co props))
+    (CompContextualize co ctx)
+    (CompCompose co rego)
+    (CompConfigure co props)
     (CompInitialize co)
     co))
 
@@ -86,14 +84,7 @@
   ^Muble
   []
 
-  (let [impl (MubleObj) ]
-    (reify Muble
-      (setv [_ k v] (.setv impl k v) )
-      (seq [_] (.seq impl))
-      (toEDN [_] (.toEDN impl))
-      (getv [_ k] (.getv impl k) )
-      (unsetv [_ k] (.unsetv impl k) )
-      (clear [_] (.clear impl)))))
+  (MubleObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,12 +112,11 @@
   ^Muble
   [^Context co ^Muble ctx]
 
-  (when (some? ctx)
-    (let [x (MakeContext) ]
-      (doseq [[k v] (.seq ctx) ]
-        (.setv x k v))
-      (.setx co x)))
-  co)
+  (let [x (MakeContext) ]
+    (doseq [[k v] (or ctx [])]
+      (.setv x k v))
+    (.setx co x)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,27 +128,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :default
-
-  [co props]
-
-  co)
+(defmethod CompConfigure :default [co props] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :default
-
-  [co]
-
-  co)
+(defmethod CompInitialize :default [co] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompCompose :default
-
-  [co rego]
-
-  co)
+(defmethod CompCompose :default [co rego] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
