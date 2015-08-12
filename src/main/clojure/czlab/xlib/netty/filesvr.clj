@@ -140,7 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
 ;;
-(defn MakeMemFileServer
+(defn MemFileServer*
 
   "A file server which can get/put files"
 
@@ -167,7 +167,7 @@
     (println "usage: filesvr host port <rootdir>"))
 
   ;; 64meg max file size
-  (MakeMemFileServer (nth args 0)
+  (MemFileServer* (nth args 0)
                      (ConvInt (nth args 1) 8080)
                      (nth args 2)
                      {}))

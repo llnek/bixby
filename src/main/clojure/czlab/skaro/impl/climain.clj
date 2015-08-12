@@ -15,7 +15,7 @@
   czlab.skaro.impl.climain
 
   (:require
-    [czlab.xlib.netty.discarder :refer [MakeDiscardHTTPD]]
+    [czlab.xlib.netty.discarder :refer [DiscardHTTPD*]]
     [czlab.xlib.util.str :refer [lcase hgl? strim]]
     [czlab.xlib.util.io :refer [CloseQ]]
     [czlab.xlib.util.logging :as log]
@@ -31,7 +31,7 @@
     [czlab.xlib.util.core
     :refer [test-nonil test-cond ConvLong SysVar
     FPath PrintMutableObj MubleObj]]
-    [czlab.skaro.impl.exec :refer [MakeExecvisor]]
+    [czlab.skaro.impl.exec :refer [Execvisor*]]
     [czlab.xlib.netty.io :refer [StopServer]])
 
   (:use [czlab.skaro.core.consts]
@@ -63,8 +63,7 @@
     ServiceHandler Component ]
     [com.zotohlab.skaro.etc CmdHelpError]
     [java.util ResourceBundle Locale]
-    [java.io File]
-    [org.apache.commons.io FileUtils]))
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -108,15 +107,14 @@
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
-      (log/info "closing the http discarder...")
+      (log/info "closing the remote shutdown")
       (StopServer (:bootstrap kp)
                   (:channel kp))
-      (log/info "http discarder closed. ok")
+      (log/info "remote shutdown closed. ok")
       ;;(when-not (nil? pid) (io/delete-file pid true))
       (log/info "containers are shutting down...")
       (log/info "about to stop skaro...")
-      (when (some? execv)
-        (.stop ^Startable execv))
+      (when (some? execv) (.stop ^Startable execv))
       (log/info "skaro stopped")
       (log/info "vm shut down")
       (log/info "\"goodbye\""))))
@@ -132,7 +130,7 @@
   (log/info "enabling remote shutdown")
   (->> (-> (SysVar "skaro.kill.port")
            (ConvLong  4444)
-           (MakeDiscardHTTPD #(stopCLI ctx)))
+           (DiscardHTTPD* #(stopCLI ctx)))
        (.setv ctx K_KILLPORT )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,14 +253,14 @@
         (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
         (log/info "inside primodial() ----------------------------->")
         (log/info "execvisor = %s" cz)
-        (let [^Startable execv (MakeExecvisor cli)]
+        (let [execv (Execvisor* cli)]
           (.setv ctx K_EXECV execv)
           (SynthesizeComponent execv {:ctx ctx})
           (log/info "execvisor created and synthesized - ok")
           (log/info "*********************************************************")
           (log/info "about to start skaro...")
           (log/info "*********************************************************")
-          (.start execv)
+          (-> ^Startable execv (.start ))
           (log/info "skaro started!"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -97,7 +97,7 @@
         (getModels [_]
           [StdAddress AuthRole
            LoginAccount AccountRole] ))
-      (MakeMetaCache )))
+      (MetaCache* )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,7 +134,7 @@
   JDBCInfo
   (applyDDL [this]
     (when-some [dbtype (MatchJdbcUrl (.getUrl this)) ]
-      (with-open [conn (MakeConnection this) ]
+      (with-open [conn (DbConnection* this) ]
         (UploadDdl conn (GenerateAuthPluginDDL dbtype)))))
 
   JDBCPool

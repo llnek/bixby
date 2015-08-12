@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJdbc
+(defn Jdbc*
 
   "Make a JDBCInfo record"
 
@@ -596,7 +596,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSchema
+(defn DbSchema*
 
   "A schema holds the set of models"
 
@@ -787,7 +787,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeMetaCache
+(defn MetaCache*
 
   "A cache storing meta-data for all models"
 
@@ -851,7 +851,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeConnection
+(defn DbConnection*
 
   "Connect to database referred by this jdbc"
 
@@ -875,7 +875,7 @@
 
   [jdbc]
 
-  (tryc (.close (MakeConnection jdbc))))
+  (tryc (.close (DbConnection* jdbc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -887,7 +887,7 @@
 
   [jdbc]
 
-  (with-open [conn (MakeConnection jdbc) ]
+  (with-open [conn (DbConnection* jdbc) ]
     (ResolveVendor conn)
   ))
 
@@ -930,7 +930,7 @@
 
   [jdbc ^String table]
 
-  (with-open [conn (MakeConnection jdbc) ]
+  (with-open [conn (DbConnection* jdbc) ]
     (TableExist? conn table)
   ))
 
@@ -968,7 +968,7 @@
 
   [jdbc ^String table]
 
-  (with-open [conn (MakeConnection jdbc) ]
+  (with-open [conn (DbConnection* jdbc) ]
     (RowExist? conn table)
   ))
 
@@ -1095,7 +1095,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeDbPool
+(defn DbPool*
 
   "Create a db connection pool"
 
@@ -1195,7 +1195,7 @@
 
   [jdbc ^String ddl]
 
-  (with-open [conn (MakeConnection jdbc) ]
+  (with-open [conn (DbConnection* jdbc) ]
      (UploadDdl conn ddl)
   ))
 

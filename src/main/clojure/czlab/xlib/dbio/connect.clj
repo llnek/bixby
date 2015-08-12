@@ -49,7 +49,7 @@
       (->> {:partitions 1
             :max-conns 1 :min-conns 1 }
            (merge options )
-           (MakeDbPool jdbc )
+           (DbPool* jdbc )
            (.put c hc )))
     (.get c hc)
   ))
@@ -75,7 +75,7 @@
 
       (finz [_] nil)
 
-      (open [_] (MakeConnection jdbc))
+      (open [_] (DbConnection* jdbc))
 
       (newCompositeSQLr [this] (CompositeSQLr this))
       (newSimpleSQLr [this] (SimpleSQLr this)) )

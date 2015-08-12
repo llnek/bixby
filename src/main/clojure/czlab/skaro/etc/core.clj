@@ -16,13 +16,11 @@
 
   (:require
     [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
-    [czlab.xlib.util.core :refer [test-cond MubleObj]]
+    [czlab.xlib.util.core :refer [PrtStk test-cond MubleObj]]
     [czlab.xlib.util.str :refer [MakeString]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.scheduler :refer [NulScheduler]]
     [czlab.xlib.util.files :refer [DirRead?]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
@@ -32,11 +30,11 @@
   (:import
     [com.zotohlab.frwk.server ServiceHandler ServerLike]
     [com.zotohlab.skaro.etc CmdHelpError]
+    [java.io File]
     [com.zotohlab.wflow Activity
     WorkFlowEx Nihil Job Switch]
     [com.zotohlab.frwk.i18n I18N]
-    [java.util ResourceBundle List Locale]
-    [java.io File]))
+    [java.util ResourceBundle List Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -163,9 +161,11 @@
                    (.chain (parseArgs))
                    (.chain (execArgs))))
              (onError [_ e]
-               (.printStackTrace ^Throwable e)
-               (Usage)
-               (Nihil/apply)))]
+               (if
+                 (instance? CmdHelpError e)
+                 (Usage)
+                 (PrtStk e))
+               (Nihil/apply))) ]
     (SetGlobals! :homeDir home)
     (SetGlobals! :rcb rcb)
     (-> ^ServiceHandler

@@ -15,7 +15,7 @@
   czlab.xlib.util.wfs
 
   (:require
-    [czlab.xlib.util.scheduler :refer [NulScheduler MakeScheduler]]
+    [czlab.xlib.util.scheduler :refer [NulScheduler Scheduler*]]
     [czlab.xlib.util.core :refer [Cast? MubleObj NextLong]])
 
   (:require [czlab.xlib.util.logging :as log])

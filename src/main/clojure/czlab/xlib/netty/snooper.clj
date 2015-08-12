@@ -209,7 +209,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSnoopHTTPD
+(defn SnoopHTTPD*
 
   "Sample Snooper HTTPD"
 

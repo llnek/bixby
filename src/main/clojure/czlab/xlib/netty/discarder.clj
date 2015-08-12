@@ -55,7 +55,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeDiscardHTTPD
+(defn DiscardHTTPD*
 
   "Discards the request, just returns 200 OK"
 
@@ -66,7 +66,7 @@
      {:bootstrap bs :channel ch}))
 
   ([port callback]
-   (MakeDiscardHTTPD "127.0.0.1" port callback )))
+   (DiscardHTTPD* "127.0.0.1" port callback )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

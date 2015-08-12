@@ -110,12 +110,12 @@
 
 (defn init-test [f]
   (reset! METAC
-    (MakeMetaCache (MakeSchema
+    (MetaCache* (DbSchema*
                       [Address Person EmpDepts Employee Department Company])))
   (let [ dir (File. (System/getProperty "java.io.tmpdir"))
          db (str "" (System/currentTimeMillis))
-         url (MakeH2Db dir db "sa" (Pwdify ""))
-        jdbc (MakeJdbc (juid)
+         url (H2Db* dir db "sa" (Pwdify ""))
+        jdbc (Jdbc* (juid)
                { :d H2-DRIVER :url url :user "sa" :passwd "" }
                (Pwdify "")) ]
     (WriteOneFile (File. dir "dbstuff.out") (DbgShowMetaCache @METAC))

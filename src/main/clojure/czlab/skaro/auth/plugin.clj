@@ -536,7 +536,7 @@
                  (.toCharArray))
         cfg ((keyword db) (get-in env [:databases :jdbc])) ]
     (when (some? cfg)
-      (let [j (MakeJdbc db cfg (Pwdify (:passwd cfg) pkey))
+      (let [j (Jdbc* db cfg (Pwdify (:passwd cfg) pkey))
             t (MatchJdbcUrl (:url cfg)) ]
         (cond
           (= "init-db" cmd)

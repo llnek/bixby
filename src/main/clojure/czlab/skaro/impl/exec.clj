@@ -15,6 +15,7 @@
   czlab.skaro.impl.exec
 
   (:require
+    [czlab.xlib.util.files :refer [Mkdirs ReadOneUrl]]
     [czlab.xlib.util.files :refer [ListFiles Unzip]]
     [czlab.xlib.util.str :refer [strim hgl? ToKW]]
     [czlab.xlib.util.mime :refer [SetupCache]]
@@ -24,11 +25,9 @@
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.util.core
-    :refer [test-nestr FPath tryletc tryc
-    NewRandom GetCwd
-    ConvLong MubleObj juid test-nonil]]
-    [czlab.xlib.util.files
-    :refer [Mkdirs ReadOneUrl]])
+    :refer [test-nestr FPath
+    tryletc tryc NewRandom GetCwd
+    ConvLong MubleObj juid test-nonil]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
@@ -38,9 +37,9 @@
 
   (:import
     [org.apache.commons.io.filefilter DirectoryFileFilter]
+    [org.apache.commons.io FilenameUtils]
     [com.zotohlab.skaro.runtime ExecvisorAPI
     JMXServer PODMeta EmitMeta]
-    [org.apache.commons.io FilenameUtils FileUtils]
     [com.zotohlab.skaro.loaders AppClassLoader]
     [com.zotohlab.skaro.core Muble Context]
     [java.io File FileFilter]
@@ -89,8 +88,8 @@
       ;; as a application
       (let [^Context
             m (-> (PodMeta* app
-                               info
-                               (io/as-url des))
+                            info
+                            (io/as-url des))
                   (SynthesizeComponent {:ctx ctx})) ]
         (-> ^Muble
             (.getx m)
@@ -145,10 +144,9 @@
     [cache (.getv co K_CONTAINERS)
      cid (.id ^Identifiable pod)
      app (.moniker pod)
-     ctr (MakeContainer pod)]
+     ctr (Container* pod)]
     (log/debug "start pod\ncid = %s\napp = %s" cid app)
-    (.setv co K_CONTAINERS (assoc cache cid ctr))
-    true))
+    (.setv co K_CONTAINERS (assoc cache cid ctr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -165,7 +163,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeExecvisor
+(defn Execvisor*
 
   "Create a ExecVisor"
 
@@ -316,11 +314,14 @@
 
         Component
 
-        (id [_] (-> (.getv impl :metaInfo)
-                    (:blockType)
-                    (keyword)))
-        (version [_] (-> (.getv impl :metaInfo)
-                         (:version)))
+        (version [_]
+          (-> (.getv impl :metaInfo)
+              (:version)))
+
+        (id [_]
+          (-> (.getv impl :metaInfo)
+              (:blockType)
+              (keyword)))
 
         EmitMeta
 

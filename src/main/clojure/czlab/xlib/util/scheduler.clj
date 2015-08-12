@@ -209,11 +209,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeScheduler
+(defn Scheduler*
 
   "Make a Scheduler"
 
-  (^Schedulable [] (MakeScheduler ""))
+  (^Schedulable [] (Scheduler* ""))
   (^Schedulable [^String named] (mkSCD named)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

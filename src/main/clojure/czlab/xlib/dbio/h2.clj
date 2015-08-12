@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeH2Db
+(defn H2Db*
 
   "Create a H2 database"
 
@@ -147,7 +147,7 @@
         (.execute s "SHUTDOWN")) )
   ))
 
-;;(println (GetDDL (MakeMetaCache testschema) (H2.) ))
+;;(println (GetDDL (MetaCache* testschema) (H2.) ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

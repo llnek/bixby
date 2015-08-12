@@ -148,14 +148,13 @@
 
   [^File hhh ^File app ^String out]
 
-  (let
-    [dir (Mkdirs (io/file out))
-     tk (a/AntZip
-          {:destFile (io/file dir (.getName app) ".zip")
-           :basedir app
-           :excludes "build/**"
-           :includes "**/*"}) ]
-    (a/RunTasks* tk)))
+  (let [dir (Mkdirs (io/file out)) ]
+     (->> (a/AntZip
+            {:destFile (io/file dir (.getName app) ".zip")
+             :basedir app
+             :excludes "build/**"
+             :includes "**/*"})
+          (a/RunTasks* ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,10 +183,9 @@
 
   [^File demo ^File out]
 
-  (let
-    [top (io/file out (.getName demo))
-     dn (.getName top)
-     dom (mkDemoPath dn)]
+  (let [top (io/file out (.getName demo))
+        dn (.getName top)
+        dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
     (case dn
       "jetty" (CreateJetty out dn dom)
@@ -206,9 +204,9 @@
 
   [^File out]
 
-  (let [top (io/file (GetHomeDir)
-                     "src/main/java/demo")
-        dss (.listFiles top)]
+  (let [dss (->> (io/file (GetHomeDir)
+                          "src/main/java/demo")
+                 (.listFiles ))]
     (doseq [^File d dss
             :when (.isDirectory d)]
       (genOneJavaDemo d out))))
@@ -219,9 +217,9 @@
 
   [^File out]
 
-  (let [top (io/file (GetHomeDir)
-                     "src/main/clojure/demo")
-        dss (.listFiles top)]
+  (let [dss (->> (io/file (GetHomeDir)
+                          "src/main/clojure/demo")
+                 (.listFiles )) ]
     (doseq [^File d dss
             :when (.isDirectory d)]
       (genOneCljDemo d out))))

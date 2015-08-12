@@ -17,9 +17,7 @@
   (:gen-class)
 
   (:require
-    [czlab.xlib.util.files :refer [DirRead?]])
-
-  (:require
+    [czlab.xlib.util.files :refer [DirRead?]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io])
 
@@ -43,9 +41,8 @@
 
   [& args]
 
-  (let
-    [ver (LoadResource VERPROPS)
-     rcb (GetResource RCB)]
+  (let [ver (LoadResource VERPROPS)
+        rcb (GetResource RCB)]
     (with-local-vars [ok false]
       (->> (.getString ver "version")
            (System/setProperty "skaro.version"))
@@ -55,8 +52,6 @@
           (var-set ok true)
           (apply BootAndRun home rcb (drop 1 args))))
       (when-not @ok (Usage)))))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

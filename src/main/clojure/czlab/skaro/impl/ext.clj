@@ -22,14 +22,17 @@
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.wfs :refer [WrapPTask NewJob SimPTask]]
     [czlab.xlib.crypto.codec :refer [Pwdify ]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs]
+    [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [MubleObj doto->> juid FPath Cast?
     trycr ConvToJava nbf ConvLong Bytesify]]
-    [czlab.xlib.util.scheduler :refer [MakeScheduler]]
+    [czlab.xlib.util.scheduler :refer [Scheduler*]]
     [czlab.xlib.util.core
     :refer [NextLong LoadJavaProps SubsVar]]
     [czlab.xlib.dbio.core
-    :refer [MakeJdbc MakeMetaCache MakeDbPool MakeSchema]])
+    :refer [Jdbc* MetaCache* DbPool* DbSchema*]])
 
   (:use
     [czlab.skaro.io.core :rename {enabled? io-enabled?} ]
@@ -46,23 +49,15 @@
     [czlab.skaro.io.socket]
     [czlab.skaro.mvc.filters]
     [czlab.skaro.mvc.ftlshim]
-    ;;[czlab.skaro.impl.misc]
     [czlab.skaro.core.sys])
-
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.string :as cs]
-    [clojure.java.io :as io])
 
   (:import
     [com.zotohlab.skaro.core Muble Context Container ConfigError]
     [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
     [com.zotohlab.skaro.etc CliMain PluginFactory Plugin]
-    [org.apache.commons.io FilenameUtils FileUtils]
-    [org.apache.commons.lang3 StringUtils]
     [freemarker.template Configuration
     Template DefaultObjectWrapper]
-    [java.util Locale Map Properties]
+    [java.util Locale]
     [com.zotohlab.frwk.i18n I18N]
     [java.net URL]
     [java.io File StringWriter]
@@ -117,7 +112,7 @@
     (SynthesizeComponent obj
                          {:ctx ctr
                           :props (assoc cfg :appkey pkey) })
-    ;;(.setf! obj :appkey pkey)
+
     (log/info "emitter synthesized - ok. handler => %s" hid)
     obj))
 
@@ -128,9 +123,9 @@
   ^JDBCPool
   [^Muble co ^String gid]
 
-  (let [dbs (.getv co K_DBPS)
-        dk (stror gid DEF_DBID) ]
-    (get dbs (keyword dk))))
+  (let [dk (stror gid DEF_DBID) ]
+    (-> (.getv co K_DBPS)
+        (get (keyword dk)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,8 +137,7 @@
   (let [mcache (.getv co K_MCACHE)
         p (maybeGetDBPool co gid) ]
     (log/debug "acquiring from dbpool: %s" p)
-    (if (nil? p)
-      nil
+    (when (some? p)
       (DbioConnectViaPool p mcache {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,9 +207,7 @@
         (isEnabled [_]
           (let [env (.getv impl K_ENVCONF)
                 c (:container env) ]
-            (if (false? (:enabled c))
-              false
-              true)))
+            (not (false? (:enabled c)))))
 
         (getService [_ serviceId]
           (let [^Registry
@@ -294,7 +286,6 @@
 
     {:typeid (ToKW "czc.skaro.ext" "Container") })))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- reifyService ""
@@ -339,7 +330,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
-(defn MakeContainer
+(defn Container*
 
   "Create an application container"
 
@@ -483,8 +474,8 @@
           (let [[t c]
                 (splitPoolSize (str (:poolsize v))) ]
             (var-set p
-                     (->> (MakeDbPool
-                            (MakeJdbc k v
+                     (->> (DbPool*
+                            (Jdbc* k v
                                       (Pwdify (:passwd v) pkey))
                                       {:max-conns c
                                        :min-conns 1
@@ -520,7 +511,7 @@
         pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)
     (.setv co :cljshim rts)
-    (let [cpu (MakeScheduler (str pid))
+    (let [cpu (Scheduler* (str pid))
           env (.getv co K_ENVCONF)
           app (.getv co K_APPCONF)
           mCZ (strim (get-in app [:info :main]))
@@ -564,7 +555,7 @@
           (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
         (.setv co
                K_MCACHE
-               (MakeMetaCache (or sc (MakeSchema [])))))
+               (MetaCache* (or sc (DbSchema* [])))))
 
       (when (empty? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
       ;;(test-nestr "Main-Class" mCZ)
