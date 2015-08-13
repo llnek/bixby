@@ -35,10 +35,9 @@
     :refer [Jdbc* MetaCache* DbPool* DbSchema*]])
 
   (:use
-    [czlab.skaro.io.core :rename {enabled? io-enabled?} ]
-    [czlab.skaro.impl.dfts
-    :rename {enabled? blockmeta-enabled?} ]
     [czlab.skaro.core.consts]
+    [czlab.skaro.io.core]
+    [czlab.skaro.impl.dfts]
     [czlab.skaro.io.loops]
     [czlab.skaro.io.mails]
     [czlab.skaro.io.files]
@@ -91,7 +90,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Service is an instance of a Block, that is, an instance of an event
 ;; emitter
-(defn- makeServiceBlock ""
+(defn- serviceBlock ""
 
   ^Emitter
   [^Identifiable bk ctr nm cfg0]
@@ -156,7 +155,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeAppContainer ""
+(defn- appContainer ""
 
   ^Container
   [^PODMeta pod options]
@@ -301,7 +300,7 @@
                (.lookup (keyword svc))) ]
     (when (nil? bk)
       (throw (ServiceError. (str "No such Service: " svc))))
-    (makeServiceBlock bk co nm cfg)))
+    (serviceBlock bk co nm cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -339,17 +338,18 @@
 
   (let [url (-> ^PODMeta pod (.srcUrl))
         ps {K_APPDIR (io/file url)}
-        ^Muble ctx (.getx pod)
-        ^Registry
-        root (.getv ctx K_COMPS)
-        apps (.lookup root K_APPS)
-        ^Startable
-        c (makeAppContainer pod ps)]
-    (CompCompose c apps)
+        ctx (.getx pod)
+        c (appContainer pod ps)]
+
+    (->>
+      (-> ^Registry
+          (.getv ctx K_COMPS)
+          (.lookup K_APPS))
+      (CompCompose c ))
     (CompContextualize c ctx)
     (CompConfigure c ps)
     (CompInitialize c)
-    (.start c)
+    (-> ^Startable c (.start ))
     c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

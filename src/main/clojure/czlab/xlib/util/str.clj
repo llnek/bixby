@@ -15,9 +15,6 @@
   czlab.xlib.util.str
 
   (:require
-    [czlab.xlib.util.core :refer [notnil?]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -96,8 +93,7 @@
     (keyword? obj) (name obj)
     (nil? obj) ""
     :else
-    (.toString obj)
-  ))
+    (.toString obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -139,9 +135,7 @@
     false
 
     :else
-    (Arrays/equals (.toCharArray a) (.toCharArray b))
-
-  ))
+    (Arrays/equals (.toCharArray a) (.toCharArray b)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,9 +202,7 @@
                        (conj! ret src)
                        ret))
         (recur (conj! ret (.substring src 0 chunkLength))
-               (.substring src chunkLength))
-      ))
-  ))
+               (.substring src chunkLength))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -224,8 +216,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (true? (some #(>= (.indexOf lc (lcase %)) 0) substrs)))
-  ))
+      (true? (some #(>= (.indexOf lc (lcase %)) 0) substrs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -236,8 +227,7 @@
   (if (or (empty? substrs)
           (nil? src))
     false
-    (true? (some #(>= (.indexOf src ^String %) 0) substrs))
-  ))
+    (true? (some #(>= (.indexOf src ^String %) 0) substrs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -250,8 +240,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (true? (some #(.startsWith lc (lcase %)) pfxs)))
-  ))
+      (true? (some #(.startsWith lc (lcase %)) pfxs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -263,8 +252,7 @@
   (if (or (empty? pfxs)
           (nil? src))
     false
-    (true? (some #(.startsWith src ^String %) pfxs))
-  ))
+    (true? (some #(.startsWith src ^String %) pfxs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -277,8 +265,7 @@
           (nil? src))
     false
     (let [lc (lcase src)]
-      (true? (some #(.equals lc (lcase %)) strs)))
-  ))
+      (true? (some #(.equals lc (lcase %)) strs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -289,8 +276,7 @@
   (if (or (empty? strs)
           (nil? src))
     false
-    (true? (some #(.equals src %) strs))
-  ))
+    (true? (some #(.equals src %) strs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -302,8 +288,7 @@
   (let [buf (StringBuilder.) ]
     (dotimes [n cnt]
       (.append buf ch))
-    (.toString buf)
-  ))
+    (.toString buf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -315,8 +300,7 @@
   (if (or (<= len 0)
           (nil? src))
     ""
-    (StringUtils/right src (int len))
-  ))
+    (StringUtils/right src (int len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -328,8 +312,7 @@
   (if (or (<= len 0)
           (nil? src))
     ""
-    (StringUtils/left src (int len))
-  ))
+    (StringUtils/left src (int len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

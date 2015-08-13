@@ -17,10 +17,8 @@
   (:require
     [czlab.xlib.util.core :refer [try! tryc]]
     [czlab.xlib.util.meta :refer [GetCldr]]
-    [czlab.xlib.util.str :refer [nsb hgl?]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.str :refer [hgl?]])
 
   (:import
     [java.lang.management ManagementFactory]
@@ -32,78 +30,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn SyncBlockExec
-
-  "Run this function synchronously"
-
-  [^Object lock func & args]
-
-  (CU/syncExec
-    lock
-    (reify CallableWithArgs
-      (run [_ a1 pms]
-        (apply func a1 pms)))
-    (first args)
-    (drop 1 args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- asyncExecThread
-
-  "Execute this runnable in a separate thread"
-
-  [^Runnable r options]
-
-  (when (some? r)
-    (let [c (or (:classLoader options)
-                (GetCldr))
-          d (true? (:daemon options))
-          n (:name options)
-          t (Thread. r) ]
-      (.setContextClassLoader t ^ClassLoader c)
-      (.setDaemon t d)
-      (when (hgl? n)
-        (.setName t (str "(" n ") " (.getName t))))
-      (log/debug "asyncExecThread: start thread#%s%s%s"
-                 (.getName t)
-                 ", daemon = " d)
-      (.start t))
-  ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn AsyncExec
-
-  "Run the code (runnable) in a separate thread"
-
-  ([^Runnable runable]
-   (AsyncExec runable (GetCldr)))
-
-  ([^Runnable runable arg]
-   (asyncExecThread
-     runable
-     (if (instance? ClassLoader arg)
-       {:classLoader arg}
-       (if (map? arg) arg {})))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Coroutine
-
-  "Run this function asynchronously"
-
-  [func & [options]]
-
-  {:pre [(fn? func)]}
-
-  (-> (reify Runnable
-       (run [_]
-         (tryc (func))))
-      (AsyncExec options)
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,12 +47,15 @@
              Runnable
              (run [_] (func)))
            (Thread. ))]
-    (with-local-vars [daemon false cl nil]
-      (when (instance? ClassLoader arg)
+    (with-local-vars
+      [daemon false cl nil]
+      (when
+        (instance? ClassLoader arg)
         (var-set cl arg))
       (when (map? arg)
         (var-set cl (:classLoader arg))
-        (when (true? (:daemon arg))
+        (when
+          (true? (:daemon arg))
           (var-set daemon true)))
       (when (some? @cl)
         (.setContextClassLoader t ^ClassLoader @cl))
@@ -135,8 +64,35 @@
       (log/debug "threadFunc: thread#%s%s%s"
                  (.getName t)
                  ", daemon = " (.isDaemon t)))
-    t
-  ))
+    t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SyncBlockExec
+
+  "Run this function synchronously"
+
+  [^Object lock func & args]
+
+  (CU/syncExec
+    lock
+    (reify CallableWithArgs
+      (run [_ p1 more]
+        (apply func p1 more)))
+    (first args)
+    (drop 1 args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Coroutine
+
+  "Run this function asynchronously"
+
+  [func & [args]]
+
+  {:pre [(fn? func)]}
+
+  (ThreadFunc func true args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,12 +114,13 @@
   ^String
   []
 
-  (let [ss (-> (nsb (.getName (ManagementFactory/getRuntimeMXBean)))
+  (let [ss (-> (ManagementFactory/getRuntimeMXBean)
+               (.getName)
+               (str)
                (.split "@")) ]
-    (if (or (nil? ss) (empty ss))
+    (if (empty ss)
       ""
-      (first ss))
-  ))
+      (first ss))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,8 +136,7 @@
       (.schedule (proxy [TimerTask][]
                    (run []
                      (func)))
-                 (long delayMillis))
-  ))
+                 (long delayMillis))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -18,10 +18,9 @@
   (:require
     [czlab.xlib.util.core :refer [Bytesify try! IntoMap]]
     [czlab.xlib.util.meta :refer [BytesClass]]
-    [czlab.xlib.util.str :refer [lcase ucase nsb hgl?]]
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.str :refer [lcase ucase hgl?]]
     [czlab.xlib.util.io :refer [Streamify]])
-
-  (:require [czlab.xlib.util.logging :as log])
 
   (:import
     [org.apache.commons.lang3 StringUtils]
@@ -36,81 +35,81 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def CTE_QUOTED "quoted-printable")
-(def CTE_7BIT "7bit")
-(def CTE_8BIT "8bit")
-(def CTE_BINARY "binary")
-(def CTE_BASE64 "base64")
+(defonce CTE_QUOTED "quoted-printable")
+(defonce CTE_7BIT "7bit")
+(defonce CTE_8BIT "8bit")
+(defonce CTE_BINARY "binary")
+(defonce CTE_BASE64 "base64")
 
-(def MIME_USER_PROP  "mime.rfc2822.user")
-(def MIME_USER_JAVAMAIL   "javamail")
-(def DEF_USER  "popeye")
-(def MIME_USER_PREFIX   "zotohlab")
-(def DEF_HOST  "localhost")
-(def MIME_HEADER_MSGID  "Message-ID")
-(def MIME_MULTIPART_BOUNDARY  "boundary")
-(def DOT   ".")
-(def AT  "@")
-(def CH_DOT   \. )
-(def CH_AT  \@)
-(def STR_LT   "<")
-(def STR_GT  ">")
-(def ALL   -1)
-(def ALL_ASCII   1)
-(def MOSTLY_ASCII   2)
-(def MOSTLY_NONASCII   3)
+(defonce MIME_USER_PROP  "mime.rfc2822.user")
+(defonce MIME_USER_JAVAMAIL   "javamail")
+(defonce DEF_USER  "popeye")
+(defonce MIME_USER_PREFIX   "zotohlab")
+(defonce DEF_HOST  "localhost")
+(defonce MIME_HEADER_MSGID  "Message-ID")
+(defonce MIME_MULTIPART_BOUNDARY  "boundary")
+(defonce DOT   ".")
+(defonce AT  "@")
+(defonce CH_DOT   \. )
+(defonce CH_AT  \@)
+(defonce STR_LT   "<")
+(defonce STR_GT  ">")
+(defonce ALL   -1)
+(defonce ALL_ASCII   1)
+(defonce MOSTLY_ASCII   2)
+(defonce MOSTLY_NONASCII   3)
 
 ;; Capitalized MIME constants to use when generating MIME headers)
 ;; for messages to be transmitted.)
-(def AS2_VER_ID    "1.1")
-(def UA  "user-agent")
-(def TO   "to")
-(def FROM  "from")
-(def AS2_VERSION    "as2-version")
-(def AS2_TO   "as2-to")
-(def AS2_FROM  "as2-from")
-(def SUBJECT    "subject")
-(def CONTENT_TYPE  "content-type")
-(def CONTENT     "content")
-(def CONTENT_NAME   "content-name")
-(def CONTENT_LENGTH  "content-length")
-(def CONTENT_LOC  "content-Location")
-(def CONTENT_ID    "content-id")
-(def CONTENT_TRANSFER_ENCODING  "content-transfer-encoding")
-(def CONTENT_DISPOSITION   "content-disposition")
-(def DISPOSITION_NOTIFICATION_TO  "disposition-notification-to")
-(def DISPOSITION_NOTIFICATION_OPTIONS  "disposition-notification-options")
-(def SIGNED_REC_MICALG "signed-receipt-micalg")
-(def MESSAGE_ID   "message-id")
-(def ORIGINAL_MESSAGE_ID   "original-message-id")
-(def RECEIPT_DELIVERY_OPTION   "receipt-delivery-option")
-(def DISPOSITION  "disposition")
-(def DATE    "date")
-(def MIME_VERSION   "mime-version")
-(def FINAL_RECIPIENT   "final-recipient")
-(def ORIGINAL_RECIPIENT   "original-recipient")
-(def RECV_CONTENT_MIC   "received-content-mic")
+(defonce AS2_VER_ID    "1.1")
+(defonce UA  "user-agent")
+(defonce TO   "to")
+(defonce FROM  "from")
+(defonce AS2_VERSION    "as2-version")
+(defonce AS2_TO   "as2-to")
+(defonce AS2_FROM  "as2-from")
+(defonce SUBJECT    "subject")
+(defonce CONTENT_TYPE  "content-type")
+(defonce CONTENT     "content")
+(defonce CONTENT_NAME   "content-name")
+(defonce CONTENT_LENGTH  "content-length")
+(defonce CONTENT_LOC  "content-Location")
+(defonce CONTENT_ID    "content-id")
+(defonce CONTENT_TRANSFER_ENCODING  "content-transfer-encoding")
+(defonce CONTENT_DISPOSITION   "content-disposition")
+(defonce DISPOSITION_NOTIFICATION_TO  "disposition-notification-to")
+(defonce DISPOSITION_NOTIFICATION_OPTIONS  "disposition-notification-options")
+(defonce SIGNED_REC_MICALG "signed-receipt-micalg")
+(defonce MESSAGE_ID   "message-id")
+(defonce ORIGINAL_MESSAGE_ID   "original-message-id")
+(defonce RECEIPT_DELIVERY_OPTION   "receipt-delivery-option")
+(defonce DISPOSITION  "disposition")
+(defonce DATE    "date")
+(defonce MIME_VERSION   "mime-version")
+(defonce FINAL_RECIPIENT   "final-recipient")
+(defonce ORIGINAL_RECIPIENT   "original-recipient")
+(defonce RECV_CONTENT_MIC   "received-content-mic")
 
-(def RFC822 "rfc822")
-(def RFC822_PFX (str RFC822 "; "))
+(defonce RFC822 "rfc822")
+(defonce RFC822_PFX (str RFC822 "; "))
 
-(def APP_XML "application/xml")
-(def TEXT_PLAIN "text/plain")
-(def APP_OCTET "application/octet-stream")
-(def PKCS7SIG "pkcs7-signature")
-(def TEXT_HTML "text/html")
-(def TEXT_XML "text/xml")
-(def MSG_DISP "message/disposition-notification")
+(defonce APP_XML "application/xml")
+(defonce TEXT_PLAIN "text/plain")
+(defonce APP_OCTET "application/octet-stream")
+(defonce PKCS7SIG "pkcs7-signature")
+(defonce TEXT_HTML "text/html")
+(defonce TEXT_XML "text/xml")
+(defonce MSG_DISP "message/disposition-notification")
 
-(def ERROR   "error")
-(def FAILURE "failure")
-(def WARNING  "warning")
-(def HEADERS  "headers")
+(defonce ERROR   "error")
+(defonce FAILURE "failure")
+(defonce WARNING  "warning")
+(defonce HEADERS  "headers")
 
-(def ISO_8859_1 "iso-8859-1")
-(def US_ASCII "us-ascii")
+(defonce ISO_8859_1 "iso-8859-1")
+(defonce US_ASCII "us-ascii")
 
-(def CRLF "\r\n")
+(defonce CRLF "\r\n")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -120,16 +119,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MimeCache
-
-  "Cache of most MIME types"
-
-  []
-  @_mime_cache)
+(defn MimeCache* "Cache of most MIME types" [] @_mime_cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- is-pkcs7mime? ""
+(defn- isPkcs7Mime? ""
 
   [^String s]
 
@@ -144,7 +138,7 @@
   ^String
   [^String cType]
 
-  (let [pos (-> (nsb cType)
+  (let [pos (-> (str cType)
                 (lcase )
                 (.indexOf "charset="))
         rc "utf-8" ]
@@ -153,8 +147,7 @@
       (let [s (.substring cType (+ pos 8))
             p (StringUtils/indexOfAny s "; \t\r\n") ]
         (if (> p 0) (.substring s 0 p) s))
-      rc)
-  ))
+      rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -164,10 +157,9 @@
 
   [^String cType]
 
-  (let [ct (lcase (nsb cType)) ]
+  (let [ct (lcase (str cType)) ]
     (or (>= (.indexOf ct "multipart/signed") 0)
-        (and (is-pkcs7mime? ct) (>= (.indexOf ct "signed-data") 0)))
-  ))
+        (and (isPkcs7Mime? ct) (>= (.indexOf ct "signed-data") 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,9 +169,8 @@
 
   [^String cType]
 
-  (let [ct (lcase (nsb cType)) ]
-    (and (is-pkcs7mime? ct) (>= (.indexOf ct "enveloped-data") 0))
-  ))
+  (let [ct (lcase (str cType)) ]
+    (and (isPkcs7Mime? ct) (>= (.indexOf ct "enveloped-data") 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -189,10 +180,9 @@
 
   [^String cType]
 
-  (let [ct (lcase (nsb cType)) ]
+  (let [ct (lcase (str cType)) ]
     (and (>= (.indexOf ct "application/pkcs7-mime") 0)
-         (>= (.indexOf ct "compressed-data") 0))
-  ))
+         (>= (.indexOf ct "compressed-data") 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -202,10 +192,9 @@
 
   [^String cType]
 
-  (let [ct (lcase (nsb cType)) ]
+  (let [ct (lcase (str cType)) ]
     (and (>= (.indexOf ct "multipart/report") 0)
-         (>= (.indexOf ct "disposition-notification") 0))
-  ))
+         (>= (.indexOf ct "disposition-notification") 0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -231,9 +220,8 @@
   ^String
   [^String u]
 
-  (when (some? u)
-    (try! (-> (URLCodec. "utf-8")(.decode u)))
-  ))
+  (when-not (empty? u)
+    (try! (-> (URLCodec. "utf-8")(.decode u)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -244,9 +232,8 @@
   ^String
   [^String u]
 
-  (when (some? u)
-    (try! (-> (URLCodec. "utf-8")(.encode u)))
-  ))
+  (when-not (empty? u)
+    (try! (-> (URLCodec. "utf-8")(.encode u)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -260,12 +247,12 @@
   (let [^Matcher
         mc (->> (lcase (.getName file))
                 (.matcher _extRegex))
-        ex (if (.matches mc)
+        ex (if
+             (.matches mc)
              (.group mc 1) "")
         p (if (hgl? ex)
-            ((keyword ex) (MimeCache))) ]
-   (if (hgl? p) p (nsb dft))
-  ))
+            (get (MimeCache*) (keyword ex) )) ]
+   (if (hgl? p) p (str dft))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -282,8 +269,7 @@
         ^String ct (if (hgl? mt) mt dft) ]
     (if-not (.startsWith ct "text/")
       ct
-      (str ct "; charset=" enc))
-  ))
+      (str ct "; charset=" enc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -297,8 +283,7 @@
     (let [ps (Properties.) ]
       (.load ps inp)
       (reset! _mime_types (MimeFileTypes/makeMimeFileTypes ps))
-      (reset! _mime_cache (IntoMap ps)))
-  ))
+      (reset! _mime_cache (IntoMap ps)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

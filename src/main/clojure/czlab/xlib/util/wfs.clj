@@ -15,10 +15,10 @@
   czlab.xlib.util.wfs
 
   (:require
-    [czlab.xlib.util.scheduler :refer [NulScheduler Scheduler*]]
-    [czlab.xlib.util.core :refer [Cast? MubleObj NextLong]])
-
-  (:require [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.scheduler :refer [Scheduler*]]
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.core
+    :refer [Cast? do->nil MubleObj NextLong]])
 
   (:use [czlab.xlib.util.consts])
 
@@ -55,18 +55,17 @@
 
       Job
 
-      (setLastResult [this v] (.setv impl JS_LAST v))
-      (getLastResult [this] (.getv impl JS_LAST))
-      (clrLastResult [this] (.unsetv impl JS_LAST))
-      (clear [_] (.clear impl))
-      (setv [this k v] (.setv impl k v))
-      (unsetv [this k] (.unsetv impl k))
-      (getv [this k] (.getv impl k))
-      (container [_] par)
+      (setLastResult [_ v] (.setv impl JS_LAST v))
+      (getLastResult [_] (.getv impl JS_LAST))
+      (clrLastResult [_] (.unsetv impl JS_LAST))
       (wflow [_] (.getv impl :wflow))
+      (clear [_] (.clear impl))
+      (setv [_ k v] (.setv impl k v))
+      (unsetv [_ k] (.unsetv impl k))
+      (getv [_ k] (.getv impl k))
+      (container [_] par)
       (event [_] evt)
-      (id [_] jid))
-  ))
+      (id [_] jid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -192,12 +191,10 @@
       (startWith [_] (SimPTask arg)))
 
     :else
-    (do
+    (do->nil
       (log/warn "unknown object type %s%s"
                 (type arg)
-                ", cannot cast to WorkFlow")
-      nil)
-  ))
+                ", cannot cast to WorkFlow"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -247,8 +244,7 @@
 
       ServerLike
 
-      (core [_] cpu))
-  ))
+      (core [_] cpu))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

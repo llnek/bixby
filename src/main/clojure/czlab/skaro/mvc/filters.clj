@@ -21,7 +21,7 @@
     [czlab.xlib.util.core
     :refer [notnil? spos? ToJavaInt try! FPath]]
     [czlab.xlib.util.str :refer [hgl? nsb strim]]
-    [czlab.xlib.util.meta :refer [MakeObj]])
+    [czlab.xlib.util.meta :refer [NewObj*]])
 
   (:require
     [czlab.xlib.util.logging :as log])

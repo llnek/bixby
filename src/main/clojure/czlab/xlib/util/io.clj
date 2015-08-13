@@ -15,9 +15,7 @@
   czlab.xlib.util.io
 
   (:require
-    [czlab.xlib.util.core :refer [spos? try!]])
-
-  (:require
+    [czlab.xlib.util.core :refer [spos? try!]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cstr])
@@ -25,18 +23,17 @@
   (:import
     [java.util.zip GZIPInputStream GZIPOutputStream]
     [java.io ByteArrayInputStream
-     ByteArrayOutputStream DataInputStream
-     DataInputStream DataOutputStream
-     FileInputStream FileOutputStream
-     CharArrayWriter OutputStreamWriter
-     File InputStream InputStreamReader
-     Closeable
-     OutputStream Reader Writer]
+    ByteArrayOutputStream DataInputStream
+    DataInputStream DataOutputStream
+    FileInputStream FileOutputStream
+    CharArrayWriter OutputStreamWriter
+    File InputStream InputStreamReader
+    Closeable
+    OutputStream Reader Writer]
     [java.nio ByteBuffer CharBuffer]
     [java.nio.charset Charset]
     [com.zotohlab.frwk.io XData XStream]
     [org.apache.commons.codec.binary Base64]
-    [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.io IOUtils]
     [org.xml.sax InputSource]
     [java.nio.charset Charset]))
@@ -91,9 +88,9 @@
   "Make a byte array output stream"
 
   ^ByteArrayOutputStream
-  []
+  [ & [size] ]
 
-  (ByteArrayOutputStream. (int 4096)))
+  (ByteArrayOutputStream. (int (or size 4096))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -160,8 +157,7 @@
     (doto (DataOutputStream. baos)
       (.writeInt (int nnum))
       (.flush))
-    (.toByteArray baos)
-  ))
+    (.toByteArray baos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,8 +170,7 @@
     (doto (DataOutputStream. baos)
       (.writeLong ^long nnum)
       (.flush))
-    (.toByteArray baos)
-  ))
+    (.toByteArray baos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -187,8 +182,7 @@
   [^bytes bits]
 
   (when (some? bits)
-    (ByteArrayInputStream. bits)
-  ))
+    (ByteArrayInputStream. bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -198,7 +192,8 @@
 
   [obj]
 
-  (when (instance? Closeable obj)
+  (when
+    (instance? Closeable obj)
     (try! (.close ^Closeable obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,8 +215,7 @@
           (aset-char out (+ pos 1)
                      (aget ^chars HEX_CHS (bit-and n 0xf))) ;; low 4 bits
           (recur (inc k) (+ 2 pos)) )))
-    out
-  ))
+    out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -233,8 +227,7 @@
   [^bytes bits]
 
   (when (some? bits)
-    (String. (HexifyChars bits))
-  ))
+    (String. (HexifyChars bits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -253,8 +246,7 @@
     (let [baos (ByteOS)]
       (with-open [g (GZIPOutputStream. baos)]
         (.write g bits 0 (alength bits)))
-      (.toByteArray baos))
-  ))
+      (.toByteArray baos))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -266,8 +258,7 @@
   [^bytes bits]
 
   (when (some? bits)
-    (IOUtils/toByteArray (GZIPInputStream. (Streamify bits)))
-  ))
+    (IOUtils/toByteArray (GZIPInputStream. (Streamify bits)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -287,8 +278,7 @@
   [^String fp]
 
   (when (some? fp)
-    (XStream. (io/file fp))
-  ))
+    (XStream. (io/file fp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -309,8 +299,7 @@
   [^String gzb64]
 
   (when (some? gzb64)
-    (Gunzip (Base64/decodeBase64 gzb64))
-  ))
+    (Gunzip (Base64/decodeBase64 gzb64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -322,8 +311,7 @@
   [^bytes bits]
 
   (when (some? bits)
-    (Base64/encodeBase64String (Gzip bits))
-  ))
+    (Base64/encodeBase64String (Gzip bits))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -334,10 +322,7 @@
   ;; int
   [^InputStream inp]
 
-  (if (nil? inp)
-    0
-    (.available inp)
-  ))
+  (if (nil? inp) 0 (.available inp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -346,12 +331,9 @@
   ^File
   [ & [pfx sux] ]
 
-  (let [pfx (or pfx "tmp-")
-        sux (or sux ".dat")]
-    (File/createTempFile
-      (if (> (count pfx) 2) pfx "tmp-")
-      (if (> (count pfx) 2) sux ".dat"))
-  ))
+  (File/createTempFile
+    (if (> (count pfx) 2) pfx "tmp-")
+    (if (> (count sux) 2) sux ".dat")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -362,8 +344,7 @@
   []
 
   (let [fp (TempFile)]
-    [fp (FileOutputStream. fp)]
-  ))
+    [fp (FileOutputStream. fp)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -380,8 +361,7 @@
       (IOUtils/copy inp os)
       (finally
         CloseQ os))
-    fp
-  ))
+    fp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -391,9 +371,9 @@
 
   [^InputStream src ^OutputStream out bytesToCopy]
 
-  (when (> bytesToCopy 0)
-    (IOUtils/copyLarge src out 0 ^long bytesToCopy)
-  ))
+  (when
+    (> bytesToCopy 0)
+    (IOUtils/copyLarge src out 0 ^long bytesToCopy)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -407,12 +387,11 @@
     (let [rdr (.getCharacterStream inpsrc)
           ism (.getByteStream inpsrc) ]
       (try! (when (some? ism) (.reset ism)) )
-      (try! (when (some? rdr) (.reset rdr)) ))
-  ))
+      (try! (when (some? rdr) (.reset rdr)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeXData
+(defn NewXData*
 
   "a newly created XData"
 
@@ -421,8 +400,7 @@
 
   (if usefile
     (XData. (TempFile))
-    (XData.)
-  ))
+    (XData.)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -438,8 +416,7 @@
       (.write (.toByteArray baos))
       (.flush))
     (.close baos)
-    [fp os]
-  ))
+    [fp os]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -456,12 +433,11 @@
       (.write (.toCharArray wtr))
       (.flush))
     (CloseQ wtr)
-    [fp w]
-  ))
+    [fp w]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- slurp-bytes ""
+(defn- slurpBytes ""
 
   ^XData
   [^InputStream inp limit]
@@ -490,12 +466,11 @@
                 (var-set os o))))
           (recur bits
                  (+ c cnt)
-                 (.read inp bits)))))
-  ))
+                 (.read inp bits)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- slurp-chars ""
+(defn- slurpChars ""
 
   ^XData
   [^Reader rdr limit]
@@ -525,8 +500,7 @@
                 (var-set wtr w))))
           (recur carr
                  (+ c cnt)
-                 (.read rdr carr)))))
-  ))
+                 (.read rdr carr)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -537,7 +511,7 @@
   ^XData
   [^InputStream inp & [usefile]]
 
-  (slurp-bytes inp (if usefile 1 (StreamLimit))))
+  (slurpBytes inp (if usefile 1 (StreamLimit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -548,7 +522,7 @@
   ^XData
   [^Reader rdr & [usefile]]
 
-  (slurp-chars rdr (if usefile 1 (StreamLimit))))
+  (slurpChars rdr (if usefile 1 (StreamLimit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -556,14 +530,13 @@
 
   "Convert these bytes to chars"
 
-  (^chars
-    [^bytes bits]
-    (MorphChars bits (Charset/forName "utf-8")) )
+  ^chars
+  [^bytes bits & [charSet]]
 
-  (^chars
-    [^bytes bits ^Charset charSet]
-    (when-not (nil? bits)
-      (IOUtils/toCharArray (Streamify bits) charSet))) )
+  (when (some? bits)
+    (->> ^CharSet
+         (or charSet (Charset/forName "utf-8"))
+         (IOUtils/toCharArray (Streamify bits) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

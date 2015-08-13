@@ -37,7 +37,6 @@
 (defmacro fatal "" [& args]
   `(when (log/enabled? :fatal) (log/logf :fatal ~@args)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

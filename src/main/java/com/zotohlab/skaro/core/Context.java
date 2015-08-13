@@ -16,8 +16,8 @@ package com.zotohlab.skaro.core;
  */
 public interface Context  {
   
-  public void setx(Object ctx);
-  public Object getx();
+  public void setx(Muble ctx);
+  public Muble getx();
   
 }
 

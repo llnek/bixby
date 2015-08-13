@@ -16,10 +16,8 @@
 
   (:require
     [czlab.xlib.util.core :refer [NextInt juid MubleObj]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [ToKW hgl?]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:import
     [com.zotohlab.frwk.util RunnableWithId Schedulable TCore]
@@ -32,9 +30,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NulScheduler
+(defn NulScheduler*
 
-  "Make a Singly threaded Scheduler"
+  "Make a Single threaded Scheduler"
 
   ^Schedulable
   []
@@ -74,22 +72,19 @@
       (activate [_ options] )
       (deactivate [_] ))
 
-    { :typeid (ToKW "czc.frwk.util" "NulScheduler") }
-
-  ))
+    { :typeid (ToKW "czc.frwk.util" "NulScheduler") } ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- xrefPID
 
-  "Returns the id of this runnable or nil"
+  "id of this runnable or nil"
 
   [runable]
 
-  (if (instance? Identifiable runable)
-    (.id ^Identifiable runable)
-    nil
-  ))
+  (when
+    (instance? Identifiable runable)
+    (.id ^Identifiable runable)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -101,8 +96,7 @@
 
   (when-some [pid (xrefPID w) ]
     (.remove hQ pid)
-    (.put rQ pid w)
-  ))
+    (.put rQ pid w)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -203,9 +197,7 @@
           (.clear runQ)
           (.stop ^TCore @cpu)))
 
-      { :typeid (ToKW "czc.frwk.util" "Scheduler") }
-
-  )))
+      { :typeid (ToKW "czc.frwk.util" "Scheduler") } )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -218,5 +210,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

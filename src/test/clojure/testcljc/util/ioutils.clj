@@ -73,8 +73,8 @@
                     (IO/CopyBytes inp os 4)))
                 (>= (.length ^File v) 4))))
 
-(is (true? (.isDiskFile (IO/MakeXData true))))
-(is (false? (.isDiskFile (IO/MakeXData))))
+(is (true? (.isDiskFile (IO/NewXData* true))))
+(is (false? (.isDiskFile (IO/NewXData*))))
 
 (is (true? (let [ x (with-open [ ^InputStream inp (IO/OpenFile TMP_FP) ] (IO/ReadBytes inp true)) ]
                 (and (instance? XData x) (.isDiskFile ^XData x) (> (.size ^XData x) 0))) ))

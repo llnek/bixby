@@ -48,10 +48,11 @@
 
   "Is this folder read-writeable?"
 
-  [d]
+  [f & dirs]
 
-  (test-cond (RStr (I18N/getBase) "dir.no.rw" d)
-             (DirReadWrite? d)))
+  (doseq [d (cons f dirs)]
+    (test-cond (RStr (I18N/getBase) "dir.no.rw" d)
+               (DirReadWrite? d))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the file is readable
@@ -59,10 +60,11 @@
 
   "Is this file readable?"
 
-  [f]
+  [ff & files]
 
-  (test-cond (RStr (I18N/getBase) "file.no.r" f)
-             (FileRead? f)))
+  (doseq [f (cons ff files)]
+    (test-cond (RStr (I18N/getBase) "file.no.r" f)
+               (FileRead? f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

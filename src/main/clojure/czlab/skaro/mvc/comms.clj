@@ -20,7 +20,7 @@
     [czlab.skaro.mvc.assets
     :refer [MakeWebAsset GetLocalFile]]
     [czlab.xlib.util.str :refer [hgl? nsb strim]]
-    [czlab.xlib.util.meta :refer [MakeObj]])
+    [czlab.xlib.util.meta :refer [NewObj*]])
 
   (:require
     [czlab.xlib.util.logging :as log]
@@ -218,7 +218,7 @@
       (let [cfg (.getv src :emcfg)
             h (:errorHandler cfg)
             ^HTTPErrorHandler
-            cb (if (hgl? h) (MakeObj h) nil)
+            cb (if (hgl? h) (NewObj* h) nil)
             ^WebContent
             rc (if (nil? cb)
                  (replyError src code)

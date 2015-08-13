@@ -45,7 +45,7 @@
 
 (is (not (nil? (MU/LoadClass "java.lang.String"))))
 
-(is (= "" (MU/MakeObj "java.lang.String")))
+(is (= "" (MU/NewObj* "java.lang.String")))
 
 (is (= 1 (count (MU/ListParents (Class/forName "java.lang.String")))))
 

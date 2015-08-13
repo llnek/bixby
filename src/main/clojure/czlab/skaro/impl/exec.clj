@@ -70,10 +70,10 @@
   (let [app (FilenameUtils/getBaseName (FPath des)) ]
     (log/info "app dir : %s" des)
     (log/info "inspecting...")
-    (PrecondFile (io/file des CFG_APP_CF))
-    (PrecondFile (io/file des CFG_ENV_CF))
-    (PrecondDir (io/file des DN_CONF))
-    (PrecondDir (io/file des DN_CFG))
+    (PrecondFile (io/file des CFG_APP_CF)
+                 (io/file des CFG_ENV_CF))
+    (PrecondDir (io/file des DN_CONF)
+                (io/file des DN_CFG))
     (let [ps (ReadEdn (io/file des CFG_APP_CF))
           ^Muble ctx (.getx execv)
           ^Registry

@@ -27,7 +27,7 @@
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.util.files
     :refer [ReadOneFile WriteOneFile]]
-    [czlab.xlib.util.scheduler :refer [NulScheduler]]
+    [czlab.xlib.util.scheduler :refer [NulScheduler*]]
     [czlab.xlib.util.core
     :refer [test-nonil test-cond ConvLong SysVar
     FPath PrintMutableObj MubleObj]]
@@ -142,7 +142,7 @@
 
   (let [ctxt (atom (MubleObj))
         impl (MubleObj)
-        cpu (NulScheduler) ]
+        cpu (NulScheduler*) ]
     (-> ^Activable
         cpu
         (.activate {:threads 1}))
