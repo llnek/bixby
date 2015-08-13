@@ -15,32 +15,29 @@
   czlab.xlib.dbio.core
 
   (:require
-    [czlab.xlib.util.str
-        :refer [lcase ucase strim Embeds?
-                AddDelim! nsb HasNocase? hgl?]]
     [czlab.xlib.util.format :refer [WriteEdnString]]
+    [czlab.xlib.util.str
+    :refer [lcase ucase strim
+    Embeds? AddDelim! HasNocase? hgl?]]
     [czlab.xlib.util.core
-        :refer [tryc try! trylet!
-                RootCause StripNSPath
-                Interject notnil? nnz nbf juid]]
-    [czlab.xlib.util.meta :refer [ForName]])
-
-  (:require
+    :refer [tryc try! trylet!
+    RootCause StripNSPath
+    Interject notnil? nnz nbf juid]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [clojure.set :as cset]
-    [czlab.xlib.crypto.codec :as codec ])
+    [czlab.xlib.crypto.codec :as codec ]
+    [czlab.xlib.util.meta :refer [ForName]])
 
   (:use [flatland.ordered.set])
 
   (:import
     [java.util HashMap GregorianCalendar
-         TimeZone Properties]
-    [org.apache.commons.lang3 StringUtils]
+    TimeZone Properties]
     [com.zotohlab.frwk.dbio MetaCache
-         Schema BoneCPHook DBIOError SQLr JDBCPool JDBCInfo]
+    Schema BoneCPHook DBIOError SQLr JDBCPool JDBCInfo]
     [java.sql SQLException
-         DatabaseMetaData Connection Driver DriverManager]
+    DatabaseMetaData Connection Driver DriverManager]
     [java.lang Math]
     [com.zotohlab.frwk.crypto PasswordAPI]
     [com.jolbox.bonecp BoneCP BoneCPConfig]
@@ -163,15 +160,17 @@
 
   ;;(log/debug "JDBC id= %s, cfg = %s" id cfg)
   (let [server (:server cfg)]
-    (reify JDBCInfo
+    (reify
+
+      JDBCInfo
+
       (getDriver [_] (:driver cfg))
       (getUser [_] (:user cfg))
       (getId [_] id)
       (getUrl [_] (if-not (empty? server)
                     server
                     (:url cfg)))
-      (getPwd [_] (nsb pwdObj)))
-  ))
+      (getPwd [_] (str pwdObj)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -227,8 +226,7 @@
       "oracle" :oracle
       "mysql" :mysql
       "h2" :h2
-      (DbioError (str "Unknown db product " product)))
-  ))
+      (DbioError (str "Unknown db product " product)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -258,8 +256,7 @@
   [^String dbtype]
 
   (let [kw (keyword (lcase dbtype)) ]
-    (when-not (nil? (DBTYPES kw)) kw)
-  ))
+    (when-not (nil? (DBTYPES kw)) kw)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -271,8 +268,7 @@
 
   (let [ss (StringUtils/split url \:) ]
     (when (> (alength ss) 1)
-      (MatchDbType (aget ss 1)))
-  ))
+      (MatchDbType (aget ss 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; data modelling
@@ -312,8 +308,7 @@
   `(def ~modelname
      (-> (DbioModel ~nsp
                     ~(name modelname))
-         ~@body)
-  ))
+         ~@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -325,8 +320,7 @@
 
   `(def ~modelname
      (-> (DbioModel ~(name modelname))
-         ~@body)
-  ))
+         ~@body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -339,8 +333,7 @@
   `(def ~modelname
       (-> (DbioModel ~nsp ~(name modelname))
           (WithDbParentModel JOINED-MODEL-MONIKER)
-          (WithDbJoinedModel ~lhs ~rhs))
-  ))
+          (WithDbJoinedModel ~lhs ~rhs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -353,8 +346,7 @@
   `(def ~modelname
       (-> (DbioModel ~(name modelname))
           (WithDbParentModel JOINED-MODEL-MONIKER)
-          (WithDbJoinedModel ~lhs ~rhs))
-  ))
+          (WithDbJoinedModel ~lhs ~rhs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -386,8 +378,7 @@
                (assoc :rhs a2)) ]
     (-> pojo
         (assoc :assocs m2)
-        (assoc :mxm true))
-  ))
+        (assoc :mxm true))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -418,8 +409,7 @@
                     (into (ordered-set) (last %2)))
             {}
             indices)]
-    (Interject pojo :indexes #(merge (%2 %1) m))
-  ))
+    (Interject pojo :indexes #(merge (%2 %1) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -437,8 +427,7 @@
                     (into (ordered-set) (last %2)))
             {}
             uniqs)]
-    (Interject pojo :uniques #(merge (%2 %1) m))
-  ))
+    (Interject pojo :uniques #(merge (%2 %1) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -473,8 +462,7 @@
 
   (let [fd (merge (getDftFldObj fid) fdef)
         k (:id fd)]
-    (Interject pojo :fields #(assoc (%2 %1) k fd))
-  ))
+    (Interject pojo :fields #(assoc (%2 %1) k fd))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -489,8 +477,7 @@
   (with-local-vars [rcmap pojo]
     (doseq [[k v] (seq flddefs) ]
       (var-set rcmap (WithDbField @rcmap k v)))
-    @rcmap
-  ))
+    @rcmap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -512,8 +499,7 @@
              ;;else
              (DbioError (str "Invalid assoc def " adef)))
         k (keyword aid)]
-    (Interject pojo :assocs #(assoc (%2 %1) k a2))
-  ))
+    (Interject pojo :assocs #(assoc (%2 %1) k a2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -528,8 +514,7 @@
   (with-local-vars [rcmap pojo ]
     (doseq [[k v] (seq assocs) ]
       (var-set rcmap (WithDbAssoc @rcmap k v)))
-    @rcmap
-  ))
+    @rcmap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -564,8 +549,7 @@
   (cond
     (and (set? src)(set? des)) (cset/union src des)
     (and (map? src)(map? des)) (merge src des)
-    :else des
-  ))
+    :else des))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Defining the base model here
@@ -603,9 +587,11 @@
   ^Schema
   [theModels]
 
-  (reify Schema
-    (getModels [_] theModels)
-  ))
+  (reify
+
+    Schema
+
+    (getModels [_] theModels)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -645,8 +631,7 @@
           (var-set xs (assoc! @xs
                               k
                               (assoc mcz :fields (merge fs v))))))
-      (persistent! @xs))
-  ))
+      (persistent! @xs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -670,8 +655,7 @@
       (assoc model :parent BASEMODEL-MONIKER)
 
       :else
-      (DbioError (str "Invalid parent " par)))
-  ))
+      (DbioError (str "Invalid parent " par)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Idea is walk through all models and ultimately
@@ -686,8 +670,7 @@
       #(let [rc (resolve-parent ms (last %2)) ]
          (assoc! %1 (:id rc) rc))
       (transient {})
-      (seq ms))
-  ))
+      (seq ms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -702,8 +685,7 @@
   (persistent!
     (reduce #(assoc! %1 (:id %2) %2)
             (transient {})
-            (seq ms))
-  ))
+            (seq ms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -719,8 +701,7 @@
     :map
 
     :else
-    (DbioError (str "Invalid arg " b))
-  ))
+    (DbioError (str "Invalid arg " b))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -734,8 +715,7 @@
 
   (if-some [mcz (cache modelid) ]
     (CollectDbXXX kw cache mcz)
-    (log/warn "Unknown database model id: %s" modelid)
-  ))
+    (log/warn "Unknown database model id: %s" modelid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -746,8 +726,7 @@
   (if-some [par (:parent mcz) ]
     (merge {} (CollectDbXXX kw cache par)
               (kw mcz))
-    (merge {} (kw mcz))
-  ))
+    (merge {} (kw mcz))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -759,10 +738,9 @@
 
   (with-local-vars [sum (transient {}) ]
     (doseq [[k v] flds]
-      (let [cn (ucase (nsb (:column v))) ]
+      (let [cn (ucase (str (:column v))) ]
         (var-set sum (assoc! @sum cn v))))
-    (persistent! @sum)
-  ))
+    (persistent! @sum)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -782,8 +760,7 @@
                          (with-meta m
                                     {:columns cols
                                      :fields flds } ) ))))
-    (persistent! @sum)
-  ))
+    (persistent! @sum)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -804,9 +781,11 @@
                  (resolve-assocs)
                  (assoc BASEMODEL-MONIKER DBIOBaseModel)
                  (meta-models))) ]
-    (reify MetaCache
-      (getMetas [_] m2))
-  ))
+    (reify
+
+      MetaCache
+
+      (getMetas [_] m2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -838,7 +817,7 @@
         d (if (hgl? url) (DriverManager/getDriver url))
         p (if (hgl? user)
             (doto (Properties.)
-              (.put "password" (nsb (.getPwd jdbc)))
+              (.put "password" (str (.getPwd jdbc)))
               (.put "user" user)
               (.put "username" user))
             (Properties.)) ]
@@ -846,8 +825,7 @@
     (when (and (hgl? dv)
                (not= (-> d (.getClass) (.getName)) dv))
       (log/warn "expected %s, loaded with driver: %s" dv (.getClass d)))
-    (.connect d url p)
-  ))
+    (.connect d url p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -866,8 +844,7 @@
     (when (nil? conn)
           (DbioError (str "Failed to create db connection: " url)))
     (doto conn
-      (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE))
-  ))
+      (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -888,8 +865,7 @@
   [jdbc]
 
   (with-open [conn (DbConnection* jdbc) ]
-    (ResolveVendor conn)
-  ))
+    (ResolveVendor conn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -906,8 +882,7 @@
         (assoc :user (.getUserName md))
         (assoc :lcis (.storesLowerCaseIdentifiers md))
         (assoc :ucis (.storesUpperCaseIdentifiers md))
-        (assoc :mcis (.storesMixedCaseIdentifiers md)))
-  ))
+        (assoc :mcis (.storesMixedCaseIdentifiers md)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -921,8 +896,7 @@
   [^JDBCPool pool ^String table]
 
   (with-open [conn (.nextFree pool) ]
-    (TableExist? conn table)
-  ))
+    (TableExist? conn table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -931,8 +905,7 @@
   [jdbc ^String table]
 
   (with-open [conn (DbConnection* jdbc) ]
-    (TableExist? conn table)
-  ))
+    (TableExist? conn table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -954,8 +927,7 @@
         (when (and (some? res)
                    (.next res))
           (var-set rc true))))
-    @rc
-  ))
+    @rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -969,8 +941,7 @@
   [jdbc ^String table]
 
   (with-open [conn (DbConnection* jdbc) ]
-    (RowExist? conn table)
-  ))
+    (RowExist? conn table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -987,8 +958,7 @@
         (when (and (some? res)
                    (.next res))
           (var-set rc (> (.getInt res (int 1)) 0)))))
-    @rc
-  ))
+    @rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1031,8 +1001,7 @@
     (with-meta @cms {:supportsGetGeneratedKeys
                      (.supportsGetGeneratedKeys mt)
                      :supportsTransactions
-                     (.supportsTransactions mt) })
-  ))
+                     (.supportsTransactions mt) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1054,8 +1023,7 @@
               :else table) ]
     ;; not good, try mixed case... arrrrrrrrrrhhhhhhhhhhhhhh
     ;;rs = m.getTables( catalog, schema, "%", null)
-    (load-columns mt catalog schema tbl)
-  ))
+    (load-columns mt catalog schema tbl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1081,7 +1049,7 @@
             (.getConnection impl)
           (catch Throwable e#
             (log/error e# "")
-            (DbioError (str "No free connection")))))
+            (DbioError (str "No free connection"))))))))
 
       ;;Object
       ;;Clojure CLJ-1347
@@ -1091,7 +1059,6 @@
           ;;(log/debug "DbPool finalize() called.")
           ;;(.shutdown this)))
 
-  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1113,7 +1080,7 @@
     (doto bcf
           (.setPartitionCount (Math/max 1 (nnz (:partitions options))))
           (.setLogStatementsEnabled (nbf (:debug options)))
-          (.setPassword (nsb (.getPwd jdbc)))
+          (.setPassword (str (.getPwd jdbc)))
           (.setJdbcUrl (.getUrl jdbc))
           (.setUsername (.getUser jdbc))
           (.setIdleMaxAgeInSeconds (* 60 60 2)) ;; 2 hrs
@@ -1126,8 +1093,7 @@
           ;;(.setConnectionHook (BoneCPHook.))
           (.setAcquireRetryAttempts 1))
     (log/debug "[bonecp]\n%s" (.toString bcf))
-    (makePool jdbc (BoneCP. bcf))
-  ))
+    (makePool jdbc (BoneCP. bcf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1151,8 +1117,7 @@
           (recur (conj! sum nl) d2 p2))))
     (if (hgl? @s2)
       (conj @rc @s2)
-      @rc)
-  ))
+      @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1160,7 +1125,7 @@
 
   [^String dbn ^Throwable e]
 
-  (let [oracle (Embeds? (nsb dbn) "oracle")
+  (let [oracle (Embeds? (str dbn) "oracle")
         ee (RootCause e)
         ec (when (instance? SQLException ee)
              (.getErrorCode ^SQLException ee)) ]
@@ -1172,8 +1137,7 @@
              (== 2289 ec)(== 0 ec))
         true
         :else
-        (throw e)))
-  ))
+        (throw e)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1186,8 +1150,7 @@
   [^JDBCPool pool ^String ddl]
 
   (with-open [conn (.nextFree pool) ]
-     (UploadDdl conn ddl)
-  ))
+     (UploadDdl conn ddl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1196,8 +1159,7 @@
   [jdbc ^String ddl]
 
   (with-open [conn (DbConnection* jdbc) ]
-     (UploadDdl conn ddl)
-  ))
+     (UploadDdl conn ddl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1219,8 +1181,7 @@
         (with-open [stmt (.createStatement conn) ]
           (.executeUpdate stmt ln))
         (catch SQLException e#
-          (maybeOK dbn e#))))
-  ))
+          (maybeOK dbn e#))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1258,8 +1219,7 @@
   (if-not (empty? fvs)
     (let [a (flatten (seq fvs))]
       (apply DbioSetFlds pojo (first a)(second a) (drop 2 a)))
-    pojo
-  ))
+    pojo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1306,8 +1266,7 @@
     (let [rc ((:assocs mcz) id) ]
       (if (nil? rc)
         (DbioGetAssoc cache (cache (:parent mcz)) id)
-        rc))
-  ))
+        rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; handling assocs
@@ -1324,8 +1283,7 @@
         fv (:rowid (meta lhsObj)) ]
     (if (nil? ac)
       (DbioError "Unknown assoc " (:as ctx))
-      [ sqlr (or rt (:other ac)) {fid fv} ])
-  ))
+      [ sqlr (or rt (:other ac)) {fid fv} ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1344,8 +1302,7 @@
                 (DbioSetFld fid fv)
                 (vary-meta MergeMeta (Concise rhsObj)))
           y (.update sqlr x) ]
-      [ lhsObj (merge y (dissoc rhsObj fid)) ])
-  ))
+      [ lhsObj (merge y (dissoc rhsObj fid)) ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1357,8 +1314,7 @@
 
   (let [[sql rt pms] (dbio-get-o2x ctx lhsObj) ]
     (when (some? rt)
-      (.findSome ^SQLr sql rt pms))
-  ))
+      (.findSome ^SQLr sql rt pms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1379,8 +1335,7 @@
       (var-set rc
                (conj! @rc
                       (last (dbio-set-o2x ctx lhsObj r)))))
-    [ lhsObj (persistent! @rc) ]
-  ))
+    [ lhsObj (persistent! @rc) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1405,8 +1360,7 @@
                        (GTable (mcache rp))
                        " set " (ese fid) " = NULL "
                        " where " (ese fid) " = ?") [fv]))
-    lhsObj
-  ))
+    lhsObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1417,8 +1371,7 @@
   [ctx lhsObj]
 
   (let [[sql rt pms] (dbio-get-o2x ctx lhsObj) ]
-    (.findOne ^SQLr sql rt pms)
-  ))
+    (.findOne ^SQLr sql rt pms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1452,8 +1405,7 @@
           (if (:cascade ac)
             (.delete sqlr x)
             (.update sqlr x)))))
-    lhsObj
-  ))
+    lhsObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1486,8 +1438,7 @@
                   (DbioSetFld :lhs-oid rv)
                   (DbioSetFld :rhs-typeid (StripNSPath lid))
                   (DbioSetFld :rhs-oid lv))) ]
-    (.insert sqlr y)
-  ))
+    (.insert sqlr y)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1529,8 +1480,7 @@
                     " =? and "
                     (ese b)
                     " =?" )
-               [ lv (StripNSPath lid) rv (StripNSPath rid) ])) )
-  ))
+               [ lv (StripNSPath lid) rv (StripNSPath rid) ])) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1570,8 +1520,7 @@
                   "=? and "
                   (str eseMM "." (ese (:column (k flds))))
                   " = " (str eseRES "." (ese (:column (:rowid flds)))))
-                  [ (StripNSPath a) (StripNSPath t) lv ])
-  ))
+                  [ (StripNSPath a) (StripNSPath t) lv ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

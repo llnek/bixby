@@ -19,7 +19,6 @@
     [clojure.string :as cs])
 
   (:import
-    [org.apache.commons.lang3 StringUtils]
     [javax.management ObjectName]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,7 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeObjectName
+(defn ObjectName*
 
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
@@ -48,8 +47,7 @@
     (doto sb
       (.append "name=")
       (.append beanName))
-    (ObjectName. (.toString sb))
-  ))
+    (ObjectName. (.toString sb))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

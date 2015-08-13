@@ -31,11 +31,11 @@
     [java.net URL]
     [java.nio.charset Charset]
     [java.io InputStream File FileInputStream
-     ByteArrayInputStream
-     ByteArrayOutputStream]
+    ByteArrayInputStream
+    ByteArrayOutputStream]
     [java.util Map Properties Date Calendar
-     HashMap HashSet ArrayList
-     GregorianCalendar TimeZone]
+    HashMap HashSet ArrayList
+    GregorianCalendar TimeZone]
     [java.sql Timestamp]
     [java.rmi.server UID]
     [org.apache.commons.lang3.text StrSubstitutor]
@@ -174,10 +174,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def GBS (* 1024 1024 1024))
-(def KBS 1024)
-(def MBS (* 1024 1024))
-(def NICHTS (TypeNichts.))
+(defonce GBS (* 1024 1024 1024))
+(defonce KBS 1024)
+(defonce MBS (* 1024 1024))
+(defonce NICHTS (TypeNichts.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -302,8 +302,7 @@
   {:pre [(fn? func)]}
 
   (let [nv (apply func pojo field  [])]
-    (assoc pojo field nv)
-  ))
+    (assoc pojo field nv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -320,7 +319,7 @@
 ;;
 (defmacro bool! ""
   [e]
-  `(if-some [e# ~e] (if (false? e#) false true) false))
+  `(if-some [e# ~e] (not (false? e#)) false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,11 +372,9 @@
   ^JsonObject
   [^JsonObject json ^String field]
 
-  (if (.has json field)
+  (when (.has json field)
     (-> (.get json field)
-        (.getAsJsonObject))
-    nil
-  ))
+        (.getAsJsonObject))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -388,11 +385,9 @@
   ^String
   [^JsonObject json ^String field]
 
-  (if (.has json field)
+  (when (.has json field)
     (-> (.get json field)
-        (.getAsString))
-    nil
-  ))
+        (.getAsString))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -402,11 +397,9 @@
 
   [^JsonObject json ^String field]
 
-  (if (.has json field)
+  (when (.has json field)
     (-> (.get json field)
-        (.getAsDouble))
-    nil
-  ))
+        (.getAsDouble))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -416,11 +409,9 @@
 
   [^JsonObject json ^String field]
 
-  (if (.has json field)
+  (when (.has json field)
     (-> (.get json field)
-        (.getAsInt))
-    nil
-  ))
+        (.getAsInt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -430,11 +421,9 @@
 
   [^JsonObject json ^String field]
 
-  (if (.has json field)
+  (when (.has json field)
     (-> (.get json field)
-        (.getAsBoolean))
-    nil
-  ))
+        (.getAsBoolean))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -478,7 +467,7 @@
   ^String
   []
 
-  (.replaceAll (nsb (UID.)) "[:\\-]+" ""))
+  (.replaceAll (str (UID.)) "[:\\-]+" ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -506,10 +495,12 @@
 
   "a new random object"
 
-  (^SecureRandom [] (NewRandom 4))
+  ^SecureRandom
+  [ & [numBytes] ]
 
-  (^SecureRandom [numBytes]
-    (SecureRandom. (SecureRandom/getSeed numBytes)) ))
+  (->> (long (or numBytes 4))
+       (SecureRandom/getSeed )
+       (SecureRandom.)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -561,7 +552,7 @@
   ^String
   [^String fpath]
 
-  (FilenameUtils/normalizeNoEndSeparator (nsb fpath) true))
+  (FilenameUtils/normalizeNoEndSeparator (str fpath) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -572,8 +563,7 @@
 
   (if (nil? aFile)
     ""
-    (FPath (.getCanonicalPath aFile))
-  ))
+    (FPath (.getCanonicalPath aFile))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -586,9 +576,9 @@
 
   (if (nil? value)
     ""
-    (.replace (StrSubstitutor. (System/getenv))
-              (StrSubstitutor/replaceSystemProperties value))
-  ))
+    (->> value
+         (StrSubstitutor/replaceSystemProperties )
+         (.replace (StrSubstitutor. (System/getenv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -601,8 +591,7 @@
 
   (if (nil? value)
     ""
-    (StrSubstitutor/replaceSystemProperties value)
-  ))
+    (StrSubstitutor/replaceSystemProperties value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -615,8 +604,7 @@
 
   (if (nil? value)
     ""
-    (.replace (StrSubstitutor. (System/getenv)) value)
-  ))
+    (.replace (StrSubstitutor. (System/getenv)) value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -634,8 +622,7 @@
             (SubsVar (.get props k)))
       memo)
     (Properties.)
-    (.keySet props)
-  ))
+    (.keySet props)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -646,7 +633,7 @@
   ^String
   [^String prop]
 
-  (System/getProperty (nsb prop) ""))
+  (System/getProperty (str prop) ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -690,7 +677,7 @@
   ^String
   [path]
 
-  (.replaceFirst (nsb path) "[/\\\\]+$"  ""))
+  (.replaceFirst (str path) "[/\\\\]+$"  ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -702,8 +689,7 @@
   [obj]
 
   (when (some? obj)
-    (SerializationUtils/serialize obj)
-  ))
+    (SerializationUtils/serialize obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -715,8 +701,7 @@
   [^bytes bits]
 
   (when (some? bits)
-    (SerializationUtils/deserialize bits)
-  ))
+    (SerializationUtils/deserialize bits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -729,8 +714,7 @@
 
   (if (nil? obj)
     "null"
-    (.getName (.getClass obj))
-  ))
+    (.getName (.getClass obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -743,8 +727,7 @@
 
   (if (nil? aFile)
     ""
-    (FPath aFile)
-  ))
+    (FPath aFile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -826,7 +809,7 @@
   ^Boolean
   [^String s]
 
-  (ccore/contains? _BOOLS (cs/lower-case (nsb s))))
+  (ccore/contains? _BOOLS (cs/lower-case (str s))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -850,9 +833,9 @@
 
   [^URL aFile]
 
-  (with-open [inp (.openStream aFile) ]
-    (LoadJavaProps inp)
-  ))
+  (with-open
+    [inp (.openStream aFile) ]
+    (LoadJavaProps inp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -987,9 +970,7 @@
                       buf
                       0
                       (.deflate cpz buf))
-              (recur))))
-      ))
-  ))
+              (recur))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1013,9 +994,7 @@
                     buf
                     0
                     (.inflate decr buf))
-            (recur)))
-      ))
-  ))
+            (recur)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1035,8 +1014,7 @@
                                  (Integer/toString (int ch) 16)))))
                (StringBuilder.)
                (seq fname))
-       (str "" )
-  ))
+       (str "" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1074,8 +1052,7 @@
   (when (some? path)
     (io/as-url (if (.startsWith "file:" path)
                  path
-                 (str "file://" path)))
-  ))
+                 (str "file://" path)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; test and assert funcs
@@ -1098,8 +1075,7 @@
 
   (assert (and (some? childz)
                (.isAssignableFrom parz childz))
-          (str "" param " not-isa " (.getName parz))
-  ))
+          (str "" param " not-isa " (.getName parz))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1109,8 +1085,7 @@
 
   (assert (and (some? obj)
                (.isAssignableFrom parz (.getClass obj)))
-          (str "" param " not-isa " (.getName parz))
-  ))
+          (str "" param " not-isa " (.getName parz))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1121,8 +1096,7 @@
   [^String param obj]
 
   (assert (some? obj)
-          (str "" param " is null")
-  ))
+          (str "" param " is null")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1143,8 +1117,7 @@
   [^String param v]
 
   (assert (not (StringUtils/isEmpty v))
-          (str "" param " is empty")
-  ))
+          (str "" param " is empty")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1181,8 +1154,7 @@
   [^String param v]
 
   (assert (>= v 0.0)
-          (str "" param " must be >= 0")
-  ))
+          (str "" param " must be >= 0")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1191,8 +1163,7 @@
   [^String param v]
 
   (assert (>= v 0)
-          (str "" param " must be >= 0")
-  ))
+          (str "" param " must be >= 0")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1201,8 +1172,7 @@
   [^String param v]
 
   (assert (> v 0.0)
-          (str "" param " must be > 0")
-  ))
+          (str "" param " must be > 0")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1211,8 +1181,7 @@
   [^String param v]
 
   (assert (> v 0)
-          (str "" param " must be > 0")
-  ))
+          (str "" param " must be > 0")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1223,8 +1192,7 @@
   [^String param v]
 
   (assert (not (nil? (not-empty v)))
-          (str  param  " must be non empty")
-  ))
+          (str  param  " must be non empty")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1240,8 +1208,7 @@
              (.getCause ^Throwable root)) ]
     (if (nil? t)
       r
-      (recur t (.getCause t)))
-  ))
+      (recur t (.getCause t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1254,8 +1221,7 @@
   (let [e (RootCause root) ]
     (if (nil? e)
       ""
-      (str (.getName (.getClass e)) ": " (.getMessage e)))
-  ))
+      (str (.getName (.getClass e)) ": " (.getMessage e)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1281,9 +1247,7 @@
           (if (and (>= n start)
                    (not (ccore/contains? rc n)))
             (recur _end r (conj rc n) (dec cnt))
-            (recur _end r rc cnt) ))
-      ))
-  ))
+            (recur _end r rc cnt) ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1310,8 +1274,7 @@
   (persistent! (reduce (fn [sum k]
                          (assoc! sum (keyword k) (.get props k)))
                        (transient {})
-                       (seq (.keySet props)))
-  ))
+                       (seq (.keySet props)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1358,8 +1321,7 @@
       (.append buf (str k " = " v "\n")))
     (.append buf "\n")
     (when-some [s (str buf) ]
-      (if dbg (log/debug "%s" s)(log/info "%s" s)))
-  ))
+      (if dbg (log/debug "%s" s)(log/info "%s" s)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1381,8 +1343,7 @@
   (let [s (str path) ]
     (if (.startsWith s ":")
       (.substring s 1)
-      s)
-  ))
+      s)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1405,8 +1366,7 @@
 
     :else
     (let [ss (StringUtils/split email "@" 2) ]
-      (str (aget ss 0) "@" (cs/lower-case (aget ss 1))))
-  ))
+      (str (aget ss 0) "@" (cs/lower-case (aget ss 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1422,8 +1382,7 @@
   (let [rc (ArrayList.)]
     (doseq [v (seq obj)]
       (.add rc (toJava v)))
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1435,8 +1394,7 @@
   (let [rc (HashSet.)]
     (doseq [v (seq obj)]
       (.add rc (toJava v)))
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1448,8 +1406,7 @@
   (let [rc (HashMap.)]
     (doseq [[k v] (seq obj)]
       (.put rc (name k) (toJava v)))
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1469,9 +1426,7 @@
         (list? obj))
     (convList obj)
 
-    :else
-    obj
-  ))
+    :else obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

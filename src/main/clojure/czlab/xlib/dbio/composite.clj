@@ -15,10 +15,9 @@
   czlab.xlib.dbio.composite
 
   (:require
-    [czlab.xlib.util.core :refer [test-nonil notnil? try!]]
-    [czlab.xlib.util.str :refer [hgl?]])
-
-  (:require [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.core :refer [test-nonil try!]]
+    [czlab.xlib.util.str :refer [hgl?]]
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.dbio.core]
         [czlab.xlib.dbio.sql])
@@ -30,43 +29,52 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CompositeSQLr
+(defn CompositeSQLr*
 
   "A composite supports transactions"
 
   ^Transactable
   [^DBAPI db ]
 
-  (reify Transactable
+  (reify
 
-    (execWith [this func]
+    Transactable
+
+    (execWith [me func]
       (with-local-vars [rc nil]
-        (with-open [conn (.begin this) ]
-          (let [s (ReifySQLr db
-                             (fn [_] conn)
-                             #(%2 %1)) ]
-            (try
-              (var-set rc (func s))
-              (.commit this conn)
-              @rc
-              (catch Throwable e#
-                (do
-                  (.rollback this conn)
-                  (log/warn e# "")
-                  (throw e#))) )))))
+      (with-open [conn
+                  (.begin me) ]
+        (try
+          (->> (ReifySQLr
+                 db
+                 (fn [_] conn) #(%2 %1))
+               (func )
+               (var-set rc ))
+          (.commit me conn)
+          @rc
+          (catch Throwable e#
+            (.rollback me conn)
+            (log/warn e# "")
+            (throw e#))) )))
 
-    (rollback [_ conn] (try! (.rollback ^Connection conn)))
-    (commit [_ conn] (.commit ^Connection conn))
+    (rollback [_ conn]
+      (try! (-> ^Connection
+                conn
+                (.rollback))))
+
+    (commit [_ conn]
+      (-> ^Connection
+          conn
+          (.commit)))
 
     (begin [_]
       (let [conn (.open db) ]
         (.setAutoCommit conn false)
-        (.setTransactionIsolation conn Connection/TRANSACTION_SERIALIZABLE)
-        conn))
-  ))
+        (->> Connection/TRANSACTION_SERIALIZABLE
+             (.setTransactionIsolation conn ))
+        conn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

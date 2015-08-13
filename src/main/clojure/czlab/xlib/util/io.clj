@@ -18,7 +18,7 @@
     [czlab.xlib.util.core :refer [spos? try!]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
-    [clojure.string :as cstr])
+    [clojure.string :as cs])
 
   (:import
     [java.util.zip GZIPInputStream GZIPOutputStream]
@@ -534,9 +534,9 @@
   [^bytes bits & [charSet]]
 
   (when (some? bits)
-    (->> ^CharSet
-         (or charSet (Charset/forName "utf-8"))
-         (IOUtils/toCharArray (Streamify bits) ))))
+    (let [^Charset
+          cs (or charSet (Charset/forName "utf-8")) ]
+      (IOUtils/toCharArray (Streamify bits) cs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

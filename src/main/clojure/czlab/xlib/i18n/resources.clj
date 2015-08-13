@@ -16,15 +16,13 @@
 
   (:require
     [czlab.xlib.util.meta :refer [GetCldr]]
-    [czlab.xlib.util.str :refer [nsb]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
+    [clojure.string :as cs]
     [clojure.java.io :as io])
 
   (:import
-    [java.util PropertyResourceBundle ResourceBundle Locale]
-    [org.apache.commons.lang3 StringUtils]
+    [java.util Locale
+    PropertyResourceBundle ResourceBundle]
     [java.io File FileInputStream]
     [java.net URL]))
 
@@ -50,8 +48,7 @@
 
   [^URL url]
 
-  (with-open [inp (.openStream url) ]
-    (PropertyResourceBundle. inp)))
+  (with-open [inp (.openStream url) ] (PropertyResourceBundle. inp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,17 +99,16 @@
 
   (if (empty? pkey)
     ""
-    (let [kv (nsb (.getString bundle pkey))
+    (let [kv (str (.getString bundle pkey))
           pc (count pms) ]
       ;;(log/debug "RStr key = %s, value = %s" pkey kv)
       (loop [src kv pos 0 ]
         (if (>= pos pc)
          src
-         (recur (StringUtils/replace src
-                                     "{}"
-                                     (nsb (nth pms pos)) 1)
-                (inc pos)))))
-  ))
+         (recur (cs/replace src
+                            "{}"
+                            (str (nth pms pos)) 1)
+                (inc pos)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

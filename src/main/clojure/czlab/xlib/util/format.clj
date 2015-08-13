@@ -15,9 +15,7 @@
   czlab.xlib.util.format
 
   (:require
-    [czlab.xlib.util.files :refer [ReadOneUrl]])
-
-  (:require
+    [czlab.xlib.util.files :refer [ReadOneUrl]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [clojure.edn :as edn]
@@ -28,7 +26,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

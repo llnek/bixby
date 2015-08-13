@@ -16,15 +16,13 @@
 
   (:require
     [czlab.xlib.util.core
-     :refer [ThrowBadData ThrowIOE
-             ConvBool ConvInt ConvLong ConvDouble]]
+    :refer [ThrowBadData ThrowIOE
+    ConvBool ConvInt ConvLong ConvDouble]]
     [czlab.xlib.util.files :refer [FileRead?]]
-    [czlab.xlib.util.str :refer [nsb strim lcase]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
-    [clojure.string :as cs])
+    [clojure.string :as cs]
+    [czlab.xlib.util.str :refer [strim lcase]])
 
   (:use [flatland.ordered.map])
 
@@ -33,7 +31,7 @@
     [com.zotohlab.frwk.util IWin32Conf]
     [java.net URL]
     [java.io File IOException
-     InputStreamReader LineNumberReader PrintStream]))
+    InputStreamReader LineNumberReader PrintStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -80,8 +78,7 @@
       (when-not (contains? @ncmap k)
         (->> (assoc @ncmap k (with-meta (sorted-map) {:name s}))
              (reset! ncmap)))
-      k)
-  ))
+      k)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,8 +99,7 @@
       (let [k (keyword (lcase nm))]
         (->> (assoc kvs k [ nm  (strim (.substring line (+ pos 1))) ])
              (swap! ncmap assoc section)))
-      section)
-  ))
+      section)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -124,8 +120,7 @@
       (maybeSection rdr ncmap ln)
 
       :else
-      (maybeLine rdr ncmap curSec ln))
-  ))
+      (maybeLine rdr ncmap curSec ln))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -141,8 +136,7 @@
       (nil? mp) (when err (throwBadMap s))
       (nil? k) (when err (throwBadKey k))
       (not (contains? mp kn)) (when err (throwBadKey k))
-      :else (nsb (last (get mp kn))))
-  ))
+      :else (str (last (get mp kn))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,7 +144,9 @@
 
   [sects]
 
-  (reify IWin32Conf
+  (reify
+
+    IWin32Conf
 
     (sectionKeys [_]
       (reduce
@@ -165,7 +161,7 @@
                 (or (vals (get sects sn)) []))))
 
     (getString [this section property]
-      (nsb (getKV sects section property true)))
+      (str (getKV sects section property true)))
 
     (getString [this section property dft]
       (if-some [rc (getKV sects section property false) ]
@@ -211,8 +207,7 @@
           (doseq [[x y] (vals v)]
             (.append buf (str x "=" y "\n")))
           (.append buf "\n"))
-        (println (.toString buf))))
-  ))
+        (println (.toString buf))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -222,8 +217,7 @@
   [fpath]
 
   (when (some? fpath)
-    (ParseInifile (io/file fpath))
-  ))
+    (ParseInifile (io/file fpath))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -233,8 +227,7 @@
   [file]
 
   (when (FileRead? file)
-    (ParseInifile (io/as-url file))
-  ))
+    (ParseInifile (io/as-url file))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -254,8 +247,7 @@
         (recur rdr
                total
                (.readLine rdr)
-               (evalOneLine rdr total curSec line))))
-  ))
+               (evalOneLine rdr total curSec line))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -265,8 +257,7 @@
   [^URL fileUrl]
 
   (when (some? fileUrl)
-    (parseFile fileUrl)
-  ))
+    (parseFile fileUrl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

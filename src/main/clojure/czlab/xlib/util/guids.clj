@@ -16,12 +16,10 @@
 
   (:require
     [czlab.xlib.util.core
-     :refer [NextInt NowMillis tryletc tryc NewRandom]]
-    [czlab.xlib.util.str :refer [nsb Left Right]]
+    :refer [NextInt NowMillis tryletc tryc NewRandom]]
+    [czlab.xlib.util.str :refer [Left Right]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.io :refer [ReadInt ReadLong]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:import
     [java.lang StringBuilder]
@@ -40,8 +38,6 @@
 (def ^:private ^chars  _CHARS (.toCharArray _SS))
 (def ^:private _UUIDLEN (.length _SS))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def ^:private ^String LONG_MASK "0000000000")
 (def ^:private ^String INT_MASK "00000")
 ;;(def ^:private LONG_MASK "0000000000000000")
@@ -58,8 +54,7 @@
         plen (.length pad) ]
     (if (>= mlen plen)
       (.substring mask 0 plen)
-      (nsb (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))
-  ))
+      (str (.replace (StringBuilder. pad) (- plen mlen) plen mask ) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -88,8 +83,7 @@
   (let [s (fmtLong (NowMillis))
         n (.length s) ]
     [ (Left s (/ n 2))
-      (Right s (max 0 (- n (/ n 2 )) )) ]
-  ))
+      (Right s (max 0 (- n (/ n 2 )) )) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,9 +98,7 @@
       (.nextLong (NewRandom))
       (if (== 4 (alength b))
         (long (ReadInt b))
-        (ReadLong b))
-    )
-  ))
+        (ReadLong b)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,7 +113,7 @@
   ^String
   []
 
-  (nsb (UUID/randomUUID)))
+  (str (UUID/randomUUID)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -147,8 +139,7 @@
                                (bit-or (bit-and r 0x3) 0x8)
                                (bit-and r 0xf)) ]
                      (aget ^chars _CHARS pos))) ))
-    (String. rc)
-  ))
+    (String. rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -165,8 +156,7 @@
          (fmtLong _IP)
          (fmtInt seed)
          (fmtInt (NextInt))
-         (nth ts 1))
-  ))
+         (nth ts 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

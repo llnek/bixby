@@ -16,19 +16,17 @@
 
   (:require
     [czlab.xlib.util.core :refer [try!]]
-    [czlab.xlib.util.str :refer [nsb]])
-
-  (:require [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.dbio.core]
         [czlab.xlib.dbio.composite]
         [czlab.xlib.dbio.simple])
 
   (:import
-    [java.util Map HashMap]
+    [java.util Map]
     [com.zotohlab.frwk.dbio DBAPI
-       JDBCPool JDBCInfo
-       DBIOLocal DBIOError OptLockError]))
+    JDBCPool JDBCInfo
+    DBIOLocal DBIOError OptLockError]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -51,8 +49,7 @@
            (merge options )
            (DbPool* jdbc )
            (.put c hc )))
-    (.get c hc)
-  ))
+    (.get c hc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -65,7 +62,9 @@
 
   (let [hc (.getId jdbc) ]
     ;;(log/debug "%s" (.getMetas metaCache))
-    (reify DBAPI
+    (reify
+
+      DBAPI
 
       (supportsLock [_] (not (false? (:opt-lock options))))
 
@@ -77,9 +76,8 @@
 
       (open [_] (DbConnection* jdbc))
 
-      (newCompositeSQLr [this] (CompositeSQLr this))
-      (newSimpleSQLr [this] (SimpleSQLr this)) )
-  ))
+      (newCompositeSQLr [this] (CompositeSQLr* this))
+      (newSimpleSQLr [this] (SimpleSQLr* this)) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,7 +88,9 @@
   ^DBAPI
   [^JDBCPool pool metaCache options]
 
-  (reify DBAPI
+  (reify
+
+    DBAPI
 
     (supportsLock [_] (not (false? (:opt-lock options))))
     (getMetaCache [_] metaCache)
@@ -99,8 +99,8 @@
     (finz [_] nil)
     (open [_] (.nextFree pool))
 
-    (newCompositeSQLr [this] (CompositeSQLr this))
-    (newSimpleSQLr [this] (SimpleSQLr this)) ))
+    (newCompositeSQLr [this] (CompositeSQLr* this))
+    (newSimpleSQLr [this] (SimpleSQLr* this)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

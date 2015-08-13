@@ -303,8 +303,7 @@
   [^String country]
 
   (when-some [rs (filter #(= (nth % 1) country) _CCODESEQ) ]
-    (nth (first rs) 0)
-  ))
+    (nth (first rs) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -396,8 +395,7 @@
   [^String state]
 
   (when-some [rs (filter #(= (nth % 1) state) _STATESSEQ) ]
-    (nth (first rs) 0)
-  ))
+    (nth (first rs) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

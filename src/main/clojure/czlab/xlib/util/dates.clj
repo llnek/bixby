@@ -15,10 +15,8 @@
   czlab.xlib.util.dates
 
   (:require
-    [czlab.xlib.util.str :refer [Has? HasAny? nichts? nsb]]
-    [czlab.xlib.util.core :refer [try!]])
-
-  (:require
+    [czlab.xlib.util.str :refer [Has? HasAny? ]]
+    [czlab.xlib.util.core :refer [try!]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -27,7 +25,7 @@
   (:import
     [java.text ParsePosition SimpleDateFormat]
     [java.util Locale TimeZone SimpleTimeZone
-     Date Calendar GregorianCalendar]
+    Date Calendar GregorianCalendar]
     [java.sql Timestamp]
     [org.apache.commons.lang3 StringUtils]))
 
@@ -45,8 +43,7 @@
   (cond
     (zero? (mod year 400)) true
     (zero? (mod year 100)) false
-    :else (zero? (mod year 4))
-  ))
+    :else (zero? (mod year 4))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -59,8 +56,7 @@
              (.substring s (inc pos))
              "") ]
     (or (HasAny? ss ["+" "-"])
-        (.matches ss "\\s*[a-zA-Z]+\\s*"))
-  ))
+        (.matches ss "\\s*[a-zA-Z]+\\s*"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,8 +83,7 @@
       (> p4 0)
       (hastzpart? (.substring dateStr (inc p4)))
 
-      :else false)
-  ))
+      :else false)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,8 +108,7 @@
 
   (when-not (or (empty? tstr)
                 (empty? fmt))
-    (.parse (SimpleDateFormat. fmt) tstr)
-  ))
+    (.parse (SimpleDateFormat. fmt) tstr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,8 +123,7 @@
     (let [fmt (if (Has? tstr \:)
                 (if (Has? tstr \.) DT_FMT_MICRO DT_FMT )
                 DATE_FMT ) ]
-      (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))
-  ))
+      (ParseDate tstr (if (hastz? tstr) (str fmt "Z") fmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -141,7 +134,7 @@
   ^String
   [^Timestamp ts]
 
-  (nsb ts))
+  (str ts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -186,8 +179,7 @@
   (when (some? cal)
     (doto (GregorianCalendar. (.getTimeZone cal))
       (.setTime (.getTime cal))
-      (.add (int calendarField) ^long amount))
-  ))
+      (.add (int calendarField) ^long amount))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,10 +232,9 @@
   ^Date
   [months]
 
-  (let [now (GCal* (Date.)) ]
-    (-> (AddMonths now months)
-        (.getTime))
-  ))
+  (-> (GCal* (Date.))
+      (AddMonths  months)
+      (.getTime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -254,10 +245,9 @@
   ^Date
   [years]
 
-  (let [now (GCal* (Date.)) ]
-    (-> (AddYears now years)
-        (.getTime))
-  ))
+  (-> (GCal* (Date.))
+      (AddYears  years)
+      (.getTime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -268,10 +258,9 @@
   ^Date
   [days]
 
-  (let [now (GCal* (Date.)) ]
-    (-> (AddDays now days)
-        (.getTime))
-  ))
+  (-> (GCal* (Date.))
+      (AddDays  days)
+      (.getTime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -291,8 +280,7 @@
                  (.get cal Calendar/DAY_OF_MONTH)
                  (.get cal Calendar/HOUR_OF_DAY)
                  (.get cal Calendar/MINUTE)
-                 (.get cal Calendar/SECOND) ] )
-  ))
+                 (.get cal Calendar/SECOND) ] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -316,8 +304,7 @@
            ["{" (.. cal (getTimeZone) (getDisplayName) )  "} "
             "{" (.. cal (getTimeZone) (getID)) "} "
             "[" (.getTimeInMillis cal) "] "
-            (FmtCal cal) ]
-  ))
+            (FmtCal cal) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

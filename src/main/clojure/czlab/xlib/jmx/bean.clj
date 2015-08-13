@@ -16,28 +16,27 @@
 
   (:require
     [czlab.xlib.util.core
-        :refer [ThrowBadArg MubleObj notnil? tryc]]
+    :refer [ThrowBadArg MubleObj tryc]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [HasAny?]])
 
-  (:require [czlab.xlib.util.logging :as log])
   (:use [czlab.xlib.util.meta])
 
   (:import
     [java.lang Exception IllegalArgumentException]
-    [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.jmx NameParams]
     [java.lang.reflect Field Method]
     [java.util Arrays]
     [com.zotohlab.skaro.core Muble]
     [javax.management Attribute AttributeList
-       AttributeNotFoundException
-       DynamicMBean
-       MBeanAttributeInfo
-       MBeanException
-       MBeanInfo
-       MBeanOperationInfo
-       MBeanParameterInfo
-       ReflectionException]))
+    AttributeNotFoundException
+    DynamicMBean
+    MBeanAttributeInfo
+    MBeanException
+    MBeanInfo
+    MBeanOperationInfo
+    MBeanParameterInfo
+    ReflectionException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -108,8 +107,7 @@
           (and (-> g (.getName)
                    (.startsWith "is"))
                (IsBoolean? (.getType this)))
-          false)))
-  ))
+          false)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,8 +132,7 @@
   [mtd ptypes n]
 
   (when-not (== n (count ptypes))
-    (ThrowBadArg (str "\"" mtd "\" needs " n "args."))
-  ))
+    (ThrowBadArg (str "\"" mtd "\" needs " n "args."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -155,8 +152,7 @@
     (if (< pos 0)
       ""
       (str (Character/toLowerCase (.charAt mn pos))
-           (.substring mn (+ pos 1))))
-  ))
+           (.substring mn (+ pos 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,8 +170,7 @@
                                          (.getName t) "")
                     (conj! @rc)))
       (var-set ctr (inc @ctr)))
-    (persistent! @rc)
-  ))
+    (persistent! @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -194,8 +189,7 @@
           (IsFloat? cz)
           (IsChar? cz))
     cz
-    nil
-  ))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -209,8 +203,7 @@
            (true? (some #(if (testJmxType %) false true)
                         (seq ptypes))) )
     false
-    (testJmxType rtype)
-  ))
+    (testJmxType rtype)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -258,8 +251,7 @@
                                       (some? (.getter v))
                                       (some? (.setter v))
                                       (.isQuery v)))) )
-      [ (persistent! @ba) rc ] )
-  ))
+      [ (persistent! @ba) rc ] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -289,8 +281,7 @@
                           (and (.startsWith fnm "is")
                                (IsBoolean? (.getType field))))
                         (conj! @rc))))))
-    [ (persistent! @rc) (persistent! @flds) ]
-  ))
+    [ (persistent! @rc) (persistent! @flds) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -328,12 +319,11 @@
                           (conj! @rc))))
           :else
           (log/info "JMX-skipping %s" mn) )))
-    [ (persistent! @rc) (persistent! @metds) ]
-  ))
+    [ (persistent! @rc) (persistent! @metds) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeJmxBean
+(defn JmxBean*
 
   "Make a JMX bean from this object"
 
@@ -448,8 +438,7 @@
           (tryc
             (if (empty? params)
               (.invoke mtd obj (object-array 0))
-              (.invoke mtd obj params))))))
-  ))
+              (.invoke mtd obj params))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

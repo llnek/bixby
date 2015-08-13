@@ -15,19 +15,15 @@
   czlab.xlib.util.cmdline
 
   (:require
-    [czlab.xlib.util.core :refer [IntoMap IsWindows?] ]
-    [czlab.xlib.util.str :refer [strim nsb Has?] ])
-
-  (:require
+    [czlab.xlib.util.core :refer [IsWindows?] ]
+    [czlab.xlib.util.str :refer [strim Has?] ]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
   (:import
     [java.io BufferedOutputStream
-     InputStreamReader OutputStreamWriter]
-    [java.io Reader Writer]
-    [java.util Map HashMap]
-    [org.apache.commons.lang3 StringUtils]))
+    InputStreamReader OutputStreamWriter]
+    [java.io Reader Writer]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -60,8 +56,7 @@
                  (recur (.read cin)))))]
     (if (contains? ms :quit)
       nil
-      (strim buf))
-  ))
+      (strim buf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -101,8 +96,7 @@
             (reset! props p)
             n)
 
-          :else :end)))
-  ))
+          :else :end)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,8 +128,7 @@
     ;; get the input from user
     ;; return the next question, :end ends it
     (->> (readData cout cin)
-         (onAnswer cout cmdQ props))
-  ))
+         (onAnswer cout cmdQ props))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,8 +138,7 @@
 
   (if (some? cmdQ)
     (popQQ cout cin cmdQ props)
-    :end
-  ))
+    :end))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,8 +154,7 @@
       (nil? rc) {}
       :else (recur (popQ cout
                          cin
-                         (cmdQNs rc) props)))
-  ))
+                         (cmdQNs rc) props)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -180,15 +171,15 @@
         kp (if (IsWindows?) "<Ctrl-C>" "<Ctrl-D>")
         cin (InputStreamReader. (System/in))
         func (partial cycleQ cout cin) ]
-    (.write cout (str ">>> Press " kp "<Enter> to cancel...\n"))
+    (.write cout (str ">>> Press "
+                      kp "<Enter> to cancel...\n"))
     (->
       (reduce
         (fn [memo k]
           (assoc memo k (assoc (get cmdQs k) :id k)))
         {}
         (keys cmdQs))
-      (func question1 (atom {})))
-  ))
+      (func question1 (atom {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
