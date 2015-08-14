@@ -15,12 +15,11 @@
   czlab.xlib.net.apache
 
   (:require
-    [czlab.xlib.util.str
-          :refer [lcase hgl? strim Embeds? HasNocase?]]
     [czlab.xlib.util.core :refer [ThrowIOE try!]]
+    [czlab.xlib.util.str
+    :refer [lcase hgl? strim Embeds? HasNocase?]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.mime :refer [GetCharset]])
-
-  (:require [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.net.comms])
 
@@ -28,15 +27,14 @@
     [org.apache.http Header StatusLine HttpEntity HttpResponse]
     [java.security.cert X509Certificate CertificateException]
     [javax.net.ssl SSLContext SSLEngine X509TrustManager
-           TrustManagerFactorySpi TrustManager
-           ManagerFactoryParameters]
+    TrustManagerFactorySpi TrustManager
+    ManagerFactoryParameters]
     [org.apache.commons.codec.binary Base64]
     [java.security KeyStoreException KeyStore
-           InvalidAlgorithmParameterException]
+    InvalidAlgorithmParameterException]
     [com.zotohlab.tpcl.apache ApacheHttpClient ]
     [com.zotohlab.frwk.net SSLTrustMgrFactory]
     [com.zotohlab.frwk.io XData]
-    [org.apache.commons.lang3 StringUtils]
     [org.apache.http.client.config RequestConfig]
     [org.apache.http.client HttpClient]
     [org.apache.http.client.methods HttpGet HttpPost]
@@ -67,8 +65,7 @@
                 (.build)) ]
     (.setDefaultRequestConfig cli ^RequestConfig cfg)
     (ApacheHttpClient/cfgForRedirect cli)
-    (.build cli)
-  ))
+    (.build cli)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -78,8 +75,7 @@
   [^HttpEntity ent]
 
   (when (some? ent)
-    (EntityUtils/toByteArray ent)
-  ))
+    (EntityUtils/toByteArray ent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,8 +104,7 @@
           clen (if (nil? bits) 0 (alength bits)) ]
       {:encoding (GetCharset cv)
        :content-type cv
-       :data (if (== clen 0) nil (XData. bits)) } )
-  ))
+       :data (if (== clen 0) nil (XData. bits)) } )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -146,8 +141,9 @@
       (processRedirect rsp)
 
       :else
-      (processError rsp (ThrowIOE (str "Service Error: " rc ": " msg))))
-  ))
+      (->> (str "Service Error: " rc ": " msg)
+           (ThrowIOE )
+           (processError rsp )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -168,8 +164,7 @@
         (beforeSendFunc p)
         (processReply (.execute cli p)))
       (finally
-        (.. cli getConnectionManager shutdown)))
-  ))
+        (.. cli getConnectionManager shutdown)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -183,8 +178,7 @@
         (beforeSendFunc g)
         (processReply (.execute cli g)))
       (finally
-        (.. cli getConnectionManager shutdown)))
-  ))
+        (.. cli getConnectionManager shutdown)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -212,7 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSimpleClientSSL
+(defn SimpleClientSSL*
 
   "Simple minded, trusts everyone"
 
@@ -220,8 +214,7 @@
   []
 
   (doto (SSLContext/getInstance "TLS")
-        (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)
-  ))
+        (.init nil (SSLTrustMgrFactory/getTrustManagers) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

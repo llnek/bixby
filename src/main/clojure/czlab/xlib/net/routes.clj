@@ -15,10 +15,10 @@
   czlab.xlib.net.routes
 
   (:require
-    [czlab.xlib.util.core
-        :refer [MubleObj test-cond test-nestr]]
     [czlab.xlib.util.str
-        :refer [ToKW strim lcase ucase hgl?]]
+    :refer [ToKW SplitTokens strim lcase ucase hgl?]]
+    [czlab.xlib.util.core
+    :refer [MubleObj test-cond test-nestr]]
     [czlab.xlib.util.files :refer [ReadOneFile]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.format :refer [ReadEdn]])
@@ -28,15 +28,14 @@
     [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.skaro.core Muble]
     [java.io File]
-    [jregex Matcher Pattern]
-    [java.util StringTokenizer]))
+    [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeRouteInfo ""
+(defn- routeInfo ""
 
   ^RouteInfo
   [route verbs handler]
@@ -88,44 +87,39 @@
                                  (str (.group mmc ^String @r2)))))
               (persistent! @rc)))) )
 
-      { :typeid (ToKW "czc.net" "RouteInfo") })))
+      {:typeid (ToKW "czc.net" "RouteInfo") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- initRoute ""
 
+  ^Muble
   [^Muble rc ^String path]
 
-  (let [tknz (StringTokenizer. path "/" true)
-        buff (StringBuilder.) ]
-    (with-local-vars
-      [cg 0 gn ""
-       ts ""
-       phs (transient []) ]
-      (while (.hasMoreTokens tknz)
-        (var-set ts (.nextToken tknz))
-        (if (= @ts "/")
-          (.append buff "/")
+  (let [buff (StringBuilder.)
+        phs (atom [])
+        cg (atom 0) ]
+    (doseq [^String ts
+            (SplitTokens path "/" true)]
+      (->>
+        (if
+          (.startsWith ts ":")
+          (let [gn (.substring ts 1)]
+            (swap! cg inc)
+            (swap! phs conj [ @cg gn ])
+            (str "({" gn "}[^/]+)"))
           ;else
-          (do
-            (if (.startsWith ^String @ts ":")
-              (do
-                (var-set gn (.substring ^String @ts 1))
-                (var-set cg (inc @cg))
-                (var-set phs (conj! @phs [ @cg @gn ] ))
-                (var-set ts  (str "({" @gn "}[^/]+)")))
-              ;else
-              (let [c (StringUtils/countMatches ^String @ts "(") ]
-                (if (> c 0)
-                  (var-set cg (+ @cg c)))))
-            (.append buff @ts))))
-      (let [pp (.toString buff) ]
-        (log/info "Route added: %s\nCanonicalized to: %s" path pp)
-        (.setv rc :regex (Pattern. pp))
-        (.setv rc :path pp))
-      (.setv rc :placeHolders (persistent! @phs))
-      rc
-  )))
+          (let [c (StringUtils/countMatches ts "(") ]
+            (when (> c 0) (swap! cg + c))
+            ts))
+        (.append buff)))
+    (let [pp (.toString buff) ]
+      (log/info "route added: %s\ncanonicalized to: %s" path pp)
+      (doto rc
+        (.setv :regex (Pattern. pp))
+        (.setv :path pp)
+        (.setv :placeHolders @phs))
+      rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,7 +138,7 @@
      mpt (get rt :mount "")
      pipe (get rt :pipe "")
      ^Muble
-     rc (makeRouteInfo
+     rc (routeInfo
           uri
           (if (and stat (empty? verb))
               #{:get}
@@ -163,8 +157,7 @@
     (when (hgl? tpl)
       (.setv rc :template tpl))
     (initRoute rc uri)
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,8 +177,7 @@
       (doseq [s rs]
         (log/debug "route def === %s" s)
         (var-set rc (conj! @rc (mkRoute stat s))))
-      (persistent! @rc))
-  ))
+      (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,8 +192,7 @@
                        %1
                        (.resemble mtd uri)) ]
              (when (some? m) [%1 m]))
-          (seq rts))
-  ))
+          (seq rts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -213,7 +204,10 @@
   ^RouteCracker
   [routes]
 
-  (reify RouteCracker
+  (reify
+
+    RouteCracker
+
     (isRoutable [this msgInfo] (first (.crack this msgInfo)))
     (hasRoutes [_] (> (count routes) 0))
 

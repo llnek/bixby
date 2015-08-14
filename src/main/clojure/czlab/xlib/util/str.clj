@@ -22,7 +22,7 @@
     [java.util Arrays Collection Iterator StringTokenizer]
     [org.apache.commons.lang3 StringUtils]
     [java.io CharArrayWriter File
-     OutputStream OutputStreamWriter Reader Writer]
+    OutputStream OutputStreamWriter Reader Writer]
     [java.lang StringBuilder]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,6 +38,19 @@
 ;;
 (defn TrimL "" [^String src ^String s] (StringUtils/stripStart src s))
 (defn TrimR "" [^String src ^String s] (StringUtils/stripEnd src s))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SplitTokens ""
+
+  [^String s ^String sep incSep?]
+
+  (let [t (StringTokenizer. s sep incSep?)]
+    (with-local-vars
+      [rc (transient [])]
+      (while (.hasMoreTokens t)
+        (conj! @rc (.nextToken t)))
+      (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

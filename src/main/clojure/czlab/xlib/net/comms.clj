@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.crypto.codec :refer [Pwdify RandomStr*]]
     [czlab.xlib.util.str
-             :refer [lcase hgl? strim Embeds? HasNocase?]]
+    :refer [lcase hgl? strim Embeds? HasNocase?]]
     [czlab.xlib.util.core :refer [ThrowIOE Bytesify]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.mime :refer [GetCharset]])
@@ -25,18 +25,18 @@
   (:import
     [java.security.cert X509Certificate CertificateException]
     [javax.net.ssl SSLContext SSLEngine X509TrustManager
-         TrustManagerFactorySpi TrustManager
-         ManagerFactoryParameters]
+    TrustManagerFactorySpi TrustManager
+    ManagerFactoryParameters]
     [org.apache.commons.codec.binary Base64]
     [org.apache.commons.codec.binary Hex]
     [java.security KeyStoreException KeyStore
-         InvalidAlgorithmParameterException]
+    InvalidAlgorithmParameterException]
     [com.zotohlab.tpcl.apache ApacheHttpClient ]
     [com.zotohlab.frwk.net SSLTrustMgrFactory]
     [com.zotohlab.frwk.io XData]
-    [org.apache.commons.lang3 StringUtils]
     [java.io File IOException]
     [java.net URL URI]
+    [org.apache.commons.lang3 StringUtils]
     [com.zotohlab.frwk.net ULFormItems ULFileItem]
     [com.zotohlab.frwk.io XData]))
 
@@ -47,10 +47,9 @@
 ;;
 (def ^:private ^String AUTH "Authorization")
 (def ^:private ^String BASIC "Basic")
-
 (def ^:dynamic *socket-timeout* 5000)
-(def ^String LOOPBACK "127.0.0.1")
-(def ^String LHOST "localhost")
+(defonce ^String LOOPBACK "127.0.0.1")
+(defonce ^String LHOST "localhost")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,9 +92,7 @@
           {:principal (first rc)
            :credential (last rc) }
           nil))
-      :else
-      nil)
-  ))
+      :else nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,8 +147,9 @@
                  :device-moniker "windows phone"
                  :device-type :phone }
                 {} ) ]
-      (merge {:browser :ie :browser-version bv :device-type dt} dev)
-    )))
+      (merge {:browser :ie
+              :browser-version bv
+              :device-type dt} dev))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -167,8 +165,9 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    {:browser :chrome :browser-version bv :device-type :pc }
-  ))
+    {:browser :chrome
+     :browser-version bv
+     :device-type :pc }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,8 +183,10 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    {:browser :silk :browser-version bv :device-type :mobile :device-moniker "kindle"}
-  ))
+    {:browser :silk
+     :browser-version bv
+     :device-type :mobile
+     :device-moniker "kindle"}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -201,8 +202,10 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-   {:browser :chrome :browser-version bv :device-type :mobile :device-moniker "android" }
-  ))
+   {:browser :chrome
+    :browser-version bv
+    :device-type :mobile
+    :device-moniker "android" }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -218,8 +221,9 @@
                     (> (count m1) 2))
              (clean-str (nth m1 2))
              "") ]
-    {:browser :firefox :browser-version bv :device-type :pc}
-  ))
+    {:browser :firefox
+     :browser-version bv
+     :device-type :pc}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -241,8 +245,7 @@
       (HasNocase? line "iphone") (merge rc {:device-type :phone :device-moniker "iphone" } )
       (HasNocase? line "ipad") (merge rc {:device-type :mobile :device-moniker "ipad" } )
       (HasNocase? line "ipod") (merge rc {:device-type :mobile :device-moniker "ipod" } )
-      :else rc )
-  ))
+      :else rc )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -276,8 +279,7 @@
       (ParseFFox)
 
       :else
-      {} )
-  ))
+      {} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
