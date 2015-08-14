@@ -22,7 +22,7 @@
     [czlab.xlib.util.core
     :refer [tryc try! trylet!
     RootCause StripNSPath
-    Interject notnil? nnz nbf juid]]
+    GetTypeId Interject nnz nbf juid]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [clojure.set :as cset]
@@ -69,16 +69,6 @@
 ;;
 (defmacro uc-ent ^String [ent] `(cs/upper-case (name ~ent)))
 (defmacro lc-ent ^String [ent] `(cs/lower-case (name ~ent)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (meta nil) is fine, so no need to worry
-(defmacro GetTypeId
-
-  "the typeid of this model"
-
-  [model]
-
-  `(:typeid (meta ~model)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -256,7 +246,8 @@
   [^String dbtype]
 
   (let [kw (keyword (lcase dbtype)) ]
-    (when-not (nil? (DBTYPES kw)) kw)))
+    (when
+      (some? (DBTYPES kw)) kw)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -267,7 +258,8 @@
   [^String url]
 
   (let [ss (StringUtils/split url \:) ]
-    (when (> (alength ss) 1)
+    (when
+      (> (alength ss) 1)
       (MatchDbType (aget ss 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

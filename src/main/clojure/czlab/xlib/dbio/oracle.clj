@@ -17,9 +17,7 @@
   (:require [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.dbio.drivers]
-        [czlab.xlib.dbio.core])
-
-  (:import [java.util Map HashMap]))
+        [czlab.xlib.dbio.core]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -88,8 +86,7 @@
         (.append (createSequenceTrigger db
                                         (first en)
                                         (last en)))))
-    (.toString bf)
-  ))
+    (.toString bf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

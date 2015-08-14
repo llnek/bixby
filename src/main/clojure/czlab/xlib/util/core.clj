@@ -63,6 +63,10 @@
 
 (deftype TypeNichts [])
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (meta nil) is fine, so no need to worry
+(defmacro GetTypeId "" [m] `(:typeid (meta ~m)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro trycr

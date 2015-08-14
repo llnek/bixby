@@ -16,13 +16,11 @@
 
   (:require
     [czlab.xlib.util.str
-         :refer [lcase ucase hgl? AddDelim! nsb]])
-
-  (:use [czlab.xlib.dbio.core])
-
-  (:require
+    :refer [lcase ucase hgl? AddDelim! ]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
+
+  (:use [czlab.xlib.dbio.core])
 
   (:import
     [com.zotohlab.frwk.dbio MetaCache DBAPI DBIOError]))
@@ -38,24 +36,15 @@
   [flds fid]
 
   (let [c (:column (get flds fid)) ]
-    (if (hgl? c) (ucase c) c)
-  ))
+    (if (hgl? c) (ucase c) c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro getNotNull  ""
-
-  [db]
-
-  "NOT NULL")
+(defmacro getNotNull  "" [db] "NOT NULL")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro getNull  ""
-
-  [db]
-
-  "NULL")
+(defmacro getNull  "" [db] "NULL")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,8 +62,7 @@
   [db opt?]
 
   `(let [d# ~db]
-    (if ~opt? (getNull d#) (getNotNull d#))
-  ))
+    (if ~opt? (getNull d#) (getNotNull d#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -227,8 +215,7 @@
                   "("
                   (:size fld) ")")
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,8 +227,7 @@
              (:column fld)
              (GetIntKeyword db)
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -261,8 +247,7 @@
              (:column fld)
              (GetDoubleKeyword db)
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -274,8 +259,7 @@
              (:column fld)
              (GetFloatKeyword db)
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -287,8 +271,7 @@
              (:column fld)
              (GetLongKeyword db)
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -316,8 +299,7 @@
              (:column fld)
              (GetTSKeyword db)
              (:null fld)
-             (if (:dft fld) (GetTSDefault db) nil)
-  ))
+             (if (:dft fld) (GetTSDefault db) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -329,8 +311,7 @@
              (:column fld)
              (GetDateKeyword db)
              (:null fld)
-             (if (:dft fld) (GetTSDefault db) nil)
-  ))
+             (if (:dft fld) (GetTSDefault db) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -350,8 +331,7 @@
              (:column fld)
              (GetBoolKeyword db)
              (:null fld)
-             (if (:dft fld) (first (:dft fld)) nil)
-  ))
+             (if (:dft fld) (first (:dft fld)) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,8 +353,7 @@
                        (cs/join "," cols)
                        " )"
                        (GenExec db) "\n\n" )))
-    (.toString bf)
-  ))
+    (.toString bf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -390,8 +369,7 @@
         (DbioError (str "Illegal empty unique: " (name nm))))
       (AddDelim! bf ",\n"
           (str (GetPad db) "UNIQUE(" (cs/join "," cols) ")")))
-    (.toString bf)
-  ))
+    (.toString bf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -401,9 +379,8 @@
 
   (str (GetPad db)
        "PRIMARY KEY("
-       (ucase (nsb (cs/join "," pks)) )
-       ")"
-  ))
+       (ucase (cs/join "," pks) )
+       ")"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -447,8 +424,7 @@
         (let [s (genUniques db cache flds mcz) ]
           (when (hgl? s)
             (.append bf (str ",\n" s)))))
-    [ (.toString bf) (.toString inx) ] )
-  ))
+    [ (.toString bf) (.toString inx) ] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -464,8 +440,7 @@
         inx (last d) ]
     (str s1
          (if (hgl? inx) inx "")
-         (GenGrant db table))
-  ))
+         (GenGrant db table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -485,8 +460,7 @@
           (log/debug "Model Id: %s table: %s" (name id) tbl)
           (-> drops (.append (GenDrop db (ucase tbl) )))
           (-> body (.append (genOneTable db ms tdef)))))
-      (str "" drops body (GenEndSQL db)))
-  ))
+      (str "" drops body (GenEndSQL db)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

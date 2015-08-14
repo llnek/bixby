@@ -16,9 +16,6 @@
 
   (:require
     [czlab.xlib.util.core :refer [test-nonil test-nestr]]
-    [czlab.xlib.util.str :refer [nsb]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io])
@@ -60,8 +57,7 @@
 
   (str (GetPad db) (GenCol fld)
        " " (GetIntKeyword db)
-       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")
-  ))
+       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -71,8 +67,7 @@
 
   (str (GetPad db) (GenCol fld)
        " " (GetLongKeyword db)
-       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")
-  ))
+       (if (:pkey fld) " IDENTITY(1) " " AUTO_INCREMENT(1) ")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,7 +102,7 @@
 
   (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
-        pwd (nsb pwdObj)
+        pwd (str pwdObj)
         dbUrl (cs/replace H2-FILE-URL "{{path}}" u) ]
     (log/debug "Creating H2: %s" dbUrl)
     (.mkdir dbFileDir)
@@ -118,8 +113,7 @@
         (.execute s "SET DEFAULT_TABLE_TYPE CACHED"))
       (with-open [s (.createStatement c1) ]
         (.execute s "SHUTDOWN")))
-    dbUrl
-  ))
+    dbUrl))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,14 +132,13 @@
 
   (let [url (io/file dbFileDir dbid)
         u (.getCanonicalPath url)
-        pwd (nsb pwdObj)
+        pwd (str pwdObj)
         dbUrl (cs/replace H2-FILE-URL "{{path}}" u) ]
     (log/debug "Closing H2: %s" dbUrl)
     (with-open [c1 (DriverManager/getConnection dbUrl user pwd) ]
       (.setAutoCommit c1 true)
       (with-open [s (.createStatement c1) ]
-        (.execute s "SHUTDOWN")) )
-  ))
+        (.execute s "SHUTDOWN")) )))
 
 ;;(println (GetDDL (MetaCache* testschema) (H2.) ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

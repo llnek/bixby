@@ -15,9 +15,7 @@
   czlab.xlib.dbio.simple
 
   (:require
-    [czlab.xlib.util.str :refer [hgl?]])
-
-  (:require
+    [czlab.xlib.util.str :refer [hgl?]]
     [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.dbio.core]
@@ -42,8 +40,7 @@
   (doto (.open db)
     (.setAutoCommit true)
     ;;(.setTransactionIsolation Connection/TRANSACTION_READ_COMMITTED)
-    (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE)
-  ))
+    (.setTransactionIsolation Connection/TRANSACTION_SERIALIZABLE)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -57,8 +54,7 @@
   (ReifySQLr
     db
     #(openDB %)
-    (fn [^Connection c f] (with-open [c c] (f c)))
-  ))
+    (fn [^Connection c f] (with-open [c c] (f c)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

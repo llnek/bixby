@@ -17,29 +17,27 @@
   (:require
     [czlab.xlib.util.meta :refer [BytesClass CharsClass]]
     [czlab.xlib.util.str
-        :refer [sname ucase lcase hgl? AddDelim! nsb strim]]
+    :refer [sname ucase lcase hgl? AddDelim! strim]]
     [czlab.xlib.util.io :refer [ReadChars ReadBytes ]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
-        :refer [FlattenNil notnil? NowJTstamp nnz]]
+    :refer [FlattenNil notnil? NowJTstamp nnz]]
     [czlab.xlib.util.dates :refer [GmtCal]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.dbio.core])
 
   (:import
     [java.util Calendar GregorianCalendar TimeZone]
     [com.zotohlab.frwk.dbio MetaCache
-        SQLr DBIOError OptLockError]
+    SQLr DBIOError OptLockError]
     [java.math BigDecimal BigInteger]
     [java.io Reader InputStream]
     [com.zotohlab.frwk.dbio DBAPI]
     [com.zotohlab.frwk.io XData]
     [java.sql ResultSet Types SQLException
-        DatabaseMetaData ResultSetMetaData
-        Date Timestamp Blob Clob
-        Statement PreparedStatement Connection]))
+    DatabaseMetaData ResultSetMetaData
+    Date Timestamp Blob Clob
+    Statement PreparedStatement Connection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -56,8 +54,7 @@
        (if lock
            (str " AND "
                 (ese (Colname :verid mcz)) "=?")
-           "")
-  ))
+           "")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -66,8 +63,7 @@
   [^String opcode cnt ^String table rowID]
 
   (when (== cnt 0)
-    (throw (OptLockError. opcode table rowID))
-  ))
+    (throw (OptLockError. opcode table rowID))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,8 +89,7 @@
                                " = ? "))))
           (StringBuilder.)
           (seq filters)) ]
-    [ (nsb wc) (FlattenNil (vals filters)) ]
-  ))
+    [ (str wc) (FlattenNil (vals filters)) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,8 +112,7 @@
     (cond
       (some? rdr) (with-open [r rdr] (ReadChars r))
       (some? inp) (with-open [p inp] (ReadBytes p))
-      :else obj)
-  ))
+      :else obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,8 +123,7 @@
   (condp == (int sqlType)
     Types/TIMESTAMP (.getTimestamp rset (int pos) (GmtCal))
     Types/DATE (.getDate rset (int pos) (GmtCal))
-    (readCol sqlType pos rset)
-  ))
+    (readCol sqlType pos rset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,8 +137,7 @@
                  (get (ucase cn))) ]
     (if (nil? fdef)
       row
-      (assoc! row (:id fdef) cv))
-  ))
+      (assoc! row (:id fdef) cv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -172,8 +164,7 @@
                   ct (.getColumnType rsmeta (int pos))
                   cv (readOneCol ct (int pos) rs) ]]
       (var-set row (finj @row cn ct cv)))
-    (persistent! @row)
-  ))
+    (persistent! @row)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -212,8 +203,7 @@
     Calendar (.setTimestamp ps pos
                             (Timestamp. (.getTimeInMillis ^Calendar p))
                             (GmtCal))
-    (DbioError (str "Unsupported param type: " (type p)))
-  ))
+    (DbioError (str "Unsupported param type: " (type p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -237,8 +227,7 @@
           (recur false (str (first rc)
                             " WITH ("
                             cmd
-                            ") " (last rc)) ))))
-  ))
+                            ") " (last rc)) ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -259,8 +248,7 @@
         (.startsWith lcs "update")
         (mssqlTweakSqlstr sql :set "ROWLOCK")
         :else sql)
-      sql)
-  ))
+      sql)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -278,8 +266,7 @@
     (log/debug "Building SQLStmt: %s" sql)
     (doseq [n (range 0 (count params)) ]
       (setBindVar ps (inc n) (nth params n)))
-    ps
-  ))
+    ps))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -289,9 +276,8 @@
 
   (let [rc (if (== cnt 1)
              (.getObject rs 1)
-             (.getLong rs (nsb (:pkey options)))) ]
-    {:1 rc}
-  ))
+             (.getLong rs (str (:pkey options)))) ]
+    {:1 rc}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -310,8 +296,7 @@
                    (.next rs))
             (handleGKeys rs cnt options)
             {}
-            ))))
-  ))
+            ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -329,8 +314,7 @@
           (persistent! sum)
           (recur (->> (post (func rs rsmeta))
                       (conj! sum))
-                 (.next rs)))))
-  ))
+                 (.next rs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -369,8 +353,7 @@
         (AddDelim! sb2 "," (if (nil? v) "NULL" "?"))
         (when (some? v)
           (var-set ps (conj! @ps v)))))
-    (persistent! @ps)
-  ))
+    (persistent! @ps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -393,8 +376,7 @@
           (.append (if (nil? v) "=NULL" "=?")))
         (when (some? v)
           (var-set ps (conj! @ps v)))))
-    (persistent! @ps)
-  ))
+    (persistent! @ps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -409,8 +391,7 @@
     (with-meta (-> obj
                    (DbioClrFld :rowid)
                    (DbioClrFld :verid)
-                   (DbioClrFld :last-modify)) mm)
-  ))
+                   (DbioClrFld :last-modify)) mm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -440,8 +421,7 @@
     (sqlSelect+ db conn sql pms
                 (partial row2Obj
                          (partial modelInjtor mcz))
-                #(postFmtModelRow model %))
-  ))
+                #(postFmtModelRow model %))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -466,8 +446,7 @@
                  [])]
     (if (empty? rc)
       0
-      (last (first (seq (first rc)))))
-  ))
+      (last (first (seq (first rc)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -478,8 +457,7 @@
   (let [sql (str "DELETE FROM "
                  (ese (Tablename model metas))) ]
     (sqlExec db conn sql [])
-    nil
-  ))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -505,8 +483,7 @@
                            (ese table)
                            " WHERE " w) p) ]
       (when lock (lockError? "delete" cnt table rowid))
-      cnt)
-  ))
+      cnt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -544,8 +521,7 @@
           (let [wm {:rowid (:1 out) :verid 0} ]
             (when-not (number? (:rowid wm))
                     (DbioError (str "RowID data-type must be Long.")))
-            (vary-meta obj MergeMeta wm)))))
-  ))
+            (vary-meta obj MergeMeta wm)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -596,8 +572,7 @@
                             (persistent! @ps)) ]
             (when lock (lockError? "update" cnt table rowid))
             (vary-meta obj MergeMeta
-                       { :verid nver :last-modify now })))))
-  ))
+                       { :verid nver :last-modify now })))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -694,8 +669,7 @@
 
       (purge [_ model]
         (->> #(doPurge db metaz %1 model)
-             (runc (getc db) ))))
-  ))
+             (runc (getc db) ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

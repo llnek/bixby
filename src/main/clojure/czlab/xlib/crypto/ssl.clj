@@ -17,11 +17,9 @@
   (:require
     [czlab.xlib.crypto.stores :refer [CryptoStore*]]
     [czlab.xlib.util.core :refer [NewRandom]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.crypto.core
-     :refer [PkcsFile? GetJksStore GetPkcsStore ]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
+    :refer [PkcsFile? GetJksStore GetPkcsStore ]])
 
   (:import
     [javax.net.ssl X509TrustManager TrustManager]
@@ -36,13 +34,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSslContext
+(defn SslContext*
 
   "Make a server-side SSLContext"
 
   ^SSLContext
   [^URL keyUrl
-   ^PasswordAPI pwdObj & [^String flavor] ]
+   ^PasswordAPI pwdObj & [flavor] ]
 
   (let
     [ks (with-open
@@ -53,18 +51,17 @@
      cs (CryptoStore* ks pwdObj)
      tmf (.trustManagerFactory cs)
      kmf (.keyManagerFactory cs)
-     ctx (->> (or flavor "TLS")
+     ctx (->> (str (or flavor "TLS"))
               (SSLContext/getInstance )) ]
     (.init ctx
            (.getKeyManagers kmf)
            (.getTrustManagers tmf)
            (NewRandom))
-    ctx
-  ))
+    ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeSslClientCtx
+(defn SslClientCtx*
 
   "Make a client-side SSLContext"
 
@@ -73,8 +70,7 @@
 
   (when ssl
     (doto (SSLContext/getInstance "TLS")
-          (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))
-  ))
+          (.init nil (SSLTrustMgrFactory/getTrustManagers) (NewRandom)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

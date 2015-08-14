@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core :refer [MubleObj try! tryc]]
-    [czlab.xlib.util.str :refer [hgl? ]]
+    [czlab.xlib.util.str :refer [hgl? stror]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -54,13 +54,12 @@
 
   [^Muble impl]
 
-  (let [port (.getv impl :regoPort) ]
-    (try
-      (->> (long port)
-           (LocateRegistry/createRegistry )
-           (.setv impl :rmi ))
-      (catch Throwable e#
-        (mkJMXrror (str "Failed to create RMI registry: " port) e#)))))
+  (try
+    (->> (long (.getv impl :regoPort))
+         (LocateRegistry/createRegistry )
+         (.setv impl :rmi ))
+    (catch Throwable e#
+      (mkJMXrror "Failed to create RMI registry" e#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,27 +72,17 @@
         regoPort (.getv impl :regoPort)
         port (.getv impl :port)
         host (.getv impl :host)
-        endpt (-> "service:jmx:rmi://{{h}}:{{s}}/jndi/rmi://:{{r}}/jmxrmi"
-                  (cs/replace "{{h}}" (if (hgl? host) host hn))
+        endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
+                       "jndi/rmi://:{{r}}/jmxrmi")
+                  (cs/replace "{{h}}" (stror host hn))
                   (cs/replace "{{s}}" (str "" port))
                   (cs/replace "{{r}}" (str "" regoPort)))
-        url (try
-              (JMXServiceURL. endpt)
-              (catch Throwable e#
-                (mkJMXrror (str "Malformed url: " endpt) e#)))
-        ^JMXConnectorServer
-        conn (try
-               (JMXConnectorServerFactory/newJMXConnectorServer
-                 url
-                 nil
-                 (ManagementFactory/getPlatformMBeanServer))
-               (catch Throwable e#
-                 (mkJMXrror (str "Failed to connect JMX") e#))) ]
-    (try
-      (.start conn)
-      (catch Throwable e#
-        (mkJMXrror (str "Failed to start JMX") e#)))
-
+        url (JMXServiceURL. endpt)
+        conn (JMXConnectorServerFactory/newJMXConnectorServer
+               url nil
+               (ManagementFactory/getPlatformMBeanServer))]
+    (-> ^JMXConnectorServer
+        conn (.start ))
     (.setv impl :beanSvr (.getMBeanServer conn))
     (.setv impl :conn conn)))
 
@@ -103,10 +92,7 @@
 
   [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean ]
 
-  (try
-    (.registerMBean svr mbean objName)
-    (catch Throwable e#
-      (mkJMXrror (str "Failed to register bean: " objName) e#)))
+  (.registerMBean svr mbean objName)
   (log/info "registered jmx-bean: %s" objName)
   objName)
 
@@ -139,14 +125,11 @@
 
       (reg [_ obj domain nname paths]
         (let [bs (.getv impl :beanSvr) ]
-          (try
-            (reset! objNames
-                    (conj @objNames
-                          (doReg bs
-                                 (ObjectName* domain nname paths)
-                                 (JmxBean* obj))))
-            (catch Throwable e#
-              (mkJMXrror (str "Failed to register object: " obj) e#)))))
+          (reset! objNames
+                  (conj @objNames
+                        (doReg bs
+                               (ObjectName* domain nname paths)
+                               (JmxBean* obj))))))
 
       ;; jconsole port
       (setRegistryPort [_ port] (.setv impl :regoPort port))

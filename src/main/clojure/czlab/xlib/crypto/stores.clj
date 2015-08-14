@@ -15,13 +15,12 @@
   czlab.xlib.crypto.stores
 
   (:require
+    [czlab.xlib.util.core :refer [ThrowBadArg]]
     [czlab.xlib.crypto.core
     :refer [NewAlias CertAliases PKeyAliases
     GetPKey GetCert GetPkcsStore GetJksStore]]
-    [czlab.xlib.util.core :refer [ThrowBadArg]]
-    [czlab.xlib.util.str :refer [nsb hgl?]])
-
-  (:require [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.str :refer [hgl?]])
 
   (:import
     [java.security.cert CertificateFactory X509Certificate Certificate]
@@ -34,6 +33,7 @@
     KeyStore$PasswordProtection
     KeyStore$PrivateKeyEntry]
     [javax.security.auth.x500 X500Principal]))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -52,8 +52,8 @@
   (when-some [cc (.getCertificateChain pkey) ]
     (doseq [^Certificate c cc ]
       (.setCertificateEntry keystore (NewAlias) c))
-    (.setEntry keystore nm pkey (KeyStore$PasswordProtection. pwd))
-  ))
+    (->> (KeyStore$PasswordProtection. pwd)
+         (.setEntry keystore nm pkey ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -75,8 +75,7 @@
           (if (or (and root (not matched)) (and tca matched))
             (recur en rc)
             (recur en (conj! rc cert))))
-        (recur en rc)))
-  ))
+        (recur en rc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -88,8 +87,7 @@
   (condp = (.getType keystore)
     "PKCS12" (GetPkcsStore)
     "JKS" (GetJksStore)
-    (ThrowBadArg "wrong keystore type.")
-  ))
+    (ThrowBadArg "wrong keystore type.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,7 +98,9 @@
   ^CryptoStoreAPI
   [^KeyStore keystore ^PasswordAPI passwdObj]
 
-  (reify CryptoStoreAPI
+  (reify
+
+    CryptoStoreAPI
 
     (addKeyEntity [this bits pwdObj]
       ;; we load the p12 content into an empty keystore, then extract the entry
@@ -143,7 +143,7 @@
 
     (trustedCerts [me]
       (map #(let [^KeyStore$TrustedCertificateEntry
-                  tc (.certEntity me (nsb %1)) ]
+                  tc (.certEntity me (str %1)) ]
               (.getTrustedCertificate tc))
            (.certAliases me)))
 
@@ -151,8 +151,7 @@
       (let [fac (CertificateFactory/getInstance "X.509")
             certs (.generateCertificates fac bits) ]
         (doseq [^X509Certificate c (seq certs) ]
-          (.setCertificateEntry keystore (NewAlias) c))))
-  ))
+          (.setCertificateEntry keystore (NewAlias) c))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

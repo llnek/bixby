@@ -43,13 +43,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defprotocol ^:private BPropInfo
+
+  ""
+
+  (get-type [_] )
+  (get-desc [_] )
+  (get-getter [_] )
+  (get-name [_] )
+  (get-setter [_] )
+  (set-setter [_ m] )
+  (set-getter [_ m] )
+  (is-query [_] ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol ^:private BFieldInfo
 
   ""
 
-  (isGetter [_] )
-  (isSetter [_] )
-  (field [_] ))
+  (is-getter [_] )
+  (is-setter [_] )
+  (get-field [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -58,24 +73,9 @@
   [^Field fld getr setr]
 
   (reify BFieldInfo
-    (isGetter [_] getr)
-    (isSetter [_] setr)
-    (field [_] fld)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol ^:private BPropInfo
-
-  ""
-
-  (getType [_] )
-  (desc [_] )
-  (getter [_] )
-  (getName [_] )
-  (setter [_] )
-  (setSetter [_ m] )
-  (setGetter [_ m] )
-  (isQuery [_] ))
+    (is-getter [_] getr)
+    (is-setter [_] setr)
+    (get-field [_] fld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -88,25 +88,25 @@
                      :setr setr
                      :type nil}) ]
     (reify BPropInfo
-      (getType [this]
-        (let [^Method g (.getter this)
-              ^Method s (.setter this) ]
+      (get-type [this]
+        (let [^Method g (get-getter this)
+              ^Method s (get-setter this) ]
           (if (some? g)
             (.getReturnType g)
             (when (some? s)
               (let [ps (.getParameterTypes s) ]
                 (when (== 1 (count ps)) (first ps)))))))
-      (getter [_] (.getv impl :getr))
-      (getName [_] prop)
-      (desc [_] descn)
-      (setter [_] (.getv impl :setr))
-      (setSetter [_ m] (.setv impl :setr m))
-      (setGetter [_ m] (.setv impl :getr m))
-      (isQuery [this]
-        (if-some [^Method g (.getter this) ]
+      (get-getter [_] (.getv impl :getr))
+      (get-name [_] prop)
+      (get-desc [_] descn)
+      (get-setter [_] (.getv impl :setr))
+      (set-setter [_ m] (.setv impl :setr m))
+      (set-getter [_ m] (.setv impl :getr m))
+      (is-query [this]
+        (if-some [^Method g (get-getter this) ]
           (and (-> g (.getName)
                    (.startsWith "is"))
-               (IsBoolean? (.getType this)))
+               (IsBoolean? (get-type this)))
           false)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,7 +131,7 @@
 
   [mtd ptypes n]
 
-  (when-not (== n (count ptypes))
+  (when (not= n (count ptypes))
     (ThrowBadArg (str "\"" mtd "\" needs " n "args."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,10 +144,8 @@
   (let
     [pos (cond
            (or (.startsWith mn "get")
-               (.startsWith mn "set"))
-           3
-           (.startsWith mn "is")
-           2
+               (.startsWith mn "set")) 3
+           (.startsWith mn "is") 2
            :else -1) ]
     (if (< pos 0)
       ""
@@ -166,16 +164,19 @@
      rc (transient []) ]
     (doseq [^Class t (seq @ptypes) ]
       (var-set rc
-               (->> (MBeanParameterInfo. (str "p" @ctr)
-                                         (.getName t) "")
+               (->> (new MBeanParameterInfo
+                         (str "p" @ctr) (.getName t) "")
                     (conj! @rc)))
       (var-set ctr (inc @ctr)))
     (persistent! @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- testJmxType ""
+(defn- testJmxType
 
+  "ok if primitive types"
+
+  ^Class
   [^Class cz]
 
   (if (or (IsBoolean? cz)
@@ -215,42 +216,42 @@
     [mtds (.getMethods cz)
      props (transient {})
      ba (transient []) ]
-    (doseq [^Method mtd (seq @mtds) ]
-      (let [ptypes (.getParameterTypes mtd)
+    (doseq [^Method mtd (seq @mtds)
+           :let
+           [ptypes (.getParameterTypes mtd)
+            rtype (.getReturnType mtd)
             mn (.getName mtd)
             pname (maybeGetPropName mn)
-            rtype (.getReturnType mtd)
-            ^czlab.xlib.jmx.bean.BPropInfo
-            methodInfo (props pname) ]
-        (cond
-          (or (.startsWith mn "get")
-              (.startsWith mn "is"))
-          (when (empty? ptypes)
-            (if (nil? methodInfo)
-              (var-set props
-                       (->> (mkBPropInfo pname "" mtd nil)
-                            (assoc! @props pname)))
-              (.setGetter methodInfo mtd)))
+            methodInfo (props pname) ] ]
+      (cond
+        (or (.startsWith mn "get")
+            (.startsWith mn "is"))
+        (when (empty? ptypes)
+          (if (nil? methodInfo)
+            (var-set props
+                     (->> (mkBPropInfo pname "" mtd nil)
+                          (assoc! @props pname)))
+            (set-getter methodInfo mtd)))
 
-          (.startsWith mn "set")
-          (when (== 1 (count ptypes))
-            (if (nil? methodInfo)
-              (var-set props
-                       (->> (mkBPropInfo pname "" nil mtd)
-                            (assoc! @props pname)))
-              (.setSetter methodInfo mtd)))
+        (.startsWith mn "set")
+        (when (== 1 (count ptypes))
+          (if (nil? methodInfo)
+            (var-set props
+                     (->> (mkBPropInfo pname "" nil mtd)
+                          (assoc! @props pname)))
+            (set-setter methodInfo mtd)))
 
-          :else nil)))
+        :else nil))
     (let [rc (persistent! @props) ]
-      (doseq [[k ^czlab.xlib.jmx.bean.BPropInfo v] rc ]
-        (when-some [^Class mt (testJmxType (.getType v)) ]
+      (doseq [[k v] rc]
+        (when-some [mt (testJmxType (get-type v)) ]
           (conj! @ba
-                 (MBeanAttributeInfo. (.getName v)
+                 (MBeanAttributeInfo. (get-name v)
                                       (.getName mt)
-                                      (.desc v)
-                                      (some? (.getter v))
-                                      (some? (.setter v))
-                                      (.isQuery v)))) )
+                                      (get-desc v)
+                                      (some? (get-getter v))
+                                      (some? (get-setter v))
+                                      (is-query v)))))
       [ (persistent! @ba) rc ] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -263,24 +264,25 @@
     [dcls (.getDeclaredFields cz)
      flds (transient {})
      rc (transient []) ]
-    (doseq [^Field field (seq @dcls) ]
-      (let [fnm (.getName field) ]
-        (when (.isAccessible field)
-          (var-set flds
-                   (->> (mkBFieldInfo field true true)
-                        (assoc! @flds fnm)))
-          (var-set rc
-                   (->> (MBeanAttributeInfo.
-                          fnm
-                          (-> field
-                              (.getType)
-                              (.getName) )
-                          (str fnm " attribute")
-                          true
-                          true
-                          (and (.startsWith fnm "is")
-                               (IsBoolean? (.getType field))))
-                        (conj! @rc))))))
+    (doseq [^Field field (seq @dcls)
+           :let
+           [fnm (.getName field) ]]
+      (when (.isAccessible field)
+        (var-set flds
+                 (->> (mkBFieldInfo field true true)
+                      (assoc! @flds fnm)))
+        (var-set rc
+                 (->> (MBeanAttributeInfo.
+                        fnm
+                        (-> field
+                            (.getType)
+                            (.getName) )
+                        (str fnm " attribute")
+                        true
+                        true
+                        (and (.startsWith fnm "is")
+                             (IsBoolean? (.getType field))))
+                      (conj! @rc)))))
     [ (persistent! @rc) (persistent! @flds) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,31 +296,32 @@
      metds (transient {})
      rc (transient []) ]
     (log/info "jmx-bean: processing class: %s" cz)
-    (doseq [^Method m (seq @dcls) ]
-      (let [^Class rtype (.getReturnType m)
+    (doseq [^Method m (seq @dcls)
+           :let
+           [^Class rtype (.getReturnType m)
             ptypes (.getParameterTypes m)
-            mn (.getName m) ]
-        (cond
-          (HasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
-          nil;;(log/info "JMX-skipping " mn)
+            mn (.getName m) ]]
+      (cond
+        (HasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
+        nil;;(log/info "JMX-skipping " mn)
 
-          (testJmxTypes rtype ptypes)
-          (let [pns (map #(.getName ^Class %) (seq ptypes))
-                nameParams (NameParams. mn
-                                        (into-array String pns))
-                pmInfos (mkParameterInfo m) ]
-            (var-set metds (assoc! @metds nameParams m))
-            (log/info "jmx-adding method %s" mn)
-            (var-set rc
-                     (->> (MBeanOperationInfo.
-                            mn
-                            (str mn " operation")
-                            (into-array MBeanParameterInfo pmInfos)
-                            (.getName rtype)
-                            MBeanOperationInfo/ACTION_INFO )
-                          (conj! @rc))))
-          :else
-          (log/info "JMX-skipping %s" mn) )))
+        (some? (testJmxTypes rtype ptypes))
+        (let [pns (map #(.getName ^Class %) (seq ptypes))
+              nameParams (NameParams. mn
+                                      (into-array String pns))
+              pmInfos (mkParameterInfo m) ]
+          (var-set metds (assoc! @metds nameParams m))
+          (log/info "jmx-adding method %s" mn)
+          (var-set rc
+                   (->> (MBeanOperationInfo.
+                          mn
+                          (str mn " operation")
+                          (into-array MBeanParameterInfo pmInfos)
+                          (.getName rtype)
+                          MBeanOperationInfo/ACTION_INFO )
+                        (conj! @rc))))
+        :else
+        (log/info "JMX-skipping %s" mn) ))
     [ (persistent! @rc) (persistent! @metds) ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -350,24 +353,24 @@
           nil) ]
     (reify DynamicMBean
       (getAttribute [_ attrName]
-        (let [^czlab.xlib.jmx.bean.BPropInfo
-              prop (get propsMap attrName)
-              ^czlab.xlib.jmx.bean.BFieldInfo
+        (let [prop (get propsMap attrName)
               fld (get fldsMap attrName) ]
           (cond
             (nil? prop)
             (do
               (when (or (nil? fld)
-                        (not (.isGetter fld)))
+                        (not (is-getter fld)))
                 (throwUnknownError attrName))
-              (let [^Field f (.field fld) ]
-                (.get f obj)))
+              (-> ^Field
+                  (get-field fld)
+                  (.get obj)))
 
-            (nil? (.getter prop))
+            (nil? (get-getter prop))
             (throwUnknownError attrName)
 
             :else
-            (-> ^Method (.getter prop)
+            (-> ^Method
+                (get-getter prop)
                 (.invoke obj (object-array 0))))))
 
       (getAttributes [this attrNames]
@@ -390,40 +393,40 @@
         (let [^Attribute attr a
               v (.getValue attr)
               an (.getName attr)
-              ^czlab.xlib.jmx.bean.BPropInfo
               prop (propsMap an)
-              ^czlab.xlib.jmx.bean.BFieldInfo
               fld (fldsMap an) ]
           (cond
             (nil? prop)
             (do
               (when (or (nil? fld)
-                        (not (.isSetter fld)))
+                        (not (is-setter fld)))
                 (throwUnknownError an))
-              (let [^Field f (.field fld) ]
-                (.set f obj v)))
+              (-> ^Field
+                  (get-field fld)
+                  (.set  obj v)))
 
-            (nil? (.setter prop))
+            (nil? (get-setter prop))
             (throwUnknownError an)
 
             :else
-            (-> ^Method (.setter prop)
+            (-> ^Method
+                (get-setter prop)
                 (.invoke obj v)))))
 
       (setAttributes [this attrs]
         (let [rcl (AttributeList. (count attrs)) ]
-          (doseq [^Attribute a (seq attrs) ]
-            (let [nn (.getName a) ]
-              (try
-                (.setAttribute this a)
+          (doseq [^Attribute a (seq attrs)
+                 :let [nn (.getName a) ]]
+            (try
+              (.setAttribute this a)
+              (.add rcl
+                    (Attribute. nn
+                                (.getAttribute this nn)))
+              (catch Throwable e#
+                (log/error e# "")
                 (.add rcl
                       (Attribute. nn
-                                  (.getAttribute this nn)))
-                (catch Throwable e#
-                  (log/error e# "")
-                  (.add rcl
-                        (Attribute. nn
-                                    (.getMessage e#)))))) )
+                                  (.getMessage e#))))))
           rcl))
 
       (invoke [_ opName params sig]
