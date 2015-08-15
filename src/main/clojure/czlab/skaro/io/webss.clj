@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [ConvLong juid MubleObj Stringify Bytesify]]
+    :refer [ConvLong juid trap! MubleObj Stringify Bytesify]]
     [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.crypto.core :refer [GenMac]]
     [czlab.xlib.util.logging :as log]
@@ -114,7 +114,7 @@
                     nil) ]
     (when (not= (GenMac pkey part2) part1)
       (log/error "session cookie - broken")
-      (throw (AuthError. "Bad Session Cookie")))))
+      (trap! AuthError "Bad Session Cookie"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,17 +151,17 @@
                 (.setAttribute mvs (keyword s1) (ConvLong s2 0))
                 (.setAttribute mvs (keyword s1) s2))))
           (catch Throwable _
-            (throw (ExpiredError. "Corrupted cookie"))))
+            (trap! ExpiredError "Corrupted cookie")))
         (.setNew mvs false 0)
         (let [ts (or (.getAttribute mvs LS_FLAG) -1)
               es (or (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
               mi (:maxIdleSecs cfg) ]
           (if (< es now)
-            (throw (ExpiredError. "Session has expired")))
+            (trap! ExpiredError "Session has expired"))
           (if (and (> mi 0)
                    (< (+ ts (* 1000 mi)) now))
-            (throw (ExpiredError. "Session has been inactive too long")))
+            (trap! ExpiredError "Session has been inactive too long"))
           (.setAttribute mvs LS_FLAG now))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

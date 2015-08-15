@@ -15,21 +15,20 @@
   czlab.xlib.netty.discarder
 
   (:require
-    [czlab.xlib.util.core :refer [notnil? try!]]
-    [czlab.xlib.util.str :refer [strim nsb hgl?]])
-
-  (:require [czlab.xlib.util.logging :as log])
+    [czlab.xlib.util.str :refer [strim hgl?]]
+    [czlab.xlib.util.core :refer [try!]]
+    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io])
 
   (:import
-    [com.zotohlab.frwk.netty
-     AuxHttpFilter
-     PipelineConfigurator ErrorSinkFilter]
-    [io.netty.channel ChannelHandlerContext Channel
-     ChannelPipeline ChannelHandler]
     [io.netty.handler.codec.http LastHttpContent ]
+    [com.zotohlab.frwk.netty
+    AuxHttpFilter
+    PipelineConfigurator ErrorSinkFilter]
+    [io.netty.channel ChannelHandlerContext Channel
+    ChannelPipeline ChannelHandler]
     [io.netty.bootstrap ServerBootstrap]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,7 +50,7 @@
                     (ReplyXXX  200))
                 (try! (callback)))))
           (.addBefore ^ChannelPipeline %1
-                      (ErrorSinkFilter/getName) "discarder"))))
+                      ErrorSinkFilter/NAME "discarder"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -16,7 +16,8 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [ThrowBadArg MubleObj tryc]]
+    :refer [trap! ex*
+    ThrowBadArg MubleObj tryc]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [HasAny?]])
 
@@ -115,7 +116,7 @@
 
   [attr]
 
-  (throw (AttributeNotFoundException. (str "Unknown property " attr))))
+  (trap! AttributeNotFoundException (str "Unknown property " attr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -123,7 +124,7 @@
 
   [^String msg]
 
-  (throw (MBeanException. (Exception. msg))))
+  (trap! MBeanException (ex* Exception msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

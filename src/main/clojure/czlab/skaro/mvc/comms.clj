@@ -211,7 +211,7 @@
 
   [^Muble src ^Channel ch code]
 
-  (with-local-vars [rsp (MakeHttpReply code)
+  (with-local-vars [rsp (HttpReply* code)
                     bits nil wf nil
                     ctype "text/plain"]
     (try

@@ -52,8 +52,7 @@
     (if (fn? v)
       (v options k)
       (set-env! k v))
-    (set-env! k dv)
-  ))
+    (set-env! k dv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,8 +110,7 @@
                  (filter ffs
                          (.listFiles (io/file root path)))))))
       []
-      paths)
-  ))
+      paths)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,8 +175,7 @@
       (let [p (.getParentFile f)]
         (when-not (contains? @bin p))
           (swap! bin assoc p p))
-      :else nil)
-  ))
+      :else nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -194,8 +191,7 @@
     (doseq [[k v] @bin]
       (let [kp (.getCanonicalPath ^File k)]
         (swap! out conj (.substring kp (+ rlen 1)))))
-    (sort @out)
-  ))
+    (sort @out)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -236,8 +232,7 @@
                (ge :wzzDir)
                (ge :czzDir)
                (ge :jzzDir)]]
-      (.mkdirs (io/file s)))
-  ))
+      (.mkdirs (io/file s)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -280,8 +275,7 @@
         (a/AntCopy
               {:todir (ge :czzDir)}
               [[:fileset {:dir root
-                          :excludes "**/*.clj"}]])))
-  ))
+                          :excludes "**/*.clj"}]])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -305,8 +299,7 @@
       (a/AntJar
         {:destFile (fp! (ge :distDir)
                         (str (ge :PID) "-" (ge :buildVersion) ".jar"))}
-        [j c]))
-  ))
+        [j c]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -316,8 +309,7 @@
 
   (minitask "pretest"
     (.mkdirs (io/file (ge :buildTestDir)))
-    (.mkdirs (io/file (ge :reportTestDir)))
-  ))
+    (.mkdirs (io/file (ge :reportTestDir)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -360,8 +352,7 @@
         (a/AntCopy
           {:todir (ge :buildTestDir)}
           [[:fileset {:dir root
-                      :excludes "**/*.clj"}]])))
-  ))
+                      :excludes "**/*.clj"}]])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -478,9 +469,7 @@
 
     (doseq [k (keys options)]
       (when (nil? (get-env k))
-        (se! options k nil)))
-
-  ))
+        (se! options k nil))) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -549,8 +538,7 @@
       (when (nil? (get-env k))
         (se! options k nil)))
 
-    (BootSyncCPath (str (ge :jzzDir) "/"))
-  ))
+    (BootSyncCPath (str (ge :jzzDir) "/"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -637,8 +625,7 @@
           (a/AntCopy {:file (fp! (:dir j) (:path j))
                         :todir to})))
       (format "copied (%d) jars to %s" (count jars) to))
-    fileset
-  ))
+    fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -703,3 +690,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+

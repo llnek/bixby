@@ -18,7 +18,7 @@ package com.zotohlab.frwk.netty;
  */
 public abstract class ErrorSinkFilter extends AuxHttpFilter {
 
-  public static String getName() { return "ErrorSinkFilter"; }
+  public static final String NAME =  "ErrorSinkFilter"; 
 
   protected ErrorSinkFilter() {}
 

@@ -17,18 +17,16 @@
   (:require
     [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
     [czlab.xlib.util.core
-    :refer [tryc Stringify ce? MubleObj
+    :refer [trap! ex* tryc Stringify ce? MubleObj
     do->false do->true juid test-nonil LoadJavaProps]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? strim]]
     [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.xlib.net.comms :refer [GetFormFields]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
-    [clojure.java.io :as io])
+    [clojure.java.io :as io]
+    [czlab.xlib.net.comms :refer [GetFormFields]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.xlib.util.wfs]
@@ -200,8 +198,8 @@
     (if (.validateHash (Pwdify pwd)
                        (:passwd acct))
       acct
-      (throw (AuthError. (RStr (I18N/getBase) "auth.bad.pwd"))))
-    (throw (UnknownUser. user))))
+      (trap! AuthError (RStr (I18N/getBase) "auth.bad.pwd")))
+    (trap! UnknownUser user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -349,18 +347,18 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (AuthError. (ce? (:e info)))}
+            (->> {:error (ex* AuthError (ce? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)
                (not= challengeStr (:captcha info)))
           (do->false
-            (->> {:error (AuthError. (RStr rb "auth.bad.cha")) }
+            (->> {:error (ex* AuthError (RStr rb "auth.bad.cha")) }
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (AuthError. (RStr rb "auth.bad.tkn")) }
+            (->> {:error (ex* AuthError (RStr rb "auth.bad.tkn")) }
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -368,7 +366,7 @@
                (hgl? (:email info)))
           (if (.hasAccount pa info)
             (do->false
-              (->> {:error (DuplicateUser. (str (:principal info)))}
+              (->> {:error (ex* DuplicateUser (str (:principal info)))}
                    (.setLastResult job )))
             (do->true
               (->> {:account (.addAccount pa info)}
@@ -376,7 +374,7 @@
 
           :else
           (do->false
-            (->> {:error (AuthError. (RStr rb "auth.bad.req"))}
+            (->> {:error (ex* AuthError (RStr rb "auth.bad.req"))}
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -409,12 +407,12 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (AuthError. (ce? (:e info)))}
+            (->> {:error (ex* AuthError (ce? (:e info)))}
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (AuthError. (RStr rb "auth.bad.tkn"))}
+            (->> {:error (ex* AuthError (RStr rb "auth.bad.tkn"))}
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -427,7 +425,7 @@
 
           :else
           (do->false
-            (->> {:error (AuthError. (RStr rb "auth.bad.req")) }
+            (->> {:error (ex* AuthError (RStr rb "auth.bad.req")) }
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -517,8 +515,7 @@
 
   (reify PluginFactory
     (createPlugin [_ ctr]
-      (makeAuthPlugin ctr)
-    )))
+      (makeAuthPlugin ctr))))
 
 ;;(ns-unmap *ns* '->AuthPluginFactory)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,8 +558,7 @@
   ;;(alter-var-root #'*read-eval* (constantly false))
   (if (< (count args) 3)
     nil
-    (apply doMain args)
-  ))
+    (apply doMain args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

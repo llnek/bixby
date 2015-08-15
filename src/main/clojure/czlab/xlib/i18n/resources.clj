@@ -21,6 +21,7 @@
     [clojure.java.io :as io])
 
   (:import
+    [org.apache.commons.lang3 StringUtils]
     [java.util Locale
     PropertyResourceBundle ResourceBundle]
     [java.io File FileInputStream]
@@ -105,7 +106,7 @@
       (loop [src kv pos 0 ]
         (if (>= pos pc)
          src
-         (recur (cs/replace src
+         (recur (StringUtils/replace src
                             "{}"
                             (str (nth pms pos)) 1)
                 (inc pos)))))))

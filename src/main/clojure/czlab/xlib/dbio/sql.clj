@@ -21,7 +21,7 @@
     [czlab.xlib.util.io :refer [ReadChars ReadBytes ]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
-    :refer [FlattenNil notnil? NowJTstamp nnz]]
+    :refer [FlattenNil trap! NowJTstamp nnz]]
     [czlab.xlib.util.dates :refer [GmtCal]])
 
   (:use [czlab.xlib.dbio.core])
@@ -63,7 +63,7 @@
   [^String opcode cnt ^String table rowID]
 
   (when (== cnt 0)
-    (throw (OptLockError. opcode table rowID))))
+    (trap! OptLockError opcode table rowID)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

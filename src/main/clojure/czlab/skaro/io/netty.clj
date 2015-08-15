@@ -165,7 +165,7 @@
         code (.getv res :code)
         data (.getv res :data)
         hdrs (.getv res :hds)
-        rsp (MakeHttpReply code) ]
+        rsp (HttpReply* code) ]
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
@@ -258,7 +258,7 @@
         (try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [rsp (MakeHttpReply 500) ]
+      (let [rsp (HttpReply* 500) ]
         (try
           (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException _
@@ -363,7 +363,7 @@
    info wantSecure]
 
   (let [^InetSocketAddress laddr (.localAddress ch)
-        ^HTTPResult res (MakeHttpResult co)
+        ^HTTPResult res (HttpResult* co)
         cookieJar (crackCookies info)
         impl (MubleObj)
         eeid (NextLong) ]
@@ -551,7 +551,7 @@
              (ReifyPipeCfgtor
                (fn [p _]
                  (-> ^ChannelPipeline p
-                     (.addBefore (ErrorSinkFilter/getName)
+                     (.addBefore ErrorSinkFilter/NAME
                                  "MsgDispatcher"
                                  disp))))
              options) ]

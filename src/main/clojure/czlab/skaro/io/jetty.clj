@@ -379,7 +379,7 @@
   [co & args]
 
   (log/debug "OPESReifyEvent: JettyIO: %s" (.id ^Identifiable co))
-  (let [^HTTPResult result (MakeHttpResult co)
+  (let [^HTTPResult result (HttpResult* co)
         ^HttpServletRequest req (first args)
         impl (MubleObj {:cookies (maybeGetCookies req)})
         ssl (= "https" (.getScheme req))

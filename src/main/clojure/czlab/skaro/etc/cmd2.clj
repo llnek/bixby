@@ -26,7 +26,7 @@
     [czlab.tpcl.antlib :as a]
     [czlab.xlib.util.core
     :refer [GetUser GetCwd juid
-    IsWindows? prn!! prn! FPath]]
+    trap! IsWindows? prn!! prn! FPath]]
     [czlab.xlib.util.files
     :refer [ReadOneFile WriteOneFile CopyFileToDir
     DeleteDir CopyFile CopyToDir CopyFiles Unzip Mkdirs]])
@@ -105,7 +105,7 @@
               (if-some [tkn (last t) ]
                 (TrimL tkn ".")
                 (first t))) ]
-    (when (empty? app) (throw (CmdHelpError.)))
+    (when (empty? app) (trap! CmdHelpError))
     (case verb
       ("mvc" "web")
       (CreateNetty cwd app path)
@@ -113,7 +113,7 @@
       (CreateJetty cwd app path)
       "basic"
       (CreateBasic cwd app path)
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

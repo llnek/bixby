@@ -16,12 +16,9 @@
 
   (:require
     [czlab.xlib.util.core :refer [ThrowIOE MubleObj
-     Cast? notnil? spos? Bytesify
-     SafeGetJsonObject SafeGetJsonInt SafeGetJsonString]]
+    Cast? spos? Bytesify]]
     [czlab.xlib.util.str :refer [lcase ucase
-     strim nsb hgl?]])
-
-  (:require
+    strim hgl?]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -31,37 +28,37 @@
   (:import
     [java.io File ByteArrayOutputStream InputStream IOException]
     [io.netty.channel ChannelHandlerContext ChannelPipeline
-     ChannelInboundHandlerAdapter ChannelFuture
-     ChannelDuplexHandler
-     ChannelOption ChannelFutureListener
-     Channel ChannelHandler]
+    ChannelInboundHandlerAdapter ChannelFuture
+    ChannelDuplexHandler
+    ChannelOption ChannelFutureListener
+    Channel ChannelHandler]
     [org.apache.commons.lang3 StringUtils]
     [io.netty.buffer Unpooled]
     [java.net URLDecoder URL ]
     [io.netty.handler.codec.http HttpHeaders HttpMessage
-     HttpHeaders$Values
-     HttpHeaders$Names
-     LastHttpContent DefaultFullHttpResponse
-     DefaultFullHttpRequest HttpContent
-     HttpRequest HttpResponse FullHttpRequest
-     QueryStringDecoder HttpResponseStatus
-     HttpRequestDecoder HttpVersion
-     HttpObjectAggregator HttpResponseEncoder]
+    HttpHeaders$Values
+    HttpHeaders$Names
+    LastHttpContent DefaultFullHttpResponse
+    DefaultFullHttpRequest HttpContent
+    HttpRequest HttpResponse FullHttpRequest
+    QueryStringDecoder HttpResponseStatus
+    HttpRequestDecoder HttpVersion
+    HttpObjectAggregator HttpResponseEncoder]
     [io.netty.handler.codec.http.multipart InterfaceHttpData
-     DefaultHttpDataFactory
-     HttpPostRequestDecoder Attribute
-     HttpPostRequestDecoder$EndOfDataDecoderException
-     FileUpload DiskFileUpload
-     InterfaceHttpData$HttpDataType]
+    DefaultHttpDataFactory
+    HttpPostRequestDecoder Attribute
+    HttpPostRequestDecoder$EndOfDataDecoderException
+    FileUpload DiskFileUpload
+    InterfaceHttpData$HttpDataType]
     [io.netty.util ReferenceCountUtil]
     [io.netty.handler.codec.http.websocketx
-             WebSocketServerProtocolHandler]
+    WebSocketServerProtocolHandler]
     [io.netty.handler.stream ChunkedWriteHandler]
     [com.zotohlab.frwk.netty PipelineConfigurator
-     SimpleInboundFilter
-     InboundAdapter
-     ErrorSinkFilter MessageFilter
-     Expect100Filter AuxHttpFilter]
+    SimpleInboundFilter
+    InboundAdapter
+    ErrorSinkFilter MessageFilter
+    Expect100Filter AuxHttpFilter]
     [com.zotohlab.frwk.core CallableWithArgs]
     [com.zotohlab.frwk.io XData]
     [com.zotohlab.frwk.net ULFileItem ULFormItems]))
@@ -87,8 +84,7 @@
   (let [ch (.channel ctx)
         v (GetAKey ch MSGTYPE_KEY)]
     (when (not= "wsock" v)
-      (ReplyXXX ch 500))
-  ))
+      (ReplyXXX ch 500))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,12 +109,11 @@
 
   (when (and (instance? HttpMessage msg)
              (HttpHeaders/is100ContinueExpected msg))
-    (-> (->> (MakeFullHttpReply HttpResponseStatus/CONTINUE)
+    (-> (->> (FullHttpReply* HttpResponseStatus/CONTINUE)
              (.writeAndFlush ctx))
         (FutureCB #(let [^ChannelFuture f %1]
                      (when-not (.isSuccess f)
-                       (.fireExceptionCaught ctx (.cause f))))))
-  ))
+                       (.fireExceptionCaught ctx (.cause f))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -163,8 +158,7 @@
     (DelAKey ch FORMDEC_KEY)
     (when (some? fis) (.destroy fis))
     (when (some? dc) (.destroy dc))
-    (ClearAKeys ch)
-  ))
+    (ClearAKeys ch)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -183,30 +177,35 @@
       (let [^FileUpload fu data
             ct (.getContentType fu)
             fnm (.getFilename fu) ]
-        (when (.isCompleted fu)
-          (if (instance? DiskFileUpload fu)
+        (when
+          (.isCompleted fu)
+          (if
+            (instance? DiskFileUpload fu)
             (let [fp (TempFile)]
-              (-> ^DiskFileUpload fu (.renameTo fp))
-              (->> (ULFileItem. nm ct fnm (XData. fp))
+              (-> ^DiskFileUpload
+                  fu (.renameTo fp))
+              (->> (XData. fp)
+                   (ULFileItem. nm ct fnm )
                    (.add fis)))
             ;else
-            (let [[fp ^OutputStream os] (OpenTempFile)]
+            (let [[fp os] (OpenTempFile)]
               (try
                 (SlurpByteBuf (.content fu) os)
                 (finally (CloseQ os)))
-              (->> (ULFileItem. nm ct fnm (XData. fp))
+              (->> (XData. fp)
+                   (ULFileItem. nm ct fnm )
                    (.add fis ))))))
 
       (= InterfaceHttpData$HttpDataType/Attribute dt)
       (let [^Attribute attr data
             baos (ByteOS)]
         (SlurpByteBuf (.content attr) baos)
-        (->> (ULFileItem. nm (.toByteArray baos))
+        (->> (.toByteArray baos)
+             (ULFileItem. nm )
              (.add fis )))
 
       :else
-      (ThrowIOE "Bad POST: unknown http data."))
-  ))
+      (ThrowIOE "Bad POST: unknown http data."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -219,14 +218,13 @@
   (try
     (while (.hasNext dc)
       (when-some [^InterfaceHttpData
-                 data (.next dc) ]
+                  data (.next dc) ]
         (try
           (writeHttpData ctx data fis)
           (finally
             (.release data)))))
-    (catch HttpPostRequestDecoder$EndOfDataDecoderException _ )
+    (catch HttpPostRequestDecoder$EndOfDataDecoderException _ )))
     ;;eat it => indicates end of content chunk by chunk
-  ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -239,22 +237,24 @@
              ">>>>>>>>>>>>>>>>>>>\n"
              "\n<<<<<<<<<<<<<<<<<<<<<<<<<" body)
 
-  (let [tkns (StringUtils/split body \&)
+  (let [tkns (.split body "&")
         fis (ULFormItems.) ]
     (when-not (empty? tkns)
       (areduce tkns n memo nil
-        (let [t (nsb (aget tkns n))
-              ss (StringUtils/split t \=) ]
+        (let [t (str (aget tkns n))
+              ss (.split t "=") ]
           (when-not (empty? ss)
-            (let [fi (URLDecoder/decode (aget ss 0) "utf-8")
+            (let [fi (-> (aget ss 0)
+                         (URLDecoder/decode "utf-8"))
                   fv (if (> (alength ss) 1)
-                         (URLDecoder/decode (aget ss 1) "utf-8")
+                         (-> (aget ss 1)
+                             (URLDecoder/decode  "utf-8"))
                          "") ]
-              (->> (ULFileItem. fi (Bytesify fv))
+              (->> (Bytesify fv)
+                   (ULFileItem. fi )
                    (.add fis))))
           nil)))
-    fis
-  ))
+    fis))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -264,13 +264,14 @@
    ^Channel ch
    handler ^XData xs]
 
-  (let [info (GetAKey ch MSGINFO_KEY)
-        itms (splitBodyParams (if (.hasContent xs)
-                                (.stringify xs) "")) ]
+  (let [info (GetAKey ch MSGINFO_KEY) ]
     (ResetAKeys ctx ch handler)
-    (.resetContent xs itms)
-    (FireMsgToNext ctx info xs)
-  ))
+    (->> (if (.hasContent xs)
+           (.stringify xs)
+           "")
+         (splitBodyParams )
+         (.resetContent xs ))
+    (FireMsgToNext ctx info xs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -280,33 +281,34 @@
    ^Channel ch
    msg]
 
-  (let [^ULFormItems
-        fis (GetAKey ch FORMITMS_KEY)
-        ^HttpPostRequestDecoder
+  (let [fis (GetAKey ch FORMITMS_KEY)
         dc (GetAKey ch FORMDEC_KEY)]
     (if (nil? dc)
       (HandleHttpContent ctx ch :formpost msg)
       (with-local-vars [err nil]
-        (when (instance? HttpContent msg)
-          (let [^HttpContent hc msg
+        (when
+          (instance? HttpContent msg)
+          (let [^HttpContent
+                hc msg
                 ct (.content hc) ]
             (when (and (some? ct)
                        (.isReadable ct))
               (try
-                (.offer dc hc)
+                (-> ^HttpPostRequestDecoder
+                    dc
+                    (.offer hc))
                 (readHttpDataChunkByChunk ctx ch dc fis)
                 (catch Throwable e#
                   (var-set err e#)
                   (.fireExceptionCaught ctx e#))))))
         (when (and (nil? @err)
                    (instance? LastHttpContent msg))
-          (let [^XData xs (GetAKey ch XDATA_KEY)
-                info (GetAKey ch MSGINFO_KEY) ]
+          (let [info (GetAKey ch MSGINFO_KEY)
+                xs (GetAKey ch XDATA_KEY)]
             (DelAKey ch FORMITMS_KEY)
-            (.resetContent xs fis)
+            (-> ^XData xs (.resetContent fis))
             (ResetAKeys ctx ch :formpost)
-            (FireMsgToNext ctx info xs)))))
-  ))
+            (FireMsgToNext ctx info xs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -317,9 +319,9 @@
    ^HttpMessage msg]
 
   (let [info (GetAKey ch MSGINFO_KEY)
-        ctype (->> HttpHeaders$Names/CONTENT_TYPE
+        ctype (->> "Content-Type"
                    (GetHeader msg)
-                   nsb
+                   str
                    strim
                    lcase) ]
     (doto ch
@@ -332,8 +334,7 @@
       (let [dc (-> (DefaultHttpDataFactory. (StreamLimit))
                    (HttpPostRequestDecoder. msg)) ]
         (SetAKey ch FORMDEC_KEY dc)
-        (HandleFormPart ctx ch msg)))
-  ))
+        (HandleFormPart ctx ch msg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -346,7 +347,7 @@
   (.fireChannelRead ctx msg)
   (if (instance? ChannelHandler handler)
     (.remove pipe ^ChannelHandler handler)
-    (.remove pipe (nsb handler)))
+    (.remove pipe (str handler)))
   (DbgPipelineHandlers pipe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -362,8 +363,7 @@
     (-> (.headers rc)
         (.set (.headers req)))
     ;;(-> (.trailingHeaders rc) (.set (.trailingHeaders req)))
-    rc
-  ))
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -424,7 +424,7 @@
           (try
             (when (instance? LastHttpContent msg)
               (let [tmp (GetAKey ch TOBJ_KEY)
-                    path (->> ^String (:wsuri tmp)
+                    path (->> (str (:wsuri tmp))
                               (QueryStringDecoder. )
                               (.path))]
               (log/debug "websock upgrade request for uri %s" path)
@@ -447,7 +447,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReifyPipeCfgtor "Create a customized netty pipeline"
+(defn ReifyPipeCfgtor
+
+  "Create a customized netty pipeline"
 
   ^PipelineConfigurator
   [cfgtor]
@@ -463,10 +465,9 @@
           (.addLast "HttpFilter" (SharedHttpFilter))
           (.addLast "HttpResponseEncoder" (HttpResponseEncoder.))
           (.addLast "ChunkedWriteHandler" (ChunkedWriteHandler.))
-          (.addLast (ErrorSinkFilter/getName) (SharedErrorSinkFilter)))
+          (.addLast ErrorSinkFilter/NAME (SharedErrorSinkFilter)))
         (cfgtor pipe options)
-        pipe))
-  ))
+        pipe))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

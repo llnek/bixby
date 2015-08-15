@@ -20,7 +20,7 @@
     :refer [lcase ucase strim
     Embeds? AddDelim! HasNocase? hgl?]]
     [czlab.xlib.util.core
-    :refer [tryc try! trylet!
+    :refer [tryc try! trylet! trap!
     RootCause StripNSPath
     GetTypeId Interject nnz nbf juid]]
     [czlab.xlib.util.logging :as log]
@@ -188,7 +188,7 @@
 
   [^String msg]
 
-  (throw (DBIOError. msg)))
+  (trap! DBIOError msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

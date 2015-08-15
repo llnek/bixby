@@ -16,13 +16,11 @@
 
   (:require
     [czlab.xlib.util.core :refer [try! tryletc trycr
-     RNil ThrowIOE spos? bool!]]
+    RNil ThrowIOE spos? bool!]]
     [czlab.xlib.util.io :refer [CloseQ
-     StreamLimit OpenTempFile ByteOS]]
+    StreamLimit OpenTempFile ByteOS]]
     [czlab.xlib.util.str :refer [lcase ucase
-     strim nsb hgl?]])
-
-  (:require
+    strim hgl?]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -39,24 +37,24 @@
     [io.netty.channel.nio NioEventLoopGroup]
     [java.io File ByteArrayOutputStream OutputStream]
     [io.netty.channel.socket.nio
-     NioDatagramChannel NioServerSocketChannel]
+    NioDatagramChannel NioServerSocketChannel]
     [javax.net.ssl KeyManagerFactory
-     SSLContext SSLEngine TrustManagerFactory]
+    SSLContext SSLEngine TrustManagerFactory]
     [java.security KeyStore SecureRandom]
     [io.netty.handler.ssl SslHandler]
     [io.netty.channel Channel ChannelFuture
-     ChannelHandlerContext ChannelPipeline
-     ChannelHandler ChannelOption
-     ChannelFutureListener]
+    ChannelHandlerContext ChannelPipeline
+    ChannelHandler ChannelOption
+    ChannelFutureListener]
     [io.netty.handler.codec.http HttpVersion
-     FullHttpResponse LastHttpContent
-     HttpHeaders$Values
-     HttpHeaders$Names
-     HttpMessage HttpResponse
-     DefaultFullHttpResponse
-     DefaultHttpResponse HttpContent
-     HttpRequest HttpResponseStatus
-     HttpHeaders QueryStringDecoder]
+    FullHttpResponse LastHttpContent
+    HttpHeaders$Values
+    HttpHeaders$Names
+    HttpMessage HttpResponse
+    DefaultFullHttpResponse
+    DefaultHttpResponse HttpContent
+    HttpRequest HttpResponseStatus
+    HttpHeaders QueryStringDecoder]
     [java.util Map$Entry]
     [io.netty.handler.stream ChunkedWriteHandler]))
 
@@ -99,8 +97,7 @@
   (log/debug "writing last http-content out to client")
   (if flush?
     (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
-    (.write ch LastHttpContent/EMPTY_LAST_CONTENT)
-  ))
+    (.write ch LastHttpContent/EMPTY_LAST_CONTENT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,24 +107,24 @@
   [msg]
 
   (reify ChannelFutureListener
-    (operationComplete [_ _]
-      (log/debug "netty-op-complete: %s" msg))
-  ))
+    (operationComplete [_ ff]
+      (log/debug
+        "op-complete: rc=%s, %s" (.isSuccess ff) msg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeHttpReply ""
+(defn HttpReply* ""
 
   ^HttpResponse
   [ & [code]]
 
-  (DefaultHttpResponse.
-    HttpVersion/HTTP_1_1
-    (HttpResponseStatus/valueOf (or code 200))))
+  (new DefaultHttpResponse
+       HttpVersion/HTTP_1_1
+       (HttpResponseStatus/valueOf (int (or code 200)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeFullHttpReply ""
+(defn FullHttpReply* ""
 
   ^FullHttpResponse
   [ & [status payload]]
@@ -144,8 +141,7 @@
       (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
                                 (HttpResponseStatus/valueOf status))
       (DefaultFullHttpResponse. HttpVersion/HTTP_1_1
-                                (HttpResponseStatus/valueOf status) p))
-  ))
+                                (HttpResponseStatus/valueOf status) p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -228,8 +224,7 @@
   (let [len (if (nil? buf) 0 (.readableBytes buf))]
     (if (> len 0)
       (.readBytes buf os (int len))
-      (.flush os))
-  ))
+      (.flush os))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -240,8 +235,7 @@
 
   (let [baos (ByteOS)]
     (SlurpByteBuf buf baos)
-    (.toByteArray baos)
-  ))
+    (.toByteArray baos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -275,8 +269,7 @@
 
   (let [mo (GetHeader req "X-HTTP-Method-Override")
         mt (-> req (.getMethod) (.name))]
-    (ucase (if-not (empty? mo) mo mt))
-  ))
+    (ucase (if-not (empty? mo) mo mt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -303,12 +296,12 @@
     (cond
       (instance? HttpResponse msg)
       (let [s (-> ^HttpResponse msg (.getStatus))]
-        (->> (merge @info {:status (nsb (.reasonPhrase s))
+        (->> (merge @info {:status (str (.reasonPhrase s))
                            :code  (.code s)})
              (var-set info)))
       (instance? HttpRequest msg)
       (let [^HttpRequest req msg
-            uriStr (nsb (.getUri req))
+            uriStr (str (.getUri req))
             pos (.indexOf uriStr "?")
             dc (QueryStringDecoder. uriStr)]
         (->> (-> (merge @info {:method (GetMethod req)
@@ -320,8 +313,7 @@
           (->> (assoc @info :query (.substring uriStr pos))
                (var-set info))))
       :else nil)
-    @info
-  ))
+    @info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -361,8 +353,7 @@
           (.write out bits 0 len)
           (recur bits (- total len)))))
     (.flush out)
-    (+ lastSum cnt)
-  ))
+    (+ lastSum cnt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -375,8 +366,7 @@
     (let [[fp os] (OpenTempFile)]
       (.resetContent x fp)
       os)
-    out
-  ))
+    out))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -394,10 +384,9 @@
 
   [^Channel ch status & [keepAlive?] ]
 
-  (let [rsp (MakeFullHttpReply status)]
+  (let [rsp (FullHttpReply* status)]
     (log/debug "return HTTP status %s back to client" status)
-    (CloseCF (.writeAndFlush ch rsp) (bool! keepAlive?))
-  ))
+    (CloseCF (.writeAndFlush ch rsp) (bool! keepAlive?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -405,11 +394,10 @@
 
   [^Channel ch permanent ^String targetUrl]
 
-  (let [rsp (MakeFullHttpReply (if permanent 301 307))]
+  (let [rsp (FullHttpReply* (if permanent 301 307))]
     (log/debug "redirecting to -> %s" targetUrl)
     (HttpHeaders/setHeader rsp "location" targetUrl)
-    (CloseCF (.writeAndFlush ch rsp))
-  ))
+    (CloseCF (.writeAndFlush ch rsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -419,8 +407,7 @@
 
   (-> ctx
       (.channel)
-      (.writeAndFlush (MakeFullHttpReply 100))
-  ))
+      (.writeAndFlush (FullHttpReply* 100))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -430,7 +417,7 @@
 
   (when (instance? ReferenceCounted obj)
     (log/debug "object %s: has ref-count = %s"
-               (trycr "???" (nsb obj))
+               (trycr "???" (str obj))
                (.refCnt ^ReferenceCounted obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -446,8 +433,7 @@
     (DelAKey ch CBUF_KEY)
     (DelAKey ch XDATA_KEY)
     (DelAKey ch XOS_KEY)
-    (DelAKey ch TOBJ_KEY)
-  ))
+    (DelAKey ch TOBJ_KEY)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -466,8 +452,7 @@
 
   (if-some [hds (get info "headers")]
     (keys hds)
-    #{}
-  ))
+    #{}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -479,8 +464,7 @@
 
   (if-some [hds (get info "headers")]
     (or (get hds (lcase header)) [])
-    []
-  ))
+    []))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -490,8 +474,7 @@
 
   (if-some [hds (get info "params")]
     (keys hds)
-    #{}
-  ))
+    #{}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -503,8 +486,7 @@
 
   (if-some [pms (get info "params")]
     (or (get pms pm) [])
-    []
-  ))
+    []))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -517,8 +499,7 @@
     (when (or (nil? olen)
               (not (== olen clen)))
       (log/warn "content-length from headers = %s, new clen = %s" olen clen)
-      (SetAKey ch MSGINFO_KEY (assoc info :clen clen)))
-  ))
+      (SetAKey ch MSGINFO_KEY (assoc info :clen clen)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -530,8 +511,7 @@
         nnw (MapHeaders hds) ]
     (SetAKey ch
              MSGINFO_KEY
-             (update info :headers #(merge %1 nnw)))
-  ))
+             (update info :headers #(merge %1 nnw)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -540,8 +520,7 @@
   [^OutputStream os ^ByteBufHolder chunc]
 
   (when-some [buf (.content chunc)]
-    (SlurpByteBuf buf os)
-  ))
+    (SlurpByteBuf buf os)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -561,8 +540,7 @@
   (if-some [buf (.content chunc)]
     (> (.readableBytes content)
        (- (StreamLimit) (.readableBytes buf)))
-    false
-  ))
+    false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -576,8 +554,7 @@
     (SlurpByteBuf bbuf os)
     (.resetContent xs fp)
     (SetAKey ch XOS_KEY os)
-    os
-  ))
+    os))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -588,8 +565,7 @@
 
   (let [info (GetAKey ch MSGINFO_KEY)]
     (ResetAKeys ctx ch handler)
-    (FireMsgToNext ctx info xs)
-  ))
+    (FireMsgToNext ctx info xs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -611,8 +587,7 @@
           (.resetContent xs baos))
         (CloseQ os))
       (SetContentLength ch (.size xs))
-      (FinzHttpContent ctx ch handler xs))
-  ))
+      (FinzHttpContent ctx ch handler xs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -642,8 +617,7 @@
                                     (.readableBytes cc))))
             (FlushContent @os chk)))))
     ;;is this the last chunk?
-    (HandleLastContent ctx ch handler msg)
-  ))
+    (HandleLastContent ctx ch handler msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -655,12 +629,11 @@
 
   (let [ct (->> HttpHeaders$Names/CONTENT_TYPE
                 (GetHeader msg)
-                nsb
+                str
                 lcase) ]
     (and (or (= "POST" method)(= "PUT" method)(= "PATCH" method))
          (or (>= (.indexOf ct "multipart/form-data") 0)
-             (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))
-  ))
+             (>= (.indexOf ct "application/x-www-form-urlencoded") 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -672,13 +645,13 @@
 
   (let [^String cn (->> HttpHeaders$Names/CONNECTION
                         (GetHeader req)
-                         nsb lcase)
+                         str lcase)
         ^String ws (->> HttpHeaders$Names/UPGRADE
                         (GetHeader req)
-                        nsb lcase)
+                        str lcase)
         ^String mo (->> "X-HTTP-Method-Override"
                         (GetHeader req)
-                        nsb
+                        str
                         strim ucase) ]
     (and (>= (.indexOf ws "websocket") 0)
          (>= (.indexOf cn "upgrade") 0)
@@ -686,8 +659,7 @@
                     (-> (.getMethod req)
                         (.name)
                         (ucase))
-                    mo)))
-  ))
+                    mo)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -703,7 +675,7 @@
         ^String pwdStr (:passwd options) ]
     (when (hgl? keyUrlStr)
       (tryletc
-        [pwd (when (some? pwdStr) (.toCharArray pwdStr))
+        [pwd (some-> pwdStr (.toCharArray ))
          x (SSLContext/getInstance flavor)
          ks (KeyStore/getInstance ^String
                                   (if (.endsWith keyUrlStr ".jks")
@@ -724,8 +696,7 @@
                  (SecureRandom/getInstance "SHA1PRNG"))
           (SslHandler. (doto
                          (.createSSLEngine x)
-                         (.setUseClientMode false))))))
-  ))
+                         (.setUseClientMode false))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -742,8 +713,7 @@
      ctx (doto (SSLContext/getInstance flavor)
            (.init nil m nil)) ]
     (SslHandler. (doto (.createSSLEngine ctx)
-                       (.setUseClientMode true)))
-  ))
+                       (.setUseClientMode true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -764,8 +734,7 @@
     (log/debug "nettyTCPServer: running on host %s:%s" ip port)
     (-> (.bind bs ip (int port))
         (.sync)
-        (.channel))
-  ))
+        (.channel))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -779,8 +748,7 @@
              (InetAddress/getLocalHost)) ]
     (log/debug "nettyUDPServer: running on host %s:%s" ip port)
     (-> (.bind bs ip (int port))
-        (.channel))
-  ))
+        (.channel))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -813,8 +781,7 @@
 
   (if (spos? thds)
     (NioEventLoopGroup. thds)
-    (NioEventLoopGroup.)
-  ))
+    (NioEventLoopGroup.)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -843,8 +810,7 @@
       (.childOption ChannelOption/TCP_NODELAY true)
       (.childHandler (.configure
                        cfg
-                       (or options {}))))
-  ))
+                       (or options {}))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -864,8 +830,7 @@
                (int (or rb (* 2 1024 1024))))
       (.handler (.configure
                   cfg
-                  (or options {}))))
-  ))
+                  (or options {}))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

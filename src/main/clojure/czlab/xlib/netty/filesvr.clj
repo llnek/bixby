@@ -18,12 +18,10 @@
 
   (:require
     [czlab.xlib.util.files :refer [SaveFile GetFile]]
+    [czlab.xlib.util.str :refer [strim hgl?]]
     [czlab.xlib.util.core
-     :refer [SafeGetJsonBool ConvInt trycr
-             SafeGetJsonString juid notnil? ]]
-    [czlab.xlib.util.str :refer [strim nsb hgl?]])
-
-  (:require
+    :refer [SafeGetJsonBool ConvInt trycr
+    SafeGetJsonString juid ]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs])
@@ -33,17 +31,17 @@
 
   (:import
     [io.netty.handler.codec.http
-     HttpResponse
-     HttpHeaders$Names
-     HttpHeaders$Values
-     HttpHeaders LastHttpContent]
+    HttpResponse
+    HttpHeaders$Names
+    HttpHeaders$Values
+    HttpHeaders LastHttpContent]
     [com.zotohlab.frwk.netty
-     AuxHttpFilter ErrorSinkFilter
-     PipelineConfigurator]
+    AuxHttpFilter ErrorSinkFilter
+    PipelineConfigurator]
     [java.io IOException File]
     [io.netty.channel ChannelHandlerContext
-     Channel ChannelPipeline
-     SimpleChannelInboundHandler ChannelHandler]
+    Channel ChannelPipeline
+    SimpleChannelInboundHandler ChannelHandler]
     [io.netty.bootstrap ServerBootstrap]
     [io.netty.handler.stream ChunkedStream]
     [com.zotohlab.frwk.io XData]))
@@ -57,15 +55,13 @@
 
   [^Channel ch info ^XData xdata]
 
-  (let [res (MakeHttpReply 200)
-        kalive (:keepAlive info)
+  (let [keep? (:keepAlive info)
+        res (HttpReply* 200)
         clen (.size xdata) ]
     (doto res
-      (SetHeader HttpHeaders$Names/CONTENT_TYPE "application/octet-stream")
-      (SetHeader HttpHeaders$Names/CONNECTION
-                 (if kalive
-                   HttpHeaders$Values/KEEP_ALIVE
-                   HttpHeaders$Values/CLOSE))
+      (SetHeader "Content-Type" "application/octet-stream")
+      (SetHeader "Connection"
+                 (if keep? "keep-alive" "close"))
       (HttpHeaders/setTransferEncodingChunked )
       (HttpHeaders/setContentLength clen))
     (log/debug "Flushing file of %s bytes to client" clen)
@@ -73,8 +69,7 @@
       (.write res)
       (.write (ChunkedStream. (.stream xdata))))
     (-> (.writeAndFlush ch LastHttpContent/EMPTY_LAST_CONTENT)
-        (CloseCF kalive))
-  ))
+        (CloseCF keep?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -86,8 +81,7 @@
 
   (->> (trycr 500
               (do (SaveFile vdir fname xdata) 200))
-       (ReplyXXX ch )
-  ))
+       (ReplyXXX ch )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -98,8 +92,7 @@
   (let [xdata (GetFile vdir fname) ]
     (if (.hasContent xdata)
       (replyGetVFile ch info xdata)
-      (ReplyXXX ch 204))
-  ))
+      (ReplyXXX ch 204))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,32 +103,31 @@
 
   (proxy [AuxHttpFilter][]
     (channelRead0 [c msg]
-      (let [ch (-> ^ChannelHandlerContext c
-                   (.channel))
+      (let [ch (-> ^ChannelHandlerContext
+                   c (.channel))
             vdir (io/file (:vdir options))
             xs (:payload msg)
             info (:info msg)
-            ^String mtd (:method info)
-            ^String uri (:uri info)
+            {:keys [method uri]} info
+            uri (str uri)
             pos (.lastIndexOf uri (int \/))
             p (if (< pos 0)
                 uri
                 (.substring uri
                             (inc pos)))
             nm (if (empty? p) (str (juid) ".dat") p) ]
-        (log/debug "method = %s, uri = %s, file = %s" mtd uri nm)
+        (log/debug "method = %s, uri = %s, file = %s" method uri nm)
         (cond
-          (or (= mtd "POST")
-              (= mtd "PUT"))
+          (or (= method "POST")
+              (= method "PUT"))
           (fPutter vdir ch info nm xs)
 
-          (or (= mtd "HEAD")
-              (= mtd "GET"))
+          (or (= method "HEAD")
+              (= method "GET"))
           (fGetter vdir ch info nm)
 
           :else
-          (ReplyXXX ch 405))))
-  ))
+          (ReplyXXX ch 405))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make a In memory File Server
@@ -149,13 +141,12 @@
   (let [bs (InitTCPServer
              (ReifyPipeCfgtor
                #(.addBefore ^ChannelPipeline %1
-                            (ErrorSinkFilter/getName)
+                            ErrorSinkFilter/NAME
                             "memfsvr"
                             (fHandler %2)))
              (merge {} options {:vdir vdir}))
         ch (StartServer bs host port) ]
-    {:bootstrap bs :channel ch}
-  ))
+    {:bootstrap bs :channel ch}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; filesvr host port vdir
@@ -168,9 +159,9 @@
 
   ;; 64meg max file size
   (MemFileServer* (nth args 0)
-                     (ConvInt (nth args 1) 8080)
-                     (nth args 2)
-                     {}))
+                  (ConvInt (nth args 1) 8080)
+                  (nth args 2)
+                  {}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

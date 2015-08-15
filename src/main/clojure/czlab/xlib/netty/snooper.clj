@@ -15,10 +15,7 @@
   czlab.xlib.netty.snooper
 
   (:require
-    [czlab.xlib.util.core :refer [notnil? ]]
-    [czlab.xlib.util.str :refer [strim nsb hgl?]])
-
-  (:require
+    [czlab.xlib.util.str :refer [strim hgl?]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
 
@@ -29,18 +26,18 @@
     [io.netty.util Attribute AttributeKey CharsetUtil]
     [java.util Map$Entry]
     [io.netty.channel ChannelHandlerContext
-     Channel ChannelPipeline ChannelHandler]
+    Channel ChannelPipeline ChannelHandler]
     [io.netty.handler.codec.http HttpHeaders
-     HttpHeaders$Names HttpHeaders$Values
-     HttpVersion FullHttpResponse
-     HttpContent
-     HttpResponseStatus CookieDecoder
-     ServerCookieEncoder Cookie
-     HttpRequest QueryStringDecoder
-     LastHttpContent]
+    HttpHeaders$Names HttpHeaders$Values
+    HttpVersion FullHttpResponse
+    HttpContent
+    HttpResponseStatus CookieDecoder
+    ServerCookieEncoder Cookie
+    HttpRequest QueryStringDecoder
+    LastHttpContent]
     [com.zotohlab.frwk.netty
-     AuxHttpFilter ErrorSinkFilter
-     PipelineConfigurator]
+    AuxHttpFilter ErrorSinkFilter
+    PipelineConfigurator]
     [com.zotohlab.frwk.io XData]
     [io.netty.bootstrap ServerBootstrap]))
 
@@ -63,29 +60,26 @@
 
   (let [^StringBuilder cookieBuf (GetAKey ch CBUF)
         ^StringBuilder buf (GetAKey ch MBUF)
-        res (MakeFullHttpReply 200 (nsb buf))
-        cs (CookieDecoder/decode (nsb cookieBuf))
+        res (FullHttpReply* 200 (str buf))
+        cs (CookieDecoder/decode (str cookieBuf))
         hds (.headers res)
         clen (-> (.content res)
                  (.readableBytes)) ]
-    (.set hds HttpHeaders$Names/CONTENT_LENGTH (str clen))
-    (.set hds HttpHeaders$Names/CONTENT_TYPE
+    (.set hds "Content-Length" (str clen))
+    (.set hds "Content-Type"
               "text/plain; charset=UTF-8")
-    (.set hds HttpHeaders$Names/CONNECTION
-          (if (GetAKey ch KALIVE)
-              HttpHeaders$Values/KEEP_ALIVE
-              HttpHeaders$Values/CLOSE))
+    (.set hds "Connection"
+          (if (GetAKey ch KALIVE) "keep-alive" "close"))
     (if (.isEmpty cs)
       (doto hds
-        (.add HttpHeaders$Names/SET_COOKIE
+        (.add "Set-Cookie"
               (ServerCookieEncoder/encode "key1" "value1"))
-        (.add HttpHeaders$Names/SET_COOKIE
+        (.add "Set-Cookie"
               (ServerCookieEncoder/encode "key2" "value2")))
       (doseq [^Cookie v (seq cs) ]
-        (.add hds HttpHeaders$Names/SET_COOKIE
+        (.add hds "Set-Cookie"
                   (ServerCookieEncoder/encode v))))
-    (.write ctx res)
-  ))
+    (.write ctx res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -141,8 +135,7 @@
             buf
             pms)
     (.append buf "\r\n")
-    (.append cookieBuf (nsb (.get headers "cookie")))
-  ))
+    (.append cookieBuf (str (.get headers "cookie")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -182,8 +175,7 @@
                   buf
                   (.names thds))
           (.append buf "\r\n")))
-      (writeReply ctx ch msg))
-  ))
+      (writeReply ctx ch msg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -205,7 +197,7 @@
        (.addBefore
          ^ChannelPipeline
          %1
-         (ErrorSinkFilter/getName) "snooper"))))
+         ErrorSinkFilter/NAME "snooper"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -217,8 +209,7 @@
 
   (let [bs (InitTCPServer (snooper) options)
         ch (StartServer bs host  port) ]
-    {:bootstrap bs :channel ch}
-  ))
+    {:bootstrap bs :channel ch}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

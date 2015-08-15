@@ -14,12 +14,13 @@
 
   czlab.skaro.etc.core
 
-  (:require [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
-            [czlab.xlib.util.core :refer [PrtStk test-cond MubleObj]]
-            [czlab.xlib.util.str :refer [MakeString]] [czlab.xlib.util.logging
-                                                       :as log]
-            [czlab.xlib.util.scheduler :refer [NulScheduler*]]
-            [czlab.xlib.util.files :refer [DirRead?]])
+  (:require
+    [czlab.xlib.util.core :refer [trap! PrtStk test-cond MubleObj]]
+    [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
+    [czlab.xlib.util.str :refer [MakeString]]
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.scheduler :refer [NulScheduler*]]
+    [czlab.xlib.util.files :refer [DirRead?]])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
@@ -146,7 +147,7 @@
   (SimPTask
     (fn [^Job j]
       (let [args (.getLastResult j)]
-        (when (< (count args) 1) (throw (CmdHelpError. "")))))))
+        (when (< (count args) 1) (trap! CmdHelpError ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

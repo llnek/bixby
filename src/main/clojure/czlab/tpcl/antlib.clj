@@ -20,39 +20,39 @@
     [java.util Stack]
     [java.io File]
     [org.apache.tools.ant.taskdefs
-     Javadoc Java Copy Chmod
-     Concat Move Mkdir Tar
-     Replace ExecuteOn
-     Delete Jar Zip ExecTask Javac]
+    Javadoc Java Copy Chmod
+    Concat Move Mkdir Tar
+    Replace ExecuteOn
+    Delete Jar Zip ExecTask Javac]
     [org.apache.tools.ant.listener
-     AnsiColorLogger
-     TimestampedLogger]
+    AnsiColorLogger
+    TimestampedLogger]
     [org.apache.tools.ant.types
-     Commandline$Argument
-     Commandline$Marker
-     PatternSet$NameEntry
-     Environment$Variable
-     Reference FileSet Path DirSet]
+    Commandline$Argument
+    Commandline$Marker
+    PatternSet$NameEntry
+    Environment$Variable
+    Reference FileSet Path DirSet]
     [org.apache.tools.ant
-     NoBannerLogger
-     Project Target Task]
+    NoBannerLogger
+    Project Target Task]
     [org.apache.tools.ant.taskdefs.optional.junit
-     FormatterElement$TypeAttribute
-     JUnitTask$SummaryAttribute
-     JUnitTask$ForkMode
-     JUnitTask
-     JUnitTest
-     BatchTest
-     FormatterElement]
+    FormatterElement$TypeAttribute
+    JUnitTask$SummaryAttribute
+    JUnitTask$ForkMode
+    JUnitTask
+    JUnitTest
+    BatchTest
+    FormatterElement]
     [org.apache.tools.ant.util FileNameMapper
-     GlobPatternMapper ChainedMapper]
+    GlobPatternMapper ChainedMapper]
     [org.apache.tools.ant.taskdefs
-     Javadoc$AccessType
-     Replace$Replacefilter
-     Replace$NestedString
-     Tar$TarFileSet
-     Tar$TarCompressionMethod
-     Javac$ImplementationSpecificArgument])
+    Javadoc$AccessType
+    Replace$Replacefilter
+    Replace$NestedString
+    Tar$TarFileSet
+    Tar$TarCompressionMethod
+    Javac$ImplementationSpecificArgument])
 
   ;;put here but not used, reason is to trick compiler
   ;;to drag in the files and compile it without
@@ -100,8 +100,7 @@
     (doto (Project.)
       (.init)
       (.setName "project-x")
-      (.addBuildListener lg))
-  ))
+      (.addBuildListener lg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -122,8 +121,7 @@
        (reduce (fn [memo pd]
                  (assoc memo
                         (keyword (.getName pd)) pd))
-               {})
-  ))
+               {})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create a default project.
@@ -145,14 +143,13 @@
 ;;
 (defn- maybeListProps
 
-  "Dynanically add bean info for non-task classes"
+  "Dynamically add bean info for non-task classes"
 
   [cz]
 
   (let [b (getBeanInfo cz)]
     (swap! props assoc cz b)
-    b
-  ))
+    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -274,8 +271,7 @@
           ;;else
           (throw (Exception. (str "property "
                                   (name k)
-                                  " not-found in task " cz))))))
-  ))
+                                  " not-found in task " cz))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -292,8 +288,7 @@
     (setOptions pj fs options)
     (.setProject fs pj)
     (maybeCfgNested pj fs nested)
-    fs
-  ))
+    fs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -313,8 +308,7 @@
                 (merge {:errorOnMissingDir false} options))
     (.setProject fs pj)
     (maybeCfgNested pj fs nested)
-    fs
-  ))
+    fs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -330,8 +324,7 @@
 
     (setOptions pj bt options)
     (maybeCfgNested pj bt nested)
-    bt
-  ))
+    bt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -348,8 +341,7 @@
 
     (setOptions pj jt options)
     (maybeCfgNested pj jt nested)
-    jt
-  ))
+    jt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -367,8 +359,7 @@
                (.setTo (:to n)))
              (.add cm))
         nil))
-    cm
-  ))
+    cm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -381,7 +372,6 @@
               tk
               (doto (FormatterElement$TypeAttribute.)
                 (.setValue (str v)))))
-
   [options #{:type}])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -399,8 +389,7 @@
 
     (apply setOptions pj fe (fmtr-preopts fe options))
     (.setProject fe pj)
-    fe
-  ))
+    fe))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -530,8 +519,7 @@
                      (if (> (count p) 1)(nth p 1) {})
                      (if (> (count p) 2)(nth p 2) []))
 
-      nil)
-  ))
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -612,8 +600,7 @@
     (->> (pre-options task options)
          (apply setOptions pj task))
     (maybeCfgNested pj task nested)
-    task
-  ))
+    task))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -632,8 +619,7 @@
     (.addOrReplaceTarget pj tg)
     (doseq [t tasks]
       (init-task pj tg t))
-    tg
-  ))
+    tg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -666,7 +652,6 @@
   [target & tasks]
 
   (RunTarget target tasks))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -722,8 +707,7 @@
                   nil)
                 (assoc r# :pre-options))
            ;;else
-           r#)))
-  ))
+           r#)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -754,8 +738,7 @@
                                   :dir dir}
                                  [[:include "**/*"]]]]))
       ;;else
-      (.mkdirs dir))
-  ))
+      (.mkdirs dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -771,8 +754,7 @@
       (RunTasks*
         (AntDelete {:quiet quiet}
                    [[:fileset {:followSymlinks false
-                               :dir dir} ]])))
-  ))
+                               :dir dir} ]])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

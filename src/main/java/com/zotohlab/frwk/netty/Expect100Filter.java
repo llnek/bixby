@@ -20,7 +20,7 @@ public abstract class Expect100Filter extends AuxHttpFilter {
 
   protected Expect100Filter() {}
 
-  public static String getName() { return "Expect100Filter"; }
+  public static final String NAME = "Expect100Filter"; 
 
 }
 

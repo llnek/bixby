@@ -15,7 +15,8 @@
   czlab.xlib.util.scheduler
 
   (:require
-    [czlab.xlib.util.core :refer [NextInt juid MubleObj]]
+    [czlab.xlib.util.core
+    :refer [trap! ex* NextInt juid MubleObj]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [ToKW hgl?]])
 
@@ -56,7 +57,7 @@
       (hold [this w] (.hold this 0 w))
 
       (hold [_ _ w]
-        (throw (Exception. "Not Implemented.")))
+        (trap! Exception "Not Implemented."))
 
       (wakeup [this w]
         (.wakeAndRun this 0 w))

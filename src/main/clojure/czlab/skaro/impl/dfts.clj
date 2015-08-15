@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong test-cond MubleObj test-nestr]]
+    :refer [NextLong trap! test-cond MubleObj test-nestr]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
@@ -79,8 +79,8 @@
     (condp instance? v
       String (io/file v)
       File v
-      (throw (ConfigError. (RStr (I18N/getBase)
-                                 "skaro.no.dir" kn))))))
+      (trap! ConfigError (RStr (I18N/getBase)
+                                 "skaro.no.dir" kn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;a registry is basically a container holding a bunch of components
@@ -152,8 +152,8 @@
                       (.id  ^Identifiable c))
                 cache (.getv impl :cache) ]
             (when (.has this cid)
-              (throw (RegistryError. (RStr (I18N/getBase)
-                                           "skaro.dup.cmp" cid))))
+              (trap! RegistryError (RStr (I18N/getBase)
+                                           "skaro.dup.cmp" cid)))
             (.setv impl :cache (assoc cache cid c))))
 
         (iter [_]

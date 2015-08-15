@@ -27,7 +27,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [MubleObj doto->> juid FPath Cast?
-    trycr ConvToJava nbf ConvLong Bytesify]]
+    trap! trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [Scheduler*]]
     [czlab.xlib.util.core
     :refer [NextLong LoadJavaProps SubsVar]]
@@ -299,7 +299,7 @@
                bks
                (.lookup (keyword svc))) ]
     (when (nil? bk)
-      (throw (ServiceError. (str "No such Service: " svc))))
+      (trap! ServiceError (str "No such Service: " svc)))
     (serviceBlock bk co nm cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -552,7 +552,7 @@
       (let [sc (trycr nil (.call rts dmCZ))]
         (when (and (some? sc)
                    (not (instance? Schema sc)))
-          (throw (ConfigError. (str "Invalid Schema Class " dmCZ))))
+          (trap! ConfigError (str "Invalid Schema Class " dmCZ)))
         (.setv co
                K_MCACHE
                (MetaCache* (or sc (DbSchema* [])))))
@@ -569,7 +569,7 @@
           (instance? AppMain @obj)
           (doCljApp co app @obj)
           ;else
-          (throw (ConfigError. (str "Invalid Main Class " mCZ))))
+          (trap! ConfigError (str "Invalid Main Class " mCZ)))
 
         (.setv co :main-app @obj)
         (log/info "application main-class %s%s"

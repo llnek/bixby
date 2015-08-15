@@ -15,6 +15,7 @@
   czlab.skaro.impl.misc
 
   (:require
+    [czlab.xlib.util.core :refer [trap!]]
     [czlab.xlib.util.wfs :refer [SimPTask]])
 
   (:import
@@ -50,9 +51,9 @@
   (let [evt (.event j) ]
     (if (instance? HTTPEvent evt)
       (mkWork s)
-      (throw (FlowError. (str "Unhandled event-type \""
+      (trap! FlowError (str "Unhandled event-type \""
                               (:typeid (meta evt))
-                              "\""))))))
+                              "\"")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

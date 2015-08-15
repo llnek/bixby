@@ -16,9 +16,7 @@
 
   (:require
     [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.str :refer [ToKW]])
-
-  (:require
+    [czlab.xlib.util.str :refer [ToKW]]
     [czlab.xlib.util.logging :as log])
 
   (:use

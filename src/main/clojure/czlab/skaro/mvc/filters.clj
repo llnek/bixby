@@ -202,7 +202,7 @@
             (try! (.remove pipe "MVCDispatcher"))
             (try! (.remove pipe "RouteFilter"))
             (try! (.remove pipe "HttpFilter"))
-            (.addBefore pipe (ErrorSinkFilter/getName) "WSOCKDispatcher" disp)
+            (.addBefore pipe ErrorSinkFilter/NAME "WSOCKDispatcher" disp)
             (SetAKey ch MSGTYPE_KEY "wsock"))
         (FireAndQuit pipe ctx this msg))))))
 
@@ -222,14 +222,14 @@
         (let [^ChannelPipeline pipe p]
           (.addAfter pipe "HttpRequestDecoder" "RouteFilter" router)
           (.addAfter pipe "WSockFilter" "WSockJiggler" wsock)
-          (.addBefore pipe (ErrorSinkFilter/getName) "MVCDispatcher" disp)
+          (.addBefore pipe ErrorSinkFilter/NAME "MVCDispatcher" disp)
           (when-some [h (cond
                          (.get pipe "ssl")
                          "ssl"
                          (.get pipe "HttpRequestDecoder")
                          "HttpRequestDecoder"
                          :else nil)]
-            (.addBefore pipe ^String h (FlashFilter/getName) FlashFilter/shared)))))))
+            (.addBefore pipe ^String h FlashFilter/NAME FlashFilter/shared)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

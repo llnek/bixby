@@ -99,7 +99,7 @@
 
 (is (not (nil? (AsymKeyPair* "RSA" 1024))))
 
-(is (let [ v (CsrReQ* 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" "PEM") ]
+(is (let [ v (CsrReQ* 1024 "C=AU,ST=NSW,L=Sydney,O=Google,OU=HQ,CN=www.google.com" :PEM) ]
           (and (= (count v) 2) (> (alength ^bytes (first v)) 0) (> (alength ^bytes (nth v 1)) 0))) )
 
 (is (let [ fout (TempFile "kenl" ".p12")]

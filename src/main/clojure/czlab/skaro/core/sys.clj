@@ -113,7 +113,7 @@
   [^Context co ^Muble ctx]
 
   (let [x (MakeContext) ]
-    (doseq [[k v] (or ctx [])]
+    (doseq [[k v] (some-> ctx (.seq))]
       (.setv x k v))
     (.setx co x)
     co))

@@ -136,6 +136,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmacro ex*
+
+  ""
+
+  [e & args]
+
+  (if (empty? args)
+    `(new ~e)
+    `(new ~e ~@args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro trap!
+
+  ""
+
+  [e & args]
+
+  (if (empty? args)
+    `(throw (new ~e))
+    `(throw (new ~e ~@args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro do->false "Do and return false" [& exprs] `(do ~@exprs false))
 (defmacro do->nil "Do and return nil" [& exprs] `(do ~@exprs nil))
 (defmacro do->true "Do and return true" [& exprs] `(do ~@exprs true))
@@ -239,7 +263,7 @@
 
   [^String msg]
 
-  (throw (UnsupportedOperationException. msg)))
+  (trap! UnsupportedOperationException msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -249,7 +273,7 @@
 
   [^String msg]
 
-  (throw (IllegalArgumentException. msg)))
+  (trap! IllegalArgumentException msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -257,11 +281,11 @@
 
 (defmethod ThrowIOE Throwable
   [^Throwable t]
-  (throw (java.io.IOException. t)))
+  (trap! java.io.IOException t))
 
 (defmethod ThrowIOE String
   [^String msg]
-  (throw (java.io.IOException. msg)))
+  (trap! java.io.IOException msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -271,7 +295,7 @@
 
   [^String msg]
 
-  (throw (BadDataError. msg)))
+  (trap! BadDataError msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

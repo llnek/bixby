@@ -25,7 +25,7 @@
     [czlab.xlib.util.core
     :refer [NextInt ThrowIOE ThrowBadArg
     NewRandom Bytesify tryc try!
-    Cast? juid GetClassname]])
+    trap! Cast? juid GetClassname]])
 
   (:import
     [org.bouncycastle.pkcs.jcajce JcaPKCS10CertificationRequestBuilder]
@@ -1212,7 +1212,7 @@
                      nil)
                  pkeys) ]
     (when (nil? rc)
-      (throw (GeneralSecurityException. "No matching decryption key")))
+      (trap! GeneralSecurityException "No matching decryption key"))
     rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1286,7 +1286,7 @@
                     (recur c it nil false))))))
           (seq sns)) ]
     (when (nil? rc)
-      (throw (GeneralSecurityException. "Verify signature: no matching cert")) )
+      (trap! GeneralSecurityException "Verify signature: no matching cert"))
 
     [(some-> sc
              (.getContentAsMimeMessage (NewSession))
@@ -1328,9 +1328,8 @@
     (let [cms (-> (CMSCompressedDataParser. inp)
                   (.getContent (ZlibExpanderProvider.))) ]
       (when (nil? cms)
-        (->> "Decompress stream: corrupted content"
-             (GeneralSecurityException. )
-             (throw )))
+        (trap! GeneralSecurityException
+               "Decompress stream: corrupted content"))
       (->> (.getContentStream cms)
            (IOUtils/toByteArray )
            (XData. )))))
@@ -1521,9 +1520,8 @@
                        (recur c it dg true))))))
              (seq sls)) ]
     (when (nil? rc)
-      (-> "Decode signature: no matching cert"
-          (GeneralSecurityException. )
-          (throw )))
+      (trap! GeneralSecurityException
+             "Decode signature: no matching cert"))
     rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

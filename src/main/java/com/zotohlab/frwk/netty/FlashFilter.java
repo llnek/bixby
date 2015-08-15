@@ -52,15 +52,15 @@ public class FlashFilter extends InboundAdapter {
 
   private static final AttributeKey<Integer> HINT = AttributeKey.valueOf("flash-hint");
   public static final FlashFilter shared = new FlashFilter();
-  public static String getName() { return "FlashFilter"; }
+  public static final String NAME = "FlashFilter"; 
 
   public static ChannelPipeline addBefore(ChannelPipeline pipe, String name) {
-    pipe.addBefore(name, getName(), shared);
+    pipe.addBefore(name, NAME, shared);
     return pipe;
   }
 
   public static ChannelPipeline addLast(ChannelPipeline pipe) {
-    pipe.addLast(getName(), shared);
+    pipe.addLast(NAME, shared);
     return pipe;
   }
 

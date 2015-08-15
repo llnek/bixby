@@ -15,10 +15,9 @@
   czlab.xlib.netty.client
 
   (:require
+    [czlab.xlib.util.core :refer [trap! ex*]]
     [czlab.xlib.util.logging :as log]
-    [clojure.string :as cs])
-
-  (:require
+    [clojure.string :as cs]
     [czlab.xlib.util.io :refer [StreamLimit]])
 
   (:import
@@ -26,11 +25,11 @@
     [io.netty.bootstrap Bootstrap]
     [io.netty.buffer Unpooled]
     [io.netty.channel Channel
-     ChannelFuture ChannelOption]
+    ChannelFuture ChannelOption]
     [io.netty.channel.nio NioEventLoopGroup]
     [io.netty.channel.socket.nio NioSocketChannel]
     [io.netty.handler.codec.http DefaultHttpRequest
-     HttpHeaders HttpMethod HttpRequest HttpVersion]
+    HttpHeaders HttpMethod HttpRequest HttpVersion]
     [io.netty.handler.stream ChunkedStream]
     [io.netty.util AttributeKey]
     [java.io IOException]
@@ -43,7 +42,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defonce ^:private ^AttributeKey URL_KEY  (AttributeKey/valueOf "targetUrl"))
+(def ^:private ^AttributeKey URL_KEY  (AttributeKey/valueOf "url"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -57,8 +56,7 @@
     (.channel NioSocketChannel)
     (.option  ChannelOption/SO_KEEPALIVE true)
     (.option ChannelOption/TCP_NODELAY true)
-    (.handler  (.configure cfg options))
-  ))
+    (.handler  (.configure cfg options))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,17 +72,16 @@
         sock (InetSocketAddress. host (int port))
         ^ChannelFuture
         cf  (-> (.connect bs sock)
-                  (.sync))
+                (.sync))
         ch (.channel cf)]
 
     (when-not (.isSuccess cf)
-      (throw (IOException. "Connect error: " (.cause cf))))
+      (trap! IOException "Connect error: " (.cause cf)))
 
     (-> ch
         (.attr URL_KEY)
         (.set targetUrl))
-    ch
-  ))
+    ch))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -93,22 +90,27 @@
   ^ChannelFuture
   [^Channel ch ^String op ^XData xs options]
 
-  (let [mo (or (:override options) "")
-        clen (if (some? xs) (.size xs) 0)
+  (let [clen (if (some? xs) (.size xs) 0)
+        options (or options {})
+        mo (or (:override options) "")
         ^URL url (-> (.attr ch URL_KEY)
                      (.get))
         req (DefaultHttpRequest. HttpVersion/HTTP_1_1
                                  (HttpMethod/valueOf op)
                                  (.toString url)) ]
-    (HttpHeaders/setHeader req
-                           "Connection"
-                           (if (:keep-alive options) "keep-alive" "close"))
 
     (HttpHeaders/setHeader req "host" (.getHost url))
 
+    (HttpHeaders/setHeader
+      req
+      "Connection"
+      (if (:keep-alive options) "keep-alive" "close"))
+
     (if (> clen  0)
       (do
-        (HttpHeaders/setHeader req "content-type"  "application/octet-stream")
+        (HttpHeaders/setHeader req
+                               "content-type"
+                               "application/octet-stream")
         (HttpHeaders/setContentLength req clen))
       ;else
       (HttpHeaders/setContentLength req 0))
@@ -121,12 +123,12 @@
 
     (with-local-vars [cf (.write ch req)]
       (when (> clen 0)
-        (->> (if (> clen  (StreamLimit))
-               (.writeAndFlush ch (ChunkedStream. (.stream xs)))
-               (.writeAndFlush ch (Unpooled/wrappedBuffer (.javaBytes xs))))
-             (var-set cf)))
-      @cf)
-  ))
+        (->>
+          (if (> clen  (StreamLimit))
+            (.writeAndFlush ch (ChunkedStream. (.stream xs)))
+            (.writeAndFlush ch (Unpooled/wrappedBuffer (.javaBytes xs))))
+          (var-set cf)))
+      @cf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

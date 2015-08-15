@@ -30,6 +30,7 @@
     [clojure.string :as cs]
     [czlab.xlib.util.core
     :refer [FPath GetCwd IsWindows?
+    trap! ex*
     tryc try! Stringify FlattenNil ConvLong ResStr]]
     [czlab.xlib.util.format :refer [ReadEdn]]
     [czlab.xlib.crypto.core
@@ -68,7 +69,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (CreateApp (fst args) (snd args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
@@ -96,7 +97,7 @@
     (if-not (empty? args)
       (BundleApp (GetHomeDir)
                  (GetCwd) (fst args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
@@ -158,7 +159,7 @@
         args (drop 1 args)]
     (if-not (empty? args)
       (PublishSamples (fst args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,7 +374,7 @@
         (csrfile)
         (var-set rc false))
       (when-not @rc)
-        (throw (CmdHelpError.)))))
+        (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -399,7 +400,7 @@
         args (drop 1 args)]
     (if-not (empty? args)
       (genHash (fst args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -424,7 +425,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (encrypt (fst args) (snd args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -449,7 +450,7 @@
         args (drop 1 args)]
     (if (> (count args) 1)
       (decrypt (fst args) (snd args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -480,7 +481,7 @@
 
   [j]
 
-  (throw (CmdHelpError.)))
+  (trap! CmdHelpError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -547,7 +548,7 @@
     (if (and (> (count args) 1)
              (= "eclipse" (fst args)))
       (genEclipseProj (snd args))
-      (throw (CmdHelpError.)))))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
