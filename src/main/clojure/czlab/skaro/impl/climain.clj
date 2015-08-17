@@ -30,7 +30,7 @@
     [czlab.xlib.util.scheduler :refer [NulScheduler*]]
     [czlab.xlib.util.core
     :refer [test-nonil test-cond ConvLong SysVar
-    FPath PrintMutableObj MubleObj]]
+    FPath PrintMutableObj MubleObj!]]
     [czlab.skaro.impl.exec :refer [Execvisor*]]
     [czlab.xlib.netty.io :refer [StopServer]])
 
@@ -140,8 +140,8 @@
   ^ServerLike
   [^File home]
 
-  (let [ctxt (atom (MubleObj))
-        impl (MubleObj)
+  (let [ctxt (atom (MubleObj!))
+        impl (MubleObj!)
         cpu (NulScheduler*) ]
     (-> ^Activable
         cpu

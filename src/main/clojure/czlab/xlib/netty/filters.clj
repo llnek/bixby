@@ -15,7 +15,7 @@
   czlab.xlib.netty.filters
 
   (:require
-    [czlab.xlib.util.core :refer [ThrowIOE MubleObj
+    [czlab.xlib.util.core :refer [ThrowIOE MubleObj!
     Cast? spos? Bytesify]]
     [czlab.xlib.util.str :refer [lcase ucase
     strim hgl?]]

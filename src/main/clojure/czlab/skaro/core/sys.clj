@@ -15,7 +15,7 @@
   czlab.skaro.core.sys
 
   (:require
-    [czlab.xlib.util.core :refer [MubleObj FPath]]
+    [czlab.xlib.util.core :refer [MubleObj! FPath]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
@@ -84,7 +84,7 @@
   ^Muble
   []
 
-  (MubleObj))
+  (MubleObj!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

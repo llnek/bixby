@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong trap! test-cond MubleObj test-nestr]]
+    :refer [NextLong trap! test-cond MubleObj! test-nestr]]
     [czlab.xlib.i18n.resources :refer [RStr]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
@@ -95,8 +95,8 @@
 
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
-  (let [impl (MubleObj {:cache {} })
-        ctxt (atom (MubleObj)) ]
+  (let [impl (MubleObj! {:cache {} })
+        ctxt (atom (MubleObj!)) ]
     (with-meta
       (reify
 
@@ -177,8 +177,8 @@
               version "1.0"}}
         info
         pid (str main "#" (NextLong))
-        impl (MubleObj)
-        ctxt (atom (MubleObj)) ]
+        impl (MubleObj!)
+        ctxt (atom (MubleObj!)) ]
 
     (log/info (str "pod-meta: app=%s\n"
                    "ver=%s\ntype=%s\n"

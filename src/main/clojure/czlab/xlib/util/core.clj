@@ -1306,9 +1306,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MObj
+(deftype UnsynchedMObj
 
-  ;;[ ^:volatile-mutable data ]
   [ ^:unsynchronized-mutable data ]
 
   Muble
@@ -1322,7 +1321,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MubleObj
+(deftype VolatileMObj
+
+  [ ^:volatile-mutable data ]
+
+  Muble
+
+  (setv [_ k v] (set! data (assoc data k v)))
+  (unsetv [_ k] (set! data (dissoc data k)))
+  (toEDN [_] (pr-str data))
+  (seq [_] (seq data))
+  (getv [_ k] (get data k))
+  (clear [_ ] (set! data {} )) )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- MubleObj!XXX
 
   "Create a mutable object"
 
@@ -1330,7 +1344,46 @@
   [ & [opts] ]
 
   (let [opts (or opts {})
-        m (MObj. {})]
+        m (atom {}) ]
+    (doseq [[k v] (seq opts)]
+      (swap! m assoc k v))
+    (reify
+
+      Muble
+
+      (setv [_ k v] (swap! m assoc k v))
+      (unsetv [_ k] (swap! m dissoc k))
+      (toEDN [_] (pr-str @m))
+      (seq [_] (seq @m))
+      (getv [_ k] (get @m k))
+      (clear [_ ] (reset! m {})))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MubleObj!!
+
+  "Create a mutable object"
+
+  ^Muble
+  [ & [opts] ]
+
+  (let [m (VolatileMObj. {})
+        opts (or opts {})]
+    (doseq [[k v] (seq opts)]
+      (.setv m k v))
+    m))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MubleObj!
+
+  "Create a mutable object"
+
+  ^Muble
+  [ & [opts] ]
+
+  (let [m (UnsynchedMObj. {})
+        opts (or opts {})]
     (doseq [[k v] (seq opts)]
       (.setv m k v))
     m))
@@ -1511,8 +1564,9 @@
   `(print (apply format ~fmt ~@args [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(ns-unmap *ns* '->UnsynchedMObj)
+(ns-unmap *ns* '->VolatileMObj)
 (ns-unmap *ns* '->TypeNichts)
-(ns-unmap *ns* '->MObj)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 

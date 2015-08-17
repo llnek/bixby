@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [ConvLong juid trap! MubleObj Stringify Bytesify]]
+    :refer [ConvLong juid trap! MubleObj! Stringify Bytesify]]
     [czlab.xlib.util.str :refer [hgl? AddDelim!]]
     [czlab.xlib.crypto.core :refer [GenMac]]
     [czlab.xlib.util.logging :as log]
@@ -87,9 +87,9 @@
             cfg (.getv src :emcfg)
             ctr (.container ^Emitter src)
             du2 (.setMaxInactiveInterval mvs
-                                         (:maxIdleSecs cfg))
+                                         (long (or (:maxIdleSecs cfg) 0)))
             du1 (when (.isNew mvs)
-                  (resetFlags mvs (:sessionAgeSecs cfg)))
+                  (resetFlags mvs (long (or (:sessionAgeSecs cfg) 3600))))
             data (maybeMacIt evt (str mvs) ctr)
             now (System/currentTimeMillis)
             est (.getExpiryTime mvs)
@@ -156,7 +156,7 @@
         (let [ts (or (.getAttribute mvs LS_FLAG) -1)
               es (or (.getAttribute mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
-              mi (:maxIdleSecs cfg) ]
+              mi (or (:maxIdleSecs cfg) 0) ]
           (if (< es now)
             (trap! ExpiredError "Session has expired"))
           (if (and (> mi 0)
@@ -171,9 +171,9 @@
   ^IOSession
   [co ssl]
 
-  (let [impl (MubleObj {:maxIdleSecs 0
+  (let [impl (MubleObj! {:maxIdleSecs 0
                         :newOne true})
-        attrs (MubleObj)]
+        attrs (MubleObj!)]
     (with-meta
       (reify WebSS
 

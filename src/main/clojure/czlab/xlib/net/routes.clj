@@ -18,7 +18,7 @@
     [czlab.xlib.util.str
     :refer [ToKW SplitTokens strim lcase ucase hgl?]]
     [czlab.xlib.util.core
-    :refer [MubleObj test-cond test-nestr]]
+    :refer [MubleObj! test-cond test-nestr]]
     [czlab.xlib.util.files :refer [ReadOneFile]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.format :refer [ReadEdn]])
@@ -40,7 +40,7 @@
   ^RouteInfo
   [route verbs handler]
 
-  (let [impl (MubleObj) ]
+  (let [impl (MubleObj!) ]
     (with-meta
       (reify
 

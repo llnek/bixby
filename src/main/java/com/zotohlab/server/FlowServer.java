@@ -14,6 +14,7 @@ package com.zotohlab.server;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -251,6 +252,15 @@ class JobCreator {
       @Override
       public WorkFlow wflow() {
         return wf;
+      }
+
+      @Override
+      public void dbgShow(PrintStream out) {
+      }
+
+      @Override
+      public String dbgStr() {
+        return null;
       }
 
     };

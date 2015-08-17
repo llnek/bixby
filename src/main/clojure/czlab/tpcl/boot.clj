@@ -284,9 +284,9 @@
   []
 
   (let [j [:fileset {:dir (ge :jzzDir)
-                     :excludes "**/log4j.properties,**/logback.xml"} ]
+                     :excludes "demo/**,**/log4j.properties,**/logback.xml"} ]
         c [:fileset {:dir (ge :czzDir)
-                     :excludes "**/log4j.properties,**/logback.xml"} ] ]
+                     :excludes "demo/**,**/log4j.properties,**/logback.xml"} ] ]
     (a/RunTarget* "jar/files"
       (a/AntJar
         {:destFile (fp! (ge :distDir)

@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [NextLong ThrowIOE MubleObj juid tryc]]
+    :refer [NextLong ThrowIOE MubleObj! juid tryc]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [hgl? ]])
@@ -52,7 +52,7 @@
   (log/info "IOESReifyEvent: JMS: %s" (.id ^Identifiable co))
   (let [msg (first args)
         eeid (NextLong)
-        impl (MubleObj)]
+        impl (MubleObj!)]
     (with-meta
       (reify
 

@@ -19,7 +19,7 @@
     :refer [LoopableSchedule LoopableOneLoop CfgLoopable]]
     [czlab.xlib.util.files :refer [Mkdirs MoveFileToDir]]
     [czlab.xlib.util.core
-    :refer [NextLong MubleObj
+    :refer [NextLong MubleObj!
     test-nestr tryc SubsVar]]
     [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
 
@@ -61,7 +61,7 @@
     [fnm (first args)
      f (nth args 1)
      eeid (NextLong)
-     impl (MubleObj) ]
+     impl (MubleObj!) ]
     (with-meta
       (reify
 

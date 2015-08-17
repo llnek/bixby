@@ -27,7 +27,7 @@
     [czlab.xlib.util.core
     :refer [test-nestr FPath
     tryletc tryc NewRandom GetCwd
-    ConvLong MubleObj juid test-nonil]])
+    ConvLong MubleObj! juid test-nonil]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
@@ -171,8 +171,8 @@
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
-  (let [impl (MubleObj {K_CONTAINERS {}})
-        ctxt (atom (MubleObj)) ]
+  (let [impl (MubleObj! {K_CONTAINERS {}})
+        ctxt (atom (MubleObj!)) ]
     (with-meta
       (reify
 
@@ -288,8 +288,8 @@
   ;; url points to block-meta file
   [^URL url]
 
-  (let [ctxt (atom (MubleObj))
-        impl (MubleObj) ]
+  (let [ctxt (atom (MubleObj!))
+        impl (MubleObj!) ]
 
     (with-meta
       (reify

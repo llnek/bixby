@@ -14,10 +14,10 @@
 
   demo.http.websock
 
-  (:require [czlab.xlib.util.logging :as log])
 
   (:require
     [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core :refer :all]
     [czlab.xlib.util.str :refer :all]
     [czlab.xlib.util.meta :refer [IsBytes?]])

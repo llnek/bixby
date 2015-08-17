@@ -15,7 +15,7 @@
   czlab.skaro.etc.core
 
   (:require
-    [czlab.xlib.util.core :refer [trap! PrtStk test-cond MubleObj]]
+    [czlab.xlib.util.core :refer [trap! PrtStk test-cond MubleObj!]]
     [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
     [czlab.xlib.util.str :refer [MakeString]]
     [czlab.xlib.util.logging :as log]

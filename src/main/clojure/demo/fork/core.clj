@@ -14,10 +14,10 @@
 
   demo.fork.core
 
-  (:require [czlab.xlib.util.logging :as log])
 
   (:require
     [czlab.xlib.util.core :refer [try!]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [hgl?]]
     [czlab.xlib.util.wfs :refer [SimPTask]])
 
@@ -56,7 +56,7 @@
 (def ^:private ^Activity
   a1
   (SimPTask
-    #(do
+    (fn [_]
        (println "I am the *Parent*")
        (println "I am programmed to fork off a parallel child process, "
                 "and continue my business."))))
@@ -69,14 +69,14 @@
     (SimPTask
       (fn [^Job j]
         (println "*Child*: will create my own child (blocking)")
-        (.setv j "rhs" 60)
-        (.setv j "lhs" 5)
+        (.setv j :rhs 60)
+        (.setv j :lhs 5)
         (-> (Split/applyAnd
               (SimPTask
                 (fn [^Job j]
                   (println "*Child*: the result for (5 * 60) according to "
                            "my own child is = "
-                           (.getv j "result"))
+                           (.getv j :result))
                   (println "*Child*: done."))))
             (.include
               (SimPTask
@@ -85,11 +85,12 @@
                            "this task... ( ~ 6secs)")
                   (dotimes [n 7]
                     (Thread/sleep 1000)
-                    (print "..."))
+                    (print "."))
                   (println "")
                   (println "*Child->child*: returning result back to *Child*.")
-                  (.setv j2 "result" (* (.getv j2 "rhs")
-                                        (.getv j2 "lhs")))
+
+                  (.setv j2 :result (* (.getv j2 :rhs)
+                                       (.getv j2 :lhs)))
                   (println "*Child->child*: done.")
                   nil))))))))
 
@@ -102,7 +103,8 @@
       (let [b (StringBuilder. "*Parent*: ")]
         (println "*Parent*: after fork, continue to calculate fib(6)...")
         (dotimes [n 7]
-          (.append b (str (fib n) " ")))
+          (when (> n 0)
+            (.append b (str (fib n) " "))))
         (println (.toString b) "\n" "*Parent*: done.")
         nil))))
 

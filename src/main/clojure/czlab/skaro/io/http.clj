@@ -20,7 +20,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [juid spos? NextLong
-    ToJavaInt SubsVar MubleObj test-cond Stringify]]
+    ToJavaInt SubsVar MubleObj! test-cond Stringify]]
     [czlab.xlib.net.comms :refer [ParseBasicAuth]]
     [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.net.routes :refer [LoadRoutes]])
@@ -98,14 +98,19 @@
         (var-set cpy (assoc! @cpy :host "")))
       (when-not (hgl? contextPath)
         (var-set cpy (assoc! @cpy :contextPath "")))
-      (when (hgl? kfile)
-        (test-cond "server-key file url"
-                   (.startsWith kfile "file:"))
-        (var-set cpy (assoc! @cpy
-                             :serverKey (URL. kfile)))
-        (var-set cpy (assoc! @cpy
-                             :passwd
-                             (Pwdify (:passwd cfg) appkey))))
+      (if (hgl? kfile)
+        (do
+          (test-cond "server-key file url"
+                     (.startsWith kfile "file:"))
+          (var-set cpy (assoc! @cpy
+                               :serverKey (URL. kfile)))
+          (var-set cpy (assoc! @cpy
+                               :passwd
+                               (Pwdify (:passwd cfg) appkey))))
+        (do
+          (var-set cpy (assoc! @cpy
+                               :serverKey nil))))
+
       (when-not (spos? sockTimeOut)
         (var-set cpy (assoc! @cpy
                              :sockTimeOut 0)))
@@ -149,7 +154,7 @@
   ^WebSockResult
   [co]
 
-  (let [impl (MubleObj {:binary false
+  (let [impl (MubleObj! {:binary false
                         :data nil}) ]
     (reify
 
@@ -178,7 +183,7 @@
   ^HTTPResult
   [co]
 
-  (let [impl (MubleObj {:version "HTTP/1.1"
+  (let [impl (MubleObj! {:version "HTTP/1.1"
                         :cookies []
                         :code -1
                         :hds {} })]

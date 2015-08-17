@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.core
     :refer [trap! ex*
-    ThrowBadArg MubleObj tryc]]
+    ThrowBadArg MubleObj! tryc]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [HasAny?]])
 
@@ -85,7 +85,7 @@
   [^String prop ^String descn ^Method getr ^Method setr]
 
   (let
-    [impl (MubleObj {:getr getr
+    [impl (MubleObj! {:getr getr
                      :setr setr
                      :type nil}) ]
     (reify BPropInfo
@@ -336,7 +336,7 @@
 
   (let
     [cz (.getClass obj)
-     impl (MubleObj)
+     impl (MubleObj!)
      ;; we are ignoring props and fields
      propsMap {}
      fldsMap {}

@@ -19,7 +19,7 @@
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
     :refer [NextLong Cast? ThrowBadArg
-    trycr ThrowIOE MubleObj ConvToJava tryc]])
+    trycr ThrowIOE MubleObj! ConvToJava tryc]])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.util.wfs]
@@ -240,8 +240,8 @@
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
-        impl (MubleObj)
-        ctxt (atom (MubleObj)) ]
+        impl (MubleObj!)
+        ctxt (atom (MubleObj!)) ]
 
     (with-meta
       (reify
@@ -337,7 +337,7 @@
   [^EventTrigger trigger
    ^IOEvent event ]
 
-  (let [impl (MubleObj) ]
+  (let [impl (MubleObj!) ]
     (reify
 
       EventHolder

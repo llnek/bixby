@@ -18,7 +18,7 @@
     [czlab.xlib.util.scheduler :refer [Scheduler*]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
-    :refer [Cast? do->nil MubleObj NextLong]])
+    :refer [Cast? do->nil MubleObj! NextLong]])
 
   (:use [czlab.xlib.util.consts])
 
@@ -32,7 +32,8 @@
      NonEvent NulEmitter
      ServiceHandler]
     [com.zotohlab.frwk.util Schedulable]
-    [com.zotohlab.frwk.core Activable Disposable]
+    [com.zotohlab.frwk.core
+    Debuggable Activable Disposable]
     [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
 
@@ -49,9 +50,14 @@
   [^ServerLike par & [evt]]
 
   (let [^Event evt (or evt (NonEvent. par))
-        impl (MubleObj)
+        impl (MubleObj!)
         jid (NextLong) ]
     (reify
+
+      Debuggable
+      (dbgStr [_] (.toEDN impl))
+      (dbgShow [me out] (->> (.dbgStr me)
+                             (.println out)))
 
       Job
 

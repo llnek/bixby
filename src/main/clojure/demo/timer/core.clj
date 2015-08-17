@@ -14,10 +14,10 @@
 
   demo.timer.core
 
-  (:require [czlab.xlib.util.logging :as log])
 
   (:require
     [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.wfs :refer [SimPTask]])
 
   (:import
@@ -53,5 +53,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

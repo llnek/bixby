@@ -20,7 +20,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.util.core
     :refer [juid tryc spos? NextLong
-    ToJavaInt try! MubleObj test-cond Stringify]]
+    ToJavaInt try! MubleObj! test-cond Stringify]]
     [czlab.xlib.crypto.codec :refer [Pwdify]])
 
   (:use [czlab.xlib.crypto.ssl]
@@ -46,6 +46,7 @@
     [com.zotohlab.frwk.core Versioned Hierarchial
     Identifiable Disposable Startable]
     [org.apache.commons.codec.binary Base64]
+    [org.apache.commons.codec.net URLCodec]
     [org.eclipse.jetty.server Connector HttpConfiguration
     HttpConnectionFactory SecureRequestCustomizer
     Server ServerConnector Handler
@@ -85,9 +86,10 @@
 (defn- cookieToServlet ""
 
   ^Cookie
-  [^HttpCookie c]
+  [^HttpCookie c ^URLCodec cc]
 
-  (doto (Cookie. (.getName c) (.getValue c))
+  (doto (Cookie. (.getName c)
+                 (.encode cc (str (.getValue c))))
     (.setDomain (str (.getDomain c)))
     (.setHttpOnly (.isHttpOnly c))
     (.setMaxAge (.getMaxAge c))
@@ -105,6 +107,7 @@
    src]
 
   (let [^URL url (.getv res :redirect)
+        cc (URLCodec. "utf-8")
         os (.getOutputStream rsp)
         cks (.getv res :cookies)
         hds (.getv res :hds)
@@ -118,7 +121,7 @@
           (doseq [vv vs]
             (.addHeader rsp ^String nm ^String vv))))
       (doseq [c cks ]
-        (.addCookie rsp (cookieToServlet c)))
+        (.addCookie rsp (cookieToServlet c cc)))
       (cond
         (and (>= code 300)
              (< code 400))
@@ -348,9 +351,10 @@
 ;;
 (defn- cookie-to-javaCookie  ""
 
-  [^Cookie c]
+  [^Cookie c ^URLCodec cc]
 
-  (doto (HttpCookie. (.getName c) (.getValue c))
+  (doto (HttpCookie. (.getName c)
+                     (.decode cc (str (.getValue c))))
     (.setDomain (.getDomain c))
     (.setHttpOnly (.isHttpOnly c))
     (.setMaxAge (.getMaxAge c))
@@ -364,13 +368,14 @@
 
   [^HttpServletRequest req]
 
-  (with-local-vars [rc (transient {})]
-    (if-some [cs (.getCookies req) ]
-      (doseq [^Cookie c cs]
-        (var-set rc (assoc! @rc
-                            (.getName c)
-                            (cookie-to-javaCookie c)))))
-    (persistent! @rc)))
+  (let [cc (URLCodec. "utf-8")]
+    (with-local-vars [rc (transient {})]
+      (if-some [cs (.getCookies req) ]
+        (doseq [^Cookie c cs]
+          (var-set rc (assoc! @rc
+                              (.getName c)
+                              (cookie-to-javaCookie c cc)))))
+      (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -381,7 +386,7 @@
   (log/debug "OPESReifyEvent: JettyIO: %s" (.id ^Identifiable co))
   (let [^HTTPResult result (HttpResult* co)
         ^HttpServletRequest req (first args)
-        impl (MubleObj {:cookies (maybeGetCookies req)})
+        impl (MubleObj! {:cookies (maybeGetCookies req)})
         ssl (= "https" (.getScheme req))
         eid (NextLong) ]
     (reify

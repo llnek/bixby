@@ -6,50 +6,52 @@
 
   @@APPDOMAIN@@.core
 
-  (:require [clojure.tools.logging :as log :only (info warn error debug)])
+  (:require [czlab.xlib.util.logging :as log])
   (:use [czlab.xlib.util.wfs])
-  (:import  [com.zotohlab.wflow FlowNode Activity Job
-                                Pipeline PDelegate
-                                PTask Work]))
+  (:import
+    [com.zotohlab.skaro.runtime AppMain]
+    [com.zotohlab.wflow FlowDot Activity Job
+    WHandler ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype Handler [] PDelegate
+(defn Handler ""
 
-  (onStop [_ pipe]
-    (log/info "nothing to be done here, just stop please."))
+  ^WHandler
+  []
 
-  (startWith [_ pipe]
-    (DefPTask
-      (fn [cur job arg]
-        (log/info "I  just handled a job!"))))
+  (reify WHandler
+    (run [_ job args])
+      (log/info "I  just handled a job!")))
 
-  (onError [ _ err curPt]
-    (log/info "Oops, I got an error!")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftype MyAppMain [] czlab.skaro.impl.ext.CljAppMain
+(defn MyAppMain ""
 
-  (contextualize [_ container]
-    (log/info "My AppMain contextualized by container " container))
+  ^AppMain
+  []
 
-  (configure [_ options]
-    (log/info "My AppMain configured with options " options))
+  (reify AppMain
 
-  (initialize [_]
-    (log/info "My AppMain initialized!"))
+    (contextualize [_ container]
+      (log/info "My AppMain contextualized by container " container))
 
-  (start [_]
-    (log/info "My AppMain started"))
+    (configure [_ options]
+      (log/info "My AppMain configured with options " options))
 
-  (stop [_]
-    (log/info "My AppMain stopped"))
+    (initialize [_]
+      (log/info "My AppMain initialized!"))
 
-  (dispose [_]
-    (log/info "My AppMain finz'ed")))
+    (start [_]
+      (log/info "My AppMain started"))
+
+    (stop [_]
+      (log/info "My AppMain stopped"))
+
+    (dispose [_]
+      (log/info "My AppMain finz'ed"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private core-eof nil)
+;;EOF
 

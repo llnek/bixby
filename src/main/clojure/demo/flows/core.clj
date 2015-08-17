@@ -41,10 +41,10 @@
   [t]
 
   (case t
-    "facebook" (SimPTask #(println "-> using facebook to login"))
-    "google+" (SimPTask #(println "-> using google+ to login"))
-    "openid" (SimPTask #(println "-> using open-id to login"))
-    (SimPTask #(println "-> using internal db to login"))))
+    "facebook" (SimPTask (fn [_] (println "-> use facebook")))
+    "google+" (SimPTask (fn [_] (println "-> use google+")))
+    "openid" (SimPTask (fn [_] (println "-> use open-id")))
+    (SimPTask (fn [_] (println "-> use internal db")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step1. choose a method to authenticate the user
@@ -72,8 +72,8 @@
 ;;step2
 (defonce ^:private ^Activity
   GetProfile
-  (SimPTask #(println "step(2): get user profile\n"
-                      "->user is superuser")))
+  (SimPTask (fn [_] (println "step(2): get user profile\n"
+                             "->user is superuser"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
@@ -158,19 +158,19 @@
 ;; like, returning a 200-OK
 (defonce ^:private ^Activity
   ReplyUser
-  (SimPTask #(println "step(5): we'd probably return a 200 OK "
-                      "back to caller here")))
+  (SimPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+                             "back to caller here"))))
 
 (defonce ^:private ^Activity
   ErrorUser
-  (SimPTask #(println "step(5): we'd probably return a 200 OK "
-                      "but with errors")))
+  (SimPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+                             "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
 (defonce ^:private ^Activity
   FinalTest
   (If/apply
-    (DefBoolExpr #(true)) ;; we hard code that all things are well
+    (DefBoolExpr (fn [_] true))
     ReplyUser
     ErrorUser))
 
@@ -185,10 +185,10 @@
     (startWith [_]
       ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
       ;; a split, which forks off more steps in parallel.
-      (->> (auth-user)
-           (.chain GetProfile)
-           (.chain Provision)
-           (.chain FinalTest)))))
+      (-> (auth-user)
+          (.chain GetProfile)
+          (.chain Provision)
+          (.chain FinalTest)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

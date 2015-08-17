@@ -26,7 +26,7 @@
     [clojure.string :as cs]
     [clojure.java.io :as io]
     [czlab.xlib.util.core
-    :refer [MubleObj doto->> juid FPath Cast?
+    :refer [MubleObj! doto->> juid FPath Cast?
     trap! trycr ConvToJava nbf ConvLong Bytesify]]
     [czlab.xlib.util.scheduler :refer [Scheduler*]]
     [czlab.xlib.util.core
@@ -163,8 +163,8 @@
   (log/info "creating an app-container: %s" (.id ^Identifiable pod))
   (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
         ftlCfg (GenFtlConfig :root pub)
-        impl (MubleObj)
-        ctxt (atom (MubleObj)) ]
+        impl (MubleObj!)
+        ctxt (atom (MubleObj!)) ]
     (with-meta
       (reify
 

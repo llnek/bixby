@@ -16,7 +16,7 @@
 
   (:require
     [czlab.xlib.util.core
-    :refer [trap! ex* NextInt juid MubleObj]]
+    :refer [trap! ex* NextInt juid MubleObj!]]
     [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.str :refer [ToKW hgl?]])
 
@@ -126,7 +126,7 @@
         runQ (ConcurrentHashMap.)
         timer (atom nil)
         cpu (atom nil)
-        impl (MubleObj) ]
+        impl (MubleObj!) ]
     (reset! timer (Timer. jid true))
     (with-meta
       (reify

@@ -6,4 +6,13 @@
          :port 8080
          :serverKey ""
          :passwd ""
+         :sessionAgeSecs 2592000
+         :maxIdleSecs 0
+         :hidden true
+         :domain ""
+         :domainPath "/"
+         :cacheAssets false
+         :maxAgeSecs 3600
+         :useETags false
+         :errorHandler ""
          :handler "" } }

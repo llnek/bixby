@@ -19,7 +19,7 @@
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [czlab.xlib.util.core
-    :refer [try! Stringify ThrowIOE NextLong MubleObj ConvLong]]
+    :refer [try! Stringify ThrowIOE NextLong MubleObj! ConvLong]]
     [czlab.skaro.io.webss :refer [MakeWSSession]]
     [czlab.xlib.util.mime :refer [GetCharset]])
 
@@ -290,7 +290,7 @@
    ^WebSocketFrame msg]
 
   (let [textF (instance? TextWebSocketFrame msg)
-        impl (MubleObj)
+        impl (MubleObj!)
         xdata (XData.)
         eeid (NextLong) ]
     (.resetContent xdata
@@ -365,7 +365,7 @@
   (let [^InetSocketAddress laddr (.localAddress ch)
         ^HTTPResult res (HttpResult* co)
         cookieJar (crackCookies info)
-        impl (MubleObj)
+        impl (MubleObj!)
         eeid (NextLong) ]
     (with-meta
       (reify

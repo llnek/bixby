@@ -15,7 +15,7 @@
   czlab.xlib.jmx.core
 
   (:require
-    [czlab.xlib.util.core :refer [MubleObj try! tryc]]
+    [czlab.xlib.util.core :refer [MubleObj! try! tryc]]
     [czlab.xlib.util.str :refer [hgl? stror]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs])
@@ -104,7 +104,7 @@
   [^String host]
 
   (let
-    [impl (MubleObj {:regoPort 7777
+    [impl (MubleObj! {:regoPort 7777
                      :port 0})
      objNames (atom []) ]
     (reify

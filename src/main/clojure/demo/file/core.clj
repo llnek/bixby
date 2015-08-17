@@ -14,10 +14,10 @@
 
   demo.file.core
 
-  (:require [czlab.xlib.util.logging :as log])
 
   (:require
     [czlab.xlib.util.core :refer [try!]]
+    [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.util.str :refer [hgl?]])
 

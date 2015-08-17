@@ -14,10 +14,10 @@
 
   demo.http.formpost
 
-  (:require [czlab.xlib.util.logging :as log])
 
   (:require
     [czlab.xlib.util.process :refer [DelayExec]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core :refer [Cast?]]
     [czlab.xlib.util.str :refer [hgl?]])
 

@@ -11,6 +11,7 @@
 
 package com.zotohlab.wflow;
 
+import com.zotohlab.frwk.core.Debuggable;
 import com.zotohlab.frwk.core.Gettable;
 import com.zotohlab.frwk.core.Identifiable;
 import com.zotohlab.frwk.core.Settable;
@@ -20,7 +21,7 @@ import com.zotohlab.frwk.server.ServerLike;
 /**
  * @author kenl
  */
-public interface Job extends Gettable , Settable, Identifiable {
+public interface Job extends Gettable , Settable, Identifiable, Debuggable {
 
   public void setLastResult( Object v) ;
 

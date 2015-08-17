@@ -14,9 +14,8 @@
 
   demo.pop3.core
 
-  (:require [czlab.xlib.util.logging :as log])
-
   (:require
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.process :refer [DelayExec]])
 
   (:import
