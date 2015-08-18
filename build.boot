@@ -144,7 +144,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlab.tpcl.boot :as b :refer :all :exclude [dev jar!]]
+(require '[czlab.tpcl.boot :as b :refer [fp! ge]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
@@ -177,29 +177,6 @@
    #(set-env! %2 [[:sysprops (-> (ge :CLJC_SYSPROPS)
                                  (assoc (ge :warn-reflection) false))]
                   [:classpath (ge :CJPATH)]])})
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(task-options!
-  uber {:as-jars true}
-  aot {:all true})
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- clean4Build ""
-  [& args]
-  (a/CleanDir (ge :packDir)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- XXpreBuild ""
-  [& args]
-  ;; get rid of debug logging during build!
-  (a/RunTarget* "pre/build"
-    (a/AntCopy
-      {:todir (ge :jzzDir)}
-      [[:fileset {:dir (fp! (ge :basedir) "artifacts")
-                  :includes "log4j.properties,logback.xml"}]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -854,13 +831,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- preTest ""
-  []
-  (.mkdirs (io/file (ge :reportTestDir)))
-  (.mkdirs (io/file (ge :buildTestDir))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;;  task defs below !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -873,7 +843,10 @@
   []
 
   (bc/with-pre-wrap fileset
-    ((comp PreBuild clean4Build Clean4Build))
+    ((comp b/PreBuild
+           (fn [& args]
+             (a/CleanDir (ge :packDir)))
+           b/Clean4Build))
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -884,10 +857,7 @@
   []
 
   (bc/with-pre-wrap fileset
-    (compileFrwk)
-    (compileWFlow)
-    (compileSkaro)
-    (compileJavaDemo)
+    (b/CompileJava)
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -925,7 +895,7 @@
   (bc/with-pre-wrap fileset
     (b/ReplaceFile (fp! (ge :jzzDir) "com/zotohlab/skaro/version.properties")
                    #(cs/replace % "@@pom.version@@" (ge :buildVersion)))
-    (JarFiles)
+    (b/JarFiles)
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -935,7 +905,7 @@
   []
 
   (comp (prebuild)
-        (libjars)
+        (b/libjars)
         (javacmp)
         (cljcmp)
         (babel)

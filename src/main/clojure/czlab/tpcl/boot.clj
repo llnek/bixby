@@ -199,10 +199,19 @@
 
   [& args]
 
-  (a/RunTarget* "clean/public"
-    (a/AntDelete {}
-      [[:fileset {:dir (fp! (ge :basedir) "public")
-                  :includes "scripts/**,styles/**,pages/**"}]])))
+  (let
+    [ics (:includes (first args))
+     ecs (:excludes (first args))
+     pms (atom {:dir (fp! (ge :basedir) "public")}) ]
+    (if (empty? ics)
+      (swap! pms assoc :includes "pages/**,styles/**,scripts/**")
+      (swap! pms assoc :includes ics))
+    (if-not (empty? ecs)
+      (swap! pms assoc :excludes ecs))
+
+    (a/RunTarget* "clean/public"
+      (a/AntDelete {}
+        [[:fileset @pms ]]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
