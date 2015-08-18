@@ -1,61 +1,101 @@
-;; This library is distributed in  the hope that it will be useful but without
-;; any  warranty; without  even  the  implied  warranty of  merchantability or
-;; fitness for a particular purpose.
-;; The use and distribution terms for this software are covered by the Eclipse
-;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
-;; can be found in the file epl-v10.html at the root of this distribution.
-;; By using this software in any  fashion, you are agreeing to be bound by the
-;; terms of this license. You  must not remove this notice, or any other, from
-;; this software.
-;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;auto-generated
 
-(ns ^:no-doc
-    ^{:author "kenl"}
+(ns ^{:doc ""
+      :author "kenl"}
 
   demo.jetty.core
 
+  (:require [czlab.xlib.util.logging :as log])
 
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.process :refer [DelayExec]])
+  (:use [czlab.skaro.core.consts]
+        [czlab.xlib.util.consts]
+        [czlab.xlib.util.core]
+        [czlab.xlib.util.str]
+        [czlab.xlib.util.wfs])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
     [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [com.zotohlab.wflow FlowDot Activity
+    WorkFlow WorkFlowEx
+    Job PTask]
+    [com.zotohlab.skaro.runtime AppMain]
     [com.zotohlab.skaro.core Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private
-  FX
-  (str " <html><head>"
-       "<title>Skaro: Test Jetty Servlet</title>"
-       "<link rel=\"shortcut icon\" href=\"/public/media/site/favicon.ico\"/>"
-       "<link type=\"text/css\" rel=\"stylesheet\" href=\"/public/styles/site/main.css\"/>"
-       "<script type=\"text/javascript\" src=\"/public/scripts/site/test.js\"></script>"
-       "</head>"
-       "<body><h1>Bonjour!</h1><br/>"
-       "<button type=\"button\" onclick=\"pop();\">Click Me!</button>"
-       "</body></html>"))
+(defn- ftlContext ""
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn Demo ""
-
-  ^WHandler
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^HTTPEvent ev (.event ^Job j)
-            res (.getResultObj ev) ]
-        (doto res
-          (.setContent FX)
-          (.setStatus 200))
-        (.replyResult ev)))))
+  {:landing
+             {:title_line "Sample Web App"
+              :title_2 "Demo Skaro"
+              :tagline "Say something" }
+   :about
+             {:title "About Skaro demo" }
+   :services {}
+   :contact {:email "a@b.com"}
+   :description "Default Skaro web app."
+   :encoding "utf-8"
+   :title "Skaro|Sample"})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn Handler ""
+
+  ^WorkFlowEx
+  []
+
+  (reify WorkFlowEx
+
+    (startWith [_]
+      (SimPTask
+        (fn [^Job job]
+          (let [tpl (:template (.getv job EV_OPTS))
+                ^HTTPEvent evt (.event job)
+                src (.emitter evt)
+                ^Container
+                co (.container src)
+                {:keys [data ctype] }
+                (.loadTemplate co
+                               tpl
+                               (ftlContext))
+                res (.getResultObj evt) ]
+            (.setHeader res "content-type" ctype)
+            (.setContent res data)
+            (.setStatus res 200)
+            (.replyResult evt)))))
+
+    (onError [ _ err]
+      (log/info "Oops, I got an error!"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn MyAppMain ""
+
+  ^AppMain
+  []
+
+  (reify AppMain
+
+    (contextualize [_ container]
+      (log/info "My AppMain contextualized by container " container))
+
+    (configure [_ options]
+      (log/info "My AppMain configured with options " options))
+
+    (initialize [_]
+      (log/info "My AppMain initialized!"))
+
+    (start [_]
+      (log/info "My AppMain started"))
+
+    (stop [_]
+      (log/info "My AppMain stopped"))
+
+    (dispose [_]
+      (log/info "My AppMain finz'ed"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -108,6 +108,7 @@
 
   (let [{:keys [destination jmsPwd jmsUser]}
         (.getv co :emcfg)
+        jmsPwd (str jmsPwd)
         c (.lookup ctx ^String destination)
         ^Connection
         conn (if (hgl? jmsUser)
@@ -137,6 +138,7 @@
   (let [{:keys [destination jmsUser
                 durable jmsPwd]}
         (.getv co :emcfg)
+        jmsPwd (str jmsPwd)
         conn (if (hgl? jmsUser)
                (.createTopicConnection cf
                                        ^String jmsUser
@@ -164,6 +166,7 @@
 
   (let [{:keys [destination jmsUser jmsPwd]}
         (.getv co :emcfg)
+        jmsPwd (str jmsPwd)
         conn (if (hgl? jmsUser)
                (.createQueueConnection cf
                                        ^String jmsUser
@@ -188,6 +191,7 @@
   (let [{:keys [contextFactory providerUrl
                 jndiUser jndiPwd connFactory]}
         (.getv co :emcfg)
+        jndiPwd (str jndiPwd)
         vars (Hashtable.) ]
 
     (when (hgl? contextFactory)

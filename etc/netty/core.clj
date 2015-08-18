@@ -8,7 +8,8 @@
 
   (:require [czlab.xlib.util.logging :as log])
 
-  (:use [czlab.skaro.core.constants]
+  (:use [czlab.skaro.core.consts]
+        [czlab.xlib.util.consts]
         [czlab.xlib.util.core]
         [czlab.xlib.util.str]
         [czlab.xlib.util.wfs])
@@ -54,14 +55,15 @@
           (let [tpl (:template (.getv job EV_OPTS))
                 ^HTTPEvent evt (.event job)
                 src (.emitter evt)
+                ^Container
                 co (.container src)
-                [rdata ct]
+                {:keys [data ctype] }
                 (.loadTemplate co
                                tpl
                                (ftlContext))
                 res (.getResultObj evt) ]
-            (.setHeader res "content-type" ct)
-            (.setContent res rdata)
+            (.setHeader res "content-type" ctype)
+            (.setContent res data)
             (.setStatus res 200)
             (.replyResult evt)))))
 

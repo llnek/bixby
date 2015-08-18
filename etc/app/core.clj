@@ -21,8 +21,8 @@
   []
 
   (reify WHandler
-    (run [_ job args])
-      (log/info "I  just handled a job!")))
+    (run [_ job args]
+      (log/info "I  just handled a job!"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

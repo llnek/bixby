@@ -382,13 +382,13 @@
         buf (StringBuilder.)]
 
     ;; make folders
-    (doseq [s ["pages" "media" "scripts" "styles"]]
-      (Mkdirs (io/file appDir "src/web/site" s))
+    (doseq [s ["pages" "media" "styles" "scripts"]]
+      (Mkdirs (io/file appDir "src/web/main" s))
       (Mkdirs (io/file appDir "public" s)))
     (Mkdirs wlib)
 
     ;; copy files
-    (let [des (io/file appDir "src/web/site/pages")
+    (let [des (io/file appDir "src/web/main/pages")
           src (io/file hhh DN_CFG "netty")]
       (CopyFiles src des "ftl")
       (CopyFiles src des "html"))
@@ -397,14 +397,14 @@
                    (mkcljd appDir appDomain))
 
     (CopyFileToDir (io/file hhh DN_CFGWEB "main.scss")
-                   (io/file appDir "src/web/site/styles"))
+                   (io/file appDir "src/web/main/styles"))
     (CopyFileToDir (io/file hhh DN_CFGWEB "main.js")
-                   (io/file appDir "src/web/site/scripts"))
+                   (io/file appDir "src/web/main/scripts"))
 
     (CopyFileToDir (io/file hhh DN_CFGWEB "favicon.png")
-                   (io/file appDir "src/web/site/media"))
+                   (io/file appDir "src/web/main/media"))
     (CopyFileToDir (io/file hhh DN_CFGWEB "body.jpg")
-                   (io/file appDir "src/web/site/media"))
+                   (io/file appDir "src/web/main/media"))
 
     (FileUtils/copyFile wfc (io/file wlib ".list"))
     (Mkdirs (io/file appDir "src/test/js"))
