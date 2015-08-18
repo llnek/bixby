@@ -48,7 +48,8 @@
     [java.util Map Calendar ResourceBundle Properties Date]
     [org.apache.commons.lang3.tuple ImmutablePair]
     [com.zotohlab.skaro.loaders AppClassLoader]
-    [com.zotohlab.skaro.etc CliMain CmdHelpError]
+    [com.zotohlab.skaro.core CLJShim ]
+    [com.zotohlab.skaro.etc CmdHelpError]
     [com.zotohlab.frwk.crypto PasswordAPI]
     [com.zotohlab.wflow Job]
     [java.io File]
@@ -125,7 +126,7 @@
         rt (-> (doto
                  (AppClassLoader. (GetCldr))
                  (.configure cwd))
-               (CliMain/newrt (.getName cwd)))
+               (CLJShim/newrt (.getName cwd)))
         args (.getLastResult j)
         args (drop 1 args)
         s2 (fst args)

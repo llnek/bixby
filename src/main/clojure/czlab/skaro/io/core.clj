@@ -28,9 +28,8 @@
         [czlab.skaro.core.consts])
 
   (:import
-    [com.zotohlab.skaro.core Context Container Muble]
+    [com.zotohlab.skaro.core CLJShim Context Container Muble]
     [java.util.concurrent ConcurrentHashMap]
-    [com.zotohlab.skaro.etc CliMain]
     [com.zotohlab.skaro.io IOEvent]
     [com.zotohlab.frwk.server Component
     Emitter EventHolder EventTrigger
@@ -210,7 +209,7 @@
 
   [^Muble ctr ^Muble src evt options]
 
-  (let [^CliMain rts (.getv ctr :cljshim)
+  (let [^CLJShim rts (.getv ctr :cljshim)
         ^ServiceHandler
         hr (.handler ^Service src)
         cfg (.getv src :emcfg)

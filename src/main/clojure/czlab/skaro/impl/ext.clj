@@ -51,9 +51,10 @@
     [czlab.skaro.core.sys])
 
   (:import
-    [com.zotohlab.skaro.core Muble Context Container ConfigError]
     [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
-    [com.zotohlab.skaro.etc CliMain PluginFactory Plugin]
+    [com.zotohlab.skaro.core CLJShim Muble
+    Context Container ConfigError]
+    [com.zotohlab.skaro.etc PluginFactory Plugin]
     [freemarker.template Configuration
     Template DefaultObjectWrapper]
     [java.util Locale]
@@ -188,6 +189,8 @@
         (getAppDir [this] (.getv this K_APPDIR))
         (getAppKey [_] (.appKey pod))
         (getName [_] (.moniker pod))
+
+        (getCljRt [_] (.getv impl :cljshim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
@@ -429,7 +432,7 @@
   ^Plugin
   [^Muble co ^String v ^File appDir env app]
 
-  (let [^CliMain rts (.getv co :cljshim)
+  (let [^CLJShim rts (.getv co :cljshim)
         pf (trycr nil (.call rts v))
         u (when (instance? PluginFactory pf)
             (.createPlugin ^PluginFactory pf
@@ -506,7 +509,7 @@
 
   (let [cl (-> (Thread/currentThread)
                (.getContextClassLoader))
-        rts (CliMain/newrt cl (juid))
+        rts (CLJShim/newrt cl (juid))
         appDir (.getv co K_APPDIR)
         pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)

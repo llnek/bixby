@@ -28,6 +28,8 @@ public interface Container extends ServerLike, ServiceProvider, Named, Disposabl
   public Object loadTemplate (String tpl, Object ctx);
   public boolean isEnabled();
 
+  public CLJShim getCljRt();
+  
   //public EventBus eventBus();
 
   public Object getEnvConfig();

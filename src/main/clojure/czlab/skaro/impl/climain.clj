@@ -41,7 +41,7 @@
         [czlab.skaro.impl.dfts])
 
   (:import
-    [com.zotohlab.skaro.core Muble Context ConfigError]
+    [com.zotohlab.skaro.core CLJShim Muble Context ConfigError]
     [io.netty.channel Channel ChannelFuture
     ChannelFutureListener]
     [com.zotohlab.skaro.loaders AppClassLoader
@@ -56,7 +56,6 @@
     [com.zotohlab.wflow Job WorkFlow
     FlowDot
     Activity Nihil]
-    [com.zotohlab.skaro.etc CliMain]
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]
     [com.zotohlab.frwk.server ServerLike

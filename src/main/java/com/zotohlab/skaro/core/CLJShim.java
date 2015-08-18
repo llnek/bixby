@@ -9,7 +9,7 @@
 // this software.
 // Copyright (c) 2013-2015, Ken Leung. All rights reserved.
 
-package com.zotohlab.skaro.etc;
+package com.zotohlab.skaro.core;
 
 import org.projectodd.shimdandy.ClojureRuntimeShim;
 
@@ -17,15 +17,15 @@ import org.projectodd.shimdandy.ClojureRuntimeShim;
 /**
  * @author kenl
  */
-public class CliMain {
+public class CLJShim {
 
   /**
    * 
    * @param cl
    * @param name
    */
-  public static CliMain newrt(ClassLoader cl, String name) {
-    return new CliMain(ClojureRuntimeShim.newRuntime(cl, name));
+  public static CLJShim newrt(ClassLoader cl, String name) {
+    return new CLJShim(ClojureRuntimeShim.newRuntime(cl, name));
   }
 
   /**
@@ -58,7 +58,7 @@ public class CliMain {
     return this.callEx(func);
   }
   
-  private CliMain(ClojureRuntimeShim s) {
+  private CLJShim(ClojureRuntimeShim s) {
     _shim=s;    
   }
 	
