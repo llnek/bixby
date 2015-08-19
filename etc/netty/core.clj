@@ -36,7 +36,7 @@
              {:title "About Skaro demo" }
    :services {}
    :contact {:email "a@b.com"}
-   :description "Default Skaro web app."
+   :description "skaro web app"
    :encoding "utf-8"
    :title "Skaro|Sample"})
 

@@ -23,13 +23,16 @@
 
   :dependencies '[ ] )
 
-(require '[czlab.tpcl.boot :as b :refer [fp! ge testjava testclj]]
-         '[clojure.java.io :as io]
-         '[clojure.string :as cs]
-         '[boot.core :as bc]
-         '[czlab.tpcl.antlib :as a])
+(require
+  '[czlab.tpcl.boot :as b :refer [fp! ge
+                                  testjava testclj]]
+  '[clojure.java.io :as io]
+  '[clojure.string :as cs]
+  '[boot.core :as bc]
+  '[czlab.tpcl.antlib :as a])
 
-(import '[java.io File])
+(import
+  '[java.io File])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -62,11 +65,12 @@
                     :paths []}
                :as args }]
 
-  (let [dir (io/file (ge :webDir) wappid "scripts")
-        out (io/file (ge :websrc) wappid)
-        mid (cs/join "/" paths)
-        des (-> (io/file out mid)
-                (.getParentFile)) ]
+  (let
+    [dir (io/file (ge :webDir) wappid "scripts")
+     out (io/file (ge :websrc) wappid)
+     mid (cs/join "/" paths)
+     des (-> (io/file out mid)
+             (.getParentFile)) ]
     (cond
       (true? postgen)
       (let [bf (io/file dir (ge :bld) mid)]
@@ -143,8 +147,11 @@
        [:srcfile {}]
        [:chainedmapper
         {}
-        [{:type :glob :from "*.scss" :to "*.css"}
-         {:type :glob :from "*" :to (fp! (ge :webcss) wappid "*")}]]
+        [{:type :glob
+          :from "*.scss" :to "*.css"}
+         {:type :glob
+          :from "*"
+          :to (fp! (ge :webcss) wappid "*")}]]
        [:targetfile {}]])
     (a/AntCopy
       {:todir (io/file (ge :webcss) wappid)}
@@ -210,7 +217,8 @@
   []
 
   (let [isDir? #(.isDirectory %)
-        dirs (->> (.listFiles (io/file (ge :webDir)))
+        dirs (->> (io/file (ge :webDir))
+                  (.listFiles )
                   (filter isDir?))]
     (doall (map #(buildOneWebApp %) dirs))))
 

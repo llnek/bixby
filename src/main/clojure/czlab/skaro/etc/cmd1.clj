@@ -170,7 +170,7 @@
 
   [len]
 
-  (println (StrongPwd* len)))
+  (println (str (StrongPwd* len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -374,8 +374,8 @@
         "csr"
         (csrfile)
         (var-set rc false))
-      (when-not @rc)
-        (trap! CmdHelpError))))
+      (when-not @rc
+        (trap! CmdHelpError)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
