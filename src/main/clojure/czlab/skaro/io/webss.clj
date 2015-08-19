@@ -54,14 +54,15 @@
   [^WebSS mvs maxAge]
 
   (let [now (System/currentTimeMillis)
-        mage (or maxAge 0) ]
-    (.setAttribute mvs SSID_FLAG
-                   (Hex/encodeHexString (Bytesify (juid))))
-    (.setAttribute mvs ES_FLAG (if (> mage 0)
-                                   (+ now (* mage 1000))
-                                   mage))
-    (.setAttribute mvs CS_FLAG now)
-    (.setAttribute mvs LS_FLAG now)))
+        maxAge (or maxAge 0) ]
+    (doto mvs
+      (.setAttribute SSID_FLAG
+                     (Hex/encodeHexString (Bytesify (juid))))
+      (.setAttribute ES_FLAG (if (> maxAge 0)
+                                 (+ now (* maxAge 1000))
+                                 maxAge))
+      (.setAttribute CS_FLAG now)
+      (.setAttribute LS_FLAG now))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -70,8 +71,11 @@
   [^HTTPEvent evt ^String data
    ^Container ctr]
 
-  (if (.checkAuthenticity evt)
-    (str (GenMac (.getAppKeyBits ctr) data) "-" data)
+  (if
+    (.checkAuthenticity evt)
+    (str (-> (.getAppKeyBits ctr)
+             (GenMac data))
+         "-" data)
     data))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
