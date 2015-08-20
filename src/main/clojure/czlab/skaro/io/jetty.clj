@@ -265,7 +265,7 @@
       (let [^RouteInfo ri r2
             ^HTTPEvent evt (IOESReifyEvent co req)
             ssl (= "https" (.getScheme req))
-            wss (MakeWSSession co ssl)
+            wss (WSSession* co ssl)
             {:keys [waitMillis]}
             (.getv co :emcfg)
             pms (.collect ri ^Matcher r3) ]

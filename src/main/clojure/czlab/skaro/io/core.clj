@@ -45,83 +45,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESReifyEvent
-
-  "Create an event"
-
-  (fn [a & args] (:typeid (meta a))))
+(defn- meta??? "" [a & args] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispatch
-
-  "Dispatch an event"
-
-  (fn [a & args] (:typeid (meta a))))
+(defmulti IOESReifyEvent "Create an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispose
-
-  "Dispose a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESDispatch "Dispatch an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESSuspend
-
-  "Suspend a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESDispose "Dispose a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStart
-
-  "Start a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESSuspend "Suspend a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStop
-
-  "Stop a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESStart "Start a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESResume
-
-  "Resume a component"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESStop "Stop a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStopped
-
-  "Called after a component has stopped"
-
-  (fn [a] (:typeid (meta a))))
+(defmulti IOESResume "Resume a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStarted
+(defmulti IOESStopped "Called after a component has stopped" meta???)
 
-  "Called after a component has started"
-
-  (fn [a] (:typeid (meta a))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti IOESStarted "Called after a component has started" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod IOESStarted :default
 
-  [^Muble co]
+  [co]
 
-  (when-some [cfg (.getv co :emcfg)]
+  (when-some [cfg (-> ^Muble co
+                      (.getv :emcfg))]
     (log/info "emitter config:\n%s" (pr-str cfg))
     (log/info "emitter %s started - ok" (:typeid (meta co)))))
 
@@ -183,14 +152,13 @@
           (log/debug "job##%s is being serviced by %s"  (.id j) service)
           (ThrowBadArg "Expected Job, got " (class more)))
         (.setv j :wflow w)
-        (-> ^Emitter service
-            (.container)
-            (.core)
-            (.run (->> (.reify (Nihil/apply) j)
-                       (.reify (.startWith w)))))))
+        (some-> ^Emitter service
+                (.container)
+                (.core)
+                (.run (->> (.reify (Nihil/apply) j)
+                           (.reify (.startWith w)))))))
 
-    (handleError [_ e]
-      (log/error e ""))))
+    (handleError [_ e] (log/error e ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -207,14 +175,14 @@
 ;;
 (defn- onEvent ""
 
-  [^Muble ctr ^Muble src evt options]
+  [^Container ctr ^Service src evt options]
 
-  (let [^CLJShim rts (.getv ctr :cljshim)
-        ^ServiceHandler
-        hr (.handler ^Service src)
-        cfg (.getv src :emcfg)
-        c0 (str (:handler cfg))
+  (let [^ServiceHandler hr (.handler src)
+        cfg (-> ^Muble
+                src (.getv :emcfg))
         c1 (str (:router options))
+        c0 (str (:handler cfg))
+        rts (.getCljRt ctr)
         wf (trycr nil (->> ^String
                            (stror c1 c0)
                            (.call rts)))
@@ -314,17 +282,16 @@
         (release [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "emitter releasing an event with id: %s" wid)
+              (log/debug "emitter releasing event, id: %s" wid)
               (.remove backlog wid))))
 
         (hold [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "emitter holding an event with id: %s" wid)
+              (log/debug "emitter holding event, id: %s" wid)
               (.put backlog wid wevt)))) )
 
       { :typeid emId })))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

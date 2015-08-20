@@ -20,7 +20,7 @@
     [clojure.string :as cs]
     [czlab.xlib.util.core
     :refer [try! Stringify ThrowIOE NextLong MubleObj! ConvLong]]
-    [czlab.skaro.io.webss :refer [MakeWSSession]]
+    [czlab.skaro.io.webss :refer [WSSession*]]
     [czlab.xlib.util.mime :refer [GetCharset]])
 
   (:use [czlab.xlib.netty.filters]
@@ -477,7 +477,7 @@
 
   (doto (makeHttpEvent2 co
                         ch sslFlag xdata info wantSecure)
-    (.bindSession (MakeWSSession co sslFlag))))
+    (.bindSession (WSSession* co sslFlag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

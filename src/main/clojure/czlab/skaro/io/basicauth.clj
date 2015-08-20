@@ -15,16 +15,14 @@
   czlab.skaro.io.basicauth
 
   (:require
+    [czlab.xlib.util.format :refer [ReadJson WriteJson]]
     [czlab.xlib.util.core
     :refer [Cast? NormalizeEmail Stringify tryletc]]
     [czlab.xlib.util.str :refer [lcase strim hgl?]]
-    [czlab.xlib.util.format :refer [ReadJson WriteJson]]
     [czlab.skaro.io.http :refer [ScanBasicAuth]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.crypto.codec :refer [CaesarDecrypt]]
     [czlab.xlib.net.comms :refer [GetFormFields]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:import
     [org.apache.commons.codec.binary Base64]
@@ -69,14 +67,14 @@
     (with-local-vars
       [rc (transient {})]
       (doseq [^ULFileItem
-              x (GetFormFields itms)]
-        (let [fm (.getFieldNameLC x)
-              fv (str x)]
-          (log/debug "form-field= %s, value= %s" fm fv)
-          (when-some [v (get PMS fm)]
-            (var-set rc (assoc! @rc
-                                (first v)
-                                (apply (last v) fv []))))))
+              x (GetFormFields itms)
+             :let [fm (.getFieldNameLC x)
+                   fv (str x)]]
+        (log/debug "form-field=%s, value=%s" fm fv)
+        (when-some [[k v] (get PMS fm)]
+          (var-set rc (assoc! @rc
+                              k
+                              (v fv)))))
       (persistent! @rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,11 +94,11 @@
                        #(lcase %)) ]
       (with-local-vars
         [rc (transient {})]
-        (doseq [[k v] PMS]
+        (doseq [[k [a1 a2]] PMS]
           (when-some [fv (get json k) ]
             (var-set rc (assoc! @rc
-                                (first v)
-                                (apply (last v) fv [])))))
+                                a1
+                                (a2 fv )))))
         (persistent! @rc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,12 +111,11 @@
 
   (with-local-vars
     [rc (transient {})]
-    (doseq [[k v]  PMS]
+    (doseq [[k [a1 a2]]  PMS]
       (when (.hasParameter evt k)
         (var-set rc (assoc! @rc
-                            (first v)
-                            (apply (last v)
-                                   (.getParameterValue evt k) [])))))
+                            a1
+                            (a2 (.getParameterValue evt k) )))))
     (persistent! @rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,7 +146,8 @@
 
   (if (:nonce info)
     (tryletc
-      [decr (CaesarDecrypt (get info fld) shiftCount)
+      [decr (-> (get info fld)
+                (CaesarDecrypt shiftCount))
        bits (Base64/decodeBase64 decr)
        s (Stringify bits) ]
       (log/debug "info = %s" info)

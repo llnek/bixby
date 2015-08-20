@@ -87,9 +87,11 @@
   (let [^WebSS mvs (.getSession evt) ]
     (when-not (.isNull mvs)
       (log/debug "session appears to be kosher, about to set-cookie!")
-      (let [^Muble src (.emitter evt)
-            cfg (.getv src :emcfg)
-            ctr (.container ^Emitter src)
+      (let [src (.emitter evt)
+            cfg (-> ^Muble
+                    src
+                    (.getv :emcfg))
+            ctr (.container src)
             du2 (.setMaxInactiveInterval mvs
                                          (long (or (:maxIdleSecs cfg) 0)))
             du1 (when (.isNew mvs)
@@ -98,8 +100,9 @@
             now (System/currentTimeMillis)
             est (.getExpiryTime mvs)
             ck (HttpCookie. SESSION_COOKIE data) ]
-        (.setMaxAge ck (if (> est 0) (/ (- est now) 1000) est))
+
         (doto ck
+          (.setMaxAge (if (> est 0) (/ (- est now) 1000) est))
           (.setDomain (str (:domain cfg)))
           (.setSecure (.isSSL mvs))
           (.setHttpOnly (true? (:hidden cfg)))
@@ -128,14 +131,15 @@
 
   (let [ck (.getCookie evt SESSION_COOKIE)
         ^WebSS mvs (.getSession evt)
-        ^Emitter netty (.emitter evt) ]
+        netty (.emitter evt) ]
     (if (nil? ck)
       (do
-        (log/debug "request contains no session cookie, invalidate the session")
+        (log/debug "request has no session-cookie, invalidate session")
         (.invalidate mvs))
       (let [cookie (str (.getValue ck))
-            ^Muble src netty
-            cfg (.getv src :emcfg)
+            cfg (-> ^Muble
+                    netty
+                    (.getv :emcfg))
             pos (.indexOf cookie (int \-))
             [^String rc1 ^String rc2]
             (if (< pos 0)
@@ -145,15 +149,15 @@
         (maybeValidateCookie evt rc1 rc2 (.container netty))
         (log/debug "session attributes = %s" rc2)
         (try
-          (doseq [^String nv (.split rc2 NV_SEP) ]
-            (let [ss (StringUtils/split nv ":" 2)
-                  ^String s1 (aget ss 0)
-                  ^String s2 (aget ss 1) ]
-              (log/debug "session attr name = %s, value = %s" s1 s2)
-              (if (and (.startsWith s1 "__f")
-                       (.endsWith s1 "n"))
-                (.setAttribute mvs (keyword s1) (ConvLong s2 0))
-                (.setAttribute mvs (keyword s1) s2))))
+          (doseq [^String nv (.split rc2 NV_SEP)
+                 :let [ss (StringUtils/split nv ":" 2)
+                       ^String s1 (aget ss 0)
+                       ^String s2 (aget ss 1) ]]
+            (log/debug "session attr name=%s, value=%s" s1 s2)
+            (if (and (.startsWith s1 "__f")
+                     (.endsWith s1 "n"))
+              (.setAttribute mvs (keyword s1) (ConvLong s2 0))
+              (.setAttribute mvs (keyword s1) s2)))
           (catch Throwable _
             (trap! ExpiredError "Corrupted cookie")))
         (.setNew mvs false 0)
@@ -170,13 +174,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeWSSession ""
+(defn WSSession* ""
 
   ^IOSession
   [co ssl]
 
   (let [impl (MubleObj! {:maxIdleSecs 0
-                        :newOne true})
+                         :newOne true})
         attrs (MubleObj!)]
     (with-meta
       (reify WebSS
