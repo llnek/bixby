@@ -118,7 +118,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/SocketIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStart: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getv co :ssocket)]
@@ -137,7 +137,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/SocketIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStop: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getv co :ssocket) ]

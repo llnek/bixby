@@ -15,21 +15,18 @@
   czlab.skaro.io.files
 
   (:require
-    [czlab.skaro.io.loops
-    :refer [LoopableSchedule LoopableOneLoop CfgLoopable]]
     [czlab.xlib.util.files :refer [Mkdirs MoveFileToDir]]
     [czlab.xlib.util.core
-    :refer [NextLong MubleObj!
-    test-nestr tryc SubsVar]]
+    :refer [NextLong MubleObj! test-nestr tryc SubsVar]]
+    [czlab.skaro.io.loops
+    :refer [LoopableSchedule
+    LoopableOneLoop CfgLoopable]]
+    [czlab.xlib.util.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
 
-  (:require
-    [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
-
   (:use
-    [czlab.skaro.core.sys
-    :rename {seq* rego-seq* has? rego-has? } ]
+    [czlab.skaro.core.sys]
     [czlab.skaro.io.core])
 
   (:import
@@ -169,7 +166,7 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/FilePicker
 
-  [^Muble co]
+  [^Muble co & args]
 
   (when-some [mon (.getv co :monitor) ]
     (log/info "filePicker's apache io monitor starting...")

@@ -107,43 +107,44 @@
    src]
 
   (let [^URL url (.getv res :redirect)
-        cc (URLCodec. "utf-8")
         os (.getOutputStream rsp)
+        cc (URLCodec. "utf-8")
         cks (.getv res :cookies)
         hds (.getv res :hds)
         code (.getv res :code)
         data (.getv res :data) ]
     (try
       (.setStatus rsp code)
-      (doseq [[nm vs] hds]
-        (when (not= "content-length"
-                    (lcase nm))
-          (doseq [vv vs]
-            (.addHeader rsp ^String nm ^String vv))))
+      (doseq [[nm vs] hds
+             :when (not= "content-length"
+                    (lcase nm))]
+        (doseq [vv vs]
+          (.addHeader rsp ^String nm ^String vv)))
       (doseq [c cks ]
         (.addCookie rsp (cookieToServlet c cc)))
-      (cond
+      (if
         (and (>= code 300)
              (< code 400))
-        (.sendRedirect rsp
-                       (.encodeRedirectURL rsp
-                                           (str url)))
-        :else
-        (let [^XData dd (cond
-                          (instance? XData data)
-                          data
-                          (some? data)
-                          (XData. data)
-                          :else nil)
-              clen (if (and (some? dd)
-                            (.hasContent dd))
-                     (.size dd)
-                     0) ]
-            (.setContentLength rsp clen)
-            (.flushBuffer rsp)
-            (when (> clen 0)
-              (IOUtils/copyLarge (.stream dd) os 0 clen)
-              (.flush os) )))
+        (->> (str url)
+             (.encodeRedirectURL rsp)
+             (.sendRedirect rsp))
+        ;;else
+        (let
+          [^XData dd (cond
+                       (instance? XData data)
+                       data
+                       (some? data)
+                       (XData. data)
+                       :else nil)
+           clen (if (and (some? dd)
+                         (.hasContent dd))
+                  (.size dd)
+                  0) ]
+          (.setContentLength rsp clen)
+          (.flushBuffer rsp)
+          (when (> clen 0)
+            (IOUtils/copyLarge (.stream dd) os 0 clen)
+            (.flush os) )))
       (catch Throwable e#
         (log/error e# ""))
       (finally
@@ -262,8 +263,8 @@
       (JettyUtils/replyRedirect req rsp r4)
 
       (= r1 true)
-      (let [^RouteInfo ri r2
-            ^HTTPEvent evt (IOESReifyEvent co req)
+      (let [^HTTPEvent evt (IOESReifyEvent co req)
+            ^RouteInfo ri r2
             ssl (= "https" (.getScheme req))
             wss (WSSession* co ssl)
             {:keys [waitMillis]}
@@ -271,15 +272,15 @@
             pms (.collect ri ^Matcher r3) ]
         ;;(log/debug "mvc route filter MATCHED with uri = " (.getRequestURI req))
         (.bindSession evt wss)
-        (let [w (AsyncWaitHolder*
-                  (makeServletTrigger req rsp co) evt) ]
+        (let [w (-> (makeServletTrigger req rsp co)
+                    (AsyncWaitHolder* evt)) ]
           (.timeoutMillis w waitMillis)
-          (doto ^Emitter co
+          (doto ^Emitter
+            co
             (.hold w)
             (.dispatch evt {:router (.getHandler ri)
                             :params (merge {} pms)
                             :template (.getTemplate ri) }))))
-
       :else
       (do
         (log/debug "failed to match uri: %s" (.getRequestURI req))
@@ -301,7 +302,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JettyIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStart: JettyIO: %s" (.id ^Identifiable co))
   (let [^Muble ctr (.parent ^Hierarchial co)
@@ -321,9 +322,9 @@
         r1 (ResourceHandler.) ]
 
     ;; static resources are based from resBase, regardless of context
-    (-> r1
-        (.setBaseResource (Resource/newResource rcpathStr)))
     (.setContextPath c1 (str "/" DN_PUBLIC))
+    (->> (Resource/newResource rcpathStr)
+         (.setBaseResource r1))
     (.setHandler c1 r1)
     (doto c2
       (.setClassLoader ^ClassLoader (.getv co K_APP_CZLR))
@@ -338,14 +339,14 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JettyIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStop: JettyIO: %s" (.id ^Identifiable co))
-  (let [^Server svr (.getv co :jetty) ]
-    (when (some? svr)
-      (tryc
-          (.stop svr) ))
-    (IOESStopped co)))
+  (when-some [^Server
+              svr (.getv co :jetty) ]
+    (tryc
+        (.stop svr) ))
+  (IOESStopped co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -474,11 +475,10 @@
                   (.release this))
               ^IOSession mvs (.getSession this)
               code (.getStatus result) ]
-          (cond
+          (when
             (and (>= code 200)
                  (< code 400))
-            (.handleResult mvs this result)
-            :else nil)
+            (.handleResult mvs this result))
           (when (some? wevt)
             (.resumeOnResult wevt result)))))))
 

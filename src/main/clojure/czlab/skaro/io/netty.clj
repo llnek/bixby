@@ -16,12 +16,13 @@
 
   (:require
     [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
+    [czlab.skaro.io.webss :refer [WSSession*]]
+    [czlab.xlib.util.mime :refer [GetCharset]]
     [czlab.xlib.util.logging :as log]
     [clojure.string :as cs]
     [czlab.xlib.util.core
-    :refer [try! Stringify ThrowIOE NextLong MubleObj! ConvLong]]
-    [czlab.skaro.io.webss :refer [WSSession*]]
-    [czlab.xlib.util.mime :refer [GetCharset]])
+    :refer [try! Stringify
+    ThrowIOE NextLong MubleObj! ConvLong]])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.net.routes]
@@ -127,10 +128,12 @@
   (let [^WebSockResult res (.getResultObj evt)
         ^XData xs (.getData res)
         ^WebSocketFrame
-        f (cond
+        f (if
             (.isBinary res)
-            (BinaryWebSocketFrame. (Unpooled/wrappedBuffer (.javaBytes xs)))
-            :else
+            (->> (.javaBytes xs)
+                 (Unpooled/wrappedBuffer )
+                 (BinaryWebSocketFrame. ))
+            ;else
             (TextWebSocketFrame. (.stringify xs))) ]
     (.writeAndFlush ch f)))
 
@@ -169,12 +172,13 @@
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
-    (with-local-vars [clen 0
-                      raf nil payload nil]
-      (doseq [[nm vs]  hdrs]
-        (when (not= "content-length" (lcase nm))
-          (doseq [vv (seq vs)]
-            (AddHeader rsp nm vv))))
+    (with-local-vars
+      [clen 0
+       raf nil payload nil]
+      (doseq [[nm vs]  hdrs
+             :when (not= "content-length" (lcase nm)) ]
+        (doseq [vv (seq vs)]
+          (AddHeader rsp nm vv)))
       (doseq [s (csToNetty cks)]
         (AddHeader rsp HttpHeaders$Names/SET_COOKIE s))
       (cond
@@ -223,7 +227,7 @@
       (when (.isKeepAlive evt)
         (SetHeader rsp "Connection" "keep-alive"))
 
-      (log/debug "writing out %s bytes back to client" @clen);
+      (log/debug "writing out %s bytes back to client" @clen)
       (HttpHeaders/setContentLength rsp @clen)
 
       (.write ch rsp)
@@ -454,11 +458,10 @@
                 code (.getStatus res)
                 ^EventHolder
                 wevt (.release co this) ]
-            (cond
+            (when
               (and (>= code 200)
                    (< code 400))
-              (.handleResult mvs this res)
-              :else nil)
+              (.handleResult mvs this res))
             (when (some? wevt)
               (.resumeOnResult wevt res)))))
 
@@ -487,12 +490,14 @@
 
   (log/info "IOESReifyEvent: NettyIO: %s" (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
-        ssl (some? (.get (.pipeline ch) "ssl"))
+        ssl (-> (.pipeline ch)
+                (.get "ssl")
+                (some?))
         msg (nth args 1) ]
-    (cond
+    (if
       (instance? WebSocketFrame msg)
       (makeWEBSockEvent co ch ssl msg)
-      :else
+      ;else
       (let [^RouteInfo
             ri (if (> (count args) 2)
                  (nth args 2)
@@ -562,7 +567,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/NettyIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [host port]}
@@ -577,7 +582,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/NettyIO
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStop NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}

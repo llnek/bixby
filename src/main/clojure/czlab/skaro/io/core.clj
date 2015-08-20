@@ -45,7 +45,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- meta??? "" [a & args] (:typeid (meta a)))
+(defn meta??? "" [a & args] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -241,7 +241,6 @@
 
         (parent [_] parObj)
 
-
         Disposable
 
         (dispose [this] (IOESDispose this))
@@ -315,7 +314,6 @@
               src (.emitter event) ]
           (when (some? tm) (.cancel tm))
           (.release src this)
-          ;;(.mm-s impl :result res)
           (.resumeWithResult trigger res)))
 
       (timeoutMillis [me millis]
@@ -339,12 +337,13 @@
 
   [co arg]
 
-  ;; arg is Container here
-  (when-some [^Context c arg ]
-    (CompCloneContext co (.getx c))))
+  (when (instance? Context arg)
+    (->> (-> ^Context
+             arg (.getx ))
+         (CompCloneContext co ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Map of emitter hierarchy.
+;; Map of emitter hierarchy
 ;;
 (derive :czc.skaro.io/HTTP :czc.skaro.io/Emitter)
 

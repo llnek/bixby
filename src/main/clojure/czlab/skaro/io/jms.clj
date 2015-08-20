@@ -185,7 +185,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/JMS
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStart: JMS: %s" (.id ^Identifiable co))
   (let [{:keys [contextFactory providerUrl
@@ -223,7 +223,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/JMS
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStop: JMS: %s" (.id ^Identifiable co))
   (when-some [^Connection c (.getv co :conn) ]

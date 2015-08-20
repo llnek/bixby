@@ -37,9 +37,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti LoopableWakeup "" (fn [a & args] (:typeid (meta a)) ))
-(defmulti LoopableSchedule "" (fn [a] (:typeid (meta a)) ))
-(defmulti LoopableOneLoop "" (fn [a] (:typeid (meta a)) ))
+(defmulti LoopableSchedule "" meta???)
+(defmulti LoopableWakeup "" meta???)
+(defmulti LoopableOneLoop "" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -181,7 +181,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/RepeatingTimer
 
-  [co]
+  [co & args]
 
   (log/info "IOESStart: RepeatingTimer: %s" (.id ^Identifiable co))
   (start-timer co)
@@ -191,7 +191,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/RepeatingTimer
 
-  [co]
+  [co & args]
 
   (log/info "IOESStop RepeatingTimer: %s" (.id ^Identifiable co))
   (kill-timer co)
@@ -209,7 +209,7 @@
 ;;
 (defmethod LoopableSchedule :default
 
-  [co]
+  [co & args]
 
   (configTimerTask co))
 
@@ -258,7 +258,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/OnceTimer
 
-  [co]
+  [co & args]
 
   (log/info "IOESStart OnceTimer: %s" (.id ^Identifiable co))
   (start-timer co)
@@ -268,7 +268,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/OnceTimer
 
-  [co]
+  [co & args]
 
   (log/info "IOESStop OnceTimer: %s" (.id ^Identifiable co))
   (kill-timer co)
@@ -292,7 +292,7 @@
 ;;
 (defmethod LoopableSchedule :czc.skaro.io/ThreadedTimer
 
-  [^Muble co]
+  [^Muble co & args]
 
   (let [{:keys [intervalMillis]}
         (.getv co :emcfg)
@@ -318,7 +318,7 @@
 ;;
 (defmethod IOESStart :czc.skaro.io/ThreadedTimer
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStart: ThreadedTimer: %s" (.id ^Identifiable co))
   (let [{:keys [intervalMillis delayMillis delayWhen]}
@@ -336,7 +336,7 @@
 ;;
 (defmethod IOESStop :czc.skaro.io/ThreadedTimer
 
-  [^Muble co]
+  [^Muble co & args]
 
   (log/info "IOESStop ThreadedTimer: %s" (.id ^Identifiable co))
   (let [loopy (.getv co :loopy) ]

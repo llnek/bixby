@@ -15,13 +15,11 @@
   czlab.skaro.io.mails
 
   (:require
+    [czlab.xlib.crypto.codec :refer [Pwdify]]
+    [czlab.xlib.util.logging :as log]
     [czlab.xlib.util.core
     :refer [NextLong spos? ThrowIOE tryc ]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]]
     [czlab.xlib.util.str :refer [hgl? ]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.loops ]
@@ -202,7 +200,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.skaro.io/POP3
 
-  [^Muble co]
+  [^Muble co & args]
 
   (try
     (connectPop3 co)
@@ -301,7 +299,7 @@
 ;;
 (defmethod LoopableOneLoop :czc.skaro.io/IMAP
 
-  [^Muble co]
+  [^Muble co & args]
 
   (try
     (connect-imap co)

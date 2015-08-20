@@ -32,14 +32,15 @@
         [czlab.skaro.io.webss])
 
   (:import
+    [javax.servlet.http Cookie HttpServletRequest]
+    [com.zotohlab.frwk.server Emitter Component]
     [java.net URL]
     [java.io File]
     [com.zotohlab.frwk.crypto PasswordAPI]
-    [javax.servlet.http Cookie HttpServletRequest]
     [java.net HttpCookie]
-    [com.zotohlab.frwk.server Emitter Component]
     [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.core Versioned Hierarchial
+    [com.zotohlab.frwk.core Versioned
+    Hierarchial
     Identifiable
     Disposable Startable]
     [org.apache.commons.codec.binary Base64]
@@ -88,7 +89,7 @@
         ssl (hgl? kfile)  ]
 
     (with-local-vars [cpy (transient cfg)]
-      (when (nil? sslType)
+      (when (empty? sslType)
         (var-set cpy (assoc! @cpy :sslType "TLS")))
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
@@ -147,7 +148,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeWSockResult
+(defn WSockResult*
 
   "Create a WebSocket result object"
 
