@@ -286,7 +286,7 @@
 (defn- makeBlockMeta ""
 
   ;; url points to block-meta file
-  [^URL url]
+  [blockType data ^URL url]
 
   (let [ctxt (atom (MubleObj!))
         impl (MubleObj!) ]
@@ -314,41 +314,30 @@
 
         Component
 
-        (version [_]
-          (-> (.getv impl :metaInfo)
-              (:version)))
+        (version [_] (get-in data [:info :version]))
 
-        (id [_]
-          (-> (.getv impl :metaInfo)
-              (:blockType)
-              (keyword)))
+        (id [_] blockType)
 
         EmitMeta
 
-        (isEnabled [_] (not (false? (-> (.getv impl :metaInfo)
-                                        (:enabled)))))
-        (getName [_] (-> (.getv impl :metaInfo)
-                         (:name)))
+        (isEnabled [_] (not (false? (get-in data [:info :enabled]))))
+
+        (getName [_] (get-in data [:info :name]))
+
         (metaUrl [_] url) )
 
       {:typeid (ToKW "czc.skaro.impl" "EmitMeta") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
-(defmethod CompInitialize :czc.skaro.impl/EmitMeta
+(defmethod CompConfigure :czc.skaro.impl/EmitMeta
 
-  [^EmitMeta co]
+  [^Muble co props]
 
-  (let [url (.metaUrl co)
-        {:keys [info conf]}
-        (ReadEdn url) ]
-    (test-nonil "Invalid block-meta file, no info section" info)
-    (test-nonil "Invalid block-meta file, no conf section" conf)
-    (log/info "initializing EmitMeta: %s" url)
-    (doto ^Muble co
-      (.setv  :dftOptions conf)
-      (.setv  :metaInfo info))
-    co))
+  (when (some? props)
+    (doseq [[k v] props]
+      (.setv co k v)))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Blocks are emitters,  each block has a meta data file describing
@@ -362,12 +351,13 @@
   (let [^Muble ctx (.getx co)
         bDir (.getv ctx K_BKSDIR)
         fs (ListFiles bDir "edn") ]
-    (doseq [^File f fs
-           :let [^Muble
-                 b (-> (makeBlockMeta (io/as-url f))
-                       (SynthesizeComponent {})) ]]
-      (.reg ^Registry co b)
-      (log/info "added one block: %s" (.id ^Identifiable b)) )))
+    (doseq [^File f fs]
+      (doseq [[k v] (ReadEdn f)
+              :let [^Muble
+                    b (-> (makeBlockMeta k v (io/as-url f))
+                          (SynthesizeComponent {:props v})) ]]
+        (.reg ^Registry co b)
+        (log/info "added one block: %s" (.id ^Identifiable b)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

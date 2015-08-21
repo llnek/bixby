@@ -1,0 +1,117 @@
+;; This library is distributed in  the hope that it will be useful but without
+;; any  warranty; without  even  the  implied  warranty of  merchantability or
+;; fitness for a particular purpose.
+;; The use and distribution terms for this software are covered by the Eclipse
+;; Public License 1.0  (http://opensource.org/licenses/eclipse-1.0.php)  which
+;; can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any  fashion, you are agreeing to be bound by the
+;; terms of this license. You  must not remove this notice, or any other, from
+;; this software.
+;; Copyright (c) 2013-2015, Ken Leung. All rights reserved.
+
+
+{:czc.skaro.io/FilePicker
+ {:info {:version "1.0"
+         :name "FILEPicker" }
+  :conf {:targetFolder "/home/dropbox"
+         :recvFolder "/home/joe"
+         ;; reg-ex, blank => all
+         :fmask ""
+         ;; 5mins
+         :intervalSecs 300
+         :delaySecs 0
+         :handler "" } }
+
+ :czc.skaro.io/IMAP
+ {:info {:version "1.0"
+         :name "IMAP" }
+  :conf {:host "imap.gmail.com"
+         :port 993
+         :deletemsg false
+         :username "joe"
+         :passwd "secret"
+         :intervalSecs 300
+         :delaySecs 0
+         :handler "" } }
+
+ :czc.skaro.io/JMS
+ {:info {:version "1.0"
+         :name "JMS" }
+  :conf {:contextFactory "com.zotohlab.mock.jms.MockContextFactory"
+         :providerUrl "java://aaa"
+         :connFactory "tcf"
+         :destination "topic.abc"
+         :jndiUser "root"
+         :jndiPwd "root"
+         :jmsUser "anonymous"
+         :jmsPwd "anonymous"
+         :intervalSecs 5
+         :handler "" } }
+
+ :czc.skaro.io/NettyIO
+ {:info {:version "1.0"
+         :name "NettyIO" }
+  :conf {:host ""
+         :port 8080
+         :serverKey ""
+         :passwd ""
+         :handler "" } }
+
+ :czc.skaro.io/NettyMVC
+ {:info {:version "1.0"
+         :name "NettyMVC" }
+  :conf {:host ""
+         :port 8080
+         :serverKey ""
+         :passwd ""
+         :sessionAgeSecs 2592000
+         :maxIdleSecs 0
+         :hidden true
+         :domain ""
+         :domainPath "/"
+         :cacheAssets false
+         :maxAgeSecs 3600
+         :useETags false
+         :errorHandler ""
+         :handler "" } }
+
+ :czc.skaro.io/OnceTimer
+ {:info {:version "1.0"
+         :name "OnceTimer" }
+  :conf {:delaySecs 0
+         :handler "" } }
+
+ :czc.skaro.io/POP3
+ {:info {:version "1.0"
+         :name "POP3" }
+  :conf {:host "pop.gmail.com"
+         :port 995
+         :deletemsg false
+         :username "joe"
+         :passwd "secret"
+         :intervalSecs 300
+         :delaySecs 0
+         :handler "" } }
+
+ :czc.skaro.io/RepeatingTimer
+ {:info {:version "1.0"
+         :name "RepeatTimer" }
+  :conf {:intervalSecs 300
+         :delaySecs 0
+         :handler "" } }
+
+ :czc.skaro.io/JettyIO
+ {:info {:version "1.0"
+         :name "JettyIO" }
+  :conf {:host ""
+         :port 8080
+         :serverKey ""
+         :passwd ""
+         :handler "" } }
+
+ :czc.skaro.io/SocketIO
+ {:info {:version "1.0"
+         :name "SocketIO" }
+  :conf {:host ""
+         :port 8080
+         :handler "" } } }
