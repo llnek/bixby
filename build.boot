@@ -144,7 +144,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlab.tpcl.boot :as b :refer [fp! ge]]
+(require '[czlab.tpcl.boot :as b :refer [fp! ge testjava testclj]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
@@ -671,7 +671,7 @@
       {:todir (fp! (ge :packDir) "etc/ems")
        :flatten true}
       [[:fileset {:dir (fp! (ge :srcDir) "clojure")
-                  :includes "**/*.edn"}]])
+                  :includes "**/io.edn"}]])
     (a/AntCopy
       {:todir (fp! (ge :packDir) "etc")}
       [[:fileset {:dir (fp! (ge :basedir) "etc")} ]])))
