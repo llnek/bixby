@@ -17,14 +17,12 @@
   (:require
     [czlab.xlib.util.core :refer [try! FPath]]
     [czlab.xlib.util.wfs :refer [SimPTask]]
-    [czlab.skaro.mvc.assets
-    :refer [MakeWebAsset GetLocalFile]]
-    [czlab.xlib.util.str :refer [hgl? nsb strim]]
-    [czlab.xlib.util.meta :refer [NewObj*]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
-    [clojure.java.io :as io])
+    [clojure.java.io :as io]
+    [czlab.skaro.mvc.assets
+    :refer [WebAsset* GetLocalFile]]
+    [czlab.xlib.util.str :refer [hgl? strim]]
+    [czlab.xlib.util.meta :refer [NewObj*]])
 
   (:use [czlab.xlib.util.consts]
         [czlab.xlib.netty.io]
@@ -71,9 +69,10 @@
 
   [^String eTag lastTm info]
 
-  (with-local-vars [unmod "if-unmodified-since"
-                    none "if-none-match"
-                    modd true ]
+  (with-local-vars
+    [unmod "if-unmodified-since"
+     none "if-none-match"
+     modd true ]
     (cond
       (HasInHeader? info @unmod)
       (when-some [s (GetInHeader info @unmod)]
@@ -103,13 +102,20 @@
         eTag  (str "\""  lastTm  "-"
                    (.hashCode file)  "\"")]
     (if (isModified eTag lastTm info)
-      (.setHeader res "last-modified"
-                  (.format (MVCUtils/getSDF) (Date. lastTm)))
+      (->> (Date. lastTm)
+           (.format (MVCUtils/getSDF))
+           (.setHeader res "last-modified" ))
       (when (= (:method info) "GET")
-        (.setStatus res (.code HttpResponseStatus/NOT_MODIFIED))))
-    (.setHeader res "cache-control"
-                (if (= maxAge 0) "no-cache" (str "max-age=" maxAge)))
-    (when (:useETag cfg) (.setHeader res "etag" eTag))))
+        (->> HttpResponseStatus/NOT_MODIFIED
+             (.code )
+             (.setStatus res ))))
+    (->> (if (== maxAge 0)
+           "no-cache"
+           (str "max-age=" maxAge))
+         (.setHeader res "cache-control" ))
+    (when
+      (:useETag cfg)
+      (.setHeader res "etag" eTag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -143,7 +149,8 @@
 
   (log/debug "serving static file: %s" (FPath file))
   (with-local-vars [crap false]
-    (let [^HTTPResult res (.getResultObj evt)]
+    (let [^HTTPResult
+          res (.getResultObj evt)]
       (try
         (if (or (nil? file)
                 (not (.exists file)))
@@ -151,7 +158,7 @@
             (.setStatus res 404)
             (.replyResult evt))
           (do
-            (.setContent res (MakeWebAsset file))
+            (.setContent res (WebAsset* file))
             (.setStatus res 200)
             (AddETag src info file res)
             (var-set crap true)
@@ -174,14 +181,13 @@
 
   [^Emitter src ^HTTPEvent evt options]
 
-  (let [^File appDir (-> ^Container
-                         (.container src)
-                         (.getAppDir))
+  (let [appDir (-> ^Container
+                   (.container src) (.getAppDir))
         ps (FPath (io/file appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
         cfg (-> ^Muble src (.getv :emcfg))
         ckAccess (:fileAccessCheck cfg)
-        fpath (nsb (:path options))
+        fpath (str (:path options))
         info (:info options) ]
     (log/debug "request to serve static file: %s" fpath)
     (if (or (.startsWith fpath ps)
@@ -199,9 +205,10 @@
 
   [^Emitter src code]
 
-  (let [^Container ctr (.container src)
-        appDir (.getAppDir ctr) ]
-    (GetLocalFile appDir (str "pages/errors/" code ".html"))))
+  (-> ^Container
+      (.container src)
+      (.getAppDir )
+      (GetLocalFile (str "pages/errors/" code ".html"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -211,9 +218,10 @@
 
   [^Muble src ^Channel ch code]
 
-  (with-local-vars [rsp (HttpReply* code)
-                    bits nil wf nil
-                    ctype "text/plain"]
+  (with-local-vars
+    [rsp (HttpReply* code)
+     bits nil wf nil
+     ctype "text/plain"]
     (try
       (let [cfg (.getv src :emcfg)
             h (:errorHandler cfg)
@@ -227,14 +235,14 @@
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
         (SetHeader @rsp "content-type" @ctype)
-        (HttpHeaders/setContentLength @rsp
-                                      (if (nil? @bits)
-                                        0
-                                        (alength ^bytes @bits)))
+        (->> (if (nil? @bits)
+                 0 (alength ^bytes @bits))
+             (HttpHeaders/setContentLength @rsp ))
         (var-set wf (.writeAndFlush ch @rsp))
         (when (some? @bits)
-          (var-set wf (.writeAndFlush ch
-                                      (Unpooled/wrappedBuffer ^bytes @bits))))
+          (->> (Unpooled/wrappedBuffer ^bytes @bits)
+               (.writeAndFlush ch )
+               (var-set wf )))
         (CloseCF @wf false))
       (catch Throwable e#
         (.close ch)))))
@@ -245,19 +253,20 @@
 
   "Reply back with a static file content"
 
-  [^Muble ri ^Emitter src
-   ^Matcher mc ^Channel ch info ^HTTPEvent evt]
+  [^Muble ri ^Emitter src ^Matcher mc
+   ^Channel ch
+   info ^HTTPEvent evt]
 
-  (with-local-vars [ok true mp nil]
+  (with-local-vars
+    [ok true mp nil]
     (try
       (-> evt (.getSession)(.handleEvent evt))
       (catch AuthError e#
         (var-set ok false)
         (ServeError src ch 403)))
     (when @ok
-      (let [^File appDir (-> ^Container
-                             (.container src)
-                             (.getAppDir))
+      (let [appDir (-> ^Container
+                       (.container src) (.getAppDir))
             ps (FPath (io/file appDir DN_PUBLIC))
             mpt (str (.getv ri :mountPoint))
             gc (.groupCount mc)]
@@ -269,7 +278,8 @@
                                              (.group mc (int i)) 1))))
         (var-set mp (FPath (File. ^String @mp)))
         (let [cfg (-> ^Muble src (.getv :emcfg))
-              w (AsyncWaitHolder* (NettyTrigger* ch evt src) evt)]
+              w (-> (NettyTrigger* ch evt src)
+                    (AsyncWaitHolder*  evt))]
           (.timeoutMillis w (:waitMillis cfg))
           (doto src
             (.hold w)
@@ -302,9 +312,8 @@
             options {:router (.getHandler ri)
                      :params (merge {} pms)
                      :template (.getTemplate ri)}
-            w
-            (AsyncWaitHolder*
-              (NettyTrigger* ch evt src) evt)]
+            w (-> (NettyTrigger* ch evt src)
+                  (AsyncWaitHolder* evt))]
         (.timeoutMillis w (:waitMillis cfg))
         (doto ^Emitter src
           (.hold  w)
@@ -315,7 +324,7 @@
 (def ^:private  AssetHandler!
   (reify WHandler
     (run [_  j _]
-      (let [^HTTPEvent evt (.event ^Job j)]
+      (let [evt (.event ^Job j)]
         (HandleStatic (.emitter evt)
                       evt
                       (.getv ^Job j EV_OPTS))))))

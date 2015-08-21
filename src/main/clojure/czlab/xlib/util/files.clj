@@ -409,7 +409,7 @@
 ;;
 (defmacro ListFiles
 
-  "Look for files with certain extension, with the dot"
+  "Look for files with certain extension, without the dot"
 
   [dir ext &[recurse?]]
 

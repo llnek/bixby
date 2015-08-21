@@ -150,9 +150,8 @@
 
   (let [dir (Mkdirs (io/file out)) ]
      (->> (a/AntZip
-            {:destFile (io/file dir (.getName app) ".zip")
+            {:destFile (io/file dir (str (.getName app) ".zip"))
              :basedir app
-             :excludes "build/**"
              :includes "**/*"})
           (a/RunTasks* ))))
 

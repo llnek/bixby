@@ -244,6 +244,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn EWicAny? "Tests endsWith() no-case, looping through
+                the list of possible suffixes"
+
+  [^String src suxs]
+
+  (if (or (empty? suxs)
+          (nil? src))
+    false
+    (let [lc (lcase src)]
+      (true? (some #(.endsWith lc (lcase %)) suxs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn EWAny? "Tests endsWith(), looping through
+              the list of possible suffixes"
+
+  [^String src suxs]
+
+  (if (or (empty? suxs)
+          (nil? src))
+    false
+    (true? (some #(.endsWith src ^String %) suxs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn SWicAny? "Tests startWith() no-case, looping through
                 the list of possible prefixes"
 

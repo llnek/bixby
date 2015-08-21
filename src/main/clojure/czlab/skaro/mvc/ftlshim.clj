@@ -15,10 +15,8 @@
   czlab.skaro.mvc.ftlshim
 
   (:require
+    [czlab.xlib.util.core :refer [ThrowBadArg]]
     [clojure.walk :as cw :refer [postwalk]]
-    [czlab.xlib.util.core :refer [ThrowBadArg]])
-
-  (:require
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io])
 

@@ -47,7 +47,7 @@
 
   (partition 2
     (RStr* rcb
-           [ "usage.cmdline"] []
+           ["usage.cmdline"] []
            ["usage.new"] ["usage.new.desc"]
            ["usage.podify"] ["usage.podify.desc"]
            ["usage.ide"] [ "usage.ide.desc"]

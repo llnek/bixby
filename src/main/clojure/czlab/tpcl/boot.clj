@@ -449,6 +449,7 @@
     (se! options :skaroHome (System/getProperty "skaro.home.dir"))
     (se! options :basedir (System/getProperty "skaro.app.dir"))
 
+    (se! options :classes "classes")
     (se! options :cout "z")
     (se! options :jzz "j")
     (se! options :czz "c")
@@ -459,6 +460,7 @@
 
     (se! options :bootBuildDir (fp! (ge :basedir) (ge :bld)))
 
+    (se! options :clzDir (fp! (ge :bootBuildDir) (ge :classes)))
     (se! options :jzzDir (fp! (ge :bootBuildDir) (ge :jzz)))
     (se! options :czzDir (fp! (ge :bootBuildDir) (ge :czz)))
     (se! options :wzzDir (fp! (ge :bootBuildDir) (ge :wzz)))
@@ -504,6 +506,7 @@
                                 :fork true})
 
     (se! options :CPATH [[:location (fp! (ge :srcDir) "artifacts")]
+                         [:location (ge :clzDir)]
                          [:location (ge :jzzDir)]
                          [:location (ge :czzDir)]
                          [:fileset {:dir (ge :libDir)

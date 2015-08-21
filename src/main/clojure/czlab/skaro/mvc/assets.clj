@@ -17,7 +17,7 @@
   (:require
     [czlab.xlib.util.core :refer [do->nil try! FPath]]
     [czlab.xlib.util.mime :refer [GuessContentType]]
-    [czlab.xlib.util.str :refer [lcase ]]
+    [czlab.xlib.util.str :refer [lcase EWicAny?]]
     [czlab.xlib.util.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.util.files
@@ -33,12 +33,12 @@
     CookieDecoder ServerCookieEncoder
     DefaultHttpResponse HttpVersion
     HttpMethod
-    HttpHeaders LastHttpContent
+    LastHttpContent
     HttpHeaders Cookie QueryStringDecoder]
+    [io.netty.handler.stream ChunkedStream ChunkedFile]
     [io.netty.channel Channel ChannelHandler
     ChannelFutureListener ChannelFuture
     ChannelPipeline ChannelHandlerContext]
-    [io.netty.handler.stream ChunkedStream ChunkedFile]
     [org.apache.commons.io FileUtils]
     [com.zotohlab.skaro.mvc WebContent
     WebAsset
@@ -65,30 +65,21 @@
   (reset! cache-assets-flag (true? cacheFlag))
   (log/info "web assets caching is set to %s" @cache-assets-flag))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- makeWebContent ""
-
-  ^WebAsset
-  [^String cType bits]
-
-  (reify
-    WebContent
-    (contentType [_] cType)
-    (body [_] bits)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn GetLocalFile ""
 
-  ^WebAsset
+  ^WebContent
   [appDir fname]
 
   (let [f (io/file appDir fname) ]
     (when (.canRead f)
-      (makeWebContent
-        (GuessContentType f "utf-8")
-        (WriteOneFile f)))))
+      (reify
+          WebContent
+          (contentType [_]
+            (GuessContentType f "utf-8"))
+          (body [_]
+            (WriteOneFile f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -99,18 +90,13 @@
   [^File fp]
 
   (if @cache-assets-flag
-    (let [^String fpath (lcase (FPath fp)) ]
-      (or (.endsWith fpath ".css")
-          (.endsWith fpath ".gif")
-          (.endsWith fpath ".jpg")
-          (.endsWith fpath ".jpeg")
-          (.endsWith fpath ".png")
-          (.endsWith fpath ".js")))
+    (-> (FPath fp)
+        (EWicAny? [ ".css" ".gif" ".jpg" ".jpeg" ".png" ".js"]))
     false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeWebAsset ""
+(defn WebAsset* ""
 
   ^WebAsset
   [^File file]
@@ -135,7 +121,7 @@
 
   (when (and (.exists file)
              (.canRead file))
-    (MakeWebAsset file)))
+    (WebAsset* file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,7 +164,7 @@
    info
    ^HttpResponse rsp ]
 
-  (let [s (str (GetInHeader info "range"))]
+  (let [s (GetInHeader info "range")]
     (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
         (.process rsp))
@@ -190,12 +176,14 @@
 
   [src ^Channel ch info ^HttpResponse rsp ^File file]
 
-  (let [^WebAsset asset (if-not (maybeCache file)
-                          nil
-                          (getAsset file))
+  (let [^WebAsset
+        asset (if-not (maybeCache file)
+                nil
+                (getAsset file))
         fname (.getName file) ]
-    (with-local-vars [raf nil clen 0
-                      inp nil ct "" wf nil]
+    (with-local-vars
+      [raf nil clen 0
+       inp nil ct "" wf nil]
       (if (nil? asset)
         (do
           (var-set ct (GuessContentType file "utf-8" "text/plain"))

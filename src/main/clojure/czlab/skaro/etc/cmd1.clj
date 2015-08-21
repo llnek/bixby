@@ -503,36 +503,40 @@
 ;;
 (defn- genEclipseProj ""
 
-  [^String app]
+  [^File appdir]
 
-  (let [ec (Mkdirs (io/file (GetCwd) "eclipse.projfiles"))
-        sb (StringBuilder.)
-        cwd (GetCwd)
-        lang "java"
-        ulang (ucase lang) ]
+  (let [ec (Mkdirs (io/file appdir "eclipse.projfiles"))
+        app (.getName appdir)
+        sb (StringBuilder.)]
     (CleanDir ec)
     (WriteOneFile
       (io/file ec ".project")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
-                       lang
+                       "java"
                        "/project.txt"))
           (cs/replace "${APP.NAME}" app)
-          (cs/replace (str "${" ulang ".SRC}")
-                      (FPath (io/file cwd
-                                      "src/main" lang)))
-          (cs/replace "${TEST.SRC}"
-                      (FPath (io/file cwd
-                                      "src/test" lang)))))
-    (.mkdirs (io/file cwd DN_BUILD DN_CLASSES))
-    (map (partial scanJars sb)
-         [(io/file (GetHomeDir) DN_DIST)
-          (io/file (GetHomeDir) DN_LIB)
-          (io/file cwd DN_BUILD DN_CLASSES)
-          (io/file cwd DN_TARGET)])
+          (cs/replace "${JAVA.TEST}"
+                      (FPath (io/file appdir
+                                      "src/test/java")))
+          (cs/replace "${JAVA.SRC}"
+                      (FPath (io/file appdir
+                                      "src/main/java")))
+          (cs/replace "${CLJ.TEST}"
+                      (FPath (io/file appdir
+                                      "src/test/clojure")))
+          (cs/replace "${CLJ.SRC}"
+                      (FPath (io/file appdir
+                                      "src/main/clojure")))))
+    (.mkdirs (io/file appdir DN_BUILD "classes"))
+    (doall
+      (map (partial scanJars sb)
+           [(io/file (GetHomeDir) DN_DIST)
+            (io/file (GetHomeDir) DN_LIB)
+            (io/file appdir DN_TARGET)]))
     (WriteOneFile
       (io/file ec ".classpath")
       (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
-                       lang
+                       "java"
                        "/classpath.txt"))
           (cs/replace "${CLASS.PATH.ENTRIES}" (str sb))))))
 
@@ -546,9 +550,9 @@
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
-    (if (and (> (count args) 1)
+    (if (and (> (count args) 0)
              (= "eclipse" (fst args)))
-      (genEclipseProj (snd args))
+      (genEclipseProj (GetCwd))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

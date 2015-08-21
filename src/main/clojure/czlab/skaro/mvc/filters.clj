@@ -19,12 +19,10 @@
     [czlab.skaro.mvc.assets
     :refer [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
     [czlab.xlib.util.core
-    :refer [notnil? spos? ToJavaInt try! FPath]]
-    [czlab.xlib.util.str :refer [hgl? nsb strim]]
+    :refer [spos? ToJavaInt try! FPath]]
+    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.util.str :refer [hgl? strim]]
     [czlab.xlib.util.meta :refer [NewObj*]])
-
-  (:require
-    [czlab.xlib.util.logging :as log])
 
   (:use [czlab.xlib.netty.filters]
         [czlab.xlib.netty.io]
@@ -84,47 +82,42 @@
   (proxy [MessageFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc route filter called with message = %s" (type msg))
-      (cond
-        (instance? HttpRequest msg)
-        (let [^RouteCracker
-              ck (.getv co :cracker)
-              ^ChannelHandlerContext ctx c
-              ^HttpRequest req msg
-              ch (.channel ctx)
-              old (GetAKey ch TOBJ_KEY)
-              cfg {:method (GetMethod req)
-                   :uri (GetUriPath req)}
-              [r1 r2 r3 r4]
-              (.crack ck cfg) ]
-          (->> (merge old {:matched false})
-               (SetAKey ch TOBJ_KEY))
-          (cond
-            (and r1 (hgl? r4))
-            (SendRedirect ch false r4)
+      (let [^ChannelHandlerContext ctx c
+            ch (.channel ctx)
+            old (GetAKey ch TOBJ_KEY) ]
+        (cond
+          (instance? HttpRequest msg)
+          (let [^HttpRequest req msg
+                ^RouteCracker
+                ck (.getv co :cracker)
+                cfg {:method (GetMethod req)
+                     :uri (GetUriPath req)}
+                [r1 r2 r3 r4]
+                (.crack ck cfg) ]
+            (->> (merge old {:matched false})
+                 (SetAKey ch TOBJ_KEY))
+            (cond
+              (and r1 (hgl? r4))
+              (SendRedirect ch false r4)
+              (= r1 true)
+              (do
+                (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
+                (->> (merge old {:matched true})
+                     (SetAKey ch TOBJ_KEY))
+                (ReferenceCountUtil/retain msg)
+                (.fireChannelRead ctx msg))
+              :else
+              (do
+                (log/debug "failed to match uri: %s" (:uri cfg))
+                (ReplyXXX ch 404 false))))
 
-            (= r1 true)
-            (do
-              (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
-              (->> (merge old {:matched true})
-                   (SetAKey ch TOBJ_KEY))
-              (ReferenceCountUtil/retain msg)
-              (.fireChannelRead ctx msg))
+          (instance? HttpResponse msg)
+          (do
+            (ReferenceCountUtil/retain msg)
+            (.fireChannelRead ^ChannelHandlerContext c msg))
 
-            :else
-            (do
-              (log/debug "failed to match uri: %s" (:uri cfg))
-              (ReplyXXX ch 404 false))))
-
-        (instance? HttpResponse msg)
-        (do
-          (ReferenceCountUtil/retain msg)
-          (.fireChannelRead ^ChannelHandlerContext c msg))
-
-        :else
-        (let [^ChannelHandlerContext ctx c
-              ch (.channel ctx)
-              flag (:matched (GetAKey ch TOBJ_KEY))]
-          (if (true? flag)
+          :else
+          (if (true? (:matched (GetAKey ch TOBJ_KEY)))
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
