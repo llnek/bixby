@@ -45,11 +45,11 @@
     [com.sun.mail/javax.mail "1.5.3" ]
 
     ;;[org.apache.ivy/ivy "2.4.0" ]
-    [org.apache.ant/ant "1.9.5" ]
-    [org.apache.ant/ant-launcher "1.9.5" ]
-    [org.apache.ant/ant-junit4 "1.9.5" ]
-    [org.apache.ant/ant-junit "1.9.5" ]
-    [org.apache.ant/ant-apache-log4j "1.9.5" :exclusions [log4j]]
+    [org.apache.ant/ant "1.9.6" ]
+    [org.apache.ant/ant-launcher "1.9.6" ]
+    [org.apache.ant/ant-junit4 "1.9.6" ]
+    [org.apache.ant/ant-junit "1.9.6" ]
+    [org.apache.ant/ant-apache-log4j "1.9.6" :exclusions [log4j]]
 
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
 
@@ -62,19 +62,19 @@
 
     [com.corundumstudio.socketio/netty-socketio "1.7.7" :exclusions [io.netty]]
 
-    [org.eclipse.jetty/jetty-xml "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-server "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-continuation "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-servlet "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-server "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-util "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-security "9.3.0.v20150612"  ]
-    [org.eclipse.jetty/jetty-webapp "9.3.0.v20150612"  ]
-    [org.eclipse.jetty.websocket/websocket-api "9.3.0.v20150612"  ]
-    [org.eclipse.jetty.websocket/websocket-common "9.3.0.v20150612"  ]
-    [org.eclipse.jetty.websocket/websocket-servlet "9.3.0.v20150612"  ]
-    [org.eclipse.jetty.websocket/websocket-client "9.3.0.v20150612"  ]
-    [org.eclipse.jetty.websocket/websocket-server "9.3.0.v20150612"  ]
+    [org.eclipse.jetty/jetty-xml "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-server "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-continuation "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-servlet "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-server "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-util "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-security "9.3.2.v20150730"  ]
+    [org.eclipse.jetty/jetty-webapp "9.3.2.v20150730"  ]
+    [org.eclipse.jetty.websocket/websocket-api "9.3.2.v20150730"  ]
+    [org.eclipse.jetty.websocket/websocket-common "9.3.2.v20150730"  ]
+    [org.eclipse.jetty.websocket/websocket-servlet "9.3.2.v20150730"  ]
+    [org.eclipse.jetty.websocket/websocket-client "9.3.2.v20150730"  ]
+    [org.eclipse.jetty.websocket/websocket-server "9.3.2.v20150730"  ]
 
     ;;[org.codehaus.ga/gant_groovy2.4 "1.9.12" ]
     ;;[org.codehaus.groovy/groovy-all "2.4.3" ]
@@ -89,7 +89,7 @@
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
 
     [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
-    [com.h2database/h2 "1.4.187" ]
+    [com.h2database/h2 "1.4.188" ]
     [org.postgresql/postgresql "9.4-1201-jdbc41" ]
 
     [org.clojure/math.numeric-tower "0.0.4" ]
@@ -117,14 +117,14 @@
     [com.cemerick/pomegranate "0.3.0"]
     [codox/codox.core "0.8.12" ]
     ;; boot/clj stuff
-    [boot/base "2.1.2"]
-    [boot/core "2.1.2"]
-    [boot/pod "2.1.2"]
-    [boot/worker "2.1.2"]
-    [boot/aether "2.1.2" ]  ;; this is causing the RELEASE_6 warning
+    [boot/base "2.2.0"]
+    [boot/core "2.2.0"]
+    [boot/pod "2.2.0"]
+    [boot/worker "2.2.0"]
+    [boot/aether "2.2.0" ]  ;; this is causing the RELEASE_6 warning
 
     [org.clojure/clojure "1.7.0" ]
-    [org.clojure/clojurescript "0.0-3308" ]
+    [org.clojure/clojurescript "1.7.107" ]
 
     [org.apache.shiro/shiro-core "1.2.3" ]
     [org.mozilla/rhino "1.7.7" ]
