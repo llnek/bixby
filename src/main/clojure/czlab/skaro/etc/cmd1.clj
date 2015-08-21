@@ -110,7 +110,7 @@
 
   (let [args (.getLastResult j)
         args (drop 1 args)]
-    (->> (if (empty? args) ["tst"] args)
+    (->> (if (empty? args) ["testjava" "testclj"] args)
          (apply ExecBootScript (GetHomeDir) (GetCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -472,7 +472,8 @@
 
   [j]
 
-  (println (System/getProperty "skaro.version")))
+  (println "skaro version : "  (System/getProperty "skaro.version"))
+  (println "java version  : "  (System/getProperty "java.version")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

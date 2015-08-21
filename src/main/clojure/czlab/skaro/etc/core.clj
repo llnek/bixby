@@ -91,11 +91,11 @@
         h (take 1 strs)
         e (take-last 1 strs)]
     (println (MakeString \= 78))
-    (drawHelp "> %-35s %s\n" h)
-    (println "> -----------------")
-    (drawHelp "> %-35s %s\n" b)
-    (println ">")
-    (drawHelp "> %-35s %s\n" e)
+    (drawHelp " %-35s %s\n" h)
+    (println " -----------------")
+    (drawHelp " %-35s %s\n" b)
+    (println "")
+    (drawHelp " %-35s %s\n" e)
     (println (MakeString \= 78))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
