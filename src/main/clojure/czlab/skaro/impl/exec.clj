@@ -289,8 +289,10 @@
   [blockType data ^URL url]
 
   (let [ctxt (atom (MubleObj!))
-        impl (MubleObj!) ]
-
+        {:keys [info conf]}
+        data
+        impl (MubleObj! {:metaInfo info
+                         :dftOptions conf})]
     (with-meta
       (reify
 
@@ -314,15 +316,15 @@
 
         Component
 
-        (version [_] (get-in data [:info :version]))
+        (version [_] (:version info))
 
         (id [_] blockType)
 
         EmitMeta
 
-        (isEnabled [_] (not (false? (get-in data [:info :enabled]))))
+        (isEnabled [_] (not (false? (:enabled info))))
 
-        (getName [_] (get-in data [:info :name]))
+        (getName [_] (:name info))
 
         (metaUrl [_] url) )
 

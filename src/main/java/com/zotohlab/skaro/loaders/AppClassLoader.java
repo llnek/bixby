@@ -23,6 +23,7 @@ public class AppClassLoader extends AbstractClassLoader {
   }
 
   public void configure(File appDir) {
+    File s= new File(appDir, "src/main/clojure");
     File j= new File(appDir, "build/j");
     File c= new File(appDir, "build/c");
     File d= new File(appDir, "build/d");
@@ -32,6 +33,7 @@ public class AppClassLoader extends AbstractClassLoader {
     c.mkdirs();
     if (!_loaded) {
       findUrls(p);
+      addUrl(s);
       addUrl(j);
       addUrl(c);
       findUrls(d);
