@@ -163,7 +163,9 @@
 ;;
 (b/BootEnvVars
   {:basedir (System/getProperty "user.dir")
-   :packDir #(set-env! %2 (fp! (ge :bootBuildDir) "p"))})
+   ;;:packDir #(set-env! %2 (fp! (ge :bootBuildDir) "p"))})
+   :packDir #(set-env! %2
+                       (fp! (System/getProperty "user.home") ".skaro"))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
