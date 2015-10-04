@@ -179,6 +179,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- scan-tree ""
+
+  [^Stack stk ext out seed]
+
+  (doseq [f (-> (or seed (.peek stk))
+                (.listFiles))]
+    (let [p (if (.empty stk)
+              '()
+              (for [x (.toArray stk)] (.getName x)))
+          fid (.getName f)
+          paths (conj (into [] p) fid) ]
+      (if
+        (.isDirectory f)
+        (do
+          (.push stk f)
+          (scan-tree stk ext out nil))
+        ;else
+        (if (.endsWith fid ext)
+          (swap! out conj (cs/join "/" paths))))))
+  (when-not (.empty stk) (.pop stk)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn CollectFilePaths ""
+
+  [rootDir ext]
+
+  (let [out (atom [])]
+    (scan-tree (Stack.) ext out (io/file rootDir))
+    @out))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn CollectCljPaths ""
 
   [^File root]
