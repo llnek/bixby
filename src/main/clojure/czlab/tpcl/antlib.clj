@@ -15,6 +15,7 @@
   czlab.tpcl.antlib
 
   (:import
+    [org.apache.tools.ant.taskdefs.optional.unix Symlink]
     [java.beans Introspector PropertyDescriptor]
     [java.lang.reflect Method]
     [java.util Stack]
@@ -733,7 +734,8 @@
   (let [dir (io/file d)]
     (if (.exists dir)
       (RunTasks* (AntDelete
-                      {:quiet quiet}
+                      {:removeNotFollowedSymlinks true
+                       :quiet quiet}
                       [[:fileset {:followSymlinks false
                                   :dir dir}
                                  [[:include "**/*"]]]]))
@@ -752,7 +754,8 @@
   (let [dir (io/file d)]
     (when (.exists dir)
       (RunTasks*
-        (AntDelete {:quiet quiet}
+        (AntDelete {:removeNotFollowedSymlinks true
+                    :quiet quiet}
                    [[:fileset {:followSymlinks false
                                :dir dir} ]])))))
 
@@ -777,6 +780,19 @@
   (RunTasks*
     (AntMove {:file file
               :todir toDir} )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn SymLink ""
+
+  [link target]
+
+  (RunTasks*
+    (AntSymlink {:overwrite true
+                 :action "single"
+                 :link link
+                 :resource target})))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
