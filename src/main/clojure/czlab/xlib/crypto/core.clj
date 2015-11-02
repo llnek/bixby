@@ -42,6 +42,14 @@
     [javax.mail.internet ContentType
     MimeBodyPart MimeMessage MimeMultipart MimeUtility]
     [org.bouncycastle.asn1 ASN1ObjectIdentifier]
+    ;;[org.bouncycastle.asn1.kisa KISAObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.nist NISTObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.ntt NTTObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.oiw OIWObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.pkcs PKCSObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.sec SECObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.teletrust TeleTrusTObjectIdentifiers]
+    ;;[org.bouncycastle.asn1.x9 X9ObjectIdentifiers]
     [org.bouncycastle.cms CMSAlgorithm]
     [org.bouncycastle.cert X509CertificateHolder]
     [java.security KeyStore$PasswordProtection
@@ -120,25 +128,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defonce DES_EDE3_CBC CMSAlgorithm/DES_EDE3_CBC)
-(defonce RC2_CBC CMSAlgorithm/RC2_CBC)
-(defonce IDEA_CBC CMSAlgorithm/IDEA_CBC)
-(defonce CAST5_CBC CMSAlgorithm/CAST5_CBC)
-(defonce AES128_CBC CMSAlgorithm/AES128_CBC)
-(defonce AES192_CBC CMSAlgorithm/AES192_CBC)
-(defonce AES256_CBC CMSAlgorithm/AES256_CBC)
-(defonce CAMELLIA128_CBC CMSAlgorithm/CAMELLIA128_CBC)
-(defonce CAMELLIA192_CBC CMSAlgorithm/CAMELLIA192_CBC)
-(defonce CAMELLIA256_CBC CMSAlgorithm/CAMELLIA256_CBC)
-(defonce SEED_CBC CMSAlgorithm/SEED_CBC)
-(defonce DES_EDE3_WRAP CMSAlgorithm/DES_EDE3_WRAP)
-(defonce AES128_WRAP CMSAlgorithm/AES128_WRAP)
-(defonce AES256_WRAP CMSAlgorithm/AES256_WRAP)
-(defonce CAMELLIA128_WRAP CMSAlgorithm/CAMELLIA128_WRAP)
-(defonce CAMELLIA192_WRAP CMSAlgorithm/CAMELLIA192_WRAP)
-(defonce CAMELLIA256_WRAP CMSAlgorithm/CAMELLIA256_WRAP)
-(defonce SEED_WRAP CMSAlgorithm/SEED_WRAP)
-(defonce ECDH_SHA1KDF CMSAlgorithm/ECDH_SHA1KDF)
+;;(defonce DES_EDE3_CBC CMSAlgorithm/DES_EDE3_CBC)
+;;(defonce RC2_CBC CMSAlgorithm/RC2_CBC)
+;;(defonce IDEA_CBC CMSAlgorithm/IDEA_CBC)
+;;(defonce CAST5_CBC CMSAlgorithm/CAST5_CBC)
+;;(defonce AES128_CBC CMSAlgorithm/AES128_CBC)
+;;(defonce AES192_CBC CMSAlgorithm/AES192_CBC)
+;;(defonce AES256_CBC CMSAlgorithm/AES256_CBC)
+;;(defonce CAMELLIA128_CBC CMSAlgorithm/CAMELLIA128_CBC)
+;;(defonce CAMELLIA192_CBC CMSAlgorithm/CAMELLIA192_CBC)
+;;(defonce CAMELLIA256_CBC CMSAlgorithm/CAMELLIA256_CBC)
+;;(defonce SEED_CBC CMSAlgorithm/SEED_CBC)
+;;(defonce DES_EDE3_WRAP CMSAlgorithm/DES_EDE3_WRAP;;)
+;;(defonce AES128_WRAP CMSAlgorithm/AES128_WRAP)
+;;(defonce AES256_WRAP CMSAlgorithm/AES256_WRAP)
+;;(defonce CAMELLIA128_WRAP CMSAlgorithm/CAMELLIA128_WRAP)
+;;(defonce CAMELLIA192_WRAP CMSAlgorithm/CAMELLIA192_WRAP)
+;;(defonce CAMELLIA256_WRAP CMSAlgorithm/CAMELLIA256_WRAP)
+;;(defonce SEED_WRAP CMSAlgorithm/SEED_WRAP)
+;;(defonce ECDH_SHA1KDF CMSAlgorithm/ECDH_SHA1KDF)
 
 (defonce EXPLICIT_SIGNING :EXPLICIT)
 (defonce IMPLICIT_SIGNING :IMPLICIT)

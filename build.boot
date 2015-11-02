@@ -1,9 +1,9 @@
 (set-env!
   :dependencies '[
 
-    [bouncycastle/bcprov-jdk15on "152" ]
-    [bouncycastle/bcmail-jdk15on "152" ]
-    [bouncycastle/bcpkix-jdk15on "152" ]
+    [bouncycastle/bcprov-jdk15on "153" ]
+    [bouncycastle/bcmail-jdk15on "153" ]
+    [bouncycastle/bcpkix-jdk15on "153" ]
     [org.jasypt/jasypt "1.9.2" ]
     ;;[org.mindrot/jbcrypt "0.3m" ]
 
