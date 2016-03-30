@@ -1,17 +1,17 @@
 (set-env!
   :dependencies '[
 
-    [bouncycastle/bcprov-jdk15on "153" ]
-    [bouncycastle/bcmail-jdk15on "153" ]
-    [bouncycastle/bcpkix-jdk15on "153" ]
+    [org.bouncycastle/bcprov-jdk15on "154" ]
+    [org.bouncycastle/bcmail-jdk15on "154" ]
+    [org.bouncycastle/bcpkix-jdk15on "154" ]
     [org.jasypt/jasypt "1.9.2" ]
     ;;[org.mindrot/jbcrypt "0.3m" ]
 
-    [org.slf4j/slf4j-api "1.7.12" ]
-    [log4j/log4j "1.2.17" ]
+    [org.slf4j/slf4j-api "1.7.20" ]
+    [org.apache.logging.log4j/log4j-core "2.5" ]
 
-    [ch.qos.logback/logback-classic "1.1.3" ]
-    [ch.qos.logback/logback-core "1.1.3" ]
+    [ch.qos.logback/logback-classic "1.1.6" ]
+    [ch.qos.logback/logback-core "1.1.6" ]
 
     [net.sourceforge.jregex/jregex "1.2_01" ]
     [net.sf.jopt-simple/jopt-simple "4.9" ]
