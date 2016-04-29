@@ -7,14 +7,14 @@
     [org.jasypt/jasypt "1.9.2" ]
     ;;[org.mindrot/jbcrypt "0.3m" ]
 
-    [org.slf4j/slf4j-api "1.7.20" ]
+    [org.slf4j/slf4j-api "1.7.21" ]
     [org.apache.logging.log4j/log4j-core "2.5" ]
 
-    [ch.qos.logback/logback-classic "1.1.6" ]
-    [ch.qos.logback/logback-core "1.1.6" ]
+    [ch.qos.logback/logback-classic "1.1.7" ]
+    [ch.qos.logback/logback-core "1.1.7" ]
 
     [net.sourceforge.jregex/jregex "1.2_01" ]
-    [net.sf.jopt-simple/jopt-simple "5.0" ]
+    [net.sf.jopt-simple/jopt-simple "5.0.1" ]
     [com.google.guava/guava "19.0" ]
     [com.google.code.findbugs/jsr305 "3.0.1" ]
     [joda-time/joda-time "2.9.3" ]
@@ -31,11 +31,11 @@
 
     [com.google.code.gson/gson "2.6.2" ]
 
-    [org.apache.commons/commons-compress "1.10" ]
+    [org.apache.commons/commons-compress "1.11" ]
     [org.apache.commons/commons-lang3 "3.4" ]
     [org.apache.commons/commons-exec "1.3" ]
     [commons-net/commons-net "3.4" ]
-    [commons-io/commons-io "2.4" ]
+    [commons-io/commons-io "2.5" ]
 
     [commons-logging/commons-logging "1.2" ]
     [org.apache.commons/commons-email "1.4" ]
@@ -45,11 +45,11 @@
     [com.sun.mail/javax.mail "1.5.5" ]
 
     ;;[org.apache.ivy/ivy "2.4.0" ]
-    [org.apache.ant/ant "1.9.6" ]
-    [org.apache.ant/ant-launcher "1.9.6" ]
-    [org.apache.ant/ant-junit4 "1.9.6" ]
-    [org.apache.ant/ant-junit "1.9.6" ]
-    [org.apache.ant/ant-apache-log4j "1.9.6" :exclusions [log4j]]
+    [org.apache.ant/ant "1.9.7" ]
+    [org.apache.ant/ant-launcher "1.9.7" ]
+    [org.apache.ant/ant-junit4 "1.9.7" ]
+    [org.apache.ant/ant-junit "1.9.7" ]
+    [org.apache.ant/ant-apache-log4j "1.9.7" :exclusions [log4j]]
 
     [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
 
@@ -58,7 +58,7 @@
     [org.apache.httpcomponents/httpcore-nio "4.4.4" ]
     [org.apache.httpcomponents/httpcore "4.4.4" ]
     [org.apache.httpcomponents/httpclient "4.5.2" ]
-    [io.netty/netty-all "4.0.35.Final" ]
+    [io.netty/netty-all "4.0.36.Final" ]
 
     ;;[com.corundumstudio.socketio/netty-socketio "1.7.10" :exclusions [io.netty]]
 
@@ -99,7 +99,7 @@
     [org.clojure/tools.reader "0.10.0" ]
     [org.clojure/data.codec "0.1.0" ]
     [org.clojure/data.csv "0.1.3" ]
-    [org.clojure/java.jdbc "0.5.0" ]
+    [org.clojure/java.jdbc "0.5.8" ]
     [org.clojure/java.data "0.1.1" ]
     [org.clojure/java.jmx "0.3.1" ]
     [org.clojure/data.json "0.2.6" ]
@@ -114,19 +114,41 @@
     [org.clojure/core.logic "0.8.10" ]
     [org.clojure/algo.monads "0.1.5" ]
     [org.clojure/algo.generic "0.1.2" ]
-    [org.clojure/core.memoize "0.5.7" ]
+    [org.clojure/core.memoize "0.5.9" ]
     [org.flatland/ordered "1.5.3"]
     [com.cemerick/pomegranate "0.3.1"]
     [codox/codox.core "0.8.15" ]
+
+    ;; 1.2.0 screws up skaro runtime
+    [org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
+    [org.projectodd.shimdandy/shimdandy-api "1.2.0"]
+
     ;; boot/clj stuff
-    [boot/base "2.5.5" :exclusions [javax.servlet/servlet-api]]
-    [boot/core "2.5.5" :exclusions [javax.servlet/servlet-api]]
-    [boot/pod "2.5.5" :exclusions [javax.servlet/servlet-api]]
-    [boot/worker "2.5.5" :exclusions [javax.servlet/servlet-api]]
-    [boot/aether "2.5.5" :exclusions [javax.servlet/servlet-api]]  ;; this is causing the RELEASE_6 warning
+
+    [boot/base "2.5.5"
+     :exclusions [javax.servlet/servlet-api
+                  org.projectodd.shimdandy/shimdandy-impl
+                  org.projectodd.shimdandy/shimdandy-api]]
+    [boot/core "2.5.5"
+     :exclusions [javax.servlet/servlet-api
+                  org.projectodd.shimdandy/shimdandy-impl
+                  org.projectodd.shimdandy/shimdandy-api]]
+    [boot/pod "2.5.5"
+     :exclusions [javax.servlet/servlet-api
+                  org.projectodd.shimdandy/shimdandy-impl
+                  org.projectodd.shimdandy/shimdandy-api]]
+    [boot/worker "2.5.5"
+     :exclusions [javax.servlet/servlet-api
+                  org.projectodd.shimdandy/shimdandy-impl
+                  org.projectodd.shimdandy/shimdandy-api]]
+    ;; this is causing the RELEASE_6 warning
+    [boot/aether "2.5.5"
+     :exclusions [javax.servlet/servlet-api
+                  org.projectodd.shimdandy/shimdandy-impl
+                  org.projectodd.shimdandy/shimdandy-api]]
 
     [org.clojure/clojure "1.8.0" ]
-    [org.clojure/clojurescript "1.8.40" ]
+    [org.clojure/clojurescript "1.8.51" ]
 
     [org.apache.shiro/shiro-core "1.2.4" ]
     [org.mozilla/rhino "1.7.7.1" ]

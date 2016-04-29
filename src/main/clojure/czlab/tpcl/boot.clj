@@ -666,9 +666,17 @@
           to (io/file (ge :libDir))]
       (a/RunTarget
         "juber"
-        (for [j (seq jars)]
-          (a/AntCopy {:file (fp! (:dir j) (:path j))
-                        :todir to})))
+        (for [j (seq jars)
+              :let [dir (:dir j)
+                    pn (:path j)
+                    ;;boot prepends a hash to the jar file, dunno why,
+                    ;;but i dont like it, so ripping it out
+                    mt (re-matches #"^[0-9a-z]*-(.*)" pn)]]
+          (if (= (count mt) 2)
+            (a/AntCopy {:file (fp! dir pn)
+                        :tofile (fp! to (last mt))})
+            (a/AntCopy {:file (fp! dir pn)
+                        :todir to}))))
       (format "copied (%d) jars to %s" (count jars) to))
     fileset))
 
