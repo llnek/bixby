@@ -107,6 +107,8 @@
     [org.clojure/core.cache "0.6.5" ]
     [org.clojure/core.match "0.2.2" ]
     [org.clojure/core.memoize "0.5.9" ]
+    [org.clojure/tools.analyzer.jvm "0.6.9"]
+    [org.clojure/tools.analyzer "0.6.7"]
     [org.clojure/tools.cli "0.3.3" ]
     [org.clojure/data.generators "0.1.2" ]
     [org.clojure/data.priority-map "0.0.7" ]
