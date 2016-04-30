@@ -15,25 +15,3 @@
 */
 
 
-package com.zotohlab.mock.jms;
-
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-
-
-/**
- * @author kenl
- *
- */
-public class MockConnFactory implements ConnectionFactory {
-
-  public Connection createConnection() {
-    return new MockConnection();
-  }
-
-  public Connection createConnection(String user, String pwd) {
-    return new MockConnection(user, pwd);
-  }
-
-}
-

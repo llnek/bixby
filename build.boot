@@ -239,8 +239,8 @@
           (a/CopyFile (io/file dir mid) des)
           nil)
         {:work-dir dir
-         :args ["--modules"
-                "amd"
+         :args ["--modules" "amd"
+                "--presets" "es2015"
                 "--module-ids" mid "--out-dir" bd] }))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
