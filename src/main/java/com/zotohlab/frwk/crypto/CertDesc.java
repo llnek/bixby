@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,13 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 package com.zotohlab.frwk.crypto;
 
+
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
+
 
 /**
  *
@@ -26,8 +26,8 @@ import javax.security.auth.x500.X500Principal;
  */
 public interface CertDesc {
 
-  public X500Principal subj();
   public X500Principal issuer();
+  public X500Principal subj();
   public Date notBefore();
   public Date notAfter();
 
