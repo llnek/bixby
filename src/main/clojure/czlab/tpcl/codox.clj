@@ -34,9 +34,9 @@
 
   (require 'codox.main)
   (if (> (count args) 0)
-    (let [options {:output-dir (nth args 2)
+    (let [options {:output-path (nth args 2)
                    :root (nth args 0)
-                   :sources [ (nth args 1)]
+                   :source-paths [ (nth args 1)]
                    }]
       (generate-docs options))
     (println "usage: codox <src-dir> <out-dir>")))
