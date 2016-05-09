@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.net;
@@ -26,22 +24,19 @@ import java.util.Map;
 import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
-
-
 import com.zotohlab.frwk.io.XData;
+
 
 /**
  * @author kenl
  */
 public class ULFormItems {
 
-  private static final Logger _log= getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
   private List<ULFileItem> _items= new ArrayList<>();
 
-  public ULFormItems() {
-  }
+  public ULFormItems() {}
 
   public ListIterator<ULFileItem> getAll() { return _items.listIterator(); }
   public Iterable<ULFileItem> intern() { return _items; }
@@ -55,7 +50,7 @@ public class ULFormItems {
   }
 
   public void add(ULFileItem x) {
-    tlog().debug("Adding a new ul-file-item {}", x.getFieldName());
+    TLOG.debug("Adding a new ul-file-item {}", x.getFieldName());
     _items.add(x);
   }
 

@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.netty;
@@ -35,8 +33,7 @@ import io.netty.util.ReferenceCounted;
 @SuppressWarnings("rawtypes")
 public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
@@ -44,7 +41,7 @@ public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
     try {
       if (obj instanceof ReferenceCounted) {
         ReferenceCounted c = (ReferenceCounted) obj ;
-        tlog().debug("Object {}: after channelRead() has ref-count = {}" ,
+        TLOG.debug("Object {}: after channelRead() has ref-count = {}" ,
             c.toString(), c.refCnt());
       }
     }
@@ -52,3 +49,5 @@ public abstract class SimpleInboundFilter extends SimpleChannelInboundHandler {
   }
 
 }
+
+

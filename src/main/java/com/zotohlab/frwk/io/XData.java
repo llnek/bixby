@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.io;
@@ -41,15 +39,15 @@ import static org.slf4j.LoggerFactory.*;
  */
 public class XData implements Serializable {
 
-  private static final Logger _log= getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
-
   private static final long serialVersionUID = -8637175588593032279L;
+
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
   private String _encoding ="utf-8";
   private Object _data = null;
   private boolean _cls=true;
 
+  //
 
   public XData(Object p) {
     resetContent(p);
@@ -59,8 +57,8 @@ public class XData implements Serializable {
     this(null);
   }
 
-  public XData setEncoding(String enc) { _encoding=enc;  return this; }
   public String getEncoding() { return _encoding; }
+  public XData setEncoding(String enc) { _encoding=enc;  return this; }
 
   /**
    * Control the internal file.
@@ -110,16 +108,21 @@ public class XData implements Serializable {
   public Object content() { return _data; }
 
   public byte[] javaBytes() throws IOException {
-    byte[] bits= new byte[0];
+    byte[] bits;
 
     if (_data instanceof File) {
       bits = IOUtils.toByteArray(((File) _data).toURI().toURL());
     }
+    else
     if (_data instanceof String) {
       bits = ((String) _data).getBytes(_encoding);
     }
+    else
     if (_data instanceof byte[]) {
       bits = (byte[]) _data;
+    }
+    else {
+      bits=new byte[0];
     }
 
     return bits;
@@ -146,7 +149,7 @@ public class XData implements Serializable {
       if (_data instanceof String) try {
         len = ((String) _data).getBytes(_encoding).length;
       } catch (Exception e) {
-        tlog().error("", e);
+        TLOG.error("", e);
       }
     }
     return len;
@@ -157,7 +160,11 @@ public class XData implements Serializable {
   }
 
   public String stringify() throws IOException {
-    return _data instanceof String ? _data.toString() : new String ( javaBytes(), _encoding );
+    return !hasContent()
+      ? ""
+      : (_data instanceof String)
+        ? _data.toString()
+        : new String(javaBytes(), _encoding);
   }
 
   public InputStream stream() throws IOException {
@@ -165,8 +172,8 @@ public class XData implements Serializable {
     if (_data instanceof File) {
       inp = new XStream( (File) _data);
     }
-    else if (_data != null) {
-      inp= new ByteArrayInputStream( javaBytes());
+    else if (hasContent()) {
+      inp= new ByteArrayInputStream(javaBytes());
     }
     return inp;
   }
@@ -178,4 +185,5 @@ public class XData implements Serializable {
   }
 
 }
+
 

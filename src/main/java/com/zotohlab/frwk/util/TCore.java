@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,12 +10,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.util;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -26,7 +25,6 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 
 
@@ -35,10 +33,7 @@ import org.slf4j.Logger;
  */
 public class TCore implements RejectedExecutionHandler {
 
-  private static final Logger _log = getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
-
-  //private val serialVersionUID = 404521678153694367L
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
 
   private ExecutorService _scd;
   private boolean _trace;
@@ -46,14 +41,14 @@ public class TCore implements RejectedExecutionHandler {
   private String _id ="";
   private int _tds = 4;
 
-  public TCore (String id, int tds, boolean traceable) {
+  public TCore(String id, int tds, boolean traceable) {
     _tds= Math.max(1,tds);
-    _id=id;
     _trace=traceable;
     _paused=true;
+    _id=id;
   }
 
-  public TCore (String id, int tds) {
+  public TCore(String id, int tds) {
     this(id, tds, true);
   }
 
@@ -71,7 +66,7 @@ public class TCore implements RejectedExecutionHandler {
     //_scd.shutdownNow()
     _scd.shutdown();
     if (_trace) {
-      tlog().debug("Core \"{}\"  disposed and shut down." , _id );
+      TLOG.debug("Core \"{}\"  disposed and shut down." , _id );
     }
   }
 
@@ -83,7 +78,7 @@ public class TCore implements RejectedExecutionHandler {
 
   public void rejectedExecution(Runnable r, ThreadPoolExecutor x) {
     //TODO: deal with too much work for the core...
-    tlog().error("\"{}\" rejected work - threads/queue are max'ed out" , _id);
+    TLOG.error("\"{}\" rejected work - threads/queue are max'ed out" , _id);
   }
 
   public String toString() {
@@ -101,9 +96,10 @@ public class TCore implements RejectedExecutionHandler {
         .build(),
         this );
     if (_trace) {
-      tlog().debug("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");
+      TLOG.debug("Core \"{}\" activated with threads = {}" , _id , "" + _tds, "");
     }
   }
 
 }
+
 

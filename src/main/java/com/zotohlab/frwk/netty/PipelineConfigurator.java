@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.netty;
@@ -36,8 +34,9 @@ import io.netty.channel.ChannelPipeline;
  */
 public abstract class PipelineConfigurator {
 
-  private static Logger _log=getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
+  public static final Logger TLOG=getLogger(lookup().lookupClass());
+
+  //
 
   public ChannelHandler configure(final Object  options) {
     return new ChannelInitializer<Channel>() {
@@ -47,12 +46,12 @@ public abstract class PipelineConfigurator {
     };
   }
 
-  protected abstract void assemble(ChannelPipeline pipe, Object  options);
-
   protected void mkInitor(ChannelPipeline pipe, Object  options) {
     assemble(pipe, options);
-    tlog().debug("ChannelPipeline: assembled handlers= {}", StringUtils.join(pipe.names(), "|"));
+    TLOG.debug("ChannelPipeline: assembled handlers= {}", StringUtils.join(pipe.names(), "|"));
   }
+
+  protected abstract void assemble(ChannelPipeline pipe, Object  options);
 
   protected PipelineConfigurator() {}
 

@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,31 +10,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.mime;
 
 import static org.apache.commons.lang3.StringUtils.trim;
-
+import javax.activation.MimetypesFileTypeMap;
+import java.io.UnsupportedEncodingException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import javax.activation.MimetypesFileTypeMap;
 
 /**
  * @author kenl
  */
 public class MimeFileTypes {
 
-  public static  MimetypesFileTypeMap makeMimeFileTypes(Properties props) throws IOException{
+  public static MimetypesFileTypeMap makeMimeFileTypes(Properties props) throws IOException{
     StringBuilder sum = new StringBuilder();
     for (Entry<Object, Object> en : props.entrySet()) {
-      sum.append(  trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n");
+      sum.append( trim( en.getValue().toString() )  + "  " + trim(en.getKey().toString() )  + "\n");
     }
     try {
       return new MimetypesFileTypeMap( new ByteArrayInputStream( sum.toString().getBytes("utf-8")) );

@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.server;
@@ -23,7 +21,7 @@ package com.zotohlab.frwk.server;
  */
 public interface Emitter {
 
-  public void dispatch( Event evt , Object options);
+  public void dispatch(Event evt, Object options);
 
   public ServerLike container();
   public Object getConfig();
@@ -34,7 +32,7 @@ public interface Emitter {
   public void suspend();
   public void resume();
 
-  public EventHolder  release(Object obj);
+  public EventHolder release(Object obj);
   public void hold(EventHolder obj);
 
 }

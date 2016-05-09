@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,32 +10,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.util;
 
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
-
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.io.FileUtils;
+import com.zotohlab.frwk.core.CallableWithArgs;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import com.zotohlab.frwk.core.CallableWithArgs;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 
 /**
  * @author kenl
@@ -45,8 +45,7 @@ import com.zotohlab.frwk.core.CallableWithArgs;
 public enum CU {
 ;
 
-  private static Logger _log=getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
+  public static final Logger TLOG=getLogger(lookup().lookupClass());
 
   private static final AtomicInteger _si= new AtomicInteger(0);
   private static final AtomicLong _sn= new AtomicLong(0L);
@@ -86,7 +85,7 @@ public enum CU {
       }
     }
     catch (Throwable e) {
-      tlog().error("", e);
+      TLOG.error("", e);
     }
   }
 
@@ -97,7 +96,7 @@ public enum CU {
       }
     }
     catch (Throwable e) {
-      tlog().error("", e);
+      TLOG.error("", e);
     }
   }
 
@@ -132,7 +131,7 @@ public enum CU {
     try {
       Thread.currentThread().join();
     } catch (Throwable e) {
-      tlog().error("", e);
+      TLOG.error("", e);
     }
     /*
     while (true) try {
@@ -145,9 +144,9 @@ public enum CU {
 
   public static JsonElement readJson(File f) {
     try {
-      return readJson( FileUtils.readFileToString(f, "utf-8"));
+      return readJson(FileUtils.readFileToString(f, "utf-8"));
     } catch (IOException e) {
-      tlog().error("",e);
+      TLOG.error("",e);
       return null;
     }
   }
@@ -170,7 +169,7 @@ public enum CU {
     return loadClass(cz).getDeclaredConstructor().newInstance();
   }
 
-  public static Object syncExec (Object syncObj, CallableWithArgs  r, Object a1, Object... args) throws Exception {
+  public static Object syncExec(Object syncObj, CallableWithArgs  r, Object a1, Object... args) throws Exception {
     synchronized(syncObj) {
       return r.run(a1, args);
     }
@@ -180,4 +179,5 @@ public enum CU {
   public static int nextSeqInt() { return _si.incrementAndGet(); }
 
 }
+
 

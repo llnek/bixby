@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,16 +10,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.mock.jms;
 
-import javax.jms.Destination;
-import javax.jms.Message;
+
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
+import javax.jms.Destination;
+import javax.jms.Message;
 
 
 /**
@@ -58,4 +57,5 @@ public class MockMsgConsumer implements MessageConsumer {
   }
 
 }
+
 

@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.i18n;
@@ -34,15 +32,16 @@ public enum I18N {
   private static Map<Object,ResourceBundle> _bundles= new HashMap<>();
   private static ResourceBundle _base;
 
-  private static Logger _log= getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
-  public static ResourceBundle getBase() {
-    return _base;
-  }
+  //
 
   public static void setBase(ResourceBundle b) {
     _base=b;
+  }
+
+  public static ResourceBundle getBase() {
+    return _base;
   }
 
   public static ResourceBundle getBundle(Object bkey) {
@@ -50,7 +49,7 @@ public enum I18N {
   }
 
   public static void setBundle(Object bkey, ResourceBundle b) {
-    tlog().info("setting a resource bundle, bkey = {}", bkey);
+    TLOG.info("setting a resource bundle, bkey = {}", bkey);
     _bundles.put(bkey,b);
   }
 
@@ -59,4 +58,5 @@ public enum I18N {
   }
 
 }
+
 

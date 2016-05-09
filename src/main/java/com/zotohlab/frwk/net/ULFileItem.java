@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,14 +10,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.net;
 
-import static com.zotohlab.frwk.util.CU.nsb;
 import static java.lang.invoke.MethodHandles.lookup;
+import static com.zotohlab.frwk.util.CU.nsb;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.io.ByteArrayOutputStream;
@@ -30,8 +28,8 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 
-import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
+import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 
@@ -44,10 +42,8 @@ import com.zotohlab.frwk.io.XData;
  */
 public class ULFileItem implements FileItem , Serializable {
 
-  private static final Logger _log= getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
-
   private static final long serialVersionUID= 2214937997601489203L;
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
   private transient OutputStream _os;
   private byte[] _fieldBits;
@@ -91,15 +87,15 @@ public class ULFileItem implements FileItem , Serializable {
    * @param value
    */
   public ULFileItem(String field, byte[] value) {
-    _ctype= "";
     _field= field;
-    _ff= true;
     _filename= "";
+    _ctype= "";
+    _ff= true;
     _os=iniz();
     try {
       _os.write(value);
     } catch (IOException e) {
-      tlog().error("",e);
+      TLOG.error("",e);
     }
   }
 
@@ -143,7 +139,7 @@ public class ULFileItem implements FileItem , Serializable {
     try {
       return (maybeGetBits() == null) ?  null : new String(_fieldBits, charset);
     } catch (UnsupportedEncodingException e) {
-      tlog().error("",e);
+      TLOG.error("",e);
       return null;
     }
   }
@@ -181,7 +177,7 @@ public class ULFileItem implements FileItem , Serializable {
       try {
         s2 ="filepath = " + _ds.filePath();
       } catch (IOException e) {
-        tlog().error("",e);
+        TLOG.error("",e);
         s2="ERROR";
       }
     } else {
@@ -209,7 +205,7 @@ public class ULFileItem implements FileItem , Serializable {
         _os = new FileOutputStream(fp);
       }
       catch (Throwable e) {
-        tlog().error("", e);
+        TLOG.error("", e);
       }
     }
 
@@ -217,4 +213,5 @@ public class ULFileItem implements FileItem , Serializable {
   }
 
 }
+
 

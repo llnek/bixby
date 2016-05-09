@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.frwk.netty;
@@ -20,9 +18,9 @@ package com.zotohlab.frwk.netty;
 import static java.lang.invoke.MethodHandles.lookup;
 import static org.slf4j.LoggerFactory.getLogger;
 
+import io.netty.channel.ChannelHandler;
 import org.slf4j.Logger;
 
-import io.netty.channel.ChannelHandler;
 
 
 /**
@@ -33,8 +31,7 @@ import io.netty.channel.ChannelHandler;
 @ChannelHandler.Sharable
 public abstract class AuxHttpFilter extends SimpleInboundFilter {
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static Logger TLOG = getLogger(lookup().lookupClass());
 
   protected AuxHttpFilter() {}
 
