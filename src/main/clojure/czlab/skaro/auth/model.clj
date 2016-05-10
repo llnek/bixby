@@ -60,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(DefModel2 _NSP  AuthRole
+(DefModel2 _NSP AuthRole
   (WithDbFields
     {:name {:column "role_name" :null false }
      :desc {:column "description" :null false } })
@@ -96,8 +96,8 @@
 
   (-> (reify Schema
         (getModels [_]
-          [StdAddress AuthRole
-           LoginAccount AccountRole] ))
+          [LoginAccount AccountRole
+           StdAddress AuthRole]))
       (MetaCache* )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

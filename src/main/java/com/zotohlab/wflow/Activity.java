@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.wflow;
@@ -34,8 +32,7 @@ import com.zotohlab.frwk.core.Named;
  */
 public abstract class Activity implements Named {
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
   private String _label;
 
   protected Activity() { this(""); }
@@ -90,4 +87,5 @@ public abstract class Activity implements Named {
   protected abstract void realize(FlowDot p);
 
 }
+
 

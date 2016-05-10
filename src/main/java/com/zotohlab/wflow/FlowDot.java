@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.wflow;
@@ -35,8 +33,7 @@ import com.zotohlab.wflow.Delay;
 @SuppressWarnings("unused")
 public abstract class FlowDot implements RunnableWithId {
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
 
   private long _pid = CU.nextSeqLong();
 
@@ -98,7 +95,7 @@ public abstract class FlowDot implements RunnableWithId {
 
     try {
       if (d.hasName()) {
-        tlog().debug("FlowDot##{} :eval()", d.getName());
+        TLOG.debug("FlowDot##{} :eval()", d.getName());
       }
       rc= eval( _job );
     } catch (Throwable e) {
@@ -112,14 +109,14 @@ public abstract class FlowDot implements RunnableWithId {
         }
       }
       if (err == null) {
-        tlog().error("",e);
+        TLOG.error("",e);
         err= Nihil.apply();
       }
       rc= err.reify( new NihilDot( _job) );
     }
 
     if (rc==null) {
-      tlog().debug("FlowDot: rc==null => skip");
+      TLOG.debug("FlowDot: rc==null => skip");
       // indicate skip, happens with joins
     } else {
       runAfter(rc);
@@ -144,7 +141,7 @@ public abstract class FlowDot implements RunnableWithId {
 
   public void XXXfinalize() throws Throwable {
     super.finalize();
-    tlog().debug("FlowDot: " + getClass().getName() + " finz'ed");
+    TLOG.debug("FlowDot: " + getClass().getName() + " finz'ed");
   }
 
 }

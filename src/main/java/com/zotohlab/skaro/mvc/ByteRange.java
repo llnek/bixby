@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.mvc;
@@ -31,8 +29,7 @@ import static org.slf4j.LoggerFactory.*;
  */
 class ByteRange {
 
-  private static Logger _log= getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
   private RandomAccessFile _file;
   private byte[] _header;
@@ -42,7 +39,9 @@ class ByteRange {
   private int _servedHeader = 0;
   private int _servedRange = 0;
 
-  public ByteRange (RandomAccessFile file,
+  //
+
+  public ByteRange(RandomAccessFile file,
       boolean wantHeader, long start, long end, String cType) {
 
     _header= new byte[0];
@@ -51,23 +50,20 @@ class ByteRange {
     _end= end;
     _cType= cType;
 
-    if (wantHeader) {
-      try {
-        _header= fmtHeader(file.length());
-      } catch (IOException e) {
-        tlog().error("",e);
-      }
+    if (wantHeader) try {
+      _header= fmtHeader(file.length());
+    } catch (IOException e) {
+      TLOG.error("",e);
     }
+
   }
 
+  public long size() { return _end - _start + 1; }
   public long start() { return _start; }
   public long end() { return _end; }
 
-  public long size() { return _end - _start + 1; }
-
-  public long remaining() { return size() - _servedRange; }
-
   public long calcTotalSize() { return size() + _header.length; }
+  public long remaining() { return size() - _servedRange; }
 
   public int pack(byte[] out, int offset) throws IOException {
     int count = 0;
@@ -82,7 +78,7 @@ class ByteRange {
       _file.seek( _start + _servedRange);
       long maxToRead = (remaining() > out.length - pos) ? out.length - pos : remaining();
       if (maxToRead > Integer.MAX_VALUE) {
-          maxToRead = Integer.MAX_VALUE;
+        maxToRead = Integer.MAX_VALUE;
       }
       int c = _file.read( out, pos, (int)maxToRead);
       if (c < 0) {

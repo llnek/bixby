@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.tpcl.axis;
@@ -39,9 +37,7 @@ import org.apache.axis.i18n.Messages;
 // and get the right timezone
 public class CalDeserializer extends CalendarDeserializer {
 
-  private static Logger _log=getLogger(lookup().lookupClass());
-  public static Logger tlog() { return _log; }
-
+  public static final Logger TLOG=getLogger(lookup().lookupClass());
   private static final long serialVersionUID = 1L;
 
   public CalDeserializer(Class<?> javaType, QName xmlType) {
@@ -53,7 +49,7 @@ public class CalDeserializer extends CalendarDeserializer {
       return _makeValue(source);
     }
     catch (Throwable e) {
-      tlog().error("", e);
+      TLOG.error("", e);
       return null;
     }
   }

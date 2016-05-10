@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.io;
@@ -31,20 +29,19 @@ import static org.slf4j.LoggerFactory.*;
  */
 public class WEBContextListener implements ServletContextListener {
 
-  private static Logger _log=getLogger(lookup().lookupClass());
+  public static final Logger TLOG=getLogger(lookup().lookupClass());
   private Object _src;
-  public Logger tlog() { return _log; }
 
   public void contextInitialized(ServletContextEvent evt) {
 
-    tlog().info("WEBContextListener: contextInitialized()");
+    TLOG.info("WEBContextListener: contextInitialized()");
 
     ServletContext x= evt.getServletContext();
     String ctx="";
     int m= x.getMajorVersion();
     int n= x.getMinorVersion();
 
-    tlog().info("Servlet-Context: major version {}, minor version {}", m, n);
+    TLOG.info("Servlet-Context: major version {}, minor version {}", m, n);
 
     if (m > 2 || ( m==2 && n > 4)) {
       ctx= x.getContextPath();
@@ -53,13 +50,13 @@ public class WEBContextListener implements ServletContextListener {
     try {
       inizAsJ2EE(x, ctx);
     } catch (Throwable e) {
-      tlog().error("", e);
+      TLOG.error("", e);
     }
 
   }
 
   public void contextDestroyed(ServletContextEvent e) {
-    tlog().info("WEBContextListener: contextDestroyed()");
+    TLOG.info("WEBContextListener: contextDestroyed()");
     if (_src!=null) {
       //_src.container.dispose()
     }
@@ -67,7 +64,7 @@ public class WEBContextListener implements ServletContextListener {
   }
 
   private void inizAsJ2EE(ServletContext ctx, String ctxPath) {
-    tlog().info("inizAsJ2EE - setting up context-path: {}", ctxPath);
+    TLOG.info("inizAsJ2EE - setting up context-path: {}", ctxPath);
     _src = ctx.getAttribute("czchhhiojetty") ;
   }
 

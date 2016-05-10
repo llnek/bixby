@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.io;
@@ -44,8 +42,7 @@ public class WEBServlet extends HttpServlet implements Serializable {
 
   private static final long serialVersionUID= -3862652820921092885L;
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
   private ServletEmitter _src;
 
   public WEBServlet(ServletEmitter src) {
@@ -57,14 +54,14 @@ public class WEBServlet extends HttpServlet implements Serializable {
   }
 
   public void destroy() {
-    tlog().debug("WEBServlet: destroy()");
+    TLOG.debug("WEBServlet: destroy()");
   }
 
   public void service(ServletRequest request, ServletResponse response) {
     HttpServletResponse rsp= (HttpServletResponse) response;
     HttpServletRequest req= (HttpServletRequest) request;
 
-    tlog().debug("{}\n{}\n{}",
+    TLOG.debug("{}\n{}\n{}",
     "********************************************************************",
       req.getRequestURL(),
     "********************************************************************");
@@ -74,7 +71,7 @@ public class WEBServlet extends HttpServlet implements Serializable {
       _src.doService(req,rsp);
     }
     catch (Throwable e) {
-      tlog().error("",e);
+      TLOG.error("",e);
     }
   }
 
@@ -88,7 +85,7 @@ public class WEBServlet extends HttpServlet implements Serializable {
     }
 
     try {
-      tlog().debug("{}\n{}{}\n{}\n{}{}",
+      TLOG.debug("{}\n{}{}\n{}\n{}{}",
         "********************************************************************",
         "Servlet Container: ",
         ctx.getServerInfo(),

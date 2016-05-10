@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,32 +10,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.core;
 
-import java.io.File;
-
+import com.zotohlab.frwk.server.ServiceProvider;
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Named;
 import com.zotohlab.frwk.dbio.DBAPI;
 import com.zotohlab.frwk.dbio.JDBCPool;
 import com.zotohlab.frwk.server.ServerLike;
-import com.zotohlab.frwk.server.ServiceProvider;
+import java.io.File;
 
 /**
  * @author kenl
  */
-public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
+public interface Cocoon extends ServerLike, ServiceProvider, Named, Disposable {
 
-  public Object loadTemplate (String tpl, Object ctx);
+  public Object loadTemplate(String tpl, Object ctx);
   public boolean isEnabled();
 
   public CLJShim getCljRt();
-
-  //public EventBus eventBus();
 
   public Object getEnvConfig();
   public Object getAppConfig();
@@ -51,4 +46,5 @@ public interface Container extends ServerLike, ServiceProvider, Named, Disposabl
   public DBAPI acquireDbAPI(Object groupid);
 
 }
+
 

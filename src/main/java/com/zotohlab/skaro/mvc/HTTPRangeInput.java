@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.mvc;
@@ -44,8 +42,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   protected static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
 
-  private static Logger _log= getLogger(lookup().lookupClass());
-  public Logger tlog()  { return _log; }
+  public static final Logger TLOG= getLogger(lookup().lookupClass());
 
   private boolean _bad = false;
   private ByteRange[] _ranges;
@@ -67,9 +64,12 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   public long process(HttpResponse rsp) {
     HttpHeaders.addHeader(rsp, "accept-ranges", "bytes");
+    long last= _clen > 0 ? _clen-1 : 0;
+
     if (_bad) {
       rsp.setStatus(HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
-      HttpHeaders.setHeader(rsp, "content-range", "bytes " + "0-" + (_clen-1) + "/" + _clen);
+      HttpHeaders.setHeader(rsp, "content-range",
+          "bytes " + "0-" + last + "/" + _clen);
       HttpHeaders.setHeader(rsp, "content-length", "0");
       return 0L;
     }
@@ -77,7 +77,8 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     rsp.setStatus(HttpResponseStatus.PARTIAL_CONTENT);
     if(_ranges.length == 1) {
       ByteRange r= _ranges[0];
-      HttpHeaders.setHeader(rsp, "content-range", "bytes " + r.start() + "-" + r.end() + "/" + _clen);
+      HttpHeaders.setHeader(rsp, "content-range",
+          "bytes " + r.start() + "-" + r.end() + "/" + _clen);
     } else {
       HttpHeaders.setHeader(rsp, "content-type", "multipart/byteranges; boundary="+ DEF_BD);
     }
@@ -116,7 +117,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     try {
       _file.close();
     } catch (IOException e) {
-      tlog().warn("",e);
+      TLOG.warn("",e);
     }
   }
 
@@ -127,23 +128,24 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       int pos= s.indexOf("bytes=");
       String[] rvs= (pos < 0) ?  null : s.substring(pos+6).trim().split(",");
       List<Long[]> ranges= new ArrayList<>();
-
       _clen= _file.length();
+      long last= _clen-1;
 
       if (rvs != null) for (int n=0; n < rvs.length; ++n) {
-          String rs= rvs[n].trim();
-          long start=0L;
-          long end=0L;
-          if (rs.startsWith("-")) {
-            start = _clen - 1 -  Long.valueOf(rs.substring(1).trim() );
-            end = _clen - 1;
-          } else {
-            String[] range = rs.split("-");
-            start = Long.valueOf(range[0].trim() );
-            end = (range.length > 1) ? Long.valueOf(range[1].trim()) : _clen - 1;
-          }
-          if (end > (_clen - 1)) { end = _clen - 1; }
-          if (start <= end) { ranges.add( new Long[]{ start, end } ); }
+        String rs= rvs[n].trim();
+        long start=0L;
+        long end=0L;
+        if (rs.startsWith("-")) {
+          start = last - Long.valueOf(rs.substring(1).trim() );
+          end = last;
+        } else {
+          String[] range = rs.split("-");
+          start = Long.valueOf(range[0].trim() );
+          end = (range.length > 1)
+            ? Long.valueOf(range[1].trim()) : last;
+        }
+        if (end > last) { end = last; }
+        if (start <= end) { ranges.add( new Long[]{ start, end } ); }
       }
 
       List<ByteRange> bytes = new ArrayList<>();
@@ -156,7 +158,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     }
     catch (Throwable e) {
       _bad = true;
-      tlog().error("", e);
+      TLOG.error("", e);
     }
   }
 
@@ -197,4 +199,5 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
   }
 
 }
+
 

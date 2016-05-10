@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.wflow;
@@ -80,15 +78,15 @@ class GroupDot extends CompositeDot {
     FlowDot rc= null;
 
     if ( ! inner().isEmpty()) {
-      //tlog().debug("Group: {} element(s.)",  _inner.size() );
+      //TLOG.debug("Group: {} element(s.)",  _inner.size() );
       FlowDot n=inner().next();
       Activity d=n.getDef();
       if (d.hasName()) {
-        tlog().debug("FlowDot##{} :eval().", d.getName());
+        TLOG.debug("FlowDot##{} :eval().", d.getName());
       }
       rc = n.eval(j);
     } else {
-      //tlog().debug("Group: no more elements.");
+      //TLOG.debug("Group: no more elements.");
       rc= next();
       realize();
     }

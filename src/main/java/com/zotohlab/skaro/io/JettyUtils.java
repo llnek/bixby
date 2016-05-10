@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,17 +10,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.io;
-
-import java.io.File;
-import java.io.IOException;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -29,6 +21,11 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+
 
 /**
  * @author kenl
@@ -52,8 +49,8 @@ public class JettyUtils {
 
   public static void replyXXX(HttpServletRequest req, HttpServletResponse rsp, int code) throws IOException {
     try {
-      rsp.setStatus(code);
       rsp.setContentLength(0);
+      rsp.setStatus(code);
       rsp.flushBuffer();
     } finally {
       ContinuationSupport.getContinuation(req).complete();

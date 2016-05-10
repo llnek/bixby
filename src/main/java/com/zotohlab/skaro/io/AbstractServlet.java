@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,21 +10,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.skaro.io;
 
-import java.io.Serializable;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-
 import static java.lang.invoke.MethodHandles.*;
 import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
+import java.io.Serializable;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 
 
 /**
@@ -34,14 +30,11 @@ import static org.slf4j.LoggerFactory.*;
  */
 public abstract class AbstractServlet extends HttpServlet implements Serializable {
 
+  public static final Logger TLOG = getLogger(lookup().lookupClass());
   private static final long serialVersionUID= -3862652820921092885L;
 
-  private static Logger _log = getLogger(lookup().lookupClass());
-  public Logger tlog() { return _log; }
-
-
   public void destroy() {
-    tlog().debug("AbstractServlet: destroy()");
+    TLOG.debug("AbstractServlet: destroy()");
   }
 
   public void init(ServletConfig config) throws ServletException {

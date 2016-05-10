@@ -1,5 +1,4 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
+/* Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -11,8 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
-*/
+ * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
 package com.zotohlab.wflow;
@@ -63,7 +61,7 @@ class AndDot extends MergeDot {
     int nv= _cntr.incrementAndGet();
     FlowDot rc= null;
 
-    tlog().debug("AndDot: size={}, cntr={}, join={}",
+    TLOG.debug("AndDot: size={}, cntr={}, join={}",
         size(),  nv, getDef().getName());
 
     // all branches have returned, proceed...
@@ -75,7 +73,7 @@ class AndDot extends MergeDot {
   }
 
   private void done() {
-    tlog().debug("AndDot: all branches have returned");
+    TLOG.debug("AndDot: all branches have returned");
     realize();
   }
 
