@@ -119,7 +119,7 @@
     [org.clojure/core.memoize "0.5.9" ]
     [org.flatland/ordered "1.5.3"]
     [com.cemerick/pomegranate "0.3.1"]
-    [codox/codox.core "0.9.5" ]
+    [codox/codox "0.9.5" ]
 
     ;; 1.2.0 screws up skaro runtime
     [org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
