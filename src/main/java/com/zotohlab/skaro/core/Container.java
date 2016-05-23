@@ -26,7 +26,7 @@ import java.io.File;
 /**
  * @author kenl
  */
-public interface Cocoon extends ServerLike, ServiceProvider, Named, Disposable {
+public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
   public Object loadTemplate(String tpl, Object ctx);
   public boolean isEnabled();

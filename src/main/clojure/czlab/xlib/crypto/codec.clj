@@ -297,14 +297,8 @@
 
     Cryptor
 
-    (decrypt [this cipher]
-      (.decrypt this C_KEYCS cipher))
-
     (decrypt [_ pkey cipher]
       (jaDecr pkey cipher))
-
-    (encrypt [this data]
-      (.encrypt this C_KEYCS data))
 
     (encrypt [_ pkey data]
       (jaEncr pkey data))
@@ -391,16 +385,10 @@
 
     Cryptor
 
-    (decrypt [this cipher]
-      (.decrypt this C_KEYBS cipher))
-
     (decrypt [this pkey cipher]
       (let [s (.algo this)]
         (ensureKeySize pkey s)
         (javaDecr pkey cipher s)))
-
-    (encrypt [this clear]
-      (.encrypt this C_KEYBS clear))
 
     (encrypt [this pkey clear]
       (let [s (.algo this)]
@@ -534,16 +522,10 @@
 
     Cryptor
 
-    (decrypt [this cipher]
-      (.decrypt this C_KEYBS cipher))
-
     (decrypt [this pkey cipher]
       (let [s (.algo this)]
         (ensureKeySize pkey s)
         (BcDecr pkey cipher s)))
-
-    (encrypt [this clear]
-      (.encrypt this C_KEYBS clear))
 
     (encrypt [this pkey clear]
       (let [s (.algo this)]

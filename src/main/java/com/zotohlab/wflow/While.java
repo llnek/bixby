@@ -72,11 +72,11 @@ class WhileDot extends ConditionalDot {
     FlowDot n, rc = this;
 
     if ( ! test(j)) {
-      //tlog().debug("WhileDot: test-condition == false")
+      //TLOG.debug("WhileDot: test-condition == false")
       rc= next();
       realize();
     } else {
-      //tlog().debug("WhileDot: looping - eval body")
+      //TLOG.debug("WhileDot: looping - eval body")
       //normally n is null, but if it is not
       //switch the body to it.
       n= _body.eval(j);
@@ -88,7 +88,7 @@ class WhileDot extends ConditionalDot {
         }
         else
         if (n != this){
-          tlog().error("WhileDot##{}.body should not return anything.",
+          TLOG.error("WhileDot##{}.body should not return anything.",
               getDef().getName());
           // let's not do this now
           //_body = n;

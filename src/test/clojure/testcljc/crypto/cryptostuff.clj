@@ -55,20 +55,14 @@
 (is (= "heeloo, how are you?" (CaesarDecrypt (CaesarEncrypt "heeloo, how are you?" 709394) 709394)))
 (is (= "heeloo, how are you?" (CaesarDecrypt (CaesarEncrypt "heeloo, how are you?" 13) 13)))
 
-(is (= "heeloo" (let [ c (JasyptCryptor*) ]
-                      (.decrypt c (.encrypt c "heeloo")))))
 
 (is (= "heeloo" (let [ c (JasyptCryptor*) pkey (.toCharArray (nsb SECRET)) ]
                       (.decrypt c pkey (.encrypt c pkey "heeloo")))))
 
-(is (= "heeloo" (let [ c (JavaCryptor*) ]
-                      (Stringify (.decrypt c (.encrypt c "heeloo"))))))
 
 (is (= "heeloo" (let [ c (JavaCryptor*) pkey (Bytesify (nsb TESTPWD)) ]
                       (Stringify (.decrypt c pkey (.encrypt c pkey "heeloo"))))))
 
-(is (= "heeloo" (let [ c (BouncyCryptor*) ]
-                      (Stringify (.decrypt c (.encrypt c "heeloo"))))))
 
 (is (= "heeloo" (let [ c (BouncyCryptor*) pkey (Bytesify (nsb TESTPWD)) ]
                       (Stringify (.decrypt c pkey (.encrypt c pkey "heeloo"))))))

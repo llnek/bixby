@@ -107,7 +107,7 @@ public class XStream extends InputStream {
     try {
       _inp= new FileInputStream(_fn);
     } catch (FileNotFoundException e) {
-      tlog().error("",e);
+      TLOG.error("",e);
     }
     _closed=false;
     pos=0L;

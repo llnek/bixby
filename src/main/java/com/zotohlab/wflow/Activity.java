@@ -80,7 +80,7 @@ public abstract class Activity implements Named {
 
   public void XXXfinalize() throws Throwable {
     super.finalize();
-    tlog().debug("Activity: " + getClass().getName() + " finz'ed");
+    TLOG.debug("Activity: " + getClass().getName() + " finz'ed");
   }
 
   protected abstract FlowDot reifyDot(FlowDot cur) ;

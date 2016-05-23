@@ -15,7 +15,7 @@
 
 package com.zotohlab.skaro.etc;
 
-import com.zotohlab.skaro.core.Cocoon;
+import com.zotohlab.skaro.core.Container;;
 
 /**
  * @author kenl
@@ -23,7 +23,7 @@ import com.zotohlab.skaro.core.Cocoon;
 @FunctionalInterface
 public interface PluginFactory {
 
-  public Plugin createPlugin(Cocoon c);
+  public Plugin createPlugin(Container c);
 
 }
 

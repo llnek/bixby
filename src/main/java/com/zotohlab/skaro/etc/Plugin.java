@@ -18,14 +18,14 @@ package com.zotohlab.skaro.etc;
 import com.zotohlab.frwk.core.Configurable;
 import com.zotohlab.frwk.core.Disposable;
 import com.zotohlab.frwk.core.Startable;
-import com.zotohlab.skaro.core.Cocoon;
+import com.zotohlab.skaro.core.Container;;
 
 /**
  * @author kenl
  */
 public interface Plugin extends Startable, Configurable, Disposable {
 
-  public void contextualize(Cocoon c);
+  public void contextualize(Container c);
   public void initialize();
 
 }
