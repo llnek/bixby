@@ -13,20 +13,20 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.core;
+package czlab.skaro.core;
 
-import com.zotohlab.frwk.server.ServiceProvider;
-import com.zotohlab.frwk.core.Disposable;
-import com.zotohlab.frwk.core.Named;
-import com.zotohlab.frwk.dbio.DBAPI;
-import com.zotohlab.frwk.dbio.JDBCPool;
-import com.zotohlab.frwk.server.ServerLike;
+import czlab.wflow.server.ServiceProvider;
+import czlab.wflow.server.ServerLike;
+import czlab.xlib.Disposable;
+import czlab.xlib.Named;
+import czlab.dbio.DBAPI;
+import czlab.dbio.JDBCPool;
 import java.io.File;
 
 /**
  * @author kenl
  */
-public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
+public interface Cocoon extends ServerLike, ServiceProvider, Named, Disposable {
 
   public Object loadTemplate(String tpl, Object ctx);
   public boolean isEnabled();

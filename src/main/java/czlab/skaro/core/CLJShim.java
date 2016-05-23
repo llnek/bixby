@@ -13,7 +13,7 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.core;
+package czlab.skaro.core;
 
 import org.projectodd.shimdandy.ClojureRuntimeShim;
 
