@@ -13,10 +13,8 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.mock.jms;
+package czlab.skaro.mock.jms;
 
-
-import static com.zotohlab.mock.jms.MockUtils.makeNewTextMsg_x;
 
 import java.io.Serializable;
 import java.util.HashMap;

@@ -13,9 +13,10 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.etc;
+package czlab.skaro.etc;
 
-import com.zotohlab.skaro.core.Container;;
+
+import czlab.skaro.core.Cocoon;
 
 /**
  * @author kenl
@@ -23,7 +24,7 @@ import com.zotohlab.skaro.core.Container;;
 @FunctionalInterface
 public interface PluginFactory {
 
-  public Plugin createPlugin(Container c);
+  public Plugin createPlugin(Cocoon c);
 
 }
 

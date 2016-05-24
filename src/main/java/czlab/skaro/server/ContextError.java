@@ -13,21 +13,27 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.runtime;
+package czlab.skaro.server;
 
 /**
  * @author kenl
  */
-public interface RouteInfo  {
+public class ContextError extends Exception {
 
-  public Object resemble(String mtd, String path);
-  public Object collect(Object matcher);
-  public Object getTemplate();
-  public Object getHandler();
-  public Object getPath();
-  public boolean isStatic();
-  public boolean isSecure();
-  public Object getVerbs();
+  private static final long serialVersionUID = 1L;
+
+  public ContextError(String msg,Throwable e)  {
+    super(msg,e);
+  }
+
+  public ContextError(Throwable e) {
+    this(null,e);
+  }
+
+  public ContextError(String msg) {
+    this(msg,null);
+  }
 
 }
+
 

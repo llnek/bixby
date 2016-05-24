@@ -12,19 +12,28 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package com.zotohlab.skaro.core;
 
-import com.zotohlab.frwk.core.Gettable;
-import com.zotohlab.frwk.core.Settable;
+package czlab.skaro.server;
 
 /**
  * @author kenl
  */
-public interface Muble extends Gettable, Settable {
+public class ConfigError extends Exception {
 
-  public Iterable<?> seq();
-  public Object toEDN();
-  public void clear();
+  private static final long serialVersionUID = 1L;
+
+  public ConfigError(String msg,Throwable e) {
+    super(msg,e);
+  }
+
+  public ConfigError(Throwable e) {
+    this(null,e);
+  }
+
+  public ConfigError(String msg) {
+    this(msg,null);
+  }
 
 }
+
 

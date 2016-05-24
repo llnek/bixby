@@ -13,13 +13,13 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.runtime;
+package czlab.skaro.runtime;
 
-import com.zotohlab.frwk.core.Configurable;
-import com.zotohlab.frwk.core.Disposable;
-import com.zotohlab.frwk.core.Initializable;
-import com.zotohlab.frwk.core.Startable;
-import com.zotohlab.skaro.core.Contextualizable;
+import czlab.xlib.Configurable;
+import czlab.xlib.Disposable;
+import czlab.xlib.Initializable;
+import czlab.xlib.Startable;
+import czlab.skaro.core.Contextualizable;
 
 /**
  * @author kenl

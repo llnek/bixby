@@ -19,52 +19,54 @@
   czlab.skaro.impl.climain
 
   (:require
-    [czlab.xlib.netty.discarder :refer [DiscardHTTPD*]]
-    [czlab.xlib.util.str :refer [lcase hgl? strim]]
-    [czlab.xlib.util.io :refer [CloseQ]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.netty.discarder :refer [discardHTTPD]]
+    [czlab.xlib.str :refer [lcase hgl? strim]]
+    [czlab.xlib.io :refer [closeQ]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.process
-    :refer [ProcessPid SafeWait ThreadFunc]]
-    [czlab.xlib.i18n.resources :refer [GetResource]]
-    [czlab.xlib.util.meta :refer [SetCldr GetCldr]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.xlib.util.files
-    :refer [ReadOneFile WriteOneFile]]
-    [czlab.xlib.util.scheduler :refer [NulScheduler*]]
-    [czlab.xlib.util.core
-    :refer [test-nonil test-cond ConvLong SysVar
-    FPath PrintMutableObj MubleObj!]]
-    [czlab.skaro.impl.exec :refer [Execvisor*]]
-    [czlab.xlib.netty.io :refer [StopServer]])
+    [czlab.xlib.process
+     :refer [processPid safeWait threadFunc]]
+    [czlab.xlib.resources :refer [getResource]]
+    [czlab.xlib.meta :refer [setCldr getCldr]]
+    [czlab.xlib.format :refer [readEdn]]
+    [czlab.xlib.files
+     :refer [readOneFile writeOneFile]]
+    [czlab.xlib.scheduler :refer [nulScheduler*]]
+    [czlab.xlib.core
+     :refer [test-nonil test-cond convLong sysVar
+             fpath printMutableObj mubleObj!]]
+    [czlab.skaro.impl.exec :refer [execvisor]]
+    [czlab.netty.io :refer [stopServer]])
 
   (:use [czlab.skaro.core.consts]
-        [czlab.xlib.util.consts]
+        [czlab.xlib.consts]
         [czlab.skaro.core.sys]
-        [czlab.xlib.util.wfs]
+        [czlab.skaro.core.wfs]
         [czlab.skaro.impl.dfts])
 
   (:import
-    [com.zotohlab.skaro.core CLJShim Muble Context ConfigError]
+    [czlab.skaro.server CLJShim Context ConfigError]
     [io.netty.channel Channel ChannelFuture
-    ChannelFutureListener]
-    [com.zotohlab.skaro.loaders AppClassLoader
-    RootClassLoader ExecClassLoader]
-    [com.zotohlab.skaro.runtime ExecvisorAPI]
-    [com.zotohlab.frwk.core
-    Versioned Identifiable
-    Disposable Activable
-    Hierarchial Startable]
-    [com.zotohlab.frwk.util Schedulable]
-    [com.zotohlab.frwk.i18n I18N]
-    [com.zotohlab.wflow Job WorkFlow
-    FlowDot
-    Activity Nihil]
+     ChannelFutureListener]
+    [czlab.skaro.loaders AppClassLoader
+     RootClassLoader
+     ExecClassLoader]
+    [czlab.skaro.runtime ExecvisorAPI]
+    [czlab.xlib Versioned
+     Identifiable
+     Disposable Activable
+     Hierarchial Startable]
+    [czlab.xlib Schedulable Muble I18N]
+    [czlab.wflow Job
+     WorkFlow
+     FlowDot
+     Activity Nihil]
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]
-    [com.zotohlab.frwk.server ServerLike
-    ServiceHandler Component ]
-    [com.zotohlab.skaro.etc CmdHelpError]
+    [czlab.wflow.server ServerLike
+     ServiceHandler
+     Component]
+    [czlab.skaro.etc CmdHelpError]
     [java.util ResourceBundle Locale]
     [java.io File]))
 
@@ -87,11 +89,11 @@
 
   (let [etc (io/file baseDir DN_CFG)
         home (.getParentFile etc)]
-    (map PrecondDir [(io/file home DN_CONF)
+    (map precondDir [(io/file home DN_CONF)
                      (io/file home DN_DIST)
                      (io/file home DN_LIB)
                      (io/file home DN_BIN) home etc])
-    (doto (MakeContext)
+    (doto (makeContext)
       (.setv K_BASEDIR home)
       (.setv K_CFGDIR etc))))
 
@@ -111,7 +113,7 @@
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown")
-      (StopServer (:bootstrap kp)
+      (stopServer (:bootstrap kp)
                   (:channel kp))
       (log/info "remote shutdown closed. ok")
       ;;(when-not (nil? pid) (io/delete-file pid true))
@@ -131,9 +133,9 @@
   [^Muble ctx]
 
   (log/info "enabling remote shutdown")
-  (->> (-> (SysVar "skaro.kill.port")
-           (ConvLong  4444)
-           (DiscardHTTPD* #(stopCLI ctx)))
+  (->> (-> (sysVar "skaro.kill.port")
+           (convLong  4444)
+           (discardHTTPD #(stopCLI ctx)))
        (.setv ctx K_KILLPORT )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,9 +145,9 @@
   ^ServerLike
   [^File home]
 
-  (let [ctxt (atom (MubleObj!))
-        impl (MubleObj!)
-        cpu (NulScheduler*) ]
+  (let [ctxt (atom (mubleObj!))
+        impl (mubleObj!)
+        cpu (nulScheduler*) ]
     (-> ^Activable
         cpu
         (.activate {:threads 1}))
@@ -154,12 +156,12 @@
       ServiceHandler
 
       (handle [this arg options]
-        (let [w (ToWorkFlow arg)
-              j (NewJob this)]
+        (let [w (toWorkFlow arg)
+              j (newJob this)]
           (doseq [[k v] options]
             (.setv j k v))
           (.setv j :wflow w)
-          (->> (NihilDot j)
+          (->> (nihilDot j)
                (.reify (.startWith w))
                (.run cpu ))))
 
@@ -194,7 +196,7 @@
       Versioned
 
       (version [_]
-        (str (SysVar "skaro.version")))
+        (str (sysVar "skaro.version")))
 
       Identifiable
 
@@ -204,7 +206,7 @@
 ;;
 (defonce ^:private ^Activity
   pauseCLI
-  (SimPTask "PauseCLI"
+  (simPTask "PauseCLI"
     (fn [^Job j]
       (let [ctx (.getLastResult j)
             s (.container j)]
@@ -212,14 +214,14 @@
                    (-> (ClassLoader/getSystemClassLoader)
                        (.getClass)
                        (.getName)))
-        (PrintMutableObj ctx)
+        (printMutableObj ctx)
         (log/info "container(s) are now running...")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defonce ^:private ^Activity
   hookShutdown
-  (SimPTask "HookShutDown"
+  (simPTask "HookShutDown"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             cli (.getv ctx K_CLISH)]
@@ -232,12 +234,12 @@
 ;;
 (defonce ^:private ^Activity
   writePID
-  (SimPTask "WritePID"
+  (simPTask "WritePID"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             home (.getv ctx K_BASEDIR)
             fp (io/file home "skaro.pid")]
-        (WriteOneFile fp (ProcessPid))
+        (writeOneFile fp (processPid))
         (.setv ctx K_PIDFILE fp)
         (.deleteOnExit fp)
         (log/info "wrote skaro.pid - ok")))))
@@ -246,7 +248,7 @@
 ;;create and synthesize Execvisor
 (defonce ^:private ^Activity
   primodial
-  (SimPTask "Primodial"
+  (simPTask "Primodial"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             cl (.getv ctx K_EXEC_CZLR)
@@ -256,9 +258,9 @@
         (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
         (log/info "inside primodial() ----------------------------->")
         (log/info "execvisor = %s" cz)
-        (let [execv (Execvisor* cli)]
+        (let [execv (execvisor cli)]
           (.setv ctx K_EXECV execv)
-          (SynthesizeComponent execv {:ctx ctx})
+          (synthesizeComponent execv {:ctx ctx})
           (log/info "execvisor created and synthesized - ok")
           (log/info "*********************************************************")
           (log/info "about to start skaro...")
@@ -270,11 +272,11 @@
 ;;look for and load the resource bundle
 (defonce ^:private ^Activity
   loadRes
-  (SimPTask "LoadResource"
+  (simPTask "LoadResource"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             rc (-> "czlab.skaro.etc/Resources"
-                   (GetResource (.getv ctx K_LOCALE)))]
+                   (getResource (.getv ctx K_LOCALE)))]
         (test-nonil "etc/resouces" rc)
         (.setv ctx K_RCBUNDLE rc)
         (I18N/setBase rc)
@@ -284,14 +286,14 @@
 ;;parse skaro.conf
 (defonce ^:private ^Activity
   loadConf
-  (SimPTask "LoadConf"
+  (simPTask "LoadConf"
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             home (.getv ctx K_BASEDIR)
             cf (io/file home
                         DN_CONF (name K_PROPS))]
         (log/info "about to parse config file %s" cf)
-        (let [w (ReadEdn cf)
+        (let [w (readEdn cf)
               lg (lcase (or (get-in w [K_LOCALE K_LANG]) "en"))
               cn (lcase (get-in w [K_LOCALE K_COUNTRY]))
               loc (if (empty? cn)
@@ -308,10 +310,10 @@
 ;;which runs skaro
 (defonce ^:private ^Activity
   setupLoaders
-  (SimPTask "SetupLoaders"
+  (simPTask "SetupLoaders"
     (fn [^Job j]
       (let [^Muble x (.getLastResult j)
-            cz (GetCldr)
+            cz (getCldr)
             p (.getParent cz)
             pp (.getParent p)]
         (test-cond "bad classloaders" (and (instance? RootClassLoader pp)
@@ -324,7 +326,7 @@
 ;;
 (defonce ^:private ^Activity
   rtStart
-  (SimPTask "RtStart"
+  (simPTask "RtStart"
     (fn [^Job j]
       (let [home (.getv j :home)
             c (.container j)
@@ -338,7 +340,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn StartViaCLI ""
+(defn startViaCLI ""
 
   [home]
 
@@ -356,4 +358,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

@@ -13,7 +13,7 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.mock.mail;
+package czlab.skaro.mock.mail;
 
 
 import javax.mail.MessagingException;

@@ -16,37 +16,48 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlab.xlib.util.wfs
+  czlab.skaro.core.wfs
 
   (:require
-    [czlab.xlib.util.scheduler :refer [Scheduler*]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core
-    :refer [Cast? do->nil MubleObj! NextLong]])
+    [czlab.xlib.scheduler :refer [mkScheduler]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core
+     :refer [cast? do->nil mubleObj! nextLong]])
 
-  (:use [czlab.xlib.util.consts])
+  (:use [czlab.xlib.consts])
 
   (:import
-    [com.zotohlab.wflow FlowDot Activity
-     CounterExpr BoolExpr Nihil
-     ChoiceExpr Job WorkFlow WorkFlowEx
-     WHandler FlowError
-     PTask Work]
-    [com.zotohlab.frwk.server Event ServerLike
-     NonEvent NulEmitter
+    [czlab.wflow FlowDot
+     Activity
+     CounterExpr
+     BoolExpr
+     Nihil
+     ChoiceExpr
+     Job
+     WorkFlow
+     WorkFlowEx
+     WHandler
+     FlowError
+     PTask
+     Work]
+    [czlab.wflow.server Event
+     ServerLike
+     NonEvent
+     NulEmitter
      ServiceHandler]
-    [com.zotohlab.frwk.util Schedulable]
-    [com.zotohlab.frwk.core
-    Debuggable Activable Disposable]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
+    [czlab.xlib Schedulable
+     Debuggable
+     Muble
+     Activable
+     Disposable]
+    [czlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NewJob
+(defn newJob
 
   "Create a new job for downstream processing"
 
@@ -54,8 +65,8 @@
   [^ServerLike par & [evt]]
 
   (let [^Event evt (or evt (NonEvent. par))
-        impl (MubleObj!)
-        jid (NextLong) ]
+        impl (mubleObj!)
+        jid (nextLong) ]
     (reify
 
       Debuggable
@@ -79,7 +90,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NihilDot
+(defn mkNihilDot
 
   "Create a Nihil FlowDot"
 
@@ -90,13 +101,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefPTask
+(defn defPTask
 
   "Given a function(arity 2), return a PTask"
 
   (^PTask
     [func]
-    (DefPTask "" func))
+    (defPTask "" func))
 
   (^PTask
     [^String nm func]
@@ -108,13 +119,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SimPTask
+(defn simPTask
 
   "Given a function(arity 1), return a PTask"
 
   (^PTask
     [func]
-    (SimPTask "" func))
+    (simPTask "" func))
 
   (^PTask
     [^String nm func]
@@ -123,7 +134,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefBoolExpr
+(defn defBoolExpr
 
   "Given a function(arity 1), return a BoolExpr"
 
@@ -136,7 +147,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefChoiceExpr
+(defn defChoiceExpr
 
   "Given a function(arity 1), return a ChoiceExpr"
 
@@ -149,7 +160,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DefCounterExpr
+(defn defCounterExpr
 
   "Given a function(arity 1), return a CounterExpr"
 
@@ -162,18 +173,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WrapPTask
+(defn wrapPTask
 
   "Wrap a PTask around this WHandler"
 
   ^Activity
   [^WHandler wf]
 
-  (SimPTask (fn [j] (.run wf j (object-array 0)))))
+  (simPTask (fn [j] (.run wf j (object-array 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ToWorkFlow
+(defn toWorkFlow
 
   "Coerce argument into a WorkFlow object"
 
@@ -198,7 +209,7 @@
 
     (fn? arg)
     (reify WorkFlow
-      (startWith [_] (SimPTask arg)))
+      (startWith [_] (simPTask arg)))
 
     :else
     (do->nil
@@ -208,7 +219,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc FlowServer
+(defn ^:no-doc flowServer
 
   "A server that handles WorkFlows"
 
@@ -224,8 +235,8 @@
       ServiceHandler
 
       (handle [this arg opts]
-        (let [w (ToWorkFlow arg)
-              j (NewJob this)
+        (let [w (toWorkFlow arg)
+              j (newJob this)
               opts (or opts {})]
           (doseq [[k v] opts]
             (.setv j k v))
@@ -238,9 +249,9 @@
       (handleError [_ e]
         (with-local-vars [ret nil]
           (when-some [^FlowError
-                     fe (Cast? FlowError e)]
+                     fe (cast? FlowError e)]
             (when-some [n (.getLastDot fe)]
-              (when-some [w (Cast? WorkFlowEx
+              (when-some [w (cast? WorkFlowEx
                                   (-> (.job n)
                                       (.wflow)))]
                 (->> (.onError ^WorkFlowEx
@@ -258,4 +269,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

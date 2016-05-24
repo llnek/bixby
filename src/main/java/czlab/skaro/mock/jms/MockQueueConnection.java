@@ -13,7 +13,7 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.mock.jms;
+package czlab.skaro.mock.jms;
 
 import javax.jms.ConnectionConsumer;
 import javax.jms.ConnectionMetaData;

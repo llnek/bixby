@@ -27,23 +27,25 @@
    :state myState)
 
   (:require
-    [czlab.xlib.crypto.codec :refer [Pwdify]])
+    [czlab.crypto.codec :refer [pwdify]])
 
   (:require
-    [czlab.xlib.util.logging :as log])
+    [czlab.xlib.logging :as log])
 
   (:use [czlab.skaro.auth.plugin]
-        [czlab.xlib.dbio.connect]
-        [czlab.xlib.dbio.core])
+        [czlab.dbio.connect]
+        [czlab.dbio.core])
 
   (:import
-    [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
-    [org.apache.shiro.authc AuthenticationException
-    AuthenticationToken SimpleAccount]
+    [org.apache.shiro.authz AuthorizationInfo
+     AuthorizationException]
+    [org.apache.shiro.authc SimpleAccount
+     AuthenticationToken
+     AuthenticationException]
     [org.apache.shiro.subject PrincipalCollection]
     [org.apache.shiro.realm AuthorizingRealm]
-    [com.zotohlab.frwk.dbio DBAPI]
     [org.apache.shiro.realm CachingRealm]
+    [czlab.dbio DBAPI]
     [java.util Collection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,13 +61,13 @@
 
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [db (DbioConnectViaPool *JDBC-POOL*
+  (let [db (dbioConnectViaPool *JDBC-POOL*
                                *META-CACHE* {})
          ;;pwd (.getCredentials token)
         user (.getPrincipal token)
         sql (.newSimpleSQLr db) ]
     (try
-      (when-some [acc (FindLoginAccount sql user) ]
+      (when-some [acc (findLoginAccount sql user) ]
         (SimpleAccount. acc
                         (:passwd acc)
                         (.getName this)))
@@ -78,7 +80,7 @@
 
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [db (DbioConnectViaPool *JDBC-POOL*
+  (let [db (dbioConnectViaPool *JDBC-POOL*
                                *META-CACHE* {})
         acc (.getPrimaryPrincipal principals)
         rc (SimpleAccount. acc
@@ -86,7 +88,7 @@
                            (.getName this))
         sql (.newSimpleSQLr db) ]
     (try
-      (let [rs (DbioGetM2M {:as :roles :with sql } acc) ]
+      (let [rs (dbioGetM2M {:as :roles :with sql } acc) ]
         (doseq [r rs]
           (.addRole rc ^String (:name r)))
         rc)
@@ -99,4 +101,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

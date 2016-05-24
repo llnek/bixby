@@ -19,19 +19,23 @@
   czlab.skaro.auth.shiro
 
   (:require
-    [czlab.xlib.crypto.codec :refer [Pwdify]])
+    [czlab.crypto.codec :refer [pwdify]])
 
   (:require
-    [czlab.xlib.util.logging :as log])
+    [czlab.xlib.logging :as log])
 
   (:import
-    [org.apache.shiro.authz AuthorizationException AuthorizationInfo]
     [org.apache.shiro.authc.credential CredentialsMatcher]
     [org.apache.shiro.realm AuthorizingRealm]
-    [org.apache.shiro.authc AuthenticationException
-    AuthenticationToken AuthenticationInfo SimpleAccount]
-    [com.zotohlab.frwk.crypto PasswordAPI]
-    [com.zotohlab.frwk.dbio DBAPI]))
+    [org.apache.shiro.authz
+     AuthorizationException
+     AuthorizationInfo]
+    [org.apache.shiro.authc SimpleAccount
+     AuthenticationException
+     AuthenticationToken
+     AuthenticationInfo ]
+    [czlab.crypto PasswordAPI]
+    [czlab.dbio DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,7 +50,7 @@
           pwd (.getCredentials tkn)
           uid (.getPrincipal tkn)
           pc (.getCredentials inf)
-          tstPwd (Pwdify (if (string? pwd)
+          tstPwd (pwdify (if (string? pwd)
                            pwd
                            (String. ^chars pwd)))
           acc (-> (.getPrincipals inf)
@@ -58,4 +62,5 @@
 (ns-unmap *ns* '->PwdMatcher)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

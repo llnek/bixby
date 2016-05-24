@@ -19,57 +19,75 @@
   czlab.skaro.auth.plugin
 
   (:require
-    [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
-    [czlab.xlib.util.core
-    :refer [trap! ex* tryc Stringify ce? MubleObj!
-    do->false do->true juid test-nonil LoadJavaProps]]
-    [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]]
-    [czlab.xlib.util.str :refer [hgl? strim]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.dbio.connect :refer [dbioConnectViaPool]]
+    [czlab.xlib.core
+     :refer [trap!
+             exp!
+             tryc
+             stringify
+             ce?
+             mubleObj!
+             do->false
+             do->true
+             juid
+             test-nonil
+             loadJavaProps]]
+    [czlab.xlib.resources :refer [rstr]]
+    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.xlib.str :refer [hgl? strim]]
+    [czlab.xlib.format :refer [readEdn]]
+    [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.xlib.net.comms :refer [GetFormFields]])
+    [czlab.net.comms :refer [getFormFields]])
 
   (:use [czlab.skaro.core.consts]
-        [czlab.xlib.util.wfs]
+        [czlab.skaro.core.wfs]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.webss]
         [czlab.skaro.io.basicauth]
         [czlab.skaro.auth.model]
-        [czlab.xlib.dbio.core])
+        [czlab.dbio.core])
 
   (:import
     [org.apache.shiro.config IniSecurityManagerFactory]
     [org.apache.commons.lang3.tuple ImmutablePair]
-    [com.zotohlab.frwk.net ULFormItems ULFileItem]
-    [com.zotohlab.skaro.etc PluginFactory
-    Plugin AuthPlugin PluginError]
-    [com.zotohlab.skaro.runtime AuthError
-    UnknownUser DuplicateUser]
+    [org.apache.shiro.authc UsernamePasswordToken]
+    [czlab.net ULFormItems ULFileItem]
+    [czlab.skaro.etc PluginFactory
+     Plugin
+     AuthPlugin
+     PluginError]
+    [czlab.skaro.runtime AuthError
+     UnknownUser
+     DuplicateUser]
     [org.apache.commons.codec.binary Base64]
-    [com.zotohlab.skaro.core Container Muble]
-    [com.zotohlab.frwk.util BadDataError]
-    [com.zotohlab.frwk.i18n I18N]
-    [com.zotohlab.frwk.crypto PasswordAPI]
-    [com.zotohlab.frwk.dbio DBAPI MetaCache
-    SQLr JDBCPool JDBCInfo]
+    [czlab.skaro.server Cocoon]
+    [czlab.xlib Muble I18N BadDataError]
+    [czlab.crypto PasswordAPI]
+    [czlab.dbio DBAPI
+     MetaCache
+     SQLr
+     JDBCPool
+     JDBCInfo]
     [java.io File IOException]
     [java.util Properties]
     [org.apache.shiro SecurityUtils]
     [org.apache.shiro.subject Subject]
-    [org.apache.shiro.authc UsernamePasswordToken]
-    [com.zotohlab.wflow If BoolExpr
-    Activity Job PTask Work]
-    [com.zotohlab.skaro.io WebSS HTTPEvent HTTPResult]))
+    [czlab.wflow If
+     BoolExpr
+     Activity
+     Job
+     PTask
+     Work]
+    [czlab.skaro.io WebSS HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AssertPluginOK
+(defn assertPluginOK
 
   "true if the plugin has been initialized,
    by looking into the db"
@@ -77,8 +95,8 @@
   [^JDBCPool pool]
 
   (let [tbl (:table LoginAccount)]
-    (when-not (TableExist? pool tbl)
-      (DbioError (RStr (I18N/getBase)
+    (when-not (tableExist? pool tbl)
+      (mkDbioError (rstr (I18N/getBase)
                        "auth.no.table" tbl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,27 +104,27 @@
 (defn- getSQLr ""
 
   ^SQLr
-  [^Container ctr]
+  [^Cocoon ctr]
 
   ;; get the default db pool
-  (-> (DbioConnectViaPool
+  (-> (dbioConnectViaPool
         (.acquireDbPool ctr "") AUTH-MCACHE {})
       (.newSimpleSQLr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateAuthRole
+(defn createAuthRole
 
   "Create a new auth-role in db"
 
   [^SQLr sql ^String role ^String desc]
 
-  (.insert sql (-> (DbioCreateObj :czc.skaro.auth/AuthRole)
-                   (DbioSetFlds :name role :desc desc))))
+  (.insert sql (-> (dbioCreateObj :czc.skaro.auth/AuthRole)
+                   (dbioSetFlds :name role :desc desc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteAuthRole
+(defn deleteAuthRole
 
   "Delete this role"
 
@@ -114,7 +132,7 @@
 
   (.exec sql
          (str "DELETE FROM "
-              (GTable AuthRole)
+              (gtable AuthRole)
               " WHERE "
               (->> (meta AuthRole)
                    (:fields)
@@ -126,7 +144,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListAuthRoles
+(defn listAuthRoles
 
   "List all the roles in db"
 
@@ -136,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn CreateLoginAccount
+(defn createLoginAccount
 
   "Create a new account
    options : a set of extra properties, such as email address.
@@ -149,8 +167,8 @@
         options (or options {})
         ps (.hashed pwdObj)
         acc (->> (-> :czc.skaro.auth/LoginAccount
-                     (DbioCreateObj )
-                     (DbioSetFld*
+                     (dbioCreateObj )
+                     (dbioSetFld*
                        (merge
                          {:acctid (strim user)
                           :passwd (.getLeft ps)}
@@ -160,7 +178,7 @@
     ;; previous insert. That is, if we fail to set a role, it's
     ;; assumed ok for the account to remain inserted
     (doseq [r roleObjs]
-      (DbioSetM2M { :as :roles :with sql } acc r))
+      (dbioSetM2M { :as :roles :with sql } acc r))
     (log/debug "created new account %s%s%s%s"
                "into db: "
                acc "\nwith meta\n" (meta acc))
@@ -168,7 +186,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindLoginAccountViaEmail
+(defn findLoginAccountViaEmail
 
   "Look for account with this email address"
 
@@ -180,7 +198,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn FindLoginAccount
+(defn findLoginAccount
 
   "Look for account with this user id"
 
@@ -192,32 +210,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetLoginAccount
+(defn getLoginAccount
 
   "Get the user account"
 
   [^SQLr sql ^String user ^String pwd]
 
-  (if-some [acct (FindLoginAccount sql user)]
-    (if (.validateHash (Pwdify pwd)
+  (if-some [acct (findLoginAccount sql user)]
+    (if (.validateHash (pwdify pwd)
                        (:passwd acct))
       acct
-      (trap! AuthError (RStr (I18N/getBase) "auth.bad.pwd")))
+      (trap! AuthError (rstr (I18N/getBase) "auth.bad.pwd")))
     (trap! UnknownUser user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasLoginAccount
+(defn hasLoginAccount
 
   "true if this user account exists"
 
   [^SQLr sql ^String user]
 
-  (some? (FindLoginAccount sql user)))
+  (some? (findLoginAccount sql user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ChangeLoginAccount
+(defn changeLoginAccount
 
   "Change the account password"
 
@@ -225,13 +243,13 @@
 
   (let [ps (.hashed pwdObj)
         u (-> userObj
-              (DbioSetFlds :passwd (.getLeft ps)
+              (dbioSetFlds :passwd (.getLeft ps)
                            :salt (.getRight ps))) ]
     (.update sql u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn UpdateLoginAccount
+(defn updateLoginAccount
 
   "Update account details
    details: a set of properties such as email address"
@@ -242,32 +260,32 @@
 
   (if (empty? details)
     userObj
-    (->> (DbioSetFld* userObj details)
+    (->> (dbioSetFld* userObj details)
          (.update sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteLoginAccountRole
+(defn deleteLoginAccountRole
 
   "Remove a role from this user"
 
   [^SQLr sql userObj roleObj]
 
-  (DbioClrM2M {:as :roles :with sql } userObj roleObj))
+  (dbioClrM2M {:as :roles :with sql } userObj roleObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddLoginAccountRole
+(defn addLoginAccountRole
 
   "Add a role to this user"
 
   [^SQLr sql userObj roleObj]
 
-  (DbioSetM2M {:as :roles :with sql } userObj roleObj))
+  (dbioSetM2M {:as :roles :with sql } userObj roleObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteLoginAccount
+(defn deleteLoginAccount
 
   "Delete this account"
 
@@ -277,7 +295,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DeleteUser
+(defn deleteUser
 
   "Delete the account with this user id"
 
@@ -285,7 +303,7 @@
 
   (.exec sql
          (str "DELETE FROM "
-              (GTable LoginAccount)
+              (gtable LoginAccount)
               " WHERE "
               (->> (meta LoginAccount)
                    (:fields)
@@ -297,7 +315,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ListLoginAccounts
+(defn listLoginAccounts
 
   "List all user accounts"
 
@@ -321,14 +339,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeSignupTest
+(defn maybeSignupTest
 
   "Test component of a standard sign-up workflow"
 
   ^BoolExpr
   [^String challengeStr]
 
-  (DefBoolExpr
+  (defBoolExpr
     (fn [^Job job]
       (let
         [^HTTPEvent evt (.event job)
@@ -336,7 +354,7 @@
                   (.getSession evt)
                   (.getXref))
          si (try
-              (GetSignupInfo evt)
+              (getSignupInfo evt)
               (catch
                 BadDataError e# {:e e#}))
          rb (I18N/getBase)
@@ -351,18 +369,18 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (ex* AuthError (ce? (:e info)))}
+            (->> {:error (exp! AuthError (ce? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)
                (not= challengeStr (:captcha info)))
           (do->false
-            (->> {:error (ex* AuthError (RStr rb "auth.bad.cha")) }
+            (->> {:error (exp! AuthError (rstr rb "auth.bad.cha")) }
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (ex* AuthError (RStr rb "auth.bad.tkn")) }
+            (->> {:error (exp! AuthError (rstr rb "auth.bad.tkn")) }
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -370,7 +388,7 @@
                (hgl? (:email info)))
           (if (.hasAccount pa info)
             (do->false
-              (->> {:error (ex* DuplicateUser (str (:principal info)))}
+              (->> {:error (exp! DuplicateUser (str (:principal info)))}
                    (.setLastResult job )))
             (do->true
               (->> {:account (.addAccount pa info)}
@@ -378,17 +396,17 @@
 
           :else
           (do->false
-            (->> {:error (ex* AuthError (RStr rb "auth.bad.req"))}
+            (->> {:error (exp! AuthError (rstr rb "auth.bad.req"))}
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeLoginTest ""
+(defn maybeLoginTest ""
 
   ^BoolExpr
   []
 
-  (DefBoolExpr
+  (defBoolExpr
     (fn [^Job job]
       (let
         [^HTTPEvent evt (.event job)
@@ -396,7 +414,7 @@
                   (.getSession evt)
                   (.getXref ))
          si (try
-              (GetSignupInfo evt)
+              (getSignupInfo evt)
               (catch
                 BadDataError e# {:e e#}))
          rb (I18N/getBase)
@@ -411,12 +429,12 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (ex* AuthError (ce? (:e info)))}
+            (->> {:error (exp! AuthError (ce? (:e info)))}
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (ex* AuthError (RStr rb "auth.bad.tkn"))}
+            (->> {:error (exp! AuthError (rstr rb "auth.bad.tkn"))}
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -429,7 +447,7 @@
 
           :else
           (do->false
-            (->> {:error (ex* AuthError (RStr rb "auth.bad.req")) }
+            (->> {:error (exp! AuthError (rstr rb "auth.bad.req")) }
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -437,9 +455,9 @@
 (defn- makeAuthPlugin ""
 
   ^Plugin
-  [^Container ctr]
+  [^Cocoon ctr]
 
-  (let [impl (MubleObj!) ]
+  (let [impl (mubleObj!) ]
     (reify AuthPlugin
 
       (configure [_ props] )
@@ -449,7 +467,7 @@
             (applyDDL )))
 
       (start [_]
-        (AssertPluginOK (.acquireDbPool ctr ""))
+        (assertPluginOK (.acquireDbPool ctr ""))
         (init-shiro (.getAppDir ctr)
                     (.getAppKey ctr))
         (log/info "AuthPlugin started"))
@@ -464,11 +482,11 @@
 
       (addAccount [_ options]
         (let [pkey (.getAppKey ctr)]
-          (CreateLoginAccount
+          (createLoginAccount
             (getSQLr ctr)
             (:principal options)
             (-> (:credential options)
-                (Pwdify pkey))
+                (pwdify pkey))
             options
             [])))
 
@@ -493,7 +511,7 @@
 
       (hasAccount [_ options]
         (let [pkey (.getAppKey ctr)]
-          (HasLoginAccount (getSQLr ctr)
+          (hasLoginAccount (getSQLr ctr)
                            (:principal options))))
 
       (getAccount [_ options]
@@ -501,10 +519,10 @@
               sql (getSQLr ctr) ]
           (cond
             (some? (:principal options))
-            (FindLoginAccount sql
+            (findLoginAccount sql
                               (:principal options))
             (some? (:email options))
-            (FindLoginAccountViaEmail sql
+            (findLoginAccountViaEmail sql
                               (:email options))
             :else nil)))
 
@@ -512,7 +530,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AuthPluginFactory ""
+(defn authPluginFactory ""
 
   ^PluginFactory
   []
@@ -531,21 +549,21 @@
   (let [appDir (io/file (first args))
         cmd (nth args 1)
         db (nth args 2)
-        env (ReadEdn (io/file appDir CFG_ENV_CF))
-        app (ReadEdn (io/file appDir CFG_APP_CF))
+        env (readEdn (io/file appDir CFG_ENV_CF))
+        app (readEdn (io/file appDir CFG_APP_CF))
         pkey (-> (str (get-in app [:info :disposition]))
                  (.toCharArray))
         cfg ((keyword db) (get-in env [:databases :jdbc])) ]
     (when (some? cfg)
-      (let [j (Jdbc* db cfg (Pwdify (:passwd cfg) pkey))
-            t (MatchJdbcUrl (:url cfg)) ]
+      (let [j (mkJdbc db cfg (pwdify (:passwd cfg) pkey))
+            t (matchJdbcUrl (:url cfg)) ]
         (cond
           (= "init-db" cmd)
           (applyDDL j)
 
           (= "gen-sql" cmd)
           (if (> (count args) 3)
-            (ExportAuthPluginDDL t
+            (exportAuthPluginDDL t
                                  (io/file (nth args 3))))
 
           :else
@@ -566,4 +584,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

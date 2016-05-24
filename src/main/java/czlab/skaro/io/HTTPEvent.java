@@ -13,12 +13,13 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.io;
+package czlab.skaro.io;
 
 
-import com.zotohlab.frwk.io.XData;
 import java.net.HttpCookie;
 import java.util.Set;
+import czlab.xlib.XData;
+
 
 
 /**

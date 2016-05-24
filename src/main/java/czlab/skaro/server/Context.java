@@ -13,18 +13,18 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.frwk.server;
+package czlab.skaro.server;
 
-import com.zotohlab.frwk.core.Identifiable;
+import czlab.xlib.Muble;
 
 /**
  * @author kenl
  */
-public interface EventHolder extends Identifiable {
+public interface Context  {
 
-  public void timeoutMillis(long  millis);
-  public void resumeOnResult(Object res);
-  public void onExpiry();
+  public void setx(Muble ctx);
+  public Muble getx();
 
 }
+
 

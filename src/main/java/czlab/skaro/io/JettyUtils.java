@@ -13,7 +13,7 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package com.zotohlab.skaro.io;
+package czlab.skaro.io;
 
 import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -33,7 +33,7 @@ import java.io.IOException;
 public class JettyUtils {
 
   public static ServerConnector makeConnector(Server svr, HttpConfiguration conf) {
-    return new ServerConnector( svr , new HttpConnectionFactory(conf)) ;
+    return new ServerConnector(svr , new HttpConnectionFactory(conf)) ;
   }
 
   public static void replyRedirect(HttpServletRequest req,
@@ -74,4 +74,5 @@ public class JettyUtils {
   }
 
 }
+
 

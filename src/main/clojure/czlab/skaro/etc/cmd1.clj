@@ -19,43 +19,62 @@
   czlab.skaro.etc.cmd1
 
   (:require
-    [czlab.xlib.crypto.codec :refer [StrongPwd* Pwdify]]
-    [czlab.xlib.util.files
-    :refer [ReadOneFile
-    CleanDir Mkdirs WriteOneFile ListFiles]]
-    [czlab.xlib.util.cmdline :refer [CLIConverse]]
-    [czlab.xlib.util.guids :refer [NewUUid NewWWid]]
-    [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.dates :refer [AddMonths GCal*]]
-    [czlab.xlib.util.meta :refer [GetCldr]]
-    [czlab.xlib.util.str :refer [ucase hgl? strim]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.crypto.codec :refer [strongPwd pwdify]]
+    [czlab.xlib.files
+     :refer [readOneFile
+             cleanDir mkdirs writeOneFile listFiles]]
+    [czlab.xlib.cmdline :refer [cliConverse]]
+    [czlab.xlib.guids :refer [newUUid newWWid]]
+    [czlab.xlib.resources :refer [rstr]]
+    [czlab.xlib.dates :refer [addMonths gcal]]
+    [czlab.xlib.meta :refer [getCldr]]
+    [czlab.xlib.str :refer [ucase hgl? strim]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs]
-    [czlab.xlib.util.core
-    :refer [FPath GetCwd IsWindows?
-    trap! ex*
-    tryc try! Stringify FlattenNil ConvLong ResStr]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.xlib.crypto.core
-    :refer [AES256_CBC AssertJce PEM_CERT ExportPublicKey
-    ExportPrivateKey DbgProvider AsymKeyPair* SSv1PKCS12* CsrReQ*]])
+    [czlab.xlib.format :refer [readEdn]]
+    [czlab.xlib.core
+     :refer [fpath
+             getCwd
+             isWindows?
+             trap!
+             exp!
+             tryc
+             try!
+             stringify
+             flattenNil
+             convLong
+             resStr]]
+    [czlab.crypto.core
+     :refer [AES256_CBC
+             assertJce
+             PEM_CERT
+             exportPublicKey
+             exportPrivateKey
+             dbgProvider
+             asymKeyPair
+             ssv1PKCS12
+             csrReQ]])
 
   (:refer-clojure :rename {first fst second snd last lst})
 
   (:use [czlab.skaro.etc.boot]
         [czlab.skaro.etc.cmd2]
-        [czlab.xlib.util.meta]
-        [czlab.skaro.core.consts])
+        [czlab.xlib.meta]
+        [czlab.skaro.server.consts])
 
   (:import
-    [java.util Map Calendar ResourceBundle Properties Date]
     [org.apache.commons.lang3.tuple ImmutablePair]
-    [com.zotohlab.skaro.loaders AppClassLoader]
-    [com.zotohlab.skaro.core CLJShim ]
-    [com.zotohlab.skaro.etc CmdHelpError]
-    [com.zotohlab.frwk.crypto PasswordAPI]
-    [com.zotohlab.wflow Job]
+    [java.util Map
+     Calendar
+     ResourceBundle
+     Properties
+     Date]
+    [czlab.skaro.loaders AppClassLoader]
+    [czlab.skaro.server CLJShim ]
+    [czlab.skaro.etc CmdHelpError]
+    [czlab.crypto PasswordAPI]
+    [czlab.wflow Job]
     [java.io File]
     [java.security KeyPair PublicKey PrivateKey]))
 
@@ -64,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn OnCreate
+(defn onCreate
 
   "Create a new app"
 
@@ -73,12 +92,12 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if (> (count args) 1)
-      (CreateApp (fst args) (snd args))
+      (createApp (fst args) (snd args))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
-(defn OnBuild
+(defn onBuild
 
   "Build the app"
 
@@ -87,11 +106,11 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["dev"] args)
-         (apply ExecBootScript (GetHomeDir) (GetCwd) ))))
+         (apply execBootScript (getHomeDir) (getCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe compress and package an app?
-(defn OnPodify
+(defn onPodify
 
   "Package the app"
 
@@ -100,13 +119,13 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if-not (empty? args)
-      (BundleApp (GetHomeDir)
-                 (GetCwd) (fst args))
+      (bundleApp (getHomeDir)
+                 (getCwd) (fst args))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run tests on an app?
-(defn OnTest
+(defn onTest
 
   "Test the app"
 
@@ -115,46 +134,46 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (->> (if (empty? args) ["testjava" "testclj"] args)
-         (apply ExecBootScript (GetHomeDir) (GetCwd) ))))
+         (apply execBootScript (getHomeDir) (getCwd) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe start the server?
-(defn OnStart
+(defn onStart
 
   "Start and run the app"
 
   [^Job j]
 
   (let [func (str "czlab.skaro.impl.climain/StartViaCLI")
-        cwd (GetCwd)
+        cwd (getCwd)
         rt (-> (doto
-                 (AppClassLoader. (GetCldr))
+                 (AppClassLoader. (getCldr))
                  (.configure cwd))
                (CLJShim/newrt (.getName cwd)))
         args (.getLastResult j)
         args (drop 1 args)
         s2 (fst args)
-        home (GetHomeDir)]
+        home (getHomeDir)]
     ;; background job is handled differently on windows
     (if (and (= s2 "bg")
-             (IsWindows?))
-      (RunAppBg home)
+             (isWindows?))
+      (runAppBg home)
       (tryc
         (.callEx rt func (object-array [home]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe run in debug mode?
-(defn OnDebug
+(defn onDebug
 
   "Debug the app"
 
   [^Job j]
 
-  (OnStart j))
+  (onStart j))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe generate some demo apps?
-(defn OnDemos
+(defn onDemos
 
   "Generate demo apps"
 
@@ -163,7 +182,7 @@
   (let [args (.getLastResult j)
         args (drop 1 args)]
     (if-not (empty? args)
-      (PublishSamples (fst args))
+      (publishSamples (fst args))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +193,7 @@
 
   [len]
 
-  (println (str (StrongPwd* len))))
+  (println (str (strongPwd len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -185,11 +204,13 @@
   [^String lenStr]
 
   ;;(DbgProvider java.lang.System/out)
-  (let [kp (AsymKeyPair* "RSA" (ConvLong lenStr 1024))
+  (let [kp (asymKeyPair "RSA" (convLong lenStr 1024))
         pvk (.getPrivate kp)
         puk (.getPublic kp)]
-    (println "privatekey=\n" (Stringify (ExportPrivateKey pvk PEM_CERT)))
-    (println "publickey=\n" (Stringify (ExportPublicKey puk PEM_CERT)))))
+    (println "privatekey=\n"
+             (stringify (exportPrivateKey pvk PEM_CERT)))
+    (println "publickey=\n"
+             (stringify (exportPublicKey puk PEM_CERT)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -197,7 +218,7 @@
 
   []
 
-  (println (NewWWid)))
+  (println (newWWid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -205,7 +226,7 @@
 
   []
 
-  (println (NewUUid)))
+  (println (newUUid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,45 +236,45 @@
 
   [^ResourceBundle rcb]
 
-  {:fname {:question (RStr rcb "cmd.save.file")
+  {:fname {:question (rstr rcb "cmd.save.file")
            :default "csr"
            :required true
            :next :end
            :result :fn}
 
-   :size {:question (RStr rcb "cmd.key.size")
+   :size {:question (rstr rcb "cmd.key.size")
           :default "1024"
           :required true
           :next :fname
           :result :size}
 
-   :c {:question (RStr rcb "cmd.dn.c")
+   :c {:question (rstr rcb "cmd.dn.c")
        :default "US"
        :required true
        :next :size
        :result :c}
 
-   :st {:question (RStr rcb "cmd.dn.st")
+   :st {:question (rstr rcb "cmd.dn.st")
         :required true
         :next :c
         :result :st}
 
-   :loc {:question (RStr rcb "cmd.dn.loc")
+   :loc {:question (rstr rcb "cmd.dn.loc")
          :required true
          :next :st
          :result :l }
 
-   :o {:question (RStr rcb "cmd.dn.org")
+   :o {:question (rstr rcb "cmd.dn.org")
        :required true
        :next :loc
        :result :o }
 
-   :ou {:question (RStr rcb "cmd.dn.ou")
+   :ou {:question (rstr rcb "cmd.dn.ou")
         :required true
         :next :o
         :result :ou }
 
-   :cn {:question (RStr rcb "cmd.dn.cn")
+   :cn {:question (rstr rcb "cmd.dn.cn")
         :required true
         :next :ou
         :result :cn } })
@@ -266,24 +287,24 @@
 
   [^ResourceBundle rcb]
 
-  {:fname {:question (RStr rcb "cmd.save.file")
+  {:fname {:question (rstr rcb "cmd.save.file")
            :default "test.p12"
            :required true
            :next :end
            :result :fn }
 
-   :pwd {:question (RStr rcb "cmd.key.pwd")
+   :pwd {:question (rstr rcb "cmd.key.pwd")
          :required true
          :next :fname
          :result :pwd }
 
-   :duration {:question (RStr rcb "cmd.key.duration")
+   :duration {:question (rstr rcb "cmd.key.duration")
               :default "12"
               :required true
               :next :pwd
               :result :months }
 
-   :size {:question (RStr rcb "cmd.key.size")
+   :size {:question (rstr rcb "cmd.key.size")
           :default "1024"
           :required true
           :next :duration
@@ -295,12 +316,12 @@
 
   [questions start]
 
-  (when-some [rc (CLIConverse questions start)]
+  (when-some [rc (cliConverse questions start)]
     (let [ssn (map #(let [v (get rc %) ]
                       (if (hgl? v)
                         (str (ucase (name %)) "=" v)))
                    [ :c :st :l :o :ou :cn ]) ]
-      [(cs/join "," (FlattenNil ssn)) rc])))
+      [(cs/join "," (flattenNil ssn)) rc])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -310,21 +331,21 @@
   []
 
   (if-some
-    [res (promptQs (merge (makeCsrQs (ResBdl))
-                          (makeKeyQs (ResBdl))) :cn) ]
+    [res (promptQs (merge (makeCsrQs (resBdl))
+                          (makeKeyQs (resBdl))) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           now (Date.)
           ff (io/file (:fn rc))]
       (println "DN entered: " dn)
-      (SSv1PKCS12*
+      (ssv1PKCS12*
         dn
-        (Pwdify (:pwd rc))
+        (pwdify (:pwd rc))
         ff
-        {:keylen (ConvLong (:size rc) 1024)
+        {:keylen (convLong (:size rc) 1024)
          :start now
-         :end (-> (GCal* now)
-                  (AddMonths (ConvLong (:months rc) 12))
+         :end (-> (gcal now)
+                  (addMonths (convLong (:months rc) 12))
                   (.getTime)) })
       (println "Wrote file: " ff))))
 
@@ -336,24 +357,24 @@
   []
 
   (if-some
-    [res (promptQs (makeCsrQs (ResBdl)) :cn) ]
+    [res (promptQs (makeCsrQs (resBdl)) :cn) ]
     (let [dn (fst res)
           rc (lst res)
           [req pkey]
-          (CsrReQ* (ConvLong (:size rc) 1024)
-                      dn
-                      PEM_CERT) ]
+          (csrReQ (convLong (:size rc) 1024)
+                  dn
+                  PEM_CERT)]
       (println "DN entered: " dn)
       (let [f1 (io/file (:fn rc) ".key")
             f2 (io/file (:fn rc) ".csr") ]
-        (WriteOneFile f1 pkey)
+        (writeOneFile f1 pkey)
         (println "Wrote file: " f1)
-        (WriteOneFile f2 req)
+        (writeOneFile f2 req)
         (println "Wrote file: " f2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnGenerate
+(defn onGenerate
 
   "Generate a bunch of stuff"
 
@@ -388,14 +409,14 @@
   [text]
 
   (->> ^PasswordAPI
-       (Pwdify text)
+       (pwdify text)
        (.hashed )
        (.getLeft )
        (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHash
+(defn onHash
 
   "Generate a hash"
 
@@ -414,13 +435,13 @@
   [pkey text]
 
   (->> ^PasswordAPI
-       (Pwdify text pkey)
+       (pwdify text pkey)
        (.encoded )
        (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnEncrypt
+(defn onEncrypt
 
   "Encrypt the data"
 
@@ -439,13 +460,13 @@
   [pkey secret]
 
   (->> ^PasswordAPI
-       (Pwdify secret pkey)
+       (pwdify secret pkey)
        (.text )
        (println )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnDecrypt
+(defn onDecrypt
 
   "Decrypt the cypher"
 
@@ -459,18 +480,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnTestJCE
+(defn onTestJCE
 
   "Test if JCE (crypto) is ok"
 
   [j]
 
-  (AssertJce)
+  (assertJce)
   (println "JCE is OK."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnVersion
+(defn onVersion
 
   "Show the version of system"
 
@@ -496,11 +517,11 @@
   [^StringBuilder out ^File dir]
 
   (let [sep (System/getProperty "line.separator")
-        fs (ListFiles dir "jar") ]
+        fs (listFiles dir "jar") ]
     (doseq [f fs]
       (doto out
         (.append (str "<classpathentry  kind=\"lib\" path=\""
-                      (FPath f)
+                      (fpath f)
                       "\"/>" ))
         (.append sep)))))
 
@@ -510,44 +531,44 @@
 
   [^File appdir]
 
-  (let [ec (Mkdirs (io/file appdir "eclipse.projfiles"))
+  (let [ec (mkdirs (io/file appdir "eclipse.projfiles"))
         app (.getName appdir)
         sb (StringBuilder.)]
-    (CleanDir ec)
-    (WriteOneFile
+    (cleanDir ec)
+    (writeOneFile
       (io/file ec ".project")
-      (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
+      (-> (resStr (str "czlab/skaro/eclipse/"
                        "java"
                        "/project.txt"))
           (cs/replace "${APP.NAME}" app)
           (cs/replace "${JAVA.TEST}"
-                      (FPath (io/file appdir
+                      (fpath (io/file appdir
                                       "src/test/java")))
           (cs/replace "${JAVA.SRC}"
-                      (FPath (io/file appdir
+                      (fpath (io/file appdir
                                       "src/main/java")))
           (cs/replace "${CLJ.TEST}"
-                      (FPath (io/file appdir
+                      (fpath (io/file appdir
                                       "src/test/clojure")))
           (cs/replace "${CLJ.SRC}"
-                      (FPath (io/file appdir
+                      (fpath (io/file appdir
                                       "src/main/clojure")))))
     (.mkdirs (io/file appdir DN_BUILD "classes"))
     (doall
       (map (partial scanJars sb)
-           [(io/file (GetHomeDir) DN_DIST)
-            (io/file (GetHomeDir) DN_LIB)
+           [(io/file (getHomeDir) DN_DIST)
+            (io/file (getHomeDir) DN_LIB)
             (io/file appdir DN_TARGET)]))
-    (WriteOneFile
+    (writeOneFile
       (io/file ec ".classpath")
-      (-> (ResStr (str "com/zotohlab/skaro/eclipse/"
+      (-> (resStr (str "czlab/skaro/eclipse/"
                        "java"
                        "/classpath.txt"))
           (cs/replace "${CLASS.PATH.ENTRIES}" (str sb))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnIDE
+(defn onIDE
 
   "Generate IDE project files"
 
@@ -557,9 +578,10 @@
         args (drop 1 args)]
     (if (and (> (count args) 0)
              (= "eclipse" (fst args)))
-      (genEclipseProj (GetCwd))
+      (genEclipseProj (getCwd))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

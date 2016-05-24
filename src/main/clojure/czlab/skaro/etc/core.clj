@@ -19,25 +19,28 @@
   czlab.skaro.etc.core
 
   (:require
-    [czlab.xlib.util.core :refer [trap! PrtStk test-cond MubleObj!]]
-    [czlab.xlib.i18n.resources :refer [GetResource RStr RStr*]]
-    [czlab.xlib.util.str :refer [MakeString]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.scheduler :refer [NulScheduler*]]
-    [czlab.xlib.util.files :refer [DirRead?]])
+    [czlab.xlib.core :refer [trap! prtStk test-cond mubleObj!]]
+    [czlab.xlib.resources :refer [getResource rstr rstr*]]
+    [czlab.xlib.str :refer [makeString]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.scheduler :refer [nulScheduler]]
+    [czlab.xlib.files :refer [dirRead?]])
 
-  (:use [czlab.xlib.util.consts]
-        [czlab.xlib.util.wfs]
+  (:use [czlab.skaro.core.wfs]
+        [czlab.xlib.consts]
         [czlab.skaro.etc.cmd2]
         [czlab.skaro.etc.cmd1])
 
   (:import
-    [com.zotohlab.frwk.server ServiceHandler ServerLike]
-    [com.zotohlab.skaro.etc CmdHelpError]
+    [czlab.wflow.server ServiceHandler ServerLike]
+    [czlab.skaro.etc CmdHelpError]
     [java.io File]
-    [com.zotohlab.wflow Activity
-    WorkFlowEx Nihil Job Switch]
-    [com.zotohlab.frwk.i18n I18N]
+    [czlab.wflow Activity
+     WorkFlowEx
+     Nihil
+     Job
+     Switch]
+    [czlab.xlib I18N]
     [java.util ResourceBundle List Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,7 +53,7 @@
   [rcb]
 
   (partition 2
-    (RStr* rcb
+    (rstr* rcb
            ["usage.cmdline"] []
            ["usage.new"] ["usage.new.desc"]
            ["usage.podify"] ["usage.podify.desc"]
@@ -86,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Usage ""
+(defn usage ""
 
   []
 
@@ -94,13 +97,13 @@
         b (drop-last (drop 1 strs))
         h (take 1 strs)
         e (take-last 1 strs)]
-    (println (MakeString \= 78))
+    (println (makeString \= 78))
     (drawHelp " %-35s %s\n" h)
     (println " -----------------")
     (drawHelp " %-35s %s\n" b)
     (println "")
     (drawHelp " %-35s %s\n" e)
-    (println (MakeString \= 78))))
+    (println (makeString \= 78))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -109,24 +112,24 @@
   ^Activity
   []
 
-  (doto (Switch/apply (DefChoiceExpr
+  (doto (Switch/apply (defChoiceExpr
                         #(keyword (first (.getLastResult ^Job %)))))
-    (.withChoice :new (SimPTask #(OnCreate %)))
-    (.withChoice :ide (SimPTask #(OnIDE %)))
-    (.withChoice :make (SimPTask #(OnBuild %)))
-    (.withChoice :podify (SimPTask #(OnPodify %)))
-    (.withChoice :test (SimPTask #(OnTest %)))
-    (.withChoice :debug (SimPTask #(OnDebug %)))
-    (.withChoice :start (SimPTask #(OnStart %)))
-    (.withChoice :demos (SimPTask #(OnDemos %)))
-    (.withChoice :generate (SimPTask #(OnGenerate %)))
-    (.withChoice :encrypt (SimPTask #(OnEncrypt %)))
-    (.withChoice :decrypt (SimPTask #(OnDecrypt %)))
-    (.withChoice :hash (SimPTask #(OnHash %)))
-    (.withChoice :testjce (SimPTask #(OnTestJCE %)))
-    (.withChoice :version (SimPTask #(OnVersion %)))
-    (.withChoice :help (SimPTask #(OnHelp %)))
-    (.withDft (SimPTask #(OnHelp %)))))
+    (.withChoice :new (simPTask #(onCreate %)))
+    (.withChoice :ide (simPTask #(onIDE %)))
+    (.withChoice :make (simPTask #(onBuild %)))
+    (.withChoice :podify (simPTask #(onPodify %)))
+    (.withChoice :test (simPTask #(onTest %)))
+    (.withChoice :debug (simPTask #(onDebug %)))
+    (.withChoice :start (simPTask #(onStart %)))
+    (.withChoice :demos (simPTask #(onDemos %)))
+    (.withChoice :generate (simPTask #(onGenerate %)))
+    (.withChoice :encrypt (simPTask #(onEncrypt %)))
+    (.withChoice :decrypt (simPTask #(onDecrypt %)))
+    (.withChoice :hash (simPTask #(onHash %)))
+    (.withChoice :testjce (simPTask #(onTestJCE %)))
+    (.withChoice :version (simPTask #(onVersion %)))
+    (.withChoice :help (simPTask #(onHelp %)))
+    (.withDft (simPTask #(onHelp %)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -137,7 +140,7 @@
   ^Activity
   []
 
-  (SimPTask (fn [_])))
+  (simPTask (fn [_])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,14 +151,14 @@
   ^Activity
   []
 
-  (SimPTask
+  (simPTask
     (fn [^Job j]
       (let [args (.getLastResult j)]
         (when (< (count args) 1) (trap! CmdHelpError ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn BootAndRun ""
+(defn bootAndRun ""
 
   [^File home ^ResourceBundle rcb & args]
 
@@ -167,17 +170,18 @@
              (onError [_ e]
                (if
                  (instance? CmdHelpError e)
-                 (Usage)
-                 (PrtStk e))
+                 (usage)
+                 (prtStk e))
                (Nihil/apply))) ]
-    (SetGlobals! :homeDir home)
-    (SetGlobals! :rcb rcb)
+    (setGlobals! :homeDir home)
+    (setGlobals! :rcb rcb)
     (-> ^ServiceHandler
-        (FlowServer (NulScheduler*) {})
+        (flowServer (nulScheduler) {})
         (.handle wf {:home home
                      :rcb rcb
                      JS_LAST args}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 
