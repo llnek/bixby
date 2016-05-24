@@ -19,7 +19,7 @@
   czlab.xlib.jmx.names
 
   (:require
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib..logging :as log]
     [clojure.string :as cs])
 
   (:import
@@ -31,7 +31,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ObjectName*
+(defn objectName
 
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
@@ -55,4 +55,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

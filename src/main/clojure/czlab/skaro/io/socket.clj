@@ -19,36 +19,38 @@
   czlab.skaro.io.socket
 
   (:require
-    [czlab.xlib.util.core
-    :refer [NextLong test-posnum ConvLong spos?]]
-    [czlab.xlib.util.process :refer [Coroutine]]
-    [czlab.xlib.util.meta :refer [GetCldr]]
-    [czlab.xlib.util.io :refer [CloseQ]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.str :refer [strim hgl?]])
+    [czlab.xlib.core
+     :refer [nextLong
+             test-posnum
+             convLong
+             spos?]]
+    [czlab.xlib.process :refer [coroutine]]
+    [czlab.xlib.meta :refer [getCldr]]
+    [czlab.xlib.io :refer [closeQ]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.str :refer [strim hgl?]])
 
   (:use [czlab.skaro.io.core]
         [czlab.skaro.core.sys])
 
   (:import
     [java.net InetAddress ServerSocket Socket]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.frwk.core Identifiable]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.io SocketEvent]))
+    [czlab.wflow.server Emitter]
+    [czlab.xlib Muble Identifiable]
+    [czlab.skaro.io SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.skaro.io/SocketIO
+(defmethod ioReifyEvent :czc.skaro.io/SocketIO
 
   [co & args]
 
-  (log/info "IOESReifyEvent: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "ioReifyEvent: SocketIO: %s" (.id ^Identifiable co))
   (let [^Socket soc (first args)
-        eeid (NextLong) ]
+        eeid (nextLong) ]
     (with-meta
       (reify
 
@@ -65,13 +67,13 @@
         (getSockOut [_] (.getOutputStream soc))
         (getSockIn [_] (.getInputStream soc))
         (emitter [_] co)
-        (dispose [_] (CloseQ soc)))
+        (dispose [_] (closeQ soc)))
 
       {:typeid :czc.skaro.io/SocketEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/SocketIO
+(defmethod compConfigure :czc.skaro.io/SocketIO
 
   [^Muble co cfg0]
 
@@ -95,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.io/SocketIO
+(defmethod compInitialize :czc.skaro.io/SocketIO
 
   [^Muble co]
 
@@ -116,39 +118,40 @@
 
   [^Emitter co ^Socket soc]
 
-  (.dispatch co (IOESReifyEvent co soc) {} ))
+  (.dispatch co (ioReifyEvent co soc) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStart :czc.skaro.io/SocketIO
+(defmethod ioStart :czc.skaro.io/SocketIO
 
   [^Muble co & args]
 
-  (log/info "IOESStart: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "ioStart: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getv co :ssocket)]
     (when (some? ssoc)
-      (Coroutine #(while (.isBound ssoc)
+      (coroutine #(while (.isBound ssoc)
                     (try
                       (sockItDown co (.accept ssoc))
                       (catch Throwable e#
                         (log/warn e# "")
-                        (CloseQ ssoc)
+                        (closeQ ssoc)
                         (.setv co :ssocket nil))))
-                 (GetCldr)))
-    (IOESStarted co)))
+                 (getCldr)))
+    (ioStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStop :czc.skaro.io/SocketIO
+(defmethod ioStop :czc.skaro.io/SocketIO
 
   [^Muble co & args]
 
-  (log/info "IOESStop: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "ioStop: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getv co :ssocket) ]
-    (CloseQ ssoc)
+    (closeQ ssoc)
     (.setv co :ssocket nil)
-    (IOESStopped co)))
+    (ioStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

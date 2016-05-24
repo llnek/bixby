@@ -19,25 +19,32 @@
   czlab.skaro.io.webss
 
   (:require
-    [czlab.xlib.util.core
-    :refer [ConvLong juid trap! MubleObj! Stringify Bytesify]]
-    [czlab.xlib.util.str :refer [hgl? AddDelim!]]
-    [czlab.xlib.crypto.core :refer [GenMac]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.net.comms :refer [GetFormFields]])
+    [czlab.xlib.core
+     :refer [convLong
+             juid
+             trap!
+             mubleObj!
+             stringify
+             bytesify]]
+    [czlab.xlib.str :refer [hgl? addDelim!]]
+    [czlab.crypto.core :refer [genMac]]
+    [czlab.xlib.logging :as log]
+    [czlab.net.comms :refer [getFormFields]])
 
   (:import
-    [com.zotohlab.skaro.runtime ExpiredError AuthError]
+    [org.apache.commons.codec.binary Base64 Hex]
+    [czlab.skaro.runtime ExpiredError AuthError]
+    [java.net HttpCookie URLDecoder URLEncoder]
     [org.apache.commons.lang3 StringUtils]
     [org.apache.commons.codec.net URLCodec]
-    [org.apache.commons.codec.binary Base64 Hex]
-    [com.zotohlab.frwk.util CU]
-    [java.net HttpCookie URLDecoder URLEncoder]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.skaro.io HTTPResult
-    HTTPEvent WebSS IOSession]
-    [com.zotohlab.skaro.core Container Muble]
-    [com.zotohlab.frwk.net ULFormItems ULFileItem]))
+    [czlab.xlib Muble CU]
+    [czlab.wflow.server Emitter]
+    [czlab.skaro.io HTTPResult
+     HTTPEvent
+     WebSS
+     IOSession]
+    [czlab.skaro.server Cocoon]
+    [czlab.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -61,7 +68,7 @@
         maxAge (or maxAge 0) ]
     (doto mvs
       (.setAttribute SSID_FLAG
-                     (Hex/encodeHexString (Bytesify (juid))))
+                     (Hex/encodeHexString (bytesify (juid))))
       (.setAttribute ES_FLAG (if (> maxAge 0)
                                  (+ now (* maxAge 1000))
                                  maxAge))
@@ -78,7 +85,7 @@
   (if
     (.checkAuthenticity evt)
     (str (-> (.getAppKeyBits ctr)
-             (GenMac data))
+             (genMac data))
          "-" data)
     data))
 
@@ -123,7 +130,7 @@
   (when-some [pkey (if (.checkAuthenticity evt)
                     (.getAppKeyBits ctr)
                     nil) ]
-    (when (not= (GenMac pkey part2) part1)
+    (when (not= (genMac pkey part2) part1)
       (log/error "session cookie - broken")
       (trap! AuthError "Bad Session Cookie"))))
 
@@ -178,14 +185,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WSSession* ""
+(defn mkWSSession ""
 
   ^IOSession
   [co ssl]
 
-  (let [impl (MubleObj! {:maxIdleSecs 0
+  (let [impl (mubleObj! {:maxIdleSecs 0
                          :newOne true})
-        attrs (MubleObj!)]
+        attrs (mubleObj!)]
     (with-meta
       (reify WebSS
 
@@ -230,7 +237,7 @@
         Object
 
         (toString [this]
-          (str (reduce #(AddDelim! %1 NV_SEP
+          (str (reduce #(addDelim! %1 NV_SEP
                                    (str (name (first %2))
                                         ":"
                                         (last %2)))
@@ -248,4 +255,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

@@ -19,23 +19,25 @@
   czlab.skaro.io.basicauth
 
   (:require
-    [czlab.xlib.util.format :refer [ReadJson WriteJson]]
-    [czlab.xlib.util.core
-    :refer [Cast? NormalizeEmail Stringify tryletc]]
-    [czlab.xlib.util.str :refer [lcase strim hgl?]]
-    [czlab.skaro.io.http :refer [ScanBasicAuth]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.crypto.codec :refer [CaesarDecrypt]]
-    [czlab.xlib.net.comms :refer [GetFormFields]])
+    [czlab.xlib.format :refer [readJson writeJson]]
+    [czlab.xlib.core
+     :refer [normalizeEmail
+             cast?
+             stringify tryletc]]
+    [czlab.xlib.str :refer [lcase strim hgl?]]
+    [czlab.skaro.io.http :refer [scanBasicAuth]]
+    [czlab.xlib.logging :as log]
+    [czlab.crypto.codec :refer [caesarDecrypt]]
+    [czlab.net.comms :refer [getFormFields]])
 
   (:import
     [org.apache.commons.codec.binary Base64]
     [org.apache.commons.lang3 StringUtils]
-    [com.zotohlab.skaro.io HTTPEvent]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.skaro.core Container]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.net ULFormItems ULFileItem]))
+    [czlab.skaro.io HTTPEvent]
+    [czlab.wflow.server Emitter]
+    [czlab.skaro.server Cocoon]
+    [czlab.xlib XData]
+    [czlab.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -51,7 +53,7 @@
 ;; should match this value.
 (def ^:private CAESAR_SHIFT 13)
 
-(def ^:private PMS {EMAIL_PARAM [ :email #(NormalizeEmail %) ]
+(def ^:private PMS {EMAIL_PARAM [ :email #(normalizeEmail %) ]
                     CAPTCHA_PARAM [ :captcha #(strim %) ]
                     USER_PARAM [ :principal #(strim %) ]
                     PWD_PARAM [ :credential #(strim %) ]
@@ -71,7 +73,7 @@
     (with-local-vars
       [rc (transient {})]
       (doseq [^ULFileItem
-              x (GetFormFields itms)
+              x (getFormFields itms)
              :let [fm (.getFieldNameLC x)
                    fv (str x)]]
         (log/debug "form-field=%s, value=%s" fm fv)
@@ -91,7 +93,7 @@
 
   (when-some [^XData
               xs (some-> evt (.data)) ]
-    (when-some [json (ReadJson
+    (when-some [json (readJson
                        (if (.hasContent xs)
                          (.stringify xs)
                          "{}")
@@ -124,7 +126,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeGetAuthInfo
+(defn maybeGetAuthInfo
 
   "Attempt to parse and get authentication info"
 
@@ -151,9 +153,9 @@
   (if (:nonce info)
     (tryletc
       [decr (-> (get info fld)
-                (CaesarDecrypt shiftCount))
+                (caesarDecrypt shiftCount))
        bits (Base64/decodeBase64 decr)
-       s (Stringify bits) ]
+       s (stringify bits) ]
       (log/debug "info = %s" info)
       (log/debug "decr = %s" decr)
       (log/debug "val = %s" s)
@@ -167,29 +169,30 @@
   ^bytes
   [^HTTPEvent evt]
 
-  (-> ^Container (.container (.emitter evt))
+  (-> ^Cocoon (.container (.emitter evt))
       (.getAppKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetSignupInfo ""
+(defn getSignupInfo ""
 
   [^HTTPEvent evt]
 
-  (-> (MaybeGetAuthInfo evt)
+  (-> (maybeGetAuthInfo evt)
       (maybeDecodeField :principal CAESAR_SHIFT)
       (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetLoginInfo ""
+(defn getLoginInfo ""
 
   [^HTTPEvent evt]
 
-  (-> (MaybeGetAuthInfo evt)
+  (-> (maybeGetAuthInfo evt)
       (maybeDecodeField :principal CAESAR_SHIFT)
       (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

@@ -19,36 +19,37 @@
   czlab.skaro.mvc.assets
 
   (:require
-    [czlab.xlib.util.core :refer [do->nil try! FPath]]
-    [czlab.xlib.util.mime :refer [GuessContentType]]
-    [czlab.xlib.util.str :refer [lcase EWicAny?]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core :refer [do->nil try! fpath]]
+    [czlab.xlib.mime :refer [guessContentType]]
+    [czlab.xlib.str :refer [lcase ewicAny?]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.files
-    :refer [ReadFileBytes WriteOneFile]]
-    [czlab.xlib.util.io :refer [Streamify]])
+    [czlab.xlib.files
+     :refer [readFileBytes writeOneFile]]
+    [czlab.xlib.io :refer [streamify]])
 
   (:use [czlab.skaro.io.http]
-        [czlab.xlib.netty.io])
+        [czlab.netty.io])
 
   (:import
     [io.netty.handler.codec.http HttpRequest HttpResponse
-    HttpResponseStatus
-    CookieDecoder ServerCookieEncoder
-    DefaultHttpResponse HttpVersion
-    HttpMethod
-    LastHttpContent
-    HttpHeaders Cookie QueryStringDecoder]
+     HttpResponseStatus
+     CookieDecoder ServerCookieEncoder
+     DefaultHttpResponse HttpVersion
+     HttpMethod
+     LastHttpContent
+     HttpHeaders Cookie QueryStringDecoder]
     [io.netty.handler.stream ChunkedStream ChunkedFile]
-    [io.netty.channel Channel ChannelHandler
-    ChannelFutureListener ChannelFuture
-    ChannelPipeline ChannelHandlerContext]
-    [org.apache.commons.io FileUtils]
-    [com.zotohlab.skaro.mvc WebContent
-    WebAsset
-    HTTPRangeInput ]
     [java.io Closeable RandomAccessFile File]
-    [com.zotohlab.skaro.core Muble]))
+    [io.netty.channel Channel
+     ChannelHandler
+     ChannelFutureListener ChannelFuture
+     ChannelPipeline ChannelHandlerContext]
+    [org.apache.commons.io FileUtils]
+    [czlab.skaro.mvc WebContent
+     WebAsset
+     HTTPRangeInput ]
+    [czlab.xlib Muble]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -60,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn SetCacheAssetsFlag
+(defn setCacheAssetsFlag
 
   "Toggle caching of assers"
 
@@ -71,7 +72,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetLocalFile ""
+(defn getLocalFile ""
 
   ^WebContent
   [appDir fname]
@@ -81,9 +82,9 @@
       (reify
           WebContent
           (contentType [_]
-            (GuessContentType f "utf-8"))
+            (guessContentType f "utf-8"))
           (body [_]
-            (WriteOneFile f))))))
+            (writeOneFile f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,18 +95,18 @@
   [^File fp]
 
   (if @cache-assets-flag
-    (-> (FPath fp)
-        (EWicAny? [ ".css" ".gif" ".jpg" ".jpeg" ".png" ".js"]))
+    (-> (fpath fp)
+        (ewicAny? [ ".css" ".gif" ".jpg" ".jpeg" ".png" ".js"]))
     false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WebAsset* ""
+(defn webAsset ""
 
   ^WebAsset
   [^File file]
 
-  (let [ct (GuessContentType file "utf-8" "text/plain")
+  (let [ct (guessContentType file "utf-8" "text/plain")
         ts (.lastModified file) ]
     (reify
       WebAsset
@@ -114,7 +115,7 @@
       (getFile [_] file)
       (getTS [_] ts)
       (size [_] (.length file))
-      (getBytes [_] (ReadFileBytes file)))))
+      (getBytes [_] (readFileBytes file)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -125,7 +126,7 @@
 
   (when (and (.exists file)
              (.canRead file))
-    (WebAsset* file)))
+    (webAsset file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -135,7 +136,7 @@
   [^File file]
 
   (if-some [wa (fetchAsset file) ]
-    (let [fp (FPath file)]
+    (let [fp (fpath file)]
       (log/debug "asset-cache: cached new file: %s" fp)
       (swap! asset-cache assoc fp wa)
       wa)
@@ -150,7 +151,7 @@
   [^File file]
 
   (if @cache-assets-flag
-    (let [^WebAsset wa (@asset-cache (FPath file))
+    (let [^WebAsset wa (@asset-cache (fpath file))
           cf (if (some? wa) (.getFile wa)) ]
       (if (or (nil? cf)
               (> (.lastModified file)
@@ -168,7 +169,7 @@
    info
    ^HttpResponse rsp ]
 
-  (let [s (GetInHeader info "range")]
+  (let [s (getInHeader info "range")]
     (if (HTTPRangeInput/isAcceptable s)
       (doto (HTTPRangeInput. raf ct s)
         (.process rsp))
@@ -176,7 +177,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ReplyFileAsset ""
+(defn replyFileAsset ""
 
   [src ^Channel ch info ^HttpResponse rsp ^File file]
 
@@ -190,14 +191,14 @@
        inp nil ct "" wf nil]
       (if (nil? asset)
         (do
-          (var-set ct (GuessContentType file "utf-8" "text/plain"))
+          (var-set ct (guessContentType file "utf-8" "text/plain"))
           (var-set raf (RandomAccessFile. file "r"))
           (var-set clen (.length ^RandomAccessFile @raf))
           (var-set inp (getFileInput @raf @ct info rsp)))
         (do
           (var-set ct (.contentType asset))
           (var-set clen (.size asset))
-          (var-set inp (ChunkedStream. (Streamify (.getBytes asset))))) )
+          (var-set inp (ChunkedStream. (streamify (.getBytes asset))))) )
       (log/debug (str "serving file: %s with "
                       "clen= %s, ctype= %s")
                  fname @clen @ct)
@@ -205,14 +206,14 @@
         (when (= HttpResponseStatus/NOT_MODIFIED
                  (.getStatus rsp))
               (var-set clen 0))
-        (AddHeader rsp "Accept-Ranges" "bytes")
-        (SetHeader rsp "Content-Type" @ct)
+        (addHeader rsp "Accept-Ranges" "bytes")
+        (setHeader rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
         (var-set wf (.writeAndFlush ch rsp))
         (when-not (or (= (:method info) "HEAD")
                       (== 0 @clen))
                   (var-set wf (.writeAndFlush ch @inp)))
-        (FutureCB @wf #(do
+        (futureCB @wf #(do
                         (log/debug "channel-future-op-cmp: %s, file = %s" %1 fname)
                         (try! (when (some? @raf) (.close ^Closeable @raf)))
                         (when-not (:keepAlive info)
@@ -224,4 +225,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

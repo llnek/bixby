@@ -19,30 +19,40 @@
   czlab.skaro.io.core
 
   (:require
-    [czlab.xlib.util.str :refer [ToKW stror strim]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core
-    :refer [NextLong Cast? ThrowBadArg
-    trycr ThrowIOE MubleObj! ConvToJava tryc]])
+    [czlab.xlib.str :refer [toKW stror strim]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core
+     :refer [nextLong
+             cast?
+             throwBadArg
+             trycr
+             throwIOE
+             mubleObj!
+             convToJava
+             tryc]])
 
-  (:use [czlab.xlib.util.consts]
-        [czlab.xlib.util.wfs]
+  (:use [czlab.xlib.consts]
+        [czlab.skaro.core.wfs]
         [czlab.skaro.core.sys]
         [czlab.skaro.impl.misc]
         [czlab.skaro.core.consts])
 
   (:import
-    [com.zotohlab.skaro.core CLJShim Context Container Muble]
     [java.util.concurrent ConcurrentHashMap]
-    [com.zotohlab.skaro.io IOEvent]
-    [com.zotohlab.frwk.server Component
-    Emitter EventHolder EventTrigger
-    ServiceHandler Service]
+    [czlab.skaro.server CLJShim
+     Context
+     Cocoon]
     [java.util Timer TimerTask]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.core Versioned Hierarchial
-    Identifiable Disposable Startable]
-    [com.zotohlab.wflow WorkFlow Job Nihil Activity]))
+    [czlab.skaro.io IOEvent]
+    [czlab.wflow.server Component
+     Emitter
+     EventHolder
+     EventTrigger
+     ServiceHandler Service]
+    [czlab.xlib XData
+     Versioned Hierarchial
+     Identifiable Disposable Startable]
+    [czlab.wflow WorkFlow Job Nihil Activity]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -53,43 +63,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESReifyEvent "Create an event" meta???)
+(defmulti ioReifyEvent "Create an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispatch "Dispatch an event" meta???)
+(defmulti ioDispatch "Dispatch an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESDispose "Dispose a component" meta???)
+(defmulti ioDispose "Dispose a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESSuspend "Suspend a component" meta???)
+(defmulti ioSuspend "Suspend a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStart "Start a component" meta???)
+(defmulti ioStart "Start a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStop "Stop a component" meta???)
+(defmulti ioStop "Stop a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESResume "Resume a component" meta???)
+(defmulti ioResume "Resume a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStopped "Called after a component has stopped" meta???)
+(defmulti ioStopped "Called after a component has stopped" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti IOESStarted "Called after a component has started" meta???)
+(defmulti ioStarted "Called after a component has started" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStarted :default
+(defmethod ioStarted :default
 
   [co]
 
@@ -100,7 +110,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStopped :default
+(defmethod ioStopped :default
 
   [co]
 
@@ -108,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESDispose :default
+(defmethod ioDispose :default
 
   [co]
 
@@ -116,19 +126,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESSuspend :default
+(defmethod ioSuspend :default
 
   [co]
 
-  (ThrowIOE "Not Implemented"))
+  (throwIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESResume :default
+(defmethod ioResume :default
 
   [co]
 
-  (ThrowIOE "Not Implemented"))
+  (throwIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,11 +160,11 @@
 
     ServiceHandler
     (handle [_ arg more]
-      (let [^Job j (Cast? Job more)
-            w (ToWorkFlow arg)]
+      (let [^Job j (cast? Job more)
+            w (toWorkFlow arg)]
         (if (some? j)
           (log/debug "job##%s is being serviced by %s"  (.id j) service)
-          (ThrowBadArg "Expected Job, got " (class more)))
+          (throwBadArg "Expected Job, got " (class more)))
         (.setv j :wflow w)
         (some-> ^Emitter service
                 (.container)
@@ -172,14 +182,14 @@
   [container evt]
 
   (with-meta
-    (NewJob container evt)
-    {:typeid (ToKW "czc.skaro.io" "Job") }))
+    (newJob container evt)
+    {:typeid (toKW "czc.skaro.io" "Job") }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEvent ""
 
-  [^Container ctr ^Service src evt options]
+  [^Cocoon ctr ^Service src evt options]
 
   (let [^ServiceHandler hr (.handler src)
         cfg (-> ^Muble
@@ -199,20 +209,20 @@
       (.setv job EV_OPTS options)
       (.handle hr wf job)
       (catch Throwable _
-        (.handle hr (MakeFatalErrorFlow job) job)))))
+        (.handle hr (makeFatalErrorFlow job) job)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Emitter*
+(defn mkEmitter
 
   "Create an Emitter"
 
-  [^Container parObj emId emAlias]
+  [^Cocoon parObj emId emAlias]
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
-        impl (MubleObj!)
-        ctxt (atom (MubleObj!)) ]
+        impl (mubleObj!)
+        ctxt (atom (mubleObj!)) ]
 
     (with-meta
       (reify
@@ -247,19 +257,19 @@
 
         Disposable
 
-        (dispose [this] (IOESDispose this))
+        (dispose [this] (ioDispose this))
 
         Startable
 
         (start [this]
           (when-some [p (mkPipeline this true)]
             (.setv impl :pipe p)
-            (IOESStart this)))
+            (ioStart this)))
 
         (stop [this]
           (when-some [p (.getv impl :pipe)]
             (.dispose ^Disposable p)
-            (IOESStop this)
+            (ioStop this)
             (.unsetv impl :pipe)))
 
         Service
@@ -275,8 +285,8 @@
         (isEnabled [_] (not (false? (.getv impl :enabled))))
         (isActive [_] (not (false? (.getv impl :active))))
 
-        (suspend [this] (IOESSuspend this))
-        (resume [this] (IOESResume this))
+        (suspend [this] (ioSuspend this))
+        (resume [this] (ioResume this))
 
         (dispatch [this ev options]
           (tryc
@@ -298,7 +308,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AsyncWaitHolder*
+(defn asyncWaitHolder
 
   "Create a async wait wrapper"
 
@@ -306,7 +316,7 @@
   [^EventTrigger trigger
    ^IOEvent event ]
 
-  (let [impl (MubleObj!) ]
+  (let [impl (mubleObj!) ]
     (reify
 
       EventHolder
@@ -337,14 +347,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompContextualize :czc.skaro.io/Emitter
+(defmethod compContextualize :czc.skaro.io/Emitter
 
   [co arg]
 
   (when (instance? Context arg)
     (->> (-> ^Context
              arg (.getx ))
-         (CompCloneContext co ))))
+         (compCloneContext co ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy
@@ -369,4 +379,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

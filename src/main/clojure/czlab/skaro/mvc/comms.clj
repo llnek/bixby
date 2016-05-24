@@ -19,17 +19,17 @@
   czlab.skaro.mvc.comms
 
   (:require
-    [czlab.xlib.util.core :refer [try! FPath]]
-    [czlab.xlib.util.wfs :refer [SimPTask]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core :refer [try! fpath]]
+    [czlab.skaro.core.wfs :refer [simPTask]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.skaro.mvc.assets
-    :refer [WebAsset* GetLocalFile]]
-    [czlab.xlib.util.str :refer [hgl? strim]]
-    [czlab.xlib.util.meta :refer [NewObj*]])
+     :refer [webAsset getLocalFile]]
+    [czlab.xlib.str :refer [hgl? strim]]
+    [czlab.xlib.meta :refer [newObj]])
 
-  (:use [czlab.xlib.util.consts]
-        [czlab.xlib.netty.io]
+  (:use [czlab.xlib.consts]
+        [czlab.netty.io]
         [czlab.skaro.io.http]
         [czlab.skaro.io.netty]
         [czlab.skaro.io.core]
@@ -37,31 +37,30 @@
         [czlab.skaro.core.consts])
 
   (:import
-    [com.zotohlab.frwk.server Emitter EventHolder EventTrigger]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-    [com.zotohlab.skaro.runtime RouteInfo RouteCracker]
-    [com.zotohlab.skaro.mvc HTTPErrorHandler
-    MVCUtils WebAsset WebContent]
-    [com.zotohlab.frwk.core Hierarchial Identifiable]
-    [com.zotohlab.wflow FlowDot Activity
-    Job WHandler PTask Work]
-    [com.zotohlab.skaro.runtime AuthError]
-    [com.zotohlab.skaro.core Muble Container]
+    [czlab.wflow.server Emitter EventHolder EventTrigger]
+    [czlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.net RouteInfo RouteCracker]
+    [czlab.skaro.mvc HTTPErrorHandler
+     MVCUtils WebAsset WebContent]
+    [czlab.xlib XData Muble Hierarchial Identifiable]
+    [czlab.wflow FlowDot Activity
+     Job WHandler PTask Work]
+    [czlab.skaro.runtime AuthError]
+    [czlab.skaro.server Cocoon]
     [org.apache.commons.lang3 StringUtils]
     [java.util Date]
     [java.io File]
-    [com.zotohlab.frwk.io XData]
     [io.netty.handler.codec.http HttpRequest
-    HttpResponseStatus HttpResponse
-    CookieDecoder ServerCookieEncoder
-    DefaultHttpResponse HttpVersion
-    HttpMessage
-    HttpHeaders LastHttpContent
-    HttpHeaders Cookie QueryStringDecoder]
+     HttpResponseStatus HttpResponse
+     CookieDecoder ServerCookieEncoder
+     DefaultHttpResponse HttpVersion
+     HttpMessage
+     HttpHeaders LastHttpContent
+     HttpHeaders Cookie QueryStringDecoder]
     [io.netty.buffer Unpooled]
     [io.netty.channel Channel ChannelHandler
-    ChannelFuture
-    ChannelPipeline ChannelHandlerContext]
+     ChannelFuture
+     ChannelPipeline ChannelHandlerContext]
     [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,23 +77,23 @@
      none "if-none-match"
      modd true ]
     (cond
-      (HasInHeader? info @unmod)
-      (when-some [s (GetInHeader info @unmod)]
+      (hasInHeader? info @unmod)
+      (when-some [s (getInHeader info @unmod)]
         (try!
           (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
                     lastTm)
             (var-set modd false))))
 
-      (HasInHeader? info @none)
+      (hasInHeader? info @none)
       (var-set modd (not= eTag
-                          (GetInHeader info @none)))
+                          (getInHeader info @none)))
 
       :else nil)
     @modd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AddETag
+(defn addETag
 
   "Add a ETag"
 
@@ -151,7 +150,7 @@
 
   [src info ^HTTPEvent evt ^File file]
 
-  (log/debug "serving static file: %s" (FPath file))
+  (log/debug "serving static file: %s" (fpath file))
   (with-local-vars [crap false]
     (let [^HTTPResult
           res (.getResultObj evt)]
@@ -162,9 +161,9 @@
             (.setStatus res 404)
             (.replyResult evt))
           (do
-            (.setContent res (WebAsset* file))
+            (.setContent res (webAsset file))
             (.setStatus res 200)
-            (AddETag src info file res)
+            (addETag src info file res)
             (var-set crap true)
             (.replyResult evt)))
         (catch Throwable e#
@@ -179,15 +178,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HandleStatic
+(defn handleStatic
 
   "Handle static file resource"
 
   [^Emitter src ^HTTPEvent evt options]
 
-  (let [appDir (-> ^Container
+  (let [appDir (-> ^Cocoon
                    (.container src) (.getAppDir))
-        ps (FPath (io/file appDir DN_PUBLIC))
+        ps (fpath (io/file appDir DN_PUBLIC))
         ^HTTPResult res (.getResultObj evt)
         cfg (-> ^Muble src (.getv :emcfg))
         ckAccess (:fileAccessCheck cfg)
@@ -209,28 +208,28 @@
 
   [^Emitter src code]
 
-  (-> ^Container
+  (-> ^Cocoon
       (.container src)
       (.getAppDir )
-      (GetLocalFile (str "pages/errors/" code ".html"))))
+      (getLocalFile (str "pages/errors/" code ".html"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeError
+(defn serveError
 
   "Reply back an error"
 
   [^Muble src ^Channel ch code]
 
   (with-local-vars
-    [rsp (HttpReply* code)
+    [rsp (httpReply code)
      bits nil wf nil
      ctype "text/plain"]
     (try
       (let [cfg (.getv src :emcfg)
             h (:errorHandler cfg)
             ^HTTPErrorHandler
-            cb (if (hgl? h) (NewObj* h) nil)
+            cb (if (hgl? h) (newObj h) nil)
             ^WebContent
             rc (if (nil? cb)
                  (replyError src code)
@@ -238,7 +237,7 @@
         (when (some? rc)
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
-        (SetHeader @rsp "content-type" @ctype)
+        (setHeader @rsp "content-type" @ctype)
         (->> (if (nil? @bits)
                  0 (alength ^bytes @bits))
              (HttpHeaders/setContentLength @rsp ))
@@ -247,13 +246,13 @@
           (->> (Unpooled/wrappedBuffer ^bytes @bits)
                (.writeAndFlush ch )
                (var-set wf )))
-        (CloseCF @wf false))
+        (closeCF @wf false))
       (catch Throwable e#
         (.close ch)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeStatic
+(defn serveStatic
 
   "Reply back with a static file content"
 
@@ -267,11 +266,11 @@
       (-> evt (.getSession)(.handleEvent evt))
       (catch AuthError e#
         (var-set ok false)
-        (ServeError src ch 403)))
+        (serveError src ch 403)))
     (when @ok
-      (let [appDir (-> ^Container
+      (let [appDir (-> ^Cocoon
                        (.container src) (.getAppDir))
-            ps (FPath (io/file appDir DN_PUBLIC))
+            ps (fpath (io/file appDir DN_PUBLIC))
             mpt (str (.getv ri :mountPoint))
             gc (.groupCount mc)]
         (var-set mp (.replace mpt "${app.dir}" (FPath appDir)))
@@ -280,10 +279,10 @@
             (var-set mp (StringUtils/replace ^String @mp
                                              "{}"
                                              (.group mc (int i)) 1))))
-        (var-set mp (FPath (File. ^String @mp)))
+        (var-set mp (fpath (File. ^String @mp)))
         (let [cfg (-> ^Muble src (.getv :emcfg))
-              w (-> (NettyTrigger* ch evt src)
-                    (AsyncWaitHolder*  evt))]
+              w (-> (nettyTrigger ch evt src)
+                    (asyncWaitHolder evt))]
           (.timeoutMillis w (:waitMillis cfg))
           (doto src
             (.hold w)
@@ -294,7 +293,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ServeRoute
+(defn serveRoute
 
   "Handle a match route"
 
@@ -309,15 +308,15 @@
       (-> evt (.getSession)(.handleEvent evt))
       (catch AuthError e#
         (var-set ok false)
-        (ServeError src ch 403)))
+        (serveError src ch 403)))
     (when @ok
       (let [cfg (.getv src :emcfg)
             pms (.collect ri mc)
             options {:router (.getHandler ri)
                      :params (merge {} pms)
                      :template (.getTemplate ri)}
-            w (-> (NettyTrigger* ch evt src)
-                  (AsyncWaitHolder* evt))]
+            w (-> (nettyTrigger ch evt src)
+                  (asyncWaitHolder evt))]
         (.timeoutMillis w (:waitMillis cfg))
         (doto ^Emitter src
           (.hold  w)
@@ -325,17 +324,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private  AssetHandler!
+(def ^:private  assetHandler!
   (reify WHandler
     (run [_  j _]
       (let [evt (.event ^Job j)]
-        (HandleStatic (.emitter evt)
+        (handleStatic (.emitter evt)
                       evt
                       (.getv ^Job j EV_OPTS))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AssetHandler "" ^WHandler [] AssetHandler!)
+(defn assetHandler ""
+
+  ^WHandler
+  []
+
+  assetHandler!)
 
 ;;(ns-unmap *ns* '->AssetHandler)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

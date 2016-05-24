@@ -19,41 +19,52 @@
   czlab.skaro.impl.exec
 
   (:require
-    [czlab.xlib.util.files :refer [Mkdirs ReadOneUrl]]
-    [czlab.xlib.util.files :refer [ListFiles Unzip]]
-    [czlab.xlib.util.str :refer [strim hgl? ToKW]]
-    [czlab.xlib.util.mime :refer [SetupCache]]
-    [czlab.xlib.util.process :refer [SafeWait]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.skaro.impl.dfts :refer [PodMeta*]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.files
+     :refer [mkdirs
+             readOneUrl
+             listFiles unzip]]
+    [czlab.xlib.str :refer [strim hgl? toKW]]
+    [czlab.xlib.mime :refer [setupCache]]
+    [czlab.xlib.process :refer [safeWait]]
+    [czlab.xlib.format :refer [readEdn]]
+    [czlab.skaro.impl.dfts :refer [podMeta]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.core
-    :refer [test-nestr FPath
-    tryletc tryc NewRandom GetCwd
-    ConvLong MubleObj! juid test-nonil]])
+    [czlab.xlib.core
+     :refer [test-nestr fpath
+             tryletc
+             tryc
+             newRandom
+             getCwd
+             convLong
+             mubleObj! juid test-nonil]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
         [czlab.skaro.impl.dfts]
-        [czlab.xlib.jmx.core]
+        [czlab.skaro.jmx.core]
         [czlab.skaro.impl.ext])
 
   (:import
     [org.apache.commons.io.filefilter DirectoryFileFilter]
     [org.apache.commons.io FilenameUtils]
-    [com.zotohlab.skaro.runtime ExecvisorAPI
-    JMXServer PODMeta EmitMeta]
-    [com.zotohlab.skaro.loaders AppClassLoader]
-    [com.zotohlab.skaro.core Muble Context]
+    [czlab.skaro.runtime ExecvisorAPI
+     JMXServer
+     PODMeta
+     EmitMeta]
+    [czlab.skaro.loaders AppClassLoader]
+    [czlab.skaro.server Context]
     [java.io File FileFilter]
     [java.security SecureRandom]
     [java.util.zip ZipFile]
     [java.net URL]
     [java.util Date]
-    [com.zotohlab.frwk.core Startable Disposable
-    Versioned Hierarchial Identifiable]
-    [com.zotohlab.frwk.server Component Registry]))
+    [czlab.xlib Muble
+     Startable
+     Disposable
+     Versioned
+     Hierarchial Identifiable]
+    [czlab.wflow.server Component Registry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -71,14 +82,14 @@
   ^PODMeta
   [^Context execv ^File des]
 
-  (let [app (FilenameUtils/getBaseName (FPath des)) ]
+  (let [app (FilenameUtils/getBaseName (fpath des)) ]
     (log/info "app dir : %s" des)
     (log/info "inspecting...")
-    (PrecondFile (io/file des CFG_APP_CF)
+    (precondFile (io/file des CFG_APP_CF)
                  (io/file des CFG_ENV_CF))
-    (PrecondDir (io/file des DN_CONF)
+    (precondDir (io/file des DN_CONF)
                 (io/file des DN_CFG))
-    (let [ps (ReadEdn (io/file des CFG_APP_CF))
+    (let [ps (readEdn (io/file des CFG_APP_CF))
           ^Muble ctx (.getx execv)
           ^Registry
           apps (-> ^Registry
@@ -91,10 +102,10 @@
       ;; synthesize the pod meta component and register it
       ;; as a application
       (let [^Context
-            m (-> (PodMeta* app
-                            info
-                            (io/as-url des))
-                  (SynthesizeComponent {:ctx ctx})) ]
+            m (-> (podMeta app
+                           info
+                           (io/as-url des))
+                  (synthesizeComponent {:ctx ctx})) ]
         (-> ^Muble
             (.getx m)
             (.setv K_EXECV execv))
@@ -113,7 +124,7 @@
   (tryletc
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
-     jmx (JmxServer* host)  ]
+     jmx (jmxServer host)]
     (.setRegistryPort jmx (int port))
     (-> ^Startable jmx (.start))
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
@@ -167,7 +178,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Execvisor*
+(defn execvisor
 
   "Create a ExecVisor"
 
@@ -175,8 +186,8 @@
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
-  (let [impl (MubleObj! {K_CONTAINERS {}})
-        ctxt (atom (MubleObj!)) ]
+  (let [impl (mubleObj! {K_CONTAINERS {}})
+        ctxt (atom (mubleObj!)) ]
     (with-meta
       (reify
 
@@ -210,26 +221,26 @@
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
-        (homeDir [this] (MaybeDir (.getx this) K_BASEDIR))
-        (confDir [this] (MaybeDir (.getx this) K_CFGDIR))
-        (blocksDir [this] (MaybeDir (.getx this) K_BKSDIR))
+        (homeDir [this] (maybeDir (.getx this) K_BASEDIR))
+        (confDir [this] (maybeDir (.getx this) K_CFGDIR))
+        (blocksDir [this] (maybeDir (.getx this) K_BKSDIR))
         (kill9 [this] (.stop ^Startable parObj))
 
         Startable
 
         (start [this]
-          (->> (inspectApp this (GetCwd))
+          (->> (inspectApp this (getCwd))
                (ignitePod this)))
 
         (stop [this]
           (stopJmx this)
           (stopPods this)) )
 
-       {:typeid (ToKW "czc.skaro.impl" "ExecVisor") })))
+       {:typeid (toKW "czc.skaro.impl" "ExecVisor") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.impl/PODMeta
+(defmethod compInitialize :czc.skaro.impl/PODMeta
 
   [^Muble co]
 
@@ -237,7 +248,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.impl/ExecVisor
+(defmethod compInitialize :czc.skaro.impl/ExecVisor
 
   [^Context co]
 
@@ -253,7 +264,7 @@
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
 
-    (SetupCache (-> (io/file base DN_CFG
+    (setupCache (-> (io/file base DN_CFG
                              "app/mime.properties")
                     (io/as-url)))
 
@@ -263,13 +274,13 @@
                    co
                    (.homeDir)
                    (io/file DN_CFG DN_BLOCKS)) ]
-      (PrecondDir bks)
+      (precondDir bks)
       (doto ctx
         (.setv K_BKSDIR bks)))
 
-    (let [root (ReifyRegistry :SystemRegistry K_COMPS "1.0" co)
-          bks (ReifyRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
-          apps (ReifyRegistry :AppsRegistry K_APPS "1.0" nil)
+    (let [root (reifyRegistry :SystemRegistry K_COMPS "1.0" co)
+          bks (reifyRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
+          apps (reifyRegistry :AppsRegistry K_APPS "1.0" nil)
           options {:ctx ctx} ]
 
       (.setv ctx K_COMPS root)
@@ -279,9 +290,9 @@
         (.reg apps)
         (.reg bks))
 
-      (SynthesizeComponent root options)
-      (SynthesizeComponent bks options)
-      (SynthesizeComponent apps options))
+      (synthesizeComponent root options)
+      (synthesizeComponent bks options)
+      (synthesizeComponent apps options))
 
     (startJmx co jmx)))
 
@@ -292,10 +303,10 @@
   ;; url points to block-meta file
   [blockType data ^URL url]
 
-  (let [ctxt (atom (MubleObj!))
+  (let [ctxt (atom (mubleObj!))
         {:keys [info conf]}
         data
-        impl (MubleObj! {:metaInfo info
+        impl (mubleObj! {:metaInfo info
                          :dftOptions conf})]
     (with-meta
       (reify
@@ -332,11 +343,11 @@
 
         (metaUrl [_] url) )
 
-      {:typeid (ToKW "czc.skaro.impl" "EmitMeta") })))
+      {:typeid (toKW "czc.skaro.impl" "EmitMeta") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
-(defmethod CompConfigure :czc.skaro.impl/EmitMeta
+(defmethod compConfigure :czc.skaro.impl/EmitMeta
 
   [^Muble co props]
 
@@ -349,25 +360,25 @@
 ;; Blocks are emitters,  each block has a meta data file describing
 ;; its functions and features
 ;; This registry loads these meta files and adds them to the registry
-(defmethod CompInitialize :czc.skaro.impl/BlocksRegistry
+(defmethod compInitialize :czc.skaro.impl/BlocksRegistry
 
   [^Context co]
 
   (log/info "compInitialize: BlocksRegistry: \"%s\"" (.id ^Identifiable co))
   (let [^Muble ctx (.getx co)
         bDir (.getv ctx K_BKSDIR)
-        fs (ListFiles bDir "edn") ]
+        fs (listFiles bDir "edn") ]
     (doseq [^File f fs]
-      (doseq [[k v] (ReadEdn f)
+      (doseq [[k v] (readEdn f)
               :let [^Muble
                     b (-> (makeBlockMeta k v (io/as-url f))
-                          (SynthesizeComponent {:props v})) ]]
+                          (synthesizeComponent {:props v})) ]]
         (.reg ^Registry co b)
         (log/info "added one block: %s" (.id ^Identifiable b)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.impl/SystemRegistry
+(defmethod compInitialize :czc.skaro.impl/SystemRegistry
 
   [co]
 
@@ -376,7 +387,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.impl/AppsRegistry
+(defmethod compInitialize :czc.skaro.impl/AppsRegistry
 
   [co]
 
@@ -385,4 +396,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

@@ -19,24 +19,36 @@
   czlab.skaro.impl.ext
 
   (:require
-    [czlab.xlib.util.files :refer [ReadOneFile WriteOneFile FileRead?]]
-    [czlab.xlib.util.str :refer [ToKW stror lcase strim]]
-    [czlab.xlib.dbio.connect :refer [DbioConnectViaPool]]
-    [czlab.xlib.i18n.resources :refer [LoadResource]]
-    [czlab.xlib.util.format :refer [ReadEdn]]
-    [czlab.xlib.util.wfs :refer [WrapPTask NewJob SimPTask]]
-    [czlab.xlib.crypto.codec :refer [Pwdify ]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.files :refer [readOneFile writeOneFile fileRead?]]
+    [czlab.xlib.str :refer [toKW stror lcase strim]]
+    [czlab.dbio.connect :refer [dbioConnectViaPool]]
+    [czlab.xlib.resources :refer [loadResource]]
+    [czlab.xlib.format :refer [readEdn]]
+    [czlab.skaro.core.wfs :refer [wrapPTask newJob simPTask]]
+    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.xlib.util.core
-    :refer [MubleObj! doto->> juid FPath Cast?
-    trap! trycr ConvToJava nbf ConvLong Bytesify]]
-    [czlab.xlib.util.scheduler :refer [Scheduler*]]
-    [czlab.xlib.util.core
-    :refer [NextLong LoadJavaProps SubsVar]]
-    [czlab.xlib.dbio.core
-    :refer [Jdbc* MetaCache* DbPool* DbSchema*]])
+    [czlab.xlib.core
+     :refer [mubleObj!
+             doto->>
+             juid
+             fpath
+             cast?
+             trap!
+             trycr
+             convToJava
+             nbf
+             nextLong
+             loadJavaProps
+             subsVar
+             convLong bytesify]]
+    [czlab.xlib.scheduler :refer [mkScheduler]]
+    [czlab.dbio.core
+     :refer [mkJdbc
+             mkMetaCache
+             dbPool
+             mkDbSchema]])
 
   (:use
     [czlab.skaro.core.consts]
@@ -55,41 +67,48 @@
     [czlab.skaro.core.sys])
 
   (:import
-    [com.zotohlab.frwk.dbio MetaCache Schema JDBCPool DBAPI]
-    [com.zotohlab.skaro.core CLJShim Muble
-    Context Container ConfigError]
-    [com.zotohlab.skaro.etc PluginFactory Plugin]
+    [czlab.dbio MetaCache Schema JDBCPool DBAPI]
+    [czlab.skaro.server CLJShim
+     Context
+     Cocoon ConfigError]
+    [czlab.skaro.etc PluginFactory Plugin]
     [freemarker.template Configuration
-    Template DefaultObjectWrapper]
+     Template
+     DefaultObjectWrapper]
     [java.util Locale]
-    [com.zotohlab.frwk.i18n I18N]
     [java.net URL]
     [java.io File StringWriter]
-    [com.zotohlab.skaro.runtime AppMain PODMeta]
-    [com.zotohlab.frwk.core Versioned Hierarchial
-    Morphable Activable
-    Startable Disposable Identifiable]
-    [com.zotohlab.frwk.server Registry
-    Service Emitter
-    Component ServiceHandler ServiceError]
-    [com.zotohlab.skaro.io IOEvent]
-    [com.zotohlab.frwk.util Schedulable CU]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.wflow Activity Job]))
+    [czlab.skaro.runtime AppMain PODMeta]
+    [czlab.xlib Versioned
+     Hierarchial
+     Muble I18N
+     Morphable Activable
+     Startable Disposable Identifiable]
+
+    [czlab.xlib XData Schedulable CU]
+    [czlab.skaro.server
+     Registry
+     Service
+     Emitter
+     Component
+     ServiceHandler
+     ServiceError]
+    [czlab.skaro.io IOEvent]
+    [czlab.wflow Activity Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetAppKeyFromEvent
+(defn getAppKeyFromEvent
 
   "Get the secret application key"
 
   ^String
   [^IOEvent evt]
 
-  (let [^Container c (.. evt emitter container)]
+  (let [^Cocoon c (.. evt emitter container)]
     (.getAppKey c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,20 +119,20 @@
   ^Emitter
   [^Identifiable bk ctr nm cfg0]
 
-  (let [pkey (-> ^Container ctr (.getAppKey))
+  (let [pkey (-> ^Cocoon ctr (.getAppKey))
         cfg (-> ^Muble bk
                 (.getv :dftOptions)
                 (merge cfg0))
         hid (:handler cfg)
         eid (.id bk)
-        obj (Emitter* ctr eid nm)
-        mm (meta obj) ]
+        obj (mkEmitter ctr eid nm)
+        mm (meta obj)]
     (log/info "about to synthesize an emitter: %s" eid)
     (log/info "emitter meta: %s" mm)
     (log/info "is emitter = %s" (isa? (:typeid mm)
                                       :czc.skaro.io/Emitter))
     (log/info "config params =\n%s" cfg)
-    (SynthesizeComponent obj
+    (synthesizeComponent obj
                          {:ctx ctr
                           :props (assoc cfg :appkey pkey) })
 
@@ -142,7 +161,7 @@
         p (maybeGetDBPool co gid) ]
     (log/debug "acquiring from dbpool: %s" p)
     (when (some? p)
-      (DbioConnectViaPool p mcache {}))))
+      (dbioConnectViaPool p mcache {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -162,14 +181,14 @@
 ;;
 (defn- appContainer ""
 
-  ^Container
+  ^Cocoon
   [^PODMeta pod options]
 
   (log/info "creating an app-container: %s" (.id ^Identifiable pod))
   (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
-        ftlCfg (GenFtlConfig :root pub)
-        impl (MubleObj!)
-        ctxt (atom (MubleObj!)) ]
+        ftlCfg (genFtlConfig :root pub)
+        impl (mubleObj!)
+        ctxt (atom (mubleObj!)) ]
     (with-meta
       (reify
 
@@ -189,7 +208,7 @@
 
         Container
 
-        (getAppKeyBits [this] (Bytesify (.getAppKey this)))
+        (getAppKeyBits [this] (bytesify (.getAppKey this)))
         (getAppDir [this] (.getv this K_APPDIR))
         (getAppKey [_] (.appKey pod))
         (getName [_] (.moniker pod))
@@ -202,7 +221,7 @@
         (loadTemplate [_ tpath ctx]
           (let [tpl (str tpath)
                 ts (str (if (.startsWith tpl "/") "" "/") tpl)
-                out (RenderFtl ftlCfg ts ctx)]
+                out (renderFtl ftlCfg ts ctx)]
             {:data (XData. out)
              :ctype (cond
                       (.endsWith tpl ".json") "application/json"
@@ -290,7 +309,7 @@
             (log/info "container dispose() - main app disposed")
             (releaseSysResources this) )))
 
-    {:typeid (ToKW "czc.skaro.ext" "Container") })))
+    {:typeid (toKW "czc.skaro.ext" "Cocoon") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -336,11 +355,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
-(defn Container*
+(defn mkContainer
 
   "Create an application container"
 
-  ^Container
+  ^Cocoon
   [^Context pod]
 
   (let [url (-> ^PODMeta pod (.srcUrl))
@@ -352,10 +371,10 @@
       (-> ^Registry
           (.getv ctx K_COMPS)
           (.lookup K_APPS))
-      (CompCompose c ))
-    (CompContextualize c ctx)
-    (CompConfigure c ps)
-    (CompInitialize c)
+      (compCompose c ))
+    (compContextualize c ctx)
+    (compConfigure c ps)
+    (compInitialize c)
     (-> ^Startable c (.start ))
     c))
 
@@ -365,24 +384,24 @@
 
   [^File appDir ^String conf]
 
-  (-> (ReadOneFile (io/file appDir conf))
-      (SubsVar)
-      (cs/replace "${appdir}" (FPath appDir))
-      (ReadEdn)))
+  (-> (readOneFile (io/file appDir conf))
+      (subsVar)
+      (cs/replace "${appdir}" (fpath appDir))
+      (readEdn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.ext/Container
+(defmethod compConfigure :czc.skaro.ext/Cocoon
 
   [^Muble co props]
 
-  (let [srg (ReifyRegistry :EventSources K_SVCS "1.0" co)
+  (let [srg (reifyRegistry :EventSources K_SVCS "1.0" co)
         appDir (K_APPDIR props)
         cfgDir (io/file appDir DN_CONF)
         envConf (parseConfile appDir CFG_ENV_CF)
         appConf (parseConfile appDir CFG_APP_CF) ]
     ;; make registry to store services
-    (SynthesizeComponent srg {})
+    (synthesizeComponent srg {})
     ;; store references to key attributes
     (doto co
       (.setv K_APPDIR appDir)
@@ -426,7 +445,7 @@
   [^String v ^File appDir]
 
   (let [pfile (fmtPluginFname v appDir) ]
-    (WriteOneFile pfile "ok")
+    (writeOneFile pfile "ok")
     (log/info "initialized plugin: %s" v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -440,8 +459,8 @@
         pf (trycr nil (.call rts v))
         u (when (instance? PluginFactory pf)
             (.createPlugin ^PluginFactory pf
-                           ^Container co)) ]
-    (when-some [^Plugin p (Cast? Plugin u)]
+                           ^Cocoon co)) ]
+    (when-some [^Plugin p (cast? Plugin u)]
       (log/info "calling plugin-factory: %s" v)
       (.configure p { :env env :app app })
       (if (pluginInited? v appDir)
@@ -462,16 +481,15 @@
 
   (let [pos (.indexOf s (int \:)) ]
     (if (< pos 0)
-      [ 1 (ConvLong (strim s) 4) ]
-      [ (ConvLong (strim (.substring s 0 pos)) 4)
-        (ConvLong (strim (.substring s (+ pos 1))) 1) ])))
+      [ 1 (convLong (strim s) 4) ]
+      [ (convLong (strim (.substring s 0 pos)) 4)
+        (convLong (strim (.substring s (+ pos 1))) 1) ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeInitDBs ""
 
-  [^Container co
-   env app]
+  [^Cocoon co env app]
 
   (with-local-vars [p (transient {}) ]
     (let [cfg (get-in env [:databases :jdbc])
@@ -481,9 +499,9 @@
           (let [[t c]
                 (splitPoolSize (str (:poolsize v))) ]
             (var-set p
-                     (->> (DbPool*
-                            (Jdbc* k v
-                                      (Pwdify (:passwd v) pkey))
+                     (->> (mkDbPool
+                            (mkJdbc k v
+                                      (pwdify (:passwd v) pkey))
                                       {:max-conns c
                                        :min-conns 1
                                        :partitions t
@@ -507,7 +525,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.ext/Container
+(defmethod compInitialize :czc.skaro.ext/Cocoon
 
   [^Muble co]
 
@@ -518,7 +536,7 @@
         pid (.id ^Component co)]
     (log/info "initializing container: %s" pid)
     (.setv co :cljshim rts)
-    (let [cpu (Scheduler* (str pid))
+    (let [cpu (mkScheduler (str pid))
           env (.getv co K_ENVCONF)
           app (.getv co K_APPCONF)
           mCZ (strim (get-in app [:info :main]))
@@ -533,8 +551,8 @@
           res (io/file appDir "i18n"
                        (str "Resources_"
                             (.toString loc) ".properties")) ]
-      (when (FileRead? res)
-        (when-some [rb (LoadResource res)]
+      (when (fileRead? res)
+        (when-some [rb (loadResource res)]
           (I18N/setBundle (.id ^Identifiable co) rb)))
 
       (doto->> (maybeInitDBs co env app)
@@ -562,7 +580,7 @@
           (trap! ConfigError (str "Invalid Schema Class " dmCZ)))
         (.setv co
                K_MCACHE
-               (MetaCache* (or sc (DbSchema* [])))))
+               (mkMetaCache (or sc (mkDbSchema [])))))
 
       (when (empty? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
       ;;(test-nestr "Main-Class" mCZ)
@@ -599,4 +617,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

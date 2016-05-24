@@ -19,61 +19,73 @@
   czlab.skaro.io.netty
 
   (:require
-    [czlab.xlib.util.str :refer [lcase hgl? strim nichts?]]
-    [czlab.skaro.io.webss :refer [WSSession*]]
-    [czlab.xlib.util.mime :refer [GetCharset]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.str :refer [lcase hgl? strim nichts?]]
+    [czlab.skaro.io.webss :refer [mkWSSession]]
+    [czlab.xlib.mime :refer [getCharset]]
+    [czlab.xlib.logging :as log]
     [clojure.string :as cs]
-    [czlab.xlib.util.core
-    :refer [try! Stringify
-    ThrowIOE NextLong MubleObj! ConvLong]])
+    [czlab.xlib.core
+     :refer [try!
+             stringify
+             throwIOE
+             nextLong
+             mubleObj!
+             convLong]])
 
-  (:use [czlab.xlib.netty.filters]
-        [czlab.xlib.net.routes]
-        [czlab.xlib.netty.io]
+  (:use [czlab.netty.filters]
+        [czlab.net.routes]
+        [czlab.netty.io]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
         [czlab.skaro.io.http])
 
   (:import
-    [com.zotohlab.frwk.server Emitter EventTrigger EventHolder]
-    [com.zotohlab.skaro.runtime RouteCracker RouteInfo]
-    [java.io Closeable File IOException RandomAccessFile]
-    [java.net HttpCookie URI URL InetSocketAddress]
-    [java.net SocketAddress InetAddress]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult
-    IOSession
-    WebSockEvent WebSockResult]
+    [czlab.net RouteCracker RouteInfo]
+    [czlab.wflow.server Emitter
+     EventTrigger
+     EventHolder]
+    [java.io Closeable
+     File
+     IOException
+     RandomAccessFile]
+    [java.net HttpCookie
+     URI
+     URL
+     InetSocketAddress
+     SocketAddress InetAddress]
+    [czlab.skaro.io HTTPEvent
+     HTTPResult
+     IOSession
+     WebSockEvent WebSockResult]
     [javax.net.ssl SSLContext]
     [java.nio.channels ClosedChannelException]
     [io.netty.handler.codec.http HttpRequest
-    HttpResponse HttpResponseStatus
-    CookieDecoder ServerCookieEncoder
-    DefaultHttpResponse HttpVersion
-    HttpRequestDecoder
-    HttpResponseEncoder DefaultCookie
-    HttpHeaders$Names LastHttpContent
-    HttpHeaders Cookie QueryStringDecoder]
+     HttpResponse HttpResponseStatus
+     CookieDecoder ServerCookieEncoder
+     DefaultHttpResponse HttpVersion
+     HttpRequestDecoder
+     HttpResponseEncoder DefaultCookie
+     HttpHeaders$Names LastHttpContent
+     HttpHeaders Cookie QueryStringDecoder]
     [org.apache.commons.codec.net URLCodec]
     [io.netty.bootstrap ServerBootstrap]
     [io.netty.channel Channel ChannelHandler
-    ChannelFuture
-    ChannelFutureListener
-    SimpleChannelInboundHandler
-    ChannelPipeline ChannelHandlerContext]
+     ChannelFuture
+     ChannelFutureListener
+     SimpleChannelInboundHandler
+     ChannelPipeline ChannelHandlerContext]
     [io.netty.handler.stream ChunkedFile
-    ChunkedStream ChunkedWriteHandler]
-    [com.zotohlab.skaro.mvc WebAsset HTTPRangeInput]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.frwk.netty
-    MessageFilter
-    ErrorSinkFilter PipelineConfigurator]
+     ChunkedStream ChunkedWriteHandler]
+    [czlab.skaro.mvc WebAsset HTTPRangeInput]
+    [czlab.netty MessageFilter
+     ErrorSinkFilter PipelineConfigurator]
     [io.netty.handler.codec.http.websocketx
-    WebSocketFrame
-    BinaryWebSocketFrame TextWebSocketFrame]
+     WebSocketFrame
+     BinaryWebSocketFrame
+     TextWebSocketFrame]
     [io.netty.buffer ByteBuf Unpooled]
-    [com.zotohlab.frwk.core Hierarchial Identifiable]
-    [com.zotohlab.frwk.io XData]))
+    [czlab.xlib XData
+     Muble Hierarchial Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -149,7 +161,7 @@
    ^HTTPEvent evt
    ^HttpResponse rsp ]
 
-  (let [ct (GetHeader rsp "content-type")
+  (let [ct (getHeader rsp "content-type")
         rv (.getHeaderValue evt "range") ]
     (if-not (HTTPRangeInput/isAcceptable rv)
       (ChunkedFile. raf)
@@ -172,7 +184,7 @@
         code (.getv res :code)
         data (.getv res :data)
         hdrs (.getv res :hds)
-        rsp (HttpReply* code) ]
+        rsp (httpReply code) ]
 
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
 
@@ -182,14 +194,14 @@
       (doseq [[nm vs]  hdrs
              :when (not= "content-length" (lcase nm)) ]
         (doseq [vv (seq vs)]
-          (AddHeader rsp nm vv)))
+          (addHeader rsp nm vv)))
       (doseq [s (csToNetty cks)]
-        (AddHeader rsp HttpHeaders$Names/SET_COOKIE s))
+        (addHeader rsp HttpHeaders$Names/SET_COOKIE s))
       (cond
         (and (>= code 300)
              (< code 400))
         (when-not (empty? loc)
-          (SetHeader rsp "Location" loc))
+          (setHeader rsp "Location" loc))
 
         (and (>= code 200)
              (< code 300)
@@ -200,7 +212,7 @@
             (condp instance? data
               WebAsset
               (let [^WebAsset ws data]
-                (SetHeader rsp "content-type" (.contentType ws))
+                (setHeader rsp "content-type" (.contentType ws))
                 (var-set raf
                          (RandomAccessFile. (.getFile ws) "r"))
                 (replyOneFile @raf evt rsp))
@@ -229,7 +241,7 @@
         :else nil)
 
       (when (.isKeepAlive evt)
-        (SetHeader rsp "Connection" "keep-alive"))
+        (setHeader rsp "Connection" "keep-alive"))
 
       (log/debug "writing out %s bytes back to client" @clen)
       (HttpHeaders/setContentLength rsp @clen)
@@ -242,16 +254,16 @@
         (.write ch @payload)
         (log/debug "wrote response body out to client"))
 
-      (let [wf (WriteLastContent ch true) ]
-        (FutureCB wf #(when (some? @raf)
+      (let [wf (writeLastContent ch true) ]
+        (futureCB wf #(when (some? @raf)
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
           (log/debug "keep-alive == false, closing channel, bye")
-          (CloseCF wf))))))
+          (closeCF wf))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn NettyTrigger*
+(defn nettyTrigger
 
   "Create a Netty Async Trigger"
 
@@ -298,15 +310,15 @@
    ^WebSocketFrame msg]
 
   (let [textF (instance? TextWebSocketFrame msg)
-        impl (MubleObj!)
+        impl (mubleObj!)
         xdata (XData.)
-        eeid (NextLong) ]
+        eeid (nextLong) ]
     (.resetContent xdata
                    (cond
                      textF
                      (.text ^TextWebSocketFrame msg)
                      (instance? BinaryWebSocketFrame msg)
-                     (SlurpBytes (.content ^BinaryWebSocketFrame msg))
+                     (slurpBytes (.content ^BinaryWebSocketFrame msg))
                      :else nil))
     (with-meta
       (reify
@@ -347,7 +359,7 @@
 
   [info]
 
-  (let [v (GetInHeader info "Cookie")
+  (let [v (getInHeader info "Cookie")
         cc (URLCodec. "utf-8")
         cks (if (hgl? v)
               (CookieDecoder/decode ^String v)
@@ -371,10 +383,10 @@
    info wantSecure]
 
   (let [^InetSocketAddress laddr (.localAddress ch)
-        ^HTTPResult res (HttpResult* co)
+        ^HTTPResult res (httpResult co)
         cookieJar (crackCookies info)
-        impl (MubleObj!)
-        eeid (NextLong) ]
+        impl (mubleObj!)
+        eeid (nextLong) ]
     (with-meta
       (reify
 
@@ -407,10 +419,10 @@
         (hasData [_] (some? xdata))
         (data [_] xdata)
 
-        (contentType [_] (GetInHeader info "content-type"))
+        (contentType [_] (getInHeader info "content-type"))
         (contentLength [_] (info "clen"))
 
-        (encoding [this]  (GetCharset (.contentType this)))
+        (encoding [this]  (getCharset (.contentType this)))
         (contextPath [_] "")
 
         (getHeaders [_] (vec (keys (:headers info))))
@@ -419,17 +431,17 @@
             (get (:headers info) (lcase nm))
             []))
 
-        (getHeaderValue [_ nm] (GetInHeader info nm))
-        (hasHeader [_ nm] (HasInHeader? info nm))
+        (getHeaderValue [_ nm] (getInHeader info nm))
+        (hasHeader [_ nm] (hasInHeader? info nm))
 
         (getParameterValues [this nm]
           (if (.hasParameter this nm)
             (get (:params info) nm)
             []))
 
-        (getParameterValue [_ nm] (GetInParameter info nm))
+        (getParameterValue [_ nm] (getInParameter info nm))
         (getParameters [_] (vec (keys (:params info))))
-        (hasParameter [_ nm] (HasInParam? info nm))
+        (hasParameter [_ nm] (hasInParam? info nm))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
         (localHost [_] (.getHostName laddr))
@@ -441,20 +453,20 @@
         (queryString [_] (:query info))
         (host [_] (:host info))
 
-        (remotePort [_] (ConvLong (GetInHeader info "remote_port") 0))
-        (remoteAddr [_] (str (GetInHeader info "remote_addr")))
+        (remotePort [_] (convLong (getInHeader info "remote_port") 0))
+        (remoteAddr [_] (str (getInHeader info "remote_addr")))
         (remoteHost [_] "")
 
         (scheme [_] (if sslFlag "https" "http"))
 
-        (serverPort [_] (ConvLong (GetInHeader info "server_port") 0))
-        (serverName [_] (str (GetInHeader info "server_name")))
+        (serverPort [_] (convLong (getInHeader info "server_port") 0))
+        (serverName [_] (str (getInHeader info "server_name")))
 
         (isSSL [_] sslFlag)
 
         (getUri [_] (:uri info))
 
-        (getRequestURL [_] (ThrowIOE "not implemented"))
+        (getRequestURL [_] (throwIOE "not implemented"))
 
         (getResultObj [_] res)
         (replyResult [this]
@@ -484,15 +496,15 @@
 
   (doto (makeHttpEvent2 co
                         ch sslFlag xdata info wantSecure)
-    (.bindSession (WSSession* co sslFlag))))
+    (.bindSession (mkWSSession co sslFlag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.skaro.io/NettyIO
+(defmethod ioReifyEvent :czc.skaro.io/NettyIO
 
   [^Emitter co & args]
 
-  (log/info "IOESReifyEvent: NettyIO: %s" (.id ^Identifiable co))
+  (log/info "ioReifyEvent: NettyIO: %s" (.id ^Identifiable co))
   (let [^Channel ch (nth args 0)
         ssl (-> (.pipeline ch)
                 (.get "ssl")
@@ -513,7 +525,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/NettyIO
+(defmethod compConfigure :czc.skaro.io/NettyIO
 
   [^Muble co cfg0]
 
@@ -538,11 +550,11 @@
       (let [ch (-> ^ChannelHandlerContext c (.channel))
             {:keys [waitMillis]}
             (.getv src :emcfg)
-            evt (IOESReifyEvent co ch msg) ]
+            evt (ioReifyEvent co ch msg) ]
         (if (instance? HTTPEvent evt)
           (let [w
-                (-> (NettyTrigger* ch evt co)
-                    (AsyncWaitHolder*  evt)) ]
+                (-> (nettyTrigger ch evt co)
+                    (asyncWaitHolder evt)) ]
             (.timeoutMillis w waitMillis)
             (.hold co w)))
         (.dispatch co evt {})))))
@@ -556,8 +568,8 @@
   (let [^Muble ctr (.parent ^Hierarchial co)
         options (.getv co :emcfg)
         disp (msgDispatcher co co options)
-        bs (InitTCPServer
-             (ReifyPipeCfgtor
+        bs (initTCPServer
+             (reifyPipeCfgtor
                (fn [p _]
                  (-> ^ChannelPipeline p
                      (.addBefore ErrorSinkFilter/NAME
@@ -569,34 +581,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStart :czc.skaro.io/NettyIO
+(defmethod ioStart :czc.skaro.io/NettyIO
 
   [^Muble co & args]
 
-  (log/info "IOESStart: NettyIO: %s" (.id ^Identifiable co))
+  (log/info "ioStart: NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [host port]}
         (.getv co :emcfg)
         nes (.getv co :netty)
         bs (:bootstrap nes)
-        ch (StartServer bs host port) ]
+        ch (startServer bs host port) ]
     (.setv co :netty (assoc nes :channel ch))
-    (IOESStarted co)))
+    (ioStarted co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStop :czc.skaro.io/NettyIO
+(defmethod ioStop :czc.skaro.io/NettyIO
 
   [^Muble co & args]
 
-  (log/info "IOESStop NettyIO: %s" (.id ^Identifiable co))
+  (log/info "ioStop NettyIO: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}
         (.getv co :netty) ]
-    (StopServer  bootstrap channel)
-    (IOESStopped co)))
+    (stopServer  bootstrap channel)
+    (ioStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.io/NettyIO
+(defmethod compInitialize :czc.skaro.io/NettyIO
 
   [^Muble co]
 
@@ -605,4 +617,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

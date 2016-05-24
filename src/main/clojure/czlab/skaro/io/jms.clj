@@ -19,11 +19,15 @@
   czlab.skaro.io.jms
 
   (:require
-    [czlab.xlib.util.core
-    :refer [NextLong ThrowIOE MubleObj! juid tryc]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.str :refer [hgl? ]])
+    [czlab.xlib.core
+     :refer [nextLong
+             throwIOE
+             mubleObj!
+             juid
+             tryc]]
+    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.str :refer [hgl? ]])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.core])
@@ -31,32 +35,31 @@
   (:import
     [java.util Hashtable Properties ResourceBundle]
     [org.apache.commons.lang3 StringUtils]
-    [com.zotohlab.frwk.core Identifiable]
-    [com.zotohlab.frwk.server Emitter]
+    [czlab.wflow.server Emitter]
+    [czlab.xlib Muble Identifiable]
     [javax.jms Connection ConnectionFactory
-    Destination Connection
-    Message MessageConsumer MessageListener Queue
-    QueueConnection QueueConnectionFactory QueueReceiver
-    QueueSession Session Topic TopicConnection
-    TopicConnectionFactory TopicSession TopicSubscriber]
+     Destination Connection
+     Message MessageConsumer MessageListener Queue
+     QueueConnection QueueConnectionFactory QueueReceiver
+     QueueSession Session Topic TopicConnection
+     TopicConnectionFactory TopicSession TopicSubscriber]
     [javax.naming Context InitialContext]
     [java.io IOException]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.io JMSEvent]))
+    [czlab.skaro.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.skaro.io/JMS
+(defmethod ioReifyEvent :czc.skaro.io/JMS
 
   [co & args]
 
-  (log/info "IOESReifyEvent: JMS: %s" (.id ^Identifiable co))
+  (log/info "ioReifyEvent: JMS: %s" (.id ^Identifiable co))
   (let [msg (first args)
-        eeid (NextLong)
-        impl (MubleObj!)]
+        eeid (nextLong)
+        impl (mubleObj!)]
     (with-meta
       (reify
 
@@ -82,11 +85,11 @@
   [^Emitter co msg]
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (IOESReifyEvent co msg) {} ))
+  (.dispatch co (ioReifyEvent co msg) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/JMS
+(defmethod compConfigure :czc.skaro.io/JMS
 
   [^Muble co cfg0]
 
@@ -96,8 +99,8 @@
         (merge (.getv co :dftOptions) cfg0)]
     (.setv co :emcfg
            (-> cfg
-               (assoc :jndiPwd (Pwdify jndiPwd appkey))
-               (assoc :jmsPwd (Pwdify jmsPwd appkey))))
+               (assoc :jndiPwd (pwdify jndiPwd appkey))
+               (assoc :jmsPwd (pwdify jmsPwd appkey))))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -126,7 +129,7 @@
           (.createConsumer c)
           (.setMessageListener (reify MessageListener
                                  (onMessage [_ m] (onMsg co m)))))
-      (ThrowIOE "Object not of Destination type"))
+      (throwIOE "Object not of Destination type"))
     conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +154,7 @@
         s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
         t (.lookup ctx ^String destination) ]
     (when-not (instance? Topic t)
-      (ThrowIOE "Object not of Topic type"))
+      (throwIOE "Object not of Topic type"))
     (-> (if durable
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
@@ -179,7 +182,7 @@
         s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
         q (.lookup ctx ^String destination) ]
     (when-not (instance? Queue q)
-      (ThrowIOE "Object not of Queue type"))
+      (throwIOE "Object not of Queue type"))
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener (reify MessageListener
                                (onMessage [_ m] (onMsg co m)))))
@@ -187,11 +190,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStart :czc.skaro.io/JMS
+(defmethod ioStart :czc.skaro.io/JMS
 
   [^Muble co & args]
 
-  (log/info "IOESStart: JMS: %s" (.id ^Identifiable co))
+  (log/info "ioStart: JMS: %s" (.id ^Identifiable co))
   (let [{:keys [contextFactory providerUrl
                 jndiUser jndiPwd connFactory]}
         (.getv co :emcfg)
@@ -218,23 +221,24 @@
               ConnectionFactory (inizFac co ctx obj)
               nil) ]
       (when (nil? c)
-        (ThrowIOE "Unsupported JMS Connection Factory"))
+        (throwIOE "Unsupported JMS Connection Factory"))
       (.setv co :conn c)
       (.start c)
-      (IOESStarted co))))
+      (ioStarted co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESStop :czc.skaro.io/JMS
+(defmethod ioStop :czc.skaro.io/JMS
 
   [^Muble co & args]
 
-  (log/info "IOESStop: JMS: %s" (.id ^Identifiable co))
+  (log/info "ioStop: JMS: %s" (.id ^Identifiable co))
   (when-some [^Connection c (.getv co :conn) ]
     (tryc (.close c))
     (.setv co :conn nil)
-    (IOESStopped co)))
+    (ioStopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

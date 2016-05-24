@@ -19,29 +19,31 @@
   czlab.xlib.jmx.bean
 
   (:require
-    [czlab.xlib.util.core
-    :refer [trap! ex*
-    ThrowBadArg MubleObj! tryc]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.str :refer [HasAny?]])
+    [czlab.xlib.core
+     :refer [trap!
+             exp!
+             throwBadArg
+             mubleObj! tryc]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.str :refer [hasAny?]])
 
-  (:use [czlab.xlib.util.meta])
+  (:use [czlab.xlib.meta])
 
   (:import
     [java.lang Exception IllegalArgumentException]
-    [com.zotohlab.frwk.jmx NameParams]
+    [czlab.skaro.jmx NameParams]
     [java.lang.reflect Field Method]
     [java.util Arrays]
-    [com.zotohlab.skaro.core Muble]
+    [czlab.xlib Muble]
     [javax.management Attribute AttributeList
-    AttributeNotFoundException
-    DynamicMBean
-    MBeanAttributeInfo
-    MBeanException
-    MBeanInfo
-    MBeanOperationInfo
-    MBeanParameterInfo
-    ReflectionException]))
+     AttributeNotFoundException
+     DynamicMBean
+     MBeanAttributeInfo
+     MBeanException
+     MBeanInfo
+     MBeanOperationInfo
+     MBeanParameterInfo
+     ReflectionException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -89,7 +91,7 @@
   [^String prop ^String descn ^Method getr ^Method setr]
 
   (let
-    [impl (MubleObj! {:getr getr
+    [impl (mubleObj! {:getr getr
                      :setr setr
                      :type nil}) ]
     (reify BPropInfo
@@ -111,7 +113,7 @@
         (if-some [^Method g (get-getter this) ]
           (and (-> g (.getName)
                    (.startsWith "is"))
-               (IsBoolean? (get-type this)))
+               (isBoolean? (get-type this)))
           false)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,7 +130,7 @@
 
   [^String msg]
 
-  (trap! MBeanException (ex* Exception msg)))
+  (trap! MBeanException (exp! Exception msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -137,7 +139,7 @@
   [mtd ptypes n]
 
   (when (not= n (count ptypes))
-    (ThrowBadArg (str "\"" mtd "\" needs " n "args."))))
+    (throwBadArg (str "\"" mtd "\" needs " n "args."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,16 +186,16 @@
   ^Class
   [^Class cz]
 
-  (if (or (IsBoolean? cz)
-          (IsVoid? cz)
-          (IsObject? cz)
-          (IsString? cz)
-          (IsShort? cz)
-          (IsLong? cz)
-          (IsInt? cz)
-          (IsDouble? cz)
-          (IsFloat? cz)
-          (IsChar? cz))
+  (if (or (isBoolean? cz)
+          (isVoid? cz)
+          (isObject? cz)
+          (isString? cz)
+          (isShort? cz)
+          (isLong? cz)
+          (isInt? cz)
+          (isDouble? cz)
+          (isFloat? cz)
+          (isChar? cz))
     cz
     nil))
 
@@ -307,7 +309,7 @@
             ptypes (.getParameterTypes m)
             mn (.getName m) ]]
       (cond
-        (HasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
+        (hasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
         nil;;(log/info "JMX-skipping " mn)
 
         (some? (testJmxTypes rtype ptypes))
@@ -331,7 +333,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn JmxBean*
+(defn mkJmxBean
 
   "Make a JMX bean from this object"
 
@@ -340,7 +342,7 @@
 
   (let
     [cz (.getClass obj)
-     impl (MubleObj!)
+     impl (mubleObj!)
      ;; we are ignoring props and fields
      propsMap {}
      fldsMap {}
@@ -450,4 +452,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

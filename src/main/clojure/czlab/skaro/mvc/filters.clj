@@ -19,58 +19,60 @@
   czlab.skaro.mvc.filters
 
   (:require
-    [czlab.skaro.io.http :refer [MaybeLoadRoutes HttpBasicConfig]]
+    [czlab.skaro.io.http :refer [maybeLoadRoutes httpBasicConfig]]
     [czlab.skaro.mvc.assets
-    :refer [SetCacheAssetsFlag GetLocalFile ReplyFileAsset]]
-    [czlab.xlib.util.core
-    :refer [spos? ToJavaInt try! FPath]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.str :refer [hgl? strim]]
-    [czlab.xlib.util.meta :refer [NewObj*]])
+     :refer [setCacheAssetsFlag
+             getLocalFile
+             replyFileAsset]]
+    [czlab.xlib.core
+     :refer [spos? toJavaInt try! fpath]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.str :refer [hgl? strim]]
+    [czlab.xlib.meta :refer [newObj]])
 
-  (:use [czlab.xlib.netty.filters]
-        [czlab.xlib.netty.io]
+  (:use [czlab.netty.filters]
+        [czlab.netty.io]
         [czlab.skaro.io.netty]
         [czlab.skaro.io.core]
         [czlab.skaro.core.sys]
         [czlab.skaro.core.consts]
         [czlab.skaro.mvc.comms]
-        [czlab.xlib.net.routes])
+        [czlab.net.routes])
 
   (:import
-    [com.zotohlab.skaro.runtime RouteInfo RouteCracker]
+    [czlab.net RouteInfo RouteCracker]
     [org.apache.commons.lang3 StringUtils]
     [io.netty.util ReferenceCountUtil]
     [java.util Date]
     [java.io File]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.core Hierarchial Identifiable]
+    [czlab.wflow.server Emitter]
+    [czlab.xlib XData
+     Hierarchial Identifiable]
     [com.zotohlab.skaro.io HTTPEvent]
     [com.zotohlab.skaro.core Muble]
     [com.zotohlab.skaro.mvc HTTPErrorHandler
-    MVCUtils WebAsset WebContent]
+     MVCUtils WebAsset WebContent]
     [io.netty.handler.codec.http HttpRequest
-    HttpResponse
-    CookieDecoder ServerCookieEncoder
-    DefaultHttpResponse HttpVersion
-    HttpResponseEncoder HttpRequestDecoder
-    HttpHeaders LastHttpContent
-    HttpHeaders Cookie QueryStringDecoder]
+     HttpResponse
+     CookieDecoder ServerCookieEncoder
+     DefaultHttpResponse HttpVersion
+     HttpResponseEncoder HttpRequestDecoder
+     HttpHeaders LastHttpContent
+     HttpHeaders Cookie QueryStringDecoder]
     [io.netty.bootstrap ServerBootstrap]
     [io.netty.channel Channel ChannelHandler
-    ChannelDuplexHandler
-    SimpleChannelInboundHandler
-    ChannelPipeline ChannelHandlerContext]
+     ChannelDuplexHandler
+     SimpleChannelInboundHandler
+     ChannelPipeline ChannelHandlerContext]
     [io.netty.handler.stream ChunkedWriteHandler]
     [io.netty.util AttributeKey]
     [io.netty.handler.timeout IdleState
-    IdleStateEvent
-    IdleStateHandler]
-    [com.zotohlab.frwk.netty ErrorSinkFilter
-    SimpleInboundFilter InboundAdapter
-    MessageFilter PipelineConfigurator
-    FlashFilter]
+     IdleStateEvent
+     IdleStateHandler]
+    [czlab.netty ErrorSinkFilter
+     SimpleInboundFilter InboundAdapter
+     MessageFilter PipelineConfigurator
+     FlashFilter]
     [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -88,32 +90,32 @@
       (log/debug "mvc route filter called with message = %s" (type msg))
       (let [^ChannelHandlerContext ctx c
             ch (.channel ctx)
-            old (GetAKey ch TOBJ_KEY) ]
+            old (getAKey ch TOBJ_KEY) ]
         (cond
           (instance? HttpRequest msg)
           (let [^HttpRequest req msg
                 ^RouteCracker
                 ck (.getv co :cracker)
-                cfg {:method (GetMethod req)
-                     :uri (GetUriPath req)}
+                cfg {:method (getMethod req)
+                     :uri (getUriPath req)}
                 [r1 r2 r3 r4]
                 (.crack ck cfg) ]
             (->> (merge old {:matched false})
-                 (SetAKey ch TOBJ_KEY))
+                 (setAKey ch TOBJ_KEY))
             (cond
               (and r1 (hgl? r4))
-              (SendRedirect ch false r4)
+              (sendRedirect ch false r4)
               (= r1 true)
               (do
                 (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
                 (->> (merge old {:matched true})
-                     (SetAKey ch TOBJ_KEY))
+                     (setAKey ch TOBJ_KEY))
                 (ReferenceCountUtil/retain msg)
                 (.fireChannelRead ctx msg))
               :else
               (do
                 (log/debug "failed to match uri: %s" (:uri cfg))
-                (ReplyXXX ch 404 false))))
+                (replyXXX ch 404 false))))
 
           (instance? HttpResponse msg)
           (do
@@ -121,7 +123,7 @@
             (.fireChannelRead ^ChannelHandlerContext c msg))
 
           :else
-          (if (true? (:matched (GetAKey ch TOBJ_KEY)))
+          (if (true? (:matched (getAKey ch TOBJ_KEY)))
             (do
               (ReferenceCountUtil/retain msg)
               (.fireChannelRead ctx msg))
@@ -146,17 +148,17 @@
             ^RouteInfo ri r2]
         (if
           (= r1 true)
-          (let [^HTTPEvent evt (IOESReifyEvent co ch msg ri) ]
+          (let [^HTTPEvent evt (ioReifyEvent co ch msg ri) ]
             (log/debug "matched one route: %s, %s%s"
                        (.getPath ri)
                        "and static = " (.isStatic ri))
             (if (.isStatic ri)
-              (ServeStatic ri co r3 ch info evt)
-              (ServeRoute ri co r3 ch evt)))
+              (serveStatic ri co r3 ch info evt)
+              (serveRoute ri co r3 ch evt)))
           ;;else
           (do
             (log/debug "failed to match uri: %s" (:uri info))
-            (ServeError co ch 404)) )))))
+            (serveError co ch 404)) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,7 +176,7 @@
         (let [ch (.channel ^ChannelHandlerContext ctx)
               opts {:router handlerFn}
               ^WebSockEvent
-              evt (IOESReifyEvent co ch msg nil) ]
+              evt (ioReifyEvent co ch msg nil) ]
           (log/debug "reified one websocket event")
           (.dispatch em evt opts))))))
 
@@ -193,15 +195,15 @@
         (let [^ChannelHandlerContext ctx c
               pipe (.pipeline ctx)
               ch (.channel ctx)
-              tmp (GetAKey ch TOBJ_KEY)]
+              tmp (getAKey ch TOBJ_KEY)]
           (when (some? (:wsreq tmp))
             (try! (.remove pipe "ChunkedWriteHandler"))
             (try! (.remove pipe "MVCDispatcher"))
             (try! (.remove pipe "RouteFilter"))
             (try! (.remove pipe "HttpFilter"))
             (.addBefore pipe ErrorSinkFilter/NAME "WSOCKDispatcher" disp)
-            (SetAKey ch MSGTYPE_KEY "wsock"))
-        (FireAndQuit pipe ctx this msg))))))
+            (setAKey ch MSGTYPE_KEY "wsock"))
+        (fireAndQuit pipe ctx this msg))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -214,7 +216,7 @@
         router (routeFilter co)
         disp (mvcDisp co)]
     (log/debug "netty pipeline initor, emitter = %s" (type co))
-    (ReifyPipeCfgtor
+    (reifyPipeCfgtor
       (fn [p _]
         (let [^ChannelPipeline pipe p]
           (.addAfter pipe "HttpRequestDecoder" "RouteFilter" router)
@@ -235,16 +237,16 @@
   [^Muble co]
 
   (let [^Muble ctr (.parent ^Hierarchial co)
-        rts (MaybeLoadRoutes co)
+        rts (maybeLoadRoutes co)
         options (.getv co :emcfg)
-        bs (InitTCPServer (mvcInitor co options) options) ]
-    (.setv co :cracker (RouteCracker* rts))
+        bs (initTCPServer (mvcInitor co options) options) ]
+    (.setv co :cracker (routeCracker rts))
     (.setv co :netty  { :bootstrap bs })
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/NettyMVC
+(defmethod compConfigure :czc.skaro.io/NettyMVC
 
   [^Muble co cfg]
 
@@ -254,7 +256,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.io/NettyMVC
+(defmethod compInitialize :czc.skaro.io/NettyMVC
 
   [^Muble co]
 
@@ -263,4 +265,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

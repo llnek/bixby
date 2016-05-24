@@ -13,7 +13,6 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 
-
 {:czc.skaro.io/FilePicker
  {:info {:version "1.0"
          :name "FILEPicker" }
@@ -41,7 +40,7 @@
  :czc.skaro.io/JMS
  {:info {:version "1.0"
          :name "JMS" }
-  :conf {:contextFactory "com.zotohlab.mock.jms.MockContextFactory"
+  :conf {:contextFactory "czlab.skaro.mock.jms.MockContextFactory"
          :providerUrl "java://aaa"
          :connFactory "tcf"
          :destination "topic.abc"
@@ -119,3 +118,5 @@
   :conf {:host ""
          :port 8080
          :handler "" } } }
+
+

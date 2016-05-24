@@ -19,27 +19,31 @@
   czlab.skaro.io.mails
 
   (:require
-    [czlab.xlib.crypto.codec :refer [Pwdify]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core
-    :refer [NextLong spos? ThrowIOE tryc ]]
-    [czlab.xlib.util.str :refer [hgl? ]])
+    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core
+     :refer [nextLong
+             spos?
+             throwIOE
+             tryc ]]
+    [czlab.xlib.str :refer [hgl? ]])
 
   (:use [czlab.skaro.core.sys]
         [czlab.skaro.io.loops ]
         [czlab.skaro.io.core ])
 
   (:import
-    [javax.mail Flags Flags$Flag
-    Store Folder
-    Session Provider Provider$Type]
-    [java.util Properties]
     [javax.mail.internet MimeMessage]
+    [javax.mail Flags Flags$Flag
+     Store Folder
+     Session
+     Provider
+     Provider$Type]
+    [czlab.wflow.server Emitter]
+    [java.util Properties]
     [java.io IOException]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.io EmailEvent]
-    [com.zotohlab.frwk.core Identifiable]))
+    [czlab.skaro.io EmailEvent]
+    [czlab.xlib Muble Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -94,7 +98,7 @@
                                  nil)
                              (seq ps)))
           (when (nil? @sun)
-            (ThrowIOE (str "Failed to find store: " pkey) ))))
+            (throwIOE (str "Failed to find store: " pkey) ))))
       (.setProvider session @sun)
       (.setv co :proto @proto)
       (.setv co :session session))))
@@ -105,7 +109,7 @@
 
   [co msg]
 
-  (let [eeid (NextLong) ]
+  (let [eeid (nextLong) ]
     (with-meta
       (reify
 
@@ -132,11 +136,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.skaro.io/POP3
+(defmethod ioReifyEvent :czc.skaro.io/POP3
 
   [co & args]
 
-  (log/info "IOESReifyEvent: POP3: %s" (.id ^Identifiable co))
+  (log/info "ioReifyEvent: POP3: %s" (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,7 +168,7 @@
     (let [^Folder fd (.getv co :folder) ]
       (when (or (nil? fd)
                 (not (.exists fd)))
-        (ThrowIOE "cannot find inbox.")) )))
+        (throwIOE "cannot find inbox.")) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,7 +182,7 @@
         (doto mm
           (.getAllHeaders)
           (.getContent))
-        (.dispatch co (IOESReifyEvent co mm) {} )
+        (.dispatch co (ioReifyEvent co mm) {} )
         (finally
           (when (.getv src :deleteMsg)
             (.setFlag mm Flags$Flag/DELETED true)))))))
@@ -202,7 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod LoopableOneLoop :czc.skaro.io/POP3
+(defmethod loopableOneLoop :czc.skaro.io/POP3
 
   [^Muble co & args]
 
@@ -235,13 +239,13 @@
       (var-set cpy (assoc! @cpy :port (if (spos? port) port 995)))
       (var-set cpy (assoc! @cpy :user (str (:user cfg))))
       (var-set cpy (assoc! @cpy :passwd
-                           (Pwdify (if (nil? pwd) nil pwd) pkey) ))
+                           (pwdify (if (nil? pwd) nil pwd) pkey) ))
       (-> (persistent! @cpy)
           (dissoc :intervalSecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/POP3
+(defmethod compConfigure :czc.skaro.io/POP3
 
   [^Muble co cfg0]
 
@@ -268,11 +272,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod IOESReifyEvent :czc.skaro.io/IMAP
+(defmethod ioReifyEvent :czc.skaro.io/IMAP
 
   [co & args]
 
-  (log/info "IOESReifyEvent: IMAP: %s" (.id ^Identifiable co))
+  (log/info "ioReifyEvent: IMAP: %s" (.id ^Identifiable co))
   (ctor-email-event co (first args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +305,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod LoopableOneLoop :czc.skaro.io/IMAP
+(defmethod loopableOneLoop :czc.skaro.io/IMAP
 
   [^Muble co & args]
 
@@ -315,7 +319,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/IMAP
+(defmethod compConfigure :czc.skaro.io/IMAP
 
   [^Muble co cfg0]
 
@@ -334,4 +338,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

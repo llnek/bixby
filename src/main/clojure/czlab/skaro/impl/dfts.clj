@@ -19,28 +19,34 @@
   czlab.skaro.impl.dfts
 
   (:require
-    [czlab.xlib.util.core
-    :refer [NextLong trap! test-cond MubleObj! test-nestr]]
-    [czlab.xlib.i18n.resources :refer [RStr]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core
+     :refer [nextLong
+             trap!
+             test-cond
+             mubleObj!
+             test-nestr]]
+    [czlab.xlib.resources :refer [rstr]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.str :refer [ToKW]]
-    [czlab.xlib.util.files
-    :refer [FileRead? DirReadWrite? ]])
+    [czlab.xlib.str :refer [toKW]]
+    [czlab.xlib.files
+     :refer [fileRead? dirReadWrite?]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys])
 
   (:import
-    [com.zotohlab.skaro.core Muble Context ConfigError]
-    [com.zotohlab.frwk.core Versioned
-    Identifiable Hierarchial]
-    [com.zotohlab.skaro.runtime PODMeta]
-    [com.zotohlab.skaro.loaders AppClassLoader]
-    [com.zotohlab.frwk.util CU]
-    [com.zotohlab.frwk.i18n I18N]
-    [com.zotohlab.frwk.server Component
-    Registry RegistryError ServiceError]
+    [czlab.skaro.server Context ConfigError]
+    [czlab.skaro.loaders AppClassLoader]
+    [czlab.xlib Muble
+     Versioned
+     Identifiable Hierarchial]
+    [czlab.skaro.runtime PODMeta]
+    [czlab.xlib I18N CU]
+    [czlab.wflow.server Component
+     Registry
+     RegistryError
+     ServiceError]
     [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,31 +54,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the directory is readable & writable.
-(defn ^:no-doc PrecondDir
+(defn ^:no-doc precondDir
 
   "Is this folder read-writeable?"
 
   [f & dirs]
 
   (doseq [d (cons f dirs)]
-    (test-cond (RStr (I18N/getBase) "dir.no.rw" d)
-               (DirReadWrite? d))))
+    (test-cond (rstr (I18N/getBase) "dir.no.rw" d)
+               (dirReadWrite? d))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the file is readable
-(defn ^:no-doc PrecondFile
+(defn ^:no-doc precondFile
 
   "Is this file readable?"
 
   [ff & files]
 
   (doseq [f (cons ff files)]
-    (test-cond (RStr (I18N/getBase) "file.no.r" f)
-               (FileRead? f))))
+    (test-cond (rstr (I18N/getBase) "file.no.r" f)
+               (fileRead? f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ^:no-doc MaybeDir
+(defn ^:no-doc maybeDir
 
   "true if the key maps to a File"
 
@@ -83,14 +89,14 @@
     (condp instance? v
       String (io/file v)
       File v
-      (trap! ConfigError (RStr (I18N/getBase)
+      (trap! ConfigError (rstr (I18N/getBase)
                                  "skaro.no.dir" kn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;a registry is basically a container holding a bunch of components
 ;;a component itself can be a registry which implies that registeries can
 ;;be nested
-(defn ReifyRegistry
+(defn reifyRegistry
 
   "Create a generic component registry"
 
@@ -99,8 +105,8 @@
 
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
-  (let [impl (MubleObj! {:cache {} })
-        ctxt (atom (MubleObj!)) ]
+  (let [impl (mubleObj! {:cache {} })
+        ctxt (atom (mubleObj!)) ]
     (with-meta
       (reify
 
@@ -156,7 +162,7 @@
                       (.id  ^Identifiable c))
                 cache (.getv impl :cache) ]
             (when (.has this cid)
-              (trap! RegistryError (RStr (I18N/getBase)
+              (trap! RegistryError (rstr (I18N/getBase)
                                            "skaro.dup.cmp" cid)))
             (.setv impl :cache (assoc cache cid c))))
 
@@ -164,11 +170,11 @@
           (let [cache (.getv impl :cache) ]
             (seq cache))) )
 
-      {:typeid (ToKW "czc.skaro.impl" (name regoType))})))
+      {:typeid (toKW "czc.skaro.impl" (name regoType))})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn PodMeta*
+(defn podMeta
 
   "Create metadata for an application bundle"
 
@@ -180,9 +186,9 @@
          :or {main "noname"
               version "1.0"}}
         info
-        pid (str main "#" (NextLong))
-        impl (MubleObj!)
-        ctxt (atom (MubleObj!)) ]
+        pid (str main "#" (nextLong))
+        impl (mubleObj!)
+        ctxt (atom (mubleObj!)) ]
 
     (log/info (str "pod-meta: app=%s\n"
                    "ver=%s\ntype=%s\n"
@@ -222,8 +228,9 @@
         (appKey [_] disposition)
         (typeof [_] main))
 
-      {:typeid (ToKW "czc.skaro.impl" "PODMeta") })))
+      {:typeid (toKW "czc.skaro.impl" "PODMeta") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

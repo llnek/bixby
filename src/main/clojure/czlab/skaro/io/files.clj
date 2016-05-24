@@ -19,15 +19,20 @@
   czlab.skaro.io.files
 
   (:require
-    [czlab.xlib.util.files :refer [Mkdirs MoveFileToDir]]
-    [czlab.xlib.util.core
-    :refer [NextLong MubleObj! test-nestr tryc SubsVar]]
+    [czlab.xlib.files :refer [mkdirs moveFileToDir]]
+    [czlab.xlib.core
+     :refer [nextLong
+             mubleObj!
+             test-nestr
+             tryc
+             subsVar]]
     [czlab.skaro.io.loops
-    :refer [LoopableSchedule
-    LoopableOneLoop CfgLoopable]]
-    [czlab.xlib.util.logging :as log]
+     :refer [loopableSchedule
+             loopableOneLoop
+             cfgLoopable]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.str :refer [ToKW hgl? nsn]])
+    [czlab.xlib.str :refer [toKW hgl? nsn]])
 
   (:use
     [czlab.skaro.core.sys]
@@ -38,31 +43,31 @@
     [org.apache.commons.lang3 StringUtils]
     [java.util Properties ResourceBundle]
     [org.apache.commons.io.filefilter SuffixFileFilter
-    PrefixFileFilter
-    RegexFileFilter FileFileFilter]
+     PrefixFileFilter
+     RegexFileFilter
+     FileFileFilter]
     [org.apache.commons.io.monitor FileAlterationListener
-    FileAlterationListenerAdaptor
-    FileAlterationMonitor
-    FileAlterationObserver]
-    [com.zotohlab.frwk.server Emitter]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.io FileEvent]
-    [com.zotohlab.frwk.core Identifiable]))
+     FileAlterationListenerAdaptor
+     FileAlterationMonitor
+     FileAlterationObserver]
+    [czlab.wflow.server Emitter]
+    [czlab.skaro.io FileEvent]
+    [czlab.xlib Muble Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Order of args must match
-(defmethod IOESReifyEvent :czc.skaro.io/FilePicker
+(defmethod ioReifyEvent :czc.skaro.io/FilePicker
 
   [co & args]
 
   (let
     [fnm (first args)
      f (nth args 1)
-     eeid (NextLong)
-     impl (MubleObj!) ]
+     eeid (nextLong)
+     impl (mubleObj!) ]
     (with-meta
       (reify
 
@@ -80,7 +85,7 @@
         (getOriginalFileName [_] fnm)
         (getFile [_] f))
 
-      {:typeid (ToKW "czc.skaro.io" "FileEvent") })))
+      {:typeid (toKW "czc.skaro.io" "FileEvent") })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -98,16 +103,16 @@
              :FP-CREATED
              (if (some? recvFolder)
                (tryc
-                 (MoveFileToDir f recvFolder false)
+                 (moveFileToDir f recvFolder false)
                  (io/file recvFolder origFname))
                f)
              nil)]
     (when (some? cf)
-      (.dispatch src (IOESReifyEvent co origFname cf action) {}))))
+      (.dispatch src (ioReifyEvent co origFname cf action) {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/FilePicker
+(defmethod compConfigure :czc.skaro.io/FilePicker
 
   [^Muble co cfg0]
 
@@ -115,16 +120,16 @@
   (let [{:keys [targetFolder recvFolder fmask]
          :as cfg}
         (merge (.getv co :dftOptions) cfg0)
-        root (SubsVar targetFolder)
-        dest (SubsVar recvFolder)
+        root (subsVar targetFolder)
+        dest (subsVar recvFolder)
         mask (str fmask)
-        c2 (CfgLoopable co cfg) ]
+        c2 (cfgLoopable co cfg) ]
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))
     (test-nestr "file-root-folder" root)
     (.setv co :emcfg
       (-> c2
-        (assoc :targetFolder (Mkdirs (io/file root)))
+        (assoc :targetFolder (mkdirs (io/file root)))
         (assoc :fmask
                (cond
                  (.startsWith mask "*.")
@@ -138,12 +143,12 @@
                  FileFileFilter/FILE))
         (assoc :recvFolder
                (if (hgl? dest)
-                 (Mkdirs (io/file dest))))))
+                 (mkdirs (io/file dest))))))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompInitialize :czc.skaro.io/FilePicker
+(defmethod compInitialize :czc.skaro.io/FilePicker
 
   [^Muble co]
 
@@ -168,7 +173,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod LoopableSchedule :czc.skaro.io/FilePicker
+(defmethod loopableSchedule :czc.skaro.io/FilePicker
 
   [^Muble co & args]
 
@@ -178,4 +183,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

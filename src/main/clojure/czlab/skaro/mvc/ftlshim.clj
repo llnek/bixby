@@ -19,22 +19,22 @@
   czlab.skaro.mvc.ftlshim
 
   (:require
-    [czlab.xlib.util.core :refer [ThrowBadArg]]
     [clojure.walk :as cw :refer [postwalk]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core :refer [throwBadArg]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io])
 
   (:import
     [freemarker.template TemplateMethodModelEx
-    TemplateBooleanModel
-    TemplateCollectionModel
-    TemplateDateModel
-    TemplateHashModelEx
-    TemplateNumberModel
-    TemplateScalarModel
-    TemplateSequenceModel
-    TemplateMethodModel
-    Configuration DefaultObjectWrapper]
+     TemplateBooleanModel
+     TemplateCollectionModel
+     TemplateDateModel
+     TemplateHashModelEx
+     TemplateNumberModel
+     TemplateScalarModel
+     TemplateSequenceModel
+     TemplateMethodModel
+     Configuration DefaultObjectWrapper]
     [java.io File Writer StringWriter]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +84,7 @@
 
   Object
   (ftl->clj [obj]
-    (ThrowBadArg (format "Can't convert %s to clj" (class obj)))))
+    (throwBadArg (format "Can't convert %s to clj" (class obj)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -123,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GenFtlConfig ""
+(defn genFtlConfig ""
 
   [ & {:keys [root shared] :or {shared {}}} ]
 
@@ -139,7 +139,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn RenderFtl
+(defn renderFtl
 
   "Renders a template given by Configuration cfg and a path
    using model as input and writes it to out
@@ -147,7 +147,7 @@
    If translate-model? is true, map->model is run on the model"
 
   (^String [^Configuration cfg path model]
-    (RenderFtl cfg (StringWriter.) path model))
+    (renderFtl cfg (StringWriter.) path model))
 
   (^String [^Configuration cfg ^Writer out
    ^String path model & {:keys [translate-model?]
@@ -159,4 +159,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

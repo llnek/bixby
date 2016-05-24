@@ -19,13 +19,14 @@
   czlab.skaro.impl.misc
 
   (:require
-    [czlab.xlib.util.core :refer [trap!]]
-    [czlab.xlib.util.wfs :refer [SimPTask]])
+    [czlab.xlib.core :refer [trap!]]
+    [czlab.skaro.core.wfs :refer [simPTask]])
 
   (:import
-    [com.zotohlab.wflow Activity Job
-    FlowError PTask Work]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]))
+    [czlab.wflow Activity
+     Job
+     FlowError PTask Work]
+    [czlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -36,7 +37,7 @@
 
   [s]
 
-  (SimPTask
+  (simPTask
     (fn [^Job job]
       (let [^HTTPEvent evt (.event job)
             ^HTTPResult
@@ -61,7 +62,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeFatalErrorFlow
+(defn makeFatalErrorFlow
 
   ^Activity
   [^Job job]
@@ -70,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MakeOrphanFlow ""
+(defn makeOrphanFlow ""
 
   ^Activity
   [^Job job]
@@ -79,4 +80,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

@@ -19,44 +19,52 @@
   czlab.skaro.io.http
 
   (:require
-    [czlab.xlib.util.str :refer [lcase hgl? strim]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.str :refer [lcase hgl? strim]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.core
-    :refer [juid spos? NextLong
-    ToJavaInt SubsVar MubleObj! test-cond Stringify]]
-    [czlab.xlib.net.comms :refer [ParseBasicAuth]]
-    [czlab.xlib.crypto.codec :refer [Pwdify]]
-    [czlab.xlib.net.routes :refer [LoadRoutes]])
+    [czlab.xlib.core
+     :refer [juid
+             spos?
+             nextLong
+             toJavaInt
+             subsVar
+             mubleObj!
+             test-cond
+             stringify]]
+    [czlab.net.comms :refer [parseBasicAuth]]
+    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.net.routes :refer [loadRoutes]])
 
-  (:use [czlab.xlib.crypto.ssl]
-        [czlab.skaro.core.consts]
+  (:use [czlab.skaro.core.consts]
+        [czlab.crypto.ssl]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
         [czlab.skaro.io.webss])
 
   (:import
     [javax.servlet.http Cookie HttpServletRequest]
-    [com.zotohlab.frwk.server Emitter Component]
-    [java.net URL]
-    [java.io File]
-    [com.zotohlab.frwk.crypto PasswordAPI]
-    [java.net HttpCookie]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.core Versioned
-    Hierarchial
-    Identifiable
-    Disposable Startable]
     [org.apache.commons.codec.binary Base64]
     [org.apache.commons.lang3 StringUtils]
+    [czlab.wflow.server Emitter Component]
+    [java.net URL]
+    [java.io File]
+    [czlab.crypto PasswordAPI]
+    [java.net HttpCookie]
+    [czlab.xlib Muble
+     XData
+     Versioned
+     Hierarchial
+     Identifiable
+     Disposable
+     Startable]
     [javax.servlet.http HttpServletRequest
-    HttpServletResponse]
-    [com.zotohlab.skaro.io WebSockResult
-    IOSession
-    ServletEmitter
-    HTTPResult
-    HTTPEvent JettyUtils]
-    [com.zotohlab.skaro.core Muble Container]))
+     HttpServletResponse]
+    [czlab.skaro.io WebSockResult
+     IOSession
+     ServletEmitter
+     HTTPResult
+     HTTPEvent JettyUtils]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -66,7 +74,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn ScanBasicAuth
+(defn scanBasicAuth
 
   "Scan and parse if exists basic authentication"
 
@@ -74,11 +82,11 @@
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
-    (ParseBasicAuth (.getHeaderValue evt AUTH))))
+    (parseBasicAuth (.getHeaderValue evt AUTH))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HttpBasicConfig
+(defn httpBasicConfig
 
   "Basic http config"
 
@@ -89,7 +97,7 @@
                 limitKB waitMillis
                 port host workers appkey]}
         cfg
-        kfile (SubsVar serverKey)
+        kfile (subsVar serverKey)
         ssl (hgl? kfile)  ]
 
     (with-local-vars [cpy (transient cfg)]
@@ -111,7 +119,7 @@
                                :serverKey (URL. kfile)))
           (var-set cpy (assoc! @cpy
                                :passwd
-                               (Pwdify (:passwd cfg) appkey))))
+                               (pwdify (:passwd cfg) appkey))))
         (do
           (var-set cpy (assoc! @cpy
                                :serverKey nil))))
@@ -140,7 +148,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod CompConfigure :czc.skaro.io/HTTP
+(defmethod compConfigure :czc.skaro.io/HTTP
 
   [^Muble co cfg0]
 
@@ -152,14 +160,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn WSockResult*
+(defn wsockResult
 
   "Create a WebSocket result object"
 
   ^WebSockResult
   [co]
 
-  (let [impl (MubleObj! {:binary false
+  (let [impl (mubleObj! {:binary false
                         :data nil}) ]
     (reify
 
@@ -181,14 +189,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HttpResult*
+(defn httpResult
 
   "Create a HttpResult object"
 
   ^HTTPResult
   [co]
 
-  (let [impl (MubleObj! {:version "HTTP/1.1"
+  (let [impl (mubleObj! {:version "HTTP/1.1"
                         :cookies []
                         :code -1
                         :hds {} })]
@@ -252,7 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasInHeader?
+(defn hasInHeader?
 
   "Returns true if header exists"
 
@@ -266,7 +274,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn HasInParam?
+(defn hasInParam?
 
   "true if parameter exists"
 
@@ -280,48 +288,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetInParameter
+(defn getInParameter
 
   "Get the named parameter"
 
   ^String
   [info ^String param]
 
-  (if-some [arr (if (HasInParam? info param)
+  (if-some [arr (if (hasInParam? info param)
                   ((:params info) param)) ]
     (when (> (count arr) 0)
       (first arr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn GetInHeader
+(defn getInHeader
 
   "Get the named header"
 
   ^String
   [info ^String header]
 
-  (if-some [arr (if (HasInHeader? info header)
+  (if-some [arr (if (hasInHeader? info header)
                  ((:headers info) (lcase header))) ]
     (when (> (count arr) 0)
       (first arr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MaybeLoadRoutes
+(defn maybeLoadRoutes
 
   [^Muble co]
 
-  (let [^Container ctr (.parent ^Hierarchial co)
+  (let [^Cocoon ctr (.parent ^Hierarchial co)
         appDir (.getAppDir ctr)
         sf (io/file appDir DN_CONF "static-routes.conf")
         rf (io/file appDir DN_CONF "routes.conf") ]
     (.setv co
            :routes
-           (vec (concat (if (.exists sf) (LoadRoutes sf) [] )
-                        (if (.exists rf) (LoadRoutes rf) [] ))))
+           (vec (concat (if (.exists sf) (loadRoutes sf) [] )
+                        (if (.exists rf) (loadRoutes rf) [] ))))
     (.getv co :routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

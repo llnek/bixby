@@ -19,9 +19,9 @@
   czlab.xlib.jmx.core
 
   (:require
-    [czlab.xlib.util.core :refer [MubleObj! try! tryc]]
-    [czlab.xlib.util.str :refer [hgl? stror]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core :refer [mubleObj! try! tryc]]
+    [czlab.xlib.str :refer [hgl? stror]]
+    [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
   (:use [czlab.xlib.jmx.names]
@@ -29,17 +29,17 @@
 
   (:import
     [java.net InetAddress MalformedURLException]
-    [java.lang.management ManagementFactory]
-    [com.zotohlab.skaro.runtime JMXServer]
-    [java.rmi NoSuchObjectException]
-    [com.zotohlab.frwk.core Startable]
-    [com.zotohlab.skaro.core Muble]
     [java.rmi.registry LocateRegistry Registry]
+    [java.lang.management ManagementFactory]
+    [czlab.skaro.runtime JMXServer]
+    [java.rmi NoSuchObjectException]
+    [czlab.xlib Startable Muble]
     [java.rmi.server UnicastRemoteObject]
     [javax.management DynamicMBean
-    JMException MBeanServer ObjectName]
+     JMException
+     MBeanServer ObjectName]
     [javax.management.remote JMXConnectorServer
-    JMXConnectorServerFactory JMXServiceURL]))
+     JMXConnectorServerFactory JMXServiceURL]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -102,13 +102,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn JmxServer* ""
+(defn mkJmxServer ""
 
   ^JMXServer
   [^String host]
 
   (let
-    [impl (MubleObj! {:regoPort 7777
+    [impl (mubleObj! {:regoPort 7777
                      :port 0})
      objNames (atom []) ]
     (reify
@@ -132,8 +132,8 @@
           (reset! objNames
                   (conj @objNames
                         (doReg bs
-                               (ObjectName* domain nname paths)
-                               (JmxBean* obj))))))
+                               (objectName domain nname paths)
+                               (jmxBean obj))))))
 
       ;; jconsole port
       (setRegistryPort [_ port] (.setv impl :regoPort port))
