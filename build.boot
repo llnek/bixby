@@ -326,9 +326,21 @@
   []
 
   (bc/with-pre-wrap fileset
+    (doseq [f (seq (output-files fileset))]
+      (let [dir (:dir f)
+            pn (:path f)
+            tf (io/file (ge :jzzDir) pn)
+            pd (.getParentFile tf)]
+        (when (.startsWith pn "META-INF")
+          (.mkdirs pd)
+          (spit tf
+                (slurp (fp! dir pn)
+                       :encoding "utf-8")
+                :encoding "utf-8"))))
     (b/replaceFile
-      (fp! (ge :jzzDir) "czlab/skaro/version.properties")
-      #(cs/replace % "@@pom.version@@" (ge :buildVersion)))
+      (fp! (ge :jzzDir)
+           "czlab/skaro/version.properties")
+      #(cs/replace % "@@pom.version@@" (ge :version)))
     (b/jarFiles)
     fileset))
 
@@ -343,6 +355,7 @@
         (b/libjars)
         (javacmp)
         (cljcmp)
+        (pom :project (ge :project) :version (ge :version))
         (jar!)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
