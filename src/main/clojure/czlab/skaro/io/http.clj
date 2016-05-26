@@ -42,10 +42,10 @@
         [czlab.skaro.io.webss])
 
   (:import
-    [javax.servlet.http Cookie HttpServletRequest]
     [org.apache.commons.codec.binary Base64]
     [org.apache.commons.lang3 StringUtils]
-    [czlab.wflow.server Emitter Component]
+    [czlab.skaro.server Component]
+    [czlab.wflow.server Emitter]
     [java.net URL]
     [java.io File]
     [czlab.crypto PasswordAPI]
@@ -57,13 +57,10 @@
      Identifiable
      Disposable
      Startable]
-    [javax.servlet.http HttpServletRequest
-     HttpServletResponse]
     [czlab.skaro.io WebSockResult
      IOSession
-     ServletEmitter
      HTTPResult
-     HTTPEvent JettyUtils]
+     HTTPEvent]
     [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,9 +150,6 @@
   [^Muble co cfg0]
 
   (log/info "compConfigure: HTTP: %s" (.id ^Identifiable co))
-  (->> (merge (.getv co :dftOptions) cfg0)
-       (HttpBasicConfig co )
-       (.setv co :emcfg ))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

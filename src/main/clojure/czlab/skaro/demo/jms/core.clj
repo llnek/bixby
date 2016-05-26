@@ -16,18 +16,18 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.jms.core
+  czlab.skaro.demo.jms.core
 
   (:require
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.process :refer [DelayExec]])
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.process :refer [delayExec]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
-    [com.zotohlab.skaro.io JMSEvent]
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.skaro.io JMSEvent]
     [javax.jms TextMessage]
     [java.util.concurrent.atomic AtomicInteger]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -41,7 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []
@@ -60,4 +60,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

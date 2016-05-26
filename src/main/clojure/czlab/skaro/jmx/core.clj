@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlab.xlib.jmx.core
+  czlab.skaro.jmx.core
 
   (:require
     [czlab.xlib.core :refer [mubleObj! try! tryc]]
@@ -24,8 +24,8 @@
     [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
-  (:use [czlab.xlib.jmx.names]
-        [czlab.xlib.jmx.bean])
+  (:use [czlab.skaro.jmx.names]
+        [czlab.skaro.jmx.bean])
 
   (:import
     [java.net InetAddress MalformedURLException]
@@ -133,7 +133,7 @@
                   (conj @objNames
                         (doReg bs
                                (objectName domain nname paths)
-                               (jmxBean obj))))))
+                               (mkJmxBean obj))))))
 
       ;; jconsole port
       (setRegistryPort [_ port] (.setv impl :regoPort port))

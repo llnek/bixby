@@ -16,19 +16,19 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.http.core
+  czlab.skaro.demo.http.core
 
 
   (:require
-    [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core :refer [try!]]
-    [czlab.xlib.util.str :refer [hgl?]])
+    [czlab.xlib.process :refer [delayExec]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core :refer [try!]]
+    [czlab.xlib.str :refer [hgl?]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,7 +46,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []

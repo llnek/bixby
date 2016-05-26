@@ -42,8 +42,8 @@
   (:import
     [czlab.net RouteCracker RouteInfo]
     [czlab.wflow.server Emitter
-     EventTrigger
      EventHolder]
+    [czlab.skaro.server EventTrigger]
     [java.io Closeable
      File
      IOException
@@ -278,7 +278,7 @@
         (try! (nettyReply ch evt src) ) ))
 
     (resumeWithError [_]
-      (let [rsp (HttpReply* 500) ]
+      (let [rsp (httpReply 500) ]
         (try
           (maybeClose evt (.writeAndFlush ch rsp))
           (catch ClosedChannelException _
@@ -531,7 +531,7 @@
 
   (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
   (->> (merge (.getv co :dftOptions) cfg0)
-       (HttpBasicConfig co )
+       (httpBasicConfig co )
        (.setv co :emcfg ))
   co)
 

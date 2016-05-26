@@ -22,7 +22,7 @@
     [czlab.xlib.files
      :refer [mkdirs
              readOneUrl
-             listFiles unzip]]
+             listFiles]]
     [czlab.xlib.str :refer [strim hgl? toKW]]
     [czlab.xlib.mime :refer [setupCache]]
     [czlab.xlib.process :refer [safeWait]]
@@ -53,7 +53,6 @@
      PODMeta
      EmitMeta]
     [czlab.skaro.loaders AppClassLoader]
-    [czlab.skaro.server Context]
     [java.io File FileFilter]
     [java.security SecureRandom]
     [java.util.zip ZipFile]
@@ -64,7 +63,8 @@
      Disposable
      Versioned
      Hierarchial Identifiable]
-    [czlab.wflow.server Component Registry]))
+    [czlab.skaro.server Context
+     Component Registry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -124,7 +124,7 @@
   (tryletc
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
-     jmx (jmxServer host)]
+     jmx (mkJmxServer host)]
     (.setRegistryPort jmx (int port))
     (-> ^Startable jmx (.start))
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
@@ -159,7 +159,7 @@
     [cache (.getv co K_CONTAINERS)
      cid (.id ^Identifiable pod)
      app (.moniker pod)
-     ctr (Container* pod)]
+     ctr (mkContainer pod)]
     (log/debug "start pod\ncid = %s\napp = %s" cid app)
     (.setv co K_CONTAINERS (assoc cache cid ctr))))
 

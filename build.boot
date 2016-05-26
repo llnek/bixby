@@ -1,6 +1,8 @@
 (set-env!
   :dependencies '[
 
+    [org.slf4j/slf4j-api "1.7.21" ]
+
     [czlab/czlab-webnet "1.0.0"]
     [czlab/czlab-wflow "1.0.0"]
     [czlab/czlab-dbio "1.0.0"]

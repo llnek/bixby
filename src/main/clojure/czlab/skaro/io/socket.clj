@@ -24,7 +24,7 @@
              test-posnum
              convLong
              spos?]]
-    [czlab.xlib.process :refer [coroutine]]
+    [czlab.xlib.process :refer [async!]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.io :refer [closeQ]]
     [czlab.xlib.logging :as log]
@@ -129,7 +129,7 @@
   (log/info "ioStart: SocketIO: %s" (.id ^Identifiable co))
   (let [^ServerSocket ssoc (.getv co :ssocket)]
     (when (some? ssoc)
-      (coroutine #(while (.isBound ssoc)
+      (async! #(while (.isBound ssoc)
                     (try
                       (sockItDown co (.accept ssoc))
                       (catch Throwable e#

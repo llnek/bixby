@@ -16,19 +16,19 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.fork.core
+  czlab.skaro.demo.fork.core
 
 
   (:require
-    [czlab.xlib.util.core :refer [try!]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.str :refer [hgl?]]
-    [czlab.xlib.util.wfs :refer [SimPTask]])
+    [czlab.xlib.core :refer [try!]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.str :refer [hgl?]]
+    [czlab.skaro.core.wfs :refer [simPTask]])
 
   (:import
-    [com.zotohlab.skaro.core Container]
-    [com.zotohlab.wflow Job
-    Activity WorkFlow FlowDot PTask Split]
+    [czlab.skaro.server Cocoon]
+    [czlab.wflow.dsl Job
+     Activity WorkFlow FlowDot PTask Split]
     [java.lang StringBuilder]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,7 +59,7 @@
 ;;
 (def ^:private ^Activity
   a1
-  (SimPTask
+  (simPTask
     (fn [_]
        (println "I am the *Parent*")
        (println "I am programmed to fork off a parallel child process, "
@@ -70,20 +70,20 @@
 (def ^:private ^Activity
   a2
   (Split/fork
-    (SimPTask
+    (simPTask
       (fn [^Job j]
         (println "*Child*: will create my own child (blocking)")
         (.setv j :rhs 60)
         (.setv j :lhs 5)
         (-> (Split/applyAnd
-              (SimPTask
+              (simPTask
                 (fn [^Job j]
                   (println "*Child*: the result for (5 * 60) according to "
                            "my own child is = "
                            (.getv j :result))
                   (println "*Child*: done."))))
             (.include
-              (SimPTask
+              (simPTask
                 (fn [^Job j2]
                   (println "*Child->child*: taking some time to do "
                            "this task... ( ~ 6secs)")
@@ -102,7 +102,7 @@
 ;;
 (def ^:private ^Activity
   a3
-  (SimPTask
+  (simPTask
     (fn [_]
       (let [b (StringBuilder. "*Parent*: ")]
         (println "*Parent*: after fork, continue to calculate fib(6)...")
@@ -114,7 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo
+(defn demo
 
   "split but no wait, parent continues"
 
@@ -128,4 +128,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

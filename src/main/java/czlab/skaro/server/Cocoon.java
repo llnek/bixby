@@ -15,7 +15,6 @@
 
 package czlab.skaro.server;
 
-import czlab.wflow.server.ServiceProvider;
 import czlab.wflow.server.ServerLike;
 import czlab.xlib.Disposable;
 import czlab.xlib.Named;

@@ -47,7 +47,7 @@
     [czlab.dbio.core
      :refer [mkJdbc
              mkMetaCache
-             dbPool
+             mkDbPool
              mkDbSchema]])
 
   (:use
@@ -60,7 +60,6 @@
     [czlab.skaro.io.jms]
     [czlab.skaro.io.http]
     [czlab.skaro.io.netty]
-    [czlab.skaro.io.jetty]
     [czlab.skaro.io.socket]
     [czlab.skaro.mvc.filters]
     [czlab.skaro.mvc.ftlshim]
@@ -81,20 +80,20 @@
     [czlab.skaro.runtime AppMain PODMeta]
     [czlab.xlib Versioned
      Hierarchial
+     XData Schedulable CU
      Muble I18N
      Morphable Activable
      Startable Disposable Identifiable]
 
-    [czlab.xlib XData Schedulable CU]
+    [czlab.wflow.server Emitter
+     ServiceHandler]
     [czlab.skaro.server
      Registry
      Service
-     Emitter
      Component
-     ServiceHandler
      ServiceError]
     [czlab.skaro.io IOEvent]
-    [czlab.wflow Activity Job]))
+    [czlab.wflow.dsl Activity Job]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -206,7 +205,7 @@
         (clear [_] (.clear impl))
         (toEDN [_] (.toEDN impl))
 
-        Container
+        Cocoon
 
         (getAppKeyBits [this] (bytesify (.getAppKey this)))
         (getAppDir [this] (.getv this K_APPDIR))

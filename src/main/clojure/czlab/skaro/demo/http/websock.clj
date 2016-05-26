@@ -16,29 +16,29 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.http.websock
+  czlab.skaro.demo.http.websock
 
 
   (:require
-    [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core :refer :all]
-    [czlab.xlib.util.str :refer :all]
-    [czlab.xlib.util.meta :refer [IsBytes?]])
+    [czlab.xlib.process :refer [delayExec]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core :refer :all]
+    [czlab.xlib.str :refer :all]
+    [czlab.xlib.meta :refer [isBytes?]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.skaro.io WebSockEvent
-    WebSockResult]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.xlib XData]
+    [czlab.skaro.io WebSockEvent
+     WebSockResult]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []
@@ -55,7 +55,7 @@
           (instance? String stuff)
           (println "Got poked by websocket-text: " stuff)
 
-          (IsBytes? (class stuff))
+          (isBytes? (class stuff))
           (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
 
           :else
@@ -63,4 +63,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

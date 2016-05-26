@@ -16,29 +16,29 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.http.formpost
+  czlab.skaro.demo.http.formpost
 
 
   (:require
-    [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core :refer [Cast?]]
-    [czlab.xlib.util.str :refer [hgl?]])
+    [czlab.xlib.process :refer [delayExec]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core :refer [cast?]]
+    [czlab.xlib.str :refer [hgl?]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.skaro.io HTTPEvent HTTPResult]
     [java.util ListIterator]
-    [com.zotohlab.frwk.io XData]
-    [com.zotohlab.frwk.net ULFileItem ULFormItems]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.xlib XData]
+    [czlab.net ULFileItem ULFormItems]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []
@@ -52,7 +52,7 @@
                              (.hasContent data))
                     (.content data)) ]
         (if-some [^ULFormItems
-                 fis (Cast? ULFormItems stuff)]
+                 fis (cast? ULFormItems stuff)]
           (doseq [^ULFileItem fi (.intern fis)]
             (println "Fieldname : " (.getFieldName fi))
             (println "Name : " (.getName fi))
@@ -70,4 +70,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

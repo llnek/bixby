@@ -16,10 +16,10 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlab.xlib.jmx.names
+  czlab.skaro.jmx.names
 
   (:require
-    [czlab.xlib..logging :as log]
+    [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
   (:import

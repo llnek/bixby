@@ -61,7 +61,7 @@
   (:use [czlab.skaro.etc.boot]
         [czlab.skaro.etc.cmd2]
         [czlab.xlib.meta]
-        [czlab.skaro.server.consts])
+        [czlab.skaro.core.consts])
 
   (:import
     [org.apache.commons.lang3.tuple ImmutablePair]
@@ -74,7 +74,7 @@
     [czlab.skaro.server CLJShim ]
     [czlab.skaro.etc CmdHelpError]
     [czlab.crypto PasswordAPI]
-    [czlab.wflow Job]
+    [czlab.wflow.dsl Job]
     [java.io File]
     [java.security KeyPair PublicKey PrivateKey]))
 
@@ -338,7 +338,7 @@
           now (Date.)
           ff (io/file (:fn rc))]
       (println "DN entered: " dn)
-      (ssv1PKCS12*
+      (ssv1PKCS12
         dn
         (pwdify (:pwd rc))
         ff
@@ -502,7 +502,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn OnHelp
+(defn onHelp
 
   "Show help"
 

@@ -78,8 +78,8 @@
   (let [{:keys [props rego ctx]} options]
     (compContextualize co ctx)
     (compCompose co rego)
-    (CompConfigure co props)
-    (CompInitialize co)
+    (compConfigure co props)
+    (compInitialize co)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

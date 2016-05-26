@@ -37,16 +37,16 @@
         [czlab.skaro.core.consts])
 
   (:import
-    [czlab.wflow.server Emitter EventHolder EventTrigger]
+    [czlab.wflow.server Emitter EventHolder]
+    [czlab.skaro.server Cocoon EventTrigger]
     [czlab.skaro.io HTTPEvent HTTPResult]
     [czlab.net RouteInfo RouteCracker]
     [czlab.skaro.mvc HTTPErrorHandler
      MVCUtils WebAsset WebContent]
     [czlab.xlib XData Muble Hierarchial Identifiable]
-    [czlab.wflow FlowDot Activity
+    [czlab.wflow.dsl FlowDot Activity
      Job WHandler PTask Work]
     [czlab.skaro.runtime AuthError]
-    [czlab.skaro.server Cocoon]
     [org.apache.commons.lang3 StringUtils]
     [java.util Date]
     [java.io File]
@@ -273,7 +273,7 @@
             ps (fpath (io/file appDir DN_PUBLIC))
             mpt (str (.getv ri :mountPoint))
             gc (.groupCount mc)]
-        (var-set mp (.replace mpt "${app.dir}" (FPath appDir)))
+        (var-set mp (.replace mpt "${app.dir}" (fpath appDir)))
         (when (> gc 1)
           (doseq [i (range 1 gc)]
             (var-set mp (StringUtils/replace ^String @mp

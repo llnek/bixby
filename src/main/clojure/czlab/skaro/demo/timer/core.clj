@@ -16,20 +16,20 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.timer.core
+  czlab.skaro.demo.timer.core
 
 
   (:require
-    [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.wfs :refer [SimPTask]])
+    [czlab.xlib.process :refer [delayExec]]
+    [czlab.xlib.logging :as log]
+    [czlab.skaro.core.wfs :refer [simPTask]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
     [java.util.concurrent.atomic AtomicInteger]
     [java.util Date]
-    [com.zotohlab.skaro.io TimerEvent]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.skaro.io TimerEvent]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -43,7 +43,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []
@@ -57,4 +57,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

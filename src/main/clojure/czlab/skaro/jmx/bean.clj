@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "kenl" }
 
-  czlab.xlib.jmx.bean
+  czlab.skaro.jmx.bean
 
   (:require
     [czlab.xlib.core
@@ -288,7 +288,7 @@
                         true
                         true
                         (and (.startsWith fnm "is")
-                             (IsBoolean? (.getType field))))
+                             (isBoolean? (.getType field))))
                       (conj! @rc)))))
     [ (persistent! @rc) (persistent! @flds) ]))
 

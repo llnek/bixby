@@ -103,15 +103,6 @@
          :delaySecs 0
          :handler "" } }
 
- :czc.skaro.io/JettyIO
- {:info {:version "1.0"
-         :name "JettyIO" }
-  :conf {:host ""
-         :port 8080
-         :serverKey ""
-         :passwd ""
-         :handler "" } }
-
  :czc.skaro.io/SocketIO
  {:info {:version "1.0"
          :name "SocketIO" }

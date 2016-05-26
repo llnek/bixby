@@ -15,11 +15,11 @@
 
 package czlab.skaro.runtime;
 
+import czlab.skaro.server.Contextualizable;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
 import czlab.xlib.Initializable;
 import czlab.xlib.Startable;
-import czlab.skaro.core.Contextualizable;
 
 /**
  * @author kenl

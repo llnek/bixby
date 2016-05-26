@@ -16,20 +16,21 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.file.core
+  czlab.skaro.demo.file.core
 
 
   (:require
-    [czlab.xlib.util.core :refer [try!]]
-    [czlab.xlib.util.logging :as log]
+    [czlab.xlib.core :refer [try!]]
+    [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.util.str :refer [hgl?]])
+    [czlab.xlib.str :refer [hgl?]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
-    [com.zotohlab.skaro.core Container Muble]
-    [com.zotohlab.skaro.io FileEvent]
-    [com.zotohlab.frwk.server ServiceProvider Service]
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.xlib Muble]
+    [czlab.skaro.server Cocoon]
+    [czlab.skaro.io FileEvent]
+    [czlab.skaro.server ServiceProvider Service]
     [java.util.concurrent.atomic AtomicInteger]
     [org.apache.commons.io FileUtils]
     [java.util Date]
@@ -48,7 +49,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DemoGen ""
+(defn demoGen ""
 
   ^WHandler
   []
@@ -65,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DemoPick ""
+(defn demoPick ""
 
   ^WHandler
   []
@@ -79,4 +80,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

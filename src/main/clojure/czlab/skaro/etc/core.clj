@@ -23,7 +23,7 @@
     [czlab.xlib.resources :refer [getResource rstr rstr*]]
     [czlab.xlib.str :refer [makeString]]
     [czlab.xlib.logging :as log]
-    [czlab.xlib.scheduler :refer [nulScheduler]]
+    [czlab.xlib.scheduler :refer [mkNulScheduler]]
     [czlab.xlib.files :refer [dirRead?]])
 
   (:use [czlab.skaro.core.wfs]
@@ -35,7 +35,7 @@
     [czlab.wflow.server ServiceHandler ServerLike]
     [czlab.skaro.etc CmdHelpError]
     [java.io File]
-    [czlab.wflow Activity
+    [czlab.wflow.dsl Activity
      WorkFlowEx
      Nihil
      Job
@@ -176,7 +176,7 @@
     (setGlobals! :homeDir home)
     (setGlobals! :rcb rcb)
     (-> ^ServiceHandler
-        (flowServer (nulScheduler) {})
+        (flowServer (mkNulScheduler) {})
         (.handle wf {:home home
                      :rcb rcb
                      JS_LAST args}))))

@@ -23,7 +23,7 @@
     [czlab.skaro.core.wfs :refer [simPTask]])
 
   (:import
-    [czlab.wflow Activity
+    [czlab.wflow.dsl Activity
      Job
      FlowError PTask Work]
     [czlab.skaro.io HTTPEvent HTTPResult]))

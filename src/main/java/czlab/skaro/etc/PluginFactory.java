@@ -16,7 +16,7 @@
 package czlab.skaro.etc;
 
 
-import czlab.skaro.core.Cocoon;
+import czlab.skaro.server.Cocoon;
 
 /**
  * @author kenl

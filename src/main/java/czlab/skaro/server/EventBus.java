@@ -15,6 +15,7 @@
 
 package czlab.skaro.server;
 
+import czlab.wflow.server.Event;
 import czlab.xlib.Hierarchial;
 
 

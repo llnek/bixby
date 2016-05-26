@@ -15,6 +15,8 @@
 
 package czlab.skaro.server;
 
+import czlab.wflow.server.Emitter;
+
 /**
  * @author kenl
  */

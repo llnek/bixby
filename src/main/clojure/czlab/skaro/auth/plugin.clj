@@ -25,7 +25,7 @@
              exp!
              tryc
              stringify
-             ce?
+             cexp?
              mubleObj!
              do->false
              do->true
@@ -74,7 +74,7 @@
     [java.util Properties]
     [org.apache.shiro SecurityUtils]
     [org.apache.shiro.subject Subject]
-    [czlab.wflow If
+    [czlab.wflow.dsl If
      BoolExpr
      Activity
      Job
@@ -168,7 +168,7 @@
         ps (.hashed pwdObj)
         acc (->> (-> :czc.skaro.auth/LoginAccount
                      (dbioCreateObj )
-                     (dbioSetFld*
+                     (dbioSetFld
                        (merge
                          {:acctid (strim user)
                           :passwd (.getLeft ps)}
@@ -260,7 +260,7 @@
 
   (if (empty? details)
     userObj
-    (->> (dbioSetFld* userObj details)
+    (->> (dbioSetFld userObj details)
          (.update sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -369,7 +369,7 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (exp! AuthError (ce? (:e info)))}
+            (->> {:error (exp! AuthError (cexp? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)
@@ -429,7 +429,7 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (exp! AuthError (ce? (:e info)))}
+            (->> {:error (exp! AuthError (cexp? (:e info)))}
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))

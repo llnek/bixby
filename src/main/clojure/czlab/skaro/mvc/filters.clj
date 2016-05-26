@@ -47,10 +47,10 @@
     [java.io File]
     [czlab.wflow.server Emitter]
     [czlab.xlib XData
+     Muble
      Hierarchial Identifiable]
-    [com.zotohlab.skaro.io HTTPEvent]
-    [com.zotohlab.skaro.core Muble]
-    [com.zotohlab.skaro.mvc HTTPErrorHandler
+    [czlab.skaro.io HTTPEvent]
+    [czlab.skaro.mvc HTTPErrorHandler
      MVCUtils WebAsset WebContent]
     [io.netty.handler.codec.http HttpRequest
      HttpResponse
@@ -251,7 +251,7 @@
   [^Muble co cfg]
 
   (log/info "compConfigure: NetttyMVC: %s" (.id ^Identifiable co))
-  (.setv co :emcfg (HttpBasicConfig co cfg))
+  (.setv co :emcfg (httpBasicConfig co cfg))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

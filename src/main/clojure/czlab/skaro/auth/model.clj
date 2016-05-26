@@ -23,13 +23,13 @@
     [czlab.xlib.logging :as log])
 
   (:use
-    [czlab.dbio.drivers]
+    [czlab.dbddl.drivers]
     [czlab.dbio.core]
-    [czlab.dbio.postgresql]
-    [czlab.dbio.h2]
-    [czlab.dbio.mysql]
-    [czlab.dbio.sqlserver]
-    [czlab.dbio.oracle])
+    [czlab.dbddl.postgresql]
+    [czlab.dbddl.h2]
+    [czlab.dbddl.mysql]
+    [czlab.dbddl.sqlserver]
+    [czlab.dbddl.oracle])
 
   (:import
     [czlab.dbio JDBCInfo JDBCPool Schema]
@@ -44,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModel2 _NSP StdAddress
+(defModelWithNSP _NSP StdAddress
   (withFields
     {:addr1 {:size 255 :null false }
      :addr2 { }
@@ -60,7 +60,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModel2 _NSP AuthRole
+(defModelWithNSP _NSP AuthRole
   (withFields
     {:name {:column "role_name" :null false }
      :desc {:column "description" :null false } })
@@ -69,7 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModel2 _NSP LoginAccount
+(defModelWithNSP _NSP LoginAccount
   (withFields
     {:acctid {:null false }
      :email {:size 128 }
@@ -86,7 +86,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defJoined2 _NSP AccountRole
+(defJoinedWithNSP _NSP AccountRole
            (toKW _NSP "LoginAccount")
            (toKW _NSP "AuthRole"))
 
@@ -135,7 +135,7 @@
   JDBCInfo
   (applyDDL [this]
     (when-some [dbtype (matchJdbcUrl (.getUrl this)) ]
-      (with-open [conn (dbConnection this)]
+      (with-open [conn (mkDbConnection this)]
         (uploadDdl conn (generateAuthPluginDDL dbtype)))))
 
   JDBCPool

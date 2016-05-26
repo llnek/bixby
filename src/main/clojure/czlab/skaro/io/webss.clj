@@ -80,7 +80,7 @@
 (defn- maybeMacIt ""
 
   [^HTTPEvent evt ^String data
-   ^Container ctr]
+   ^Cocoon ctr]
 
   (if
     (.checkAuthenticity evt)
@@ -125,7 +125,7 @@
 (defn- maybeValidateCookie  ""
 
   [^HTTPEvent evt ^String part1 ^String part2
-   ^Container ctr]
+   ^Cocoon ctr]
 
   (when-some [pkey (if (.checkAuthenticity evt)
                     (.getAppKeyBits ctr)
@@ -167,7 +167,7 @@
             (log/debug "session attr name=%s, value=%s" s1 s2)
             (if (and (.startsWith s1 "__f")
                      (.endsWith s1 "n"))
-              (.setAttribute mvs (keyword s1) (ConvLong s2 0))
+              (.setAttribute mvs (keyword s1) (convLong s2 0))
               (.setAttribute mvs (keyword s1) s2)))
           (catch Throwable _
             (trap! ExpiredError "Corrupted cookie")))

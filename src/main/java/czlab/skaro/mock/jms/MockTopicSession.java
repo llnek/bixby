@@ -15,6 +15,7 @@
 
 package czlab.skaro.mock.jms;
 
+import static czlab.skaro.mock.jms.MockUtils.*;
 
 import java.io.Serializable;
 import java.util.HashMap;

@@ -16,14 +16,14 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  demo.flows.core
+  czlab.skaro.demo.flows.core
 
-  (:use [czlab.xlib.util.wfs])
+  (:use [czlab.skaro.core.wfs])
 
   (:import
-    [com.zotohlab.wflow PTask
-    WorkFlow Job
-    Activity FlowError If Split Switch While]))
+    [czlab.wflow.dsl PTask
+     WorkFlow Job
+     Activity FlowError If Split Switch While]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -45,10 +45,10 @@
   [t]
 
   (case t
-    "facebook" (SimPTask (fn [_] (println "-> use facebook")))
-    "google+" (SimPTask (fn [_] (println "-> use google+")))
-    "openid" (SimPTask (fn [_] (println "-> use open-id")))
-    (SimPTask (fn [_] (println "-> use internal db")))))
+    "facebook" (simPTask (fn [_] (println "-> use facebook")))
+    "google+" (simPTask (fn [_] (println "-> use google+")))
+    "openid" (simPTask (fn [_] (println "-> use open-id")))
+    (simPTask (fn [_] (println "-> use internal db")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step1. choose a method to authenticate the user
@@ -62,7 +62,7 @@
   ;; could check some data from the job, such as URI/Query params
   ;; and decide on which mth-value to switch() on
   (doto
-    (->> (DefChoiceExpr
+    (->> (defChoiceExpr
            (fn [_]
              (println "step(1): choose an authentication method")
              "facebook"))
@@ -76,7 +76,7 @@
 ;;step2
 (defonce ^:private ^Activity
   GetProfile
-  (SimPTask (fn [_] (println "step(2): get user profile\n"
+  (simPTask (fn [_] (println "step(2): get user profile\n"
                              "->user is superuser"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,13 +86,13 @@
 (defonce ^:private ^Activity
   prov_ami
   (While/apply
-    (DefBoolExpr
+    (defBoolExpr
       (fn [^Job j]
         (let [v (.getv j :ami_count)
               c (if (some? v) (inc v) 0)]
          (.setv j :ami_count c)
          (< c 3))))
-    (SimPTask
+    (simPTask
       (fn [^Job j]
         (let [v (.getv j :ami_count)
               c (if (some? v) v 0) ]
@@ -109,13 +109,13 @@
 (defonce ^:private ^Activity
   prov_vol
   (While/apply
-    (DefBoolExpr
+    (defBoolExpr
       (fn [^Job j]
         (let [v (.getv j :vol_count)
               c (if (some? v) (inc v) 0) ]
           (.setv j :vol_count c)
           (< c 3))))
-    (SimPTask
+    (simPTask
       (fn [^Job j]
         (let [v (.getv j :vol_count)
               c (if (some? v) v 0) ]
@@ -132,13 +132,13 @@
 (defonce ^:private ^Activity
   save_sdb
   (While/apply
-    (DefBoolExpr
+    (defBoolExpr
       (fn [^Job j]
         (let [v (.getv j :wdb_count)
               c (if (some? v) (inc v) 0)]
           (.setv j :wdb_count c)
           (< c 3))))
-    (SimPTask
+    (simPTask
       (fn [^Job j]
         (let [v (.getv j :wdb_count)
               c (if (some? v) v 0) ]
@@ -162,25 +162,25 @@
 ;; like, returning a 200-OK
 (defonce ^:private ^Activity
   ReplyUser
-  (SimPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+  (simPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
                              "back to caller here"))))
 
 (defonce ^:private ^Activity
   ErrorUser
-  (SimPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+  (simPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
                              "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
 (defonce ^:private ^Activity
   FinalTest
   (If/apply
-    (DefBoolExpr (fn [_] true))
+    (defBoolExpr (fn [_] true))
     ReplyUser
     ErrorUser))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WorkFlow
   []

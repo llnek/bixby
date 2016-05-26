@@ -16,23 +16,23 @@
 (ns ^{:doc ""
       :author "kenl"}
 
-  demo.mvc.core
+  czlab.skaro.demo.mvc.core
 
-  (:require [czlab.xlib.util.logging :as log])
+  (:require [czlab.xlib.logging :as log])
 
   (:use [czlab.skaro.core.consts]
-        [czlab.xlib.util.consts]
-        [czlab.xlib.util.core]
-        [czlab.xlib.util.str]
-        [czlab.xlib.util.wfs])
+        [czlab.xlib.consts]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.skaro.core.wfs])
 
   (:import
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-    [com.zotohlab.wflow FlowDot Activity
-    WorkFlow WorkFlowEx
-    Job PTask]
-    [com.zotohlab.skaro.runtime AppMain]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.wflow.dsl FlowDot Activity
+     WorkFlow WorkFlowEx
+     Job PTask]
+    [czlab.skaro.runtime AppMain]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -54,7 +54,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Handler ""
+(defn handler ""
 
   ^WorkFlowEx
   []
@@ -62,12 +62,12 @@
   (reify WorkFlowEx
 
     (startWith [_]
-      (SimPTask
+      (simPTask
         (fn [^Job job]
           (let [tpl (:template (.getv job EV_OPTS))
                 ^HTTPEvent evt (.event job)
                 src (.emitter evt)
-                ^Container
+                ^Cocoon
                 co (.container src)
                 {:keys [data ctype] }
                 (.loadTemplate co
@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MyAppMain ""
+(defn myAppMain ""
 
   ^AppMain
   []
@@ -111,4 +111,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

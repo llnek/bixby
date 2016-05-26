@@ -16,10 +16,10 @@
 package czlab.skaro.etc;
 
 
+import czlab.skaro.server.Cocoon;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
 import czlab.xlib.Startable;
-import czlab.skaro.core.Cocoon;
 
 
 /**

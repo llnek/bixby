@@ -16,21 +16,21 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.pop3.core
+  czlab.skaro.demo.pop3.core
 
   (:require
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.process :refer [DelayExec]])
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.process :refer [delayExec]])
 
   (:import
-    [com.zotohlab.wflow WHandler Job FlowDot PTask]
+    [czlab.wflow.dsl WHandler Job FlowDot PTask]
     [org.apache.commons.io IOUtils]
     [java.util.concurrent.atomic AtomicInteger]
     [javax.mail Message Message$RecipientType Multipart]
     [javax.mail.internet MimeMessage]
-    [com.zotohlab.skaro.runtime AppMain]
-    [com.zotohlab.skaro.io EmailEvent]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.skaro.runtime AppMain]
+    [czlab.skaro.io EmailEvent]
+    [czlab.skaro.server Cocoon]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -44,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Demo ""
+(defn demo ""
 
   ^WHandler
   []
@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MyAppMain ""
+(defn myAppMain ""
 
   ^AppMain
   []
@@ -76,11 +76,12 @@
     (initialize [_] )
     (configure [_ cfg]
       (System/setProperty "skaro.demo.pop3"
-                          "com.zotohlab.mock.mail.MockPop3Store"))
+                          "czlab.skaro.mock.mail.MockPop3Store"))
     (start [_] )
     (stop [_] )
     (dispose [_] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

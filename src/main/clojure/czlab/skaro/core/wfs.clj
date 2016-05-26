@@ -27,7 +27,7 @@
   (:use [czlab.xlib.consts])
 
   (:import
-    [czlab.wflow FlowDot
+    [czlab.wflow.dsl FlowDot
      Activity
      CounterExpr
      BoolExpr
@@ -194,7 +194,7 @@
   (cond
     (instance? WHandler arg)
     (reify WorkFlow
-      (startWith [_] (WrapPTask arg)))
+      (startWith [_] (wrapPTask arg)))
 
     (instance? WorkFlow arg)
     arg

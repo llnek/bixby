@@ -16,23 +16,24 @@
 (ns ^:no-doc
     ^{:author "kenl"}
 
-  demo.tcpip.core
+  czlab.skaro.demo.tcpip.core
 
 
   (:require
-    [czlab.xlib.util.process :refer [DelayExec]]
-    [czlab.xlib.util.logging :as log]
-    [czlab.xlib.util.core :refer [try!]]
-    [czlab.xlib.util.wfs :refer [SimPTask]])
+    [czlab.xlib.process :refer [delayExec]]
+    [czlab.xlib.logging :as log]
+    [czlab.xlib.core :refer [try!]]
+    [czlab.skaro.core.wfs :refer [simPTask]])
 
   (:import
     [java.io DataOutputStream DataInputStream BufferedInputStream]
-    [com.zotohlab.wflow WorkFlow Job FlowDot PTask Delay]
-    [com.zotohlab.skaro.io SocketEvent]
-    [com.zotohlab.skaro.core Muble Container]
+    [czlab.wflow.dsl WorkFlow Job FlowDot PTask Delay]
+    [czlab.skaro.io SocketEvent]
+    [czlab.skaro.server Cocoon]
     [java.net Socket]
     [java.util Date]
-    [com.zotohlab.frwk.server ServiceProvider Service]))
+    [czlab.xlib Muble]
+    [czlab.skaro.server ServiceProvider Service]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -43,7 +44,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DemoClient ""
+(defn demoClient ""
 
   ^WorkFlow
   []
@@ -53,7 +54,7 @@
       ;; wait, then opens a socket and write something to server process.
       (-> (Delay/apply 3000)
           (.chain
-            (SimPTask
+            (simPTask
               (fn [^Job j]
                 (with-local-vars
                   [tcp (-> ^ServiceProvider
@@ -81,14 +82,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn DemoServer ""
+(defn demoServer ""
 
   ^WorkFlow
   []
 
   (reify WorkFlow
     (startWith [_]
-      (-> (SimPTask
+      (-> (simPTask
             (fn [^Job j]
               (let [^SocketEvent ev (.event j)
                     dis (DataInputStream. (.getSockIn ev))
@@ -100,11 +101,12 @@
                 ;; add a delay into the workflow before next step
                 (Delay/apply 1500))))
           (.chain
-            (SimPTask
+            (simPTask
               (fn [^Job j]
                 (println "Socket Server Received: "
                          (.getv j "cmsg")))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

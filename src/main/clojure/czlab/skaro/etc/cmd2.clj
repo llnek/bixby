@@ -41,10 +41,9 @@
              copyFile
              copyToDir
              copyFiles
-             unzip
              mkdirs]])
 
-  (:use [czlab.skaro.server.consts])
+  (:use [czlab.skaro.core.consts])
 
   (:import
     [org.apache.commons.io FilenameUtils FileUtils]
@@ -468,7 +467,7 @@
 
   [^File out appId ^String appDomain]
 
-  (doto (Mkdirs (io/file out appId))
+  (doto (mkdirs (io/file out appId))
     (createAppCommon appId appDomain "basic")
     (postCreateApp appId appDomain)))
 

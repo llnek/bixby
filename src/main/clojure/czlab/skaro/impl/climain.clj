@@ -31,7 +31,7 @@
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.files
      :refer [readOneFile writeOneFile]]
-    [czlab.xlib.scheduler :refer [nulScheduler*]]
+    [czlab.xlib.scheduler :refer [mkNulScheduler]]
     [czlab.xlib.core
      :refer [test-nonil test-cond convLong sysVar
              fpath printMutableObj mubleObj!]]
@@ -45,7 +45,8 @@
         [czlab.skaro.impl.dfts])
 
   (:import
-    [czlab.skaro.server CLJShim Context ConfigError]
+    [czlab.skaro.server Component
+     CLJShim Context ConfigError]
     [io.netty.channel Channel ChannelFuture
      ChannelFutureListener]
     [czlab.skaro.loaders AppClassLoader
@@ -55,17 +56,16 @@
     [czlab.xlib Versioned
      Identifiable
      Disposable Activable
-     Hierarchial Startable]
-    [czlab.xlib Schedulable Muble I18N]
-    [czlab.wflow Job
+     Hierarchial Startable
+     Schedulable Muble I18N]
+    [czlab.wflow.dsl Job
      WorkFlow
      FlowDot
      Activity Nihil]
     [io.netty.bootstrap ServerBootstrap]
     [com.google.gson JsonObject]
     [czlab.wflow.server ServerLike
-     ServiceHandler
-     Component]
+     ServiceHandler]
     [czlab.skaro.etc CmdHelpError]
     [java.util ResourceBundle Locale]
     [java.io File]))
@@ -147,7 +147,7 @@
 
   (let [ctxt (atom (mubleObj!))
         impl (mubleObj!)
-        cpu (nulScheduler*) ]
+        cpu (mkNulScheduler) ]
     (-> ^Activable
         cpu
         (.activate {:threads 1}))
@@ -161,7 +161,7 @@
           (doseq [[k v] options]
             (.setv j k v))
           (.setv j :wflow w)
-          (->> (nihilDot j)
+          (->> (mkNihilDot j)
                (.reify (.startWith w))
                (.run cpu ))))
 
@@ -225,7 +225,7 @@
     (fn [^Job j]
       (let [^Muble ctx (.getLastResult j)
             cli (.getv ctx K_CLISH)]
-        (->> (ThreadFunc #(stopCLI ctx) false)
+        (->> (threadFunc #(stopCLI ctx) false)
              (.addShutdownHook (Runtime/getRuntime)))
         (enableRemoteShutdown ctx)
         (log/info "added shutdown hook")))))
@@ -331,7 +331,7 @@
       (let [home (.getv j :home)
             c (.container j)
             x (inizContext home)]
-        (log/info "skaro.home %s" (FPath home))
+        (log/info "skaro.home %s" (fpath home))
         (log/info "skaro.version= %s" (.version ^Versioned c))
         (.setv x K_CLISH c)
         (-> ^Context c (.setx x))

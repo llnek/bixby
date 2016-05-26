@@ -19,7 +19,7 @@
   czlab.skaro.io.loops
 
   (:require
-    [czlab.xlib.process :refer [coroutine safeWait]]
+    [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.core :refer [nextLong spos? tryc]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
@@ -303,7 +303,7 @@
 
     (log/info "Threaded one timer - interval = %s" intervalMillis)
     (.setv co :loopy loopy)
-    (coroutine
+    (async!
       #(while @loopy
          (loopableWakeup co intervalMillis))
       (getCldr))))
