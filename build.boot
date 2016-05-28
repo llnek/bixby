@@ -60,6 +60,17 @@
     [jline/jline "2.14.1" ]
     [com.sun.tools/tools "1.8.0"  ]
 
+    ;;[org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
+    ;;[org.projectodd.shimdandy/shimdandy-api "1.2.0"]
+    [codox/codox "0.9.5" :scope "provided"]
+    ;; boot/clj stuff
+    [boot/base "2.6.0" ]
+    [boot/core "2.6.0" ]
+    [boot/pod "2.6.0" ]
+    [boot/worker "2.6.0" ]
+    ;; this is causing the RELEASE_6 warning
+    [boot/aether "2.6.0" ]
+
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
@@ -74,7 +85,7 @@
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
-         '[czlab.tpcl.antlib :as a]
+         '[czlab.xlib.antlib :as a]
          '[boot.core :as bc])
 
 (import '[org.apache.tools.ant Project Target Task]
@@ -142,106 +153,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- packDocs ""
-
-  []
-
-  (a/cleanDir (fp! (ge :packDir) "docs" "api"))
-
-  (a/runTarget*
-    "pack/docs"
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "docs")}
-      [[:fileset {:dir (fp! (ge :basedir) "docs")
-                  :excludes "dummy.txt"}]])
-    (a/antJavadoc
-      {:destdir (fp! (ge :packDir) "docs/api")
-       :access "protected"
-       :author true
-       :nodeprecated false
-       :nodeprecatedlist false
-       :noindex false
-       :nonavbar false
-       :notree false
-       :source "1.8"
-       :splitindex true
-       :use true
-       :version true}
-       [[:fileset {:dir (fp! (ge :srcDir) "java")
-                   :includes "**/*.java"}]
-        [:classpath (ge :CPATH) ]])
-
-    (a/antJava
-      {:classname "czlab.tpcl.codox"
-       :fork true
-       :failonerror true}
-      [[:argvalues [(ge :basedir)
-                    (fp! (ge :srcDir) "clojure")
-                    (fp! (ge :packDir) "docs/api")]]
-       [:classpath (ge :CJPATH) ]]) ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packSrc ""
-
-  []
-
-  (a/runTarget*
-    "pack/src"
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "src/main/clojure")}
-      [[:fileset {:dir (fp! (ge :srcDir) "clojure")} ]])
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "src/main/java")}
-      [[:fileset {:dir (fp! (ge :srcDir) "java")} ]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packLics ""
-
-  []
-
-  (a/runTarget*
-    "pack/lics"
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "lics")}
-      [[:fileset {:dir (fp! (ge :basedir) "lics") } ]])
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "lics")}
-      [[:fileset {:dir (ge :basedir)
-                  :includes "*.html,*.txt,LICENSE"}]])
-    (a/antCopy
-      {:todir (ge :packDir) :flatten true}
-      [[:fileset {:dir (ge :basedir)
-                  :includes "README.md"}]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packDist ""
-
-  []
-
-  (a/runTarget*
-    "pack/dist"
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "dist")}
-      [[:fileset {:dir (ge :distDir)
-                  :includes "*.jar"}]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- packLibs ""
-
-  []
-
-  (a/runTarget*
-    "pack/lib"
-    (a/antCopy
-      {:todir (fp! (ge :packDir) "lib")}
-      [[:fileset {:dir (ge :libDir)} ]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- packBin ""
 
   []
@@ -259,130 +170,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- packAll ""
-
-  [& args]
-
-  (a/runTarget*
-    "pack/all"
-    (a/antTar
-      {:destFile (fp! (ge :distDir)
-                      (str (artifactID)
-                           "-"
-                           (ge :version) ".tar.gz"))
-       :compression "gzip"}
-      [[:tarfileset {:dir (ge :packDir)
-                     :excludes "bin/**"}]
-       [:tarfileset {:dir (ge :packDir)
-                     :mode "755"
-                     :includes "bin/**"}]])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;;  task defs below !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask prebuild
-
-  "prepare build environment"
-  []
-
-  (bc/with-pre-wrap fileset
-    ((comp b/preBuild
-           (fn [& args]
-             (a/cleanDir (ge :packDir)))
-           b/clean4Build))
-    fileset))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask javacmp
-
-  "compile java files"
-  []
-
-  (bc/with-pre-wrap fileset
-    (b/compileJava)
-    fileset))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask cljcmp
-
-  "compile clojure files"
-  []
-
-  (bc/with-pre-wrap fileset
-    (compileClj)
-    fileset))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(deftask jar!
-
-  "jar all classes"
-  []
-
-  (bc/with-pre-wrap fileset
-    (doseq [f (seq (output-files fileset))]
-      (let [dir (:dir f)
-            pn (:path f)
-            tf (io/file (ge :jzzDir) pn)
-            pd (.getParentFile tf)]
-        (when (.startsWith pn "META-INF")
-          (.mkdirs pd)
-          (spit tf
-                (slurp (fp! dir pn)
-                       :encoding "utf-8")
-                :encoding "utf-8"))))
-    (b/replaceFile
-      (fp! (ge :jzzDir)
-           "czlab/skaro/version.properties")
-      #(cs/replace % "@@pom.version@@" (ge :version)))
-    (b/jarFiles)
-    fileset))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask dev
 
-  "dev-mode"
+  "for dev only"
   []
 
-  (comp (prebuild)
+  (comp (b/initBuild)
         (b/libjars)
-        (javacmp)
-        (cljcmp)
-        (pom :project (ge :project) :version (ge :version))
-        (jar!)))
+        (b/buildr)
+        (b/pom!)
+        (b/jar!)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask pack
 
-  "bundle-project"
+(deftask packDistro
+
+  ""
   []
 
   (bc/with-pre-wrap fileset
-    (distroInit)
-    (packRes)
-    (packSrc)
-    (packBin)
-    (packDist)
-    (packLibs)
-    ;;(packDocs)
-    (packLics)
-    (packAll)
+
+    (let [root (ge :packDir)
+          dist (ge :distDir)
+          ver (ge :version)
+          src (ge :srcDir)]
+      ;; make some dirs
+      (a/cleanDir root)
+      (distroInit)
+      ;; copy license stuff
+      (a/runTarget*
+        "pack/lics"
+        (a/antCopy
+          {:todir root}
+          [[:fileset
+            {:dir (ge :basedir)
+             :includes "*.md,LICENSE"}]]))
+      ;; copy source
+      (a/runTarget*
+        "pack/src"
+        (a/antCopy
+          {:todir (fp! root "src/main/clojure")}
+          [[:fileset {:dir (fp! src "clojure")}]])
+        (a/antCopy
+          {:todir (fp! root "src/main/java")}
+          [[:fileset {:dir (fp! src "java")}]]))
+      ;; copy distro jars
+      (a/runTarget*
+        "pack/dist"
+        (a/antCopy
+          {:todir (fp! root "dist")}
+          [[:fileset {:dir dist
+                      :includes "*.jar"}]]))
+      (a/runTarget*
+        "pack/lib"
+        (a/antCopy
+          {:todir (fp! root "lib")}
+          [[:fileset {:dir (ge :libDir)}]]))
+
+      (packRes)
+      (packBin)
+
+      (if (ge :wantDocs) (b/genDocs))
+
+      ;; tar everything
+      (a/runTarget*
+        "pack/all"
+        (a/antTar
+          {:destFile
+           (fp! dist (str (artifactID)
+                          "-"
+                          ver
+                          ".tar.gz"))
+           :compression "gzip"}
+          [[:tarfileset {:dir root
+                         :excludes "bin/**"}]
+           [:tarfileset {:dir root
+                         :mode "755"
+                         :includes "bin/**"}]]))
+      nil)
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask release
+
   ""
-  []
-  (comp (dev) (pack)))
+  [d doco bool "Generate doc"]
+
+  (b/toggleDoco doco)
+  (comp (dev)
+        (b/localInstall)
+        (packDistro)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -26,7 +26,7 @@
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.tpcl.antlib :as a]
+    [czlab.xlib.antlib :as a]
     [czlab.xlib.core
      :refer [getUser getCwd juid
              trap!
