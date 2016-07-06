@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.mock.mail;
 
 
@@ -30,9 +29,8 @@ import javax.mail.Multipart;
 import javax.mail.Session;
 
 
-
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")
@@ -48,7 +46,7 @@ public class MockPop3Msg {
   "--XXXXboundary text\r\n"+
   "Content-Type: text/plain\r\n"+
   "\r\n"+
-  "this is the time ${TS}\r\n"+
+  "this is the time {{TS}}\r\n"+
   "\r\n"+
   "--XXXXboundary text\r\n"+
   "Content-Type: text/plain\r\n"+
@@ -59,6 +57,8 @@ public class MockPop3Msg {
   "--XXXXboundary text--\r\n";
 
 
+  /**
+   */
   public static void main(String[] args) {
     try {
       start(args);
@@ -68,6 +68,8 @@ public class MockPop3Msg {
     }
   }
 
+  /**
+   */
   private static void start(String[] args) throws Exception {
     MimeMessage m = new MimeMessage( Session.getInstance(System.getProperties()) ,
         new ByteArrayInputStream(_mime.getBytes("utf-8")));
@@ -87,13 +89,18 @@ public class MockPop3Msg {
     n=0;
   }
 
+  /**
+   */
   public MockPop3Msg(Folder f, int m)  {
   }
 
+  /**
+   */
   public MimeMessage newMimeMsg() throws Exception {
-    String s = StringUtils.replace(_mime, "${TS}",  new Date().toString() );
-    MimeMessage m= new MimeMessage( Session.getInstance(System.getProperties()) ,
-        new ByteArrayInputStream( s.getBytes("utf-8")));
+    String s= new Date().toString();
+    MimeMessage m= new MimeMessage(
+        Session.getInstance(System.getProperties()),
+        new ByteArrayInputStream(_mime.replace("{{TS}}", s).getBytes("utf-8")));
     m.saveChanges();
     return m;
   }

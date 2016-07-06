@@ -19,7 +19,7 @@ import org.projectodd.shimdandy.ClojureRuntimeShim;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class CLJShim {
 

@@ -15,28 +15,26 @@
 
 package czlab.skaro.server;
 
-import czlab.wflow.server.Emitter;
-import czlab.wflow.server.Event;
+import czlab.server.EventEmitter;
+import czlab.server.Event;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class EndEvent implements Event {
 
-  public EndEvent(Emitter em) {
-    _emit=em;
+  public EndEvent(EventEmitter em) {
+    _ee=em;
   }
 
-  private Emitter _emit;
+  private EventEmitter _ee;
 
-  @Override
   public Object getId() {
     return "end-event-101";
   }
 
-  @Override
-  public Emitter emitter() {
-    return _emit;
+  public EventEmitter emitter() {
+    return _ee;
   }
 
 }

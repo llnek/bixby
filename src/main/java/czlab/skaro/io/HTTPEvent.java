@@ -23,7 +23,7 @@ import czlab.xlib.XData;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface HTTPEvent extends IOEvent {
 

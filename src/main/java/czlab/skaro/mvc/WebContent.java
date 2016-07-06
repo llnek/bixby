@@ -16,7 +16,7 @@
 package czlab.skaro.mvc;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface WebContent {
 

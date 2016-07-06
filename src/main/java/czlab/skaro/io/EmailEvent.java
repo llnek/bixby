@@ -18,7 +18,7 @@ package czlab.skaro.io;
 import javax.mail.internet.MimeMessage;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface EmailEvent extends IOEvent {
 

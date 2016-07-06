@@ -18,7 +18,7 @@ package czlab.skaro.io;
 import czlab.xlib.XData;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface WebSockEvent  extends IOEvent {
 

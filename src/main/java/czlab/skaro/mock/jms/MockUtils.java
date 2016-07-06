@@ -20,7 +20,7 @@ import java.util.Random;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public enum MockUtils {

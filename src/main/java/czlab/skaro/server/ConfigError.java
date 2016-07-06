@@ -16,7 +16,7 @@
 package czlab.skaro.server;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class ConfigError extends Exception {
 

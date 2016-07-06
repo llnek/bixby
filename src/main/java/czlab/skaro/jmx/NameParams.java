@@ -15,32 +15,42 @@
 
 package czlab.skaro.jmx;
 
-import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 
 /**
- * @author
+ * @author Kenneth Leung
  */
 public class NameParams {
 
   private String[] _pms;
   private String _name;
 
-  //
-
+  /**
+   */
   public NameParams(String name, String[] params) {
     _pms = Arrays.copyOf(params, params.length);
     _name= name;
   }
 
+  /**
+   */
   public NameParams(String name) {
     this(name, new String[0]);
   }
 
+  /**
+   */
   public String toString() {
-    return _pms.length > 0 ? _name + "/" + StringUtils.join(_pms, '#') : _name;
+    StringBuilder b=new StringBuilder(_name+"/");
+    if (_pms != null) for (int i=0; i < _pms.length; ++i) {
+       if (i > 0) { b.append("#"); }
+       b.append(_pms[i]);
+    }
+    return _pms.length > 0 ? b.toString() : _name;
   }
 
+  /**
+   */
   public int hashCode() {
     int hash= 31 * (31 + _name.hashCode() );
     if (_pms.length > 0) {
@@ -49,6 +59,8 @@ public class NameParams {
     return hash;
   }
 
+  /**
+   */
   public boolean equals(Object obj) {
     if (obj == null || getClass() != obj.getClass() ) { return false; } else {
       NameParams other = (NameParams) obj;

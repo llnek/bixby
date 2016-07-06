@@ -12,19 +12,19 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.server;
 
-import czlab.wflow.server.Event;
 import czlab.xlib.Hierarchial;
+import czlab.server.Event;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface EventBus extends Hierarchial {
 
-  public void onEvent(Event evt, Object  options );
+  public void fireEvent(Event evt, Object options);
 
 }
+
 

@@ -17,14 +17,13 @@ package czlab.skaro.server;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import czlab.wflow.server.*;
+import czlab.server.*;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
-public class NulEmitter implements Emitter {
+public class NulEmitter implements EventEmitter {
 
   private static final Map<String,?> _cfg = new HashMap<>();
   private ServerLike _server;
@@ -33,46 +32,22 @@ public class NulEmitter implements Emitter {
     _server=s;
   }
 
-  @Override
-  public Object getConfig() {
-    return _cfg;
-  }
+  public EventHolder release(Object obj) { return null; }
 
-  @Override
-  public ServerLike container() {
-    return _server;
-  }
+  public void dispatch(Event evt, Object options) {}
 
-  @Override
-  public void dispatch(Event evt, Object options) {
-  }
+  public ServerLike container() { return _server; }
 
-  @Override
-  public boolean isEnabled() {
-    return false;
-  }
+  public Object getConfig() { return _cfg; }
 
-  @Override
-  public boolean isActive() {
-    return false;
-  }
+  public boolean isEnabled() { return false; }
+  public boolean isActive() { return false; }
 
-  @Override
-  public void suspend() {
-  }
+  public void hold(EventHolder obj) {}
 
-  @Override
-  public void resume() {
-  }
+  public void suspend() {}
 
-  @Override
-  public EventHolder release(Object obj) {
-    return null;
-  }
-
-  @Override
-  public void hold(EventHolder obj) {
-  }
+  public void resume() {}
 
 }
 

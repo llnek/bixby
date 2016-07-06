@@ -18,7 +18,7 @@ package czlab.skaro.io;
 import czlab.wflow.server.Event;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface IOEvent extends Event {
 

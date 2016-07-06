@@ -20,7 +20,7 @@ import javax.jms.Connection;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockConnFactory implements ConnectionFactory {

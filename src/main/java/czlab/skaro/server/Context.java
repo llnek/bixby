@@ -18,7 +18,7 @@ package czlab.skaro.server;
 import czlab.xlib.Muble;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface Context  {
 

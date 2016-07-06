@@ -15,16 +15,18 @@
 
 package czlab.skaro.server;
 
-import czlab.wflow.server.Emitter;
+import czlab.server.EventEmitter;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface EventTrigger  {
 
   public void resumeWithResult(Object res);
+
   public void resumeWithError();
-  public Emitter emitter();
+
+  public EventEmitter emitter();
 
 }
 

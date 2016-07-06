@@ -19,7 +19,7 @@ import javax.jms.Topic;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockTopic implements Topic {

@@ -19,9 +19,12 @@ import java.net.HttpCookie;
 import java.net.URL;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface HTTPResult extends IOResult {
+
+  public void addHeader(String name, String value);
+  public void setHeader(String name, String value);
 
   public void setProtocolVersion(String ver);
   public void setStatus(int code);
@@ -30,9 +33,6 @@ public interface HTTPResult extends IOResult {
   public void containsHeader(String name);
   public void removeHeader(String name);
   public void clearHeaders();
-
-  public void addHeader(String name, String value);
-  public void setHeader(String name, String value);
 
   public void setChunked(boolean c);
   public void setContent(Object data);

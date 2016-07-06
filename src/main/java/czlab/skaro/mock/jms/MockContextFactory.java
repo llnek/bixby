@@ -22,7 +22,7 @@ import javax.naming.Context;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockContextFactory implements InitialContextFactory {

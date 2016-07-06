@@ -15,10 +15,10 @@
 
 package czlab.skaro.server;
 
-import czlab.wflow.server.ServiceHandler;
+import czlab.server.ServiceHandler;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface Service extends Component  {
 

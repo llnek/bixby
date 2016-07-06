@@ -23,7 +23,7 @@ import javax.jms.Message;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

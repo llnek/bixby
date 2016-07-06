@@ -22,15 +22,19 @@ import javax.mail.Message;
 import javax.mail.Store;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class DefaultFolder extends Folder {
 
+  /**
+   */
   public DefaultFolder(Store s) {
     super(s);
   }
 
+  /**
+   */
   private Folder getInbox() {
     try {
       return getStore().getFolder("INBOX");
@@ -40,51 +44,71 @@ public class DefaultFolder extends Folder {
     }
   }
 
+  /**
+   */
   @Override
   public String getName() {
     return "";
   }
 
+  /**
+   */
   @Override
   public String getFullName() {
     return "";
   }
 
+  /**
+   */
   @Override
   public Folder getParent() throws MessagingException {
     return null;
   }
 
+  /**
+   */
   @Override
   public boolean exists() throws MessagingException {
     return true;
   }
 
+  /**
+   */
   @Override
   public Folder[] list(String s) throws MessagingException {
     return new Folder[] { getInbox() };
   }
 
+  /**
+   */
   @Override
   public char getSeparator() throws MessagingException {
     return '/';
   }
 
+  /**
+   */
   @Override
   public int getType() throws MessagingException {
     return 2;
   }
 
+  /**
+   */
   @Override
   public boolean create(int i) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public boolean hasNewMessages() throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public Folder getFolder(String name) throws MessagingException {
     if (!name.equalsIgnoreCase("INBOX")) {
@@ -93,48 +117,68 @@ public class DefaultFolder extends Folder {
     return getInbox();
   }
 
+  /**
+   */
   @Override
   public boolean delete(boolean b) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public boolean renameTo(Folder folder) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public void open(int i) throws MessagingException {
   }
 
+  /**
+   */
   @Override
   public void close(boolean b) throws MessagingException {
   }
 
+  /**
+   */
   @Override
   public boolean isOpen() {
     return false;
   }
 
+  /**
+   */
   @Override
   public Flags getPermanentFlags() {
     return null;
   }
 
+  /**
+   */
   @Override
   public int getMessageCount() throws MessagingException {
     return 0;
   }
 
+  /**
+   */
   @Override
   public Message getMessage(int i) throws MessagingException {
     return null;
   }
 
+  /**
+   */
   @Override
   public void appendMessages(Message[] messages) throws MessagingException {
   }
 
+  /**
+   */
   @Override
   public Message[] expunge() throws MessagingException {
     return new Message[0];

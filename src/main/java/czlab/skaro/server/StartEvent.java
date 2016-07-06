@@ -12,25 +12,22 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.server;
 
-
-import czlab.wflow.server.Emitter;
-import czlab.wflow.server.Event;
-
+import czlab.server.EventEmitter;
+import czlab.server.Event;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class StartEvent implements Event {
 
-  public StartEvent(Emitter em) {
-    _emit=em;
+  public StartEvent(EventEmitter em) {
+    _ee=em;
   }
 
-  private Emitter _emit;
+  private EventEmitter _ee;
 
   @Override
   public Object getId() {
@@ -38,8 +35,8 @@ public class StartEvent implements Event {
   }
 
   @Override
-  public Emitter emitter() {
-    return _emit;
+  public EventEmitter emitter() {
+    return _ee;
   }
 
 }

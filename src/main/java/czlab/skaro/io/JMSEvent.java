@@ -18,7 +18,7 @@ package czlab.skaro.io;
 import javax.jms.Message;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface JMSEvent  extends IOEvent {
 

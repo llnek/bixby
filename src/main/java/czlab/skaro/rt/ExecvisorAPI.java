@@ -12,21 +12,18 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
-package czlab.skaro.runtime;
+package czlab.skaro.rt;
 
 import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface ExecvisorAPI  {
 
   public long getUpTimeInMillis();
   public long getStartTime();
   public File homeDir();
-  public File confDir();
-  public File blocksDir();
   public void kill9();
 
 }

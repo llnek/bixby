@@ -12,25 +12,24 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
-package czlab.skaro.runtime;
+package czlab.skaro.rt;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
-public class ExpiredError extends Exception {
+public class UnknownUser extends AuthError {
 
   private static final long serialVersionUID = 1L;
 
-  public ExpiredError(String msg, Throwable e) {
+  public UnknownUser(String msg,Throwable e) {
     super(msg,e);
   }
 
-  public ExpiredError(Throwable e) {
+  public UnknownUser(Throwable e) {
     this(null,e);
   }
 
-  public ExpiredError(String msg) {
+  public UnknownUser(String msg) {
     this(msg,null);
   }
 

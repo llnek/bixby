@@ -12,9 +12,7 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.mock.mail;
-
 
 import javax.mail.MessagingException;
 import javax.mail.Folder;
@@ -24,30 +22,29 @@ import javax.mail.URLName;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")
 public class MockPop3Store extends Store {
 
+  /**
+   */
   public MockPop3Store(Session s,URLName url) {
     super(s, url);
   }
 
+  protected boolean _isSSL=false;
   private String _name="pop3";
   protected int _dftPort = 110;
   protected int _portNum = -1;
-  protected boolean _isSSL=false;
   protected String _host ="";
   protected String _user = "";
   protected String _pwd = "";
 
-    /*
-    if (url != null)
-      name = url.getProtocol()
-      */
-
-  public synchronized boolean protocolConnect( String host, int portNum,
+  /**
+   */
+  public synchronized boolean protocolConnect(String host, int portNum,
           String user, String pwd) {
     if ((host == null) || (pwd == null) || (user == null)) { return false; } else {
       _portNum = (portNum == -1) ? _dftPort : portNum ;
@@ -58,40 +55,54 @@ public class MockPop3Store extends Store {
     }
   }
 
+  /**
+   */
   public synchronized boolean isConnected() {
-    return ( super.isConnected()) ? true : false;
+    return super.isConnected() ? true : false;
   }
 
+  /**
+   */
   public synchronized void close() throws MessagingException {
     super.close();
   }
 
+  /**
+   */
   public Folder getDefaultFolder() {
     checkConnected();
     return new DefaultFolder(this);
   }
 
+  /**
+   */
   public Folder getFolder(String name) {
     checkConnected();
     return new MockPop3Folder(name,this);
   }
 
+  /**
+   */
   public Folder getFolder(URLName url) {
     checkConnected();
     return new MockPop3Folder( url.getFile(), this);
   }
 
+  /**
+   */
   public void finalize() throws Throwable {
     super.finalize();
   }
 
+  /**
+   */
   private void checkConnected()  {
     if (!super.isConnected())
-      try {
-        throw new MessagingException("Not connected");
-      } catch (MessagingException e) {
-        e.printStackTrace();
-      }
+    try {
+      throw new MessagingException("Not connected");
+    } catch (MessagingException e) {
+      e.printStackTrace();
+    }
   }
 
 }

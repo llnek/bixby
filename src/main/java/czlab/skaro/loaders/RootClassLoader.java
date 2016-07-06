@@ -18,25 +18,33 @@ package czlab.skaro.loaders;
 import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class RootClassLoader extends AbstractClassLoader {
 
   private File _baseDir=null;
 
+  /**
+   */
   public RootClassLoader(ClassLoader par) {
     super(par);
     configure(new File(System.getProperty("skaro.home","")));
   }
 
+  /**
+   */
   public File baseDir() { return _baseDir; }
 
+  /**
+   */
   public void configure(File baseDir) {
     if (baseDir != null) {
       load( baseDir);
     }
   }
 
+  /**
+   */
   private void load(File baseDir) {
 
     File p= new File(baseDir, "patch");

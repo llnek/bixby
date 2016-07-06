@@ -16,13 +16,13 @@
 package czlab.skaro.server;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface Registry  {
 
-  public Object lookup( Object name);
+  public Object lookup(Object name);
 
-  public boolean has( Object name) ;
+  public boolean has(Object name) ;
 
   public void dereg(Object c);
 

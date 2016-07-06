@@ -12,27 +12,18 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.rt;
 
-package czlab.skaro.runtime;
+import java.net.URL;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
-public class DuplicateUser extends AuthError {
+public interface EmitMeta {
 
-  private static final long serialVersionUID = 1L;
-
-  public DuplicateUser(String msg, Throwable e) {
-    super(msg,e);
-  }
-
-  public DuplicateUser(Throwable e) {
-    this(null,e);
-  }
-
-  public DuplicateUser(String msg) {
-    this(msg,null);
-  }
+  public boolean isEnabled();
+  public String getName();
+  public URL metaUrl();
 
 }
 

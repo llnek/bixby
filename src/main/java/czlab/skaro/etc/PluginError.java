@@ -16,7 +16,7 @@
 package czlab.skaro.etc;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class PluginError extends Exception {
 

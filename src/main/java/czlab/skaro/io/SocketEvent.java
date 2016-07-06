@@ -19,7 +19,7 @@ import java.io.OutputStream;
 import java.io.InputStream;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface SocketEvent  extends IOEvent {
 

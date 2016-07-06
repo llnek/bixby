@@ -13,18 +13,36 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.runtime;
+package czlab.skaro.server;
 
-import java.net.URL;
+import czlab.server.ServerLike;
+import czlab.xlib.Disposable;
+import czlab.xlib.Named;
+import czlab.dbio.DBAPI;
+import czlab.dbio.JDBCPool;
+import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
-public interface EmitMeta  {
+public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
 
+  public Object loadTemplate(String tpl, Object ctx);
   public boolean isEnabled();
+
+  public CLJShim getCljRt();
+
+  public Object getEnvConfig();
+  public Object getAppConfig();
+
+  public byte[] getAppKeyBits();
+  public String getAppKey();
+
   public String getName();
-  public URL metaUrl();
+  public File getAppDir();
+
+  public JDBCPool acquireDbPool(Object groupid);
+  public DBAPI acquireDbAPI(Object groupid);
 
 }
 

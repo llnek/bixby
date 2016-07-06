@@ -16,7 +16,7 @@
 package czlab.skaro.io;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 @FunctionalInterface
 public interface IOResult {

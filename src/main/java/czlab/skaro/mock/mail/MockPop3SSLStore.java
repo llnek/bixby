@@ -12,20 +12,20 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.mock.mail;
-
 
 import javax.mail.Session;
 import javax.mail.URLName;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockPop3SSLStore extends MockPop3Store {
 
+  /**
+   */
   public MockPop3SSLStore(Session s,URLName url) {
     super(s, url);
   }

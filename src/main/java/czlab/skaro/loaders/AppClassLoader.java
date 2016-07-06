@@ -12,20 +12,23 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.loaders;
 
 import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class AppClassLoader extends AbstractClassLoader {
 
+  /**
+   */
   public AppClassLoader(ExecClassLoader par) {
     super(par);
   }
 
+  /**
+   */
   public void configure(File appDir) {
     File s= new File(appDir, "src/main/clojure");
     File j= new File(appDir, "build/j");

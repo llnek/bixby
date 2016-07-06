@@ -16,18 +16,19 @@
 package czlab.skaro.etc;
 
 
-import czlab.skaro.server.Cocoon;
+import czlab.skaro.server.Container;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
 import czlab.xlib.Startable;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface Plugin extends Startable, Configurable, Disposable {
 
-  public void contextualize(Cocoon c);
+  public void contextualize(Container c);
+
   public void initialize();
 
 }

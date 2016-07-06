@@ -24,11 +24,13 @@ import javax.mail.Store;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockPop3Folder extends Folder {
 
+  /**
+   */
   public MockPop3Folder(String n, Store s) {
     super(s);
     _name=n;
@@ -38,91 +40,127 @@ public class MockPop3Folder extends Folder {
   private int _count = 1;
   private String _name;
 
+  /**
+   */
   @Override
   public String getName() {
     return _name;
   }
 
+  /**
+   */
   @Override
   public String getFullName() {
     return _name;
   }
 
+  /**
+   */
   @Override
   public Folder getParent() throws MessagingException {
     return null;
   }
 
+  /**
+   */
   @Override
   public boolean exists() throws MessagingException {
     return true;
   }
 
+  /**
+   */
   @Override
   public Folder[] list(String s) throws MessagingException {
     return new Folder[0];
   }
 
+  /**
+   */
   @Override
   public char getSeparator() throws MessagingException {
     return 0;
   }
 
+  /**
+   */
   @Override
   public int getType() throws MessagingException {
     return 0;
   }
 
+  /**
+   */
   @Override
   public boolean create(int i) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public boolean hasNewMessages() throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public Folder getFolder(String s) throws MessagingException {
     return null;
   }
 
+  /**
+   */
   @Override
   public boolean delete(boolean b) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public boolean renameTo(Folder folder) throws MessagingException {
     return false;
   }
 
+  /**
+   */
   @Override
   public void open(int i) throws MessagingException {
     _open=true;
   }
 
+  /**
+   */
   @Override
   public void close(boolean b) throws MessagingException {
     _open=false;
   }
 
+  /**
+   */
   @Override
   public boolean isOpen() {
     return _open;
   }
 
+  /**
+   */
   @Override
   public Flags getPermanentFlags() {
     return null;
   }
 
+  /**
+   */
   @Override
   public int getMessageCount() throws MessagingException {
     return _count;
   }
 
+  /**
+   */
   @Override
   public Message getMessage(int pos) throws MessagingException {
     if (pos < 1) throw new MessagingException("wrong message num: " + pos);
@@ -134,15 +172,19 @@ public class MockPop3Folder extends Folder {
     }
   }
 
+  /**
+   */
   @Override
   public void appendMessages(Message[] messages) throws MessagingException {
-
   }
 
+  /**
+   */
   @Override
   public Message[] expunge() throws MessagingException {
     return new Message[0];
   }
+
 }
 
 

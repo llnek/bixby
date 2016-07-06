@@ -12,17 +12,16 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.server;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface ServiceProvider {
 
-  public boolean hasService( Object serviceId);
-  public Service getService( Object serviceId);
+  public boolean hasService(Object serviceId);
+  public Service getService(Object serviceId);
 
 }
 

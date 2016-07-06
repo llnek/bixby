@@ -22,7 +22,7 @@ import javax.jms.Connection;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockTopicConnFactory implements TopicConnectionFactory {

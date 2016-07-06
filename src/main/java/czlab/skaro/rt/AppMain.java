@@ -12,37 +12,19 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.rt;
 
-package czlab.skaro.server;
-
-import czlab.wflow.server.ServerLike;
+import czlab.skaro.server.Contextualizable;
+import czlab.xlib.Initializable;
+import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
-import czlab.xlib.Named;
-import czlab.dbio.DBAPI;
-import czlab.dbio.JDBCPool;
-import java.io.File;
+import czlab.xlib.Startable;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
-public interface Cocoon extends ServerLike, ServiceProvider, Named, Disposable {
-
-  public Object loadTemplate(String tpl, Object ctx);
-  public boolean isEnabled();
-
-  public CLJShim getCljRt();
-
-  public Object getEnvConfig();
-  public Object getAppConfig();
-
-  public byte[] getAppKeyBits();
-  public String getAppKey();
-
-  public String getName();
-  public File getAppDir();
-
-  public JDBCPool acquireDbPool(Object groupid);
-  public DBAPI acquireDbAPI(Object groupid);
+public interface AppMain
+extends Disposable, Initializable, Startable, Contextualizable, Configurable {
 
 }
 

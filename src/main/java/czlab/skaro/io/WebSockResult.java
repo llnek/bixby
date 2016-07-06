@@ -17,7 +17,7 @@ package czlab.skaro.io;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface WebSockResult extends IOResult {
 

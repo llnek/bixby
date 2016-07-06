@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public enum MVCUtils {
 ;
@@ -35,7 +35,10 @@ public enum MVCUtils {
 
   };
 
-  public static SimpleDateFormat getSDF() { return _fmt.get(); }
+
+  public static SimpleDateFormat getSDF() {
+    return _fmt.get();
+  }
 
 }
 

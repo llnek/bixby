@@ -18,7 +18,7 @@ package czlab.skaro.io;
 import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface FileEvent  extends IOEvent {
 

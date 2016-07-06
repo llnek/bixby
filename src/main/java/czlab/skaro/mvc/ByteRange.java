@@ -19,17 +19,16 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 
-import static java.lang.invoke.MethodHandles.*;
-import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.*;
+import org.slf4j.Logger;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 class ByteRange {
 
-  public static final Logger TLOG= getLogger(lookup().lookupClass());
+  public static final Logger TLOG= getLogger(ByteRange.class);
 
   private RandomAccessFile _file;
   private byte[] _header;
@@ -39,8 +38,8 @@ class ByteRange {
   private int _servedHeader = 0;
   private int _servedRange = 0;
 
-  //
-
+  /**
+   */
   public ByteRange(RandomAccessFile file,
       boolean wantHeader, long start, long end, String cType) {
 
@@ -50,7 +49,8 @@ class ByteRange {
     _end= end;
     _cType= cType;
 
-    if (wantHeader) try {
+    if (wantHeader)
+    try {
       _header= fmtHeader(file.length());
     } catch (IOException e) {
       TLOG.error("",e);
@@ -58,13 +58,28 @@ class ByteRange {
 
   }
 
+  /**
+   */
   public long size() { return _end - _start + 1; }
+
+  /**
+   */
   public long start() { return _start; }
+
+  /**
+   */
   public long end() { return _end; }
 
+  /**
+   */
   public long calcTotalSize() { return size() + _header.length; }
+
+  /**
+   */
   public long remaining() { return size() - _servedRange; }
 
+  /**
+   */
   public int pack(byte[] out, int offset) throws IOException {
     int count = 0;
     int pos=offset;
@@ -93,8 +108,9 @@ class ByteRange {
     return count;
   }
 
-  private byte[] fmtHeader(long flen)
-    throws UnsupportedEncodingException {
+  /**
+   */
+  private byte[] fmtHeader(long flen) throws UnsupportedEncodingException {
 
     String s= "--" + HTTPRangeInput.DEF_BD + "\r\n" +
       "content-type: " + _cType + "\r\n" +

@@ -12,11 +12,10 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
-package czlab.skaro.runtime;
+package czlab.skaro.rt;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface JMXServer  {
 

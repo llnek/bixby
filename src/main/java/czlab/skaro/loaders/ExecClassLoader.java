@@ -19,18 +19,21 @@ import java.io.File;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public class ExecClassLoader extends AbstractClassLoader {
 
   //should be called by command line
+  /**
+   */
   public ExecClassLoader(ClassLoader par) {
-    super( par instanceof RootClassLoader ? par : new RootClassLoader(par));
-
+    super(par instanceof RootClassLoader ? par : new RootClassLoader(par));
     RootClassLoader c= (RootClassLoader) this.getParent();
     configure(c.baseDir());
   }
 
+  /**
+   */
   private void load(File base) {
     File p= new File(base, "dist");
     if (p.exists() && !_loaded) {
@@ -39,6 +42,8 @@ public class ExecClassLoader extends AbstractClassLoader {
     _loaded=true;
   }
 
+  /**
+   */
   public void configure(File baseDir) {
     if (baseDir != null) {
       load(baseDir);

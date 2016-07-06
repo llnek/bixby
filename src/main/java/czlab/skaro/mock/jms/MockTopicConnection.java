@@ -29,7 +29,7 @@ import javax.jms.TopicSession;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

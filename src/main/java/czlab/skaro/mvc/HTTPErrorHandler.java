@@ -16,7 +16,7 @@
 package czlab.skaro.mvc;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 @FunctionalInterface
 public interface HTTPErrorHandler {

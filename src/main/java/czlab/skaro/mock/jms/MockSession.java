@@ -38,7 +38,7 @@ import javax.jms.TopicSubscriber;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

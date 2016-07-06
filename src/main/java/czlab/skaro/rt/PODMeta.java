@@ -12,13 +12,12 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
-package czlab.skaro.runtime;
+package czlab.skaro.rt;
 
 import java.net.URL;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface PODMeta  {
 

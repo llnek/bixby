@@ -16,15 +16,15 @@
 package czlab.skaro.etc;
 
 
-import czlab.skaro.server.Cocoon;
+import czlab.skaro.server.Container;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 @FunctionalInterface
 public interface PluginFactory {
 
-  public Plugin createPlugin(Cocoon c);
+  public Plugin createPlugin(Container c);
 
 }
 

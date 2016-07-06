@@ -26,7 +26,7 @@ import javax.naming.Name;
 
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  *
  */
 public class MockContext implements Context {

@@ -13,19 +13,27 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.runtime;
-
-import czlab.skaro.server.Contextualizable;
-import czlab.xlib.Configurable;
-import czlab.xlib.Disposable;
-import czlab.xlib.Initializable;
-import czlab.xlib.Startable;
+package czlab.skaro.rt;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
-public interface AppMain
-extends Disposable, Initializable, Startable, Contextualizable, Configurable {
+public class DuplicateUser extends AuthError {
+
+  private static final long serialVersionUID = 1L;
+
+  public DuplicateUser(String msg, Throwable e) {
+    super(msg,e);
+  }
+
+  public DuplicateUser(Throwable e) {
+    this(null,e);
+  }
+
+  public DuplicateUser(String msg) {
+    this(msg,null);
+  }
+
 }
 
 

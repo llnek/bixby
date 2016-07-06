@@ -19,7 +19,7 @@ import czlab.xlib.Identifiable;
 import czlab.xlib.Versioned;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface Component extends Identifiable, Versioned { //Composable  {
 }

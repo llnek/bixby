@@ -18,7 +18,7 @@ package czlab.skaro.mvc;
 import java.io.File;
 
 /**
- * @author kenl
+ * @author Kenneth Leung
  */
 public interface WebAsset {
 
