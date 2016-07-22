@@ -13,11 +13,12 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.auth.model
 
   (:require
+    [czlab.xlib.files :refer [spitUTF8]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.str :refer [toKW]]
     [czlab.xlib.logging :as log])
@@ -40,85 +41,71 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private ^String _NSP "czc.skaro.auth")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModelWithNSP _NSP StdAddress
-  (withFields
+(dbmodel StdAddress
+  (dbfields
     {:addr1 {:size 255 :null false }
-     :addr2 { }
+     :addr2 {}
      :city {:null false}
      :state {:null false}
      :zip {:null false}
      :country {:null false} })
-  (withIndexes
-    {:i1 [ :city :state :country ]
-     :i2 [ :zip :country ]
-     :state [ :state ]
-     :zip [ :zip ] } ))
+  (dbindexes
+    {:i1 #{:city :state :country}
+     :i2 #{:zip :country}
+     :state #{:state}
+     :zip #{:zip} }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModelWithNSP _NSP AuthRole
-  (withFields
+(dbmodel AuthRole
+  (dbfields
     {:name {:column "role_name" :null false }
      :desc {:column "description" :null false } })
-  (withUniques
-    {:u1 [ :name ] }) )
+  (dbuniques
+    {:u1 #{:name} }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defModelWithNSP _NSP LoginAccount
-  (withFields
+(dbmodel LoginAccount
+  (dbfields
     {:acctid {:null false }
      :email {:size 128 }
       ;;:salt { :size 128 }
      :passwd {:null false :domain :Password } })
-  (withAssocs
-    {:roles {:kind :M2M
-             :joined (toKW _NSP "AccountRole") }
-     :addr {:kind :O2O
+  (dbassocs
+    {:addr {:kind :O2O
             :cascade true
-            :other (toKW _NSP "StdAddress") } })
-  (withUniques
-    {:u2 [ :acctid ] }) )
+            :other ::StdAddress } })
+  (dbuniques
+    {:u2 #{:acctid} }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defJoinedWithNSP _NSP AccountRole
-           (toKW _NSP "LoginAccount")
-           (toKW _NSP "AuthRole"))
+(dbjoined AccountRoles ::LoginAccount ::AuthRole)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defonce AUTH-MCACHE
-
-  (-> (reify Schema
-        (getModels [_]
-          [LoginAccount AccountRole
-           StdAddress AuthRole]))
-      (mkMetaCache )))
+(def ^:dynamic *auth-mcache*
+  (dbschema LoginAccount
+            AccountRole
+            StdAddress
+            AuthRole))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn generateAuthPluginDDL
+(defn genAuthPluginDDL
 
   "Generate db ddl for the auth-plugin"
-
   ^String
-  [dbtype]
+  [spec]
 
-  (getDDL AUTH-MCACHE
-    (case dbtype
-      (:postgres :postgresql) Postgresql
-      (:sqlserver :mssql) SQLServer
-      :mysql MySQL
-      :h2 H2
-      :oracle Oracle
-      (mkDbioError (rstr (I18N/getBase)
-                       "db.unknown"
-                       (name dbtype))))))
+  (if (contains? *DBTYPES* spec)
+    (getDDL *auth-mcache* spec)
+    (dberr! (rstr (I18N/getBase)
+                  "db.unknown"
+                  (name spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,26 +121,24 @@
 
   JDBCInfo
   (applyDDL [this]
-    (when-some [dbtype (matchJdbcUrl (.getUrl this)) ]
-      (with-open [conn (mkDbConnection this)]
-        (uploadDdl conn (generateAuthPluginDDL dbtype)))))
+    (when-some [t (matchUrl (.url this))]
+      (with-open [c (dbconnect this)]
+        (uploadDdl c (genAuthPluginDDL t)))))
 
   JDBCPool
   (applyDDL [this]
-    (when-some [dbtype (matchJdbcUrl (.dbUrl this)) ]
-      (uploadDdl this (generateAuthPluginDDL dbtype)))))
+    (when-some [t (matchUrl (.dbUrl this))]
+      (uploadDdl this (genAuthPluginDDL t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn exportAuthPluginDDL
 
   "Output the auth-plugin ddl to file"
+  [spec file]
 
-  [dbtype ^File file]
-
-  (spit file (generateAuthPluginDDL dbtype) :encoding "utf-8"))
+  (spitUTF8 file (genAuthPluginDDL spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

@@ -12,18 +12,17 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.auth.plugin
 
   (:require
-    [czlab.dbio.connect :refer [dbioConnectViaPool]]
+    [czlab.dbio.connect :refer [dbopen+]]
     [czlab.xlib.core
      :refer [trap!
              exp!
-             tryc
+             try!
              stringify
              cexp?
              mubleObj!
@@ -51,22 +50,24 @@
 
   (:import
     [org.apache.shiro.config IniSecurityManagerFactory]
-    [org.apache.commons.lang3.tuple ImmutablePair]
     [org.apache.shiro.authc UsernamePasswordToken]
+    [org.apache.commons.codec.binary Base64]
     [czlab.net ULFormItems ULFileItem]
-    [czlab.skaro.etc PluginFactory
+    [czlab.skaro.etc
      Plugin
      AuthPlugin
-     PluginError]
-    [czlab.skaro.runtime AuthError
+     PluginError
+     PluginFactory]
+    [czlab.skaro.runtime
+     AuthError
      UnknownUser
      DuplicateUser]
-    [org.apache.commons.codec.binary Base64]
-    [czlab.skaro.server Cocoon]
+    [czlab.skaro.server Container]
     [czlab.xlib Muble I18N BadDataError]
     [czlab.crypto PasswordAPI]
-    [czlab.dbio DBAPI
-     MetaCache
+    [czlab.dbio
+     DBAPI
+     Schema
      SQLr
      JDBCPool
      JDBCInfo]
@@ -74,12 +75,12 @@
     [java.util Properties]
     [org.apache.shiro SecurityUtils]
     [org.apache.shiro.subject Subject]
-    [czlab.wflow.dsl If
+    [czlab.wflow
      BoolExpr
-     Activity
+     TaskDef
+     If
      Job
-     PTask
-     Work]
+     Script]
     [czlab.skaro.io WebSS HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,94 +92,96 @@
 
   "true if the plugin has been initialized,
    by looking into the db"
-
   [^JDBCPool pool]
 
-  (let [tbl (:table LoginAccount)]
+  (let [tbl (dbtable LoginAccount)]
     (when-not (tableExist? pool tbl)
-      (mkDbioError (rstr (I18N/getBase)
-                       "auth.no.table" tbl)))))
+      (dberr! (rstr (I18N/getBase)
+                    "auth.no.table" tbl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getSQLr ""
+(defn- getSQLr
 
+  ""
   ^SQLr
-  [^Cocoon ctr]
-
+  [^Container ctr & [tx?]]
   ;; get the default db pool
-  (-> (dbioConnectViaPool
-        (.acquireDbPool ctr "") AUTH-MCACHE {})
-      (.newSimpleSQLr)))
+  (let [db (-> (.acquireDbPool ctr "")
+               (dbopen+ *auth-mcache* ))]
+    (if (boolean tx?)
+      (.compositeSQL db)
+      (.simpleSQLr db))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn createAuthRole
 
   "Create a new auth-role in db"
-
   [^SQLr sql ^String role ^String desc]
 
-  (.insert sql (-> (dbioCreateObj :czc.skaro.auth/AuthRole)
-                   (dbioSetFlds :name role :desc desc))))
+  (let [m (.get (.metas sql)
+                (dbtag AuthRole))]
+    (->>
+      (-> (dbpojo m)
+          (dbSetFlds* :name role
+                      :desc desc))
+      (.insert sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteAuthRole
 
   "Delete this role"
+  [^SQLr sql ^String role]
 
-  [^SQLr sql role]
-
-  (.exec sql
-         (str "DELETE FROM "
-              (gtable AuthRole)
-              " WHERE "
-              (->> (meta AuthRole)
-                   (:fields)
-                   (:name)
-                   (:column)
-                   (ese))
-              " = ?")
-         [(strim role)]))
+  (let [m (.get (.metas sql)
+                (dbtag AuthRole))]
+    (.exec sql
+           (format
+             "delete from %s where %s =?"
+             (->> (dbtable m)
+                  (.fmtId sql))
+             (->> (dbcol :name m)
+                  (.fmtId sql)))
+           [(strim role)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn listAuthRoles
 
   "List all the roles in db"
-
   [^SQLr sql]
 
-  (.findAll sql :czc.skaro.auth/AuthRole))
+  (.findAll sql (dbtag AuthRole)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn createLoginAccount
 
   "Create a new account
-   options : a set of extra properties, such as email address.
+   props : extra properties, such as email address.
    roleObjs : a list of roles to be assigned to the account"
 
   [^SQLr sql ^String user
-   ^PasswordAPI pwdObj & [options roleObjs]]
+   ^PasswordAPI pwdObj & [props roleObjs]]
 
-  (let [roleObjs (or roleObjs [])
-        options (or options {})
-        ps (.hashed pwdObj)
-        acc (->> (-> :czc.skaro.auth/LoginAccount
-                     (dbioCreateObj )
-                     (dbioSetFld
-                       (merge
-                         {:acctid (strim user)
-                          :passwd (.getLeft ps)}
-                         options)))
-                 (.insert sql)) ]
+  (let [m (.get (.metas sql)
+                (dbtag LoginAccount))
+        ps (:hash (.hashed pwdObj))
+        acc
+        (->>
+          (apply dbSetFlds*
+                 (dbpojo m)
+                 :acctid (strim user)
+                 (concat [:passwd ps] props))
+          (.insert sql))]
     ;; currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
     ;; assumed ok for the account to remain inserted
     (doseq [r roleObjs]
-      (dbioSetM2M { :as :roles :with sql } acc r))
+      (dbSetM2M {:joined (dbtag AccountRoles)
+                 :with sql} acc r))
     (log/debug "created new account %s%s%s%s"
                "into db: "
                acc "\nwith meta\n" (meta acc))
@@ -189,11 +192,10 @@
 (defn findLoginAccountViaEmail
 
   "Look for account with this email address"
-
   [^SQLr sql ^String email]
 
   (.findOne sql
-            :czc.skaro.auth/LoginAccount
+            (dbtag LoginAccount)
             {:email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -201,11 +203,10 @@
 (defn findLoginAccount
 
   "Look for account with this user id"
-
   [^SQLr sql ^String user]
 
   (.findOne sql
-            :czc.skaro.auth/LoginAccount
+            (dbtag LoginAccount)
             {:acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,7 +214,6 @@
 (defn getLoginAccount
 
   "Get the user account"
-
   [^SQLr sql ^String user ^String pwd]
 
   (if-some [acct (findLoginAccount sql user)]
@@ -225,10 +225,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn hasLoginAccount
+(defn hasLoginAccount?
 
   "true if this user account exists"
-
   [^SQLr sql ^String user]
 
   (some? (findLoginAccount sql user)))
@@ -238,13 +237,13 @@
 (defn changeLoginAccount
 
   "Change the account password"
-
-  [^SQLr sql userObj ^PasswordAPI pwdObj ]
+  [^SQLr sql userObj ^PasswordAPI pwdObj]
 
   (let [ps (.hashed pwdObj)
-        u (-> userObj
-              (dbioSetFlds :passwd (.getLeft ps)
-                           :salt (.getRight ps))) ]
+        u (dbSetFlds*
+            userObj
+            :passwd (:hash ps)
+            :salt (:salt ps))]
     (.update sql u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,42 +252,45 @@
 
   "Update account details
    details: a set of properties such as email address"
+  [^SQLr sql userObj & details]
 
-  [^SQLr sql userObj details]
-
-  {:pre [(map? details)]}
-
-  (if (empty? details)
-    userObj
-    (->> (dbioSetFld userObj details)
-         (.update sql))))
+  (let [[a b] (take 2 details)
+        r (drop 2 details)]
+    (if (and (some? a)
+             (some? b))
+      (->> (apply dbSetFlds*
+                  userObj
+                  a b (or r []))
+           (.update sql))
+      userObj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteLoginAccountRole
 
   "Remove a role from this user"
-
   [^SQLr sql userObj roleObj]
 
-  (dbioClrM2M {:as :roles :with sql } userObj roleObj))
+  (dbClrM2M {:joined (dbtag AccountRoles)
+             :with sql}
+            userObj roleObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn addLoginAccountRole
 
   "Add a role to this user"
-
   [^SQLr sql userObj roleObj]
 
-  (dbioSetM2M {:as :roles :with sql } userObj roleObj))
+  (dbSetM2M {:joined (dbtag AccountRoles)
+             :with sql}
+            userObj roleObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteLoginAccount
 
   "Delete this account"
-
   [^SQLr sql userObj]
 
   (.delete sql userObj))
@@ -298,35 +300,33 @@
 (defn deleteUser
 
   "Delete the account with this user id"
-
   [^SQLr sql user]
 
-  (.exec sql
-         (str "DELETE FROM "
-              (gtable LoginAccount)
-              " WHERE "
-              (->> (meta LoginAccount)
-                   (:fields)
-                   (:acctid)
-                   (:column)
-                   (ese))
-              " =?")
-         [ (strim user) ]))
+  (let [m (.get (.metas sql)
+                (dbtag LoginAccount))]
+    (.exec sql
+           (format "delete from %s where %s =?"
+                   (-> (dbtable m)
+                       (.fmtId sql))
+                   (-> (dbcol :acctid m)
+                       (.fmtId sql))
+                   " =?")
+           [(strim user)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn listLoginAccounts
 
   "List all user accounts"
-
   [^SQLr sql]
 
-  (.findAll sql :czc.skaro.auth/LoginAccount))
+  (.findAll sql (dbtag LoginAccount)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-shiro ""
+(defn- init-shiro
 
+  ""
   [^File appDir ^String appKey]
 
   (-> (io/file appDir "conf/shiro.ini")
@@ -342,14 +342,14 @@
 (defn maybeSignupTest
 
   "Test component of a standard sign-up workflow"
-
   ^BoolExpr
   [^String challengeStr]
 
-  (defBoolExpr
-    (fn [^Job job]
+  (reify BoolExpr
+    (ptest [_ arg]
       (let
-        [^HTTPEvent evt (.event job)
+        [^Job job arg
+         ^HTTPEvent evt (.event job)
          csrf (-> ^WebSS
                   (.getSession evt)
                   (.getXref))
@@ -360,9 +360,10 @@
          rb (I18N/getBase)
          info (or si {})
          ^AuthPlugin
-         pa (-> ^Muble (.container job)
-                       (.getv K_PLUGINS)
-                       (:auth )) ]
+         pa (-> ^Muble
+                (.container job)
+                (.getv K_PLUGINS)
+                (:auth ))]
         (log/debug "session csrf = %s%s%s"
                    csrf
                    ", and form token = " (:csrf info))
@@ -401,15 +402,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn maybeLoginTest ""
+(defn maybeLoginTest
 
+  ""
   ^BoolExpr
   []
 
-  (defBoolExpr
-    (fn [^Job job]
+  (reify BoolExpr
+    (ptest [_ arg]
       (let
-        [^HTTPEvent evt (.event job)
+        [^Job job arg
+         ^HTTPEvent evt (.event job)
          csrf (-> ^WebSS
                   (.getSession evt)
                   (.getXref ))
@@ -420,7 +423,8 @@
          rb (I18N/getBase)
          info (or si {})
          ^AuthPlugin
-         pa (-> ^Muble (.container job)
+         pa (-> ^Muble
+                (.container job)
                 (.getv K_PLUGINS)
                 (:auth )) ]
         (log/debug "session csrf = %s%s%s"
@@ -452,10 +456,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeAuthPlugin ""
+(defn- makeAuthPlugin
 
+  ""
   ^Plugin
-  [^Cocoon ctr]
+  [^Container ctr]
 
   (let [impl (mubleObj!) ]
     (reify AuthPlugin
@@ -493,7 +498,7 @@
       (login [_ user pwd]
         (binding
           [*JDBC-POOL* (.acquireDbPool ctr "")
-           *META-CACHE* AUTH-MCACHE ]
+           *META-CACHE* *auth-mcache*]
           (let
             [token (UsernamePasswordToken.
                      ^String user ^String pwd)
@@ -511,8 +516,8 @@
 
       (hasAccount [_ options]
         (let [pkey (.getAppKey ctr)]
-          (hasLoginAccount (getSQLr ctr)
-                           (:principal options))))
+          (hasLoginAccount? (getSQLr ctr)
+                            (:principal options))))
 
       (getAccount [_ options]
         (let [pkey (.getAppKey ctr)
@@ -530,8 +535,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn authPluginFactory ""
+(defn authPluginFactory
 
+  ""
   ^PluginFactory
   []
 
@@ -542,8 +548,9 @@
 ;;(ns-unmap *ns* '->AuthPluginFactory)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doMain ""
+(defn- doMain
 
+  ""
   [& args]
 
   (let [appDir (io/file (first args))
@@ -555,8 +562,8 @@
                  (.toCharArray))
         cfg ((keyword db) (get-in env [:databases :jdbc])) ]
     (when (some? cfg)
-      (let [j (mkJdbc db cfg (pwdify (:passwd cfg) pkey))
-            t (matchJdbcUrl (:url cfg)) ]
+      (let [j (dbspec db cfg (pwdify (:passwd cfg) pkey))
+            t (matchUrl (:url cfg))]
         (cond
           (= "init-db" cmd)
           (applyDDL j)
@@ -572,8 +579,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; home gen-sql alias outfile
 ;; home init-db alias
-(defn -main "Main Entry"
+(defn -main
 
+  "Main Entry"
   [& args]
 
   ;; for security, don't just eval stuff
