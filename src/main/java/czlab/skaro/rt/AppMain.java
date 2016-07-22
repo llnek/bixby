@@ -15,7 +15,7 @@
 package czlab.skaro.rt;
 
 import czlab.skaro.server.Contextualizable;
-import czlab.xlib.Initializable;
+import czlab.xlib.Initable;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
 import czlab.xlib.Startable;
@@ -24,7 +24,7 @@ import czlab.xlib.Startable;
  * @author Kenneth Leung
  */
 public interface AppMain
-extends Disposable, Initializable, Startable, Contextualizable, Configurable {
+extends Disposable, Initable, Startable, Contextualizable, Configurable {
 
 }
 

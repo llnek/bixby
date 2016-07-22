@@ -22,6 +22,7 @@ import javax.mail.internet.MimeMessage;
  */
 public interface EmailEvent extends IOEvent {
 
+  /**/
   public MimeMessage getMsg();
 
 }

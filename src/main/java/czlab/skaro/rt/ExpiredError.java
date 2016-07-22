@@ -21,14 +21,17 @@ public class ExpiredError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public ExpiredError(String msg, Throwable e) {
     super(msg,e);
   }
 
+  /**/
   public ExpiredError(Throwable e) {
     this(null,e);
   }
 
+  /**/
   public ExpiredError(String msg) {
     this(msg,null);
   }

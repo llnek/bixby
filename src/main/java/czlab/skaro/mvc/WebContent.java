@@ -20,7 +20,10 @@ package czlab.skaro.mvc;
  */
 public interface WebContent {
 
+  /**/
   public String contentType();
+
+  /**/
   public byte[] body();
 
 }

@@ -21,9 +21,16 @@ import java.io.File;
  */
 public interface ExecvisorAPI  {
 
+  /**/
   public long getUpTimeInMillis();
+
+  /**/
   public long getStartTime();
+
+  /**/
   public File homeDir();
+
+  /**/
   public void kill9();
 
 }

@@ -22,10 +22,12 @@ public class ServiceError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public ServiceError(Throwable e) {
     super(null,e);
   }
 
+  /**/
   public ServiceError(String msg) {
     super(msg,null);
   }

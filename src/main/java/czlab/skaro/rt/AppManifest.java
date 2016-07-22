@@ -14,16 +14,25 @@
 
 package czlab.skaro.rt;
 
+import czlab.xlib.Nameable;
 import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface EmitMeta {
+public interface AppManifest extends Nameable {
 
-  public boolean isEnabled();
-  public String getName();
-  public URL metaUrl();
+  /**/
+  public String appKey();
+
+  /**/
+  public String typeof();
+
+  /**/
+  public String name();
+
+  /**/
+  public URL content();
 
 }
 

@@ -22,14 +22,17 @@ public class DuplicateUser extends AuthError {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public DuplicateUser(String msg, Throwable e) {
     super(msg,e);
   }
 
+  /**/
   public DuplicateUser(Throwable e) {
     this(null,e);
   }
 
+  /**/
   public DuplicateUser(String msg) {
     this(msg,null);
   }

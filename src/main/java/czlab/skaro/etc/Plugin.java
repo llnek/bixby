@@ -16,7 +16,9 @@
 package czlab.skaro.etc;
 
 
+import czlab.skaro.server.Contextualizable;
 import czlab.skaro.server.Container;
+import czlab.xlib.Initable;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;
 import czlab.xlib.Startable;
@@ -25,11 +27,7 @@ import czlab.xlib.Startable;
 /**
  * @author Kenneth Leung
  */
-public interface Plugin extends Startable, Configurable, Disposable {
-
-  public void contextualize(Container c);
-
-  public void initialize();
+public interface Plugin extends Contextualizable, Initable, Startable, Configurable, Disposable {
 
 }
 

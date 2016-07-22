@@ -14,17 +14,22 @@
 
 package czlab.skaro.rt;
 
+import czlab.xlib.Nameable;
 import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface PODMeta  {
+public interface EmitterManifest extends Nameable {
 
-  public String moniker();
-  public String typeof();
-  public String appKey();
-  public URL srcUrl();
+  /**/
+  public boolean isEnabled();
+
+  /**/
+  public String name();
+
+  /**/
+  public URL content();
 
 }
 

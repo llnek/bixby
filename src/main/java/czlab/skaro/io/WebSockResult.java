@@ -21,8 +21,13 @@ package czlab.skaro.io;
  */
 public interface WebSockResult extends IOResult {
 
+  /**/
   public boolean isBinary();
+
+  /**/
   public boolean isText();
+
+  /**/
   public Object getData();
 
 }

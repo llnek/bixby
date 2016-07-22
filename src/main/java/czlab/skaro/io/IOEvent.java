@@ -15,17 +15,20 @@
 
 package czlab.skaro.io;
 
-import czlab.wflow.server.Event;
+import czlab.server.Event;
 
 /**
  * @author Kenneth Leung
  */
 public interface IOEvent extends Event {
 
+  /**/
   public void bindSession(IOSession s);
 
+  /**/
   public IOSession getSession();
 
+  /**/
   public boolean checkAuthenticity();
 
 }

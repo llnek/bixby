@@ -15,7 +15,6 @@
 package czlab.skaro.mock.mail;
 
 
-import org.apache.commons.lang3.StringUtils;
 import javax.mail.internet.MimeMessage;
 import java.io.ByteArrayInputStream;
 import java.util.Date;

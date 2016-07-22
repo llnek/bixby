@@ -23,7 +23,8 @@ import czlab.server.Event;
  */
 public interface EventBus extends Hierarchial {
 
-  public void fireEvent(Event evt, Object options);
+  /**/
+  public void fireEvent(Event evt, Object arg);
 
 }
 

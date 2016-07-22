@@ -22,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.stream.ChunkedInput;
+import io.netty.buffer.ByteBufAllocator;
 
 import java.io.RandomAccessFile;
 import java.io.IOException;
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
  */
 public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
-  private static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
+  public static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
   public static final Logger TLOG= getLogger(HTTPRangeInput.class);
 
   private RandomAccessFile _file;
@@ -48,7 +49,9 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
   private boolean _bad = false;
   private String _cType;
 
-  private long _clen= 0L;
+  private long _totalBytes=0L;
+  private long _bytesRead=0L;
+  private long _flen= 0L;
   private int _current= 0;
 
   /**
@@ -69,12 +72,12 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
    */
   public long process(HttpResponse rsp) {
     rsp.headers().add("accept-ranges", "bytes");
-    long last= _clen > 0 ? _clen-1 : 0;
+    long last= _flen > 0 ? _flen-1 : 0;
 
     if (_bad) {
       rsp.setStatus(HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE);
       rsp.headers().set("content-range",
-                        "bytes 0-" + last + "/" + _clen);
+                        "bytes 0-" + last + "/" + _flen);
       rsp.headers().set("content-length", "0");
       return 0L;
     }
@@ -83,24 +86,26 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
     if (_ranges.length == 1) {
       ByteRange r= _ranges[0];
       rsp.headers().set("content-range",
-                        "bytes " + r.start() + "-" + r.end() + "/" + _clen);
+                        "bytes " + r.start() + "-" + r.end() + "/" + _flen);
     } else {
       rsp.headers().set("content-type",
                         "multipart/byteranges; boundary="+ DEF_BD);
     }
-    long len=0L;
-    for (int n=0; n < _ranges.length; ++n) {
-      len += _ranges[n].calcTotalSize();
-    }
-    rsp.headers().set("content-length", Long.toString(len));
-    return len;
+    rsp.headers().set("content-length", Long.toString(_totalBytes));
+    return _totalBytes;
   }
 
   /**
    */
-  public ByteBuf readChunk(ChannelHandlerContext ctx) throws IOException {
+  @Deprecated
+  @Override
+  public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
+    return readChunk(ctx.alloc());
+  }
 
-    byte[] buff= new byte[ 8192];
+  @Override
+  public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
+    byte[] buff= new byte[8192];
     int mlen= buff.length;
     int count = 0;
 
@@ -114,7 +119,18 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       }
     }
 
-    return (count == 0) ? null : Unpooled.copiedBuffer(buff);
+    if (count == 0) { return null; }  else {
+      _bytesRead += count;
+      return Unpooled.copiedBuffer(buff,0,count);
+    }
+  }
+
+  @Override
+  public long length() { return _totalBytes;  }
+
+  @Override
+  public long progress() {
+    return _bytesRead;
   }
 
   /**
@@ -146,8 +162,8 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
       List<Long[]> ranges= new ArrayList<>();
       int pos= s.indexOf("bytes=");
       String[] rvs= (pos < 0) ? null : s.substring(pos+6).trim().split(",");
-      _clen= _file.length();
-      long last= _clen-1;
+      _flen= _file.length();
+      long last= _flen-1;
 
       if (rvs != null) for (int n=0; n < rvs.length; ++n) {
         String rs= rvs[n].trim();
@@ -175,6 +191,10 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
       _ranges = bytes.toArray(new ByteRange[0]) ;
       _bad = (_ranges.length == 0);
+
+      if (!_bad) {
+         _totalBytes= calcTotal();
+      }
     }
     catch (Throwable e) {
       _bad = true;
@@ -194,6 +214,16 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
   private Long[] merge(Long[] r1, Long[] r2) {
     return new Long[] { (r1[0] < r2[0]) ?  r1[0] : r2[0],
                         (r1[1] > r2[1]) ? r1[1] : r2[1] } ;
+  }
+
+
+  /**/
+  private long calcTotal() {
+    long len=0L;
+    for (int n=0; n < _ranges.length; ++n) {
+      len += _ranges[n].calcTotalSize();
+    }
+    return len;
   }
 
   /**

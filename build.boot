@@ -24,7 +24,7 @@
     [org.javassist/javassist "3.20.0-GA"  ]
 
     [com.github.spullara.mustache.java/compiler "0.9.2" ]
-    [org.freemarker/freemarker "2.3.23" ]
+    [org.freemarker/freemarker "2.3.25-incubating" ]
 
     [org.clojure/clojure "1.8.0" ]
     [org.clojure/clojurescript "1.9.93" ]
@@ -81,7 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlab.tpcl.boot :as b :refer [fp! ge testjava testclj artifactID compileJava compileClj]]
+(require '[czlab.tpcl.boot :as b :refer [fp! ge artifactID]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]

@@ -22,20 +22,27 @@ import czlab.xlib.XData;
  */
 public interface WebSockEvent  extends IOEvent {
 
+  /**/
   public Object getSocket();
 
+  /**/
   public boolean isBinary();
 
+  /**/
   public boolean isText();
 
+  /**/
   public XData getData();
 
+  /**/
   public boolean isSSL();
 
-  //------------
+  //------------ reply ----------------------
 
+  /**/
   public WebSockResult getResultObj();
 
+  /**/
   public void replyResult();
 
 }

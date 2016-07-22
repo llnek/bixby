@@ -20,6 +20,7 @@ package czlab.skaro.io;
  */
 public interface TimerEvent  extends IOEvent {
 
+  /**/
   public boolean isRepeating();
 
 }

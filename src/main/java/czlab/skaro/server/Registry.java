@@ -20,14 +20,19 @@ package czlab.skaro.server;
  */
 public interface Registry  {
 
-  public Object lookup(Object name);
+  /**/
+  public Object lookup(Object key);
 
-  public boolean has(Object name) ;
+  /**/
+  public boolean has(Object key) ;
 
+  /**/
   public void dereg(Object c);
 
+  /**/
   public void reg(Object c);
 
+  /**/
   public Iterable<?> iter();
 
 }

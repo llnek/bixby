@@ -22,10 +22,12 @@ public class RegistryError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public RegistryError(Throwable e) {
     super(null,e);
   }
 
+  /**/
   public RegistryError(String msg) {
     super(msg,null);
   }

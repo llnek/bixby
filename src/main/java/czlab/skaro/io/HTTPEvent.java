@@ -27,68 +27,111 @@ import czlab.xlib.XData;
  */
 public interface HTTPEvent extends IOEvent {
 
+  /**/
   public HttpCookie getCookie(String name);
 
+  /**/
   public Iterable<HttpCookie> getCookies();
 
+  /**/
   public boolean isKeepAlive();
 
+  /**/
   public XData data();
 
+  /**/
   public boolean hasData();
 
+  /**/
   public long contentLength();
 
+  /**/
   public String contentType();
 
+  /**/
   public String encoding();
 
+  /**/
   public String contextPath();
 
+  /**/
   public Iterable<String> getHeaderValues(String nm);
+
+  /**/
   public Set<String> getHeaders();
+
+  /**/
   public String getHeaderValue(String nm);
+
+  /**/
   public boolean hasHeader(String nm);
 
+  /**/
   public Iterable<String> getParameterValues(String nm);
+
+  /**/
   public Set<String> getParameters();
+
+  /**/
   public String getParameterValue(String nm);
+
+  /**/
   public boolean hasParameter(String nm);
 
+  /**/
   public String localAddr();
 
+  /**/
   public String localHost();
 
+  /**/
   public int localPort();
 
+  /**/
   public String method();
 
+  /**/
   public String protocol();
+
+  /**/
   public String host();
 
+  /**/
   public String queryString();
 
+  /**/
   public String remoteAddr();
 
+  /**/
   public String remoteHost();
 
+  /**/
   public int remotePort();
 
+  /**/
   public String scheme();
 
+  /**/
   public String serverName();
 
+  /**/
   public int serverPort();
 
+  /**/
   public boolean isSSL();
 
+  /**/
   public String getUri();
 
+  /**/
   public String getRequestURL();
 
-  //------------
+  //------------ reply -----------
 
+  /**/
   public HTTPResult getResultObj();
+
+  /**/
   public void replyResult();
 
 }

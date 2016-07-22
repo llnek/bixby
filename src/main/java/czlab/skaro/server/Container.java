@@ -17,7 +17,7 @@ package czlab.skaro.server;
 
 import czlab.server.ServerLike;
 import czlab.xlib.Disposable;
-import czlab.xlib.Named;
+import czlab.xlib.Nameable;
 import czlab.dbio.DBAPI;
 import czlab.dbio.JDBCPool;
 import java.io.File;
@@ -25,23 +25,36 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface Container extends ServerLike, ServiceProvider, Named, Disposable {
+public interface Container extends ServerLike, ServiceProvider, Nameable, Disposable {
 
+  /** load freemarker template */
   public Object loadTemplate(String tpl, Object ctx);
+
+  /**/
   public boolean isEnabled();
 
+  /**/
   public CLJShim getCljRt();
 
+  /**/
   public Object getEnvConfig();
+
+  /**/
   public Object getAppConfig();
 
+  /**/
   public byte[] getAppKeyBits();
+
+  /**/
   public String getAppKey();
 
-  public String getName();
+  /**/
   public File getAppDir();
 
+  /**/
   public JDBCPool acquireDbPool(Object groupid);
+
+  /**/
   public DBAPI acquireDbAPI(Object groupid);
 
 }

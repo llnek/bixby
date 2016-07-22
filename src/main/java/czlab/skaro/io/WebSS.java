@@ -20,24 +20,61 @@ package czlab.skaro.io;
  */
 public interface WebSS {
 
+  /**/
   public void setMaxInactiveInterval( long idleSecs);
+
+  /**/
   public void setAttribute(Object k, Object v);
+
+  /**/
   public Object getAttribute(Object k);
+
+  /**/
   public void removeAttribute(Object k);
+
+  /**/
   public void clear();
+
+  /**/
   public Iterable<?> listAttributes();
+
+  /**/
   public boolean isNew();
+
+  /**/
   public boolean isNull();
+
+  /**/
   public boolean isSSL();
+
+  /**/
   public void invalidate();
+
+  /**/
   public void setNew(boolean flag, long maxAge);
+
+  /**/
   public void setXref(Object csrf);
+
+  /**/
   public long getCreationTime();
+
+  /**/
   public long getExpiryTime();
+
+  /**/
   public Object getId();
+
+  /**/
   public Object getXref();
+
+  /**/
   public Object getLastError();
+
+  /**/
   public long getLastAccessedTime();
+
+  /**/
   public long getMaxInactiveInterval();
 
 }

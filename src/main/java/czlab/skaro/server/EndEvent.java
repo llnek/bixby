@@ -23,16 +23,19 @@ import czlab.server.Event;
  */
 public class EndEvent implements Event {
 
+  /**/
   public EndEvent(EventEmitter em) {
     _ee=em;
   }
 
   private EventEmitter _ee;
 
-  public Object getId() {
+  @Override
+  public Object id() {
     return "end-event-101";
   }
 
+  @Override
   public EventEmitter emitter() {
     return _ee;
   }

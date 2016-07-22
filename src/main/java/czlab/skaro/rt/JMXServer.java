@@ -19,10 +19,19 @@ package czlab.skaro.rt;
  */
 public interface JMXServer  {
 
+  /**/
   public void reg(Object obj, String domain, String nname, Object paths);
+
+  /**/
   public void setRegistryPort(int port);
+
+  /**/
   public void setServerPort(int port);
+
+  /**/
   public void reset();
+
+  /**/
   public void dereg(String nname);
 
 }

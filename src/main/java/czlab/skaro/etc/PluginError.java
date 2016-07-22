@@ -22,14 +22,17 @@ public class PluginError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public PluginError(String msg,Throwable e) {
     super(msg, e);
   }
 
+  /**/
   public PluginError(Throwable e) {
     this(null,e);
   }
 
+  /**/
   public PluginError(String msg) {
     this(msg,null);
   }

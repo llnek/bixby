@@ -22,14 +22,17 @@ public class AuthError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public AuthError(String msg,Throwable e) {
     super(msg,e);
   }
 
+  /**/
   public AuthError(Throwable e) {
     this(null,e);
   }
 
+  /**/
   public AuthError(String msg) {
     this(msg,null);
   }

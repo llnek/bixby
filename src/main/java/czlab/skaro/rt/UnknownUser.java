@@ -21,14 +21,17 @@ public class UnknownUser extends AuthError {
 
   private static final long serialVersionUID = 1L;
 
+  /**/
   public UnknownUser(String msg,Throwable e) {
     super(msg,e);
   }
 
+  /**/
   public UnknownUser(Throwable e) {
     this(null,e);
   }
 
+  /**/
   public UnknownUser(String msg) {
     this(msg,null);
   }

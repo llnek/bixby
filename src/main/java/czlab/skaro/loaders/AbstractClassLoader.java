@@ -37,7 +37,7 @@ public abstract class AbstractClassLoader extends URLClassLoader {
    */
   public AbstractClassLoader findUrls(File dir) {
     if (dir.exists() ) {
-      dir.listFiles( new FilenameFilter() {
+      dir.listFiles(new FilenameFilter() {
         public boolean accept(File f,String n) {
           if (n.endsWith(".jar")) {
             addUrl(new File(f,n));

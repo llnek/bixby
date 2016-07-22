@@ -22,6 +22,7 @@ import czlab.server.ServiceHandler;
  */
 public interface Service extends Component  {
 
+  /**/
   public ServiceHandler handler();
 
 }

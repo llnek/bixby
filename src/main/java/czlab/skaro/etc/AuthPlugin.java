@@ -20,16 +20,22 @@ package czlab.skaro.etc;
  */
 public interface AuthPlugin  extends Plugin {
 
+  /**/
   public void checkAction(Object acctObj, Object action);
 
+  /**/
   public Object addAccount(Object options);
 
+  /**/
   public boolean hasAccount(Object options);
 
+  /**/
   public Object login(Object user, Object pwd);
 
+  /**/
   public Iterable<?> getRoles(Object acctObj);
 
+  /**/
   public Iterable<?> getAccount(Object options);
 
 }

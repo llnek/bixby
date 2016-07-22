@@ -20,8 +20,13 @@ package czlab.skaro.io;
  */
 public interface IOSession {
 
+  /**/
   public void handleResult(IOEvent ev, IOResult res);
+
+  /**/
   public void handleEvent(IOEvent ev);
+
+  /**/
   public Object getImpl();
 
 }

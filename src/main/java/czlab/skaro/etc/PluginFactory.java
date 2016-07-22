@@ -21,9 +21,9 @@ import czlab.skaro.server.Container;
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface
-public interface PluginFactory {
+@FunctionalInterface public interface PluginFactory {
 
+  /**/
   public Plugin createPlugin(Container c);
 
 }

@@ -23,21 +23,40 @@ import java.net.URL;
  */
 public interface HTTPResult extends IOResult {
 
+  /**/
   public void addHeader(String name, String value);
+
+  /**/
   public void setHeader(String name, String value);
 
+  /**/
   public void setProtocolVersion(String ver);
+
+  /**/
   public void setStatus(int code);
+
+  /**/
   public void addCookie(HttpCookie c);
 
+  /**/
   public void containsHeader(String name);
+
+  /**/
   public void removeHeader(String name);
+
+  /**/
   public void clearHeaders();
 
+  /**/
   public void setChunked(boolean c);
+
+  /**/
   public void setContent(Object data);
 
+  /**/
   public void setRedirect(URL location);
+
+  /**/
   public int getStatus();
 
 }

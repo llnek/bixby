@@ -30,7 +30,7 @@ public class StartEvent implements Event {
   private EventEmitter _ee;
 
   @Override
-  public Object getId() {
+  public Object id() {
     return "start-event-101";
   }
 

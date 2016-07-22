@@ -22,10 +22,14 @@ import czlab.server.EventEmitter;
  */
 public interface EventTrigger  {
 
+  /**/
   public void resumeWithResult(Object res);
 
+  /**/
   public void resumeWithError();
 
+
+  /**/
   public EventEmitter emitter();
 
 }

@@ -26,9 +26,15 @@ public class RootClassLoader extends AbstractClassLoader {
 
   /**
    */
-  public RootClassLoader(ClassLoader par) {
+  public RootClassLoader(ClassLoader par, File home) {
     super(par);
-    configure(new File(System.getProperty("skaro.home","")));
+    configure(home);
+  }
+
+  /**
+   */
+  public RootClassLoader(ClassLoader par) {
+    this(par, new File(System.getProperty("skaro.home",".")));
   }
 
   /**

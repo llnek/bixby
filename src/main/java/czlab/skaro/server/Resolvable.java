@@ -18,9 +18,9 @@ package czlab.skaro.server;
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface
-public interface Resolvable {
+@FunctionalInterface public interface Resolvable {
 
+  /**/
   public Object resolve(Context c);
 
 }

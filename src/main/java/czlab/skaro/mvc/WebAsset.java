@@ -22,14 +22,19 @@ import java.io.File;
  */
 public interface WebAsset {
 
+  /**/
   public String contentType();
 
+  /**/
   public File getFile();
 
+  /**/
   public long getTS();
 
+  /**/
   public long size();
 
+  /**/
   public byte[] getBytes();
 
 }

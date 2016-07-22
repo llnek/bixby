@@ -23,8 +23,13 @@ import java.io.InputStream;
  */
 public interface SocketEvent  extends IOEvent {
 
+  /**/
   public OutputStream getSockOut();
+
+  /**/
   public InputStream getSockIn();
+
+  /**/
   public void dispose();
 
 }

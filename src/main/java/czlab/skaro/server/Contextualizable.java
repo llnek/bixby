@@ -18,10 +18,10 @@ package czlab.skaro.server;
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface
-public interface Contextualizable {
+@FunctionalInterface public interface Contextualizable {
 
-  public void contextualize(Object ctx);
+  /**/
+  public void contextualize(Object arg);
 
 }
 

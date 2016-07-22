@@ -20,7 +20,10 @@ package czlab.skaro.server;
  */
 public interface ServiceProvider {
 
+  /**/
   public boolean hasService(Object serviceId);
+
+  /**/
   public Service getService(Object serviceId);
 
 }
