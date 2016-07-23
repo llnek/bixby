@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.auth.shiro
 
@@ -30,7 +30,8 @@
     [org.apache.shiro.authz
      AuthorizationException
      AuthorizationInfo]
-    [org.apache.shiro.authc SimpleAccount
+    [org.apache.shiro.authc
+     SimpleAccount
      AuthenticationException
      AuthenticationToken
      AuthenticationInfo ]

@@ -43,55 +43,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(dbmodel StdAddress
-  (dbfields
-    {:addr1 {:size 255 :null false }
-     :addr2 {}
-     :city {:null false}
-     :state {:null false}
-     :zip {:null false}
-     :country {:null false} })
-  (dbindexes
-    {:i1 #{:city :state :country}
-     :i2 #{:zip :country}
-     :state #{:state}
-     :zip #{:zip} }))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(dbmodel AuthRole
-  (dbfields
-    {:name {:column "role_name" :null false }
-     :desc {:column "description" :null false } })
-  (dbuniques
-    {:u1 #{:name} }))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(dbmodel LoginAccount
-  (dbfields
-    {:acctid {:null false }
-     :email {:size 128 }
-      ;;:salt { :size 128 }
-     :passwd {:null false :domain :Password } })
-  (dbassocs
-    {:addr {:kind :O2O
-            :cascade true
-            :other ::StdAddress } })
-  (dbuniques
-    {:u2 #{:acctid} }))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(dbjoined AccountRoles ::LoginAccount ::AuthRole)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (def ^:dynamic *auth-mcache*
-  (dbschema LoginAccount
-            AccountRole
-            StdAddress
-            AuthRole))
+  (dbschema
+    (dbmodel StdAddress
+      (dbfields
+        {:addr1 {:size 255 :null false }
+         :addr2 {}
+         :city {:null false}
+         :state {:null false}
+         :zip {:null false}
+         :country {:null false} })
+      (dbindexes
+        {:i1 #{:city :state :country}
+         :i2 #{:zip :country}
+         :state #{:state}
+         :zip #{:zip} }))
+    (dbmodel AuthRole
+      (dbfields
+        {:name {:column "role_name" :null false }
+         :desc {:column "description" :null false } })
+      (dbuniques
+        {:u1 #{:name} }))
+    (dbmodel LoginAccount
+      (dbfields
+        {:acctid {:null false }
+         :email {:size 128 }
+          ;;:salt { :size 128 }
+         :passwd {:null false :domain :Password } })
+      (dbassocs
+        {:addr {:kind :O2O
+                :cascade true
+                :other ::StdAddress } })
+      (dbuniques
+        {:u2 #{:acctid} }))
+    (dbjoined AccountRoles LoginAccount AuthRole)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

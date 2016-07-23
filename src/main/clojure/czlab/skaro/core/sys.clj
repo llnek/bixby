@@ -12,30 +12,28 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "kenl" }
 
   czlab.skaro.core.sys
 
   (:require
+    [czlab.xlib.files :refer [changeContent readFile readUrl]]
     [czlab.xlib.core :refer [mubleObj! fpath]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
-    [clojure.java.io :as io]
-    [czlab.xlib.files
-     :refer [changeFileContent
-             readOneFile
-             readOneUrl]])
+    [clojure.java.io :as io])
 
   (:use [czlab.skaro.core.consts])
 
   (:import
     [org.apache.commons.io FilenameUtils FileUtils]
-    [czlab.xlib Muble Hierarchial
+    [czlab.skaro.server Context]
+    [czlab.xlib
+     Hierarchial
+     Muble
      Identifiable
      Versioned]
-    [czlab.skaro.server Context]
     [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,27 +41,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti compContextualize
+(defmulti comp->contextualize
   "Contextualize a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti compCompose
+(defmulti comp->compose
   "Compose a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti compConfigure
+(defmulti comp->configure
   "Configure a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti compInitialize
+(defmulti comp->initialize
   "Init a component" (fn [a & args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn synthesizeComponent
+(defn comp->synthesize
 
   "Synthesize a component
    Note the ordering
@@ -76,21 +74,18 @@
   [co options]
 
   (let [{:keys [props rego ctx]} options]
-    (compContextualize co ctx)
-    (compCompose co rego)
-    (compConfigure co props)
-    (compInitialize co)
+    (comp->contextualize co ctx)
+    (comp->compose co rego)
+    (comp->configure co props)
+    (comp->initialize co)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn makeContext
-
+(defn context<+>
   "Create a context object"
-
   ^Muble
   []
-
   (mubleObj!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,12 +93,11 @@
 (defn readConf
 
   "Parse a edn configuration file"
-
   ^String
   [^File appDir ^String confile]
 
   (let [rc (-> (io/file appDir DN_CONF confile)
-               (changeFileContent
+               (changeContent
                  #(cs/replace %
                               "${appdir}"
                               (fpath appDir)))) ]
@@ -112,14 +106,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn compCloneContext
+(defn cloneContext
 
   "Shallow copy"
-
   ^Muble
   [^Context co ^Muble ctx]
 
-  (let [x (makeContext) ]
+  (let [x (context<>) ]
     (doseq [[k v] (some-> ctx (.seq))]
       (.setv x k v))
     (.setx co x)
@@ -127,23 +120,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compContextualize :default
-
-  [co arg]
-
-  (compCloneContext co arg))
+(defmethod comp->contextualize :default [co arg] (cloneContext co arg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :default [co props] co)
+(defmethod comp->configure :default [co props] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :default [co] co)
+(defmethod comp->initialize :default [co] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compCompose :default [co rego] co)
+(defmethod comp->compose :default [co rego] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -12,9 +12,8 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.auth.realm
 
@@ -37,14 +36,16 @@
         [czlab.dbio.core])
 
   (:import
-    [org.apache.shiro.authz AuthorizationInfo
-     AuthorizationException]
-    [org.apache.shiro.authc SimpleAccount
-     AuthenticationToken
-     AuthenticationException]
     [org.apache.shiro.subject PrincipalCollection]
     [org.apache.shiro.realm AuthorizingRealm]
     [org.apache.shiro.realm CachingRealm]
+    [org.apache.shiro.authz
+     AuthorizationInfo
+     AuthorizationException]
+    [org.apache.shiro.authc
+     SimpleAccount
+     AuthenticationToken
+     AuthenticationException]
     [czlab.dbio DBAPI]
     [java.util Collection]))
 
@@ -59,13 +60,13 @@
 ;;
 (defn -doGetAuthenticationInfo
 
+  ""
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [db (dbioConnectViaPool *JDBC-POOL*
-                               *META-CACHE* {})
+  (let [db (dbopen+ *JDBC-POOL* *META-CACHE*)
          ;;pwd (.getCredentials token)
         user (.getPrincipal token)
-        sql (.newSimpleSQLr db) ]
+        sql (.simpleSQLr db) ]
     (try
       (when-some [acc (findLoginAccount sql user) ]
         (SimpleAccount. acc
@@ -76,19 +77,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -doGetAuthorizationInfo ""
+(defn -doGetAuthorizationInfo
 
+  ""
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [db (dbioConnectViaPool *JDBC-POOL*
-                               *META-CACHE* {})
+  (let [db (dbopen+ *JDBC-POOL* *META-CACHE*)
         acc (.getPrimaryPrincipal principals)
         rc (SimpleAccount. acc
                            (:passwd acc)
                            (.getName this))
-        sql (.newSimpleSQLr db) ]
+        sql (.simpleSQLr db)
+        j :czlab.skaro.auth.model/AccountRoles]
     (try
-      (let [rs (dbioGetM2M {:as :roles :with sql } acc) ]
+      (let [rs (dbGetM2M {:joined j :with sql} acc) ]
         (doseq [r rs]
           (.addRole rc ^String (:name r)))
         rc)

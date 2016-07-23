@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.boot
 
@@ -29,14 +29,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn execBootScript ""
+(defn execBootScript
 
+  ""
   [^File homeDir ^File appDir & args]
 
   (System/setProperty "skaro.home.dir" (.getCanonicalPath homeDir))
   (System/setProperty "skaro.app.dir" (.getCanonicalPath appDir))
-  (->> (into-array String args)
-       (App/main )))
+  (App/main (into-array String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -41,7 +41,6 @@
     [czlab.net.comms :refer [getFormFields]])
 
   (:use [czlab.skaro.core.consts]
-        [czlab.skaro.core.wfs]
         [czlab.skaro.core.sys]
         [czlab.skaro.io.webss]
         [czlab.skaro.io.basicauth]
@@ -124,8 +123,8 @@
                 (dbtag AuthRole))]
     (->>
       (-> (dbpojo m)
-          (dbSetFlds* :name role
-                      :desc desc))
+          (dbSetFlds* {:name role
+                       :desc desc}))
       (.insert sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,19 +161,19 @@
   "Create a new account
    props : extra properties, such as email address.
    roleObjs : a list of roles to be assigned to the account"
-
   [^SQLr sql ^String user
-   ^PasswordAPI pwdObj & [props roleObjs]]
+   ^PasswordAPI pwdObj props roleObjs]
+  {:pre [(map? props) (coll? roleObjs)]}
 
   (let [m (.get (.metas sql)
                 (dbtag LoginAccount))
         ps (:hash (.hashed pwdObj))
         acc
         (->>
-          (apply dbSetFlds*
-                 (dbpojo m)
-                 :acctid (strim user)
-                 (concat [:passwd ps] props))
+          (dbSetFlds* (dbpojo m)
+                      (merge
+                        {:acctid (strim user) :passwd ps}
+                        props))
           (.insert sql))]
     ;; currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
@@ -242,8 +241,8 @@
   (let [ps (.hashed pwdObj)
         u (dbSetFlds*
             userObj
-            :passwd (:hash ps)
-            :salt (:salt ps))]
+            {:passwd (:hash ps)
+             :salt (:salt ps)})]
     (.update sql u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,17 +251,13 @@
 
   "Update account details
    details: a set of properties such as email address"
-  [^SQLr sql userObj & details]
+  [^SQLr sql userObj details]
+  {:pre [(map? details)]}
 
-  (let [[a b] (take 2 details)
-        r (drop 2 details)]
-    (if (and (some? a)
-             (some? b))
-      (->> (apply dbSetFlds*
-                  userObj
-                  a b (or r []))
-           (.update sql))
-      userObj)))
+  (if (empty? details)
+    userObj
+    (->> (dbSetFlds* userObj details)
+         (.update sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -339,49 +334,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn maybeSignupTest
+(defn signupTestExpr<>
 
   "Test component of a standard sign-up workflow"
   ^BoolExpr
   [^String challengeStr]
 
   (reify BoolExpr
-    (ptest [_ arg]
+    (.ptest [_ arg]
       (let
-        [^Job job arg
-         ^HTTPEvent evt (.event job)
+        [^Job job arg ^HTTPEvent evt (.event job)
          csrf (-> ^WebSS
-                  (.getSession evt)
-                  (.getXref))
+                  (.getSession evt) (.getXref))
          si (try
               (getSignupInfo evt)
-              (catch
-                BadDataError e# {:e e#}))
+              (catch BadDataError e# {:e e#}))
          rb (I18N/getBase)
          info (or si {})
          ^AuthPlugin
-         pa (-> ^Muble
-                (.container job)
+         pa (-> ^Muble (.container job)
                 (.getv K_PLUGINS)
                 (:auth ))]
         (log/debug "session csrf = %s%s%s"
-                   csrf
-                   ", and form token = " (:csrf info))
+                   csrf ", and form token = " (:csrf info))
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (exp! AuthError (cexp? (:e info)))}
+            (->> {:error (exp! AuthError
+                               (cexp? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)
                (not= challengeStr (:captcha info)))
           (do->false
-            (->> {:error (exp! AuthError (rstr rb "auth.bad.cha")) }
+            (->> {:error (exp! AuthError
+                               (rstr rb "auth.bad.cha")) }
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (exp! AuthError (rstr rb "auth.bad.tkn")) }
+            (->> {:error (exp! AuthError
+                               (rstr rb "auth.bad.tkn")) }
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -389,7 +382,8 @@
                (hgl? (:email info)))
           (if (.hasAccount pa info)
             (do->false
-              (->> {:error (exp! DuplicateUser (str (:principal info)))}
+              (->> {:error (exp! DuplicateUser
+                                 (str (:principal info)))}
                    (.setLastResult job )))
             (do->true
               (->> {:account (.addAccount pa info)}
@@ -397,22 +391,22 @@
 
           :else
           (do->false
-            (->> {:error (exp! AuthError (rstr rb "auth.bad.req"))}
+            (->> {:error (exp! AuthError
+                               (rstr rb "auth.bad.req"))}
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn maybeLoginTest
+(defn loginTestExpr<>
 
   ""
   ^BoolExpr
   []
 
   (reify BoolExpr
-    (ptest [_ arg]
+    (.ptest [_ arg]
       (let
-        [^Job job arg
-         ^HTTPEvent evt (.event job)
+        [^Job job arg ^HTTPEvent evt (.event job)
          csrf (-> ^WebSS
                   (.getSession evt)
                   (.getXref ))
@@ -433,12 +427,14 @@
         (cond
           (some? (:e info))
           (do->false
-            (->> {:error (exp! AuthError (cexp? (:e info)))}
+            (->> {:error (exp! AuthError
+                               (cexp? (:e info)))}
                  (.setLastResult job)))
 
           (not= csrf (:csrf info))
           (do->false
-            (->> {:error (exp! AuthError (rstr rb "auth.bad.tkn"))}
+            (->> {:error (exp! AuthError
+                               (rstr rb "auth.bad.tkn"))}
                  (.setLastResult job)))
 
           (and (hgl? (:credential info))
@@ -451,91 +447,93 @@
 
           :else
           (do->false
-            (->> {:error (exp! AuthError (rstr rb "auth.bad.req")) }
+            (->> {:error (exp! AuthError
+                               (rstr rb "auth.bad.req")) }
                  (.setLastResult job))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeAuthPlugin
+(defn- authPlugin<>
 
   ""
   ^Plugin
   [^Container ctr]
 
-  (let [impl (mubleObj!) ]
-    (reify AuthPlugin
+  (reify AuthPlugin
 
-      (configure [_ props] )
+    (configure [_ props] )
 
-      (initialize [_]
-        (-> (.acquireDbPool ctr "")
-            (applyDDL )))
+    (init [_ arg]
+      (-> (.acquireDbPool ctr "")
+          (applyDDL )))
 
-      (start [_]
-        (assertPluginOK (.acquireDbPool ctr ""))
-        (init-shiro (.getAppDir ctr)
-                    (.getAppKey ctr))
-        (log/info "AuthPlugin started"))
+    (start [_]
+      (assertPluginOK (.acquireDbPool ctr ""))
+      (init-shiro (.getAppDir ctr)
+                  (.getAppKey ctr))
+      (log/info "AuthPlugin started"))
 
-      (stop [_]
-        (log/info "AuthPlugin stopped"))
+    (stop [_]
+      (log/info "AuthPlugin stopped"))
 
-      (dispose [_]
-        (log/info "AuthPlugin disposed"))
+    (dispose [_]
+      (log/info "AuthPlugin disposed"))
 
-      (checkAction [_ acctObj action] )
+    (checkAction [_ acctObj action] )
 
-      (addAccount [_ options]
-        (let [pkey (.getAppKey ctr)]
-          (createLoginAccount
-            (getSQLr ctr)
-            (:principal options)
-            (-> (:credential options)
-                (pwdify pkey))
-            options
-            [])))
+    (addAccount [_ arg]
+      (let [pkey (.getAppKey ctr)]
+        (createLoginAccount
+          (getSQLr ctr)
+          (:principal arg)
+          (-> (:credential arg)
+              (pwdify pkey))
+          (dissoc arg
+                  :principal :credential)
+          [])))
 
-      (login [_ user pwd]
-        (binding
-          [*JDBC-POOL* (.acquireDbPool ctr "")
-           *META-CACHE* *auth-mcache*]
-          (let
-            [token (UsernamePasswordToken.
-                     ^String user ^String pwd)
-             cur (SecurityUtils/getSubject)
-             sss (.getSession cur) ]
-            (log/debug "Current user session %s" sss)
-            (log/debug "Current user object %s" cur)
-            (when-not (.isAuthenticated cur)
-              (tryc
-                ;;(.setRememberMe token true)
-                (.login cur token)
-                (log/debug "User [%s] logged in successfully" user)))
-            (if (.isAuthenticated cur)
-              (.getPrincipal cur)))))
+    (login [_ user pwd]
+      (binding
+        [*JDBC-POOL* (.acquireDbPool ctr "")
+         *META-CACHE* *auth-mcache*]
+        (let
+          [token (new UsernamePasswordToken
+                      ^String user ^String pwd)
+           cur (SecurityUtils/getSubject)
+           sss (.getSession cur) ]
+          (log/debug "Current user session %s" sss)
+          (log/debug "Current user object %s" cur)
+          (when-not (.isAuthenticated cur)
+            (try!
+              ;;(.setRememberMe token true)
+              (.login cur token)
+              (log/debug "User [%s] logged in successfully" user)))
+          (if (.isAuthenticated cur)
+            (.getPrincipal cur)))))
 
-      (hasAccount [_ options]
-        (let [pkey (.getAppKey ctr)]
-          (hasLoginAccount? (getSQLr ctr)
-                            (:principal options))))
+    (hasAccount [_ arg]
+      (let [pkey (.getAppKey ctr)]
+        (hasLoginAccount? (getSQLr ctr)
+                          (:principal arg))))
 
-      (getAccount [_ options]
-        (let [pkey (.getAppKey ctr)
-              sql (getSQLr ctr) ]
-          (cond
-            (some? (:principal options))
-            (findLoginAccount sql
-                              (:principal options))
-            (some? (:email options))
-            (findLoginAccountViaEmail sql
-                              (:email options))
-            :else nil)))
+    (getAccount [_ arg]
+      (let [pkey (.getAppKey ctr)
+            sql (getSQLr ctr) ]
+        (cond
+          (some? (:principal arg))
+          (findLoginAccount sql
+                            (:principal arg))
+          (some? (:email arg))
+          (findLoginAccountViaEmail sql
+                            (:email arg))
+          :else nil)))
 
-      (getRoles [_ acct] []))))
+    ;;TODO: get roles please
+    (getRoles [_ acct] [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn authPluginFactory
+(defn pluginFactory<>
 
   ""
   ^PluginFactory
@@ -543,7 +541,7 @@
 
   (reify PluginFactory
     (createPlugin [_ ctr]
-      (makeAuthPlugin ctr))))
+      (authPlugin<> ctr))))
 
 ;;(ns-unmap *ns* '->AuthPluginFactory)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
