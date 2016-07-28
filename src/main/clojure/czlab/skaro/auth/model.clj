@@ -44,8 +44,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:dynamic *auth-mcache*
-  (dbschema
-    (dbmodel StdAddress
+  (dbschema<>
+    (dbmodel<> StdAddress
       (dbfields
         {:addr1 {:size 255 :null false }
          :addr2 {}
@@ -58,13 +58,13 @@
          :i2 #{:zip :country}
          :state #{:state}
          :zip #{:zip} }))
-    (dbmodel AuthRole
+    (dbmodel<> AuthRole
       (dbfields
         {:name {:column "role_name" :null false }
          :desc {:column "description" :null false } })
       (dbuniques
         {:u1 #{:name} }))
-    (dbmodel LoginAccount
+    (dbmodel<> LoginAccount
       (dbfields
         {:acctid {:null false }
          :email {:size 128 }
@@ -76,7 +76,7 @@
                 :other ::StdAddress } })
       (dbuniques
         {:u2 #{:acctid} }))
-    (dbjoined AccountRoles LoginAccount AuthRole)))
+    (dbjoined<> AccountRoles LoginAccount AuthRole)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,7 +107,7 @@
   JDBCInfo
   (applyDDL [this]
     (when-some [t (matchUrl (.url this))]
-      (with-open [c (dbconnect this)]
+      (with-open [c (dbconnect<> this)]
         (uploadDdl c (genAuthPluginDDL t)))))
 
   JDBCPool

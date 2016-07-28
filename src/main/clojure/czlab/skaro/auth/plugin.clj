@@ -18,9 +18,10 @@
   czlab.skaro.auth.plugin
 
   (:require
-    [czlab.dbio.connect :refer [dbopen+]]
+    [czlab.dbio.connect :refer [dbopen<+>]]
     [czlab.xlib.core
-     :refer [trap!
+     :refer [doto->>
+             trap!
              exp!
              try!
              stringify
@@ -31,8 +32,8 @@
              juid
              test-nonil
              loadJavaProps]]
+    [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.resources :refer [rstr]]
-    [czlab.crypto.codec :refer [pwdify]]
     [czlab.xlib.str :refer [hgl? strim]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
@@ -93,7 +94,9 @@
    by looking into the db"
   [^JDBCPool pool]
 
-  (let [tbl (dbtable LoginAccount)]
+  (let [tbl (->> :czlab.skaro.auth.model/LoginAccount
+                 (.get *auth-mcache* )
+                 (dbtable))]
     (when-not (tableExist? pool tbl)
       (dberr! (rstr (I18N/getBase)
                     "auth.no.table" tbl)))))
@@ -107,7 +110,7 @@
   [^Container ctr & [tx?]]
   ;; get the default db pool
   (let [db (-> (.acquireDbPool ctr "")
-               (dbopen+ *auth-mcache* ))]
+               (dbopen<+> *auth-mcache* ))]
     (if (boolean tx?)
       (.compositeSQL db)
       (.simpleSQLr db))))
@@ -117,15 +120,17 @@
 (defn createAuthRole
 
   "Create a new auth-role in db"
+  ^APersistentMap
   [^SQLr sql ^String role ^String desc]
 
-  (let [m (.get (.metas sql)
-                (dbtag AuthRole))]
-    (->>
-      (-> (dbpojo m)
-          (dbSetFlds* {:name role
-                       :desc desc}))
-      (.insert sql))))
+  (let [m (->> :czlab.skaro.auth.model/AuthRole
+               (.get (.metas sql)))
+        rc
+        (-> (dbpojo<> m)
+            (dbSetFlds* {:name role
+                         :desc desc}))]
+    (.insert sql rc)
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -134,8 +139,8 @@
   "Delete this role"
   [^SQLr sql ^String role]
 
-  (let [m (.get (.metas sql)
-                (dbtag AuthRole))]
+  (let [m (->> :czlab.skaro.auth.model/AuthRole
+               (.get (.metas sql)))]
     (.exec sql
            (format
              "delete from %s where %s =?"
@@ -152,7 +157,7 @@
   "List all the roles in db"
   [^SQLr sql]
 
-  (.findAll sql (dbtag AuthRole)))
+  (.findAll sql :czlab.skaro.auth.model/AuthRole))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -161,25 +166,25 @@
   "Create a new account
    props : extra properties, such as email address.
    roleObjs : a list of roles to be assigned to the account"
+  ^APersistentMap
   [^SQLr sql ^String user
    ^PasswordAPI pwdObj props roleObjs]
   {:pre [(map? props) (coll? roleObjs)]}
 
-  (let [m (.get (.metas sql)
-                (dbtag LoginAccount))
+  (let [m (->> :czlab.skaro.auth.model/LoginAccount
+               (.get (.metas sql)))
         ps (:hash (.hashed pwdObj))
         acc
         (->>
-          (dbSetFlds* (dbpojo m)
-                      (merge
-                        {:acctid (strim user) :passwd ps}
-                        props))
+          (dbSetFlds* (dbpojo<> m)
+                      (merge {:acctid (strim user)
+                              :passwd ps} props))
           (.insert sql))]
     ;; currently adding roles to the account is not bound to the
     ;; previous insert. That is, if we fail to set a role, it's
     ;; assumed ok for the account to remain inserted
     (doseq [r roleObjs]
-      (dbSetM2M {:joined (dbtag AccountRoles)
+      (dbSetM2M {:joined :czlab.skaro.auth.model/AccountRoles
                  :with sql} acc r))
     (log/debug "created new account %s%s%s%s"
                "into db: "
@@ -194,7 +199,7 @@
   [^SQLr sql ^String email]
 
   (.findOne sql
-            (dbtag LoginAccount)
+            :czlab.skaro.auth.model/LoginAccount
             {:email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -205,7 +210,7 @@
   [^SQLr sql ^String user]
 
   (.findOne sql
-            (dbtag LoginAccount)
+            :czlab.skaro.auth.model/LoginAccount
             {:acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,7 +221,7 @@
   [^SQLr sql ^String user ^String pwd]
 
   (if-some [acct (findLoginAccount sql user)]
-    (if (.validateHash (pwdify pwd)
+    (if (.validateHash (passwd<> pwd)
                        (:passwd acct))
       acct
       (trap! AuthError (rstr (I18N/getBase) "auth.bad.pwd")))
@@ -236,14 +241,16 @@
 (defn changeLoginAccount
 
   "Change the account password"
+  ^APersistentMap
   [^SQLr sql userObj ^PasswordAPI pwdObj]
 
   (let [ps (.hashed pwdObj)
-        u (dbSetFlds*
-            userObj
-            {:passwd (:hash ps)
-             :salt (:salt ps)})]
-    (.update sql u)))
+        m {:passwd (:hash ps)
+           :salt (:salt ps)}]
+    (->> (dbSetFlds*
+           (mockPojo<> userObj) m)
+         (.update sql ))
+    (dbSetFlds* userObj m)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -251,22 +258,26 @@
 
   "Update account details
    details: a set of properties such as email address"
+  ^long
   [^SQLr sql userObj details]
-  {:pre [(map? details)]}
+  {:pre [(or (nil? details)
+             (map? details))]}
 
   (if (empty? details)
-    userObj
-    (->> (dbSetFlds* userObj details)
-         (.update sql))))
+    0
+    (doto->>
+      (dbSetFlds* userObj details)
+      (.update sql))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteLoginAccountRole
 
   "Remove a role from this user"
+  ^long
   [^SQLr sql userObj roleObj]
 
-  (dbClrM2M {:joined (dbtag AccountRoles)
+  (dbClrM2M {:joined :czlab.skaro.auth.model/AccountRoles
              :with sql}
             userObj roleObj))
 
@@ -275,9 +286,10 @@
 (defn addLoginAccountRole
 
   "Add a role to this user"
+  ^APersistentMap
   [^SQLr sql userObj roleObj]
 
-  (dbSetM2M {:joined (dbtag AccountRoles)
+  (dbSetM2M {:joined :czlab.skaro.auth.model/AccountRoles
              :with sql}
             userObj roleObj))
 
@@ -286,6 +298,7 @@
 (defn deleteLoginAccount
 
   "Delete this account"
+  ^long
   [^SQLr sql userObj]
 
   (.delete sql userObj))
@@ -297,8 +310,8 @@
   "Delete the account with this user id"
   [^SQLr sql user]
 
-  (let [m (.get (.metas sql)
-                (dbtag LoginAccount))]
+  (let [m (->> :czlab.skaro.auth.model/LoginAccount
+               (.get (.metas sql)))]
     (.exec sql
            (format "delete from %s where %s =?"
                    (-> (dbtable m)
@@ -315,7 +328,7 @@
   "List all user accounts"
   [^SQLr sql]
 
-  (.findAll sql (dbtag LoginAccount)))
+  (.findAll sql :czlab.skaro.auth.model/LoginAccount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
