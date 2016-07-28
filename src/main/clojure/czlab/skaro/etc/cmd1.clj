@@ -17,16 +17,15 @@
 
   czlab.skaro.etc.cmd1
 
-  (:refer-clojure :rename {first fst second snd last lst})
+  ;;(:refer-clojure :rename {first fst second snd last lst})
 
   (:require
-    [czlab.crypto.codec :refer [strongPwd pwdify]]
-    [czlab.xlib.guids :refer [newUUid newWWid]]
+    [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
+    [czlab.crypto.codec :refer [strongPwd passwd<>]]
     [czlab.xlib.cmdline :refer [consoleIO]]
     [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.dates :refer [addMonths gcal]]
+    [czlab.xlib.dates :refer [+months gcal<>]]
     [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.str :refer [strbf ucase hgl? strim]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs]
@@ -38,9 +37,10 @@
              writeFile
              listFiles]]
     [czlab.xlib.core
-     :refer [fpath
+     :refer [isWindows?
+             fpath
+             spos?
              getCwd
-             isWindows?
              trap!
              exp!
              try!
@@ -55,12 +55,13 @@
              exportPublicKey
              exportPrivateKey
              dbgProvider
-             asymKeyPair
-             ssv1PKCS12
-             csrReQ]])
+             asymKeyPair<>
+             ssv1PKCS12<>
+             csreq<>]])
 
   (:use [czlab.skaro.etc.boot]
         [czlab.skaro.etc.cmd2]
+        [czlab.xlib.guids]
         [czlab.xlib.meta]
         [czlab.skaro.core.consts])
 
@@ -89,9 +90,9 @@
   "Create a new app"
   [args]
 
-  (let [args (drop 1 args)]
+  (let [args (vec (drop 1 args))]
     (if (> (count args) 1)
-      (createApp (first args) (second args))
+      (createApp (args 0) (args 1))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,7 +102,7 @@
   "Build the app"
   [args]
 
-  (let [args (drop 1 args)]
+  (let [args (vec (drop 1 args))]
     (->> (if (empty? args) ["dev"] args)
          (apply execBootScript (getHomeDir) (getCwd)))))
 
@@ -112,10 +113,10 @@
   "Package the app"
   [args]
 
-  (let [args (drop 1 args)]
+  (let [args (vec (drop 1 args))]
     (if-not (empty? args)
       (bundleApp (getHomeDir)
-                 (getCwd) (first args))
+                 (getCwd) (args 0))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -125,7 +126,7 @@
   "Test the app"
   [args]
 
-  (let [args (drop 1 args)]
+  (let [args (vec (drop 1 args))]
     (->> (if (empty? args) ["tst"] args)
          (apply execBootScript (getHomeDir) (getCwd) ))))
 
@@ -163,9 +164,9 @@
   "Generate demo apps"
   [args]
 
-  (let [args (drop 1 args)]
+  (let [args (vec (drop 1 args))]
     (if-not (empty? args)
-      (publishSamples (first args))
+      (publishSamples (args 0))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,16 +184,16 @@
 (defn- genKeyPair
 
   "Generate a keypair"
-  [^String lenStr]
+  [^String lenStr & [^chars pwd]]
 
   ;;(DbgProvider java.lang.System/out)
-  (let [kp (asymKeyPair "RSA" (convLong lenStr 1024))
+  (let [kp (asymKeyPair<> "RSA" (convLong lenStr 1024))
         pvk (.getPrivate kp)
         puk (.getPublic kp)]
     (println "privatekey=\n"
-             (stringify (exportPrivateKey pvk PEM_CERT)))
+             (stringify (exportPrivateKey pvk pwd)))
     (println "publickey=\n"
-             (stringify (exportPublicKey puk PEM_CERT)))))
+             (stringify (exportPublicKey puk )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -336,17 +337,23 @@
 (defn- csrfile
 
   "Maybe generate a CSR?"
-  []
+  [args]
 
-  (if-some
-    [res (promptQs (makeCsrQs (resBdl)) :cn) ]
-    (let [dn (fst res)
-          rc (lst res)
-          [req pkey]
-          (csrReQ (convLong (:size rc) 1024)
-                  dn
-                  PEM_CERT)]
-      (println "DN entered: " dn)
+  (when-not (== (count args) 14)
+    (trap! CmdHelpError))
+  (let [[v1 v2] (split-at 12 args)
+        sz (convLong (first v2) 0)
+        bf (strbf<>)
+        v1 (into {} (map #(vec %)
+                         (partition 2 v1)))]
+    (when-not (spos? sz) (trap! CmdHelpError))
+    (doseq [k [:c :st :l :o :ou :cn]
+            :let [v (strim (v1 (str "-" (name k))))]]
+      (when-not (hgl? v)
+        (trap! CmdHelpError))
+      (->> (format "%s=%s" (ucase (name k)) v)
+           (addDelim! bf ",")))
+    (csreq<> (str dn)
       (let [f1 (io/file (:fn rc) ".key")
             f2 (io/file (:fn rc) ".csr") ]
         (writeOneFile f1 pkey)
@@ -378,7 +385,7 @@
        "wwid"
        (genWwid)
        "csr"
-       (csrfile)
+       (csrfile (drop 1 args))
        false)]
     (when (false? rc)
       (trap! CmdHelpError))))

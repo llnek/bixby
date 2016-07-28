@@ -19,7 +19,7 @@
   czlab.skaro.auth.shiro
 
   (:require
-    [czlab.crypto.codec :refer [pwdify]])
+    [czlab.crypto.codec :refer [passwd<>]])
 
   (:require
     [czlab.xlib.logging :as log])
@@ -51,14 +51,13 @@
           pwd (.getCredentials tkn)
           uid (.getPrincipal tkn)
           pc (.getCredentials inf)
-          tstPwd (pwdify (if (string? pwd)
-                           pwd
-                           (String. ^chars pwd)))
+          tstPwd (passwd<>
+                   (if (string? pwd)
+                     pwd (String. ^chars pwd)))
           acc (-> (.getPrincipals inf)
                   (.getPrimaryPrincipal))]
       (and (= (:acctid acc) uid)
-           (.validateHash tstPwd pc)))
-  ))
+           (.validateHash tstPwd pc)))))
 
 (ns-unmap *ns* '->PwdMatcher)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

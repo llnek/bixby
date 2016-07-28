@@ -20,10 +20,7 @@ import czlab.xlib.Muble;
 /**
  * @author Kenneth Leung
  */
-public interface Context  {
-
-  public void setx(Muble ctx);
-  public Muble getx();
+public interface Context extends Muble {
 
 }
 

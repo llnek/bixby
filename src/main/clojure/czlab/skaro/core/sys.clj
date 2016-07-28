@@ -27,7 +27,6 @@
   (:use [czlab.skaro.core.consts])
 
   (:import
-    [org.apache.commons.io FilenameUtils FileUtils]
     [czlab.skaro.server Context]
     [czlab.xlib
      Hierarchial
@@ -82,11 +81,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn context<+>
+(defmacro context<>
+
   "Create a context object"
   ^Muble
   []
-  (mubleObj!))
+
+  `(mubleObj!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,10 +111,10 @@
 
   "Shallow copy"
   ^Muble
-  [^Context co ^Muble ctx]
+  [^Muble src]
 
   (let [x (context<>) ]
-    (doseq [[k v] (some-> ctx (.seq))]
+    (doseq [[k v] (some-> src (.seq))]
       (.setv x k v))
     (.setx co x)
     co))

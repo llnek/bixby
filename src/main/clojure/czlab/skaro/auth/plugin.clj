@@ -51,8 +51,8 @@
   (:import
     [org.apache.shiro.config IniSecurityManagerFactory]
     [org.apache.shiro.authc UsernamePasswordToken]
-    [org.apache.commons.codec.binary Base64]
     [czlab.net ULFormItems ULFileItem]
+    [clojure.lang APersistentMap]
     [czlab.skaro.etc
      Plugin
      AuthPlugin
@@ -308,6 +308,7 @@
 (defn deleteUser
 
   "Delete the account with this user id"
+  ^long
   [^SQLr sql user]
 
   (let [m (->> :czlab.skaro.auth.model/LoginAccount
@@ -356,7 +357,8 @@
   (reify BoolExpr
     (.ptest [_ arg]
       (let
-        [^Job job arg ^HTTPEvent evt (.event job)
+        [^HTTPEvent evt (.event ^Job arg)
+         ^Job job arg
          csrf (-> ^WebSS
                   (.getSession evt) (.getXref))
          si (try
@@ -419,7 +421,8 @@
   (reify BoolExpr
     (.ptest [_ arg]
       (let
-        [^Job job arg ^HTTPEvent evt (.event job)
+        [^HTTPEvent evt (.event ^Job arg)
+         ^Job job arg
          csrf (-> ^WebSS
                   (.getSession evt)
                   (.getXref ))
@@ -500,27 +503,28 @@
           (getSQLr ctr)
           (:principal arg)
           (-> (:credential arg)
-              (pwdify pkey))
+              (passwd<> pkey))
           (dissoc arg
                   :principal :credential)
           [])))
 
-    (login [_ user pwd]
+    (login [_ u p]
       (binding
         [*JDBC-POOL* (.acquireDbPool ctr "")
          *META-CACHE* *auth-mcache*]
         (let
-          [token (new UsernamePasswordToken
-                      ^String user ^String pwd)
-           cur (SecurityUtils/getSubject)
+          [cur (SecurityUtils/getSubject)
            sss (.getSession cur) ]
           (log/debug "Current user session %s" sss)
           (log/debug "Current user object %s" cur)
           (when-not (.isAuthenticated cur)
             (try!
               ;;(.setRememberMe token true)
-              (.login cur token)
-              (log/debug "User [%s] logged in successfully" user)))
+              (->>
+                (UsernamePasswordToken.
+                  ^String u ^String p)
+                (.login cur ))
+              (log/debug "User [%s] logged in successfully" u)))
           (if (.isAuthenticated cur)
             (.getPrincipal cur)))))
 
@@ -571,9 +575,11 @@
         app (readEdn (io/file appDir CFG_APP_CF))
         pkey (-> (str (get-in app [:info :disposition]))
                  (.toCharArray))
-        cfg ((keyword db) (get-in env [:databases :jdbc])) ]
+        cfg ((keyword db) (get-in env [:databases :jdbc]))
+        pwd (-> (passwd<> (:passwd cfg) pkey)
+                (.text))]
     (when (some? cfg)
-      (let [j (dbspec db cfg (pwdify (:passwd cfg) pkey))
+      (let [j (dbspec<> (assoc cfg :passwd pwd))
             t (matchUrl (:url cfg))]
         (cond
           (= "init-db" cmd)

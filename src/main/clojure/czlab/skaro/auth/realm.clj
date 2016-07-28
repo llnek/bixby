@@ -26,7 +26,7 @@
    :state myState)
 
   (:require
-    [czlab.crypto.codec :refer [pwdify]])
+    [czlab.crypto.codec :refer [passwd<>]])
 
   (:require
     [czlab.xlib.logging :as log])
@@ -63,7 +63,7 @@
   ""
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [db (dbopen+ *JDBC-POOL* *META-CACHE*)
+  (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
          ;;pwd (.getCredentials token)
         user (.getPrincipal token)
         sql (.simpleSQLr db) ]
@@ -82,7 +82,7 @@
   ""
   [^AuthorizingRealm  this ^PrincipalCollection principals]
 
-  (let [db (dbopen+ *JDBC-POOL* *META-CACHE*)
+  (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
         acc (.getPrimaryPrincipal principals)
         rc (SimpleAccount. acc
                            (:passwd acc)
