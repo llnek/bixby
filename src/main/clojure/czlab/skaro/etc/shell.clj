@@ -46,12 +46,13 @@
   [& args]
 
   (let [ver (loadResource VERPROPS)
+        h (first args)
         rcb (getResource RCB)]
     (with-local-vars [ok false]
       (->> (.getString ver "version")
            (System/setProperty "skaro.version"))
       (I18N/setBase rcb)
-      (when-some [home (io/file (first args))]
+      (when-some [home (io/file h)]
         (when (dirRead? home)
           (var-set ok true)
           (apply bootAndRun home rcb (drop 1 args))))

@@ -19,9 +19,9 @@
   czlab.skaro.etc.cmd2
 
   (:require
-    [czlab.xlib.str :refer [strim triml trimr]]
+    [czlab.xlib.str :refer [strim triml trimr strimAny strbf<>]]
     [czlab.xlib.ini :refer [parseInifile]]
-    [czlab.xlib.guids :refer [newUUid]]
+    [czlab.xlib.guids :refer [uuid<>]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
@@ -33,10 +33,12 @@
              isWindows?
              prn!! prn! fpath]]
     [czlab.xlib.files
-     :refer [readOneFile
+     :refer [copyFileToDir
+             readOneFile
              writeOneFile
-             copyFileToDir
              replaceFile
+             dirRead?
+             touch!
              deleteDir
              copyFile
              copyToDir
@@ -46,10 +48,6 @@
   (:use [czlab.skaro.core.consts])
 
   (:import
-    [org.apache.commons.io FilenameUtils FileUtils]
-    [org.apache.commons.io.filefilter
-     FileFileFilter
-     FileFilterUtils]
     [java.util ResourceBundle UUID]
     [czlab.skaro.etc CmdHelpError]
     [java.io File]))
@@ -63,14 +61,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn setGlobals! "" [k v] (swap! SKARO-PROPS assoc k v))
+(defn setGlobals!
+
+  ""
+  [k v]
+
+  (swap! SKARO-PROPS assoc k v))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn resBdl
 
   "Return the system resource bundle"
-
   ^ResourceBundle
   []
 
@@ -81,7 +83,6 @@
 (defn getHomeDir
 
   "Return the home directory"
-
   ^File
   []
 
@@ -93,21 +94,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- sanitizeAppDomain ""
+(defn- sanitizeAppDomain
 
+  ""
   [appDomain]
 
-  (-> (str appDomain)
-      (triml ".")
-      (trimr ".")))
+  (strimAny appDomain "."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
 (defn createApp
 
   "Create a new app"
-
-  [verb path]
+  [path]
 
   (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
         t (re-matches rx path)
@@ -115,18 +114,11 @@
         ;; treat as domain e.g com.acme => app = acme
         ;; regex gives ["com.acme" ".acme"]
         app (when (some? t)
-              (if-some [tkn (last t) ]
+              (if-some [tkn (last t)]
                 (triml tkn ".")
                 (first t))) ]
     (when (empty? app) (trap! CmdHelpError))
-    (case verb
-      ("mvc" "web")
-      (createNetty cwd app path)
-      "jetty"
-      (createJetty cwd app path)
-      "basic"
-      (createBasic cwd app path)
-      (trap! CmdHelpError))))
+    (createNetty cwd app path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,15 +150,15 @@
 (defn bundleApp
 
   "Bundle an app"
-
   [^File hhh ^File app ^String out]
 
   (let [dir (mkdirs (io/file out)) ]
-     (->> (a/antZip
-            {:destFile (io/file dir (str (.getName app) ".zip"))
-             :basedir app
-             :includes "**/*"})
-          (a/runTasks* ))))
+    (->>
+      (a/antZip
+        {:destFile (io/file dir (str (.getName app) ".zip"))
+         :basedir app
+         :includes "**/*"})
+      (a/runTasks* ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,35 +166,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genOneJavaDemo ""
+(defn- genOneCljDemo
 
-  [^File demo ^File out]
-
-  (let [top (io/file out (.getName demo))
-        dn (.getName top)]
-    (prn!! "Generating demo[%s]..." dn)
-    (createBasic out dn (mkDemoPath dn))
-    (copyFiles demo
-               (io/file top DN_CONF) "conf")
-    (copyFiles demo
-               (io/file top
-                        "src/main/java/demo" dn)
-               "java")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- genOneCljDemo ""
-
+  ""
   [^File demo ^File out]
 
   (let [top (io/file out (.getName demo))
         dn (.getName top)
         dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
-    (case dn
-      "jetty" (createJetty out dn dom)
-      "mvc" (createNetty out dn dom)
-      (createBasic out dn dom))
+    (createNetty out dn dom)
     (copyFiles demo
                (io/file top DN_CONF) "conf")
     (copyFiles demo
@@ -212,28 +185,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- genJavaDemos ""
+(defn- genCljDemos
 
-  [^File out]
-
-  (let [dss (->> (io/file (getHomeDir)
-                          "src/main/java/demo")
-                 (.listFiles ))]
-    (doseq [^File d dss
-            :when (.isDirectory d)]
-      (genOneJavaDemo d out))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- genCljDemos ""
-
+  ""
   [^File out]
 
   (let [dss (->> (io/file (getHomeDir)
                           "src/main/clojure/demo")
                  (.listFiles )) ]
-    (doseq [^File d dss
-            :when (.isDirectory d)]
+    (doseq [d dss
+            :when (dirRead? d)]
       (genOneCljDemo d out))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,7 +202,6 @@
 (defn publishSamples
 
   "Unzip all samples"
-
   [^String output]
 
   (->> (mkdirs output)
@@ -249,19 +209,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkcljfp ""
+(defn- mkcljfp
 
+  ""
   ^File
-  [^File cljd ^String fname]
+  [cljd fname]
 
   (io/file cljd fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkcljd ""
+(defn- mkcljd
 
+  ""
   ^File
-  [^File appDir ^String appDomain]
+  [appDir appDomain]
 
   (io/file appDir
            "src/main/clojure"
@@ -269,8 +231,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postCreateApp ""
+(defn- postCreateApp
 
+  ""
   [^File appDir ^String appId ^String appDomain]
 
   (let [h2db (str (if (isWindows?)
@@ -298,8 +261,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createAppCommon ""
+(defn- createAppCommon
 
+  ""
   [^File appDir ^String appId ^String appDomain ^String flavor]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
@@ -335,11 +299,11 @@
 
       (doseq [s ["build.boot" "pom.xml"]]
         (copyFileToDir (io/file hhh DN_CFGAPP s) appDir))
-      (FileUtils/touch (io/file appDir "README.md"))
+      (touch! (io/file appDir "README.md"))
 
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt"]]
-        (FileUtils/touch (io/file appDir DN_CFG s)))
+        (touch! (io/file appDir DN_CFG s)))
       (doseq [s [APP_CF ENV_CF ]]
         (copyFileToDir (io/file hhh DN_CFGAPP s) cfd))
       (copyFileToDir (io/file hhh DN_CFGAPP DN_RCPROPS)
@@ -362,7 +326,7 @@
       (var-set fp (io/file cfd APP_CF))
       (replaceFile @fp
                    #(-> (cs/replace % "@@USER@@" (getUser))
-                        (cs/replace "@@APPKEY@@" (newUUid))
+                        (cs/replace "@@APPKEY@@" (uuid))
                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
                         (cs/replace "@@APPMAINCLASS@@"
                                     (str appDomain ".core/MyAppMain"))))
@@ -382,8 +346,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createWebCommon ""
+(defn- createWebCommon
 
+  ""
   [^File appDir appId ^String appDomain]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
@@ -391,7 +356,7 @@
         wfc (io/file hhh DN_CFGAPP "weblibs.conf")
         wlib (io/file appDir "public/vendors")
         wbs (readEdn wfc)
-        buf (StringBuilder.)]
+        buf (strbf<>)]
 
     ;; make folders
     (doseq [s ["pages" "media" "styles" "scripts"]]
@@ -418,7 +383,7 @@
     (copyFileToDir (io/file hhh DN_CFGWEB "body.jpg")
                    (io/file appDir "src/web/main/media"))
 
-    (FileUtils/copyFile wfc (io/file wlib ".list"))
+    (io/copy wfc (io/file wlib ".list"))
     (mkdirs (io/file appDir "src/test/js"))
 
     (doseq [df (:libs wbs)
@@ -438,8 +403,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createMvcWeb ""
+(defn- createMvcWeb
 
+  ""
   [^File appDir ^String appId ^String appDomain ^String emType ]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
@@ -463,8 +429,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn createBasic ""
+(defn createBasic
 
+  ""
   [^File out appId ^String appDomain]
 
   (doto (mkdirs (io/file out appId))
@@ -473,17 +440,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn createJetty ""
+(defn createNetty
 
-  [^File out appId ^String appDomain]
-
-  (-> (mkdirs (io/file out appId))
-      (createMvcWeb appId appDomain "czc.skaro.io/JettyIO")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn createNetty ""
-
+  ""
   [^File out appId ^String appDomain]
 
   (-> (mkdirs (io/file out appId))

@@ -21,25 +21,17 @@
   (:require
     [czlab.xlib.core :refer [trap! prtStk test-cond mubleObj!]]
     [czlab.xlib.resources :refer [getResource rstr rstr*]]
-    [czlab.xlib.str :refer [makeString]]
+    [czlab.xlib.str :refer [string<>]]
     [czlab.xlib.logging :as log]
-    [czlab.xlib.scheduler :refer [mkNulScheduler]]
     [czlab.xlib.files :refer [dirRead?]])
 
-  (:use [czlab.skaro.core.wfs]
+  (:use [czlab.skaro.etc.cmd2]
         [czlab.xlib.consts]
-        [czlab.skaro.etc.cmd2]
         [czlab.skaro.etc.cmd1])
 
   (:import
-    [czlab.wflow.server ServiceHandler ServerLike]
     [czlab.skaro.etc CmdHelpError]
     [java.io File]
-    [czlab.wflow.dsl Activity
-     WorkFlowEx
-     Nihil
-     Job
-     Switch]
     [czlab.xlib I18N]
     [java.util ResourceBundle List Locale]))
 
@@ -48,8 +40,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getCmdInfo ""
+(defn- getCmdInfo
 
+  ""
   [rcb]
 
   (partition 2
@@ -58,30 +51,31 @@
            ["usage.new"] ["usage.new.desc"]
            ["usage.podify"] ["usage.podify.desc"]
            ["usage.ide"] [ "usage.ide.desc"]
-           [ "usage.build"] [ "usage.build.desc"]
-           [ "usage.test"] [ "usage.test.desc"]
+           ["usage.build"] [ "usage.build.desc"]
+           ["usage.test"] [ "usage.test.desc"]
 
-           [ "usage.debug"] ["usage.debug.desc"]
-           [ "usage.start"] [ "usage.start.desc"]
+           ["usage.debug"] ["usage.debug.desc"]
+           ["usage.start"] ["usage.start.desc"]
 
-           [ "usage.gen.keypair"] [ "usage.gen.keypair.desc"]
-           [ "usage.gen.key"] [ "usage.gen.key.desc"]
-           [ "usage.gen.pwd"] [ "usage.gen.pwd.desc"]
-           [ "usage.gen.csr"] [ "usage.gen.csr.desc"]
-           [ "usage.gen.guid"] [ "usage.gen.guid.desc"]
-           [ "usage.encrypt"] [ "usage.encrypt.desc"]
-           [ "usage.decrypt"] [ "usage.decrypt.desc"]
-           [ "usage.hash"] [ "usage.hash.desc"]
-           [ "usage.testjce"] ["usage.testjce.desc"]
+           ["usage.gen.keypair"] [ "usage.gen.keypair.desc"]
+           ["usage.gen.key"] [ "usage.gen.key.desc"]
+           ["usage.gen.pwd"] [ "usage.gen.pwd.desc"]
+           ["usage.gen.csr"] [ "usage.gen.csr.desc"]
+           ["usage.gen.guid"] [ "usage.gen.guid.desc"]
+           ["usage.encrypt"] [ "usage.encrypt.desc"]
+           ["usage.decrypt"] [ "usage.decrypt.desc"]
+           ["usage.hash"] [ "usage.hash.desc"]
+           ["usage.testjce"] ["usage.testjce.desc"]
 
-           [ "usage.demo"] [ "usage.demo.desc"]
-           [ "usage.version"] [ "usage.version.desc"]
-           [ "usage.help"] [])))
+           ["usage.demo"] [ "usage.demo.desc"]
+           ["usage.version"] [ "usage.version.desc"]
+           ["usage.help"] [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- drawHelp ""
+(defn- drawHelp
 
+  ""
   [fmt arr]
 
   (doseq [a arr]
@@ -89,97 +83,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn usage ""
+(defn usage
 
+  ""
   []
 
   (let [strs (getCmdInfo (I18N/getBase))
         b (drop-last (drop 1 strs))
         h (take 1 strs)
         e (take-last 1 strs)]
-    (println (makeString \= 78))
+    (println (string<> \= 78))
     (drawHelp " %-35s %s\n" h)
     (println " -----------------")
     (drawHelp " %-35s %s\n" b)
     (println "")
     (drawHelp " %-35s %s\n" e)
-    (println (makeString \= 78))))
+    (println (string<> \= 78))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- execArgs ""
+(defn- execArgs
 
-  ^Activity
-  []
+  ""
+  [args]
 
-  (doto (Switch/apply (defChoiceExpr
-                        #(keyword (first (.getLastResult ^Job %)))))
-    (.withChoice :new (simPTask #(onCreate %)))
-    (.withChoice :ide (simPTask #(onIDE %)))
-    (.withChoice :make (simPTask #(onBuild %)))
-    (.withChoice :podify (simPTask #(onPodify %)))
-    (.withChoice :test (simPTask #(onTest %)))
-    (.withChoice :debug (simPTask #(onDebug %)))
-    (.withChoice :start (simPTask #(onStart %)))
-    (.withChoice :demos (simPTask #(onDemos %)))
-    (.withChoice :generate (simPTask #(onGenerate %)))
-    (.withChoice :encrypt (simPTask #(onEncrypt %)))
-    (.withChoice :decrypt (simPTask #(onDecrypt %)))
-    (.withChoice :hash (simPTask #(onHash %)))
-    (.withChoice :testjce (simPTask #(onTestJCE %)))
-    (.withChoice :version (simPTask #(onVersion %)))
-    (.withChoice :help (simPTask #(onHelp %)))
-    (.withDft (simPTask #(onHelp %)))))
+  (let [cmd (first args)
+        args (vec (drop 1 args))]
+    (case cmd
+      :new (onCreate args)
+      :ide (onIDE args)
+      :make (onBuild args)
+      :podify (onPodify args)
+      :test (onTest args)
+      :debug (onDebug args)
+      :start (onStart args)
+      :demos (onDemos args)
+      :generate (onGenerate args)
+      :encrypt (onEncrypt args)
+      :decrypt (onDecrypt args)
+      :hash (onHash args)
+      :testjce (onTestJCE args)
+      :version (onVersion args)
+      (onHelp args))
+    args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseArgs
-
-  "Do nothing right now"
-
-  ^Activity
-  []
-
-  (simPTask (fn [_])))
+(defn- parseArgs "Do nothing right now" [args] args)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cmdStart
 
   "Make sure cmdline args are ok"
+  [args]
 
-  ^Activity
-  []
-
-  (simPTask
-    (fn [^Job j]
-      (let [args (.getLastResult j)]
-        (when (< (count args) 1) (trap! CmdHelpError ))))))
+  (when (< (count args) 1) (trap! CmdHelpError ))
+  args)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn bootAndRun ""
+(defn bootAndRun
 
+  ""
   [^File home ^ResourceBundle rcb & args]
 
-  (let [wf (reify WorkFlowEx
-             (startWith [_]
-               (-> (cmdStart)
-                   (.chain (parseArgs))
-                   (.chain (execArgs))))
-             (onError [_ e]
-               (if
-                 (instance? CmdHelpError e)
-                 (usage)
-                 (prtStk e))
-               (Nihil/apply))) ]
-    (setGlobals! :homeDir home)
-    (setGlobals! :rcb rcb)
-    (-> ^ServiceHandler
-        (flowServer (mkNulScheduler) {})
-        (.handle wf {:home home
-                     :rcb rcb
-                     JS_LAST args}))))
+  (binding [*skaro-home* home
+            *skaro-rb* rcb]
+    (try
+      (-> args
+          (comp execArgs
+                parseArgs
+                comdStart))
+      (catch Throwable e
+        (if (inst? CmdHelpError e)
+          (usage)
+          (prtStk e))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

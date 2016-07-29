@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.impl.dfts
 
@@ -37,13 +37,16 @@
 
   (:import
     [czlab.skaro.loaders AppClassLoader]
-    [czlab.xlib Muble
-     Versioned
-     I18N CU
-     Identifiable Hierarchial]
     [czlab.skaro.runtime PODMeta]
-    [czlab.skaro.server Component
-     Context
+    [czlab.xlib
+     Versioned
+     Muble
+     I18N
+     CU
+     Hierarchial
+     Identifiable]
+    [czlab.skaro.server
+     Component
      ConfigError
      Registry
      RegistryError
@@ -57,24 +60,25 @@
 ;;asserts that the directory is readable & writable.
 (defn ^:no-doc precondDir
 
-  "Is this folder read-writeable?"
-
+  "Assert folder(s) are read-writeable?"
   [f & dirs]
 
   (doseq [d (cons f dirs)]
-    (test-cond (rstr (I18N/getBase) "dir.no.rw" d)
+    (test-cond (rstr (I18N/getBase)
+                     "dir.no.rw" d)
                (dirReadWrite? d))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the file is readable
 (defn ^:no-doc precondFile
 
-  "Is this file readable?"
+  "Assert file(s) are readable?"
 
   [ff & files]
 
   (doseq [f (cons ff files)]
-    (test-cond (rstr (I18N/getBase) "file.no.r" f)
+    (test-cond (rstr (I18N/getBase)
+                     "file.no.r" f)
                (fileRead? f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,7 +86,6 @@
 (defn ^:no-doc maybeDir
 
   "true if the key maps to a File"
-
   ^File
   [^Muble m kn]
 
@@ -91,30 +94,31 @@
       String (io/file v)
       File v
       (trap! ConfigError (rstr (I18N/getBase)
-                                 "skaro.no.dir" kn)))))
+                               "skaro.no.dir" kn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;a registry is basically a container holding a bunch of components
 ;;a component itself can be a registry which implies that registeries can
 ;;be nested
-(defn reifyRegistry
+(defn registry<>
 
   "Create a generic component registry"
-
   ^Registry
   [regoType regoId ver parObj]
-
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
   (let [impl (mubleObj! {:cache {} })
-        ctxt (atom (mubleObj!)) ]
+        ctxt (mubleObj!)]
     (with-meta
       (reify
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
+        (setx [_ x] (when (and (some? x)
+                               (not (identical? x ctxt)))
+                      (.clear ctxt)
+                      (.copy ctxt x)))
+        (getx [_] ctxt)
 
         Muble
 
