@@ -14,41 +14,42 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.impl.ext
 
   (:require
-    [czlab.xlib.files :refer [readOneFile writeOneFile fileRead?]]
-    [czlab.xlib.str :refer [toKW stror lcase strim]]
-    [czlab.dbio.connect :refer [dbioConnectViaPool]]
     [czlab.xlib.resources :refer [loadResource]]
+    [czlab.xlib.scheduler :refer [scheduler<>]]
+    [czlab.xlib.str :refer [stror lcase strim]]
     [czlab.xlib.format :refer [readEdn]]
-    [czlab.skaro.core.wfs :refer [wrapPTask newJob simPTask]]
-    [czlab.crypto.codec :refer [pwdify]]
+    [czlab.crypto.codec :refer [passwd<>]]
+    [czlab.dbio.connect :refer [dbopen<+>]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
+    [czlab.xlib.files
+     :refer [writeFile
+             readFile
+             fileRead?]]
     [czlab.xlib.core
-     :refer [mubleObj!
+     :refer [loadJavaProps
+             convToJava
+             muble<>
              doto->>
              juid
              fpath
              cast?
              trap!
-             trycr
-             convToJava
+             try!!
              nbf
-             nextLong
-             loadJavaProps
-             subsVar
-             convLong bytesify]]
-    [czlab.xlib.scheduler :refer [mkScheduler]]
+             seqlong
+             convLong
+             bytesify]]
     [czlab.dbio.core
-     :refer [mkJdbc
-             mkMetaCache
-             mkDbPool
-             mkDbSchema]])
+     :refer [dbspec<>
+             dbpool<>
+             dbschema<>]])
 
   (:use
     [czlab.skaro.core.consts]
@@ -66,34 +67,41 @@
     [czlab.skaro.core.sys])
 
   (:import
-    [czlab.dbio MetaCache Schema JDBCPool DBAPI]
-    [czlab.skaro.server CLJShim
-     Context
-     Cocoon ConfigError]
+    [czlab.server EventEmitter ServiceHandler]
+    [czlab.skaro.runtime AppMain AppManifest]
     [czlab.skaro.etc PluginFactory Plugin]
-    [freemarker.template Configuration
+    [czlab.dbio Schema JDBCPool DBAPI]
+    [java.io File StringWriter]
+    [czlab.skaro.server
+     CLJShim
+     Context
+     Container
+     ConfigError]
+    [freemarker.template
+     Configuration
      Template
      DefaultObjectWrapper]
     [java.util Locale]
     [java.net URL]
-    [java.io File StringWriter]
-    [czlab.skaro.runtime AppMain PODMeta]
-    [czlab.xlib Versioned
+    [czlab.xlib
+     Versioned
      Hierarchial
-     XData Schedulable CU
-     Muble I18N
-     Morphable Activable
-     Startable Disposable Identifiable]
-
-    [czlab.wflow.server Emitter
-     ServiceHandler]
+     XData
+     Schedulable
+     CU
+     Muble
+     I18N
+     Morphable
+     Activable
+     Startable
+     Disposable
+     Identifiable]
     [czlab.skaro.server
      Registry
      Service
      Component
      ServiceError]
-    [czlab.skaro.io IOEvent]
-    [czlab.wflow.dsl Activity Job]))
+    [czlab.skaro.io IOEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -103,73 +111,77 @@
 (defn getAppKeyFromEvent
 
   "Get the secret application key"
-
   ^String
   [^IOEvent evt]
 
-  (let [^Cocoon c (.. evt emitter container)]
+  (let [^Container c (.. evt emitter container)]
     (.getAppKey c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A Service is an instance of a Block, that is, an instance of an event
 ;; emitter
-(defn- serviceBlock ""
+(defn- serviceBlock
 
-  ^Emitter
+  ""
+  ^EventEmitter
   [^Identifiable bk ctr nm cfg0]
 
-  (let [pkey (-> ^Cocoon ctr (.getAppKey))
+  (let [pkey (.getAppKey ^Container ctr)
         cfg (-> ^Muble bk
                 (.getv :dftOptions)
                 (merge cfg0))
         hid (:handler cfg)
         eid (.id bk)
-        obj (mkEmitter ctr eid nm)
+        obj (emitter<> ctr eid nm)
         mm (meta obj)]
     (log/info "about to synthesize an emitter: %s" eid)
     (log/info "emitter meta: %s" mm)
-    (log/info "is emitter = %s" (isa? (:typeid mm)
-                                      :czc.skaro.io/Emitter))
+    (log/info "emitter = %s"
+              (isa? (:typeid mm)
+                    :czlab.skaro.io/EventEmitter))
     (log/info "config params =\n%s" cfg)
-    (synthesizeComponent obj
-                         {:ctx ctr
-                          :props (assoc cfg :appkey pkey) })
+    (comp->synthesize obj
+                      {:ctx ctr
+                       :props (assoc cfg :appkey pkey) })
 
-    (log/info "emitter synthesized - ok. handler => %s" hid)
+    (log/info "emitter - ok. handler => %s" hid)
     obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeGetDBPool ""
+(defn- maybeGetDBPool
 
+  ""
   ^JDBCPool
   [^Muble co ^String gid]
 
-  (let [dk (stror gid DEF_DBID) ]
+  (let [dk (stror gid DEF_DBID)]
     (-> (.getv co K_DBPS)
         (get (keyword dk)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeGetDBAPI ""
+(defn- maybeGetDBAPI
 
+  ""
   ^DBAPI
   [^Muble co ^String gid]
 
   (let [mcache (.getv co K_MCACHE)
-        p (maybeGetDBPool co gid) ]
+        p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
     (when (some? p)
-      (dbioConnectViaPool p mcache {}))))
+      (dbopen<+> p mcache {}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- releaseSysResources ""
+(defn- releaseSysResources
 
+  ""
   [^Muble co]
 
   (let [^Schedulable sc (.getv co K_SCHEDULER)
-        dbs (.getv co K_DBPS) ]
+        dbs (.getv co K_DBPS)]
     (log/info "container releasing all system resources")
     (when (some? sc) (.dispose sc))
     (doseq [[k v] dbs]
@@ -178,55 +190,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- appContainer ""
+(defn- appContainer
 
-  ^Cocoon
-  [^PODMeta pod options]
+  ""
+  ^Container
+  [^AppManifest pod options]
 
   (log/info "creating an app-container: %s" (.id ^Identifiable pod))
   (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
         ftlCfg (genFtlConfig :root pub)
-        impl (mubleObj!)
-        ctxt (atom (mubleObj!)) ]
+        impl (muble<>)
+        ctxt (muble<>)]
     (with-meta
       (reify
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
+        (getx [_] ctxt)
 
-        Muble
+        MubleParent
 
-        (setv [_ a v] (.setv impl a v) )
-        (unsetv [_ a] (.unsetv impl a) )
-        (getv [_ a] (.getv impl a) )
-        (seq [_])
-        (clear [_] (.clear impl))
-        (toEDN [_] (.toEDN impl))
+        (muble [_] impl)
 
-        Cocoon
+        Container
 
         (getAppKeyBits [this] (bytesify (.getAppKey this)))
         (getAppDir [this] (.getv this K_APPDIR))
         (getAppKey [_] (.appKey pod))
-        (getName [_] (.moniker pod))
-
+        (name [_] (.name pod))
         (getCljRt [_] (.getv impl :cljshim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
         (loadTemplate [_ tpath ctx]
-          (let [tpl (str tpath)
-                ts (str (if (.startsWith tpl "/") "" "/") tpl)
-                out (renderFtl ftlCfg ts ctx)]
-            {:data (XData. out)
-             :ctype (cond
-                      (.endsWith tpl ".json") "application/json"
-                      (.endsWith tpl ".xml") "application/xml"
-                      (.endsWith tpl ".html") "text/html"
-                      :else "text/plain")} ))
+          (let
+            [tpl (str tpath)
+             ts (str (if (.startsWith tpl "/") "" "/") tpl)
+             out (renderFtl ftlCfg ts ctx)]
+            {:data (xdata<> out)
+             :ctype
+             (cond
+               (.endsWith tpl ".json") "application/json"
+               (.endsWith tpl ".xml") "application/xml"
+               (.endsWith tpl ".html") "text/html"
+               :else "text/plain")} ))
 
         (isEnabled [_]
           (let [env (.getv impl K_ENVCONF)
@@ -308,15 +316,16 @@
             (log/info "container dispose() - main app disposed")
             (releaseSysResources this) )))
 
-    {:typeid (toKW "czc.skaro.ext" "Cocoon") })))
+    {:typeid ::Container})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyService ""
+(defn- service<>
 
+  ""
   [^Context co svc nm cfg]
 
-  (let [^Muble ctx (.getx co)
+  (let [ctx (.getx co)
         bks (-> ^Registry
                 (.getv ctx K_COMPS)
                 (.lookup K_BLOCKS))
@@ -329,7 +338,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyOneService ""
+(defn- oneService<>
 
   [^Muble co nm cfg]
 
@@ -338,69 +347,71 @@
         cfg ]
     (if-not (or (false? enabled)
                 (empty? service))
-      (->> (reifyService co service nm cfg)
+      (->> (service<> co service nm cfg)
            (.reg srg )))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- reifyServices  ""
+(defn- services<>
 
+  ""
   [^Muble co]
 
   (let [env (.getv co K_ENVCONF)
         s (:services env) ]
     (if-not (empty? s)
       (doseq [[k v] s]
-        (reifyOneService co k v)))))
+        (oneService<> co k v)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
 (defn mkContainer
 
   "Create an application container"
-
-  ^Cocoon
+  ^Container
   [^Context pod]
 
-  (let [url (-> ^PODMeta pod (.srcUrl))
+  (let [url (.content ^AppManifest pod)
         ps {K_APPDIR (io/file url)}
         ctx (.getx pod)
         c (appContainer pod ps)]
-
     (->>
       (-> ^Registry
           (.getv ctx K_COMPS)
           (.lookup K_APPS))
-      (compCompose c ))
-    (compContextualize c ctx)
-    (compConfigure c ps)
-    (compInitialize c)
-    (-> ^Startable c (.start ))
+      (comp->compose c))
+    (comp->contextualize c ctx)
+    (comp->configure c ps)
+    (comp->initialize c)
+    (.start ^Startable c)
     c))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseConfile ""
+(defn- parseConfile
 
+  ""
   [^File appDir ^String conf]
 
-  (-> (readOneFile (io/file appDir conf))
+  (-> (readFile (io/file appDir conf))
       (subsVar)
       (cs/replace "${appdir}" (fpath appDir))
       (readEdn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.ext/Cocoon
+(defmethod comp->configure
 
+  :czlab.skaro.impl.ext/Container
   [^Muble co props]
 
-  (let [srg (reifyRegistry :EventSources K_SVCS "1.0" co)
+  (let [srg (registry<> ::EventEmitters K_SVCS "1.0" co)
         appDir (K_APPDIR props)
         cfgDir (io/file appDir DN_CONF)
         envConf (parseConfile appDir CFG_ENV_CF)
-        appConf (parseConfile appDir CFG_APP_CF) ]
+        appConf (parseConfile appDir CFG_APP_CF)]
     ;; make registry to store services
-    (synthesizeComponent srg {})
+    (comp->synthesize srg {})
     ;; store references to key attributes
     (doto co
       (.setv K_APPDIR appDir)
@@ -411,8 +422,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doCljApp ""
+(defn- doCljApp
 
+  ""
   [ctr opts ^AppMain obj]
 
   (.contextualize obj ctr)
@@ -421,8 +433,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fmtPluginFname ""
+(defn- fmtPluginFname
 
+  ""
   ^File
   [^String v ^File appDir]
 
@@ -431,34 +444,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- pluginInited? ""
+(defn- pluginInited?
 
+  ""
   [v appDir]
 
   (.exists (fmtPluginFname v appDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postInitPlugin ""
+(defn- postInitPlugin
 
+  ""
   [^String v ^File appDir]
 
-  (let [pfile (fmtPluginFname v appDir) ]
-    (writeOneFile pfile "ok")
+  (let [pfile (fmtPluginFname v appDir)]
+    (writeFile pfile "ok")
     (log/info "initialized plugin: %s" v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doOnePlugin ""
+(defn- doOnePlugin
 
+  ""
   ^Plugin
   [^Muble co ^String v ^File appDir env app]
 
   (let [^CLJShim rts (.getv co :cljshim)
-        pf (trycr nil (.call rts v))
-        u (when (instance? PluginFactory pf)
+        pf (try!! nil (.call rts v))
+        u (when (inst? PluginFactory pf)
             (.createPlugin ^PluginFactory pf
-                           ^Cocoon co)) ]
+                           ^Container co))]
     (when-some [^Plugin p (cast? Plugin u)]
       (log/info "calling plugin-factory: %s" v)
       (.configure p { :env env :app app })
@@ -474,8 +490,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- splitPoolSize ""
+(defn- splitPoolSize
 
+  ""
   [^String s]
 
   (let [pos (.indexOf s (int \:)) ]
@@ -486,9 +503,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeInitDBs ""
+(defn- maybeInitDBs
 
-  [^Cocoon co env app]
+  ""
+  [^Container co env app]
 
   (with-local-vars [p (transient {}) ]
     (let [cfg (get-in env [:databases :jdbc])
@@ -496,7 +514,7 @@
       (doseq [[k v] cfg]
         (when-not (false? (:status v))
           (let [[t c]
-                (splitPoolSize (str (:poolsize v))) ]
+                (splitPoolSize (str (:poolsize v)))]
             (var-set p
                      (->> (mkDbPool
                             (mkJdbc k v

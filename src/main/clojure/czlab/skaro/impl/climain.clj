@@ -20,33 +20,45 @@
 
   (:require
     [czlab.netty.discarder :refer [discardHTTPD<>]]
+    [czlab.xlib.files :refer [readFile writeFile]]
+    [czlab.xlib.scheduler :refer [scheduler<>]]
     [czlab.xlib.str :refer [lcase hgl? strim]]
+    [czlab.xlib.resources :refer [getResource]]
+    [czlab.xlib.meta :refer [setCldr getCldr]]
+    [czlab.skaro.impl.exec :refer [execvisor]]
+    [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.io :refer [closeQ]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.process
-     :refer [jvmInfo processPid safeWait thread<>]]
-    [czlab.xlib.resources :refer [getResource]]
-    [czlab.xlib.meta :refer [setCldr getCldr]]
-    [czlab.xlib.format :refer [readEdn]]
-    [czlab.xlib.files
-     :refer [readFile writeFile]]
-    [czlab.xlib.scheduler :refer [scheduler<>]]
+     :refer [processPid
+             exitHook
+             jvmInfo
+             safeWait
+             thread<>]]
     [czlab.xlib.core
-     :refer [test-nonil test-cond convLong sysProp
-             fpath printMutableObj mubleObj!]]
-    [czlab.skaro.impl.exec :refer [execvisor]]
+     :refer [test-nonil
+             test-cond
+             convLong
+             sysProp
+             inst?
+             fpath
+             muble<>
+             printMutableObj]]
     [czlab.netty.io :refer [stopServer]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.xlib.consts]
         [czlab.skaro.core.sys]
-        [czlab.skaro.core.wfs]
         [czlab.skaro.impl.dfts])
 
   (:import
-    [io.netty.channel Channel ChannelFuture ChannelFutureListener]
+    [io.netty.bootstrap ServerBootstrap]
     [czlab.skaro.runtime ExecvisorAPI]
+    [io.netty.channel
+     Channel
+     ChannelFuture
+     ChannelFutureListener]
     [czlab.skaro.server
      Component
      CLJShim
@@ -57,25 +69,16 @@
      RootClassLoader
      ExecClassLoader]
     [czlab.xlib
-     Versioned
      Identifiable
+     Versioned
      Disposable
      Activable
      Hierarchial
      Startable
-     Schedulable
      Muble
-     I18N]
+     I18N
+     Schedulable]
     [java.io File]
-    [czlab.wflow
-     Job
-     Step
-     TaskDef
-     Nihil]
-    [io.netty.bootstrap ServerBootstrap]
-    [czlab.wflow.server
-     ServerLike
-     ServiceHandler]
     [czlab.skaro.etc CmdHelpError]
     [java.util ResourceBundle Locale]))
 
@@ -90,7 +93,7 @@
 ;;
 (defn- inizContext
 
-  "The context object has a set of properties, such as home dir, which
+  "Context has a set of props, such as home dir, which
    is shared with other key components"
 
   ^Muble
@@ -115,7 +118,7 @@
 
   (let [pid (.getv ctx K_PIDFILE)
         kp (.getv ctx K_KILLPORT)
-        execv (.getv ctx K_EXECV) ]
+        execv (.getv ctx K_EXECV)]
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
@@ -129,7 +132,7 @@
       (when (some? execv) (.stop ^Startable execv))
       (log/info "skaro stopped")
       (log/info "vm shut down")
-      (log/info "\"goodbye\""))))
+      (log/info "(bye)"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -168,9 +171,8 @@
   ^Muble
   [^Muble ctx]
 
-  (->> (thread<> #(stopCLI ctx) false)
-       (.addShutdownHook (Runtime/getRuntime)))
   (enableRemoteShutdown ctx)
+  (exitHook #(stopCLI ctx))
   (log/info "added shutdown hook")
   ctx)
 
@@ -202,7 +204,8 @@
         cli {:stop #(stopCLI ctx) }
         wc (.getv ctx K_PROPS)
         cz (get-in wc [K_COMPS K_EXECV])]
-    (test-cond "conf file:execvisor" (= cz "czlab.skaro.impl.Execvisor"))
+    (test-cond "conf file:execvisor"
+               (= cz "czlab.skaro.impl.Execvisor"))
     (log/info "inside primodial() ----------------------------->")
     (log/info "execvisor = %s" cz)
     (let [execv (execvisor cli)]

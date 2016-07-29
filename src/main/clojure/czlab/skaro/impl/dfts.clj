@@ -20,10 +20,10 @@
 
   (:require
     [czlab.xlib.core
-     :refer [nextLong
+     :refer [test-cond
+             seqLong
              trap!
-             test-cond
-             mubleObj!
+             muble<>
              test-nestr]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.logging :as log]
@@ -37,8 +37,9 @@
 
   (:import
     [czlab.skaro.loaders AppClassLoader]
-    [czlab.skaro.runtime PODMeta]
+    [czlab.skaro.runtime AppManifest]
     [czlab.xlib
+     MubleParent
      Versioned
      Muble
      I18N
@@ -89,8 +90,8 @@
   ^File
   [^Muble m kn]
 
-  (let [v (.getv m kn) ]
-    (condp instance? v
+  (let [v (.getv m kn)]
+    (condp inst? v
       String (io/file v)
       File v
       (trap! ConfigError (rstr (I18N/getBase)
@@ -107,31 +108,22 @@
   [regoType regoId ver parObj]
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
-  (let [impl (mubleObj! {:cache {} })
-        ctxt (mubleObj!)]
+  (let [impl (muble<> {:cache {} })
+        ctxt (muble<>)]
     (with-meta
       (reify
-
-        Context
-
-        (setx [_ x] (when (and (some? x)
-                               (not (identical? x ctxt)))
-                      (.clear ctxt)
-                      (.copy ctxt x)))
-        (getx [_] ctxt)
-
-        Muble
-
-        (setv [_ a v] (.setv impl a v) )
-        (unsetv [_ a] (.unsetv impl a) )
-        (getv [_ a] (.getv impl a) )
-        (seq [_] )
-        (clear [_] (.clear impl))
-        (toEDN [_] (.toEDN impl))
 
         Hierarchial
 
         (parent [_] parObj)
+
+        MubleParent
+
+        (muble [_] impl)
+
+        Context
+
+        (getx [_] ctxt)
 
         Component
 
@@ -146,76 +138,68 @@
               (some? )))
 
         (lookup [_ cid]
-          (let [cache (.getv impl :cache)
-                c (get cache cid) ]
+          (let [cc (.getv impl :cache)
+                c (get cc cid)]
             (if (and (nil? c)
-                     (instance? Registry parObj))
-              (-> ^Registry parObj (.lookup cid))
+                     (inst? Registry parObj))
+              (.lookup ^Registry parObj cid)
               c)))
 
         (dereg [this c]
           (let [cid (if (nil? c)
                       nil
                       (.id  ^Identifiable c))
-                cache (.getv impl :cache) ]
+                cc (.getv impl :cache)]
             (when (.has this cid)
-              (.setv impl :cache (dissoc cache cid)))))
+              (.setv impl :cache (dissoc cc cid)))))
 
         (reg [this c]
           (let [cid (if (nil? c)
                       nil
                       (.id  ^Identifiable c))
-                cache (.getv impl :cache) ]
+                cc (.getv impl :cache)]
             (when (.has this cid)
-              (trap! RegistryError (rstr (I18N/getBase)
-                                           "skaro.dup.cmp" cid)))
-            (.setv impl :cache (assoc cache cid c))))
+              (trap! RegistryError
+                     (rstr (I18N/getBase)
+                           "skaro.dup.cmp" cid)))
+            (.setv impl :cache (assoc cc cid c))))
 
         (iter [_]
-          (let [cache (.getv impl :cache) ]
-            (seq cache))) )
+          (let [cc (.getv impl :cache)]
+            (seq cc))))
 
-      {:typeid (toKW "czc.skaro.impl" (name regoType))})))
+      {:typeid (asFQKeyword (name regoType))})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn podMeta
 
   "Create metadata for an application bundle"
-
   [app info pathToPOD]
-
   {:pre [(map? info)]}
 
   (let [{:keys [disposition version main]
          :or {main "noname"
               version "1.0"}}
         info
-        pid (str main "#" (nextLong))
-        impl (mubleObj!)
-        ctxt (atom (mubleObj!)) ]
-
+        pid (str main "#" (seqLong))
+        impl (muble<>)
+        ctxt (muble<>)]
     (log/info (str "pod-meta: app=%s\n"
                    "ver=%s\ntype=%s\n"
                    "key=%s\npath=%s")
               app version
-              main disposition pathToPOD )
+              main disposition pathToPOD)
     (with-meta
       (reify
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
+        (getx [_] ctxt)
 
-        Muble
+        MubleParent
 
-        (setv [_ a v] (.setv impl a v) )
-        (unsetv [_ a] (.unsetv impl a) )
-        (getv [_ a] (.getv impl a) )
-        (seq [_])
-        (clear [_] (.clear impl))
-        (toEDN [_ ] (.toEDN impl))
+        (muble [_] impl)
 
         Component
 
@@ -226,14 +210,14 @@
 
         (parent [_] nil)
 
-        PODMeta
+        AppManifest
 
-        (srcUrl [_] pathToPOD)
-        (moniker [_] app)
         (appKey [_] disposition)
+        (content [_] pathToPOD)
+        (name [_] app)
         (typeof [_] main))
 
-      {:typeid (toKW "czc.skaro.impl" "PODMeta") })))
+      {:typeid ::AppManifest})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

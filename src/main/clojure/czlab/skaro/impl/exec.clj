@@ -14,30 +14,34 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.impl.exec
 
   (:require
-    [czlab.xlib.files
-     :refer [mkdirs
-             readOneUrl
-             listFiles]]
-    [czlab.xlib.str :refer [strim hgl? toKW]]
-    [czlab.xlib.mime :refer [setupCache]]
-    [czlab.xlib.process :refer [safeWait]]
-    [czlab.xlib.format :refer [readEdn]]
     [czlab.skaro.impl.dfts :refer [podMeta]]
+    [czlab.xlib.process :refer [safeWait]]
+    [czlab.xlib.str :refer [strim hgl?]]
+    [czlab.xlib.mime :refer [setupCache]]
+    [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
+    [czlab.xlib.files
+     :refer [basename
+             mkdirs
+             readUrl
+             listFiles]]
     [czlab.xlib.core
-     :refer [test-nestr fpath
-             tryletc
-             tryc
-             newRandom
+     :refer [test-nestr
+             srandom<>
+             fpath
+             trylet!
+             try!
              getCwd
              convLong
-             mubleObj! juid test-nonil]])
+             muble<>
+             juid
+             test-nonil]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.skaro.core.sys]
@@ -46,25 +50,28 @@
         [czlab.skaro.impl.ext])
 
   (:import
-    [org.apache.commons.io.filefilter DirectoryFileFilter]
-    [org.apache.commons.io FilenameUtils]
-    [czlab.skaro.runtime ExecvisorAPI
-     JMXServer
-     PODMeta
-     EmitMeta]
     [czlab.skaro.loaders AppClassLoader]
-    [java.io File FileFilter]
     [java.security SecureRandom]
+    [java.io File FileFilter]
     [java.util.zip ZipFile]
+    [czlab.skaro.runtime
+     ExecvisorAPI
+     AppManifest
+     JMXServer
+     EmitterManifest]
     [java.net URL]
     [java.util Date]
-    [czlab.xlib Muble
-     Startable
+    [czlab.xlib
      Disposable
+     Startable
+     Muble
      Versioned
-     Hierarchial Identifiable]
-    [czlab.skaro.server Context
-     Component Registry]))
+     Hierarchial
+     Identifiable]
+    [czlab.skaro.server
+     Context
+     Component
+     Registry]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -78,11 +85,10 @@
 (defn- inspectApp
 
   "Make sure the app setup is kosher"
-
-  ^PODMeta
+  ^AppManifest
   [^Context execv ^File des]
 
-  (let [app (FilenameUtils/getBaseName (fpath des)) ]
+  (let [app (basename des)]
     (log/info "app dir : %s" des)
     (log/info "inspecting...")
     (precondFile (io/file des CFG_APP_CF)
@@ -90,24 +96,21 @@
     (precondDir (io/file des DN_CONF)
                 (io/file des DN_CFG))
     (let [ps (readEdn (io/file des CFG_APP_CF))
-          ^Muble ctx (.getx execv)
+          ctx (.getx execv)
           ^Registry
           apps (-> ^Registry
                    (.getv ctx K_COMPS)
                    (.lookup K_APPS))
-          info (:info ps) ]
-
+          info (:info ps)]
       (log/info "checking conf for app: %s\n%s" app info)
-
       ;; synthesize the pod meta component and register it
       ;; as a application
       (let [^Context
             m (-> (podMeta app
                            info
                            (io/as-url des))
-                  (synthesizeComponent {:ctx ctx})) ]
-        (-> ^Muble
-            (.getx m)
+                  (comp->synthesize {:ctx ctx}))]
+        (-> (.getx m)
             (.setv K_EXECV execv))
         (.reg apps m)
         m))))
@@ -117,18 +120,17 @@
 (defn- startJmx
 
   "Basic JMX support"
-
   [^Context co cfg]
 
   (log/info "jmx-config: %s" cfg)
-  (tryletc
+  (trylet!
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
-     jmx (mkJmxServer host)]
+     jmx (jmxServer<> host)]
     (.setRegistryPort jmx (int port))
-    (-> ^Startable jmx (.start))
+    (.start ^Startable jmx)
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
-    (-> ^Muble (.getx co)
+    (-> (.getx co)
         (.setv K_JMXSVR jmx))
     (log/info "jmx-server listening on: %s:%s" host port)))
 
@@ -137,40 +139,40 @@
 (defn- stopJmx
 
   "Kill the internal JMX server"
-
   [^Context co]
 
-  (tryletc
-    [^Muble ctx (.getx co)
-     ^Startable
-     jmx (.getv ctx K_JMXSVR) ]
+  (trylet!
+    [ctx (.getx co)
+     jmx (.getv ctx K_JMXSVR)]
     (when (some? jmx)
-      (.stop jmx))
+      (.stop ^Startable jmx))
     (.setv ctx K_JMXSVR nil))
   (log/info "jmx connection terminated"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ignitePod ""
+(defn- ignitePod
 
-  [^Muble co ^PODMeta pod]
+  ""
+  [^Muble co ^AppManifest pod]
 
-  (tryletc
-    [cache (.getv co K_CONTAINERS)
-     cid (.id ^Identifiable pod)
-     app (.moniker pod)
+  (trylet!
+    [cid (.id ^Identifiable pod)
+     cc (.getv co K_CONTAINERS)
+     app (.name pod)
      ctr (mkContainer pod)]
     (log/debug "start pod\ncid = %s\napp = %s" cid app)
-    (.setv co K_CONTAINERS (assoc cache cid ctr))))
+    (.setv co K_CONTAINERS (assoc cc cid ctr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stopPods ""
+(defn- stopPods
 
+  ""
   [^Muble co]
 
   (log/info "preparing to stop pods...")
-  (let [cs (.getv co K_CONTAINERS) ]
+  (let [cs (.getv co K_CONTAINERS)]
     (doseq [[k v] cs]
       (.stop ^Startable v)
       (.dispose ^Disposable v))
@@ -178,16 +180,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn execvisor
+(defn execvisor<>
 
   "Create a ExecVisor"
-
   ^ExecvisorAPI
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
-  (let [impl (mubleObj! {K_CONTAINERS {}})
-        ctxt (atom (mubleObj!)) ]
+  (let [impl (muble<> {K_CONTAINERS {}})
+        ctxt (muble<>)]
     (with-meta
       (reify
 
@@ -205,26 +206,20 @@
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
+        (getx [_] ctxt)
 
-        Muble
+        MubleParent
 
-        (setv [_ a v] (.setv impl a v) )
-        (unsetv [_ a] (.unsetv impl a) )
-        (getv [_ a] (.getv impl a) )
-        (seq [_] )
-        (clear [_] (.clear impl))
-        (toEDN [_ ] (.toEDN impl))
+        (muble [_] impl)
 
         ExecvisorAPI
 
         (getUpTimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (getStartTime [_] START-TIME)
+        (kill9 [this] ((:stop parObj)))
         (homeDir [this] (maybeDir (.getx this) K_BASEDIR))
         (confDir [this] (maybeDir (.getx this) K_CFGDIR))
         (blocksDir [this] (maybeDir (.getx this) K_BKSDIR))
-        (kill9 [this] (.stop ^Startable parObj))
 
         Startable
 
@@ -236,37 +231,40 @@
           (stopJmx this)
           (stopPods this)) )
 
-       {:typeid (toKW "czc.skaro.impl" "ExecVisor") })))
+       {:typeid ::ExecVisor})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.impl/PODMeta
+(defmethod comp->initialize
 
-  [^Muble co]
+  :czlab.skaro.impl/AppManifest
+  [co]
 
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.impl/ExecVisor
+(defmethod comp->initialize
 
+  :czlab.skaro.impl/ExecVisor
   [^Context co]
 
-  (let [^Muble ctx (.getx co)
+  (let [ctx (.getx co)
         base (.getv ctx K_BASEDIR)
         cf (.getv ctx K_PROPS)
         comps (K_COMPS cf)
         regs (K_REGS cf)
-        jmx  (K_JMXMGM cf) ]
+        jmx  (K_JMXMGM cf)]
 
     (log/info "initializing component: ExecVisor: %s" co)
     (test-nonil "conf file: components" comps)
     (test-nonil "conf file: registries" regs)
     (test-nonil "conf file: jmx mgmt" jmx)
 
-    (setupCache (-> (io/file base DN_CFG
-                             "app/mime.properties")
-                    (io/as-url)))
+    (->> "app/mime.properties"
+         (io/file base DN_CFG)
+         (io/as-url)
+         (setupCache ))
 
     (System/setProperty "file.encoding" "utf-8")
 
@@ -278,9 +276,9 @@
       (doto ctx
         (.setv K_BKSDIR bks)))
 
-    (let [root (reifyRegistry :SystemRegistry K_COMPS "1.0" co)
-          bks (reifyRegistry :BlocksRegistry K_BLOCKS "1.0" nil)
-          apps (reifyRegistry :AppsRegistry K_APPS "1.0" nil)
+    (let [root (registry<> :SystemRego K_COMPS "1.0" co)
+          bks (registry<> :BlocksRego K_BLOCKS "1.0" nil)
+          apps (registry<> :AppsRego K_APPS "1.0" nil)
           options {:ctx ctx} ]
 
       (.setv ctx K_COMPS root)
@@ -290,24 +288,25 @@
         (.reg apps)
         (.reg bks))
 
-      (synthesizeComponent root options)
-      (synthesizeComponent bks options)
-      (synthesizeComponent apps options))
+      (comp->synthesize root options)
+      (comp->synthesize bks options)
+      (comp->synthesize apps options))
 
     (startJmx co jmx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeBlockMeta ""
+(defn- blockMeta<>
 
+  ""
   ;; url points to block-meta file
   [blockType data ^URL url]
 
-  (let [ctxt (atom (mubleObj!))
+  (let [ctxt (muble<>)
         {:keys [info conf]}
         data
-        impl (mubleObj! {:metaInfo info
-                         :dftOptions conf})]
+        impl (muble<> {:metaInfo info
+                       :dftOptions conf})]
     (with-meta
       (reify
 
@@ -317,17 +316,11 @@
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
+        (getx [_] ctxt)
 
-        Muble
+        MubleParent
 
-        (setv [_ a v] (.setv impl a v) )
-        (unsetv [_ a] (.unsetv impl a) )
-        (getv [_ a] (.getv impl a) )
-        (seq [_] )
-        (clear [_] (.clear impl))
-        (toEDN [_ ] (.toEDN impl))
+        (muble [_] impl)
 
         Component
 
@@ -335,20 +328,21 @@
 
         (id [_] blockType)
 
-        EmitMeta
+        EmitterManifest
 
         (isEnabled [_] (not (false? (:enabled info))))
 
-        (getName [_] (:name info))
+        (name [_] (:name info))
 
-        (metaUrl [_] url) )
+        (content [_] url) )
 
-      {:typeid (toKW "czc.skaro.impl" "EmitMeta") })))
+      {:typeid ::EmitterManifest})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
-(defmethod compConfigure :czc.skaro.impl/EmitMeta
+(defmethod comp->configure
 
+  :czlab.skaro.impl/EmitterManifest
   [^Muble co props]
 
   (when (some? props)
@@ -360,38 +354,40 @@
 ;; Blocks are emitters,  each block has a meta data file describing
 ;; its functions and features
 ;; This registry loads these meta files and adds them to the registry
-(defmethod compInitialize :czc.skaro.impl/BlocksRegistry
+(defmethod comp->initialize
 
+  :czlab.skaro.impl/BlocksRego
   [^Context co]
 
-  (log/info "compInitialize: BlocksRegistry: \"%s\"" (.id ^Identifiable co))
-  (let [^Muble ctx (.getx co)
+  (log/info "comp->initialize: BlocksRego \"%s\"" (.id ^Identifiable co))
+  (let [ctx (.getx co)
         bDir (.getv ctx K_BKSDIR)
         fs (listFiles bDir "edn") ]
-    (doseq [^File f fs]
+    (doseq [f fs]
       (doseq [[k v] (readEdn f)
-              :let [^Muble
-                    b (-> (makeBlockMeta k v (io/as-url f))
-                          (synthesizeComponent {:props v})) ]]
+              :let [b (-> (blockMeta<> k v (io/as-url f))
+                          (comp->synthesize {:props v}))]]
         (.reg ^Registry co b)
         (log/info "added one block: %s" (.id ^Identifiable b)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.impl/SystemRegistry
+(defmethod comp->initialize
 
+  :czlab.skaro.impl/SystemRego
   [co]
 
-  (log/info "compInitialize: SystemRegistry: \"%s\"" (.id ^Identifiable co))
+  (log/info "comp->initialize: SystemRego: \"%s\"" (.id ^Identifiable co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.impl/AppsRegistry
+(defmethod comp->initialize
 
+  :czlab.skaro.impl/AppsRego
   [co]
 
-  (log/info "compInitialize: AppsRegistry: \"%s\"" (.id ^Identifiable co))
+  (log/info "comp->initialize: AppsRego: \"%s\"" (.id ^Identifiable co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
