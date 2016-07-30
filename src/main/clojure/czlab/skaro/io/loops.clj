@@ -19,8 +19,8 @@
   czlab.skaro.io.loops
 
   (:require
+    [czlab.xlib.core :refer [inst? seqint2 spos? try!]]
     [czlab.xlib.process :refer [async! safeWait]]
-    [czlab.xlib.core :refer [seqint2 spos? try!]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
@@ -48,70 +48,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-repeat-timer
+(defn- configRepeatTimer
 
   ""
-  [^Timer tm delays
-   ^long intv
-   func]
+  [^Timer tm delays ^long intv func]
 
-  (let [[^Date dw ^long ds]
-        delays
-        tt (proxy [TimerTask][]
-             (run []
-               (tryc (func)))) ]
-
-    (when (instance? Date dw)
-      (.schedule tm tt dw intv))
-    (when (number? ds)
-      (.schedule tm tt ds intv))))
+  (let [tt (tmtask<> func)
+        [dw ds] delays]
+    (when (inst? Date dw)
+      (.schedule tm tt ^Date dw intv))
+    (when (spos? ds)
+      (.schedule tm tt ^long ds intv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- configTimer ""
+(defn- configTimer
 
+  ""
   [^Timer tm delays func]
 
-  (let [[^Date dw ^long ds]
-        delays
-        tt (proxy [TimerTask][]
-             (run []
-               (func))) ]
-
-    (when (instance? Date dw)
-      (.schedule tm tt dw) )
-    (when (number? ds)
-      (.schedule tm tt ds))))
+  (let [ tt (tmtask<> func)
+        [dw ds] delays]
+    (when (inst? Date dw)
+      (.schedule tm tt ^Date dw) )
+    (when (spos? ds)
+      (.schedule tm tt ^long ds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- configTimerTask ""
+(defn- configTimerTask
 
-  [^Muble co]
+  ""
+  [^Context co]
 
-  (let [{:keys [intervalMillis
+  (let [t (.getv (.getx co) :timer)
+        {:keys [intervalMillis
                 delayWhen
                 delayMillis]}
-        (.getv co :emcfg)
-        t (.getv co :timer)
+        (.getv (.getx co) :emcfg)
         func #(loopableWakeup co) ]
-    (if (number? intervalMillis)
-      (config-repeat-timer t
-                           [delayWhen delayMillis] intervalMillis func)
+    (if (spos? intervalMillis)
+      (configRepeatTimer
+        t
+        [delayWhen delayMillis] intervalMillis func)
       (configTimer t [delayWhen delayMillis] func))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn cfgLoopable ""
+(defn cfgLoopable
 
-  [^Muble co cfg]
+  ""
+  [^Context co cfg]
 
   (let [{:keys [intervalSecs
-                delaySecs delayWhen]}
-        cfg ]
+                delaySecs delayWhen]} cfg ]
     (with-local-vars [cpy (transient cfg)]
-      (if (instance? Date delayWhen)
+      (if (inst? Date delayWhen)
         (var-set cpy (assoc! @cpy :delayWhen delayWhen))
         (var-set cpy (assoc! @cpy
                              :delayMillis
@@ -121,39 +114,40 @@
         (var-set cpy (assoc! @cpy
                              :intervalMillis (* 1000 intervalSecs))))
       (-> (persistent! @cpy)
-          (dissoc :delaySecs)
-          (dissoc :intervalSecs)))))
+          (dissoc :delaySecs :intervalSecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start-timer ""
+(defn- startTimer
 
-  [^Muble co]
+  ""
+  [^Context co]
 
-  (.setv co :timer (Timer. true))
+  (.setv (.getx co) :timer (Timer. true))
   (loopableSchedule co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- kill-timer ""
+(defn- killTimer
 
-  [^Muble co]
+  ""
+  [^Context co]
 
-  (let [^Timer t (.getv co :timer) ]
-    (tryc
-      (when (some? t) (.cancel t)) )))
+  (when-some [t (.getv (.getx co) :timer)]
+    (try! (.cancel ^Timer t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Repeating Timer
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioReifyEvent :czc.skaro.io/RepeatingTimer
+(defmethod ioevent<>
 
-  [co & args]
+  ::RepeatingTimer
+  [^EventEmitter co & args]
 
-  (log/info "ioReifyEvent: RepeatingTimer: %s" (.id ^Identifiable co))
-  (let [eeid (nextLong) ]
+  (log/info "ioevent: RepeatingTimer: %s" (.id ^Identifiable co))
+  (let [eeid (seqint2)]
     (with-meta
       (reify
 
@@ -166,55 +160,61 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] nil)
         (getSession [_] nil)
-        (getId [_] eeid)
+        (id [_] eeid)
         (emitter [_] co)
         (isRepeating [_] true))
 
-      {:typeid :czc.skaro.io/TimerEvent })))
+      {:typeid ::TimerEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/RepeatingTimer
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::RepeatingTimer
+  [^Context co cfg0]
 
-  (log/info "compConfigure: RepeatingTimer: %s" (.id ^Identifiable co))
-  (->> (merge (.getv co :dftOptions) cfg0)
+  (log/info "comp->configure: RepeatingTimer: %s" (.id ^Identifiable co))
+  (->> (merge (.getv (.getx co) :dftOptions) cfg0)
        (cfgLoopable co )
-       (.setv co :emcfg )))
+       (.setv (.getx co) :emcfg ))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/RepeatingTimer
+(defmethod io->start
 
+  ::RepeatingTimer
   [co & args]
 
-  (log/info "ioStart: RepeatingTimer: %s" (.id ^Identifiable co))
-  (start-timer co)
-  (ioStarted co))
+  (log/info "iostart: RepeatingTimer: %s" (.id ^Identifiable co))
+  (startTimer co)
+  (io->started co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/RepeatingTimer
+(defmethod io->stop
 
+  ::RepeatingTimer
   [co & args]
 
-  (log/info "ioStop RepeatingTimer: %s" (.id ^Identifiable co))
-  (kill-timer co)
-  (ioStopped co))
+  (log/info "iostop RepeatingTimer: %s" (.id ^Identifiable co))
+  (killTimer co)
+  (io->stopped co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableWakeup :czc.skaro.io/RepeatingTimer
+(defmethod loopableWakeup
 
-  [^Emitter co & args]
+  ::RepeatingTimer
+  [^EventEmitter co & args]
 
-  (.dispatch co (ioReifyEvent co) {} ))
+  (.dispatch co (ioevent<> co) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableSchedule :default
+(defmethod loopableSchedule
 
+  :default
   [co & args]
 
   (configTimerTask co))
@@ -224,12 +224,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioReifyEvent :czc.skaro.io/OnceTimer
+(defmethod ioevent<>
 
-  [co & args]
+  ::OnceTimer
+  [^EventEmitter co & args]
 
-  (log/info "ioReifyEvent: OnceTimer: %s" (.id ^Identifiable co))
-  (let [eeid (nextLong) ]
+  (log/info "ioevent: OnceTimer: %s" (.id ^Identifiable co))
+  (let [eeid (seqint2) ]
     (with-meta
       (reify
 
@@ -242,51 +243,56 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] nil)
         (getSession [_] nil)
-        (getId [_] eeid)
+        (id [_] eeid)
         (emitter [_] co)
         (isRepeating [_] false))
 
-      {:typeid :czc.skaro.io/TimerEvent })))
+      {:typeid ::TimerEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/OnceTimer
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::OnceTimer
+  [^Context co cfg0]
 
-  (log/info "compConfigure: OnceTimer: %s" (.id ^Identifiable co))
+  (log/info "comp->configure: OnceTimer: %s" (.id ^Identifiable co))
   ;; get rid of interval millis field, if any
-  (let [cfg (merge (.getv co :dftOptions) cfg0)
+  (let [cfg (merge (.getv (.getx co) :dftOptions) cfg0)
         c2 (cfgLoopable co cfg) ]
-    (.setv co :emcfg (dissoc c2 :intervalMillis))))
+    (->> (dissoc c2 :intervalMillis)
+         (.setv (.getx co) :emcfg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/OnceTimer
+(defmethod io->start
 
+  ::OnceTimer
   [co & args]
 
   (log/info "ioStart OnceTimer: %s" (.id ^Identifiable co))
-  (start-timer co)
-  (ioStarted co))
+  (startTimer co)
+  (io->started co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/OnceTimer
+(defmethod io->stop
 
+  ::OnceTimer
   [co & args]
 
   (log/info "ioStop OnceTimer: %s" (.id ^Identifiable co))
-  (kill-timer co)
-  (ioStopped co))
+  (killTimer co)
+  (io->stopped co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableWakeup :czc.skaro.io/OnceTimer
+(defmethod loopableWakeup
 
-  [^Emitter co & args]
+  ::OnceTimer
+  [^EventEmitter co & args]
 
-  (.dispatch co (ioReifyEvent co) {} )
+  (.dispatch co (ioevent<> co) {} )
   (.stop ^Startable co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,16 +302,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableSchedule :czc.skaro.io/ThreadedTimer
+(defmethod loopableSchedule
 
-  [^Muble co & args]
+  ::ThreadedTimer
+  [^Context co & args]
 
   (let [{:keys [intervalMillis]}
-        (.getv co :emcfg)
+        (.getv (.getx co) :emcfg)
         loopy (atom true) ]
 
     (log/info "Threaded one timer - interval = %s" intervalMillis)
-    (.setv co :loopy loopy)
+    (.setv (.getx co) :loopy loopy)
     (async!
       #(while @loopy
          (loopableWakeup co intervalMillis))
@@ -313,41 +320,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableWakeup :czc.skaro.io/ThreadedTimer
+(defmethod loopableWakeup
 
+  ::ThreadedTimer
   [co & args]
 
-  (tryc (loopableOneLoop co) )
+  (try! (loopableOneLoop co) )
   (safeWait (first args) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/ThreadedTimer
+(defmethod io->start
 
-  [^Muble co & args]
+  ::ThreadedTimer
+  [^Context co & args]
 
-  (log/info "ioStart: ThreadedTimer: %s" (.id ^Identifiable co))
+  (log/info "iostart: ThreadedTimer: %s" (.id ^Identifiable co))
   (let [{:keys [intervalMillis delayMillis delayWhen]}
-        (.getv co :emcfg)
+        (.getv (.getx co) :emcfg)
         loopy (atom true)
         func #(loopableSchedule co) ]
-    (.setv co :loopy loopy)
-    (if (or (number? delayMillis)
-            (instance? Date delayWhen))
+    (.setv (.getx co) :loopy loopy)
+    (if (or (spos? delayMillis)
+            (inst? Date delayWhen))
       (configTimer (Timer.) [delayWhen delayMillis] func)
       (func))
-    (ioStarted co)))
+    (io->started co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/ThreadedTimer
+(defmethod io->stop
 
-  [^Muble co & args]
+  ::ThreadedTimer
+  [^Context co & args]
 
   (log/info "ioStop ThreadedTimer: %s" (.id ^Identifiable co))
-  (let [loopy (.getv co :loopy) ]
+  (let [loopy (.getv (.getx co) :loopy) ]
     (reset! loopy false)
-    (ioStopped co)))
+    (io->stopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
