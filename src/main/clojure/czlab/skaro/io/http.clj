@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.http
 
@@ -23,17 +23,18 @@
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.core
-     :refer [juid
+     :refer [when-some+
+             juid
              spos?
-             nextLong
+             seqint2
              toJavaInt
              subsVar
-             mubleObj!
+             muble<>
              test-cond
              stringify]]
-    [czlab.net.comms :refer [parseBasicAuth]]
-    [czlab.crypto.codec :refer [pwdify]]
-    [czlab.net.routes :refer [loadRoutes]])
+    [czlab.netty.util :refer [parseBasicAuth]]
+    [czlab.crypto.codec :refer [passwd<>]]
+    [czlab.netty.routes :refer [loadRoutes]])
 
   (:use [czlab.skaro.core.consts]
         [czlab.crypto.ssl]
@@ -42,26 +43,27 @@
         [czlab.skaro.io.webss])
 
   (:import
-    [org.apache.commons.codec.binary Base64]
-    [org.apache.commons.lang3 StringUtils]
     [czlab.skaro.server Component]
-    [czlab.wflow.server Emitter]
+    [clojure.lang APersistentMap]
+    [czlab.server EventEmitter]
     [java.net URL]
     [java.io File]
     [czlab.crypto PasswordAPI]
     [java.net HttpCookie]
-    [czlab.xlib Muble
+    [czlab.xlib
+     Muble
      XData
      Versioned
      Hierarchial
      Identifiable
      Disposable
      Startable]
-    [czlab.skaro.io WebSockResult
+    [czlab.skaro.io
+     WebSockResult
      IOSession
      HTTPResult
      HTTPEvent]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -74,8 +76,7 @@
 (defn scanBasicAuth
 
   "Scan and parse if exists basic authentication"
-
-  ;; returns map
+  ^APersistentMap
   [^HTTPEvent evt]
 
   (when (.hasHeader evt AUTH)
@@ -86,8 +87,7 @@
 (defn httpBasicConfig
 
   "Basic http config"
-
-  [^Muble co cfg]
+  [^Context co cfg]
 
   (let [{:keys [serverKey sockTimeOut
                 sslType contextPath
@@ -95,16 +95,15 @@
                 port host workers appkey]}
         cfg
         kfile (subsVar serverKey)
-        ssl (hgl? kfile)  ]
-
+        ssl (hgl? kfile)]
     (with-local-vars [cpy (transient cfg)]
-      (when (empty? sslType)
+      (when-not (hgl? sslType)
         (var-set cpy (assoc! @cpy :sslType "TLS")))
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
                              :port
                              (if ssl 443 80))))
-      (when (nil? host)
+      (when-not (hgl? host)
         (var-set cpy (assoc! @cpy :host "")))
       (when-not (hgl? contextPath)
         (var-set cpy (assoc! @cpy :contextPath "")))
@@ -116,7 +115,9 @@
                                :serverKey (URL. kfile)))
           (var-set cpy (assoc! @cpy
                                :passwd
-                               (pwdify (:passwd cfg) appkey))))
+                               (-> (:passwd cfg)
+                                   (passwd<> appkey)
+                                   (.text)))))
         (do
           (var-set cpy (assoc! @cpy
                                :serverKey nil))))
@@ -145,65 +146,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/HTTP
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::HTTP
+  [^Context co cfg0]
 
-  (log/info "compConfigure: HTTP: %s" (.id ^Identifiable co))
+  (log/info "comp->configure: HTTP: %s" (.id ^Identifiable co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn wsockResult
+(defn wsockResult<>
 
   "Create a WebSocket result object"
-
   ^WebSockResult
-  [co]
+  [^EventEmitter co]
 
-  (let [impl (mubleObj! {:binary false
-                        :data nil}) ]
+  (let [impl (muble<> {:binary false :data nil})]
     (reify
 
-      Muble
+      Context
 
-      (setv [_ k v] (.setv impl k v) )
-      (seq [_] (.seq impl))
-      (toEDN [_] (.toEDN impl))
-      (getv [_ k] (.getv impl k) )
-      (unsetv [_ k] (.unsetv impl k) )
-      (clear [_] (.clear impl))
+      (getx [_] impl)
 
       WebSockResult
 
       (isBinary [_] (true? (.getv impl :binary)))
       (isText [this] (not (.isBinary this)))
-      (getData [_] (XData. (.getv impl :data)))
+      (getData [_] (xdata<> (.getv impl :data)))
       (emitter [_] co) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn httpResult
+(defn httpResult<>
 
   "Create a HttpResult object"
 
   ^HTTPResult
-  [co]
+  [^EventEmitter co]
 
-  (let [impl (mubleObj! {:version "HTTP/1.1"
-                        :cookies []
-                        :code -1
-                        :hds {} })]
+  (let [impl (muble<> {:version "HTTP/1.1"
+                       :cookies []
+                       :code -1
+                       :hds {} })]
     (reify
 
-      Muble
+      Context
 
-      (setv [_ k v] (.setv impl k v) )
-      (seq [_] (.seq impl))
-      (getv [_ k] (.getv impl k) )
-      (unsetv [_ k] (.unsetv impl k) )
-      (toEDN [_] (.toEDN impl))
-      (clear [_] (.clear impl))
+      (getx [_] impl)
 
       HTTPResult
 
@@ -257,11 +247,9 @@
 (defn hasInHeader?
 
   "Returns true if header exists"
+  [gist header]
 
-  ;; boolean
-  [info ^String header]
-
-  (if-some [h (:headers info) ]
+  (if-some [h (:headers gist)]
     (and (> (count h) 0)
          (some? (get h (lcase header))))
     false))
@@ -271,11 +259,9 @@
 (defn hasInParam?
 
   "true if parameter exists"
+  [gist param]
 
-  ;; boolean
-  [info ^String param]
-
-  (if-some [p (:params info) ]
+  (if-some [p (:params gist)]
     (and (> (count p) 0)
          (some? (get p param)))
     false))
@@ -285,44 +271,42 @@
 (defn getInParameter
 
   "Get the named parameter"
-
   ^String
-  [info ^String param]
+  [gist param]
 
-  (if-some [arr (if (hasInParam? info param)
-                  ((:params info) param)) ]
-    (when (> (count arr) 0)
-      (first arr))))
+  (when-some+ [arr (if (hasInParam? gist param)
+                     (get (:params gist) param))]
+    (first arr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn getInHeader
 
   "Get the named header"
-
   ^String
-  [info ^String header]
+  [gist header]
 
-  (if-some [arr (if (hasInHeader? info header)
-                 ((:headers info) (lcase header))) ]
-    (when (> (count arr) 0)
-      (first arr))))
+  (when-some+ [arr (if (hasInHeader? gist header)
+                     (get (:headers gist) (lcase header)))]
+    (first arr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn maybeLoadRoutes
 
-  [^Muble co]
+  ^APersistentMap
+  [^Context co]
 
-  (let [^Cocoon ctr (.parent ^Hierarchial co)
+  (let [^Container ctr (.parent ^Hierarchial co)
         appDir (.getAppDir ctr)
+        ctx (.getx co)
         sf (io/file appDir DN_CONF "static-routes.conf")
-        rf (io/file appDir DN_CONF "routes.conf") ]
-    (.setv co
+        rf (io/file appDir DN_CONF "routes.conf")]
+    (.setv ctx
            :routes
            (vec (concat (if (.exists sf) (loadRoutes sf) [] )
                         (if (.exists rf) (loadRoutes rf) [] ))))
-    (.getv co :routes)))
+    (.getv ctx :routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

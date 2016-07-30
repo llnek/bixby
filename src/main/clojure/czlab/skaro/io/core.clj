@@ -14,239 +14,236 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.core
 
   (:require
-    [czlab.xlib.str :refer [toKW stror strim]]
+    [czlab.xlib.str :refer [stror strim]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.core
-     :refer [nextLong
+     :refer [throwBadArg
+             seqint
              cast?
-             throwBadArg
-             trycr
+             try!!
              throwIOE
-             mubleObj!
-             convToJava
-             tryc]])
+             muble<>
+             convToJava]])
 
   (:use [czlab.xlib.consts]
-        [czlab.skaro.core.wfs]
         [czlab.skaro.core.sys]
         [czlab.skaro.impl.misc]
         [czlab.skaro.core.consts])
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
-    [czlab.skaro.server CLJShim
+    [czlab.skaro.server
+     CLJShim
      Context
-     Cocoon]
+     Container]
     [java.util Timer TimerTask]
     [czlab.skaro.io IOEvent]
-    [czlab.skaro.server Component
-     EventTrigger
-     Service]
-    [czlab.wflow.server Emitter
+    [czlab.skaro.server
+     Component
+     Service
+     EventTrigger]
+    [czlab.server
+     EventEmitter
      EventHolder
      ServiceHandler]
-    [czlab.xlib XData
-     Versioned Hierarchial
+    [czlab.xlib
+     XData
+     Versioned
+     Hierarchial
      Muble
-     Identifiable Disposable Startable]
-    [czlab.wflow.dsl WorkFlow Job Nihil Activity]))
+     Identifiable
+     Disposable
+     Startable]
+    [czlab.wflow Job TaskDef]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn meta??? "" [a & args] (:typeid (meta a)))
+(defn- meta??? "" [a & args] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioReifyEvent "Create an event" meta???)
+(defmulti ioevent<> "Create an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioDispatch "Dispatch an event" meta???)
+(defmulti io->dispatch "Dispatch an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioDispose "Dispose a component" meta???)
+(defmulti io->dispose "Dispose a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioSuspend "Suspend a component" meta???)
+(defmulti io->suspend "Suspend a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioStart "Start a component" meta???)
+(defmulti io->start "Start a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioStop "Stop a component" meta???)
+(defmulti io->stop "Stop a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioResume "Resume a component" meta???)
+(defmulti io->resume "Resume a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioStopped "Called after a component has stopped" meta???)
+(defmulti io<stopped> "Called after a component has stopped" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioStarted "Called after a component has started" meta???)
+(defmulti io<started> "Called after a component has started" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStarted :default
+(defmethod io<started>
 
-  [co]
+  :default
+  [^Context co]
 
-  (when-some [cfg (-> ^Muble co
+  (when-some [cfg (-> (.getx co)
                       (.getv :emcfg))]
     (log/info "emitter config:\n%s" (pr-str cfg))
     (log/info "emitter %s started - ok" (:typeid (meta co)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStopped :default
+(defmethod io<stopped>
 
+  :default
   [co]
 
   (log/info "emitter %s stopped - ok" (:typeid (meta co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioDispose :default
+(defmethod io->dispose
 
+  :default
   [co]
 
   (log/info "emitter %s disposed - ok" (:typeid (meta co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioSuspend :default
+(defmethod io->suspend
 
+  :default
   [co]
 
   (throwIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioResume :default
+(defmethod io->resume
 
+  :default
   [co]
 
   (throwIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkPipeline ""
+(defn- mkPipeline
 
+  ""
   ^ServiceHandler
-  [^Service service traceable]
+  [^Service svc trace?]
 
-  (when traceable
-    (log/info "pipeline## %s created. ok" service))
+  (when trace?
+    (log/info "pipeline## %s created - ok" service))
 
   (reify
 
     Identifiable
-    (id [_] (.id service))
+    (id [_] (.id svc))
 
     Disposable
     (dispose [_] )
 
     ServiceHandler
     (handle [_ arg more]
-      (let [^Job j (cast? Job more)
-            w (toWorkFlow arg)]
+      (let
+        [^Job j (cast? Job more)
+         w (toWorkFlow arg)]
         (if (some? j)
-          (log/debug "job##%s is being serviced by %s"  (.id j) service)
+          (log/debug "job#%s is being serviced by %s"  (.id j) service)
           (throwBadArg "Expected Job, got " (class more)))
         (.setv j :wflow w)
-        (some-> ^Emitter service
-                (.container)
-                (.core)
-                (.run (->> (.reify (Nihil/apply) j)
-                           (.reify (.startWith w)))))))
+        (.execWith
+          w
+          (-> (.server ^EventEmitter svc)
+              (.core))
+          j)))
 
     (handleError [_ e] (log/error e ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkJob ""
+(defn- mkJob
 
+  ""
   ^Job
-  [container evt]
+  [co evt]
 
   (with-meta
-    (newJob container evt)
-    {:typeid (toKW "czc.skaro.io" "Job") }))
+    (job<> co evt)
+    {:typeid ::Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onEvent ""
+(defn- onEvent
 
-  [^Cocoon ctr ^Service src evt options]
+  ""
+  [^Container ctr ^Service src evt options]
 
-  (let [^ServiceHandler hr (.handler src)
-        cfg (-> ^Muble
-                src (.getv :emcfg))
-        c1 (str (:router options))
-        c0 (str (:handler cfg))
-        rts (.getCljRt ctr)
-        wf (trycr nil (->> ^String
-                           (stror c1 c0)
-                           (.call rts)))
-        job (mkJob ctr evt) ]
+  (let
+    [hr (.handler src)
+     cfg (-> (.getx ^Context src)
+             (.getv :emcfg))
+     c1 (str (:router options))
+     c0 (str (:handler cfg))
+     rts (.getCljRt ctr)
+     wf (try!
+          (.call rtx ^String (stror c1 c0)))
+     job (job<> ctr evt)]
     (log/debug "event type = %s" (type evt))
-    (log/debug "event options = %s" options)
+    (log/debug "event opts = %s" options)
     (log/debug "event router = %s" c1)
     (log/debug "io-handler = %s" c0)
     (try
       (.setv job EV_OPTS options)
       (.handle hr wf job)
       (catch Throwable _
-        (.handle hr (makeFatalErrorFlow job) job)))))
+        (.handle hr (fatalErrorFlow<> job) job)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn mkEmitter
+(defn emitter<>
 
   "Create an Emitter"
-
-  [^Cocoon parObj emId emAlias]
+  [^Container parObj emId emAlias]
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
-        impl (mubleObj!)
-        ctxt (atom (mubleObj!)) ]
+        impl (mubleObj!)]
 
     (with-meta
       (reify
 
         Context
 
-        (setx [_ x] (reset! ctxt x))
-        (getx [_] @ctxt)
-
-        Muble
-
-        (setv [_ k v] (.setv impl (keyword k) v))
-        (getv [_ k]
-          (let [cfg (.getv impl :emcfg)
-                kw (keyword k)
-                v (.getv impl kw) ]
-            (or v (get cfg kw))))
-
-        (unsetv [_ a] (.unsetv impl a) )
-        (seq [_])
-        (clear [_] (.clear impl))
-        (toEDN [_ ] (.toEDN impl))
+        (getx [_] impl)
 
         Component
 
@@ -259,39 +256,42 @@
 
         Disposable
 
-        (dispose [this] (ioDispose this))
+        (dispose [this] (io->dispose this))
 
         Startable
 
         (start [this]
-          (when-some [p (mkPipeline this true)]
-            (.setv impl :pipe p)
-            (ioStart this)))
+          (->> (mkPipeline this true)
+               (.setv impl :pipe ))
+          (io->start this))
 
         (stop [this]
-          (when-some [p (.getv impl :pipe)]
+          (when-some
+            [p (.getv impl :pipe)]
             (.dispose ^Disposable p)
-            (ioStop this)
+            (io->stop this)
             (.unsetv impl :pipe)))
 
         Service
 
         (handler [_] (.getv impl :pipe))
 
-        Emitter
+        EventEmitter
 
-        (container [this] (.parent this))
-        (getConfig [_]
-          (.getv impl :emcfg))
+        (config [_] (.getv impl :emcfg))
+        (server [this] (.parent this))
 
-        (isEnabled [_] (not (false? (.getv impl :enabled))))
-        (isActive [_] (not (false? (.getv impl :active))))
+        (isEnabled [_]
+          (not (false? (.getv impl :enabled))))
 
-        (suspend [this] (ioSuspend this))
-        (resume [this] (ioResume this))
+        (isActive [_]
+          (not (false? (.getv impl :active))))
+
+        (suspend [this] (io->suspend this))
+        (resume [this] (io->resume this))
 
         (dispatch [this ev options]
-          (tryc
+          (try!
             (onEvent parObj this ev options)))
 
         (release [_ wevt]
@@ -306,29 +306,31 @@
               (log/debug "emitter holding event, id: %s" wid)
               (.put backlog wid wevt)))) )
 
-      { :typeid emId })))
+      {:typeid (asFQKeyword (name emId))})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn asyncWaitHolder
+(defn asyncWaitHolder<>
 
   "Create a async wait wrapper"
-
   ^EventHolder
   [^EventTrigger trigger
    ^IOEvent event ]
 
-  (let [impl (mubleObj!) ]
+  (let [impl (muble<>)]
     (reify
 
       EventHolder
 
-      (id [_] (.getId event))
+      (id [_] (.id event))
 
       (resumeOnResult [this res]
-        (let [^Timer tm (.getv impl :timer)
-              src (.emitter event) ]
-          (when (some? tm) (.cancel tm))
+        (let
+          [tm (.getv impl :timer)
+           src (.emitter event) ]
+          (when (some? tm)
+            (.cancel ^Timer tm))
+          (.unsetv impl :timer)
           (.release src this)
           (.resumeWithResult trigger res)))
 
@@ -344,40 +346,43 @@
       (onExpiry [this]
         (let [src (.emitter event) ]
           (.release src this)
-          (.setv impl :timer nil)
+          (.unsetv impl :timer)
           (.resumeWithError trigger) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compContextualize :czc.skaro.io/Emitter
+(defmethod comp->contextualize
 
+  ::EventEmitter
   [co arg]
 
-  (when (instance? Context arg)
-    (->> (-> ^Context
-             arg (.getx ))
-         (compCloneContext co ))))
+  (when (and (inst? Context co)
+             (inst? Muble arg))
+    (-> (.getx ^Context co)
+        (.copy  ^Muble arg)))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy
 ;;
-(derive :czc.skaro.io/HTTP :czc.skaro.io/Emitter)
-
-(derive :czc.skaro.io/JettyIO :czc.skaro.io/HTTP)
-(derive :czc.skaro.io/NettyIO :czc.skaro.io/HTTP)
+(derive ::HTTP ::EventEmitter)
+(derive ::Jetty ::HTTP)
+(derive ::Netty ::HTTP)
 ;;(derive :czc.skaro.io/WebSockIO :czc.skaro.io/NettyIO)
-(derive :czc.skaro.io/NettyMVC :czc.skaro.io/NettyIO)
+(derive ::NettyMVC ::Netty)
 
-(derive :czc.skaro.io/RepeatingTimer :czc.skaro.io/Emitter)
-(derive :czc.skaro.io/OnceTimer :czc.skaro.io/Emitter)
-(derive :czc.skaro.io/ThreadedTimer :czc.skaro.io/RepeatingTimer)
+(derive ::RepeatingTimer ::EventEmitter)
+(derive ::OnceTimer ::EventEmitter)
+(derive ::ThreadedTimer ::RepeatingTimer)
 
-(derive :czc.skaro.io/FilePicker :czc.skaro.io/ThreadedTimer)
-(derive :czc.skaro.io/IMAP :czc.skaro.io/ThreadedTimer)
-(derive :czc.skaro.io/POP3 :czc.skaro.io/ThreadedTimer)
+(derive ::FilePicker ::ThreadedTimer)
+(derive ::IMAP ::ThreadedTimer)
+(derive ::POP3 ::ThreadedTimer)
 
-(derive :czc.skaro.io/JMS :czc.skaro.io/Emitter)
-(derive :czc.skaro.io/SocketIO :czc.skaro.io/Emitter)
+(derive ::JMS ::EventEmitter)
+(derive ::Socket ::EventEmitter)
+;;(derive ::SocketIO ::EventEmitter)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

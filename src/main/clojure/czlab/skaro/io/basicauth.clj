@@ -14,28 +14,27 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.basicauth
 
   (:require
+    [czlab.xlib.str :refer [embeds? lcase strim hgl?]]
     [czlab.xlib.format :refer [readJson writeJson]]
+    [czlab.skaro.io.http :refer [scanBasicAuth]]
+    [czlab.crypto.codec :refer [caesarDecrypt]]
+    [czlab.net.comms :refer [getFormFields]]
     [czlab.xlib.core
      :refer [normalizeEmail
              cast?
-             stringify tryletc]]
-    [czlab.xlib.str :refer [lcase strim hgl?]]
-    [czlab.skaro.io.http :refer [scanBasicAuth]]
-    [czlab.xlib.logging :as log]
-    [czlab.crypto.codec :refer [caesarDecrypt]]
-    [czlab.net.comms :refer [getFormFields]])
+             stringify trylet!]]
+    [czlab.xlib.logging :as log])
 
   (:import
-    [org.apache.commons.codec.binary Base64]
-    [org.apache.commons.lang3 StringUtils]
+    [java.util Base64 Base64$Decoder]
+    [czlab.skaro.server Container]
+    [czlab.server EventEmitter]
     [czlab.skaro.io HTTPEvent]
-    [czlab.wflow.server Emitter]
-    [czlab.skaro.server Cocoon]
     [czlab.xlib XData]
     [czlab.net ULFormItems ULFileItem]))
 
@@ -53,92 +52,89 @@
 ;; should match this value.
 (def ^:private CAESAR_SHIFT 13)
 
-(def ^:private PMS {EMAIL_PARAM [ :email #(normalizeEmail %) ]
-                    CAPTCHA_PARAM [ :captcha #(strim %) ]
-                    USER_PARAM [ :principal #(strim %) ]
-                    PWD_PARAM [ :credential #(strim %) ]
-                    CSRF_PARAM [ :csrf #(strim %) ]
-                    NONCE_PARAM [ :nonce #(some? %) ] })
+(def ^:private PMS
+  {EMAIL_PARAM [ :email #(normalizeEmail %) ]
+   CAPTCHA_PARAM [ :captcha #(strim %) ]
+   USER_PARAM [ :principal #(strim %) ]
+   PWD_PARAM [ :credential #(strim %) ]
+   CSRF_PARAM [ :csrf #(strim %) ]
+   NONCE_PARAM [ :nonce #(some? %) ] })
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackFormFields
 
   "Parse a standard login-like form with userid,password,email"
-
   [^HTTPEvent evt]
 
-  (when-some [itms (some-> evt
-                          (.data) (.content))]
-    (with-local-vars
-      [rc (transient {})]
-      (doseq [^ULFileItem
-              x (getFormFields itms)
-             :let [fm (.getFieldNameLC x)
-                   fv (str x)]]
-        (log/debug "form-field=%s, value=%s" fm fv)
-        (when-some [[k v] (get PMS fm)]
-          (var-set rc (assoc! @rc
-                              k
-                              (v fv)))))
-      (persistent! @rc))))
+  (when-some
+    [itms (some-> evt
+                  (.data) (.content))]
+    (persistent!
+      (reduce
+        #(let [fm (.getFieldNameLC ^ULFileItem %2)
+               fv (str %2)]
+           (log/debug "form-field=%s, value=%s" fm fv)
+           (if-some [[k v] (get PMS fm)]
+             (assoc! %1 k (v fv))
+             %1))
+        (transient {})
+        (getFormFields itms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackBodyContent
 
   "Parse a JSON body"
-
   [^HTTPEvent evt]
 
-  (when-some [^XData
-              xs (some-> evt (.data)) ]
-    (when-some [json (readJson
-                       (if (.hasContent xs)
-                         (.stringify xs)
-                         "{}")
-                       #(lcase %)) ]
-      (with-local-vars
-        [rc (transient {})]
-        (doseq [[k [a1 a2]] PMS]
-          (when-some [fv (get json k) ]
-            (var-set rc (assoc! @rc
-                                a1
-                                (a2 fv )))))
-        (persistent! @rc)))))
+  (let
+    [^XData xs (some-> evt (.data))
+     json (-> (if (and (some? xs)
+                       (.hasContent xs))
+                (stringify xs) "{}")
+              (readJson #(lcase %)))]
+    (persistent!
+      (reduce
+        #(let [[k [a1 a2]] %2]
+           (if-some [fv (get json k)]
+            (assoc! %1 a1 (a2 fv ))
+            %1))
+        (transient {})
+        PMS))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackUrlParams
 
   "Parse form fields in the Url"
-
   [^HTTPEvent evt]
 
-  (with-local-vars
-    [rc (transient {})]
-    (doseq [[k [a1 a2]]  PMS]
-      (when (.hasParameter evt k)
-        (var-set rc (assoc! @rc
-                            a1
-                            (a2 (.getParameterValue evt k) )))))
-    (persistent! @rc)))
+  (persistent!
+    (reduce
+      #(let [[^String k [a1 a2]]  PMS]
+         (if (.hasParameter evt k)
+           (assoc! %1
+                   a1
+                   (a2 (.getParameterValue evt k)))
+           %1))
+      (transient {})
+      PMS)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn maybeGetAuthInfo
 
   "Attempt to parse and get authentication info"
-
   [^HTTPEvent evt]
 
-  (when-some [ct (.contentType evt) ]
+  (when-some+ [ct (.contentType evt)]
     (cond
-      (or (> (.indexOf ct "form-urlencoded") 0)
-          (> (.indexOf ct "form-data") 0))
+      (or (embeds? ct "form-urlencoded")
+          (embeds? ct "form-data"))
       (crackFormFields evt)
 
-      (> (.indexOf ct "/json") 0)
+      (embeds? ct "/json")
       (crackBodyContent evt)
 
       :else
@@ -146,16 +142,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeDecodeField ""
+(defn- maybeDecodeField
 
+  ""
   [info fld shiftCount]
 
   (if (:nonce info)
-    (tryletc
-      [decr (-> (get info fld)
-                (caesarDecrypt shiftCount))
-       bits (Base64/decodeBase64 decr)
-       s (stringify bits) ]
+    (trylet!
+      [decr (->> (get info fld)
+                 (caesarDecrypt shiftCount))
+       s (->> decr
+              (.decode (Base64/getMimeDecoder))
+              (stringify))]
       (log/debug "info = %s" info)
       (log/debug "decr = %s" decr)
       (log/debug "val = %s" s)
@@ -164,18 +162,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getAppKey ""
+(defn- getAppKey
 
+  ""
   ^bytes
   [^HTTPEvent evt]
 
-  (-> ^Cocoon (.container (.emitter evt))
+  (-> ^Container (.container (.emitter evt))
       (.getAppKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getSignupInfo ""
+(defn getSignupInfo
 
+  ""
   [^HTTPEvent evt]
 
   (-> (maybeGetAuthInfo evt)
@@ -184,8 +184,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getLoginInfo ""
+(defn getLoginInfo
 
+  ""
   [^HTTPEvent evt]
 
   (-> (maybeGetAuthInfo evt)

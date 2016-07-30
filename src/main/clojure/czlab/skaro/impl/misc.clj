@@ -14,18 +14,16 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.impl.misc
 
   (:require
-    [czlab.xlib.core :refer [trap!]]
-    [czlab.skaro.core.wfs :refer [simPTask]])
+    [czlab.wflow.core :refer :all]
+    [czlab.xlib.core :refer [inst? trap!]])
 
   (:import
-    [czlab.wflow.dsl Activity
-     Job
-     FlowError PTask Work]
+    [czlab.wflow TaskDef Job StepError]
     [czlab.skaro.io HTTPEvent HTTPResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,12 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Internal flows
-(defn- mkWork ""
+(defn- mkWork
 
+  ""
   [s]
 
-  (simPTask
-    (fn [^Job job]
+  (script<>
+    (fn [_ ^Job job]
       (let [^HTTPEvent evt (.event job)
             ^HTTPResult
             res (.getResultObj evt) ]
@@ -48,32 +47,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkInternalFlow ""
+(defn- mkInternalFlow
 
-  ^Activity
+  ""
+  ^TaskDef
   [^Job j s]
 
-  (let [evt (.event j) ]
-    (if (instance? HTTPEvent evt)
+  (let [evt (.event j)]
+    (if (inst? HTTPEvent evt)
       (mkWork s)
-      (trap! FlowError (str "Unhandled event-type \""
-                              (:typeid (meta evt))
-                              "\"")))))
+      (trap! StepError
+             (format "unhandled event, type=\"%s\""
+                     (:typeid (meta evt)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn makeFatalErrorFlow
+(defn fatalErrorFlow<>
 
-  ^Activity
+  ^TaskDef
   [^Job job]
 
   (mkInternalFlow job 500))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn makeOrphanFlow ""
+(defn orphanFlow<>
 
-  ^Activity
+  ""
+  ^TaskDef
   [^Job job]
 
   (mkInternalFlow job 501))

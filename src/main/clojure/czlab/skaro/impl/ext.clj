@@ -68,7 +68,7 @@
 
   (:import
     [czlab.server EventEmitter ServiceHandler]
-    [czlab.skaro.runtime AppMain AppManifest]
+    [czlab.skaro.runtime AppMain]
     [czlab.skaro.etc PluginFactory Plugin]
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
@@ -89,6 +89,7 @@
      XData
      Schedulable
      CU
+     Mutable
      Muble
      I18N
      Morphable
@@ -114,38 +115,7 @@
   ^String
   [^IOEvent evt]
 
-  (let [^Container c (.. evt emitter container)]
-    (.getAppKey c)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; A Service is an instance of a Block, that is, an instance of an event
-;; emitter
-(defn- serviceBlock
-
-  ""
-  ^EventEmitter
-  [^Identifiable bk ctr nm cfg0]
-
-  (let [pkey (.getAppKey ^Container ctr)
-        cfg (-> ^Muble bk
-                (.getv :dftOptions)
-                (merge cfg0))
-        hid (:handler cfg)
-        eid (.id bk)
-        obj (emitter<> ctr eid nm)
-        mm (meta obj)]
-    (log/info "about to synthesize an emitter: %s" eid)
-    (log/info "emitter meta: %s" mm)
-    (log/info "emitter = %s"
-              (isa? (:typeid mm)
-                    :czlab.skaro.io/EventEmitter))
-    (log/info "config params =\n%s" cfg)
-    (comp->synthesize obj
-                      {:ctx ctr
-                       :props (assoc cfg :appkey pkey) })
-
-    (log/info "emitter - ok. handler => %s" hid)
-    obj))
+  (.getAppKey ^Container (.. evt emitter container)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -190,34 +160,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- appContainer
+(defn- mkctr
 
   ""
   ^Container
-  [^AppManifest pod options]
+  [appDir options]
 
-  (log/info "creating an app-container: %s" (.id ^Identifiable pod))
-  (let [pub (io/file (K_APPDIR options) DN_PUBLIC DN_PAGES)
+  (log/info "creating a container: %s" (:name options))
+  (let [pub (io/file appDir DN_PUBLIC DN_PAGES)
         ftlCfg (genFtlConfig :root pub)
-        impl (muble<>)
-        ctxt (muble<>)]
+        pid (str "c#" (seqint))
+        impl (muble<>)]
     (with-meta
       (reify
 
         Context
 
-        (getx [_] ctxt)
-
-        MubleParent
-
-        (muble [_] impl)
+        (getx [_] impl)
 
         Container
 
         (getAppKeyBits [this] (bytesify (.getAppKey this)))
-        (getAppDir [this] (.getv this K_APPDIR))
-        (getAppKey [_] (.appKey pod))
-        (name [_] (.name pod))
+        (getAppDir [this] (.getv impl K_APPDIR))
+        (getAppKey [_] (:appKey options))
+        (name [_] (:name options))
         (getCljRt [_] (.getv impl :cljshim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
@@ -241,18 +207,18 @@
                 c (:container env) ]
             (not (false? (:enabled c)))))
 
-        (getService [_ serviceId]
+        (getService [_ sid]
           (let [^Registry
-                srg (.getv impl K_SVCS) ]
-            (.lookup srg (keyword serviceId))))
+                srg (.getv impl K_SVCS)]
+            (.lookup srg (keyword sid))))
 
-        (hasService [_ serviceId]
+        (hasService [_ sid]
           (let [^Registry
-                srg (.getv impl K_SVCS) ]
-            (.has srg (keyword serviceId))))
+                srg (.getv impl K_SVCS)]
+            (.has srg (keyword sid))))
 
         (core [this]
-          (.getv this K_SCHEDULER))
+          (.getv impl K_SCHEDULER))
 
         (getEnvConfig [_]
           (.getv impl K_ENVCONF))
@@ -262,8 +228,8 @@
 
         Component
 
-        (id [_] (.id ^Identifiable pod) )
         (version [_] "1.0")
+        (id [_] pid)
 
         Hierarchial
 
@@ -276,7 +242,7 @@
                 srg (.getv impl K_SVCS)
                 main (.getv impl :main-app) ]
             (log/info "container starting all services...")
-            (doseq [[k v] (.iter srg) ]
+            (doseq [[k v] (.iter srg)]
               (log/info "service: %s about to start..." k)
               (.start ^Startable v))
             (log/info "container starting main app...")
@@ -286,8 +252,8 @@
         (stop [this]
           (let [^Registry
                 srg (.getv impl K_SVCS)
-                pls (.getv this K_PLUGINS)
-                main (.getv impl :main-app) ]
+                pls (.getv impl K_PLUGINS)
+                main (.getv impl :main-app)]
             (log/info "container stopping all services...")
             (doseq [[k v] (.iter srg)]
               (.stop ^Startable v))
@@ -303,10 +269,10 @@
         (dispose [this]
           (let [^Registry
                 srg (.getv impl K_SVCS)
-                pls (.getv this K_PLUGINS)
-                main (.getv impl :main-app) ]
+                pls (.getv impl K_PLUGINS)
+                main (.getv impl :main-app)]
             (log/info "container dispose(): all services")
-            (doseq [[k v] (.iter srg) ]
+            (doseq [[k v] (.iter srg)]
               (.dispose ^Disposable v))
             (log/info "container dispose(): all plugins")
             (doseq [[k v] pls]
@@ -323,18 +289,33 @@
 (defn- service<>
 
   ""
-  [^Context co svc nm cfg]
+  ^EventEmitter
+  [^Context co svc nm cfg0]
 
-  (let [ctx (.getx co)
-        bks (-> ^Registry
-                (.getv ctx K_COMPS)
-                (.lookup K_BLOCKS))
-        bk (-> ^Registry
-               bks
-               (.lookup (keyword svc))) ]
-    (when (nil? bk)
-      (trap! ServiceError (str "No such Service: " svc)))
-    (serviceBlock bk co nm cfg)))
+  (let
+    [^Registry
+     bks (-> ^Registry
+             (.getv (.getx co) K_COMPS)
+             (.lookup K_BLOCKS))]
+    (if-some
+      [^Muble
+       bk (.lookup bks (keyword svc))]
+      (let
+        [cfg (merge (.getv bk :dftOptions) cfg0)
+         pkey (.getAppKey ^Container co)
+         eid (.id ^Identifiable bk)
+         hid (:handler cfg)
+         obj (emitter<> co eid nm)]
+        (log/info "about to synthesize emitter: %s" eid)
+        (log/info "emitter meta: %s" (meta obj))
+        (log/info "config params =\n%s" cfg)
+        (comp->synthesize
+          obj
+          {:ctx co
+          :props (assoc cfg :appkey pkey) })
+        (log/info "emitter - ok. handler => %s" hid)
+        obj)
+      (trap! ServiceError (str "No such Service: " svc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -365,23 +346,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
-(defn mkContainer
+(defn container<>
 
   "Create an application container"
   ^Container
-  [^Context pod]
+  [^Context co options]
 
-  (let [url (.content ^AppManifest pod)
-        ps {K_APPDIR (io/file url)}
-        ctx (.getx pod)
-        c (appContainer pod ps)]
+  (let [c (mkctr appDir options)
+        ctx (.getx co)]
     (->>
       (-> ^Registry
           (.getv ctx K_COMPS)
           (.lookup K_APPS))
       (comp->compose c))
     (comp->contextualize c ctx)
-    (comp->configure c ps)
+    (comp->configure c options)
     (comp->initialize c)
     (.start ^Startable c)
     c))

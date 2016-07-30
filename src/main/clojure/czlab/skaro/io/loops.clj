@@ -14,13 +14,13 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.loops
 
   (:require
     [czlab.xlib.process :refer [async! safeWait]]
-    [czlab.xlib.core :refer [nextLong spos? tryc]]
+    [czlab.xlib.core :refer [seqint2 spos? try!]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
@@ -31,12 +31,14 @@
 
   (:import
     [java.util Date Timer TimerTask]
-    [czlab.wflow.server Emitter]
+    [czlab.server EventEmitter]
     [czlab.skaro.io TimerEvent]
     [czlab.xlib Muble Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+(defn- meta??? "" [a & args] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -46,8 +48,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- config-repeat-timer ""
+(defn- config-repeat-timer
 
+  ""
   [^Timer tm delays
    ^long intv
    func]

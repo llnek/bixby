@@ -14,18 +14,19 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.jms
 
   (:require
     [czlab.xlib.core
-     :refer [nextLong
-             throwIOE
-             mubleObj!
+     :refer [throwIOE
+             seqint2
+             inst?
+             muble<>
              juid
-             tryc]]
-    [czlab.crypto.codec :refer [pwdify]]
+             try!!]]
+    [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl? ]])
 
@@ -34,15 +35,27 @@
 
   (:import
     [java.util Hashtable Properties ResourceBundle]
-    [org.apache.commons.lang3 StringUtils]
-    [czlab.wflow.server Emitter]
+    [czlab.server EventEmitter]
     [czlab.xlib Muble Identifiable]
-    [javax.jms Connection ConnectionFactory
-     Destination Connection
-     Message MessageConsumer MessageListener Queue
-     QueueConnection QueueConnectionFactory QueueReceiver
-     QueueSession Session Topic TopicConnection
-     TopicConnectionFactory TopicSession TopicSubscriber]
+    [javax.jms
+     Connection
+     ConnectionFactory
+     Destination
+     Connection
+     Message
+     MessageConsumer
+     MessageListener
+     Queue
+     QueueConnection
+     QueueConnectionFactory
+     QueueReceiver
+     QueueSession
+     Session
+     Topic
+     TopicConnection
+     TopicConnectionFactory
+     TopicSession
+     TopicSubscriber]
     [javax.naming Context InitialContext]
     [java.io IOException]
     [czlab.skaro.io JMSEvent]))
@@ -52,14 +65,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioReifyEvent :czc.skaro.io/JMS
+(defmethod ioevent<>
 
-  [co & args]
+  ::JMS
+  [^EventEmitter co & args]
 
-  (log/info "ioReifyEvent: JMS: %s" (.id ^Identifiable co))
+  (log/info "ioevent: JMS: %s" (.id ^Identifiable co))
   (let [msg (first args)
-        eeid (nextLong)
-        impl (mubleObj!)]
+        eeid (seqint2)
+        impl (muble<>)]
     (with-meta
       (reify
 
@@ -72,133 +86,150 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
         (getSession [_] )
-        (getId [_] eeid)
+        (id [_] eeid)
         (emitter [_] co)
         (getMsg [_] msg))
 
-      {:typeid :czc.skaro.io/JMSEvent })))
+      {:typeid ::JMSEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onMsg ""
+(defn- onMsg
 
-  [^Emitter co msg]
+  ""
+  [^EventEmitter co msg]
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (ioReifyEvent co msg) {} ))
+  (.dispatch co (ioevent<> co msg) {} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/JMS
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::JMS
+  [^Context co cfg0]
 
   (log/info "compConfigure: JMS: %s" (.id ^Identifiable co))
   (let [{:keys [appkey jndiPwd jmsPwd]
          :as cfg}
-        (merge (.getv co :dftOptions) cfg0)]
-    (.setv co :emcfg
+        (merge (.getv (.getx co) :dftOptions) cfg0)]
+    (.setv (.getx co)
+           :emcfg
            (-> cfg
-               (assoc :jndiPwd (pwdify jndiPwd appkey))
-               (assoc :jmsPwd (pwdify jmsPwd appkey))))
+               (assoc :jndiPwd
+                      (-> (passwd<> jndiPwd appkey)
+                          (.text)))
+               (assoc :jmsPwd
+                      (-> (passwd<> jmsPwd appkey)
+                          (.text)))))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizFac ""
+(defn- inizFac
 
+  ""
   ^Connection
-
-  [^Muble co
+  [^Context co
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
-  (let [{:keys [destination jmsPwd jmsUser]}
-        (.getv co :emcfg)
-        jmsPwd (str jmsPwd)
+  (let [{:keys [^String destination
+                ^String jmsPwd
+                ^String jmsUser]}
+        (.getv (.getx co) :emcfg)
         c (.lookup ctx ^String destination)
         ^Connection
         conn (if (hgl? jmsUser)
                (.createConnection cf
-                                  ^String jmsUser
-                                  ^String (if (hgl? jmsPwd) jmsPwd nil))
-               (.createConnection cf)) ]
-    (if (instance? Destination c)
+                                  jmsUser
+                                  ^String
+                                  (stror jmsPwd nil))
+               (.createConnection cf))]
+    (if (inst? Destination c)
       ;;TODO ? ack always ?
       (-> (.createSession conn false Session/CLIENT_ACKNOWLEDGE)
           (.createConsumer c)
-          (.setMessageListener (reify MessageListener
-                                 (onMessage [_ m] (onMsg co m)))))
+          (.setMessageListener
+            (reify MessageListener
+              (onMessage [_ m] (onMsg co m)))))
       (throwIOE "Object not of Destination type"))
     conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizTopic ""
+(defn- inizTopic
 
+  ""
   ^Connection
-
-  [^Muble co
+  [^Context co
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
-  (let [{:keys [destination jmsUser
-                durable jmsPwd]}
-        (.getv co :emcfg)
-        jmsPwd (str jmsPwd)
+  (let [{:keys [^String destination
+                ^String jmsUser
+                durable
+                ^String jmsPwd]}
+        (.getv (.getx co) :emcfg)
         conn (if (hgl? jmsUser)
                (.createTopicConnection cf
-                                       ^String jmsUser
-                                       ^String (if (hgl? jmsPwd) jmsPwd nil))
+                                       jmsUser
+                                       ^String
+                                       (stror jmsPwd nil))
                (.createTopicConnection cf))
         s (.createTopicSession conn false Session/CLIENT_ACKNOWLEDGE)
-        t (.lookup ctx ^String destination) ]
-    (when-not (instance? Topic t)
+        t (.lookup ctx destination) ]
+    (when-not (inst? Topic t)
       (throwIOE "Object not of Topic type"))
     (-> (if durable
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
-        (.setMessageListener (reify MessageListener
-                               (onMessage [_ m] (onMsg co m))) ))
+        (.setMessageListener
+          (reify MessageListener
+            (onMessage [_ m] (onMsg co m))) ))
     conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inizQueue ""
+(defn- inizQueue
 
+  ""
   ^Connection
-  [^Muble co
+  [^Context co
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
-  (let [{:keys [destination jmsUser jmsPwd]}
-        (.getv co :emcfg)
-        jmsPwd (str jmsPwd)
+  (let [{:keys [^String destination
+                ^String jmsUser
+                ^String jmsPwd]}
+        (.getv (.getx co) :emcfg)
         conn (if (hgl? jmsUser)
                (.createQueueConnection cf
-                                       ^String jmsUser
-                                       ^String (if (hgl? jmsPwd) jmsPwd nil))
+                                       jmsUser
+                                       ^String
+                                       (stror jmsPwd nil))
                (.createQueueConnection cf))
         s (.createQueueSession conn false Session/CLIENT_ACKNOWLEDGE)
-        q (.lookup ctx ^String destination) ]
-    (when-not (instance? Queue q)
+        q (.lookup ctx destination)]
+    (when-not (inst? Queue q)
       (throwIOE "Object not of Queue type"))
     (-> (.createReceiver s ^Queue q)
-        (.setMessageListener (reify MessageListener
-                               (onMessage [_ m] (onMsg co m)))))
+        (.setMessageListener
+          (reify MessageListener
+            (onMessage [_ m] (onMsg co m)))))
     conn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/JMS
+(defmethod io->start
 
-  [^Muble co & args]
+  ::JMS
+  [^Context co & args]
 
   (log/info "ioStart: JMS: %s" (.id ^Identifiable co))
   (let [{:keys [contextFactory providerUrl
                 jndiUser jndiPwd connFactory]}
-        (.getv co :emcfg)
-        jndiPwd (str jndiPwd)
+        (.getv (.getx co) :emcfg)
         vars (Hashtable.) ]
 
     (when (hgl? contextFactory)
@@ -209,8 +240,7 @@
 
     (when (hgl? jndiUser)
       (.put vars "jndi.user" jndiUser)
-      (when (hgl? jndiPwd)
-        (.put vars "jndi.password" jndiPwd)))
+      (.put vars "jndi.password" jndiPwd))
 
     (let [ctx (InitialContext. vars)
           obj (->> (str connFactory)
@@ -219,24 +249,26 @@
               QueueConnectionFactory (inizQueue co ctx obj)
               TopicConnectionFactory (inizTopic co ctx obj)
               ConnectionFactory (inizFac co ctx obj)
-              nil) ]
+              nil)]
       (when (nil? c)
         (throwIOE "Unsupported JMS Connection Factory"))
-      (.setv co :conn c)
+      (.setv (.getx co) :conn c)
       (.start c)
-      (ioStarted co))))
+      (io->started co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/JMS
+(defmethod io->stop
 
-  [^Muble co & args]
+  ::JMS
+  [^Context co & args]
 
   (log/info "ioStop: JMS: %s" (.id ^Identifiable co))
-  (when-some [^Connection c (.getv co :conn) ]
-    (tryc (.close c))
-    (.setv co :conn nil)
-    (ioStopped co)))
+  (when-some [^Connection c
+              (.getv (.getx co) :conn)]
+    (try! (.close c))
+    (.unsetv (.getx co) :conn)
+    (io->stopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

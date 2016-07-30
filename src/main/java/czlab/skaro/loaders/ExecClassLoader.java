@@ -23,31 +23,41 @@ import java.io.File;
  */
 public class ExecClassLoader extends AbstractClassLoader {
 
-  //should be called by command line
   /**
    */
-  public ExecClassLoader(ClassLoader par) {
-    super(par instanceof RootClassLoader ? par : new RootClassLoader(par));
-    RootClassLoader c= (RootClassLoader) this.getParent();
-    configure(c.baseDir());
+  public ExecClassLoader(ClassLoader par, File home) {
+    super(par);
+    configure(home);
   }
 
   /**
    */
-  private void load(File base) {
-    File p= new File(base, "dist");
-    if (p.exists() && !_loaded) {
-      findUrls(p);
-    }
-    _loaded=true;
-  }
+  public File baseDir() { return _baseDir; }
+
+  private File _baseDir=null;
 
   /**
    */
   public void configure(File baseDir) {
     if (baseDir != null) {
-      load(baseDir);
+      load( baseDir);
     }
+  }
+
+  /**
+   */
+  private void load(File baseDir) {
+
+    File p= new File(baseDir, "patch");
+    File b= new File(baseDir, "lib");
+    File d= new File(baseDir, "dist");
+
+    if (!_loaded) {
+      findUrls(p).findUrls(d).findUrls(b);
+    }
+
+    _baseDir=baseDir;
+    _loaded=true;
   }
 
 }
