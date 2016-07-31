@@ -15,22 +15,20 @@
 
 package czlab.skaro.io;
 
+import czlab.xlib.Disposable;
 import java.io.OutputStream;
 import java.io.InputStream;
 
 /**
  * @author Kenneth Leung
  */
-public interface SocketEvent  extends IOEvent {
+public interface SocketEvent extends IOEvent, Disposable {
 
   /**/
-  public OutputStream getSockOut();
+  public OutputStream sockOut();
 
   /**/
-  public InputStream getSockIn();
-
-  /**/
-  public void dispose();
+  public InputStream sockIn();
 
 }
 

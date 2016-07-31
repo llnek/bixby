@@ -28,7 +28,7 @@ public interface WebSockResult extends IOResult {
   public boolean isText();
 
   /**/
-  public Object getData();
+  public Object data();
 
 }
 

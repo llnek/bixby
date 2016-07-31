@@ -18,7 +18,7 @@ package czlab.skaro.etc;
 /**
  * @author Kenneth Leung
  */
-public interface AuthPlugin  extends Plugin {
+public interface AuthPlugin extends Plugin {
 
   /**/
   public void checkAction(Object acctObj, Object action);
@@ -33,10 +33,10 @@ public interface AuthPlugin  extends Plugin {
   public Object login(Object user, Object pwd);
 
   /**/
-  public Iterable<?> getRoles(Object acctObj);
+  public Iterable<?> roles(Object acctObj);
 
   /**/
-  public Iterable<?> getAccount(Object options);
+  public Iterable<?> account(Object options);
 
 }
 

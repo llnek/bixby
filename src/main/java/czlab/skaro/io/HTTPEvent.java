@@ -15,7 +15,7 @@
 
 package czlab.skaro.io;
 
-
+import czlab.skaro.server.Replyable;
 import java.net.HttpCookie;
 import java.util.Set;
 import czlab.xlib.XData;
@@ -25,13 +25,13 @@ import czlab.xlib.XData;
 /**
  * @author Kenneth Leung
  */
-public interface HTTPEvent extends IOEvent {
+public interface HTTPEvent extends IOEvent, Replyable {
 
   /**/
-  public HttpCookie getCookie(String name);
+  public HttpCookie cookie(String name);
 
   /**/
-  public Iterable<HttpCookie> getCookies();
+  public Iterable<HttpCookie> cookies();
 
   /**/
   public boolean isKeepAlive();
@@ -55,28 +55,28 @@ public interface HTTPEvent extends IOEvent {
   public String contextPath();
 
   /**/
-  public Iterable<String> getHeaderValues(String nm);
+  public Iterable<String> headerValues(String nm);
 
   /**/
-  public Set<String> getHeaders();
+  public Set<String> headers();
 
   /**/
-  public String getHeaderValue(String nm);
+  public String header(String nm);
 
   /**/
   public boolean hasHeader(String nm);
 
   /**/
-  public Iterable<String> getParameterValues(String nm);
+  public Iterable<String> paramValues(String nm);
 
   /**/
-  public Set<String> getParameters();
+  public Set<String> params();
 
   /**/
-  public String getParameterValue(String nm);
+  public String param(String nm);
 
   /**/
-  public boolean hasParameter(String nm);
+  public boolean hasParam(String nm);
 
   /**/
   public String localAddr();
@@ -97,7 +97,7 @@ public interface HTTPEvent extends IOEvent {
   public String host();
 
   /**/
-  public String queryString();
+  public String queryStr();
 
   /**/
   public String remoteAddr();
@@ -121,18 +121,10 @@ public interface HTTPEvent extends IOEvent {
   public boolean isSSL();
 
   /**/
-  public String getUri();
+  public String uri();
 
   /**/
-  public String getRequestURL();
-
-  //------------ reply -----------
-
-  /**/
-  public HTTPResult getResultObj();
-
-  /**/
-  public void replyResult();
+  public String requestURL();
 
 }
 

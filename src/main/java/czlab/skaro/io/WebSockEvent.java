@@ -15,15 +15,16 @@
 
 package czlab.skaro.io;
 
+import czlab.skaro.server.Replyable;
 import czlab.xlib.XData;
 
 /**
  * @author Kenneth Leung
  */
-public interface WebSockEvent  extends IOEvent {
+public interface WebSockEvent extends IOEvent, Replyable {
 
   /**/
-  public Object getSocket();
+  public Object socket();
 
   /**/
   public boolean isBinary();
@@ -32,18 +33,10 @@ public interface WebSockEvent  extends IOEvent {
   public boolean isText();
 
   /**/
-  public XData getData();
+  public XData data();
 
   /**/
   public boolean isSSL();
-
-  //------------ reply ----------------------
-
-  /**/
-  public WebSockResult getResultObj();
-
-  /**/
-  public void replyResult();
 
 }
 

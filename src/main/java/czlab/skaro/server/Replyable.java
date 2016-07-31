@@ -18,11 +18,13 @@ package czlab.skaro.server;
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface public interface Contextualizable {
+public interface Replyable {
 
   /**/
-  public void contextualize(Object arg);
+  public IOResult resultObj();
 
+  /**/
+  public void replyResult();
 }
 
 

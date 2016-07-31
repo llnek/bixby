@@ -15,28 +15,30 @@
 
 package czlab.skaro.io;
 
+import czlab.xlib.Identifiable;
+
 /**
  * @author Kenneth Leung
  */
-public interface WebSS {
+public interface WebSS extends Identifiable {
 
   /**/
-  public void setMaxInactiveInterval( long idleSecs);
+  public void setMaxIdleSecs(long idleSecs);
 
   /**/
-  public void setAttribute(Object k, Object v);
+  public void setAttr(Object k, Object v);
 
   /**/
-  public Object getAttribute(Object k);
+  public Object attr(Object k);
 
   /**/
-  public void removeAttribute(Object k);
+  public void removeAttr(Object k);
 
   /**/
   public void clear();
 
   /**/
-  public Iterable<?> listAttributes();
+  public Iterable<?> attrs();
 
   /**/
   public boolean isNew();
@@ -57,25 +59,22 @@ public interface WebSS {
   public void setXref(Object csrf);
 
   /**/
-  public long getCreationTime();
+  public long creationTime();
 
   /**/
-  public long getExpiryTime();
+  public long expiryTime();
 
   /**/
-  public Object getId();
+  public Object xref();
 
   /**/
-  public Object getXref();
+  public Object lastError();
 
   /**/
-  public Object getLastError();
+  public long lastAccessedTime();
 
   /**/
-  public long getLastAccessedTime();
-
-  /**/
-  public long getMaxInactiveInterval();
+  public long maxIdleSecs();
 
 }
 

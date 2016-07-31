@@ -30,7 +30,7 @@ public interface HTTPResult extends IOResult {
   public void setHeader(String name, String value);
 
   /**/
-  public void setProtocolVersion(String ver);
+  public void setVersion(String ver);
 
   /**/
   public void setStatus(int code);
@@ -57,7 +57,7 @@ public interface HTTPResult extends IOResult {
   public void setRedirect(URL location);
 
   /**/
-  public int getStatus();
+  public int status();
 
 }
 

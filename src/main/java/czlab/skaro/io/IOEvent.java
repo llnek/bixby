@@ -26,7 +26,7 @@ public interface IOEvent extends Event {
   public void bindSession(IOSession s);
 
   /**/
-  public IOSession getSession();
+  public IOSession session();
 
   /**/
   public boolean checkAuthenticity();

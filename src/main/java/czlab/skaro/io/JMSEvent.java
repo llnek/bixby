@@ -23,7 +23,7 @@ import javax.jms.Message;
 public interface JMSEvent  extends IOEvent {
 
   /**/
-  public Message getMsg();
+  public Message message();
 
 }
 

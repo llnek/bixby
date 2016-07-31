@@ -23,10 +23,10 @@ import java.io.File;
 public interface FileEvent  extends IOEvent {
 
   /**/
-  public String getOriginalFileName();
+  public String originalName();
 
   /**/
-  public File getFile();
+  public File file();
 
 }
 

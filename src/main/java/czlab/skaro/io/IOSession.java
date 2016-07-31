@@ -27,7 +27,7 @@ public interface IOSession {
   public void handleEvent(IOEvent ev);
 
   /**/
-  public Object getImpl();
+  public Object impl();
 
 }
 

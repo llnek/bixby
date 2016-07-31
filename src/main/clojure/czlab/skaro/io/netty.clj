@@ -14,22 +14,22 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.netty
 
   (:require
     [czlab.xlib.str :refer [lcase hgl? strim nichts?]]
-    [czlab.skaro.io.webss :refer [mkWSSession]]
+    [czlab.skaro.io.webss :refer [wsession<>]]
     [czlab.xlib.mime :refer [getCharset]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [czlab.xlib.core
-     :refer [try!
-             stringify
+     :refer [stringify
+             try!
              throwIOE
-             nextLong
-             mubleObj!
+             seqint2
+             muble<>
              convLong]])
 
   (:use [czlab.netty.filters]
@@ -41,68 +41,91 @@
 
   (:import
     [czlab.net RouteCracker RouteInfo]
-    [czlab.wflow.server Emitter
-     EventHolder]
     [czlab.skaro.server EventTrigger]
-    [java.io Closeable
+    [czlab.server
+     EventEmitter
+     EventHolder]
+    [java.io
+     Closeable
      File
      IOException
      RandomAccessFile]
-    [java.net HttpCookie
+    [java.net
+     HttpCookie
      URI
      URL
      InetSocketAddress
-     SocketAddress InetAddress]
-    [czlab.skaro.io HTTPEvent
+     InetAddress
+     SocketAddress]
+    [czlab.skaro.io
+     HTTPEvent
      HTTPResult
      IOSession
-     WebSockEvent WebSockResult]
+     WebSockEvent
+     WebSockResult]
     [javax.net.ssl SSLContext]
     [java.nio.channels ClosedChannelException]
-    [io.netty.handler.codec.http HttpRequest
-     HttpResponse HttpResponseStatus
-     CookieDecoder ServerCookieEncoder
-     DefaultHttpResponse HttpVersion
+    [io.netty.handler.codec.http
+     HttpResponseStatus
+     HttpRequest
+     HttpUtil
+     HttpResponse
+     CookieDecoder
+     ServerCookieEncoder
+     DefaultHttpResponse
+     HttpVersion
      HttpRequestDecoder
-     HttpResponseEncoder DefaultCookie
-     HttpHeaders$Names LastHttpContent
-     HttpHeaders Cookie QueryStringDecoder]
-    [org.apache.commons.codec.net URLCodec]
+     HttpResponseEncoder
+     DefaultCookie
+     HttpHeaders$Names
+     LastHttpContent
+     HttpHeaders
+     Cookie
+     QueryStringDecoder]
     [io.netty.bootstrap ServerBootstrap]
-    [io.netty.channel Channel ChannelHandler
+    [io.netty.channel
+     Channel
+     ChannelHandler
      ChannelFuture
      ChannelFutureListener
-     SimpleChannelInboundHandler
-     ChannelPipeline ChannelHandlerContext]
-    [io.netty.handler.stream ChunkedFile
-     ChunkedStream ChunkedWriteHandler]
+     ChannelPipeline
+     ChannelHandlerContext
+     SimpleChannelInboundHandler]
+    [io.netty.handler.stream
+     ChunkedFile
+     ChunkedStream
+     ChunkedWriteHandler]
     [czlab.skaro.mvc WebAsset HTTPRangeInput]
-    [czlab.netty MessageFilter
-     ErrorSinkFilter PipelineConfigurator]
+    [czlab.netty
+     PipelineConfigurator]
     [io.netty.handler.codec.http.websocketx
      WebSocketFrame
      BinaryWebSocketFrame
      TextWebSocketFrame]
     [io.netty.buffer ByteBuf Unpooled]
-    [czlab.xlib XData
-     Muble Hierarchial Identifiable]))
+    [czlab.xlib
+     XData
+     Muble
+     Hierarchial
+     Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- javaToCookie ""
+(defn- javaToCookie
 
+  ""
   ^Cookie
-  [^HttpCookie c ^URLCodec cc]
+  [^HttpCookie c]
 
   ;; stick with version 0, Java's HttpCookie defaults to 1 but that
   ;; screws up the Path attribute on the wire => it's quoted but
   ;; browser seems to not like it and mis-interpret it.
   ;; Netty's cookie defaults to 0, which is cool with me.
   (doto (DefaultCookie. (.getName c)
-                        (.encode cc (str (.getValue c))))
+                        (urlEncode (str (.getValue c))))
     ;;(.setComment (.getComment c))
     (.setDomain (.getDomain c))
     (.setMaxAge (.getMaxAge c))
@@ -113,33 +136,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeClose ""
+(defn- maybeClose
 
+  ""
   [^HTTPEvent evt ^ChannelFuture cf]
 
-  (when (and (not (.isKeepAlive evt))
-             (some? cf))
-    (.addListener cf ChannelFutureListener/CLOSE)))
+  (closeCF cf (.isKeepAlive evt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- csToNetty ""
+(defn- csToNetty
 
+  ""
   [cookies]
 
-  (let [cc (URLCodec. "utf-8") ]
-    (persistent!
-      (reduce
-        #(conj! %1
-                (ServerCookieEncoder/encode (javaToCookie %2 cc)))
-        (transient [])
-        (seq cookies)))))
+  (persistent!
+    (reduce
+      #(conj! %1
+              (ServerCookieEncoder/encode (javaToCookie %2)))
+      (transient [])
+      (seq cookies))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- nettyWSReply ""
+(defn- nettyWSReply
 
-  [^Channel ch ^WebSockEvent evt src]
+  ""
+  [^ChannelHandlerContext ctx ^WebSockEvent evt src]
 
   (let [^WebSockResult res (.getResultObj evt)
         ^XData xs (.getData res)
@@ -151,57 +174,54 @@
                  (BinaryWebSocketFrame. ))
             ;else
             (TextWebSocketFrame. (.stringify xs))) ]
-    (.writeAndFlush ch f)))
+    (.writeAndFlush ctx f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- replyOneFile ""
+(defn- replyOneFile
 
+  ""
   [^RandomAccessFile raf
    ^HTTPEvent evt
-   ^HttpResponse rsp ]
+   ^HttpResponse rsp]
 
   (let [ct (getHeader rsp "content-type")
-        rv (.getHeaderValue evt "range") ]
+        rv (.getHeaderValue evt "range")]
     (if-not (HTTPRangeInput/isAcceptable rv)
       (ChunkedFile. raf)
       (let [r (HTTPRangeInput. raf ct rv)
-            n (.process r rsp) ]
+            n (.process r rsp)]
         (if (> n 0)
           r
           nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- nettyReply ""
+(defn- nettyReply
 
-  [^Channel ch ^HTTPEvent evt src]
+  ""
+  [^ChannelHandlerContext ctx ^HTTPEvent evt src]
 
   ;;(log/debug "nettyReply called by event with uri: " (.getUri evt))
-  (let [^Muble res (.getResultObj evt)
-        loc (.getv res :redirect)
-        cks (.getv res :cookies)
-        code (.getv res :code)
-        data (.getv res :data)
-        hdrs (.getv res :hds)
-        rsp (httpReply code) ]
-
+  (let [^Context res (.getResultObj evt)
+        {:keys [redirect cookies code data hds]}
+        (.impl (.getx res))
+        rsp (httpReply<> code)]
     ;;(log/debug "about to reply " (.getStatus ^HTTPResult res))
-
     (with-local-vars
       [clen 0
        raf nil payload nil]
       (doseq [[nm vs]  hdrs
-             :when (not= "content-length" (lcase nm)) ]
+             :when (not= "content-length" (lcase nm))]
         (doseq [vv (seq vs)]
           (addHeader rsp nm vv)))
-      (doseq [s (csToNetty cks)]
+      (doseq [s (csToNetty cookies)]
         (addHeader rsp HttpHeaders$Names/SET_COOKIE s))
       (cond
         (and (>= code 300)
              (< code 400))
-        (when-not (empty? loc)
-          (setHeader rsp "Location" loc))
+        (when-not (empty? redirect)
+          (setHeader rsp "Location" redirect))
 
         (and (>= code 200)
              (< code 300)
@@ -244,21 +264,21 @@
         (setHeader rsp "Connection" "keep-alive"))
 
       (log/debug "writing out %s bytes back to client" @clen)
-      (HttpHeaders/setContentLength rsp @clen)
+      (HttpUtil/setContentLength rsp @clen)
 
-      (.write ch rsp)
+      (.write ctx rsp)
       (log/debug "wrote response headers out to client")
 
       (when (and (> @clen 0)
                  (some? @payload))
-        (.write ch @payload)
+        (.write ctx @payload)
         (log/debug "wrote response body out to client"))
 
-      (let [wf (writeLastContent ch true) ]
+      (let [wf (writeLastContent ctx true)]
         (futureCB wf #(when (some? @raf)
                         (.close ^Closeable @raf)))
         (when-not (.isKeepAlive evt)
-          (log/debug "keep-alive == false, closing channel, bye")
+          (log/debug "channel will be closed")
           (closeCF wf))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -266,33 +286,33 @@
 (defn nettyTrigger
 
   "Create a Netty Async Trigger"
-
   ^EventTrigger
-  [^Channel ch evt src]
+  [^ChannelHandlerContext ctx evt src]
 
   (reify EventTrigger
 
     (resumeWithResult [_ res]
-      (if (instance? WebSockEvent evt)
-        (try! (nettyWSReply ch evt src) )
-        (try! (nettyReply ch evt src) ) ))
+      (if (inst? WebSockEvent evt)
+        (try! (nettyWSReply ctx evt src))
+        (try! (nettyReply ctx evt src) ) ))
 
     (resumeWithError [_]
-      (let [rsp (httpReply 500) ]
+      (let [rsp (httpReply<> 500)]
         (try
-          (maybeClose evt (.writeAndFlush ch rsp))
+          (maybeClose evt (.writeAndFlush ctx rsp))
           (catch ClosedChannelException _
-            (log/warn "closedChannelException thrown while flushing headers"))
+            (log/warn "closedChannelEx thrown"))
           (catch Throwable t# (log/error t# "") )) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cookieToJava ""
+(defn- cookieToJava
 
-  [^Cookie c ^URLCodec cc]
+  ""
+  [^Cookie c]
 
   (doto (HttpCookie. (.getName c)
-                     (.decode cc (str (.getValue c))))
+                     (urlDecode (str (.getValue c))))
     (.setComment (.getComment c))
     (.setDomain (.getDomain c))
     (.setMaxAge (.getMaxAge c))
@@ -302,35 +322,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeWEBSockEvent ""
+(defn- makeWEBSockEvent
 
-  [^Emitter co
-   ^Channel ch
-   ssl
-   ^WebSocketFrame msg]
+  ""
+  [^EventEmitter co ^Channel ch ssl msg]
 
-  (let [textF (instance? TextWebSocketFrame msg)
-        impl (mubleObj!)
-        xdata (XData.)
-        eeid (nextLong) ]
-    (.resetContent xdata
-                   (cond
-                     textF
-                     (.text ^TextWebSocketFrame msg)
-                     (instance? BinaryWebSocketFrame msg)
-                     (slurpBytes (.content ^BinaryWebSocketFrame msg))
-                     :else nil))
+  (let
+    [text? (inst? TextWebSocketFrame msg)
+     xdata
+     (xdata<>
+       (cond
+         (inst? BinaryWebSocketFrame msg)
+         (slurpBytes (.content
+                       ^BinaryWebSocketFrame msg))
+         text?
+         (.text ^TextWebSocketFrame msg)
+         :else nil))
+     impl (muble<>)
+     eeid (seqint2) ]
     (with-meta
       (reify
 
-        Muble
+        Context
 
-        (setv [_ k v] (.setv impl k v) )
-        (seq [_] (.seq impl))
-        (getv [_ k] (.getv impl k) )
-        (toEDN [_] (.toEDN impl))
-        (unsetv [_ k] (.unsetv impl k) )
-        (clear [_] (.clear impl))
+        (.getx [_] impl)
 
         Identifiable
 
@@ -341,130 +356,123 @@
         (bindSession [_ s] (.setv impl :ios s))
         (getSession [_] (.getv impl :ios))
         (getSocket [_] ch)
-        (getId [_] eeid)
+        (id [_] eeid)
         (checkAuthenticity [_] false)
         (isSSL [_] ssl)
-        (isBinary [this] (not textF))
-        (isText [_] textF)
+        (isBinary [this] (not text?))
+        (isText [_] text?)
         (getData [_] xdata)
         (getResultObj [_] nil)
         (replyResult [this] nil)
         (emitter [_] co))
 
-      {:typeid :czc.skaro.io/WebSockEvent })))
+      {:typeid ::WebSockEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackCookies ""
+(defn- crackCookies
 
-  [info]
+  ""
+  [gist]
 
-  (let [v (getInHeader info "Cookie")
-        cc (URLCodec. "utf-8")
-        cks (if (hgl? v)
-              (CookieDecoder/decode ^String v)
-              []) ]
-    (with-local-vars [rc (transient {})]
-      (doseq [^Cookie c  cks]
-        (var-set rc (assoc! @rc
-                            (.getName c)
-                            (cookieToJava c cc))))
-      (persistent! @rc))))
+  (let
+    [^String v (getInHeader gist "Cookie")
+     cks (if (hgl? v)
+           (CookieDecoder/decode v))]
+    (persistent!
+      (reduce
+        #(assoc! %1
+                 (.getName ^Cookie %2)
+                 (cookieToJava c))
+        (transient {})
+        (seq cks)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeHttpEvent2 ""
+(defn- makeHttpEvent2
 
+  ""
   ^HTTPEvent
-  [^Emitter co
-   ^Channel ch
-   sslFlag
-   ^XData xdata
-   info wantSecure]
+  [^EventEmitter co ^Channel ch
+   ssl? xdata gist wantSecure?]
 
-  (let [^InetSocketAddress laddr (.localAddress ch)
-        ^HTTPResult res (httpResult co)
-        cookieJar (crackCookies info)
-        impl (mubleObj!)
-        eeid (nextLong) ]
+  (let
+    [^InetSocketAddress laddr (.localAddress ch)
+     res (httpResult<> co)
+     cookieJar (crackCookies info)
+     impl (mubleObj!)
+     eeid (seqint2)]
     (with-meta
       (reify
 
-        Muble
-
-        (setv [_ k v] (.setv impl k v) )
-        (seq [_] (.seq impl))
-        (getv [_ k] (.getv impl k) )
-        (unsetv [_ k] (.unsetv impl k) )
-        (toEDN [_] (.toEDN impl))
-        (clear [_] (.clear impl))
+        Context
+        (.getx [_] impl)
 
         Identifiable
-
         (id [_] eeid)
 
         HTTPEvent
 
         (bindSession [_ s] (.setv impl :ios s))
         (getSession [_] (.getv impl :ios))
-        (getId [_] eeid)
+        (id [_] eeid)
         (emitter [_] co)
-        (checkAuthenticity [_] wantSecure)
+        (checkAuthenticity [_] wantSecure?)
 
         (getCookie [_ nm] (get cookieJar nm))
         (getCookies [_] (vals cookieJar))
 
-        (isKeepAlive [_] (true? (info "keepAlive")))
+        (isKeepAlive [_] (true? (gist :keepAlive)))
 
         (hasData [_] (some? xdata))
         (data [_] xdata)
 
-        (contentType [_] (getInHeader info "content-type"))
-        (contentLength [_] (info "clen"))
+        (contentType [_] (getInHeader gist "content-type"))
+        (contentLength [_] (gist :clen))
 
         (encoding [this]  (getCharset (.contentType this)))
         (contextPath [_] "")
 
-        (getHeaders [_] (vec (keys (:headers info))))
+        (getHeaders [_] (keys (:headers gist)))
         (getHeaderValues [this nm]
           (if (.hasHeader this nm)
-            (get (:headers info) (lcase nm))
+            (get (:headers gist) (lcase nm))
             []))
 
-        (getHeaderValue [_ nm] (getInHeader info nm))
-        (hasHeader [_ nm] (hasInHeader? info nm))
+        (getHeaderValue [_ nm] (getInHeader gist nm))
+        (hasHeader [_ nm] (hasInHeader? gist nm))
 
         (getParameterValues [this nm]
           (if (.hasParameter this nm)
-            (get (:params info) nm)
+            (get (:params gist) nm)
             []))
 
-        (getParameterValue [_ nm] (getInParameter info nm))
-        (getParameters [_] (vec (keys (:params info))))
-        (hasParameter [_ nm] (hasInParam? info nm))
+        (getParameterValue [_ nm] (getInParameter gist nm))
+        (getParameters [_] (keys (:params gist)))
+        (hasParameter [_ nm] (hasInParam? gist nm))
 
         (localAddr [_] (.getHostAddress (.getAddress laddr)))
         (localHost [_] (.getHostName laddr))
         (localPort [_] (.getPort laddr))
 
-        (protocol [_] (:protocol info))
-        (method [_] (:method info))
+        (protocol [_] (:protocol gist))
+        (method [_] (:method gist))
 
-        (queryString [_] (:query info))
-        (host [_] (:host info))
+        (queryString [_] (:query gist))
+        (host [_] (:host gist))
 
-        (remotePort [_] (convLong (getInHeader info "remote_port") 0))
-        (remoteAddr [_] (str (getInHeader info "remote_addr")))
+        (remotePort [_] (convLong (getInHeader gist "remote_port") 0))
+        (remoteAddr [_] (str (getInHeader gist "remote_addr")))
         (remoteHost [_] "")
 
-        (scheme [_] (if sslFlag "https" "http"))
+        (scheme [_] (if ssl? "https" "http"))
 
-        (serverPort [_] (convLong (getInHeader info "server_port") 0))
-        (serverName [_] (str (getInHeader info "server_name")))
+        (serverPort [_] (convLong (getInHeader gist "server_port") 0))
+        (serverName [_] (str (getInHeader gist "server_name")))
 
-        (isSSL [_] sslFlag)
+        (isSSL [_] ssl?)
 
-        (getUri [_] (:uri info))
+        (getUri [_] (:uri gist))
 
         (getRequestURL [_] (throwIOE "not implemented"))
 
@@ -481,138 +489,140 @@
             (when (some? wevt)
               (.resumeOnResult wevt res)))))
 
-      {:typeid :czc.skaro.io/HTTPEvent })))
+      {:typeid ::HTTPEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeHttpEvent ""
+(defn- makeHttpEvent
 
+  ""
   ^HTTPEvent
-  [^Emitter co
+  [^EventEmitter co
    ^Channel ch
-   sslFlag
-   ^XData xdata
-   info wantSecure]
+   ssl?
+   xdata
+   gist wantSecure?]
 
   (doto (makeHttpEvent2 co
-                        ch sslFlag xdata info wantSecure)
-    (.bindSession (mkWSSession co sslFlag))))
+                        ch ssl? xdata gist wantSecure?)
+    (.bindSession (wsession<> co ssl?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioReifyEvent :czc.skaro.io/NettyIO
+(defmethod ioevent<>
 
-  [^Emitter co & args]
+  ::Netty
+  [^EventEmitter co & args]
 
-  (log/info "ioReifyEvent: NettyIO: %s" (.id ^Identifiable co))
-  (let [^Channel ch (nth args 0)
-        ssl (-> (.pipeline ch)
-                (.get "ssl")
-                (some?))
-        msg (nth args 1) ]
+  (log/info "ioevent: Netty: %s" (.id ^Identifiable co))
+  (let [^Channel ch (first args)
+        ssl? (-> (.pipeline ch)
+                 (.get SslHandler)
+                 (some?))
+        msg (nth args 1)]
     (if
-      (instance? WebSocketFrame msg)
-      (makeWEBSockEvent co ch ssl msg)
+      (inst? WebSocketFrame msg)
+      (makeWEBSockEvent co ch ssl? msg)
       ;else
       (let [^RouteInfo
             ri (if (> (count args) 2)
                  (nth args 2)
                  nil)]
-        (makeHttpEvent co ch ssl
-                       (:payload msg)
-                       (:info msg)
+        (makeHttpEvent co ch ssl?
+                       (:data msg)
+                       (:gist msg)
                        (if (nil? ri) false (.isSecure ri)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/NettyIO
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::Netty
+  [^Context co cfg0]
 
-  (log/info "CompConfigure: NettyIO: %s" (.id ^Identifiable co))
-  (->> (merge (.getv co :dftOptions) cfg0)
+  (log/info "comp->configure: Netty: %s" (.id ^Identifiable co))
+  (->> (merge (.getv (.getx co) :dftOptions) cfg0)
        (httpBasicConfig co )
-       (.setv co :emcfg ))
+       (.setv (.getx co) :emcfg ))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- msgDispatcher ""
+(defn- msgDispatcher
 
+  ""
   ^ChannelHandler
-  [^Emitter co
-   ^Muble src
-   options]
+  [^EventEmitter co options]
 
   (log/debug "netty pipeline dispatcher, emitter = %s" (type co))
-  (proxy [MessageFilter] []
+  (proxy [InboundFilter] []
     (channelRead0 [c msg]
       (let [ch (-> ^ChannelHandlerContext c (.channel))
             {:keys [waitMillis]}
-            (.getv src :emcfg)
-            evt (ioReifyEvent co ch msg) ]
-        (if (instance? HTTPEvent evt)
+            (.getv (.getx ^Context co) :emcfg)
+            evt (ioevent co ch msg)]
+        (if (inst? HTTPEvent evt)
           (let [w
                 (-> (nettyTrigger ch evt co)
                     (asyncWaitHolder evt)) ]
             (.timeoutMillis w waitMillis)
             (.hold co w)))
-        (.dispatch co evt {})))))
+        (.dispatch co evt nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- initNetty ""
+(defn- initNetty
 
-  [^Muble co]
+  ""
+  [^Context co]
 
-  (let [^Muble ctr (.parent ^Hierarchial co)
-        options (.getv co :emcfg)
-        disp (msgDispatcher co co options)
-        bs (initTCPServer
-             (reifyPipeCfgtor
-               (fn [p _]
-                 (-> ^ChannelPipeline p
-                     (.addBefore ErrorSinkFilter/NAME
-                                 "MsgDispatcher"
-                                 disp))))
-             options) ]
-    (.setv co :netty  { :bootstrap bs })
+  (let [^Context ctr (.parent ^Hierarchial co)
+        options (.getv (.getx co) :emcfg)
+        bs (httpServer<>
+             (reify CPDecorator
+               (newHttp1Handler [_ ops] (msgDispatcher co ops))
+               (newHttp2Handler [_ _])
+               (newHttp2Reqr [_ _]))
+             options)]
+    (.setv (.getx co) :netty  { :bootstrap bs })
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/NettyIO
+(defmethod io->start
 
-  [^Muble co & args]
+  ::Netty
+  [^Context co & args]
 
-  (log/info "ioStart: NettyIO: %s" (.id ^Identifiable co))
-  (let [{:keys [host port]}
-        (.getv co :emcfg)
-        nes (.getv co :netty)
+  (log/info "io->start: NettyIO: %s" (.id ^Identifiable co))
+  (let [nes (.getv (.getx co) :netty)
+        cfg (.getv (.getx co) :emcfg)
         bs (:bootstrap nes)
-        ch (startServer bs host port) ]
-    (.setv co :netty (assoc nes :channel ch))
-    (ioStarted co)))
+        ch (startServer bs cfg)]
+    (.setv (.getx co) :netty (assoc nes :channel ch))
+    (io->started co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/NettyIO
+(defmethod io->stop
 
-  [^Muble co & args]
+  ::Netty
+  [^Context co & args]
 
-  (log/info "ioStop NettyIO: %s" (.id ^Identifiable co))
+  (log/info "io->stop Netty: %s" (.id ^Identifiable co))
   (let [{:keys [bootstrap channel]}
-        (.getv co :netty) ]
-    (stopServer  bootstrap channel)
-    (ioStopped co)))
+        (.getv (.getx co) :netty) ]
+    (stopServer bootstrap channel)
+    (io->stopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.io/NettyIO
+(defmethod comp->initialize
 
-  [^Muble co]
+  ::Netty
+  [^Context co]
 
-  (log/info "compInitialize: NettyIO: %s" (.id ^Identifiable co))
+  (log/info "comp->initialize: Netty: %s" (.id ^Identifiable co))
   (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

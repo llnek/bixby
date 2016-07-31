@@ -14,15 +14,16 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.io.socket
 
   (:require
     [czlab.xlib.core
-     :refer [nextLong
-             test-posnum
+     :refer [test-posnum
              convLong
+             muble<>
+             seqint
              spos?]]
     [czlab.xlib.process :refer [async!]]
     [czlab.xlib.meta :refer [getCldr]]
@@ -35,7 +36,7 @@
 
   (:import
     [java.net InetAddress ServerSocket Socket]
-    [czlab.wflow.server Emitter]
+    [czlab.server EventEmitter]
     [czlab.xlib Muble Identifiable]
     [czlab.skaro.io SocketEvent]))
 
@@ -44,18 +45,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioReifyEvent :czc.skaro.io/SocketIO
+(defmethod ioevent
 
-  [co & args]
+  ::Socket
+  [^EventEmitter co & args]
 
-  (log/info "ioReifyEvent: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "ioevent: Socket: %s" (.id ^Identifiable co))
   (let [^Socket soc (first args)
-        eeid (nextLong) ]
+        impl (muble<>)
+        eeid (seqint2) ]
     (with-meta
       (reify
 
-        Identifiable
+        Context
+        (getx [_] impl)
 
+        Identifiable
         (id [_] eeid)
 
         SocketEvent
@@ -63,27 +68,27 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
         (getSession [_] )
-        (getId [_] eeid)
+        (id [_] eeid)
         (getSockOut [_] (.getOutputStream soc))
         (getSockIn [_] (.getInputStream soc))
         (emitter [_] co)
         (dispose [_] (closeQ soc)))
 
-      {:typeid :czc.skaro.io/SocketEvent })))
+      {:typeid ::SocketEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/SocketIO
+(defmethod comp->configure
 
-  [^Muble co cfg0]
+  ::Socket
+  [^Context co cfg0]
 
-  (log/info "compConfigure: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "comp->configure: Socket: %s" (.id ^Identifiable co))
   (test-posnum "socket-io port" (:port cfg0))
 
   (let [{:keys [timeoutMillis backlog host]
          :as cfg}
-        (merge (.getv co :dftOptions) cfg0) ]
-
+        (merge (.getv (.getx co) :dftOptions) cfg0) ]
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy (assoc! @cpy :backlog
                            (if (spos? backlog) backlog 100)))
@@ -92,64 +97,71 @@
       (var-set cpy (assoc! @cpy
                            :timeoutMillis
                            (if (spos? timeoutMillis) timeoutMillis 0)))
-      (.setv co :emcfg (persistent! @cpy)))
+      (.setv (.getx co) :emcfg (persistent! @cpy)))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.io/SocketIO
+(defmethod comp->initialize
 
-  [^Muble co]
+  ::Socket
+  [^Context co]
 
-  (log/info "CompInitialize: SocketIO: %s" (.id ^Identifiable co))
+  (log/info "comp->initialize: Socket: %s" (.id ^Identifiable co))
   (let [{:keys [backlog host port]}
-        (.getv co :emcfg)
+        (.getv (.getx co) :emcfg)
         ip (if (hgl? host)
              (InetAddress/getByName host)
              (InetAddress/getLocalHost))
         soc (ServerSocket. port backlog ip) ]
     (log/info "Opened Server Socket %s (bound?) " soc (.isBound soc))
     (doto soc (.setReuseAddress true))
-    (.setv co :ssocket soc)))
+    (.setv (.getx co) :ssocket soc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- sockItDown ""
+(defn- sockItDown
 
-  [^Emitter co ^Socket soc]
+  ""
+  [^EventEmitter co ^Socket soc]
 
-  (.dispatch co (ioReifyEvent co soc) {} ))
+  (.dispatch co (ioevent<> co soc) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStart :czc.skaro.io/SocketIO
+(defmethod io->start
 
-  [^Muble co & args]
+  ::Socket
+  [^Context co & args]
 
-  (log/info "ioStart: SocketIO: %s" (.id ^Identifiable co))
-  (let [^ServerSocket ssoc (.getv co :ssocket)]
+  (log/info "io->start: Socket: %s" (.id ^Identifiable co))
+  (let [^ServerSocket
+        ssoc (.getv (.getx co) :ssocket)]
     (when (some? ssoc)
-      (async! #(while (.isBound ssoc)
-                    (try
-                      (sockItDown co (.accept ssoc))
-                      (catch Throwable e#
-                        (log/warn e# "")
-                        (closeQ ssoc)
-                        (.setv co :ssocket nil))))
-                 (getCldr)))
-    (ioStarted co)))
+      (async!
+        #(while (.isBound ssoc)
+           (try
+             (sockItDown co (.accept ssoc))
+             (catch Throwable e#
+               (log/warn e# "")
+               (closeQ ssoc)
+               (.unsetv (.getx co) :ssocket ))))
+        (getCldr)))
+    (io->started co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioStop :czc.skaro.io/SocketIO
+(defmethod io->stop
 
-  [^Muble co & args]
+  ::Socket
+  [^Context co & args]
 
-  (log/info "ioStop: SocketIO: %s" (.id ^Identifiable co))
-  (let [^ServerSocket ssoc (.getv co :ssocket) ]
+  (log/info "io->stop: Socket: %s" (.id ^Identifiable co))
+  (let [^ServerSocket
+        ssoc (.getv (.getx co) :ssocket) ]
     (closeQ ssoc)
-    (.setv co :ssocket nil)
-    (ioStopped co)))
+    (.unsetv (.getx co) :ssocket )
+    (io->stopped co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
