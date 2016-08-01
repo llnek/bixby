@@ -21,14 +21,14 @@
   (:require
     [czlab.xlib.core
      :refer [test-cond
-             seqLong
+             seqint2
              trap!
              muble<>
              test-nestr]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.str :refer [toKW]]
+    [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.files
      :refer [fileRead? dirReadWrite?]])
 
@@ -36,10 +36,7 @@
         [czlab.skaro.core.sys])
 
   (:import
-    [czlab.skaro.loaders AppClassLoader]
-    [czlab.skaro.runtime AppManifest]
     [czlab.xlib
-     MubleParent
      Versioned
      Muble
      I18N
@@ -108,22 +105,19 @@
   [regoType regoId ver parObj]
   {:pre [(keyword? regoType) (keyword? regoId)]}
 
-  (let [impl (muble<> {:cache {} })
-        ctxt (muble<>)]
+  (let [impl (muble<> {:_pptr_ parObj
+                       :cache {}})]
     (with-meta
       (reify
 
         Hierarchial
 
-        (parent [_] parObj)
-
-        MubleParent
-
-        (muble [_] impl)
+        (setParent [_ p] (.setv impl :_pptr p))
+        (parent [_] (.getv impl :_pptr_))
 
         Context
 
-        (getx [_] ctxt)
+        (getx [_] impl)
 
         Component
 
@@ -138,8 +132,8 @@
               (some? )))
 
         (lookup [_ cid]
-          (let [cc (.getv impl :cache)
-                c (get cc cid)]
+          (let [c (-> (.getv impl :cache)
+                      (get cid))]
             (if (and (nil? c)
                      (inst? Registry parObj))
               (.lookup ^Registry parObj cid)
@@ -151,6 +145,8 @@
                       (.id  ^Identifiable c))
                 cc (.getv impl :cache)]
             (when (.has this cid)
+              (when (inst? Hierarchial c)
+                (.setParent ^Hierarchial c nil))
               (.setv impl :cache (dissoc cc cid)))))
 
         (reg [this c]
@@ -162,62 +158,49 @@
               (trap! RegistryError
                      (rstr (I18N/getBase)
                            "skaro.dup.cmp" cid)))
+            (when (inst? Hierarchial c)
+              (.setParent ^Hierarchial c this))
             (.setv impl :cache (assoc cc cid c))))
 
         (iter [_]
           (let [cc (.getv impl :cache)]
             (seq cc))))
 
-      {:typeid (asFQKeyword (name regoType))})))
+      {:typeid regoType})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn podMeta
 
   "Create metadata for an application bundle"
-  [app info pathToPOD]
-  {:pre [(map? info)]}
+  [app conf urlToPOD]
+  {:pre [(map? conf)]}
 
-  (let [{:keys [disposition version main]
-         :or {main "noname"
-              version "1.0"}}
-        info
-        pid (str main "#" (seqLong))
-        impl (muble<>)
-        ctxt (muble<>)]
-    (log/info (str "pod-meta: app=%s\n"
-                   "ver=%s\ntype=%s\n"
-                   "key=%s\npath=%s")
-              app version
-              main disposition pathToPOD)
+  (let [pid (seqint2)
+        impl
+        (-> (merge {:version "1.0"
+                    :path pathToPOD
+                    :name app
+                    :main "noname"} conf)
+            (muble<> ))]
+    (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
 
         Context
 
-        (getx [_] ctxt)
-
-        MubleParent
-
-        (muble [_] impl)
+        (getx [_] impl)
 
         Component
 
-        (version [_] (str version))
-        (id [_] pid )
+        (id [_] (str (.getv impl :name) "#" pid ))
+        (version [_] (.getv impl :version))
 
         Hierarchial
 
-        (parent [_] nil)
+        (parent [_] nil))
 
-        AppManifest
-
-        (appKey [_] disposition)
-        (content [_] pathToPOD)
-        (name [_] app)
-        (typeof [_] main))
-
-      {:typeid ::AppManifest})))
+      {:typeid ::AppGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

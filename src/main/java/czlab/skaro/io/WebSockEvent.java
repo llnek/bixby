@@ -33,9 +33,6 @@ public interface WebSockEvent extends IOEvent, Replyable {
   public boolean isText();
 
   /**/
-  public XData data();
-
-  /**/
   public boolean isSSL();
 
 }

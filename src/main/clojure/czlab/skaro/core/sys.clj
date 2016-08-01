@@ -64,30 +64,18 @@
 
   "Synthesize a component
    Note the ordering
-   1. contextualize
-   2. compose
-   3. configure
-   4. initialize"
+   1. initialize
+   2. configure
+   3. compose"
 
   ^Muble
   [co options]
 
   (let [{:keys [props rego ctx]} options]
-    (comp->contextualize co ctx)
-    (comp->compose co rego)
+    (comp->initialize co ctx)
     (comp->configure co props)
-    (comp->initialize co)
+    (comp->compose co rego)
     co))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro context<>
-
-  "Create a context object"
-  ^Muble
-  []
-
-  `(mubleObj!))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

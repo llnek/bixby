@@ -15,6 +15,8 @@
 
 package czlab.skaro.server;
 
+import czlab.skaro.io.IOResult;
+
 /**
  * @author Kenneth Leung
  */

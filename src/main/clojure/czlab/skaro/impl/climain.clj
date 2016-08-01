@@ -14,15 +14,15 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.impl.climain
 
   (:require
+    [czlab.xlib.str :refer [str<> lcase hgl? strim]]
     [czlab.netty.discarder :refer [discardHTTPD<>]]
     [czlab.xlib.files :refer [readFile writeFile]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
-    [czlab.xlib.str :refer [lcase hgl? strim]]
     [czlab.xlib.resources :refer [getResource]]
     [czlab.xlib.meta :refer [setCldr getCldr]]
     [czlab.skaro.impl.exec :refer [execvisor]]
@@ -66,7 +66,6 @@
      ConfigError]
     [czlab.skaro.loaders
      AppClassLoader
-     RootClassLoader
      ExecClassLoader]
     [czlab.xlib
      Identifiable
@@ -95,7 +94,6 @@
 
   "Context has a set of props, such as home dir, which
    is shared with other key components"
-
   ^Muble
   [baseDir]
 
@@ -105,47 +103,51 @@
                 (io/file home DN_DIST)
                 (io/file home DN_LIB)
                 (io/file home DN_BIN) home etc)
-    (doto (context<>)
-      (.setv K_BASEDIR home)
-      (.setv K_CFGDIR etc))))
+    (doto (muble<>)
+      (.setv :basedir home)
+      (.setv :etc etc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopCLI
 
   "Stop all apps and processors"
+  ^Muble
   [^Muble ctx]
 
-  (let [pid (.getv ctx K_PIDFILE)
-        kp (.getv ctx K_KILLPORT)
-        execv (.getv ctx K_EXECV)]
+  (let [{:keys [pidFile
+                execv
+                discarder]}
+        (.impl ctx)]
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
-      (stopServer (:bootstrap kp)
-                  (:channel kp))
+      (stopServer (:bootstrap discarder)
+                  (:channel discarder))
       (log/info "remote shutdown hook closed - ok")
-      ;;(when-not (nil? pid) (io/delete-file pid true))
       (log/info "containers are shutting down...")
       (log/info "about to stop skaro...")
       (when (some? execv) (.stop ^Startable execv))
       (log/info "skaro stopped")
       (log/info "vm shut down")
-      (log/info "(bye)"))))
+      (log/info "(bye)"))
+    ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- enableRemoteShutdown
 
   "Listen on a port for remote kill command"
+  ^Muble
   [^Muble ctx]
 
   (log/info "enabling remote shutdown hook")
   (->> (-> (sysProp "skaro.kill.port")
            (convLong  4444)
            (discardHTTPD<> #(stopCLI ctx)))
-       (.setv ctx K_KILLPORT )))
+       (.setv ctx :discarder ))
+  ctx)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,10 +186,10 @@
   ^Muble
   [^Muble ctx]
 
-  (let [home (.getv ctx K_BASEDIR)
-        fp (io/file home "skaro.pid")]
+  (let [fp (-> (.getv ctx :basedir)
+               (io/file "skaro.pid"))]
     (writeFile fp (processPid))
-    (.setv ctx K_PIDFILE fp)
+    (.setv ctx :pidFile fp)
     (.deleteOnExit fp)
     (log/info "wrote skaro.pid - ok")
     ctx))
@@ -200,21 +202,21 @@
   ^Muble
   [^Muble ctx]
 
-  (let [cl (.getv ctx K_EXEC_CZLR)
-        cli {:stop #(stopCLI ctx) }
-        wc (.getv ctx K_PROPS)
-        cz (get-in wc [K_COMPS K_EXECV])]
+  (let [cli {:stop #(stopCLI ctx) }
+        cl (.getv ctx :exeLoader)
+        wc (.getv ctx :skaroConf)
+        cz (get-in wc [:components :execvisor])]
     (test-cond "conf file:execvisor"
                (= cz "czlab.skaro.impl.Execvisor"))
     (log/info "inside primodial() ----------------------------->")
     (log/info "execvisor = %s" cz)
     (let [execv (execvisor cli)]
-      (.setv ctx K_EXECV execv)
+      (.setv ctx :execv execv)
       (comp->synthesize execv {:ctx ctx})
-      (log/info "execvisor created and synthesized - ok")
-      (log/info "*********************************************************")
+      (log/info "execvisor synthesized - ok")
+      (log/info (str<> 72 \*))
       (log/info "about to start skaro...")
-      (log/info "*********************************************************")
+      (log/info (str<> 72 \*))
       (.start ^Startable execv)
       (log/info "skaro started!"))
     ctx))
@@ -228,9 +230,9 @@
   [^Muble ctx]
 
   (let [rc (-> "czlab.skaro.etc/Resources"
-               (getResource (.getv ctx K_LOCALE)))]
+               (getResource (.getv ctx :locale)))]
     (test-nonil "etc/resouces" rc)
-    (.setv ctx K_RCBUNDLE rc)
+    (.setv ctx :skaroRes rc)
     (I18N/setBase rc)
     (log/info "resource bundle found and loaded")
     ctx))
@@ -243,20 +245,19 @@
   ^Muble
   [^Muble ctx]
 
-  (let [home (.getv ctx K_BASEDIR)
-        cf (io/file home
-                    DN_CONF (name K_PROPS))]
+  (let [cf (-> (.getv ctx :basedir)
+               (io/file DN_CONF SKARO_CF))]
     (log/info "about to parse config file %s" cf)
     (let [w (readEdn cf)
-          lg (lcase (or (get-in w [K_LOCALE K_LANG]) "en"))
-          cn (lcase (get-in w [K_LOCALE K_COUNTRY]))
+          lg (lcase (or (get-in w [:locale :lang]) "en"))
+          cn (lcase (get-in w [:locale :country]))
           loc (if (empty? cn)
                 (Locale. lg)
                 (Locale. lg cn))]
       (log/info "using locale: %s" loc)
       (doto ctx
-        (.setv K_LOCALE loc)
-        (.setv K_PROPS w)))))
+        (.setv :locale loc)
+        (.setv :skaroConf w)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;prepare class loaders.  The root class loader loads all the core libs,
@@ -269,14 +270,11 @@
   [ctx]
 
   (let [cz (getCldr)
-        p (.getParent cz)
-        pp (.getParent p)]
+        p (.getParent cz)]
     (test-cond "bad classloaders"
-               (and (inst? RootClassLoader pp)
-                    (inst? ExecClassLoader p)))
-    (.setv ctx K_ROOT_CZLR pp)
-    (.setv ctx K_EXEC_CZLR p)
+               (inst? ExecClassLoader p))
     (log/info "classloaders configured: using %s" (type cz))
+    (log/info "parent-loader = %s" (type p))
     ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,7 +288,6 @@
   (let [ctx (inizContext home)]
     (log/info "skaro.home   = %s" (fpath home))
     (log/info "skaro.version= %s" (sysProp "skaro.version"))
-    ;;(.setv x K_CLISH this)
     (log/info "home directory - ok")
     x))
 

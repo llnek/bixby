@@ -37,12 +37,6 @@ public interface HTTPEvent extends IOEvent, Replyable {
   public boolean isKeepAlive();
 
   /**/
-  public XData data();
-
-  /**/
-  public boolean hasData();
-
-  /**/
   public long contentLength();
 
   /**/

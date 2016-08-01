@@ -66,6 +66,7 @@
 (def ^String DN_STYLES "styles" )
 (def ^String DN_PUBLIC "public" )
 
+(def ^String SKARO_CF "skaro.conf" )
 (def ^String ENV_CF  "env.conf" )
 (def ^String APP_CF  "app.conf" )
 
@@ -88,7 +89,6 @@
 (def K_SKARO_APPTASK :skaro-app-task )
 (def K_JMXMGM :jmx-management )
 (def K_HOMEDIR :skaro-home )
-(def K_PROPS :skaro.conf )
 (def K_ROUTE_INFO :route-info )
 (def K_CLISH :cli-shell )
 (def K_COMPS :components )

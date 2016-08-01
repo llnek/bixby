@@ -24,7 +24,7 @@ public interface ServiceProvider {
   public boolean hasService(Object serviceId);
 
   /**/
-  public Service getService(Object serviceId);
+  public Service service(Object serviceId);
 
 }
 

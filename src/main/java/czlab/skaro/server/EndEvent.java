@@ -15,7 +15,7 @@
 
 package czlab.skaro.server;
 
-import czlab.server.EventEmitter;
+import czlab.server.Emitter;
 import czlab.server.Event;
 
 /**
@@ -24,11 +24,11 @@ import czlab.server.Event;
 public class EndEvent implements Event {
 
   /**/
-  public EndEvent(EventEmitter em) {
+  public EndEvent(Emitter em) {
     _ee=em;
   }
 
-  private EventEmitter _ee;
+  private Emitter _ee;
 
   @Override
   public Object id() {
@@ -36,7 +36,7 @@ public class EndEvent implements Event {
   }
 
   @Override
-  public EventEmitter emitter() {
+  public Emitter emitter() {
     return _ee;
   }
 

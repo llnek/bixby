@@ -34,22 +34,22 @@ public interface Container extends ServerLike, ServiceProvider, Nameable, Dispos
   public boolean isEnabled();
 
   /**/
-  public CLJShim getCljRt();
+  public CLJShim cljRt();
 
   /**/
-  public Object getEnvConfig();
+  public Object envConfig();
 
   /**/
-  public Object getAppConfig();
+  public Object appConfig();
 
   /**/
-  public byte[] getAppKeyBits();
+  public byte[] appKeyBits();
 
   /**/
-  public String getAppKey();
+  public String appKey();
 
   /**/
-  public File getAppDir();
+  public File appDir();
 
   /**/
   public JDBCPool acquireDbPool(Object groupid);

@@ -26,16 +26,16 @@ public interface WebAsset {
   public String contentType();
 
   /**/
-  public File getFile();
+  public File file();
 
   /**/
-  public long getTS();
+  public long ts();
 
   /**/
   public long size();
 
   /**/
-  public byte[] getBytes();
+  public byte[] content();
 
 }
 

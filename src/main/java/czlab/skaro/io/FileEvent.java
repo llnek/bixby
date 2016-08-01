@@ -25,9 +25,6 @@ public interface FileEvent  extends IOEvent {
   /**/
   public String originalName();
 
-  /**/
-  public File file();
-
 }
 
 

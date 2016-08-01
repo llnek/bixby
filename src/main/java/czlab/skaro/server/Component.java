@@ -21,7 +21,7 @@ import czlab.xlib.Versioned;
 /**
  * @author Kenneth Leung
  */
-public interface Component extends Identifiable, Versioned { //Composable  {
+public interface Component extends Identifiable, Versioned {
 }
 
 

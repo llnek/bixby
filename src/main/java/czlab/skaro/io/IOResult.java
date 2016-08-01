@@ -15,7 +15,7 @@
 
 package czlab.skaro.io;
 
-import czlab.server.EventEmitter;
+import czlab.server.Emitter;
 
 /**
  * @author Kenneth Leung
@@ -23,7 +23,7 @@ import czlab.server.EventEmitter;
 @FunctionalInterface public interface IOResult {
 
   /**/
-  public EventEmitter emitter();
+  public Emitter emitter();
 
 }
 

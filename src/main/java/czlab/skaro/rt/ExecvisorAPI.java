@@ -22,10 +22,10 @@ import java.io.File;
 public interface ExecvisorAPI  {
 
   /**/
-  public long getUpTimeInMillis();
+  public long uptimeInMillis();
 
   /**/
-  public long getStartTime();
+  public long startTime();
 
   /**/
   public File homeDir();

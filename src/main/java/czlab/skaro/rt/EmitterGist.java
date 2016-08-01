@@ -20,13 +20,10 @@ import java.net.URL;
 /**
  * @author Kenneth Leung
  */
-public interface AppManifest extends Nameable {
+public interface EmitterGist extends Nameable {
 
   /**/
-  public String appKey();
-
-  /**/
-  public String typeof();
+  public boolean isEnabled();
 
   /**/
   public String name();
