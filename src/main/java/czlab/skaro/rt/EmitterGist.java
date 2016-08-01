@@ -14,22 +14,17 @@
 
 package czlab.skaro.rt;
 
+import  czlab.skaro.server.Context;
 import czlab.xlib.Nameable;
 import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface EmitterGist extends Nameable {
+public interface EmitterGist extends Context, Nameable {
 
   /**/
   public boolean isEnabled();
-
-  /**/
-  public String name();
-
-  /**/
-  public URL content();
 
 }
 

@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.impl.exec
+  czlab.skaro.core.exec
 
   (:require
     [czlab.xlib.process :refer [safeWait]]
@@ -41,11 +41,10 @@
              juid
              test-nonil]])
 
-  (:use [czlab.skaro.core.consts]
+  (:use [czlab.skaro.core.dfts]
         [czlab.skaro.core.sys]
-        [czlab.skaro.impl.dfts]
         [czlab.skaro.jmx.core]
-        [czlab.skaro.impl.ext])
+        [czlab.skaro.core.ext])
 
   (:import
     [java.security SecureRandom]
@@ -64,8 +63,7 @@
      Identifiable]
     [czlab.skaro.server
      Context
-     Component
-     Registry]))
+     Component]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -76,11 +74,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inspectApp
+(defn- inspectPod
 
-  "Make sure the app setup is ok"
+  "Make sure the pod setup is ok"
   ^Component
-  [^Context execv ^File des]
+  [^Component execv ^File des]
 
   (let [app (basename des)]
     (log/info "app dir : %s" des)
@@ -88,25 +86,19 @@
     (precondFile (io/file des CFG_APP_CF)
                  (io/file des CFG_ENV_CF))
     (precondDir (io/file des DN_CONF)
-                (io/file des DN_CFG))
+                (io/file des DN_ETC))
     (let [ps (readEdn (io/file des CFG_APP_CF))
-          ctx (.getx execv)
-          ^Registry
-          apps (-> ^Registry
-                   (.getv ctx :components)
-                   (.lookup :apps))
-          info (:info ps)]
-      (log/info "checking conf for app: %s\n%s" app info)
-      ;; synthesize the pod meta component and register it
+          ctx (.getx execv)]
+      (log/info "checking conf for app: %s" app)
+      ;; create the pod meta and register it
       ;; as a application
-      (let [^Context
-            m (-> (podMeta app
-                           info
+      (let [m (-> (podMeta app
+                           (:info ps)
                            (io/as-url des))
-                  (comp->synthesize {:ctx ctx}))]
-        (-> (.getx m)
-            (.setv :execv execv))
-        (.reg apps m)
+                  (comp->initialize  execv))]
+        (->> (-> (.getv ctx :apps)
+                 (assoc (.id ^Identifiable m) m))
+             (.setv ctx :apps))
         m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -114,7 +106,8 @@
 (defn- startJmx
 
   "Basic JMX support"
-  [^Context co cfg]
+  ^JMXServer
+  [^Component co cfg]
 
   (log/info "jmx-config: %s" cfg)
   (trylet!
@@ -134,7 +127,8 @@
 (defn- stopJmx
 
   "Kill the internal JMX server"
-  [^Context co]
+  ^Component
+  [^Component co]
 
   (trylet!
     [ctx (.getx co)
@@ -150,15 +144,18 @@
 (defn- ignitePod
 
   ""
-  [^Context co ^Context pod]
+  ^Component
+  [^Component co ^Component gist]
 
   (trylet!
     [cc (.getv (.getx co) :containers)
-     cid (.id ^Identifiable pod)
-     app (.getv (.getx pod) :name)
-     ctr (mkContainer pod)]
-    (log/debug "start pod\ncid = %s\napp = %s" cid app)
-    (.setv (.getx co) :containers (assoc cc cid ctr)))
+     app (.id ^Identifiable gist)
+     ctr (mkContainer gist)
+     cid (.id ^Identifiable ctr)]
+    (log/debug (str "start pod = %s\n
+                    instance = %s") app cid)
+    (->> (assoc cc cid ctr)
+         (.setv (.getx co) :containers)))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -166,7 +163,8 @@
 (defn- stopPods
 
   ""
-  [^Context co]
+  ^Component
+  [^Component co]
 
   (log/info "preparing to stop pods...")
   (doseq [[_ v]
@@ -189,33 +187,28 @@
     (with-meta
       (reify
 
-        Versioned
+        Component
 
+        (id [_] :execvisor)
         (version [_] "1.0")
+        (getx [_] impl)
 
         Hierarchial
 
         (parent [_] parObj)
-
-        Identifiable
-
-        (id [_] :execvisor)
-
-        Context
-
-        (getx [_] impl)
+        (setParent [_ p])
 
         ExecvisorAPI
 
         (uptimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (startTime [_] START-TIME)
-        (kill9 [this] ((:stop parObj)))
-        (homeDir [this] (maybeDir impl :basedir))
+        (kill9 [_] ((:stop parObj)))
+        (homeDir [_] (maybeDir impl :basedir))
 
         Startable
 
         (start [this]
-          (->> (inspectApp this (getCwd))
+          (->> (inspectPod this (getCwd))
                (ignitePod this)))
 
         (stop [this]
@@ -229,24 +222,21 @@
 (defmethod comp->initialize
 
   ::ExecVisor
-  [^Context co ^Muble arg]
+  [^Component co & args]
 
   (let [{:keys [basedir skaroConf]}
-        (.impl arg)
+        (.impl (first args))
         ctx (.getx co)
-        {:keys [components
-                jmx
-                registries]}
+        {:keys [components jmx ]}
         skaroConf]
     (log/info "com->initialize: ExecVisor: %s" co)
     (test-nonil "conf file: components" components)
-    (test-nonil "conf file: registries" registries)
     (test-nonil "conf file: jmx" jmx)
 
     (System/setProperty "file.encoding" "utf-8")
 
     (->> "app/mime.properties"
-         (io/file basedir DN_CFG)
+         (io/file basedir DN_ETC)
          (io/as-url)
          (setupCache ))
 
@@ -273,54 +263,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- blockMeta<>
+(defn- emsMeta<>
 
   ""
-  ;; url points to block-meta file
-  [blockType data ^URL url]
+  [emsType data]
 
-  (let [ctxt (muble<>)
-        {:keys [info conf]}
+  (let [{:keys [info conf]}
         data
-        impl (muble<> {:metaInfo info
-                       :dftOptions conf})]
+        impl (muble<> conf)]
     (with-meta
       (reify
 
         Hierarchial
 
+        (setParent [_ p])
         (parent [_] nil)
 
         Context
 
-        (getx [_] ctxt)
-
-        MubleParent
-
-        (muble [_] impl)
+        (getx [_] impl)
 
         Component
 
         (version [_] (:version info))
 
-        (id [_] blockType)
+        (id [_] emsType)
 
-        EmitterManifest
+        EmitterGist
 
-        (isEnabled [_] (not (false? (:enabled info))))
+        (isEnabled [_]
+          (not (false? (:enabled info))))
 
-        (name [_] (:name info))
+        (name [_] (:name info)))
 
-        (content [_] url) )
-
-      {:typeid ::EmitterManifest})))
+      {:typeid ::EmitterGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
 (defmethod comp->configure
 
-  :czlab.skaro.impl/EmitterManifest
-  [^Muble co props]
+  ::EmitterGist
+  [^Context co props]
 
   (when (some? props)
     (doseq [[k v] props]
@@ -337,18 +320,18 @@
   [^Context co arg]
 
   (log/info "comp->initialize: EmsRego \"%s\"" (.id ^Identifiable co))
-  (doseq [[k v] *emitter-defs*
-          :let [b (-> (emsMeta<> k v (io/as-url f))
-                          (comp->synthesize {:props v}))]]
-        (.reg ^Registry co b)
-        (log/info "added one block: %s" (.id ^Identifiable b)) ))))
+  (doseq
+    [[k v] *emitter-defs*
+     :let [b (emsMeta<> k v)]]
+    (.reg ^Registry co b)
+    (log/info "added emitter: %s" (.id ^Identifiable b)) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->initialize
 
-  :czlab.skaro.impl/SystemRego
-  [co]
+  ::SystemRego
+  [^Context co arg]
 
   (log/info "comp->initialize: SystemRego: \"%s\"" (.id ^Identifiable co))
   co)
@@ -357,10 +340,12 @@
 ;;
 (defmethod comp->initialize
 
-  :czlab.skaro.impl/AppsRego
-  [co]
+  :czlab.skaro.core.dfts/AppGist
+  [^Component co & args]
 
-  (log/info "comp->initialize: AppsRego: \"%s\"" (.id ^Identifiable co))
+  (log/info "comp->initialize: AppGist: \"%s\"" (.id ^Identifiable co))
+  (-> (.getx co)
+      (.setv :execv (first args)))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

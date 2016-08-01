@@ -100,7 +100,7 @@
 ;;be nested
 (defn registry<>
 
-  "Create a generic component registry"
+  "Create a component registry"
   ^Registry
   [regoType regoId ver parObj]
   {:pre [(keyword? regoType) (keyword? regoId)]}
@@ -173,34 +173,23 @@
 (defn podMeta
 
   "Create metadata for an application bundle"
-  [app conf urlToPOD]
-  {:pre [(map? conf)]}
+  [app info urlToPOD]
+  {:pre [(map? info)]}
 
-  (let [pid (seqint2)
-        impl
+  (let [impl
         (-> (merge {:version "1.0"
-                    :path pathToPOD
+                    :path urlToPOD
                     :name app
-                    :main "noname"} conf)
+                    :main "noname"} info)
             (muble<> ))]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
-
-        Context
-
-        (getx [_] impl)
-
         Component
-
-        (id [_] (str (.getv impl :name) "#" pid ))
         (version [_] (.getv impl :version))
-
-        Hierarchial
-
-        (parent [_] nil))
-
-      {:typeid ::AppGist})))
+        (id [_] (str (.getv impl :name)))
+        (getx [_] impl))
+      {:typeid  ::AppGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

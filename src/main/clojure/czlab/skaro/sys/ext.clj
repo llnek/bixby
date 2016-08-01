@@ -12,7 +12,6 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
@@ -43,7 +42,7 @@
              trap!
              try!!
              nbf
-             seqlong
+             seqint2
              convLong
              bytesify]]
     [czlab.dbio.core
@@ -89,7 +88,6 @@
      XData
      Schedulable
      CU
-     Mutable
      Muble
      I18N
      Morphable
@@ -115,7 +113,7 @@
   ^String
   [^IOEvent evt]
 
-  (.getAppKey ^Container (.. evt emitter container)))
+  (.getAppKey ^Container (.. evt emitter server)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -123,10 +121,10 @@
 
   ""
   ^JDBCPool
-  [^Muble co ^String gid]
+  [^Context co ^String gid]
 
   (let [dk (stror gid DEF_DBID)]
-    (-> (.getv co K_DBPS)
+    (-> (.getv (.getx co) :dbps)
         (get (keyword dk)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,28 +133,28 @@
 
   ""
   ^DBAPI
-  [^Muble co ^String gid]
+  [^Context co ^String gid]
 
-  (let [mcache (.getv co K_MCACHE)
-        p (maybeGetDBPool co gid)]
+  (when-some [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
-    (when (some? p)
-      (dbopen<+> p mcache {}))))
+    (->> (.getv (.getx co) :schema)
+         (dbopen<+> p ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- releaseSysResources
 
   ""
-  [^Muble co]
+  [^Context co]
 
-  (let [^Schedulable sc (.getv co K_SCHEDULER)
-        dbs (.getv co K_DBPS)]
-    (log/info "container releasing all system resources")
-    (when (some? sc) (.dispose sc))
-    (doseq [[k v] dbs]
-      (log/debug "shutting down dbpool %s" (name k))
-      (.shutdown ^JDBCPool v))))
+  (log/info "container releasing all system resources")
+  (when-some [^Schedulable
+              sc (.getv (.getx co) :core)]
+    (.dispose sc))
+  (doseq [[k v]
+          (.getv (.getx co) :dbps)]
+    (log/debug "shutting down dbpool %s" (name k))
+    (.shutdown ^JDBCPool v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -164,9 +162,9 @@
 
   ""
   ^Container
-  [appDir options]
+  [appDir arg]
 
-  (log/info "creating a container: %s" (:name options))
+  (log/info "creating a container: %s" (:name arg))
   (let [pub (io/file appDir DN_PUBLIC DN_PAGES)
         ftlCfg (genFtlConfig :root pub)
         pid (str "c#" (seqint))
@@ -180,11 +178,11 @@
 
         Container
 
-        (getAppKeyBits [this] (bytesify (.getAppKey this)))
-        (getAppDir [this] (.getv impl K_APPDIR))
-        (getAppKey [_] (:appKey options))
-        (name [_] (:name options))
-        (getCljRt [_] (.getv impl :cljshim))
+        (appKeyBits [this] (bytesify (.appKey this)))
+        (appDir [this] (.getv impl :appDir))
+        (appKey [_] (:appKey arg))
+        (name [_] (:name arg))
+        (cljrt [_] (.getv impl :cljshim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
@@ -203,28 +201,28 @@
                :else "text/plain")} ))
 
         (isEnabled [_]
-          (let [env (.getv impl K_ENVCONF)
-                c (:container env) ]
+          (let [c (->> (.getv impl :envConf)
+                       (:container ))]
             (not (false? (:enabled c)))))
 
-        (getService [_ sid]
+        (service [_ sid]
           (let [^Registry
-                srg (.getv impl K_SVCS)]
+                srg (.getv impl :services)]
             (.lookup srg (keyword sid))))
 
         (hasService [_ sid]
           (let [^Registry
-                srg (.getv impl K_SVCS)]
+                srg (.getv impl :services)]
             (.has srg (keyword sid))))
 
         (core [this]
-          (.getv impl K_SCHEDULER))
+          (.getv impl :core))
 
-        (getEnvConfig [_]
-          (.getv impl K_ENVCONF))
+        (envConfig [_]
+          (.getv impl :envConf))
 
-        (getAppConfig [_]
-          (.getv impl K_APPCONF))
+        (appConfig [_]
+          (.getv impl :appConf))
 
         Component
 
@@ -233,14 +231,15 @@
 
         Hierarchial
 
+        (setParent [_ p] )
         (parent [_] nil)
 
         Startable
 
         (start [this]
           (let [^Registry
-                srg (.getv impl K_SVCS)
-                main (.getv impl :main-app) ]
+                srg (.getv impl :services)
+                main (.getv impl :mainApp)]
             (log/info "container starting all services...")
             (doseq [[k v] (.iter srg)]
               (log/info "service: %s about to start..." k)
@@ -251,9 +250,9 @@
 
         (stop [this]
           (let [^Registry
-                srg (.getv impl K_SVCS)
-                pls (.getv impl K_PLUGINS)
-                main (.getv impl :main-app)]
+                srg (.getv impl :services)
+                pls (.getv impl :plugins)
+                main (.getv impl :mainApp)]
             (log/info "container stopping all services...")
             (doseq [[k v] (.iter srg)]
               (.stop ^Startable v))
@@ -268,9 +267,9 @@
 
         (dispose [this]
           (let [^Registry
-                srg (.getv impl K_SVCS)
-                pls (.getv impl K_PLUGINS)
-                main (.getv impl :main-app)]
+                srg (.getv impl :services)
+                pls (.getv impl :plugins)
+                main (.getv impl :mainApp)]
             (log/info "container dispose(): all services")
             (doseq [[k v] (.iter srg)]
               (.dispose ^Disposable v))
@@ -289,19 +288,19 @@
 (defn- service<>
 
   ""
-  ^EventEmitter
-  [^Context co svc nm cfg0]
+  ^Emitter
+  [^Container co svc nm cfg0]
 
   (let
     [^Registry
      bks (-> ^Registry
-             (.getv (.getx co) K_COMPS)
-             (.lookup K_BLOCKS))]
+             (.getv (.getx co) :components)
+             (.lookup :emitters))]
     (if-some
-      [^Muble
+      [^Context
        bk (.lookup bks (keyword svc))]
       (let
-        [cfg (merge (.getv bk :dftOptions) cfg0)
+        [cfg (merge (.impl (.getx bk)) cfg0)
          pkey (.getAppKey ^Container co)
          eid (.id ^Identifiable bk)
          hid (:handler cfg)

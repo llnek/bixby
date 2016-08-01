@@ -14,12 +14,13 @@
 
 package czlab.skaro.rt;
 
+import  czlab.skaro.server.Context;
 import java.io.File;
 
 /**
  * @author Kenneth Leung
  */
-public interface ExecvisorAPI  {
+public interface ExecvisorAPI extends Context {
 
   /**/
   public long uptimeInMillis();

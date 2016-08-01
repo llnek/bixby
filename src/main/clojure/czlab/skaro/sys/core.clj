@@ -15,9 +15,25 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.core.consts)
+  czlab.skaro.core.sys
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (:require
+    [czlab.xlib.files :refer [changeContent readFile readUrl]]
+    [czlab.xlib.core :refer [muble<> fpath]]
+    [czlab.xlib.logging :as log]
+    [clojure.string :as cs]
+    [clojure.java.io :as io])
+
+  (:import
+    [czlab.skaro.server Context]
+    [czlab.xlib
+     Hierarchial
+     Muble
+     Identifiable
+     Versioned]
+    [java.io File]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,6 +155,34 @@
 (def K_MFPROPS :mf-props)
 (def K_META :meta )
 (def K_KILLPORT :discarder)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti comp->initialize
+  "Init component" ^Component (fn [a & args] (:typeid (meta a))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->initialize
+
+  :default
+  [co & args] co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn readConf
+
+  "Parse a edn configuration file"
+  ^String
+  [^File appDir ^String confile]
+
+  (let [rc (-> (io/file appDir DN_CONF confile)
+               (changeContent
+                 #(cs/replace %
+                              "${appdir}"
+                              (fpath appDir)))) ]
+    (log/debug "[%s]\n%s" confile rc)
+    rc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

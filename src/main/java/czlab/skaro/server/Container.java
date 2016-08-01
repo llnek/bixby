@@ -25,7 +25,7 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface Container extends ServerLike, ServiceProvider, Nameable, Disposable {
+public interface Container extends Component, ServerLike, ServiceProvider, Nameable, Disposable {
 
   /** load freemarker template */
   public Object loadTemplate(String tpl, Object ctx);
@@ -34,7 +34,7 @@ public interface Container extends ServerLike, ServiceProvider, Nameable, Dispos
   public boolean isEnabled();
 
   /**/
-  public CLJShim cljRt();
+  public CLJShim cljrt();
 
   /**/
   public Object envConfig();
