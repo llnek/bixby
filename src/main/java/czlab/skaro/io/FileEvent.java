@@ -22,9 +22,13 @@ import java.io.File;
  */
 public interface FileEvent  extends IOEvent {
 
-  /**/
-  public String originalName();
+  /**
+   */
+  public String originalFileName();
 
+  /**
+   */
+  public File file();
 }
 
 

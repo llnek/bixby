@@ -28,7 +28,6 @@
              spos?
              seqint2
              toJavaInt
-             subsVar
              muble<>
              test-cond
              stringify]]
@@ -36,16 +35,17 @@
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.netty.routes :refer [loadRoutes]])
 
-  (:use [czlab.skaro.core.consts]
+  (:use [czlab.skaro.sys.core]
         [czlab.crypto.ssl]
-        [czlab.skaro.core.sys]
         [czlab.skaro.io.core]
         [czlab.skaro.io.webss])
 
   (:import
-    [czlab.skaro.server Component]
     [clojure.lang APersistentMap]
-    [czlab.server EventEmitter]
+    [czlab.skaro.server
+     Component
+     Container]
+    [czlab.server Emitter]
     [java.net URL]
     [java.io File]
     [czlab.crypto PasswordAPI]
@@ -62,14 +62,13 @@
      WebSockResult
      IOSession
      HTTPResult
-     HTTPEvent]
-    [czlab.skaro.server Container]))
+     HTTPEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private ^String AUTH "Authorization")
-(def ^:private ^String BASIC "Basic")
+(def ^:private ^String AUTH "authorization")
+(def ^:private ^String BASIC "basic")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,35 +78,32 @@
   ^APersistentMap
   [^HTTPEvent evt]
 
-  (when (.hasHeader evt AUTH)
-    (parseBasicAuth (.getHeaderValue evt AUTH))))
+  (let [{:keys [headers]}
+        gist (.msgGist evt)]
+    (when (contains? headers AUTH)
+      (parseBasicAuth (first (get headers AUTH))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn httpBasicConfig
 
   "Basic http config"
-  [^Context co cfg]
+  ^APersistentMap
+  [^Service co]
 
   (let [{:keys [serverKey sockTimeOut
-                sslType contextPath
                 limitKB waitMillis
-                port host workers appkey]}
-        cfg
+                port passwd workers]}
+        (.config co)
+        ^Container ctr (.server co)
         kfile (subsVar serverKey)
         ssl (hgl? kfile)]
-    (with-local-vars [cpy (transient cfg)]
-      (when-not (hgl? sslType)
-        (var-set cpy (assoc! @cpy :sslType "TLS")))
+    (with-local-vars [cpy (transient {})]
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
                              :port
                              (if ssl 443 80))))
-      (when-not (hgl? host)
-        (var-set cpy (assoc! @cpy :host "")))
-      (when-not (hgl? contextPath)
-        (var-set cpy (assoc! @cpy :contextPath "")))
-      (if (hgl? kfile)
+      (if ssl
         (do
           (test-cond "server-key file url"
                      (.startsWith kfile "file:"))
@@ -115,9 +111,9 @@
                                :serverKey (URL. kfile)))
           (var-set cpy (assoc! @cpy
                                :passwd
-                               (-> (:passwd cfg)
-                                   (passwd<> appkey)
-                                   (.text)))))
+                               (->> (.appKey ctr)
+                                    (passwd<> passwd)
+                                    (.text)))))
         (do
           (var-set cpy (assoc! @cpy
                                :serverKey nil))))
@@ -130,7 +126,7 @@
 
       (when-not (spos? workers)
         (var-set cpy (assoc! @cpy
-                             :workers 2)))
+                             :workers 0)))
 
       ;; 4Meg threshold for payload in memory
       (when-not (spos? limitKB)
@@ -146,34 +142,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->configure
-
-  ::HTTP
-  [^Context co cfg0]
-
-  (log/info "comp->configure: HTTP: %s" (.id ^Identifiable co))
-  co)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn wsockResult<>
 
   "Create a WebSocket result object"
   ^WebSockResult
-  [^EventEmitter co]
+  [^Service co ^XData body & [binary?]]
 
-  (let [impl (muble<> {:binary false :data nil})]
+  (let [impl (muble<> {:body body})]
     (reify
-
-      Context
-
-      (getx [_] impl)
 
       WebSockResult
 
-      (isBinary [_] (true? (.getv impl :binary)))
       (isText [this] (not (.isBinary this)))
-      (getData [_] (xdata<> (.getv impl :data)))
+      (isBinary [_] (true? binary?))
+      (getx [_] impl)
       (emitter [_] co) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,28 +163,22 @@
 (defn httpResult<>
 
   "Create a HttpResult object"
-
   ^HTTPResult
-  [^EventEmitter co]
+  [^Service co]
 
   (let [impl (muble<> {:version "HTTP/1.1"
                        :cookies []
                        :code -1
-                       :hds {} })]
+                       :headers {} })]
     (reify
-
-      Context
-
-      (getx [_] impl)
 
       HTTPResult
 
-      (setProtocolVersion [_ ver]  (.setv impl :version ver))
-      (setStatus [_ code] (.setv impl :code code))
-      (getStatus [_] (.getv impl :code))
-      (emitter [_] co)
-
       (setRedirect [_ url] (.setv impl :redirect url))
+      (setVersion [_ ver]  (.setv impl :version ver))
+      (setStatus [_ code] (.setv impl :code code))
+      (status [_] (.getv impl :code))
+      (emitter [_] co)
 
       (addCookie [_ c]
         (when (some? c)
@@ -210,37 +186,38 @@
             (.setv impl :cookies (conj a c)))))
 
       (containsHeader [_ nm]
-        (let [m (.getv impl :hds)
+        (let [m (.getv impl :headers)
               a (get m (lcase nm)) ]
           (and (some? a)
                (> (count a) 0))))
 
       (removeHeader [_ nm]
-        (let [m (.getv impl :hds)]
-          (.setv impl :hds (dissoc m (lcase nm)))))
+        (let [m (.getv impl :headers)]
+          (->> (dissoc m (lcase nm))
+               (.setv impl :headers))))
 
       (clearHeaders [_]
-        (.setv impl :hds {}))
+        (.setv impl :headers {}))
 
       (addHeader [_ nm v]
-        (let [m (.getv impl :hds)
+        (let [m (.getv impl :headers)
               a (or (get m (lcase nm))
-                         []) ]
+                         [])]
           (.setv impl
-                 :hds
+                 :headers
                  (assoc m (lcase nm) (conj a v)))))
 
       (setHeader [_ nm v]
-        (let [m (.getv impl :hds) ]
+        (let [m (.getv impl :headers)]
           (.setv impl
-                 :hds
+                 :headers
                  (assoc m (lcase nm) [v]))))
 
-      (setChunked [_ b] (.setv impl :chunked b))
+      (setChunked [_ b] (.setv impl :chunked? b))
 
       (setContent [_ data]
         (if (some? data)
-          (.setv impl :data data)) ))))
+          (.setv impl :body data)) ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -250,8 +227,8 @@
   [gist header]
 
   (if-some [h (:headers gist)]
-    (and (> (count h) 0)
-         (some? (get h (lcase header))))
+    (and (not (empty? h))
+         (not (empty? (get h (lcase header)))))
     false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,8 +239,8 @@
   [gist param]
 
   (if-some [p (:params gist)]
-    (and (> (count p) 0)
-         (some? (get p param)))
+    (and (not (empty? p))
+         (not (empty? (get p param))))
     false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,9 +272,9 @@
 (defn maybeLoadRoutes
 
   ^APersistentMap
-  [^Context co]
+  [^Service co]
 
-  (let [^Container ctr (.parent ^Hierarchial co)
+  (let [^Container ctr (.server co)
         appDir (.getAppDir ctr)
         ctx (.getx co)
         sf (io/file appDir DN_CONF "static-routes.conf")

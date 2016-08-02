@@ -15,6 +15,7 @@
 
 package czlab.skaro.io;
 
+import czlab.xlib.Identifiable;
 import czlab.server.Event;
 
 /**

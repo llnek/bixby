@@ -22,8 +22,9 @@ import javax.jms.Message;
  */
 public interface JMSEvent  extends IOEvent {
 
-  /**/
-  //public Message message();
+  /**
+   */
+  public Message message();
 
 }
 

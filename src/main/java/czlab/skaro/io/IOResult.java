@@ -15,12 +15,13 @@
 
 package czlab.skaro.io;
 
+import czlab.skaro.server.Context;
 import czlab.server.Emitter;
 
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface public interface IOResult {
+public interface IOResult extends Context {
 
   /**/
   public Emitter emitter();

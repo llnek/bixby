@@ -33,11 +33,11 @@
     [czlab.xlib.str :refer [hgl? nsn]])
 
   (:use
-    [czlab.skaro.core.sys]
+    [czlab.skaro.sys.core]
     [czlab.skaro.io.core])
 
   (:import
-    [java.io FileFilter File FilenameFilter IOException]
+    [java.io FileFilter File IOException]
     [java.util Properties ResourceBundle]
     [org.apache.commons.io.filefilter
      SuffixFileFilter
@@ -49,7 +49,7 @@
      FileAlterationMonitor
      FileAlterationObserver
      FileAlterationListenerAdaptor]
-    [czlab.server EventEmitter]
+    [czlab.server Emitter]
     [czlab.skaro.io FileEvent]
     [czlab.xlib Muble Identifiable]))
 
@@ -61,7 +61,7 @@
 (defmethod ioevent<>
 
   ::FilePicker
-  [^EventEmitter co & args]
+  [^Service co & args]
 
   (let
     [fnm (first args)
@@ -69,21 +69,16 @@
      eeid (seqint2)
      impl (muble<>)]
     (with-meta
-      (reify
-
-        Identifiable
-
-        (id [_] eeid)
-
-        FileEvent
+      (reify FileEvent
 
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
-        (getSession [_] )
+        (session [_] )
         (id [_] eeid)
         (emitter [_] co)
-        (getOriginalFileName [_] fnm)
-        (getFile [_] f))
+        (originalFileName [_] fnm)
+        (file [_] f)
+        (id [_] eeid))
 
       {:typeid ::FileEvent})))
 
@@ -92,92 +87,77 @@
 (defn- postPoll
 
   "Only look for new files"
-  [^Context co ^File f action]
+  [^Service co ^File f action]
 
   (let
-    [^EventEmitter src co
-     {:keys [recvFolder]}
-     (.getv (.getx co) :emcfg)
+    [{:keys [recvFolder]}
+     (.config co)
      orig (.getName f)
      cf (if (and (= action :FP-CREATED)
                  (some? recvFolder))
-          (try!
-            (moveFileToDir f recvFolder false)
-            (io/file recvFolder orig))
-          nil)]
+          (trylet!
+            [r (subsVar recvFolder)]
+            (moveFileToDir f r false)
+            (io/file r orig)))]
     (when (some? cf)
-      (.dispatch ^EventEmitter src
-                 (ioevent<> co orig cf action) {}))))
+      (->> (ioevent<> co orig cf action)
+           (.dispatch co)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->configure
+(defn- toFMask
 
-  ::FilePicker
-  [^Context co cfg0]
+  ""
+  ^FileFilter
+  [^String mask]
 
-  (log/info "comp->configure: FilePicker: %s" (.id ^Identifiable co))
-  (let
-    [{:keys [recvFolder
-             fmask
-             targetFolder]
-      :as cfg}
-      (merge (.getv (.getx co)
-                    :dftOptions) cfg0)
-      root (subsVar targetFolder)
-      dest (subsVar recvFolder)
-      mask (str fmask)
-      ff
-      (cond
-        (.startsWith mask "*.")
-        (SuffixFileFilter. (.substring mask 1))
-        (.endsWith mask "*")
-        (PrefixFileFilter.
-          (.substring mask
-                      0 (dec (.length mask))))
-        (> (.length mask) 0)
-        (RegexFileFilter. mask)
-        :else
-        FileFileFilter/FILE)
-      c2 (cfgLoopable co cfg)]
-    (log/info "monitoring folder: %s" root)
-    (log/info "rcv folder: %s" (nsn dest))
-    (test-nestr "file-root-folder" root)
-    (->>
-      (-> (assoc c2 :targetFolder
-                 (mkdirs (io/file root)))
-          (assoc :fmask ff)
-          (assoc :recvFolder
-                 (if (hgl? dest)
-                   (mkdirs (io/file dest)))))
-      (.setv (.getx co) :emcfg))
-    co))
+  (cond
+    (.startsWith mask "*.")
+    (SuffixFileFilter. (.substring mask 1))
+    (.endsWith mask "*")
+    (PrefixFileFilter.
+      (.substring mask
+                  0 (dec (.length mask))))
+    (> (.length mask) 0)
+    (RegexFileFilter. mask)
+    :else
+    FileFileFilter/FILE))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->initialize
 
   ::FilePicker
-  [^Context co]
+  [^Service co & xs]
 
-  (log/info "comp->initialize FilePicker: %s" (.id ^Identifiable co))
+  (log/info "comp->initialize: FilePicker: %s" (.id co))
   (let
-    [{:keys [targetFolder fmask intervalMillis]}
-     (.getv (.getx co) :emcfg)
-     obs (FileAlterationObserver.
-           (io/file targetFolder) ^FileFilter fmask)
-     mon (FileAlterationMonitor. intervalMillis)
-     lnr (proxy [FileAlterationListenerAdaptor][]
-           (onFileCreate [f]
-             (postPoll co f :FP-CREATED))
-           (onFileChange [f]
-             (postPoll co f :FP-CHANGED))
-           (onFileDelete [f]
-             (postPoll co f :FP-DELETED)))]
-    (.addListener obs lnr)
-    (.addObserver mon obs)
-    (.setv (.getx co) :monitor mon)
-    (log/info "filePicker's apache io monitor created - ok")
+    [{:keys [recvFolder
+             fmask
+             targetFolder]}
+     (.config co)
+     root (subsVar targetFolder)
+     dest (subsVar recvFolder)
+     ff (toFMask (str fmask))
+     c2 (cfgLoopable co)]
+    (log/info "monitoring folder: %s" root)
+    (log/info "rcv folder: %s" (nsn dest))
+    (test-nestr "file-root-folder" root)
+    (let
+      [mon (FileAlterationMonitor. (:intervalMillis c2))
+       obs (FileAlterationObserver. (io/file root) ff)]
+      (->>
+        (proxy [FileAlterationListenerAdaptor][]
+          (onFileCreate [f]
+            (postPoll co f :FP-CREATED))
+          (onFileChange [f]
+            (postPoll co f :FP-CHANGED))
+          (onFileDelete [f]
+            (postPoll co f :FP-DELETED)))
+        (.addListener obs ))
+      (.addObserver mon obs)
+      (doto (.getx co)
+        (.setv :monitor mon)))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,10 +165,11 @@
 (defmethod loopableSchedule
 
   ::FilePicker
-  [^Context co & args]
+  [^Service co & args]
 
-  (when-some [mon (.getv (.getx co) :monitor)]
-    (log/info "filePicker's apache io monitor starting...")
+  (when-some
+    [mon (.getv (.getx co) :monitor)]
+    (log/info "apache io monitor starting...")
     (.start ^FileAlterationMonitor mon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
