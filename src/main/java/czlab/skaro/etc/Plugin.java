@@ -25,7 +25,7 @@ import czlab.xlib.Startable;
 /**
  * @author Kenneth Leung
  */
-public interface Plugin extends Initable, Startable, Configurable, Disposable {
+public interface Plugin extends Initable, Startable, Disposable {
 
 }
 

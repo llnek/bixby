@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.core.exec
+  czlab.skaro.sys.exec
 
   (:require
     [czlab.xlib.process :refer [safeWait]]
@@ -41,10 +41,10 @@
              juid
              test-nonil]])
 
-  (:use [czlab.skaro.core.dfts]
-        [czlab.skaro.core.sys]
-        [czlab.skaro.jmx.core]
-        [czlab.skaro.core.ext])
+  (:use [czlab.skaro.sys.dfts]
+        [czlab.skaro.sys.core]
+        [czlab.skaro.sys.ext]
+        [czlab.skaro.jmx.core])
 
   (:import
     [java.security SecureRandom]
@@ -81,8 +81,7 @@
   [^Component execv ^File des]
 
   (let [app (basename des)]
-    (log/info "app dir : %s" des)
-    (log/info "inspecting...")
+    (log/info "app dir : %s\ninspecting..." des)
     (precondFile (io/file des CFG_APP_CF)
                  (io/file des CFG_ENV_CF))
     (precondDir (io/file des DN_CONF)
@@ -97,7 +96,7 @@
                            (io/as-url des))
                   (comp->initialize  execv))]
         (->> (-> (.getv ctx :apps)
-                 (assoc (.id ^Identifiable m) m))
+                 (assoc (.id m) m))
              (.setv ctx :apps))
         m))))
 
@@ -109,7 +108,7 @@
   ^JMXServer
   [^Component co cfg]
 
-  (log/info "jmx-config: %s" cfg)
+  (log/info "jmx-config:\n%s" cfg)
   (trylet!
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
@@ -149,14 +148,14 @@
 
   (trylet!
     [cc (.getv (.getx co) :containers)
-     app (.id ^Identifiable gist)
-     ctr (mkContainer gist)
-     cid (.id ^Identifiable ctr)]
+     ctr (container<> gist)
+     app (.id gist)
+     cid (.id ctr)]
     (log/debug (str "start pod = %s\n
                     instance = %s") app cid)
     (->> (assoc cc cid ctr)
          (.setv (.getx co) :containers)))
-  co)
+  ctr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,17 +178,20 @@
 (defn execvisor<>
 
   "Create a ExecVisor"
-  ^ExecvisorAPI
+  ^Component
   [parObj]
 
   (log/info "creating execvisor, parent = %s" parObj)
-  (let [impl (muble<> {:containers {}})]
+  (let [impl (muble<> {:containers {}
+                       :apps {}
+                       :emitters {}})
+        pid (juid)]
     (with-meta
       (reify
 
         Component
 
-        (id [_] :execvisor)
+        (id [_] (format "%s{%s}" pid "execvisor"))
         (version [_] "1.0")
         (getx [_] impl)
 
@@ -219,74 +221,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
-
-  ::ExecVisor
-  [^Component co & args]
-
-  (let [{:keys [basedir skaroConf]}
-        (.impl (first args))
-        ctx (.getx co)
-        {:keys [components jmx ]}
-        skaroConf]
-    (log/info "com->initialize: ExecVisor: %s" co)
-    (test-nonil "conf file: components" components)
-    (test-nonil "conf file: jmx" jmx)
-
-    (System/setProperty "file.encoding" "utf-8")
-
-    (->> "app/mime.properties"
-         (io/file basedir DN_ETC)
-         (io/as-url)
-         (setupCache ))
-
-    (.copy ctx arg)
-
-    (let [root (registry<> ::SystemRego :root "1.0" co)
-          bks (registry<> ::EmsRego :blocks "1.0" nil)
-          apps (registry<> ::AppsRego :apps "1.0" nil)
-          options {:ctx ctx} ]
-
-      (doto ctx
-        (.setv :components root)
-        (.setv :execv co))
-
-      (doto root
-        (.reg apps)
-        (.reg bks))
-
-      (comp->synthesize root options)
-      (comp->synthesize bks options)
-      (comp->synthesize apps options))
-
-    (startJmx co jmx)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- emsMeta<>
+(defn- emitMeta
 
   ""
-  [emsType data]
+  [emsType gist]
 
   (let [{:keys [info conf]}
-        data
+        gist
         impl (muble<> conf)]
     (with-meta
       (reify
 
-        Hierarchial
-
-        (setParent [_ p])
-        (parent [_] nil)
-
-        Context
-
-        (getx [_] impl)
-
         Component
 
         (version [_] (:version info))
-
+        (getx [_] impl)
         (id [_] emsType)
 
         EmitterGist
@@ -296,57 +245,77 @@
 
         (name [_] (:name info)))
 
-      {:typeid ::EmitterGist})))
+      {:typeid  ::EmitterGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
-(defmethod comp->configure
+(defmethod comp->initialize
 
   ::EmitterGist
-  [^Context co props]
+  [^Component co & [execv]]
 
-  (when (some? props)
-    (doseq [[k v] props]
-      (.setv co k v)))
+  (log/info "comp->initialize: EmitterGist: %s" (.id co))
+  (.setv (.getx co) :execv execv)
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Each emitter has a meta data file describing
 ;; its functions and features
 ;; This registry loads these meta files and adds them to the registry
-(defmethod comp->initialize
+(defn- regoEmitters
 
-  ::EmsRego
-  [^Context co arg]
+  ""
+  [^Component co]
 
-  (log/info "comp->initialize: EmsRego \"%s\"" (.id ^Identifiable co))
-  (doseq
-    [[k v] *emitter-defs*
-     :let [b (emsMeta<> k v)]]
-    (.reg ^Registry co b)
-    (log/info "added emitter: %s" (.id ^Identifiable b)) ))
+  (let [ctx (.getx co)]
+    (->>
+      (persistent!
+        (reduce
+          #(let [b (emitMeta (first %2)
+                             (last %2))]
+             (comp->initialize b co)
+             (assoc! %1 (.id b) b))
+          (transient {})
+          *emitter-defs*))
+      (.setv ctx :emitters ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defn- regoApps
 
-  ::SystemRego
-  [^Context co arg]
+  ""
+  [^Component co]
 
-  (log/info "comp->initialize: SystemRego: \"%s\"" (.id ^Identifiable co))
+  (inspectPod co (getCwd))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->initialize
 
-  :czlab.skaro.core.dfts/AppGist
-  [^Component co & args]
+  ::ExecVisor
+  [^Component co & [&rootGist]]
+  {:pre [(inst? Muble rootGist)]}
 
-  (log/info "comp->initialize: AppGist: \"%s\"" (.id ^Identifiable co))
-  (-> (.getx co)
-      (.setv :execv (first args)))
-  co)
+  (let [{:keys [basedir skaroConf]}
+        (.impl rootGist)
+        ctx (.getx co)
+        {:keys [components jmx ]}
+        skaroConf]
+    (log/info "com->initialize: ExecVisor: %s" co)
+    (test-nonil "conf file: components" components)
+    (test-nonil "conf file: jmx" jmx)
+
+    (System/setProperty "file.encoding" "utf-8")
+    (.copy ctx rootGist)
+    (->> "app/mime.properties"
+         (io/file basedir DN_ETC)
+         (io/as-url)
+         (setupCache ))
+
+    (regoEmitters co)
+    (regoApps co)
+    (startJmx co jmx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -21,7 +21,7 @@ import java.net.URL;
 /**
  * @author Kenneth Leung
  */
-public interface EmitterGist extends Context, Nameable {
+public interface EmitterGist extends Nameable {
 
   /**/
   public boolean isEnabled();

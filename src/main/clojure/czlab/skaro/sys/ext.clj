@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.impl.ext
+  czlab.skaro.sys.ext
 
   (:require
     [czlab.xlib.resources :refer [loadResource]]
@@ -51,9 +51,9 @@
              dbschema<>]])
 
   (:use
-    [czlab.skaro.core.consts]
+    [czlab.skaro.sys.core]
     [czlab.skaro.io.core]
-    [czlab.skaro.impl.dfts]
+    [czlab.skaro.sys.dfts]
     [czlab.skaro.io.loops]
     [czlab.skaro.io.mails]
     [czlab.skaro.io.files]
@@ -62,13 +62,12 @@
     [czlab.skaro.io.netty]
     [czlab.skaro.io.socket]
     [czlab.skaro.mvc.filters]
-    [czlab.skaro.mvc.ftlshim]
-    [czlab.skaro.core.sys])
+    [czlab.skaro.mvc.ftlshim])
 
   (:import
-    [czlab.server EventEmitter ServiceHandler]
-    [czlab.skaro.runtime AppMain]
     [czlab.skaro.etc PluginFactory Plugin]
+    [czlab.server Emitter ServiceHandler]
+    [czlab.skaro.runtime AppMain]
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
@@ -83,10 +82,10 @@
     [java.util Locale]
     [java.net URL]
     [czlab.xlib
+     Schedulable
      Versioned
      Hierarchial
      XData
-     Schedulable
      CU
      Muble
      I18N
@@ -96,7 +95,6 @@
      Disposable
      Identifiable]
     [czlab.skaro.server
-     Registry
      Service
      Component
      ServiceError]
@@ -158,31 +156,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkctr
+(defn container<>
 
   ""
-  ^Container
-  [appDir arg]
+  ^Component
+  [^Component gist]
 
-  (log/info "creating a container: %s" (:name arg))
-  (let [pub (io/file appDir DN_PUBLIC DN_PAGES)
+  (log/info "creating a container: %s" (.id gist))
+  (let [pid (format "%s#%d" (.id gist) (seqint))
+        ctx (.getx gist)
+        appDir (io/file (.getv ctx :path))
+        pub (io/file appDir DN_PUBLIC DN_PAGES)
         ftlCfg (genFtlConfig :root pub)
-        pid (str "c#" (seqint))
-        impl (muble<>)]
+        impl (muble<> {:services {}})]
     (with-meta
       (reify
-
-        Context
-
-        (getx [_] impl)
 
         Container
 
         (appKeyBits [this] (bytesify (.appKey this)))
-        (appDir [this] (.getv impl :appDir))
-        (appKey [_] (:appKey arg))
-        (name [_] (:name arg))
-        (cljrt [_] (.getv impl :cljshim))
+        (appDir [this] appDir)
+        (appKey [_] (.get ctx :disposition ))
+        (getx [_] impl)
+        (version [_] (.version gist))
+        (id [_] pid)
+        (name [_] (.getv ctx :name))
+        (cljrt [_] (.getv impl :shim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
@@ -206,16 +205,14 @@
             (not (false? (:enabled c)))))
 
         (service [_ sid]
-          (let [^Registry
-                srg (.getv impl :services)]
-            (.lookup srg (keyword sid))))
+          (-> (.getv impl :services)
+              (get (keyword sid))))
 
         (hasService [_ sid]
-          (let [^Registry
-                srg (.getv impl :services)]
-            (.has srg (keyword sid))))
+          (-> (.getv impl :services)
+              (contains (keyword sid))))
 
-        (core [this]
+        (core [_]
           (.getv impl :core))
 
         (envConfig [_]
@@ -224,24 +221,13 @@
         (appConfig [_]
           (.getv impl :appConf))
 
-        Component
-
-        (version [_] "1.0")
-        (id [_] pid)
-
-        Hierarchial
-
-        (setParent [_ p] )
-        (parent [_] nil)
-
         Startable
 
         (start [this]
-          (let [^Registry
-                srg (.getv impl :services)
+          (let [svcs (.getv impl :services)
                 main (.getv impl :mainApp)]
             (log/info "container starting all services...")
-            (doseq [[k v] (.iter srg)]
+            (doseq [[k v] svcs]
               (log/info "service: %s about to start..." k)
               (.start ^Startable v))
             (log/info "container starting main app...")
@@ -249,15 +235,14 @@
               (.start ^Startable main))))
 
         (stop [this]
-          (let [^Registry
-                srg (.getv impl :services)
-                pls (.getv impl :plugins)
+          (let [svcs (.getv impl :services)
+                pugs (.getv impl :plugins)
                 main (.getv impl :mainApp)]
             (log/info "container stopping all services...")
-            (doseq [[k v] (.iter srg)]
+            (doseq [[k v] svcs]
               (.stop ^Startable v))
             (log/info "container stopping all plugins...")
-            (doseq [[k v] pls]
+            (doseq [[k v] pugs]
               (.stop ^Plugin v))
             (log/info "container stopping...")
             (when (some? main)
@@ -266,15 +251,14 @@
         Disposable
 
         (dispose [this]
-          (let [^Registry
-                srg (.getv impl :services)
-                pls (.getv impl :plugins)
+          (let [svcs (.getv impl :services)
+                pugs (.getv impl :plugins)
                 main (.getv impl :mainApp)]
             (log/info "container dispose(): all services")
-            (doseq [[k v] (.iter srg)]
+            (doseq [[k v] svcs]
               (.dispose ^Disposable v))
             (log/info "container dispose(): all plugins")
-            (doseq [[k v] pls]
+            (doseq [[k v] pugs]
               (.dispose ^Disposable v))
             (when (some? main)
               (.dispose ^Disposable main))
@@ -289,80 +273,67 @@
 
   ""
   ^Emitter
-  [^Container co svc nm cfg0]
+  [^Container co svcType nm cfg0]
 
   (let
-    [^Registry
-     bks (-> ^Registry
-             (.getv (.getx co) :components)
-             (.lookup :emitters))]
+    [ctx (.getx co)
+     bks (.getv ctx :emitters)]
     (if-some
-      [^Context
-       bk (.lookup bks (keyword svc))]
+      [^Component
+       bk (get bks (keyword svcType))]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)
-         pkey (.getAppKey ^Container co)
-         eid (.id ^Identifiable bk)
+         pkey (.getAppKey co)
+         eid (.id bk)
          hid (:handler cfg)
          obj (emitter<> co eid nm)]
-        (log/info "about to synthesize emitter: %s" eid)
+        (log/info "about to create emitter: %s" eid)
         (log/info "emitter meta: %s" (meta obj))
         (log/info "config params =\n%s" cfg)
-        (comp->synthesize
-          obj
-          {:ctx co
-          :props (assoc cfg :appkey pkey) })
+        (comp->initialize obj co cfg)
         (log/info "emitter - ok. handler => %s" hid)
         obj)
-      (trap! ServiceError (str "No such Service: " svc)))))
+      (trap! ServiceError (str "No such emitter: " svcType)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- oneService<>
+(defn- doOneService
 
-  [^Muble co nm cfg]
+  [^Container co nm cfg]
 
-  (let [^Registry srg (.getv co K_SVCS)
-        {:keys [service enabled]}
-        cfg ]
+  (let
+    [ctx (.getx co)
+     cc (.getv ctx :services)
+     {:keys [service enabled]}
+     cfg ]
     (if-not (or (false? enabled)
-                (empty? service))
-      (->> (service<> co service nm cfg)
-           (.reg srg )))))
+                (nichts? service))
+      (let [v (service<> co service nm cfg)]
+        (->> (assoc cc (.id v) v)
+             (.setv ctx :services))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- services<>
+(defn- doServices
 
   ""
-  [^Muble co]
+  [^Container co]
 
-  (let [env (.getv co K_ENVCONF)
-        s (:services env) ]
-    (if-not (empty? s)
-      (doseq [[k v] s]
-        (oneService<> co k v)))))
+  (when-some+
+    [s (:services (.getv (.getx co) :envConf))]
+    (doseq [[k v] s]
+      (doOneService co k v))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
 (defn container<>
 
   "Create an application container"
-  ^Container
-  [^Context co options]
+  ^Component
+  [^Component gist]
 
-  (let [c (mkctr appDir options)
-        ctx (.getx co)]
-    (->>
-      (-> ^Registry
-          (.getv ctx K_COMPS)
-          (.lookup K_APPS))
-      (comp->compose c))
-    (comp->contextualize c ctx)
-    (comp->configure c options)
-    (comp->initialize c)
-    (.start ^Startable c)
-    c))
+  (doto (mkctr gist)
+    (comp->initialize c )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -378,36 +349,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->configure
-
-  :czlab.skaro.impl.ext/Container
-  [^Muble co props]
-
-  (let [srg (registry<> ::EventEmitters K_SVCS "1.0" co)
-        appDir (K_APPDIR props)
-        cfgDir (io/file appDir DN_CONF)
-        envConf (parseConfile appDir CFG_ENV_CF)
-        appConf (parseConfile appDir CFG_APP_CF)]
-    ;; make registry to store services
-    (comp->synthesize srg {})
-    ;; store references to key attributes
-    (doto co
-      (.setv K_APPDIR appDir)
-      (.setv K_SVCS srg)
-      (.setv K_ENVCONF envConf)
-      (.setv K_APPCONF appConf))
-    (log/info "container: configured app: %s" (.id ^Identifiable co))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- doCljApp
 
   ""
-  [ctr opts ^AppMain obj]
+  [^Container ctr ^AppMain m options]
 
-  (.contextualize obj ctr)
-  (.configure obj opts)
-  (.initialize obj))
+  (.contextualize m ctr)
+  (.init m options)
+  m)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -427,7 +376,9 @@
   ""
   [v appDir]
 
-  (.exists (fmtPluginFname v appDir)))
+  (let [b (.exists (fmtPluginFname v appDir))]
+    (if b (log/info "plugin %s already initialized" v))
+    b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -446,38 +397,26 @@
 
   ""
   ^Plugin
-  [^Muble co ^String v ^File appDir env app]
+  [^Container co ^String v ^File appDir env app]
 
-  (let [^CLJShim rts (.getv co :cljshim)
-        pf (try!! nil (.call rts v))
-        u (when (inst? PluginFactory pf)
-            (.createPlugin ^PluginFactory pf
-                           ^Container co))]
-    (when-some [^Plugin p (cast? Plugin u)]
-      (log/info "calling plugin-factory: %s" v)
-      (.configure p { :env env :app app })
-      (if (pluginInited? v appDir)
-        (log/info "plugin %s already initialized" v)
-        (do
-          (.initialize p)
-          (postInitPlugin v appDir)))
+  (let
+    [^CLJShim
+     rts (.getv (.getx co) :shim)
+     e? (pluginInited? v appDir)
+    ^PluginFactory
+    pf (try! (cast? PluginFactory
+                    (.call rts v)))
+    u (when (some? pf)
+        (.createPlugin pf co))]
+    (when (some? u)
+      (log/info "plugin->factory: %s" v)
+      (.init u {:new? (not e?)
+                :env env :app app })
+      (postInitPlugin v appDir)
       (log/info "plugin %s starting..." v)
-      (.start p)
+      (.start u)
       (log/info "plugin %s started" v)
-      p)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- splitPoolSize
-
-  ""
-  [^String s]
-
-  (let [pos (.indexOf s (int \:)) ]
-    (if (< pos 0)
-      [ 1 (convLong (strim s) 4) ]
-      [ (convLong (strim (.substring s 0 pos)) 4)
-        (convLong (strim (.substring s (+ pos 1))) 1) ])))
+      u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -486,129 +425,117 @@
   ""
   [^Container co env app]
 
-  (with-local-vars [p (transient {}) ]
-    (let [cfg (get-in env [:databases :jdbc])
-          pkey (.getAppKey co) ]
-      (doseq [[k v] cfg]
-        (when-not (false? (:status v))
-          (let [[t c]
-                (splitPoolSize (str (:poolsize v)))]
-            (var-set p
-                     (->> (mkDbPool
-                            (mkJdbc k v
-                                      (pwdify (:passwd v) pkey))
-                                      {:max-conns c
-                                       :min-conns 1
-                                       :partitions t
-                                       :debug (nbf (:debug v)) })
-                          (assoc! @p k)))))))
-    (persistent! @p)))
+  (persistent!
+    (reduce
+      #(let [[k v] %2]
+         (if-not (false? (:status v))
+           (let [pwd (passwd<> (:passwd v)
+                               (.getAppKey co))
+                 cfg (merge v {:passwd (.text pwd)
+                               :id k})]
+             (->> (dbpool<> (dbspec<> cfg) cfg)
+                  (assoc! %1 k)))
+           %1))
+      (transient {})
+      (seq  (get-in env [:databases :jdbc])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkDftAppMain ""
+(defn- dftAppMain<>
 
+  ""
+  ^AppMain
   []
 
   (reify AppMain
-    (contextualize [_ ctr] )
-    (initialize [_])
-    (configure [_ cfg] )
+    (setContext [_ c])
+    (init [_ arg])
     (start [_] )
     (stop [_])
     (dispose [_] )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compInitialize :czc.skaro.ext/Cocoon
+(defmethod comp->initialize
 
-  [^Muble co]
+  ::Container
+  [^Container co & [^Component execv]]
 
-  (let [cl (-> (Thread/currentThread)
-               (.getContextClassLoader))
-        rts (CLJShim/newrt cl (juid))
-        appDir (.getv co K_APPDIR)
-        pid (.id ^Component co)]
-    (log/info "initializing container: %s" pid)
-    (.setv co :cljshim rts)
-    (let [cpu (mkScheduler (str pid))
-          env (.getv co K_ENVCONF)
-          app (.getv co K_APPCONF)
-          mCZ (strim (get-in app [:info :main]))
-          dmCZ (str (:data-model app))
-          reg (.getv co K_SVCS)
-          cfg (:container env)
-          lg (lcase (or (get-in env [K_LOCALE K_LANG]) "en"))
-          cn (lcase (get-in env [K_LOCALE K_COUNTRY]))
-          loc (if (empty? cn)
-                (Locale. lg)
-                (Locale. lg cn))
-          res (io/file appDir "i18n"
-                       (str "Resources_"
-                            (.toString loc) ".properties")) ]
-      (when (fileRead? res)
-        (when-some [rb (loadResource res)]
-          (I18N/setBundle (.id ^Identifiable co) rb)))
-
-      (doto->> (maybeInitDBs co env app)
-               (.setv co K_DBPS )
-               (log/debug "db [dbpools]\n%s" ))
-
-      ;; handle the plugins
-      (.setv co K_PLUGINS
-             (persistent!
-               (reduce
-                 #(->> (doOnePlugin co
-                                    (last %2)
-                                    appDir env app)
-                       (assoc! %1
-                               (first %2)))
-                 (transient {})
-                 (seq (:plugins app))) ))
-      (.setv co K_SCHEDULER cpu)
-
-      ;; build the user data-models or create a default one
-      (log/info "application data-model schema-class: %s" dmCZ)
-      (let [sc (trycr nil (.call rts dmCZ))]
-        (when (and (some? sc)
-                   (not (instance? Schema sc)))
-          (trap! ConfigError (str "Invalid Schema Class " dmCZ)))
-        (.setv co
-               K_MCACHE
-               (mkMetaCache (or sc (mkDbSchema [])))))
-
-      (when (empty? mCZ) (log/warn "============> NO MAIN-CLASS DEFINED"))
-      ;;(test-nestr "Main-Class" mCZ)
-
-      (with-local-vars
-        [obj (trycr nil (.call rts mCZ))]
-        (when (nil? @obj)
-          (log/warn "failed to create main class: %s" mCZ)
-          (var-set obj (mkDftAppMain)))
-        (if
-          (instance? AppMain @obj)
-          (doCljApp co app @obj)
-          ;else
-          (trap! ConfigError (str "Invalid Main Class " mCZ)))
-
-        (.setv co :main-app @obj)
-        (log/info "application main-class %s%s"
-                  (stror mCZ "???")
-                  " created and invoked"))
-
-      (let [svcs (:services env) ]
-        (if (empty? svcs)
-          (log/warn "no system service defined in env.conf")
-          (reifyServices co)))
-
-      ;; start the scheduler
-      (.activate ^Activable cpu cfg)
-
-      (log/info "container app class-loader: %s"
-                (-> cl
-                    (.getClass)
-                    (.getName)))
-      (log/info "initialized app: %s" (.id ^Identifiable co)))))
+  (log/info "comp->initialize: Container: %s" (.id co))
+  (let
+    [cfgDir (io/file (.appDir co) DN_CONF)
+     envConf (parseConfile appDir CFG_ENV_CF)
+     appConf (parseConfile appDir CFG_APP_CF)]
+    (doto (.getx co)
+      (.setv :envConf envConf)
+      (.setv :appConf appConf)))
+  (let
+    [appDir (.appDir co)
+     ctx (.getx co)
+     pid (.id co)
+     env (.getv ctx :envConf)
+     app (.getv ctx :appConf)
+     mcz (strim (get-in app [:info :main]))
+     cfg (:container env)
+     lg (lcase (or (get-in env [:locale :lang]) "en"))
+     cn (lcase (get-in env [:locale :country]))
+     loc (if-not (hgl? cn)
+           (Locale. lg) (Locale. lg cn))
+     rts (CLJShim/newrt (getCldr) (juid))
+     cpu (scheduler<> pid)
+     res (->>
+           (format "%s_%s.%s"
+                   "Resources"
+                   (str loc)
+                   "properties")
+           (io/file appDir "i18n"))]
+    (.setv ctx :core cpu)
+    (.setv ctx :shim rts)
+    (when-some
+     [rb (if (fileRead? res)
+           (loadResource res))]
+     (I18N/setBundle pid  rb))
+    (doto->>
+      (maybeInitDBs co env app)
+      (.setv ctx :dbps )
+      (log/debug "db [dbpools]\n%s" ))
+    ;; handle the plugins
+    (->>
+      (persistent!
+        (reduce
+          #(->>
+             (doOnePlugin
+               co (last %2) appDir env app)
+             (assoc! %1 (first %2)))
+          (transient {})
+          (seq (:plugins app))))
+      (.setv ctx :plugins))
+    ;; build the user data-models or create a default one
+    (when-some+ [dmCZ (:data-model app)]
+      (log/info "data-model schema-func: %s" dmCZ)
+      (when-some [sc (try! (.call rts dmCZ))]
+        (when-not (inst? Schema sc)
+          (trap! ConfigError (str "Invalid schema " sc)))
+        (.setv ctx :schema sc)))
+    (let
+      [m
+       (if-not (hgl? mCZ)
+         (do
+           (log/warn "no main defined, using default")
+           (dftAppMain))
+         (.call rts mCZ))]
+      (if (inst? AppMain m)
+        (do
+          (doCljApp co m app)
+          (.setv ctx :main m))
+        (trap! ConfigError (str "Invalid main " mCZ))))
+    (when-some+
+      [svcs (:services env)]
+      (services<> co svcs))
+    ;; start the scheduler
+    (.activate ^Activable cpu cfg)
+    (log/info "app class-loader: %s" cl)
+    (log/info "app: %s initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

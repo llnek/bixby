@@ -176,7 +176,8 @@
   [app info urlToPOD]
   {:pre [(map? info)]}
 
-  (let [impl
+  (let [pid (juid)
+        impl
         (-> (merge {:version "1.0"
                     :path urlToPOD
                     :name app
@@ -186,8 +187,8 @@
     (with-meta
       (reify
         Component
+        (id [_] (format "%s{%s}" pid (.getv impl :name)))
         (version [_] (.getv impl :version))
-        (id [_] (str (.getv impl :name)))
         (getx [_] impl))
       {:typeid  ::AppGist})))
 

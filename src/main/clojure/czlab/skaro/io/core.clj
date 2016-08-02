@@ -48,7 +48,7 @@
      Service
      EventTrigger]
     [czlab.server
-     EventEmitter
+     Emitter
      EventHolder
      ServiceHandler]
     [czlab.xlib
@@ -182,7 +182,7 @@
         (.setv j :wflow w)
         (.execWith
           w
-          (-> (.server ^EventEmitter svc)
+          (-> (.server ^Emitter svc)
               (.core))
           j)))
 
@@ -236,7 +236,7 @@
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
-        impl (mubleObj!)]
+        impl (muble<>)]
 
     (with-meta
       (reify
@@ -276,7 +276,7 @@
 
         (handler [_] (.getv impl :pipe))
 
-        EventEmitter
+        Emitter
 
         (config [_] (.getv impl :emcfg))
         (server [this] (.parent this))
@@ -353,7 +353,7 @@
 ;;
 (defmethod comp->contextualize
 
-  ::EventEmitter
+  ::Emitter
   [co arg]
 
   (when (and (inst? Context co)
@@ -365,23 +365,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy
 ;;
-(derive ::HTTP ::EventEmitter)
+(derive ::HTTP ::Emitter)
 (derive ::Jetty ::HTTP)
 (derive ::Netty ::HTTP)
 ;;(derive :czc.skaro.io/WebSockIO :czc.skaro.io/NettyIO)
 (derive ::NettyMVC ::Netty)
 
-(derive ::RepeatingTimer ::EventEmitter)
-(derive ::OnceTimer ::EventEmitter)
+(derive ::RepeatingTimer ::Emitter)
+(derive ::OnceTimer ::Emitter)
 (derive ::ThreadedTimer ::RepeatingTimer)
 
 (derive ::FilePicker ::ThreadedTimer)
 (derive ::IMAP ::ThreadedTimer)
 (derive ::POP3 ::ThreadedTimer)
 
-(derive ::JMS ::EventEmitter)
-(derive ::Socket ::EventEmitter)
-;;(derive ::SocketIO ::EventEmitter)
+(derive ::JMS ::Emitter)
+(derive ::Socket ::Emitter)
+;;(derive ::SocketIO ::Emitter)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

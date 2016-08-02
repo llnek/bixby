@@ -23,7 +23,7 @@ import czlab.xlib.Startable;
  * @author Kenneth Leung
  */
 public interface AppMain
-extends Disposable, Initable, Startable, Configurable {
+extends Disposable, Initable, Startable, Contextualizable {
 
 }
 

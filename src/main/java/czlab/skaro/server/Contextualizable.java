@@ -18,22 +18,11 @@ package czlab.skaro.server;
 /**
  * @author Kenneth Leung
  */
-public interface Registry  {
+@FunctionalInterface public interface Contextualizable  {
 
-  /**/
-  public Object lookup(Object key);
-
-  /**/
-  public boolean has(Object key) ;
-
-  /**/
-  public void dereg(Object c);
-
-  /**/
-  public void reg(Object c);
-
-  /**/
-  public Iterable<?> iter();
+  /**
+   */
+  public void setContext(Object c);
 
 }
 
