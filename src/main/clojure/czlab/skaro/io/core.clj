@@ -31,22 +31,19 @@
              convToJava]])
 
   (:use [czlab.xlib.consts]
-        [czlab.skaro.core.sys]
-        [czlab.skaro.impl.misc]
-        [czlab.skaro.core.consts])
+        [czlab.skaro.sys.core]
+        [czlab.skaro.sys.misc])
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
     [czlab.skaro.server
-     CLJShim
-     Context
+     EventTrigger
+     Service
+     Cljshim
+     Component
      Container]
     [java.util Timer TimerTask]
     [czlab.skaro.io IOEvent]
-    [czlab.skaro.server
-     Component
-     Service
-     EventTrigger]
     [czlab.server
      Emitter
      EventHolder
@@ -66,7 +63,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- meta??? "" [a & args] (:typeid (meta a)))
+(defn meta???
+
+  ""
+  {:no-doc true}
+  [a & xs] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -98,48 +99,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io<stopped> "Called after a component has stopped" meta???)
+(defmulti io<stopped>
+  "Called after a component has stopped" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io<started> "Called after a component has started" meta???)
+(defmulti io<started>
+  "Called after a component has started" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io<started>
 
   :default
-  [^Context co]
+  [^Service co]
 
   (when-some [cfg (-> (.getx co)
                       (.getv :emcfg))]
-    (log/info "emitter config:\n%s" (pr-str cfg))
-    (log/info "emitter %s started - ok" (:typeid (meta co)))))
+    (log/info "service config:\n%s" (pr-str cfg))
+    (log/info "service %s started - ok" (gtid co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io<stopped>
 
   :default
-  [co]
+  [^Service co]
 
-  (log/info "emitter %s stopped - ok" (:typeid (meta co))))
+  (log/info "service %s stopped - ok" (gtid co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->dispose
 
   :default
-  [co]
+  [^Service co]
 
-  (log/info "emitter %s disposed - ok" (:typeid (meta co))))
+  (log/info "service %s disposed - ok" (gtid co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->suspend
 
   :default
-  [co]
+  [^Service co]
 
   (throwIOE "Not Implemented"))
 
@@ -148,57 +151,51 @@
 (defmethod io->resume
 
   :default
-  [co]
+  [^Service co]
 
   (throwIOE "Not Implemented"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkPipeline
+(defn- mkSvcHdr
 
   ""
   ^ServiceHandler
-  [^Service svc trace?]
+  [^Service svc & [trace?]]
 
   (when trace?
-    (log/info "pipeline## %s created - ok" service))
+    (log/info "handler for %s created - ok"
+              (.id svc)))
+  (reify ServiceHandler
 
-  (reify
-
-    Identifiable
     (id [_] (.id svc))
 
-    Disposable
     (dispose [_] )
 
-    ServiceHandler
-    (handle [_ arg more]
+    (handle [_ p1 p2]
       (let
-        [^Job j (cast? Job more)
-         w (toWorkFlow arg)]
+        [^WorkStream w (cast? WorkStream p1)
+         ^Job j (cast? Job p2)]
+        (if (nil? w)
+          (throwBadArg "Want WorkStream, got " (class p1)))
         (if (some? j)
-          (log/debug "job#%s is being serviced by %s"  (.id j) service)
-          (throwBadArg "Expected Job, got " (class more)))
+          (throwBadArg "Want Job, got " (class p2)))
+        (log/debug "job#%s - handled by %s"  (.id j) svc)
         (.setv j :wflow w)
-        (.execWith
-          w
-          (-> (.server ^Emitter svc)
-              (.core))
-          j)))
+        (.execWith w j)))
 
     (handleError [_ e] (log/error e ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkJob
+(defn job<+>
 
   ""
   ^Job
-  [co evt]
+  [^Container co wf evt]
 
   (with-meta
-    (job<> co evt)
-    {:typeid ::Job}))
+    (job<> co wf evt) {:typeid ::Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,15 +205,15 @@
   [^Container ctr ^Service src evt options]
 
   (let
-    [hr (.handler src)
-     cfg (-> (.getx ^Context src)
+    [c1 (str (:router options))
+     cfg (-> (.getx src)
              (.getv :emcfg))
-     c1 (str (:router options))
+     hr (.handler src)
      c0 (str (:handler cfg))
      rts (.getCljRt ctr)
      wf (try!
-          (.call rtx ^String (stror c1 c0)))
-     job (job<> ctr evt)]
+          (.call rts ^String (stror c1 c0)))
+     job (job<+> ctr wf evt)]
     (log/debug "event type = %s" (type evt))
     (log/debug "event opts = %s" options)
     (log/debug "event router = %s" c1)
@@ -237,49 +234,8 @@
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
         impl (muble<>)]
-
     (with-meta
-      (reify
-
-        Context
-
-        (getx [_] impl)
-
-        Component
-
-        (version [_] "1.0")
-        (id [_] emAlias)
-
-        Hierarchial
-
-        (parent [_] parObj)
-
-        Disposable
-
-        (dispose [this] (io->dispose this))
-
-        Startable
-
-        (start [this]
-          (->> (mkPipeline this true)
-               (.setv impl :pipe ))
-          (io->start this))
-
-        (stop [this]
-          (when-some
-            [p (.getv impl :pipe)]
-            (.dispose ^Disposable p)
-            (io->stop this)
-            (.unsetv impl :pipe)))
-
-        Service
-
-        (handler [_] (.getv impl :pipe))
-
-        Emitter
-
-        (config [_] (.getv impl :emcfg))
-        (server [this] (.parent this))
+      (reify Service
 
         (isEnabled [_]
           (not (false? (.getv impl :enabled))))
@@ -289,24 +245,50 @@
 
         (suspend [this] (io->suspend this))
         (resume [this] (io->resume this))
-
-        (dispatch [this ev options]
+        (handler [_] (.getv impl :pipe))
+        (config [_] (.getv impl :emcfg))
+        (server [this] (.parent this))
+        (dispatch [this ev arg]
           (try!
-            (onEvent parObj this ev options)))
-
+            (onEvent parObj this ev arg)))
         (release [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "emitter releasing event, id: %s" wid)
+              (log/debug "releasing event, id: %s" wid)
               (.remove backlog wid))))
-
         (hold [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
-              (log/debug "emitter holding event, id: %s" wid)
-              (.put backlog wid wevt)))) )
+              (log/debug "holding event, id: %s" wid)
+              (.put backlog wid wevt))))
+        (version [_] "1.0")
+        (getx [_] impl)
+        (id [_] emAlias)
 
-      {:typeid (asFQKeyword (name emId))})))
+        Hierarchial
+
+        (parent [_] parObj)
+        (setParent [_ p])
+
+        Disposable
+
+        (dispose [this]
+          (when-some
+            [p (.getv impl :pipe)]
+            (.dispose ^Disposable p)
+            (.unsetv impl :pipe))
+          (io->dispose this))
+
+        Startable
+
+        (start [this]
+          (->> (mkSvcHdr this true)
+               (.setv impl :pipe ))
+          (io->start this))
+
+        (stop [this] (io->stop this)))
+
+      {:typeid emId})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -339,8 +321,7 @@
           (.setv impl :timer tm)
           (.schedule
             tm
-            (proxy [TimerTask][]
-              (run [] (.onExpiry me)))
+            (tmtask #(.onExpiry me))
             (long millis))))
 
       (onExpiry [this]
@@ -348,19 +329,6 @@
           (.release src this)
           (.unsetv impl :timer)
           (.resumeWithError trigger) )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->contextualize
-
-  ::Emitter
-  [co arg]
-
-  (when (and (inst? Context co)
-             (inst? Muble arg))
-    (-> (.getx ^Context co)
-        (.copy  ^Muble arg)))
-  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of emitter hierarchy

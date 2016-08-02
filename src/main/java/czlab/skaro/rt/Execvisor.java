@@ -20,7 +20,7 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface ExecvisorAPI extends Context {
+public interface Execvisor extends Component {
 
   /**/
   public long uptimeInMillis();

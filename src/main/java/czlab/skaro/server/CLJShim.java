@@ -21,15 +21,15 @@ import org.projectodd.shimdandy.ClojureRuntimeShim;
 /**
  * @author Kenneth Leung
  */
-public class CLJShim {
+public class Cljshim {
 
   /**
    *
    * @param cl
    * @param name
    */
-  public static CLJShim newrt(ClassLoader cl, String name) {
-    return new CLJShim(ClojureRuntimeShim.newRuntime(cl, name));
+  public static Cljshim newrt(ClassLoader cl, String name) {
+    return new Cljshim(ClojureRuntimeShim.newRuntime(cl, name));
   }
 
   /**
@@ -62,7 +62,7 @@ public class CLJShim {
     return this.callEx(func);
   }
 
-  private CLJShim(ClojureRuntimeShim s) {
+  private Cljshim(ClojureRuntimeShim s) {
     _shim=s;
   }
 

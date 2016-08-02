@@ -156,6 +156,15 @@
 (def K_META :meta )
 (def K_KILLPORT :discarder)
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro gtid
+
+  "Get the typeid of this component"
+  [obj]
+  `(:typeid (meta ~obj)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti comp->initialize

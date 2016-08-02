@@ -12,19 +12,15 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.rt;
 
-package czlab.skaro.server;
-
-import czlab.server.ServiceHandler;
-import czlab.server.Emitter;
+import  czlab.skaro.server.Context;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Emitter  {
+public interface AppGist extends Component {
 
-  /**/
-  public ServiceHandler handler();
 
 }
 
