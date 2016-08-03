@@ -87,45 +87,16 @@
   [^Service co & [repeat?]]
 
   (let [tm (.getv (.getx co) :timer)
-        {:keys [intervalMillis
+        {:keys [intervalSecs
                 delayWhen
-                delayMillis]}
-        (cfgLoopable co)
-        d [delayWhen delayMillis]
+                delaySecs]}
+        d [delayWhen (s2ms delaySecs)]
         func #(loopableWakeup co)]
     (if (and repeat?
-             (spos? intervalMillis))
-      (configRTimer tm d intervalMillis func)
+             (spos? intervalSecs))
+      (configRTimer tm d (s2ms intervalSecs) func)
       (configTimer tm d func))
     co))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn cfgLoopable
-
-  ""
-  ^APersistentMap
-  [^Service co]
-
-  (let
-    [{:keys [intervalSecs
-             delaySecs delayWhen]}
-     (.config co)]
-    (with-local-vars [cpy (transient {})]
-      (if (inst? Date delayWhen)
-        (var-set cpy (assoc! @cpy :delayWhen delayWhen))
-        (var-set cpy
-                 (assoc! @cpy
-                         :delayMillis
-                         (* 1000
-                            (if (spos? delaySecs)
-                              delaySecs 3)))))
-      (when (spos? intervalSecs)
-        (var-set cpy
-                 (assoc! @cpy
-                         :intervalMillis (* 1000
-                                            intervalSecs))))
-      (persistent! @cpy))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -178,10 +149,12 @@
 (defmethod comp->initialize
 
   ::RepeatingTimer
-  [^Service co]
+  [^Service co & [cfg0]]
 
   (log/info "comp->initialize: RepeatingTimer: %s" (.id co))
-  co)
+  (let [c2 (merge (.config co) cfg0)]
+    (.setv (.getx co) :emcfg c2)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -190,7 +163,7 @@
   ::RepeatingTimer
   [co & args]
 
-  (log/info "iostart: RepeatingTimer: %s" (.id ^Identifiable co))
+  (log/info "iostart: RepeatingTimer: %s" (.id co))
   (startTimer co true)
   (io->started co))
 
@@ -219,9 +192,9 @@
 (defmethod loopableSchedule
 
   :default
-  [^Service co & args]
+  [^Service co & [repeat?]]
 
-  (configTimerTask co (first args)))
+  (configTimerTask co repeat?))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Once Timer
@@ -253,10 +226,12 @@
 (defmethod comp->initialize
 
   ::OnceTimer
-  [^Service co & xs]
+  [^Service co & [cfg0]]
 
   (log/info "comp->initialize: OnceTimer: %s" (.id co))
-  co)
+  (let [c2 (merge (.config co) cfg0)]
+    (.setv (.getx co) :emcfg c2)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -312,13 +287,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmethod comp->initialize
+
+  ::ThreadedTimer
+  [^Service co & args]
+
+  (throwIOE "comp->initialize for threaded-timer called!"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod loopableWakeup
 
   ::ThreadedTimer
-  [co & args]
+  [co & [waitMillis]]
 
   (try! (loopableOneLoop co))
-  (safeWait (first args)))
+  (safeWait waitMillis)
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -328,13 +313,14 @@
   [^Service co & args]
 
   (log/info "io->start: ThreadedTimer: %s" (.id co))
-  (let [{:keys [intervalMillis
-                delayMillis delayWhen]}
-        (cfgLoopable co)
-        func #(loopableSchedule co intervalMillis) ]
-    (if (or (spos? delayMillis)
+  (let [{:keys [intervalSecs
+                delaySecs delayWhen]}
+        (.config co)
+        func #(loopableSchedule co (s2ms intervalSecs))]
+    (if (or (spos? delaySecs)
             (inst? Date delayWhen))
-      (configTimer (Timer.) [delayWhen delayMillis] func)
+      (configTimer (Timer.)
+                   [delayWhen (s2ms delaySecs)] func)
       (func))
     (io->started co)))
 

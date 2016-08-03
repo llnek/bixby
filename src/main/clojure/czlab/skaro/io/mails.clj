@@ -28,7 +28,7 @@
              throwIOE]]
     [czlab.xlib.str :refer [hgl? ]])
 
-  (:use [czlab.skaro.core.sys]
+  (:use [czlab.skaro.sys.core]
         [czlab.skaro.io.loops ]
         [czlab.skaro.io.core ])
 
@@ -42,7 +42,7 @@
      Session
      Provider
      Provider$Type]
-    [czlab.server EventEmitter]
+    [czlab.skaro.server Service]
     [java.util Properties]
     [java.io IOException]
     [czlab.skaro.io EmailEvent]
@@ -67,14 +67,14 @@
 (defn- closeStore
 
   ""
-  [^Context co]
+  [^Service co]
 
-  (let [conn (.getv (.getx co) :store)
-        fd (.getv (.getx co) :folder) ]
-    (closeFolder fd)
-    (when (some? conn)
+  (let [{:keys [store folder]}
+        (.impl (.getx co))]
+    (closeFolder folder)
+    (when (some? store)
       (try!
-        (.close ^Store conn)))
+        (.close ^Store store)))
     (doto (.getx co)
       (.unsetv :store)
       (.unsetv :folder))))
@@ -84,25 +84,26 @@
 (defn- resolveProvider
 
   ""
-  [^Context co ^String cz ^String proto]
+  [^Service co ^String cz ^String proto]
 
   (let
-    [demo (hgl? (System/getProperty "skaro.demo.flag" ""))
+    [demo? (= "true" (System/getProperty "skaro.demo.flag"))
      ss (-> (doto (Properties.)
               (.put  "mail.store.protocol" proto))
               (Session/getInstance nil))
      ps (.getProviders ss)
-     [^Provider sun ^String proto]
+     [^Provider sun ^String pz ^String proto]
      (if demo?
        [(Provider. Provider$Type/STORE
                    *mock-mail-provider*
-                   "yo" "test" "1") "yo"]
+                   "yo" "test" "1")
+        *mock-mail-provider* "yo"]
        [(some #(if (= cz (.getClassName ^Provider %)) %)
               (seq ps))
-        proto])]
+        cz proto])]
     (when (nil? sun)
-      (throwIOE (str "Failed to find store: " cz)))
-    (log/debug "using store %s!!!" sun)
+      (throwIOE (str "Failed to find store: " pz)))
+    (log/debug "using mail store %s" sun)
     (.setProvider ss sun)
     (doto (.getx co)
       (.setv :proto proto)
@@ -114,22 +115,19 @@
 (defn- ctorEmailEvent
 
   ""
-  [^EventEmitter co msg]
+  [^Service co msg]
 
   (let [eeid (seqint2) ]
     (with-meta
       (reify
 
-        Identifiable
-        (id [_] eeid)
-
         EmailEvent
         (bindSession [_ s] nil)
-        (getSession [_] nil)
+        (session [_] nil)
         (id [_] eeid)
         (checkAuthenticity [_] false)
         (emitter [_] co)
-        (getMsg [_] msg))
+        (message [_] msg))
 
       {:typeid ::EmailEvent })))
 
@@ -146,27 +144,26 @@
 (defmethod ioevent<>
 
   ::POP3
-  [co & args]
+  [co & [msg]]
 
-  (log/info "ioevent: POP3: %s" (.id ^Identifiable co))
-  (ctorEmailEvent co (first args)))
+  (log/info "ioevent: POP3: %s" (.id co))
+  (ctorEmailEvent co msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- connectPop3
 
   ""
-  [^Context co]
+  [^Service co]
 
   (let [{:keys [^Session session
-                emcfg
                 ^String proto]}
         (.impl (.getx co))
         {:keys [^String host
                 port
                 ^String user
                 ^String passwd]}
-        emcfg]
+        (.config co)]
     (when-some [s (.getStore session proto)]
       (.connect s
                 host ^long port
@@ -175,35 +172,35 @@
         (.setv :folder
                (some-> (.getDefaultFolder s)
                        (.getFolder "INBOX")))
-        (.setv :store s)))
-    (let [fd (.getv (.getx co) :folder) ]
-      (when (or (nil? fd)
-                (not (.exists ^Folder fd)))
-        (.unsetv (.getx co) :store)
-        (try! (.close s))
-        (throwIOE "cannot find inbox")))))
+        (.setv :store s))
+      (let [fd (.getv (.getx co) :folder) ]
+        (when (or (nil? fd)
+                  (not (.exists ^Folder fd)))
+          (.unsetv (.getx co) :store)
+          (try! (.close s))
+          (throwIOE "cannot find inbox"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readPop3
 
   ""
-  [^Context co msgs]
+  [^Service co msgs]
 
-  (let [d (.getv (.getx co) :deleteMsg)]
+  (let [d? (.getv (.getx co) :deleteMsg?)]
     (doseq [^MimeMessage mm  msgs]
       (doto mm
         (.getAllHeaders)
         (.getContent))
-      (.dispatch ^EventEmitter co (ioevent<> co mm) nil)
-      (when d (.setFlag mm Flags$Flag/DELETED true)))))
+      (.dispatch co (ioevent<> co mm))
+      (when d? (.setFlag mm Flags$Flag/DELETED true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- scanPop3
 
   ""
-  [^Context co]
+  [^Service co]
 
   (let [{:keys [^Folder folder
                 ^Store store]}
@@ -211,20 +208,22 @@
     (when (and (some? folder)
                (not (.isOpen folder)))
       (.open folder Folder/READ_WRITE))
-    (when (.isOpen folder)
+    (when (and (some? folder)
+               (.isOpen folder))
       (try
         (let [cnt (.getMessageCount folder)]
           (log/debug "count of new mail-messages: %d" cnt)
-          (when (> cnt 0)
+          (when (spos? cnt)
             (readPop3 co (.getMessages folder))))
         (finally
           (try! (.close folder)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableOneLoop ::POP3
+(defmethod loopableOneLoop
 
-  [^Context co & args]
+  ::POP3
+  [^Service co & args]
 
   (try
     (connectPop3 co)
@@ -240,10 +239,10 @@
 (defn- stdConfig
 
   ""
-  [^Context co cfg]
+  [^Service co cfg0]
 
-  (let [{:keys [intervalSecs port deleteMsg
-                host user ssl appkey passwd]}
+  (let [{:keys [intervalSecs port deleteMsg?
+                host user ssl? passwd]}
         cfg]
     (with-local-vars [cpy (transient cfg)]
       (var-set cpy
@@ -267,21 +266,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->configure
+(defmethod comp->initialize
 
   ::POP3
-  [^Context co cfg0]
+  [^Service co & [cfg0]]
 
-  (log/info "comp->configure: POP3: %s" (.id ^Identifiable co))
-  (let [c2 (->> (merge (.getv (.getx co)
-                          :dftOptions) cfg0)
-                (stdConfig co))]
+  (log/info "comp->initialize: POP3: %s" (.id co))
+  (let [c2 (merge (.config co) cfg0)
+        [z p]
+        (if (:ssl? c2)
+          [ST_POP3S POP3S]
+          [ST_POP3 POP3C])]
     (.setv (.getx co) :emcfg c2)
-    (apply resolveProvider
-           co
-           (if (:ssl c2)
-             [ST_POP3S POP3S]
-             [ST_POP3 POP3C]))
+    (resolveProvider co z p)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,10 +294,10 @@
 (defmethod ioevent
 
   ::IMAP
-  [co & args]
+  [co & [msg]]
 
-  (log/info "ioevent: IMAP: %s" (.id ^Identifiable co))
-  (ctorEmailEvent co (first args)))
+  (log/info "ioevent: IMAP: %s" (.id co))
+  (ctorEmailEvent co msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -323,7 +320,7 @@
 (defmethod loopableOneLoop
 
   ::IMAP
-  [^Context co & args]
+  [^Service co & args]
 
   (try
     (connectIMAP co)
@@ -336,21 +333,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->configure
+(defmethod comp->initialize
 
   ::IMAP
-  [^Muble co cfg0]
+  [^Service co  & [cfg0]]
 
-  (log/info "comp->configure: IMAP: %s" (.id ^Identifiable co))
-  (let [c2 (->> (merge (.getv (.getx co)
-                              :dftOptions) cfg0)
-                (stdConfig co))]
+  (log/info "comp->initialize: IMAP: %s" (.id co))
+  (let [c2 (merge (.config co) cfg0)
+        [z p]
+        (if (:ssl? c2)
+          [ST_IMAPS IMAPS]
+          [ST_IMAP IMAP])]
     (.setv (.getx co) :emcfg c2)
-    (apply resolveProvider
-           co
-           (if (:ssl c2)
-             [ST_IMAPS IMAPS]
-             [ST_IMAP IMAP]))
+    (resolveProvider co z p)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

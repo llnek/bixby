@@ -61,12 +61,10 @@
 (defmethod ioevent<>
 
   ::FilePicker
-  [^Service co & args]
+  [^Service co & [fnm f]]
 
   (let
-    [fnm (first args)
-     f (nth args 1)
-     eeid (seqint2)
+    [eeid (seqint2)
      impl (muble<>)]
     (with-meta
       (reify FileEvent
@@ -128,24 +126,28 @@
 (defmethod comp->initialize
 
   ::FilePicker
-  [^Service co & xs]
+  [^Service co & [cfg0]]
 
   (log/info "comp->initialize: FilePicker: %s" (.id co))
   (let
-    [{:keys [recvFolder
+    [c2 (merge (.config co) cfg0)
+     {:keys [recvFolder
              fmask
-             targetFolder]}
-     (.config co)
+             targetFolder]} c2
      root (subsVar targetFolder)
      dest (subsVar recvFolder)
-     ff (toFMask (str fmask))
-     c2 (cfgLoopable co)]
+     ff (toFMask (str fmask))]
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))
     (test-nestr "file-root-folder" root)
+    (->> (merge c2 {:targetFolder root
+               :recvFolder dest
+               :fmask ff})
+         (.setv (.getx co) :emcfg))
     (let
-      [mon (FileAlterationMonitor. (:intervalMillis c2))
-       obs (FileAlterationObserver. (io/file root) ff)]
+      [obs (FileAlterationObserver. (io/file root) ff)
+       mon (-> (s2ms (:intervalSecs c2))
+               (FileAlterationMonitor. ))]
       (->>
         (proxy [FileAlterationListenerAdaptor][]
           (onFileCreate [f]

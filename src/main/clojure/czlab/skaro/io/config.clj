@@ -37,7 +37,8 @@
            :name "IMAP" }
     :conf {:host "imap.gmail.com"
            :port 993
-           :deletemsg false
+           :deleteMsg? false
+           :ssl? true
            :username "joe"
            :passwd "secret"
            :intervalSecs 300
@@ -76,9 +77,9 @@
            :hidden true
            :domain ""
            :domainPath "/"
-           :cacheAssets false
+           :cacheAssets? false
            :maxAgeSecs 3600
-           :useETags false
+           :useETags? false
            :errorHandler ""
            :handler "" } }
    :czlab.skaro.io.loops/OnceTimer
@@ -91,11 +92,12 @@
            :name "POP3" }
     :conf {:host "pop.gmail.com"
            :port 995
-           :deletemsg false
+           :deleteMsg? false
            :username "joe"
            :passwd "secret"
            :intervalSecs 300
            :delaySecs 0
+           :ssl? true
            :handler "" } }
    :czlab.skaro.io.loops/RepeatingTimer
    {:info {:version "1.0"

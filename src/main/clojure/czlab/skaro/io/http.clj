@@ -89,21 +89,22 @@
 
   "Basic http config"
   ^APersistentMap
-  [^Service co]
+  [^Service co & [cfg0]]
 
   (let [{:keys [serverKey sockTimeOut
                 limitKB waitMillis
-                port passwd workers]}
-        (.config co)
+                port passwd workers]
+         :as cfg}
+        (merge (.config co) cfg0)
         ^Container ctr (.server co)
         kfile (subsVar serverKey)
-        ssl (hgl? kfile)]
-    (with-local-vars [cpy (transient {})]
+        ssl? (hgl? kfile)]
+    (with-local-vars [cpy (transient cfg)]
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
                              :port
                              (if ssl 443 80))))
-      (if ssl
+      (if ssl?
         (do
           (test-cond "server-key file url"
                      (.startsWith kfile "file:"))

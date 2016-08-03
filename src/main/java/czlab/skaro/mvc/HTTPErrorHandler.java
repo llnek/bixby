@@ -18,7 +18,7 @@ package czlab.skaro.mvc;
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface public interface HTTPErrorHandler {
+@FunctionalInterface public interface HttpErrorHandler {
 
   /**/
   public WebContent getErrorResponse(int code);

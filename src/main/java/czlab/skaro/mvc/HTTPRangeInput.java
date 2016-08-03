@@ -38,10 +38,10 @@ import org.slf4j.Logger;
 /**
  * @author Kenneth Leung
  */
-public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
+public class HttpRangeInput implements ChunkedInput<ByteBuf> {
 
   public static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
-  public static final Logger TLOG= getLogger(HTTPRangeInput.class);
+  public static final Logger TLOG= getLogger(HttpRangeInput.class);
 
   private RandomAccessFile _file;
   private ByteRange[] _ranges;
@@ -56,7 +56,29 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   /**
    */
-  public HTTPRangeInput(RandomAccessFile file, String cType, String range) {
+  public static ChunkedInput<ByteBuf> fileRange(
+      String range,
+      HttpResponse rsp,
+      RandomAccessFile file) {
+
+    if (isAcceptable(range)) {
+      HttpRangeInput r= new HttpRangeInput(
+          range,
+          rsp.headers().get("content-type"),
+          file);
+      return (r.process(rsp) > 0) ? r : null;
+    } else {
+      return new ChunkedFile(file);
+    }
+
+  }
+
+  /**
+   */
+  protected HttpRangeInput(
+      String range,
+      String cType,
+      RandomAccessFile file) {
     _cType= cType;
     _file=file;
     init(range);
@@ -64,7 +86,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
 
   /**
    */
-  public static boolean isAcceptable(String range) {
+  private boolean isAcceptable(String range) {
     return range != null && range.length() > 0;
   }
 
@@ -143,8 +165,7 @@ public class HTTPRangeInput implements ChunkedInput<ByteBuf> {
    */
   public boolean isEndOfInput() { return !hasNext(); }
 
-  /**
-   */
+  @Override
   public void close() {
     try {
       _file.close();

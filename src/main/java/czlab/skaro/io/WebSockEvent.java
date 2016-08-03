@@ -23,6 +23,10 @@ import czlab.xlib.XData;
  */
 public interface WebSockEvent extends IOEvent, Replyable {
 
+  /**
+   */
+  public XData body();
+
   /**/
   public Object socket();
 
