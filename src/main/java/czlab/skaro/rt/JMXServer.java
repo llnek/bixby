@@ -14,10 +14,12 @@
 
 package czlab.skaro.rt;
 
+import czlab.xlib.Startable;
+
 /**
  * @author Kenneth Leung
  */
-public interface JMXServer  {
+public interface JMXServer extends Startable {
 
   /**/
   public void reg(Object obj, String domain, String nname, Object paths);

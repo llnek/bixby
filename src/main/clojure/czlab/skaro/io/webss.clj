@@ -34,7 +34,7 @@
 
   (:import
     [czlab.skaro.runtime ExpiredError AuthError]
-    [czlab.server EventEmitter]
+    [czlab.skaro.server Service]
     [java.net HttpCookie]
     [czlab.xlib Muble CU]
     [czlab.skaro.io
@@ -81,12 +81,13 @@
 (defn- maybeMacIt
 
   ""
-  [^HTTPEvent evt ^String data
-   ^Container ctr]
+  [^HTTPEvent evt ^String data]
 
   (if
     (.checkAuthenticity evt)
-    (str (-> (.getAppKeyBits ctr)
+    (str (-> ^Container
+             (.server (.emitter evt))
+             (.getAppKeyBits )
              (genMac data))
          "-" data)
     data))
@@ -98,30 +99,29 @@
   ""
   [^HTTPEvent evt ^HTTPResult res ]
 
-  (let [^WebSS mvs (.session evt)
-        src (.emitter evt)
-        {:keys [sessionAgeSecs
-                domainPath
-                domain
-                hidden
-                maxIdleSecs]}
-        (-> (.getx ^Context src)
-            (.getv :emcfg))]
+  (let
+    [^Service co (.emitter evt)
+     ^WebSS mvs (.session evt)
+     {:keys [sessionAgeSecs
+             domainPath
+             domain
+             hidden
+             maxIdleSecs]}
+     (.config co)]
     (when-not (.isNull mvs)
       (log/debug "session ok, about to set-cookie!")
       (when (.isNew mvs)
-        (->> ^long (or sessionAgeSecs 3600)
+        (->> (or sessionAgeSecs 3600)
              (resetFlags mvs )))
       (let
-        [ck (->> (.server src)
-                 (maybeMacIt evt (str mvs))
+        [ck (->> (maybeMacIt evt (str mvs))
                  (HttpCookie. SESSION_COOKIE ))
          est (.expiryTime mvs)]
         (->> ^long (or maxIdleSecs 0)
              (.setMaxIdleSecs mvs))
         (doto ck
           (.setMaxAge (if (spos? est)
-                        (/ (- est (now<>)) 1000) est))
+                        (/ (- est (now<>)) 1000) 0))
           (.setDomain (str domain))
           (.setSecure (.isSSL mvs))
           (.setHttpOnly (true? hidden))
@@ -133,12 +133,14 @@
 (defn- testCookie
 
   ""
-  [^HTTPEvent evt p1 p2 ^Container ctr]
+  [^HTTPEvent evt p1 p2]
 
   (when-some
     [pkey (when (.checkAuthenticity evt)
-            (.getAppKeyBits ctr))]
-    (when (not= (genMac pkey p2) p1)
+            (-> ^Container
+                (.server (.emitter evt))
+                (.getAppKeyBits )))]
+    (when-not (= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
       (trap! AuthError "Bad Session Cookie"))))
 
@@ -150,7 +152,7 @@
   [^HTTPEvent evt]
 
   (let
-    [ck (.cookie evt SESSION_COOKIE)
+    [ck (get (.cookies evt) SESSION_COOKIE)
      ^WebSS mvs (.session evt)
      src (.emitter evt)]
     (if (nil? ck)

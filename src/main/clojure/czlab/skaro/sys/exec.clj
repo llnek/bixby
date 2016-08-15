@@ -48,8 +48,8 @@
 
   (:import
     [java.security SecureRandom]
-    [czlab.skaro.runtime
-     ExecvisorAPI
+    [czlab.skaro.rt
+     Execvisor
      JMXServer
      EmitterGist]
     [java.net URL]
@@ -62,7 +62,7 @@
      Hierarchial
      Identifiable]
     [czlab.skaro.server
-     Context
+     Service
      Component]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,13 +77,12 @@
 (defn- inspectPod
 
   "Make sure the pod setup is ok"
-  ^Component
+  ^AppGist
   [^Component execv ^File des]
 
   (let [app (basename des)]
     (log/info "app dir : %s\ninspecting..." des)
-    (precondFile (io/file des CFG_APP_CF)
-                 (io/file des CFG_ENV_CF))
+    (precondFile (io/file des CFG_APP_CF))
     (precondDir (io/file des DN_CONF)
                 (io/file des DN_ETC))
     (let [ps (readEdn (io/file des CFG_APP_CF))
@@ -106,7 +105,7 @@
 
   "Basic JMX support"
   ^JMXServer
-  [^Component co cfg]
+  [^Execvisor co cfg]
 
   (log/info "jmx-config:\n%s" cfg)
   (trylet!
@@ -114,7 +113,7 @@
      host (str (:host cfg))
      jmx (jmxServer<> host)]
     (.setRegistryPort jmx (int port))
-    (.start ^Startable jmx)
+    (.start jmx)
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
     (-> (.getx co)
         (.setv :jmxServer jmx))
@@ -127,13 +126,13 @@
 
   "Kill the internal JMX server"
   ^Component
-  [^Component co]
+  [^Execvisor co]
 
   (trylet!
     [ctx (.getx co)
      jmx (.getv ctx :jmxServer)]
     (when (some? jmx)
-      (.stop ^Startable jmx))
+      (.stop ^JMXServer jmx))
     (.unsetv ctx :jmxServer))
   (log/info "jmx connection terminated")
   co)
@@ -143,8 +142,8 @@
 (defn- ignitePod
 
   ""
-  ^Component
-  [^Component co ^Component gist]
+  ^Container
+  [^Execvisor co ^AppGist gist]
 
   (trylet!
     [cc (.getv (.getx co) :containers)
@@ -166,10 +165,10 @@
   [^Component co]
 
   (log/info "preparing to stop pods...")
-  (doseq [[_ v]
+  (doseq [[_ ^Container v]
           (.getv (.getx co) :containers)]
-    (.stop ^Startable v)
-    (.dispose ^Disposable v))
+    (.stop v)
+    (.dispose v))
   (.setv (.getx co) :containers {})
   co)
 
@@ -177,11 +176,10 @@
 ;;
 (defn execvisor<>
 
-  "Create a ExecVisor"
-  ^Component
-  [parObj]
+  "Create a Execvisor"
+  ^Execvisor
+  []
 
-  (log/info "creating execvisor, parent = %s" parObj)
   (let [impl (muble<> {:containers {}
                        :apps {}
                        :emitters {}})
@@ -189,41 +187,33 @@
     (with-meta
       (reify
 
-        Component
+        Execvisor
 
-        (id [_] (format "%s{%s}" pid "execvisor"))
+        (uptimeInMillis [_]
+          (- (System/currentTimeMillis) START-TIME))
+        (id [_] (format "%s{%s}" "execvisor" pid))
+        (homeDir [_] (maybeDir impl :basedir))
         (version [_] "1.0")
         (getx [_] impl)
-
-        Hierarchial
-
-        (parent [_] parObj)
-        (setParent [_ p])
-
-        ExecvisorAPI
-
-        (uptimeInMillis [_] (- (System/currentTimeMillis) START-TIME))
         (startTime [_] START-TIME)
-        (kill9 [_] ((:stop parObj)))
-        (homeDir [_] (maybeDir impl :basedir))
-
-        Startable
+        (kill9 [_] (apply (.getv impl :stopper) []))
 
         (start [this]
-          (->> (inspectPod this (getCwd))
-               (ignitePod this)))
+          (doseq [[_ v] (.getv impl :apps)]
+            (ignitePod this v)))
 
         (stop [this]
           (stopJmx this)
           (stopPods this)))
 
-       {:typeid ::ExecVisor})))
+       {:typeid ::Execvisor})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- emitMeta
 
   ""
+  ^EmitterGist
   [emsType gist]
 
   (let [{:keys [info conf]}
@@ -232,13 +222,11 @@
     (with-meta
       (reify
 
-        Component
+        EmitterGist
 
         (version [_] (:version info))
         (getx [_] impl)
         (id [_] emsType)
-
-        EmitterGist
 
         (isEnabled [_]
           (not (false? (:enabled info))))
@@ -255,7 +243,7 @@
   [^Component co & [execv]]
 
   (log/info "comp->initialize: EmitterGist: %s" (.id co))
-  (.setv (.getx co) :execv execv)
+  ;;(.setv (.getx co) :execv execv)
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,7 +253,8 @@
 (defn- regoEmitters
 
   ""
-  [^Component co]
+  ^Component
+  [^Execvisor co]
 
   (let [ctx (.getx co)]
     (->>
@@ -284,7 +273,8 @@
 (defn- regoApps
 
   ""
-  [^Component co]
+  ^Component
+  [^Execvisor co]
 
   (inspectPod co (getCwd))
   co)
@@ -293,21 +283,19 @@
 ;;
 (defmethod comp->initialize
 
-  ::ExecVisor
-  [^Component co & [&rootGist]]
-  {:pre [(inst? Muble rootGist)]}
+  ::Execvisor
+  [^Component co & [rootGist]]
+  {:pre [(inst? Atom rootGist)]}
 
   (let [{:keys [basedir skaroConf]}
-        (.impl rootGist)
-        ctx (.getx co)
-        {:keys [components jmx ]}
+        @rootGist
+        {:keys [jmx]}
         skaroConf]
-    (log/info "com->initialize: ExecVisor: %s" co)
-    (test-nonil "conf file: components" components)
+    (log/info "com->initialize: Execvisor: %s" co)
     (test-nonil "conf file: jmx" jmx)
 
     (System/setProperty "file.encoding" "utf-8")
-    (.copy ctx rootGist)
+    (.copy (.getx co) (muble<> @rootGist))
     (->> "app/mime.properties"
          (io/file basedir DN_ETC)
          (io/as-url)

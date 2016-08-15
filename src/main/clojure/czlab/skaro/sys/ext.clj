@@ -66,12 +66,13 @@
 
   (:import
     [czlab.skaro.etc PluginFactory Plugin]
-    [czlab.server Emitter ServiceHandler]
+    [czlab.server Service ServiceHandler]
     [czlab.skaro.runtime AppMain]
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
-     CLJShim
+     Component
+     Cljshim
      Context
      Container
      ConfigError]
@@ -94,10 +95,6 @@
      Startable
      Disposable
      Identifiable]
-    [czlab.skaro.server
-     Service
-     Component
-     ServiceError]
     [czlab.skaro.io IOEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +116,7 @@
 
   ""
   ^JDBCPool
-  [^Context co ^String gid]
+  [^Container co ^String gid]
 
   (let [dk (stror gid DEF_DBID)]
     (-> (.getv (.getx co) :dbps)
@@ -131,7 +128,7 @@
 
   ""
   ^DBAPI
-  [^Context co ^String gid]
+  [^Container co ^String gid]
 
   (when-some [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
@@ -143,12 +140,11 @@
 (defn- releaseSysResources
 
   ""
-  [^Context co]
+  [^Container co]
 
   (log/info "container releasing all system resources")
-  (when-some [^Schedulable
-              sc (.getv (.getx co) :core)]
-    (.dispose sc))
+  (when-some [sc (.getv (.getx co) :core)]
+    (.dispose ^Disposable sc))
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
     (log/debug "shutting down dbpool %s" (name k))
@@ -159,32 +155,36 @@
 (defn container<>
 
   ""
-  ^Component
-  [^Component gist]
+  ^Container
+  [^Execvisor parObj ^AppGist gist]
 
   (log/info "creating a container: %s" (.id gist))
-  (let [pid (format "%s#%d" (.id gist) (seqint))
-        ctx (.getx gist)
-        appDir (io/file (.getv ctx :path))
-        pub (io/file appDir DN_PUBLIC DN_PAGES)
-        ftlCfg (genFtlConfig :root pub)
-        impl (muble<> {:services {}})]
+  (let
+    [pid (format "%s#%d" (.id gist) (seqint2))
+     ctx (.getx gist)
+     appDir (io/file (.getv ctx :path))
+     pub (io/file appDir DN_PUBLIC DN_PAGES)
+     ftlCfg (genFtlConfig :root pub)
+     impl (muble<> {:services {}})]
     (with-meta
       (reify
 
         Container
 
         (appKeyBits [this] (bytesify (.appKey this)))
+        (appKey [_] (.getv impl :disposition ))
         (appDir [this] appDir)
-        (appKey [_] (.get ctx :disposition ))
         (getx [_] impl)
         (version [_] (.version gist))
         (id [_] pid)
-        (name [_] (.getv ctx :name))
+        (name [_] (.getv impl :name))
         (cljrt [_] (.getv impl :shim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
+
+        (setParent [_ x])
+        (parent [_] parObj)
 
         (loadTemplate [_ tpath ctx]
           (let
@@ -221,18 +221,16 @@
         (appConfig [_]
           (.getv impl :appConf))
 
-        Startable
-
         (start [this]
           (let [svcs (.getv impl :services)
                 main (.getv impl :mainApp)]
             (log/info "container starting all services...")
             (doseq [[k v] svcs]
               (log/info "service: %s about to start..." k)
-              (.start ^Startable v))
+              (.start ^Service v))
             (log/info "container starting main app...")
             (when (some? main)
-              (.start ^Startable main))))
+              (.start ^AppMain main))))
 
         (stop [this]
           (let [svcs (.getv impl :services)
@@ -240,15 +238,13 @@
                 main (.getv impl :mainApp)]
             (log/info "container stopping all services...")
             (doseq [[k v] svcs]
-              (.stop ^Startable v))
+              (.stop ^Service v))
             (log/info "container stopping all plugins...")
             (doseq [[k v] pugs]
               (.stop ^Plugin v))
             (log/info "container stopping...")
             (when (some? main)
-              (.stop ^Startable main))))
-
-        Disposable
+              (.stop ^AppMain main))))
 
         (dispose [this]
           (let [svcs (.getv impl :services)
@@ -256,12 +252,12 @@
                 main (.getv impl :mainApp)]
             (log/info "container dispose(): all services")
             (doseq [[k v] svcs]
-              (.dispose ^Disposable v))
+              (.dispose ^Service v))
             (log/info "container dispose(): all plugins")
             (doseq [[k v] pugs]
-              (.dispose ^Disposable v))
+              (.dispose ^Plugin v))
             (when (some? main)
-              (.dispose ^Disposable main))
+              (.dispose ^AppMain main))
             (log/info "container dispose() - main app disposed")
             (releaseSysResources this) )))
 
@@ -272,14 +268,14 @@
 (defn- service<>
 
   ""
-  ^Emitter
+  ^Service
   [^Container co svcType nm cfg0]
 
   (let
-    [ctx (.getx co)
-     bks (.getv ctx :emitters)]
+    [^Execvisor exe (.parent co)
+     bks (.getv (.ctx exe) :emitters)]
     (if-some
-      [^Component
+      [^EmitterGist
        bk (get bks (keyword svcType))]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)
@@ -330,7 +326,7 @@
 
   "Create an application container"
   ^Component
-  [^Component gist]
+  [^Execvisor exe ^AppGist gist]
 
   (doto (mkctr gist)
     (comp->initialize c )))
@@ -400,7 +396,7 @@
   [^Container co ^String v ^File appDir env app]
 
   (let
-    [^CLJShim
+    [^Cljshim
      rts (.getv (.getx co) :shim)
      e? (pluginInited? v appDir)
     ^PluginFactory
@@ -448,7 +444,7 @@
   []
 
   (reify AppMain
-    (setContext [_ c])
+    (contextualize [_ c])
     (init [_ arg])
     (start [_] )
     (stop [_])

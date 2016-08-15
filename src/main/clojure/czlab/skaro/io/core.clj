@@ -23,7 +23,7 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.core
      :refer [throwBadArg
-             seqint
+             seqint2
              cast?
              try!!
              throwIOE

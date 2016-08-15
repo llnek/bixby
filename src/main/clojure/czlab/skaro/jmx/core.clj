@@ -140,8 +140,6 @@
 
       (setServerPort[_ port] (.setv impl :port port))
 
-      Startable
-
       (start [_]
         (let [p1 (.getv impl :regoPort)
               p2 (.getv impl :port) ]

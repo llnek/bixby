@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.core.sys
+  czlab.skaro.sys.core
 
   (:require
     [czlab.xlib.files :refer [changeContent readFile readUrl]]

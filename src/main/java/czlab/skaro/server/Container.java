@@ -18,6 +18,8 @@ package czlab.skaro.server;
 import czlab.server.ServerLike;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
+import czlab.xlib.Startable;
+import czlab.xlib.Hierarchial;
 import czlab.dbio.DBAPI;
 import czlab.dbio.JDBCPool;
 import java.io.File;
@@ -25,7 +27,7 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface Container extends Component, ServerLike, ServiceProvider, Nameable, Disposable {
+public interface Container extends Component, ServerLike, ServiceProvider, Nameable, Disposable, Startable, Hierarchial {
 
   /** load freemarker template */
   public Object loadTemplate(String tpl, Object ctx);
