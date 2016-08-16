@@ -25,7 +25,7 @@
     [clojure.java.io :as io])
 
   (:import
-    [czlab.skaro.server Context]
+    [czlab.skaro.server Component]
     [czlab.xlib
      Hierarchial
      Muble

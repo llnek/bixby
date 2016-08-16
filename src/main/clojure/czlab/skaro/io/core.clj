@@ -23,16 +23,18 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.core
      :refer [throwBadArg
+             tmtask<>
              seqint2
              cast?
-             try!!
+             try!
              throwIOE
              muble<>
              convToJava]])
 
   (:use [czlab.xlib.consts]
-        [czlab.skaro.sys.core]
-        [czlab.skaro.sys.misc])
+        [czlab.wflow.core]
+        [czlab.skaro.sys.core])
+        ;;[czlab.skaro.sys.misc])
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
@@ -56,7 +58,7 @@
      Identifiable
      Disposable
      Startable]
-    [czlab.wflow Job TaskDef]))
+    [czlab.wflow WorkStream Job TaskDef]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -205,6 +207,7 @@
   (with-meta
     (job<> co wf evt) {:typeid ::Job}))
 
+(defn- fatalErrorFlow<> [a])
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEvent
@@ -218,7 +221,7 @@
              (.getv :emcfg))
      hr (.handler src)
      c0 (str (:handler cfg))
-     rts (.getCljRt ctr)
+     rts (.cljrt ctr)
      wf (try!
           (.call rts ^String (stror c1 c0)))
      job (job<+> ctr wf evt)]
@@ -234,9 +237,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn emitter<>
+(defn service<>
 
-  "Create an Emitter"
+  "Create a Service"
   [^Container parObj emId emAlias]
 
   ;; holds all the events from this source
@@ -256,7 +259,10 @@
         (handler [_] (.getv impl :pipe))
         (config [_] (.getv impl :emcfg))
         (server [this] (.parent this))
-        (dispatch [this ev arg]
+        (dispatch [this ev]
+          (try!
+            (onEvent parObj this ev nil)))
+        (dispatchEx [this ev arg]
           (try!
             (onEvent parObj this ev arg)))
         (release [_ wevt]
@@ -329,7 +335,7 @@
           (.setv impl :timer tm)
           (.schedule
             tm
-            (tmtask #(.onExpiry me))
+            (tmtask<> #(.onExpiry me))
             (long millis))))
 
       (onExpiry [this]

@@ -16,12 +16,13 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.impl.dfts
+  czlab.skaro.sys.dfts
 
   (:require
     [czlab.xlib.core
      :refer [test-cond
              seqint2
+             juid
              trap!
              muble<>
              test-nestr]]
@@ -32,8 +33,7 @@
     [czlab.xlib.files
      :refer [fileRead? dirReadWrite?]])
 
-  (:use [czlab.skaro.core.consts]
-        [czlab.skaro.core.sys])
+  (:use [czlab.skaro.sys.core])
 
   (:import
     [czlab.xlib
@@ -46,8 +46,6 @@
     [czlab.skaro.server
      Component
      ConfigError
-     Registry
-     RegistryError
      ServiceError]
     [java.io File]))
 
@@ -62,7 +60,7 @@
   [f & dirs]
 
   (doseq [d (cons f dirs)]
-    (test-cond (rstr (I18N/getBase)
+    (test-cond (rstr (I18N/base)
                      "dir.no.rw" d)
                (dirReadWrite? d))))
 
@@ -75,7 +73,7 @@
   [ff & files]
 
   (doseq [f (cons ff files)]
-    (test-cond (rstr (I18N/getBase)
+    (test-cond (rstr (I18N/base)
                      "file.no.r" f)
                (fileRead? f))))
 
@@ -88,85 +86,11 @@
   [^Muble m kn]
 
   (let [v (.getv m kn)]
-    (condp inst? v
+    (condp instance? v
       String (io/file v)
       File v
-      (trap! ConfigError (rstr (I18N/getBase)
+      (trap! ConfigError (rstr (I18N/base)
                                "skaro.no.dir" kn)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;a registry is basically a container holding a bunch of components
-;;a component itself can be a registry which implies that registeries can
-;;be nested
-(defn registry<>
-
-  "Create a component registry"
-  ^Registry
-  [regoType regoId ver parObj]
-  {:pre [(keyword? regoType) (keyword? regoId)]}
-
-  (let [impl (muble<> {:_pptr_ parObj
-                       :cache {}})]
-    (with-meta
-      (reify
-
-        Hierarchial
-
-        (setParent [_ p] (.setv impl :_pptr p))
-        (parent [_] (.getv impl :_pptr_))
-
-        Context
-
-        (getx [_] impl)
-
-        Component
-
-        (version [_] (str ver))
-        (id [_] regoId)
-
-        Registry
-
-        (has [_ cid]
-          (-> (.getv impl :cache)
-              (get cid)
-              (some? )))
-
-        (lookup [_ cid]
-          (let [c (-> (.getv impl :cache)
-                      (get cid))]
-            (if (and (nil? c)
-                     (inst? Registry parObj))
-              (.lookup ^Registry parObj cid)
-              c)))
-
-        (dereg [this c]
-          (let [cid (if (nil? c)
-                      nil
-                      (.id  ^Identifiable c))
-                cc (.getv impl :cache)]
-            (when (.has this cid)
-              (when (inst? Hierarchial c)
-                (.setParent ^Hierarchial c nil))
-              (.setv impl :cache (dissoc cc cid)))))
-
-        (reg [this c]
-          (let [cid (if (nil? c)
-                      nil
-                      (.id  ^Identifiable c))
-                cc (.getv impl :cache)]
-            (when (.has this cid)
-              (trap! RegistryError
-                     (rstr (I18N/getBase)
-                           "skaro.dup.cmp" cid)))
-            (when (inst? Hierarchial c)
-              (.setParent ^Hierarchial c this))
-            (.setv impl :cache (assoc cc cid c))))
-
-        (iter [_]
-          (let [cc (.getv impl :cache)]
-            (seq cc))))
-
-      {:typeid regoType})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,18 +101,20 @@
   {:pre [(map? conf)]}
 
   (let [pid (juid)
+        info
+        (merge {:version "1.0"
+                :path urlToApp
+                :name app
+                :main "noname"} (:info conf))
         impl
-        (-> (merge {:version "1.0"
-                    :path urlToApp
-                    :name app
-                    :main "noname"} (:info conf))
-            (muble<> ))]
+        (->> (assoc conf :info info)
+             (muble<> ))]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
         Component
-        (id [_] (format "%s{%s}" pid (.getv impl :name)))
-        (version [_] (.getv impl :version))
+        (id [_] (format "%s{%s}" pid (:name info)))
+        (version [_] (:version info))
         (getx [_] impl))
       {:typeid  ::AppGist})))
 

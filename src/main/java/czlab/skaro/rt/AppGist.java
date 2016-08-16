@@ -14,7 +14,7 @@
 
 package czlab.skaro.rt;
 
-import  czlab.skaro.server.Context;
+import  czlab.skaro.server.Component;
 
 /**
  * @author Kenneth Leung

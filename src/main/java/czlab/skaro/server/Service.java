@@ -16,12 +16,16 @@
 package czlab.skaro.server;
 
 import czlab.server.ServiceHandler;
+import czlab.xlib.Hierarchial;
+import czlab.xlib.Suspendable;
+import czlab.xlib.Startable;
+import czlab.xlib.Disposable;
 import czlab.server.Emitter;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Emitter  {
+public interface Service extends Component, Emitter, Startable, Suspendable, Hierarchial, Disposable {
 
   /**/
   public ServiceHandler handler();

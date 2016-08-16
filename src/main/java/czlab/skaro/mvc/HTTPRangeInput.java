@@ -22,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.stream.ChunkedInput;
+import io.netty.handler.stream.ChunkedFile;
 import io.netty.buffer.ByteBufAllocator;
 
 import java.io.RandomAccessFile;
@@ -59,7 +60,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
   public static ChunkedInput<ByteBuf> fileRange(
       String range,
       HttpResponse rsp,
-      RandomAccessFile file) {
+      RandomAccessFile file) throws IOException {
 
     if (isAcceptable(range)) {
       HttpRangeInput r= new HttpRangeInput(
@@ -86,7 +87,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
 
   /**
    */
-  private boolean isAcceptable(String range) {
+  private static boolean isAcceptable(String range) {
     return range != null && range.length() > 0;
   }
 

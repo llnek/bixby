@@ -18,9 +18,10 @@
   czlab.skaro.sys.ext
 
   (:require
+    [czlab.xlib.str :refer [nichts? stror lcase strim]]
     [czlab.xlib.resources :refer [loadResource]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
-    [czlab.xlib.str :refer [stror lcase strim]]
+    [czlab.xlib.io :refer [xdata<>]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.dbio.connect :refer [dbopen<+>]]
@@ -34,6 +35,7 @@
     [czlab.xlib.core
      :refer [loadJavaProps
              convToJava
+             when-some+
              muble<>
              doto->>
              juid
@@ -41,7 +43,6 @@
              cast?
              trap!
              try!!
-             nbf
              seqint2
              convLong
              bytesify]]
@@ -53,27 +54,29 @@
   (:use
     [czlab.skaro.sys.core]
     [czlab.skaro.io.core]
-    [czlab.skaro.sys.dfts]
-    [czlab.skaro.io.loops]
-    [czlab.skaro.io.mails]
-    [czlab.skaro.io.files]
-    [czlab.skaro.io.jms]
-    [czlab.skaro.io.http]
-    [czlab.skaro.io.netty]
-    [czlab.skaro.io.socket]
-    [czlab.skaro.mvc.filters]
-    [czlab.skaro.mvc.ftlshim])
+    [czlab.skaro.sys.dfts])
+
+    ;;[czlab.skaro.io.loops]
+    ;;[czlab.skaro.io.mails]
+    ;;[czlab.skaro.io.files]
+    ;;[czlab.skaro.io.jms]
+    ;;[czlab.skaro.io.http]
+    ;;[czlab.skaro.io.netty]
+    ;;[czlab.skaro.io.socket]
+    ;;[czlab.skaro.mvc.filters]
+    ;;[czlab.skaro.mvc.ftlshim])
 
   (:import
+    [czlab.skaro.rt EmitterGist AppGist Execvisor AppMain]
     [czlab.skaro.etc PluginFactory Plugin]
-    [czlab.server Service ServiceHandler]
-    [czlab.skaro.runtime AppMain]
+    [czlab.server ServiceHandler]
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
+     ServiceError
      Component
      Cljshim
-     Context
+     Service
      Container
      ConfigError]
     [freemarker.template
@@ -108,7 +111,8 @@
   ^String
   [^IOEvent evt]
 
-  (.getAppKey ^Container (.. evt emitter server)))
+  (let [^Container c (.. evt emitter server)]
+    (.appKey c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,9 +154,12 @@
     (log/debug "shutting down dbpool %s" (name k))
     (.shutdown ^JDBCPool v)))
 
+(defn- genFtlConfig [a b])
+(defn- renderFtl [a b c])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn container<>
+(defn- mkctr
 
   ""
   ^Container
@@ -210,7 +217,7 @@
 
         (hasService [_ sid]
           (-> (.getv impl :services)
-              (contains (keyword sid))))
+              (contains? (keyword sid))))
 
         (core [_]
           (.getv impl :core))
@@ -265,7 +272,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- service<>
+(defn- service<+>
 
   ""
   ^Service
@@ -273,16 +280,16 @@
 
   (let
     [^Execvisor exe (.parent co)
-     bks (.getv (.ctx exe) :emitters)]
+     bks (.getv (.getx exe) :emitters)]
     (if-some
       [^EmitterGist
        bk (get bks (keyword svcType))]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)
-         pkey (.getAppKey co)
+         pkey (.appKey co)
          eid (.id bk)
          hid (:handler cfg)
-         obj (emitter<> co eid nm)]
+         obj (service<> co eid nm)]
         (log/info "about to create emitter: %s" eid)
         (log/info "emitter meta: %s" (meta obj))
         (log/info "config params =\n%s" cfg)
@@ -304,7 +311,7 @@
      cfg ]
     (if-not (or (false? enabled)
                 (nichts? service))
-      (let [v (service<> co service nm cfg)]
+      (let [v (service<+> co service nm cfg)]
         (->> (assoc cc (.id v) v)
              (.setv ctx :services))))))
 
@@ -328,8 +335,8 @@
   ^Component
   [^Execvisor exe ^AppGist gist]
 
-  (doto (mkctr gist)
-    (comp->initialize c )))
+  (doto (mkctr exe gist)
+    (comp->initialize )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

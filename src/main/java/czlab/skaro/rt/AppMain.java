@@ -14,6 +14,7 @@
 
 package czlab.skaro.rt;
 
+import czlab.skaro.server.Contextualizable;
 import czlab.xlib.Initable;
 import czlab.xlib.Configurable;
 import czlab.xlib.Disposable;

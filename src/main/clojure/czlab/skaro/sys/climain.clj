@@ -25,7 +25,7 @@
     [czlab.xlib.scheduler :refer [scheduler<>]]
     [czlab.xlib.resources :refer [getResource]]
     [czlab.xlib.meta :refer [setCldr getCldr]]
-    [czlab.skaro.impl.exec :refer [execvisor<>]]
+    [czlab.skaro.sys.exec :refer [execvisor<>]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.io :refer [closeQ]]
     [czlab.xlib.logging :as log]

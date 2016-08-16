@@ -32,11 +32,11 @@
     [czlab.xlib.core
      :refer [test-nestr
              srandom<>
+             convLong
              fpath
              trylet!
              try!
              getCwd
-             convLong
              muble<>
              juid
              test-nonil]])
@@ -78,7 +78,7 @@
 
   "Make sure the pod setup is ok"
   ^AppGist
-  [^Component execv ^File des]
+  [^Execvisor execv ^File des]
 
   (let [conf (io/file des CFG_APP_CF)
         app (basename des)]
@@ -143,27 +143,28 @@
 (defn- ignitePod
 
   ""
-  ^Container
+  ^Execvisor
   [^Execvisor co ^AppGist gist]
 
-  (trylet!
-    [cc (.getv (.getx co) :containers)
-     ctr (container<> gist)
-     app (.id gist)
-     cid (.id ctr)]
-    (log/debug (str "start pod = %s\n
-                    instance = %s") app cid)
-    (->> (assoc cc cid ctr)
-         (.setv (.getx co) :containers)))
-  ctr)
+  (async!
+    #(trylet!
+       [cc (.getv (.getx co) :containers)
+        ctr (container<> gist)
+        app (.id gist)
+        cid (.id ctr)]
+       (log/debug (str "start pod = %s\n instance = %s") app cid)
+       (->> (assoc cc cid ctr)
+            (.setv (.getx co) :containers)))
+    {:classLoader (AppClassLoader. (getCldr))
+     :daemon true}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopPods
 
   ""
-  ^Component
-  [^Component co]
+  ^Execvisor
+  [^Execvisor co]
 
   (log/info "preparing to stop pods...")
   (doseq [[_ ^Container v]
@@ -229,6 +230,9 @@
         (getx [_] impl)
         (id [_] emsType)
 
+        (setParent [_ p] (.setv impl :execv p))
+        (parent [_] (.getv impl :execv))
+
         (isEnabled [_]
           (not (false? (:enabled info))))
 
@@ -244,7 +248,7 @@
   [^Component co & [execv]]
 
   (log/info "comp->initialize: EmitterGist: %s" (.id co))
-  ;;(.setv (.getx co) :execv execv)
+  (.setv (.getx co) :execv execv)
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,7 +258,7 @@
 (defn- regoEmitters
 
   ""
-  ^Component
+  ^Execvisor
   [^Execvisor co]
 
   (let [ctx (.getx co)]
@@ -263,7 +267,7 @@
         (reduce
           #(let [b (emitMeta (first %2)
                              (last %2))]
-             (comp->initialize b co)
+             (comp->initialize b )
              (assoc! %1 (.id b) b))
           (transient {})
           *emitter-defs*))
@@ -274,7 +278,7 @@
 (defn- regoApps
 
   ""
-  ^Component
+  ^Execvisor
   [^Execvisor co]
 
   (inspectPod co (getCwd))
@@ -285,7 +289,7 @@
 (defmethod comp->initialize
 
   ::Execvisor
-  [^Component co & [rootGist]]
+  [^Execvisor co & [rootGist]]
   {:pre [(inst? Atom rootGist)]}
 
   (let [{:keys [basedir skaroConf]}
