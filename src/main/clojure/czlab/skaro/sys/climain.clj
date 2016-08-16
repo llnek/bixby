@@ -44,7 +44,7 @@
              inst?
              fpath
              muble<>
-             printMutableObj]]
+             prnMuble]]
     [czlab.netty.io :refer [stopServer]])
 
   (:use [czlab.skaro.sys.core]
@@ -53,7 +53,7 @@
 
   (:import
     [io.netty.bootstrap ServerBootstrap]
-    [czlab.skaro.runtime Execvisor]
+    [czlab.skaro.rt Execvisor]
     [clojure.lang
      Atom
      APersistentMap]
@@ -159,7 +159,7 @@
              (-> (ClassLoader/getSystemClassLoader)
                  (.getClass)
                  (.getName)))
-  (println @gist)
+  (log/info @gist)
   (log/info "container(s) are now running...")
   (CU/block))
 
@@ -189,8 +189,8 @@
     (writeFile fp (processPid))
     (.deleteOnExit fp)
     (log/info "wrote skaro.pid - ok")
-    (swap! gist assoc :pidFile fp))
-  gist)
+    (swap! gist assoc :pidFile fp)
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
@@ -200,27 +200,20 @@
   ^Atom
   [^Atom gist]
 
+  (log/info "inside primodial() ----------------------------->")
   (let
     [cli {:stop #(stopCLI gist)}
-     cl (:exeLoader gist)
-     wc (:skaroConf gist)
-     {:keys [exeLoader
-             skaroConf]}
-     @gist
-     cz (get-in skaroConf [:components
-                           :execvisor])]
-    (test-cond "conf file:execvisor"
-               (= cz "czlab.skaro.rt.Execvisor"))
-    (log/info "inside primodial() ----------------------------->")
-    (log/info "execvisor = %s" cz)
+     wc (:skaroConf gist)]
+    (log/info "execvisor = %s"
+              "czlab.skaro.rt.Execvisor")
     (let [execv (execvisor<> gist)]
       (swap! gist assoc :execv execv)
-      (comp->initialize execv @gist)
+      (comp->initialize execv)
       (log/info "%s\n%s\n%s"
                 (str<> 72 \*)
                 "about to start skaro..."
                 (str<> 72 \*))
-      (.start ^Startable execv)
+      (.start execv)
       (log/info "skaro started!"))
     gist))
 

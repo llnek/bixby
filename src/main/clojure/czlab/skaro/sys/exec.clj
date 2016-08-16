@@ -80,20 +80,21 @@
   ^AppGist
   [^Component execv ^File des]
 
-  (let [app (basename des)]
+  (let [conf (io/file des CFG_APP_CF)
+        app (basename des)]
     (log/info "app dir : %s\ninspecting..." des)
-    (precondFile (io/file des CFG_APP_CF))
+    (precondFile conf)
     (precondDir (io/file des DN_CONF)
                 (io/file des DN_ETC))
-    (let [ps (readEdn (io/file des CFG_APP_CF))
+    (let [ps (readEdn conf)
           ctx (.getx execv)]
       (log/info "checking conf for app: %s" app)
       ;; create the pod meta and register it
       ;; as a application
       (let [m (-> (podMeta app
-                           (:info ps)
+                           ps
                            (io/as-url des))
-                  (comp->initialize  execv))]
+                  (comp->initialize ))]
         (->> (-> (.getv ctx :apps)
                  (assoc (.id m) m))
              (.setv ctx :apps))

@@ -173,15 +173,15 @@
 (defn podMeta
 
   "Create metadata for an application bundle"
-  [app info urlToPOD]
-  {:pre [(map? info)]}
+  [app conf urlToApp]
+  {:pre [(map? conf)]}
 
   (let [pid (juid)
         impl
         (-> (merge {:version "1.0"
-                    :path urlToPOD
+                    :path urlToApp
                     :name app
-                    :main "noname"} info)
+                    :main "noname"} (:info conf))
             (muble<> ))]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
