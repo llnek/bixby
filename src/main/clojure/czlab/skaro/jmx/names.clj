@@ -14,11 +14,12 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.jmx.names
 
   (:require
+    [czlab.xlib.str :refer [strbf<>]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
@@ -41,8 +42,8 @@
   [^String domain ^String beanName & [paths]]
 
   (let [paths (or paths [])
-        sb (StringBuilder.)
-        cs (seq paths) ]
+        sb (strbf<>)
+        cs (seq paths)]
     (doto sb
       (.append domain)
       (.append ":")

@@ -28,26 +28,32 @@
              nichts?]]
     [czlab.skaro.io.webss :refer [wsession<>]]
     [czlab.xlib.mime :refer [getCharset]]
+    [czlab.xlib.io :refer [xdata<>]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [czlab.xlib.core
-     :refer [stringify
+     :refer [throwBadArg
+             stringify
+             spos?
+             inst?
              try!
              throwIOE
              seqint2
              muble<>
              convLong]])
 
-  (:use [czlab.netty.filters]
-        [czlab.net.routes]
-        [czlab.netty.io]
+  (:use [czlab.netty.routes]
+        [czlab.netty.server]
+        [czlab.netty.core]
         [czlab.skaro.sys.core]
         [czlab.skaro.io.core]
         [czlab.skaro.io.http])
 
   (:import
+    [czlab.skaro.server Container Service EventTrigger]
     [czlab.net RouteCracker RouteInfo]
-    [czlab.skaro.server EventTrigger]
+    [czlab.netty InboundFilter]
+    [clojure.lang APersistentMap]
     [czlab.server
      Emitter
      EventHolder]
@@ -64,19 +70,21 @@
      InetAddress
      SocketAddress]
     [czlab.skaro.io
-     HTTPEvent
-     HTTPResult
+     HttpEvent
+     HttpResult
      IOSession
      WebSockEvent
      WebSockResult]
     [java.nio.channels ClosedChannelException]
+    [io.netty.handler.ssl SslHandler]
+    [io.netty.handler.codec.http.cookie
+     ServerCookieDecoder
+     ServerCookieEncoder]
     [io.netty.handler.codec.http
      HttpResponseStatus
      HttpRequest
      HttpUtil
      HttpResponse
-     ServerCookieDecoder
-     ServerCookieEncoder
      DefaultHttpResponse
      HttpVersion
      HttpRequestDecoder
@@ -97,12 +105,14 @@
      ChannelHandlerContext
      SimpleChannelInboundHandler]
     [io.netty.handler.stream
-     ChunkedFile
      ChunkedStream
+     ChunkedFile
+     ChunkedInput
      ChunkedWriteHandler]
     [czlab.skaro.mvc WebAsset HttpRangeInput]
     [czlab.netty
-     PipelineConfigurator]
+     CPDecorator
+     PipelineCfgtor]
     [io.netty.handler.codec.http.websocketx
      WebSocketFrame
      BinaryWebSocketFrame
@@ -144,9 +154,9 @@
 (defn- maybeClose
 
   ""
-  [^HTTPEvent evt ^ChannelFuture cf]
+  [^HttpEvent evt ^ChannelFuture cf]
 
-  (->> (:keepAlive? (.msgGist))
+  (->> (:keepAlive? (.msgGist evt))
        (closeCF cf )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -156,9 +166,12 @@
   ""
   [cookies]
 
-  (-> (map #(javaToCookie %)
-           (seq cookies))
-      (.encode ServerCookieEncoder/STRICT )))
+  (persistent!
+    (reduce
+      #(->> (.encode ServerCookieEncoder/STRICT ^Cookie %2)
+            (conj! %1 ))
+      (transient [])
+      (map #(javaToCookie %) (seq cookies)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -173,7 +186,7 @@
         f (when (and (some? xs)
                      (.hasContent xs))
             (if (.isBinary res)
-              (->> (.javaBytes xs)
+              (->> (.getBytes xs)
                    (Unpooled/wrappedBuffer )
                    (BinaryWebSocketFrame. ))
               (TextWebSocketFrame. (.stringify xs))))]
@@ -187,7 +200,7 @@
   ""
   ^ChunkedInput
   [^RandomAccessFile raf
-   ^HTTPEvent evt
+   ^HttpEvent evt
    ^HttpResponse rsp]
 
   (-> (getInHeader (.msgGist evt) "range")
@@ -198,14 +211,14 @@
 (defn- nettyReplyMore
 
   ""
-  [^ChannelHandleContext ctx
+  [^ChannelHandlerContext ctx
    ^HttpResponse rsp
-   ^HTTPEvent evt
+   ^HttpEvent evt
    & [body]]
 
   (let
     [clen
-     (cond instance? body
+     (condp instance? body
        ChunkedInput (.length ^ChunkedInput body)
        XData (.size ^XData body)
        (if (nil? body)
@@ -237,7 +250,7 @@
 (defn- nettyReply
 
   ""
-  [^ChannelHandlerContext ctx ^HTTPEvent evt]
+  [^ChannelHandlerContext ctx ^HttpEvent evt]
 
   (let [res (.resultObj evt)
         {:keys [redirect
@@ -247,7 +260,7 @@
         gist (.msgGist evt)
         rsp (httpReply<> code)]
     ;;headers
-    (doseq [[nm vs]  hdrs
+    (doseq [[nm vs]  hds
            :when (not= "content-length" (lcase nm))]
       (doseq [vv (seq vs)]
         (addHeader rsp nm vv)))
@@ -270,7 +283,7 @@
         (when-not (= "HEAD" (:method gist))
           (condp instance? body
             WebAsset
-            (let [^WebAsset ws data
+            (let [^WebAsset ws body
                   raf (RandomAccessFile. (.file ws) "r")]
               (setHeader rsp "content-type" (.contentType ws))
               (replyOneFile raf evt rsp))
@@ -286,7 +299,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nettyTrigger
+(defn nettyTrigger<>
 
   "Create a Netty Async Trigger"
   ^EventTrigger
@@ -332,7 +345,7 @@
 
   (let
     [text? (inst? TextWebSocketFrame msg)
-     body
+     _body
      (xdata<>
        (cond
          (inst? BinaryWebSocketFrame msg)
@@ -345,8 +358,8 @@
     (with-meta
       (reify WebSockEvent
 
-        (bindSession [_ s] (.setv impl :ios s))
-        (session [_] (.getv impl :ios))
+        (bindSession [_ s] )
+        (session [_] )
         (socket [_] ch)
         (id [_] eeid)
         (checkAuthenticity [_] false)
@@ -376,7 +389,7 @@
       (reduce
         #(assoc! %1
                  (.getName ^Cookie %2)
-                 (cookieToJava c))
+                 (cookieToJava %2))
         (transient {})
         (seq cks)))))
 
@@ -385,7 +398,7 @@
 (defn- makeHttpEvent
 
   ""
-  ^HTTPEvent
+  ^HttpEvent
   [^Service co ^Channel ch
    ssl? _body gist wantSecure?]
 
@@ -396,51 +409,51 @@
      impl (muble<>)
      eeid (seqint2)
      evt
-     (with-meta
-       (reify HTTPEvent
+     (reify HttpEvent
 
-         (bindSession [_ s] (.setv impl :ios s))
-         (session [_] (.getv impl :ios))
-         (id [_] eeid)
-         (emitter [_] co)
-         (checkAuthenticity [_] wantSecure?)
+       (bindSession [_ s] (.setv impl :ios s))
+       (session [_] (.getv impl :ios))
+       (id [_] eeid)
+       (emitter [_] co)
+       (checkAuthenticity [_] wantSecure?)
 
-         (cookies [_] cookieJar)
-         (msgGist [_] gist)
-         (body [_] _body)
+       (cookie [_ n] (get cookieJar n))
+       (cookies [_] cookieJar)
+       (msgGist [_] gist)
+       (body [_] _body)
 
-         (localAddr [_] (.getHostAddress (.getAddress laddr)))
-         (localHost [_] (.getHostName laddr))
-         (localPort [_] (.getPort laddr))
+       (localAddr [_] (.getHostAddress (.getAddress laddr)))
+       (localHost [_] (.getHostName laddr))
+       (localPort [_] (.getPort laddr))
 
-         (remotePort [_]
-           (convLong (getInHeader gist "remote_port") 0))
-         (remoteAddr [_]
-           (str (getInHeader gist "remote_addr")))
-         (remoteHost [_] "")
+       (remotePort [_]
+         (convLong (getInHeader gist "remote_port") 0))
+       (remoteAddr [_]
+         (str (getInHeader gist "remote_addr")))
+       (remoteHost [_] "")
 
-         (serverPort [_]
-           (convLong (getInHeader gist "server_port") 0))
-         (serverName [_]
-           (str (getInHeader gist "server_name")))
-         (scheme [_] (if ssl? "https" "http"))
-         (isSSL [_] ssl?)
+       (serverPort [_]
+         (convLong (getInHeader gist "server_port") 0))
+       (serverName [_]
+         (str (getInHeader gist "server_name")))
+       (scheme [_] (if ssl? "https" "http"))
+       (isSSL [_] ssl?)
 
-         (resultObj [_] res)
-         (replyResult [this]
-           (let [^IOSession mvs (.session this)
-                 code (.status res)
-                 ^EventHolder
-                 wevt (.release co this)]
-             (when
-               (and (>= code 200)
-                    (< code 400))
-               (.handleResult mvs this res))
-             (when (some? wevt)
-               (.resumeOnResult wevt res)))))
-       {:typeid ::HTTPEvent })]
+       (resultObj [_] res)
+       (replyResult [this]
+         (let [^IOSession mvs (.session this)
+               code (.status res)
+               ^EventHolder
+               wevt (.release co this)]
+           (when
+             (and (>= code 200)
+                  (< code 400))
+             (.handleResult mvs this res))
+           (when (some? wevt)
+             (.resumeOnResult wevt res)))))]
     (doto evt
-      (.bindSession (wsession<> co ssl?)))))
+      (.bindSession (wsession<> co ssl?))
+      (with-meta {:typeid ::HTTPEvent}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -477,11 +490,11 @@
       (let [ch (-> ^ChannelHandlerContext c (.channel))
             {:keys [waitMillis]}
             (.config co)
-            evt (ioevent co ch msg)]
-        (if (inst? HTTPEvent evt)
+            evt (ioevent<> co ch msg)]
+        (if (inst? HttpEvent evt)
           (let [w
-                (-> (nettyTrigger ch evt)
-                    (asyncWaitHolder evt))]
+                (-> (nettyTrigger<> ch evt)
+                    (asyncWaitHolder<> evt))]
             (.timeoutMillis w waitMillis)
             (.hold co w)))
         (.dispatch co evt )))))
@@ -518,7 +531,7 @@
         bs (:bootstrap nes)
         ch (startServer bs cfg)]
     (.setv (.getx co) :netty (assoc nes :channel ch))
-    (io->started co)))
+    (io<started> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -531,7 +544,7 @@
   (let [{:keys [bootstrap channel]}
         (.getv (.getx co) :netty) ]
     (stopServer bootstrap channel)
-    (io->stopped co)))
+    (io<stopped> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

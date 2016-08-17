@@ -26,7 +26,7 @@
              spos?
              try!
              throwIOE]]
-    [czlab.xlib.str :refer [hgl? ]])
+    [czlab.xlib.str :refer [hgl?  stror]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.skaro.io.loops ]
@@ -42,7 +42,7 @@
      Session
      Provider
      Provider$Type]
-    [czlab.skaro.server Service]
+    [czlab.skaro.server Container Service]
     [java.util Properties]
     [java.io IOException]
     [czlab.skaro.io EmailEvent]
@@ -50,6 +50,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+(def ^:dynamic *mock-mail-provider* "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,7 +146,7 @@
 (defmethod ioevent<>
 
   ::POP3
-  [co & [msg]]
+  [^Service co & [msg]]
 
   (log/info "ioevent: POP3: %s" (.id co))
   (ctorEmailEvent co msg))
@@ -167,7 +169,7 @@
     (when-some [s (.getStore session proto)]
       (.connect s
                 host ^long port
-                user ^String (stror pwd nil))
+                user ^String (stror passwd nil))
       (doto (.getx co)
         (.setv :folder
                (some-> (.getDefaultFolder s)
@@ -216,7 +218,7 @@
           (when (spos? cnt)
             (readPop3 co (.getMessages folder))))
         (finally
-          (try! (.close folder)))))))
+          (try! (.close folder true)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -243,18 +245,19 @@
 
   (let [{:keys [intervalSecs port deleteMsg?
                 host user ssl? passwd]}
-        cfg]
-    (with-local-vars [cpy (transient cfg)]
+        cfg0
+        pkey (.appKey ^Container (.server co))]
+    (with-local-vars [cpy (transient cfg0)]
       (var-set cpy
                (assoc! @cpy :intervalMillis
                        (* 1000 (if (spos? intervalSecs)
                                  intervalSecs 300))))
       (var-set cpy
                (assoc! @cpy :ssl
-                       (if (false? ssl) false true)))
+                       (if (false? ssl?) false true)))
       (var-set cpy
                (assoc! @cpy :deleteMsg
-                       (true? deleteMsg)))
+                       (true? deleteMsg?)))
       (var-set cpy (assoc! @cpy :host (str host)))
       (var-set cpy (assoc! @cpy :port
                            (if (spos? port) port 995)))
@@ -291,10 +294,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent
+(defmethod ioevent<>
 
   ::IMAP
-  [co & [msg]]
+  [^Service co & [msg]]
 
   (log/info "ioevent: IMAP: %s" (.id co))
   (ctorEmailEvent co msg))

@@ -27,7 +27,6 @@
              juid
              spos?
              seqint2
-             toJavaInt
              muble<>
              test-cond
              stringify]]
@@ -44,6 +43,7 @@
     [clojure.lang APersistentMap]
     [czlab.skaro.server
      Component
+     Service
      Container]
     [czlab.server Emitter]
     [java.net URL]
@@ -61,8 +61,8 @@
     [czlab.skaro.io
      WebSockResult
      IOSession
-     HTTPResult
-     HTTPEvent]))
+     HttpResult
+     HttpEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -76,10 +76,10 @@
 
   "Scan and parse if exists basic authentication"
   ^APersistentMap
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (let [{:keys [headers]}
-        gist (.msgGist evt)]
+        (.msgGist evt)]
     (when (contains? headers AUTH)
       (parseBasicAuth (first (get headers AUTH))))))
 
@@ -97,13 +97,13 @@
          :as cfg}
         (merge (.config co) cfg0)
         ^Container ctr (.server co)
-        kfile (subsVar serverKey)
+        kfile (expandVars serverKey)
         ssl? (hgl? kfile)]
     (with-local-vars [cpy (transient cfg)]
       (when-not (spos? port)
         (var-set cpy (assoc! @cpy
                              :port
-                             (if ssl 443 80))))
+                             (if ssl? 443 80))))
       (if ssl?
         (do
           (test-cond "server-key file url"
@@ -164,7 +164,7 @@
 (defn httpResult<>
 
   "Create a HttpResult object"
-  ^HTTPResult
+  ^HttpResult
   [^Service co]
 
   (let [impl (muble<> {:version "HTTP/1.1"
@@ -173,7 +173,7 @@
                        :headers {} })]
     (reify
 
-      HTTPResult
+      HttpResult
 
       (setRedirect [_ url] (.setv impl :redirect url))
       (setVersion [_ ver]  (.setv impl :version ver))
@@ -276,7 +276,7 @@
   [^Service co]
 
   (let [^Container ctr (.server co)
-        appDir (.getAppDir ctr)
+        appDir (.appDir ctr)
         ctx (.getx co)
         sf (io/file appDir DN_CONF "static-routes.conf")
         rf (io/file appDir DN_CONF "routes.conf")]

@@ -22,24 +22,25 @@
     [czlab.xlib.core
      :refer [convLong
              spos?
+             now<>
              juid
              trap!
              muble<>
              stringify
              bytesify]]
-    [czlab.xlib.str :refer [hgl? addDelim!]]
+    [czlab.xlib.str :refer [hgl? addDelim! strbf<>]]
     [czlab.xlib.io :refer [hexify]]
     [czlab.crypto.core :refer [genMac]]
     [czlab.xlib.logging :as log])
 
   (:import
-    [czlab.skaro.runtime ExpiredError AuthError]
+    [czlab.skaro.rt ExpiredError AuthError]
     [czlab.skaro.server Service]
     [java.net HttpCookie]
     [czlab.xlib Muble CU]
     [czlab.skaro.io
-     HTTPResult
-     HTTPEvent
+     HttpResult
+     HttpEvent
      WebSS
      IOSession]
     [czlab.skaro.server Container]
@@ -81,13 +82,13 @@
 (defn- maybeMacIt
 
   ""
-  [^HTTPEvent evt ^String data]
+  [^HttpEvent evt ^String data]
 
   (if
     (.checkAuthenticity evt)
     (str (-> ^Container
              (.server (.emitter evt))
-             (.getAppKeyBits )
+             (.appKeyBits )
              (genMac data))
          "-" data)
     data))
@@ -97,7 +98,7 @@
 (defn- downstream
 
   ""
-  [^HTTPEvent evt ^HTTPResult res ]
+  [^HttpEvent evt ^HttpResult res ]
 
   (let
     [^Service co (.emitter evt)
@@ -133,13 +134,13 @@
 (defn- testCookie
 
   ""
-  [^HTTPEvent evt p1 p2]
+  [^HttpEvent evt p1 p2]
 
   (when-some
     [pkey (when (.checkAuthenticity evt)
             (-> ^Container
                 (.server (.emitter evt))
-                (.getAppKeyBits )))]
+                (.appKeyBits )))]
     (when-not (= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
       (trap! AuthError "Bad Session Cookie"))))
@@ -149,31 +150,30 @@
 (defn- upstream
 
   ""
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (let
-    [ck (get (.cookies evt) SESSION_COOKIE)
+    [^HttpCookie ck (get (.cookies evt) SESSION_COOKIE)
      ^WebSS mvs (.session evt)
-     src (.emitter evt)]
+     ^Service src (.emitter evt)]
     (if (nil? ck)
       (do
         (log/warn "no s-cookie found, invalidate!")
         (.invalidate mvs))
       (let
         [cookie (str (.getValue ck))
-         cfg (-> ^Muble
-                    netty
-                    (.getv :emcfg))
+         cfg (-> (.getx src)
+                 (.getv :emcfg))
          pos (.indexOf cookie (int \-))
-         [p1 p2]
+         [^String p1 ^String p2]
          (if (< pos 0)
            ["" cookie]
            [(.substring cookie 0 pos)
-            (.substring cookie (inc pos1))])]
+            (.substring cookie (inc pos))])]
         (testCookie evt p1 p2 (.server src))
         (log/debug "session attrs= %s" p2)
         (try
-          (doseq [nv (.split p2 NV_SEP)
+          (doseq [^String nv (.split p2 NV_SEP)
                  :let [ss (.split nv ":" 2)
                        ^String s1 (aget ss 0)
                        ^String s2 (aget ss 1)]]
@@ -190,7 +190,7 @@
         (let [ts (or (.attr mvs LS_FLAG) -1)
               es (or (.attr mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
-              mi (or (maxIdleSecs 0))]
+              mi (or (:maxIdleSecs cfg) 0)]
           (when (or (< es now)
                     (and (spos? mi)
                          (< (+ ts (* 1000 mi)) now)))
@@ -199,7 +199,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn wsession
+(defn wsession<>
 
   ""
   ^WebSS
@@ -226,7 +226,7 @@
         (isSSL [_] ssl?)
 
         (invalidate [_]
-          (.clear attrs)
+          (.clear _attrs)
           (.clear impl))
 
         (setXref [_ csrf]

@@ -22,7 +22,7 @@ package czlab.skaro.server;
 
   /**
    */
-  public void Contextualize(Object c);
+  public void contextualize(Object c);
 
 }
 

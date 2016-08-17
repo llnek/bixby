@@ -23,9 +23,11 @@
     [czlab.xlib.format :refer [readJson writeJson]]
     [czlab.skaro.io.http :refer [scanBasicAuth]]
     [czlab.crypto.codec :refer [caesarDecrypt]]
-    [czlab.net.comms :refer [getFormFields]]
+    [czlab.netty.util :refer [filterFormFields]]
+    [czlab.netty.core :refer :all]
     [czlab.xlib.core
      :refer [normalizeEmail
+             when-some+
              cast?
              stringify trylet!]]
     [czlab.xlib.logging :as log])
@@ -33,8 +35,8 @@
   (:import
     [java.util Base64 Base64$Decoder]
     [czlab.skaro.server Container]
-    [czlab.server EventEmitter]
-    [czlab.skaro.io HTTPEvent]
+    [czlab.server Emitter]
+    [czlab.skaro.io HttpEvent]
     [czlab.xlib XData]
     [czlab.net ULFormItems ULFileItem]))
 
@@ -65,11 +67,11 @@
 (defn- crackFormFields
 
   "Parse a standard login-like form with userid,password,email"
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (when-some
     [itms (some-> evt
-                  (.data) (.content))]
+                  (.body) (.content))]
     (persistent!
       (reduce
         #(let [fm (.getFieldNameLC ^ULFileItem %2)
@@ -79,17 +81,17 @@
              (assoc! %1 k (v fv))
              %1))
         (transient {})
-        (getFormFields itms)))))
+        (filterFormFields itms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackBodyContent
 
   "Parse a JSON body"
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (let
-    [^XData xs (some-> evt (.data))
+    [^XData xs (some-> evt (.body))
      json (-> (if (and (some? xs)
                        (.hasContent xs))
                 (stringify xs) "{}")
@@ -108,37 +110,39 @@
 (defn- crackUrlParams
 
   "Parse form fields in the Url"
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
-  (persistent!
-    (reduce
-      #(let [[^String k [a1 a2]]  PMS]
-         (if (.hasParameter evt k)
-           (assoc! %1
-                   a1
-                   (a2 (.getParameterValue evt k)))
-           %1))
-      (transient {})
-      PMS)))
+  (let [gist (.msgGist evt)]
+    (persistent!
+      (reduce
+        #(let [[^String k [a1 a2]]  PMS]
+           (if (hasParam? gist k)
+             (assoc! %1
+                     a1
+                     (a2 (getParam gist k)))
+             %1))
+        (transient {})
+        PMS))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn maybeGetAuthInfo
 
   "Attempt to parse and get authentication info"
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
-  (when-some+ [ct (.contentType evt)]
-    (cond
-      (or (embeds? ct "form-urlencoded")
-          (embeds? ct "form-data"))
-      (crackFormFields evt)
+  (let [gist (.msgGist evt)]
+    (when-some+ [ct (:contentType gist)]
+      (cond
+        (or (embeds? ct "form-urlencoded")
+            (embeds? ct "form-data"))
+        (crackFormFields evt)
 
-      (embeds? ct "/json")
-      (crackBodyContent evt)
+        (embeds? ct "/json")
+        (crackBodyContent evt)
 
-      :else
-      (crackUrlParams evt))))
+        :else
+        (crackUrlParams evt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -166,17 +170,17 @@
 
   ""
   ^bytes
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
-  (-> ^Container (.container (.emitter evt))
-      (.getAppKeyBits)))
+  (-> ^Container (.server (.emitter evt))
+      (.appKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn getSignupInfo
 
   ""
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (-> (maybeGetAuthInfo evt)
       (maybeDecodeField :principal CAESAR_SHIFT)
@@ -187,7 +191,7 @@
 (defn getLoginInfo
 
   ""
-  [^HTTPEvent evt]
+  [^HttpEvent evt]
 
   (-> (maybeGetAuthInfo evt)
       (maybeDecodeField :principal CAESAR_SHIFT)

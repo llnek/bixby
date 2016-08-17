@@ -22,6 +22,7 @@
     [czlab.xlib.core
      :refer [test-posnum
              convLong
+             try!
              muble<>
              seqint2
              spos?]]
@@ -122,7 +123,7 @@
              (closeQ ssoc)
              (.unsetv (.getx co) :ssocket ))))
       (getCldr)))
-  (io->started co))
+  (io<started> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -137,7 +138,7 @@
      ssoc (.getv (.getx co) :ssocket) ]
     (closeQ ssoc)
     (.unsetv (.getx co) :ssocket )
-    (io->stopped co)))
+    (io<stopped> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

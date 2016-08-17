@@ -36,6 +36,7 @@
   (:use [czlab.skaro.sys.core])
 
   (:import
+    [czlab.skaro.rt AppGist]
     [czlab.xlib
      Versioned
      Muble
@@ -44,8 +45,8 @@
      Hierarchial
      Identifiable]
     [czlab.skaro.server
-     Component
      ConfigError
+     Component
      ServiceError]
     [java.io File]))
 
@@ -97,6 +98,7 @@
 (defn podMeta
 
   "Create metadata for an application bundle"
+  ^AppGist
   [app conf urlToApp]
   {:pre [(map? conf)]}
 
@@ -112,7 +114,7 @@
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
-        Component
+        AppGist
         (id [_] (format "%s{%s}" pid (:name info)))
         (version [_] (:version info))
         (getx [_] impl))

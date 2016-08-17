@@ -21,7 +21,7 @@ import java.net.URL;
 /**
  * @author Kenneth Leung
  */
-public interface HTTPResult extends IOResult {
+public interface HttpResult extends IOResult {
 
   /**/
   public void addHeader(String name, String value);

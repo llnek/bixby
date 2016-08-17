@@ -26,7 +26,7 @@
              try!
              stringify
              cexp?
-             mubleObj!
+             muble<>
              do->false
              do->true
              juid
@@ -39,12 +39,11 @@
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.net.comms :refer [getFormFields]])
+    [czlab.netty.util :refer [filterFormFields]])
 
-  (:use [czlab.skaro.core.consts]
-        [czlab.skaro.core.sys]
+  (:use [czlab.skaro.io.basicauth]
+        [czlab.skaro.sys.core]
         [czlab.skaro.io.webss]
-        [czlab.skaro.io.basicauth]
         [czlab.skaro.auth.model]
         [czlab.dbio.core])
 
@@ -58,7 +57,7 @@
      AuthPlugin
      PluginError
      PluginFactory]
-    [czlab.skaro.runtime
+    [czlab.skaro.rt
      AuthError
      UnknownUser
      DuplicateUser]
@@ -81,10 +80,13 @@
      If
      Job
      Script]
-    [czlab.skaro.io WebSS HTTPEvent HTTPResult]))
+    [czlab.skaro.io WebSS HttpEvent HttpResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+(def ^:dynamic *META-CACHE* nil)
+(def ^:dynamic *JDBC-POOL* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -95,10 +97,10 @@
   [^JDBCPool pool]
 
   (let [tbl (->> :czlab.skaro.auth.model/LoginAccount
-                 (.get *auth-mcache* )
+                 (.get ^Schema *auth-mcache*)
                  (dbtable))]
     (when-not (tableExist? pool tbl)
-      (dberr! (rstr (I18N/getBase)
+      (dberr! (rstr (I18N/base)
                     "auth.no.table" tbl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,7 +114,7 @@
   (let [db (-> (.acquireDbPool ctr "")
                (dbopen<+> *auth-mcache* ))]
     (if (boolean tx?)
-      (.compositeSQL db)
+      (.compositeSQLr db)
       (.simpleSQLr db))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -224,7 +226,7 @@
     (if (.validateHash (passwd<> pwd)
                        (:passwd acct))
       acct
-      (trap! AuthError (rstr (I18N/getBase) "auth.bad.pwd")))
+      (trap! AuthError (rstr (I18N/base) "auth.bad.pwd")))
     (trap! UnknownUser user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,10 +317,10 @@
                (.get (.metas sql)))]
     (.exec sql
            (format "delete from %s where %s =?"
-                   (-> (dbtable m)
-                       (.fmtId sql))
-                   (-> (dbcol :acctid m)
-                       (.fmtId sql))
+                   (->> (dbtable m)
+                        (.fmtId sql))
+                   (->> (dbcol :acctid m)
+                        (.fmtId sql))
                    " =?")
            [(strim user)])))
 
@@ -355,19 +357,19 @@
   [^String challengeStr]
 
   (reify BoolExpr
-    (.ptest [_ arg]
+    (ptest [_ arg]
       (let
-        [^HTTPEvent evt (.event ^Job arg)
+        [^HttpEvent evt (.event ^Job arg)
          ^Job job arg
          csrf (-> ^WebSS
-                  (.getSession evt) (.getXref))
+                  (.session evt) (.xref))
          si (try
               (getSignupInfo evt)
               (catch BadDataError e# {:e e#}))
-         rb (I18N/getBase)
+         rb (I18N/base)
          info (or si {})
          ^AuthPlugin
-         pa (-> ^Muble (.container job)
+         pa (-> ^Muble (.server job)
                 (.getv K_PLUGINS)
                 (:auth ))]
         (log/debug "session csrf = %s%s%s"
@@ -419,22 +421,22 @@
   []
 
   (reify BoolExpr
-    (.ptest [_ arg]
+    (ptest [_ arg]
       (let
-        [^HTTPEvent evt (.event ^Job arg)
+        [^HttpEvent evt (.event ^Job arg)
          ^Job job arg
          csrf (-> ^WebSS
-                  (.getSession evt)
-                  (.getXref ))
+                  (.session evt)
+                  (.xref ))
          si (try
               (getSignupInfo evt)
               (catch
                 BadDataError e# {:e e#}))
-         rb (I18N/getBase)
+         rb (I18N/base)
          info (or si {})
          ^AuthPlugin
          pa (-> ^Muble
-                (.container job)
+                (.server job)
                 (.getv K_PLUGINS)
                 (:auth )) ]
         (log/debug "session csrf = %s%s%s"
@@ -459,7 +461,7 @@
             (->> {:account (.login pa (:principal info)
                                       (:credential info)) }
                  (.setLastResult job))
-            (some? (:account (.getLastResult job))))
+            (some? (:account (.lastResult job))))
 
           :else
           (do->false
@@ -477,16 +479,14 @@
 
   (reify AuthPlugin
 
-    (configure [_ props] )
-
     (init [_ arg]
       (-> (.acquireDbPool ctr "")
           (applyDDL )))
 
     (start [_]
       (assertPluginOK (.acquireDbPool ctr ""))
-      (init-shiro (.getAppDir ctr)
-                  (.getAppKey ctr))
+      (init-shiro (.appDir ctr)
+                  (.appKey ctr))
       (log/info "AuthPlugin started"))
 
     (stop [_]
@@ -498,7 +498,7 @@
     (checkAction [_ acctObj action] )
 
     (addAccount [_ arg]
-      (let [pkey (.getAppKey ctr)]
+      (let [pkey (.appKey ctr)]
         (createLoginAccount
           (getSQLr ctr)
           (:principal arg)
@@ -529,12 +529,12 @@
             (.getPrincipal cur)))))
 
     (hasAccount [_ arg]
-      (let [pkey (.getAppKey ctr)]
+      (let [pkey (.appKey ctr)]
         (hasLoginAccount? (getSQLr ctr)
                           (:principal arg))))
 
-    (getAccount [_ arg]
-      (let [pkey (.getAppKey ctr)
+    (account [_ arg]
+      (let [pkey (.appKey ctr)
             sql (getSQLr ctr) ]
         (cond
           (some? (:principal arg))
@@ -546,7 +546,7 @@
           :else nil)))
 
     ;;TODO: get roles please
-    (getRoles [_ acct] [])))
+    (roles [_ acct] [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

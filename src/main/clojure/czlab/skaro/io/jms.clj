@@ -25,10 +25,10 @@
              inst?
              muble<>
              juid
-             try!!]]
+             try!]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.logging :as log]
-    [czlab.xlib.str :refer [hgl? ]])
+    [czlab.xlib.str :refer [hgl? stror]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.skaro.io.core])
@@ -58,6 +58,7 @@
      TopicSubscriber]
     [javax.naming Context InitialContext]
     [java.io IOException]
+    [czlab.skaro.server Container Service]
     [czlab.skaro.io JMSEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,7 +255,7 @@
         (throwIOE "Unsupported JMS Connection Factory"))
       (.setv (.getx co) :conn c)
       (.start c)
-      (io->started co))))
+      (io<started> co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -269,7 +270,7 @@
      (.getv (.getx co) :conn)]
     (try! (.close c))
     (.unsetv (.getx co) :conn)
-    (io->stopped co)))
+    (io<stopped> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

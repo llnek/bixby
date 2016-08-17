@@ -88,7 +88,7 @@
 
   (if (contains? *DBTYPES* spec)
     (getDDL *auth-mcache* spec)
-    (dberr! (rstr (I18N/getBase)
+    (dberr! (rstr (I18N/base)
                   "db.unknown"
                   (name spec)))))
 

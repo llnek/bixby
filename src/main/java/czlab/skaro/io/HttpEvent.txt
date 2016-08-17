@@ -34,10 +34,43 @@ public interface HttpEvent extends IOEvent, Replyable {
   public Iterable<HttpCookie> cookies();
 
   /**/
-  public XData body();
+  public boolean isKeepAlive();
 
   /**/
-  public Object msgGist();
+  public long contentLength();
+
+  /**/
+  public String contentType();
+
+  /**/
+  public String encoding();
+
+  /**/
+  public String contextPath();
+
+  /**/
+  public Iterable<String> headerValues(String nm);
+
+  /**/
+  public Set<String> headers();
+
+  /**/
+  public String header(String nm);
+
+  /**/
+  public boolean hasHeader(String nm);
+
+  /**/
+  public Iterable<String> paramValues(String nm);
+
+  /**/
+  public Set<String> params();
+
+  /**/
+  public String param(String nm);
+
+  /**/
+  public boolean hasParam(String nm);
 
   /**/
   public String localAddr();
@@ -49,6 +82,18 @@ public interface HttpEvent extends IOEvent, Replyable {
   public int localPort();
 
   /**/
+  public String method();
+
+  /**/
+  public String protocol();
+
+  /**/
+  public String host();
+
+  /**/
+  public String queryStr();
+
+  /**/
   public String remoteAddr();
 
   /**/
@@ -58,16 +103,22 @@ public interface HttpEvent extends IOEvent, Replyable {
   public int remotePort();
 
   /**/
+  public String scheme();
+
+  /**/
   public String serverName();
 
   /**/
   public int serverPort();
 
   /**/
-  public String scheme();
+  public boolean isSSL();
 
   /**/
-  public boolean isSSL();
+  public String uri();
+
+  /**/
+  public String requestURL();
 
 }
 

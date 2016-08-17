@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.impl.misc
+  czlab.skaro.sys.misc
 
   (:require
     [czlab.wflow.core :refer :all]
@@ -24,7 +24,7 @@
 
   (:import
     [czlab.wflow TaskDef Job StepError]
-    [czlab.skaro.io HTTPEvent HTTPResult]))
+    [czlab.skaro.io HttpEvent HttpResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -38,9 +38,9 @@
 
   (script<>
     (fn [_ ^Job job]
-      (let [^HTTPEvent evt (.event job)
-            ^HTTPResult
-            res (.getResultObj evt) ]
+      (let [^HttpEvent evt (.event job)
+            ^HttpResult
+            res (.resultObj evt) ]
         (.setStatus res s)
         (.replyResult evt)
         nil))))
@@ -54,10 +54,11 @@
   [^Job j s]
 
   (let [evt (.event j)]
-    (if (inst? HTTPEvent evt)
+    (if (inst? HttpEvent evt)
       (mkWork s)
       (trap! StepError
-             (format "unhandled event, type=\"%s\""
+             nil
+             (format "unhandled event, '%s'"
                      (:typeid (meta evt)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

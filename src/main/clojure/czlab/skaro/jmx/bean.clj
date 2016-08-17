@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.jmx.bean
 
@@ -23,7 +23,7 @@
      :refer [trap!
              exp!
              throwBadArg
-             mubleObj! tryc]]
+             muble<> try!]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hasAny?]])
 
@@ -75,8 +75,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkBFieldInfo ""
+(defn- mkBFieldInfo
 
+  ""
   [^Field fld getr setr]
 
   (reify BFieldInfo
@@ -86,14 +87,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkBPropInfo ""
+(defn- mkBPropInfo
 
+  ""
   [^String prop ^String descn ^Method getr ^Method setr]
 
   (let
-    [impl (mubleObj! {:getr getr
-                     :setr setr
-                     :type nil}) ]
+    [impl (muble<> {:getr getr
+                    :setr setr
+                    :type nil}) ]
     (reify BPropInfo
       (get-type [this]
         (let [^Method g (get-getter this)
@@ -118,24 +120,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- throwUnknownError ""
+(defn- throwUnknownError
 
+  ""
   [attr]
 
-  (trap! AttributeNotFoundException (str "Unknown property " attr)))
+  (trap! AttributeNotFoundException
+         (str "Unknown property " attr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- throwBeanError ""
+(defn- throwBeanError
 
+  ""
   [^String msg]
 
   (trap! MBeanException (exp! Exception msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- assertArgs ""
+(defn- assertArgs
 
+  ""
   [mtd ptypes n]
 
   (when (not= n (count ptypes))
@@ -143,8 +149,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeGetPropName ""
+(defn- maybeGetPropName
 
+  ""
   ^String
   [^String mn]
 
@@ -161,8 +168,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkParameterInfo ""
+(defn- mkParameterInfo
 
+  ""
   [^Method mtd]
 
   (with-local-vars
@@ -182,7 +190,6 @@
 (defn- testJmxType
 
   "ok if primitive types"
-
   ^Class
   [^Class cz]
 
@@ -204,7 +211,6 @@
 (defn- testJmxTypes
 
   "Make sure we are dealing with primitive types"
-
   [^Class rtype ptypes]
 
   (if (and (not (empty? ptypes))
@@ -215,8 +221,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleProps ""
+(defn- handleProps
 
+  ""
   [^Class cz]
 
   (with-local-vars
@@ -265,6 +272,7 @@
 ;;
 (defn- handleFlds
 
+  ""
   [^Class cz]
 
   (with-local-vars
@@ -294,8 +302,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleMethods ""
+(defn- handleMethods
 
+  ""
   [^Class cz]
 
   (with-local-vars
@@ -336,13 +345,12 @@
 (defn mkJmxBean
 
   "Make a JMX bean from this object"
-
   ^DynamicMBean
   [^Object obj]
 
   (let
     [cz (.getClass obj)
-     impl (mubleObj!)
+     impl (muble<>)
      ;; we are ignoring props and fields
      propsMap {}
      fldsMap {}
@@ -445,7 +453,7 @@
                      "\n(sig) " (seq sig))
           (when (nil? mtd)
             (throwBeanError (str "Unknown operation \"" opName "\"")))
-          (tryc
+          (try!
             (if (empty? params)
               (.invoke mtd obj (object-array 0))
               (.invoke mtd obj params))))))))

@@ -18,13 +18,15 @@
   czlab.skaro.sys.ext
 
   (:require
-    [czlab.xlib.str :refer [nichts? stror lcase strim]]
+    [czlab.xlib.str :refer [nichts? hgl? stror lcase strim]]
     [czlab.xlib.resources :refer [loadResource]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
     [czlab.xlib.io :refer [xdata<>]]
+    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.dbio.connect :refer [dbopen<+>]]
+    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
@@ -42,7 +44,8 @@
              fpath
              cast?
              trap!
-             try!!
+             inst?
+             try!
              seqint2
              convLong
              bytesify]]
@@ -317,22 +320,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doServices
+(defn- services<>
 
   ""
-  [^Container co]
+  [^Container co svcs]
 
-  (when-some+
-    [s (:services (.getv (.getx co) :envConf))]
-    (doseq [[k v] s]
-      (doOneService co k v))))
+  (doseq [[k v] svcs]
+    (doOneService co k v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
 (defn container<>
 
   "Create an application container"
-  ^Component
+  ^Container
   [^Execvisor exe ^AppGist gist]
 
   (doto (mkctr exe gist)
@@ -346,7 +347,7 @@
   [^File appDir ^String conf]
 
   (-> (readFile (io/file appDir conf))
-      (subsVar)
+      (expandVars)
       (cs/replace "${appdir}" (fpath appDir))
       (readEdn)))
 
@@ -433,7 +434,7 @@
       #(let [[k v] %2]
          (if-not (false? (:status v))
            (let [pwd (passwd<> (:passwd v)
-                               (.getAppKey co))
+                               (.appKey co))
                  cfg (merge v {:passwd (.text pwd)
                                :id k})]
              (->> (dbpool<> (dbspec<> cfg) cfg)
@@ -466,7 +467,8 @@
 
   (log/info "comp->initialize: Container: %s" (.id co))
   (let
-    [cfgDir (io/file (.appDir co) DN_CONF)
+    [appDir (.appDir co)
+     cfgDir (io/file (.appDir co) DN_CONF)
      envConf (parseConfile appDir CFG_ENV_CF)
      appConf (parseConfile appDir CFG_APP_CF)]
     (doto (.getx co)
@@ -484,7 +486,7 @@
      cn (lcase (get-in env [:locale :country]))
      loc (if-not (hgl? cn)
            (Locale. lg) (Locale. lg cn))
-     rts (CLJShim/newrt (getCldr) (juid))
+     rts (Cljshim/newrt (getCldr) (juid))
      cpu (scheduler<> pid)
      res (->>
            (format "%s_%s.%s"
@@ -522,22 +524,22 @@
         (.setv ctx :schema sc)))
     (let
       [m
-       (if-not (hgl? mCZ)
+       (if-not (hgl? mcz)
          (do
            (log/warn "no main defined, using default")
-           (dftAppMain))
-         (.call rts mCZ))]
+           (dftAppMain<>))
+         (.call rts mcz))]
       (if (inst? AppMain m)
         (do
           (doCljApp co m app)
           (.setv ctx :main m))
-        (trap! ConfigError (str "Invalid main " mCZ))))
+        (trap! ConfigError (str "Invalid main " mcz))))
     (when-some+
       [svcs (:services env)]
       (services<> co svcs))
     ;; start the scheduler
     (.activate ^Activable cpu cfg)
-    (log/info "app class-loader: %s" cl)
+    (log/info "app class-loader: %s" (getCldr))
     (log/info "app: %s initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

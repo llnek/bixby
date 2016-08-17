@@ -19,7 +19,7 @@
   czlab.skaro.io.loops
 
   (:require
-    [czlab.xlib.core :refer [inst? seqint2 spos? try!]]
+    [czlab.xlib.core :refer [throwIOE tmtask<> inst? seqint2 spos? try!]]
     [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
@@ -32,14 +32,13 @@
   (:import
     [java.util Date Timer TimerTask]
     [clojure.lang APersistentMap]
-    [czlab.server Emitter]
+    [czlab.skaro.server Service]
     [czlab.skaro.io TimerEvent]
     [czlab.xlib Muble Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(defn- meta??? "" [a & args] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -90,6 +89,7 @@
         {:keys [intervalSecs
                 delayWhen
                 delaySecs]}
+        (.config co)
         d [delayWhen (s2ms delaySecs)]
         func #(loopableWakeup co)]
     (if (and repeat?
@@ -161,22 +161,22 @@
 (defmethod io->start
 
   ::RepeatingTimer
-  [co & args]
+  [^Service co & args]
 
   (log/info "iostart: RepeatingTimer: %s" (.id co))
   (startTimer co true)
-  (io->started co))
+  (io<started> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
 
   ::RepeatingTimer
-  [co & args]
+  [^Service co & args]
 
   (log/info "io->stop RepeatingTimer: %s" (.id co))
   (killTimer co)
-  (io->stopped co))
+  (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -238,22 +238,22 @@
 (defmethod io->start
 
   ::OnceTimer
-  [co & args]
+  [^Service co & args]
 
   (log/info "io->start OnceTimer: %s" (.id co))
   (startTimer co false)
-  (io->started co))
+  (io<started> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
 
   ::OnceTimer
-  [co & args]
+  [^Service co & args]
 
   (log/info "io->stop OnceTimer: %s" (.id co))
   (killTimer co)
-  (io->stopped co))
+  (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -322,7 +322,7 @@
       (configTimer (Timer.)
                    [delayWhen (s2ms delaySecs)] func)
       (func))
-    (io->started co)))
+    (io<started> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -334,7 +334,7 @@
   (log/info "io->stop ThreadedTimer: %s" (.id co))
   (let [loopy (.getv (.getx co) :loopy) ]
     (reset! loopy false)
-    (io->stopped co)))
+    (io<stopped> co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

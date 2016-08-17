@@ -20,11 +20,13 @@
   (:require
     [czlab.xlib.files :refer [changeContent readFile readUrl]]
     [czlab.xlib.core :refer [muble<> fpath]]
+    [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io])
 
   (:import
+    [org.apache.commons.lang3.text StrSubstitutor]
     [czlab.skaro.server Component]
     [czlab.xlib
      Hierarchial
@@ -63,7 +65,7 @@
 
 (def ^String DN_CFGAPP "etc/app" )
 (def ^String DN_CFGWEB "etc/web" )
-(def ^String DN_CFG "etc" )
+(def ^String DN_ETC "etc" )
 
 (def ^String DN_RCPROPS  "Resources_en.properties" )
 (def ^String DN_TEMPLATES  "templates" )
@@ -192,6 +194,45 @@
                               (fpath appDir)))) ]
     (log/debug "[%s]\n%s" confile rc)
     rc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn expandSysProps
+
+  "Expand any system properties found inside the string value"
+  ^String
+  [^String value]
+
+  (if-not (hgl? value)
+    value
+    (StrSubstitutor/replaceSystemProperties value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn expandEnvVars
+
+  "Expand any env-vars found inside the string value"
+
+  ^String
+  [^String value]
+
+  (if-not (hgl? value)
+    value
+    (.replace (StrSubstitutor. (System/getenv)) value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn expandVars
+
+  "Replaces all system & env variables in the value"
+
+  ^String
+  [^String value]
+
+  (if-not (hgl? value)
+    value
+    (-> (expandSysProps value)
+        (expandEnvVars ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

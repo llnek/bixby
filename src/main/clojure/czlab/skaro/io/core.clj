@@ -24,6 +24,7 @@
     [czlab.xlib.core
      :refer [throwBadArg
              tmtask<>
+             spos?
              seqint2
              cast?
              try!
@@ -33,8 +34,8 @@
 
   (:use [czlab.xlib.consts]
         [czlab.wflow.core]
-        [czlab.skaro.sys.core])
-        ;;[czlab.skaro.sys.misc])
+        [czlab.skaro.sys.core]
+        [czlab.skaro.sys.misc])
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
@@ -207,7 +208,6 @@
   (with-meta
     (job<> co wf evt) {:typeid ::Job}))
 
-(defn- fatalErrorFlow<> [a])
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEvent

@@ -18,8 +18,9 @@
   czlab.skaro.sys.exec
 
   (:require
-    [czlab.xlib.process :refer [safeWait]]
+    [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.str :refer [strim hgl?]]
+    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.mime :refer [setupCache]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
@@ -33,6 +34,7 @@
      :refer [test-nestr
              srandom<>
              convLong
+             inst?
              fpath
              trylet!
              try!
@@ -42,18 +44,23 @@
              test-nonil]])
 
   (:use [czlab.skaro.sys.dfts]
+        [czlab.skaro.io.config]
         [czlab.skaro.sys.core]
         [czlab.skaro.sys.ext]
         [czlab.skaro.jmx.core])
 
   (:import
+    [czlab.skaro.loaders AppClassLoader]
     [java.security SecureRandom]
+    [clojure.lang Atom]
     [czlab.skaro.rt
      Execvisor
+     AppGist
      JMXServer
      EmitterGist]
-    [java.net URL]
     [java.util Date]
+    [java.io File]
+    [java.net URL]
     [czlab.xlib
      Disposable
      Startable
@@ -62,6 +69,7 @@
      Hierarchial
      Identifiable]
     [czlab.skaro.server
+     Container
      Service
      Component]))
 
@@ -93,8 +101,8 @@
       ;; as a application
       (let [m (-> (podMeta app
                            ps
-                           (io/as-url des))
-                  (comp->initialize ))]
+                           (io/as-url des)))]
+        (comp->initialize m)
         (->> (-> (.getv ctx :apps)
                  (assoc (.id m) m))
              (.setv ctx :apps))
@@ -149,6 +157,7 @@
   (async!
     #(trylet!
        [cc (.getv (.getx co) :containers)
+        ^Container
         ctr (container<> gist)
         app (.id gist)
         cid (.id ctr)]

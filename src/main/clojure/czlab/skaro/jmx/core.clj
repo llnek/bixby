@@ -14,12 +14,12 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.jmx.core
 
   (:require
-    [czlab.xlib.core :refer [mubleObj! try! tryc]]
+    [czlab.xlib.core :refer [muble<> try!]]
     [czlab.xlib.str :refer [hgl? stror]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs])
@@ -31,7 +31,7 @@
     [java.net InetAddress MalformedURLException]
     [java.rmi.registry LocateRegistry Registry]
     [java.lang.management ManagementFactory]
-    [czlab.skaro.runtime JMXServer]
+    [czlab.skaro.rt JMXServer]
     [java.rmi NoSuchObjectException]
     [czlab.xlib Startable Muble]
     [java.rmi.server UnicastRemoteObject]
@@ -46,16 +46,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkJMXrror ""
+(defn- mkJMXrror
 
+  ""
   [^String msg ^Throwable e]
 
   (throw (doto (JMException. msg) (.initCause e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- startRMI ""
+(defn- startRMI
 
+  ""
   [^Muble impl]
 
   (try
@@ -67,24 +69,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- startJMX ""
+(defn- startJMX
 
+  ""
   [^Muble impl]
 
-  (let [hn (-> (InetAddress/getLocalHost)
-               (.getHostName))
-        regoPort (.getv impl :regoPort)
-        port (.getv impl :port)
-        host (.getv impl :host)
-        endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
-                       "jndi/rmi://:{{r}}/jmxrmi")
-                  (cs/replace "{{h}}" (stror host hn))
-                  (cs/replace "{{s}}" (str "" port))
-                  (cs/replace "{{r}}" (str "" regoPort)))
-        url (JMXServiceURL. endpt)
-        conn (JMXConnectorServerFactory/newJMXConnectorServer
-               url nil
-               (ManagementFactory/getPlatformMBeanServer))]
+  (let
+    [hn (-> (InetAddress/getLocalHost)
+            (.getHostName))
+     regoPort (.getv impl :regoPort)
+     port (.getv impl :port)
+     host (.getv impl :host)
+     endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
+                    "jndi/rmi://:{{r}}/jmxrmi")
+               (cs/replace "{{h}}" (stror host hn))
+               (cs/replace "{{s}}" (str "" port))
+               (cs/replace "{{r}}" (str "" regoPort)))
+     url (JMXServiceURL. endpt)
+     conn (JMXConnectorServerFactory/newJMXConnectorServer
+            url nil
+            (ManagementFactory/getPlatformMBeanServer))]
     (-> ^JMXConnectorServer
         conn (.start ))
     (.setv impl :beanSvr (.getMBeanServer conn))
@@ -92,8 +96,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- doReg ""
+(defn- doReg
 
+  ""
   [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean ]
 
   (.registerMBean svr mbean objName)
@@ -102,14 +107,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn mkJmxServer ""
+(defn jmxServer<>
 
+  ""
   ^JMXServer
   [^String host]
 
   (let
-    [impl (mubleObj! {:regoPort 7777
-                     :port 0})
+    [impl (muble<> {:regoPort 7777
+                    :port 0})
      objNames (atom []) ]
     (reify
 
@@ -151,10 +157,10 @@
         (let [^JMXConnectorServer c (.getv impl :conn)
               ^Registry r (.getv impl :rmi) ]
           (.reset this)
-          (when (some? c) (tryc (.stop c)))
+          (when (some? c) (try! (.stop c)))
           (.setv impl :conn nil)
           (when (some? r)
-            (tryc
+            (try!
               (UnicastRemoteObject/unexportObject r true)))
           (.setv impl :rmi nil))))))
 

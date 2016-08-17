@@ -2,7 +2,8 @@
   :dependencies '[
 
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
-
+    [org.apache.commons/commons-lang3 "3.4"]
+    [commons-io/commons-io "2.5"]
     [org.slf4j/slf4j-api "1.7.21" ]
 
     [czlab/czlab-crypto "1.0.0"]

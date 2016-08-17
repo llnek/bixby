@@ -18,16 +18,16 @@
   czlab.skaro.io.files
 
   (:require
-    [czlab.xlib.files :refer [mkdirs moveFileToDir]]
+    [czlab.xlib.files :refer [mkdirs]]
     [czlab.xlib.core
      :refer [test-nestr
              seqint2
+             trylet!
              muble<>
              try!]]
     [czlab.skaro.io.loops
      :refer [loopableSchedule
-             loopableOneLoop
-             cfgLoopable]]
+             loopableOneLoop]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.str :refer [hgl? nsn]])
@@ -49,7 +49,8 @@
      FileAlterationMonitor
      FileAlterationObserver
      FileAlterationListenerAdaptor]
-    [czlab.server Emitter]
+    [org.apache.commons.io FileUtils]
+    [czlab.skaro.server Service]
     [czlab.skaro.io FileEvent]
     [czlab.xlib Muble Identifiable]))
 
@@ -72,7 +73,6 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
         (session [_] )
-        (id [_] eeid)
         (emitter [_] co)
         (originalFileName [_] fnm)
         (file [_] f)
@@ -94,9 +94,10 @@
      cf (if (and (= action :FP-CREATED)
                  (some? recvFolder))
           (trylet!
-            [r (subsVar recvFolder)]
-            (moveFileToDir f r false)
-            (io/file r orig)))]
+            [r (expandVars recvFolder)
+             d (io/file r orig)]
+            (FileUtils/moveFile f d)
+            d))]
     (when (some? cf)
       (->> (ioevent<> co orig cf action)
            (.dispatch co)))))
@@ -134,8 +135,8 @@
      {:keys [recvFolder
              fmask
              targetFolder]} c2
-     root (subsVar targetFolder)
-     dest (subsVar recvFolder)
+     root (expandVars targetFolder)
+     dest (expandVars recvFolder)
      ff (toFMask (str fmask))]
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))

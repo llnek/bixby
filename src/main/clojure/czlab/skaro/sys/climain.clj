@@ -45,7 +45,7 @@
              fpath
              muble<>
              prnMuble]]
-    [czlab.netty.io :refer [stopServer]])
+    [czlab.netty.core :refer [stopServer]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.xlib.consts]
@@ -76,6 +76,7 @@
      Activable
      Hierarchial
      Startable
+     CU
      Muble
      I18N
      Schedulable]
@@ -213,7 +214,7 @@
                 (str<> 72 \*)
                 "about to start skaro..."
                 (str<> 72 \*))
-      (.start execv)
+      (.start ^Execvisor execv)
       (log/info "skaro started!"))
     gist))
 

@@ -15,13 +15,14 @@
 package czlab.skaro.rt;
 
 import  czlab.skaro.server.Component;
+import czlab.xlib.Hierarchial;
 import czlab.xlib.Nameable;
 import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface EmitterGist extends Component, Nameable {
+public interface EmitterGist extends Component, Nameable, Hierarchial {
 
   /**/
   public boolean isEnabled();
