@@ -21,8 +21,10 @@ import czlab.xlib.Startable;
 /**
  * @author Kenneth Leung
  */
-public interface AppMain
-extends Disposable, Initable, Startable, Contextualizable {
+public interface AppMain extends Disposable, Initable, Startable {
+
+  /**/
+  public void setContainer(Container c);
 
 }
 

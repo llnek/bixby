@@ -34,7 +34,8 @@
     [czlab.xlib.logging :as log])
 
   (:import
-    [czlab.skaro.server Container Service ExpiredError AuthError]
+    [czlab.skaro.etc ExpiredError AuthError]
+    [czlab.skaro.server Container Service ]
     [java.net HttpCookie]
     [czlab.xlib Muble CU]
     [czlab.skaro.io

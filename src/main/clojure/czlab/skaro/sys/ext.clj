@@ -360,7 +360,7 @@
   ""
   [^Container ctr ^AppMain m options]
 
-  (.contextualize m ctr)
+  (.setContainer m ctr)
   (.init m options)
   m)
 
@@ -454,7 +454,7 @@
   []
 
   (reify AppMain
-    (contextualize [_ c])
+    (setContainer [_ c])
     (init [_ arg])
     (start [_] )
     (stop [_])

@@ -48,6 +48,7 @@
         [czlab.dbio.core])
 
   (:import
+    [czlab.skaro.etc AuthError UnknownUser DuplicateUser]
     [org.apache.shiro.config IniSecurityManagerFactory]
     [org.apache.shiro.authc UsernamePasswordToken]
     [czlab.net ULFormItems ULFileItem]
@@ -57,11 +58,7 @@
      AuthPlugin
      PluginError
      PluginFactory]
-    [czlab.skaro.server
-     Container
-     AuthError
-     UnknownUser
-     DuplicateUser]
+    [czlab.skaro.server Container ]
     [czlab.xlib Muble I18N BadDataError]
     [czlab.crypto PasswordAPI]
     [czlab.dbio
