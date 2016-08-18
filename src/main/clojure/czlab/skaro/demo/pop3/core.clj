@@ -14,7 +14,7 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.pop3.core
 
@@ -22,15 +22,16 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.process :refer [delayExec]])
 
+  (:use [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
-    [org.apache.commons.io IOUtils]
-    [java.util.concurrent.atomic AtomicInteger]
     [javax.mail Message Message$RecipientType Multipart]
+    [java.util.concurrent.atomic AtomicInteger]
+    [czlab.wflow Job TaskDef]
+    [org.apache.commons.io IOUtils]
     [javax.mail.internet MimeMessage]
-    [czlab.skaro.runtime AppMain]
-    [czlab.skaro.io EmailEvent]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container AppMain]
+    [czlab.skaro.io EmailEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -44,15 +45,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^EmailEvent ev (.event ^Job j)
-            ^MimeMessage msg (.getMsg ev)
+  (script<>
+    #(let [^EmailEvent ev (.event ^Job %2)
+            ^MimeMessage msg (.message ev)
             ^Multipart p (.getContent msg) ]
         (println "######################## (" (ncount) ")" )
         (print "Subj:" (.getSubject msg) "\r\n")
@@ -62,19 +63,19 @@
         (print "\r\n")
         (println (IOUtils/toString (-> (.getBodyPart p 0)
                                        (.getInputStream))
-                                   "utf-8"))))))
+                                   "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn myAppMain ""
+(defn myAppMain
 
+  ""
   ^AppMain
   []
 
   (reify AppMain
-    (contextualize [_ ctr] )
-    (initialize [_] )
-    (configure [_ cfg]
+    (setContainer [_ c] )
+    (init [_ _]
       (System/setProperty "skaro.demo.pop3"
                           "czlab.skaro.mock.mail.MockPop3Store"))
     (start [_] )

@@ -12,12 +12,10 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.http.core
-
 
   (:require
     [czlab.xlib.process :refer [delayExec]]
@@ -25,10 +23,12 @@
     [czlab.xlib.core :refer [try!]]
     [czlab.xlib.str :refer [hgl?]])
 
+  (:use [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
-    [czlab.skaro.io HTTPEvent HTTPResult]
-    [czlab.skaro.server Cocoon]))
+    [czlab.wflow Job TaskDef]
+    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -46,15 +46,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^HTTPEvent ev (.event ^Job j)
-            res (.getResultObj ev) ]
+  (script<>
+    #(let [^HttpEvent ev (.event ^Job %2)
+           ^HttpResult
+            res (.resultObj ev) ]
         ;; construct a simple html page back to caller
         ;; by wrapping it into a stream data object
         (doto res
@@ -63,7 +64,7 @@
           (.setStatus 200))
         ;; associate this result with the orignal event
         ;; this will trigger the http response
-        (.replyResult ev)))))
+        (.replyResult ev))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

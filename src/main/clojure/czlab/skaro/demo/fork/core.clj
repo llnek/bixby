@@ -12,23 +12,20 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.fork.core
-
 
   (:require
     [czlab.xlib.core :refer [try!]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl?]]
-    [czlab.skaro.core.wfs :refer [simPTask]])
+    [czlab.wflow.core :refer :all])
 
   (:import
-    [czlab.skaro.server Cocoon]
-    [czlab.wflow.dsl Job
-     Activity WorkFlow FlowDot PTask Split]
+    [czlab.skaro.server Container]
+    [czlab.wflow Job TaskDef WorkStream]
     [java.lang StringBuilder]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,8 +33,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fib ""
+(defn- fib
 
+  ""
   [n]
 
   (if (< n 3)
@@ -57,53 +55,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^Activity
+(def ^:private ^TaskDef
   a1
-  (simPTask
-    (fn [_]
+  (script<>
+    (fn [_ _]
        (println "I am the *Parent*")
        (println "I am programmed to fork off a parallel child process, "
                 "and continue my business."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^Activity
+(def ^:private ^TaskDef
   a2
-  (Split/fork
-    (simPTask
-      (fn [^Job j]
+  (group<>
+    (script<>
+      (fn [_ ^Job j]
         (println "*Child*: will create my own child (blocking)")
         (.setv j :rhs 60)
-        (.setv j :lhs 5)
-        (-> (Split/applyAnd
-              (simPTask
-                (fn [^Job j]
-                  (println "*Child*: the result for (5 * 60) according to "
-                           "my own child is = "
-                           (.getv j :result))
-                  (println "*Child*: done."))))
-            (.include
-              (simPTask
-                (fn [^Job j2]
-                  (println "*Child->child*: taking some time to do "
-                           "this task... ( ~ 6secs)")
-                  (dotimes [n 7]
-                    (Thread/sleep 1000)
-                    (print "."))
-                  (println "")
-                  (println "*Child->child*: returning result back to *Child*.")
-
-                  (.setv j2 :result (* (.getv j2 :rhs)
-                                       (.getv j2 :lhs)))
-                  (println "*Child->child*: done.")
-                  nil))))))))
+        (.setv j :lhs 5)))
+    (fork<>
+      {:join :and}
+      (script<>
+        (fn [_ ^Job j2]
+          (println "*Child->child*: taking some time to do "
+                   "this task... ( ~ 6secs)")
+          (dotimes [n 7]
+            (Thread/sleep 1000)
+            (print "."))
+          (println "")
+          (println "*Child->child*: returning result back to *Child*.")
+          (.setv j2 :result (* (.getv j2 :rhs)
+                               (.getv j2 :lhs)))
+          (println "*Child->child*: done.")
+          nil)))
+    (script<>
+      #(do
+         (println "*Child*: the result for (5 * 60) according to "
+                  "my own child is = "
+                  (.getv ^Job %2 :result))
+         (println "*Child*: done.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^Activity
+(def ^:private ^TaskDef
   a3
-  (simPTask
-    (fn [_]
+  (script<>
+    (fn [_ _]
       (let [b (StringBuilder. "*Parent*: ")]
         (println "*Parent*: after fork, continue to calculate fib(6)...")
         (dotimes [n 7]
@@ -117,14 +114,11 @@
 (defn demo
 
   "split but no wait, parent continues"
-
-  ^WorkFlow
+  ^WorkStream
   []
 
-  (reify WorkFlow
-    (startWith [_]
-      (-> (.chain a1 a2)
-          (.chain a3)))))
+  (workStream<>
+    (group<> a1 (fork<> {} a2) a3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

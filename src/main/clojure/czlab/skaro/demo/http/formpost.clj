@@ -14,10 +14,9 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.http.formpost
-
 
   (:require
     [czlab.xlib.process :refer [delayExec]]
@@ -25,29 +24,32 @@
     [czlab.xlib.core :refer [cast?]]
     [czlab.xlib.str :refer [hgl?]])
 
+  (:use [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
-    [czlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.wflow Job TaskDef]
     [java.util ListIterator]
     [czlab.xlib XData]
     [czlab.net ULFileItem ULFormItems]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^HTTPEvent ev (.event  ^Job j)
-            res (.getResultObj ev)
-            data (.data ev)
+  (script<>
+    #(let [^HttpEvent ev (.event ^Job %2)
+           ^HttpResult
+            res (.resultObj ev)
+            data (.body ev)
             stuff (when (and (some? data)
                              (.hasContent data))
                     (.content data)) ]
@@ -66,7 +68,7 @@
         (.setStatus res 200)
         ;; associate this result with the orignal event
         ;; this will trigger the http response
-        (.replyResult ev)))))
+        (.replyResult ev))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

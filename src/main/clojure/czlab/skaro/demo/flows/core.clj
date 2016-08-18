@@ -21,7 +21,7 @@
   (:use [czlab.wflow.core])
 
   (:import
-    [czlab.wflow Job TaskDef]))
+    [czlab.wflow ChoiceExpr BoolExpr Job TaskDef WorkStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -137,7 +137,7 @@
           (.setv ^Job j :wdb_count c)
           (< c 3))))
     (script<>
-      #(let [v (.getv ^JOb %2 :wdb_count)
+      #(let [v (.getv ^Job %2 :wdb_count)
              c (if (some? v) v 0) ]
          (if (== c 2)
            (println "step(4): wrote stuff to database successfully")
@@ -151,48 +151,44 @@
 ;;the workflow
 (defonce ^:private ^TaskDef
   Provision
-  (fork<>
-    {:join :and}
-    )
-  (-> (Split/applyAnd save_sdb)
-      (.includeMany (into-array Activity [prov_ami prov_vol]))))
+  (group<>
+    (fork<> {:join :and} prov_ami prov_vol)
+    save_sdb))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this is the final step, after all the work are done, reply back to the caller.
 ;; like, returning a 200-OK
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   ReplyUser
-  (simPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+  (script<> (fn [_ _]
+              (println "step(5): we'd probably return a 200 OK "
                              "back to caller here"))))
 
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   ErrorUser
-  (simPTask (fn [_] (println "step(5): we'd probably return a 200 OK "
+  (script<> (fn [_ _]
+              (println "step(5): we'd probably return a 200 OK "
                              "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   FinalTest
-  (If/apply
-    (defBoolExpr (fn [_] true))
+  (ternary<>
+    (reify BoolExpr (ptest [_ j] true))
     ReplyUser
     ErrorUser))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WorkFlow
+  ""
+  ^WorkStream
   []
-
-  (reify WorkFlow
-    (startWith [_]
-      ;; so, the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
-      ;; a split, which forks off more steps in parallel.
-      (-> (auth-user)
-          (.chain GetProfile)
-          (.chain Provision)
-          (.chain FinalTest)))))
+  ;; the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
+  ;; a split, which forks off more steps in parallel.
+  (workStream<>
+    (group<> (auth-user) GetProfile Provision FinalTest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

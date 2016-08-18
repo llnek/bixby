@@ -14,7 +14,7 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.jms.core
 
@@ -22,12 +22,14 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.process :refer [delayExec]])
 
+  (:use [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [java.util.concurrent.atomic AtomicInteger]
+    [czlab.wflow Job TaskDef]
     [czlab.skaro.io JMSEvent]
     [javax.jms TextMessage]
-    [java.util.concurrent.atomic AtomicInteger]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -41,22 +43,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^JMSEvent ev (.event ^Job j)
-            ^TextMessage msg (.getMsg ev) ]
+  (script<>
+    #(let [^JMSEvent ev (.event ^Job %2)
+            ^TextMessage msg (.message ev)]
         (println "-> Correlation ID= " (.getJMSCorrelationID msg))
         (println "-> Msg ID= " (.getJMSMessageID msg))
         (println "-> Type= " (.getJMSType msg))
         (println "("
                  (ncount)
                  ") -> Message= "
-                 (.getText msg))))))
+                 (.getText msg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

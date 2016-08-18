@@ -14,7 +14,7 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.tcpip.core
 
@@ -22,18 +22,18 @@
   (:require
     [czlab.xlib.process :refer [delayExec]]
     [czlab.xlib.logging :as log]
-    [czlab.xlib.core :refer [try!]]
-    [czlab.skaro.core.wfs :refer [simPTask]])
+    [czlab.xlib.core :refer [try!]])
+
+  (:use [czlab.wflow.core])
 
   (:import
     [java.io DataOutputStream DataInputStream BufferedInputStream]
-    [czlab.wflow.dsl WorkFlow Job FlowDot PTask Delay]
+    [czlab.wflow Job TaskDef WorkStream]
     [czlab.skaro.io SocketEvent]
-    [czlab.skaro.server Cocoon]
     [java.net Socket]
     [java.util Date]
     [czlab.xlib Muble]
-    [czlab.skaro.server ServiceProvider Service]))
+    [czlab.skaro.server Container ServiceProvider Service]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -44,67 +44,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demoClient ""
+(defn demoClient
 
-  ^WorkFlow
+  ""
+  ^WorkStream
   []
 
-  (reify WorkFlow
-    (startWith [_]
-      ;; wait, then opens a socket and write something to server process.
-      (-> (Delay/apply 3000)
-          (.chain
-            (simPTask
-              (fn [^Job j]
-                (with-local-vars
-                  [tcp (-> ^ServiceProvider
-                           (.container j)
-                           (.getService :default-sample))
-                   s (.replace TEXTMsg "${TS}" (.toString (Date.)))
-                   ssoc nil]
-                  (println "TCP Client: about to send message" @s)
-                  (try
-                    (let [^String host (.getv ^Muble @tcp :host)
-                          bits (.getBytes ^String @s "utf-8")
-                          port (.getv ^Muble @tcp :port)
-                          soc (Socket. host (int port))
-                          os (.getOutputStream soc) ]
-                      (var-set ssoc soc)
-                      (-> (DataOutputStream. os)
-                          (.writeInt (int (alength bits))))
-                      (doto os
-                        (.write bits)
-                        (.flush)))
-                    (finally
-                      (try! (when (some? @ssoc)
-                              (.close ^Socket @ssoc)))))
-                  nil))))))))
+  ;; wait, then opens a socket and write something to server process.
+  (workStream<>
+    (postpone<> 3)
+    (script<>
+      (fn [_ ^Job j]
+        (let
+          [tcp (-> ^Container
+                   (.server j)
+                   (.service :default-sample))
+           s (.replace TEXTMsg "${TS}" (.toString (Date.)))
+           ^String host (.getv (.getx tcp) :host)
+           bits (.getBytes ^String s "utf-8")
+           port (.getv (.getx tcp) :port)]
+          (println "TCP Client: about to send message" s)
+          (with-open [soc (Socket. host (int port))]
+            (let [os (.getOutputStream soc)]
+              (-> (DataOutputStream. os)
+                  (.writeInt (int (alength bits))))
+              (doto os
+                (.write bits)
+                (.flush)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demoServer ""
+(defn demoServer
 
-  ^WorkFlow
+  ""
+  ^WorkStream
   []
 
-  (reify WorkFlow
-    (startWith [_]
-      (-> (simPTask
-            (fn [^Job j]
-              (let [^SocketEvent ev (.event j)
-                    dis (DataInputStream. (.getSockIn ev))
-                    clen (.readInt dis)
-                    bf (BufferedInputStream. (.getSockIn ev))
-                    ^bytes buf (byte-array clen) ]
-                (.read bf buf)
-                (.setv j "cmsg" (String. buf "utf-8"))
-                ;; add a delay into the workflow before next step
-                (Delay/apply 1500))))
-          (.chain
-            (simPTask
-              (fn [^Job j]
-                (println "Socket Server Received: "
-                         (.getv j "cmsg")))))))))
+  (workStream<>
+    (script<>
+      #(let [^SocketEvent ev (.event ^Job %2)
+             dis (DataInputStream. (.sockIn ev))
+             clen (.readInt dis)
+             bf (BufferedInputStream. (.sockIn ev))
+             ^bytes buf (byte-array clen) ]
+         (.read bf buf)
+         (.setv ^Job %2 "cmsg" (String. buf "utf-8"))
+         ;; add a delay into the workflow before next step
+         (postpone<> 1.5)))
+    (script<>
+      (fn [_ ^Job j]
+        (println "Socket Server Received: "
+                 (.getv j "cmsg"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

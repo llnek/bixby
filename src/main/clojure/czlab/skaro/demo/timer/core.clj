@@ -14,22 +14,22 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.timer.core
 
-
   (:require
     [czlab.xlib.process :refer [delayExec]]
-    [czlab.xlib.logging :as log]
-    [czlab.skaro.core.wfs :refer [simPTask]])
+    [czlab.xlib.logging :as log])
+
+  (:use [czlab.wflow.core])
 
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
     [java.util.concurrent.atomic AtomicInteger]
+    [czlab.wflow Job TaskDef]
     [java.util Date]
     [czlab.skaro.io TimerEvent]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -43,17 +43,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^TimerEvent ev (.event ^Job j) ]
+  (script<>
+    #(let [^TimerEvent ev (.event ^Job %2)]
         (if (.isRepeating ev)
           (println "-----> (" (ncount) ") repeating-update: " (Date.))
-          (println "-----> once-only!!: " (Date.)))))))
+          (println "-----> once-only!!: " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

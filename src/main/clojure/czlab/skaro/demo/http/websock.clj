@@ -14,10 +14,9 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.http.websock
-
 
   (:require
     [czlab.xlib.process :refer [delayExec]]
@@ -26,28 +25,29 @@
     [czlab.xlib.str :refer :all]
     [czlab.xlib.meta :refer [isBytes?]])
 
+  (:use [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
+    [czlab.skaro.io WebSockEvent WebSockResult]
+    [czlab.wflow Job TaskDef]
     [czlab.xlib XData]
-    [czlab.skaro.io WebSockEvent
-     WebSockResult]
-    [czlab.skaro.server Cocoon]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demo ""
+(defn demo
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^WebSockEvent ev (.event ^Job j)
-            res (.getResultObj ev)
-            data (.getData ev)
+  (script<>
+    #(let [^WebSockEvent ev (.event ^Job %2)
+            res (.resultObj ev)
+            data (.body ev)
             stuff (when (and (some? data)
                              (.hasContent data))
                     (.content data)) ]
@@ -59,7 +59,7 @@
           (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
 
           :else
-          (println "Funky data from websocket????"))))))
+          (println "Funky data from websocket????")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
