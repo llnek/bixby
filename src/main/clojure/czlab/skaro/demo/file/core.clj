@@ -14,27 +14,25 @@
 
 
 (ns ^:no-doc
-    ^{:author "kenl"}
+    ^{:author "Kenneth Leung"}
 
   czlab.skaro.demo.file.core
 
-
   (:require
-    [czlab.xlib.core :refer [try!]]
+    [czlab.xlib.core :refer :all]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.str :refer [hgl?]])
 
+  (:use [czlab.xlib.files]
+        [czlab.wflow.core])
+
   (:import
-    [czlab.wflow.dsl WHandler Job FlowDot PTask]
-    [czlab.xlib Muble]
-    [czlab.skaro.server Cocoon]
-    [czlab.skaro.io FileEvent]
-    [czlab.skaro.server ServiceProvider Service]
+    [czlab.skaro.server Container ServiceProvider Service]
     [java.util.concurrent.atomic AtomicInteger]
-    [org.apache.commons.io FileUtils]
+    [czlab.wflow Job TaskDef]
+    [czlab.skaro.io FileEvent]
     [java.util Date]
-    [java.lang StringBuilder]
     [java.io File IOException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,34 +47,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demoGen ""
+(defn demoGen
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [^Muble p (-> ^ServiceProvider
-                         (.container ^Job j)
-                         (.getService :default-sample))
-            s (str "Current time is " (Date.)) ]
-        (spit (io/file (.getv p :targetFolder)
-                       (str "ts-" (ncount) ".txt"))
-              s :encoding "utf-8")))))
+  (script<>
+    #(let [p (-> ^Container
+                 (.server ^Job %2)
+                 (.getService :default-sample))]
+       (spitUTF8 (io/file (.getv (.getx p) :targetFolder)
+                          (str "ts-" (ncount) ".txt"))
+                 (str "Current time is " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn demoPick ""
+(defn demoPick
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_  j _]
-      (let [f (-> ^FileEvent (.event ^Job j)
-                  (.getFile)) ]
-        (println "picked up new file: " f)
-        (println "content: " (slurp f :encoding "utf-8"))))))
+  (script<>
+    #(let [f (-> ^FileEvent (.event ^Job %2)
+                  (.file)) ]
+       (println "picked up new file: " f)
+       (println "content: " (slurpUTF f)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

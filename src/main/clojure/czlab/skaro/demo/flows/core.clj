@@ -14,16 +14,14 @@
 
 
 (ns ^{:doc ""
-      :author "kenl"}
+      :author "Kenneth Leung"}
 
   czlab.skaro.demo.flows.core
 
-  (:use [czlab.skaro.core.wfs])
+  (:use [czlab.wflow.core])
 
   (:import
-    [czlab.wflow.dsl PTask
-     WorkFlow Job
-     Activity FlowError If Split Switch While]))
+    [czlab.wflow Job TaskDef]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -39,121 +37,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getAuthMtd ""
+(defn- getAuthMtd
 
-  ^Activity
+  ""
+  ^TaskDef
   [t]
 
   (case t
-    "facebook" (simPTask (fn [_] (println "-> use facebook")))
-    "google+" (simPTask (fn [_] (println "-> use google+")))
-    "openid" (simPTask (fn [_] (println "-> use open-id")))
-    (simPTask (fn [_] (println "-> use internal db")))))
+    "facebook" (script<> (fn [_ _] (println "-> use facebook")))
+    "google+" (script<> (fn [_ _] (println "-> use google+")))
+    "openid" (script<> (fn [_ _] (println "-> use open-id")))
+    (script<> (fn [_ _] (println "-> use internal db")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step1. choose a method to authenticate the user
 ;;here, we'll use a switch() to pick which method
-(defn- auth-user ""
+(defn- auth-user
 
-  ^Activity
+  ""
+  ^TaskDef
   []
 
   ;; hard code to use facebook in this example, but you
   ;; could check some data from the job, such as URI/Query params
   ;; and decide on which mth-value to switch() on
-  (doto
-    (->> (defChoiceExpr
-           (fn [_]
-             (println "step(1): choose an authentication method")
-             "facebook"))
-         (Switch/apply ))
-    (.withChoice "facebook"  (getAuthMtd "facebook"))
-    (.withChoice "google+" (getAuthMtd "google+"))
-    (.withChoice "openid" (getAuthMtd "openid"))
-    (.withDft  (getAuthMtd "db"))))
+  (choice<>
+    (reify ChoiceExpr
+      (choose [_ j]
+        (println "step(1): choose an authentication method")
+        "facebook"))
+    (getAuthMtd "db")
+    "facebook"  (getAuthMtd "facebook")
+    "google+" (getAuthMtd "google+")
+    "openid" (getAuthMtd "openid")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step2
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   GetProfile
-  (simPTask (fn [_] (println "step(2): get user profile\n"
-                             "->user is superuser"))))
+  (script<> (fn [_ _] (println "step(2): get user profile\n"
+                               "->user is superuser"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant permission
 ;;so here , we are using a while() to do that
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   prov_ami
-  (While/apply
-    (defBoolExpr
-      (fn [^Job j]
-        (let [v (.getv j :ami_count)
+  (wloop<>
+    (reify BoolExpr
+      (ptest [_ j]
+        (let [v (.getv ^Job j :ami_count)
               c (if (some? v) (inc v) 0)]
-         (.setv j :ami_count c)
+         (.setv ^Job j :ami_count c)
          (< c 3))))
-    (simPTask
-      (fn [^Job j]
-        (let [v (.getv j :ami_count)
-              c (if (some? v) v 0) ]
-          (if (== 2 c)
-            (println "step(3): granted permission for user "
-                     "to launch this ami(id)")
-            (println "step(3): failed to contact "
-                     "ami- server, will retry again (" c ")")))))))
+    (script<>
+      #(let [v (.getv ^Job %2 :ami_count)
+             c (if (some? v) v 0) ]
+         (if (== 2 c)
+           (println "step(3): granted permission for user "
+                    "to launch this ami(id)")
+           (println "step(3): failed to contact "
+                    "ami- server, will retry again (" c ")"))
+         nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3'. we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant volume permission
 ;;so here , we are using a while() to do that
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   prov_vol
-  (While/apply
-    (defBoolExpr
-      (fn [^Job j]
-        (let [v (.getv j :vol_count)
+  (wloop<>
+    (reify BoolExpr
+      (ptest [_ j]
+        (let [v (.getv ^Job j :vol_count)
               c (if (some? v) (inc v) 0) ]
-          (.setv j :vol_count c)
+          (.setv ^Job j :vol_count c)
           (< c 3))))
-    (simPTask
-      (fn [^Job j]
-        (let [v (.getv j :vol_count)
-              c (if (some? v) v 0) ]
-          (if (== c 2)
-            (println "step(3'): granted permission for user "
-                     "to access/snapshot this volume(id)")
-            (println "step(3'): failed to contact vol- server, "
-                     "will retry again (" c ")")))))))
+    (script<>
+      #(let [v (.getv ^Job %2 :vol_count)
+             c (if (some? v) v 0) ]
+         (if (== c 2)
+           (println "step(3'): granted permission for user "
+                    "to access/snapshot this volume(id)")
+           (println "step(3'): failed to contact vol- server, "
+                    "will retry again (" c ")"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step4. pretend to write stuff to db. again, we are going to dummy up the case
 ;;where the db write fails a couple of times
 ;;so again , we are using a while() to do that
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   save_sdb
-  (While/apply
-    (defBoolExpr
-      (fn [^Job j]
-        (let [v (.getv j :wdb_count)
+  (wloop<>
+    (reify BoolExpr
+      (ptest [_ j]
+        (let [v (.getv ^Job j :wdb_count)
               c (if (some? v) (inc v) 0)]
-          (.setv j :wdb_count c)
+          (.setv ^Job j :wdb_count c)
           (< c 3))))
-    (simPTask
-      (fn [^Job j]
-        (let [v (.getv j :wdb_count)
-              c (if (some? v) v 0) ]
-          (if (== c 2)
-            (println "step(4): wrote stuff to database successfully")
-            (println "step(4): failed to contact db- server, "
-                   "will retry again (" c ")")))))))
+    (script<>
+      #(let [v (.getv ^JOb %2 :wdb_count)
+             c (if (some? v) v 0) ]
+         (if (== c 2)
+           (println "step(4): wrote stuff to database successfully")
+           (println "step(4): failed to contact db- server, "
+                    "will retry again (" c ")"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;this is the step where it will do the provisioning of the AMI and the EBS volume
 ;;in parallel.  To do that, we use a split-we want to fork off both tasks in parallel.  Since
 ;;we don't want to continue until both provisioning tasks are done. we use a AndJoin to hold/freeze
 ;;the workflow
-(defonce ^:private ^Activity
+(defonce ^:private ^TaskDef
   Provision
+  (fork<>
+    {:join :and}
+    )
   (-> (Split/applyAnd save_sdb)
       (.includeMany (into-array Activity [prov_ami prov_vol]))))
 
