@@ -73,7 +73,7 @@
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
         (session [_] )
-        (emitter [_] co)
+        (source [_] co)
         (originalFileName [_] fnm)
         (file [_] f)
         (id [_] eeid))

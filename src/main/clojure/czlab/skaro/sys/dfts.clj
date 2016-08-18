@@ -36,7 +36,6 @@
   (:use [czlab.skaro.sys.core])
 
   (:import
-    [czlab.skaro.rt AppGist]
     [czlab.xlib
      Versioned
      Muble
@@ -46,6 +45,7 @@
      Identifiable]
     [czlab.skaro.server
      ConfigError
+     AppGist
      Component
      ServiceError]
     [java.io File]))

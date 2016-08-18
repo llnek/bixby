@@ -13,27 +13,27 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.rt;
+package czlab.skaro.server;
 
 /**
  * @author Kenneth Leung
  */
-public class AuthError extends Exception {
+public class DuplicateUser extends AuthError {
 
   private static final long serialVersionUID = 1L;
 
   /**/
-  public AuthError(String msg,Throwable e) {
+  public DuplicateUser(String msg, Throwable e) {
     super(msg,e);
   }
 
   /**/
-  public AuthError(Throwable e) {
+  public DuplicateUser(Throwable e) {
     this(null,e);
   }
 
   /**/
-  public AuthError(String msg) {
+  public DuplicateUser(String msg) {
     this(msg,null);
   }
 

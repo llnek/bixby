@@ -50,13 +50,10 @@
         [czlab.skaro.io.http])
 
   (:import
-    [czlab.skaro.server Container Service EventTrigger]
+    [czlab.skaro.server EventHolder Container Service EventTrigger]
     [czlab.net RouteCracker RouteInfo]
     [czlab.netty InboundFilter]
     [clojure.lang APersistentMap]
-    [czlab.server
-     Emitter
-     EventHolder]
     [java.io
      Closeable
      File
@@ -109,7 +106,7 @@
      ChunkedFile
      ChunkedInput
      ChunkedWriteHandler]
-    [czlab.skaro.mvc WebAsset HttpRangeInput]
+    [czlab.skaro.net WebAsset HttpRangeInput]
     [czlab.netty
      CPDecorator
      PipelineCfgtor]
@@ -369,7 +366,7 @@
         (body [_] _body)
         (resultObj [_] nil)
         (replyResult [this] nil)
-        (emitter [_] co))
+        (source [_] co))
 
       {:typeid ::WebSockEvent })))
 
@@ -414,7 +411,7 @@
        (bindSession [_ s] (.setv impl :ios s))
        (session [_] (.getv impl :ios))
        (id [_] eeid)
-       (emitter [_] co)
+       (source [_] co)
        (checkAuthenticity [_] wantSecure?)
 
        (cookie [_ n] (get cookieJar n))

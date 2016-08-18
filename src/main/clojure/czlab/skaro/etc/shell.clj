@@ -45,7 +45,7 @@
 
   [& args]
 
-  (let [ver (loadResource VERPROPS)
+  (let [^ResourceBundle ver (loadResource VERPROPS)
         h (first args)
         rcb (getResource RCB)]
     (with-local-vars [ok false]

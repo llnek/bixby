@@ -21,7 +21,7 @@ package czlab.skaro.server;
 @FunctionalInterface public interface Resolvable {
 
   /**/
-  public Object resolve(Context c);
+  public Object resolve(Object c);
 
 }
 

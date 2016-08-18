@@ -12,11 +12,10 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.io;
 
-import czlab.skaro.server.Context;
-import czlab.server.Emitter;
+import czlab.skaro.server.Service;
+import czlab.xlib.Context;
 
 /**
  * @author Kenneth Leung
@@ -24,7 +23,7 @@ import czlab.server.Emitter;
 public interface IOResult extends Context {
 
   /**/
-  public Emitter emitter();
+  public Service source();
 
 }
 

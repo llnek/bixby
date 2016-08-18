@@ -31,7 +31,7 @@
     [java.net InetAddress MalformedURLException]
     [java.rmi.registry LocateRegistry Registry]
     [java.lang.management ManagementFactory]
-    [czlab.skaro.rt JMXServer]
+    [czlab.skaro.server JMXServer]
     [java.rmi NoSuchObjectException]
     [czlab.xlib Startable Muble]
     [java.rmi.server UnicastRemoteObject]

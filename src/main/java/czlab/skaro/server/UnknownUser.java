@@ -12,20 +12,29 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
-
-import  czlab.skaro.server.Component;
-import czlab.xlib.Hierarchial;
-import czlab.xlib.Nameable;
-import java.net.URL;
+package czlab.skaro.server;
 
 /**
  * @author Kenneth Leung
  */
-public interface EmitterGist extends Component, Nameable, Hierarchial {
+public class UnknownUser extends AuthError {
+
+  private static final long serialVersionUID = 1L;
 
   /**/
-  public boolean isEnabled();
+  public UnknownUser(String msg,Throwable e) {
+    super(msg,e);
+  }
+
+  /**/
+  public UnknownUser(Throwable e) {
+    this(null,e);
+  }
+
+  /**/
+  public UnknownUser(String msg) {
+    this(msg,null);
+  }
 
 }
 

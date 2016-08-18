@@ -12,7 +12,7 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.mvc;
+package czlab.skaro.net;
 
 
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -27,6 +27,7 @@ import io.netty.buffer.ByteBufAllocator;
 
 import java.io.RandomAccessFile;
 import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -59,8 +60,8 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
    */
   public static ChunkedInput<ByteBuf> fileRange(
       String range,
-      HttpResponse rsp,
-      RandomAccessFile file) throws IOException {
+      File file,
+      HttpResponse rsp) throws Exception {
 
     if (isAcceptable(range)) {
       HttpRangeInput r= new HttpRangeInput(
@@ -69,7 +70,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
           file);
       return (r.process(rsp) > 0) ? r : null;
     } else {
-      return new ChunkedFile(file);
+      return new ChunkedFile(new RandomAccessFile(file,"r"));
     }
 
   }
@@ -79,9 +80,9 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
   protected HttpRangeInput(
       String range,
       String cType,
-      RandomAccessFile file) {
+      File file) throws Exception {
+    _file= new RandomAccessFile(file, "r");
     _cType= cType;
-    _file=file;
     init(range);
   }
 

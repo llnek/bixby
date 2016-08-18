@@ -40,17 +40,15 @@
   (:import
     [java.util.concurrent ConcurrentHashMap]
     [czlab.skaro.server
+     ServiceHandler
      EventTrigger
      Service
+     EventHolder
      Cljshim
      Component
      Container]
     [java.util Timer TimerTask]
     [czlab.skaro.io IOEvent]
-    [czlab.server
-     Emitter
-     EventHolder
-     ServiceHandler]
     [czlab.xlib
      XData
      Versioned
@@ -323,7 +321,7 @@
       (resumeOnResult [this res]
         (let
           [tm (.getv impl :timer)
-           src (.emitter event) ]
+           src (.source event) ]
           (when (some? tm)
             (.cancel ^Timer tm))
           (.unsetv impl :timer)
@@ -339,31 +337,31 @@
             (long millis))))
 
       (onExpiry [this]
-        (let [src (.emitter event) ]
+        (let [src (.source event) ]
           (.release src this)
           (.unsetv impl :timer)
           (.resumeWithError trigger) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Map of emitter hierarchy
+;; Map of service hierarchy
 ;;
-(derive ::HTTP ::Emitter)
+(derive ::HTTP ::Service)
 (derive ::Jetty ::HTTP)
 (derive ::Netty ::HTTP)
 ;;(derive :czc.skaro.io/WebSockIO :czc.skaro.io/NettyIO)
 (derive ::NettyMVC ::Netty)
 
-(derive ::RepeatingTimer ::Emitter)
-(derive ::OnceTimer ::Emitter)
+(derive ::RepeatingTimer ::Service)
+(derive ::OnceTimer ::Service)
 (derive ::ThreadedTimer ::RepeatingTimer)
 
 (derive ::FilePicker ::ThreadedTimer)
 (derive ::IMAP ::ThreadedTimer)
 (derive ::POP3 ::ThreadedTimer)
 
-(derive ::JMS ::Emitter)
-(derive ::Socket ::Emitter)
-;;(derive ::SocketIO ::Emitter)
+(derive ::JMS ::Service)
+(derive ::Socket ::Service)
+;;(derive ::SocketIO ::Service)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

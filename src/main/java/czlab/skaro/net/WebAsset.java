@@ -12,32 +12,30 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.server;
 
-import czlab.server.Emitter;
-import czlab.server.Event;
+package czlab.skaro.net;
 
+import java.io.File;
 
 /**
  * @author Kenneth Leung
  */
-public class StartEvent implements Event {
+public interface WebAsset {
 
-  public StartEvent(Emitter em) {
-    _ee=em;
-  }
+  /**/
+  public String contentType();
 
-  private Emitter _ee;
+  /**/
+  public File file();
 
-  @Override
-  public Object id() {
-    return "start-event-101";
-  }
+  /**/
+  public long ts();
 
-  @Override
-  public Emitter emitter() {
-    return _ee;
-  }
+  /**/
+  public long size();
+
+  /**/
+  public byte[] content();
 
 }
 

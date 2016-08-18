@@ -13,15 +13,19 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.mvc;
+package czlab.skaro.net;
 
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface public interface HttpErrorHandler {
+public interface WebContent {
 
   /**/
-  public WebContent getErrorResponse(int code);
+  public String contentType();
+
+  /**/
+  public byte[] body();
 
 }
+
 

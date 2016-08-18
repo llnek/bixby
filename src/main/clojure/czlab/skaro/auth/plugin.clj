@@ -57,11 +57,11 @@
      AuthPlugin
      PluginError
      PluginFactory]
-    [czlab.skaro.rt
+    [czlab.skaro.server
+     Container
      AuthError
      UnknownUser
      DuplicateUser]
-    [czlab.skaro.server Container]
     [czlab.xlib Muble I18N BadDataError]
     [czlab.crypto PasswordAPI]
     [czlab.dbio

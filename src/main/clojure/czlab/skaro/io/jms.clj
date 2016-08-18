@@ -35,7 +35,6 @@
 
   (:import
     [java.util Hashtable Properties ResourceBundle]
-    [czlab.server Emitter]
     [czlab.xlib Muble Identifiable]
     [javax.jms
      ConnectionFactory
@@ -83,7 +82,7 @@
         (bindSession [_ s] )
         (session [_] )
         (id [_] eeid)
-        (emitter [_] co)
+        (source [_] co)
         (message [_] msg))
 
       {:typeid ::JMSEvent})))

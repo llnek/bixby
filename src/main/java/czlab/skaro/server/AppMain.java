@@ -12,29 +12,17 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
+package czlab.skaro.server;
 
+import czlab.xlib.Initable;
+import czlab.xlib.Disposable;
 import czlab.xlib.Startable;
 
 /**
  * @author Kenneth Leung
  */
-public interface JMXServer extends Startable {
-
-  /**/
-  public void reg(Object obj, String domain, String nname, Object paths);
-
-  /**/
-  public void setRegistryPort(int port);
-
-  /**/
-  public void setServerPort(int port);
-
-  /**/
-  public void reset();
-
-  /**/
-  public void dereg(String nname);
+public interface AppMain
+extends Disposable, Initable, Startable, Contextualizable {
 
 }
 

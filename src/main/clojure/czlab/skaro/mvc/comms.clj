@@ -19,48 +19,60 @@
   czlab.skaro.mvc.comms
 
   (:require
-    [czlab.xlib.core :refer [try! fpath]]
-    [czlab.skaro.core.wfs :refer [simPTask]]
+    [czlab.xlib.core :refer [when-some+ try! fpath]]
+    [czlab.xlib.str :refer [hgl? strim]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.skaro.mvc.assets
-     :refer [webAsset getLocalFile]]
-    [czlab.xlib.str :refer [hgl? strim]]
-    [czlab.xlib.meta :refer [newObj]])
+     :refer [webAsset
+             getLocalFile]]
+    [czlab.xlib.meta :refer [new<>]])
 
   (:use [czlab.xlib.consts]
-        [czlab.netty.io]
+        [czlab.netty.core]
         [czlab.skaro.io.http]
         [czlab.skaro.io.netty]
         [czlab.skaro.io.core]
-        [czlab.skaro.core.sys]
-        [czlab.skaro.core.consts])
+        [czlab.skaro.sys.core])
 
   (:import
-    [czlab.wflow.server Emitter EventHolder]
-    [czlab.skaro.server Cocoon EventTrigger]
-    [czlab.skaro.io HTTPEvent HTTPResult]
+    [czlab.skaro.server Container Service EventTrigger]
+    [czlab.server Emitter EventHolder]
+    [czlab.skaro.io HttpEvent HttpResult]
     [czlab.net RouteInfo RouteCracker]
-    [czlab.skaro.mvc HTTPErrorHandler
-     MVCUtils WebAsset WebContent]
+    [czlab.skaro.mvc
+     HttpErrorHandler
+     MVCUtils
+     WebAsset
+     WebContent]
     [czlab.xlib XData Muble Hierarchial Identifiable]
-    [czlab.wflow.dsl FlowDot Activity
-     Job WHandler PTask Work]
-    [czlab.skaro.runtime AuthError]
+    [czlab.wflow  TaskDef Job]
+    [czlab.skaro.rt AuthError]
     [org.apache.commons.lang3 StringUtils]
     [java.util Date]
     [java.io File]
-    [io.netty.handler.codec.http HttpRequest
-     HttpResponseStatus HttpResponse
-     CookieDecoder ServerCookieEncoder
-     DefaultHttpResponse HttpVersion
+    [io.netty.handler.codec.http.cookie
+     ServerCookieEncoder
+     CookieDecoder ]
+    [io.netty.handler.codec.http
+     DefaultHttpResponse
+     HttpRequest
+     HttpResponseStatus
+     HttpResponse
+     HttpVersion
      HttpMessage
-     HttpHeaders LastHttpContent
-     HttpHeaders Cookie QueryStringDecoder]
+     HttpHeaders
+     LastHttpContent
+     HttpHeaders
+     Cookie
+     QueryStringDecoder]
     [io.netty.buffer Unpooled]
-    [io.netty.channel Channel ChannelHandler
+    [io.netty.channel
+     Channel
+     ChannelHandler
      ChannelFuture
-     ChannelPipeline ChannelHandlerContext]
+     ChannelPipeline
+     ChannelHandlerContext]
     [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,25 +80,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- isModified ""
+(defn- isModified
 
-  [^String eTag lastTm info]
+  ""
+  [^String eTag lastTm gist]
 
   (with-local-vars
     [unmod "if-unmodified-since"
      none "if-none-match"
      modd true ]
     (cond
-      (hasInHeader? info @unmod)
-      (when-some [s (getInHeader info @unmod)]
+      (gistHeader? gist @unmod)
+      (when-some+ [s (gistHeader gist @unmod)]
         (try!
           (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
                     lastTm)
             (var-set modd false))))
 
-      (hasInHeader? info @none)
+      (gistHeader? gist @none)
       (var-set modd (not= eTag
-                          (getInHeader info @none)))
+                          (gistHeader gist @none)))
 
       :else nil)
     @modd))
@@ -96,19 +109,18 @@
 (defn addETag
 
   "Add a ETag"
-
-  [^Muble src info ^File file ^HTTPResult res]
+  [^Service src gist ^File file ^HttpResult res]
 
   (let [lastTm (.lastModified file)
-        cfg (.getv src :emcfg)
+        cfg (.config src)
         maxAge (:maxAgeSecs cfg)
         eTag  (str "\""  lastTm  "-"
                    (.hashCode file)  "\"")]
-    (if (isModified eTag lastTm info)
+    (if (isModified eTag lastTm gist)
       (->> (Date. lastTm)
            (.format (MVCUtils/getSDF))
            (.setHeader res "last-modified" ))
-      (when (= (:method info) "GET")
+      (when (= (:method gist) "GET")
         (->> HttpResponseStatus/NOT_MODIFIED
              (.code )
              (.setStatus res ))))
@@ -126,7 +138,6 @@
 
   "Want to handle case where the url has stuff after the file name.
    For example:  /public/blab&hhh or /public/blah?ggg"
-
   ^String
   [^String path]
 
@@ -146,14 +157,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleStatic2 ""
+(defn- handleStatic2
 
-  [src info ^HTTPEvent evt ^File file]
+  ""
+  [gist ^HttpEvent evt ^File file]
 
   (log/debug "serving static file: %s" (fpath file))
   (with-local-vars [crap false]
-    (let [^HTTPResult
-          res (.getResultObj evt)]
+    (let [^HttpResult
+          res (.resultObj evt)]
       (try
         (if (or (nil? file)
                 (not (.exists file)))
@@ -163,12 +175,12 @@
           (do
             (.setContent res (webAsset file))
             (.setStatus res 200)
-            (addETag src info file res)
+            (addETag gist file res)
             (var-set crap true)
             (.replyResult evt)))
         (catch Throwable e#
           (log/error "failed to get static resource %s"
-                     (:uri2 info)
+                     (:uri2 gist)
                      e#)
           (when-not @crap
             (.setContent res nil)
@@ -181,21 +193,21 @@
 (defn handleStatic
 
   "Handle static file resource"
+  [^Service src ^HttpEvent evt options]
 
-  [^Emitter src ^HTTPEvent evt options]
-
-  (let [appDir (-> ^Cocoon
-                   (.container src) (.getAppDir))
+  (let [appDir (-> ^Container
+                   (.server src) (.appDir))
         ps (fpath (io/file appDir DN_PUBLIC))
-        ^HTTPResult res (.getResultObj evt)
-        cfg (-> ^Muble src (.getv :emcfg))
+        ^HttpResult res (.resultObj evt)
+        cfg (.config src)
         ckAccess (:fileAccessCheck cfg)
         fpath (str (:path options))
-        info (:info options) ]
+        gist (:gist options) ]
     (log/debug "request to serve static file: %s" fpath)
     (if (or (.startsWith fpath ps)
             (false? ckAccess))
-      (handleStatic2 src info evt
+      (handleStatic2 gist
+                     evt
                      (io/file (maybeStripUrlCrap fpath)))
       (do
         (log/warn "attempt to access non public file-system: %s" fpath)
@@ -204,13 +216,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- replyError ""
+(defn- replyError
 
-  [^Emitter src code]
+  ""
+  [^Service src code]
 
-  (-> ^Cocoon
-      (.container src)
-      (.getAppDir )
+  (-> ^Container
+      (.server src)
+      (.appDir )
       (getLocalFile (str "pages/errors/" code ".html"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,29 +231,29 @@
 (defn serveError
 
   "Reply back an error"
-
-  [^Muble src ^Channel ch code]
+  [^Service src ^Channel ch code]
 
   (with-local-vars
-    [rsp (httpReply code)
+    [rsp (httpReply<> code)
      bits nil wf nil
      ctype "text/plain"]
     (try
-      (let [cfg (.getv src :emcfg)
-            h (:errorHandler cfg)
-            ^HTTPErrorHandler
-            cb (if (hgl? h) (newObj h) nil)
-            ^WebContent
-            rc (if (nil? cb)
-                 (replyError src code)
-                 (.getErrorResponse cb code)) ]
+      (let
+        [cfg (.config src)
+         h (:errorHandler cfg)
+         ^HttpErrorHandler
+         cb (if (hgl? h) (new<> h) nil)
+         ^WebContent
+         rc (if (nil? cb)
+              (replyError src code)
+              (.getErrorResponse cb code)) ]
         (when (some? rc)
           (var-set ctype (.contentType rc))
           (var-set bits (.body rc)))
         (setHeader @rsp "content-type" @ctype)
         (->> (if (nil? @bits)
                  0 (alength ^bytes @bits))
-             (HttpHeaders/setContentLength @rsp ))
+             (HttpUtil/setContentLength @rsp ))
         (var-set wf (.writeAndFlush ch @rsp))
         (when (some? @bits)
           (->> (Unpooled/wrappedBuffer ^bytes @bits)
@@ -255,23 +268,22 @@
 (defn serveStatic
 
   "Reply back with a static file content"
-
-  [^Muble ri ^Emitter src ^Matcher mc
+  [^RouteInfo ri ^Service src ^Matcher mc
    ^Channel ch
-   info ^HTTPEvent evt]
+   gist ^HttpEvent evt]
 
   (with-local-vars
     [ok true mp nil]
     (try
-      (-> evt (.getSession)(.handleEvent evt))
+      (-> evt (.session)(.handleEvent evt))
       (catch AuthError e#
         (var-set ok false)
         (serveError src ch 403)))
     (when @ok
-      (let [appDir (-> ^Cocoon
-                       (.container src) (.getAppDir))
+      (let [appDir (-> ^Container
+                       (.server src) (.appDir))
             ps (fpath (io/file appDir DN_PUBLIC))
-            mpt (str (.getv ri :mountPoint))
+            mpt (str (.getv (.getx ri) :mountPoint))
             gc (.groupCount mc)]
         (var-set mp (.replace mpt "${app.dir}" (fpath appDir)))
         (when (> gc 1)
@@ -280,63 +292,62 @@
                                              "{}"
                                              (.group mc (int i)) 1))))
         (var-set mp (fpath (File. ^String @mp)))
-        (let [cfg (-> ^Muble src (.getv :emcfg))
-              w (-> (nettyTrigger ch evt src)
-                    (asyncWaitHolder evt))]
+        (let [cfg (.config src)
+              w (-> (nettyTrigger<> ch evt src)
+                    (asyncWaitHolder<> evt))]
           (.timeoutMillis w (:waitMillis cfg))
           (doto src
             (.hold w)
-            (.dispatch evt
-                       {:router "czlab.skaro.mvc.comms/AssetHandler"
-                        :info info
-                        :path @mp})))))))
+            (.dispatchEx
+              evt
+              {:router "czlab.skaro.mvc.comms/AssetHandler"
+               :gist gist
+               :path @mp})))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn serveRoute
 
   "Handle a match route"
-
   [^RouteInfo ri
-   ^Muble src
+   ^Service src
    ^Matcher mc
    ^Channel ch
-   ^HTTPEvent evt]
+   ^HttpEvent evt]
 
   (with-local-vars [ok true]
     (try
-      (-> evt (.getSession)(.handleEvent evt))
+      (-> evt (.session)(.handleEvent evt))
       (catch AuthError e#
         (var-set ok false)
         (serveError src ch 403)))
     (when @ok
-      (let [cfg (.getv src :emcfg)
+      (let [cfg (.config src)
             pms (.collect ri mc)
             options {:router (.getHandler ri)
                      :params (merge {} pms)
                      :template (.getTemplate ri)}
-            w (-> (nettyTrigger ch evt src)
-                  (asyncWaitHolder evt))]
+            w (-> (nettyTrigger<> ch evt src)
+                  (asyncWaitHolder<> evt))]
         (.timeoutMillis w (:waitMillis cfg))
-        (doto ^Emitter src
+        (doto src
           (.hold  w)
-          (.dispatch  evt options))))))
+          (.dispatchEx  evt options))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private  assetHandler!
-  (reify WHandler
-    (run [_  j _]
-      (let [evt (.event ^Job j)]
-        (handleStatic (.emitter evt)
-                      evt
-                      (.getv ^Job j EV_OPTS))))))
+  (script<>
+    #(let [evt (.event ^Job %2)]
+       (handleStatic (.emitter evt)
+                     evt
+                     (.getv ^Job %2 EV_OPTS)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn assetHandler ""
 
-  ^WHandler
+  ^TaskDef
   []
 
   assetHandler!)

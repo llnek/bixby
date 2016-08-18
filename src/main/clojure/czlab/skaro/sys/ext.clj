@@ -57,25 +57,27 @@
   (:use
     [czlab.skaro.sys.core]
     [czlab.skaro.io.core]
-    [czlab.skaro.sys.dfts])
-
-    ;;[czlab.skaro.io.loops]
-    ;;[czlab.skaro.io.mails]
-    ;;[czlab.skaro.io.files]
-    ;;[czlab.skaro.io.jms]
-    ;;[czlab.skaro.io.http]
-    ;;[czlab.skaro.io.netty]
-    ;;[czlab.skaro.io.socket]
+    [czlab.skaro.sys.dfts]
+    [czlab.skaro.io.loops]
+    [czlab.skaro.io.mails]
+    [czlab.skaro.io.files]
+    [czlab.skaro.io.jms]
+    [czlab.skaro.io.http]
+    [czlab.skaro.io.netty]
+    [czlab.skaro.io.socket])
     ;;[czlab.skaro.mvc.filters]
     ;;[czlab.skaro.mvc.ftlshim])
 
   (:import
-    [czlab.skaro.rt EmitterGist AppGist Execvisor AppMain]
     [czlab.skaro.etc PluginFactory Plugin]
-    [czlab.server ServiceHandler]
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
+     ServiceHandler
+     ServiceGist
+     AppGist
+     Execvisor
+     AppMain
      ServiceError
      Component
      Cljshim
@@ -114,7 +116,7 @@
   ^String
   [^IOEvent evt]
 
-  (let [^Container c (.. evt emitter server)]
+  (let [c (.. evt source server)]
     (.appKey c)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,7 +287,7 @@
     [^Execvisor exe (.parent co)
      bks (.getv (.getx exe) :emitters)]
     (if-some
-      [^EmitterGist
+      [^ServiceGist
        bk (get bks (keyword svcType))]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)

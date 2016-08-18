@@ -15,8 +15,6 @@
 
 package czlab.skaro.server;
 
-import czlab.server.Emitter;
-
 /**
  * @author Kenneth Leung
  */
@@ -30,7 +28,7 @@ public interface EventTrigger  {
 
 
   /**/
-  public Emitter emitter();
+  public Service source();
 
 }
 

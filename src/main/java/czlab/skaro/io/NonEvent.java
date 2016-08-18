@@ -12,34 +12,44 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.io;
 
-package czlab.skaro.server;
+import czlab.skaro.server.NulService;
+import czlab.skaro.server.Service;
+import czlab.skaro.server.Container;
 
-import czlab.server.Emitter;
-import czlab.server.Event;
 
 /**
  * @author Kenneth Leung
  */
-public class EndEvent implements Event {
+public class NonEvent implements IOEvent {
 
-  /**/
-  public EndEvent(Emitter em) {
-    _ee=em;
+  private void init(Container s) {
+    _svc=new NulService(s);
   }
 
-  private Emitter _ee;
+  public NonEvent(Container s) {
+    init(s);
+  }
+
+  public NonEvent() {
+    this(null);
+  }
+
 
   @Override
   public Object id() {
-    return "end-event-101";
+    return "nada";
   }
 
   @Override
-  public Emitter emitter() {
-    return _ee;
+  public Service source() {
+    return _svc;
   }
 
+  private Service _svc;
+
 }
+
 
 

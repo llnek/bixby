@@ -32,7 +32,6 @@
     [boot.core :as bcore]
     [czlab.xlib.files
      :refer [readFile
-             cleanDir
              mkdirs
              writeFile
              listFiles]]
@@ -49,23 +48,23 @@
              convLong
              resStr]]
     [czlab.crypto.core
-     :refer [AES256_CBC
+     :refer [exportPrivateKey
              assertJce
              exportPublicKey
-             exportPrivateKey
              dbgProvider
              asymKeyPair<>
-             ssv1PKCS12<>
+             ssv1PKCS12
              csreq<>]])
 
-  (:use [czlab.skaro.etc.boot]
-        [czlab.skaro.etc.cmd2]
+  (:use [czlab.skaro.etc.cmd2]
+        [czlab.tpcl.boot]
         [czlab.xlib.guids]
         [czlab.xlib.meta]
-        [czlab.skaro.core.consts])
+        [czlab.skaro.sys.core])
 
   (:import
     [czlab.skaro.loaders AppClassLoader]
+    [org.apache.commons.io FileUtils]
     [boot App]
     [java.util
      ResourceBundle
@@ -73,7 +72,7 @@
      Calendar
      Map
      Date]
-    [czlab.skaro.server CLJShim ]
+    [czlab.skaro.server Cljshim ]
     [czlab.skaro.etc CmdHelpError]
     [czlab.crypto PasswordAPI]
     [java.io File]
@@ -147,7 +146,7 @@
         rt (-> (doto
                  (AppClassLoader. (getCldr))
                  (.configure cwd))
-               (CLJShim/newrt (.getName cwd)))
+               (Cljshim/newrt (.getName cwd)))
         s2 (first args)]
     ;; background job is handled differently on windows
     (if (and (= s2 "bg")
@@ -346,7 +345,7 @@
   (let [ec (mkdirs (io/file appdir "eclipse.projfiles"))
         app (.getName appdir)
         sb (strbf<>)]
-    (cleanDir ec)
+    (FileUtils/cleanDirectory ec)
     (writeFile
       (io/file ec ".project")
       (-> (resStr (str "czlab/skaro/eclipse/"

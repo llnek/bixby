@@ -128,7 +128,7 @@
         (session [_] nil)
         (id [_] eeid)
         (checkAuthenticity [_] false)
-        (emitter [_] co)
+        (source [_] co)
         (message [_] msg))
 
       {:typeid ::EmailEvent })))

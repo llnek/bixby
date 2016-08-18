@@ -13,29 +13,35 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.io;
+package czlab.skaro.net;
 
-import czlab.skaro.server.Service;
-import czlab.xlib.Identifiable;
-import czlab.server.Event;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * @author Kenneth Leung
  */
-public interface IOEvent extends Event {
+public enum MVCUtils {
+;
+
+  private static ThreadLocal<SimpleDateFormat> _fmt = new ThreadLocal<SimpleDateFormat>() {
+
+    public SimpleDateFormat initialValue() {
+      SimpleDateFormat f= new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
+      f.setTimeZone(TimeZone.getTimeZone("GMT"));
+      return f;
+    }
+
+  };
+
 
   /**/
-  default public void bindSession(IOSession s) {}
-
-  /**/
-  default public IOSession session() { return null; }
-
-  /**/
-  public Service source();
-
-  /**/
-  default public boolean checkAuthenticity() { return false; }
+  public static SimpleDateFormat getSDF() {
+    return _fmt.get();
+  }
 
 }
+
 
 

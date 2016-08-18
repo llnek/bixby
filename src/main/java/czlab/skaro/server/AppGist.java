@@ -12,25 +12,14 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.server;
+
 
 /**
  * @author Kenneth Leung
  */
-public class RegistryError extends Exception {
+public interface AppGist extends Component {
 
-  private static final long serialVersionUID = 1L;
-
-  /**/
-  public RegistryError(Throwable e) {
-    super(null,e);
-  }
-
-  /**/
-  public RegistryError(String msg) {
-    super(msg,null);
-  }
 
 }
 

@@ -25,30 +25,41 @@
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.files
-     :refer [readFileBytes writeOneFile]]
+     :refer [slurpBytes writeFile]]
     [czlab.xlib.io :refer [streamify]])
 
   (:use [czlab.skaro.io.http]
-        [czlab.netty.io])
+        [czlab.netty.core])
 
   (:import
-    [io.netty.handler.codec.http HttpRequest HttpResponse
+    [io.netty.handler.stream ChunkedStream ChunkedFile]
+    [io.netty.handler.codec.http.cookie
+     ServerCookieEncoder
+     CookieDecoder]
+    [io.netty.handler.codec.http
+     DefaultHttpResponse
+     HttpRequest
+     HttpResponse
      HttpResponseStatus
-     CookieDecoder ServerCookieEncoder
-     DefaultHttpResponse HttpVersion
+     HttpVersion
      HttpMethod
      LastHttpContent
-     HttpHeaders Cookie QueryStringDecoder]
-    [io.netty.handler.stream ChunkedStream ChunkedFile]
+     HttpHeaders
+     Cookie
+     QueryStringDecoder]
     [java.io Closeable RandomAccessFile File]
-    [io.netty.channel Channel
+    [io.netty.channel
+     ChannelFutureListener
+     Channel
      ChannelHandler
-     ChannelFutureListener ChannelFuture
-     ChannelPipeline ChannelHandlerContext]
+     ChannelFuture
+     ChannelPipeline
+     ChannelHandlerContext]
     [org.apache.commons.io FileUtils]
-    [czlab.skaro.mvc WebContent
+    [czlab.skaro.mvc
+     WebContent
      WebAsset
-     HTTPRangeInput ]
+     HttpRangeInput ]
     [czlab.xlib Muble]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -64,7 +75,6 @@
 (defn setCacheAssetsFlag
 
   "Toggle caching of assers"
-
   [cacheFlag]
 
   (reset! cache-assets-flag (true? cacheFlag))
@@ -72,8 +82,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getLocalFile ""
+(defn getLocalFile
 
+  ""
   ^WebContent
   [appDir fname]
 
@@ -84,14 +95,13 @@
           (contentType [_]
             (guessContentType f "utf-8"))
           (body [_]
-            (writeOneFile f))))))
+            (writeFile f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeCache
+(defn- maybeCached?
 
   "cache certain files"
-
   [^File fp]
 
   (if @cache-assets-flag
@@ -101,8 +111,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn webAsset ""
+(defn webAsset
 
+  ""
   ^WebAsset
   [^File file]
 
@@ -115,12 +126,13 @@
       (getFile [_] file)
       (getTS [_] ts)
       (size [_] (.length file))
-      (getBytes [_] (readFileBytes file)))))
+      (getBytes [_] (slurpBytes file)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fetchAsset ""
+(defn- fetchAsset
 
+  ""
   ^WebAsset
   [^File file]
 
@@ -130,8 +142,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fetchAndSetAsset ""
+(defn- fetchAndSetAsset
 
+  ""
   ^WebAsset
   [^File file]
 
@@ -145,8 +158,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getAsset ""
+(defn- getAsset
 
+  ""
   ^WebAsset
   [^File file]
 
@@ -162,66 +176,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getFileInput ""
+(defn- getFileInput
 
-  [^RandomAccessFile raf
-   ^String ct
-   info
-   ^HttpResponse rsp ]
+  ""
+  ^ChunkedInput
+  [^File file gist ^HttpResponse rsp ]
 
-  (let [s (getInHeader info "range")]
-    (if (HTTPRangeInput/isAcceptable s)
-      (doto (HTTPRangeInput. raf ct s)
-        (.process rsp))
-      (ChunkedFile. raf))))
+  (HttpRangeInput/fileRange (getInHeader gist "range") file rsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn replyFileAsset ""
+(defn replyFileAsset
 
-  [src ^Channel ch info ^HttpResponse rsp ^File file]
+  ""
+  [^Channel ch gist ^HttpResponse rsp ^File file]
 
   (let [^WebAsset
-        asset (if-not (maybeCache file)
+        asset (if-not (maybeCached? file)
                 nil
                 (getAsset file))
         fname (.getName file) ]
     (with-local-vars
-      [raf nil clen 0
-       inp nil ct "" wf nil]
+      [inp nil clen (.length file)]
       (if (nil? asset)
         (do
-          (var-set ct (guessContentType file "utf-8" "text/plain"))
-          (var-set raf (RandomAccessFile. file "r"))
-          (var-set clen (.length ^RandomAccessFile @raf))
-          (var-set inp (getFileInput @raf @ct info rsp)))
+          (->> (guessContentType file "utf-8" "text/plain")
+               (setHeader rsp "content-type" ))
+          (var-set inp (getFileInput file gist rsp)))
         (do
-          (var-set ct (.contentType asset))
-          (var-set clen (.size asset))
-          (var-set inp (ChunkedStream. (streamify (.getBytes asset))))) )
+          (->> (.contentType asset)
+               (setHeader rsp "content-type" ))
+          (var-set inp (ChunkedStream. (streamify (.getBytes asset))))))
       (log/debug (str "serving file: %s with "
                       "clen= %s, ctype= %s")
-                 fname @clen @ct)
+                 fname clen (getHeader rsp "content-type"))
       (try
         (when (= HttpResponseStatus/NOT_MODIFIED
                  (.getStatus rsp))
-              (var-set clen 0))
+          (var-set clen 0))
         (addHeader rsp "Accept-Ranges" "bytes")
-        (setHeader rsp "Content-Type" @ct)
         (HttpHeaders/setContentLength rsp @clen)
-        (var-set wf (.writeAndFlush ch rsp))
-        (when-not (or (= (:method info) "HEAD")
-                      (== 0 @clen))
-                  (var-set wf (.writeAndFlush ch @inp)))
-        (futureCB @wf #(do
-                        (log/debug "channel-future-op-cmp: %s, file = %s" %1 fname)
-                        (try! (when (some? @raf) (.close ^Closeable @raf)))
-                        (when-not (:keepAlive info)
-                          (.close ch))))
-        (catch Throwable e#
-          (try! (when (some? @raf)(.close ^Closeable @raf)))
-          (log/error e# "")
-          (try! (.close ch))) ))))
+        (let [wf1 (.writeAndFlush ch rsp)
+              wf2
+              (if-not (or (= (:method gist) "HEAD")
+                          (== 0 @clen))
+                (.writeAndFlush ch @inp)
+                (do->nil (.close ^ChunkedInput @inp)))]
+          (closeCF (or wf2 wf1) (:keepAlive? gist)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

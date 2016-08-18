@@ -35,7 +35,6 @@
   (:import
     [java.util Base64 Base64$Decoder]
     [czlab.skaro.server Container]
-    [czlab.server Emitter]
     [czlab.skaro.io HttpEvent]
     [czlab.xlib XData]
     [czlab.net ULFormItems ULFileItem]))
@@ -116,10 +115,10 @@
     (persistent!
       (reduce
         #(let [[^String k [a1 a2]]  PMS]
-           (if (hasParam? gist k)
+           (if (gistParam? gist k)
              (assoc! %1
                      a1
-                     (a2 (getParam gist k)))
+                     (a2 (gistParam gist k)))
              %1))
         (transient {})
         PMS))))
@@ -172,7 +171,7 @@
   ^bytes
   [^HttpEvent evt]
 
-  (-> ^Container (.server (.emitter evt))
+  (-> (.server (.source evt))
       (.appKeyBits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

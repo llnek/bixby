@@ -12,30 +12,28 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.server;
 
-package czlab.skaro.mvc;
-
+import  czlab.xlib.Startable;
+import czlab.xlib.Context;
 import java.io.File;
 
 /**
  * @author Kenneth Leung
  */
-public interface WebAsset {
+public interface Execvisor extends Context, Component, Startable {
 
   /**/
-  public String contentType();
+  public long uptimeInMillis();
 
   /**/
-  public File file();
+  public long startTime();
 
   /**/
-  public long ts();
+  public File homeDir();
 
   /**/
-  public long size();
-
-  /**/
-  public byte[] content();
+  public void kill9();
 
 }
 

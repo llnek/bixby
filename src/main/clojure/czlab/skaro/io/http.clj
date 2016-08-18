@@ -45,7 +45,6 @@
      Component
      Service
      Container]
-    [czlab.server Emitter]
     [java.net URL]
     [java.io File]
     [czlab.crypto PasswordAPI]
@@ -157,7 +156,7 @@
       (isText [this] (not (.isBinary this)))
       (isBinary [_] (true? binary?))
       (getx [_] impl)
-      (emitter [_] co) )))
+      (source [_] co) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,7 +178,7 @@
       (setVersion [_ ver]  (.setv impl :version ver))
       (setStatus [_ code] (.setv impl :code code))
       (status [_] (.getv impl :code))
-      (emitter [_] co)
+      (source [_] co)
 
       (addCookie [_ c]
         (when (some? c)

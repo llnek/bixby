@@ -53,11 +53,6 @@
     [czlab.skaro.loaders AppClassLoader]
     [java.security SecureRandom]
     [clojure.lang Atom]
-    [czlab.skaro.rt
-     Execvisor
-     AppGist
-     JMXServer
-     EmitterGist]
     [java.util Date]
     [java.io File]
     [java.net URL]
@@ -70,6 +65,10 @@
      Identifiable]
     [czlab.skaro.server
      Container
+     Execvisor
+     AppGist
+     JMXServer
+     ServiceGist
      Service
      Component]))
 
@@ -224,7 +223,7 @@
 (defn- emitMeta
 
   ""
-  ^EmitterGist
+  ^ServiceGist
   [emsType gist]
 
   (let [{:keys [info conf]}
@@ -233,7 +232,7 @@
     (with-meta
       (reify
 
-        EmitterGist
+        ServiceGist
 
         (version [_] (:version info))
         (getx [_] impl)
@@ -247,16 +246,16 @@
 
         (name [_] (:name info)))
 
-      {:typeid  ::EmitterGist})))
+      {:typeid  ::ServiceGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
 (defmethod comp->initialize
 
-  ::EmitterGist
+  ::ServiceGist
   [^Component co & [execv]]
 
-  (log/info "comp->initialize: EmitterGist: %s" (.id co))
+  (log/info "comp->initialize: ServiceGist: %s" (.id co))
   (.setv (.getx co) :execv execv)
   co)
 

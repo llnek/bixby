@@ -63,7 +63,7 @@
         (id [_] eeid)
         (sockOut [_] (.getOutputStream soc))
         (sockIn [_] (.getInputStream soc))
-        (emitter [_] co)
+        (source [_] co)
         (dispose [_] (closeQ soc)))
 
       {:typeid ::SocketEvent })))

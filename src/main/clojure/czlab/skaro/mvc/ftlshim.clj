@@ -25,7 +25,8 @@
     [clojure.java.io :as io])
 
   (:import
-    [freemarker.template TemplateMethodModelEx
+    [freemarker.template
+     TemplateMethodModelEx
      TemplateBooleanModel
      TemplateCollectionModel
      TemplateDateModel
@@ -88,8 +89,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fn->method ""
+(defn- fn->method
 
+  ""
   [func]
 
   (reify
@@ -99,8 +101,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- strkey  ""
+(defn- strkey
 
+  ""
   [[k v]]
 
   (if (keyword? k)
@@ -123,8 +126,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn genFtlConfig ""
+(defn genFtlConfig
 
+  ""
   [ & {:keys [root shared] :or {shared {}}} ]
 
   (let [cfg (Configuration.)]

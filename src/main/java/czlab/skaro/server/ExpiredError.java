@@ -12,19 +12,29 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
-
-import czlab.skaro.server.Contextualizable;
-import czlab.xlib.Initable;
-import czlab.xlib.Configurable;
-import czlab.xlib.Disposable;
-import czlab.xlib.Startable;
+package czlab.skaro.server;
 
 /**
  * @author Kenneth Leung
  */
-public interface AppMain
-extends Disposable, Initable, Startable, Contextualizable {
+public class ExpiredError extends Exception {
+
+  private static final long serialVersionUID = 1L;
+
+  /**/
+  public ExpiredError(String msg, Throwable e) {
+    super(msg,e);
+  }
+
+  /**/
+  public ExpiredError(Throwable e) {
+    this(null,e);
+  }
+
+  /**/
+  public ExpiredError(String msg) {
+    this(msg,null);
+  }
 
 }
 

@@ -12,19 +12,29 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+package czlab.skaro.server;
 
-package czlab.skaro.mvc;
+import czlab.xlib.Startable;
 
 /**
  * @author Kenneth Leung
  */
-public interface WebContent {
+public interface JMXServer extends Startable {
 
   /**/
-  public String contentType();
+  public void reg(Object obj, String domain, String nname, Object paths);
 
   /**/
-  public byte[] body();
+  public void setRegistryPort(int port);
+
+  /**/
+  public void setServerPort(int port);
+
+  /**/
+  public void reset();
+
+  /**/
+  public void dereg(String nname);
 
 }
 

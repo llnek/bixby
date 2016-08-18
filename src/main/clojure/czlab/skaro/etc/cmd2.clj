@@ -20,7 +20,6 @@
 
   (:require
     [czlab.xlib.str :refer [strim triml trimr strimAny strbf<>]]
-    [czlab.xlib.ini :refer [parseInifile]]
     [czlab.xlib.guids :refer [uuid<>]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
@@ -28,26 +27,27 @@
     [clojure.java.io :as io]
     [czlab.xlib.antlib :as a]
     [czlab.xlib.core
-     :refer [getUser getCwd juid
+     :refer [isWindows?
+             getUser
+             getCwd
+             juid
              trap!
-             isWindows?
-             prn!! prn! fpath]]
+             prn!!
+             prn!
+             fpath]]
     [czlab.xlib.files
-     :refer [copyFileToDir
-             readOneFile
-             writeOneFile
-             replaceFile
+     :refer [replaceFile!
+             readFile
+             writeFile
              dirRead?
              touch!
-             deleteDir
-             copyFile
-             copyToDir
-             copyFiles
              mkdirs]])
 
-  (:use [czlab.skaro.core.consts])
+  (:use [czlab.skaro.sys.core])
 
   (:import
+    [org.apache.commons.io.filefilter FileFilterUtils]
+    [org.apache.commons.io FileUtils]
     [java.util ResourceBundle UUID]
     [czlab.skaro.etc CmdHelpError]
     [java.io File]))
@@ -57,6 +57,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some globals
+(def ^:dynamic *skaro-home* nil)
+(def ^:dynamic *skaro-rb* nil)
+
 (defonce SKARO-PROPS (atom {}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,12 +179,15 @@
         dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
     (createNetty out dn dom)
-    (copyFiles demo
-               (io/file top DN_CONF) "conf")
-    (copyFiles demo
+    (FileUtils/copyDirectory
+               (io/file top DN_CONF)
+               demo
+               (FileFilterUtils/suffixFileFilter ".conf"))
+    (FileUtils/copyDirectory
                (io/file top
                         "src/main/clojure/demo" dn)
-               "clj")))
+               demo
+               (FileFilterUtils/suffixFileFilter ".clj"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -250,14 +256,14 @@
     (mkdirs h2db)
     (with-local-vars [fp nil]
       (var-set fp (mkcljfp cljd "core.clj"))
-      (replaceFile @fp
-                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                        (cs/replace "@@USER@@" (getUser))))
+      (replaceFile! @fp
+                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                         (cs/replace "@@USER@@" (getUser))))
 
       (var-set fp (io/file appDir CFG_ENV_CF))
-      (replaceFile @fp
-                   #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
-                        (cs/replace "@@APPDOMAIN@@" appDomain))))))
+      (replaceFile! @fp
+                    #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
+                         (cs/replace "@@APPDOMAIN@@" appDomain))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -267,13 +273,13 @@
   [^File appDir ^String appId ^String appDomain ^String flavor]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
-        mfDir (io/file appDir DN_CFG)
+        mfDir (io/file appDir DN_ETC)
         cfd (io/file appDir DN_CONF)
         hhh (getHomeDir)]
     (with-local-vars [fp nil]
       ;; make all the folders
       (doseq [^String s ["i18n" "modules" "logs"
-                         DN_CONF DN_CFG
+                         DN_CONF DN_ETC
                          "src" "build" "patch" "target"]]
         (mkdirs (io/file appDir s)))
       (doseq [s [ "clojure" "java"]]
@@ -285,64 +291,70 @@
 
       ;;copy files
 
-      (copyFile (io/file hhh DN_CFG "log/log4jbuild.properties")
-                (io/file appDir "src/main/artifacts/log4j.properties"))
-      (copyFile (io/file hhh DN_CFG "log/logback4build.xml")
-                (io/file appDir "src/main/artifacts/logback.xml"))
-
-      (copyFileToDir (io/file hhh DN_CFGAPP "test.clj")
-                     (io/file appDir "src/test/clojure" appDomainPath))
+      (FileUtils/copyFile
+        (io/file hhh DN_ETC "log/log4jbuild.properties")
+        (io/file appDir "src/main/artifacts/log4j.properties"))
+      (FileUtils/copyFile
+        (io/file hhh DN_ETC "log/logback4build.xml")
+        (io/file appDir "src/main/artifacts/logback.xml"))
+      (FileUtils/copyFileToDirectory
+        (io/file hhh DN_CFGAPP "test.clj")
+        (io/file appDir "src/test/clojure" appDomainPath))
 
       (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
-        (copyFileToDir (io/file hhh DN_CFGAPP s)
-                       (io/file appDir "src/test/java" appDomainPath)))
+        (FileUtils/copyFileToDirectory
+          (io/file hhh DN_CFGAPP s)
+          (io/file appDir "src/test/java" appDomainPath)))
 
       (doseq [s ["build.boot" "pom.xml"]]
-        (copyFileToDir (io/file hhh DN_CFGAPP s) appDir))
+        (FileUtils/copyFileToDirectory
+          (io/file hhh DN_CFGAPP s) appDir))
       (touch! (io/file appDir "README.md"))
 
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt"]]
-        (touch! (io/file appDir DN_CFG s)))
+        (touch! (io/file appDir DN_ETC s)))
       (doseq [s [APP_CF ENV_CF ]]
-        (copyFileToDir (io/file hhh DN_CFGAPP s) cfd))
-      (copyFileToDir (io/file hhh DN_CFGAPP DN_RCPROPS)
-                     (io/file  appDir "i18n"))
-      (copyFileToDir (io/file hhh DN_CFGAPP "core.clj")
-                     (mkcljd appDir appDomain))
+        (FileUtils/copyFileToDirectory (io/file hhh DN_CFGAPP s) cfd))
+      (FileUtils/copyFileToDirectory
+        (io/file hhh DN_CFGAPP DN_RCPROPS)
+        (io/file  appDir "i18n"))
+      (FileUtils/copyFileToDirectory
+        (io/file hhh DN_CFGAPP "core.clj")
+        (mkcljd appDir appDomain))
 
       ;;modify files, replace placeholders
       (var-set fp (io/file appDir
                            "src/test/clojure" appDomainPath "test.clj"))
-      (replaceFile @fp
-                   #(cs/replace % "@@APPDOMAIN@@" appDomain))
+      (replaceFile! @fp
+                    #(cs/replace % "@@APPDOMAIN@@" appDomain))
 
       (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
         (var-set fp (io/file appDir
                              "src/test/java" appDomainPath s))
-        (replaceFile @fp
-                     #(cs/replace % "@@APPDOMAIN@@" appDomain)))
+        (replaceFile! @fp
+                      #(cs/replace % "@@APPDOMAIN@@" appDomain)))
 
       (var-set fp (io/file cfd APP_CF))
-      (replaceFile @fp
-                   #(-> (cs/replace % "@@USER@@" (getUser))
-                        (cs/replace "@@APPKEY@@" (uuid))
-                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cs/replace "@@APPMAINCLASS@@"
-                                    (str appDomain ".core/MyAppMain"))))
+      (replaceFile! @fp
+                    #(-> (cs/replace % "@@USER@@" (getUser))
+                         (cs/replace "@@APPKEY@@" (uuid<>))
+                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                         (cs/replace "@@APPMAINCLASS@@"
+                                     (str appDomain ".core/MyAppMain"))))
 
       (var-set fp (io/file appDir "pom.xml"))
-      (replaceFile @fp
-                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cs/replace "@@APPID@@" appId)))
+      (replaceFile! @fp
+                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                         (cs/replace "@@APPID@@" appId)))
 
       (var-set fp (io/file appDir "build.boot"))
-      (replaceFile @fp
-                   #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                        (cs/replace "@@TYPE@@" flavor)
-                        (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                        (cs/replace "@@APPID@@" appId))))))
+      (replaceFile! @fp
+                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+                         (cs/replace "@@TYPE@@" flavor)
+                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+                         (cs/replace "@@APPID@@" appId))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -366,40 +378,47 @@
 
     ;; copy files
     (let [des (io/file appDir "src/web/main/pages")
-          src (io/file hhh DN_CFG "netty")]
-      (copyFiles src des "ftl")
-      (copyFiles src des "html"))
+          src (io/file hhh DN_ETC "netty")]
+      (FileUtils/copyDirectory src des
+                               (FileFilterUtils/suffixFileFilter ".ftl"))
+      (FileUtils/copyDirectory src des
+                               (FileFilterUtils/suffixFileFilter ".html")))
 
-    (copyFileToDir (io/file hhh DN_CFG "netty/core.clj")
-                   (mkcljd appDir appDomain))
+    (FileUtils/copyFileToDirectory
+      (io/file hhh DN_ETC "netty/core.clj")
+      (mkcljd appDir appDomain))
 
-    (copyFileToDir (io/file hhh DN_CFGWEB "main.scss")
-                   (io/file appDir "src/web/main/styles"))
-    (copyFileToDir (io/file hhh DN_CFGWEB "main.js")
-                   (io/file appDir "src/web/main/scripts"))
+    (FileUtils/copyFileToDirectory
+      (io/file hhh DN_CFGWEB "main.scss")
+      (io/file appDir "src/web/main/styles"))
+    (FileUtils/copyFileToDirectory
+      (io/file hhh DN_CFGWEB "main.js")
+      (io/file appDir "src/web/main/scripts"))
 
-    (copyFileToDir (io/file hhh DN_CFGWEB "favicon.png")
-                   (io/file appDir "src/web/main/media"))
-    (copyFileToDir (io/file hhh DN_CFGWEB "body.jpg")
-                   (io/file appDir "src/web/main/media"))
+    (FileUtils/copyFileToDirectory
+      (io/file hhh DN_CFGWEB "favicon.png")
+      (io/file appDir "src/web/main/media"))
+    (FileUtils/copyFileToDirectory
+      (io/file hhh DN_CFGWEB "body.jpg")
+      (io/file appDir "src/web/main/media"))
 
     (io/copy wfc (io/file wlib ".list"))
     (mkdirs (io/file appDir "src/test/js"))
 
     (doseq [df (:libs wbs)
             :let [dn (:dir df)
-                  dd (io/file hhh DN_CFG "weblibs" dn)
+                  dd (io/file hhh DN_ETC "weblibs" dn)
                   td (io/file wlib dn)]
             :when (.isDirectory dd)]
-      (copyToDir dd wlib)
+      (FileUtils/copyDirectoryToDirectory dd wlib)
       (when-not (:skip df)
         (doseq [f (:js df) ]
-          (-> (.append buf (readOneFile (io/file td f)))
+          (-> (.append buf (readFile (io/file td f)))
               (.append (str "\n\n/* @@@" f "@@@ */"))
               (.append "\n\n")))))
 
-    (writeOneFile (io/file appDir "public/c/webcommon.css") "")
-    (writeOneFile (io/file appDir "public/c/webcommon.js") buf)))
+    (writeFile (io/file appDir "public/c/webcommon.css") "")
+    (writeFile (io/file appDir "public/c/webcommon.js") buf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -415,15 +434,18 @@
       (createAppCommon appDir appId appDomain "web")
       (createWebCommon appDir appId appDomain)
       ;; copy files
-      (copyFiles (io/file hhh DN_CFG "netty") cfd "conf")
+      (FileUtils/copyDirectory
+        (io/file hhh DN_ETC "netty")
+        cfd
+        (FileFilterUtils/suffixFileFilter ".conf"))
       ;; modify files
       (var-set fp (io/file cfd "routes.conf"))
-      (replaceFile @fp
-                   #(cs/replace % "@@APPDOMAIN@@" appDomain))
+      (replaceFile! @fp
+                    #(cs/replace % "@@APPDOMAIN@@" appDomain))
 
       (var-set fp (io/file cfd ENV_CF))
-      (replaceFile @fp
-                   #(cs/replace % "@@EMTYPE@@" emType))
+      (replaceFile! @fp
+                    #(cs/replace % "@@EMTYPE@@" emType))
 
       (postCreateApp appDir appId appDomain))))
 

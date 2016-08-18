@@ -12,28 +12,30 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
+package czlab.skaro.io;
+
+import czlab.skaro.server.Service;
+
 
 /**
  * @author Kenneth Leung
  */
-public class UnknownUser extends AuthError {
+public class StartEvent implements IOEvent {
 
-  private static final long serialVersionUID = 1L;
-
-  /**/
-  public UnknownUser(String msg,Throwable e) {
-    super(msg,e);
+  public StartEvent(Service em) {
+    _ee=em;
   }
 
-  /**/
-  public UnknownUser(Throwable e) {
-    this(null,e);
+  private Service _ee;
+
+  @Override
+  public Object id() {
+    return "start-event-101";
   }
 
-  /**/
-  public UnknownUser(String msg) {
-    this(msg,null);
+  @Override
+  public Service source() {
+    return _ee;
   }
 
 }

@@ -13,30 +13,15 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.rt;
+package czlab.skaro.net;
 
 /**
  * @author Kenneth Leung
  */
-public class DuplicateUser extends AuthError {
-
-  private static final long serialVersionUID = 1L;
+@FunctionalInterface public interface HttpErrorHandler {
 
   /**/
-  public DuplicateUser(String msg, Throwable e) {
-    super(msg,e);
-  }
-
-  /**/
-  public DuplicateUser(Throwable e) {
-    this(null,e);
-  }
-
-  /**/
-  public DuplicateUser(String msg) {
-    this(msg,null);
-  }
+  public WebContent getErrorResponse(int code);
 
 }
-
 

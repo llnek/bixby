@@ -19,9 +19,9 @@
   czlab.skaro.etc.core
 
   (:require
-    [czlab.xlib.core :refer [trap! prtStk test-cond mubleObj!]]
+    [czlab.xlib.core :refer [inst? trap! prtStk test-cond muble<>]]
     [czlab.xlib.resources :refer [getResource rstr rstr*]]
-    [czlab.xlib.str :refer [string<>]]
+    [czlab.xlib.str :refer [str<>]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.files :refer [dirRead?]])
 
@@ -88,17 +88,17 @@
   ""
   []
 
-  (let [strs (getCmdInfo (I18N/getBase))
+  (let [strs (getCmdInfo (I18N/base))
         b (drop-last (drop 1 strs))
         h (take 1 strs)
         e (take-last 1 strs)]
-    (println (string<> \= 78))
+    (println (str<> \= 78))
     (drawHelp " %-35s %s\n" h)
     (println " -----------------")
     (drawHelp " %-35s %s\n" b)
     (println "")
     (drawHelp " %-35s %s\n" e)
-    (println (string<> \= 78))))
+    (println (str<> \= 78))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -154,7 +154,7 @@
       (-> args
           (comp execArgs
                 parseArgs
-                comdStart))
+                cmdStart))
       (catch Throwable e
         (if (inst? CmdHelpError e)
           (usage)

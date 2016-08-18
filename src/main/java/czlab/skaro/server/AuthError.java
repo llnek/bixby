@@ -13,35 +13,30 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.mvc;
-
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-import java.util.TimeZone;
+package czlab.skaro.server;
 
 /**
  * @author Kenneth Leung
  */
-public enum MVCUtils {
-;
+public class AuthError extends Exception {
 
-  private static ThreadLocal<SimpleDateFormat> _fmt = new ThreadLocal<SimpleDateFormat>() {
-
-    public SimpleDateFormat initialValue() {
-      SimpleDateFormat f= new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US);
-      f.setTimeZone(TimeZone.getTimeZone("GMT"));
-      return f;
-    }
-
-  };
-
+  private static final long serialVersionUID = 1L;
 
   /**/
-  public static SimpleDateFormat getSDF() {
-    return _fmt.get();
+  public AuthError(String msg,Throwable e) {
+    super(msg,e);
+  }
+
+  /**/
+  public AuthError(Throwable e) {
+    this(null,e);
+  }
+
+  /**/
+  public AuthError(String msg) {
+    this(msg,null);
   }
 
 }
-
 
 

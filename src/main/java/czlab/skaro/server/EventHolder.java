@@ -12,30 +12,21 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
+
+package czlab.skaro.server;
+
+import czlab.xlib.Identifiable;
 
 /**
  * @author Kenneth Leung
  */
-public class ExpiredError extends Exception {
+public interface EventHolder extends Identifiable {
 
-  private static final long serialVersionUID = 1L;
+  public void timeoutMillis(long millis);
 
-  /**/
-  public ExpiredError(String msg, Throwable e) {
-    super(msg,e);
-  }
+  public void resumeOnResult(Object res);
 
-  /**/
-  public ExpiredError(Throwable e) {
-    this(null,e);
-  }
-
-  /**/
-  public ExpiredError(String msg) {
-    this(msg,null);
-  }
+  public void onExpiry();
 
 }
-
 

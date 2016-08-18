@@ -139,7 +139,7 @@
         (bindSession [_ s] nil)
         (session [_] nil)
         (id [_] eeid)
-        (emitter [_] co)
+        (source [_] co)
         (isRepeating [_] true))
 
       {:typeid ::TimerEvent})))
@@ -216,7 +216,7 @@
         (bindSession [_ s] nil)
         (session [_] nil)
         (id [_] eeid)
-        (emitter [_] co)
+        (source [_] co)
         (isRepeating [_] false))
 
       {:typeid ::TimerEvent })))

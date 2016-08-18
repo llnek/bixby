@@ -24,55 +24,65 @@
      :refer [setCacheAssetsFlag
              getLocalFile
              replyFileAsset]]
-    [czlab.xlib.core
-     :refer [spos? toJavaInt try! fpath]]
+    [czlab.xlib.core :refer [spos? try! fpath]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl? strim]]
-    [czlab.xlib.meta :refer [newObj]])
+    [czlab.xlib.meta :refer [new<>]])
 
-  (:use [czlab.netty.filters]
-        [czlab.netty.io]
-        [czlab.skaro.io.netty]
+  (:use [czlab.skaro.io.netty]
+        [czlab.netty.core]
         [czlab.skaro.io.core]
-        [czlab.skaro.core.sys]
-        [czlab.skaro.core.consts]
+        [czlab.skaro.sys.core]
         [czlab.skaro.mvc.comms]
         [czlab.net.routes])
 
   (:import
-    [czlab.net RouteInfo RouteCracker]
     [org.apache.commons.lang3 StringUtils]
+    [czlab.net RouteInfo RouteCracker]
     [io.netty.util ReferenceCountUtil]
     [java.util Date]
     [java.io File]
-    [czlab.wflow.server Emitter]
+    [czlab.server Emitter]
     [czlab.xlib XData
      Muble
-     Hierarchial Identifiable]
-    [czlab.skaro.io HTTPEvent]
-    [czlab.skaro.mvc HTTPErrorHandler
-     MVCUtils WebAsset WebContent]
-    [io.netty.handler.codec.http HttpRequest
+     Hierarchial
+     Identifiable]
+    [czlab.skaro.io HttpEvent]
+    [czlab.skaro.mvc
+     HttpErrorHandler
+     MVCUtils
+     WebAsset
+     WebContent]
+    [io.netty.handler.codec.http
+     HttpRequest
      HttpResponse
-     CookieDecoder ServerCookieEncoder
-     DefaultHttpResponse HttpVersion
-     HttpResponseEncoder HttpRequestDecoder
-     HttpHeaders LastHttpContent
-     HttpHeaders Cookie QueryStringDecoder]
+     DefaultHttpResponse
+     HttpVersion
+     HttpResponseEncoder
+     HttpRequestDecoder
+     HttpHeaders
+     LastHttpContent
+     HttpHeaders
+     Cookie
+     QueryStringDecoder]
     [io.netty.bootstrap ServerBootstrap]
-    [io.netty.channel Channel ChannelHandler
-     ChannelDuplexHandler
+    [io.netty.channel
      SimpleChannelInboundHandler
-     ChannelPipeline ChannelHandlerContext]
+     Channel
+     ChannelHandler
+     ChannelDuplexHandler
+     ChannelPipeline
+     ChannelHandlerContext]
     [io.netty.handler.stream ChunkedWriteHandler]
     [io.netty.util AttributeKey]
-    [io.netty.handler.timeout IdleState
+    [io.netty.handler.timeout
+     IdleState
      IdleStateEvent
      IdleStateHandler]
-    [czlab.netty ErrorSinkFilter
-     SimpleInboundFilter InboundAdapter
-     MessageFilter PipelineConfigurator
-     FlashFilter]
+    [czlab.netty
+     CPDecorator
+     InboundFilter
+     PipelineCfgtor ]
     [jregex Matcher Pattern]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -80,12 +90,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- routeFilter ""
+(defn- routeFilter
 
+  ""
   ^ChannelHandler
-  [^Muble co]
+  [^Service co]
 
-  (proxy [MessageFilter] []
+  (proxy [InboundFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc route filter called with message = %s" (type msg))
       (let [^ChannelHandlerContext ctx c
@@ -95,7 +106,7 @@
           (instance? HttpRequest msg)
           (let [^HttpRequest req msg
                 ^RouteCracker
-                ck (.getv co :cracker)
+                ck (.getv (.getx co) :cracker)
                 cfg {:method (getMethod req)
                      :uri (getUriPath req)}
                 [r1 r2 r3 r4]
@@ -105,7 +116,7 @@
             (cond
               (and r1 (hgl? r4))
               (sendRedirect ch false r4)
-              (= r1 true)
+              (true? r1)
               (do
                 (log/debug "mvc route filter MATCHED with uri = %s" (.getUri req))
                 (->> (merge old {:matched true})
@@ -131,61 +142,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcDisp ""
+(defn- mvcDisp
 
+  ""
   ^ChannelHandler
-  [^Muble co]
+  [^Service co]
 
-  (proxy [MessageFilter] []
+  (proxy [InboundFilter] []
     (channelRead0 [c msg]
       (log/debug "mvc netty handler called with message = %s" (type msg))
       (let [^RouteCracker
-            rcc (.getv co :cracker)
+            rcc (.getv (.getx co) :cracker)
             ^ChannelHandlerContext ctx c
             ch (.channel ctx)
-            info (:info msg)
-            [r1 r2 r3 r4] (.crack rcc info)
+            gist (:gist msg)
+            [r1 r2 r3 r4] (.crack rcc gist)
             ^RouteInfo ri r2]
         (if
-          (= r1 true)
-          (let [^HTTPEvent evt (ioReifyEvent co ch msg ri) ]
+          (true? r1)
+          (let [^HttpEvent evt (ioevent<> co ch msg ri) ]
             (log/debug "matched one route: %s, %s%s"
                        (.getPath ri)
                        "and static = " (.isStatic ri))
             (if (.isStatic ri)
-              (serveStatic ri co r3 ch info evt)
+              (serveStatic ri co r3 ch gist evt)
               (serveRoute ri co r3 ch evt)))
           ;;else
           (do
-            (log/debug "failed to match uri: %s" (:uri info))
+            (log/debug "failed to match uri: %s" (:uri gist))
             (serveError co ch 404)) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wsockDispatcher ""
+(defn- wsockDispatcher
 
+  ""
   ^ChannelHandler
-  [^Emitter em
-   ^Muble co
+  [^Service co
    options]
 
   (let [handlerFn (get-in options [:wsock :handler])]
     (log/debug "wsockDispatcher has user function: %s" handlerFn)
-    (proxy [MessageFilter] []
+    (proxy [InboundFilter] []
       (channelRead0 [ctx msg]
         (let [ch (.channel ^ChannelHandlerContext ctx)
               opts {:router handlerFn}
               ^WebSockEvent
-              evt (ioReifyEvent co ch msg nil) ]
+              evt (ioevent<> co ch msg nil) ]
           (log/debug "reified one websocket event")
-          (.dispatch em evt opts))))))
+          (.dispatchEx co evt opts))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- wsockJiggler
 
   "Jiggle the pipeline upon a websocket request"
-
   ^ChannelHandler
   [co options]
 
@@ -207,15 +218,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mvcInitor ""
+(defn- mvcInitor
 
-  ^PipelineConfigurator
-  [^Muble co options]
+  ""
+  ^PipelineCfgtor
+  [^Service co options]
 
   (let [wsock (wsockJiggler co options)
         router (routeFilter co)
         disp (mvcDisp co)]
     (log/debug "netty pipeline initor, emitter = %s" (type co))
+    nil))
+(comment
     (reifyPipeCfgtor
       (fn [p _]
         (let [^ChannelPipeline pipe p]
@@ -228,39 +242,32 @@
                          (.get pipe "HttpRequestDecoder")
                          "HttpRequestDecoder"
                          :else nil)]
-            (.addBefore pipe ^String h FlashFilter/NAME FlashFilter/shared)))))))
+      (.addBefore pipe ^String h FlashFilter/NAME FlashFilter/shared))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- initNetty ""
 
-  [^Muble co]
+  [^Service co]
 
-  (let [^Muble ctr (.parent ^Hierarchial co)
+  (let [^Container ctr (.parent ^Hierarchial co)
         rts (maybeLoadRoutes co)
-        options (.getv co :emcfg)
-        bs (initTCPServer (mvcInitor co options) options) ]
-    (.setv co :cracker (routeCracker rts))
-    (.setv co :netty  { :bootstrap bs })
+        options (.config co)
+        bs (httpServer<> (mvcInitor co options) options)]
+    (doto (.getx co)
+      (.setv :cracker (routeCracker rts))
+      (.setv :netty  { :bootstrap bs }))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod compConfigure :czc.skaro.io/NettyMVC
+(defmethod comp->initialize
 
-  [^Muble co cfg]
+  :czc.skaro.io/NettyMVC
+  [^Service co & [cfg0]]
 
-  (log/info "compConfigure: NetttyMVC: %s" (.id ^Identifiable co))
-  (.setv co :emcfg (httpBasicConfig co cfg))
-  co)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod compInitialize :czc.skaro.io/NettyMVC
-
-  [^Muble co]
-
-  (log/info "compInitialize: NetttyMVC: %s" (.id ^Identifiable co))
+  (log/info "comp->initialize: NetttyMVC: %s" (.id co))
+  (.setv (.getx co) :emcfg (httpBasicConfig co cfg0))
   (initNetty co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

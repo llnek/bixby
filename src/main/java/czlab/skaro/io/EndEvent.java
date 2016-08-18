@@ -13,18 +13,31 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.server;
+package czlab.skaro.io;
 
-import czlab.xlib.Muble;
+import czlab.skaro.server.Service;
 
 /**
  * @author Kenneth Leung
  */
-public interface Context {
+public class EndEvent implements IOEvent {
 
-  /**
-   */
-  public Muble getx();
+  /**/
+  public EndEvent(Service em) {
+    _ee=em;
+  }
+
+  private Service _ee;
+
+  @Override
+  public Object id() {
+    return "end-event-101";
+  }
+
+  @Override
+  public Service source() {
+    return _ee;
+  }
 
 }
 

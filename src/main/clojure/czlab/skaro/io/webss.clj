@@ -28,14 +28,13 @@
              muble<>
              stringify
              bytesify]]
-    [czlab.xlib.str :refer [hgl? addDelim! strbf<>]]
+    [czlab.xlib.str :refer [strbf<> hgl? addDelim!]]
     [czlab.xlib.io :refer [hexify]]
     [czlab.crypto.core :refer [genMac]]
     [czlab.xlib.logging :as log])
 
   (:import
-    [czlab.skaro.rt ExpiredError AuthError]
-    [czlab.skaro.server Service]
+    [czlab.skaro.server Container Service ExpiredError AuthError]
     [java.net HttpCookie]
     [czlab.xlib Muble CU]
     [czlab.skaro.io
@@ -43,7 +42,6 @@
      HttpEvent
      WebSS
      IOSession]
-    [czlab.skaro.server Container]
     [czlab.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,8 +84,7 @@
 
   (if
     (.checkAuthenticity evt)
-    (str (-> ^Container
-             (.server (.emitter evt))
+    (str (-> (.server (.source evt))
              (.appKeyBits )
              (genMac data))
          "-" data)
@@ -101,7 +98,7 @@
   [^HttpEvent evt ^HttpResult res ]
 
   (let
-    [^Service co (.emitter evt)
+    [co (.source evt)
      ^WebSS mvs (.session evt)
      {:keys [sessionAgeSecs
              domainPath
@@ -138,8 +135,7 @@
 
   (when-some
     [pkey (when (.checkAuthenticity evt)
-            (-> ^Container
-                (.server (.emitter evt))
+            (-> (.server (.source evt))
                 (.appKeyBits )))]
     (when-not (= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
@@ -155,7 +151,7 @@
   (let
     [^HttpCookie ck (get (.cookies evt) SESSION_COOKIE)
      ^WebSS mvs (.session evt)
-     ^Service src (.emitter evt)]
+     src (.source evt)]
     (if (nil? ck)
       (do
         (log/warn "no s-cookie found, invalidate!")

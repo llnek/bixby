@@ -12,15 +12,19 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
+package czlab.skaro.server;
 
-import  czlab.skaro.server.Component;
+import czlab.xlib.Hierarchial;
+import czlab.xlib.Nameable;
+import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface AppGist extends Component {
+public interface ServiceGist extends Component, Nameable, Hierarchial {
 
+  /**/
+  public boolean isEnabled();
 
 }
 

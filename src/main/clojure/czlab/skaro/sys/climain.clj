@@ -53,7 +53,6 @@
 
   (:import
     [io.netty.bootstrap ServerBootstrap]
-    [czlab.skaro.rt Execvisor]
     [clojure.lang
      Atom
      APersistentMap]
@@ -62,9 +61,9 @@
      ChannelFuture
      ChannelFutureListener]
     [czlab.skaro.server
+     Execvisor
      Component
      Cljshim
-     Context
      ConfigError]
     [czlab.skaro.loaders
      AppClassLoader

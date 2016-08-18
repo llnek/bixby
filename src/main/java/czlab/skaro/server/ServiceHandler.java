@@ -12,29 +12,20 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.rt;
 
-import czlab.skaro.server.Component;
-import czlab.skaro.server.Context;
-import  czlab.xlib.Startable;
-import java.io.File;
+package czlab.skaro.server;
+
+import czlab.xlib.Identifiable;
+import czlab.xlib.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Context, Component, Startable {
+public interface ServiceHandler extends Disposable, Identifiable {
 
-  /**/
-  public long uptimeInMillis();
+  public Object handle(Object arg, Object options) throws Exception;
 
-  /**/
-  public long startTime();
-
-  /**/
-  public File homeDir();
-
-  /**/
-  public void kill9();
+  public Object handleError(Throwable t);
 
 }
 

@@ -15,17 +15,41 @@
 
 package czlab.skaro.server;
 
-import czlab.server.ServiceHandler;
 import czlab.xlib.Hierarchial;
 import czlab.xlib.Suspendable;
 import czlab.xlib.Startable;
 import czlab.xlib.Disposable;
-import czlab.server.Emitter;
+
+import czlab.server.Event;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Emitter, Startable, Suspendable, Hierarchial, Disposable {
+public interface Service extends Component, Startable, Suspendable, Hierarchial, Disposable {
+
+  /**/
+  public void dispatchEx(Event evt, Object arg);
+
+  /**/
+  public void dispatch(Event evt);
+
+  /**/
+  public Container server();
+
+  /**/
+  public Object config();
+
+  /**/
+  public boolean isEnabled();
+
+  /**/
+  public boolean isActive();
+
+  /**/
+  public EventHolder release(Object obj);
+
+  /**/
+  public void hold(EventHolder obj);
 
   /**/
   public ServiceHandler handler();
