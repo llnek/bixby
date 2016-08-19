@@ -31,7 +31,7 @@
 
   (:import
     [java.lang Exception IllegalArgumentException]
-    [czlab.skaro.jmx NameParams]
+    [czlab.skaro.etc NameParams]
     [java.lang.reflect Field Method]
     [java.util Arrays]
     [czlab.xlib Muble]
