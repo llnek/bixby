@@ -58,7 +58,7 @@
     [javax.naming Context InitialContext]
     [java.io IOException]
     [czlab.skaro.server Container Service]
-    [czlab.skaro.io JMSEvent]))
+    [czlab.skaro.io JmsEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -76,7 +76,7 @@
         impl (muble<>)]
     (with-meta
       (reify
-        JMSEvent
+        JmsEvent
 
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
@@ -85,7 +85,7 @@
         (source [_] co)
         (message [_] msg))
 
-      {:typeid ::JMSEvent})))
+      {:typeid ::JmsEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

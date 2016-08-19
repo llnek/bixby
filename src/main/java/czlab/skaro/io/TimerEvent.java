@@ -18,7 +18,7 @@ package czlab.skaro.io;
 /**
  * @author Kenneth Leung
  */
-public interface TimerEvent  extends IOEvent {
+public interface TimerEvent  extends IoEvent {
 
   /**/
   public boolean isRepeating();

@@ -103,7 +103,7 @@
      Startable
      Disposable
      Identifiable]
-    [czlab.skaro.io IOEvent]))
+    [czlab.skaro.io IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -114,7 +114,7 @@
 
   "Get the secret application key"
   ^String
-  [^IOEvent evt]
+  [^IoEvent evt]
 
   (let [c (.. evt source server)]
     (.appKey c)))

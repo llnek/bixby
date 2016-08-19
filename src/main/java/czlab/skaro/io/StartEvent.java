@@ -20,7 +20,7 @@ import czlab.skaro.server.Service;
 /**
  * @author Kenneth Leung
  */
-public class StartEvent implements IOEvent {
+public class StartEvent implements IoEvent {
 
   public StartEvent(Service em) {
     _ee=em;

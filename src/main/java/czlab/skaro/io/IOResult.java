@@ -20,7 +20,7 @@ import czlab.xlib.Context;
 /**
  * @author Kenneth Leung
  */
-public interface IOResult extends Context {
+public interface IoResult extends Context {
 
   /**/
   public Service source();

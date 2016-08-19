@@ -20,7 +20,7 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface FileEvent  extends IOEvent {
+public interface FileEvent  extends IoEvent {
 
   /**
    */

@@ -20,7 +20,7 @@ import javax.jms.Message;
 /**
  * @author Kenneth Leung
  */
-public interface JMSEvent  extends IOEvent {
+public interface JmsEvent  extends IoEvent {
 
   /**
    */

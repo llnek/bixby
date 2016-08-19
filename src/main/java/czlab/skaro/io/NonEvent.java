@@ -22,7 +22,7 @@ import czlab.skaro.server.Container;
 /**
  * @author Kenneth Leung
  */
-public class NonEvent implements IOEvent {
+public class NonEvent implements IoEvent {
 
   private void init(Container s) {
     _svc=new NulService(s);

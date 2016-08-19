@@ -22,7 +22,7 @@ import java.io.InputStream;
 /**
  * @author Kenneth Leung
  */
-public interface SocketEvent extends IOEvent, Disposable {
+public interface SocketEvent extends IoEvent, Disposable {
 
   /**/
   public OutputStream sockOut();

@@ -18,13 +18,13 @@ package czlab.skaro.io;
 /**
  * @author Kenneth Leung
  */
-public interface IOSession {
+public interface IoSession {
 
   /**/
-  public void handleResult(IOEvent ev, IOResult res);
+  public void handleResult(IoEvent ev, IoResult res);
 
   /**/
-  public void handleEvent(IOEvent ev);
+  public void handleEvent(IoEvent ev);
 
   /**/
   public Object impl();

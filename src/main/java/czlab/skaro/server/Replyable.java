@@ -15,7 +15,7 @@
 
 package czlab.skaro.server;
 
-import czlab.skaro.io.IOResult;
+import czlab.skaro.io.IoResult;
 
 /**
  * @author Kenneth Leung
@@ -23,7 +23,7 @@ import czlab.skaro.io.IOResult;
 public interface Replyable {
 
   /**/
-  public IOResult resultObj();
+  public IoResult resultObj();
 
   /**/
   public void replyResult();

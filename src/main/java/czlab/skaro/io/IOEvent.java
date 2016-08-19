@@ -22,13 +22,13 @@ import czlab.server.Event;
 /**
  * @author Kenneth Leung
  */
-public interface IOEvent extends Event {
+public interface IoEvent extends Event {
 
   /**/
-  default public void bindSession(IOSession s) {}
+  default public void bindSession(IoSession s) {}
 
   /**/
-  default public IOSession session() { return null; }
+  default public IoSession session() { return null; }
 
   /**/
   public Service source();

@@ -21,7 +21,7 @@ import java.util.TimeZone;
 /**
  * @author Kenneth Leung
  */
-public enum MVCUtils {
+public enum MvcUtils {
 ;
 
   private static ThreadLocal<SimpleDateFormat> _fmt = new ThreadLocal<SimpleDateFormat>() {

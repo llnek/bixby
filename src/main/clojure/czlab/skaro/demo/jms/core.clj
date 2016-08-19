@@ -27,7 +27,7 @@
   (:import
     [java.util.concurrent.atomic AtomicInteger]
     [czlab.wflow Job TaskDef]
-    [czlab.skaro.io JMSEvent]
+    [czlab.skaro.io JmsEvent]
     [javax.jms TextMessage]
     [czlab.skaro.server Container]))
 
@@ -50,7 +50,7 @@
   []
 
   (script<>
-    #(let [^JMSEvent ev (.event ^Job %2)
+    #(let [^JmsEvent ev (.event ^Job %2)
             ^TextMessage msg (.message ev)]
         (println "-> Correlation ID= " (.getJMSCorrelationID msg))
         (println "-> Msg ID= " (.getJMSMessageID msg))

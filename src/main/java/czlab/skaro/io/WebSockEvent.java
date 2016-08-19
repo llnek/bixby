@@ -21,7 +21,7 @@ import czlab.xlib.XData;
 /**
  * @author Kenneth Leung
  */
-public interface WebSockEvent extends IOEvent, Replyable {
+public interface WebSockEvent extends IoEvent, Replyable {
 
   /**
    */

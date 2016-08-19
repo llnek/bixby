@@ -42,7 +42,7 @@
      HttpResult
      HttpEvent
      WebSS
-     IOSession]
+     IoSession]
     [czlab.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,7 +261,7 @@
               (strbf<>)
               (.seq _attrs))))
 
-        IOSession
+        IoSession
 
         (handleResult [_ evt res] (downstream evt res))
         (handleEvent [_ evt] (upstream evt))

@@ -20,7 +20,7 @@ import javax.mail.internet.MimeMessage;
 /**
  * @author Kenneth Leung
  */
-public interface EmailEvent extends IOEvent {
+public interface EmailEvent extends IoEvent {
   /**
    */
   public MimeMessage message();

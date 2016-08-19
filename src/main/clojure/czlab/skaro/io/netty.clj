@@ -69,7 +69,7 @@
     [czlab.skaro.io
      HttpEvent
      HttpResult
-     IOSession
+     IoSession
      WebSockEvent
      WebSockResult]
     [java.nio.channels ClosedChannelException]
@@ -438,7 +438,7 @@
 
        (resultObj [_] res)
        (replyResult [this]
-         (let [^IOSession mvs (.session this)
+         (let [^IoSession mvs (.session this)
                code (.status res)
                ^EventHolder
                wevt (.release co this)]

@@ -20,7 +20,7 @@ import czlab.skaro.server.Service;
 /**
  * @author Kenneth Leung
  */
-public class EndEvent implements IOEvent {
+public class EndEvent implements IoEvent {
 
   /**/
   public EndEvent(Service em) {

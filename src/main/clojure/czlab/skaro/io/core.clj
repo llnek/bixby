@@ -48,7 +48,7 @@
      Component
      Container]
     [java.util Timer TimerTask]
-    [czlab.skaro.io IOEvent]
+    [czlab.skaro.io IoEvent]
     [czlab.xlib
      XData
      Versioned
@@ -307,7 +307,7 @@
   "Create a async wait wrapper"
   ^EventHolder
   [^EventTrigger trigger
-   ^IOEvent event ]
+   ^IoEvent event ]
 
   (let [impl (muble<>)]
     (reify

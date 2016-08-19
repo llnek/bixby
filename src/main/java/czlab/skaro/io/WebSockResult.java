@@ -19,7 +19,7 @@ package czlab.skaro.io;
 /**
  * @author Kenneth Leung
  */
-public interface WebSockResult extends IOResult {
+public interface WebSockResult extends IoResult {
 
   /**/
   public boolean isBinary();

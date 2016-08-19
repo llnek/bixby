@@ -59,7 +59,7 @@
      Startable]
     [czlab.skaro.io
      WebSockResult
-     IOSession
+     IoSession
      HttpResult
      HttpEvent]))
 
