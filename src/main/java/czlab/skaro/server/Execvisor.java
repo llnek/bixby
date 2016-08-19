@@ -14,14 +14,13 @@
 
 package czlab.skaro.server;
 
-import  czlab.xlib.Startable;
-import czlab.xlib.Context;
+import czlab.xlib.Startable;
 import java.io.File;
 
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Context, Component, Startable {
+public interface Execvisor extends Component, Startable {
 
   /**/
   public long uptimeInMillis();

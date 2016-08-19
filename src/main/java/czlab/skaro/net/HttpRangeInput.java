@@ -94,7 +94,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
 
   /**
    */
-  public long process(HttpResponse rsp) {
+  private long process(HttpResponse rsp) {
     rsp.headers().add("accept-ranges", "bytes");
     long last= _flen > 0 ? _flen-1 : 0;
 

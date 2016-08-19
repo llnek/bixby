@@ -19,19 +19,18 @@ import czlab.xlib.Hierarchial;
 import czlab.xlib.Suspendable;
 import czlab.xlib.Startable;
 import czlab.xlib.Disposable;
-
-import czlab.server.Event;
+import czlab.skaro.io.IOEvent;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Startable, Suspendable, Hierarchial, Disposable {
+public interface Service extends Component, Startable, Hierarchial, Disposable {
 
   /**/
-  public void dispatchEx(Event evt, Object arg);
+  public void dispatchEx(IOEvent evt, Object arg);
 
   /**/
-  public void dispatch(Event evt);
+  public void dispatch(IOEvent evt);
 
   /**/
   public Container server();

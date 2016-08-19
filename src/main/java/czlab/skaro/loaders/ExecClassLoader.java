@@ -38,7 +38,7 @@ public class ExecClassLoader extends AbstractClassLoader {
 
   /**
    */
-  public void configure(File baseDir) {
+  private void configure(File baseDir) {
     if (baseDir != null) {
       load( baseDir);
     }

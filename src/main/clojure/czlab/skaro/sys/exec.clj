@@ -236,7 +236,7 @@
 
         (version [_] (:version info))
         (getx [_] impl)
-        (id [_] emsType)
+        (type [_] emsType)
 
         (setParent [_ p] (.setv impl :execv p))
         (parent [_] (.getv impl :execv))
@@ -244,7 +244,7 @@
         (isEnabled [_]
           (not (false? (:enabled info))))
 
-        (name [_] (:name info)))
+        (id [_] (:name info)))
 
       {:typeid  ::ServiceGist})))
 

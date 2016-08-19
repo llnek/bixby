@@ -15,16 +15,17 @@
 package czlab.skaro.server;
 
 import czlab.xlib.Hierarchial;
-import czlab.xlib.Nameable;
-import java.net.URL;
 
 /**
  * @author Kenneth Leung
  */
-public interface ServiceGist extends Component, Nameable, Hierarchial {
+public interface ServiceGist extends Component, Hierarchial {
 
   /**/
   public boolean isEnabled();
+
+  /**/
+  public Object type();
 
 }
 

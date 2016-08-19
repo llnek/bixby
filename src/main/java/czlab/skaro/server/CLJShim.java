@@ -58,10 +58,12 @@ public class Cljshim {
     return ret;
   }
 
+  /**/
   public Object call(String func) {
     return this.callEx(func);
   }
 
+  /**/
   private Cljshim(ClojureRuntimeShim s) {
     _shim=s;
   }

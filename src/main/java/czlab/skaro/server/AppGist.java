@@ -14,12 +14,13 @@
 
 package czlab.skaro.server;
 
+import czlab.xlib.Hierarchial;
+
 
 /**
  * @author Kenneth Leung
  */
-public interface AppGist extends Component {
-
+public interface AppGist extends Component, Hierarchial {
 
 }
 

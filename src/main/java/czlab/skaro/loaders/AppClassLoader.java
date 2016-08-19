@@ -29,7 +29,7 @@ public class AppClassLoader extends AbstractClassLoader {
 
   /**
    */
-  public void configure(File appDir) {
+  public AppClassLoader configure(File appDir) {
     File s= new File(appDir, "src/main/clojure");
     File j= new File(appDir, "build/j");
     File c= new File(appDir, "build/c");
@@ -47,6 +47,7 @@ public class AppClassLoader extends AbstractClassLoader {
       findUrls(b);
     }
     _loaded=true;
+    return this;
   }
 
 }

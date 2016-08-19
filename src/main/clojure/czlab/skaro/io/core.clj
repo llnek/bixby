@@ -252,8 +252,6 @@
         (isActive [_]
           (not (false? (.getv impl :active))))
 
-        (suspend [this] (io->suspend this))
-        (resume [this] (io->resume this))
         (handler [_] (.getv impl :pipe))
         (config [_] (.getv impl :emcfg))
         (server [this] (.parent this))

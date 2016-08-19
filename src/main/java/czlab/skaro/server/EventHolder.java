@@ -15,6 +15,7 @@
 
 package czlab.skaro.server;
 
+import czlab.skaro.io.IOResult;
 import czlab.xlib.Identifiable;
 
 /**
@@ -24,7 +25,7 @@ public interface EventHolder extends Identifiable {
 
   public void timeoutMillis(long millis);
 
-  public void resumeOnResult(Object res);
+  public void resumeOnResult(IOResult res);
 
   public void onExpiry();
 

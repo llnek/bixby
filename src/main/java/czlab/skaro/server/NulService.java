@@ -16,7 +16,7 @@
 package czlab.skaro.server;
 
 import czlab.server.ServerLike;
-import czlab.server.Event;
+import czlab.skaro.io.IOEvent;
 import czlab.xlib.Muble;
 
 /**
@@ -24,8 +24,8 @@ import czlab.xlib.Muble;
  */
 public class NulService implements Service {
 
-  public void dispatchEx(Event evt, Object options) {}
-  public void dispatch(Event evt) {}
+  public void dispatchEx(IOEvent evt, Object options) {}
+  public void dispatch(IOEvent evt) {}
   public Muble getx() {return null;}
   public Container server() {return _s;}
   public Object config() {return null;}

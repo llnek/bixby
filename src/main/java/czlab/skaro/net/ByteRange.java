@@ -15,9 +15,9 @@
 
 package czlab.skaro.net;
 
+import java.io.UnsupportedEncodingException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 
 import static org.slf4j.LoggerFactory.*;
 import org.slf4j.Logger;

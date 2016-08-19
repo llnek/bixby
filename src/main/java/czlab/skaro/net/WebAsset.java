@@ -20,22 +20,10 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface WebAsset {
-
-  /**/
-  public String contentType();
+public interface WebAsset extends WebContent {
 
   /**/
   public File file();
-
-  /**/
-  public long ts();
-
-  /**/
-  public long size();
-
-  /**/
-  public byte[] content();
 
 }
 
