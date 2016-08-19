@@ -41,7 +41,7 @@
     [clojure.java.io :as io]
     [czlab.netty.util :refer [filterFormFields]])
 
-  (:use [czlab.skaro.io.basicauth]
+  (:use [czlab.skaro.auth.core]
         [czlab.skaro.sys.core]
         [czlab.skaro.io.webss]
         [czlab.skaro.auth.model]

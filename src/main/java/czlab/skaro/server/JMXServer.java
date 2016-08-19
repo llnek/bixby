@@ -19,7 +19,7 @@ import czlab.xlib.Startable;
 /**
  * @author Kenneth Leung
  */
-public interface JMXServer extends Startable {
+public interface JmxServer extends Startable {
 
   /**/
   public void reg(Object obj, String domain, String nname, Object paths);

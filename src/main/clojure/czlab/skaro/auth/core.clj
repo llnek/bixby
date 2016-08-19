@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.io.basicauth
+  czlab.skaro.auth.core
 
   (:require
     [czlab.xlib.str :refer [embeds? lcase strim hgl?]]

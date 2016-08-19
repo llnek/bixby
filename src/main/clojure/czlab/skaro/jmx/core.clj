@@ -31,7 +31,7 @@
     [java.net InetAddress MalformedURLException]
     [java.rmi.registry LocateRegistry Registry]
     [java.lang.management ManagementFactory]
-    [czlab.skaro.server JMXServer]
+    [czlab.skaro.server JmxServer]
     [java.rmi NoSuchObjectException]
     [czlab.xlib Startable Muble]
     [java.rmi.server UnicastRemoteObject]
@@ -110,7 +110,7 @@
 (defn jmxServer<>
 
   ""
-  ^JMXServer
+  ^JmxServer
   [^String host]
 
   (let
@@ -119,7 +119,7 @@
      objNames (atom []) ]
     (reify
 
-      JMXServer
+      JmxServer
 
       (reset [this]
         (let [bs (.getv impl :beanSvr) ]

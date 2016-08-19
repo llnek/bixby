@@ -67,7 +67,7 @@
      Container
      Execvisor
      AppGist
-     JMXServer
+     JmxServer
      ServiceGist
      Service
      Component]))
@@ -112,7 +112,7 @@
 (defn- startJmx
 
   "Basic JMX support"
-  ^JMXServer
+  ^JmxServer
   [^Execvisor co cfg]
 
   (log/info "jmx-config:\n%s" cfg)
@@ -140,7 +140,7 @@
     [ctx (.getx co)
      jmx (.getv ctx :jmxServer)]
     (when (some? jmx)
-      (.stop ^JMXServer jmx))
+      (.stop ^JmxServer jmx))
     (.unsetv ctx :jmxServer))
   (log/info "jmx connection terminated")
   co)
