@@ -16,9 +16,8 @@
 package czlab.skaro.etc;
 
 
-import czlab.xlib.Configurable;
-import czlab.xlib.Initable;
 import czlab.xlib.Disposable;
+import czlab.xlib.Initable;
 import czlab.xlib.Startable;
 
 
