@@ -6,26 +6,24 @@
 
   @@APPDOMAIN@@.core
 
-  (:require [czlab.xlib.util.logging :as log])
+  (:require [czlab.xlib.logging :as log])
 
-  (:use [czlab.skaro.core.consts]
-        [czlab.xlib.util.consts]
-        [czlab.xlib.util.core]
-        [czlab.xlib.util.str]
-        [czlab.xlib.util.wfs])
+  (:use [czlab.skaro.sys.core]
+        [czlab.xlib.consts]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.wflow.core])
 
   (:import
-    [com.zotohlab.skaro.io HTTPEvent HTTPResult]
-    [com.zotohlab.wflow FlowDot Activity
-    WorkFlow WorkFlowEx
-    Job PTask]
-    [com.zotohlab.skaro.runtime AppMain]
-    [com.zotohlab.skaro.core Container]))
+    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.wflow Job TaskDef WorkStream]
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ftlContext ""
+(defn- ftlContext
 
+  ""
   []
 
   {:landing
@@ -42,60 +40,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Handler ""
+(defn dftHandler
 
-  ^WorkFlowEx
+  ""
+  ^WorkStream
   []
 
-  (reify WorkFlowEx
-
-    (startWith [_]
-      (SimPTask
-        (fn [^Job job]
-          (let [tpl (:template (.getv job EV_OPTS))
-                ^HTTPEvent evt (.event job)
-                src (.emitter evt)
-                ^Container
-                co (.container src)
-                {:keys [data ctype] }
-                (.loadTemplate co
-                               tpl
-                               (ftlContext))
-                res (.getResultObj evt) ]
-            (.setHeader res "content-type" ctype)
-            (.setContent res data)
-            (.setStatus res 200)
-            (.replyResult evt)))))
-
-    (onError [ _ err]
+  (workStream<>
+    (script<>
+      (fn [_ ^Job job]
+        (let
+          [tpl (:template (.getv job EV_OPTS))
+           ^HttpEvent evt (.event job)
+           src (.source evt)
+           co (.server src)
+           {:keys [data ctype] }
+           (.loadTemplate co tpl (ftlContext))
+           ^HttpResult
+           res (.resultObj evt) ]
+          (.setHeader res "content-type" ctype)
+          (.setContent res data)
+          (.setStatus res 200)
+          (.replyResult evt))))
+    :catch
+    (fn [ _ err]
       (log/info "Oops, I got an error!"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MyAppMain ""
+(defn myAppMain
 
-  ^AppMain
+  ""
   []
 
-  (reify AppMain
-
-    (contextualize [_ container]
-      (log/info "My AppMain contextualized by container " container))
-
-    (configure [_ options]
-      (log/info "My AppMain configured with options " options))
-
-    (initialize [_]
-      (log/info "My AppMain initialized!"))
-
-    (start [_]
-      (log/info "My AppMain started"))
-
-    (stop [_]
-      (log/info "My AppMain stopped"))
-
-    (dispose [_]
-      (log/info "My AppMain finz'ed"))))
+  (log/info "My AppMain called!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

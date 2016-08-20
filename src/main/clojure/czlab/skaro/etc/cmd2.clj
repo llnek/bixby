@@ -249,7 +249,7 @@
                     #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
                          (cs/replace "@@USER@@" (getUser))))
 
-      (var-set fp (io/file appDir CFG_ENV_CF))
+      (var-set fp (io/file appDir CFG_APP_CF))
       (replaceFile! @fp
                     #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
                          (cs/replace "@@APPDOMAIN@@" appDomain))))))
@@ -283,9 +283,6 @@
       (FileUtils/copyFile
         (io/file hhh DN_ETC "log/log4jbuild.properties")
         (io/file appDir "src/main/artifacts/log4j.properties"))
-      (FileUtils/copyFile
-        (io/file hhh DN_ETC "log/logback4build.xml")
-        (io/file appDir "src/main/artifacts/logback.xml"))
       (FileUtils/copyFileToDirectory
         (io/file hhh DN_CFGAPP "test.clj")
         (io/file appDir "src/test/clojure" appDomainPath))
@@ -303,9 +300,8 @@
       (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
                  "LICENSE.txt"]]
         (touch! (io/file appDir DN_ETC s)))
-      (doseq [s [APP_CF ENV_CF ]]
-        (FileUtils/copyFileToDirectory
-          (io/file hhh DN_CFGAPP s) cfd))
+      (FileUtils/copyFileToDirectory
+          (io/file hhh DN_CFGAPP APP_CF) cfd)
       (FileUtils/copyFileToDirectory
         (io/file hhh DN_CFGAPP DN_RCPROPS)
         (io/file  appDir "i18n"))
@@ -356,16 +352,12 @@
 
   (let [appDomainPath (cs/replace appDomain "." "/")
         hhh (getHomeDir)
-        wfc (io/file hhh DN_CFGAPP "weblibs.conf")
-        wlib (io/file appDir "public/vendors")
-        wbs (readEdn wfc)
         buf (strbf<>)]
 
     ;; make folders
     (doseq [s ["pages" "media" "styles" "scripts"]]
       (mkdirs (io/file appDir "src/web/main" s))
       (mkdirs (io/file appDir "public" s)))
-    (mkdirs wlib)
 
     ;; copy files
     (let [des (io/file appDir "src/web/main/pages")
@@ -393,33 +385,14 @@
       (io/file appDir "src/web/main/media"))
     (FileUtils/copyFileToDirectory
       (io/file hhh DN_CFGWEB "body.jpg")
-      (io/file appDir "src/web/main/media"))
-
-    (io/copy wfc (io/file wlib ".list"))
-    (mkdirs (io/file appDir "src/test/js"))
-
-    (doseq [df (:libs wbs)
-            :let [dn (:dir df)
-                  dd (io/file hhh DN_ETC "weblibs" dn)
-                  td (io/file wlib dn)]
-            :when (.isDirectory dd)]
-      (FileUtils/copyDirectoryToDirectory dd wlib)
-      (when-not (:skip df)
-        (doseq [f (:js df) ]
-          (-> (.append buf (readFile (io/file td f)))
-              (.append (str "\n\n/* @@@" f "@@@ */"))
-              (.append "\n\n")))))
-
-    ;;(writeFile (io/file appDir "public/c/webcommon.css") "")
-    ;;(writeFile (io/file appDir "public/c/webcommon.js") buf)
-    ))
+      (io/file appDir "src/web/main/media"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- createMvc
 
   ""
-  [^File appDir ^String appId ^String appDomain emType ]
+  [^File appDir ^String appId ^String appDomain ]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
         hhh (getHomeDir)
@@ -436,10 +409,6 @@
       (var-set fp (io/file cfd "routes.conf"))
       (replaceFile! @fp
                     #(cs/replace % "@@APPDOMAIN@@" appDomain))
-
-      (var-set fp (io/file cfd ENV_CF))
-      (replaceFile! @fp
-                    #(cs/replace % "@@EMTYPE@@" (str emType)))
 
       (postCreateApp appDir appId appDomain))))
 
@@ -462,7 +431,7 @@
   [^File out appId ^String appDomain]
 
   (-> (mkdirs (io/file out appId))
-      (createMvc appId appDomain :czlab.skaro.io.netty/NettyMVC)))
+      (createMvc appId appDomain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

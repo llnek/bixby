@@ -6,51 +6,31 @@
 
   @@APPDOMAIN@@.core
 
-  (:require [czlab.xlib.util.logging :as log])
-  (:use [czlab.xlib.util.wfs])
+  (:require [czlab.xlib.logging :as log])
+  (:use [czlab.wflow.core])
   (:import
-    [com.zotohlab.skaro.runtime AppMain]
-    [com.zotohlab.wflow FlowDot Activity Job
-    WHandler ]))
+    [czlab.skaro.server AppMain]
+    [czlab.wflow TaskDef Job WorkStream ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Handler ""
+(defn dftHandler
 
-  ^WHandler
+  ""
+  ^TaskDef
   []
 
-  (reify WHandler
-    (run [_ job args]
+  (script<>
+    (fn [_ job]
       (log/info "I  just handled a job!"))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn MyAppMain ""
+(defn myAppMain
 
-  ^AppMain
-  []
+  ""
+  (log/info "My AppMain called!"))
 
-  (reify AppMain
-
-    (contextualize [_ container]
-      (log/info "My AppMain contextualized by container " container))
-
-    (configure [_ options]
-      (log/info "My AppMain configured with options " options))
-
-    (initialize [_]
-      (log/info "My AppMain initialized!"))
-
-    (start [_]
-      (log/info "My AppMain started"))
-
-    (stop [_]
-      (log/info "My AppMain stopped"))
-
-    (dispose [_]
-      (log/info "My AppMain finz'ed"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
