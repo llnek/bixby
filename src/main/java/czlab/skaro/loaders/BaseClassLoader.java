@@ -23,19 +23,19 @@ import java.net.URLClassLoader;
 /**
  * @author Kenneth Leung
  */
-public abstract class AbstractClassLoader extends URLClassLoader {
+public abstract class BaseClassLoader extends URLClassLoader {
 
   protected boolean _loaded=false;
 
   /**
    */
-  protected AbstractClassLoader(ClassLoader par) {
+  protected BaseClassLoader(ClassLoader par) {
     super(new URL[]{}, par);
   }
 
   /**
    */
-  public AbstractClassLoader findUrls(File dir) {
+  public BaseClassLoader findUrls(File dir) {
     if (dir.exists() ) {
       dir.listFiles(new FilenameFilter() {
         public boolean accept(File f,String n) {
@@ -51,7 +51,7 @@ public abstract class AbstractClassLoader extends URLClassLoader {
 
   /**
    */
-  public AbstractClassLoader addUrl(File f) {
+  public BaseClassLoader addUrl(File f) {
     if (f.exists())
     try {
       addURL( f.toURI().toURL() );

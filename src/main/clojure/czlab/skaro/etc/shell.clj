@@ -12,9 +12,8 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.shell
 
@@ -22,6 +21,8 @@
 
   (:require
     [czlab.xlib.files :refer [dirRead?]]
+    [czlab.xlib.core :refer [sysProp!]]
+    [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io])
 
@@ -36,27 +37,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private VERPROPS "czlab/skaro/version.properties")
+(def ^:private VERPROPS "czlab/czlab-skaro/version.properties")
 (def ^:private RCB "czlab.skaro.etc/Resources")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -main "Main Entry"
+(defn -main
 
+  "Main Entry"
   [& args]
 
   (let [^ResourceBundle ver (loadResource VERPROPS)
-        h (first args)
-        rcb (getResource RCB)]
-    (with-local-vars [ok false]
-      (->> (.getString ver "version")
-           (System/setProperty "skaro.version"))
-      (I18N/setBase rcb)
-      (when-some [home (io/file h)]
-        (when (dirRead? home)
-          (var-set ok true)
-          (apply bootAndRun home rcb (drop 1 args))))
-      (when-not @ok (usage)))))
+        rcb (getResource RCB)
+        h (first args)]
+    (->> (.getString ver "version")
+         (sysProp! "skaro.version"))
+    (I18N/setBase rcb)
+    (if (and (hgl? h)
+             (dirRead? (io/file h)))
+      (apply bootAndRun h rcb (drop 1 args))
+      (usage))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

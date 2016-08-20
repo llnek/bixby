@@ -12,16 +12,21 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.core
 
   (:require
-    [czlab.xlib.core :refer [inst? trap! prtStk test-cond muble<>]]
     [czlab.xlib.resources :refer [getResource rstr rstr*]]
+    [czlab.xlib.core
+     :refer [test-cond
+             inst?
+             trap!
+             prtStk
+             muble<>]]
     [czlab.xlib.str :refer [str<>]]
+    [clojure.java.io :as io]
     [czlab.xlib.logging :as log]
     [czlab.xlib.files :refer [dirRead?]])
 
@@ -46,30 +51,31 @@
   [rcb]
 
   (partition 2
-    (rstr* rcb
-           ["usage.cmdline"] []
-           ["usage.new"] ["usage.new.desc"]
-           ["usage.podify"] ["usage.podify.desc"]
-           ["usage.ide"] [ "usage.ide.desc"]
-           ["usage.build"] [ "usage.build.desc"]
-           ["usage.test"] [ "usage.test.desc"]
+    (rstr*
+      rcb
+      ["usage.cmdline"] []
+      ["usage.new"] ["usage.new.desc"]
+      ["usage.podify"] ["usage.podify.desc"]
+      ["usage.ide"] [ "usage.ide.desc"]
+      ["usage.build"] [ "usage.build.desc"]
+      ["usage.test"] [ "usage.test.desc"]
 
-           ["usage.debug"] ["usage.debug.desc"]
-           ["usage.start"] ["usage.start.desc"]
+      ["usage.debug"] ["usage.debug.desc"]
+      ["usage.start"] ["usage.start.desc"]
 
-           ["usage.gen.keypair"] [ "usage.gen.keypair.desc"]
-           ["usage.gen.key"] [ "usage.gen.key.desc"]
-           ["usage.gen.pwd"] [ "usage.gen.pwd.desc"]
-           ["usage.gen.csr"] [ "usage.gen.csr.desc"]
-           ["usage.gen.guid"] [ "usage.gen.guid.desc"]
-           ["usage.encrypt"] [ "usage.encrypt.desc"]
-           ["usage.decrypt"] [ "usage.decrypt.desc"]
-           ["usage.hash"] [ "usage.hash.desc"]
-           ["usage.testjce"] ["usage.testjce.desc"]
+      ["usage.gen.keypair"] [ "usage.gen.keypair.desc"]
+      ["usage.gen.key"] [ "usage.gen.key.desc"]
+      ["usage.gen.pwd"] [ "usage.gen.pwd.desc"]
+      ["usage.gen.csr"] [ "usage.gen.csr.desc"]
+      ["usage.gen.guid"] [ "usage.gen.guid.desc"]
+      ["usage.encrypt"] [ "usage.encrypt.desc"]
+      ["usage.decrypt"] [ "usage.decrypt.desc"]
+      ["usage.hash"] [ "usage.hash.desc"]
+      ["usage.testjce"] ["usage.testjce.desc"]
 
-           ["usage.demo"] [ "usage.demo.desc"]
-           ["usage.version"] [ "usage.version.desc"]
-           ["usage.help"] [])))
+      ["usage.demo"] [ "usage.demo.desc"]
+      ["usage.version"] [ "usage.version.desc"]
+      ["usage.help"] [])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -88,17 +94,18 @@
   ""
   []
 
+
   (let [strs (getCmdInfo (I18N/base))
         b (drop-last (drop 1 strs))
         h (take 1 strs)
         e (take-last 1 strs)]
-    (println (str<> \= 78))
+    (println (str<> 78 \=))
     (drawHelp " %-35s %s\n" h)
     (println " -----------------")
     (drawHelp " %-35s %s\n" b)
     (println "")
     (drawHelp " %-35s %s\n" e)
-    (println (str<> \= 78))))
+    (println (str<> 78 \=))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -109,7 +116,7 @@
 
   (let [cmd (first args)
         args (vec (drop 1 args))]
-    (case cmd
+    (case (keyword cmd)
       :new (onCreate args)
       :ide (onIDE args)
       :make (onBuild args)
@@ -129,7 +136,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseArgs "Do nothing right now" [args] args)
+(defn- parseArgs
+  "Do nothing right now"
+  [args]
+  args)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -146,15 +156,14 @@
 (defn bootAndRun
 
   ""
-  [^File home ^ResourceBundle rcb & args]
+  [home rcb & args]
 
-  (binding [*skaro-home* home
+  (binding [*skaro-home* (io/file home)
             *skaro-rb* rcb]
     (try
-      (-> args
-          (comp execArgs
-                parseArgs
-                cmdStart))
+      ((comp execArgs
+             parseArgs
+             cmdStart) (vec args))
       (catch Throwable e
         (if (inst? CmdHelpError e)
           (usage)

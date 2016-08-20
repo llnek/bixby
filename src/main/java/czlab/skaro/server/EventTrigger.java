@@ -15,13 +15,15 @@
 
 package czlab.skaro.server;
 
+import czlab.skaro.io.IoResult;
+
 /**
  * @author Kenneth Leung
  */
 public interface EventTrigger  {
 
   /**/
-  public void resumeWithResult(Object res);
+  public void resumeWithResult(IoResult res);
 
   /**/
   public void resumeWithError();

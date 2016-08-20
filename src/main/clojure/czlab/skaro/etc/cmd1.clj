@@ -24,11 +24,11 @@
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.dates :refer [+months gcal<>]]
+    [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs]
-    [czlab.xlib.format :refer [readEdn]]
     [boot.core :as bcore]
     [czlab.xlib.files
      :refer [readFile
@@ -37,22 +37,22 @@
              listFiles]]
     [czlab.xlib.core
      :refer [isWindows?
+             stringify
              fpath
              spos?
              getCwd
              trap!
              exp!
              try!
-             stringify
              flatnil
              convLong
              resStr]]
     [czlab.crypto.core
      :refer [exportPrivateKey
-             assertJce
              exportPublicKey
-             dbgProvider
              asymKeyPair<>
+             assertJce
+             dbgProvider
              ssv1PKCS12
              csreq<>]])
 
@@ -63,8 +63,10 @@
         [czlab.skaro.sys.core])
 
   (:import
-    [czlab.skaro.loaders AppClassLoader]
+    [czlab.skaro.loaders CljClassLoader]
     [org.apache.commons.io FileUtils]
+    [czlab.skaro.etc CmdHelpError]
+    [czlab.skaro.server Cljshim ]
     [boot App]
     [java.util
      ResourceBundle
@@ -72,8 +74,6 @@
      Calendar
      Map
      Date]
-    [czlab.skaro.server Cljshim ]
-    [czlab.skaro.etc CmdHelpError]
     [czlab.crypto PasswordAPI]
     [java.io File]
     [java.security KeyPair PublicKey PrivateKey]))
@@ -83,11 +83,11 @@
 
 (defn- execBootScript
 
-  ""
+  "Call into boot/clj code"
   [^File homeDir ^File appDir & args]
 
   (System/setProperty "skaro.home.dir" (.getCanonicalPath homeDir))
-  (System/setProperty "skaro.app.dir" (.getCanonicalPath appDir))
+  (System/setProperty "skaro.proc.dir" (.getCanonicalPath appDir))
   (App/main (into-array String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,12 +140,10 @@
   "Start and run the app"
   [args]
 
-  (let [func "czlab.skaro.impl.climain/startViaCLI"
+  (let [func "czlab.skaro.sys.climain/startViaCLI"
         home (getHomeDir)
         cwd (getCwd)
-        rt (-> (doto
-                 (AppClassLoader. (getCldr))
-                 (.configure cwd))
+        rt (-> (CljClassLoader/newLoader home cwd)
                (Cljshim/newrt (.getName cwd)))
         s2 (first args)]
     ;; background job is handled differently on windows
@@ -300,7 +298,7 @@
 (defn onTestJCE
 
   "Test if JCE (crypto) is ok"
-  []
+  [args]
 
   (assertJce)
   (println "JCE is OK."))
@@ -310,14 +308,14 @@
 (defn onVersion
 
   "Show the version of system"
-  []
+  [args]
 
   (println "skaro version : "  (System/getProperty "skaro.version"))
   (println "java version  : "  (System/getProperty "java.version")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp "Show help" [] (trap! CmdHelpError))
+(defn onHelp "Show help" [args] (trap! CmdHelpError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

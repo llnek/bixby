@@ -14,7 +14,7 @@
 
 
 (ns ^{:doc ""
-      :author "kenl" }
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.cmd2
 
@@ -60,17 +60,6 @@
 (def ^:dynamic *skaro-home* nil)
 (def ^:dynamic *skaro-rb* nil)
 
-(defonce SKARO-PROPS (atom {}))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn setGlobals!
-
-  ""
-  [k v]
-
-  (swap! SKARO-PROPS assoc k v))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn resBdl
@@ -79,7 +68,7 @@
   ^ResourceBundle
   []
 
-  (:rcb @SKARO-PROPS))
+  *skaro-rb*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -89,11 +78,11 @@
   ^File
   []
 
-  (:homeDir @SKARO-PROPS))
+  *skaro-home*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(declare createBasic createNetty createJetty)
+(declare createOneApp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,24 +100,24 @@
   "Create a new app"
   [path]
 
-  (let [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-        t (re-matches rx path)
-        cwd (getCwd)
-        ;; treat as domain e.g com.acme => app = acme
-        ;; regex gives ["com.acme" ".acme"]
-        app (when (some? t)
-              (if-some [tkn (last t)]
-                (triml tkn ".")
-                (first t))) ]
+  (let
+    [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+     t (re-matches rx path)
+     cwd (getCwd)
+     ;; treat as domain e.g com.acme => app = acme
+     ;; regex gives ["com.acme" ".acme"]
+     app (when (some? t)
+           (if-some [tkn (last t)]
+             (triml tkn ".")
+             (first t))) ]
     (when (empty? app) (trap! CmdHelpError))
-    (createNetty cwd app path)))
+    (createOneApp cwd app path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn runAppBg
 
   "Run the application in the background"
-
   [^File hhh]
 
   (let
@@ -178,15 +167,15 @@
         dn (.getName top)
         dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
-    (createNetty out dn dom)
+    (createOneApp out dn dom)
     (FileUtils/copyDirectory
-               (io/file top DN_CONF)
                demo
+               (io/file top DN_CONF)
                (FileFilterUtils/suffixFileFilter ".conf"))
     (FileUtils/copyDirectory
+               demo
                (io/file top
                         "src/main/clojure/demo" dn)
-               demo
                (FileFilterUtils/suffixFileFilter ".clj"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -315,7 +304,8 @@
                  "LICENSE.txt"]]
         (touch! (io/file appDir DN_ETC s)))
       (doseq [s [APP_CF ENV_CF ]]
-        (FileUtils/copyFileToDirectory (io/file hhh DN_CFGAPP s) cfd))
+        (FileUtils/copyFileToDirectory
+          (io/file hhh DN_CFGAPP s) cfd))
       (FileUtils/copyFileToDirectory
         (io/file hhh DN_CFGAPP DN_RCPROPS)
         (io/file  appDir "i18n"))
@@ -325,7 +315,8 @@
 
       ;;modify files, replace placeholders
       (var-set fp (io/file appDir
-                           "src/test/clojure" appDomainPath "test.clj"))
+                           "src/test/clojure"
+                           appDomainPath "test.clj"))
       (replaceFile! @fp
                     #(cs/replace % "@@APPDOMAIN@@" appDomain))
 
@@ -379,10 +370,12 @@
     ;; copy files
     (let [des (io/file appDir "src/web/main/pages")
           src (io/file hhh DN_ETC "netty")]
-      (FileUtils/copyDirectory src des
-                               (FileFilterUtils/suffixFileFilter ".ftl"))
-      (FileUtils/copyDirectory src des
-                               (FileFilterUtils/suffixFileFilter ".html")))
+      (FileUtils/copyDirectory
+        src des
+        (FileFilterUtils/suffixFileFilter ".ftl"))
+      (FileUtils/copyDirectory
+        src des
+        (FileFilterUtils/suffixFileFilter ".html")))
 
     (FileUtils/copyFileToDirectory
       (io/file hhh DN_ETC "netty/core.clj")
@@ -417,15 +410,16 @@
               (.append (str "\n\n/* @@@" f "@@@ */"))
               (.append "\n\n")))))
 
-    (writeFile (io/file appDir "public/c/webcommon.css") "")
-    (writeFile (io/file appDir "public/c/webcommon.js") buf)))
+    ;;(writeFile (io/file appDir "public/c/webcommon.css") "")
+    ;;(writeFile (io/file appDir "public/c/webcommon.js") buf)
+    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createMvcWeb
+(defn- createMvc
 
   ""
-  [^File appDir ^String appId ^String appDomain ^String emType ]
+  [^File appDir ^String appId ^String appDomain emType ]
 
   (let [appDomainPath (cs/replace appDomain "." "/")
         hhh (getHomeDir)
@@ -445,13 +439,13 @@
 
       (var-set fp (io/file cfd ENV_CF))
       (replaceFile! @fp
-                    #(cs/replace % "@@EMTYPE@@" emType))
+                    #(cs/replace % "@@EMTYPE@@" (str emType)))
 
       (postCreateApp appDir appId appDomain))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn createBasic
+(defn- createBasic
 
   ""
   [^File out appId ^String appDomain]
@@ -462,13 +456,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn createNetty
+(defn createOneApp
 
   ""
   [^File out appId ^String appDomain]
 
   (-> (mkdirs (io/file out appId))
-      (createMvcWeb appId appDomain "czc.skaro.io/NettyMVC")))
+      (createMvc appId appDomain :czlab.skaro.io.netty/NettyMVC)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

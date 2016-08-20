@@ -141,14 +141,15 @@ DBGOPTS="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
 
 PATCHDIR=$SKARO_HOME/patch/*
 LIBDIR=$SKARO_HOME/lib/*
-BOOT=$PATCHDIR:$SKARO_HOME/dist/*:$LIBDIR
+HACK=$SKARO_HOME/cout/j/:$SKARO_HOME/cout/c/:$SKARO_HOME/target/*
+BOOT=$HACK:$PATCHDIR:$SKARO_HOME/dist/*:$LIBDIR
 
 JAVA_CMD=$JAVA_HOME/bin/java
 BG=false
 
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
-CLDR=" -Djava.system.class.loader=com.zotohlab.skaro.loaders.ExecClassLoader"
+CLDR=" -Djava.system.class.loader=czlab.skaro.loaders.ExecClassLoader"
 MAINCZ=czlab.skaro.etc.shell
 
 LIBP="-Djava.library.path=$SKARO_HOME/bin"

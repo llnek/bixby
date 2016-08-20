@@ -19,17 +19,32 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public class AppClassLoader extends BaseClassLoader {
+public class CljClassLoader extends BaseClassLoader {
 
-  /**
-   */
-  public AppClassLoader(ExecClassLoader par) {
-    super(par);
+  /**/
+  public static CljClassLoader newLoader(File homeDir, File appDir) {
+    CljClassLoader c= new CljClassLoader();
+    c.configure(homeDir,appDir);
+    return c;
   }
 
   /**
    */
-  public AppClassLoader configure(File appDir) {
+  private CljClassLoader() {
+    super(null);
+  }
+
+  /**/
+  private void cfg0(File baseDir) {
+    File p= new File(baseDir, "patch");
+    File b= new File(baseDir, "lib");
+    File d= new File(baseDir, "dist");
+    findUrls(p).findUrls(d).findUrls(b);
+  }
+
+  /**
+   */
+  private CljClassLoader configure(File homeDir, File appDir) {
     File s= new File(appDir, "src/main/clojure");
     File j= new File(appDir, "build/j");
     File c= new File(appDir, "build/c");
@@ -45,6 +60,7 @@ public class AppClassLoader extends BaseClassLoader {
       addUrl(c);
       findUrls(d);
       findUrls(b);
+      cfg0(homeDir);
     }
     _loaded=true;
     return this;

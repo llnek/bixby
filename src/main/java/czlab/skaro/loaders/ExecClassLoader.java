@@ -21,7 +21,13 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public class ExecClassLoader extends AbstractClassLoader {
+public class ExecClassLoader extends BaseClassLoader {
+
+  /**
+   */
+  public ExecClassLoader(ClassLoader par) {
+    this(par, new File(System.getProperty("skaro.home")));
+  }
 
   /**
    */
