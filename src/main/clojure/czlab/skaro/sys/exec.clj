@@ -44,7 +44,7 @@
              test-nonil]])
 
   (:use [czlab.skaro.sys.dfts]
-        [czlab.skaro.io.config]
+        [czlab.skaro.etc.svcs]
         [czlab.skaro.sys.core]
         [czlab.skaro.sys.ext]
         [czlab.skaro.jmx.core])
