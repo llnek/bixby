@@ -19,7 +19,7 @@
   czlab.skaro.etc.cmd2
 
   (:require
-    [czlab.xlib.str :refer [strim triml trimr strimAny strbf<>]]
+    [czlab.xlib.str :refer [strim triml trimr stror strimAny strbf<>]]
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.xlib.guids :refer [uuid<>]]
     [czlab.xlib.logging :as log]
@@ -234,10 +234,11 @@
 
   ""
   ^File
-  [appDir appDomain]
+  [appDir appDomain & [dir]]
 
   (io/file appDir
-           "src/main/clojure"
+           "src/main"
+           (stror dir "clojure")
            (cs/replace appDomain "." "/")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -281,11 +282,11 @@
         hhh (getHomeDir)]
     ;; make all the folders
     (doseq [s [;; "patch" "build" "target" "logs"
-               "ext" "i18n" DN_CONF DN_ETC "src"]]
+               "ext" DN_CONF DN_ETC "src"]]
       (mkdirs (io/file appDir s)))
     (doseq [s ["clojure" "java"]]
       (map #(mkdirs %)
-           (map #(io/file appDir "src" % s domPath))))
+           (map #(io/file appDir "src" % s domPath) ["main" "test"])))
     (mkdirs (io/file appDir "src/main/resources"))
     ;;copy files
     (cpf2d
@@ -311,7 +312,10 @@
     (cpf2d (io/file hhh DN_CFGAPP APP_CF) cfd)
     (cpf2d
       (io/file hhh DN_CFGAPP DN_RCPROPS)
-      (io/file  appDir "i18n"))
+      (io/file appDir "src/main/resources"))
+    (cpf2d
+      (io/file hhh DN_CFGAPP "HelloWorld.java")
+      (mkcljd appDir appDomain "java"))
     (cpf2d
       (io/file hhh DN_CFGAPP "core.clj")
       (mkcljd appDir appDomain))
@@ -320,6 +324,15 @@
       (io/file appDir
                "src/test/clojure" domPath "test.clj")
       #(cs/replace % "@@APPDOMAIN@@" appDomain))
+    (replaceFile!
+      (io/file appDir
+               "src/main/clojure" domPath "core.clj")
+      #(cs/replace % "@@APPDOMAIN@@" appDomain))
+    (replaceFile!
+      (io/file appDir
+               "src/main/java" domPath "HelloWorld.java")
+      #(cs/replace % "@@APPDOMAIN@@" appDomain))
+
     (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
       (replaceFile!
         (io/file appDir "src/test/java" domPath s)
@@ -371,7 +384,11 @@
       (io/file appDir "src/web/main/media"))
     (cpf2d
       (io/file hhh DN_ETC "netty/core.clj")
-      (mkcljd appDir appDomain))))
+      (mkcljd appDir appDomain))
+    (replaceFile!
+      (io/file appDir
+               "src/main/clojure" domPath "core.clj")
+      #(cs/replace % "@@APPDOMAIN@@" appDomain))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
