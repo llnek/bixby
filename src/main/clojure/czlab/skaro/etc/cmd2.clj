@@ -273,18 +273,24 @@
   [^File out appId ^String appDomain kind]
 
   (let [domPath (cs/replace appDomain "." "/")
-        appDir (doto (io/file out appId)
-                 (mkdirs))
         other (if (= :soa kind) :web :soa)
+        appDir (mkdirs (io/file out appId))
+        srcDir (io/file appDir "src")
+        mcloj "main/clojure"
+        tcloj "test/clojure"
+        mjava "main/java"
+        tjava "test/java"
         hhh (getHomeDir)]
-    (FileUtils/copyDirectory
-      (io/file hhh DN_ETC "app")
-      appDir
-      (FileFilterUtils/trueFileFilter))
+    (FileUtils/copyDirectory (io/file hhh DN_ETC "app")
+                             appDir
+                             (FileFilterUtils/trueFileFilter))
+    ;;defaults to web, so get rid of web stuff
     (when (= :soa kind)
-      (FileUtils/deleteDirectory (io/file appDir "src/web"))
-      (FileUtils/deleteDirectory (io/file appDir "public"))
-      (FileUtils/deleteQuietly (io/file appDir "conf/routes.conf")))
+      (map #(->> (io/file appDir %)
+                 (FileUtils/deleteDirectory ))
+           ["src/web" "public"])
+      (->> (io/file appDir DN_CONF "routes.conf")
+           (FileUtils/deleteQuietly )))
     (doseq [s ["main" "test"]]
       (map #(mkdirs %)
            (map #(io/file appDir
@@ -294,30 +300,27 @@
                           domPath)
                 ["clojure" "java"])))
     (FileUtils/moveFile
-      (io/file appDir (str "src/main/clojure/" (name kind) ".clj"))
-      (io/file appDir "src/main/clojure" domPath "core.clj"))
+      (io/file srcDir mcloj (str (name kind) ".clj"))
+      (io/file srcDir mcloj domPath "core.clj"))
     (FileUtils/deleteQuietly
-      (io/file appDir (str "src/main/clojure/" (name other) ".clj")))
+      (io/file srcDir mcloj (str (name other) ".clj")))
     (FileUtils/moveToDirectory
-      (io/file appDir (str "src/main/java/HelloWorld.java"))
-      (io/file appDir "src/main/java" domPath)
-      true)
+      (io/file srcDir mjava "HelloWorld.java")
+      (io/file srcDir domPath) true)
     (FileUtils/moveToDirectory
-      (io/file appDir (str "src/test/clojure/test.clj"))
-      (io/file appDir "src/test/clojure" domPath)
-      true)
+      (io/file srcDir tcloj "test.clj")
+      (io/file srcDir tcloj domPath) true)
     (FileUtils/moveToDirectory
-      (io/file appDir (str "src/test/java/JUnit.java"))
-      (io/file appDir "src/test/java" domPath)
-      true)
+      (io/file srcDir tjava "JUnit.java")
+      (io/file srcDir tjava domPath) true)
     (FileUtils/moveToDirectory
-      (io/file appDir (str "src/test/java/ClojureJUnit.java"))
-      (io/file appDir "src/test/java" domPath)
-      true)
-    (doseq [f (FileUtils/listFiles (io/file appDir "src") nil true)]
-      (replaceFile! f #(cs/replace % "@@APPDOMAIN@@" appDomain)))
+      (io/file srcDir tjava "ClojureJUnit.java")
+      (io/file srcDir tjava domPath) true)
+    (doseq [f (FileUtils/listFiles srcDir nil true)]
+      (replaceFile!
+        f #(cs/replace % "@@APPDOMAIN@@" appDomain)))
     (replaceFile!
-      (io/file appDir "conf/app.conf")
+      (io/file appDir CFG_APP_CF)
       #(-> (cs/replace % "@@USER@@" (getUser))
            (cs/replace "@@APPKEY@@" (uuid<>))
            (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
@@ -335,7 +338,7 @@
            (cs/replace "@@APPID@@" appId)))
     (when (= :web kind)
       (replaceFile!
-        (io/file appDir "conf/routes.conf")
+        (io/file appDir DN_CONF "routes.conf")
         #(cs/replace % "@@APPDOMAIN@@" appDomain)))
     (postCreateApp appDir appId appDomain)))
 
