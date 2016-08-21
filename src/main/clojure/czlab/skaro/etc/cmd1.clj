@@ -97,8 +97,8 @@
   "Create a new app"
   [args]
 
-  (if (> (count args) 0)
-    (createApp (args 0))
+  (if (> (count args) 1)
+    (createApp (args 0) (args 1))
     (trap! CmdHelpError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

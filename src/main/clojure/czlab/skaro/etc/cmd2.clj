@@ -261,84 +261,63 @@
         cljd (mkcljd appDir appDomain)]
     (mkdirs h2db)
     (replaceFile!
-      (mkcljfp cljd "core.clj")
-      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-           (cs/replace "@@USER@@" (getUser))))
-    (replaceFile!
       (io/file appDir CFG_APP_CF)
       #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
            (cs/replace "@@APPDOMAIN@@" appDomain)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createAppCommon
+(defn- createOneApp
 
   ""
-  [^File appDir ^String appId ^String appDomain]
+  [^File out appId ^String appDomain kind]
 
   (let [domPath (cs/replace appDomain "." "/")
-        cfd (io/file appDir DN_CONF)
-        etc (io/file appDir DN_ETC)
+        appDir (doto (io/file out appId)
+                 (mkdirs))
+        other (if (= :soa kind) :web :soa)
         hhh (getHomeDir)]
-    ;; make all the folders
-    (doseq [s [;; "patch" "build" "target" "logs"
-               "ext" DN_CONF DN_ETC "src"]]
-      (mkdirs (io/file appDir s)))
-    (doseq [s ["clojure" "java"]]
+    (FileUtils/copyDirectory
+      (io/file hhh DN_ETC "app")
+      appDir
+      (FileFilterUtils/trueFileFilter))
+    (when (= :soa kind)
+      (FileUtils/deleteDirectory (io/file appDir "src/web"))
+      (FileUtils/deleteDirectory (io/file appDir "public"))
+      (FileUtils/deleteQuietly (io/file appDir "conf/routes.conf")))
+    (doseq [s ["main" "test"]]
       (map #(mkdirs %)
-           (map #(io/file appDir "src" % s domPath) ["main" "test"])))
-    (mkdirs (io/file appDir "src/main/resources"))
-    ;;copy files
-    (cpf2d
-      (io/file hhh DN_CFGAPP "shiro.ini")
-      (io/file appDir "ext"))
-    (cpf2f
-      (io/file hhh DN_ETC "log/log4jbuild.properties")
-      (io/file appDir DN_ETC "log4j.properties"))
-    (cpf2d
-      (io/file hhh DN_CFGAPP "test.clj")
-      (io/file appDir "src/test/clojure" domPath))
-    (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
-      (cpf2d
-        (io/file hhh DN_CFGAPP s)
-        (io/file appDir "src/test/java" domPath)))
-    (cpf2d (io/file hhh DN_CFGAPP "build.boot") appDir)
-    (cpf2d (io/file hhh DN_CFGAPP "pom.xml")
-           (io/file appDir DN_ETC))
-    (cpf2f
-      (io/file hhh DN_ETC "lics/LICENSE")
-      (io/file appDir DN_ETC "LICENSE.TXT"))
-    (touch! (io/file appDir DN_ETC "README.md"))
-    (cpf2d (io/file hhh DN_CFGAPP APP_CF) cfd)
-    (cpf2d
-      (io/file hhh DN_CFGAPP DN_RCPROPS)
-      (io/file appDir "src/main/resources"))
-    (cpf2d
-      (io/file hhh DN_CFGAPP "HelloWorld.java")
-      (mkcljd appDir appDomain "java"))
-    (cpf2d
-      (io/file hhh DN_CFGAPP "core.clj")
-      (mkcljd appDir appDomain))
-    ;;modify files, replace placeholders
+           (map #(io/file appDir
+                          "src"
+                          s
+                          %
+                          domPath)
+                ["clojure" "java"])))
+    (FileUtils/moveFile
+      (io/file appDir (str "src/main/clojure/" (name kind) ".clj"))
+      (io/file appDir "src/main/clojure" domPath "core.clj"))
+    (FileUtils/deleteQuietly
+      (io/file appDir (str "src/main/clojure/" (name other) ".clj")))
+    (FileUtils/moveToDirectory
+      (io/file appDir (str "src/main/java/HelloWorld.java"))
+      (io/file appDir "src/main/java" domPath)
+      true)
+    (FileUtils/moveToDirectory
+      (io/file appDir (str "src/test/clojure/test.clj"))
+      (io/file appDir "src/test/clojure" domPath)
+      true)
+    (FileUtils/moveToDirectory
+      (io/file appDir (str "src/test/java/JUnit.java"))
+      (io/file appDir "src/test/java" domPath)
+      true)
+    (FileUtils/moveToDirectory
+      (io/file appDir (str "src/test/java/ClojureJUnit.java"))
+      (io/file appDir "src/test/java" domPath)
+      true)
+    (doseq [f (FileUtils/listFiles (io/file appDir "src") nil true)]
+      (replaceFile! f #(cs/replace % "@@APPDOMAIN@@" appDomain)))
     (replaceFile!
-      (io/file appDir
-               "src/test/clojure" domPath "test.clj")
-      #(cs/replace % "@@APPDOMAIN@@" appDomain))
-    (replaceFile!
-      (io/file appDir
-               "src/main/clojure" domPath "core.clj")
-      #(cs/replace % "@@APPDOMAIN@@" appDomain))
-    (replaceFile!
-      (io/file appDir
-               "src/main/java" domPath "HelloWorld.java")
-      #(cs/replace % "@@APPDOMAIN@@" appDomain))
-
-    (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
-      (replaceFile!
-        (io/file appDir "src/test/java" domPath s)
-        #(cs/replace % "@@APPDOMAIN@@" appDomain)))
-    (replaceFile!
-      (io/file cfd APP_CF)
+      (io/file appDir "conf/app.conf")
       #(-> (cs/replace % "@@USER@@" (getUser))
            (cs/replace "@@APPKEY@@" (uuid<>))
            (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
@@ -351,63 +330,13 @@
     (replaceFile!
       (io/file appDir "build.boot")
       #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-           (cs/replace "@@TYPE@@" "web")
+           (cs/replace "@@TYPE@@" (name kind))
            (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-           (cs/replace "@@APPID@@" appId)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createWebCommon
-
-  ""
-  [^File appDir appId ^String appDomain]
-
-  (let [domPath (cs/replace appDomain "." "/")
-        hhh (getHomeDir)
-        web (io/file hhh DN_CFGWEB)]
-    ;; make folders
-    (doseq [s ["pages" "media" "styles" "scripts"]]
-      (mkdirs (io/file appDir "src/web/main" s))
-      (mkdirs (io/file appDir "public" s)))
-    ;; copy files
-    (let [des (io/file appDir "src/web/main/pages")
-          src (io/file hhh DN_ETC "netty")]
-      (cpfs src des ".ftl")
-      (cpfs src des ".html"))
-
-    (touch!
-      (io/file appDir "src/web/main/styles/main.scss"))
-    (touch!
-      (io/file appDir "src/web/main/scripts/main.js"))
-    (cpf2d
-      (io/file web "favicon.png")
-      (io/file appDir "src/web/main/media"))
-    (cpf2d
-      (io/file hhh DN_ETC "netty/core.clj")
-      (mkcljd appDir appDomain))
-    (replaceFile!
-      (io/file appDir
-               "src/main/clojure" domPath "core.clj")
-      #(cs/replace % "@@APPDOMAIN@@" appDomain))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createOneApp
-
-  ""
-  [^File out appId ^String appDomain]
-
-  (let [appDir (mkdirs (io/file out appId))
-        hhh (getHomeDir)
-        cfd (io/file appDir DN_CONF)]
-    (createAppCommon appDir appId appDomain)
-    (createWebCommon appDir appId appDomain)
-    ;; copy files
-    (cpfs (io/file hhh DN_ETC "netty") cfd ".conf")
-    ;; modify files
-    (replaceFile!
-      (io/file cfd "routes.conf")
-      #(cs/replace % "@@APPDOMAIN@@" appDomain))
+           (cs/replace "@@APPID@@" appId)))
+    (when (= :web kind)
+      (replaceFile!
+        (io/file appDir "conf/routes.conf")
+        #(cs/replace % "@@APPDOMAIN@@" appDomain)))
     (postCreateApp appDir appId appDomain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -415,8 +344,9 @@
 (defn createApp
 
   "Create a new app"
-  [path]
+  [kind path]
 
+  (case kind "-web" nil "-soa" nil (trap! CmdHelpError))
   (let
     [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
      path (sanitizeAppDomain path)
@@ -429,7 +359,8 @@
              (triml tkn ".")
              (first t))) ]
     (when (empty? app) (trap! CmdHelpError))
-    (createOneApp cwd app path)))
+    (->> (keyword (triml kind "-"))
+         (createOneApp cwd app path ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -442,7 +373,7 @@
         dn (.getName top)
         dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
-    (createOneApp out dn dom)
+    (createOneApp out dn dom :soa)
     (FileUtils/copyDirectory
                demo
                (io/file top DN_CONF)
