@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.io.config)
+  czlab.skaro.etc.svcs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

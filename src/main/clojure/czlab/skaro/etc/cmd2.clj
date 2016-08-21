@@ -20,8 +20,8 @@
 
   (:require
     [czlab.xlib.str :refer [strim triml trimr strimAny strbf<>]]
+    [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.xlib.guids :refer [uuid<>]]
-    [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
@@ -38,12 +38,14 @@
     [czlab.xlib.files
      :refer [replaceFile!
              readFile
+             spitUTF8
              writeFile
              dirRead?
              touch!
              mkdirs]])
 
-  (:use [czlab.skaro.sys.core])
+  (:use [czlab.skaro.sys.core]
+        [czlab.skaro.etc.svcs])
 
   (:import
     [org.apache.commons.io.filefilter FileFilterUtils]
@@ -59,6 +61,36 @@
 ;; some globals
 (def ^:dynamic *skaro-home* nil)
 (def ^:dynamic *skaro-rb* nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro cpfs
+  ""
+  ^{:private true}
+  [s d u]
+
+  `(FileUtils/copyDirectory
+     (io/file ~s)
+     (io/file ~d)
+     (FileFilterUtils/suffixFileFilter (str ~u))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro cpf2d
+  ""
+  ^{:private true}
+  [f d]
+
+  `(FileUtils/copyFileToDirectory (io/file ~f) (io/file ~d)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro cpf2f
+  ""
+  ^{:private true}
+  [f f2]
+
+  `(FileUtils/copyFile (io/file ~f) (io/file ~f2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,36 +114,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(declare createOneApp)
+(defn- onSvc
+
+  ""
+  [id hint & [svc]]
+
+  (let
+    [fp (io/file (getCwd) CFG_APP_CF)
+     cf (readEdn fp)
+     root (:services cf)
+     nw
+     (if (< hint 0)
+       (dissoc root id)
+       (when-some
+         [gist (:conf (*emitter-defs* svc))]
+         (when (contains? root id) (trap! CmdHelpError))
+         (assoc root id (assoc gist :service svc))))]
+    (when (some? nw)
+      (->> (assoc cf :services nw)
+           (writeEdnString)
+           (spitUTF8 fp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onService
+
+  ""
+  [args]
+
+  (when (< (count args) 2) (trap! CmdHelpError))
+  (let [cmd (args 0)
+        id (keyword (args 1))
+        [hint svc]
+        (case (keyword cmd)
+          :remove [-1 "?"]
+          :add (if (< (count args) 3)
+                 (trap! CmdHelpError)
+                 [1 (args 2)])
+          (trap! CmdHelpError))
+        t (case (keyword svc)
+            :repeat :czlab.skaro.io.loops/RepeatingTimer
+            :once :czlab.skaro.io.loops/OnceTimer
+            :files :czlab.skaro.io.files/FilePicker
+            :http :czlab.skaro.io.netty/NettyMVC
+            :pop3 :czlab.skaro.io.mails/POP3
+            :imap :czlab.skaro.io.mails/IMAP
+            :tcp :czlab.skaro.io.socket/Socket
+            :jms :czlab.skaro.io.jms/JMS
+            :? nil
+            (trap! CmdHelpError))]
+    (onSvc id hint t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sanitizeAppDomain
 
   ""
+  ^String
   [appDomain]
 
   (strimAny appDomain "."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe create a new app?
-(defn createApp
-
-  "Create a new app"
-  [path]
-
-  (let
-    [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-     t (re-matches rx path)
-     cwd (getCwd)
-     ;; treat as domain e.g com.acme => app = acme
-     ;; regex gives ["com.acme" ".acme"]
-     app (when (some? t)
-           (if-some [tkn (last t)]
-             (triml tkn ".")
-             (first t))) ]
-    (when (empty? app) (trap! CmdHelpError))
-    (createOneApp cwd app path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -155,6 +217,202 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro mkDemoPath "" [dn] `(str "demo." ~dn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkcljfp
+
+  ""
+  ^File
+  [cljd fname]
+
+  (io/file cljd fname))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkcljd
+
+  ""
+  ^File
+  [appDir appDomain]
+
+  (io/file appDir
+           "src/main/clojure"
+           (cs/replace appDomain "." "/")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- postCreateApp
+
+  ""
+  [^File appDir ^String appId ^String appDomain]
+
+  (let [h2db (str (if (isWindows?)
+                    "/c:/temp/"
+                    "/tmp/")
+                  (juid))
+        h2dbUrl (str h2db
+                     "/"
+                     appId
+                     ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
+        domPath (cs/replace appDomain "." "/")
+        hhh (getHomeDir)
+        cljd (mkcljd appDir appDomain)]
+    (mkdirs h2db)
+    (replaceFile!
+      (mkcljfp cljd "core.clj")
+      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+           (cs/replace "@@USER@@" (getUser))))
+    (replaceFile!
+      (io/file appDir CFG_APP_CF)
+      #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
+           (cs/replace "@@APPDOMAIN@@" appDomain)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- createAppCommon
+
+  ""
+  [^File appDir ^String appId ^String appDomain]
+
+  (let [domPath (cs/replace appDomain "." "/")
+        cfd (io/file appDir DN_CONF)
+        etc (io/file appDir DN_ETC)
+        hhh (getHomeDir)]
+    ;; make all the folders
+    (doseq [s [;; "patch" "build" "target" "logs"
+               "ext" "i18n" DN_CONF DN_ETC "src"]]
+      (mkdirs (io/file appDir s)))
+    (doseq [s ["clojure" "java"]]
+      (map #(mkdirs %)
+           (map #(io/file appDir "src" % s domPath))))
+    (mkdirs (io/file appDir "src/main/resources"))
+    ;;copy files
+    (cpf2d
+      (io/file hhh DN_CFGAPP "shiro.ini")
+      (io/file appDir "ext"))
+    (cpf2f
+      (io/file hhh DN_ETC "log/log4jbuild.properties")
+      (io/file appDir DN_ETC "log4j.properties"))
+    (cpf2d
+      (io/file hhh DN_CFGAPP "test.clj")
+      (io/file appDir "src/test/clojure" domPath))
+    (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
+      (cpf2d
+        (io/file hhh DN_CFGAPP s)
+        (io/file appDir "src/test/java" domPath)))
+    (cpf2d (io/file hhh DN_CFGAPP "build.boot") appDir)
+    (cpf2d (io/file hhh DN_CFGAPP "pom.xml")
+           (io/file appDir DN_ETC))
+    (cpf2f
+      (io/file hhh DN_ETC "lics/LICENSE")
+      (io/file appDir DN_ETC "LICENSE.TXT"))
+    (touch! (io/file appDir DN_ETC "README.md"))
+    (cpf2d (io/file hhh DN_CFGAPP APP_CF) cfd)
+    (cpf2d
+      (io/file hhh DN_CFGAPP DN_RCPROPS)
+      (io/file  appDir "i18n"))
+    (cpf2d
+      (io/file hhh DN_CFGAPP "core.clj")
+      (mkcljd appDir appDomain))
+    ;;modify files, replace placeholders
+    (replaceFile!
+      (io/file appDir
+               "src/test/clojure" domPath "test.clj")
+      #(cs/replace % "@@APPDOMAIN@@" appDomain))
+    (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
+      (replaceFile!
+        (io/file appDir "src/test/java" domPath s)
+        #(cs/replace % "@@APPDOMAIN@@" appDomain)))
+    (replaceFile!
+      (io/file cfd APP_CF)
+      #(-> (cs/replace % "@@USER@@" (getUser))
+           (cs/replace "@@APPKEY@@" (uuid<>))
+           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@APPDOMAIN@@" appDomain)))
+    (replaceFile!
+      (io/file appDir DN_ETC "pom.xml")
+      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@APPID@@" appId)))
+    (replaceFile!
+      (io/file appDir "build.boot")
+      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+           (cs/replace "@@TYPE@@" "web")
+           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@APPID@@" appId)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- createWebCommon
+
+  ""
+  [^File appDir appId ^String appDomain]
+
+  (let [domPath (cs/replace appDomain "." "/")
+        hhh (getHomeDir)
+        web (io/file hhh DN_CFGWEB)]
+    ;; make folders
+    (doseq [s ["pages" "media" "styles" "scripts"]]
+      (mkdirs (io/file appDir "src/web/main" s))
+      (mkdirs (io/file appDir "public" s)))
+    ;; copy files
+    (let [des (io/file appDir "src/web/main/pages")
+          src (io/file hhh DN_ETC "netty")]
+      (cpfs src des ".ftl")
+      (cpfs src des ".html"))
+
+    (touch!
+      (io/file appDir "src/web/main/styles/main.scss"))
+    (touch!
+      (io/file appDir "src/web/main/scripts/main.js"))
+    (cpf2d
+      (io/file web "favicon.png")
+      (io/file appDir "src/web/main/media"))
+    (cpf2d
+      (io/file hhh DN_ETC "netty/core.clj")
+      (mkcljd appDir appDomain))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- createOneApp
+
+  ""
+  [^File out appId ^String appDomain]
+
+  (let [appDir (mkdirs (io/file out appId))
+        hhh (getHomeDir)
+        cfd (io/file appDir DN_CONF)]
+    (createAppCommon appDir appId appDomain)
+    (createWebCommon appDir appId appDomain)
+    ;; copy files
+    (cpfs (io/file hhh DN_ETC "netty") cfd ".conf")
+    ;; modify files
+    (replaceFile!
+      (io/file cfd "routes.conf")
+      #(cs/replace % "@@APPDOMAIN@@" appDomain))
+    (postCreateApp appDir appId appDomain)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Maybe create a new app?
+(defn createApp
+
+  "Create a new app"
+  [path]
+
+  (let
+    [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+     path (sanitizeAppDomain path)
+     t (re-matches rx path)
+     cwd (getCwd)
+     ;; treat as domain e.g com.acme => app = acme
+     ;; regex gives ["com.acme" ".acme"]
+     app (when (some? t)
+           (if-some [tkn (last t)]
+             (triml tkn ".")
+             (first t))) ]
+    (when (empty? app) (trap! CmdHelpError))
+    (createOneApp cwd app path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -202,237 +460,10 @@
   (->> (mkdirs output)
        (genCljDemos )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mkcljfp
-
-  ""
-  ^File
-  [cljd fname]
-
-  (io/file cljd fname))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- mkcljd
-
-  ""
-  ^File
-  [appDir appDomain]
-
-  (io/file appDir
-           "src/main/clojure"
-           (cs/replace appDomain "." "/")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- postCreateApp
-
-  ""
-  [^File appDir ^String appId ^String appDomain]
-
-  (let [h2db (str (if (isWindows?)
-                    "/c:/temp/"
-                    "/tmp/")
-                  (juid))
-        h2dbUrl (str h2db
-                     "/"
-                     appId
-                     ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
-        appDomainPath (cs/replace appDomain "." "/")
-        hhh (getHomeDir)
-        cljd (mkcljd appDir appDomain) ]
-    (mkdirs h2db)
-    (with-local-vars [fp nil]
-      (var-set fp (mkcljfp cljd "core.clj"))
-      (replaceFile! @fp
-                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                         (cs/replace "@@USER@@" (getUser))))
-
-      (var-set fp (io/file appDir CFG_APP_CF))
-      (replaceFile! @fp
-                    #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
-                         (cs/replace "@@APPDOMAIN@@" appDomain))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createAppCommon
-
-  ""
-  [^File appDir ^String appId ^String appDomain ^String flavor]
-
-  (let [appDomainPath (cs/replace appDomain "." "/")
-        mfDir (io/file appDir DN_ETC)
-        cfd (io/file appDir DN_CONF)
-        hhh (getHomeDir)]
-    (with-local-vars [fp nil]
-      ;; make all the folders
-      (doseq [^String s ["i18n" "modules" "logs"
-                         DN_CONF DN_ETC
-                         "src" "build" "patch" "target"]]
-        (mkdirs (io/file appDir s)))
-      (doseq [s [ "clojure" "java"]]
-        (mkdirs (io/file appDir "src/main" s appDomainPath))
-        (mkdirs (io/file appDir "src/test" s appDomainPath)))
-
-      (mkdirs (io/file appDir "src/main/resources"))
-      (mkdirs (io/file appDir "src/main/artifacts"))
-
-      ;;copy files
-
-      (FileUtils/copyFile
-        (io/file hhh DN_ETC "log/log4jbuild.properties")
-        (io/file appDir "src/main/artifacts/log4j.properties"))
-      (FileUtils/copyFileToDirectory
-        (io/file hhh DN_CFGAPP "test.clj")
-        (io/file appDir "src/test/clojure" appDomainPath))
-
-      (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
-        (FileUtils/copyFileToDirectory
-          (io/file hhh DN_CFGAPP s)
-          (io/file appDir "src/test/java" appDomainPath)))
-
-      (doseq [s ["build.boot" "pom.xml"]]
-        (FileUtils/copyFileToDirectory
-          (io/file hhh DN_CFGAPP s) appDir))
-      (touch! (io/file appDir "README.md"))
-
-      (doseq [s ["RELEASE-NOTES.txt" "NOTES.txt"
-                 "LICENSE.txt"]]
-        (touch! (io/file appDir DN_ETC s)))
-      (FileUtils/copyFileToDirectory
-          (io/file hhh DN_CFGAPP APP_CF) cfd)
-      (FileUtils/copyFileToDirectory
-        (io/file hhh DN_CFGAPP DN_RCPROPS)
-        (io/file  appDir "i18n"))
-      (FileUtils/copyFileToDirectory
-        (io/file hhh DN_CFGAPP "core.clj")
-        (mkcljd appDir appDomain))
-
-      ;;modify files, replace placeholders
-      (var-set fp (io/file appDir
-                           "src/test/clojure"
-                           appDomainPath "test.clj"))
-      (replaceFile! @fp
-                    #(cs/replace % "@@APPDOMAIN@@" appDomain))
-
-      (doseq [s ["ClojureJUnit.java" "JUnit.java"]]
-        (var-set fp (io/file appDir
-                             "src/test/java" appDomainPath s))
-        (replaceFile! @fp
-                      #(cs/replace % "@@APPDOMAIN@@" appDomain)))
-
-      (var-set fp (io/file cfd APP_CF))
-      (replaceFile! @fp
-                    #(-> (cs/replace % "@@USER@@" (getUser))
-                         (cs/replace "@@APPKEY@@" (uuid<>))
-                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                         (cs/replace "@@APPMAINCLASS@@"
-                                     (str appDomain ".core/MyAppMain"))))
-
-      (var-set fp (io/file appDir "pom.xml"))
-      (replaceFile! @fp
-                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                         (cs/replace "@@APPID@@" appId)))
-
-      (var-set fp (io/file appDir "build.boot"))
-      (replaceFile! @fp
-                    #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-                         (cs/replace "@@TYPE@@" flavor)
-                         (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
-                         (cs/replace "@@APPID@@" appId))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createWebCommon
-
-  ""
-  [^File appDir appId ^String appDomain]
-
-  (let [appDomainPath (cs/replace appDomain "." "/")
-        hhh (getHomeDir)
-        buf (strbf<>)]
-
-    ;; make folders
-    (doseq [s ["pages" "media" "styles" "scripts"]]
-      (mkdirs (io/file appDir "src/web/main" s))
-      (mkdirs (io/file appDir "public" s)))
-
-    ;; copy files
-    (let [des (io/file appDir "src/web/main/pages")
-          src (io/file hhh DN_ETC "netty")]
-      (FileUtils/copyDirectory
-        src des
-        (FileFilterUtils/suffixFileFilter ".ftl"))
-      (FileUtils/copyDirectory
-        src des
-        (FileFilterUtils/suffixFileFilter ".html")))
-
-    (FileUtils/copyFileToDirectory
-      (io/file hhh DN_ETC "netty/core.clj")
-      (mkcljd appDir appDomain))
-
-    (FileUtils/copyFileToDirectory
-      (io/file hhh DN_CFGWEB "main.scss")
-      (io/file appDir "src/web/main/styles"))
-    (FileUtils/copyFileToDirectory
-      (io/file hhh DN_CFGWEB "main.js")
-      (io/file appDir "src/web/main/scripts"))
-
-    (FileUtils/copyFileToDirectory
-      (io/file hhh DN_CFGWEB "favicon.png")
-      (io/file appDir "src/web/main/media"))
-    (FileUtils/copyFileToDirectory
-      (io/file hhh DN_CFGWEB "body.jpg")
-      (io/file appDir "src/web/main/media"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createMvc
-
-  ""
-  [^File appDir ^String appId ^String appDomain ]
-
-  (let [appDomainPath (cs/replace appDomain "." "/")
-        hhh (getHomeDir)
-        cfd (io/file appDir DN_CONF) ]
-    (with-local-vars [fp nil]
-      (createAppCommon appDir appId appDomain "web")
-      (createWebCommon appDir appId appDomain)
-      ;; copy files
-      (FileUtils/copyDirectory
-        (io/file hhh DN_ETC "netty")
-        cfd
-        (FileFilterUtils/suffixFileFilter ".conf"))
-      ;; modify files
-      (var-set fp (io/file cfd "routes.conf"))
-      (replaceFile! @fp
-                    #(cs/replace % "@@APPDOMAIN@@" appDomain))
-
-      (postCreateApp appDir appId appDomain))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- createBasic
-
-  ""
-  [^File out appId ^String appDomain]
-
-  (doto (mkdirs (io/file out appId))
-    (createAppCommon appId appDomain "basic")
-    (postCreateApp appId appDomain)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn createOneApp
-
-  ""
-  [^File out appId ^String appDomain]
-
-  (-> (mkdirs (io/file out appId))
-      (createMvc appId appDomain)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
+
+
+
 

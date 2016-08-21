@@ -55,6 +55,7 @@
       rcb
       ["usage.cmdline"] []
       ["usage.new"] ["usage.new.desc"]
+      ["usage.svc"] ["usage.svc.desc"]
       ["usage.podify"] ["usage.podify.desc"]
       ["usage.ide"] [ "usage.ide.desc"]
       ["usage.build"] [ "usage.build.desc"]
@@ -117,6 +118,7 @@
   (let [cmd (first args)
         args (vec (drop 1 args))]
     (case (keyword cmd)
+      :service (onService args)
       :new (onCreate args)
       :ide (onIDE args)
       :make (onBuild args)
