@@ -96,7 +96,6 @@
 (def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
 (def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
 
-(def ^String CFG_ENV_CF  (str DN_CONF  "/"  ENV_CF ))
 (def ^String CFG_APP_CF  (str DN_CONF  "/"  APP_CF ))
 
 

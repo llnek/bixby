@@ -27,10 +27,12 @@
              muble<>]]
     [czlab.xlib.str :refer [str<>]]
     [clojure.java.io :as io]
+    [czlab.table.core :as tbl]
     [czlab.xlib.logging :as log]
     [czlab.xlib.files :refer [dirRead?]])
 
   (:use [czlab.skaro.etc.cmd2]
+        [czlab.xlib.format]
         [czlab.xlib.consts]
         [czlab.skaro.etc.cmd1])
 
@@ -91,6 +93,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn usage
+
+  ""
+  []
+
+
+  (let [strs (getCmdInfo (I18N/base))]
+    (-> strs (tbl/table :style :none) )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn XXXusage
 
   ""
   []
