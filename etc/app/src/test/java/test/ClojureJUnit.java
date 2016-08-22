@@ -1,4 +1,4 @@
-package @@APPDOMAIN@@;
+package test;
 
 import mikera.cljunit.ClojureTest;
 import java.util.Arrays;
@@ -8,7 +8,7 @@ public class ClojureJUnit extends ClojureTest {
     @Override
     public List<String> namespaces() {
         return Arrays.asList(new String[]{
-                "@@APPDOMAIN@@.test"
+                "test.test"
         });
     }
 }

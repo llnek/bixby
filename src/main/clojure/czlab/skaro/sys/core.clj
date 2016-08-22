@@ -84,9 +84,7 @@
 (def ^String DN_STYLES "styles" )
 (def ^String DN_PUBLIC "public" )
 
-(def ^String SKARO_CF "skaro.conf" )
-(def ^String ENV_CF  "env.conf" )
-(def ^String APP_CF  "app.conf" )
+(def ^String APP_CF  "appconfig.conf" )
 
 (def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
