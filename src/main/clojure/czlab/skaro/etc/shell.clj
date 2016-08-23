@@ -56,7 +56,8 @@
     (if (and (hgl? h)
              (dirRead? (io/file h)))
       (apply bootAndRun h rcb (drop 1 args))
-      (usage))))
+      (usage))
+    (shutdown-agents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

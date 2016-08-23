@@ -25,7 +25,7 @@
              trap!
              prtStk
              muble<>]]
-    [czlab.xlib.str :refer [str<>]]
+    [czlab.xlib.str :refer [str<> strim]]
     [clojure.java.io :as io]
     [czlab.table.core :as tbl]
     [czlab.xlib.logging :as log]
@@ -52,33 +52,26 @@
   ""
   [rcb]
 
-  (partition 2
-    (rstr*
-      rcb
-      ["usage.cmdline"] []
-      ["usage.new"] ["usage.new.desc"]
-      ["usage.svc"] ["usage.svc.desc"]
-      ["usage.podify"] ["usage.podify.desc"]
-      ["usage.ide"] [ "usage.ide.desc"]
-      ["usage.build"] [ "usage.build.desc"]
-      ["usage.test"] [ "usage.test.desc"]
+  (doall
+    (partition 2
+      (rstr*
+        rcb
+        ["usage.new"] ["usage.new.desc"]
+        ["usage.svc"] ["usage.svc.desc"]
+        ["usage.podify"] ["usage.podify.desc"]
+        ["usage.ide"] [ "usage.ide.desc"]
+        ["usage.build"] [ "usage.build.desc"]
+        ["usage.test"] [ "usage.test.desc"]
 
-      ["usage.debug"] ["usage.debug.desc"]
-      ["usage.start"] ["usage.start.desc"]
+        ["usage.debug"] ["usage.debug.desc"]
+        ["usage.start"] ["usage.start.desc"]
 
-      ["usage.gen.keypair"] [ "usage.gen.keypair.desc"]
-      ["usage.gen.key"] [ "usage.gen.key.desc"]
-      ["usage.gen.pwd"] [ "usage.gen.pwd.desc"]
-      ["usage.gen.csr"] [ "usage.gen.csr.desc"]
-      ["usage.gen.guid"] [ "usage.gen.guid.desc"]
-      ["usage.encrypt"] [ "usage.encrypt.desc"]
-      ["usage.decrypt"] [ "usage.decrypt.desc"]
-      ["usage.hash"] [ "usage.hash.desc"]
-      ["usage.testjce"] ["usage.testjce.desc"]
+        ["usage.gen"] [ "usage.gen.desc"]
+        ["usage.demo"] [ "usage.demo.desc"]
+        ["usage.version"] [ "usage.version.desc"]
 
-      ["usage.demo"] [ "usage.demo.desc"]
-      ["usage.version"] [ "usage.version.desc"]
-      ["usage.help"] [])))
+        ["usage.testjce"] ["usage.testjce.desc"]
+        ["usage.help"] ["usage.help.desc"]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,29 +90,23 @@
   ""
   []
 
-
-  (let [strs (getCmdInfo (I18N/base))]
-    (-> strs (tbl/table :style :none) )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn XXXusage
-
-  ""
-  []
-
-
-  (let [strs (getCmdInfo (I18N/base))
-        b (drop-last (drop 1 strs))
-        h (take 1 strs)
-        e (take-last 1 strs)]
-    (println (str<> 78 \=))
-    (drawHelp " %-35s %s\n" h)
-    (println " -----------------")
-    (drawHelp " %-35s %s\n" b)
-    (println "")
-    (drawHelp " %-35s %s\n" e)
-    (println (str<> 78 \=))))
+  (let
+    [walls ["" "   " ""]
+     style {:top ["" "" ""], :middle ["" "" ""] :bottom ["" "" ""]
+            :dash " " :header-walls walls :body-walls walls }
+     rcb (I18N/base)
+     strs (getCmdInfo rcb)]
+    (printf "%s\n\n" (rstr rcb "skaro.desc"))
+    (printf "%s\n" (rstr rcb "cmds.header"))
+    ;; prepend blanks to act as headers
+    (printf "%s\n\n"
+            (strim
+              (with-out-str
+                (-> '(("" ""))
+                    (concat strs)
+                    (tbl/table :style style)))))
+    (printf "%s\n" (rstr rcb "cmds.trailer"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,25 +115,13 @@
   ""
   [args]
 
-  (let [cmd (first args)
-        args (vec (drop 1 args))]
-    (case (keyword cmd)
-      :service (onService args)
-      :new (onCreate args)
-      :ide (onIDE args)
-      :make (onBuild args)
-      :podify (onPodify args)
-      :test (onTest args)
-      :debug (onDebug args)
-      :start (onStart args)
-      :demos (onDemos args)
-      :generate (onGenerate args)
-      :encrypt (onEncrypt args)
-      :decrypt (onDecrypt args)
-      :hash (onHash args)
-      :testjce (onTestJCE args)
-      :version (onVersion args)
-      (onHelp args))
+  (let [cmd (keyword (first args))
+        args (vec (drop 1 args))
+        [f h]
+        (*skaro-tasks* cmd)]
+    (if (fn? f)
+      (f args)
+      (trap! CmdHelpError))
     args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

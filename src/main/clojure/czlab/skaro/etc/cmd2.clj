@@ -44,8 +44,7 @@
              touch!
              mkdirs]])
 
-  (:use [czlab.skaro.sys.core]
-        [czlab.skaro.etc.svcs])
+  (:use [czlab.skaro.sys.core])
 
   (:import
     [org.apache.commons.io.filefilter FileFilterUtils]
@@ -111,59 +110,6 @@
   []
 
   *skaro-home*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- onSvc
-
-  ""
-  [id hint & [svc]]
-
-  (let
-    [fp (io/file (getCwd) CFG_APP_CF)
-     cf (readEdn fp)
-     root (:services cf)
-     nw
-     (if (< hint 0)
-       (dissoc root id)
-       (when-some
-         [gist (:conf (*emitter-defs* svc))]
-         (when (contains? root id) (trap! CmdHelpError))
-         (assoc root id (assoc gist :service svc))))]
-    (when (some? nw)
-      (->> (assoc cf :services nw)
-           (writeEdnString)
-           (spitUTF8 fp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onService
-
-  ""
-  [args]
-
-  (when (< (count args) 2) (trap! CmdHelpError))
-  (let [cmd (args 0)
-        id (keyword (args 1))
-        [hint svc]
-        (case (keyword cmd)
-          :remove [-1 "?"]
-          :add (if (< (count args) 3)
-                 (trap! CmdHelpError)
-                 [1 (args 2)])
-          (trap! CmdHelpError))
-        t (case (keyword svc)
-            :repeat :czlab.skaro.io.loops/RepeatingTimer
-            :once :czlab.skaro.io.loops/OnceTimer
-            :files :czlab.skaro.io.files/FilePicker
-            :http :czlab.skaro.io.netty/NettyMVC
-            :pop3 :czlab.skaro.io.mails/POP3
-            :imap :czlab.skaro.io.mails/IMAP
-            :tcp :czlab.skaro.io.socket/Socket
-            :jms :czlab.skaro.io.jms/JMS
-            :? nil
-            (trap! CmdHelpError))]
-    (onSvc id hint t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

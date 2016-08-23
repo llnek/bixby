@@ -93,8 +93,6 @@ splash() {
   #echo ""
   #echo -n "Version: "
   #cat $SKARO_HOME/VERSION
-  echo ""
-  echo ""
 }
 
 ### osx sux, has no proper readlink.

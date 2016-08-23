@@ -21,10 +21,11 @@
 
   (:require
     [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
+    [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.dates :refer [+months gcal<>]]
-    [czlab.xlib.format :refer [readEdn]]
+    [czlab.xlib.files :refer [spitUTF8]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
@@ -37,6 +38,7 @@
              listFiles]]
     [czlab.xlib.core
      :refer [isWindows?
+             when-some+
              stringify
              fpath
              spos?
@@ -60,6 +62,7 @@
         [czlab.tpcl.boot]
         [czlab.xlib.guids]
         [czlab.xlib.meta]
+        [czlab.skaro.etc.svcs]
         [czlab.skaro.sys.core])
 
   (:import
@@ -91,7 +94,21 @@
   (App/main (into-array String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe create a new app?
+;;
+(defn onHelp-Create
+
+  ""
+  []
+
+  (printf "%s\n" "Create a new application in the current directory.")
+  (printf "%s\n" "skaro new [options] <app-name>")
+  (printf "%s\n" "options:")
+  (printf "%s\n" "-web, --webapp   Create a web application")
+  (printf "%s\n" "-soa, --soaapp   Create a service oriented application")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onCreate
 
   "Create a new app"
@@ -100,6 +117,19 @@
   (if (> (count args) 1)
     (createApp (args 0) (args 1))
     (trap! CmdHelpError)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onHelp-Build
+
+  ""
+  []
+
+  (printf "%s\n" "Make the application, optionally run a build target.")
+  (printf "%s\n" "make [optional-target]")
+  (printf "%s\n" "e.g.")
+  (printf "%s\n" "make compile")
+  (println))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
@@ -112,7 +142,18 @@
        (apply execBootScript (getHomeDir) (getCwd))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe compress and package an app?
+;;
+(defn onHelp-Podify
+
+  ""
+  []
+
+  (printf "%s\n" "Package this application as a zipped archive.")
+  (printf "%s\n" "skaro podify <output-dir>")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onPodify
 
   "Package the app"
@@ -124,7 +165,16 @@
     (trap! CmdHelpError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe run tests on an app?
+;;
+(defn onHelp-Test
+
+  ""
+  []
+
+  (printf "Compiles and run test cases."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onTest
 
   "Test the app"
@@ -134,7 +184,20 @@
        (apply execBootScript (getHomeDir) (getCwd) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe start the server?
+;;
+(defn onHelp-Start
+
+  ""
+  []
+
+  (printf "%s\n" "Start the application, optionally run in background.")
+  (printf "%s\n" "start [options]")
+  (printf "%s\n" "options:")
+  (printf "%s\n" "-bg, --background   Run app in background.")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onStart
 
   "Start and run the app"
@@ -154,11 +217,32 @@
         (.callEx rt func (object-array [home]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe run in debug mode?
+;;
+(defn onHelp-Debug
+
+  ""
+  []
+
+  (printf "%s" "Start the application in debug mode.")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onDebug "Debug the app" [args] (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe generate some demo apps?
+;;
+(defn onHelp-Demos
+
+  ""
+  []
+
+  (printf "%s\n" "Generate a set of samples in the output directory.")
+  (printf "%s\n" "skaro demos <output-dir>")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onDemos
 
   "Generate demo apps"
@@ -201,6 +285,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- genGuid "" [] (println (uuid<>)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onHelp-Generate
+
+  ""
+  []
+
+  (printf "%s\n" "Generate useful crypto related artifacts.")
+  (printf "%s\n" "skaro generate [options]")
+  (printf "%s\n" "options:")
+  (printf "%s\n" "-sc --selfsignedcert   x")
+  (printf "%s\n" "-cr --certreq          x")
+  (printf "%s\n" "-kp --keypair          x")
+  (printf "%s\n" "-pw --password         x")
+  (printf "%s\n" "-hh --hash             x")
+  (printf "%s\n" "-uu --uuid             x")
+  (printf "%s\n" "-ec --encrypt          x")
+  (printf "%s\n" "-dc --decrypt          x")
+  (println))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -295,6 +399,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn onHelp-TestJCE
+
+  ""
+  []
+
+  (printf "%s" "Check for the installation of unlimited JCE files.")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onTestJCE
 
   "Test if JCE (crypto) is ok"
@@ -305,6 +419,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn onHelp-Version
+
+  ""
+  []
+
+  (printf "%s" "Show the skaro version")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onVersion
 
   "Show the version of system"
@@ -312,10 +436,6 @@
 
   (println "skaro version : "  (System/getProperty "skaro.version"))
   (println "java version  : "  (System/getProperty "java.version")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onHelp "Show help" [args] (trap! CmdHelpError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -377,6 +497,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn onHelp-IDE
+
+  ""
+  []
+
+  (printf "%s\n" "Generate IDE project files.")
+  (printf "%s\n" "skaro ide [options]")
+  (printf "%s\n" "options:")
+  (printf "%s\n" "-e, --eclipse   Generate eclipse project files.")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onIDE
 
   "Generate IDE project files"
@@ -386,6 +519,121 @@
            (= "eclipse" (args 0)))
     (genEclipseProj (getCwd))
     (trap! CmdHelpError)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onHelp-Service
+
+  ""
+  []
+
+  (printf "%s\n" "Manage system services for this application.")
+  (printf "%s\n" "skaro service [options]")
+  (printf "%s\n" "options:")
+  (printf "%s\n" "-t, --type <http|web|tcp|mail|repeat|once|files>   Service type.")
+  (printf "%s\n" "-a, --add <id>                                     Name of service.")
+  (printf "%s\n" "-r, --remove <id>                                  Name of service.")
+  (println))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onSvc
+
+  ""
+  [id hint & [svc]]
+
+  (let
+    [fp (io/file (getCwd) CFG_APP_CF)
+     cf (readEdn fp)
+     root (:services cf)
+     nw
+     (if (< hint 0)
+       (dissoc root id)
+       (when-some
+         [gist (:conf (*emitter-defs* svc))]
+         (when (contains? root id) (trap! CmdHelpError))
+         (assoc root id (assoc gist :service svc))))]
+    (when (some? nw)
+      (->> (assoc cf :services nw)
+           (writeEdnString)
+           (spitUTF8 fp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onService
+
+  ""
+  [args]
+
+  (when (< (count args) 2) (trap! CmdHelpError))
+  (let [cmd (args 0)
+        id (keyword (args 1))
+        [hint svc]
+        (case (keyword cmd)
+          :remove [-1 "?"]
+          :add (if (< (count args) 3)
+                 (trap! CmdHelpError)
+                 [1 (args 2)])
+          (trap! CmdHelpError))
+        t (case (keyword svc)
+            :repeat :czlab.skaro.io.loops/RepeatingTimer
+            :once :czlab.skaro.io.loops/OnceTimer
+            :files :czlab.skaro.io.files/FilePicker
+            :http :czlab.skaro.io.netty/NettyMVC
+            :pop3 :czlab.skaro.io.mails/POP3
+            :imap :czlab.skaro.io.mails/IMAP
+            :tcp :czlab.skaro.io.socket/Socket
+            :jms :czlab.skaro.io.jms/JMS
+            :? nil
+            (trap! CmdHelpError))]
+    (onSvc id hint t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn onHelp-Help
+
+  ""
+  []
+
+  (trap! CmdHelpError))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(declare getTasks)
+(defn onHelp
+
+  "Show help"
+  [args]
+
+  (let
+    [c (keyword (first args))
+     [f h] ((getTasks) c)]
+    (if (fn? h)
+      (h)
+      (trap! CmdHelpError))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def
+  ^:dynamic
+  *skaro-tasks*
+  {:service [onService onHelp-Service]
+   :new [onCreate onHelp-Create]
+   :ide [onIDE onHelp-IDE]
+   :make [onBuild onHelp-Build]
+   :podify [onPodify onHelp-Podify]
+   :test [onTest onHelp-Test]
+   :debug [onDebug onHelp-Debug]
+   :help [onHelp onHelp-Help]
+   :start [onStart onHelp-Start]
+   :demos [onDemos onHelp-Demos]
+   :generate [onGenerate onHelp-Generate]
+   :testjce [onTestJCE onHelp-TestJCE]
+   :version [onVersion onHelp-Version] })
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getTasks "" [] *skaro-tasks*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
