@@ -126,22 +126,21 @@
 (defn runAppBg
 
   "Run the application in the background"
-  [^File hhh]
+  [^File hhh ^File appDir]
 
   (let
     [progW (io/file hhh "bin/skaro.bat")
      prog (io/file hhh "bin/skaro")
-     cwd (getCwd)
      tk (if (isWindows?)
           (a/antExec
             {:executable "cmd.exe"
-             :dir cwd}
+             :dir appDir}
             [[:argvalues ["/C" "start" "/B"
                           "/MIN"
                           (fpath progW) "start" ]]])
           (a/antExec
             {:executable (fpath prog)
-             :dir cwd}
+             :dir appDir}
             [[:argvalues [ "start" "bg" ]]])) ]
     (a/runTasks* tk)))
 

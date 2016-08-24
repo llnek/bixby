@@ -12,23 +12,22 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung" }
+(ns ^{:doc "" :author "Kenneth Leung" }
 
   czlab.skaro.etc.core
 
   (:require
     [czlab.xlib.resources :refer [getResource rstr rstr*]]
+    [czlab.xlib.str :refer [str<> strim]]
+    [czlab.xlib.logging :as log]
+    [clojure.java.io :as io]
+    [czlab.table.core :as tbl]
     [czlab.xlib.core
      :refer [test-cond
              inst?
              trap!
              prtStk
              muble<>]]
-    [czlab.xlib.str :refer [str<> strim]]
-    [clojure.java.io :as io]
-    [czlab.table.core :as tbl]
-    [czlab.xlib.logging :as log]
     [czlab.xlib.files :refer [dirRead?]])
 
   (:use [czlab.skaro.etc.cmd2]
@@ -75,16 +74,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- drawHelp
-
-  ""
-  [fmt arr]
-
-  (doseq [a arr]
-    (print (apply format fmt a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn usage
 
   ""
@@ -92,18 +81,17 @@
 
   (let
     [walls ["" "   " ""]
-     style {:top ["" "" ""], :middle ["" "" ""] :bottom ["" "" ""]
+     style {:top ["" "" ""] :middle ["" "" ""] :bottom ["" "" ""]
             :dash " " :header-walls walls :body-walls walls }
-     rcb (I18N/base)
-     strs (getCmdInfo rcb)]
+     rcb (I18N/base)]
     (printf "%s\n\n" (rstr rcb "skaro.desc"))
     (printf "%s\n" (rstr rcb "cmds.header"))
     ;; prepend blanks to act as headers
     (printf "%s\n\n"
             (strim
               (with-out-str
-                (-> '(("" ""))
-                    (concat strs)
+                (-> (concat '(("" ""))
+                            (getCmdInfo rcb))
                     (tbl/table :style style)))))
     (printf "%s\n" (rstr rcb "cmds.trailer"))
     (println)))
@@ -126,34 +114,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseArgs
-  "Do nothing right now"
-  [args]
-  args)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- cmdStart
-
-  "Make sure cmdline args are ok"
-  [args]
-
-  (when (< (count args) 1) (trap! CmdHelpError ))
-  args)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn bootAndRun
 
   ""
-  [home rcb & args]
+  [home & args]
 
-  (binding [*skaro-home* (io/file home)
-            *skaro-rb* rcb]
+  (binding [*skaro-home* (io/file home)]
     (try
-      ((comp execArgs
-             parseArgs
-             cmdStart) (vec args))
+      (if (< (count args) 1)
+        (trap! CmdHelpError ))
+      (execArgs (vec args))
       (catch Throwable e
         (if (inst? CmdHelpError e)
           (usage)

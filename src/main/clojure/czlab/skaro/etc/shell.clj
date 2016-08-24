@@ -12,8 +12,7 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung" }
+(ns ^{:doc "" :author "Kenneth Leung" }
 
   czlab.skaro.etc.shell
 
@@ -47,7 +46,7 @@
   "Main Entry"
   [& args]
 
-  (let [^ResourceBundle ver (loadResource VERPROPS)
+  (let [ver (loadResource VERPROPS)
         rcb (getResource RCB)
         h (first args)]
     (->> (.getString ver "version")
@@ -55,7 +54,7 @@
     (I18N/setBase rcb)
     (if (and (hgl? h)
              (dirRead? (io/file h)))
-      (apply bootAndRun h rcb (drop 1 args))
+      (apply bootAndRun h (drop 1 args))
       (usage))
     (shutdown-agents)))
 

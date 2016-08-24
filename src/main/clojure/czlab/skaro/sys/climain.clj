@@ -294,7 +294,7 @@
 (defn startViaCLI
 
   ""
-  [home]
+  [home appDir]
 
   (-> (rtStart home)
       (setupLoaders)

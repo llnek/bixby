@@ -12,21 +12,17 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung" }
+(ns ^{:doc "" :author "Kenneth Leung" }
 
   czlab.skaro.etc.cmd1
 
   ;;(:refer-clojure :rename {first fst second snd last lst})
-
   (:require
     [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
     [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.dates :refer [+months gcal<>]]
     [czlab.xlib.files :refer [spitUTF8]]
-    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs]
@@ -40,6 +36,8 @@
      :refer [isWindows?
              when-some+
              stringify
+             sysProp!
+             sysProp
              fpath
              spos?
              getCwd
@@ -70,6 +68,7 @@
     [org.apache.commons.io FileUtils]
     [czlab.skaro.etc CmdHelpError]
     [czlab.skaro.server Cljshim ]
+    [czlab.crypto PasswordAPI]
     [boot App]
     [java.util
      ResourceBundle
@@ -77,20 +76,22 @@
      Calendar
      Map
      Date]
-    [czlab.crypto PasswordAPI]
+    [czlab.xlib I18N]
     [java.io File]
     [java.security KeyPair PublicKey PrivateKey]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- execBootScript
 
   "Call into boot/clj code"
   [^File homeDir ^File appDir & args]
 
-  (System/setProperty "skaro.home.dir" (.getCanonicalPath homeDir))
-  (System/setProperty "skaro.proc.dir" (.getCanonicalPath appDir))
+  (sysProp! "skaro.home.dir" (.getCanonicalPath homeDir))
+  (sysProp! "skaro.proc.dir" (.getCanonicalPath appDir))
   (App/main (into-array String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,12 +101,13 @@
   ""
   []
 
-  (printf "%s\n" "Create a new application in the current directory.")
-  (printf "%s\n" "skaro new [options] <app-name>")
-  (printf "%s\n" "options:")
-  (printf "%s\n" "-web, --webapp   Create a web application")
-  (printf "%s\n" "-soa, --soaapp   Create a service oriented application")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.new.d1"))
+    (printf "%s\n" (rstr rcb "usage.new.d2"))
+    (printf "%s\n" (rstr rcb "usage.new.d3"))
+    (printf "%s\n" (rstr rcb "usage.new.d4"))
+    (printf "%s\n" (rstr rcb "usage.new.d5"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -113,6 +115,7 @@
 
   "Create a new app"
   [args]
+  {:pre [(vector? args)]}
 
   (if (> (count args) 1)
     (createApp (args 0) (args 1))
@@ -125,11 +128,12 @@
   ""
   []
 
-  (printf "%s\n" "Make the application, optionally run a build target.")
-  (printf "%s\n" "make [optional-target]")
-  (printf "%s\n" "e.g.")
-  (printf "%s\n" "make compile")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.build.d1"))
+    (printf "%s\n" (rstr rcb "usage.build.d2"))
+    (printf "%s\n" (rstr rcb "usage.build.d3"))
+    (printf "%s\n" (rstr rcb "usage.build.d4"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
@@ -137,6 +141,7 @@
 
   "Build the app"
   [args]
+  {:pre [(vector? args)]}
 
   (->> (if (empty? args) ["dev"] args)
        (apply execBootScript (getHomeDir) (getCwd))))
@@ -148,9 +153,10 @@
   ""
   []
 
-  (printf "%s\n" "Package this application as a zipped archive.")
-  (printf "%s\n" "skaro podify <output-dir>")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.podify.d1"))
+    (printf "%s\n" (rstr rcb "usage.podify.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,6 +164,7 @@
 
   "Package the app"
   [args]
+  {:pre [(vector? args)]}
 
   (if-not (empty? args)
     (bundleApp (getHomeDir)
@@ -171,7 +178,10 @@
   ""
   []
 
-  (printf "Compiles and run test cases."))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.test.d1"))
+    (printf "%s\n" (rstr rcb "usage.test.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,6 +189,7 @@
 
   "Test the app"
   [args]
+  {:pre [(vector? args)]}
 
   (->> (if (empty? args) ["tst"] args)
        (apply execBootScript (getHomeDir) (getCwd) )))
@@ -190,11 +201,12 @@
   ""
   []
 
-  (printf "%s\n" "Start the application, optionally run in background.")
-  (printf "%s\n" "start [options]")
-  (printf "%s\n" "options:")
-  (printf "%s\n" "-bg, --background   Run app in background.")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.start.d1"))
+    (printf "%s\n" (rstr rcb "usage.start.d2"))
+    (printf "%s\n" (rstr rcb "usage.start.d3"))
+    (printf "%s\n" (rstr rcb "usage.start.d4"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -202,6 +214,7 @@
 
   "Start and run the app"
   [args]
+  {:pre [(vector? args)]}
 
   (let [func "czlab.skaro.sys.climain/startViaCLI"
         home (getHomeDir)
@@ -210,11 +223,11 @@
                (Cljshim/newrt (.getName cwd)))
         s2 (first args)]
     ;; background job is handled differently on windows
-    (if (and (= s2 "bg")
+    (if (and (contains? #{"-bg" "--background"} s2)
              (isWindows?))
-      (runAppBg home)
+      (runAppBg home cwd)
       (try!
-        (.callEx rt func (object-array [home]))))))
+        (.callEx rt func (object-array [home cwd]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -223,8 +236,10 @@
   ""
   []
 
-  (printf "%s" "Start the application in debug mode.")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.debug.d1"))
+    (printf "%s\n" (rstr rcb "usage.debug.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -237,9 +252,10 @@
   ""
   []
 
-  (printf "%s\n" "Generate a set of samples in the output directory.")
-  (printf "%s\n" "skaro demos <output-dir>")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.demo.d1"))
+    (printf "%s\n" (rstr rcb "usage.demo.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -247,6 +263,7 @@
 
   "Generate demo apps"
   [args]
+  {:pre [(vector? args)]}
 
   (if-not (empty? args)
     (publishSamples (args 0))
@@ -254,29 +271,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro generatePassword
+(defn- genPwd
 
-  "Generate a random password"
-  {:private true}
-  [len]
-
-  `(println (str (strongPwd ~len))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- genKeyPair
-
-  "Generate a keypair"
+  ""
   [args]
 
-  ;;(DbgProvider java.lang.System/out)
-  (let [kp (asymKeyPair<> "RSA" 1024)
-        pvk (.getPrivate kp)
-        puk (.getPublic kp)]
-    (println "privatekey=\n"
-             (stringify (exportPrivateKey pvk )))
-    (println "publickey=\n"
-             (stringify (exportPublicKey puk )))))
+  (let [c (first args)
+        n (convLong (str c) 12)]
+    (if (and (>= n 8)
+             (<= n 32))
+      (println (strongPwd n))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -288,23 +293,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- onHash
+
+  "Generate a hash"
+  [args]
+  {:pre [(vector? args)]}
+
+  (if-not (empty? args)
+    (->> (passwd<> (first args))
+         (.hashed )
+         (:hash )
+         (println ))
+    (trap! CmdHelpError)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onEncrypt
+
+  "Encrypt the data"
+  [args]
+  {:pre [(vector? args)]}
+
+  (if (> (count args) 1)
+    (->> (passwd<> (args 1) (args 0))
+         (.encoded )
+         (println ))
+    (trap! CmdHelpError)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onDecrypt
+
+  "Decrypt the cypher"
+  [args]
+  {:pre [(vector? args)]}
+
+  (if (> (count args) 1)
+    (->> (passwd<> (args 1) (args 0))
+         (.text )
+         (println ))
+    (trap! CmdHelpError)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn onHelp-Generate
 
   ""
   []
 
-  (printf "%s\n" "Generate useful crypto related artifacts.")
-  (printf "%s\n" "skaro generate [options]")
-  (printf "%s\n" "options:")
-  (printf "%s\n" "-sc --selfsignedcert   x")
-  (printf "%s\n" "-cr --certreq          x")
-  (printf "%s\n" "-kp --keypair          x")
-  (printf "%s\n" "-pw --password         x")
-  (printf "%s\n" "-hh --hash             x")
-  (printf "%s\n" "-uu --uuid             x")
-  (printf "%s\n" "-ec --encrypt          x")
-  (printf "%s\n" "-dc --decrypt          x")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.gen.d1"))
+    (printf "%s\n" (rstr rcb "usage.gen.d2"))
+    (printf "%s\n" (rstr rcb "usage.gen.d3"))
+    (printf "%s\n" (rstr rcb "usage.gen.d4"))
+    (printf "%s\n" (rstr rcb "usage.gen.d5"))
+    (printf "%s\n" (rstr rcb "usage.gen.d6"))
+    (printf "%s\n" (rstr rcb "usage.gen.d7"))
+    (printf "%s\n" (rstr rcb "usage.gen.d8"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -312,90 +358,23 @@
 
   "Generate a bunch of stuff"
   [args]
+  {:pre [(vector? args)]}
 
-  (condp = (first args)
-    "keypair"
-    (if (> (count args) 1)
-      (genKeyPair args)
-      (trap! CmdHelpError))
-    "password"
-    (generatePassword 12)
-    "serverkey"
-    nil;;(keyfile args)
-    "guid"
+  (let [c (first args)]
+  (cond
+    (contains? #{"-p" "--password"} c)
+    (genPwd args)
+    (contains? #{"-h" "--hash"} c)
+    (onHash args)
+    (contains? #{"-u" "--uuid"} c)
     (genGuid)
-    "wwid"
+    (contains? #{"-w" "--wwid"} c)
     (genWwid)
-    "csr"
-    nil;;(csrfile args)
-    (trap! CmdHelpError)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- genHash
-
-  ""
-  [text]
-
-  (->> (passwd<> text)
-       (.hashed )
-       (:hash )
-       (println )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onHash
-
-  "Generate a hash"
-  [args]
-
-  (if-not (empty? args)
-    (genHash (args 0))
-    (trap! CmdHelpError)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- encrypt
-
-  ""
-  [pkey text]
-
-  (->> (passwd<> text pkey)
-       (.encoded )
-       (println )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onEncrypt
-
-  "Encrypt the data"
-  [args]
-
-  (if (> (count args) 1)
-    (encrypt (args 0) (args 1))
-    (trap! CmdHelpError)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- decrypt
-
-  ""
-  [pkey secret]
-
-  (->> (passwd<> secret pkey)
-       (.text )
-       (println )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onDecrypt
-
-  "Decrypt the cypher"
-  [args]
-
-  (if (> (count args) 1)
-    (decrypt (args 0) (args 1))
-    (trap! CmdHelpError)))
+    (contains? #{"-e" "--encrypt"} c)
+    (onEncrypt args)
+    (contains? #{"-d" "--decrypt"} c)
+    (onDecrypt args)
+    :else (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -404,8 +383,10 @@
   ""
   []
 
-  (printf "%s" "Check for the installation of unlimited JCE files.")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.testjce.d1"))
+    (printf "%s\n" (rstr rcb "usage.testjce.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -413,9 +394,11 @@
 
   "Test if JCE (crypto) is ok"
   [args]
+  {:pre [(vector? args)]}
 
-  (assertJce)
-  (println "JCE is OK."))
+  (let [rcb (I18N/base)]
+    (assertJce)
+    (println (rstr rcb "usage.testjce.ok"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -424,8 +407,10 @@
   ""
   []
 
-  (printf "%s" "Show the skaro version")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.version.d1"))
+    (printf "%s\n" (rstr rcb "usage.version.d2"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -433,9 +418,12 @@
 
   "Show the version of system"
   [args]
+  {:pre [(vector? args)]}
 
-  (println "skaro version : "  (System/getProperty "skaro.version"))
-  (println "java version  : "  (System/getProperty "java.version")))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.version.o1" (sysProp "skaro.version")))
+    (printf "%s\n" (rstr rcb "usage.version.o2" (sysProp "java.version")))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -444,14 +432,16 @@
   ""
   [^StringBuilder out ^File dir]
 
-  (let [sep (System/getProperty "line.separator")
-        fs (listFiles dir "jar") ]
-    (doseq [f fs]
-      (doto out
-        (.append (str "<classpathentry  kind=\"lib\" path=\""
-                      (fpath f)
-                      "\"/>" ))
-        (.append sep)))))
+  (let [sep (System/getProperty "line.separator")]
+    (reduce
+      (fn [^StringBuilder b f]
+         (.append b
+                  (str "<classpathentry  "
+                       "kind=\"lib\""
+                       " path=\"" (fpath f) "\"/>"))
+         (.append b sep))
+      out
+      (listFiles dir "jar"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -482,7 +472,7 @@
           (cs/replace "${CLJ.SRC}"
                       (fpath (io/file appdir
                                       "src/main/clojure")))))
-    (.mkdirs (io/file appdir DN_BUILD "classes"))
+    (mkdirs (io/file appdir DN_BUILD "classes"))
     (doall
       (map (partial scanJars sb)
            [(io/file (getHomeDir) DN_DIST)
@@ -502,11 +492,12 @@
   ""
   []
 
-  (printf "%s\n" "Generate IDE project files.")
-  (printf "%s\n" "skaro ide [options]")
-  (printf "%s\n" "options:")
-  (printf "%s\n" "-e, --eclipse   Generate eclipse project files.")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.ide.d1"))
+    (printf "%s\n" (rstr rcb "usage.ide.d2"))
+    (printf "%s\n" (rstr rcb "usage.ide.d3"))
+    (printf "%s\n" (rstr rcb "usage.ide.d4"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -514,9 +505,10 @@
 
   "Generate IDE project files"
   [args]
+  {:pre [(vector? args)]}
 
   (if (and (> (count args) 0)
-           (= "eclipse" (args 0)))
+           (contains? #{"-e" "--eclipse"} (args 0)))
     (genEclipseProj (getCwd))
     (trap! CmdHelpError)))
 
@@ -527,13 +519,16 @@
   ""
   []
 
-  (printf "%s\n" "Manage system services for this application.")
-  (printf "%s\n" "skaro service [options]")
-  (printf "%s\n" "options:")
-  (printf "%s\n" "-t, --type <http|web|tcp|mail|repeat|once|files>   Service type.")
-  (printf "%s\n" "-a, --add <id>                                     Name of service.")
-  (printf "%s\n" "-r, --remove <id>                                  Name of service.")
-  (println))
+  (let [rcb (I18N/base)]
+    (printf "%s\n" (rstr rcb "usage.svc.d1"))
+    (printf "%s\n" (rstr rcb "usage.svc.d2"))
+    (printf "%s\n" (rstr rcb "usage.svc.d3"))
+    (printf "%s\n" (rstr rcb "usage.svc.d4"))
+    (printf "%s\n" (rstr rcb "usage.svc.d5"))
+    (printf "%s\n" (rstr rcb "usage.svc.d6"))
+    (printf "%s\n" (rstr rcb "usage.svc.d7"))
+    (printf "%s\n" (rstr rcb "usage.svc.d8"))
+    (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -564,17 +559,20 @@
 
   ""
   [args]
+  {:pre [(vector? args)]}
 
   (when (< (count args) 2) (trap! CmdHelpError))
   (let [cmd (args 0)
         id (keyword (args 1))
         [hint svc]
-        (case (keyword cmd)
-          :remove [-1 "?"]
-          :add (if (< (count args) 3)
-                 (trap! CmdHelpError)
-                 [1 (args 2)])
-          (trap! CmdHelpError))
+        (cond
+          (contains? #{"-r" "--remove"} cmd)
+          [-1 "?"]
+          (contains? #{"-a" "--add"} cmd)
+          (if (< (count args) 3)
+            (trap! CmdHelpError)
+            [1 (args 2)])
+          :else (trap! CmdHelpError))
         t (case (keyword svc)
             :repeat :czlab.skaro.io.loops/RepeatingTimer
             :once :czlab.skaro.io.loops/OnceTimer
@@ -604,6 +602,7 @@
 
   "Show help"
   [args]
+  {:pre [(vector? args)]}
 
   (let
     [c (keyword (first args))
