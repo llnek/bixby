@@ -121,7 +121,7 @@
 
   (binding [*skaro-home* (io/file home)]
     (try
-      (if (< (count args) 1)
+      (if (empty? args)
         (trap! CmdHelpError ))
       (execArgs (vec args))
       (catch Throwable e
