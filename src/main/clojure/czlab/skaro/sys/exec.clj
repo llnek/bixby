@@ -18,10 +18,10 @@
   czlab.skaro.sys.exec
 
   (:require
-    [czlab.xlib.str :refer [strim hgl?]]
-    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.mime :refer [setupCache]]
     [czlab.xlib.format :refer [readEdn]]
+    [czlab.xlib.str :refer [strim hgl?]]
+    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.files
@@ -33,6 +33,7 @@
      :refer [test-nestr
              srandom<>
              convLong
+             sysProp!
              inst?
              fpath
              trylet!
@@ -85,23 +86,21 @@
   ^AppGist
   [^Execvisor execv ^File des]
 
-  (let [conf (io/file des CFG_APP_CF)
-        app (basename des)]
-    (log/info "app dir : %s\ninspecting..." des)
-    (log/info "checking conf for app: %s" app)
-    (precondFile conf)
-    (let [cf (readEdn conf)
-          ctx (.getx execv)]
-      ;;create the pod meta and register it
-      ;;as a application
-      (let [m (-> (podMeta app
-                           cf
-                           (io/as-url des)))]
-        (comp->initialize m)
-        (->> (-> (.getv ctx :apps)
-                 (assoc (.id m) m))
-             (.setv ctx :apps))
-        m))))
+  (log/info "app dir : %s\ninspecting..." des)
+  ;;create the pod meta and register it
+  ;;as a application
+  (let
+    [conf (io/file des CFG_APP_CF)
+     dummy (precondFile conf)
+     app (basename des)
+     cf (readEdn conf)
+     ctx (.getx execv)
+     m (-> (podMeta app
+                    cf
+                    (io/as-url des)))]
+    (comp->initialize m)
+    (.setv ctx :app m)
+    m))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,7 +137,7 @@
     (when (some? jmx)
       (.stop ^JmxServer jmx))
     (.unsetv ctx :jmxServer))
-  (log/info "jmx connection terminated")
+  (log/info "jmx terminated")
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,18 +148,14 @@
   ^Execvisor
   [^Execvisor co ^AppGist gist]
 
-  (async!
-    #(trylet!
-       [cc (.getv (.getx co) :containers)
-        ^Container
-        ctr (container<> gist)
-        app (.id gist)
-        cid (.id ctr)]
-       (log/debug (str "start pod = %s\n instance = %s") app cid)
-       (->> (assoc cc cid ctr)
-            (.setv (.getx co) :containers)))
-    {:classLoader (AppClassLoader. (getCldr))
-     :daemon true}))
+  (trylet!
+    [ctr (container<> co gist)
+     app (.id gist)
+     cid (.id ctr)]
+    (log/debug "start pod = %s\ninstance = %s" app cid)
+    (.setv (.getx co) :container ctr)
+    (.start ctr))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -171,12 +166,12 @@
   [^Execvisor co]
 
   (log/info "preparing to stop pods...")
-  (doseq [[_ ^Container v]
-          (.getv (.getx co) :containers)]
+  (let [^Container
+        c (.getv (.getx co) :container)]
     (.stop v)
-    (.dispose v))
-  (.setv (.getx co) :containers {})
-  co)
+    (.dispose v)
+    (.setv (.getx co) :container nil)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -186,8 +181,8 @@
   ^Execvisor
   []
 
-  (let [impl (muble<> {:containers {}
-                       :apps {}
+  (let [impl (muble<> {:container nil
+                       :app nil
                        :emitters {}})
         pid (juid)]
     (with-meta
@@ -205,8 +200,8 @@
         (kill9 [_] (apply (.getv impl :stop!) []))
 
         (start [this]
-          (doseq [[_ v] (.getv impl :apps)]
-            (ignitePod this v)))
+          (->> (.getv impl :app)
+               (ignitePod this )))
 
         (stop [this]
           (stopJmx this)
@@ -224,6 +219,9 @@
 
   (let [{:keys [info conf]}
         gist
+        pid (format "%s[%s]"
+                    (juid)
+                    (:name info))
         impl (muble<> conf)]
     (with-meta
       (reify
@@ -240,7 +238,7 @@
         (isEnabled [_]
           (not (false? (:enabled info))))
 
-        (id [_] (:name info)))
+        (id [_] pid))
 
       {:typeid  ::ServiceGist})))
 
@@ -249,16 +247,14 @@
 (defmethod comp->initialize
 
   ::ServiceGist
-  [^Component co & [execv]]
+  [^ServiceGist co & [execv]]
 
   (log/info "comp->initialize: ServiceGist: %s" (.id co))
-  (.setv (.getx co) :execv execv)
+  (.setParent co execv)
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Each emitter has a meta data file describing
-;; its functions and features
-;; This registry loads these meta files and adds them to the registry
+;;
 (defn- regoEmitters
 
   ""
@@ -271,8 +267,8 @@
         (reduce
           #(let [b (emitMeta (first %2)
                              (last %2))]
-             (comp->initialize b )
-             (assoc! %1 (.id b) b))
+             (comp->initialize b co)
+             (assoc! %1 (.type b) b))
           (transient {})
           *emitter-defs*))
       (.setv ctx :emitters ))))
@@ -285,7 +281,8 @@
   ^Execvisor
   [^Execvisor co]
 
-  (inspectPod co (getCwd))
+  (->> (.getv (.getx co) :appdir)
+       (inspectPod co))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,20 +293,19 @@
   [^Execvisor co & [rootGist]]
   {:pre [(inst? Atom rootGist)]}
 
-  (let [{:keys [basedir skaroConf]}
+  (let [{:keys [basedir appdir env]}
         @rootGist
         {:keys [jmx]}
-        skaroConf]
+        env]
     (log/info "com->initialize: Execvisor: %s" co)
     (test-nonil "conf file: jmx" jmx)
-
-    (System/setProperty "file.encoding" "utf-8")
+    (sysProp! "file.encoding" "utf-8")
     (.copy (.getx co) (muble<> @rootGist))
-    (->> "app/mime.properties"
-         (io/file basedir DN_ETC)
+    (->> (io/file appdir
+                  DN_ETC
+                  "mime.properties")
          (io/as-url)
          (setupCache ))
-
     (regoEmitters co)
     (regoApps co)
     (startJmx co jmx)))

@@ -91,7 +91,7 @@
 
   ""
   ^Atom
-  [baseDir]
+  [baseDir more]
 
   (let [etc (io/file baseDir DN_ETC)
         home (.getParentFile etc)]
@@ -99,7 +99,7 @@
                 (io/file home DN_DIST)
                 (io/file home DN_LIB)
                 (io/file home DN_BIN) home etc)
-    (atom {:basedir home})))
+    (atom (merge more {:basedir home}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,8 +158,7 @@
             "inside primodial()" (str<> 78 \=))
   (log/info "execvisor = %s"
             "czlab.skaro.rt.Execvisor")
-  (let [execv (execvisor<>)
-        cl (getCldr)]
+  (let [execv (execvisor<>)]
     (swap! gist
            assoc
            :execv execv
@@ -181,13 +180,22 @@
   [home appDir]
 
   (let
-    [rc (-> "czlab.skaro.etc/Resources"
-            (getResource (Locale. "en" US)))
+    [env (->> (io/file appDir
+                       CFG_ENV_CF)
+              (readEdn ))
+     cn (get-in env [:locale :country])
+     ln (get-in env [:locale :lang])
      fp (io/file appDir "skaro.pid")
      ver (sysProp "skaro.version")
-     ctx (cliGist home)
-     cz (getCldr)
-     p (.getParent cz)]
+     ln (stror ln "en")
+     cn (stror cn "US")
+     loc (Locale. ln cn)
+     rc (getResource C_RCB loc)
+     ctx (cliGist home {:appdir appDir
+                        :locale loc
+                        :pidFile fp
+                        :env env})
+     cz (getCldr)]
     (log/info "skaro.home   = %s" (fpath home))
     (log/info "skaro.version= %s" ver)
     (log/info "skaro folder - ok")
@@ -198,7 +206,6 @@
     (writeFile fp (processPid))
     (.deleteOnExit fp)
     (log/info "wrote skaro.pid - ok")
-    (swap! ctx assoc :pidFile fp)
     (enableRemoteShutdown ctx)
     (exitHook #(stopCLI ctx))
     (log/info "added shutdown hook")

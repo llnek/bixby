@@ -26,7 +26,6 @@
     [czlab.xlib.format :refer [readEdn]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.dbio.connect :refer [dbopen<+>]]
-    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
@@ -116,8 +115,7 @@
   ^String
   [^IoEvent evt]
 
-  (let [c (.. evt source server)]
-    (.appKey c)))
+  (.. evt source server appKey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -142,7 +140,7 @@
   (when-some [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
     (->> (.getv (.getx co) :schema)
-         (dbopen<+> p ))))
+         (dbopen<+> p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,7 +150,8 @@
   [^Container co]
 
   (log/info "container releasing all system resources")
-  (when-some [sc (.getv (.getx co) :core)]
+  (if-some
+    [sc (.getv (.getx co) :core)]
     (.dispose ^Disposable sc))
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
@@ -174,7 +173,7 @@
   (let
     [pid (format "%s#%d" (.id gist) (seqint2))
      ctx (.getx gist)
-     appDir (io/file (.getv ctx :path))
+     _appDir (io/file (.getv ctx :path))
      pub (io/file appDir DN_PUBLIC DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
      impl (muble<> {:services {}})]
@@ -185,7 +184,7 @@
 
         (appKeyBits [this] (bytesify (.appKey this)))
         (appKey [_] (.getv impl :disposition ))
-        (appDir [this] appDir)
+        (appDir [this] _appDir)
         (getx [_] impl)
         (version [_] (.version gist))
         (id [_] pid)

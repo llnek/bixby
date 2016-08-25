@@ -40,6 +40,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^String C_VERPROPS "czlab/czlab-skaro/version.properties")
+(def ^String C_RCB "czlab.skaro.etc/Resources")
+
 (def ^String ^:private SYS_DEVID_PFX "system.####")
 (def ^String ^:private SYS_DEVID_SFX "####")
 
@@ -85,6 +88,7 @@
 (def ^String DN_PUBLIC "public" )
 
 (def ^String APP_CF  "appconfig.conf" )
+(def ^String ENV_CF  "env.conf" )
 
 (def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
@@ -97,7 +101,7 @@
 (def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
 
 (def ^String CFG_APP_CF  (str DN_CONF  "/"  APP_CF ))
-
+(def ^String CFG_ENV_CF  (str DN_CONF  "/"  ENV_CF ))
 
 (def K_SKARO_APPDOMAIN :skaro-app-domain )
 (def K_SKARO_APPID :skaro-appid )

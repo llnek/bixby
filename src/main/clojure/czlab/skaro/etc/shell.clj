@@ -37,8 +37,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private VERPROPS "czlab/czlab-skaro/version.properties")
-(def ^:private RCB "czlab.skaro.etc/Resources")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -47,8 +45,8 @@
   "Main Entry"
   [& args]
 
-  (let [ver (loadResource VERPROPS)
-        rcb (getResource RCB)
+  (let [ver (loadResource C_VERPROPS)
+        rcb (getResource C_RCB)
         h (first args)]
     (->> (.getString ver "version")
          (sysProp! "skaro.version"))
