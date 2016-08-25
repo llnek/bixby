@@ -23,6 +23,13 @@ public class AppClassLoader extends BaseClassLoader {
 
   /**
    */
+  public AppClassLoader(ExecClassLoader par, File dir) {
+    this(par);
+    configure(dir);
+  }
+
+  /**
+   */
   public AppClassLoader(ExecClassLoader par) {
     super(par);
   }

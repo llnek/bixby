@@ -12,14 +12,15 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc "" :author "Kenneth Leung" }
+(ns ^{:doc ""
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.cmd1
 
-  ;;(:refer-clojure :rename {first fst second snd last lst})
   (:require
     [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
     [czlab.xlib.format :refer [writeEdnString readEdn]]
+    [czlab.crypto.core :refer [assertJce dbgProvider]]
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.files :refer [spitUTF8]]
@@ -46,15 +47,7 @@
              try!
              flatnil
              convLong
-             resStr]]
-    [czlab.crypto.core
-     :refer [exportPrivateKey
-             exportPublicKey
-             asymKeyPair<>
-             assertJce
-             dbgProvider
-             ssv1PKCS12
-             csreq<>]])
+             resStr]])
 
   (:use [czlab.skaro.etc.cmd2]
         [czlab.tpcl.boot]
@@ -77,8 +70,7 @@
      Map
      Date]
     [czlab.xlib I18N]
-    [java.io File]
-    [java.security KeyPair PublicKey PrivateKey]))
+    [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -96,26 +88,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Create
+(defn- onHelpXXX
 
   ""
-  []
+  [pfx end]
 
   (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.new.d1"))
-    (printf "%s\n" (rstr rcb "usage.new.d2"))
-    (printf "%s\n" (rstr rcb "usage.new.d3"))
-    (printf "%s\n" (rstr rcb "usage.new.d4"))
-    (printf "%s\n" (rstr rcb "usage.new.d5"))
+    (dotimes [n end]
+      (printf "%s\n" (rstr rcb (str pfx (+ n 1)))))
     (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onCreate
+(defn- onHelp-Create "" [] (onHelpXXX "usage.new.d" 5))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onCreate
 
   "Create a new app"
   [args]
-  {:pre [(vector? args)]}
 
   (if (> (count args) 1)
     (createApp (args 0) (args 1))
@@ -123,48 +115,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Build
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.build.d1"))
-    (printf "%s\n" (rstr rcb "usage.build.d2"))
-    (printf "%s\n" (rstr rcb "usage.build.d3"))
-    (printf "%s\n" (rstr rcb "usage.build.d4"))
-    (println)))
+(defn- onHelp-Build "" [] (onHelpXXX "usage.build.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
-(defn onBuild
+(defn- onBuild
 
   "Build the app"
   [args]
-  {:pre [(vector? args)]}
 
   (->> (if (empty? args) ["dev"] args)
        (apply execBootScript (getHomeDir) (getCwd))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Podify
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.podify.d1"))
-    (printf "%s\n" (rstr rcb "usage.podify.d2"))
-    (println)))
+(defn- onHelp-Podify "" [] (onHelpXXX "usage.podify.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onPodify
+(defn- onPodify
 
   "Package the app"
   [args]
-  {:pre [(vector? args)]}
 
   (if-not (empty? args)
     (bundleApp (getHomeDir)
@@ -173,48 +145,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Test
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.test.d1"))
-    (printf "%s\n" (rstr rcb "usage.test.d2"))
-    (println)))
+(defn- onHelp-Test "" [] (onHelpXXX "usage.test.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onTest
+(defn- onTest
 
   "Test the app"
   [args]
-  {:pre [(vector? args)]}
 
   (->> (if (empty? args) ["tst"] args)
        (apply execBootScript (getHomeDir) (getCwd) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Start
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.start.d1"))
-    (printf "%s\n" (rstr rcb "usage.start.d2"))
-    (printf "%s\n" (rstr rcb "usage.start.d3"))
-    (printf "%s\n" (rstr rcb "usage.start.d4"))
-    (println)))
+(defn- onHelp-Start "" [] (onHelpXXX "usage.start.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onStart
+(defn- onStart
 
   "Start and run the app"
   [args]
-  {:pre [(vector? args)]}
 
   (let [func "czlab.skaro.sys.climain/startViaCLI"
         home (getHomeDir)
@@ -231,39 +183,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Debug
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.debug.d1"))
-    (printf "%s\n" (rstr rcb "usage.debug.d2"))
-    (println)))
+(defn- onHelp-Debug "" [] (onHelpXXX "usage.debug.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onDebug "Debug the app" [args] (onStart args))
+(defn- onDebug "Debug the app" [args] (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Demos
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.demo.d1"))
-    (printf "%s\n" (rstr rcb "usage.demo.d2"))
-    (println)))
+(defn- onHelp-Demos "" [] (onHelpXXX "usage.demo.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onDemos
+(defn- onDemos
 
   "Generate demo apps"
   [args]
-  {:pre [(vector? args)]}
 
   (if-not (empty? args)
     (publishSamples (args 0))
@@ -297,7 +232,6 @@
 
   "Generate a hash"
   [args]
-  {:pre [(vector? args)]}
 
   (if-not (empty? args)
     (->> (passwd<> (first args))
@@ -312,7 +246,6 @@
 
   "Encrypt the data"
   [args]
-  {:pre [(vector? args)]}
 
   (if (> (count args) 1)
     (->> (passwd<> (args 1) (args 0))
@@ -326,7 +259,6 @@
 
   "Decrypt the cypher"
   [args]
-  {:pre [(vector? args)]}
 
   (if (> (count args) 1)
     (->> (passwd<> (args 1) (args 0))
@@ -336,65 +268,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Generate
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.gen.d1"))
-    (printf "%s\n" (rstr rcb "usage.gen.d2"))
-    (printf "%s\n" (rstr rcb "usage.gen.d3"))
-    (printf "%s\n" (rstr rcb "usage.gen.d4"))
-    (printf "%s\n" (rstr rcb "usage.gen.d5"))
-    (printf "%s\n" (rstr rcb "usage.gen.d6"))
-    (printf "%s\n" (rstr rcb "usage.gen.d7"))
-    (printf "%s\n" (rstr rcb "usage.gen.d8"))
-    (println)))
+(defn- onHelp-Generate "" [] (onHelpXXX "usage.gen.d" 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onGenerate
+(defn- onGenerate
 
   "Generate a bunch of stuff"
   [args]
-  {:pre [(vector? args)]}
 
-  (let [c (first args)]
-  (cond
-    (contains? #{"-p" "--password"} c)
-    (genPwd args)
-    (contains? #{"-h" "--hash"} c)
-    (onHash args)
-    (contains? #{"-u" "--uuid"} c)
-    (genGuid)
-    (contains? #{"-w" "--wwid"} c)
-    (genWwid)
-    (contains? #{"-e" "--encrypt"} c)
-    (onEncrypt args)
-    (contains? #{"-d" "--decrypt"} c)
-    (onDecrypt args)
-    :else (trap! CmdHelpError))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onHelp-TestJCE
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.testjce.d1"))
-    (printf "%s\n" (rstr rcb "usage.testjce.d2"))
-    (println)))
+  (let [c (first args)
+        args (vec (drop 1 args))]
+    (cond
+      (contains? #{"-p" "--password"} c)
+      (genPwd args)
+      (contains? #{"-h" "--hash"} c)
+      (onHash args)
+      (contains? #{"-u" "--uuid"} c)
+      (genGuid)
+      (contains? #{"-w" "--wwid"} c)
+      (genWwid)
+      (contains? #{"-e" "--encrypt"} c)
+      (onEncrypt args)
+      (contains? #{"-d" "--decrypt"} c)
+      (onDecrypt args)
+      :else (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onTestJCE
+(defn- onHelp-TestJCE "" [] (onHelpXXX "usage.testjce.d" 2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- onTestJCE
 
   "Test if JCE (crypto) is ok"
   [args]
-  {:pre [(vector? args)]}
 
   (let [rcb (I18N/base)]
     (assertJce)
@@ -402,27 +311,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Version
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.version.d1"))
-    (printf "%s\n" (rstr rcb "usage.version.d2"))
-    (println)))
+(defn- onHelp-Version "" [] (onHelpXXX "usage.version.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onVersion
+(defn- onVersion
 
   "Show the version of system"
   [args]
-  {:pre [(vector? args)]}
 
   (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.version.o1" (sysProp "skaro.version")))
-    (printf "%s\n" (rstr rcb "usage.version.o2" (sysProp "java.version")))
+    (->> (sysProp "skaro.version")
+         (rstr rcb "usage.version.o1")
+         (printf "%s\n" ))
+    (->> (sysProp "java.version")
+         (rstr rcb "usage.version.o2")
+         (printf "%s\n" ))
     (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -487,48 +391,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-IDE
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.ide.d1"))
-    (printf "%s\n" (rstr rcb "usage.ide.d2"))
-    (printf "%s\n" (rstr rcb "usage.ide.d3"))
-    (printf "%s\n" (rstr rcb "usage.ide.d4"))
-    (println)))
+(defn- onHelp-IDE "" [] (onHelpXXX "usage.ide.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onIDE
+(defn- onIDE
 
   "Generate IDE project files"
   [args]
-  {:pre [(vector? args)]}
 
-  (if (and (> (count args) 0)
+  (if (and (not-empty args)
            (contains? #{"-e" "--eclipse"} (args 0)))
     (genEclipseProj (getCwd))
     (trap! CmdHelpError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Service
-
-  ""
-  []
-
-  (let [rcb (I18N/base)]
-    (printf "%s\n" (rstr rcb "usage.svc.d1"))
-    (printf "%s\n" (rstr rcb "usage.svc.d2"))
-    (printf "%s\n" (rstr rcb "usage.svc.d3"))
-    (printf "%s\n" (rstr rcb "usage.svc.d4"))
-    (printf "%s\n" (rstr rcb "usage.svc.d5"))
-    (printf "%s\n" (rstr rcb "usage.svc.d6"))
-    (printf "%s\n" (rstr rcb "usage.svc.d7"))
-    (printf "%s\n" (rstr rcb "usage.svc.d8"))
-    (println)))
+(defn- onHelp-Service "" [] (onHelpXXX "usage.svc.d" 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -555,11 +434,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onService
+(defn- onService
 
   ""
   [args]
-  {:pre [(vector? args)]}
 
   (when (< (count args) 2) (trap! CmdHelpError))
   (let [cmd (args 0)
@@ -588,12 +466,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Help
-
-  ""
-  []
-
-  (trap! CmdHelpError))
+(defn onHelp-Help "" [] (trap! CmdHelpError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -602,7 +475,6 @@
 
   "Show help"
   [args]
-  {:pre [(vector? args)]}
 
   (let
     [c (keyword (first args))

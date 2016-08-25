@@ -18,7 +18,6 @@
   czlab.skaro.sys.exec
 
   (:require
-    [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.str :refer [strim hgl?]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.mime :refer [setupCache]]
@@ -50,7 +49,6 @@
         [czlab.skaro.jmx.core])
 
   (:import
-    [czlab.skaro.loaders AppClassLoader]
     [java.security SecureRandom]
     [clojure.lang Atom]
     [java.util Date]
@@ -64,11 +62,11 @@
      Hierarchial
      Identifiable]
     [czlab.skaro.server
+     ServiceGist
      Container
      Execvisor
      AppGist
      JmxServer
-     ServiceGist
      Service
      Component]))
 
@@ -90,16 +88,14 @@
   (let [conf (io/file des CFG_APP_CF)
         app (basename des)]
     (log/info "app dir : %s\ninspecting..." des)
+    (log/info "checking conf for app: %s" app)
     (precondFile conf)
-    (precondDir (io/file des DN_CONF)
-                (io/file des DN_ETC))
-    (let [ps (readEdn conf)
+    (let [cf (readEdn conf)
           ctx (.getx execv)]
-      (log/info "checking conf for app: %s" app)
-      ;; create the pod meta and register it
-      ;; as a application
+      ;;create the pod meta and register it
+      ;;as a application
       (let [m (-> (podMeta app
-                           ps
+                           cf
                            (io/as-url des)))]
         (comp->initialize m)
         (->> (-> (.getv ctx :apps)
@@ -202,11 +198,11 @@
         (uptimeInMillis [_]
           (- (System/currentTimeMillis) START-TIME))
         (id [_] (format "%s{%s}" "execvisor" pid))
-        (homeDir [_] (maybeDir impl :basedir))
+        (homeDir [_] (.getv impl :basedir))
         (version [_] "1.0")
         (getx [_] impl)
         (startTime [_] START-TIME)
-        (kill9 [_] (apply (.getv impl :stopper) []))
+        (kill9 [_] (apply (.getv impl :stop!) []))
 
         (start [this]
           (doseq [[_ v] (.getv impl :apps)]

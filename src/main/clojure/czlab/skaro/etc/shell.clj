@@ -12,7 +12,8 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc "" :author "Kenneth Leung" }
+(ns ^{:doc ""
+      :author "Kenneth Leung" }
 
   czlab.skaro.etc.shell
 

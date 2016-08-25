@@ -12,20 +12,25 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
   czlab.skaro.etc.cmd2
 
   (:require
-    [czlab.xlib.str :refer [strim triml trimr stror strimAny strbf<>]]
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.xlib.guids :refer [uuid<>]]
     [czlab.xlib.logging :as log]
+    [czlab.xlib.str
+     :refer [strim
+             triml
+             trimr
+             stror
+             strimAny
+             strbf<>]]
+    [czlab.xlib.antlib :as a]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.xlib.antlib :as a]
     [czlab.xlib.core
      :refer [isWindows?
              getUser
@@ -59,67 +64,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; some globals
 (def ^:dynamic *skaro-home* nil)
-(def ^:dynamic *skaro-rb* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro cpfs
-  ""
-  ^{:private true}
-  [s d u]
-
-  `(FileUtils/copyDirectory
-     (io/file ~s)
-     (io/file ~d)
-     (FileFilterUtils/suffixFileFilter (str ~u))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro cpf2d
-  ""
-  ^{:private true}
-  [f d]
-
-  `(FileUtils/copyFileToDirectory (io/file ~f) (io/file ~d)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro cpf2f
-  ""
-  ^{:private true}
-  [f f2]
-
-  `(FileUtils/copyFile (io/file ~f) (io/file ~f2)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn resBdl
-
-  "Return the system resource bundle"
-  ^ResourceBundle
-  []
-
-  *skaro-rb*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn getHomeDir
-
-  "Return the home directory"
-  ^File
-  []
-
-  *skaro-home*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- sanitizeAppDomain
-
-  ""
-  ^String
-  [appDomain]
-
-  (strimAny appDomain "."))
+(defn getHomeDir "" ^File [] *skaro-home*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,7 +99,7 @@
   "Bundle an app"
   [^File hhh ^File app ^String out]
 
-  (let [dir (mkdirs (io/file out)) ]
+  (let [dir (mkdirs (io/file out))]
     (->>
       (a/antZip
         {:destFile (io/file dir (str (.getName app) ".zip"))
@@ -165,13 +113,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkcljfp
-
-  ""
-  ^File
-  [cljd fname]
-
-  (io/file cljd fname))
+(defn- mkcljfp "" ^File [cljd fname] (io/file cljd fname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -193,17 +135,16 @@
   ""
   [^File appDir ^String appId ^String appDomain]
 
-  (let [h2db (str (if (isWindows?)
-                    "/c:/temp/"
-                    "/tmp/")
-                  (juid))
-        h2dbUrl (str h2db
-                     "/"
-                     appId
-                     ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
-        domPath (cs/replace appDomain "." "/")
-        hhh (getHomeDir)
-        cljd (mkcljd appDir appDomain)]
+  (let
+    [h2db (str (if (isWindows?)
+                 "/c:/temp/" "/tmp/") (juid))
+     h2dbUrl (str h2db
+                  "/"
+                  appId
+                  ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
+     domPath (cs/replace appDomain "." "/")
+     hhh (getHomeDir)
+     cljd (mkcljd appDir appDomain)]
     (mkdirs h2db)
     (replaceFile!
       (io/file appDir CFG_APP_CF)
@@ -217,25 +158,28 @@
   ""
   [^File out appId ^String appDomain kind]
 
-  (let [domPath (cs/replace appDomain "." "/")
-        appDir (mkdirs (io/file out appId))
-        other (if (= :soa kind) :web :soa)
-        srcDir (io/file appDir "src")
-        mcloj "main/clojure"
-        mjava "main/java"
-        hhh (getHomeDir)]
-    (FileUtils/copyDirectory (io/file hhh DN_ETC "app")
-                             appDir
-                             (FileFilterUtils/trueFileFilter))
+  (let
+    [domPath (cs/replace appDomain "." "/")
+     appDir (mkdirs (io/file out appId))
+     other (if (= :soa kind) :web :soa)
+     srcDir (io/file appDir "src")
+     verStr "0.1.0-SNAPSHOT"
+     mcloj "main/clojure"
+     mjava "main/java"
+     hhh (getHomeDir)]
+    (FileUtils/copyDirectory
+      (io/file hhh DN_ETC "app")
+      appDir
+      (FileFilterUtils/trueFileFilter))
     ;;defaults to web, so get rid of web stuff
     (when (= :soa kind)
-      (dorun
+      (doall
         (map #(->> (io/file appDir %)
                    (FileUtils/deleteDirectory ))
-           ["src/web" "public"]))
+             ["src/web" "public"]))
       (->> (io/file appDir DN_CONF "routes.conf")
            (FileUtils/deleteQuietly )))
-    (dorun
+    (doall
       (map #(mkdirs (io/file appDir
                              "src/main" % domPath))
            ["clojure" "java"]))
@@ -256,18 +200,18 @@
       (io/file appDir CFG_APP_CF)
       #(-> (cs/replace % "@@USER@@" (getUser))
            (cs/replace "@@APPKEY@@" (uuid<>))
-           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPDOMAIN@@" appDomain)))
     (replaceFile!
       (io/file appDir DN_ETC "pom.xml")
       #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
-           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPID@@" appId)))
     (replaceFile!
       (io/file appDir "build.boot")
       #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
            (cs/replace "@@TYPE@@" (name kind))
-           (cs/replace "@@VER@@" "0.1.0-SNAPSHOT")
+           (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPID@@" appId)))
     (when (= :web kind)
       (replaceFile!
@@ -282,10 +226,9 @@
   "Create a new app"
   [kind path]
 
-  (case kind "-web" nil "-soa" nil (trap! CmdHelpError))
   (let
     [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-     path (sanitizeAppDomain path)
+     path (strimAny path ".")
      t (re-matches rx path)
      cwd (getCwd)
      ;; treat as domain e.g com.acme => app = acme
@@ -295,6 +238,10 @@
              (triml tkn ".")
              (first t))) ]
     (when (empty? app) (trap! CmdHelpError))
+    (case kind
+      ("-web" "--web") nil
+      ("-soa" "--soa") nil
+      (trap! CmdHelpError))
     (->> (keyword (triml kind "-"))
          (createOneApp cwd app path ))))
 
@@ -309,16 +256,15 @@
         dn (.getName top)
         dom (mkDemoPath dn)]
     (prn!! "Generating demo[%s]..." dn)
-    (createOneApp out dn dom :soa)
+    (createOneApp out dn dom :web)
     (FileUtils/copyDirectory
-               demo
-               (io/file top DN_CONF)
-               (FileFilterUtils/suffixFileFilter ".conf"))
+      demo
+      (io/file top DN_CONF)
+      (FileFilterUtils/suffixFileFilter ".conf"))
     (FileUtils/copyDirectory
-               demo
-               (io/file top
-                        "src/main/clojure/demo" dn)
-               (FileFilterUtils/suffixFileFilter ".clj"))))
+      demo
+      (io/file top "src/main/clojure/demo" dn)
+      (FileFilterUtils/suffixFileFilter ".clj"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -327,9 +273,10 @@
   ""
   [^File out]
 
-  (let [dss (->> (io/file (getHomeDir)
-                          "src/main/clojure/demo")
-                 (.listFiles )) ]
+  (let
+    [dss (->> (io/file (getHomeDir)
+                       "src/main/clojure/demo")
+              (.listFiles ))]
     (doseq [d dss
             :when (dirRead? d)]
       (genOneCljDemo d out))))
@@ -346,8 +293,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
-
-
 
 
