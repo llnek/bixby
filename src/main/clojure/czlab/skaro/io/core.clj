@@ -20,12 +20,14 @@
 
   (:require
     [czlab.xlib.str :refer [stror strim]]
+    [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.core
      :refer [throwBadArg
              tmtask<>
-             spos?
              seqint2
+             juid
+             spos?
              cast?
              try!
              throwIOE
@@ -214,12 +216,12 @@
   [^Container ctr ^Service src evt options]
 
   (let
-    [c1 (str (:router options))
+    [rts (Cljshim/newrt (getCldr) (juid))
+     c1 (str (:router options))
      cfg (-> (.getx src)
              (.getv :emcfg))
      hr (.handler src)
      c0 (str (:handler cfg))
-     rts (.cljrt ctr)
      wf (try!
           (.call rts ^String (stror c1 c0)))
      job (job<+> ctr wf evt)]

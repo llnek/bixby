@@ -99,15 +99,16 @@
 
   "Create metadata for an application bundle"
   ^AppGist
-  [app conf urlToApp]
+  [^String app conf urlToApp]
   {:pre [(map? conf)]}
 
   (let [pid (juid)
         info
         (merge {:version "1.0"
-                :path urlToApp
                 :name app
-                :main "noname"} (:info conf))
+                :main ""}
+               (:info conf)
+               {:path urlToApp})
         impl
         (->> (assoc conf :info info)
              (muble<> ))]
@@ -115,7 +116,7 @@
     (with-meta
       (reify
         AppGist
-        (id [_] (format "%s{%s}" pid (:name info)))
+        (id [_] (format "%s{%s}" (:name info) pid))
         (version [_] (:version info))
         (getx [_] impl))
       {:typeid  ::AppGist})))

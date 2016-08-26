@@ -83,25 +83,9 @@
 (defn myAppMain
 
   ""
-  ^AppMain
   []
 
-  (reify AppMain
-
-    (setContainer [_ co]
-      (log/info "My AppMain contextualized by container " co))
-
-    (init [_ _]
-      (log/info "My AppMain initialized!"))
-
-    (start [_]
-      (log/info "My AppMain started"))
-
-    (stop [_]
-      (log/info "My AppMain stopped"))
-
-    (dispose [_]
-      (log/info "My AppMain finz'ed"))))
+  (log/info "My AppMain called!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

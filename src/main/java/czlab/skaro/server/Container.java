@@ -35,8 +35,6 @@ public interface Container extends Component, ServerLike, ServiceProvider, Namea
   /**/
   public boolean isEnabled();
 
-  /**/
-  public Cljshim cljrt();
 
   /**/
   public Object envConfig();

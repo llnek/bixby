@@ -70,17 +70,11 @@
 (defn myAppMain
 
   ""
-  ^AppMain
   []
 
-  (reify AppMain
-    (setContainer [_ c] )
-    (init [_ _]
-      (System/setProperty "skaro.demo.pop3"
-                          "czlab.skaro.mock.mail.MockPop3Store"))
-    (start [_] )
-    (stop [_] )
-    (dispose [_] )))
+  (System/setProperty
+    "skaro.demo.pop3"
+    "czlab.skaro.mock.mail.MockPop3Store"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

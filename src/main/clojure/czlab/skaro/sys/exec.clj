@@ -168,8 +168,8 @@
   (log/info "preparing to stop pods...")
   (let [^Container
         c (.getv (.getx co) :container)]
-    (.stop v)
-    (.dispose v)
+    (.stop c)
+    (.dispose c)
     (.setv (.getx co) :container nil)
     co))
 
@@ -194,6 +194,7 @@
           (- (System/currentTimeMillis) START-TIME))
         (id [_] (format "%s{%s}" "execvisor" pid))
         (homeDir [_] (.getv impl :basedir))
+        (locale [_] (.getv impl :locale))
         (version [_] "1.0")
         (getx [_] impl)
         (startTime [_] START-TIME)

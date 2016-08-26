@@ -203,7 +203,7 @@
            (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPDOMAIN@@" appDomain)))
     (replaceFile!
-      (io/file appDir DN_ETC "pom.xml")
+      (io/file srcDir "main/resources/pom.xml")
       #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
            (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPID@@" appId)))

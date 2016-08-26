@@ -126,8 +126,8 @@
   [^Container co ^String gid]
 
   (let [dk (stror gid DEF_DBID)]
-    (-> (.getv (.getx co) :dbps)
-        (get (keyword dk)))))
+    (get (.getv (.getx co) :dbps)
+         (keyword dk))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,7 +149,7 @@
   ""
   [^Container co]
 
-  (log/info "container releasing all system resources")
+  (log/info "container releasing system resources")
   (if-some
     [sc (.getv (.getx co) :core)]
     (.dispose ^Disposable sc))
@@ -174,7 +174,7 @@
     [pid (format "%s#%d" (.id gist) (seqint2))
      ctx (.getx gist)
      _appDir (io/file (.getv ctx :path))
-     pub (io/file appDir DN_PUBLIC DN_PAGES)
+     pub (io/file _appDir DN_PUBLIC DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
      impl (muble<> {:services {}})]
     (with-meta
@@ -189,7 +189,6 @@
         (version [_] (.version gist))
         (id [_] pid)
         (name [_] (.getv impl :name))
-        (cljrt [_] (.getv impl :shim))
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
@@ -210,18 +209,15 @@
                (.endsWith tpl ".html") "text/html"
                :else "text/plain")} ))
 
-        (isEnabled [_]
-          (let [c (->> (.getv impl :envConf)
-                       (:container ))]
-            (not (false? (:enabled c)))))
+        (isEnabled [_] true)
 
         (service [_ sid]
-          (-> (.getv impl :services)
-              (get (keyword sid))))
+          (get (.getv impl :services)
+               (keyword sid)))
 
         (hasService [_ sid]
-          (-> (.getv impl :services)
-              (contains? (keyword sid))))
+          (contains? (.getv impl :services)
+                     (keyword sid)))
 
         (core [_]
           (.getv impl :core))
@@ -233,44 +229,33 @@
           (.getv impl :appConf))
 
         (start [this]
-          (let [svcs (.getv impl :services)
-                main (.getv impl :mainApp)]
-            (log/info "container starting all services...")
+          (let [svcs (.getv impl :services)]
+            (log/info "container starting services...")
             (doseq [[k v] svcs]
-              (log/info "service: %s about to start..." k)
-              (.start ^Service v))
-            (log/info "container starting main app...")
-            (when (some? main)
-              (.start ^AppMain main))))
+              (log/info "service: %s to start" k)
+              (.start ^Service v))))
 
         (stop [this]
           (let [svcs (.getv impl :services)
-                pugs (.getv impl :plugins)
-                main (.getv impl :mainApp)]
-            (log/info "container stopping all services...")
+                pugs (.getv impl :plugins)]
+            (log/info "container stopping services...")
             (doseq [[k v] svcs]
               (.stop ^Service v))
-            (log/info "container stopping all plugins...")
+            (log/info "container stopping plugins...")
             (doseq [[k v] pugs]
               (.stop ^Plugin v))
-            (log/info "container stopping...")
-            (when (some? main)
-              (.stop ^AppMain main))))
+            (log/info "container stopping...")))
 
         (dispose [this]
           (let [svcs (.getv impl :services)
-                pugs (.getv impl :plugins)
-                main (.getv impl :mainApp)]
-            (log/info "container dispose(): all services")
+                pugs (.getv impl :plugins)]
+            (log/info "container dispose(): services")
             (doseq [[k v] svcs]
               (.dispose ^Service v))
-            (log/info "container dispose(): all plugins")
+            (log/info "container dispose(): plugins")
             (doseq [[k v] pugs]
               (.dispose ^Plugin v))
-            (when (some? main)
-              (.dispose ^AppMain main))
-            (log/info "container dispose() - main app disposed")
-            (releaseSysResources this) )))
+            (releaseSysResources this))))
 
     {:typeid ::Container})))
 
@@ -284,50 +269,51 @@
 
   (let
     [^Execvisor exe (.parent co)
-     bks (.getv (.getx exe) :emitters)]
+     svcType (keyword svcType)
+     bks (->> :emitters
+              (.getv (.getx exe)))]
     (if-some
       [^ServiceGist
-       bk (get bks (keyword svcType))]
+       bk (bks svcType)]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)
+         obj (service<> co svcType nm)
          pkey (.appKey co)
-         eid (.id bk)
-         hid (:handler cfg)
-         obj (service<> co eid nm)]
-        (log/info "about to create emitter: %s" eid)
-        (log/info "emitter meta: %s" (meta obj))
+         hid (:handler cfg)]
+        (log/info "making service %s..." svcType)
+        (log/info "svc meta: %s" (meta obj))
         (log/info "config params =\n%s" cfg)
-        (comp->initialize obj co cfg)
-        (log/info "emitter - ok. handler => %s" hid)
+        (comp->initialize obj cfg)
+        (log/info "service - ok. handler => %s" hid)
         obj)
-      (trap! ServiceError (str "No such emitter: " svcType)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doOneService
-
-  [^Container co nm cfg]
-
-  (let
-    [ctx (.getx co)
-     cc (.getv ctx :services)
-     {:keys [service enabled]}
-     cfg ]
-    (if-not (or (false? enabled)
-                (nichts? service))
-      (let [v (service<+> co service nm cfg)]
-        (->> (assoc cc (.id v) v)
-             (.setv ctx :services))))))
+      (trap! ServiceError
+             (str "No such service: " svcType)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- services<>
 
   ""
+  ^Container
   [^Container co svcs]
 
-  (doseq [[k v] svcs]
-    (doOneService co k v)))
+  (->>
+    (persistent!
+      (reduce
+        #(let
+           [[k cfg] %2
+            {:keys [service
+                    enabled]} cfg]
+           (if-not (or (false? enabled)
+                       (nichts? service))
+             (let [v (service<+>
+                       co service k cfg)]
+               (assoc! %1 (.id v) v))
+             %1))
+        (transient {})
+        (seq svcs)))
+    (.setv (.getx co) :services ))
+  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
@@ -342,26 +328,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- parseConfile
+(defn- parseConf
 
   ""
-  [^File appDir ^String conf]
+  [^Container co]
 
-  (-> (readFile (io/file appDir conf))
-      (expandVars)
-      (cs/replace "${appdir}" (fpath appDir))
-      (readEdn)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- doCljApp
-
-  ""
-  [^Container ctr ^AppMain m options]
-
-  (.setContainer m ctr)
-  (.init m options)
-  m)
+  (let
+    [appDir (.appDir co)
+     f
+     #(-> (readFile (io/file appDir %))
+          (cs/replace "${appdir}"
+                      (fpath appDir))
+          (expandVars)
+          (readEdn))]
+    (doto (.getx co)
+      (.setv :envConf (f CFG_ENV_CF))
+      (.setv :appConf (f CFG_APP_CF)))
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -369,20 +352,20 @@
 
   ""
   ^File
-  [^String v ^File appDir]
+  [^Container co ^String fc]
 
-  (->> (cs/replace v #"[\./]+" "")
-       (io/file appDir "modules" )))
+  (->> (cs/replace fc #"[\./]+" "")
+       (io/file (.appDir co) "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- pluginInited?
 
   ""
-  [v appDir]
+  [^Container co ^String fc]
 
-  (let [b (.exists (fmtPluginFname v appDir))]
-    (if b (log/info "plugin %s already initialized" v))
+  (let [b (.exists (fmtPluginFname co fc))]
+    (if b (log/info "plugin %s already initialized" fc))
     b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -390,11 +373,12 @@
 (defn- postInitPlugin
 
   ""
-  [^String v ^File appDir]
+  [^Container co ^String fc]
 
-  (let [pfile (fmtPluginFname v appDir)]
+  (let [pfile (->> (.appDir co)
+                   (fmtPluginFname fc))]
     (writeFile pfile "ok")
-    (log/info "initialized plugin: %s" v)))
+    (log/info "initialized plugin: %s" fc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -402,25 +386,21 @@
 
   ""
   ^Plugin
-  [^Container co ^String v ^File appDir env app]
+  [^Container co ^Cljshim rts ^String fc appConf]
 
+  (log/info "plugin->factory: %s" fc)
   (let
-    [^Cljshim
-     rts (.getv (.getx co) :shim)
-     e? (pluginInited? v appDir)
-    ^PluginFactory
-    pf (try! (cast? PluginFactory
-                    (.call rts v)))
-    u (when (some? pf)
-        (.createPlugin pf co))]
+    [^PluginFactory
+     pf (try! (cast? PluginFactory
+                    (.call rts fc)))
+     u (if (some? pf)
+         (.createPlugin pf co))]
     (when (some? u)
-      (log/info "plugin->factory: %s" v)
-      (.init u {:new? (not e?)
-                :env env :app app })
-      (postInitPlugin v appDir)
-      (log/info "plugin %s starting..." v)
+      (.init u {:appConf appConf})
+      (postInitPlugin co fc)
+      (log/info "plugin %s starting..." fc)
       (.start u)
-      (log/info "plugin %s started" v)
+      (log/info "plugin %s started" fc)
       u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -428,120 +408,88 @@
 (defn- maybeInitDBs
 
   ""
-  [^Container co env app]
+  [^Container co app]
 
   (persistent!
     (reduce
-      #(let [[k v] %2]
+      #(let
+         [[k v] %2]
          (if-not (false? (:status v))
-           (let [pwd (passwd<> (:passwd v)
-                               (.appKey co))
-                 cfg (merge v {:passwd (.text pwd)
-                               :id k})]
+           (let
+             [pwd (passwd<> (:passwd v)
+                            (.appKey co))
+              cfg (merge v {:passwd (.text pwd)
+                            :id k})]
              (->> (dbpool<> (dbspec<> cfg) cfg)
                   (assoc! %1 k)))
            %1))
       (transient {})
-      (seq  (get-in env [:databases :jdbc])))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- dftAppMain<>
-
-  ""
-  ^AppMain
-  []
-
-  (reify AppMain
-    (setContainer [_ c])
-    (init [_ arg])
-    (start [_] )
-    (stop [_])
-    (dispose [_] )))
+      (seq (get-in app [:databases :jdbc])))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->initialize
 
   ::Container
-  [^Container co & [^Component execv]]
+  [^Container co & args]
 
   (log/info "comp->initialize: Container: %s" (.id co))
+  (parseConf co)
   (let
-    [appDir (.appDir co)
-     cfgDir (io/file (.appDir co) DN_CONF)
-     envConf (parseConfile appDir CFG_ENV_CF)
-     appConf (parseConfile appDir CFG_APP_CF)]
-    (doto (.getx co)
-      (.setv :envConf envConf)
-      (.setv :appConf appConf)))
-  (let
-    [appDir (.appDir co)
-     ctx (.getx co)
+    [rts (Cljshim/newrt (getCldr) (juid))
      pid (.id co)
-     env (.getv ctx :envConf)
-     app (.getv ctx :appConf)
-     mcz (strim (get-in app [:info :main]))
-     cfg (:container env)
-     lg (lcase (or (get-in env [:locale :lang]) "en"))
-     cn (lcase (get-in env [:locale :country]))
-     loc (if-not (hgl? cn)
-           (Locale. lg) (Locale. lg cn))
-     rts (Cljshim/newrt (getCldr) (juid))
      cpu (scheduler<> pid)
+     {:keys [envConf appConf]}
+     (.impl (.getx co))
+     mcz (get-in appConf
+                 [:info :main])
+     loc (-> ^Execvisor
+             (.parent co)
+             (.locale))
      res (->>
-           (format "%s_%s.%s"
-                   "Resources"
-                   (str loc)
-                   "properties")
-           (io/file appDir "i18n"))]
-    (.setv ctx :core cpu)
-    (.setv ctx :shim rts)
-    (when-some
-     [rb (if (fileRead? res)
-           (loadResource res))]
-     (I18N/setBundle pid  rb))
+           (str "Resources_"
+                loc
+                ".properties")
+           (io/file (.appDir co) DN_ETC))]
+    (.setv (.getx co) :core cpu)
+    (if (fileRead? res)
+      (->> (loadResource res)
+           (I18N/setBundle pid)))
+    ;;db stuff
     (doto->>
-      (maybeInitDBs co env app)
-      (.setv ctx :dbps )
+      (maybeInitDBs co appConf)
+      (.setv (.getx co) :dbps)
       (log/debug "db [dbpools]\n%s" ))
-    ;; handle the plugins
+    ;;handle the plugins
     (->>
       (persistent!
         (reduce
-          #(->>
-             (doOnePlugin
-               co (last %2) appDir env app)
-             (assoc! %1 (first %2)))
+          #(let
+             [[k v] %2]
+             (->>
+               (doOnePlugin
+                 co rts v appConf)
+               (assoc! %1 k)))
           (transient {})
-          (seq (:plugins app))))
-      (.setv ctx :plugins))
-    ;; build the user data-models or create a default one
-    (when-some+ [dmCZ (:data-model app)]
-      (log/info "data-model schema-func: %s" dmCZ)
-      (when-some [sc (try! (.call rts dmCZ))]
-        (when-not (inst? Schema sc)
-          (trap! ConfigError (str "Invalid schema " sc)))
-        (.setv ctx :schema sc)))
-    (let
-      [m
-       (if-not (hgl? mcz)
-         (do
-           (log/warn "no main defined, using default")
-           (dftAppMain<>))
-         (.call rts mcz))]
-      (if (inst? AppMain m)
-        (do
-          (doCljApp co m app)
-          (.setv ctx :main m))
-        (trap! ConfigError (str "Invalid main " mcz))))
+          (seq (:plugins appConf))))
+      (.setv (.getx co) :plugins))
+    ;; build the user data-models?
     (when-some+
-      [svcs (:services env)]
-      (services<> co svcs))
-    ;; start the scheduler
-    (.activate ^Activable cpu cfg)
-    (log/info "app class-loader: %s" (getCldr))
-    (log/info "app: %s initialized - ok" pid)))
+      [dmCZ (:data-model appConf)]
+      (log/info "schema-func: %s" dmCZ)
+      (if-some
+        [sc (cast? Schema
+                   (try! (.call rts dmCZ)))]
+        (.setv (.getx co) :schema sc)
+        (trap! ConfigError
+               "Invalid data-model schema ")))
+    (.activate ^Activable cpu {})
+    (->> (or (:services appConf) {})
+         (services<> co ))
+    (if (hgl? mcz)
+      (.call rts mcz))
+    (log/info "app: %s initialized - ok" pid)
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -19,7 +19,7 @@
   czlab.skaro.sys.climain
 
   (:require
-    [czlab.xlib.str :refer [str<> lcase hgl? strim]]
+    [czlab.xlib.str :refer [str<> stror lcase hgl? strim]]
     [czlab.netty.discarder :refer [discardHTTPD<>]]
     [czlab.xlib.files :refer [readFile writeFile]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
@@ -210,7 +210,8 @@
     (exitHook #(stopCLI ctx))
     (log/info "added shutdown hook")
     (log/info "class-loader: using %s" (type cz))
-    (log/info "sys-loader: %s" (type p))
+    (log/info "sys-loader: %s"
+              (type (.getParent cz)))
     (log/info @ctx)
     (log/info "container(s) are now running...")
     (CU/block)))

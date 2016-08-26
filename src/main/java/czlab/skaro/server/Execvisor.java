@@ -16,6 +16,7 @@ package czlab.skaro.server;
 
 import czlab.xlib.Startable;
 import java.io.File;
+import java.util.Locale;
 
 /**
  * @author Kenneth Leung
@@ -24,6 +25,9 @@ public interface Execvisor extends Component, Startable {
 
   /**/
   public long uptimeInMillis();
+
+  /**/
+  public Locale locale();
 
   /**/
   public long startTime();
