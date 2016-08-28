@@ -57,7 +57,7 @@
         [czlab.skaro.sys.core])
 
   (:import
-    [czlab.skaro.loaders CljClassLoader]
+    [czlab.skaro.server CljAppLoader]
     [org.apache.commons.io FileUtils]
     [czlab.skaro.etc CmdHelpError]
     [czlab.skaro.server Cljshim ]
@@ -171,7 +171,7 @@
   (let [func "czlab.skaro.sys.climain/startViaCLI"
         home (getHomeDir)
         cwd (getCwd)
-        rt (-> (CljClassLoader/newLoader home cwd)
+        rt (-> (CljAppLoader/newInstance home cwd)
                (Cljshim/newrt (.getName cwd)))
         s2 (first args)]
     ;; background job is handled differently on windows
