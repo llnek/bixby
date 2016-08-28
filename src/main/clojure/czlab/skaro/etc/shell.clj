@@ -20,10 +20,12 @@
   (:gen-class)
 
   (:require
-    [czlab.xlib.files :refer [dirRead?]]
+    [czlab.xlib.resources :refer [getResource rstr rstr*]]
     [czlab.xlib.core :refer [sysProp!]]
-    [czlab.xlib.str :refer [hgl?]]
+    [czlab.xlib.files :refer [dirRead?]]
+    [czlab.xlib.str :refer [hgl? strim]]
     [czlab.xlib.logging :as log]
+    [czlab.table.core :as tbl]
     [clojure.java.io :as io])
 
   (:use [czlab.xlib.resources]
@@ -39,6 +41,91 @@
 (def ^:private C_VERPROPS "czlab/czlab-skaro/version.properties")
 (def ^:private C_RCB "czlab.skaro.etc/Resources")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getCmdInfo
+
+  ""
+  [rcb]
+
+  (doall
+    (partition
+      2
+      (rstr*
+        rcb
+        ["usage.new"] ["usage.new.desc"]
+        ["usage.svc"] ["usage.svc.desc"]
+        ["usage.podify"] ["usage.podify.desc"]
+        ["usage.ide"] [ "usage.ide.desc"]
+        ["usage.build"] [ "usage.build.desc"]
+        ["usage.test"] [ "usage.test.desc"]
+
+        ["usage.debug"] ["usage.debug.desc"]
+        ["usage.start"] ["usage.start.desc"]
+
+        ["usage.gen"] [ "usage.gen.desc"]
+        ["usage.demo"] [ "usage.demo.desc"]
+        ["usage.version"] [ "usage.version.desc"]
+
+        ["usage.testjce"] ["usage.testjce.desc"]
+        ["usage.help"] ["usage.help.desc"]))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn usage
+
+  ""
+  []
+
+  (let
+    [walls ["" "   " ""]
+     style {:top ["" "" ""] :middle ["" "" ""] :bottom ["" "" ""]
+            :dash " " :header-walls walls :body-walls walls }
+     rcb (I18N/base)]
+    (printf "%s\n\n" (rstr rcb "skaro.desc"))
+    (printf "%s\n" (rstr rcb "cmds.header"))
+    ;; prepend blanks to act as headers
+    (printf "%s\n\n"
+            (strim
+              (with-out-str
+                (-> (concat '(("" ""))
+                            (getCmdInfo rcb))
+                    (tbl/table :style style)))))
+    (printf "%s\n" (rstr rcb "cmds.trailer"))
+    (println)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- execArgs
+
+  ""
+  [args]
+
+  (let [cmd (keyword (first args))
+        args (vec (drop 1 args))
+        [f h]
+        (*skaro-tasks* cmd)]
+    (if (fn? f)
+      (f args)
+      (trap! CmdHelpError))
+    args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn bootAndRun
+
+  ""
+  [home & args]
+
+  (binding [*skaro-home* (io/file home)]
+    (try
+      (if (empty? args)
+        (trap! CmdHelpError ))
+      (execArgs (vec args))
+      (catch Throwable e
+        (if (inst? CmdHelpError e)
+          (usage)
+          (prtStk e))))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main
