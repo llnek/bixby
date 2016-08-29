@@ -18,10 +18,8 @@
   czlab.skaro.sys.ext
 
   (:require
-    [czlab.xlib.str :refer [nichts? hgl? stror lcase strim]]
     [czlab.xlib.resources :refer [loadResource]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
-    [czlab.xlib.io :refer [xdata<>]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.crypto.codec :refer [passwd<>]]
@@ -29,6 +27,12 @@
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
+    [czlab.xlib.str
+     :refer [nichts?
+             hgl?
+             stror
+             lcase
+             strim]]
     [czlab.xlib.files
      :refer [writeFile
              readFile
@@ -55,6 +59,7 @@
 
   (:use
     [czlab.skaro.sys.core]
+    [czlab.xlib.io]
     [czlab.skaro.io.core]
     [czlab.skaro.sys.dfts]
     [czlab.skaro.io.loops]
@@ -172,6 +177,7 @@
   (log/info "creating a container: %s" (.id gist))
   (let
     [pid (format "%s#%d" (.id gist) (seqint2))
+     rts (Cljshim/newrt (getCldr) pid)
      ctx (.getx gist)
      _appDir (io/file (.getv ctx :path))
      pub (io/file _appDir DN_PUBLIC DN_PAGES)
@@ -185,6 +191,7 @@
         (appKeyBits [this] (bytesify (.appKey this)))
         (appKey [_] (.getv impl :disposition ))
         (appDir [this] _appDir)
+        (cljrt [_] rts)
         (getx [_] impl)
         (version [_] (.version gist))
         (id [_] pid)
@@ -436,9 +443,9 @@
   (log/info "comp->initialize: Container: %s" (.id co))
   (parseConf co)
   (let
-    [rts (Cljshim/newrt (getCldr) (juid))
+    [cpu (scheduler<> (.id co))
+     rts (.cljrt co)
      pid (.id co)
-     cpu (scheduler<> pid)
      {:keys [envConf appConf]}
      (.impl (.getx co))
      mcz (get-in appConf

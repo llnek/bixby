@@ -19,6 +19,9 @@
 
   (:require
     [czlab.xlib.files :refer [mkdirs]]
+    [czlab.xlib.str :refer [hgl? nsn]]
+    [czlab.xlib.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.core
      :refer [test-nestr
              seqint2
@@ -27,10 +30,7 @@
              try!]]
     [czlab.skaro.io.loops
      :refer [loopableSchedule
-             loopableOneLoop]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.xlib.str :refer [hgl? nsn]])
+             loopableOneLoop]])
 
   (:use
     [czlab.skaro.sys.core]

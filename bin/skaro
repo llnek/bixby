@@ -2,18 +2,14 @@
 
 splash_crawford() {
 
-echo "  _____ __  _   ____  ____   ___"
-echo " / ___/|  |/ ] /    ||    \ /   \\"
-echo "(   \_ |  ' / |  o  ||  D  )     |"
-echo " \__  ||    \ |     ||    /|  O  |"
-echo " /  \ ||     ||  _  ||    \|     |"
-echo " \    ||  .  ||  |  ||  .  \     |"
-echo "  \___||__|\_||__|__||__|\_|\___/"
-
-}
-
-splash_crawford2() {
-  echo ""
+echo "${txtylw}  _____ __  _   ____  ____   ___"
+echo "${txtylw} / ___/|  |/ ] /    ||    \ /   \\"
+echo "${txtylw}(   \_ |  ' / |  o  ||  D  )     |"
+echo "${txtylw} \__  ||    \ |     ||    /|  O  |"
+echo "${txtylw} /  \ ||     ||  _  ||    \|     |"
+echo "${txtylw} \    ||  .  ||  |  ||  .  \     |"
+echo "${txtylw}  \___||__|\_||__|__||__|\_|\___/"
+echo "${txtcyn}"
 }
 
 splash_bubble() {
@@ -25,40 +21,6 @@ echo " \_/ \_/ \_/ \_/ \_/"
 
 }
 
-splash_dalek() {
-
-echo "       D>=G==='   '."
-echo "            |======|"
-echo "            |======|"
-echo "        )--/]IIIIII]"
-echo "           |_______|"
-echo "           C O O O D"
-echo "          C O  O  O D"
-echo "         C  O  O  O  D"
-echo "         C__O__O__O__D"
-echo "        [_____________]"
-
-}
-
-splash_einstein() {
-
-echo "        ,---,_          ,"
-echo "         _>   ''-.  .--'/"
-echo "    .--'' ._      '/   <_"
-echo "     >,-' ._'.. ..__ . ' '-."
-echo "  .-'   .''         ''.     '."
-echo "   >   / >'-.     .-'< \ , '._\ "
-echo "  /    ; '-._>   <_.-' ;  '._>"
-echo "  '>  ,/  /___\ /___\  \_  /"
-echo "  '.-|(|  \o_/  \o_/   |)|~"
-echo "      \;        \      ;/"
-echo "        \  .-,   )-.  /"
-echo "         /'  .'-'.  '\ "
-echo "        ;_.-'.___.'-.;"
-
-}
-
-
 txtred=$(tput setaf 1) #Red
 txtgrn=$(tput setaf 2) # Green
 txtylw=$(tput setaf 3) # Yellow
@@ -68,31 +30,9 @@ txtcyn=$(tput setaf 6) # Cyan
 txtwht=$(tput setaf 7) # White
 txtrst=$(tput sgr0) # Text reset.
 
-splash_cool() {
-
-echo "${txtylw}    o--------------------------------- D>=G==='   '."
-echo "${txtylw}    |                                       |======|"
-echo "${txtylw}    |                                       |======|"
-echo "${txtylw}  __v__ __  _   ____  ____   ___        )--/]IIIIII]"
-echo "${txtylw} / ___/|  |/ ] /    ||    \ /   \\          |_______|"
-echo "${txtylw}(   \_ |  ' / |  o  ||  D  )     |         C O O O D"
-echo "${txtylw} \__  ||    \ |     ||    /|  O  |        C O  O  O D"
-echo "${txtylw} /  \ ||     ||  _  ||    \|     |       C  O  O  O  D"
-echo "${txtylw} \    ||  .  ||  |  ||  .  \     |       C__O__O__O__D"
-echo "${txtylw}  \___||__|\_||__|__||__|\_|\___/       [_____________]"
-echo "${txtcyn}"
-}
-
 splash() {
   echo ""
-  splash_cool
-  #splash_crawford
-  #echo ""
-  #splash_dalek
-  #splash_bubble
-  #echo ""
-  #echo -n "Version: "
-  #cat $SKARO_HOME/VERSION
+  splash_crawford
 }
 
 ### osx sux, has no proper readlink.
@@ -149,7 +89,7 @@ BG=false
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
 MAINCZ=czlab.skaro.etc.shell
 
-LIBP="-Djava.library.path=$SKARO_HOME/bin"
+LIBP="-Djava.library.path=$SKARO_BIN"
 #48G
 #VMARGS="-Xms8192m -Xmx49152m"
 #36G
@@ -157,16 +97,19 @@ LIBP="-Djava.library.path=$SKARO_HOME/bin"
 #32G
 #VMARGS="-Xms8192m -Xmx32768m"
 VMARGS="-Xms512m -Xmx7096m $VMXRGS"
-if [ -d "logs" ]; then
-  LOG4J=etc/log/logbacklog.xml
+LJC=etc/log4jc.xml
+LJD=etc/log4j.xml
+L4JFILE=
+if [ -e $LJD -a -d "logs" ]
+then
+  L4JFILE=$LJD
+elif [ -e $LJC ]
+then
+  L4JFILE=$LJC
 else
-  LOG4J=etc/log/logback.xml
+  L4JFILE=${SKARO_BIN}/log.xml
 fi
-L4JFILE=${SKARO_HOME}/$LOG4J
-L4J=file:${L4JFILE}
-LOGCFG=$L4J
-#LOGREF="-Dlogback.configurationFile=$LOGCFG -Dlogback.ContextSelector=com.zotohlab.frwk.util.LogbackCtxSelector"
-LOGREF="-Dlogback.configurationFile=$LOGCFG"
+LOGCFG=-Dlog4j.configurationFile=file:${L4JFILE}
 BASEDIR="-Dskaro.home=$SKARO_HOME"
 KPORT=4444
 KILLPORT="-Dskaro.kill.port=$KPORT"
@@ -189,10 +132,6 @@ stop_proc() {
       cd $CWD
     fi
 }
-
-if [ ! -e ${L4JFILE} ]; then
-    LOGREF=
-fi
 
 if [ $# -eq 2 ] ; then
     if [ "$1" = "start" -a "$2" = "bg" ]; then
@@ -226,10 +165,12 @@ fi
 #CMDLINE="$JAVA_CMD -cp $BOOT $DBGOPTS $LOGREF $BASEDIR $MAINCZ $SKARO_HOME $@ "
 #cd $SKARO_BIN
 if [ "$BG" = "true" ]; then
-  nohup $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR $MAINCZ $SKARO_HOME $@ &
+  nohup $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGCFG $NETTY $KILLPORT $BASEDIR $MAINCZ $SKARO_HOME $@ &
 else
   splash
-  $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGREF $NETTY $KILLPORT $BASEDIR  $MAINCZ $SKARO_HOME $@
+  $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGCFG $NETTY $KILLPORT $BASEDIR  $MAINCZ $SKARO_HOME $@
 fi
 #cd $CWD
 exit $?
+
+

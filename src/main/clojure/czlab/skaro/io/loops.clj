@@ -19,12 +19,18 @@
   czlab.skaro.io.loops
 
   (:require
-    [czlab.xlib.core :refer [throwIOE tmtask<> inst? seqint2 spos? try!]]
     [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.logging :as log]
-    [czlab.xlib.str :refer [hgl? strim]])
+    [czlab.xlib.str :refer [hgl? strim]]
+    [czlab.xlib.core
+     :refer [throwIOE
+             tmtask<>
+             inst?
+             spos?
+             try!
+             seqint2]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.skaro.io.core])

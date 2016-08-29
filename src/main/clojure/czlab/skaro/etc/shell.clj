@@ -20,26 +20,34 @@
   (:gen-class)
 
   (:require
-    [czlab.xlib.resources :refer [getResource rstr rstr*]]
-    [czlab.xlib.core :refer [sysProp!]]
-    [czlab.xlib.files :refer [dirRead?]]
-    [czlab.xlib.str :refer [hgl? strim]]
+    [czlab.xlib.str :refer [str<> strim hgl?]]
+    [czlab.xlib.resources :refer :all]
     [czlab.xlib.logging :as log]
+    [clojure.java.io :as io]
     [czlab.table.core :as tbl]
-    [clojure.java.io :as io])
+    [czlab.xlib.core
+     :refer [test-cond
+             sysProp!
+             inst?
+             trap!
+             prtStk
+             muble<>]]
+    [czlab.xlib.files :refer [dirRead?]])
 
-  (:use [czlab.xlib.resources]
-        [czlab.skaro.etc.core])
+  (:use [czlab.skaro.etc.cmd2]
+        [czlab.skaro.sys.core]
+        [czlab.xlib.format]
+        [czlab.xlib.consts]
+        [czlab.skaro.etc.cmd1])
 
   (:import
-    [java.util ResourceBundle Locale]
+    [czlab.skaro.etc CmdHelpError]
+    [java.io File]
     [czlab.xlib I18N]
-    [java.io File]))
+    [java.util ResourceBundle List Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* true)
-(def ^:private C_VERPROPS "czlab/czlab-skaro/version.properties")
-(def ^:private C_RCB "czlab.skaro.etc/Resources")
+;;(set! *warn-on-reflection* false)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,12 +115,11 @@
         (*skaro-tasks* cmd)]
     (if (fn? f)
       (f args)
-      (trap! CmdHelpError))
-    args))
+      (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn bootAndRun
+(defn- bootAndRun
 
   ""
   [home & args]
@@ -120,12 +127,13 @@
   (binding [*skaro-home* (io/file home)]
     (try
       (if (empty? args)
-        (trap! CmdHelpError ))
-      (execArgs (vec args))
+        (trap! CmdHelpError)
+        (execArgs args))
       (catch Throwable e
         (if (inst? CmdHelpError e)
           (usage)
           (prtStk e))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main

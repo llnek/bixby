@@ -170,7 +170,7 @@
         c (.getv (.getx co) :container)]
     (.stop c)
     (.dispose c)
-    (.setv (.getx co) :container nil)
+    (.unsetv (.getx co) :container)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,10 +181,11 @@
   ^Execvisor
   []
 
-  (let [impl (muble<> {:container nil
-                       :app nil
-                       :emitters {}})
-        pid (juid)]
+  (let
+    [impl (muble<> {:container nil
+                    :app nil
+                    :emitters {}})
+     pid (juid)]
     (with-meta
       (reify
 
@@ -282,7 +283,7 @@
   ^Execvisor
   [^Execvisor co]
 
-  (->> (.getv (.getx co) :appdir)
+  (->> (.getv (.getx co) :appDir)
        (inspectPod co))
   co)
 
@@ -294,15 +295,13 @@
   [^Execvisor co & [rootGist]]
   {:pre [(inst? Atom rootGist)]}
 
-  (let [{:keys [basedir appdir env]}
-        @rootGist
-        {:keys [jmx]}
-        env]
+  (let [{:keys [basedir appDir jmx]}
+        @rootGist]
     (log/info "com->initialize: Execvisor: %s" co)
     (test-nonil "conf file: jmx" jmx)
     (sysProp! "file.encoding" "utf-8")
     (.copy (.getx co) (muble<> @rootGist))
-    (->> (io/file appdir
+    (->> (io/file appDir
                   DN_ETC
                   "mime.properties")
          (io/as-url)

@@ -19,6 +19,10 @@
   czlab.skaro.sys.dfts
 
   (:require
+    [czlab.xlib.resources :refer [rstr]]
+    [czlab.xlib.str :refer [hgl?]]
+    [czlab.xlib.logging :as log]
+    [clojure.java.io :as io]
     [czlab.xlib.core
      :refer [test-cond
              seqint2
@@ -26,12 +30,9 @@
              trap!
              muble<>
              test-nestr]]
-    [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.files
-     :refer [fileRead? dirReadWrite?]])
+     :refer [fileRead?
+             dirReadWrite?]])
 
   (:use [czlab.skaro.sys.core])
 

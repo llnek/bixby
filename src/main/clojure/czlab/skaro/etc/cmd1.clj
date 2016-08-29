@@ -22,14 +22,15 @@
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.crypto.core :refer [assertJce dbgProvider]]
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
+    [czlab.skaro.sys.climain :refer [startViaCLI]]
     [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.files :refer [spitUTF8]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [clojure.string :as cs]
     [boot.core :as bcore]
     [czlab.xlib.files
      :refer [readFile
+             spitUTF8
              mkdirs
              writeFile
              listFiles]]
@@ -168,18 +169,15 @@
   "Start and run the app"
   [args]
 
-  (let [func "czlab.skaro.sys.climain/startViaCLI"
-        home (getHomeDir)
+  (let [home (getHomeDir)
         cwd (getCwd)
-        rt (-> (CljAppLoader/newInstance home cwd)
-               (Cljshim/newrt (.getName cwd)))
         s2 (first args)]
     ;; background job is handled differently on windows
     (if (and (contains? #{"-bg" "--background"} s2)
              (isWindows?))
       (runAppBg home cwd)
       (try!
-        (.callEx rt func (object-array [home cwd]))))))
+        (startViaCLI home cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -212,7 +210,7 @@
   [args]
 
   (let [c (first args)
-        n (convLong (str c) 12)]
+        n (convLong (str c) 16)]
     (if (and (>= n 8)
              (<= n 32))
       (println (strongPwd n))

@@ -30,12 +30,6 @@
     [czlab.xlib.io :refer [closeQ]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.process
-     :refer [processPid
-             exitHook
-             jvmInfo
-             async!
-             safeWait]]
     [czlab.xlib.core
      :refer [test-nonil
              sysProp
@@ -46,6 +40,7 @@
     [czlab.netty.core :refer [stopServer]])
 
   (:use [czlab.skaro.sys.core]
+        [czlab.xlib.process]
         [czlab.xlib.consts]
         [czlab.skaro.sys.dfts])
 
@@ -91,15 +86,14 @@
 
   ""
   ^Atom
-  [baseDir more]
+  [gist]
 
-  (let [etc (io/file baseDir DN_ETC)
-        home (.getParentFile etc)]
-    (precondDir (io/file home DN_CONF)
-                (io/file home DN_DIST)
+  (let [home (:basedir gist)]
+    (precondDir (io/file home DN_DIST)
                 (io/file home DN_LIB)
-                (io/file home DN_BIN) home etc)
-    (atom (merge more {:basedir home}))))
+                (io/file home DN_ETC)
+                (io/file home DN_BIN))
+    (atom gist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -177,29 +171,30 @@
 (defn startViaCLI
 
   ""
-  [home appDir]
+  [home cwd]
 
   (let
-    [env (->> (io/file appDir
-                       CFG_ENV_CF)
+    [env (->> (io/file cwd CFG_ENV_CF)
               (readEdn ))
      cn (get-in env [:locale :country])
      ln (get-in env [:locale :lang])
-     fp (io/file appDir "skaro.pid")
      ver (sysProp "skaro.version")
+     fp (io/file cwd "skaro.pid")
      ln (stror ln "en")
      cn (stror cn "US")
      loc (Locale. ln cn)
      rc (getResource C_RCB loc)
-     ctx (cliGist home {:appdir appDir
-                        :locale loc
-                        :pidFile fp
-                        :env env})
+     ctx (->> {:basedir (io/file home)
+               :appDir (io/file cwd)
+               :pidFile fp
+               :locale loc}
+              (merge env)
+              (cliGist ))
      cz (getCldr)]
-    (log/info "skaro.home   = %s" (fpath home))
-    (log/info "skaro.version= %s" ver)
+    (log/info "skaro.home    = %s" (fpath home))
+    (log/info "skaro.version = %s" ver)
     (log/info "skaro folder - ok")
-    (test-nonil "etc/resouces" rc)
+    (test-nonil "base resouces" rc)
     (I18N/setBase rc)
     (log/info "resource bundle found and loaded")
     (primodial ctx)
@@ -214,7 +209,8 @@
               (type (.getParent cz)))
     (log/info @ctx)
     (log/info "container(s) are now running...")
-    (CU/block)))
+    (while (not @STOPCLI)
+      (safeWait 5000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

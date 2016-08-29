@@ -41,6 +41,9 @@
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
+    [czlab.wflow WorkStream Job TaskDef]
+    [java.util Timer TimerTask]
+    [czlab.skaro.io IoEvent]
     [czlab.skaro.server
      ServiceHandler
      EventTrigger
@@ -49,8 +52,6 @@
      Cljshim
      Component
      Container]
-    [java.util Timer TimerTask]
-    [czlab.skaro.io IoEvent]
     [czlab.xlib
      XData
      Versioned
@@ -58,8 +59,7 @@
      Muble
      Identifiable
      Disposable
-     Startable]
-    [czlab.wflow WorkStream Job TaskDef]))
+     Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -94,19 +94,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->suspend "Suspend a component" meta???)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmulti io->start "Start a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io->stop "Stop a component" meta???)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io->resume "Resume a component" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -125,8 +117,7 @@
   :default
   [^Service co]
 
-  (when-some [cfg (-> (.getx co)
-                      (.getv :emcfg))]
+  (when-some [cfg (.config co)]
     (log/info "service config:\n%s" (pr-str cfg))
     (log/info "service %s started - ok" (gtid co))))
 
@@ -150,24 +141,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io->suspend
-
-  :default
-  [^Service co]
-
-  (throwIOE "Not Implemented"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->resume
-
-  :default
-  [^Service co]
-
-  (throwIOE "Not Implemented"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- mkSvcHdr
 
   ""
@@ -175,8 +148,7 @@
   [^Service svc & [trace?]]
 
   (when trace?
-    (log/info "handler for %s created - ok"
-              (.id svc)))
+    (log/info "handler for %s created - ok" (.id svc)))
   (reify ServiceHandler
 
     (id [_] (.id svc))
@@ -191,7 +163,7 @@
           (throwBadArg "Want WorkStream, got " (class p1)))
         (if (some? j)
           (throwBadArg "Want Job, got " (class p2)))
-        (log/debug "job#%s - handled by %s"  (.id j) svc)
+        (log/debug "job#%s-handled by %s" (.id j) (.id svc))
         (.setv j :wflow w)
         (.execWith w j)))
 
@@ -216,10 +188,9 @@
   [^Container ctr ^Service src evt options]
 
   (let
-    [rts (Cljshim/newrt (getCldr) (juid))
-     c1 (str (:router options))
-     cfg (-> (.getx src)
-             (.getv :emcfg))
+    [c1 (str (:router options))
+     rts (.cljrt ctr)
+     cfg (.config src)
      hr (.handler src)
      c0 (str (:handler cfg))
      wf (try!
