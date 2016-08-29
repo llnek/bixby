@@ -97,8 +97,8 @@ LIBP="-Djava.library.path=$SKARO_BIN"
 #32G
 #VMARGS="-Xms8192m -Xmx32768m"
 VMARGS="-Xms512m -Xmx7096m $VMXRGS"
-LJC=etc/log4jc.xml
-LJD=etc/log4j.xml
+LJC=etc/log4j2c.xml
+LJD=etc/log4j2d.xml
 L4JFILE=
 if [ -e $LJD -a -d "logs" ]
 then
@@ -107,7 +107,7 @@ elif [ -e $LJC ]
 then
   L4JFILE=$LJC
 else
-  L4JFILE=${SKARO_BIN}/log.xml
+  L4JFILE=${SKARO_BIN}/log4j2.xml
 fi
 LOGCFG=-Dlog4j.configurationFile=file:${L4JFILE}
 BASEDIR="-Dskaro.home=$SKARO_HOME"

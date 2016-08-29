@@ -109,7 +109,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro mkDemoPath "" [dn] `(str "demo." ~dn))
+(defmacro mkDemoPath "" [dn] `(str "czlab.skaro.demo." ~dn))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -130,7 +130,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postCreateApp
+(defn- postConfigApp
 
   ""
   [^File appDir ^String appId ^String appDomain]
@@ -153,17 +153,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- createOneApp
+(defn- copyOneApp
 
   ""
-  [^File out appId ^String appDomain kind]
+  [^File out appId appDomain kind]
 
   (let
     [domPath (cs/replace appDomain "." "/")
      appDir (mkdirs (io/file out appId))
      other (if (= :soa kind) :web :soa)
      srcDir (io/file appDir "src")
-     verStr "0.1.0-SNAPSHOT"
      mcloj "main/clojure"
      mjava "main/java"
      hhh (getHomeDir)]
@@ -171,7 +170,6 @@
       (io/file hhh DN_ETC "app")
       appDir
       (FileFilterUtils/trueFileFilter))
-    ;;defaults to web, so get rid of web stuff
     (when (= :soa kind)
       (doall
         (map #(->> (io/file appDir %)
@@ -190,7 +188,21 @@
       (io/file srcDir mcloj (str (name other) ".clj")))
     (FileUtils/moveToDirectory
       (io/file srcDir mjava "HelloWorld.java")
-      (io/file srcDir mjava domPath) true)
+      (io/file srcDir mjava domPath) true)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- configOneApp
+
+  ""
+  [^File out appId ^String appDomain kind]
+
+  (let
+    [domPath (cs/replace appDomain "." "/")
+     appDir (io/file out appId)
+     srcDir (io/file appDir "src")
+     verStr "0.1.0-SNAPSHOT"
+     hhh (getHomeDir)]
     (doseq [f (FileUtils/listFiles srcDir nil true)]
       (replaceFile!
         f
@@ -217,17 +229,18 @@
       (replaceFile!
         (io/file appDir DN_CONF "routes.conf")
         #(cs/replace % "@@APPDOMAIN@@" appDomain)))
-    (postCreateApp appDir appId appDomain)))
+    (postConfigApp appDir appId appDomain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
 (defn createApp
 
   "Create a new app"
-  [kind path]
+  [option path]
 
   (let
     [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
+     kind (keyword (triml option "-"))
      path (strimAny path ".")
      t (re-matches rx path)
      cwd (getCwd)
@@ -238,12 +251,12 @@
              (triml tkn ".")
              (first t))) ]
     (when (empty? app) (trap! CmdHelpError))
-    (case kind
+    (case option
       ("-web" "--web") nil
       ("-soa" "--soa") nil
       (trap! CmdHelpError))
-    (->> (keyword (triml kind "-"))
-         (createOneApp cwd app path ))))
+    (copyOneApp cwd app path kind)
+    (configOneApp cwd app path kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -254,17 +267,23 @@
 
   (let [top (io/file out (.getName demo))
         dn (.getName top)
-        dom (mkDemoPath dn)]
-    (prn!! "Generating demo[%s]..." dn)
-    (createOneApp out dn dom :web)
+        appDomain (mkDemoPath dn)
+        domPath (cs/replace appDomain "." "/")
+        kind (if (contains? #{"mvc" "http"} dn)
+                    :web :soa)]
+    (prn!! "Generating: %s..." appDomain)
+    (copyOneApp out dn appDomain kind)
     (FileUtils/copyDirectory
       demo
       (io/file top DN_CONF)
       (FileFilterUtils/suffixFileFilter ".conf"))
     (FileUtils/copyDirectory
       demo
-      (io/file top "src/main/clojure/demo" dn)
-      (FileFilterUtils/suffixFileFilter ".clj"))))
+      (io/file top "src/main/clojure" domPath)
+      (FileFilterUtils/suffixFileFilter ".clj"))
+    (configOneApp out
+                  dn
+                  appDomain kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -274,8 +293,8 @@
   [^File out]
 
   (let
-    [dss (->> (io/file (getHomeDir)
-                       "src/main/clojure/demo")
+    [dss (->> "src/main/clojure/czlab/skaro/demo"
+              (io/file (getHomeDir))
               (.listFiles ))]
     (doseq [d dss
             :when (dirRead? d)]
