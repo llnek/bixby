@@ -222,7 +222,7 @@
   ""
   [^File home ^File cwd]
 
-  (if false
+  (if true
     (->> (CljAppLoader/newInstance home cwd)
          (.setContextClassLoader (Thread/currentThread))))
   (runCLI home cwd))

@@ -76,8 +76,10 @@ public class CljAppLoader extends URLClassLoader {
   /**/
   private boolean isSystem(String name) {
     if (name != null) {
-      return (name.startsWith("javax.") ||
+      return (name.startsWith("com.sun.") ||
+              name.startsWith("javax.") ||
               name.startsWith("java.") ||
+              name.startsWith("com/sun/") ||
               name.startsWith("javax/") ||
               name.startsWith("java/"));
     }

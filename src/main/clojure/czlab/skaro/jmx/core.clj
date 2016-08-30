@@ -34,6 +34,7 @@
     [czlab.skaro.server JmxServer]
     [java.rmi NoSuchObjectException]
     [czlab.xlib Startable Muble]
+    [java.util HashMap]
     [java.rmi.server UnicastRemoteObject]
     [javax.management DynamicMBean
      JMException
@@ -78,20 +79,22 @@
     [regoPort (.getv impl :regoPort)
      port (.getv impl :port)
      host (.getv impl :host)
+     env (HashMap.)
      endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
                     "jndi/rmi://{{h}}:{{r}}/jmxrmi")
                (cs/replace "{{h}}" (str "" host))
                (cs/replace "{{s}}" (str "" port))
                (cs/replace "{{r}}" (str "" regoPort)))]
     (log/debug "jmx service url: %s" endpt)
+    (.put env
+          "java.naming.factory.initial"
+          "com.sun.jndi.rmi.registry.RegistryContextFactory")
     (let
       [url (JMXServiceURL. endpt)
        conn (JMXConnectorServerFactory/newJMXConnectorServer
               url
-              (java.util.HashMap.)
+              env
              (ManagementFactory/getPlatformMBeanServer))]
-      (doseq [[k v] (.getAttributes conn)]
-        (log/debug "k = %s, v= %s" k v))
       (-> ^JMXConnectorServer
           conn (.start ))
       (.setv impl :beanSvr (.getMBeanServer conn))

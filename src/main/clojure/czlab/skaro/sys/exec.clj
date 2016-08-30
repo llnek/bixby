@@ -116,7 +116,7 @@
      host (str (:host cfg))
      jmx (jmxServer<> host port)]
     (.start jmx)
-    (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
+    (.reg jmx co "czlab" "execvisor" ["root=skaro"])
     (-> (.getx co)
         (.setv :jmxServer jmx))
     (log/info "jmx-server listening on: %s:%s" host port)
