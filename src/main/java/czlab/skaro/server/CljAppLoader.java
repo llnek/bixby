@@ -33,6 +33,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import static org.slf4j.LoggerFactory.*;
+import org.slf4j.Logger;
 
 /**/
 public class CljAppLoader extends URLClassLoader {
@@ -41,6 +43,8 @@ public class CljAppLoader extends URLClassLoader {
   private final Set<String> _exts=new HashSet<String>();
   private final ClassLoader _parent;
   private boolean _loaded;
+
+  public static final Logger TLOG= getLogger(CljAppLoader.class);
 
   static {
     registerAsParallelCapable();
@@ -138,6 +142,7 @@ public class CljAppLoader extends URLClassLoader {
   protected Class<?> loadClass(String name, boolean resolve)
   throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
+      //TLOG.debug("loading class {}", name);
       Class<?> c= findLoadedClass(name);
       ClassNotFoundException ex= null;
       boolean tried_parent= false;

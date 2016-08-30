@@ -100,7 +100,10 @@
                             (getCmdInfo rcb))
                     (tbl/table :style style)))))
     (printf "%s\n" (rstr rcb "cmds.trailer"))
-    (println)))
+    (println)
+    ;;the table module causes some agent stuff to hang
+    ;;the vm without exiting, so shut them down
+    (shutdown-agents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,8 +153,7 @@
     (if (and (hgl? h)
              (dirRead? (io/file h)))
       (apply bootAndRun h (drop 1 args))
-      (usage))
-    (shutdown-agents)))
+      (usage))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

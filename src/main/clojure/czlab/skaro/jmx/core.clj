@@ -75,24 +75,27 @@
   [^Muble impl]
 
   (let
-    [hn (-> (InetAddress/getLocalHost)
-            (.getHostName))
-     regoPort (.getv impl :regoPort)
+    [regoPort (.getv impl :regoPort)
      port (.getv impl :port)
      host (.getv impl :host)
      endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
-                    "jndi/rmi://:{{r}}/jmxrmi")
-               (cs/replace "{{h}}" (stror host hn))
+                    "jndi/rmi://{{h}}:{{r}}/jmxrmi")
+               (cs/replace "{{h}}" (str "" host))
                (cs/replace "{{s}}" (str "" port))
-               (cs/replace "{{r}}" (str "" regoPort)))
-     url (JMXServiceURL. endpt)
-     conn (JMXConnectorServerFactory/newJMXConnectorServer
-            url nil
-            (ManagementFactory/getPlatformMBeanServer))]
-    (-> ^JMXConnectorServer
-        conn (.start ))
-    (.setv impl :beanSvr (.getMBeanServer conn))
-    (.setv impl :conn conn)))
+               (cs/replace "{{r}}" (str "" regoPort)))]
+    (log/debug "jmx service url: %s" endpt)
+    (let
+      [url (JMXServiceURL. endpt)
+       conn (JMXConnectorServerFactory/newJMXConnectorServer
+              url
+              (java.util.HashMap.)
+             (ManagementFactory/getPlatformMBeanServer))]
+      (doseq [[k v] (.getAttributes conn)]
+        (log/debug "k = %s, v= %s" k v))
+      (-> ^JMXConnectorServer
+          conn (.start ))
+      (.setv impl :beanSvr (.getMBeanServer conn))
+      (.setv impl :conn conn))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -111,11 +114,16 @@
 
   ""
   ^JmxServer
-  [^String host]
+  [^String host regoPort]
 
+  (log/debug "jmxServer host = %s" host)
   (let
-    [impl (muble<> {:regoPort 7777
-                    :port 0})
+    [impl (muble<>
+            {:regoPort regoPort
+             :host (stror host
+                          (-> (InetAddress/getLocalHost)
+                              (.getHostName)))
+             :port 0})
      objNames (atom []) ]
     (reify
 
@@ -142,9 +150,9 @@
                                (mkJmxBean obj))))))
 
       ;; jconsole port
-      (setRegistryPort [_ port] (.setv impl :regoPort port))
+      (setRegistryPort [_ p] (.setv impl :regoPort p))
 
-      (setServerPort[_ port] (.setv impl :port port))
+      (setServerPort[_ p] (.setv impl :port p))
 
       (start [_]
         (let [p1 (.getv impl :regoPort)

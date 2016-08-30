@@ -37,7 +37,7 @@
              inst?
              fpath
              convLong]]
-    [czlab.netty.core :refer [stopServer]])
+    [czlab.netty.core :refer [startServer stopServer]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.xlib.process]
@@ -46,6 +46,7 @@
 
   (:import
     [io.netty.bootstrap ServerBootstrap]
+    [czlab.skaro.server CljAppLoader]
     [clojure.lang
      Atom
      APersistentMap]
@@ -133,11 +134,13 @@
   [^Atom gist]
 
   (log/info "enabling remote shutdown hook")
-  (->> (-> (sysProp "skaro.kill.port")
-           (convLong  4444)
-           (discardHTTPD<> #(stopCLI gist)))
-       (swap! gist assoc :kill9 ))
-  gist)
+  (let [bs (discardHTTPD<> #(stopCLI gist))
+        ch (->> {:port (-> (sysProp "skaro.kill.port")
+                           (convLong  4444))}
+                (startServer bs))]
+    (swap! gist assoc :kill9  {:bootstrap bs
+                               :channel ch})
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
@@ -168,7 +171,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn startViaCLI
+(defn- runCLI
 
   ""
   [home cwd]
@@ -207,10 +210,22 @@
     (log/info "class-loader: using %s" (type cz))
     (log/info "sys-loader: %s"
               (type (.getParent cz)))
-    (log/info @ctx)
+    (log/info "%s" @ctx)
     (log/info "container(s) are now running...")
     (while (not @STOPCLI)
       (safeWait 5000))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn startViaCLI
+
+  ""
+  [^File home ^File cwd]
+
+  (if false
+    (->> (CljAppLoader/newInstance home cwd)
+         (.setContextClassLoader (Thread/currentThread))))
+  (runCLI home cwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -114,8 +114,7 @@
   (trylet!
     [port (or (:port cfg) 7777)
      host (str (:host cfg))
-     jmx (jmxServer<> host)]
-    (.setRegistryPort jmx (int port))
+     jmx (jmxServer<> host port)]
     (.start jmx)
     (.reg jmx co "com.zotohlab" "execvisor" ["root=skaro"])
     (-> (.getx co)

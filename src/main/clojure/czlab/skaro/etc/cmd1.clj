@@ -58,7 +58,6 @@
         [czlab.skaro.sys.core])
 
   (:import
-    [czlab.skaro.server CljAppLoader]
     [org.apache.commons.io FileUtils]
     [czlab.skaro.etc CmdHelpError]
     [czlab.skaro.server Cljshim ]
@@ -176,8 +175,7 @@
     (if (and (contains? #{"-bg" "--background"} s2)
              (isWindows?))
       (runAppBg home cwd)
-      (try!
-        (startViaCLI home cwd)))))
+      (startViaCLI home cwd))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

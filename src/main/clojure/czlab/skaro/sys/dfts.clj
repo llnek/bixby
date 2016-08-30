@@ -110,9 +110,7 @@
                 :main ""}
                (:info conf)
                {:path urlToApp})
-        impl
-        (->> (assoc conf :info info)
-             (muble<> ))]
+        impl (muble<> info)]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify

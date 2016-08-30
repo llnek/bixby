@@ -60,7 +60,7 @@
     [jline/jline "2.14.2" ]
     [com.sun.tools/tools "1.8.0"  ]
 
-    [com.cemerick/pomegranate "0.3.1" :scope "provided"]
+    [com.cemerick/pomegranate "0.3.1"];; :scope "provided"]
     ;;[org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
     ;;[org.projectodd.shimdandy/shimdandy-api "1.2.0"]
     [codox/codox "0.9.5" :scope "provided"]
@@ -173,6 +173,19 @@
 ;;
 ;;  task defs below !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ;;
+(deftask preJar
+
+  "private"
+  []
+
+  (bc/with-pre-wrap fileset
+    (->> (fp! (ge :czzDir)
+              "czlab/skaro/demo")
+         (a/deleteDir))
+    fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftask dev
 
   "for dev only"
@@ -182,6 +195,7 @@
         (b/libjars)
         (b/buildr)
         (b/pom!)
+        (preJar)
         (b/jar!)))
 
 
@@ -257,7 +271,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask release
+(deftask rel
 
   ""
   [d doco bool "Generate doc"]
