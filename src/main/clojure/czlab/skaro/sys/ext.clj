@@ -188,7 +188,7 @@
         Container
 
         (appKeyBits [this] (bytesify (.appKey this)))
-        (appKey [_] (.getv impl :disposition ))
+        (appKey [_] (.getv impl :digest ))
         (appDir [this] _appDir)
         (cljrt [_] rts)
         (getx [_] impl)

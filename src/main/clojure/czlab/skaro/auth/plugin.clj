@@ -570,7 +570,7 @@
         db (nth args 2)
         env (readEdn (io/file appDir CFG_ENV_CF))
         app (readEdn (io/file appDir CFG_APP_CF))
-        pkey (-> (str (get-in app [:info :disposition]))
+        pkey (-> (str (get-in app [:info :digest]))
                  (.toCharArray))
         cfg ((keyword db) (get-in env [:databases :jdbc]))
         pwd (-> (passwd<> (:passwd cfg) pkey)

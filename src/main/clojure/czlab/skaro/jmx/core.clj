@@ -62,7 +62,7 @@
   [^Muble impl]
 
   (try
-    (->> (long (.getv impl :regoPort))
+    (->> (long (.getv impl :registryPort))
          (LocateRegistry/createRegistry )
          (.setv impl :rmi ))
     (catch Throwable e#
@@ -76,15 +76,15 @@
   [^Muble impl]
 
   (let
-    [regoPort (.getv impl :regoPort)
-     port (.getv impl :port)
-     host (.getv impl :host)
+    [url (str "service:jmx:rmi://{{h}}:{{s}}"
+              "/jndi/rmi://{{h}}:{{r}}/jmxrmi")
+     {:keys [registryPort serverPort
+             host url contextFactory]}
+     (.impl impl)
      env (HashMap.)
-     endpt (-> (str "service:jmx:rmi://{{h}}:{{s}}/"
-                    "jndi/rmi://{{h}}:{{r}}/jmxrmi")
-               (cs/replace "{{h}}" (str "" host))
-               (cs/replace "{{s}}" (str "" port))
-               (cs/replace "{{r}}" (str "" regoPort)))]
+     endpt (-> (cs/replace url "{{h}}" host)
+               (cs/replace "{{s}}" (str serverPort))
+               (cs/replace "{{r}}" (str registryPort)))]
     (log/debug "jmx service url: %s" endpt)
     (.put env
           "java.naming.factory.initial"
@@ -108,7 +108,7 @@
   [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean ]
 
   (.registerMBean svr mbean objName)
-  (log/info "registered jmx-bean: %s" objName)
+  (log/info "jmx-bean: %s" objName)
   objName)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -117,16 +117,16 @@
 
   ""
   ^JmxServer
-  [^String host regoPort]
+  [cfg]
 
-  (log/debug "jmxServer host = %s" host)
+  (log/debug "jmxServer config =\n%s" cfg)
   (let
-    [impl (muble<>
-            {:regoPort regoPort
-             :host (stror host
-                          (-> (InetAddress/getLocalHost)
-                              (.getHostName)))
-             :port 0})
+    [impl (->> (merge
+                 {:registryPort 7777
+                  :serverPort 7778
+                  :host (-> (InetAddress/getLocalHost)
+                            (.getHostName))} cfg)
+               (muble<> ))
      objNames (atom []) ]
     (reify
 
@@ -145,24 +145,20 @@
               (.unregisterMBean objName))))
 
       (reg [_ obj domain nname paths]
-        (let [bs (.getv impl :beanSvr) ]
-          (reset! objNames
-                  (conj @objNames
-                        (doReg bs
-                               (objectName domain nname paths)
-                               (mkJmxBean obj))))))
+        (let [bs (.getv impl :beanSvr)
+              nm (objectName domain nname paths)]
+          (->> (doReg bs nm (mkJmxBean obj))
+               (swap! objNames conj))
+          nm))
 
       ;; jconsole port
-      (setRegistryPort [_ p] (.setv impl :regoPort p))
+      (setRegistryPort [_ p] (.setv impl :registryPort p))
 
-      (setServerPort[_ p] (.setv impl :port p))
+      (setServerPort[_ p] (.setv impl :serverPort p))
 
       (start [_]
-        (let [p1 (.getv impl :regoPort)
-              p2 (.getv impl :port) ]
-          (when-not (> p2 0) (.setv impl :port (inc p1)))
-          (startRMI impl)
-          (startJMX impl)) )
+        (startRMI impl)
+        (startJMX impl))
 
       (stop [this]
         (let [^JMXConnectorServer c (.getv impl :conn)
@@ -173,7 +169,7 @@
           (when (some? r)
             (try!
               (UnicastRemoteObject/unexportObject r true)))
-          (.setv impl :rmi nil))))))
+          (.unsetv impl :rmi ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

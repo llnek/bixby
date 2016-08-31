@@ -149,9 +149,9 @@
   ^Atom
   [^Atom gist]
 
-  (log/info "%s\n%s\n%s"
-            (str<> 24 \=)
-            "inside primodial()" (str<> 24 \=))
+  (log/info "\n%s\n%s\n%s"
+            (str<> 78 \=)
+            "inside primodial()" (str<> 78 \=))
   (log/info "execvisor = %s"
             "czlab.skaro.rt.Execvisor")
   (let [execv (execvisor<>)]

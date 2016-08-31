@@ -86,7 +86,7 @@
   ^AppGist
   [^Execvisor execv ^File des]
 
-  (log/info "app dir : %s\ninspecting..." des)
+  (log/info "app dir : %s => inspecting..." des)
   ;;create the pod meta and register it
   ;;as a application
   (let
@@ -112,14 +112,11 @@
 
   (log/info "jmx-config:\n%s" cfg)
   (trylet!
-    [port (or (:port cfg) 7777)
-     host (str (:host cfg))
-     jmx (jmxServer<> host port)]
+    [jmx (jmxServer<> cfg)]
     (.start jmx)
     (.reg jmx co "czlab" "execvisor" ["root=skaro"])
     (-> (.getx co)
         (.setv :jmxServer jmx))
-    (log/info "jmx-server listening on: %s:%s" host port)
     jmx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

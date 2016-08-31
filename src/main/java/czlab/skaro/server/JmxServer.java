@@ -14,6 +14,7 @@
 
 package czlab.skaro.server;
 
+import javax.management ObjectName;
 import czlab.xlib.Startable;
 
 /**
@@ -22,7 +23,7 @@ import czlab.xlib.Startable;
 public interface JmxServer extends Startable {
 
   /**/
-  public void reg(Object obj, String domain, String nname, Object paths);
+  public ObjectName reg(Object obj, String domain, String nname, Object paths);
 
   /**/
   public void setRegistryPort(int port);
@@ -34,7 +35,7 @@ public interface JmxServer extends Startable {
   public void reset();
 
   /**/
-  public void dereg(String nname);
+  public void dereg(ObjectName nname);
 
 }
 
