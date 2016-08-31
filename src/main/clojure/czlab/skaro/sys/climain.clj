@@ -57,7 +57,6 @@
     [czlab.skaro.server
      Execvisor
      Component
-     Cljshim
      ConfigError]
     [czlab.xlib
      Identifiable
@@ -151,8 +150,8 @@
   [^Atom gist]
 
   (log/info "%s\n%s\n%s"
-            (str<> 78 \=)
-            "inside primodial()" (str<> 78 \=))
+            (str<> 24 \=)
+            "inside primodial()" (str<> 24 \=))
   (log/info "execvisor = %s"
             "czlab.skaro.rt.Execvisor")
   (let [execv (execvisor<>)]
@@ -162,9 +161,9 @@
            :stop! #(stopCLI gist))
     (comp->initialize execv gist)
     (log/info "%s\n%s\n%s"
-              (str<> 78 \*)
+              (str<> 24 \*)
               "about to start skaro..."
-              (str<> 78 \*))
+              (str<> 24 \*))
     (.start execv)
     (log/info "skaro started!")
     gist))
@@ -222,7 +221,7 @@
   ""
   [^File home ^File cwd]
 
-  (if true
+  (if false
     (->> (CljAppLoader/newInstance home cwd)
          (.setContextClassLoader (Thread/currentThread))))
   (runCLI home cwd))

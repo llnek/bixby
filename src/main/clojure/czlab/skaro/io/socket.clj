@@ -122,7 +122,7 @@
              (log/error e# "")
              (closeQ ssoc)
              (.unsetv (.getx co) :ssocket ))))
-      (getCldr)))
+      {:cl (getCldr)} ))
   (io<started> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -133,10 +133,11 @@ stop_proc() {
     fi
 }
 
-if [ $# -eq 2 ] ; then
-    if [ "$1" = "start" -a "$2" = "bg" ]; then
-       BG=true
-    fi
+if [ "$1" = "start" ]; then
+  MAINCZ=czlab.skaro.server.Runtime
+  if [ "$2" = "bg" ]; then
+    BG=true
+  fi
 fi
 
 if [ $# -eq 1 -a "$1" = "debug" ]; then

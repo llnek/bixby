@@ -12,19 +12,23 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.server;
+package czlab.skaro.etc;
 
-import czlab.xlib.Initable;
-import czlab.xlib.Disposable;
-import czlab.xlib.Startable;
+import java.lang.reflect.Method;
 
 /**
  * @author Kenneth Leung
  */
-public interface AppMain extends Disposable, Startable {
+public class AppMain {
 
   /**/
-  public void init(Container c, Object options);
+  public static Object invokeStatic(String[] args)
+  throws Exception {
+    Class<?> z = Class.forName("boot.App");
+    String[] s = new String[0];
+    Method m= z.getDeclaredMethod("main", s.getClass());
+    return m.invoke(null, (Object)args);
+  }
 
 }
 

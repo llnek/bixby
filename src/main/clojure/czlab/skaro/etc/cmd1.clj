@@ -58,11 +58,10 @@
         [czlab.skaro.sys.core])
 
   (:import
+    [czlab.skaro.etc AppMain CmdHelpError]
     [org.apache.commons.io FileUtils]
-    [czlab.skaro.etc CmdHelpError]
-    [czlab.skaro.server Cljshim ]
     [czlab.crypto PasswordAPI]
-    [boot App]
+    ;;[boot App]
     [java.util
      ResourceBundle
      Properties
@@ -84,7 +83,7 @@
 
   (sysProp! "skaro.home.dir" (.getCanonicalPath homeDir))
   (sysProp! "skaro.proc.dir" (.getCanonicalPath appDir))
-  (App/main (into-array String args)))
+  (AppMain/invokeStatic (into-array String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

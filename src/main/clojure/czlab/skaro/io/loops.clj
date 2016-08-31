@@ -289,7 +289,7 @@
     (async!
       #(while @loopy
          (loopableWakeup co intervalMillis))
-      (getCldr))))
+      {:cl (getCldr)} )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -29,7 +29,7 @@ public class Cljshim {
    * @param name
    */
   public static Cljshim newrt(ClassLoader cl, String name) {
-    return new Cljshim(ClojureRuntimeShim.newRuntime(cl, name));
+    return new Cljshim(ClojureRuntimeShim.newRuntime(cl,name));
   }
 
   /**
@@ -61,6 +61,11 @@ public class Cljshim {
   /**/
   public Object call(String func) {
     return this.callEx(func);
+  }
+
+  /**/
+  public void close() {
+     _shim.close();
   }
 
   /**/

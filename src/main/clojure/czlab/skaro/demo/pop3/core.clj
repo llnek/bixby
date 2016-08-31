@@ -30,7 +30,7 @@
     [czlab.wflow Job TaskDef]
     [org.apache.commons.io IOUtils]
     [javax.mail.internet MimeMessage]
-    [czlab.skaro.server Container AppMain]
+    [czlab.skaro.server Container]
     [czlab.skaro.io EmailEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

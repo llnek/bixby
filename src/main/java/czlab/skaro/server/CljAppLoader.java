@@ -76,10 +76,16 @@ public class CljAppLoader extends URLClassLoader {
   /**/
   private boolean isSystem(String name) {
     if (name != null) {
-      return (name.startsWith("com.sun.") ||
+      return (name.startsWith("org.xml.sax.") ||
+              name.startsWith("org.w3c.dom.") ||
+              name.startsWith("com.sun.") ||
+              name.startsWith("sun.") ||
               name.startsWith("javax.") ||
               name.startsWith("java.") ||
+              name.startsWith("org/xml/sax/") ||
+              name.startsWith("org/w3c/dom/") ||
               name.startsWith("com/sun/") ||
+              name.startsWith("sun/") ||
               name.startsWith("javax/") ||
               name.startsWith("java/"));
     }
@@ -144,7 +150,6 @@ public class CljAppLoader extends URLClassLoader {
   protected Class<?> loadClass(String name, boolean resolve)
   throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
-      //TLOG.debug("loading class {}", name);
       Class<?> c= findLoadedClass(name);
       ClassNotFoundException ex= null;
       boolean tried_parent= false;

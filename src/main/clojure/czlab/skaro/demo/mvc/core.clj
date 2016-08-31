@@ -29,7 +29,7 @@
   (:import
     [czlab.skaro.io HttpEvent HttpResult]
     [czlab.wflow Job TaskDef WorkStream]
-    [czlab.skaro.server AppMain Container]))
+    [czlab.skaro.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

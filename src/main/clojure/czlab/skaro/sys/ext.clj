@@ -81,7 +81,6 @@
      ServiceGist
      AppGist
      Execvisor
-     AppMain
      ServiceError
      Component
      Cljshim
