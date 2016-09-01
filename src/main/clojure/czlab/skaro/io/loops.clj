@@ -44,7 +44,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
+(derive ::RepeatingTimer :czlab.skaro.io.core/:Service)
+(derive ::OnceTimer :czlab.skaro.io.core/Service)
+(derive ::ThreadedTimer ::RepeatingTimer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -338,9 +340,9 @@
   [^Service co & args]
 
   (log/info "io->stop ThreadedTimer: %s" (.id co))
-  (let [loopy (.getv (.getx co) :loopy) ]
-    (reset! loopy false)
-    (io<stopped> co)))
+  (when-some [loopy (.getv (.getx co) :loopy) ]
+    (reset! loopy false))
+  (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

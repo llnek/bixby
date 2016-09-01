@@ -160,10 +160,10 @@
            :execv execv
            :stop! #(stopCLI gist))
     (comp->initialize execv gist)
-    (log/info "%s\n%s\n%s"
-              (str<> 24 \*)
+    (log/info "\n%s\n%s\n%s"
+              (str<> 78 \*)
               "about to start skaro..."
-              (str<> 24 \*))
+              (str<> 78 \*))
     (.start execv)
     (log/info "skaro started!")
     gist))

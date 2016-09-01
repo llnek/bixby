@@ -76,23 +76,25 @@
   [^Muble impl]
 
   (let
-    [url (str "service:jmx:rmi://{{h}}:{{s}}"
+    [cfc "com.sun.jndi.rmi.registry.RegistryContextFactory"
+     svc (str "service:jmx:rmi://{{h}}:{{s}}"
               "/jndi/rmi://{{h}}:{{r}}/jmxrmi")
      {:keys [registryPort serverPort
              host url contextFactory]}
      (.impl impl)
      env (HashMap.)
-     endpt (-> (cs/replace url "{{h}}" host)
+     endpt (-> (stror url svc)
+               (cs/replace "{{h}}" host)
                (cs/replace "{{s}}" (str serverPort))
                (cs/replace "{{r}}" (str registryPort)))]
     (log/debug "jmx service url: %s" endpt)
     (.put env
           "java.naming.factory.initial"
-          "com.sun.jndi.rmi.registry.RegistryContextFactory")
+          (stror contextFactory cfc))
     (let
-      [url (JMXServiceURL. endpt)
+      [s (JMXServiceURL. endpt)
        conn (JMXConnectorServerFactory/newJMXConnectorServer
-              url
+              s
               env
              (ManagementFactory/getPlatformMBeanServer))]
       (-> ^JMXConnectorServer

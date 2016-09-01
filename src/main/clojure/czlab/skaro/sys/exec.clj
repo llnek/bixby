@@ -110,7 +110,6 @@
   ^JmxServer
   [^Execvisor co cfg]
 
-  (log/info "jmx-config:\n%s" cfg)
   (trylet!
     [jmx (jmxServer<> cfg)]
     (.start jmx)

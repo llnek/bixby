@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
+(derive ::HTTP :czlab.skaro.io.core/Service)
 (def ^:private ^String AUTH "authorization")
 (def ^:private ^String BASIC "basic")
 

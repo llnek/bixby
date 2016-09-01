@@ -14,7 +14,7 @@
 
 package czlab.skaro.server;
 
-import javax.management ObjectName;
+import javax.management.ObjectName;
 import czlab.xlib.Startable;
 
 /**

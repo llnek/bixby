@@ -161,7 +161,7 @@
          ^Job j (cast? Job p2)]
         (if (nil? w)
           (throwBadArg "Want WorkStream, got " (class p1)))
-        (if (some? j)
+        (if (nil? j)
           (throwBadArg "Want Job, got " (class p2)))
         (log/debug "job#%s-handled by %s" (.id j) (.id svc))
         (.setv j :wflow w)
@@ -200,10 +200,13 @@
     (log/debug "event opts = %s" options)
     (log/debug "event router = %s" c1)
     (log/debug "io-handler = %s" c0)
+    (log/debug "handler = %s" hr)
+    (log/debug "wf = %s" wf)
     (try
       (.setv job EV_OPTS options)
       (.handle hr wf job)
-      (catch Throwable _
+      (catch Throwable e#
+        (log/error e# "")
         (.handle hr (fatalErrorFlow<> job) job)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,24 +319,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Map of service hierarchy
 ;;
-(derive ::HTTP ::Service)
-(derive ::Jetty ::HTTP)
-(derive ::Netty ::HTTP)
-;;(derive :czc.skaro.io/WebSockIO :czc.skaro.io/NettyIO)
-(derive ::NettyMVC ::Netty)
-
-(derive ::RepeatingTimer ::Service)
-(derive ::OnceTimer ::Service)
-(derive ::ThreadedTimer ::RepeatingTimer)
-
-(derive ::FilePicker ::ThreadedTimer)
-(derive ::IMAP ::ThreadedTimer)
-(derive ::POP3 ::ThreadedTimer)
-
-(derive ::JMS ::Service)
-(derive ::Socket ::Service)
-;;(derive ::SocketIO ::Service)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

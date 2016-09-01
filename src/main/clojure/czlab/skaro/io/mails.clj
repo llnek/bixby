@@ -50,7 +50,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
+(derive ::IMAP :czlab.skaro.io.mails/ThreadedTimer)
+(derive ::POP3 :czlab.skaro.io.mails/ThreadedTimer)
 (def ^:dynamic *mock-mail-provider* "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
