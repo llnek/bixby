@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.sys.climain
+  czlab.skaro.sys.main
 
   (:require
     [czlab.xlib.str :refer [str<> stror lcase hgl? strim]]

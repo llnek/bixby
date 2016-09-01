@@ -26,6 +26,7 @@
     [czlab.xlib.core
      :refer [test-cond
              seqint2
+             inst?
              juid
              trap!
              muble<>
@@ -34,9 +35,12 @@
      :refer [fileRead?
              dirReadWrite?]])
 
-  (:use [czlab.skaro.sys.core])
+  (:use [czlab.skaro.sys.core]
+        [czlab.wflow.core])
 
   (:import
+    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.wflow TaskDef Job StepError]
     [czlab.xlib
      Versioned
      Muble
@@ -119,6 +123,58 @@
         (version [_] (:version info))
         (getx [_] impl))
       {:typeid  ::AppGist})))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Internal flows
+(defn- mkWork
+
+  ""
+  [s]
+
+  (script<>
+    (fn [_ ^Job job]
+      (let [^HttpEvent evt (.event job)
+            ^HttpResult
+            res (.resultObj evt) ]
+        (.setStatus res s)
+        (.replyResult evt)
+        nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- mkInternalFlow
+
+  ""
+  ^TaskDef
+  [^Job j s]
+
+  (let [evt (.event j)]
+    (if (inst? HttpEvent evt)
+      (mkWork s)
+      (trap! StepError
+             nil
+             (format "unhandled event, '%s'"
+                     (:typeid (meta evt)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn fatalErrorFlow<>
+
+  ^TaskDef
+  [^Job job]
+
+  (mkInternalFlow job 500))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn orphanFlow<>
+
+  ""
+  ^TaskDef
+  [^Job job]
+
+  (mkInternalFlow job 501))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

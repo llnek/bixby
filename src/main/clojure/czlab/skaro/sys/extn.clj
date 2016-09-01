@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.sys.ext
+  czlab.skaro.sys.extn
 
   (:require
     [czlab.xlib.resources :refer [loadResource]]
