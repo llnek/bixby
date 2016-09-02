@@ -223,7 +223,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableOneLoop
+(defmethod loopableWakeup
 
   ::POP3
   [^Service co & args]
@@ -321,7 +321,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableOneLoop
+(defmethod loopableWakeup
 
   ::IMAP
   [^Service co & args]

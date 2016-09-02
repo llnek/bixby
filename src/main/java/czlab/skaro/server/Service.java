@@ -50,9 +50,6 @@ public interface Service extends Component, Startable, Hierarchial, Disposable {
   /**/
   public void hold(EventHolder obj);
 
-  /**/
-  public ServiceHandler handler();
-
 }
 
 

@@ -12,8 +12,7 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:doc "Basic functions for loopable services."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.loops
@@ -25,10 +24,12 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl? strim]]
     [czlab.xlib.core
-     :refer [throwIOE
+     :refer [test-nonil
+             throwUOE
              tmtask<>
              inst?
              spos?
+             try!!
              try!
              seqint2]])
 
@@ -44,23 +45,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-(derive ::RepeatingTimer :czlab.skaro.io.core/:Service)
+;; service hierarchy
+(derive ::RepeatingTimer :czlab.skaro.io.core/Service)
 (derive ::OnceTimer :czlab.skaro.io.core/Service)
 (derive ::ThreadedTimer ::RepeatingTimer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+;; These 2 fn(s) together dictates how a loopable shall run
 (defmulti loopableSchedule "" meta???)
 (defmulti loopableWakeup "" meta???)
-(defmulti loopableOneLoop "" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- configRTimer
+(defn- mkEventObj
 
-  ""
+  ^TimerEvent
+  [^Service co repeat?]
+
+  (log/debug "ioevent: %s: %s" (gtid co) (.id co))
+  (let [eeid (seqint2)]
+    (with-meta
+      (reify
+        TimerEvent
+
+        (checkAuthenticity [_] false)
+        (bindSession [_ s] nil)
+        (session [_] nil)
+        (id [_] eeid)
+        (source [_] co)
+        (isRepeating [_] repeat?))
+
+      {:typeid ::TimerEvent})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- configRepeat
+
+  "Configure a repeating timer"
   [^Timer tm delays ^long intv func]
 
+  (log/debug "Scheduling a repeating timer: %dms" intv)
   (let [tt (tmtask<> func)
         [dw ds] delays]
     (cond
@@ -72,11 +96,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- configTimer
+(defn- configOnce
 
-  ""
+  "Configure a *one-time* timer"
   [^Timer tm delays func]
 
+  (log/debug "Scheduling a *single-shot* timer")
   (let [ tt (tmtask<> func)
         [dw ds] delays]
     (cond
@@ -90,7 +115,6 @@
 ;;
 (defn- configTimerTask
 
-  ""
   [^Service co & [repeat?]]
 
   (let [tm (.getv (.getx co) :timer)
@@ -100,10 +124,11 @@
         (.config co)
         d [delayWhen (s2ms delaySecs)]
         func #(loopableWakeup co)]
+    (test-nonil "java-timer" tm)
     (if (and repeat?
              (spos? intervalSecs))
-      (configRTimer tm d (s2ms intervalSecs) func)
-      (configTimer tm d func))
+      (configRepeat tm d (s2ms intervalSecs) func)
+      (configOnce tm d func))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,6 +138,7 @@
   ""
   [^Service co & [repeat?]]
 
+  (log/debug "service %s: created a java-timer" (.id co))
   (.setv (.getx co) :timer (Timer. true))
   (loopableSchedule co repeat?))
 
@@ -132,37 +158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<>
-
-  ::RepeatingTimer
-  [^Service co & args]
-
-  (log/info "ioevent: RepeatingTimer: %s" (.id co))
-  (let [eeid (seqint2)]
-    (with-meta
-      (reify
-        TimerEvent
-
-        (checkAuthenticity [_] false)
-        (bindSession [_ s] nil)
-        (session [_] nil)
-        (id [_] eeid)
-        (source [_] co)
-        (isRepeating [_] true))
-
-      {:typeid ::TimerEvent})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->initialize
-
-  ::RepeatingTimer
-  [^Service co & [cfg0]]
-
-  (log/info "comp->initialize: RepeatingTimer: %s" (.id co))
-  (let [c2 (merge (.config co) cfg0)]
-    (.setv (.getx co) :emcfg c2)
-    co))
+(defmethod ioevent<> ::RepeatingTimer [^Service co & _] (mkEventObj co true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -171,7 +167,7 @@
   ::RepeatingTimer
   [^Service co & args]
 
-  (log/info "iostart: RepeatingTimer: %s" (.id co))
+  (log/info "iostart: %s: %s" (gtid co) (.id co))
   (startTimer co true)
   (io<started> co))
 
@@ -182,7 +178,7 @@
   ::RepeatingTimer
   [^Service co & args]
 
-  (log/info "io->stop RepeatingTimer: %s" (.id co))
+  (log/info "io->stop %s: %s" (gtid co) (.id co))
   (killTimer co)
   (io<stopped> co))
 
@@ -193,6 +189,7 @@
   ::RepeatingTimer
   [^Service co & args]
 
+  ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
   (.dispatch co (ioevent<> co) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,37 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<>
-
-  ::OnceTimer
-  [^Service co & args]
-
-  (log/info "ioevent: OnceTimer: %s" (.id co))
-  (let [eeid (seqint2) ]
-    (with-meta
-      (reify
-        TimerEvent
-
-        (checkAuthenticity [_] false)
-        (bindSession [_ s] nil)
-        (session [_] nil)
-        (id [_] eeid)
-        (source [_] co)
-        (isRepeating [_] false))
-
-      {:typeid ::TimerEvent })))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->initialize
-
-  ::OnceTimer
-  [^Service co & [cfg0]]
-
-  (log/info "comp->initialize: OnceTimer: %s" (.id co))
-  (let [c2 (merge (.config co) cfg0)]
-    (.setv (.getx co) :emcfg c2)
-    co))
+(defmethod ioevent<> ::OnceTimer [^Service co & _] (mkEventObj false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -248,7 +215,7 @@
   ::OnceTimer
   [^Service co & args]
 
-  (log/info "io->start OnceTimer: %s" (.id co))
+  (log/info "io->start %s: %s" (gtid co) (.id co))
   (startTimer co false)
   (io<started> co))
 
@@ -259,7 +226,7 @@
   ::OnceTimer
   [^Service co & args]
 
-  (log/info "io->stop OnceTimer: %s" (.id co))
+  (log/info "io->stop %s: %s" (gtid co) (.id co))
   (killTimer co)
   (io<stopped> co))
 
@@ -275,41 +242,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Threaded Timer
-
-;;(defmethod loopable-oneloop :default [co] nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmethod loopableSchedule
 
   ::ThreadedTimer
   [^Service co & [intervalMillis]]
 
-  (log/info "Threaded timer - interval = %d" intervalMillis)
-  (let [loopy (atom true)]
+  (log/debug "%s timer @interval = %d" (gtid co) intervalMillis)
+  (let [loopy (volatile! true)]
     (.setv (.getx co) :loopy loopy)
     (async!
       #(while @loopy
          (loopableWakeup co intervalMillis))
-      {:cl (getCldr)} )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->initialize
-
-  ::ThreadedTimer
-  [^Service co & args]
-
-  (throwIOE "comp->initialize for threaded-timer called!"))
+      {:cl (getCldr)} )
+    co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
 
   ::ThreadedTimer
-  [co & [waitMillis]]
+  [^Service co & [waitMillis]]
 
-  (try! (loopableOneLoop co))
+  ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
+  (.dispatch co (ioevent<> co))
   (safeWait waitMillis)
   co)
 
@@ -320,14 +275,14 @@
   ::ThreadedTimer
   [^Service co & args]
 
-  (log/info "io->start: ThreadedTimer: %s" (.id co))
+  (log/info "io->start: %s: %s" (gtid co) (.id co))
   (let [{:keys [intervalSecs
                 delaySecs delayWhen]}
         (.config co)
         func #(loopableSchedule co (s2ms intervalSecs))]
     (if (or (spos? delaySecs)
             (inst? Date delayWhen))
-      (configTimer (Timer.)
+      (configOnce (Timer.)
                    [delayWhen (s2ms delaySecs)] func)
       (func))
     (io<started> co)))
@@ -339,9 +294,9 @@
   ::ThreadedTimer
   [^Service co & args]
 
-  (log/info "io->stop ThreadedTimer: %s" (.id co))
+  (log/info "io->stop %s: %s" (gtid co) (.id co))
   (when-some [loopy (.getv (.getx co) :loopy) ]
-    (reset! loopy false))
+    (vreset! loopy false))
   (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

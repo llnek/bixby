@@ -46,7 +46,7 @@
   (:use [czlab.skaro.sys.dfts]
         [czlab.skaro.etc.svcs]
         [czlab.skaro.sys.core]
-        [czlab.skaro.sys.ext]
+        [czlab.skaro.sys.extn]
         [czlab.skaro.jmx.core])
 
   (:import

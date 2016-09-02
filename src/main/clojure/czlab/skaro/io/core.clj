@@ -27,9 +27,10 @@
              tmtask<>
              seqint2
              juid
+             inst?
              spos?
              cast?
-             try!
+             try!!
              throwIOE
              muble<>
              convToJava]])
@@ -37,7 +38,7 @@
   (:use [czlab.xlib.consts]
         [czlab.wflow.core]
         [czlab.skaro.sys.core]
-        [czlab.skaro.sys.misc])
+        [czlab.skaro.sys.dfts])
 
   (:import
     [java.util.concurrent ConcurrentHashMap]
@@ -45,7 +46,6 @@
     [java.util Timer TimerTask]
     [czlab.skaro.io IoEvent]
     [czlab.skaro.server
-     ServiceHandler
      EventTrigger
      Service
      EventHolder
@@ -66,23 +66,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn meta??? "" {:no-doc true} [a & xs] (:typeid (meta a)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmacro s2ms
-  ""
+
+  "Convert seconds to milliseconds"
   {:no-doc true}
   [s]
+
   `(if (spos? ~s) (* 1000 ~s) 0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn meta???
-
-  ""
-  {:no-doc true}
-  [a & xs] (:typeid (meta a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti ioevent<> "Create an event" meta???)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -102,6 +96,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmulti io->error! "Handle error" meta???)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmulti io<stopped>
   "Called after a component has stopped" meta???)
 
@@ -112,109 +110,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defmulti ioevent<> "Create an event" meta???)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->initialize
+
+  :default
+  [^Service co & args]
+
+  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (if (and (not-empty args)
+           (map? (first args)))
+    (->> (merge (.config co) (first args))
+         (.setv (.getx co) :emcfg )))
+  co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod io<started>
 
   :default
-  [^Service co]
+  [^Service co & xs]
 
   (when-some [cfg (.config co)]
     (log/info "service config:\n%s" (pr-str cfg))
-    (log/info "service %s started - ok" (gtid co))))
+    (log/info "service %s started - ok" (.id co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io<stopped>
 
   :default
-  [^Service co]
+  [^Service co & xs]
 
-  (log/info "service %s stopped - ok" (gtid co)))
+  (log/info "service %s stopped - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->dispose
 
   :default
-  [^Service co]
+  [^Service co & xs]
 
-  (log/info "service %s disposed - ok" (gtid co)))
+  (log/info "service %s disposed - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkSvcHdr
+(defmethod io->error!
 
-  ""
-  ^ServiceHandler
-  [^Service svc & [trace?]]
+  :default
+  [^Service co & [^Job job ^Throwable e]]
 
-  (when trace?
-    (log/info "handler for %s created - ok" (.id svc)))
-  (reify ServiceHandler
-
-    (id [_] (.id svc))
-
-    (dispose [_] )
-
-    (handle [_ p1 p2]
-      (let
-        [^WorkStream w (cast? WorkStream p1)
-         ^Job j (cast? Job p2)]
-        (if (nil? w)
-          (throwBadArg "Want WorkStream, got " (class p1)))
-        (if (nil? j)
-          (throwBadArg "Want Job, got " (class p2)))
-        (log/debug "job#%s-handled by %s" (.id j) (.id svc))
-        (.setv j :wflow w)
-        (.execWith w j)))
-
-    (handleError [_ e] (log/error e ""))))
+  (log/error e "")
+  (when-some [wf (fatalErrorFlow<> job)]
+    (.execWith wf job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn job<+>
+(defmacro job<+>
 
   ""
-  ^Job
-  [^Container co wf evt]
+  {:private true
+   :tag Job}
+  [co wf evt]
 
-  (with-meta
-    (job<> co wf evt) {:typeid ::Job}))
+  `(with-meta (job<> ~co ~wf ~evt) {:typeid ::Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEvent
 
   ""
-  [^Container ctr ^Service src evt options]
+  [^Container ctr ^Service src evt args]
 
+  (log/debug "service %s onevent called" (.id src))
   (let
-    [c1 (str (:router options))
-     rts (.cljrt ctr)
+    [^Job job (job<+> ctr nil evt)
+     c1 (str (:router args))
      cfg (.config src)
-     hr (.handler src)
+     rts (.cljrt ctr)
      c0 (str (:handler cfg))
-     wf (try!
-          (.call rts ^String (stror c1 c0)))
-     job (job<+> ctr wf evt)]
+     cb (stror c1 c0)
+     wf (try!! nil
+               (.call rts ^String cb))]
     (log/debug "event type = %s" (type evt))
-    (log/debug "event opts = %s" options)
+    (log/debug "event opts = %s" args)
     (log/debug "event router = %s" c1)
     (log/debug "io-handler = %s" c0)
-    (log/debug "handler = %s" hr)
-    (log/debug "wf = %s" wf)
     (try
-      (.setv job EV_OPTS options)
-      (.handle hr wf job)
+      (if-not (inst? WorkStream wf)
+        (throwBadArg "Want WorkStream, got " (class wf)))
+      (log/debug "job#%s => %s" (.id job) (.id src))
+      (.setv job EV_OPTS args)
+      (.execWith ^WorkStream wf job)
       (catch Throwable e#
-        (log/error e# "")
-        (.handle hr (fatalErrorFlow<> job) job)))))
+        (io->error! src job e#)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn service<>
 
   "Create a Service"
-  [^Container parObj emId emAlias]
+  [^Container parObj emType emAlias]
+  {:pre [(keyword? emType)]}
 
   ;; holds all the events from this source
   (let [backlog (ConcurrentHashMap.)
@@ -228,53 +227,46 @@
         (isActive [_]
           (not (false? (.getv impl :active))))
 
-        (handler [_] (.getv impl :pipe))
         (config [_] (.getv impl :emcfg))
         (server [this] (.parent this))
+
         (dispatch [this ev]
-          (try!
-            (onEvent parObj this ev nil)))
+          (.dispatchEx this ev nil))
+
         (dispatchEx [this ev arg]
-          (try!
+          (try!!
+            nil
             (onEvent parObj this ev arg)))
+
         (release [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
               (log/debug "releasing event, id: %s" wid)
               (.remove backlog wid))))
+
         (hold [_ wevt]
           (when (some? wevt)
             (let [wid (.id ^Identifiable wevt)]
               (log/debug "holding event, id: %s" wid)
               (.put backlog wid wevt))))
+
         (version [_] "1.0")
         (getx [_] impl)
         (id [_] emAlias)
 
-        Hierarchial
-
         (parent [_] parObj)
         (setParent [_ p])
 
-        Disposable
-
         (dispose [this]
-          (when-some
-            [p (.getv impl :pipe)]
-            (.dispose ^Disposable p)
-            (.unsetv impl :pipe))
           (io->dispose this))
 
-        Startable
-
         (start [this]
-          (->> (mkSvcHdr this true)
-               (.setv impl :pipe ))
           (io->start this))
 
-        (stop [this] (io->stop this)))
+        (stop [this]
+          (io->stop this)))
 
-      {:typeid emId})))
+      {:typeid emType})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -315,10 +307,6 @@
           (.release src this)
           (.unsetv impl :timer)
           (.resumeWithError trigger) )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Map of service hierarchy
-;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

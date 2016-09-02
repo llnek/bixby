@@ -40,7 +40,7 @@
 
   (:import
     [czlab.skaro.io HttpEvent HttpResult]
-    [czlab.wflow TaskDef Job StepError]
+    [czlab.wflow WorkStream Job StepError]
     [czlab.xlib
      Versioned
      Muble
@@ -130,38 +130,41 @@
 (defn- mkWork
 
   ""
+  ^WorkStream
   [s]
 
-  (script<>
-    (fn [_ ^Job job]
-      (let [^HttpEvent evt (.event job)
-            ^HttpResult
-            res (.resultObj evt) ]
-        (.setStatus res s)
-        (.replyResult evt)
-        nil))))
+  (workStream<>
+    (script<>
+      (fn [_ ^Job job]
+        (let [^HttpEvent evt (.event job)
+              ^HttpResult
+              res (.resultObj evt) ]
+          (.setStatus res s)
+          (.replyResult evt)
+          nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mkInternalFlow
 
   ""
-  ^TaskDef
+  ^WorkStream
   [^Job j s]
 
   (let [evt (.event j)]
     (if (inst? HttpEvent evt)
       (mkWork s)
-      (trap! StepError
-             nil
-             (format "unhandled event, '%s'"
-                     (:typeid (meta evt)))))))
+      (workStream<>
+        (script<>
+          #(log/error "Unhandled event, '%s' {job:#s}"
+                      (:typeid (meta evt))
+                      (.id ^Job %2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn fatalErrorFlow<>
 
-  ^TaskDef
+  ^WorkStream
   [^Job job]
 
   (mkInternalFlow job 500))
@@ -171,7 +174,7 @@
 (defn orphanFlow<>
 
   ""
-  ^TaskDef
+  ^WorkStream
   [^Job job]
 
   (mkInternalFlow job 501))

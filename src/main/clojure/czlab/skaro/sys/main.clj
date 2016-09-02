@@ -170,7 +170,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- runCLI
+(defn startViaCLI
 
   ""
   [home cwd]
@@ -213,18 +213,6 @@
     (log/info "container(s) are now running...")
     (while (not @STOPCLI)
       (safeWait 5000))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn startViaCLI
-
-  ""
-  [^File home ^File cwd]
-
-  (if false
-    (->> (CljAppLoader/newInstance home cwd)
-         (.setContextClassLoader (Thread/currentThread))))
-  (runCLI home cwd))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

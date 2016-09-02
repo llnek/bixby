@@ -22,7 +22,7 @@
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.crypto.core :refer [assertJce dbgProvider]]
     [czlab.crypto.codec :refer [strongPwd passwd<>]]
-    [czlab.skaro.sys.climain :refer [startViaCLI]]
+    [czlab.skaro.sys.main :refer [startViaCLI]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]

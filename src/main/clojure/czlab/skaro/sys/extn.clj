@@ -77,7 +77,6 @@
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
-     ServiceHandler
      ServiceGist
      AppGist
      Execvisor
@@ -275,7 +274,6 @@
 
   (let
     [^Execvisor exe (.parent co)
-     svcType (keyword svcType)
      bks (->> :emitters
               (.getv (.getx exe)))]
     (if-some
@@ -311,7 +309,7 @@
             {:keys [service
                     enabled]} cfg]
            (if-not (or (false? enabled)
-                       (nichts? service))
+                       (nil? service))
              (let [v (service<+>
                        co service k cfg)]
                (assoc! %1 (.id v) v))

@@ -12,7 +12,7 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-(ns ^{:doc ""
+(ns ^{:doc "Implementation for FilePicker."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.files
@@ -27,13 +27,11 @@
              seqint2
              trylet!
              muble<>
-             try!]]
-    [czlab.skaro.io.loops
-     :refer [loopableSchedule
-             loopableOneLoop]])
+             try!]])
 
   (:use
     [czlab.skaro.sys.core]
+    [czlab.skaro.io.loops]
     [czlab.skaro.io.core])
 
   (:import
@@ -76,7 +74,7 @@
         (session [_] )
         (source [_] co)
         (originalFileName [_] fnm)
-        (file [_] f)
+        (file [_] (io/file f))
         (id [_] eeid))
 
       {:typeid ::FileEvent})))
@@ -130,7 +128,7 @@
   ::FilePicker
   [^Service co & [cfg0]]
 
-  (log/info "comp->initialize: FilePicker: %s" (.id co))
+  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
   (let
     [c2 (merge (.config co) cfg0)
      {:keys [recvFolder
@@ -169,7 +167,7 @@
 (defmethod loopableSchedule
 
   ::FilePicker
-  [^Service co & args]
+  [^Service co & _]
 
   (when-some
     [mon (.getv (.getx co) :monitor)]
