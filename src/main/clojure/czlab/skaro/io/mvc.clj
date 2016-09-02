@@ -12,11 +12,10 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:doc "Implementation for HTTP/MVC service."
       :author "Kenneth Leung" }
 
-  czlab.skaro.io.netty
+  czlab.skaro.io.mvc
 
   (:require
     [czlab.xlib.str
@@ -36,6 +35,7 @@
              stringify
              spos?
              inst?
+             try!!
              try!
              throwIOE
              seqint2
@@ -50,8 +50,12 @@
         [czlab.skaro.io.http])
 
   (:import
-    [czlab.skaro.server EventHolder Container Service EventTrigger]
     [czlab.net RouteCracker RouteInfo]
+    [czlab.skaro.server
+     EventHolder
+     Container
+     Service
+     EventTrigger]
     [czlab.netty InboundFilter]
     [clojure.lang APersistentMap]
     [java.io
@@ -180,15 +184,14 @@
   [^ChannelHandlerContext ctx ^WebSockEvent evt src]
 
   (let [^WebSockResult res (.resultObj evt)
-        ^XData xs (.getv (.getx res) :body)
         ^WebSocketFrame
-        f (when (and (some? xs)
-                     (.hasContent xs))
+        f (if-not (.isEmpty res)
             (if (.isBinary res)
-              (->> (.getBytes xs)
+              (->> ^bytes (.getv (.getx res) :binary)
                    (Unpooled/wrappedBuffer )
                    (BinaryWebSocketFrame. ))
-              (TextWebSocketFrame. (.stringify xs))))]
+              (->> ^String (.getv (.getx res) :text)
+                   (TextWebSocketFrame. ))))]
     (when (some? f)
       (.writeAndFlush ctx f))))
 
@@ -202,7 +205,8 @@
    ^HttpEvent evt
    ^HttpResponse rsp]
 
-  (-> (getInHeader (.msgGist evt) "range")
+  (-> (gistHeader (.msgGist evt) "range")
+      str
       (HttpRangeInput/fileRange rsp raf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,12 +258,12 @@
   (let [res (.resultObj evt)
         {:keys [redirect
                 cookies
-                code body hds]}
+                code body headers]}
         (.impl (.getx res))
         gist (.msgGist evt)
         rsp (httpReply<> code)]
     ;;headers
-    (doseq [[nm vs]  hds
+    (doseq [[nm vs]  headers
            :when (not= "content-length" (lcase nm))]
       (doseq [vv (seq vs)]
         (addHeader rsp nm vv)))

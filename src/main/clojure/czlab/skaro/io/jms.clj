@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 
-(ns ^{:doc ""
+(ns ^{:doc "Implementation for JMS service."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.jms
@@ -23,9 +23,10 @@
      :refer [throwIOE
              seqint2
              inst?
-             muble<>
+             try!!
+             try!
              juid
-             try!]]
+             muble<>]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl? stror]])
@@ -55,8 +56,8 @@
      TopicConnectionFactory
      TopicSession
      TopicSubscriber]
-    [javax.naming Context InitialContext]
     [java.io IOException]
+    [javax.naming Context InitialContext]
     [czlab.skaro.server Container Service]
     [czlab.skaro.io JmsEvent]))
 
@@ -71,14 +72,12 @@
   ::JMS
   [^Service co & args]
 
-  (log/info "ioevent: JMS: %s" (.id co))
+  (log/info "ioevent: %s: %s" (gtid co) (.id co))
   (let [msg (first args)
         eeid (seqint2)
         impl (muble<>)]
     (with-meta
-      (reify
-        JmsEvent
-
+      (reify JmsEvent
         (checkAuthenticity [_] false)
         (bindSession [_ s] )
         (session [_] )
@@ -97,16 +96,6 @@
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (ioevent<> co msg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->initialize
-
-  ::JMS
-  [^Service co & xs]
-
-  (log/info "comp->initialize: JMS: %s" (.id co))
-  co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -216,19 +205,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- sanitize
+
+  ""
+  [^Service co cfg0]
+
+  (let [{:keys [jndiPwd jmsPwd]}
+        cfg0
+        pkey (.appKey ^Container (.server co))]
+    (-> cfg0
+        (assoc :jndiPwd (.text (passwd<> jndiPwd pkey)))
+        (assoc :jmsPwd (.text (passwd<> jmsPwd pkey))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->initialize
+
+  ::JMS
+  [^Service co  & [cfg0]]
+
+  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (->> (merge (.config co)
+              (sanitize cfg0))
+       (.setv (.getx co) :emcfg ))
+  co)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod io->start
 
   ::JMS
-  [^Service co & args]
+  [^Service co & _]
 
-  (log/info "io->start: JMS: %s" (.id co))
+  (log/info "io->start: %s: %s" (gtid co) (.id co))
   (let
     [{:keys [contextFactory providerUrl
              jndiUser jndiPwd connFactory]}
      (.config co)
-     pwd (->> ^Container (.server co)
-              (.appKey)
-              (passwd<> jndiPwd))
      vars (Hashtable.) ]
     (when (hgl? providerUrl)
       (.put vars Context/PROVIDER_URL providerUrl))
@@ -238,7 +251,7 @@
             contextFactory))
     (when (hgl? jndiUser)
       (.put vars "jndi.user" jndiUser)
-      (.put vars "jndi.password" (stror pwd nil)))
+      (.put vars "jndi.password" (stror jndiPwd nil)))
     (let
       [ctx (InitialContext. vars)
        obj (->> (str connFactory)
@@ -262,9 +275,9 @@
 (defmethod io->stop
 
   ::JMS
-  [^Service co & args]
+  [^Service co & _]
 
-  (log/info "io->stop: JMS: %s" (.id co))
+  (log/info "io->stop: %s: %s" (gtid co) (.id co))
   (when-some
     [^Connection c
      (.getv (.getx co) :conn)]

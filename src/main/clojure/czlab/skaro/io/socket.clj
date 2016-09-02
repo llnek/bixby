@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 
-(ns ^{:doc ""
+(ns ^{:doc "Implementation for TCP socket service."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.socket
@@ -22,10 +22,11 @@
     [czlab.xlib.core
      :refer [test-posnum
              convLong
+             try!!
+             spos?
              try!
              muble<>
-             seqint2
-             spos?]]
+             seqint2]]
     [czlab.xlib.process :refer [async!]]
     [czlab.xlib.meta :refer [getCldr]]
     [czlab.xlib.io :refer [closeQ]]
@@ -52,7 +53,7 @@
   ::Socket
   [^Service co & [^Socket soc]]
 
-  (log/info "ioevent: Socket: %s" (.id co))
+  (log/info "ioevent: %s: %s" (gtid co) (.id co))
   (let [impl (muble<>)
         eeid (seqint2) ]
     (with-meta
@@ -76,7 +77,7 @@
   ::Socket
   [^Service co & [cfg0]]
 
-  (log/info "comp->initialize: Socket: %s" (.id co))
+  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
   (let
     [{:keys [timeoutMillis
              backlog host port]
@@ -109,9 +110,9 @@
 (defmethod io->start
 
   ::Socket
-  [^Service co & args]
+  [^Service co & _]
 
-  (log/info "io->start: Socket: %s" (.id co))
+  (log/info "io->start: %s: %s" (gtid co) (.id co))
   (when-some
     [^ServerSocket
      ssoc (.getv (.getx co) :ssocket)]
@@ -131,15 +132,15 @@
 (defmethod io->stop
 
   ::Socket
-  [^Service co & args]
+  [^Service co & _]
 
-  (log/info "io->stop: Socket: %s" (.id co))
+  (log/info "io->stop: %s: %s" (gtid co) (.id co))
   (when-some
     [^ServerSocket
      ssoc (.getv (.getx co) :ssocket) ]
     (closeQ ssoc)
-    (.unsetv (.getx co) :ssocket )
-    (io<stopped> co)))
+    (.unsetv (.getx co) :ssocket ))
+  (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

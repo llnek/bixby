@@ -12,8 +12,7 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:doc "Common HTTP functions."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.http
@@ -77,10 +76,9 @@
   ^APersistentMap
   [^HttpEvent evt]
 
-  (let [{:keys [headers]}
-        (.msgGist evt)]
-    (when (contains? headers AUTH)
-      (parseBasicAuth (first (get headers AUTH))))))
+  (let [gist (.msgGist evt)]
+    (if (gistHeader? gist AUTH)
+      (parseBasicAuth (gistHeader gist AUTH)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -95,50 +93,32 @@
                 port passwd workers]
          :as cfg}
         (merge (.config co) cfg0)
-        ^Container ctr (.server co)
         kfile (expandVars serverKey)
+        ^Container ctr (.server co)
         ssl? (hgl? kfile)]
-    (with-local-vars [cpy (transient cfg)]
-      (when-not (spos? port)
-        (var-set cpy (assoc! @cpy
-                             :port
-                             (if ssl? 443 80))))
-      (if ssl?
-        (do
-          (test-cond "server-key file url"
-                     (.startsWith kfile "file:"))
-          (var-set cpy (assoc! @cpy
-                               :serverKey (URL. kfile)))
-          (var-set cpy (assoc! @cpy
-                               :passwd
-                               (->> (.appKey ctr)
-                                    (passwd<> passwd)
-                                    (.text)))))
-        (do
-          (var-set cpy (assoc! @cpy
-                               :serverKey nil))))
-
-      (when-not (spos? sockTimeOut)
-        (var-set cpy (assoc! @cpy
-                             :sockTimeOut 0)))
-      ;; always async *NIO*
-      (var-set cpy (assoc! @cpy :async true))
-
-      (when-not (spos? workers)
-        (var-set cpy (assoc! @cpy
-                             :workers 0)))
-
-      ;; 4Meg threshold for payload in memory
-      (when-not (spos? limitKB)
-        (var-set cpy (assoc! @cpy
-                             :limitKB
-                             (* 1024 4))))
-      ;; 5 mins
-      (when-not (spos? waitMillis)
-        (var-set cpy (assoc! @cpy
-                             :waitMillis
-                             (* 1000 300))))
-      (persistent! @cpy))))
+    (if ssl?
+      (test-cond "server-key file url"
+                 (.startsWith kfile "file:")))
+    (->>
+      {:port
+       (if-not (spos? port)
+         (if ssl? 443 80) port)
+       :passwd
+       (->> (.appKey ctr)
+            (passwd<> passwd)
+            (.text))
+       :serverKey
+       (if ssl? (URL. kfile) nil)
+       :sockTimeOut
+       (if-not (spos? sockTimeOut) 0 sockTimeOut)
+       :workers
+       (if-not (spos? workers) 0 workers)
+       :limitKB
+       (if-not (spos? limitKB) (* 1024 4) limitKB)
+       :waitMillis
+       (if-not (spos? waitMillis)
+         (* 1000 300) waitMillis)}
+      (merge cfg ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -146,15 +126,16 @@
 
   "Create a WebSocket result object"
   ^WebSockResult
-  [^Service co ^XData body & [binary?]]
+  [^Service co ^Object body & [binary?]]
 
-  (let [impl (muble<> {:body body})]
-    (reify
-
-      WebSockResult
-
+  (let [impl (muble<>)]
+    (if (true? binary?)
+      (.setv impl :binary body)
+      (.setv impl :text (str body)))
+    (reify WebSockResult
       (isText [this] (not (.isBinary this)))
       (isBinary [_] (true? binary?))
+      (isEmpty [_] (nil? body))
       (getx [_] impl)
       (source [_] co) )))
 
@@ -170,9 +151,7 @@
                        :cookies []
                        :code -1
                        :headers {} })]
-    (reify
-
-      HttpResult
+    (reify HttpResult
 
       (setRedirect [_ url] (.setv impl :redirect url))
       (setVersion [_ ver]  (.setv impl :version ver))
@@ -215,57 +194,10 @@
 
       (setChunked [_ b] (.setv impl :chunked? b))
 
+      (isEmpty [_] (nil? (.getv impl :body)))
+
       (setContent [_ data]
-        (if (some? data)
-          (.setv impl :body data)) ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn hasInHeader?
-
-  "Returns true if header exists"
-  [gist header]
-
-  (if-some [h (:headers gist)]
-    (and (not (empty? h))
-         (not (empty? (get h (lcase header)))))
-    false))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn hasInParam?
-
-  "true if parameter exists"
-  [gist param]
-
-  (if-some [p (:params gist)]
-    (and (not (empty? p))
-         (not (empty? (get p param))))
-    false))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn getInParameter
-
-  "Get the named parameter"
-  ^String
-  [gist param]
-
-  (when-some+ [arr (if (hasInParam? gist param)
-                     (get (:params gist) param))]
-    (first arr)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn getInHeader
-
-  "Get the named header"
-  ^String
-  [gist header]
-
-  (when-some+ [arr (if (hasInHeader? gist header)
-                     (get (:headers gist) (lcase header)))]
-    (first arr)))
+          (.setv impl :body data)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -277,12 +209,10 @@
   (let [^Container ctr (.server co)
         appDir (.appDir ctr)
         ctx (.getx co)
-        sf (io/file appDir DN_CONF "static-routes.conf")
         rf (io/file appDir DN_CONF "routes.conf")]
     (.setv ctx
            :routes
-           (vec (concat (if (.exists sf) (loadRoutes sf) [] )
-                        (if (.exists rf) (loadRoutes rf) [] ))))
+           (if (.exists rf) (loadRoutes rf) []))
     (.getv ctx :routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

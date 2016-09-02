@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 
-(ns ^{:doc ""
+(ns ^{:doc "Core functions for all IO services."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.core
@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn meta??? "" {:no-doc true} [a & xs] (:typeid (meta a)))
+(defn meta??? "" {:no-doc true} [a & _] (:typeid (meta a)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -131,7 +131,7 @@
 (defmethod io<started>
 
   :default
-  [^Service co & xs]
+  [^Service co & _]
 
   (when-some [cfg (.config co)]
     (log/info "service config:\n%s" (pr-str cfg))
@@ -142,7 +142,7 @@
 (defmethod io<stopped>
 
   :default
-  [^Service co & xs]
+  [^Service co & _]
 
   (log/info "service %s stopped - ok" (.id co)))
 
@@ -151,7 +151,7 @@
 (defmethod io->dispose
 
   :default
-  [^Service co & xs]
+  [^Service co & _]
 
   (log/info "service %s disposed - ok" (.id co)))
 
@@ -184,7 +184,7 @@
   ""
   [^Container ctr ^Service src evt args]
 
-  (log/debug "service %s onevent called" (.id src))
+  (log/debug "service '%s' onevent called" (.id src))
   (let
     [^Job job (job<+> ctr nil evt)
      c1 (str (:router args))

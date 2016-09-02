@@ -25,6 +25,9 @@ public interface IoResult extends Context {
   /**/
   public Service source();
 
+  /**/
+  public boolean isEmpty();
+
 }
 
 
