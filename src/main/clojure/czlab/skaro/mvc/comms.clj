@@ -12,7 +12,6 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
@@ -28,10 +27,10 @@
              getLocalFile]]
     [czlab.xlib.meta :refer [new<>]])
 
-  (:use [czlab.xlib.consts]
+  (:use [czlab.skaro.io.http]
+        [czlab.xlib.consts]
+        [czlab.wflow.core]
         [czlab.netty.core]
-        [czlab.skaro.io.http]
-        [czlab.skaro.io.netty]
         [czlab.skaro.io.core]
         [czlab.skaro.sys.core])
 
@@ -42,11 +41,11 @@
     [czlab.net RouteInfo RouteCracker]
     [czlab.skaro.mvc
      HttpErrorHandler
-     MVCUtils
+     MvcUtils
      WebAsset
      WebContent]
     [czlab.xlib XData Muble Hierarchial Identifiable]
-    [czlab.wflow  TaskDef Job]
+    [czlab.wflow  WorkStream Job]
     [czlab.skaro.rt AuthError]
     [org.apache.commons.lang3 StringUtils]
     [java.util Date]
@@ -85,24 +84,20 @@
   ""
   [^String eTag lastTm gist]
 
-  (with-local-vars
-    [unmod "if-unmodified-since"
-     none "if-none-match"
-     modd true ]
+  (let
+    [unmod (gistHeader gist "if-unmodified-since")
+     none (gistHeader gist "if-none-match")]
     (cond
-      (gistHeader? gist @unmod)
-      (when-some+ [s (gistHeader gist @unmod)]
-        (try!
-          (when (>= (.getTime (.parse (MVCUtils/getSDF) s))
-                    lastTm)
-            (var-set modd false))))
+      (hgl? unmod)
+      (let [t (try!! -1 (-> (MvcUtils/getSDF)
+                            (.parse s)
+                            (.getTime)))]
+        (> lastTm t))
 
-      (gistHeader? gist @none)
-      (var-set modd (not= eTag
-                          (gistHeader gist @none)))
+      (hgl? none)
+      (not= eTag none)
 
-      :else nil)
-    @modd))
+      :else true)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -120,7 +115,7 @@
       (->> (Date. lastTm)
            (.format (MVCUtils/getSDF))
            (.setHeader res "last-modified" ))
-      (when (= (:method gist) "GET")
+      (if (= (:method gist) "GET")
         (->> HttpResponseStatus/NOT_MODIFIED
              (.code )
              (.setStatus res ))))
@@ -141,7 +136,7 @@
   ^String
   [^String path]
 
-  (let [pos (.lastIndexOf path (int \/)) ]
+  (let [pos (.lastIndexOf path (int \/))]
     (if (> pos 0)
       (let [p1 (.indexOf path (int \?) pos)
             p2 (.indexOf path (int \&) pos)
@@ -337,20 +332,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private  assetHandler!
-  (script<>
-    #(let [evt (.event ^Job %2)]
-       (handleStatic (.emitter evt)
-                     evt
-                     (.getv ^Job %2 EV_OPTS)))))
+  (workStream<>
+    (script<>
+      #(let [evt (.event ^Job %2)]
+         (handleStatic (.source evt)
+                       evt
+                       (.getv ^Job %2 EV_OPTS))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn assetHandler ""
-
-  ^TaskDef
-  []
-
-  assetHandler!)
+(defn assetHandler<> "" ^WorkStream [] assetHandler!)
 
 ;;(ns-unmap *ns* '->AssetHandler)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 
-(ns ^{:doc ""
+(ns ^{:doc "Helpers related to Freemarker."
       :author "Kenneth Leung" }
 
   czlab.skaro.mvc.ftlshim

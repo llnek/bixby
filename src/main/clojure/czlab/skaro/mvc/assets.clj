@@ -19,13 +19,12 @@
   czlab.skaro.mvc.assets
 
   (:require
+    [czlab.xlib.files :refer [slurpBytes writeFile]]
     [czlab.xlib.core :refer [do->nil try! fpath]]
     [czlab.xlib.mime :refer [guessContentType]]
     [czlab.xlib.str :refer [lcase ewicAny?]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
-    [czlab.xlib.files
-     :refer [slurpBytes writeFile]]
     [czlab.xlib.io :refer [streamify]])
 
   (:use [czlab.skaro.io.http]
@@ -33,6 +32,8 @@
 
   (:import
     [io.netty.handler.stream ChunkedStream ChunkedFile]
+    [java.io Closeable RandomAccessFile File]
+    [org.apache.commons.io FileUtils]
     [io.netty.handler.codec.http.cookie
      ServerCookieEncoder
      CookieDecoder]
@@ -47,7 +48,6 @@
      HttpHeaders
      Cookie
      QueryStringDecoder]
-    [java.io Closeable RandomAccessFile File]
     [io.netty.channel
      ChannelFutureListener
      Channel
@@ -55,11 +55,10 @@
      ChannelFuture
      ChannelPipeline
      ChannelHandlerContext]
-    [org.apache.commons.io FileUtils]
     [czlab.skaro.mvc
      WebContent
      WebAsset
-     HttpRangeInput ]
+     HttpRangeInput]
     [czlab.xlib Muble]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,11 +73,11 @@
 ;;
 (defn setCacheAssetsFlag
 
-  "Toggle caching of assers"
-  [cacheFlag]
+  "Toggle caching of assets"
+  [cacheFlag?]
 
-  (reset! cache-assets-flag (true? cacheFlag))
-  (log/info "web assets caching is set to %s" @cache-assets-flag))
+  (reset! cache-assets-flag (true? cacheFlag?))
+  (log/info "web assets caching set to %s" @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -88,14 +87,13 @@
   ^WebContent
   [appDir fname]
 
-  (let [f (io/file appDir fname) ]
-    (when (.canRead f)
-      (reify
-          WebContent
-          (contentType [_]
-            (guessContentType f "utf-8"))
-          (body [_]
-            (writeFile f))))))
+  (let [f (io/file appDir fname)]
+    (if (.canRead f)
+      (reify WebContent
+        (contentType [_]
+          (guessContentType f "utf-8"))
+        (body [_]
+          (slurpBytes f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,16 +115,16 @@
   ^WebAsset
   [^File file]
 
-  (let [ct (guessContentType file "utf-8" "text/plain")
-        ts (.lastModified file) ]
-    (reify
-      WebAsset
-
-      (contentType [_] ct)
-      (getFile [_] file)
-      (getTS [_] ts)
-      (size [_] (.length file))
-      (getBytes [_] (slurpBytes file)))))
+  (if (and (some? file)
+           (.canRead file))
+    (let [ct (guessContentType file "utf-8" "text/plain")
+          ts (.lastModified file)]
+      (reify WebAsset
+        (contentType [_] ct)
+        (getFile [_] file)
+        (getTS [_] ts)
+        (size [_] (.length file))
+        (getBytes [_] (slurpBytes file))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,7 +146,7 @@
   ^WebAsset
   [^File file]
 
-  (if-some [wa (fetchAsset file) ]
+  (if-some [wa (fetchAsset file)]
     (let [fp (fpath file)]
       (log/debug "asset-cache: cached new file: %s" fp)
       (swap! asset-cache assoc fp wa)
@@ -165,8 +163,9 @@
   [^File file]
 
   (if @cache-assets-flag
-    (let [^WebAsset wa (@asset-cache (fpath file))
-          cf (if (some? wa) (.getFile wa)) ]
+    (let [wa (@asset-cache (fpath file))
+          cf (if (some? wa)
+               (.getFile ^WebAsset wa))]
       (if (or (nil? cf)
               (> (.lastModified file)
                  (.getTS wa)))
@@ -182,7 +181,8 @@
   ^ChunkedInput
   [^File file gist ^HttpResponse rsp ]
 
-  (HttpRangeInput/fileRange (getInHeader gist "range") file rsp))
+  (-> (gistHeader gist "range")
+      (HttpRangeInput/fileRange file rsp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -195,9 +195,10 @@
         asset (if-not (maybeCached? file)
                 nil
                 (getAsset file))
-        fname (.getName file) ]
+        fname (.getName file)]
     (with-local-vars
-      [inp nil clen (.length file)]
+      [inp nil
+       clen (.length file)]
       (if (nil? asset)
         (do
           (->> (guessContentType file "utf-8" "text/plain")
