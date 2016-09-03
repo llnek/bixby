@@ -67,7 +67,6 @@
     [czlab.skaro.io.files]
     [czlab.skaro.io.jms]
     [czlab.skaro.io.http]
-    [czlab.skaro.io.netty]
     [czlab.skaro.io.socket])
     ;;[czlab.skaro.mvc.filters]
     ;;[czlab.skaro.mvc.ftlshim])

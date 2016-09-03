@@ -57,18 +57,24 @@
            :jmsPwd "anonymous"
            :intervalSecs 5
            :handler "" } }
-   :czlab.skaro.io.netty/Netty
+   :czlab.skaro.io.http/HTTP
    {:info {:version "1.0"
-           :name "Netty" }
-    :conf {:host ""
+           :name "HTTP" }
+    :conf {:waitMillis (* 1000 300)
+           :limitKB (* 1024 4)
+           :sockTimeOut 0
+           :host ""
            :port 8080
            :serverKey ""
            :passwd ""
            :handler "" } }
-   :czlab.skaro.io.netty/NettyMVC
+   :czlab.skaro.io.http/WebMVC
    {:info {:version "1.0"
-           :name "NettyMVC" }
-    :conf {:host ""
+           :name "WebMVC" }
+    :conf {:waitMillis (* 1000 300)
+           :limitKB (* 1024 4)
+           :sockTimeOut 0
+           :host ""
            :port 8080
            :serverKey ""
            :passwd ""

@@ -23,6 +23,12 @@ import czlab.xlib.Context;
 public interface IoResult extends Context {
 
   /**/
+  public void setContent(Object c);
+
+  /**/
+  public Object content();
+
+  /**/
   public Service source();
 
   /**/

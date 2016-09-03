@@ -27,6 +27,7 @@ public interface WebSockResult extends IoResult {
   /**/
   public boolean isText();
 
+
 }
 
 
