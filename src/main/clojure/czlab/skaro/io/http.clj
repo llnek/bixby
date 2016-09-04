@@ -111,7 +111,7 @@
      ChunkedFile
      ChunkedInput
      ChunkedWriteHandler]
-    [czlab.skaro.net WebAsset HttpRangeInput]
+    [czlab.skaro.net WebAsset RangeInput]
     [czlab.netty
      CPDecorator
      PipelineCfgtor]
@@ -342,7 +342,7 @@
 
   (-> (gistHeader (.msgGist evt) "range")
       str
-      (HttpRangeInput/fileRange rsp raf)))
+      (RangeInput/fileRange rsp raf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

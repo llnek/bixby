@@ -177,7 +177,7 @@
      rts (Cljshim/newrt (getCldr) pid)
      ctx (.getx gist)
      _appDir (io/file (.getv ctx :path))
-     pub (io/file _appDir DN_PUBLIC DN_PAGES)
+     pub (io/file _appDir DN_PUB DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
      impl (muble<> {:services {}})]
     (with-meta

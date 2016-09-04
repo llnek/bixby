@@ -85,7 +85,7 @@
 (def ^String DN_MEDIA "media" )
 (def ^String DN_SCRIPTS "scripts" )
 (def ^String DN_STYLES "styles" )
-(def ^String DN_PUBLIC "public" )
+(def ^String DN_PUB "public" )
 
 (def ^String APP_CF  "appconfig.conf" )
 (def ^String ENV_CF  "env.conf" )

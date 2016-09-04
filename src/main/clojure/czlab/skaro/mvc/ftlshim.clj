@@ -55,10 +55,12 @@
 
   TemplateCollectionModel
   (ftl->clj [obj]
-    (when-some [itr (.iterator obj)]
+    (when-some
+      [itr (.iterator obj)]
       (loop [acc []]
         (if (.hasNext itr)
-          (recur (conj acc (ftl->clj (.next itr))))
+          (recur (conj acc
+                       (ftl->clj (.next itr))))
           acc))))
 
   TemplateDateModel
@@ -85,7 +87,8 @@
 
   Object
   (ftl->clj [obj]
-    (throwBadArg (format "Can't convert %s to clj" (class obj)))))
+    (throwBadArg
+      "Can't convert %s to clj" (class obj))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -119,10 +122,15 @@
 
   [m]
 
-  (cw/postwalk (fn [x] (cond (map? x) (into {} (map strkey x))
-                          (fn? x) (fn->method x)
-                          :else x))
-            m))
+  (cw/postwalk
+    (fn [x]
+      (cond
+        (map? x)
+        (into {} (map strkey x))
+        (fn? x)
+        (fn->method x)
+        :else x))
+    m))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,7 +166,10 @@
                          :or {translate-model? true}}]
     (when-some [tpl (.getTemplate cfg path)]
       (.process tpl
-                (if translate-model? (map->model model) model) out))
+                (if translate-model?
+                  (map->model model)
+                  model)
+                out))
     (str out)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

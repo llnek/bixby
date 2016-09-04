@@ -20,7 +20,7 @@
 
   (:require
     [czlab.xlib.files :refer [slurpBytes writeFile]]
-    [czlab.xlib.core :refer [do->nil try! fpath]]
+    [czlab.xlib.core :refer [do->nil try!! fpath]]
     [czlab.xlib.mime :refer [guessContentType]]
     [czlab.xlib.str :refer [lcase ewicAny?]]
     [czlab.xlib.logging :as log]
@@ -32,34 +32,18 @@
 
   (:import
     [io.netty.handler.stream ChunkedStream ChunkedFile]
-    [java.io Closeable RandomAccessFile File]
-    [org.apache.commons.io FileUtils]
-    [io.netty.handler.codec.http.cookie
-     ServerCookieEncoder
-     CookieDecoder]
+    [java.io Closeable File]
     [io.netty.handler.codec.http
-     DefaultHttpResponse
+     HttpResponseStatus
      HttpRequest
      HttpResponse
-     HttpResponseStatus
-     HttpVersion
-     HttpMethod
-     LastHttpContent
-     HttpHeaders
-     Cookie
-     QueryStringDecoder]
-    [io.netty.channel
-     ChannelFutureListener
-     Channel
-     ChannelHandler
-     ChannelFuture
-     ChannelPipeline
-     ChannelHandlerContext]
+     HttpUtil
+     HttpHeaders]
+    [io.netty.channel Channel]
     [czlab.skaro.mvc
      WebContent
      WebAsset
-     HttpRangeInput]
-    [czlab.xlib Muble]))
+     RangeInput]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -81,35 +65,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getLocalFile
+(defn webContent<>
 
   ""
   ^WebContent
-  [appDir fname]
+  [^File f]
 
-  (let [f (io/file appDir fname)]
-    (if (.canRead f)
-      (reify WebContent
-        (contentType [_]
-          (guessContentType f "utf-8"))
-        (body [_]
-          (slurpBytes f))))))
+  (if (and (some? f)
+           (.canRead f))
+    (reify WebContent
+      (contentType [_]
+        (guessContentType f "utf-8"))
+      (body [_]
+        (slurpBytes f)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeCached?
+(defmacro getLocalFile
+
+  ""
+  [appDir fname]
+
+  `(webContent<> (io/file ~appDir ~fname)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- cached?
 
   "cache certain files"
   [^File fp]
 
   (if @cache-assets-flag
     (-> (fpath fp)
-        (ewicAny? [ ".css" ".gif" ".jpg" ".jpeg" ".png" ".js"]))
+        (ewicAny? [".css"
+                   ".gif"
+                   ".jpg"
+                   ".jpeg"
+                   ".png"
+                   ".js"]))
     false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn webAsset
+(defn webAsset<>
 
   ""
   ^WebAsset
@@ -117,7 +115,8 @@
 
   (if (and (some? file)
            (.canRead file))
-    (let [ct (guessContentType file "utf-8" "text/plain")
+    (let [ct (guessContentType file
+                               "utf-8" "text/plain")
           ts (.lastModified file)]
       (reify WebAsset
         (contentType [_] ct)
@@ -136,7 +135,7 @@
 
   (when (and (.exists file)
              (.canRead file))
-    (webAsset file)))
+    (webAsset<> file)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -144,15 +143,15 @@
 
   ""
   ^WebAsset
-  [^File file]
+  [^File f]
 
-  (if-some [wa (fetchAsset file)]
-    (let [fp (fpath file)]
-      (log/debug "asset-cache: cached new file: %s" fp)
+  (if-some [wa (fetchAsset f)]
+    (let [fp (fpath f)]
+      (log/debug "asset-cache: new file: %s" fp)
       (swap! asset-cache assoc fp wa)
       wa)
     (do->nil
-      (log/warn "asset-cache: failed to read/find file: %s" file))))
+      (log/warn "asset-cache: fetch failed: %s" f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -160,18 +159,18 @@
 
   ""
   ^WebAsset
-  [^File file]
+  [^File f]
 
   (if @cache-assets-flag
-    (let [wa (@asset-cache (fpath file))
+    (let [wa (@asset-cache (fpath f))
           cf (if (some? wa)
-               (.getFile ^WebAsset wa))]
+               (.file ^WebAsset wa))]
       (if (or (nil? cf)
-              (> (.lastModified file)
+              (> (.lastModified f)
                  (.getTS wa)))
-        (fetchAndSetAsset file)
+        (fetchAndSetAsset f)
         wa))
-    (fetchAsset file)))
+    (fetchAsset f)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,51 +178,47 @@
 
   ""
   ^ChunkedInput
-  [^File file gist ^HttpResponse rsp ]
+  [^File file gist ^HttpResponse rsp]
 
   (-> (gistHeader gist "range")
-      (HttpRangeInput/fileRange file rsp)))
+      (RangeInput/fileRange file rsp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn replyFileAsset
 
   ""
-  [^Channel ch gist ^HttpResponse rsp ^File file]
+  [^Channel ch gist ^HttpResponse rsp ^File f]
 
-  (let [^WebAsset
-        asset (if-not (maybeCached? file)
-                nil
-                (getAsset file))
-        fname (.getName file)]
-    (with-local-vars
-      [inp nil
-       clen (.length file)]
-      (if (nil? asset)
-        (do
-          (->> (guessContentType file "utf-8" "text/plain")
-               (setHeader rsp "content-type" ))
-          (var-set inp (getFileInput file gist rsp)))
-        (do
-          (->> (.contentType asset)
-               (setHeader rsp "content-type" ))
-          (var-set inp (ChunkedStream. (streamify (.getBytes asset))))))
-      (log/debug (str "serving file: %s with "
-                      "clen= %s, ctype= %s")
-                 fname clen (getHeader rsp "content-type"))
-      (try
-        (when (= HttpResponseStatus/NOT_MODIFIED
-                 (.getStatus rsp))
-          (var-set clen 0))
-        (addHeader rsp "Accept-Ranges" "bytes")
-        (HttpHeaders/setContentLength rsp @clen)
-        (let [wf1 (.writeAndFlush ch rsp)
-              wf2
-              (if-not (or (= (:method gist) "HEAD")
-                          (== 0 @clen))
-                (.writeAndFlush ch @inp)
-                (do->nil (.close ^ChunkedInput @inp)))]
-          (closeCF (or wf2 wf1) (:keepAlive? gist)))))))
+  (let
+    [asset (getAsset f)
+     fname (.getName f)
+     [ctype inp]
+     (if (nil? asset)
+       [(guessContentType f "utf-8" "text/plain")
+        (getFileInput f gist rsp)]
+       [(.contentType asset)
+        (ChunkedStream. (streamify (.body asset)))])]
+    (setHeader rsp "content-type" ctype)
+    (log/debug (str "serving file: %s with "
+                    "clen= %s, ctype= %s")
+               fname
+               clen
+               (getHeader rsp "content-type"))
+    (addHeader rsp "Accept-Ranges" "bytes")
+    (->> (if (= HttpResponseStatus/NOT_MODIFIED
+                (.getStatus rsp))
+           0
+           (.length f))
+         (contentLength! rsp ))
+    (let
+      [wf1 (.writeAndFlush ch rsp)
+       wf2
+       (if-not (or (= (:method gist) "HEAD")
+                   (noContent? rsp))
+         (.writeAndFlush ch inp)
+         (try!! nil (.close ^ChunkedInput inp)))]
+      (closeCF (or wf2 wf1) (:keepAlive? gist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

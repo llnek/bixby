@@ -112,7 +112,7 @@ class ByteRange {
    */
   private byte[] fmtHeader(long flen) throws UnsupportedEncodingException {
 
-    String s= "--" + HttpRangeInput.DEF_BD + "\r\n" +
+    String s= "--" + RangeInput.DEF_BD + "\r\n" +
       "content-type: " + _cType + "\r\n" +
       "content-range: bytes " +
       _start + "-" + _end +

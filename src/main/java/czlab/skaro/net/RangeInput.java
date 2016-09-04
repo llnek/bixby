@@ -40,10 +40,10 @@ import org.slf4j.Logger;
 /**
  * @author Kenneth Leung
  */
-public class HttpRangeInput implements ChunkedInput<ByteBuf> {
+public class RangeInput implements ChunkedInput<ByteBuf> {
 
   public static final String DEF_BD= "21458390-ebd6-11e4-b80c-0800200c9a66";
-  public static final Logger TLOG= getLogger(HttpRangeInput.class);
+  public static final Logger TLOG= getLogger(RangeInput.class);
 
   private RandomAccessFile _file;
   private ByteRange[] _ranges;
@@ -64,7 +64,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
       HttpResponse rsp) throws Exception {
 
     if (isAcceptable(range)) {
-      HttpRangeInput r= new HttpRangeInput(
+      RangeInput r= new RangeInput(
           range,
           rsp.headers().get("content-type"),
           file);
@@ -77,7 +77,7 @@ public class HttpRangeInput implements ChunkedInput<ByteBuf> {
 
   /**
    */
-  protected HttpRangeInput(
+  protected RangeInput(
       String range,
       String cType,
       File file) throws Exception {

@@ -25,7 +25,7 @@ import czlab.xlib.XData;
 /**
  * @author Kenneth Leung
  */
-public interface HttpEvent extends IoEvent, Replyable {
+public interface HttpEvent extends IoEvent, Context, Replyable {
 
   /**/
   public HttpCookie cookie(String name);
