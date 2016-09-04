@@ -25,13 +25,18 @@
     [czlab.xlib.str :refer [lcase ewicAny?]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
+    [czlab.netty.core
+     :refer :all
+     :rename {slurpBytes xxx}]
     [czlab.xlib.io :refer [streamify]])
 
-  (:use [czlab.skaro.io.http]
-        [czlab.netty.core])
+  (:use [czlab.skaro.io.http])
 
   (:import
-    [io.netty.handler.stream ChunkedStream ChunkedFile]
+    [io.netty.handler.stream
+     ChunkedStream
+     ChunkedInput
+     ChunkedFile]
     [java.io Closeable File]
     [io.netty.handler.codec.http
      HttpResponseStatus
@@ -40,7 +45,7 @@
      HttpUtil
      HttpHeaders]
     [io.netty.channel Channel]
-    [czlab.skaro.mvc
+    [czlab.skaro.net
      WebContent
      WebAsset
      RangeInput]))
@@ -120,10 +125,8 @@
           ts (.lastModified file)]
       (reify WebAsset
         (contentType [_] ct)
-        (getFile [_] file)
-        (getTS [_] ts)
-        (size [_] (.length file))
-        (getBytes [_] (slurpBytes file))))))
+        (file [_] file)
+        (body [_] (slurpBytes file))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -167,7 +170,7 @@
                (.file ^WebAsset wa))]
       (if (or (nil? cf)
               (> (.lastModified f)
-                 (.getTS wa)))
+                 (.lastModified cf)))
         (fetchAndSetAsset f)
         wa))
     (fetchAsset f)))
@@ -198,7 +201,9 @@
        [(guessContentType f "utf-8" "text/plain")
         (getFileInput f gist rsp)]
        [(.contentType asset)
-        (ChunkedStream. (streamify (.body asset)))])]
+        (ChunkedStream.
+          (streamify (.body asset)))])
+     clen (.length ^ChunkedInput inp)]
     (setHeader rsp "content-type" ctype)
     (log/debug (str "serving file: %s with "
                     "clen= %s, ctype= %s")
@@ -209,7 +214,7 @@
     (->> (if (= HttpResponseStatus/NOT_MODIFIED
                 (.getStatus rsp))
            0
-           (.length f))
+           clen)
          (contentLength! rsp ))
     (let
       [wf1 (.writeAndFlush ch rsp)

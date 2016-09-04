@@ -45,19 +45,19 @@
   (:import
     [czlab.xlib XData Muble Hierarchial Identifiable]
     [io.netty.handler.codec.http HttpResponseStatus]
-    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.skaro.io IoEvent HttpEvent HttpResult]
     [czlab.net RouteInfo RouteCracker]
     [czlab.skaro.server
      Container
      Service
      EventHolder
      EventTrigger]
-    [czlab.skaro.mvc
+    [czlab.skaro.net
      MvcUtils
      WebAsset
      WebContent]
     [czlab.wflow WorkStream Job]
-    [czlab.skaro.rt AuthError]
+    [czlab.skaro.etc AuthError]
     [java.util Date]
     [java.io File]
     [io.netty.buffer Unpooled]
@@ -102,7 +102,7 @@
                       lastTm (.hashCode f))]
     (if (isMod? eTag lastTm gist)
       (->> (Date. lastTm)
-           (.format (MVCUtils/getSDF))
+           (.format (MvcUtils/getSDF))
            (.setHeader res "last-modified" ))
       (if (= (:method gist) "GET")
         (->> HttpResponseStatus/NOT_MODIFIED
@@ -229,7 +229,7 @@
        h (:errorHandler cfg)
        rc (if (hgl? h)
             (cast? WebContent
-                   (.invoke rts h code)))
+                   (.callEx rts h code)))
        ^WebContent
        rc (or rc
               (replyError src code))]
@@ -237,7 +237,7 @@
            (setHeader rsp "content-type"))
       (let [bits (.body rc)]
         (->> (if (some? bits)
-               (.length bits) 0)
+               (alength bits) 0)
              (contentLength! rsp))
         (let [w1 (.writeAndFlush ch rsp)
               w2
@@ -265,7 +265,7 @@
      ps (fpath (io/file appDir DN_PUB))
      mpt (.replace (str mpt)
                    "${app.dir}"
-                   (fpath appDir))
+                   ^String (fpath appDir))
      mpt
      (-> #(cs/replace-first %1 "{}" %2)
          (reduce mpt parts))
@@ -341,7 +341,7 @@
 (def ^:private ASSET_HANDLER
   (workStream<>
     (script<>
-      #(let [evt (.event ^Job %2)]
+      #(let [^IoEvent evt (.event ^Job %2)]
          (handleStatic (.source evt)
                        evt
                        (.getv ^Job %2 EV_OPTS))))))

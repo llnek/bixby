@@ -580,6 +580,8 @@
        (scheme [_] (if ssl? "https" "http"))
        (isSSL [_] ssl?)
 
+       (getx [_] impl)
+
        (resultObj [_] res)
        (replyResult [this]
          (let [^IoSession mvs (.session this)
