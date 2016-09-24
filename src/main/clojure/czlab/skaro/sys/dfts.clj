@@ -30,7 +30,7 @@
              juid
              trap!
              muble<>
-             test-nestr]]
+             test-hgl]]
     [czlab.xlib.files
      :refer [fileRead?
              dirReadWrite?]])

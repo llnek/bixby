@@ -30,7 +30,7 @@
              do->false
              do->true
              juid
-             test-nonil
+             test-some
              loadJavaProps]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.resources :refer [rstr]]

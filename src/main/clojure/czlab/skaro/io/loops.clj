@@ -24,7 +24,7 @@
     [czlab.xlib.logging :as log]
     [czlab.xlib.str :refer [hgl? strim]]
     [czlab.xlib.core
-     :refer [test-nonil
+     :refer [test-some
              throwUOE
              tmtask<>
              inst?
@@ -124,7 +124,7 @@
         (.config co)
         d [delayWhen (s2ms delaySecs)]
         func #(loopableWakeup co)]
-    (test-nonil "java-timer" tm)
+    (test-some "java-timer" tm)
     (if (and repeat?
              (spos? intervalSecs))
       (configRepeat tm d (s2ms intervalSecs) func)

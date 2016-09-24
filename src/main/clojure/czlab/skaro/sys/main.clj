@@ -31,7 +31,7 @@
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.core
-     :refer [test-nonil
+     :refer [test-some
              sysProp
              getCwd
              inst?
@@ -196,7 +196,7 @@
     (log/info "skaro.home    = %s" (fpath home))
     (log/info "skaro.version = %s" ver)
     (log/info "skaro folder - ok")
-    (test-nonil "base resouces" rc)
+    (test-some "base resouces" rc)
     (I18N/setBase rc)
     (log/info "resource bundle found and loaded")
     (primodial ctx)

@@ -20,7 +20,7 @@
 
   (:require
     [czlab.xlib.core
-     :refer [test-posnum
+     :refer [test-pos
              convLong
              try!!
              spos?
@@ -86,7 +86,7 @@
      ip (if (hgl? host)
           (InetAddress/getByName host)
           (InetAddress/getLocalHost))]
-    (test-posnum "socket port" port)
+    (test-pos "socket port" port)
     (let
       [soc (ServerSocket. port
                           (or backlog 100) ip)]

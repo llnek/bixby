@@ -23,9 +23,8 @@
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]
     [czlab.xlib.core
-     :refer [test-nestr
+     :refer [test-hgl
              seqint2
-             trylet!
              muble<>
              try!]])
 
@@ -92,11 +91,12 @@
      orig (.getName f)
      cf (if (and (= action :FP-CREATED)
                  (some? recvFolder))
-          (trylet!
-            [r (expandVars recvFolder)
-             d (io/file r orig)]
-            (FileUtils/moveFile f d)
-            d))]
+          (try!
+            (let
+              [r (expandVars recvFolder)
+               d (io/file r orig)]
+              (FileUtils/moveFile f d)
+              d)))]
     (when (some? cf)
       (->> (ioevent<> co orig cf action)
            (.dispatch co)))))
@@ -139,7 +139,7 @@
      ff (toFMask (str fmask))]
     (log/info "monitoring folder: %s" root)
     (log/info "rcv folder: %s" (nsn dest))
-    (test-nestr "file-root-folder" root)
+    (test-hgl "file-root-folder" root)
     (->> (merge c2 {:targetFolder root
                :recvFolder dest
                :fmask ff})

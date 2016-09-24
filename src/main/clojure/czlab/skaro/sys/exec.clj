@@ -30,18 +30,17 @@
              readUrl
              listFiles]]
     [czlab.xlib.core
-     :refer [test-nestr
+     :refer [test-hgl
              srandom<>
              convLong
              sysProp!
              inst?
              fpath
-             trylet!
              try!
              getCwd
              muble<>
              juid
-             test-nonil]])
+             test-some]])
 
   (:use [czlab.skaro.sys.dfts]
         [czlab.skaro.etc.svcs]
@@ -110,13 +109,13 @@
   ^JmxServer
   [^Execvisor co cfg]
 
-  (trylet!
-    [jmx (jmxServer<> cfg)]
-    (.start jmx)
-    (.reg jmx co "czlab" "execvisor" ["root=skaro"])
-    (-> (.getx co)
-        (.setv :jmxServer jmx))
-    jmx))
+  (try!
+    (let [jmx (jmxServer<> cfg)]
+      (.start jmx)
+      (.reg jmx co "czlab" "execvisor" ["root=skaro"])
+      (-> (.getx co)
+          (.setv :jmxServer jmx))
+      jmx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -126,12 +125,13 @@
   ^Component
   [^Execvisor co]
 
-  (trylet!
-    [ctx (.getx co)
-     jmx (.getv ctx :jmxServer)]
-    (when (some? jmx)
-      (.stop ^JmxServer jmx))
-    (.unsetv ctx :jmxServer))
+  (try!
+    (let
+      [ctx (.getx co)
+       jmx (.getv ctx :jmxServer)]
+      (when (some? jmx)
+        (.stop ^JmxServer jmx))
+      (.unsetv ctx :jmxServer)))
   (log/info "jmx terminated")
   co)
 
@@ -143,13 +143,14 @@
   ^Execvisor
   [^Execvisor co ^AppGist gist]
 
-  (trylet!
-    [ctr (container<> co gist)
-     app (.id gist)
-     cid (.id ctr)]
-    (log/debug "start pod = %s\ninstance = %s" app cid)
-    (.setv (.getx co) :container ctr)
-    (.start ctr))
+  (try!
+    (let
+      [ctr (container<> co gist)
+       app (.id gist)
+       cid (.id ctr)]
+      (log/debug "start pod = %s\ninstance = %s" app cid)
+      (.setv (.getx co) :container ctr)
+      (.start ctr)))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -293,7 +294,7 @@
   (let [{:keys [basedir appDir jmx]}
         @rootGist]
     (log/info "com->initialize: Execvisor: %s" co)
-    (test-nonil "conf file: jmx" jmx)
+    (test-some "conf file: jmx" jmx)
     (sysProp! "file.encoding" "utf-8")
     (.copy (.getx co) (muble<> @rootGist))
     (->> (io/file appDir

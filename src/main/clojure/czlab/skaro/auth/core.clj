@@ -29,7 +29,7 @@
      :refer [normalizeEmail
              when-some+
              cast?
-             stringify trylet!]]
+             stringify try!]]
     [czlab.xlib.logging :as log])
 
   (:import
@@ -151,16 +151,17 @@
   [info fld shiftCount]
 
   (if (:nonce info)
-    (trylet!
-      [decr (->> (get info fld)
+    (try!
+      (let
+        [decr (->> (get info fld)
                  (caesarDecrypt shiftCount))
-       s (->> decr
-              (.decode (Base64/getMimeDecoder))
-              (stringify))]
-      (log/debug "info = %s" info)
-      (log/debug "decr = %s" decr)
-      (log/debug "val = %s" s)
-      (assoc info fld s))
+         s (->> decr
+                (.decode (Base64/getMimeDecoder))
+                (stringify))]
+        (log/debug "info = %s" info)
+        (log/debug "decr = %s" decr)
+        (log/debug "val = %s" s)
+        (assoc info fld s)))
     info))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
