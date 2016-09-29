@@ -20,10 +20,10 @@
   (:require
     [czlab.xlib.meta :refer [isString? isBytes?]]
     [czlab.skaro.io.webss :refer [wsession<>]]
-    [czlab.xlib.mime :refer [getCharset]]
+    [czlab.net.mime :refer [getCharset]]
     [czlab.xlib.io :refer [xdata<>]]
     [czlab.xlib.logging :as log]
-    [czlab.netty.util :refer [parseBasicAuth]]
+    [czlab.net.util :refer [parseBasicAuth]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.xlib.str :refer [lcase hgl? strim]]
     [clojure.java.io :as io]
@@ -114,7 +114,7 @@
     [czlab.skaro.net WebAsset RangeInput]
     [czlab.netty
      CPDecorator
-     PipelineCfgtor]
+     TcpPipeline]
     [io.netty.handler.codec.http.websocketx
      WebSocketFrame
      BinaryWebSocketFrame
@@ -686,9 +686,9 @@
     (->>
       (httpServer<>
         (reify CPDecorator
-          (newHttp1Handler [_ ops] (h1Handler co ops))
-          (newHttp2Handler [_ _])
-          (newHttp2Reqr [_ _])) cfg)
+          (forH1 [_ ops] (h1Handler co ops))
+          (forH2H1 [_ _])
+          (forH2 [_ _])) cfg)
       (.setv (.getx co) :bootstrap ))
     co))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -703,9 +703,9 @@
         cfg (httpBasicConfig co cfg0)
         bs (httpServer<>
              (reify CPDecorator
-               (newHttp1Handler [_ ops] (h1Handler co ops))
-               (newHttp2Handler [_ _])
-               (newHttp2Reqr [_ _]))
+               (forH1 [_ ops] (h1Handler co ops))
+               (forH2H1 [_ _])
+               (forH2 [_ _]))
              cfg)]
     (doto (.getx co)
       (.setv :emcfg cfg)

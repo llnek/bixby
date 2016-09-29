@@ -39,7 +39,7 @@
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io]
-    [czlab.netty.util :refer [filterFormFields]])
+    [czlab.net.util :refer [filterFormFields]])
 
   (:use [czlab.skaro.auth.core]
         [czlab.skaro.sys.core]
@@ -375,7 +375,7 @@
           (some? (:e info))
           (do->false
             (->> {:error (exp! AuthError
-                               (cexp? (:e info)))}
+                               "" (cexp? (:e info)))}
                  (.setLastResult job)))
 
           (and (hgl? challengeStr)

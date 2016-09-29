@@ -42,8 +42,8 @@
              fpath]]
     [czlab.xlib.files
      :refer [replaceFile!
-             readFile
-             spitUTF8
+             readAsStr
+             spitUtf8
              writeFile
              dirRead?
              touch!

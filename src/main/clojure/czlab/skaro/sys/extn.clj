@@ -35,7 +35,7 @@
              strim]]
     [czlab.xlib.files
      :refer [writeFile
-             readFile
+             readAsStr
              fileRead?]]
     [czlab.xlib.core
      :refer [loadJavaProps
@@ -339,7 +339,7 @@
   (let
     [appDir (.appDir co)
      f
-     #(-> (readFile (io/file appDir %))
+     #(-> (readAsStr (io/file appDir %))
           (cs/replace "${appdir}"
                       (fpath appDir))
           (expandVars)

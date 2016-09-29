@@ -18,7 +18,7 @@
   czlab.skaro.sys.exec
 
   (:require
-    [czlab.xlib.mime :refer [setupCache]]
+    [czlab.net.mime :refer [setupCache]]
     [czlab.xlib.format :refer [readEdn]]
     [czlab.xlib.str :refer [strim hgl?]]
     [czlab.xlib.meta :refer [getCldr]]
@@ -27,11 +27,11 @@
     [czlab.xlib.files
      :refer [basename
              mkdirs
-             readUrl
+             readAsStr
              listFiles]]
     [czlab.xlib.core
      :refer [test-hgl
-             srandom<>
+             rand<>
              convLong
              sysProp!
              inst?

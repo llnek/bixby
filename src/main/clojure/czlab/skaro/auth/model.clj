@@ -18,7 +18,7 @@
   czlab.skaro.auth.model
 
   (:require
-    [czlab.xlib.files :refer [spitUTF8]]
+    [czlab.xlib.files :refer [spitUtf8]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.str :refer [toKW]]
     [czlab.xlib.logging :as log])
@@ -122,7 +122,7 @@
   "Output the auth-plugin ddl to file"
   [spec file]
 
-  (spitUTF8 file (genAuthPluginDDL spec)))
+  (spitUtf8 file (genAuthPluginDDL spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

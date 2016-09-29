@@ -18,7 +18,7 @@
   czlab.skaro.sys.core
 
   (:require
-    [czlab.xlib.files :refer [changeContent readFile readUrl]]
+    [czlab.xlib.files :refer [changeContent readAsStr]]
     [czlab.xlib.core :refer [muble<> fpath]]
     [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.logging :as log]

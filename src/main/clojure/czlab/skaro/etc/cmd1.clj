@@ -21,7 +21,7 @@
     [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
     [czlab.xlib.format :refer [writeEdnString readEdn]]
     [czlab.crypto.core :refer [assertJce dbgProvider]]
-    [czlab.crypto.codec :refer [strongPwd passwd<>]]
+    [czlab.crypto.codec :refer [strongPwd<> passwd<>]]
     [czlab.skaro.sys.main :refer [startViaCLI]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.logging :as log]
@@ -29,8 +29,8 @@
     [clojure.string :as cs]
     [boot.core :as bcore]
     [czlab.xlib.files
-     :refer [readFile
-             spitUTF8
+     :refer [readAsStr
+             spitUtf8
              mkdirs
              writeFile
              listFiles]]
@@ -210,7 +210,7 @@
         n (convLong (str c) 16)]
     (if (and (>= n 8)
              (<= n 32))
-      (println (strongPwd n))
+      (println (strongPwd<> n))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -425,7 +425,7 @@
     (when (some? nw)
       (->> (assoc cf :services nw)
            (writeEdnString)
-           (spitUTF8 fp)))))
+           (spitUtf8 fp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

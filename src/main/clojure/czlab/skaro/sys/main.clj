@@ -21,7 +21,7 @@
   (:require
     [czlab.xlib.str :refer [str<> stror lcase hgl? strim]]
     [czlab.netty.discarder :refer [discardHTTPD<>]]
-    [czlab.xlib.files :refer [readFile writeFile]]
+    [czlab.xlib.files :refer [readAsStr writeFile]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
     [czlab.xlib.resources :refer [getResource]]
     [czlab.xlib.meta :refer [setCldr getCldr]]
@@ -37,7 +37,7 @@
              inst?
              fpath
              convLong]]
-    [czlab.netty.core :refer [startServer stopServer]])
+    [czlab.netty.server :refer [startServer stopServer]])
 
   (:use [czlab.skaro.sys.core]
         [czlab.xlib.process]

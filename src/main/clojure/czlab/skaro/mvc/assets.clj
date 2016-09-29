@@ -21,7 +21,7 @@
   (:require
     [czlab.xlib.files :refer [slurpBytes writeFile]]
     [czlab.xlib.core :refer [do->nil try!! fpath]]
-    [czlab.xlib.mime :refer [guessContentType]]
+    [czlab.net.mime :refer [guessContentType]]
     [czlab.xlib.str :refer [lcase ewicAny?]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]

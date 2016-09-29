@@ -23,7 +23,7 @@
     [czlab.xlib.format :refer [readJson writeJson]]
     [czlab.skaro.io.http :refer [scanBasicAuth]]
     [czlab.crypto.codec :refer [caesarDecrypt]]
-    [czlab.netty.util :refer [filterFormFields]]
+    [czlab.net.util :refer [filterFormFields]]
     [czlab.netty.core :refer :all]
     [czlab.xlib.core
      :refer [normalizeEmail
@@ -106,7 +106,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackUrlParams
+(defn- crackParams
 
   "Parse form fields in the Url"
   [^HttpEvent evt]
@@ -141,7 +141,7 @@
         (crackBodyContent evt)
 
         :else
-        (crackUrlParams evt)))))
+        (crackParams evt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

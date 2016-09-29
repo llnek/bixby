@@ -57,7 +57,7 @@
     #(let [p (-> ^Container
                  (.server ^Job %2)
                  (.service :default-sample))]
-       (spitUTF8 (io/file (.getv (.getx p) :targetFolder)
+       (spitUtf8 (io/file (.getv (.getx p) :targetFolder)
                           (str "ts-" (ncount) ".txt"))
                  (str "Current time is " (Date.))))))
 
@@ -73,7 +73,7 @@
     #(let [f (-> ^FileEvent (.event ^Job %2)
                   (.file)) ]
        (println "picked up new file: " f)
-       (println "content: " (slurpUTF8 f)))))
+       (println "content: " (slurpUtf8 f)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

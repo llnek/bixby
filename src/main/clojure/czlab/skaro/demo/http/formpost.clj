@@ -61,8 +61,9 @@
             (println "Formfield : " (.isFormField fi))
             (if (.isFormField fi)
               (println "Field value: " (.getString fi))
-              (when-some [xs (.fileData fi)]
-                (println "Field file = " (.filePath xs)))))
+              (if-some [xs (.getFile fi)]
+                (println "Field file = "
+                         (.getCanonicalPath xs)))))
           ;;else
           (println "Error: data is not ULFormItems."))
         (.setStatus res 200)

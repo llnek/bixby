@@ -27,10 +27,6 @@ public class AuthError extends Exception {
     super(msg,e);
   }
 
-  /**/
-  public AuthError(Throwable e) {
-    this(null,e);
-  }
 
   /**/
   public AuthError(String msg) {
