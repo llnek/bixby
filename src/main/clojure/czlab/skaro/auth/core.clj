@@ -19,18 +19,15 @@
   czlab.skaro.auth.core
 
   (:require
-    [czlab.xlib.str :refer [embeds? lcase strim hgl?]]
     [czlab.xlib.format :refer [readJson writeJson]]
     [czlab.skaro.io.http :refer [scanBasicAuth]]
     [czlab.crypto.codec :refer [caesarDecrypt]]
     [czlab.net.util :refer [filterFormFields]]
-    [czlab.netty.core :refer :all]
-    [czlab.xlib.core
-     :refer [normalizeEmail
-             when-some+
-             cast?
-             stringify try!]]
     [czlab.xlib.logging :as log])
+
+  (:use [czlab.netty.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
   (:import
     [java.util Base64 Base64$Decoder]
@@ -68,10 +65,10 @@
   "Parse a standard login-like form with userid,password,email"
   [^HttpEvent evt]
 
-  (when-some
+  (if-some
     [itms (some-> evt
                   (.body) (.content))]
-    (persistent!
+    (pcoll!
       (reduce
         #(let [fm (.getFieldNameLC ^ULFileItem %2)
                fv (str %2)]
@@ -90,12 +87,13 @@
   [^HttpEvent evt]
 
   (let
-    [^XData xs (some-> evt (.body))
-     json (-> (if (and (some? xs)
-                       (.hasContent xs))
+    [xs (some-> evt
+                (.body)
+                (.getBytes))
+     json (-> (if (some? xs)
                 (stringify xs) "{}")
               (readJson #(lcase %)))]
-    (persistent!
+    (pcoll!
       (reduce
         #(let [[k [a1 a2]] %2]
            (if-some [fv (get json k)]
@@ -112,9 +110,9 @@
   [^HttpEvent evt]
 
   (let [gist (.msgGist evt)]
-    (persistent!
+    (pcoll!
       (reduce
-        #(let [[^String k [a1 a2]]  PMS]
+        #(let [[k [a1 a2]] PMS]
            (if (gistParam? gist k)
              (assoc! %1
                      a1
@@ -131,7 +129,8 @@
   [^HttpEvent evt]
 
   (let [gist (.msgGist evt)]
-    (when-some+ [ct (:contentType gist)]
+    (if-some+
+      [ct (:contentType gist)]
       (cond
         (or (embeds? ct "form-urlencoded")
             (embeds? ct "form-data"))
@@ -154,7 +153,7 @@
     (try!
       (let
         [decr (->> (get info fld)
-                 (caesarDecrypt shiftCount))
+                   (caesarDecrypt shiftCount))
          s (->> decr
                 (.decode (Base64/getMimeDecoder))
                 (stringify))]
@@ -172,8 +171,7 @@
   ^bytes
   [^HttpEvent evt]
 
-  (-> (.server (.source evt))
-      (.appKeyBits)))
+  (.. evt source server appKeyBits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
