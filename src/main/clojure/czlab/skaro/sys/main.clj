@@ -21,7 +21,7 @@
   (:require
     [czlab.xlib.str :refer [str<> stror lcase hgl? strim]]
     [czlab.netty.discarder :refer [discardHTTPD<>]]
-    [czlab.xlib.files :refer [readAsStr writeFile]]
+    [czlab.xlib.io :refer [readAsStr writeFile]]
     [czlab.xlib.scheduler :refer [scheduler<>]]
     [czlab.xlib.resources :refer [getResource]]
     [czlab.xlib.meta :refer [setCldr getCldr]]

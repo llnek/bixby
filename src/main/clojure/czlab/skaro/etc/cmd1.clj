@@ -28,7 +28,7 @@
     [clojure.java.io :as io]
     [clojure.string :as cs]
     [boot.core :as bcore]
-    [czlab.xlib.files
+    [czlab.xlib.io
      :refer [readAsStr
              spitUtf8
              mkdirs

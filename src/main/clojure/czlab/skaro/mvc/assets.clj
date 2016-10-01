@@ -19,7 +19,7 @@
   czlab.skaro.mvc.assets
 
   (:require
-    [czlab.xlib.files :refer [slurpBytes writeFile]]
+    [czlab.xlib.io :refer [slurpBytes writeFile]]
     [czlab.xlib.core :refer [do->nil try!! fpath]]
     [czlab.net.mime :refer [guessContentType]]
     [czlab.xlib.str :refer [lcase ewicAny?]]

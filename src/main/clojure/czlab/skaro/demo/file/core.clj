@@ -24,7 +24,7 @@
     [clojure.java.io :as io]
     [czlab.xlib.str :refer [hgl?]])
 
-  (:use [czlab.xlib.files]
+  (:use [czlab.xlib.io]
         [czlab.wflow.core])
 
   (:import

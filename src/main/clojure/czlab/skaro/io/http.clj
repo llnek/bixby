@@ -19,27 +19,13 @@
 
   (:require
     [czlab.xlib.meta :refer [isString? isBytes?]]
-    [czlab.skaro.io.webss :refer [wsession<>]]
+    [czlab.net.util :refer [parseBasicAuth]]
+    [czlab.crypto.codec :refer [passwd<>]]
     [czlab.net.mime :refer [getCharset]]
     [czlab.xlib.io :refer [xdata<>]]
     [czlab.xlib.logging :as log]
-    [czlab.net.util :refer [parseBasicAuth]]
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.str :refer [lcase hgl? strim]]
     [clojure.java.io :as io]
-    [clojure.string :as cs]
-    [czlab.xlib.core
-     :refer [throwBadArg
-             test-cond
-             stringify
-             spos?
-             inst?
-             try!!
-             try!
-             throwIOE
-             seqint2
-             muble<>
-             convLong]])
+    [clojure.string :as cs])
 
   (:use [czlab.netty.routes]
         [czlab.netty.server]
@@ -47,6 +33,8 @@
         [czlab.skaro.sys.core]
         [czlab.skaro.io.core]
         [czlab.crypto.ssl]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.skaro.io.webss])
 
   (:import
@@ -92,7 +80,7 @@
      HttpRequestDecoder
      HttpResponseEncoder
      DefaultCookie
-     HttpHeaders$Names
+     HttpHeaderNames
      LastHttpContent
      HttpHeaders
      Cookie
@@ -405,7 +393,7 @@
     ;;cookies
     (doseq [s (csToNetty cookies)]
       (addHeader rsp
-                 HttpHeaders$Names/SET_COOKIE s))
+                 HttpHeaderNames/SET_COOKIE s))
     (cond
       ;;redirect?
       (and (>= code 300)
@@ -486,7 +474,7 @@
      _body
      (cond
        (inst? BinaryWebSocketFrame msg)
-       (slurpBytes (.content
+       (toByteArray (.content
                      ^BinaryWebSocketFrame msg))
        text?
        (.text ^TextWebSocketFrame msg)

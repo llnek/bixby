@@ -40,7 +40,7 @@
              prn!!
              prn!
              fpath]]
-    [czlab.xlib.files
+    [czlab.xlib.io
      :refer [replaceFile!
              readAsStr
              spitUtf8

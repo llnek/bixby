@@ -32,7 +32,7 @@
              trap!
              prtStk
              muble<>]]
-    [czlab.xlib.files :refer [dirRead?]])
+    [czlab.xlib.io :refer [dirRead?]])
 
   (:use [czlab.skaro.etc.cmd2]
         [czlab.skaro.sys.core]

@@ -18,7 +18,7 @@
   czlab.skaro.auth.model
 
   (:require
-    [czlab.xlib.files :refer [spitUtf8]]
+    [czlab.xlib.io :refer [spitUtf8]]
     [czlab.xlib.resources :refer [rstr]]
     [czlab.xlib.str :refer [toKW]]
     [czlab.xlib.logging :as log])

@@ -31,7 +31,7 @@
              trap!
              muble<>
              test-hgl]]
-    [czlab.xlib.files
+    [czlab.xlib.io
      :refer [fileRead?
              dirReadWrite?]])
 

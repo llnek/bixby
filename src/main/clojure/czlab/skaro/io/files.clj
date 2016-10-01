@@ -18,7 +18,7 @@
   czlab.skaro.io.files
 
   (:require
-    [czlab.xlib.files :refer [mkdirs]]
+    [czlab.xlib.io :refer [mkdirs]]
     [czlab.xlib.str :refer [hgl? nsn]]
     [czlab.xlib.logging :as log]
     [clojure.java.io :as io]

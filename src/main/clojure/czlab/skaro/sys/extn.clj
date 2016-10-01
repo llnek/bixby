@@ -33,7 +33,7 @@
              stror
              lcase
              strim]]
-    [czlab.xlib.files
+    [czlab.xlib.io
      :refer [writeFile
              readAsStr
              fileRead?]]
