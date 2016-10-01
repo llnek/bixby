@@ -18,7 +18,7 @@
   czlab.skaro.io.http
 
   (:require
-    [czlab.xlib.meta :refer [isString? isBytes?]]
+    [czlab.xlib.meta :refer [bytesClass isString? isBytes?]]
     [czlab.net.util :refer [parseBasicAuth]]
     [czlab.crypto.codec :refer [passwd<>]]
     [czlab.net.mime :refer [getCharset]]
@@ -125,9 +125,9 @@
   ^APersistentMap
   [^HttpEvent evt]
 
-  (let [gist (.msgGist evt)]
-    (if (gistHeader? gist AUTH)
-      (parseBasicAuth (gistHeader gist AUTH)))))
+  (if-some+ [v (-> (.msgGist evt)
+                   (gistHeader AUTH))]
+    (parseBasicAuth v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,7 +150,7 @@
                (if ssl? 443 80) port)
        :passwd (->> (.appKey ctr)
                     (passwd<> passwd) (.text))
-       :serverKey (if ssl? (URL. kfile) nil)}
+       :serverKey (if ssl? (URL. kfile))}
       (merge cfg ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,7 +171,7 @@
       (isBinary [_]
         (isBytes? (class (.getv impl :body))))
       (getx [_] impl)
-      (source [_] co) )))
+      (source [_] co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -184,7 +184,7 @@
   (let [impl (muble<> {:version "HTTP/1.1"
                        :cookies []
                        :code -1
-                       :headers {} })]
+                       :headers {}})]
     (reify HttpResult
 
       (setRedirect [_ url] (.setv impl :redirect url))
@@ -194,13 +194,13 @@
       (source [_] co)
 
       (addCookie [_ c]
-        (when (some? c)
-          (let [a (.getv impl :cookies) ]
+        (if (some? c)
+          (let [a (.getv impl :cookies)]
             (.setv impl :cookies (conj a c)))))
 
       (containsHeader [_ nm]
         (let [m (.getv impl :headers)
-              a (get m (lcase nm)) ]
+              a (get m (lcase nm))]
           (and (some? a)
                (> (count a) 0))))
 
@@ -243,12 +243,14 @@
   [^Service co]
 
   (let [^Container ctr (.server co)
-        appDir (.appDir ctr)
         ctx (.getx co)
-        f (io/file appDir DN_CONF "routes.conf")
-        rs (if (.exists f) (loadRoutes f) [])]
-    (.setv ctx :routes rs)
-    rs))
+        f (io/file (.appDir ctr)
+                   DN_CONF
+                   "routes.conf")]
+    (doto->>
+      (if (.exists f)
+        (loadRoutes f) [])
+      (.setv ctx :routes ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -289,7 +291,7 @@
   ""
   [cookies]
 
-  (persistent!
+  (pcoll!
     (reduce
       #(->> (.encode ServerCookieEncoder/STRICT ^Cookie %2)
             (conj! %1 ))
@@ -306,13 +308,15 @@
   (let [^WebSockResult res (.resultObj evt)
         ^Channel ch (.socket evt)
         c (.content res)
-        f (if-not (.isEmpty res)
-            (if (.isBinary res)
-              (->> (Unpooled/wrappedBuffer ^bytes c)
-                   (BinaryWebSocketFrame. ))
-              (TextWebSocketFrame. ^String c)))]
-    (when (some? f)
-      (.writeAndFlush ch ^WebSocketFrame f))))
+        ^WebSocketFrame
+        f (condp instance? c
+            (bytesClass)
+            (->> (Unpooled/wrappedBuffer ^bytes c)
+                 (BinaryWebSocketFrame. ))
+            String
+            (TextWebSocketFrame. ^String c))]
+    (if (some? f)
+      (.writeAndFlush ch f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -321,10 +325,10 @@
   ""
   ^ChunkedInput
   [^RandomAccessFile raf
-   ^HttpEvent evt
-   ^HttpResponse rsp]
+   ^HttpEvent evt ^HttpResponse rsp]
 
-  (-> (gistHeader (.msgGist evt) "range")
+  (-> (.msgGist evt)
+      (gistHeader "range")
       str
       (RangeInput/fileRange rsp raf)))
 
@@ -333,39 +337,49 @@
 (defn- nettyReplyMore
 
   ""
-  [^ChannelHandlerContext ctx
-   ^HttpResponse rsp
-   ^HttpEvent evt
-   & [body]]
 
-  (let
-    [clen
-     (condp instance? body
-       ChunkedInput (.length ^ChunkedInput body)
-       XData (.size ^XData body)
-       (if (nil? body)
-         0
-         (throwBadArg "rogue payload type %s"
-                    (class body))))
-     gist (.msgGist evt)]
-    (log/debug "writing out %d bytes to client" clen)
-    (when (:keepAlive? gist)
-      (setHeader rsp "Connection" "keep-alive"))
-    (if-not (hgl? (getHeader rsp "content-length"))
-      (HttpUtil/setContentLength rsp clen))
-    (.write ctx rsp)
-    (log/debug "wrote rsp-headers out to client")
-    (when (and (spos? clen)
-               (some? body))
-      (->>
-        (if (inst? XData body)
-          (->> (.stream  ^XData body)
-               (ChunkedStream.))
-          body)
-        (.write ctx ))
-      (log/debug "wrote rsp-body out to client"))
-    (-> (writeLastContent ctx true)
-        (closeCF (:keepAlive? gist)))))
+  ([^ChannelHandlerContext ctx
+    ^HttpResponse rsp
+    ^HttpEvent evt]
+   (nettyReplyMore ctx rsp evt nil))
+
+  ([^ChannelHandlerContext ctx
+    ^HttpResponse rsp
+    ^HttpEvent evt
+    body]
+   (let
+     [gist (.msgGist evt)
+      [clen body]
+      (condp instance? body
+        ChunkedInput
+        [(.length ^ChunkedInput body) body]
+        XData
+        [(.size ^XData body)
+         (->> (.stream ^XData body)
+              (ChunkedStream.))]
+        (if (nil? body)
+          0
+          (throwBadArg "rogue payload type %s"
+                       (class body))))]
+     (log/debug "writing out %d bytes to client" clen)
+     (if (:keepAlive? gist)
+       (setHeader rsp
+                  HttpHeaderNames/CONNECTION
+                  HttpHeaderValues/KEEP_ALIVE))
+     (if-not
+       (hgl? (getHeader rsp
+                        HttpHeaderNames/CONTENT_LENGTH))
+       (HttpUtil/setContentLength rsp clen))
+     (let [f1 (.write ctx rsp)
+           f2 (if (spos? clen)
+                (.write ctx body))]
+       (if (some? f1)
+         (log/debug "wrote rsp-headers out to client"))
+       (if (some? f2)
+         (log/debug "wrote rsp-body out to client")
+         (.close ^ChunkedInput body))
+       (-> (or f2 f1)
+           (closeCF (:keepAlive? gist)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -383,7 +397,7 @@
         rsp (httpReply<> code)]
     ;;headers
     (doseq [[nm vs]  headers
-           :when (not= "content-length" (lcase nm))]
+            :when (not= "content-length" (lcase nm))]
       (doseq [vv (seq vs)]
         (addHeader rsp nm vv)))
     ;;cookies
@@ -395,22 +409,26 @@
       (and (>= code 300)
            (< code 400))
       (do
-        (when (hgl? redirect)
-          (setHeader rsp "Location" redirect))
+        (if (hgl? redirect)
+          (setHeader rsp
+                     HttpHeaderNames/LOCATION redirect))
         (nettyReplyMore ctx rsp evt))
       ;;ok?
       (and (>= code 200)
            (< code 300))
       (->>
-        (when-not (= "HEAD" (:method gist))
+        (when (not= "HEAD" (:method gist))
           (condp instance? body
             WebAsset
-            (let [^WebAsset ws body
-                  raf (RandomAccessFile. (.file ws) "r")]
-              (setHeader rsp "content-type" (.contentType ws))
+            (let [raf (RandomAccessFile.
+                        (.file ^WebAsset body) "r")]
+              (setHeader rsp
+                         HttpHeaderNames/CONTENT_TYPE
+                         (.contentType ws))
               (replyOneFile raf evt rsp))
             File
-            (let [raf (RandomAccessFile. ^File body "r")]
+            (let [raf (RandomAccessFile.
+                        ^File body "r")]
               (replyOneFile raf evt rsp))
             ;;else
             (xdata<> body)))
