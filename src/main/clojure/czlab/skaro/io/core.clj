@@ -12,36 +12,23 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc "Core functions for all IO services."
       :author "Kenneth Leung" }
 
   czlab.skaro.io.core
 
   (:require
-    [czlab.xlib.str :refer [stror strim]]
     [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core
-     :refer [throwBadArg
-             tmtask<>
-             seqint2
-             juid
-             inst?
-             spos?
-             cast?
-             try!!
-             throwIOE
-             muble<>
-             convToJava]])
+    [czlab.xlib.logging :as log])
 
   (:use [czlab.xlib.consts]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.wflow.core]
         [czlab.skaro.sys.core]
         [czlab.skaro.sys.dfts])
 
   (:import
-    [java.util.concurrent ConcurrentHashMap]
     [czlab.wflow WorkStream Job TaskDef]
     [java.util Timer TimerTask]
     [czlab.skaro.io IoEvent]
@@ -66,63 +53,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn meta??? "" {:no-doc true} [a & _] (:typeid (meta a)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defmacro s2ms
 
   "Convert seconds to milliseconds"
   {:no-doc true}
   [s]
 
-  `(if (spos? ~s) (* 1000 ~s) 0))
+  `(let [t# ~s] (if (spos?  t#) (* 1000 t#) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->dispatch "Dispatch an event" meta???)
+(defmulti io->dispose
+  "Dispose a component" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->dispose "Dispose a component" meta???)
+(defmulti io->start
+  "Start a component" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->start "Start a component" meta???)
+(defmulti io->stop
+  "Stop a component" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->stop "Stop a component" meta???)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io->error! "Handle error" meta???)
+(defmulti io->error!
+  "Handle error" (fn [a b c] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io<stopped>
-  "Called after a component has stopped" meta???)
+  "Called after a component has stopped" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io<started>
-  "Called after a component has started" meta???)
+  "Called after a component has started" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti ioevent<> "Create an event" meta???)
+(defmulti ioevent<>
+  "Create an event" (fn [a b] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->initialize
 
   :default
-  [^Service co & args]
+  [^Service co args]
 
   (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
   (if (and (not-empty args)
-           (map? (first args)))
-    (->> (merge (.config co) (first args))
+           (map? args))
+    (->> (merge (.config co) args)
          (.setv (.getx co) :emcfg )))
   co)
 

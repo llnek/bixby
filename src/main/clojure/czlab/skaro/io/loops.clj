@@ -52,8 +52,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; These 2 fn(s) together dictates how a loopable shall run
-(defmulti loopableSchedule "" meta???)
-(defmulti loopableWakeup "" meta???)
+(defmulti loopableSchedule "" (fn [a b] (:typeid (meta a))))
+(defmulti loopableWakeup "" (fn [a b] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
