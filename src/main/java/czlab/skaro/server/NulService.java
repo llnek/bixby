@@ -15,7 +15,6 @@
 
 package czlab.skaro.server;
 
-import czlab.server.ServerLike;
 import czlab.skaro.io.IoEvent;
 import czlab.xlib.Muble;
 

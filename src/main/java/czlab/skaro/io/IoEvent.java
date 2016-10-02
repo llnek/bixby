@@ -15,10 +15,9 @@
 
 package czlab.skaro.io;
 
+import czlab.server.Event;
 import czlab.skaro.server.EventTrigger;
 import czlab.skaro.server.Service;
-import czlab.xlib.Identifiable;
-import czlab.server.Event;
 
 /**
  * @author Kenneth Leung

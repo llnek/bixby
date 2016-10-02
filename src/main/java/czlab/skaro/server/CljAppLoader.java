@@ -14,29 +14,30 @@
 
 package czlab.skaro.server;
 
-import java.lang.instrument.IllegalClassFormatException;
-import java.lang.instrument.ClassFileTransformer;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.net.MalformedURLException;
-import org.apache.commons.io.IOUtils;
-import java.io.FilenameFilter;
-import java.net.URLClassLoader;
-import java.security.CodeSource;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import static org.slf4j.LoggerFactory.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 
 /**/
+@SuppressWarnings("unused")
 public class CljAppLoader extends URLClassLoader {
 
   private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
@@ -53,7 +54,9 @@ public class CljAppLoader extends URLClassLoader {
   public static CljAppLoader newInstance(File homeDir, File appDir) {
     ClassLoader c= Thread.currentThread().getContextClassLoader();
     ClassLoader s= ClassLoader.getSystemClassLoader();
-    return new CljAppLoader(c==null ? s : c).init(homeDir,appDir);
+    CljAppLoader app= new CljAppLoader(c==null ? s : c);
+    app.init(homeDir,appDir);
+    return app;
   }
 
   /**/

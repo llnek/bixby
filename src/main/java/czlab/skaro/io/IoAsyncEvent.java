@@ -13,39 +13,18 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.server;
+package czlab.skaro.io;
 
-import czlab.skaro.io.IoEvent;
-import czlab.xlib.Disposable;
-import czlab.xlib.Hierarchial;
-import czlab.xlib.Startable;
+import czlab.skaro.server.EventTrigger;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Startable, Hierarchial, Disposable {
+public interface IoAsyncEvent extends IoEvent {
 
   /**/
-  public void dispatchEx(IoEvent evt, Object arg);
-
-  /**/
-  public void dispatch(IoEvent evt);
-
-  /**/
-  public Container server();
-
-  /**/
-  public Object config();
-
-  /**/
-  public boolean isEnabled();
-
-  /**/
-  public boolean isActive();
-
-  /**/
-  public void hold(EventTrigger t, long millis);
-
+  public void setTrigger(EventTrigger t);
+  
 }
 
 
