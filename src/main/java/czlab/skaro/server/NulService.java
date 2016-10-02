@@ -40,8 +40,7 @@ public class NulService implements Service {
   public void start() {}
   public void suspend() {}
   public void resume() {}
-  public EventHolder release(Object obj) {return null;}
-  public void hold(EventHolder obj) {}
+  public void hold(EventTrigger t, long m) {}
 
   public NulService(Container s) { _s=s; }
   private Container _s;

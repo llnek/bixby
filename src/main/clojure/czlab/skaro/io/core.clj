@@ -48,11 +48,11 @@
     [czlab.skaro.server
      EventTrigger
      Service
-     EventHolder
      Cljshim
      Component
      Container]
     [czlab.xlib
+     Context
      XData
      Versioned
      Hierarchial
@@ -216,7 +216,7 @@
   {:pre [(keyword? emType)]}
 
   ;; holds all the events from this source
-  (let [backlog (ConcurrentHashMap.)
+  (let [timer (atom nil)
         impl (muble<>)]
     (with-meta
       (reify Service
@@ -238,17 +238,15 @@
             nil
             (onEvent parObj this ev arg)))
 
-        (release [_ wevt]
-          (when (some? wevt)
-            (let [wid (.id ^Identifiable wevt)]
-              (log/debug "releasing event, id: %s" wid)
-              (.remove backlog wid))))
-
-        (hold [_ wevt]
-          (when (some? wevt)
-            (let [wid (.id ^Identifiable wevt)]
-              (log/debug "holding event, id: %s" wid)
-              (.put backlog wid wevt))))
+        (hold [_ wevt millis]
+          (when (and (some? @timer)
+                     (some? wevt))
+            (let [t (tmtask<>
+                      #(.resumeOnExpiry wevt))]
+              (log/debug "holding event: %s"
+                         (.id ^Identifiable wevt))
+              (.schedule ^Timer @timer t (long millis))
+              (.setv (.getx ^Context wevt) :ttask t))))
 
         (version [_] "1.0")
         (getx [_] impl)
@@ -258,55 +256,20 @@
         (setParent [_ p])
 
         (dispose [this]
+          (some-> ^Timer @timer (.cancel))
+          (reset! timer nil)
           (io->dispose this))
 
         (start [this]
-          (io->start this))
+          (io->start this)
+          (reset! timer (Timer. true)))
 
         (stop [this]
+          (some-> ^Timer @timer (.cancel ))
+          (reset! timer nil)
           (io->stop this)))
 
       {:typeid emType})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn asyncWaitHolder<>
-
-  "Create a async wait wrapper"
-  ^EventHolder
-  [^EventTrigger trigger
-   ^IoEvent event ]
-
-  (let [impl (muble<>)]
-    (reify
-
-      EventHolder
-
-      (id [_] (.id event))
-
-      (resumeOnResult [this res]
-        (let
-          [tm (.getv impl :timer)
-           src (.source event) ]
-          (when (some? tm)
-            (.cancel ^Timer tm))
-          (.unsetv impl :timer)
-          (.release src this)
-          (.resumeWithResult trigger res)))
-
-      (timeoutMillis [me millis]
-        (let [tm (Timer. true) ]
-          (.setv impl :timer tm)
-          (.schedule
-            tm
-            (tmtask<> #(.onExpiry me))
-            (long millis))))
-
-      (onExpiry [this]
-        (let [src (.source event) ]
-          (.release src this)
-          (.unsetv impl :timer)
-          (.resumeWithError trigger) )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

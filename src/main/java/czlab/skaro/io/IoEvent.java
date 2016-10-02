@@ -15,6 +15,7 @@
 
 package czlab.skaro.io;
 
+import czlab.skaro.server.EventTrigger;
 import czlab.skaro.server.Service;
 import czlab.xlib.Identifiable;
 import czlab.server.Event;
@@ -24,6 +25,9 @@ import czlab.server.Event;
  */
 public interface IoEvent extends Event {
 
+  /**/
+  default public void setTrigger(EventTrigger t) {}
+  
   /**/
   default public void bindSession(IoSession s) {}
 

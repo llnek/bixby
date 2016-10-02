@@ -45,10 +45,7 @@ public interface Service extends Component, Startable, Hierarchial, Disposable {
   public boolean isActive();
 
   /**/
-  public EventHolder release(Object obj);
-
-  /**/
-  public void hold(EventHolder obj);
+  public void hold(EventTrigger t, long millis);
 
 }
 

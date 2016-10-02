@@ -52,6 +52,7 @@
     [czlab.net RouteCracker RouteInfo]
     [clojure.lang APersistentMap]
     [czlab.crypto PasswordAPI]
+    [java.util Timer TimerTask]
     [czlab.netty InboundFilter]
     [io.netty.handler.codec.http
      HttpResponseStatus
@@ -63,13 +64,13 @@
      HttpRequestDecoder
      HttpResponseEncoder
      DefaultCookie
+     HttpHeaderValues
      HttpHeaderNames
      LastHttpContent
      HttpHeaders
      Cookie
      QueryStringDecoder]
     [czlab.skaro.server
-     EventHolder
      Container
      Service
      EventTrigger]
@@ -389,8 +390,7 @@
   [^ChannelHandlerContext ctx ^HttpEvent evt]
 
   (let [res (.resultObj evt)
-        {:keys [redirect
-                cookies
+        {:keys [redirect cookies
                 code body headers]}
         (.impl (.getx res))
         gist (.msgGist evt)
@@ -424,7 +424,7 @@
                         (.file ^WebAsset body) "r")]
               (setHeader rsp
                          HttpHeaderNames/CONTENT_TYPE
-                         (.contentType ws))
+                         (.contentType ^WebAsset body))
               (replyOneFile raf evt rsp))
             File
             (let [raf (RandomAccessFile.
@@ -445,20 +445,31 @@
   ^EventTrigger
   [^ChannelHandlerContext ctx evt]
 
-  (reify EventTrigger
-
-    (resumeWithResult [_ res]
-      (if (inst? WebSockEvent evt)
-        (try!! nil (nettyWSReply ctx evt))
-        (try!! nil (nettyReply ctx evt))))
-
-    (resumeWithError [_]
-      (let [rsp (httpFullReply<> 500)]
-        (try
-          (maybeClose evt (.writeAndFlush ctx rsp))
-          (catch ClosedChannelException _
-            (log/warn "closedChannelEx thrown"))
-          (catch Throwable t# (log/error t# "") )) ))))
+  (let
+    [eeid (str "trigger#" (seqint2))
+     impl (muble<>)
+     t
+     (reify EventTrigger
+       (resumeWithResult [_ res]
+         (some-> ^TimerTask
+                 (.getv impl :ttask)
+                 (.cancel))
+         (.unsetv impl :ttask)
+         (if (inst? WebSockEvent evt)
+           (try! (nettyWSReply evt))
+           (try! (nettyReply ctx evt))))
+       (getx [_] impl)
+       (id [_] eeid)
+       (resumeOnExpiry [_]
+         (.unsetv impl :ttask)
+         (let [rsp (httpFullReply<> 500)]
+           (try
+             (maybeClose evt (.writeAndFlush ctx rsp))
+             (catch ClosedChannelException _
+               (log/warn "closedChannelEx thrown"))
+             (catch Throwable t# (log/error t# "") )) )))]
+    (.setTrigger ^HttpEvent evt t)
+    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -509,7 +520,7 @@
         (body [_] _body)
         (resultObj [_] res)
         (replyResult [this]
-          (nettyWSReply ))
+          (nettyWSReply this))
         (source [_] co))
 
       {:typeid ::WebSockEvent })))
@@ -523,7 +534,7 @@
   [gist]
 
   (let
-    [^String v (gistHeader gist "Cookie")
+    [^String v (gistHeader gist HttpHeaderNames/COOKIE)
      cks (if (hgl? v)
            (.decode ServerCookieDecoder/STRICT v))]
     (persistent!
@@ -548,7 +559,7 @@
      cookieJar (crackCookies gist)
      res (httpResult<> co)
      impl (muble<>)
-     eeid (seqint2)
+     eeid (str "event#" (seqint2))
      evt
      (reify HttpEvent
 
@@ -582,20 +593,23 @@
        (scheme [_] (if ssl? "https" "http"))
        (isSSL [_] ssl?)
 
+       (setTrigger [_ t] (.setv impl :trigger t))
+
        (getx [_] impl)
 
        (resultObj [_] res)
        (replyResult [this]
          (let [^IoSession mvs (.session this)
                code (.status res)
-               ^EventHolder
-               wevt (.release co this)]
+               ^EventTrigger
+               t (.getv impl :trigger)]
            (when
              (and (>= code 200)
                   (< code 400))
              (.handleResult mvs this res))
-           (when (some? wevt)
-             (.resumeOnResult wevt res)))))]
+           (some->
+             t
+             (.resumeWithResult res)))))]
     (doto evt
       (.bindSession (wsession<> co ssl?))
       (with-meta {:typeid ::HTTPEvent}))))
@@ -608,9 +622,7 @@
   [^Service co & [^Channel ch msg ^RouteInfo ri]]
 
   (log/info "ioevent: %s: %s" (gtid co) (.id co))
-  (let [ssl? (-> (.pipeline ch)
-                 (.get SslHandler)
-                 (some?))]
+  (let [ssl? (maybeSSL? ch)]
     (if
       (inst? WebSocketFrame msg)
       (makeWEBSockEvent co ch ssl? msg)
@@ -637,11 +649,8 @@
             (.config co)
             evt (ioevent<> co ch msg)]
         (if (inst? HttpEvent evt)
-          (let [w
-                (-> (nettyTrigger<> ch evt)
-                    (asyncWaitHolder<> evt))]
-            (.timeoutMillis w waitMillis)
-            (.hold co w)))
+          (let [w (nettyTrigger<> ch evt)]
+            (.hold co w waitMillis)))
         (.dispatch co evt )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

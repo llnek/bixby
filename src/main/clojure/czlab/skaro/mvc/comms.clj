@@ -50,7 +50,6 @@
     [czlab.skaro.server
      Container
      Service
-     EventHolder
      EventTrigger]
     [czlab.skaro.net
      MvcUtils
@@ -270,16 +269,14 @@
      (-> #(cs/replace-first %1 "{}" %2)
          (reduce mpt parts))
      mpt (fpath (io/file mpt))
-     w (-> (nettyTrigger<> ch evt src)
-           (asyncWaitHolder<> evt))]
-    (.timeoutMillis w (:waitMillis cfg))
-    (doto src
-      (.hold w)
-      (.dispatchEx
-        evt
-        {:router "czlab.skaro.mvc.comms/assetHandler<>"
-         :gist gist
-         :path mpt}))))
+     w (nettyTrigger<> ch evt src)]
+    (.hold src w (:waitMillis cfg))
+    (.dispatchEx
+      src
+      evt
+      {:router "czlab.skaro.mvc.comms/assetHandler<>"
+       :gist gist
+       :path mpt})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -312,12 +309,9 @@
      options {:router (.handler ri)
               :params (or pms {})
               :template (.template ri)}
-     w (-> (nettyTrigger<> ch evt src)
-           (asyncWaitHolder<> evt))]
-    (.timeoutMillis w (:waitMillis cfg))
-    (doto src
-      (.hold  w)
-      (.dispatchEx  evt options))))
+     w (nettyTrigger<> ch evt src)]
+    (.hold src w (:waitMillis cfg))
+    (.dispatchEx src evt options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

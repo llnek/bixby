@@ -16,18 +16,19 @@
 package czlab.skaro.server;
 
 import czlab.skaro.io.IoResult;
+import czlab.xlib.Context;
+import czlab.xlib.Identifiable;
 
 /**
  * @author Kenneth Leung
  */
-public interface EventTrigger  {
+public interface EventTrigger extends Context, Identifiable {
 
   /**/
   public void resumeWithResult(IoResult res);
 
   /**/
-  public void resumeWithError();
-
+  public void resumeOnExpiry();
 
   /**/
   public Service source();
