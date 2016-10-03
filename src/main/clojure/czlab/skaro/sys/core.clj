@@ -159,7 +159,6 @@
 (def K_META :meta )
 (def K_KILLPORT :discarder)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro gtid
@@ -170,15 +169,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti comp->initialize
-  "Init component" ^Component (fn [a & args] (:typeid (meta a))))
+(defmacro logcomp
+  ""
+  [pfx co]
+  `(log/info "%s: '%s'# '%s'" ~pfx (gtid ~co) (.id ~co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmulti comp->init
+  "Init component" ^Component (fn [a arg] (:typeid (meta a))))
 
-  :default
-  [co & args] co)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->init :default [co arg] co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

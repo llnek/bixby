@@ -123,7 +123,7 @@
                 delaySecs]}
         (.config co)
         d [delayWhen (s2ms delaySecs)]
-        func #(loopableWakeup co)]
+        func #(loopableWakeup co nil)]
     (test-some "java-timer" tm)
     (if (and repeat?
              (spos? intervalSecs))
@@ -140,7 +140,7 @@
 
   (log/debug "service %s: created a java-timer" (.id co))
   (.setv (.getx co) :timer (Timer. true))
-  (loopableSchedule co repeat?))
+  (loopableSchedule co {:repeat? repeat?} ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -158,14 +158,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<> ::RepeatingTimer [^Service co & _] (mkEventObj co true))
+(defmethod ioevent<> ::RepeatingTimer [^Service co _] (mkEventObj co true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
 
   ::RepeatingTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "iostart: %s: %s" (gtid co) (.id co))
   (startTimer co true)
@@ -176,7 +176,7 @@
 (defmethod io->stop
 
   ::RepeatingTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "io->stop %s: %s" (gtid co) (.id co))
   (killTimer co)
@@ -187,17 +187,17 @@
 (defmethod loopableWakeup
 
   ::RepeatingTimer
-  [^Service co & args]
+  [^Service co _]
 
   ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
-  (.dispatch co (ioevent<> co) ))
+  (.dispatch co (ioevent<> co nil) ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableSchedule
 
   :default
-  [^Service co & [repeat?]]
+  [^Service co {:keys [repeat?]} ]
 
   (configTimerTask co repeat?))
 
@@ -206,14 +206,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<> ::OnceTimer [^Service co & _] (mkEventObj false))
+(defmethod ioevent<> ::OnceTimer [^Service co _] (mkEventObj false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
 
   ::OnceTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "io->start %s: %s" (gtid co) (.id co))
   (startTimer co false)
@@ -224,7 +224,7 @@
 (defmethod io->stop
 
   ::OnceTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "io->stop %s: %s" (gtid co) (.id co))
   (killTimer co)
@@ -235,9 +235,9 @@
 (defmethod loopableWakeup
 
   ::OnceTimer
-  [^Service co & args]
+  [^Service co _]
 
-  (.dispatch co (ioevent<> co))
+  (.dispatch co (ioevent<> co nil))
   (.stop ^Startable co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -245,14 +245,14 @@
 (defmethod loopableSchedule
 
   ::ThreadedTimer
-  [^Service co & [intervalMillis]]
+  [^Service co {:keys [intervalMillis]}]
 
   (log/debug "%s timer @interval = %d" (gtid co) intervalMillis)
   (let [loopy (volatile! true)]
     (.setv (.getx co) :loopy loopy)
     (async!
       #(while @loopy
-         (loopableWakeup co intervalMillis))
+         (loopableWakeup co {:waitMillis intervalMillis}))
       {:cl (getCldr)} )
     co))
 
@@ -261,10 +261,10 @@
 (defmethod loopableWakeup
 
   ::ThreadedTimer
-  [^Service co & [waitMillis]]
+  [^Service co {:keys [waitMillis]}]
 
   ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
-  (.dispatch co (ioevent<> co))
+  (.dispatch co (ioevent<> co nil))
   (safeWait waitMillis)
   co)
 
@@ -273,13 +273,14 @@
 (defmethod io->start
 
   ::ThreadedTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "io->start: %s: %s" (gtid co) (.id co))
   (let [{:keys [intervalSecs
                 delaySecs delayWhen]}
         (.config co)
-        func #(loopableSchedule co (s2ms intervalSecs))]
+        func #(loopableSchedule co {:intervalMillis
+                                    (s2ms intervalSecs)})]
     (if (or (spos? delaySecs)
             (inst? Date delayWhen))
       (configOnce (Timer.)
@@ -292,7 +293,7 @@
 (defmethod io->stop
 
   ::ThreadedTimer
-  [^Service co & args]
+  [^Service co]
 
   (log/info "io->stop %s: %s" (gtid co) (.id co))
   (when-some [loopy (.getv (.getx co) :loopy) ]

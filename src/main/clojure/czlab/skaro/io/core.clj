@@ -64,46 +64,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io->dispose
-  "Dispose a component" (fn [a] (:typeid (meta a))))
+  "Dispose a io-service" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io->start
-  "Start a component" (fn [a] (:typeid (meta a))))
+  "Start a io-service" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io->stop
-  "Stop a component" (fn [a] (:typeid (meta a))))
+  "Stop a io-service" (fn [a] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti io->error!
-  "Handle error" (fn [a b c] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io<stopped>
-  "Called after a component has stopped" (fn [a] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io<started>
-  "Called after a component has started" (fn [a] (:typeid (meta a))))
+  "Handle io-service error" (fn [a b c] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti ioevent<>
-  "Create an event" (fn [a b] (:typeid (meta a))))
+  "Create an event" (fn [a args] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   :default
   [^Service co args]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (logcomp "comp->init" co)
   (if (and (not-empty args)
            (map? args))
     (->> (merge (.config co) args)
@@ -112,22 +102,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io<started>
-
-  :default
-  [^Service co & _]
-
-  (when-some [cfg (.config co)]
-    (log/info "service config:\n%s" (pr-str cfg))
-    (log/info "service %s started - ok" (.id co))))
+(defn io<started>
+  ""
+  [^Service co]
+  (log/info "service %s config:\n%s\nstarted - ok"
+            (.id co)
+            (pr-str (.config co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io<stopped>
-
-  :default
-  [^Service co & _]
-
+(defn io<stopped>
+  ""
+  [^Service co]
   (log/info "service %s stopped - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,7 +121,7 @@
 (defmethod io->dispose
 
   :default
-  [^Service co & _]
+  [^Service co]
 
   (log/info "service %s disposed - ok" (.id co)))
 
@@ -144,11 +130,11 @@
 (defmethod io->error!
 
   :default
-  [^Service co & [^Job job ^Throwable e]]
+  [^Service co ^Job job ^Throwable e]
 
-  (log/error e "")
-  (when-some [wf (fatalErrorFlow<> job)]
-    (.execWith wf job)))
+  (log/exception e)
+  (some-> (fatalErrorFlow<> job)
+          (.execWith job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -159,7 +145,7 @@
    :tag Job}
   [co wf evt]
 
-  `(with-meta (job<> ~co ~wf ~evt) {:typeid ::Job}))
+  `(with-meta (job<> ~co ~wf ~evt) {:typeid :czlab.skaro.io/Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -176,8 +162,7 @@
      rts (.cljrt ctr)
      c0 (str (:handler cfg))
      cb (stror c1 c0)
-     wf (try!! nil
-               (.call rts ^String cb))]
+     wf (try! (.call rts cb))]
     (log/debug "event type = %s" (type evt))
     (log/debug "event opts = %s" args)
     (log/debug "event router = %s" c1)
@@ -196,6 +181,7 @@
 (defn service<>
 
   "Create a Service"
+  ^Service
   [^Container parObj emType emAlias]
   {:pre [(keyword? emType)]}
 
@@ -243,6 +229,9 @@
           (some-> ^Timer @timer (.cancel))
           (reset! timer nil)
           (io->dispose this))
+
+        (init [this cfg]
+          (comp->init this cfg))
 
         (start [this]
           (io->start this)

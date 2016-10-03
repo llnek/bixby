@@ -619,9 +619,11 @@
 (defmethod ioevent<>
 
   ::HTTP
-  [^Service co & [^Channel ch msg ^RouteInfo ri]]
+  [^Service co {:keys [^Channel ch
+                       msg
+                       ^RouteInfo route]}]
 
-  (log/info "ioevent: %s: %s" (gtid co) (.id co))
+  (log/info "ioevent: '%s': '%s'" (gtid co) (.id co))
   (let [ssl? (maybeSSL? ch)]
     (if
       (inst? WebSocketFrame msg)
@@ -631,7 +633,7 @@
         co ch ssl?
         (:body msg)
         (:gist msg)
-        (if (nil? ri) false (.isSecure ri))))))
+        (if (nil? route) false (.isSecure route))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -647,7 +649,9 @@
       (let [ch (.channel ^ChannelHandlerContext c)
             {:keys [waitMillis]}
             (.config co)
-            evt (ioevent<> co ch msg)]
+            evt (ioevent<> co {:ch ch
+                               :msg msg
+                               :route nil})]
         (if (inst? HttpEvent evt)
           (let [w (nettyTrigger<> ch evt)]
             (.hold co w waitMillis)))
@@ -685,12 +689,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::HTTP
-  [^Service co & [cfg0]]
+  [^Service co cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let [^Container ctr (.server co)
         cfg (httpBasicConfig co cfg0)]
     (.setv (.getx co) :emcfg cfg)
@@ -704,12 +708,12 @@
     co))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::WebMVC
-  [^Service co & [cfg0]]
+  [^Service co cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let [^Container ctr (.server co)
         cfg (httpBasicConfig co cfg0)
         bs (httpServer<>

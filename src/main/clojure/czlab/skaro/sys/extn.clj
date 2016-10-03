@@ -286,7 +286,7 @@
         (log/info "making service %s..." svcType)
         (log/info "svc meta: %s" (meta obj))
         (log/info "config params =\n%s" cfg)
-        (comp->initialize obj cfg)
+        (.init obj cfg)
         (log/info "service - ok. handler => %s" hid)
         obj)
       (trap! ServiceError
@@ -327,7 +327,7 @@
   [^Execvisor exe ^AppGist gist]
 
   (doto (mkctr exe gist)
-    (comp->initialize )))
+    (comp->init  nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -431,12 +431,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::Container
-  [^Container co & args]
+  [^Container co arg]
 
-  (log/info "comp->initialize: Container: %s" (.id co))
+  (log/info "comp->init: '%s' : '%s'" (gtid co) (.id co))
   (parseConf co)
   (let
     [cpu (scheduler<> (.id co))

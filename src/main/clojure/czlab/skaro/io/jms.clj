@@ -70,11 +70,10 @@
 (defmethod ioevent<>
 
   ::JMS
-  [^Service co & args]
+  [^Service co {:keys [msg]}]
 
   (log/info "ioevent: %s: %s" (gtid co) (.id co))
-  (let [msg (first args)
-        eeid (seqint2)
+  (let [eeid (seqint2)
         impl (muble<>)]
     (with-meta
       (reify JmsEvent
@@ -95,7 +94,7 @@
   [^Service co msg]
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (ioevent<> co msg)))
+  (.dispatch co (ioevent<> co {:msg msg})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -219,12 +218,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::JMS
-  [^Service co  & [cfg0]]
+  [^Service co  cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (->> (merge (.config co)
               (sanitize cfg0))
        (.setv (.getx co) :emcfg ))

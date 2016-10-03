@@ -97,7 +97,7 @@
      m (-> (podMeta app
                     cf
                     (io/as-url des)))]
-    (comp->initialize m)
+    (comp->init m nil)
     (.setv ctx :app m)
     m))
 
@@ -242,12 +242,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::ServiceGist
-  [^ServiceGist co & [execv]]
+  [^ServiceGist co execv]
 
-  (log/info "comp->initialize: ServiceGist: %s" (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (.setParent co execv)
   co)
 
@@ -265,7 +265,7 @@
         (reduce
           #(let [b (emitMeta (first %2)
                              (last %2))]
-             (comp->initialize b co)
+             (comp->init b co)
              (assoc! %1 (.type b) b))
           (transient {})
           *emitter-defs*))
@@ -285,15 +285,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::Execvisor
-  [^Execvisor co & [rootGist]]
+  [^Execvisor co rootGist]
   {:pre [(inst? Atom rootGist)]}
 
   (let [{:keys [basedir appDir jmx]}
         @rootGist]
-    (log/info "com->initialize: Execvisor: %s" co)
+    (log/info "com->init: '%s': '%s'" (gtid co) (.id co))
     (test-some "conf file: jmx" jmx)
     (sysProp! "file.encoding" "utf-8")
     (.copy (.getx co) (muble<> @rootGist))

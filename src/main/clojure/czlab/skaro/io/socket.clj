@@ -51,7 +51,7 @@
 (defmethod ioevent<>
 
   ::Socket
-  [^Service co & [^Socket soc]]
+  [^Service co {:keys [^Socket socket]} ]
 
   (log/info "ioevent: %s: %s" (gtid co) (.id co))
   (let [impl (muble<>)
@@ -63,21 +63,21 @@
         (bindSession [_ s] )
         (session [_] )
         (id [_] eeid)
-        (sockOut [_] (.getOutputStream soc))
-        (sockIn [_] (.getInputStream soc))
+        (sockOut [_] (.getOutputStream socket))
+        (sockIn [_] (.getInputStream socket))
         (source [_] co)
-        (dispose [_] (closeQ soc)))
+        (dispose [_] (closeQ socket)))
 
       {:typeid ::SocketEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::Socket
-  [^Service co & [cfg0]]
+  [^Service co cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let
     [{:keys [timeoutMillis
              backlog host port]
@@ -103,14 +103,14 @@
   [^Service co ^Socket soc]
 
   (try!
-    (.dispatch co (ioevent<> co soc))))
+    (.dispatch co (ioevent<> co {:socket soc}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
 
   ::Socket
-  [^Service co & _]
+  [^Service co]
 
   (log/info "io->start: %s: %s" (gtid co) (.id co))
   (when-some
@@ -132,7 +132,7 @@
 (defmethod io->stop
 
   ::Socket
-  [^Service co & _]
+  [^Service co]
 
   (log/info "io->stop: %s: %s" (gtid co) (.id co))
   (when-some

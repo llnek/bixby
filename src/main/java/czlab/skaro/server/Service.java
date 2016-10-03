@@ -18,12 +18,13 @@ package czlab.skaro.server;
 import czlab.skaro.io.IoEvent;
 import czlab.xlib.Disposable;
 import czlab.xlib.Hierarchial;
+import czlab.xlib.Initable;
 import czlab.xlib.Startable;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Startable, Hierarchial, Disposable {
+public interface Service extends Component, Initable, Startable, Hierarchial, Disposable {
 
   /**/
   public void dispatchEx(IoEvent evt, Object arg);

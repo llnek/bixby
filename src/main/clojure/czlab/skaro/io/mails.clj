@@ -154,7 +154,7 @@
 (defmethod ioevent<>
 
   ::EMAIL
-  [^Service co & [msg]]
+  [^Service co {:keys [msg]} ]
 
   (log/info "ioevent: %s: %s" (gtid co) (.id co))
   (ctorEmailEvent co msg))
@@ -202,7 +202,7 @@
       (doto mm
         (.getAllHeaders)
         (.getContent))
-      (.dispatch co (ioevent<> co mm))
+      (.dispatch co (ioevent<> co {:msg mm}))
       (when d? (.setFlag mm Flags$Flag/DELETED true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,12 +265,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::POP3
-  [^Service co & [cfg0]]
+  [^Service co cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let [c2 (merge (.config co)
                   (sanitize cfg0))
         [z p]
@@ -306,12 +306,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::IMAP
-  [^Service co  & [cfg0]]
+  [^Service co  cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let [c2 (merge (.config co)
                   (sanitize cfg0))
         [z p]

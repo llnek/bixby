@@ -60,10 +60,11 @@
 (defmethod ioevent<>
 
   ::FilePicker
-  [^Service co & [fnm f]]
+  [^Service co {:keys [fname fp]}]
 
   (let
     [eeid (seqint2)
+     f (io/file fp)
      impl (muble<>)]
     (with-meta
       (reify FileEvent
@@ -72,8 +73,8 @@
         (bindSession [_ s] )
         (session [_] )
         (source [_] co)
-        (originalFileName [_] fnm)
-        (file [_] (io/file f))
+        (originalFileName [_] fname)
+        (file [_] f)
         (id [_] eeid))
 
       {:typeid ::FileEvent})))
@@ -98,7 +99,9 @@
               (FileUtils/moveFile f d)
               d)))]
     (when (some? cf)
-      (->> (ioevent<> co orig cf action)
+      (->> (ioevent<> co {:fname orig
+                          :fp cf
+                          :action action})
            (.dispatch co)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -123,12 +126,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->initialize
+(defmethod comp->init
 
   ::FilePicker
-  [^Service co & [cfg0]]
+  [^Service co cfg0]
 
-  (log/info "comp->initialize: %s: %s" (gtid co) (.id co))
+  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (let
     [c2 (merge (.config co) cfg0)
      {:keys [recvFolder

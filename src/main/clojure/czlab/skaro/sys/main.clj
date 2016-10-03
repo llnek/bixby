@@ -159,7 +159,7 @@
            assoc
            :execv execv
            :stop! #(stopCLI gist))
-    (comp->initialize execv gist)
+    (comp->init execv gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
               "about to start skaro..."

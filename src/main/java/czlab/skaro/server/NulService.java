@@ -25,6 +25,7 @@ public class NulService implements Service {
 
   public void dispatchEx(IoEvent evt, Object options) {}
   public void dispatch(IoEvent evt) {}
+  public void init(Object o) {}
   public Muble getx() {return null;}
   public Container server() {return _s;}
   public Object config() {return null;}
