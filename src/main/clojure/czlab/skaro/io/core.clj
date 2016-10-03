@@ -91,7 +91,7 @@
 (defmethod comp->init
 
   :default
-  [^Service co args]
+  [^IoService co args]
 
   (logcomp "comp->init" co)
   (if (and (not-empty args)
@@ -104,33 +104,33 @@
 ;;
 (defn io<started>
   ""
-  [^Service co]
-  (log/info "service %s config:\n%s\nstarted - ok"
-            (.id co)
-            (pr-str (.config co))))
+  [^IoService co]
+  (log/info "service '%s' config:" (.id co))
+  (log/info "%s" (pr-str (.config co)))
+  (log/info "service '%s' started - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn io<stopped>
   ""
-  [^Service co]
-  (log/info "service %s stopped - ok" (.id co)))
+  [^IoService co]
+  (log/info "service '%s' stopped - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->dispose
 
   :default
-  [^Service co]
+  [^IoService co]
 
-  (log/info "service %s disposed - ok" (.id co)))
+  (log/info "service '%s' disposed - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->error!
 
   :default
-  [^Service co ^Job job ^Throwable e]
+  [^IoService co ^Job job ^Throwable e]
 
   (log/exception e)
   (some-> (fatalErrorFlow<> job)
@@ -152,25 +152,27 @@
 (defn- onEvent
 
   ""
-  [^Container ctr ^Service src evt args]
+  [^IoService src evt args]
 
   (log/debug "service '%s' onevent called" (.id src))
   (let
-    [^Job job (job<+> ctr nil evt)
-     c1 (str (:router args))
+    [c1 (:router args)
+     ctr (.server src)
+     job (job<+> ctr nil evt)
      cfg (.config src)
      rts (.cljrt ctr)
-     c0 (str (:handler cfg))
+     c0 (:handler cfg)
      cb (stror c1 c0)
      wf (try! (.call rts cb))]
-    (log/debug "event type = %s" (type evt))
-    (log/debug "event opts = %s" args)
-    (log/debug "event router = %s" c1)
-    (log/debug "io-handler = %s" c0)
+    (log/debug (str "event type = %s\n"
+                    "event opts = %s\n"
+                    "event router = %s\n"
+                    "io-handler = %s")
+               (type evt) args c1 c0)
     (try
       (if-not (inst? WorkStream wf)
-        (throwBadArg "Want WorkStream, got " (class wf)))
-      (log/debug "job#%s => %s" (.id job) (.id src))
+        (throwBadArg "Want WorkStream, got %s" (class wf))
+        (log/debug "job#%s => %s" (.id job) (.id src)))
       (.setv job EV_OPTS args)
       (.execWith ^WorkStream wf job)
       (catch Throwable e#
@@ -180,16 +182,15 @@
 ;;
 (defn service<>
 
-  "Create a Service"
-  ^Service
+  "Create a IO/Service"
+  ^IoService
   [^Container parObj emType emAlias]
   {:pre [(keyword? emType)]}
 
-  ;; holds all the events from this source
   (let [timer (atom nil)
         impl (muble<>)]
     (with-meta
-      (reify Service
+      (reify IoService
 
         (isEnabled [_]
           (not (false? (.getv impl :enabled))))
@@ -204,26 +205,27 @@
           (.dispatchEx this ev nil))
 
         (dispatchEx [this ev arg]
-          (try!!
-            nil
-            (onEvent parObj this ev arg)))
+          (try! (onEvent this ev arg)))
 
-        (hold [_ wevt millis]
-          (when (and (some? @timer)
-                     (some? wevt))
+        (hold [_ trig millis]
+          (if (and (some? @timer)
+                   (some? trig))
             (let [t (tmtask<>
-                      #(.resumeOnExpiry wevt))]
-              (log/debug "holding event: %s"
-                         (.id ^Identifiable wevt))
-              (.schedule ^Timer @timer t (long millis))
-              (.setv (.getx ^Context wevt) :ttask t))))
+                      #(.resumeOnExpiry trig))]
+              (log/debug (str "holding event: '%s'"
+                              " for %s millis")
+                         (.id trig)
+                         millis)
+              (.schedule ^Timer @timer t millis)
+              (.setv (.getx trig) :ttask t))))
 
         (version [_] "1.0")
         (getx [_] impl)
         (id [_] emAlias)
 
         (parent [_] parObj)
-        (setParent [_ p])
+        (setParent [_ p]
+          (throwUOE "can't set service parent"))
 
         (dispose [this]
           (some-> ^Timer @timer (.cancel))
@@ -234,8 +236,8 @@
           (comp->init this cfg))
 
         (start [this]
-          (io->start this)
-          (reset! timer (Timer. true)))
+          (reset! timer (Timer. true))
+          (io->start this))
 
         (stop [this]
           (some-> ^Timer @timer (.cancel ))

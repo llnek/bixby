@@ -35,15 +35,17 @@
         [czlab.crypto.ssl]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.skaro.io.webss])
+        [czlab.skaro.io.web])
 
   (:import
-    [io.netty.handler.codec.http.cookie ServerCookieDecoder ServerCookieEncoder]
     [java.nio.channels ClosedChannelException]
     [io.netty.handler.codec.http.websocketx
      WebSocketFrame
      BinaryWebSocketFrame
      TextWebSocketFrame]
+    [io.netty.handler.codec.http.cookie
+     ServerCookieDecoder
+     ServerCookieEncoder]
     [czlab.netty CPDecorator TcpPipeline]
     [czlab.skaro.net WebAsset RangeInput]
     [io.netty.bootstrap ServerBootstrap]

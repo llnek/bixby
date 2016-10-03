@@ -12,20 +12,31 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.skaro.server;
+package czlab.skaro.io;
 
-import czlab.xlib.Hierarchial;
+import czlab.skaro.server.Container;
+import czlab.skaro.server.EventTrigger;
+import czlab.skaro.server.Service;
 
 /**
  * @author Kenneth Leung
  */
-public interface ServiceGist extends Component, Hierarchial {
+public interface IoService extends Service {
 
   /**/
-  public boolean isEnabled();
+  public void dispatchEx(IoEvent evt, Object arg);
 
   /**/
-  public Object type();
+  public void dispatch(IoEvent evt);
+
+  /**/
+  public Container server();
+
+  /**/
+  public Object config();
+
+  /**/
+  public void hold(EventTrigger t, long millis);
 
 }
 

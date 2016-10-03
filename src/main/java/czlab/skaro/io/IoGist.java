@@ -12,19 +12,22 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.skaro.io;
 
-import czlab.skaro.server.EventTrigger;
+import czlab.skaro.server.Component;
+import czlab.xlib.Hierarchial;
 
 /**
  * @author Kenneth Leung
  */
-public interface IoAsyncEvent extends IoEvent {
+public interface IoGist extends Component, Hierarchial {
 
   /**/
-  public void setTrigger(EventTrigger t);
-  
+  public boolean isEnabled();
+
+  /**/
+  public Object type();
+
 }
 
 

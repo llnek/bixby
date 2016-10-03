@@ -16,7 +16,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.io.webss
+  czlab.skaro.io.web
 
   (:require
     [czlab.xlib.core

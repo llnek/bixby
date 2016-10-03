@@ -20,7 +20,7 @@ import czlab.xlib.Identifiable;
 /**
  * @author Kenneth Leung
  */
-public interface WebSS extends Identifiable {
+public interface HttpSession extends Identifiable {
 
   /**/
   public void setMaxIdleSecs(long idleSecs);
