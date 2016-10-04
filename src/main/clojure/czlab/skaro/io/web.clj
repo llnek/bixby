@@ -12,36 +12,29 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
   czlab.skaro.io.web
 
   (:require
-    [czlab.xlib.core
-     :refer [convLong
-             spos?
-             now<>
-             juid
-             trap!
-             muble<>
-             stringify
-             bytesify]]
-    [czlab.xlib.str :refer [strbf<> hgl? addDelim!]]
-    [czlab.xlib.io :refer [hexify]]
     [czlab.crypto.core :refer [genMac]]
+    [czlab.xlib.io :refer [hexify]]
     [czlab.xlib.logging :as log])
+
+  (:use [czlab.xlib.core]
+        [czlab.xlib.str])
 
   (:import
     [czlab.skaro.etc ExpiredError AuthError]
-    [czlab.skaro.server Container Service ]
+    [czlab.skaro.server Container]
     [java.net HttpCookie]
     [czlab.xlib Muble CU]
     [czlab.skaro.io
+     HttpSession
      HttpResult
      HttpEvent
-     WebSS
+     IoService
      IoSession]
     [czlab.net ULFormItems ULFileItem]))
 
@@ -50,19 +43,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private SESSION_COOKIE "__ss117")
+(def ^:private ^String SESSION_COOKIE "__ss117")
 (def ^:private SSID_FLAG :__f01es)
 (def ^:private CS_FLAG :__f184n ) ;; creation time
 (def ^:private LS_FLAG :__f384n ) ;; last access time
 (def ^:private ES_FLAG :__f484n ) ;; expiry time
-(def ^String ^:private NV_SEP "\u0000")
+(def ^:private ^String NV_SEP "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resetFlags
 
   "A negative value means that the cookie is not stored persistently and will be deleted when the Web browser exits. A zero value causes the cookie to be deleted."
-  [^WebSS mvs maxAgeSecs]
+  [^HttpSession mvs maxAgeSecs]
 
   (let [now (System/currentTimeMillis)
         maxAgeSecs (or maxAgeSecs 0)]
@@ -99,8 +92,8 @@
   [^HttpEvent evt ^HttpResult res ]
 
   (let
-    [co (.source evt)
-     ^WebSS mvs (.session evt)
+    [^HttpSession mvs (.session evt)
+     co (.source evt)
      {:keys [sessionAgeSecs
              domainPath
              domain
@@ -109,12 +102,12 @@
      (.config co)]
     (when-not (.isNull mvs)
       (log/debug "session ok, about to set-cookie!")
-      (when (.isNew mvs)
+      (if (.isNew mvs)
         (->> (or sessionAgeSecs 3600)
              (resetFlags mvs )))
       (let
         [ck (->> (maybeMacIt evt (str mvs))
-                 (HttpCookie. SESSION_COOKIE ))
+                 (HttpCookie. SESSION_COOKIE))
          est (.expiryTime mvs)]
         (->> ^long (or maxIdleSecs 0)
              (.setMaxIdleSecs mvs))
@@ -134,11 +127,11 @@
   ""
   [^HttpEvent evt p1 p2]
 
-  (when-some
-    [pkey (when (.checkAuthenticity evt)
+  (if-some
+    [pkey (if (.checkAuthenticity evt)
             (-> (.server (.source evt))
-                (.appKeyBits )))]
-    (when-not (= (genMac pkey p2) p1)
+                (.appKeyBits)))]
+    (when (not= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
       (trap! AuthError "Bad Session Cookie"))))
 
@@ -151,7 +144,7 @@
 
   (let
     [^HttpCookie ck (get (.cookies evt) SESSION_COOKIE)
-     ^WebSS mvs (.session evt)
+     ^HttpSession mvs (.session evt)
      src (.source evt)]
     (if (nil? ck)
       (do
@@ -159,8 +152,7 @@
         (.invalidate mvs))
       (let
         [cookie (str (.getValue ck))
-         cfg (-> (.getx src)
-                 (.getv :emcfg))
+         cfg (.config src)
          pos (.indexOf cookie (int \-))
          [^String p1 ^String p2]
          (if (< pos 0)
@@ -188,9 +180,9 @@
               es (or (.attr mvs ES_FLAG) -1)
               now (System/currentTimeMillis)
               mi (or (:maxIdleSecs cfg) 0)]
-          (when (or (< es now)
-                    (and (spos? mi)
-                         (< (+ ts (* 1000 mi)) now)))
+          (if (or (< es now)
+                  (and (spos? mi)
+                       (< (+ ts (* 1000 mi)) now)))
             (trap! ExpiredError "Session has expired"))
           (.setAttr mvs LS_FLAG now))))))
 
@@ -199,14 +191,14 @@
 (defn wsession<>
 
   ""
-  ^WebSS
+  ^HttpSession
   [co ssl?]
 
   (let [impl (muble<> {:maxIdleSecs 0
                        :newOne true})
         _attrs (muble<>)]
     (with-meta
-      (reify WebSS
+      (reify HttpSession
 
         (removeAttr [_ k] (.unsetv _attrs k))
         (setAttr [_ k v] (.setv _attrs k v))
@@ -215,7 +207,7 @@
         (attrs [_] (.seq _attrs))
 
         (setMaxIdleSecs [_ idleSecs]
-          (when (number? idleSecs)
+          (if (number? idleSecs)
             (.setv impl :maxIdleSecs idleSecs)))
 
         (isNull [_] (empty? (.impl impl)))
@@ -267,7 +259,7 @@
         (handleEvent [_ evt] (upstream evt))
         (impl [_] nil))
 
-        {:typeid ::WebSS })))
+        {:typeid ::HttpSession })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

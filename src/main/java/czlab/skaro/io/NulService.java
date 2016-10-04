@@ -40,7 +40,7 @@ public class NulService implements IoService {
   public void start() {}
   public void suspend() {}
   public void resume() {}
-  public void hold(IoEvent t, long m) {}
+  public void hold(IoTrigger t, long m) {}
 
   public NulService(Container s) { _s=s; }
   private Container _s;

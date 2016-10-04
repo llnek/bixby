@@ -19,19 +19,12 @@
   czlab.skaro.io.jms
 
   (:require
-    [czlab.xlib.core
-     :refer [throwIOE
-             seqint2
-             inst?
-             try!!
-             try!
-             juid
-             muble<>]]
     [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.str :refer [hgl? stror]])
+    [czlab.xlib.logging :as log])
 
   (:use [czlab.skaro.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.skaro.io.core])
 
   (:import
@@ -58,8 +51,8 @@
      TopicSubscriber]
     [java.io IOException]
     [javax.naming Context InitialContext]
-    [czlab.skaro.server Container Service]
-    [czlab.skaro.io JmsEvent]))
+    [czlab.skaro.server Container]
+    [czlab.skaro.io IoService JmsEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -70,10 +63,10 @@
 (defmethod ioevent<>
 
   ::JMS
-  [^Service co {:keys [msg]}]
+  [^IoService co {:keys [msg]}]
 
-  (log/info "ioevent: %s: %s" (gtid co) (.id co))
-  (let [eeid (seqint2)
+  (logcomp "ioevent" co)
+  (let [eeid (str "event#" (seqint2))
         impl (muble<>)]
     (with-meta
       (reify JmsEvent
@@ -91,7 +84,7 @@
 (defn- onMsg
 
   ""
-  [^Service co msg]
+  [^IoService co msg]
 
   ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (ioevent<> co {:msg msg})))
@@ -102,7 +95,7 @@
 
   ""
   ^Connection
-  [^Service co
+  [^IoService co
    ^InitialContext ctx
    ^ConnectionFactory cf]
 
@@ -111,15 +104,16 @@
              ^String jmsPwd
              ^String jmsUser]}
      (.config co)
-     pwd (->> ^Container (.server co)
-             (.appKey )
-             (passwd<> jmsPwd ))
+     pwd (->> (.server co)
+              (.appKey )
+              (passwd<> jmsPwd))
      c (.lookup ctx destination)
      ^Connection
      conn (if (hgl? jmsUser)
             (.createConnection
-              cf jmsUser
-              ^String (stror pwd nil))
+              cf
+              jmsUser
+              (stror pwd nil))
             (.createConnection cf))]
     (if (inst? Destination c)
       ;;TODO ? ack always ?
@@ -137,7 +131,7 @@
 
   ""
   ^Connection
-  [^Service co
+  [^IoService co
    ^InitialContext ctx
    ^TopicConnectionFactory cf]
 
@@ -147,18 +141,19 @@
              durable
              ^String jmsPwd]}
      (.config co)
-     pwd (->> ^Container (.server co)
+     pwd (->> (.server co)
               (.appKey)
               (passwd<> jmsPwd))
      conn (if (hgl? jmsUser)
             (.createTopicConnection
-              cf jmsUser
-              ^String (stror pwd nil))
+              cf
+              jmsUser
+              (stror pwd nil))
             (.createTopicConnection cf))
      s (.createTopicSession
          conn false Session/CLIENT_ACKNOWLEDGE)
      t (.lookup ctx destination)]
-    (when-not (inst? Topic t)
+    (if-not (inst? Topic t)
       (throwIOE "Object not of Topic type"))
     (-> (if durable
           (.createDurableSubscriber s t (juid))
@@ -174,7 +169,7 @@
 
   ""
   ^Connection
-  [^Service co
+  [^IoService co
    ^InitialContext ctx
    ^QueueConnectionFactory cf]
 
@@ -183,18 +178,19 @@
              ^String jmsUser
              ^String jmsPwd]}
      (.config co)
-     pwd (->> ^Container (.server co)
+     pwd (->> (.server co)
               (.appKey)
               (passwd<> jmsPwd))
      conn (if (hgl? jmsUser)
             (.createQueueConnection
-              cf jmsUser
-              ^String (stror pwd nil))
+              cf
+              jmsUser
+              (stror pwd nil))
             (.createQueueConnection cf))
      s (.createQueueSession conn
                             false Session/CLIENT_ACKNOWLEDGE)
      q (.lookup ctx destination)]
-    (when-not (inst? Queue q)
+    (if-not (inst? Queue q)
       (throwIOE "Object not of Queue type"))
     (-> (.createReceiver s ^Queue q)
         (.setMessageListener
@@ -207,11 +203,11 @@
 (defn- sanitize
 
   ""
-  [^Service co cfg0]
+  [^IoService co cfg0]
 
   (let [{:keys [jndiPwd jmsPwd]}
         cfg0
-        pkey (.appKey ^Container (.server co))]
+        pkey (.appKey (.server co))]
     (-> cfg0
         (assoc :jndiPwd (.text (passwd<> jndiPwd pkey)))
         (assoc :jmsPwd (.text (passwd<> jmsPwd pkey))))))
@@ -221,9 +217,9 @@
 (defmethod comp->init
 
   ::JMS
-  [^Service co  cfg0]
+  [^IoService co cfg0]
 
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
+  (logcomp "comp->init" co)
   (->> (merge (.config co)
               (sanitize cfg0))
        (.setv (.getx co) :emcfg ))
@@ -234,17 +230,17 @@
 (defmethod io->start
 
   ::JMS
-  [^Service co & _]
+  [^IoService co]
 
-  (log/info "io->start: %s: %s" (gtid co) (.id co))
+  (logcomp "io->start" co)
   (let
     [{:keys [contextFactory providerUrl
              jndiUser jndiPwd connFactory]}
      (.config co)
-     vars (Hashtable.) ]
-    (when (hgl? providerUrl)
+     vars (Hashtable.)]
+    (if (hgl? providerUrl)
       (.put vars Context/PROVIDER_URL providerUrl))
-    (when (hgl? contextFactory)
+    (if (hgl? contextFactory)
       (.put vars
             Context/INITIAL_CONTEXT_FACTORY
             contextFactory))
@@ -261,9 +257,8 @@
            TopicConnectionFactory
            (inizTopic co ctx obj)
            ConnectionFactory
-           (inizFac co ctx obj)
-           nil)]
-      (when (nil? c)
+           (inizFac co ctx obj))]
+      (if (nil? c)
         (throwIOE "Unsupported JMS Connection Factory"))
       (.setv (.getx co) :conn c)
       (.start c)
@@ -274,9 +269,9 @@
 (defmethod io->stop
 
   ::JMS
-  [^Service co & _]
+  [^IoService co]
 
-  (log/info "io->stop: %s: %s" (gtid co) (.id co))
+  (logcomp "io->stop" co)
   (when-some
     [^Connection c
      (.getv (.getx co) :conn)]

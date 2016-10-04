@@ -12,7 +12,6 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc "Implementation for email services."
       :author "Kenneth Leung" }
 
@@ -20,21 +19,16 @@
 
   (:require
     [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core
-     :refer [seqint2
-             sysProp
-             spos?
-             try!!
-             try!
-             throwIOE]]
-    [czlab.xlib.str :refer [hgl? stror]])
+    [czlab.xlib.logging :as log])
 
-  (:use [czlab.skaro.sys.core]
-        [czlab.skaro.io.loops ]
-        [czlab.skaro.io.core ])
+  (:use [czlab.skaro.io.loops]
+        [czlab.skaro.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.skaro.io.core])
 
   (:import
+    [czlab.skaro.io IoService EmailEvent]
     [javax.mail.internet MimeMessage]
     [javax.mail
      Flags$Flag
@@ -44,10 +38,9 @@
      Session
      Provider
      Provider$Type]
-    [czlab.skaro.server Container Service]
+    [czlab.skaro.server Container]
     [java.util Properties]
     [java.io IOException]
-    [czlab.skaro.io EmailEvent]
     [czlab.xlib Muble Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -55,21 +48,21 @@
 (derive ::EMAIL :czlab.skaro.io.loops/ThreadedTimer)
 (derive ::IMAP ::EMAIL)
 (derive ::POP3 ::EMAIL)
-(def ^:dynamic *mock-mail-provider* "")
+(def ^:dynamic ^String *mock-mail-provider* "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
-(def CZ_POP3S  "com.sun.mail.pop3.POP3SSLStore" )
+(def CZ_POP3S  "com.sun.mail.pop3.POP3SSLStore")
 (def CZ_POP3  "com.sun.mail.pop3.POP3Store")
 (def POP3S "pop3s")
 (def POP3C "pop3")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IMAP
-(def CZ_IMAPS "com.sun.mail.imap.IMAPSSLStore" )
-(def CZ_IMAP "com.sun.mail.imap.IMAPStore" )
-(def IMAPS "imaps" )
-(def IMAP "imap" )
+(def CZ_IMAPS "com.sun.mail.imap.IMAPSSLStore")
+(def CZ_IMAP "com.sun.mail.imap.IMAPStore")
+(def IMAPS "imaps")
+(def IMAP "imap")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,12 +80,12 @@
 (defn- closeStore
 
   ""
-  [^Service co]
+  [^IoService co]
 
   (let [{:keys [store folder]}
         (.impl (.getx co))]
     (closeFolder folder)
-    (when (some? store)
+    (if (some? store)
       (try!
         (.close ^Store store)))
     (doto (.getx co)
@@ -104,7 +97,7 @@
 (defn- resolveProvider
 
   ""
-  [^Service co ^String cz ^String proto]
+  [^IoService co ^String cz ^String proto]
 
   (let
     [demo? (= "true" (sysProp "skaro.demo.flag"))
@@ -121,7 +114,7 @@
        [(some #(if (= cz (.getClassName ^Provider %)) %)
               (seq ps))
         cz proto])]
-    (when (nil? sun)
+    (if (nil? sun)
       (throwIOE (str "Failed to find store: " pz)))
     (log/debug "mail store impl = '%s'" pz)
     (.setProvider ss sun)
@@ -135,9 +128,9 @@
 (defn- ctorEmailEvent
 
   ""
-  [^Service co msg]
+  [^IoService co msg]
 
-  (let [eeid (seqint2)]
+  (let [eeid (str "event#" (seqint2))]
     (with-meta
       (reify EmailEvent
         (checkAuthenticity [_] false)
@@ -154,9 +147,8 @@
 (defmethod ioevent<>
 
   ::EMAIL
-  [^Service co {:keys [msg]} ]
+  [^IoService co {:keys [msg]}]
 
-  (log/info "ioevent: %s: %s" (gtid co) (.id co))
   (ctorEmailEvent co msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -164,7 +156,7 @@
 (defn- connectPop3
 
   ""
-  [^Service co]
+  [^IoService co]
 
   (let [{:keys [^Session session
                 ^String proto]}
@@ -176,8 +168,10 @@
         (.config co)]
     (when-some [s (.getStore session proto)]
       (.connect s
-                host ^long port
-                user ^String (stror passwd nil))
+                host
+                ^long port
+                user
+                (stror passwd nil))
       (doto (.getx co)
         (.setv :folder
                (some-> (.getDefaultFolder s)
@@ -195,7 +189,7 @@
 (defn- readPop3
 
   ""
-  [^Service co msgs]
+  [^IoService co msgs]
 
   (let [d? (.getv (.getx co) :deleteMsg?)]
     (doseq [^MimeMessage mm  msgs]
@@ -210,20 +204,20 @@
 (defn- scanPop3
 
   ""
-  [^Service co]
+  [^IoService co]
 
   (let [{:keys [^Folder folder
                 ^Store store]}
         (.impl (.getx co))]
-    (when (and (some? folder)
-               (not (.isOpen folder)))
+    (if (and (some? folder)
+             (not (.isOpen folder)))
       (.open folder Folder/READ_WRITE))
     (when (and (some? folder)
                (.isOpen folder))
       (try
         (let [cnt (.getMessageCount folder)]
           (log/debug "count of new mail-messages: %d" cnt)
-          (when (spos? cnt)
+          (if (spos? cnt)
             (readPop3 co (.getMessages folder))))
         (finally
           (try! (.close folder true)))))))
@@ -233,13 +227,13 @@
 (defmethod loopableWakeup
 
   ::POP3
-  [^Service co & _]
+  [^IoService co _]
 
   (try
     (connectPop3 co)
     (scanPop3 co)
     (catch Throwable e#
-      (log/warn e# ""))
+      (log/exception e#))
     (finally
       (closeStore co)))
   co)
@@ -249,12 +243,12 @@
 (defn- sanitize
 
   ""
-  [^Service co cfg0]
+  [^IoService co cfg0]
 
   (let [{:keys [port deleteMsg?
                 host user ssl? passwd]}
         cfg0
-        pkey (.appKey ^Container (.server co))]
+        pkey (.appKey (.server co))]
     (-> cfg0
         (assoc :ssl (if (false? ssl?) false true))
         (assoc :deleteMsg (true? deleteMsg?))
@@ -268,9 +262,9 @@
 (defmethod comp->init
 
   ::POP3
-  [^Service co cfg0]
+  [^IoService co cfg0]
 
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
+  (logcomp "comp->init" co)
   (let [c2 (merge (.config co)
                   (sanitize cfg0))
         [z p]
@@ -282,24 +276,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro connectIMAP "" {:private true} [co] `(connectPop3 ~co))
+(defmacro ^:private connectIMAP "" [co] `(connectPop3 ~co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro scanIMAP "" {:private true} [co] `(scanPop3 ~co))
+(defmacro ^:private scanIMAP "" [co] `(scanPop3 ~co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
 
   ::IMAP
-  [^Service co & _]
+  [^IoService co _]
 
   (try
     (connectIMAP co)
     (scanIMAP co)
     (catch Throwable e#
-      (log/warn e# ""))
+      (log/exception e#))
     (finally
       (closeStore co)))
   co)
@@ -309,9 +303,9 @@
 (defmethod comp->init
 
   ::IMAP
-  [^Service co  cfg0]
+  [^IoService co cfg0]
 
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
+  (logcomp "comp->init" co)
   (let [c2 (merge (.config co)
                   (sanitize cfg0))
         [z p]

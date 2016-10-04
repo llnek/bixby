@@ -19,11 +19,12 @@
 
   (:require
     [czlab.xlib.io :refer [changeContent readAsStr]]
-    [czlab.xlib.core :refer [muble<> fpath]]
-    [czlab.xlib.str :refer [hgl?]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs]
     [clojure.java.io :as io])
+
+  (:use [czlab.xlib.core]
+        [czlab.xlib.str])
 
   (:import
     [org.apache.commons.lang3.text StrSubstitutor]
@@ -43,8 +44,8 @@
 (def ^String C_VERPROPS "czlab/czlab-skaro/version.properties")
 (def ^String C_RCB "czlab.skaro.etc/Resources")
 
-(def ^String ^:private SYS_DEVID_PFX "system.####")
-(def ^String ^:private SYS_DEVID_SFX "####")
+(def ^:private ^String SYS_DEVID_PFX "system.####")
+(def ^:private ^String SYS_DEVID_SFX "####")
 
 (def ^String SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
 (def ^String SHUTDOWN_DEVID #"system::kill_9" )
@@ -60,9 +61,6 @@
 
 (def ^String DN_CLASSES "classes" )
 (def ^String DN_BIN "bin" )
-(def ^String DN_BLOCKS  "ems" )
-(def ^String DN_BOOT "boot" )
-(def ^String DN_EXEC "exec" )
 (def ^String DN_CONF "conf" )
 (def ^String DN_LIB "lib" )
 
@@ -74,7 +72,6 @@
 (def ^String DN_TEMPLATES  "templates" )
 
 (def ^String DN_BOXX "apps" )
-(def ^String DN_PODS  "pods" )
 (def ^String DN_LOGS "logs" )
 (def ^String DN_TMP "tmp" )
 (def ^String DN_DBS "dbs" )
@@ -161,11 +158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro gtid
-
-  "Get the typeid of this component"
-  [obj]
-  `(:typeid (meta ~obj)))
+(defmacro gtid "typeid of component" [obj] `(:typeid (meta ~obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -195,7 +188,7 @@
                (changeContent
                  #(cs/replace %
                               "${appdir}"
-                              (fpath appDir)))) ]
+                              (fpath appDir))))]
     (log/debug "[%s]\n%s" confile rc)
     rc))
 

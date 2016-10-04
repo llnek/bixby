@@ -88,7 +88,6 @@
     [czlab.skaro.io
      HttpEvent
      HttpResult
-     IoTrigger
      IoSession
      WebSockEvent
      WebSockResult]
@@ -438,14 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cancelTimerTask
+(defn- killTimerTask
   ""
   [^Muble m kee]
-  (trye!
-    nil
-    (some-> ^TimerTask
-            (.getv m kee)
-            (.cancel)))
+  (cancelTimerTask (.getv m kee))
   (.unsetv m kee))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,13 +448,12 @@
 (defn- resumeWithResult
 
   ""
-  [ch evt]
+  [ch ^HttpEvent evt]
 
-  (let
-    [res (.resultObj evt)]
+  (try!
     (if (inst? WebSockEvent evt)
-      (try! (nettyWSReply evt))
-      (try! (nettyReply ch evt)))))
+      (nettyWSReply evt)
+      (nettyReply ch evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -614,8 +608,8 @@
          (let [t (.getv impl :trigger)
                mvs (.session this)
                code (.status res)]
+           (some-> t (cancelTimerTask ))
            (.unsetv impl :trigger)
-           (cancelTimerTask t)
            (if (.isStale this)
              (throwIOE "Event has expired"))
            (if

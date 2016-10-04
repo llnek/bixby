@@ -35,7 +35,7 @@ public interface IoService extends Service {
   public Object config();
 
   /**/
-  public void hold(IoEvent evt, long millis);
+  public void hold(IoTrigger t, long millis);
 
 }
 

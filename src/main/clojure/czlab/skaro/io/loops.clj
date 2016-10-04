@@ -21,26 +21,17 @@
     [czlab.xlib.process :refer [async! safeWait]]
     [czlab.xlib.dates :refer [parseDate]]
     [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.str :refer [hgl? strim]]
-    [czlab.xlib.core
-     :refer [test-some
-             throwUOE
-             tmtask<>
-             inst?
-             spos?
-             try!!
-             try!
-             seqint2]])
+    [czlab.xlib.logging :as log])
 
   (:use [czlab.skaro.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.skaro.io.core])
 
   (:import
+    [czlab.skaro.io IoService TimerEvent]
     [java.util Date Timer TimerTask]
     [clojure.lang APersistentMap]
-    [czlab.skaro.server Service]
-    [czlab.skaro.io TimerEvent]
     [czlab.xlib Muble Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,10 +51,9 @@
 (defn- mkEventObj
 
   ^TimerEvent
-  [^Service co repeat?]
+  [^IoService co repeat?]
 
-  (log/debug "ioevent: %s: %s" (gtid co) (.id co))
-  (let [eeid (seqint2)]
+  (let [eeid (str "event#" (seqint2))]
     (with-meta
       (reify
         TimerEvent
@@ -84,15 +74,14 @@
   "Configure a repeating timer"
   [^Timer tm delays ^long intv func]
 
-  (log/debug "Scheduling a repeating timer: %dms" intv)
+  (log/info "Scheduling a repeating timer: %dms" intv)
   (let [tt (tmtask<> func)
         [dw ds] delays]
     (cond
       (inst? Date dw)
       (.schedule tm tt ^Date dw intv)
       (spos? ds)
-      (.schedule tm tt ^long ds intv)
-      :else nil)))
+      (.schedule tm tt ^long ds intv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -101,21 +90,20 @@
   "Configure a *one-time* timer"
   [^Timer tm delays func]
 
-  (log/debug "Scheduling a *single-shot* timer")
+  (log/info "Scheduling a *single-shot* timer")
   (let [ tt (tmtask<> func)
         [dw ds] delays]
     (cond
       (inst? Date dw)
       (.schedule tm tt ^Date dw)
       (spos? ds)
-      (.schedule tm tt ^long ds)
-      :else nil)))
+      (.schedule tm tt ^long ds))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configTimerTask
 
-  [^Service co & [repeat?]]
+  [^IoService co repeat?]
 
   (let [tm (.getv (.getx co) :timer)
         {:keys [intervalSecs
@@ -136,9 +124,9 @@
 (defn- startTimer
 
   ""
-  [^Service co & [repeat?]]
+  [^IoService co repeat?]
 
-  (log/debug "service %s: created a java-timer" (.id co))
+  (logcomp "start-timer" co)
   (.setv (.getx co) :timer (Timer. true))
   (loopableSchedule co {:repeat? repeat?} ))
 
@@ -147,7 +135,7 @@
 (defn- killTimer
 
   ""
-  [^Service co]
+  [^IoService co]
 
   (when-some [t (.getv (.getx co) :timer)]
     (try! (.cancel ^Timer t))
@@ -158,16 +146,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<> ::RepeatingTimer [^Service co _] (mkEventObj co true))
+(defmethod ioevent<>
+  ::RepeatingTimer [^IoService co _] (mkEventObj co true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
 
   ::RepeatingTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "iostart: %s: %s" (gtid co) (.id co))
+  (logcomp "io->start" co)
   (startTimer co true)
   (io<started> co))
 
@@ -176,9 +165,9 @@
 (defmethod io->stop
 
   ::RepeatingTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "io->stop %s: %s" (gtid co) (.id co))
+  (logcomp "io->stop" co)
   (killTimer co)
   (io<stopped> co))
 
@@ -187,17 +176,17 @@
 (defmethod loopableWakeup
 
   ::RepeatingTimer
-  [^Service co _]
+  [^IoService co _]
 
   ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
-  (.dispatch co (ioevent<> co nil) ))
+  (.dispatch co (ioevent<> co nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableSchedule
 
-  :default
-  [^Service co {:keys [repeat?]} ]
+  :czlab.skaro.io.core/Service
+  [^IoService co {:keys [repeat?]} ]
 
   (configTimerTask co repeat?))
 
@@ -206,16 +195,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<> ::OnceTimer [^Service co _] (mkEventObj false))
+(defmethod ioevent<>
+  ::OnceTimer [^IoService co _] (mkEventObj false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
 
   ::OnceTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "io->start %s: %s" (gtid co) (.id co))
+  (logcomp "io->start" co)
   (startTimer co false)
   (io<started> co))
 
@@ -224,9 +214,9 @@
 (defmethod io->stop
 
   ::OnceTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "io->stop %s: %s" (gtid co) (.id co))
+  (logcomp "io->stop" co)
   (killTimer co)
   (io<stopped> co))
 
@@ -235,7 +225,7 @@
 (defmethod loopableWakeup
 
   ::OnceTimer
-  [^Service co _]
+  [^IoService co _]
 
   (.dispatch co (ioevent<> co nil))
   (.stop ^Startable co))
@@ -245,15 +235,15 @@
 (defmethod loopableSchedule
 
   ::ThreadedTimer
-  [^Service co {:keys [intervalMillis]}]
+  [^IoService co {:keys [intervalMillis]}]
 
-  (log/debug "%s timer @interval = %d" (gtid co) intervalMillis)
+  (log/info "%s timer @interval = %d" (gtid co) intervalMillis)
   (let [loopy (volatile! true)]
     (.setv (.getx co) :loopy loopy)
     (async!
       #(while @loopy
          (loopableWakeup co {:waitMillis intervalMillis}))
-      {:cl (getCldr)} )
+      {:cl (getCldr)})
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,7 +251,7 @@
 (defmethod loopableWakeup
 
   ::ThreadedTimer
-  [^Service co {:keys [waitMillis]}]
+  [^IoService co {:keys [waitMillis]}]
 
   ;;(log/debug "loopableWakeup %s: %s" (gtid co) (.id co))
   (.dispatch co (ioevent<> co nil))
@@ -273,9 +263,9 @@
 (defmethod io->start
 
   ::ThreadedTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "io->start: %s: %s" (gtid co) (.id co))
+  (logcomp "io->start" co)
   (let [{:keys [intervalSecs
                 delaySecs delayWhen]}
         (.config co)
@@ -293,10 +283,10 @@
 (defmethod io->stop
 
   ::ThreadedTimer
-  [^Service co]
+  [^IoService co]
 
-  (log/info "io->stop %s: %s" (gtid co) (.id co))
-  (when-some [loopy (.getv (.getx co) :loopy) ]
+  (logcomp "io->stop" co)
+  (if-some [loopy (.getv (.getx co) :loopy)]
     (vreset! loopy false))
   (io<stopped> co))
 

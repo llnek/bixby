@@ -118,7 +118,7 @@
 ;;
 (defmethod io->dispose
 
-  :default
+  :czlab.skaro.io.core/Service
   [^IoService co]
 
   (log/info "service '%s' disposed - ok" (.id co)))
@@ -127,7 +127,7 @@
 ;;
 (defmethod io->error!
 
-  :default
+  :czlab.skaro.io.core/Service
   [^IoService co ^Job job ^Throwable e]
 
   (log/exception e)
@@ -139,10 +139,10 @@
 (defmacro ^:private job<+>
 
   ""
-  [co wf evt]
+  [co evt]
 
-  `(vary-meta (job<> ~co ~wf ~evt)
-              assoc :typeid :czlab.skaro.io/Job))
+  `(vary-meta (job<> ~co nil ~evt)
+              assoc :typeid :czlab.skaro.io.core/Job))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -155,11 +155,11 @@
   (let
     [c1 (:router args)
      ctr (.server src)
-     job (job<+> ctr nil evt)
      cfg (.config src)
      rts (.cljrt ctr)
      c0 (:handler cfg)
      cb (stror c1 c0)
+     job (job<+> ctr evt)
      wf (try! (.call rts cb))]
     (log/debug (str "event type = %s\n"
                     "event opts = %s\n"
@@ -204,17 +204,13 @@
         (dispatchEx [this ev arg]
           (try! (onEvent this ev arg)))
 
-        (hold [_ evt millis]
+        (hold [_ trig millis]
           (if (and (some? @timer)
                    (spos? millis))
             (let [t (tmtask<>
-                      #(.fire evt nil))]
-              (log/debug (str "holding event: '%s'"
-                              " for %s millis")
-                         (.id evt)
-                         millis)
+                      #(.fire trig nil))]
               (.schedule ^Timer @timer t millis)
-              (.setTrigger evt t))))
+              (.setTrigger trig t))))
 
         (version [_] "1.0")
         (getx [_] impl)
