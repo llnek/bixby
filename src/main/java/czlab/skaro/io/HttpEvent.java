@@ -17,7 +17,6 @@ package czlab.skaro.io;
 
 import java.net.HttpCookie;
 
-import czlab.skaro.server.Replyable;
 import czlab.xlib.Context;
 import czlab.xlib.XData;
 
@@ -26,7 +25,7 @@ import czlab.xlib.XData;
 /**
  * @author Kenneth Leung
  */
-public interface HttpEvent extends IoEvent, Context, Replyable {
+public interface HttpEvent extends IoEvent, IoTrigger, Context, Replyable {
 
   /**/
   public HttpCookie cookie(String name);

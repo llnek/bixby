@@ -13,26 +13,19 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.server;
-
-import czlab.skaro.io.IoResult;
-import czlab.xlib.Context;
-import czlab.xlib.Identifiable;
+package czlab.skaro.io;
 
 /**
  * @author Kenneth Leung
  */
-public interface EventTrigger extends Context, Identifiable {
+public interface IoTrigger {
 
   /**/
-  public void resumeWithResult(IoResult res);
-
+  public void setTrigger(Object t);
+  
   /**/
-  public void resumeOnExpiry();
-
-  /**/
-  public Service source();
-
+  public void fire(Object arg);
+  
 }
 
 

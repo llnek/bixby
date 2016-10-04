@@ -14,8 +14,6 @@
 
 package czlab.skaro.io;
 
-import czlab.skaro.server.NulService;
-import czlab.skaro.server.Service;
 import czlab.skaro.server.Container;
 
 
@@ -43,11 +41,25 @@ public class NonEvent implements IoEvent {
   }
 
   @Override
-  public Service source() {
+  public IoService source() {
     return _svc;
   }
 
-  private Service _svc;
+  private IoService _svc;
+
+  @Override
+  public void bindSession(IoSession s) {
+  }
+
+  @Override
+  public IoSession session() {
+    return null;
+  }
+
+  @Override
+  public boolean isStale() {
+    return false;
+  }
 
 }
 

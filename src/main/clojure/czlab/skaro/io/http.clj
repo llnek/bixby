@@ -40,9 +40,9 @@
   (:import
     [java.nio.channels ClosedChannelException]
     [io.netty.handler.codec.http.websocketx
+     TextWebSocketFrame
      WebSocketFrame
-     BinaryWebSocketFrame
-     TextWebSocketFrame]
+     BinaryWebSocketFrame]
     [io.netty.handler.codec.http.cookie
      ServerCookieDecoder
      ServerCookieEncoder]
@@ -52,6 +52,7 @@
     [io.netty.buffer ByteBuf Unpooled]
     [io.netty.handler.ssl SslHandler]
     [czlab.net RouteCracker RouteInfo]
+    [czlab.skaro.server Container]
     [clojure.lang APersistentMap]
     [czlab.crypto PasswordAPI]
     [java.util Timer TimerTask]
@@ -72,10 +73,6 @@
      HttpHeaders
      Cookie
      QueryStringDecoder]
-    [czlab.skaro.server
-     Container
-     Service
-     EventTrigger]
     [java.io
      Closeable
      File
@@ -91,6 +88,7 @@
     [czlab.skaro.io
      HttpEvent
      HttpResult
+     IoTrigger
      IoSession
      WebSockEvent
      WebSockResult]
@@ -137,13 +135,12 @@
 (defn- httpBasicConfig
 
   "Basic http config"
-  [^Service co cfg0]
+  [^IoService co cfg0]
 
   (let [{:keys [serverKey port passwd]
          :as cfg}
         (merge (.config co) cfg0)
         kfile (expandVars serverKey)
-        ^Container ctr (.server co)
         ssl? (hgl? kfile)]
     (if ssl?
       (test-cond "server-key file url"
@@ -151,7 +148,8 @@
     (->>
       {:port (if-not (spos? port)
                (if ssl? 443 80) port)
-       :passwd (->> (.appKey ctr)
+       :passwd (->> (.server co)
+                    (.appKey)
                     (passwd<> passwd) (.text))
        :serverKey (if ssl? (URL. kfile))}
       (merge cfg ))))
@@ -162,7 +160,7 @@
 
   "Create a WebSocket result object"
   ^WebSockResult
-  [^Service co]
+  [^IoService co]
 
   (let [impl (muble<>)]
     (reify WebSockResult
@@ -182,9 +180,9 @@
 
   "Create a HttpResult object"
   ^HttpResult
-  [^Service co]
+  [^IoService co]
 
-  (let [impl (muble<> {:version "HTTP/1.1"
+  (let [impl (muble<> {:version (.text HttpVersion/HTTP_1_1)
                        :cookies []
                        :code -1
                        :headers {}})]
@@ -217,8 +215,7 @@
 
       (addHeader [_ nm v]
         (let [m (.getv impl :headers)
-              a (or (get m (lcase nm))
-                         [])]
+              a (or (get m (lcase nm)) [])]
           (.setv impl
                  :headers
                  (assoc m (lcase nm) (conj a v)))))
@@ -243,9 +240,9 @@
 (defn- maybeLoadRoutes
 
   ^APersistentMap
-  [^Service co]
+  [^IoService co]
 
-  (let [^Container ctr (.server co)
+  (let [ctr (.server co)
         ctx (.getx co)
         f (io/file (.appDir ctr)
                    DN_CONF
@@ -327,13 +324,13 @@
 
   ""
   ^ChunkedInput
-  [^RandomAccessFile raf
-   ^HttpEvent evt ^HttpResponse rsp]
+  [^HttpEvent evt ^HttpResponse rsp ^File fp]
 
-  (-> (.msgGist evt)
-      (gistHeader "range")
-      str
-      (RangeInput/fileRange rsp raf)))
+  (RangeInput/fileRange
+    (-> (.msgGist evt)
+        (gistHeader "range") str)
+    rsp
+    (RandomAccessFile. fp "r")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -341,12 +338,12 @@
 
   ""
 
-  ([^ChannelHandlerContext ctx
+  ([^Channel ch
     ^HttpResponse rsp
     ^HttpEvent evt]
-   (nettyReplyMore ctx rsp evt nil))
+   (nettyReplyMore ch rsp evt nil))
 
-  ([^ChannelHandlerContext ctx
+  ([^Channel ch
     ^HttpResponse rsp
     ^HttpEvent evt
     body]
@@ -373,9 +370,9 @@
        (hgl? (getHeader rsp
                         HttpHeaderNames/CONTENT_LENGTH))
        (HttpUtil/setContentLength rsp clen))
-     (let [f1 (.write ctx rsp)
+     (let [f1 (.write ch rsp)
            f2 (if (spos? clen)
-                (.write ctx body))]
+                (.write ch body))]
        (if (some? f1)
          (log/debug "wrote rsp-headers out to client"))
        (if (some? f2)
@@ -389,17 +386,19 @@
 (defn- nettyReply
 
   ""
-  [^ChannelHandlerContext ctx ^HttpEvent evt]
+  [^Channel ch ^HttpEvent evt]
 
-  (let [res (.resultObj evt)
-        {:keys [redirect cookies
+  (let [cl (lcase HttpHeaderNames/CONTENT_LENGTH)
+        res (.resultObj evt)
+        {:keys [redirect
+                cookies
                 code body headers]}
         (.impl (.getx res))
         gist (.msgGist evt)
         rsp (httpReply<> code)]
     ;;headers
-    (doseq [[nm vs]  headers
-            :when (not= "content-length" (lcase nm))]
+    (doseq [[nm vs] headers
+            :when (not= cl (lcase nm))]
       (doseq [vv (seq vs)]
         (addHeader rsp nm vv)))
     ;;cookies
@@ -414,7 +413,7 @@
         (if (hgl? redirect)
           (setHeader rsp
                      HttpHeaderNames/LOCATION redirect))
-        (nettyReplyMore ctx rsp evt))
+        (nettyReplyMore ch rsp evt))
       ;;ok?
       (and (>= code 200)
            (< code 300))
@@ -422,56 +421,60 @@
         (when (not= "HEAD" (:method gist))
           (condp instance? body
             WebAsset
-            (let [raf (RandomAccessFile.
-                        (.file ^WebAsset body) "r")]
+            (let [^WebAsset w body]
               (setHeader rsp
                          HttpHeaderNames/CONTENT_TYPE
-                         (.contentType ^WebAsset body))
-              (replyOneFile raf evt rsp))
+                         (.contentType w))
+              (->> (.file w)
+                   (replyOneFile evt rsp )))
             File
-            (let [raf (RandomAccessFile.
-                        ^File body "r")]
-              (replyOneFile raf evt rsp))
+            (replyOneFile evt rsp ^File body)
             ;;else
             (xdata<> body)))
-        (nettyReplyMore ctx rsp evt ))
+        (nettyReplyMore ch rsp evt ))
 
       :else
-      (nettyReplyMore ctx rsp evt))))
+      (nettyReplyMore ch rsp evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn nettyTrigger<>
+(defn- cancelTimerTask
+  ""
+  [^Muble m kee]
+  (trye!
+    nil
+    (some-> ^TimerTask
+            (.getv m kee)
+            (.cancel)))
+  (.unsetv m kee))
 
-  "Create a Netty Async Trigger"
-  ^EventTrigger
-  [^ChannelHandlerContext ctx evt]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- resumeWithResult
+
+  ""
+  [ch evt]
 
   (let
-    [eeid (str "trigger#" (seqint2))
-     impl (muble<>)
-     t
-     (reify EventTrigger
-       (resumeWithResult [_ res]
-         (some-> ^TimerTask
-                 (.getv impl :ttask)
-                 (.cancel))
-         (.unsetv impl :ttask)
-         (if (inst? WebSockEvent evt)
-           (try! (nettyWSReply evt))
-           (try! (nettyReply ctx evt))))
-       (getx [_] impl)
-       (id [_] eeid)
-       (resumeOnExpiry [_]
-         (.unsetv impl :ttask)
-         (let [rsp (httpFullReply<> 500)]
-           (try
-             (maybeClose evt (.writeAndFlush ctx rsp))
-             (catch ClosedChannelException _
-               (log/warn "closedChannelEx thrown"))
-             (catch Throwable t# (log/error t# "") )) )))]
-    (.setTrigger ^HttpEvent evt t)
-    t))
+    [res (.resultObj evt)]
+    (if (inst? WebSockEvent evt)
+      (try! (nettyWSReply evt))
+      (try! (nettyReply ch evt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- resumeOnExpiry
+
+  ""
+  [^Channel ch ^HttpEvent evt]
+
+  (try
+    (->> (httpFullReply<> 500)
+         (.writeAndFlush ch )
+         (maybeClose evt ))
+    (catch ClosedChannelException _
+      (log/warn "closedChannelEx thrown"))
+    (catch Throwable t# (log/exception t#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -494,20 +497,19 @@
 (defn- makeWEBSockEvent
 
   ""
-  [^Service co ^Channel ch ssl? msg]
+  [^IoService co ^Channel ch ssl? msg]
 
   (let
     [text? (inst? TextWebSocketFrame msg)
+     res (wsockResult<> co)
+     eeid (seqint2)
      _body
      (cond
        (inst? BinaryWebSocketFrame msg)
        (toByteArray (.content
                      ^BinaryWebSocketFrame msg))
        text?
-       (.text ^TextWebSocketFrame msg)
-       :else nil)
-     res (wsockResult<> co)
-     eeid (seqint2) ]
+       (.text ^TextWebSocketFrame msg))]
     (with-meta
       (reify WebSockEvent
 
@@ -536,10 +538,11 @@
   [gist]
 
   (let
-    [^String v (gistHeader gist HttpHeaderNames/COOKIE)
+    [^String v (gistHeader gist
+                           HttpHeaderNames/COOKIE)
      cks (if (hgl? v)
            (.decode ServerCookieDecoder/STRICT v))]
-    (persistent!
+    (pcoll!
       (reduce
         #(assoc! %1
                  (.getName ^Cookie %2)
@@ -553,15 +556,15 @@
 
   ""
   ^HttpEvent
-  [^Service co ^Channel ch
+  [^IoService co ^Channel ch
    ssl? _body gist wantSecure?]
 
   (let
     [^InetSocketAddress laddr (.localAddress ch)
      cookieJar (crackCookies gist)
-     res (httpResult<> co)
-     impl (muble<>)
      eeid (str "event#" (seqint2))
+     res (httpResult<> co)
+     impl (muble<> {:stale false})
      evt
      (reify HttpEvent
 
@@ -576,7 +579,8 @@
        (msgGist [_] gist)
        (body [_] _body)
 
-       (localAddr [_] (.getHostAddress (.getAddress laddr)))
+       (localAddr [_]
+         (.getHostAddress (.getAddress laddr)))
        (localHost [_] (.getHostName laddr))
        (localPort [_] (.getPort laddr))
 
@@ -592,49 +596,55 @@
        (serverName [_]
          (str (gistHeader gist "server_name")))
 
-       (scheme [_] (if ssl? "https" "http"))
-       (isSSL [_] ssl?)
-
        (setTrigger [_ t] (.setv impl :trigger t))
+       (fire [this _]
+         (when-some [t (.getv impl :trigger)]
+           (.setv impl :stale true)
+           (.unsetv impl :trigger)
+           (cancelTimerTask t)
+           (resumeOnExpiry ch this)))
 
+       (scheme [_] (if ssl? "https" "http"))
+       (isStale [_] (.getv impl :stale))
+       (isSSL [_] ssl?)
        (getx [_] impl)
 
        (resultObj [_] res)
        (replyResult [this]
-         (let [^IoSession mvs (.session this)
-               code (.status res)
-               ^EventTrigger
-               t (.getv impl :trigger)]
-           (when
+         (let [t (.getv impl :trigger)
+               mvs (.session this)
+               code (.status res)]
+           (.unsetv impl :trigger)
+           (cancelTimerTask t)
+           (if (.isStale this)
+             (throwIOE "Event has expired"))
+           (if
              (and (>= code 200)
                   (< code 400))
-             (.handleResult mvs this res))
-           (some->
-             t
-             (.resumeWithResult res)))))]
-    (doto evt
-      (.bindSession (wsession<> co ssl?))
-      (with-meta {:typeid ::HTTPEvent}))))
+             (.handleResult
+               ^IoSession mvs this res))
+           (resumeWithResult ch this))))]
+    (.bindSession evt (wsession<> co ssl?))
+    (with-meta evt {:typeid ::HTTPEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
 
   ::HTTP
-  [^Service co {:keys [^Channel ch
-                       msg
-                       ^RouteInfo route]}]
+  [^IoService co {:keys [^Channel ch
+                         gist
+                         body
+                         ^RouteInfo route]}]
 
-  (log/info "ioevent: '%s': '%s'" (gtid co) (.id co))
+  (logcomp "ioevent" co)
   (let [ssl? (maybeSSL? ch)]
     (if
       (inst? WebSocketFrame msg)
       (makeWEBSockEvent co ch ssl? msg)
       ;else
       (makeHttpEvent
-        co ch ssl?
-        (:body msg)
-        (:gist msg)
+        co ch ssl? body gist
         (if (nil? route) false (.isSecure route))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -643,20 +653,20 @@
 
   ""
   ^ChannelHandler
-  [^Service co args]
+  [^IoService co args]
 
-  (log/debug "dispatcher for %s : %s" (gtid co) (.id co))
   (proxy [InboundFilter] []
-    (channelRead0 [c msg]
-      (let [ch (.channel ^ChannelHandlerContext c)
+    (channelRead0 [ctx msg]
+      (let [^ChannelHandlerContext ctx ctx
             {:keys [waitMillis]}
             (.config co)
-            evt (ioevent<> co {:ch ch
-                               :msg msg
+            evt (ioevent<> co {:gist (getAKey ctx MSGGIST_KEY)
+                               :ch (.channel ctx)
+                               :body msg
                                :route nil})]
-        (if (inst? HttpEvent evt)
-          (let [w (nettyTrigger<> ch evt)]
-            (.hold co w waitMillis)))
+        (if (and (inst? HttpEvent evt)
+                 (spos? waitMillis))
+          (.hold co evt waitMillis))
         (.dispatch co evt )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -664,9 +674,9 @@
 (defmethod io->start
 
   ::HTTP
-  [^Service co & _]
+  [^IoService co]
 
-  (log/info "io->start: %s: %s" (gtid co) (.id co))
+  (logcomp "io->start" co)
   (let [bs (.getv (.getx co) :bootstrap)
         cfg (.config co)
         ch (startServer bs cfg)]
@@ -678,11 +688,11 @@
 (defmethod io->stop
 
   ::HTTP
-  [^Service co & _]
+  [^IoService co]
 
-  (log/info "io->stop %s: %s" (gtid co) (.id co))
+  (logcomp "io->stop" co)
   (let [{:keys [bootstrap channel]}
-        (.impl (.getx co)) ]
+        (.impl (.getx co))]
     (stopServer bootstrap channel)
     (doto (.getx co)
       (.unsetv :bootstrap)
@@ -694,39 +704,21 @@
 (defmethod comp->init
 
   ::HTTP
-  [^Service co cfg0]
+  [^IoService co cfg0]
 
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
-  (let [^Container ctr (.server co)
+  (logcomp "comp->init" co)
+  (let [ctr (.server co)
         cfg (httpBasicConfig co cfg0)]
     (.setv (.getx co) :emcfg cfg)
     (->>
       (httpServer<>
         (reify CPDecorator
-          (forH1 [_ ops] (h1Handler co ops))
+          (forH1 [_ ops]
+            (h1Handler co ops))
           (forH2H1 [_ _])
-          (forH2 [_ _])) cfg)
+          (forH2 [_ _]))
+        cfg)
       (.setv (.getx co) :bootstrap ))
-    co))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->init
-
-  ::WebMVC
-  [^Service co cfg0]
-
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
-  (let [^Container ctr (.server co)
-        cfg (httpBasicConfig co cfg0)
-        bs (httpServer<>
-             (reify CPDecorator
-               (forH1 [_ ops] (h1Handler co ops))
-               (forH2H1 [_ _])
-               (forH2 [_ _]))
-             cfg)]
-    (doto (.getx co)
-      (.setv :emcfg cfg)
-      (.setv :bootstrap bs))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

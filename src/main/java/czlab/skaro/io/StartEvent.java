@@ -14,7 +14,6 @@
 
 package czlab.skaro.io;
 
-import czlab.skaro.server.Service;
 
 
 /**
@@ -22,11 +21,11 @@ import czlab.skaro.server.Service;
  */
 public class StartEvent implements IoEvent {
 
-  public StartEvent(Service em) {
+  public StartEvent(IoService em) {
     _ee=em;
   }
 
-  private Service _ee;
+  private IoService _ee;
 
   @Override
   public Object id() {
@@ -34,8 +33,22 @@ public class StartEvent implements IoEvent {
   }
 
   @Override
-  public Service source() {
+  public IoService source() {
     return _ee;
+  }
+
+  @Override
+  public void bindSession(IoSession s) {
+  }
+
+  @Override
+  public IoSession session() {
+    return null;
+  }
+
+  @Override
+  public boolean isStale() {
+    return false;
   }
 
 }

@@ -13,15 +13,15 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
 
-package czlab.skaro.server;
+package czlab.skaro.io;
 
-import czlab.skaro.io.IoEvent;
+import czlab.skaro.server.Container;
 import czlab.xlib.Muble;
 
 /**
  * @author Kenneth Leung
  */
-public class NulService implements Service {
+public class NulService implements IoService {
 
   public void dispatchEx(IoEvent evt, Object options) {}
   public void dispatch(IoEvent evt) {}
@@ -40,7 +40,7 @@ public class NulService implements Service {
   public void start() {}
   public void suspend() {}
   public void resume() {}
-  public void hold(EventTrigger t, long m) {}
+  public void hold(IoEvent t, long m) {}
 
   public NulService(Container s) { _s=s; }
   private Container _s;

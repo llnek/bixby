@@ -15,7 +15,6 @@
 
 package czlab.skaro.io;
 
-import czlab.skaro.server.Service;
 
 /**
  * @author Kenneth Leung
@@ -23,11 +22,11 @@ import czlab.skaro.server.Service;
 public class EndEvent implements IoEvent {
 
   /**/
-  public EndEvent(Service em) {
+  public EndEvent(IoService em) {
     _ee=em;
   }
 
-  private Service _ee;
+  private IoService _ee;
 
   @Override
   public Object id() {
@@ -35,8 +34,22 @@ public class EndEvent implements IoEvent {
   }
 
   @Override
-  public Service source() {
+  public IoService source() {
     return _ee;
+  }
+
+  @Override
+  public void bindSession(IoSession s) {
+  }
+
+  @Override
+  public IoSession session() {
+    return null;
+  }
+
+  @Override
+  public boolean isStale() {
+    return false;
   }
 
 }

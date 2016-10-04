@@ -15,7 +15,6 @@
 package czlab.skaro.io;
 
 import czlab.skaro.server.Container;
-import czlab.skaro.server.EventTrigger;
 import czlab.skaro.server.Service;
 
 /**
@@ -36,7 +35,7 @@ public interface IoService extends Service {
   public Object config();
 
   /**/
-  public void hold(EventTrigger t, long millis);
+  public void hold(IoEvent evt, long millis);
 
 }
 

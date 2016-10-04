@@ -16,8 +16,6 @@
 package czlab.skaro.io;
 
 import czlab.server.Event;
-import czlab.skaro.server.EventTrigger;
-import czlab.skaro.server.Service;
 
 /**
  * @author Kenneth Leung
@@ -25,17 +23,19 @@ import czlab.skaro.server.Service;
 public interface IoEvent extends Event {
 
   /**/
-  default public void setTrigger(EventTrigger t) {}
+  //default public void bindSession(IoSession s) {}
+  public void bindSession(IoSession s);
+
+  /**/
+  //default public IoSession session() { return null; }
+  public IoSession session();
+
+  /**/
+  public IoService source();
+
+  /**/
+  public boolean isStale();
   
-  /**/
-  default public void bindSession(IoSession s) {}
-
-  /**/
-  default public IoSession session() { return null; }
-
-  /**/
-  public Service source();
-
   /**/
   default public boolean checkAuthenticity() { return false; }
 

@@ -29,12 +29,10 @@
         [czlab.skaro.sys.dfts])
 
   (:import
+    [czlab.skaro.io IoTrigger IoService IoEvent]
     [czlab.wflow WorkStream Job TaskDef]
     [java.util Timer TimerTask]
-    [czlab.skaro.io IoEvent]
     [czlab.skaro.server
-     EventTrigger
-     Service
      Cljshim
      Component
      Container]
@@ -90,7 +88,7 @@
 ;;
 (defmethod comp->init
 
-  :default
+  :czlab.skaro.io.core/Service
   [^IoService co args]
 
   (logcomp "comp->init" co)
@@ -138,14 +136,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro job<+>
+(defmacro ^:private job<+>
 
   ""
-  {:private true
-   :tag Job}
   [co wf evt]
 
-  `(with-meta (job<> ~co ~wf ~evt) {:typeid :czlab.skaro.io/Job}))
+  `(vary-meta (job<> ~co ~wf ~evt)
+              assoc :typeid :czlab.skaro.io/Job))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -207,17 +204,17 @@
         (dispatchEx [this ev arg]
           (try! (onEvent this ev arg)))
 
-        (hold [_ trig millis]
+        (hold [_ evt millis]
           (if (and (some? @timer)
-                   (some? trig))
+                   (spos? millis))
             (let [t (tmtask<>
-                      #(.resumeOnExpiry trig))]
+                      #(.fire evt nil))]
               (log/debug (str "holding event: '%s'"
                               " for %s millis")
-                         (.id trig)
+                         (.id evt)
                          millis)
               (.schedule ^Timer @timer t millis)
-              (.setv (.getx trig) :ttask t))))
+              (.setTrigger evt t))))
 
         (version [_] "1.0")
         (getx [_] impl)

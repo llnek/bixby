@@ -15,7 +15,6 @@
 
 package czlab.skaro.io;
 
-import czlab.skaro.server.Replyable;
 import czlab.xlib.XData;
 
 /**
