@@ -472,22 +472,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cookieToJava
-
-  ""
-  [^Cookie c]
-
-  (doto (HttpCookie. (.getName c)
-                     (.getValue c))
-    (.setComment (.getComment c))
-    (.setDomain (.getDomain c))
-    (.setMaxAge (.getMaxAge c))
-    (.setPath (.getPath c))
-    (.setVersion (.getVersion c))
-    (.setHttpOnly (.isHttpOnly c))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- makeWEBSockEvent
 
   ""
@@ -525,27 +509,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- crackCookies
-
-  ""
-  ^APersistentMap
-  [gist]
-
-  (let
-    [^String v (gistHeader gist
-                           HttpHeaderNames/COOKIE)
-     cks (if (hgl? v)
-           (.decode ServerCookieDecoder/STRICT v))]
-    (pcoll!
-      (reduce
-        #(assoc! %1
-                 (.getName ^Cookie %2)
-                 (cookieToJava %2))
-        (transient {})
-        (seq cks)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- makeHttpEvent
 
   ""
@@ -555,8 +518,8 @@
 
   (let
     [^InetSocketAddress laddr (.localAddress ch)
-     cookieJar (crackCookies gist)
      eeid (str "event#" (seqint2))
+     cookieJar (:cookies gist)
      res (httpResult<> co)
      impl (muble<> {:stale false})
      evt
