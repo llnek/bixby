@@ -53,6 +53,9 @@ public interface HttpSession extends Identifiable {
   public void invalidate();
 
   /**/
+  public Object signer();
+  
+  /**/
   public void setNew(boolean flag, long maxAge);
 
   /**/

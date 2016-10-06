@@ -23,12 +23,9 @@ import czlab.server.Event;
 public interface IoEvent extends Event {
 
   /**/
-  //default public void bindSession(IoSession s) {}
-  public void bindSession(IoSession s);
-
-  /**/
-  //default public IoSession session() { return null; }
-  public IoSession session();
+  default public boolean checkAuthenticity() { 
+    return false; 
+  }
 
   /**/
   public IoService source();
@@ -36,8 +33,6 @@ public interface IoEvent extends Event {
   /**/
   public boolean isStale();
   
-  /**/
-  default public boolean checkAuthenticity() { return false; }
 
 }
 

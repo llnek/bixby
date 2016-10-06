@@ -34,8 +34,7 @@
      HttpSession
      HttpResult
      HttpEvent
-     IoService
-     IoSession]
+     IoService]
     [czlab.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -57,8 +56,8 @@
   "A negative value means that the cookie is not stored persistently and will be deleted when the Web browser exits. A zero value causes the cookie to be deleted."
   [^HttpSession mvs maxAgeSecs]
 
-  (let [now (System/currentTimeMillis)
-        maxAgeSecs (or maxAgeSecs 0)]
+  (let [maxAgeSecs (or maxAgeSecs -1)
+        now (now<>)]
     (doto mvs
       (.setAttr SSID_FLAG
                 (hexify (bytesify (juid))))
@@ -74,14 +73,14 @@
 (defn- maybeMacIt
 
   ""
-  [^HttpEvent evt ^String data]
+  [^HttpMsgGist gist pkey ^String data]
 
   (if
-    (.checkAuthenticity evt)
-    (str (-> (.server (.source evt))
-             (.appKeyBits )
-             (genMac data))
-         "-" data)
+    (boolean
+      (some-> ^RouteInfo
+              (get-in gist [:route :routeInfo])
+              (.isSecure)))
+    (str (genMac pkey data) "-" data)
     data))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,27 +88,28 @@
 (defn- downstream
 
   ""
-  [^HttpEvent evt ^HttpResult res ]
+  [^Container ctr ^HttpMsgGist gist
+   cfg
+   ^HttpSession mvs ^HttpResult res]
 
   (let
-    [^HttpSession mvs (.session evt)
-     co (.source evt)
-     {:keys [sessionAgeSecs
+    [{:keys [sessionAgeSecs
              domainPath
              domain
              hidden
-             maxIdleSecs]}
-     (.config co)]
+             maxIdleSecs]} cfg]
     (when-not (.isNull mvs)
       (log/debug "session ok, about to set-cookie!")
       (if (.isNew mvs)
         (->> (or sessionAgeSecs 3600)
              (resetFlags mvs )))
       (let
-        [ck (->> (maybeMacIt evt (str mvs))
+        [ck (->> (maybeMacIt gist
+                             (.signer mvs)
+                             (str mvs))
                  (HttpCookie. SESSION_COOKIE))
          est (.expiryTime mvs)]
-        (->> ^long (or maxIdleSecs 0)
+        (->> (long (or maxIdleSecs -1))
              (.setMaxIdleSecs mvs))
         (doto ck
           (.setMaxAge (if (spos? est)
@@ -125,13 +125,11 @@
 (defn- testCookie
 
   ""
-  [^Container ctr route p1 p2]
+  [^bytes pkey route p1 p2]
 
-  (if-some
-    [pkey (if (boolean
-                (some-> ^RouteInfo
-                        (:routeInfo route) (.isSecure)))
-            (.appKeyBits ctr))]
+  (if (boolean
+        (some-> ^RouteInfo
+                (:routeInfo route) (.isSecure)))
     (when (not= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
       (trap! AuthError "Bad Session Cookie")))
@@ -143,7 +141,7 @@
 
   ""
   ^HttpSession
-  [^Container ctr ^HttpMsgGist gist maxIdleSecs]
+  [^HttpMsgGist gist pkey maxIdleSecs]
 
   (if-some
     [^HttpCookie
@@ -157,8 +155,8 @@
          ["" cookie]
          [(.substring cookie 0 pos)
           (.substring cookie (inc pos))])
-       ok (testCookie ctr (:route gist) p1 p2)
-       mvs (wsession<>) ]
+       ok (testCookie pkey (:route gist) p1 p2)
+       mvs (wsession<> pkey (:ssl? gist))]
       (log/debug "session attrs= %s" p2)
       (try
         (doseq [^String nv (.split p2 NV_SEP)
@@ -183,10 +181,11 @@
                 (and (spos? mi)
                      (< (+ ts (* 1000 mi)) now)))
           (trap! ExpiredError "Session has expired"))
-        (.setAttr mvs LS_FLAG now)))
+        (.setAttr mvs LS_FLAG now)
+        mvs))
     (do->nil
       (log/warn "no s-cookie found, invalidate!")
-      (.invalidate mvs)
+      ;;(.invalidate mvs)
       )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -195,7 +194,7 @@
 
   ""
   ^HttpSession
-  [co ssl?]
+  [^bytes pkey ssl?]
 
   (let [impl (muble<> {:maxIdleSecs 0
                        :newOne true})
@@ -220,6 +219,8 @@
         (invalidate [_]
           (.clear _attrs)
           (.clear impl))
+
+        (signer [_] pkey)
 
         (setXref [_ csrf]
           (.setv _attrs :csrf csrf))
@@ -248,19 +249,12 @@
         (toString [this]
           (str
             (reduce
-              #(addDelim!
-                 %1 NV_SEP
-                 (str (name (first %2))
-                      ":"
-                      (last %2)))
+              #(let [[k v] %2]
+                 (addDelim! %1
+                            NV_SEP
+                            (str (name k) ":" v)))
               (strbf<>)
-              (.seq _attrs))))
-
-        IoSession
-
-        (handleResult [_ evt res] (downstream evt res))
-        (handleEvent [_ evt] (upstream evt))
-        (impl [_] nil))
+              (.seq _attrs)))))
 
         {:typeid ::HttpSession })))
 

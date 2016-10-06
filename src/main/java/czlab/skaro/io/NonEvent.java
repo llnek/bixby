@@ -48,15 +48,6 @@ public class NonEvent implements IoEvent {
   private IoService _svc;
 
   @Override
-  public void bindSession(IoSession s) {
-  }
-
-  @Override
-  public IoSession session() {
-    return null;
-  }
-
-  @Override
   public boolean isStale() {
     return false;
   }

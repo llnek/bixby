@@ -88,7 +88,6 @@
     [czlab.skaro.io
      HttpEvent
      HttpResult
-     IoSession
      WebSockEvent
      WebSockResult]
     [io.netty.channel
@@ -521,68 +520,71 @@
      eeid (str "event#" (seqint2))
      cookieJar (:cookies gist)
      res (httpResult<> co)
-     impl (muble<> {:stale false})
-     evt
-     (reify HttpEvent
+     impl (muble<> {:stale false})]
+    (with-meta
+      (reify HttpEvent
 
-       (bindSession [_ s] (.setv impl :ios s))
-       (session [_] (.getv impl :ios))
-       (id [_] eeid)
-       (source [_] co)
-       (checkAuthenticity [_] wantSecure?)
+        (checkAuthenticity [_] wantSecure?)
+        (session [_] (.getv impl :session))
+        (id [_] eeid)
+        (bindSession [_ s]
+          (.getv impl :session s))
+        (source [_] co)
 
-       (cookie [_ n] (get cookieJar n))
-       (cookies [_] (vals cookieJar))
-       (msgGist [_] gist)
-       (body [_] _body)
+        (cookie [_ n] (get cookieJar n))
+        (cookies [_] (vals cookieJar))
+        (msgGist [_] gist)
+        (body [_] _body)
 
-       (localAddr [_]
-         (.getHostAddress (.getAddress laddr)))
-       (localHost [_] (.getHostName laddr))
-       (localPort [_] (.getPort laddr))
+        (localAddr [_]
+          (.getHostAddress (.getAddress laddr)))
+        (localHost [_] (.getHostName laddr))
+        (localPort [_] (.getPort laddr))
 
-       (remotePort [_]
-         (convLong (gistHeader gist "remote_port") 0))
-       (remoteAddr [_]
-         (str (gistHeader gist "remote_addr")))
-       (remoteHost [_]
-         (str (gistHeader gist "remote_host")))
+        (remotePort [_]
+          (convLong (gistHeader gist "remote_port") 0))
+        (remoteAddr [_]
+          (str (gistHeader gist "remote_addr")))
+        (remoteHost [_]
+          (str (gistHeader gist "remote_host")))
 
-       (serverPort [_]
-         (convLong (gistHeader gist "server_port") 0))
-       (serverName [_]
-         (str (gistHeader gist "server_name")))
+        (serverPort [_]
+          (convLong (gistHeader gist "server_port") 0))
+        (serverName [_]
+          (str (gistHeader gist "server_name")))
 
-       (setTrigger [_ t] (.setv impl :trigger t))
-       (fire [this _]
-         (when-some [t (.getv impl :trigger)]
-           (.setv impl :stale true)
-           (.unsetv impl :trigger)
-           (cancelTimerTask t)
-           (resumeOnExpiry ch this)))
+        (setTrigger [_ t] (.setv impl :trigger t))
+        (fire [this _]
+          (when-some [t (.getv impl :trigger)]
+            (.setv impl :stale true)
+            (.unsetv impl :trigger)
+            (cancelTimerTask t)
+            (resumeOnExpiry ch this)))
 
-       (scheme [_] (if ssl? "https" "http"))
-       (isStale [_] (.getv impl :stale))
-       (isSSL [_] ssl?)
-       (getx [_] impl)
+        (scheme [_] (if ssl? "https" "http"))
+        (isStale [_] (.getv impl :stale))
+        (isSSL [_] ssl?)
+        (getx [_] impl)
 
-       (resultObj [_] res)
-       (replyResult [this]
-         (let [t (.getv impl :trigger)
-               mvs (.session this)
-               code (.status res)]
-           (some-> t (cancelTimerTask ))
-           (.unsetv impl :trigger)
-           (if (.isStale this)
-             (throwIOE "Event has expired"))
-           (if
-             (and (>= code 200)
-                  (< code 400))
-             (.handleResult
-               ^IoSession mvs this res))
-           (resumeWithResult ch this))))]
-    (.bindSession evt (wsession<> co ssl?))
-    (with-meta evt {:typeid ::HTTPEvent})))
+        (resultObj [_] res)
+        (replyResult [this]
+          (let [t (.getv impl :trigger)
+                mvs (.session this)
+                code (.status res)]
+            (some-> t (cancelTimerTask ))
+            (.unsetv impl :trigger)
+            (if (.isStale this)
+              (throwIOE "Event has expired"))
+            (if
+              (and (>= code 200)
+                   (< code 400)
+                   (some? mvs))
+              (downstream
+                (.server co)
+                gist
+                (.config co) mvs res))
+            (resumeWithResult ch this))))
+      {:typeid ::HTTPEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
