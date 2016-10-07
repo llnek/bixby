@@ -64,8 +64,6 @@
       (reify FileEvent
 
         (checkAuthenticity [_] false)
-        (bindSession [_ s] )
-        (session [_] )
         (source [_] co)
         (originalFileName [_] fname)
         (file [_] f)

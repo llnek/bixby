@@ -59,8 +59,6 @@
         TimerEvent
 
         (checkAuthenticity [_] false)
-        (bindSession [_ s] nil)
-        (session [_] nil)
         (id [_] eeid)
         (source [_] co)
         (isRepeating [_] repeat?))

@@ -136,13 +136,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro ^:private job<+>
+(defn- job<+>
 
   ""
+  ^Job
   [co evt]
 
-  `(vary-meta (job<> ~co nil ~evt)
-              assoc :typeid :czlab.skaro.io.core/Job))
+  (with-meta (job<> co nil evt)
+             {:typeid :czlab.skaro.io.core/Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

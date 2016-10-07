@@ -22,7 +22,8 @@
     [czlab.xlib.io :refer [hexify]]
     [czlab.xlib.logging :as log])
 
-  (:use [czlab.xlib.core]
+  (:use [czlab.netty.core]
+        [czlab.xlib.core]
         [czlab.xlib.str])
 
   (:import
@@ -34,9 +35,8 @@
      HttpSession
      HttpResult
      HttpEvent
-     IoService
-     IoSession]
-    [czlab.net ULFormItems ULFileItem]))
+     IoService]
+    [czlab.net RouteInfo]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -57,8 +57,8 @@
   "A negative value means that the cookie is not stored persistently and will be deleted when the Web browser exits. A zero value causes the cookie to be deleted."
   [^HttpSession mvs maxAgeSecs]
 
-  (let [now (System/currentTimeMillis)
-        maxAgeSecs (or maxAgeSecs 0)]
+  (let [maxAgeSecs (or maxAgeSecs -1)
+        now (now<>)]
     (doto mvs
       (.setAttr SSID_FLAG
                 (hexify (bytesify (juid))))
@@ -71,128 +71,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- maybeMacIt
-
-  ""
-  [^HttpEvent evt ^String data]
-
-  (if
-    (.checkAuthenticity evt)
-    (str (-> (.server (.source evt))
-             (.appKeyBits )
-             (genMac data))
-         "-" data)
-    data))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- downstream
-
-  ""
-  [^HttpEvent evt ^HttpResult res ]
-
-  (let
-    [^HttpSession mvs (.session evt)
-     co (.source evt)
-     {:keys [sessionAgeSecs
-             domainPath
-             domain
-             hidden
-             maxIdleSecs]}
-     (.config co)]
-    (when-not (.isNull mvs)
-      (log/debug "session ok, about to set-cookie!")
-      (if (.isNew mvs)
-        (->> (or sessionAgeSecs 3600)
-             (resetFlags mvs )))
-      (let
-        [ck (->> (maybeMacIt evt (str mvs))
-                 (HttpCookie. SESSION_COOKIE))
-         est (.expiryTime mvs)]
-        (->> ^long (or maxIdleSecs 0)
-             (.setMaxIdleSecs mvs))
-        (doto ck
-          (.setMaxAge (if (spos? est)
-                        (/ (- est (now<>)) 1000) 0))
-          (.setDomain (str domain))
-          (.setSecure (.isSSL mvs))
-          (.setHttpOnly (true? hidden))
-          (.setPath (str domainPath)))
-        (.addCookie res ck)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- testCookie
-
-  ""
-  [^HttpEvent evt p1 p2]
-
-  (if-some
-    [pkey (if (.checkAuthenticity evt)
-            (-> (.server (.source evt))
-                (.appKeyBits)))]
-    (when (not= (genMac pkey p2) p1)
-      (log/error "session cookie - broken")
-      (trap! AuthError "Bad Session Cookie"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- upstream
-
-  ""
-  [^HttpEvent evt]
-
-  (let
-    [^HttpCookie ck (get (.cookies evt) SESSION_COOKIE)
-     ^HttpSession mvs (.session evt)
-     src (.source evt)]
-    (if (nil? ck)
-      (do
-        (log/warn "no s-cookie found, invalidate!")
-        (.invalidate mvs))
-      (let
-        [cookie (str (.getValue ck))
-         cfg (.config src)
-         pos (.indexOf cookie (int \-))
-         [^String p1 ^String p2]
-         (if (< pos 0)
-           ["" cookie]
-           [(.substring cookie 0 pos)
-            (.substring cookie (inc pos))])]
-        (testCookie evt p1 p2 (.server src))
-        (log/debug "session attrs= %s" p2)
-        (try
-          (doseq [^String nv (.split p2 NV_SEP)
-                 :let [ss (.split nv ":" 2)
-                       ^String s1 (aget ss 0)
-                       ^String s2 (aget ss 1)]]
-            (log/debug "s-attr n=%s, v=%s" s1 s2)
-            (if (and (.startsWith s1 "__f")
-                     (.endsWith s1 "n"))
-              (.setAttr mvs
-                        (keyword s1)
-                        (convLong s2 0))
-              (.setAttr mvs (keyword s1) s2)))
-          (catch Throwable _
-            (trap! ExpiredError "malformed cookie")))
-        (.setNew mvs false 0)
-        (let [ts (or (.attr mvs LS_FLAG) -1)
-              es (or (.attr mvs ES_FLAG) -1)
-              now (System/currentTimeMillis)
-              mi (or (:maxIdleSecs cfg) 0)]
-          (if (or (< es now)
-                  (and (spos? mi)
-                       (< (+ ts (* 1000 mi)) now)))
-            (trap! ExpiredError "Session has expired"))
-          (.setAttr mvs LS_FLAG now))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn wsession<>
 
   ""
   ^HttpSession
-  [co ssl?]
+  [^bytes pkey ssl?]
 
   (let [impl (muble<> {:maxIdleSecs 0
                        :newOne true})
@@ -217,6 +100,8 @@
         (invalidate [_]
           (.clear _attrs)
           (.clear impl))
+
+        (signer [_] pkey)
 
         (setXref [_ csrf]
           (.setv _attrs :csrf csrf))
@@ -245,21 +130,140 @@
         (toString [this]
           (str
             (reduce
-              #(addDelim!
-                 %1 NV_SEP
-                 (str (name (first %2))
-                      ":"
-                      (last %2)))
+              #(let [[k v] %2]
+                 (addDelim! %1
+                            NV_SEP
+                            (str (name k) ":" v)))
               (strbf<>)
-              (.seq _attrs))))
-
-        IoSession
-
-        (handleResult [_ evt res] (downstream evt res))
-        (handleEvent [_ evt] (upstream evt))
-        (impl [_] nil))
+              (.seq _attrs)))))
 
         {:typeid ::HttpSession })))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeMacIt
+
+  ""
+  [^czlab.netty.core.HttpMsgGist gist pkey ^String data]
+
+  (if
+    (boolean
+      (some-> ^RouteInfo
+              (get-in gist [:route :routeInfo])
+              (.isSecure)))
+    (str (genMac pkey data) "-" data)
+    data))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn downstream
+
+  ""
+  [^Container ctr ^czlab.netty.core.HttpMsgGist gist
+   cfg
+   ^HttpSession mvs ^HttpResult res]
+
+  (let
+    [{:keys [sessionAgeSecs
+             domainPath
+             domain
+             hidden
+             maxIdleSecs]} cfg]
+    (when-not (.isNull mvs)
+      (log/debug "session ok, about to set-cookie!")
+      (if (.isNew mvs)
+        (->> (or sessionAgeSecs 3600)
+             (resetFlags mvs )))
+      (let
+        [ck (->> (maybeMacIt gist
+                             (.signer mvs)
+                             (str mvs))
+                 (HttpCookie. SESSION_COOKIE))
+         est (.expiryTime mvs)]
+        (->> (long (or maxIdleSecs -1))
+             (.setMaxIdleSecs mvs))
+        (doto ck
+          (.setMaxAge (if (spos? est)
+                        (/ (- est (now<>)) 1000) 0))
+          (.setDomain (str domain))
+          (.setSecure (.isSSL mvs))
+          (.setHttpOnly (true? hidden))
+          (.setPath (str domainPath)))
+        (.addCookie res ck)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- testCookie
+
+  ""
+  [^bytes pkey ^RouteInfo ri p1 p2]
+
+  (if (boolean (some-> ri (.isSecure)))
+    (when (not= (genMac pkey p2) p1)
+      (log/error "session cookie - broken")
+      (trap! AuthError "Bad Session Cookie")))
+  true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn upstream
+
+  ""
+  ^HttpSession
+  [^czlab.netty.core.HttpMsgGist gist pkey maxIdleSecs]
+
+  (let [^RouteInfo
+        ri (get-in gist
+                   [:route :routeInfo])
+        [^HttpSession mvs
+         ^HttpCookie ck]
+        (if (.wantSession ri)
+          [(wsession<> pkey (:ssl? gist))
+           (-> (:cookies gist)
+               (get SESSION_COOKIE))])]
+    (cond
+      (some? ck)
+      (let
+        [cookie (str (.getValue ck))
+         pos (.indexOf cookie (int \-))
+         [^String p1 ^String p2]
+         (if (< pos 0)
+           ["" cookie]
+           [(.substring cookie 0 pos)
+            (.substring cookie (inc pos))])
+         ok (testCookie pkey ri p1 p2)]
+        (log/debug "session attrs= %s" p2)
+        (try
+          (doseq [^String nv (.split p2 NV_SEP)
+                  :let [ss (.split nv ":" 2)
+                        ^String s1 (aget ss 0)
+                        k1 (keyword s1)
+                        ^String s2 (aget ss 1)]]
+            (log/debug "s-attr n=%s, v=%s" s1 s2)
+            (if (and (.startsWith s1 "__f")
+                     (.endsWith s1 "n"))
+              (->> (convLong s2 0)
+                   (.setAttr mvs k1))
+              (.setAttr mvs k1 s2)))
+          (catch Throwable _
+            (trap! ExpiredError "malformed cookie")))
+        (.setNew mvs false 0)
+        (let [ts (or (.attr mvs LS_FLAG) -1)
+              es (or (.attr mvs ES_FLAG) -1)
+              mi (or maxIdleSecs 0)
+              now (now<>)]
+          (if (or (< es now)
+                  (and (spos? mi)
+                       (< (+ ts (* 1000 mi)) now)))
+            (trap! ExpiredError "Session has expired"))
+          (.setAttr mvs LS_FLAG now)
+          mvs))
+
+      (some? mvs)
+      (do
+        (log/warn "no s-cookie found, invalidate!")
+        (.invalidate mvs)))
+    mvs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

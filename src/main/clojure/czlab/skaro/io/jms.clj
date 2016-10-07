@@ -71,8 +71,6 @@
     (with-meta
       (reify JmsEvent
         (checkAuthenticity [_] false)
-        (bindSession [_ s] )
-        (session [_] )
         (id [_] eeid)
         (source [_] co)
         (message [_] msg))
@@ -251,6 +249,7 @@
       [ctx (InitialContext. vars)
        obj (->> (str connFactory)
                 (.lookup ctx))
+       ^Connection
        c (condp instance? obj
            QueueConnectionFactory
            (inizQueue co ctx obj)

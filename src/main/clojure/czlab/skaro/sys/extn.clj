@@ -76,7 +76,6 @@
     [czlab.dbio Schema JDBCPool DBAPI]
     [java.io File StringWriter]
     [czlab.skaro.server
-     ServiceGist
      AppGist
      Execvisor
      ServiceError
@@ -104,7 +103,7 @@
      Startable
      Disposable
      Identifiable]
-    [czlab.skaro.io IoEvent]))
+    [czlab.skaro.io IoGist IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -276,7 +275,7 @@
      bks (->> :emitters
               (.getv (.getx exe)))]
     (if-some
-      [^ServiceGist
+      [^IoGist
        bk (bks svcType)]
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)

@@ -36,6 +36,7 @@
              getLocalFile]])
 
   (:use [czlab.skaro.io.http]
+        [czlab.skaro.io.web]
         [czlab.xlib.consts]
         [czlab.wflow.core]
         [czlab.netty.core]
@@ -43,14 +44,11 @@
         [czlab.skaro.sys.core])
 
   (:import
+    [czlab.skaro.io IoService IoEvent HttpEvent HttpResult]
     [czlab.xlib XData Muble Hierarchial Identifiable]
     [io.netty.handler.codec.http HttpResponseStatus]
-    [czlab.skaro.io IoEvent HttpEvent HttpResult]
     [czlab.net RouteInfo RouteCracker]
-    [czlab.skaro.server
-     Container
-     Service
-     EventTrigger]
+    [czlab.skaro.server Container]
     [czlab.skaro.net
      MvcUtils
      WebAsset
@@ -92,7 +90,7 @@
 (defn addETag
 
   "Add a ETag"
-  [^Service src gist ^File f ^HttpResult res]
+  [^IoService src gist ^File f ^HttpResult res]
 
   (let [lastTm (.lastModified f)
         cfg (.config src)
@@ -175,7 +173,7 @@
 (defn- handleStatic
 
   "Handle static resource"
-  [^Service src ^HttpEvent evt args]
+  [^IoService src ^HttpEvent evt args]
 
   (let
     [appDir (-> ^Container
@@ -201,7 +199,7 @@
 (defn- replyError
 
   ""
-  [^Service src code]
+  [^IoService src code]
 
   (let [appDir (-> ^Container
                    (.server src) (.appDir))]
@@ -213,7 +211,7 @@
 (defn serveError
 
   "Reply back an error"
-  [^Service src ^Channel ch code]
+  [^IoService src ^Channel ch code]
 
   (try
     (let
@@ -252,7 +250,7 @@
 (defn- serveStatic2
 
   "Reply back with a static file content"
-  [^Service src ^Channel ch gist ^HttpEvent evt]
+  [^IoService src ^Channel ch gist ^HttpEvent evt]
 
   (let
     [^RouteInfo ri (.getv (.getx evt) :ri)
@@ -268,9 +266,8 @@
      mpt
      (-> #(cs/replace-first %1 "{}" %2)
          (reduce mpt parts))
-     mpt (fpath (io/file mpt))
-     w (nettyTrigger<> ch evt src)]
-    (.hold src w (:waitMillis cfg))
+     mpt (fpath (io/file mpt))]
+    (.hold src evt (:waitMillis cfg))
     (.dispatchEx
       src
       evt
@@ -283,13 +280,15 @@
 (defn serveStatic
 
   "Reply back with a static file content"
-  [^Service src ^Channel ch gist ^HttpEvent evt]
+  [^IoService src ^Channel ch gist ^HttpEvent evt]
 
   (let
     [exp
      (try
-       (do->nil (-> (.session evt)
-                    (.handleEvent evt)))
+       (do->nil
+         (upstream gist
+                   (.appKeyBits (.server src))
+                   (:maxIdleSecs (.config src))))
        (catch AuthError e# e#))]
     (if (some? exp)
       (serveError src ch 403)
@@ -300,7 +299,7 @@
 (defn- serveRoute2
 
   "Handle a matched route"
-  [^Service src ^Channel ch gist ^HttpEvent evt]
+  [^IoService src ^Channel ch gist ^HttpEvent evt]
 
   (let
     [^RouteInfo ri (.getv (.getx evt) :ri)
@@ -308,9 +307,8 @@
      cfg (.config src)
      options {:router (.handler ri)
               :params (or pms {})
-              :template (.template ri)}
-     w (nettyTrigger<> ch evt src)]
-    (.hold src w (:waitMillis cfg))
+              :template (.template ri)}]
+    (.hold src evt (:waitMillis cfg))
     (.dispatchEx src evt options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,13 +316,15 @@
 (defn serveRoute
 
   "Handle a matched route"
-  [^Service src ^Channel ch gist ^HttpEvent evt]
+  [^IoService src ^Channel ch gist ^HttpEvent evt]
 
   (let
     [exp
      (try
-       (do->nil (-> (.session evt)
-                    (.handleEvent evt)))
+       (do->nil
+         (upstream gist
+                   (.appKeyBits (.server src))
+                   (:maxIdleSecs (.config src))))
        (catch AuthError e# e#))]
     (if (some? exp)
       (serveError src ch 403)

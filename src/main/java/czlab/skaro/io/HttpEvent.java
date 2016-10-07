@@ -69,6 +69,8 @@ public interface HttpEvent extends IoEvent, IoTrigger, Context, Replyable {
   /**/
   public boolean isSSL();
 
+  /**/
+  public HttpSession session();
 }
 
 

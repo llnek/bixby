@@ -134,8 +134,6 @@
     (with-meta
       (reify EmailEvent
         (checkAuthenticity [_] false)
-        (bindSession [_ s] nil)
-        (session [_] nil)
         (id [_] eeid)
         (source [_] co)
         (message [_] msg))

@@ -61,13 +61,12 @@
      Versioned
      Hierarchial
      Identifiable]
+    [czlab.skaro.io IoService IoGist]
     [czlab.skaro.server
-     ServiceGist
      Container
      Execvisor
      AppGist
      JmxServer
-     Service
      Component]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,7 +211,7 @@
 (defn- emitMeta
 
   ""
-  ^ServiceGist
+  ^IoGist
   [emsType gist]
 
   (let [{:keys [info conf]}
@@ -224,7 +223,7 @@
     (with-meta
       (reify
 
-        ServiceGist
+        IoGist
 
         (version [_] (:version info))
         (getx [_] impl)
@@ -238,14 +237,14 @@
 
         (id [_] pid))
 
-      {:typeid  ::ServiceGist})))
+      {:typeid  ::IoGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
 (defmethod comp->init
 
-  ::ServiceGist
-  [^ServiceGist co execv]
+  ::IoGist
+  [^IoGist co execv]
 
   (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
   (.setParent co execv)

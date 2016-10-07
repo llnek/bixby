@@ -43,7 +43,7 @@
 
   (:use [czlab.skaro.auth.core]
         [czlab.skaro.sys.core]
-        [czlab.skaro.io.webss]
+        [czlab.skaro.io.web]
         [czlab.skaro.auth.model]
         [czlab.dbio.core])
 
@@ -77,7 +77,7 @@
      If
      Job
      Script]
-    [czlab.skaro.io WebSS HttpEvent HttpResult]))
+    [czlab.skaro.io HttpSession HttpEvent HttpResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -358,8 +358,7 @@
       (let
         [^HttpEvent evt (.event ^Job arg)
          ^Job job arg
-         csrf (-> ^WebSS
-                  (.session evt) (.xref))
+         csrf (-> (.session evt) (.xref))
          si (try
               (getSignupInfo evt)
               (catch BadDataError e# {:e e#}))
@@ -422,8 +421,7 @@
       (let
         [^HttpEvent evt (.event ^Job arg)
          ^Job job arg
-         csrf (-> ^WebSS
-                  (.session evt)
+         csrf (-> (.session evt)
                   (.xref ))
          si (try
               (getSignupInfo evt)

@@ -50,8 +50,6 @@
       (reify SocketEvent
 
         (checkAuthenticity [_] false)
-        (bindSession [_ s] )
-        (session [_] )
         (id [_] eeid)
         (sockOut [_] (.getOutputStream socket))
         (sockIn [_] (.getInputStream socket))

@@ -53,6 +53,7 @@
     [io.netty.handler.ssl SslHandler]
     [czlab.net RouteCracker RouteInfo]
     [czlab.skaro.server Container]
+    [czlab.skaro.io IoService]
     [clojure.lang APersistentMap]
     [czlab.crypto PasswordAPI]
     [java.util Timer TimerTask]
@@ -491,8 +492,6 @@
       (reify WebSockEvent
 
         (checkAuthenticity [_] false)
-        (bindSession [_ s] )
-        (session [_] )
         (socket [_] ch)
         (id [_] eeid)
         (isSSL [_] ssl?)
@@ -527,8 +526,6 @@
         (checkAuthenticity [_] wantSecure?)
         (session [_] (.getv impl :session))
         (id [_] eeid)
-        (bindSession [_ s]
-          (.getv impl :session s))
         (source [_] co)
 
         (cookie [_ n] (get cookieJar n))
@@ -593,6 +590,7 @@
   ::HTTP
   [^IoService co {:keys [^Channel ch
                          gist
+                         msg
                          body
                          ^RouteInfo route]}]
 
