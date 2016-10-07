@@ -12,38 +12,63 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
   czlab.skaro.jmx.core
 
   (:require
-    [czlab.xlib.core :refer [muble<> try!]]
-    [czlab.xlib.str :refer [hgl? stror]]
     [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
-  (:use [czlab.skaro.jmx.names]
-        [czlab.skaro.jmx.bean])
+  (:use [czlab.skaro.jmx.bean]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
   (:import
     [java.net InetAddress MalformedURLException]
     [java.rmi.registry LocateRegistry Registry]
     [java.lang.management ManagementFactory]
+    [java.rmi.server UnicastRemoteObject]
     [czlab.skaro.server JmxServer]
     [java.rmi NoSuchObjectException]
     [czlab.xlib Startable Muble]
     [java.util HashMap]
-    [java.rmi.server UnicastRemoteObject]
-    [javax.management DynamicMBean
+    [javax.management.remote
+     JMXConnectorServer
+     JMXServiceURL
+     JMXConnectorServerFactory]
+    [javax.management
      JMException
-     MBeanServer ObjectName]
-    [javax.management.remote JMXConnectorServer
-     JMXConnectorServerFactory JMXServiceURL]))
+     MBeanServer
+     ObjectName
+     DynamicMBean]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn objectName
+
+  "paths: [ \"a=b\" \"c=d\" ]
+   domain: com.acme
+   beanName: mybean"
+  {:tag ObjectName}
+
+  ([domain beanName] (objectName domain beanName nil))
+  ([^String domain ^String beanName paths]
+   (let [cs (seq (or paths []))
+         sb (strbf<>)]
+     (doto sb
+       (.append domain)
+       (.append ":")
+       (.append (cs/join "," cs)))
+     (when-not (empty? cs) (.append sb ","))
+     (doto sb
+       (.append "name=")
+       (.append beanName))
+     (ObjectName. (.toString sb)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

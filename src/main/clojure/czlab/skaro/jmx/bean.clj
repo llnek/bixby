@@ -12,27 +12,22 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
   czlab.skaro.jmx.bean
 
   (:require
-    [czlab.xlib.core
-     :refer [trap!
-             exp!
-             throwBadArg
-             muble<> try!]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.str :refer [hasAny?]])
+    [czlab.xlib.logging :as log])
 
-  (:use [czlab.xlib.meta])
+  (:use [czlab.xlib.meta]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
   (:import
     [java.lang Exception IllegalArgumentException]
-    [czlab.skaro.etc NameParams]
     [java.lang.reflect Field Method]
+    [czlab.skaro.etc NameParams]
     [java.util Arrays]
     [czlab.xlib Muble]
     [javax.management Attribute AttributeList
@@ -54,14 +49,14 @@
 
   ""
 
-  (get-type [_] )
-  (get-desc [_] )
-  (get-getter [_] )
-  (get-name [_] )
-  (get-setter [_] )
-  (set-setter [_ m] )
-  (set-getter [_ m] )
-  (is-query [_] ))
+  (set-setter [_ ^Method m] )
+  (set-getter [_ ^Method m] )
+  (^Method get-getter [_] )
+  (^Method get-setter [_] )
+  (^Class get-type [_] )
+  (^String get-desc [_] )
+  (^String get-name [_] )
+  (^boolean is-query? [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -69,20 +64,20 @@
 
   ""
 
-  (is-getter [_] )
-  (is-setter [_] )
-  (get-field [_] ))
+  (^boolean is-getter? [_] )
+  (^boolean is-setter? [_] )
+  (^Field get-field [_] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mkBFieldInfo
 
   ""
-  [^Field fld getr setr]
+  [^Field fld getr? setr?]
 
   (reify BFieldInfo
-    (is-getter [_] getr)
-    (is-setter [_] setr)
+    (is-getter? [_] getr?)
+    (is-setter? [_] setr?)
     (get-field [_] fld)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -95,25 +90,23 @@
   (let
     [impl (muble<> {:getr getr
                     :setr setr
-                    :type nil}) ]
+                    :type nil})]
     (reify BPropInfo
       (get-type [this]
-        (let [^Method g (get-getter this)
-              ^Method s (get-setter this) ]
-          (if (some? g)
-            (.getReturnType g)
-            (when (some? s)
-              (let [ps (.getParameterTypes s) ]
-                (when (== 1 (count ps)) (first ps)))))))
-      (get-getter [_] (.getv impl :getr))
-      (get-name [_] prop)
-      (get-desc [_] descn)
-      (get-setter [_] (.getv impl :setr))
+        (if-some [g (get-getter this)]
+          (.getReturnType g)
+          (let [ps (some-> (get-setter this)
+                           (.getParameterTypes ))]
+            (if (== 1 (count ps)) (first ps)))))
       (set-setter [_ m] (.setv impl :setr m))
       (set-getter [_ m] (.setv impl :getr m))
-      (is-query [this]
-        (if-some [^Method g (get-getter this) ]
-          (and (-> g (.getName)
+      (get-setter [_] (.getv impl :setr))
+      (get-getter [_] (.getv impl :getr))
+      (get-desc [_] descn)
+      (get-name [_] prop)
+      (is-query? [this]
+        (if-some [g (get-getter this)]
+          (and (-> (.getName g)
                    (.startsWith "is"))
                (isBoolean? (get-type this)))
           false)))))
@@ -144,7 +137,7 @@
   ""
   [mtd ptypes n]
 
-  (when (not= n (count ptypes))
+  (if (not= n (count ptypes))
     (throwBadArg (str "\"" mtd "\" needs " n "args."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,17 +166,20 @@
   ""
   [^Method mtd]
 
-  (with-local-vars
-    [ptypes (.getParameterTypes mtd)
-     ctr 1
-     rc (transient []) ]
-    (doseq [^Class t (seq @ptypes) ]
-      (var-set rc
-               (->> (new MBeanParameterInfo
-                         (str "p" @ctr) (.getName t) "")
-                    (conj! @rc)))
-      (var-set ctr (inc @ctr)))
-    (persistent! @rc)))
+  (pcoll!
+    (reduce
+      #(let [[t n] %2]
+         (->> (MBeanParameterInfo.
+                (format "p%d" n)
+                (.getName ^Class t)
+                "")
+              (conj! %1)))
+      (transient [])
+      (partition
+        2
+        (interleave
+          (vec (.getParameterTypes mtd))
+          (map inc (range)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -203,8 +199,7 @@
           (isDouble? cz)
           (isFloat? cz)
           (isChar? cz))
-    cz
-    nil))
+    cz))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -216,8 +211,43 @@
   (if (and (not (empty? ptypes))
            (true? (some #(if (testJmxType %) false true)
                         (seq ptypes))) )
-    false
+    nil
     (testJmxType rtype)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleProps2
+
+  ""
+  [^Method mtd propsBin]
+
+  (let
+    [ptypes (.getParameterTypes mtd)
+     rtype (.getReturnType mtd)
+     mn (.getName mtd)
+     pname (maybeGetPropName mn)
+     methodInfo (propsBin pname)]
+    (cond
+      (and (or (.startsWith mn "get")
+               (.startsWith mn "is"))
+           (empty? ptypes))
+      (if (nil? methodInfo)
+        (->> (mkBPropInfo pname "" mtd nil)
+             (assoc! propsBin pname))
+        (do
+          (set-getter methodInfo mtd)
+          propsBin))
+
+      (and (.startsWith mn "set")
+           (== 1 (count ptypes))
+      (if (nil? methodInfo)
+        (->> (mkBPropInfo pname "" nil mtd)
+             (assoc! propsBin pname))
+        (do
+          (set-setter methodInfo mtd)
+          propsBin))
+
+      :else propsBin))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -226,47 +256,29 @@
   ""
   [^Class cz]
 
-  (with-local-vars
-    [mtds (.getMethods cz)
-     props (transient {})
-     ba (transient []) ]
-    (doseq [^Method mtd (seq @mtds)
-           :let
-           [ptypes (.getParameterTypes mtd)
-            rtype (.getReturnType mtd)
-            mn (.getName mtd)
-            pname (maybeGetPropName mn)
-            methodInfo (props pname) ] ]
-      (cond
-        (or (.startsWith mn "get")
-            (.startsWith mn "is"))
-        (when (empty? ptypes)
-          (if (nil? methodInfo)
-            (var-set props
-                     (->> (mkBPropInfo pname "" mtd nil)
-                          (assoc! @props pname)))
-            (set-getter methodInfo mtd)))
-
-        (.startsWith mn "set")
-        (when (== 1 (count ptypes))
-          (if (nil? methodInfo)
-            (var-set props
-                     (->> (mkBPropInfo pname "" nil mtd)
-                          (assoc! @props pname)))
-            (set-setter methodInfo mtd)))
-
-        :else nil))
-    (let [rc (persistent! @props) ]
-      (doseq [[k v] rc]
-        (when-some [mt (testJmxType (get-type v)) ]
-          (conj! @ba
-                 (MBeanAttributeInfo. (get-name v)
-                                      (.getName mt)
-                                      (get-desc v)
-                                      (some? (get-getter v))
-                                      (some? (get-setter v))
-                                      (is-query v)))))
-      [ (persistent! @ba) rc ] )))
+  (let
+    [rc
+     (pcoll!
+       (reduce #(handleProps2 %2 %1)
+               (transient {}) (.getMethods cz)))
+     ba
+     (pcoll!
+       (reduce
+         #(let [[k v] %2]
+            (if-some
+              [mt (testJmxType (get-type v))]
+              (->>
+                (MBeanAttributeInfo.
+                  (get-name v)
+                  (.getName mt)
+                  (get-desc v)
+                  (some? (get-getter v))
+                  (some? (get-setter v))
+                  (is-query? v))
+                (conj! %1))
+              %1))
+         (transient []) rc))]
+    [ba rc]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -275,30 +287,68 @@
   ""
   [^Class cz]
 
-  (with-local-vars
+  (let
     [dcls (.getDeclaredFields cz)
-     flds (transient {})
-     rc (transient []) ]
-    (doseq [^Field field (seq @dcls)
-           :let
-           [fnm (.getName field) ]]
-      (when (.isAccessible field)
-        (var-set flds
-                 (->> (mkBFieldInfo field true true)
-                      (assoc! @flds fnm)))
-        (var-set rc
-                 (->> (MBeanAttributeInfo.
-                        fnm
-                        (-> field
-                            (.getType)
-                            (.getName) )
-                        (str fnm " attribute")
-                        true
-                        true
-                        (and (.startsWith fnm "is")
-                             (isBoolean? (.getType field))))
-                      (conj! @rc)))))
-    [ (persistent! @rc) (persistent! @flds) ]))
+     flds
+     (pcoll!
+       (reduce
+         #(let [^Field f %2
+                fnm (.getName f)]
+            (if (.isAccessible f)
+              (->> (mkBFieldInfo f true true)
+                   (assoc! %1 fnm))
+              %1))
+         (transient {}) dcls))
+     rc
+     (pcoll!
+       (reduce
+         #(let [^Field f %2
+                t (.getType f)
+                fnm (.getName f)]
+            (if-not (.isAccessible f)
+              (->>
+                (MBeanAttributeInfo.
+                  fnm
+                  (.getName t)
+                  (str fnm " attribute")
+                  true
+                  true
+                  (and (.startsWith fnm "is")
+                       (isBoolean? t)))
+                (conj! %1))
+              %1))
+         (transient {}) dcls))]
+    [rc flds]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleMethods2
+
+  ""
+  [^Method m mtds rc]
+
+  (let
+    [ptypes (.getParameterTypes m)
+     rtype (.getReturnType m)
+     mn (.getName m)]
+    (if (some? (testJmxTypes rtype
+                             ptypes))
+      [(assoc! mtds
+               (->> ptypes
+                    (map #(.getName ^Class %))
+                    (into-array String)
+                    (NameParams. mn))
+               m)
+       (->>
+         (MBeanOperationInfo.
+           mn
+           (str mn " operation")
+           (->> (mkParameterInfo m)
+                (into-array MBeanParameterInfo))
+           (.getName rtype)
+           MBeanOperationInfo/ACTION_INFO)
+         (conj! rc))]
+      [mtds rc])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -307,38 +357,18 @@
   ""
   [^Class cz]
 
-  (with-local-vars
-    [dcls (.getMethods cz)
-     metds (transient {})
-     rc (transient []) ]
-    (log/info "jmx-bean: processing class: %s" cz)
-    (doseq [^Method m (seq @dcls)
-           :let
-           [^Class rtype (.getReturnType m)
-            ptypes (.getParameterTypes m)
-            mn (.getName m) ]]
-      (cond
-        (hasAny? mn [ "_QMARK" "_BANG" "_STAR" ])
-        nil;;(log/info "JMX-skipping " mn)
-
-        (some? (testJmxTypes rtype ptypes))
-        (let [pns (map #(.getName ^Class %) (seq ptypes))
-              nameParams (NameParams. mn
-                                      (into-array String pns))
-              pmInfos (mkParameterInfo m) ]
-          (var-set metds (assoc! @metds nameParams m))
-          (log/info "jmx-adding method %s" mn)
-          (var-set rc
-                   (->> (MBeanOperationInfo.
-                          mn
-                          (str mn " operation")
-                          (into-array MBeanParameterInfo pmInfos)
-                          (.getName rtype)
-                          MBeanOperationInfo/ACTION_INFO )
-                        (conj! @rc))))
-        :else
-        (log/info "JMX-skipping %s" mn) ))
-    [ (persistent! @rc) (persistent! @metds) ]))
+  (log/info "jmx-bean: processing methods for class: %s" cz)
+  (loop
+    [ms (seq (.getMethods cz))
+     mtds (transient {})
+     rc (transient [])]
+    (if (empty? ms)
+      [(pcoll! rc) (pcoll! mtds)]
+      (let [[m r]
+            (handleMethods2 (first ms) mtds rc)]
+        (recur (rest ms)
+               m
+               r)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
