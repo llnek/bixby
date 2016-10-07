@@ -38,6 +38,7 @@
         [czlab.skaro.io.web])
 
   (:import
+    [czlab.netty MixedFullRequest InboundFilter]
     [java.nio.channels ClosedChannelException]
     [io.netty.handler.codec.http.websocketx
      TextWebSocketFrame
@@ -46,6 +47,7 @@
     [io.netty.handler.codec.http.cookie
      ServerCookieDecoder
      ServerCookieEncoder]
+    [io.netty.handler.codec DecoderException]
     [czlab.netty CPDecorator TcpPipeline]
     [czlab.skaro.net WebAsset RangeInput]
     [io.netty.bootstrap ServerBootstrap]
@@ -57,13 +59,13 @@
     [clojure.lang APersistentMap]
     [czlab.crypto PasswordAPI]
     [java.util Timer TimerTask]
-    [czlab.netty InboundFilter]
     [io.netty.handler.codec.http
      HttpResponseStatus
      HttpRequest
      HttpUtil
      HttpResponse
      DefaultHttpResponse
+     FullHttpRequest
      HttpVersion
      HttpRequestDecoder
      HttpResponseEncoder
@@ -511,11 +513,16 @@
 
   ""
   ^HttpEvent
-  [^IoService co ^Channel ch
-   ssl? _body gist wantSecure?]
+  [^IoService co ^Channel ch gist ^XData _body]
 
   (let
     [^InetSocketAddress laddr (.localAddress ch)
+     ^RouteInfo
+     ri (get-in gist [:route :routeInfo])
+     wantSess? (boolean
+                 (some-> ri (.wantSession)))
+     wantSecure? (boolean
+                   (some-> ri (.isSecure)))
      eeid (str "event#" (seqint2))
      cookieJar (:cookies gist)
      res (httpResult<> co)
@@ -558,9 +565,9 @@
             (cancelTimerTask t)
             (resumeOnExpiry ch this)))
 
-        (scheme [_] (if ssl? "https" "http"))
+        (scheme [_] (if (:ssl? gist) "https" "http"))
         (isStale [_] (.getv impl :stale))
-        (isSSL [_] ssl?)
+        (isSSL [_] (:ssl? gist))
         (getx [_] impl)
 
         (resultObj [_] res)
@@ -572,14 +579,12 @@
             (.unsetv impl :trigger)
             (if (.isStale this)
               (throwIOE "Event has expired"))
-            (if
-              (and (>= code 200)
-                   (< code 400)
-                   (some? mvs))
-              (downstream
-                (.server co)
-                gist
-                (.config co) mvs res))
+            (if (some-> ri (.wantSession))
+              (if (or (nil? mvs)
+                      (nil? (.isNull mvs)))
+                (throwIOE "Invalid/Null session")))
+            (if (some? mvs)
+              (downstream co gist mvs res))
             (resumeWithResult ch this))))
       {:typeid ::HTTPEvent})))
 
@@ -588,43 +593,43 @@
 (defmethod ioevent<>
 
   ::HTTP
-  [^IoService co {:keys [^Channel ch
-                         gist
-                         msg
-                         body
-                         ^RouteInfo route]}]
+  [^IoService co {:keys [^Channel ch gist ^XData body]}]
 
   (logcomp "ioevent" co)
   (let [ssl? (maybeSSL? ch)]
+    (comment
     (if
       (inst? WebSocketFrame msg)
-      (makeWEBSockEvent co ch ssl? msg)
-      ;else
-      (makeHttpEvent
-        co ch ssl? body gist
-        (if (nil? route) false (.isSecure route))))))
+      (makeWEBSockEvent co ch ssl? msg)))
+    (makeHttpEvent co ch gist body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- h1Handler
+(defn- h1Handler->onRead
 
   ""
-  ^ChannelHandler
-  [^IoService co args]
+  [^ChannelHandlerContext ctx
+   ^IoService co ^FullHttpRequest msg]
 
-  (proxy [InboundFilter] []
-    (channelRead0 [ctx msg]
-      (let [^ChannelHandlerContext ctx ctx
-            {:keys [waitMillis]}
-            (.config co)
-            evt (ioevent<> co {:gist (getAKey ctx MSGGIST_KEY)
-                               :ch (.channel ctx)
-                               :body msg
-                               :route nil})]
-        (if (and (inst? HttpEvent evt)
-                 (spos? waitMillis))
-          (.hold co evt waitMillis))
-        (.dispatch co evt )))))
+  (if-not (decoderSuccess? msg)
+    (throw (or (decoderError msg)
+               (DecoderException. "Unknown decoder error"))))
+
+  (let [gist (getAKey ctx MSGGIST_KEY)
+        body
+        (if-some [r (cast? MixedFullRequest msg)]
+          (if (.isInMemory r) (.getBytes r) (.getFile r))
+          (-> (.content msg) (toByteArray)))
+        x (xdata<> body true)
+        {:keys [waitMillis]}
+        (.config co)
+        ^HttpEvent
+        evt (ioevent<> co {:ch (.channel ctx)
+                           :gist gist
+                           :body x})]
+    (if (spos? waitMillis)
+      (.hold co evt waitMillis))
+    (.dispatch co evt )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -665,13 +670,16 @@
 
   (logcomp "comp->init" co)
   (let [ctr (.server co)
-        cfg (httpBasicConfig co cfg0)]
-    (.setv (.getx co) :emcfg cfg)
+        cfg (->> (httpBasicConfig co cfg0)
+                 (.setv (.getx co) :emcfg))
+        h
+        (proxy [InboundFilter] []
+          (channelRead0 [ctx msg]
+            (h1Handler->onRead ctx co msg)))]
     (->>
       (httpServer<>
         (reify CPDecorator
-          (forH1 [_ ops]
-            (h1Handler co ops))
+          (forH1 [_ ops] h)
           (forH2H1 [_ _])
           (forH2 [_ _]))
         cfg)

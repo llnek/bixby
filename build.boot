@@ -76,13 +76,17 @@
 
   :source-paths #{"src/main/clojure" "src/main/java"}
   :test-runner "czlabtest.skaro.ClojureJUnit"
+
+   :exclude-clj #"^czlab.skaro.demo.*"
+   ;;:exclude-java ""
+
   :version "1.0.0"
   :debug true
   :project 'czlab/czlab-skaro)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlab.tpcl.boot :as b :refer [fp! ge artifactID]]
+(require '[czlab.tpcl.boot :as b :refer [fp! se! ge artifactID]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
@@ -198,7 +202,6 @@
         (preJar)
         (b/jar!)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
@@ -276,6 +279,7 @@
   ""
   [d doco bool "Generate doc"]
 
+  (se! :exclude-clj 0)
   (b/toggleDoco doco)
   (comp (dev)
         (b/localInstall)

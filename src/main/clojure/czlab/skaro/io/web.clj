@@ -159,8 +159,7 @@
 (defn downstream
 
   ""
-  [^Container ctr ^czlab.netty.core.HttpMsgGist gist
-   cfg
+  [^IoService co gist
    ^HttpSession mvs ^HttpResult res]
 
   (let
@@ -168,7 +167,8 @@
              domainPath
              domain
              hidden
-             maxIdleSecs]} cfg]
+             maxIdleSecs]}
+     (.config co)]
     (when-not (.isNull mvs)
       (log/debug "session ok, about to set-cookie!")
       (if (.isNew mvs)
