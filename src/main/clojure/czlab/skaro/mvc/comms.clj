@@ -33,7 +33,7 @@
     [czlab.skaro.mvc.assets
      :refer [webAsset<>
              webContent<>
-             getLocalFile]])
+             getLocalContent]])
 
   (:use [czlab.skaro.io.http]
         [czlab.skaro.io.web]
@@ -204,7 +204,7 @@
   (let [appDir (-> ^Container
                    (.server src) (.appDir))]
     (->> (str DN_PAGES "errors/" code ".html")
-         (getLocalFile appDir))))
+         (getLocalContent appDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

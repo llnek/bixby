@@ -19,20 +19,19 @@
   czlab.skaro.mvc.assets
 
   (:require
-    [czlab.xlib.io :refer [slurpBytes writeFile]]
-    [czlab.xlib.core :refer [do->nil try!! fpath]]
     [czlab.net.mime :refer [guessContentType]]
-    [czlab.xlib.str :refer [lcase ewicAny?]]
     [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.netty.core
-     :refer :all
-     :rename {slurpBytes xxx}]
-    [czlab.xlib.io :refer [streamify]])
+    [clojure.java.io :as io])
 
-  (:use [czlab.skaro.io.http])
+  (:use [czlab.skaro.io.http]
+        [czlab.netty.core]
+        [czlab.xlib.core]
+        [czlab.xlib.io]
+        [czlab.xlib.str])
 
   (:import
+    [czlab.skaro.net WebContent WebAsset RangeInput]
+    [io.netty.channel Channel]
     [io.netty.handler.stream
      ChunkedStream
      ChunkedInput
@@ -43,12 +42,7 @@
      HttpRequest
      HttpResponse
      HttpUtil
-     HttpHeaders]
-    [io.netty.channel Channel]
-    [czlab.skaro.net
-     WebContent
-     WebAsset
-     RangeInput]))
+     HttpHeaders]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -60,13 +54,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn setCacheAssetsFlag
+(defn toggleCacheAssetsFlag
 
   "Toggle caching of assets"
   [cacheFlag?]
 
   (reset! cache-assets-flag (true? cacheFlag?))
-  (log/info "web assets caching set to %s" @cache-assets-flag))
+  (log/debug "web assets caching set to %s" @cache-assets-flag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -78,15 +72,16 @@
 
   (if (and (some? f)
            (.canRead f))
-    (reify WebContent
-      (contentType [_]
-        (guessContentType f "utf-8"))
-      (body [_]
-        (slurpBytes f)))))
+    (let
+      [ct (memoize guessContentType)
+       s (memoize slurpBytes)]
+      (reify WebContent
+        (contentType [_] (ct f))
+        (content [_] (s f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro getLocalFile
+(defmacro getLocalContent
 
   ""
   [appDir fname]
@@ -97,18 +92,12 @@
 ;;
 (defn- cached?
 
-  "cache certain files"
+  "Cache certain files"
   [^File fp]
 
-  (if @cache-assets-flag
-    (-> (fpath fp)
-        (ewicAny? [".css"
-                   ".gif"
-                   ".jpg"
-                   ".jpeg"
-                   ".png"
-                   ".js"]))
-    false))
+  (and @cache-assets-flag
+       (ewicAny? (fpath fp)
+                 [".css" ".gif" ".jpg" ".jpeg" ".png" ".js"])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -116,29 +105,20 @@
 
   ""
   ^WebAsset
-  [^File file]
+  [^File f]
 
-  (if (and (some? file)
-           (.canRead file))
-    (let [ct (guessContentType file
-                               "utf-8" "text/plain")
-          ts (.lastModified file)]
+  (if (and (some? f)
+           (.canRead f))
+    (let [ct (memoize guessContentType)
+          s (memoize slurpBytes)]
       (reify WebAsset
-        (contentType [_] ct)
-        (file [_] file)
-        (body [_] (slurpBytes file))))))
+        (contentType [_] (ct f))
+        (file [_] f)
+        (content [_] (s f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- fetchAsset
-
-  ""
-  ^WebAsset
-  [^File file]
-
-  (when (and (.exists file)
-             (.canRead file))
-    (webAsset<> file)))
+(defmacro ^:private fetchAsset "" [f] `(webAsset<> ~f))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -150,7 +130,7 @@
 
   (if-some [wa (fetchAsset f)]
     (let [fp (fpath f)]
-      (log/debug "asset-cache: new file: %s" fp)
+      (log/debug "asset-cache: file: %s" f)
       (swap! asset-cache assoc fp wa)
       wa)
     (do->nil
@@ -198,11 +178,11 @@
      fname (.getName f)
      [ctype inp]
      (if (nil? asset)
-       [(guessContentType f "utf-8" "text/plain")
+       [(guessContentType f)
         (getFileInput f gist rsp)]
        [(.contentType asset)
         (ChunkedStream.
-          (streamify (.body asset)))])
+          (streamify (.content asset)))])
      clen (.length ^ChunkedInput inp)]
     (setHeader rsp "content-type" ctype)
     (log/debug (str "serving file: %s with "

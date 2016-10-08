@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.jmx.bean
+  czlab.skaro.sys.bean
 
   (:require
     [czlab.xlib.logging :as log])

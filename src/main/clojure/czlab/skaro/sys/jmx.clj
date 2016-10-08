@@ -15,13 +15,13 @@
 (ns ^{:doc ""
       :author "Kenneth Leung" }
 
-  czlab.skaro.jmx.core
+  czlab.skaro.sys.jmx
 
   (:require
     [czlab.xlib.logging :as log]
     [clojure.string :as cs])
 
-  (:use [czlab.skaro.jmx.bean]
+  (:use [czlab.skaro.sys.bean]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
@@ -49,14 +49,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn objectName
+(defn objectName<>
 
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
    beanName: mybean"
   {:tag ObjectName}
 
-  ([domain beanName] (objectName domain beanName nil))
+  ([domain beanName] (objectName<> domain beanName nil))
   ([^String domain ^String beanName paths]
    (let [cs (seq (or paths []))
          sb (strbf<>)]
@@ -64,7 +64,7 @@
        (.append domain)
        (.append ":")
        (.append (cs/join "," cs)))
-     (when-not (empty? cs) (.append sb ","))
+     (if-not (empty? cs) (.append sb ","))
      (doto sb
        (.append "name=")
        (.append beanName))
@@ -108,8 +108,7 @@
              host url contextFactory]}
      (.impl impl)
      env (HashMap.)
-     endpt (-> (stror url svc)
-               (cs/replace "{{h}}" host)
+     endpt (-> (cs/replace (stror url svc) "{{h}}" host)
                (cs/replace "{{s}}" (str serverPort))
                (cs/replace "{{r}}" (str registryPort)))]
     (log/debug "jmx service url: %s" endpt)
@@ -117,15 +116,14 @@
           "java.naming.factory.initial"
           (stror contextFactory cfc))
     (let
-      [s (JMXServiceURL. endpt)
-       conn (JMXConnectorServerFactory/newJMXConnectorServer
-              s
+      [conn (JMXConnectorServerFactory/newJMXConnectorServer
+              (JMXServiceURL. endpt)
               env
-             (ManagementFactory/getPlatformMBeanServer))]
-      (-> ^JMXConnectorServer
-          conn (.start ))
-      (.setv impl :beanSvr (.getMBeanServer conn))
-      (.setv impl :conn conn))))
+              (ManagementFactory/getPlatformMBeanServer))]
+      (.start conn)
+      (doto impl
+        (.setv :beanSvr (.getMBeanServer conn))
+        (.setv :conn conn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -148,55 +146,49 @@
 
   (log/debug "jmxServer config =\n%s" cfg)
   (let
-    [impl (->> (merge
-                 {:registryPort 7777
-                  :serverPort 7778
-                  :host (-> (InetAddress/getLocalHost)
-                            (.getHostName))} cfg)
-               (muble<> ))
-     objNames (atom []) ]
-    (reify
-
-      JmxServer
+    [impl (muble<> (merge
+                     {:registryPort 7777
+                      :serverPort 7778
+                      :host (-> (InetAddress/getLocalHost)
+                                (.getHostName))} cfg))
+     objNames (atom [])]
+    (reify JmxServer
 
       (reset [this]
-        (let [bs (.getv impl :beanSvr) ]
+        (let [bs (.getv impl :beanSvr)]
           (doseq [nm @objNames]
             (try!
               (.dereg this nm)))
           (reset! objNames [])))
 
       (dereg [_ objName]
-        (let [bs (.getv impl :beanSvr) ]
+        (let [bs (.getv impl :beanSvr)]
           (-> ^MBeanServer bs
               (.unregisterMBean objName))))
 
       (reg [_ obj domain nname paths]
-        (let [bs (.getv impl :beanSvr)
-              nm (objectName domain nname paths)]
+        (let [nm (objectName<> domain nname paths)
+              bs (.getv impl :beanSvr)]
           (->> (doReg bs nm (mkJmxBean obj))
                (swap! objNames conj))
           nm))
 
       ;; jconsole port
       (setRegistryPort [_ p] (.setv impl :registryPort p))
-
       (setServerPort[_ p] (.setv impl :serverPort p))
 
-      (start [_]
-        (startRMI impl)
-        (startJMX impl))
+      (start [_] (startRMI impl) (startJMX impl))
 
       (stop [this]
         (let [^JMXConnectorServer c (.getv impl :conn)
-              ^Registry r (.getv impl :rmi) ]
+              ^Registry r (.getv impl :rmi)]
           (.reset this)
-          (when (some? c) (try! (.stop c)))
+          (if (some? c) (try! (.stop c)))
           (.setv impl :conn nil)
-          (when (some? r)
+          (if (some? r)
             (try!
               (UnicastRemoteObject/unexportObject r true)))
-          (.unsetv impl :rmi ))))))
+          (.unsetv impl :rmi))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

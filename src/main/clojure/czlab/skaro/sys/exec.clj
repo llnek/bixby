@@ -46,7 +46,7 @@
         [czlab.skaro.etc.svcs]
         [czlab.skaro.sys.core]
         [czlab.skaro.sys.extn]
-        [czlab.skaro.jmx.core])
+        [czlab.skaro.sys.jmx])
 
   (:import
     [java.security SecureRandom]

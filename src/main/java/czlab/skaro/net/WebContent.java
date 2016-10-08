@@ -24,7 +24,7 @@ public interface WebContent {
   public String contentType();
 
   /**/
-  public byte[] body();
+  public byte[] content();
 
 }
 
