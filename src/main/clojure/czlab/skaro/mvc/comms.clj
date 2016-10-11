@@ -155,15 +155,14 @@
           (.setStatus res 404)
           (.replyResult evt))
         (do
-          (.setContent res (webAsset<> f))
+          (.setContent res f)
           (.setStatus res 200)
           (addETag gist f res)
           (.replyResult evt)))
       (catch Throwable e#
         (log/error "get: %s"
                    (:uri2 gist) e#)
-        (try!!
-          nil
+        (try!
           (.setContent res nil)
           (.setStatus res 500)
           (.replyResult evt))))))
