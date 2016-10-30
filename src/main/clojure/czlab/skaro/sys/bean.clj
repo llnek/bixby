@@ -260,7 +260,7 @@
     (MBeanOperationInfo. mn
                          (str mn " operation")
                          (->> (mkParameterInfo m)
-                              (jarray MBeanParameterInfo))
+                              (vargs MBeanParameterInfo))
                          (.getName t)
                          MBeanOperationInfo/ACTION_INFO)))
 
@@ -414,9 +414,9 @@
           (.getName cz)
           (str "About: " cz)
           (->> (concat ps fs)
-               (jarray MBeanAttributeInfo))
+               (vargs MBeanAttributeInfo))
           nil
-          (jarray MBeanOperationInfo ms)
+          (vargs MBeanOperationInfo ms)
           nil)]
     (reify DynamicMBean
       (getAttribute [_ attr]
