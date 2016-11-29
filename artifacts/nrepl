@@ -21,14 +21,14 @@ splash() {
 
 ### osx sux, has no proper readlink.
 check_darwin() {
-  SKARO_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
-  SKARO_BIN=$( dirname $SKARO_BIN )
-  SKARO_HOME=$( dirname $SKARO_BIN )
+  wabbit_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
+  wabbit_BIN=$( dirname $wabbit_BIN )
+  wabbit_HOME=$( dirname $wabbit_BIN )
 }
 check_linux() {
-  SKARO_BIN=$(dirname $(readlink -f $0))/../
-  SKARO_HOME=$(readlink -f $SKARO_BIN)
-  SKARO_BIN=$SKARO_HOME/bin
+  wabbit_BIN=$(dirname $(readlink -f $0))/../
+  wabbit_HOME=$(readlink -f $wabbit_BIN)
+  wabbit_BIN=$wabbit_HOME/bin
 }
 
 OSTYPE=`uname -s`
@@ -48,7 +48,7 @@ if [ "$JAVA_HOME" = "" ] ; then
   JAVA_HOME=/usr
 fi
 
-BCP=/wdrive/dev/builds/skaro/lib/test/*
+BCP=/wdrive/dev/builds/wabbit/lib/test/*
 JAVA_CMD=$JAVA_HOME/bin/java
 
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"

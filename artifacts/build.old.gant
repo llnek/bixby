@@ -18,7 +18,7 @@ includeTool << gant.tools.Ivy
 //////////////////////////////////////////////////////////////////////////////
 // global properties
 //property( name: 'DISTRO', value: "${gantProjectName}-distro")
-property( name: 'gantProjectName' , value: 'skaro')
+property( name: 'gantProjectName' , value: 'wabbit')
 property( name: "PID", value: "${gantProjectName}")
 property ( file: "build.xs" )
 property( name: 'ivySettingsDir', value: "${basedir}")
@@ -200,7 +200,7 @@ target (packDocs: '') {
     fork: true,
     failonerror: true) {
     classpath (refid: 'compilePathId')
-    arg (value: '--name=Skaro')
+    arg (value: '--name=wabbit')
     arg (value: "--root=${basedir}")
     arg (value: '--source-path=src/main/clojure')
     arg (value: "--output-path=${packDir}/docs/api")
@@ -507,7 +507,7 @@ def compileBootJava() {
          debuglevel: 'lines,vars,source',
          classpathref: 'compilePathId') {
     compilerarg (line: '-Xlint:deprecation -Xlint:unchecked')
-    include (name: 'com/zotohlab/skaro/loaders/**/*.java')
+    include (name: 'com/zotohlab/wabbit/loaders/**/*.java')
   }
 }
 

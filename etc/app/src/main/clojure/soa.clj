@@ -9,7 +9,7 @@
   (:require [czlab.xlib.logging :as log])
   (:use [czlab.wflow.core])
   (:import
-    [czlab.skaro.server AppMain]
+    [czlab.wabbit.server AppMain]
     [czlab.wflow TaskDef Job WorkStream ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

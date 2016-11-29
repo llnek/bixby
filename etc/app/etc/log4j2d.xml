@@ -13,8 +13,8 @@
     </Console>
     <RollingFile
       name="ROLLER"
-      fileName="${logd}/skaro.log"
-      filePattern="${logd}/skaro.log.%d{yyyyMMdd-hhmm}.gz">
+      fileName="${logd}/wabbit.log"
+      filePattern="${logd}/wabbit.log.%d{yyyyMMdd-hhmm}.gz">
       <PatternLayout
         pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
       <Policies>

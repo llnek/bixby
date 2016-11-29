@@ -6,7 +6,7 @@
 
     <div class="row">
       <div class="col-sm-8 col-sm-offset-2 text-center">
-        <p class="lead">Have a question about skaro, or want to suggest a new feature?</p>
+        <p class="lead">Have a question about wabbit, or want to suggest a new feature?</p>
         <p>Feel free to email me, or drop me a line in Twitter!</p>
         <p><b>${contact.email}</b><br><br></p>
         <ul class="list-inline list-social">

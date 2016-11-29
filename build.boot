@@ -75,14 +75,14 @@
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
-  :test-runner "czlabtest.skaro.ClojureJUnit"
+  :test-runner "czlabtest.wabbit.ClojureJUnit"
 
-   :exclude-clj #"^czlab.skaro.demo.*"
+   :exclude-clj #"^czlab.wabbit.demo.*"
    ;;:exclude-java ""
 
   :version "1.0.0"
   :debug true
-  :project 'czlab/czlab-skaro)
+  :project 'czlab/czlab-wabbit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,7 +104,7 @@
 ;;
 (b/bootEnv!
   {:packDir
-   (fn [_] (fp! (ge :homedir) ".skaro"))
+   (fn [_] (fp! (ge :homedir) ".wabbit"))
 
    :mdirs
    (fn [_]
@@ -184,7 +184,7 @@
 
   (bc/with-pre-wrap fileset
     (->> (fp! (ge :czzDir)
-              "czlab/skaro/demo")
+              "czlab/wabbit/demo")
          (a/deleteDir))
     fileset))
 

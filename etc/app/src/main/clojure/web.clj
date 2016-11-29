@@ -8,16 +8,16 @@
 
   (:require [czlab.xlib.logging :as log])
 
-  (:use [czlab.skaro.sys.core]
+  (:use [czlab.wabbit.sys.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wflow.core])
 
   (:import
-    [czlab.skaro.io HttpEvent HttpResult]
+    [czlab.wabbit.io HttpEvent HttpResult]
     [czlab.wflow Job TaskDef WorkStream]
-    [czlab.skaro.server Container]))
+    [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -28,15 +28,15 @@
 
   {:landing
              {:title_line "Sample Web App"
-              :title_2 "Demo Skaro"
+              :title_2 "Demo wabbit"
               :tagline "Say something" }
    :about
-             {:title "About Skaro demo" }
+             {:title "About wabbit demo" }
    :services {}
    :contact {:email "a@b.com"}
-   :description "skaro web app"
+   :description "wabbit web app"
    :encoding "utf-8"
-   :title "Skaro|Sample"})
+   :title "wabbit|Sample"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

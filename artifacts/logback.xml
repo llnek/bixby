@@ -15,14 +15,14 @@
   </appender>
   <appender name="DISK" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <!--See also http://logback.qos.ch/manual/appenders.html#RollingFileAppender-->
-    <File>/tmp/skaro.log</File>
+    <File>/tmp/wabbit.log</File>
     <Append>true</Append>
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{26} - %msg%n</pattern>
     </encoder>
     <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
       <maxIndex>2</maxIndex>
-      <FileNamePattern>/tmp/skaro.log.%i</FileNamePattern>
+      <FileNamePattern>/tmp/wabbit.log.%i</FileNamePattern>
     </rollingPolicy>
     <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
       <MaxFileSize>4MB</MaxFileSize>

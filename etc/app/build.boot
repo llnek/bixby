@@ -239,7 +239,7 @@
                   :excludes "**/*.min.css"
                   :includes "**/*.css"}]
        [:arglines ["-jar"]]
-       [:argpaths [(str (ge :skaroHome)
+       [:argpaths [(str (ge :wabbitHome)
                         "/lib/yuicompressor-2.4.8.jar")]]
        [:srcfile {}]
        [:arglines ["-o"]]
@@ -261,7 +261,7 @@
                   :excludes "**/*.min.js"
                   :includes "**/*.js"}]
        [:arglines ["-jar"]]
-       [:argpaths [(str (ge :skaroHome)
+       [:argpaths [(str (ge :wabbitHome)
                         "/lib/yuicompressor-2.4.8.jar")]]
        [:srcfile {}]
        [:arglines ["-o"]]

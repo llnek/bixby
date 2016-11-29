@@ -16,10 +16,10 @@
 
 
 "use strict";/**
- * @requires cherimoia/skaro
+ * @requires cherimoia/wabbit
  * @module cherimoia/ebus
  */
-import sjs from "cherimoia/skaro";
+import sjs from "cherimoia/wabbit";
 
 let R = sjs.ramda,
 undef,

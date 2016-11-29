@@ -16,11 +16,11 @@
 
 
 "use strict";/**
- * @requires cherimoia/skaro
+ * @requires cherimoia/wabbit
  * @module cherimoia/caesar
  */
 
-import sjs from "cherimoia/skaro";
+import sjs from "cherimoia/wabbit";
 
 const VISCHS= " @N/\\Ri2}aP`(xeT4F3mt;8~%r0v:L5$+Z{'V)\"CKIc>z.*" +
               "fJEwSU7juYg<klO&1?[h9=n,yoQGsW]BMHpXb6A|D#q^_d!-",
