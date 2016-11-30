@@ -2,12 +2,12 @@
   :dependencies '[
 
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
-    [org.apache.commons/commons-lang3 "3.4"]
+    [org.apache.commons/commons-lang3 "3.5"]
     [commons-io/commons-io "2.5"]
     [org.slf4j/slf4j-api "1.7.21" ]
 
     [czlab/czlab-crypto "1.0.0"]
-    [czlab/czlab-webnet "1.0.0"]
+    [czlab/czlab-convoy "1.0.0"]
     [czlab/czlab-wflow "1.0.0"]
     [czlab/czlab-dbio "1.0.0"]
     [czlab/czlab-xlib "1.0.0"]
@@ -22,13 +22,13 @@
 
     [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
     [com.google.code.findbugs/jsr305 "3.0.1" ]
-    [org.javassist/javassist "3.20.0-GA"  ]
+    [org.javassist/javassist "3.21.0-GA"  ]
 
-    [com.github.spullara.mustache.java/compiler "0.9.2" ]
+    [com.github.spullara.mustache.java/compiler "0.9.4" ]
     [org.freemarker/freemarker "2.3.25-incubating" ]
 
     [org.clojure/clojure "1.8.0" ]
-    [org.clojure/clojurescript "1.9.93" ]
+    [org.clojure/clojurescript "1.9.293" ]
 
     [org.clojure/math.numeric-tower "0.0.4" ]
     [org.clojure/math.combinatorics "0.1.3" ]
