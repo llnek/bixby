@@ -6,10 +6,10 @@
     [commons-io/commons-io "2.5"]
     [org.slf4j/slf4j-api "1.7.21" ]
 
-    [czlab/czlab-crypto "1.0.0"]
+    [czlab/czlab-fluxion "1.0.0"]
+    [czlab/czlab-twisty "1.0.0"]
     [czlab/czlab-convoy "1.0.0"]
-    [czlab/czlab-wflow "1.0.0"]
-    [czlab/czlab-dbio "1.0.0"]
+    [czlab/czlab-horde "1.0.0"]
     [czlab/czlab-xlib "1.0.0"]
 
     ;;[org.apache.ant/ant-apache-log4j "1.9.7" :exclusions [log4j]]
@@ -63,7 +63,7 @@
     [com.cemerick/pomegranate "0.3.1"];; :scope "provided"]
     ;;[org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
     ;;[org.projectodd.shimdandy/shimdandy-api "1.2.0"]
-    [codox/codox "0.9.5" :scope "provided"]
+    [codox/codox "0.10.2" :scope "provided"]
     ;; boot/clj stuff
     [boot/base "2.6.0" ]
     [boot/core "2.6.0" ]

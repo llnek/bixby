@@ -15,7 +15,7 @@
 
 package czlab.wabbit.server;
 
-import czlab.server.ServerLike;
+import czlab.fluxion.server.ServerLike;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
 import czlab.xlib.Startable;

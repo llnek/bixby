@@ -20,14 +20,7 @@ import czlab.xlib.XData;
 /**
  * @author Kenneth Leung
  */
-public interface WebSockEvent extends IoEvent, Replyable {
-
-  /**
-   */
-  public XData body();
-
-  /**/
-  public Object socket();
+public interface WebSockEvent extends IoEvent {
 
   /**/
   public boolean isBinary();
@@ -37,6 +30,13 @@ public interface WebSockEvent extends IoEvent, Replyable {
 
   /**/
   public boolean isSSL();
+
+  /**
+   */
+  public XData body();
+
+  /**/
+  public Object socket();
 
 }
 

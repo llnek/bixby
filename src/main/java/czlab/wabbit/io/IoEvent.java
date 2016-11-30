@@ -23,8 +23,8 @@ import czlab.server.Event;
 public interface IoEvent extends Event {
 
   /**/
-  default public boolean checkAuthenticity() { 
-    return false; 
+  default public boolean checkAuthenticity() {
+    return false;
   }
 
   /**/
@@ -32,7 +32,7 @@ public interface IoEvent extends Event {
 
   /**/
   public boolean isStale();
-  
+
 
 }
 

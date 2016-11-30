@@ -18,23 +18,23 @@
 
   czlab.wabbit.auth.core
 
-  (:require
-    [czlab.xlib.format :refer [readJson writeJson]]
-    [czlab.wabbit.io.http :refer [scanBasicAuth]]
-    [czlab.crypto.codec :refer [caesarDecrypt]]
-    [czlab.net.util :refer [filterFormFields]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.convoy.net.util :refer [filterFormFields]]
+            [czlab.xlib.format :refer [readJson writeJson]]
+            [czlab.wabbit.io.http :refer [scanBasicAuth]]
+            [czlab.twisty.codec :refer [caesarDecrypt]]
+            [czlab.xlib.logging :as log])
 
-  (:use [czlab.netty.core]
+  (:use [czlab.convoy.netty.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
   (:import
     [java.util Base64 Base64$Decoder]
+    [clojure.lang APersistentMap]
     [czlab.wabbit.server Container]
     [czlab.wabbit.io HttpEvent]
     [czlab.xlib XData]
-    [czlab.net ULFormItems ULFileItem]))
+    [czlab.convoy.net ULFormItems ULFileItem]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -48,7 +48,7 @@
 
 ;; hard code the shift position, the encrypt code
 ;; should match this value.
-(def ^:private CAESAR_SHIFT 13)
+(def ^:private CAESAR_SHIFT 16)
 
 (def ^:private PMS
   {EMAIL_PARAM [ :email #(normalizeEmail %) ]
@@ -56,81 +56,67 @@
    USER_PARAM [ :principal #(strim %) ]
    PWD_PARAM [ :credential #(strim %) ]
    CSRF_PARAM [ :csrf #(strim %) ]
-   NONCE_PARAM [ :nonce #(some? %) ] })
+   NONCE_PARAM [ :nonce #(some? %) ]})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackFormFields
-
   "Parse a standard login-like form with userid,password,email"
   [^HttpEvent evt]
-
   (if-some
-    [itms (some-> evt
-                  (.body) (.content))]
-    (pcoll!
-      (reduce
-        #(let [fm (.getFieldNameLC ^ULFileItem %2)
-               fv (str %2)]
-           (log/debug "form-field=%s, value=%s" fm fv)
-           (if-some [[k v] (get PMS fm)]
-             (assoc! %1 k (v fv))
-             %1))
-        (transient {})
-        (filterFormFields itms)))))
+    [itms (cast? ULFormItems
+                 (some-> evt
+                         (.body)(.content)))]
+    (preduce<map>
+      #(let [fm (.getFieldNameLC ^ULFileItem %2)
+             fv (str %2)]
+         (log/debug "form-field=%s, value=%s" fm fv)
+         (if-some [[k v] (get PMS fm)]
+           (assoc! %1 k (v fv))
+           %1))
+      (filterFormFields itms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackBodyContent
-
   "Parse a JSON body"
   [^HttpEvent evt]
-
   (let
-    [xs (some-> evt
-                (.body)
-                (.getBytes))
+    [xs (some-> evt (.body) (.getBytes))
      json (-> (if (some? xs)
                 (stringify xs) "{}")
               (readJson #(lcase %)))]
-    (pcoll!
-      (reduce
-        #(let [[k [a1 a2]] %2]
-           (if-some [fv (get json k)]
-            (assoc! %1 a1 (a2 fv ))
-            %1))
-        (transient {})
-        PMS))))
+    (preduce<map>
+      #(let [[k [a1 a2]] %2]
+         (if-some [fv (get json k)]
+           (assoc! %1 a1 (a2 fv))
+           %1))
+      PMS)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- crackParams
-
   "Parse form fields in the Url"
   [^HttpEvent evt]
-
   (let [gist (.msgGist evt)]
-    (pcoll!
-      (reduce
-        #(let [[k [a1 a2]] PMS]
-           (if (gistParam? gist k)
+    (preduce<map>
+      #(let [[k [a1 a2]] PMS]
+         (if (gistParam? gist k)
              (assoc! %1
                      a1
                      (a2 (gistParam gist k)))
              %1))
-        (transient {})
-        PMS))))
+      PMS)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn maybeGetAuthInfo
-
   "Attempt to parse and get authentication info"
+  ^APersistentMap
   [^HttpEvent evt]
-
   (let [gist (.msgGist evt)]
     (if-some+
-      [ct (:contentType gist)]
+      [ct (gistHeader gist "content-type")]
       (cond
         (or (embeds? ct "form-urlencoded")
             (embeds? ct "form-data"))
@@ -145,10 +131,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeDecodeField
-
   ""
   [info fld shiftCount]
-
   (if (:nonce info)
     (try!
       (let
@@ -166,34 +150,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getAppKey
-
   ""
   ^bytes
   [^HttpEvent evt]
-
   (.. evt source server appKeyBits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getSignupInfo
-
+(defmacro ^:private getXXXInfo
   ""
-  [^HttpEvent evt]
-
-  (-> (maybeGetAuthInfo evt)
-      (maybeDecodeField :principal CAESAR_SHIFT)
-      (maybeDecodeField :credential CAESAR_SHIFT)))
+  [evt]
+  `(-> (maybeGetAuthInfo ~evt)
+       (maybeDecodeField :principal CAESAR_SHIFT)
+       (maybeDecodeField :credential CAESAR_SHIFT)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getLoginInfo
+(defn getSignupInfo "" [^HttpEvent evt] (getXXXInfo evt))
 
-  ""
-  [^HttpEvent evt]
-
-  (-> (maybeGetAuthInfo evt)
-      (maybeDecodeField :principal CAESAR_SHIFT)
-      (maybeDecodeField :credential CAESAR_SHIFT)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getLoginInfo "" [^HttpEvent evt] (getXXXInfo evt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

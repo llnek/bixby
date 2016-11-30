@@ -22,10 +22,10 @@ public interface IoTrigger {
 
   /**/
   public void setTrigger(Object t);
-  
+
   /**/
   public void fire(Object arg);
-  
+
 }
 
 

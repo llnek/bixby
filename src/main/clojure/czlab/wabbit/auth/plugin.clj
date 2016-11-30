@@ -17,67 +17,56 @@
 
   czlab.wabbit.auth.plugin
 
-  (:require
-    [czlab.dbio.connect :refer [dbopen<+>]]
-    [czlab.xlib.core
-     :refer [doto->>
-             trap!
-             exp!
-             try!
-             stringify
-             cexp?
-             muble<>
-             do->false
-             do->true
-             juid
-             test-some
-             loadJavaProps]]
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.str :refer [hgl? strim]]
-    [czlab.xlib.format :refer [readEdn]]
-    [czlab.xlib.logging :as log]
-    [clojure.string :as cs]
-    [clojure.java.io :as io]
-    [czlab.net.util :refer [filterFormFields]])
+  (:require [czlab.horde.dbio.connect :refer [dbopen<+>]]
+            [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.resources :refer [rstr]]
+            [czlab.xlib.format :refer [readEdn]]
+            [czlab.xlib.core :refer :all]
+            [czlab.xlib.str :refer :all]
+            [czlab.xlib.logging :as log]
+            [clojure.string :as cs]
+            [clojure.java.io :as io]
+            [czlab.convoy.net.util :refer [filterFormFields]])
 
   (:use [czlab.wabbit.auth.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.io.web]
         [czlab.wabbit.auth.model]
-        [czlab.dbio.core])
+        [czlab.horde.dbio.core])
 
-  (:import
-    [czlab.wabbit.etc AuthError UnknownUser DuplicateUser]
-    [org.apache.shiro.config IniSecurityManagerFactory]
-    [org.apache.shiro.authc UsernamePasswordToken]
-    [czlab.net ULFormItems ULFileItem]
-    [clojure.lang APersistentMap]
-    [czlab.wabbit.etc
-     Plugin
-     AuthPlugin
-     PluginError
-     PluginFactory]
-    [czlab.wabbit.server Container ]
-    [czlab.xlib Muble I18N BadDataError]
-    [czlab.crypto PasswordAPI]
-    [czlab.dbio
-     DBAPI
-     Schema
-     SQLr
-     JDBCPool
-     JDBCInfo]
-    [java.io File IOException]
-    [java.util Properties]
-    [org.apache.shiro SecurityUtils]
-    [org.apache.shiro.subject Subject]
-    [czlab.wflow
-     BoolExpr
-     TaskDef
-     If
-     Job
-     Script]
-    [czlab.wabbit.io HttpSession HttpEvent HttpResult]))
+  (:import [czlab.wabbit.etc AuthError UnknownUser DuplicateUser]
+           [org.apache.shiro.config IniSecurityManagerFactory]
+           [org.apache.shiro.authc UsernamePasswordToken]
+           [czlab.convoy.net ULFormItems ULFileItem]
+           [czlab.xlib Muble I18N BadDataError]
+           [org.apache.shiro.subject Subject]
+           [org.apache.shiro SecurityUtils]
+           [czlab.wabbit.server Container]
+           [clojure.lang APersistentMap]
+           [java.io File IOException]
+           [czlab.twisty IPassword]
+           [java.util Properties]
+           [czlab.fluxion.wflow
+            BoolExpr
+            TaskDef
+            If
+            Job
+            Script]
+           [czlab.wabbit.etc
+            Plugin
+            AuthPlugin
+            PluginError
+            PluginFactory]
+           [czlab.horde.dbio
+            DBAPI
+            Schema
+            SQLr
+            JDBCPool
+            JDBCInfo]
+           [czlab.wabbit.io
+            HttpSession
+            HttpEvent
+            HttpResult]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -88,13 +77,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn assertPluginOK
-
-  "true if the plugin has been initialized,
+  "If the plugin has been initialized,
    by looking into the db"
   [^JDBCPool pool]
-
   (let [tbl (->> :czlab.wabbit.auth.model/LoginAccount
-                 (.get ^Schema *auth-mcache*)
+                 (.get ^Schema *auth-meta-cache*)
                  (dbtable))]
     (when-not (tableExist? pool tbl)
       (dberr! (rstr (I18N/base)
@@ -103,41 +90,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getSQLr
-
   ""
-  ^SQLr
-  [^Container ctr & [tx?]]
-  ;; get the default db pool
-  (let [db (-> (.acquireDbPool ctr "")
-               (dbopen<+> *auth-mcache* ))]
-    (if (boolean tx?)
-      (.compositeSQLr db)
-      (.simpleSQLr db))))
+  {:tag SQLr}
+  ([ctr] (getSQLr ctr false))
+  ([^Container ctr tx?]
+   ;; get the default db pool
+   (let [db (-> (.acquireDbPool ctr "")
+                (dbopen<+> *auth-meta-cache*))]
+     (if (boolean tx?)
+       (.compositeSQLr db)
+       (.simpleSQLr db)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn createAuthRole
-
   "Create a new auth-role in db"
   ^APersistentMap
   [^SQLr sql ^String role ^String desc]
-
   (let [m (->> :czlab.wabbit.auth.model/AuthRole
                (.get (.metas sql)))
         rc
         (-> (dbpojo<> m)
             (dbSetFlds* {:name role
                          :desc desc}))]
-    (.insert sql rc)
-    rc))
+    (.insert sql rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteAuthRole
-
   "Delete this role"
   [^SQLr sql ^String role]
-
   (let [m (->> :czlab.wabbit.auth.model/AuthRole
                (.get (.metas sql)))]
     (.exec sql
@@ -152,24 +134,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn listAuthRoles
-
   "List all the roles in db"
   [^SQLr sql]
-
   (.findAll sql :czlab.wabbit.auth.model/AuthRole))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn createLoginAccount
-
   "Create a new account
    props : extra properties, such as email address.
    roleObjs : a list of roles to be assigned to the account"
   ^APersistentMap
   [^SQLr sql ^String user
-   ^PasswordAPI pwdObj props roleObjs]
-  {:pre [(map? props) (coll? roleObjs)]}
-
+   ^IPassword pwdObj props roleObjs]
+  {:pre [(map? props)(coll? roleObjs)]}
   (let [m (->> :czlab.wabbit.auth.model/LoginAccount
                (.get (.metas sql)))
         ps (:hash (.hashed pwdObj))
@@ -187,16 +165,15 @@
                  :with sql} acc r))
     (log/debug "created new account %s%s%s%s"
                "into db: "
-               acc "\nwith meta\n" (meta acc))
+               acc
+               "\nwith meta\n" (meta acc))
     acc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn findLoginAccountViaEmail
-
   "Look for account with this email address"
   [^SQLr sql ^String email]
-
   (.findOne sql
             :czlab.wabbit.auth.model/LoginAccount
             {:email (strim email) }))
@@ -204,10 +181,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn findLoginAccount
-
   "Look for account with this user id"
   [^SQLr sql ^String user]
-
   (.findOne sql
             :czlab.wabbit.auth.model/LoginAccount
             {:acctid (strim user) }))
@@ -215,11 +190,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn getLoginAccount
-
   "Get the user account"
   [^SQLr sql ^String user ^String pwd]
-
-  (if-some [acct (findLoginAccount sql user)]
+  (if-some
+    [acct (findLoginAccount sql user)]
     (if (.validateHash (passwd<> pwd)
                        (:passwd acct))
       acct
@@ -229,49 +203,44 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn hasLoginAccount?
-
-  "true if this user account exists"
+  "If this user account exists"
   [^SQLr sql ^String user]
-
   (some? (findLoginAccount sql user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn changeLoginAccount
-
   "Change the account password"
   ^APersistentMap
-  [^SQLr sql userObj ^PasswordAPI pwdObj]
-
+  [^SQLr sql userObj ^IPassword pwdObj]
   (let [ps (.hashed pwdObj)
         m {:passwd (:hash ps)
            :salt (:salt ps)}]
     (->> (dbSetFlds*
            (mockPojo<> userObj) m)
-         (.update sql ))
+         (.update sql))
     (dbSetFlds* userObj m)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn updateLoginAccount
-
   "Update account details
    details: a set of properties such as email address"
-  ^long
+  ^APersistentMap
   [^SQLr sql userObj details]
   {:pre [(or (nil? details)
              (map? details))]}
-
-  (if (empty? details)
-    0
-    (doto->>
-      (dbSetFlds* userObj details)
-      (.update sql))))
+  (if-not (empty? details)
+    (do
+      (->> (dbSetFlds*
+             (mockPojo<> userObj) details)
+           (.update sql))
+      (dbSetFlds* userObj details))
+    userObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn deleteLoginAccountRole
-
   "Remove a role from this user"
   ^long
   [^SQLr sql userObj roleObj]

@@ -14,15 +14,16 @@
 
 package czlab.wabbit.server;
 
+import java.lang.instrument.IllegalClassFormatException;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.lang.instrument.ClassFileTransformer;
 import static org.slf4j.LoggerFactory.getLogger;
-
+import java.net.MalformedURLException;
+import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.instrument.ClassFileTransformer;
-import java.lang.instrument.IllegalClassFormatException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -31,26 +32,26 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 
 /**/
 @SuppressWarnings("unused")
 public class CljAppLoader extends URLClassLoader {
 
-  private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
+  public static final Logger TLOG= getLogger(CljAppLoader.class);
   private final Set<String> _exts=new HashSet<String>();
+  private final
+    List<ClassFileTransformer>
+    _transformers = new CopyOnWriteArrayList<>();
   private final ClassLoader _parent;
   private boolean _loaded;
-
-  public static final Logger TLOG= getLogger(CljAppLoader.class);
 
   static {
     registerAsParallelCapable();
   }
 
+  /**
+   */
   public static CljAppLoader newInstance(File homeDir, File appDir) {
     ClassLoader c= Thread.currentThread().getContextClassLoader();
     ClassLoader s= ClassLoader.getSystemClassLoader();
@@ -64,7 +65,7 @@ public class CljAppLoader extends URLClassLoader {
     super(new URL[]{}, p);
     _parent=getParent();
     if (_parent==null) {
-      throw new IllegalArgumentException("no parent classloader.");
+      throw new IllegalArgumentException("no parent classloader");
     }
     _exts.add(".jar");
     _exts.add(".zip");
@@ -79,18 +80,18 @@ public class CljAppLoader extends URLClassLoader {
   /**/
   private boolean isSystem(String name) {
     if (name != null) {
-      return (name.startsWith("org.xml.sax.") ||
-              name.startsWith("org.w3c.dom.") ||
-              name.startsWith("com.sun.") ||
-              name.startsWith("sun.") ||
-              name.startsWith("javax.") ||
-              name.startsWith("java.") ||
-              name.startsWith("org/xml/sax/") ||
-              name.startsWith("org/w3c/dom/") ||
-              name.startsWith("com/sun/") ||
-              name.startsWith("sun/") ||
-              name.startsWith("javax/") ||
-              name.startsWith("java/"));
+      return name.startsWith("org.xml.sax.") ||
+             name.startsWith("org.w3c.dom.") ||
+             name.startsWith("com.sun.") ||
+             name.startsWith("sun.") ||
+             name.startsWith("javax.") ||
+             name.startsWith("java.") ||
+             name.startsWith("org/xml/sax/") ||
+             name.startsWith("org/w3c/dom/") ||
+             name.startsWith("com/sun/") ||
+             name.startsWith("sun/") ||
+             name.startsWith("javax/") ||
+             name.startsWith("java/");
     }
     return false;
   }
@@ -99,8 +100,9 @@ public class CljAppLoader extends URLClassLoader {
   public Enumeration<URL> getResources(String name)
   throws IOException {
     boolean sys= isSystem(name);
-    Enumeration<URL> p = !sys ? null:_parent.getResources(name);
-    Enumeration<URL> t = (sys && !p.hasMoreElements()) ? null : this.findResources(name);
+    Enumeration<URL> p = !sys ? null : _parent.getResources(name);
+    Enumeration<URL> t = (sys && !p.hasMoreElements())
+      ? null : this.findResources(name);
     List<URL> s = toList(t);
     s.addAll(toList(p));
     return Collections.enumeration(s);
@@ -125,10 +127,10 @@ public class CljAppLoader extends URLClassLoader {
     }
 
     if (url == null) {
-      url= this.findResource(name);
+      url= findResource(name);
       source=this;
       if (url == null && name.startsWith("/")) {
-        url= this.findResource(name.substring(1));
+        url= findResource(name.substring(1));
       }
     }
 
@@ -172,7 +174,7 @@ public class CljAppLoader extends URLClassLoader {
       if (c == null) {
         try {
           source=this;
-          c= this.findClass(name);
+          c= findClass(name);
         } catch (ClassNotFoundException e) {
           ex= e;
         }

@@ -16,7 +16,6 @@
 package czlab.wabbit.io;
 
 import java.net.HttpCookie;
-
 import czlab.xlib.Context;
 import czlab.xlib.XData;
 
@@ -71,6 +70,7 @@ public interface HttpEvent extends IoEvent, IoTrigger, Context, Replyable {
 
   /**/
   public HttpSession session();
+
 }
 
 

@@ -17,88 +17,80 @@
 
   czlab.wabbit.auth.model
 
-  (:require
-    [czlab.xlib.io :refer [spitUtf8]]
-    [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.str :refer [toKW]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.resources :refer [rstr]]
+            [czlab.xlib.io :refer [spitUtf8]]
+            [czlab.xlib.str :refer [toKW]]
+            [czlab.xlib.logging :as log])
 
-  (:use
-    [czlab.dbddl.drivers]
-    [czlab.dbio.core]
-    [czlab.dbddl.postgresql]
-    [czlab.dbddl.h2]
-    [czlab.dbddl.mysql]
-    [czlab.dbddl.sqlserver]
-    [czlab.dbddl.oracle])
+  (:use [czlab.horde.dbddl.postgresql]
+        [czlab.horde.dbddl.sqlserver]
+        [czlab.horde.dbddl.drivers]
+        [czlab.horde.dbio.core]
+        [czlab.horde.dbddl.h2]
+        [czlab.horde.dbddl.mysql]
+        [czlab.horde.dbddl.oracle])
 
-  (:import
-    [czlab.dbio JDBCInfo JDBCPool Schema]
-    [java.sql Connection]
-    [java.io File]
-    [czlab.xlib I18N]))
+  (:import [czlab.horde JDBCInfo JDBCPool Schema]
+           [java.sql Connection]
+           [java.io File]
+           [czlab.xlib I18N]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:dynamic *auth-mcache*
+(def ^:dynamic *auth-meta-cache*
   (dbschema<>
-    (dbmodel<> StdAddress
+    (dbmodel<> ::StdAddress
       (dbfields
-        {:addr1 {:size 255 :null false }
+        {:addr1 {:size 255 :null false}
          :addr2 {}
-         :city {:null false}
          :state {:null false}
+         :city {:null false}
          :zip {:null false}
-         :country {:null false} })
+         :country {:null false}})
       (dbindexes
         {:i1 #{:city :state :country}
          :i2 #{:zip :country}
          :state #{:state}
-         :zip #{:zip} }))
-    (dbmodel<> AuthRole
+         :zip #{:zip}}))
+    (dbmodel<> ::AuthRole
       (dbfields
-        {:name {:column "role_name" :null false }
-         :desc {:column "description" :null false } })
+        {:name {:column "role_name" :null false}
+         :desc {:column "description" :null false}})
       (dbuniques
-        {:u1 #{:name} }))
-    (dbmodel<> LoginAccount
+        {:u1 #{:name}}))
+    (dbmodel<> ::LoginAccount
       (dbfields
-        {:acctid {:null false }
-         :email {:size 128 }
-          ;;:salt { :size 128 }
-         :passwd {:null false :domain :Password } })
+        {:acctid {:null false}
+         :email {:size 128}
+          ;;:salt { :size 128}
+         :passwd {:null false :domain :Password}})
       (dbassocs
         {:addr {:kind :O2O
                 :cascade true
-                :other ::StdAddress } })
+                :other ::StdAddress}})
       (dbuniques
-        {:u2 #{:acctid} }))
-    (dbjoined<> AccountRoles LoginAccount AuthRole)))
+        {:u2 #{:acctid}}))
+    (dbjoined<> ::AccountRoles ::LoginAccount ::AuthRole)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn genAuthPluginDDL
-
   "Generate db ddl for the auth-plugin"
   ^String
   [spec]
-
+  {:pre [(keyword? spec)]}
   (if (contains? *DBTYPES* spec)
-    (getDDL *auth-mcache* spec)
+    (getDDL *auth-meta-cache* spec)
     (dberr! (rstr (I18N/base)
                   "db.unknown"
                   (name spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol PluginDDL
-
-  "Upload the auth-plugin ddl to db"
-
-  (applyDDL [_]))
+(defprotocol PluginDDL "Upload the auth-plugin ddl to db" (applyDDL [_]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -118,10 +110,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn exportAuthPluginDDL
-
   "Output the auth-plugin ddl to file"
   [spec file]
-
   (spitUtf8 file (genAuthPluginDDL spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
