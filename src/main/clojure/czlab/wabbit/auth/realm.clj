@@ -25,29 +25,24 @@
    :exposes-methods { }
    :state myState)
 
-  (:require
-    [czlab.crypto.codec :refer [passwd<>]])
-
-  (:require
-    [czlab.xlib.logging :as log])
+  (:require [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.auth.plugin]
-        [czlab.dbio.connect]
-        [czlab.dbio.core])
+        [czlab.horde.dbio.connect]
+        [czlab.horde.dbio.core])
 
-  (:import
-    [org.apache.shiro.subject PrincipalCollection]
-    [org.apache.shiro.realm AuthorizingRealm]
-    [org.apache.shiro.realm CachingRealm]
-    [org.apache.shiro.authz
-     AuthorizationInfo
-     AuthorizationException]
-    [org.apache.shiro.authc
-     SimpleAccount
-     AuthenticationToken
-     AuthenticationException]
-    [czlab.dbio DBAPI]
-    [java.util Collection]))
+  (:import [org.apache.shiro.realm CachingRealm AuthorizingRealm]
+           [org.apache.shiro.subject PrincipalCollection]
+           [org.apache.shiro.authz
+            AuthorizationInfo
+            AuthorizationException]
+           [org.apache.shiro.authc
+            SimpleAccount
+            AuthenticationToken
+            AuthenticationException]
+           [czlab.horde DBAPI]
+           [java.util Collection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -59,16 +54,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -doGetAuthenticationInfo
-
   ""
   [^AuthorizingRealm this ^AuthenticationToken token]
-
   (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
-         ;;pwd (.getCredentials token)
+        ;;pwd (.getCredentials token)
         user (.getPrincipal token)
-        sql (.simpleSQLr db) ]
+        sql (.simpleSQLr db)]
     (try
-      (when-some [acc (findLoginAccount sql user) ]
+      (when-some [acc (findLoginAccount sql user)]
         (SimpleAccount. acc
                         (:passwd acc)
                         (.getName this)))
@@ -78,10 +71,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -doGetAuthorizationInfo
-
   ""
-  [^AuthorizingRealm  this ^PrincipalCollection principals]
-
+  [^AuthorizingRealm this ^PrincipalCollection principals]
   (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
         acc (.getPrimaryPrincipal principals)
         rc (SimpleAccount. acc

@@ -18,25 +18,25 @@
 
   czlab.wabbit.auth.shiro
 
-  (:require
-    [czlab.crypto.codec :refer [passwd<>]])
+  (:require [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.logging :as log])
 
-  (:require
-    [czlab.xlib.logging :as log])
+  (:use [czlab.xlib.meta]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [org.apache.shiro.authc.credential CredentialsMatcher]
-    [org.apache.shiro.realm AuthorizingRealm]
-    [org.apache.shiro.authz
-     AuthorizationException
-     AuthorizationInfo]
-    [org.apache.shiro.authc
-     SimpleAccount
-     AuthenticationException
-     AuthenticationToken
-     AuthenticationInfo ]
-    [czlab.crypto PasswordAPI]
-    [czlab.dbio DBAPI]))
+  (:import [org.apache.shiro.authc.credential CredentialsMatcher]
+           [org.apache.shiro.realm AuthorizingRealm]
+           [czlab.twisty IPassword]
+           [org.apache.shiro.authz
+            AuthorizationException
+            AuthorizationInfo]
+           [org.apache.shiro.authc
+            SimpleAccount
+            AuthenticationException
+            AuthenticationToken
+            AuthenticationInfo ]
+           [czlab.horde DBAPI]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -52,8 +52,9 @@
           uid (.getPrincipal tkn)
           pc (.getCredentials inf)
           tstPwd (passwd<>
-                   (if (string? pwd)
-                     pwd (String. ^chars pwd)))
+                   (if (instChars? pwd)
+                     (String. ^chars pwd)
+                     (str pwd)))
           acc (-> (.getPrincipals inf)
                   (.getPrimaryPrincipal))]
       (and (= (:acctid acc) uid)

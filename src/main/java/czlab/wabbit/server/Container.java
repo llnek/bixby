@@ -59,6 +59,12 @@ public interface Container extends Component, ServerLike, ServiceProvider, Namea
   /**/
   public DBAPI acquireDbAPI(Object groupid);
 
+  /**/
+  public JDBCPool acquireDbPool();
+
+  /**/
+  public DBAPI acquireDbAPI();
+
 }
 
 

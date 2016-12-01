@@ -17,59 +17,38 @@
 
   czlab.wabbit.etc.cmd1
 
-  (:require
-    [czlab.xlib.str :refer [addDelim! strbf<> ucase hgl? strim]]
-    [czlab.xlib.format :refer [writeEdnString readEdn]]
-    [czlab.crypto.core :refer [assertJce dbgProvider]]
-    [czlab.crypto.codec :refer [strongPwd<> passwd<>]]
-    [czlab.wabbit.sys.main :refer [startViaCLI]]
-    [czlab.xlib.resources :refer [rstr]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [clojure.string :as cs]
-    [boot.core :as bcore]
-    [czlab.xlib.io
-     :refer [readAsStr
-             spitUtf8
-             mkdirs
-             writeFile
-             listFiles]]
-    [czlab.xlib.core
-     :refer [isWindows?
-             when-some+
-             stringify
-             sysProp!
-             sysProp
-             fpath
-             spos?
-             getCwd
-             trap!
-             exp!
-             try!
-             flatnil
-             convLong
-             resStr]])
+  (:require [czlab.xlib.format :refer [writeEdnString readEdn]]
+            [czlab.twisty.core :refer [assertJce dbgProvider]]
+            [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
+            [czlab.wabbit.sys.main :refer [startViaCLI]]
+            [czlab.xlib.resources :refer [rstr]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cs]
+            [boot.core :as bcore])
 
   (:use [czlab.wabbit.etc.cmd2]
         [czlab.tpcl.boot]
         [czlab.xlib.guids]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.xlib.io]
         [czlab.xlib.meta]
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.sys.core])
 
-  (:import
-    [czlab.wabbit.etc AppMain CmdHelpError]
-    [org.apache.commons.io FileUtils]
-    [czlab.crypto PasswordAPI]
-    ;;[boot App]
-    [java.util
-     ResourceBundle
-     Properties
-     Calendar
-     Map
-     Date]
-    [czlab.xlib I18N]
-    [java.io File]))
+  (:import [czlab.wabbit.etc AppMain CmdHelpError]
+           [org.apache.commons.io FileUtils]
+           [czlab.twisty IPassword]
+           ;;[boot App]
+           [java.util
+            ResourceBundle
+            Properties
+            Calendar
+            Map
+            Date]
+           [czlab.xlib I18N]
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -77,18 +56,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- execBootScript
-
   "Call into boot/clj code"
   [^File homeDir ^File appDir & args]
-
   (sysProp! "wabbit.home.dir" (.getCanonicalPath homeDir))
   (sysProp! "wabbit.proc.dir" (.getCanonicalPath appDir))
-  (AppMain/invokeStatic (into-array String args)))
+  (AppMain/invokeStatic (vargs String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onHelpXXX
-
   ""
   [pfx end]
 
