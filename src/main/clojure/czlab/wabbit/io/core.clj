@@ -13,38 +13,36 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Core functions for all IO services."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.core
 
-  (:require
-    [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.meta :refer [getCldr]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.wflow.core]
+        [czlab.flux.wflow.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.sys.dfts])
 
-  (:import
-    [czlab.wabbit.io IoTrigger IoService IoEvent]
-    [czlab.wflow WorkStream Job TaskDef]
-    [java.util Timer TimerTask]
-    [czlab.wabbit.server
-     Cljshim
-     Component
-     Container]
-    [czlab.xlib
-     Context
-     XData
-     Versioned
-     Hierarchial
-     Muble
-     Identifiable
-     Disposable
-     Startable]))
+  (:import [czlab.wabbit.io IoTrigger IoService IoEvent]
+           [czlab.flux.wflow WorkStream Job TaskDef]
+           [java.util Timer TimerTask]
+           [czlab.wabbit.server
+            Cljshim
+            Component
+            Container]
+           [czlab.xlib
+            Context
+            XData
+            Versioned
+            Hierarchial
+            Muble
+            Disposable
+            Startable
+            Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -52,11 +50,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro s2ms
-
   "Convert seconds to milliseconds"
   {:no-doc true}
   [s]
-
   `(let [t# ~s] (if (spos?  t#) (* 1000 t#) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,10 +83,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   :czlab.wabbit.io.core/Service
   [^IoService co args]
-
   (logcomp "comp->init" co)
   (if (and (not-empty args)
            (map? args))
@@ -117,19 +111,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->dispose
-
   :czlab.wabbit.io.core/Service
   [^IoService co]
-
   (log/info "service '%s' disposed - ok" (.id co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->error!
-
   :czlab.wabbit.io.core/Service
-  [^IoService co ^Job job ^Throwable e]
-
+  [co ^Job job ^Throwable e]
   (log/exception e)
   (some-> (fatalErrorFlow<> job)
           (.execWith job)))
@@ -137,28 +127,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- job<+>
-
   ""
   ^Job
   [co evt]
-
   (with-meta (job<> co nil evt)
              {:typeid :czlab.wabbit.io.core/Job}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEvent
-
   ""
   [^IoService src evt args]
-
   (log/debug "service '%s' onevent called" (.id src))
   (let
     [c1 (:router args)
+     c0 (:handler cfg)
      ctr (.server src)
      cfg (.config src)
      rts (.cljrt ctr)
-     c0 (:handler cfg)
      cb (stror c1 c0)
      job (job<+> ctr evt)
      wf (try! (.call rts cb))]
@@ -168,23 +154,22 @@
                     "io-handler = %s")
                (type evt) args c1 c0)
     (try
-      (if-not (inst? WorkStream wf)
-        (throwBadArg "Want WorkStream, got %s" (class wf))
-        (log/debug "job#%s => %s" (.id job) (.id src)))
-      (.setv job EV_OPTS args)
-      (.execWith ^WorkStream wf job)
-      (catch Throwable e#
-        (io->error! src job e#)))))
+      (if-some [w (cast? WorkStream wf)]
+        (do
+          (log/debug "job#%s => %s" (.id job) (.id src))
+          (.setv job EV_OPTS args)
+          (.execWith w job))
+        (throwBadArg "Want WorkStream, got %s" (class wf)))
+      (catch Throwable _
+        (io->error! src job _)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn service<>
-
   "Create a IO/Service"
   ^IoService
   [^Container parObj emType emAlias]
   {:pre [(keyword? emType)]}
-
   (let [timer (atom nil)
         impl (muble<>)]
     (with-meta

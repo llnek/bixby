@@ -19,32 +19,24 @@
 
   (:gen-class)
 
-  (:require
-    [czlab.xlib.str :refer [str<> strim hgl?]]
-    [czlab.xlib.resources :refer :all]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.table.core :as tbl]
-    [czlab.xlib.core
-     :refer [test-cond
-             sysProp!
-             inst?
-             trap!
-             prtStk
-             muble<>]]
-    [czlab.xlib.io :refer [dirRead?]])
+  (:require [czlab.xlib.io :refer [dirRead?]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io]
+            [czlab.table.core :as tbl])
 
   (:use [czlab.wabbit.etc.cmd2]
         [czlab.wabbit.sys.core]
+        [czlab.xlib.resources]
         [czlab.xlib.format]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.xlib.consts]
         [czlab.wabbit.etc.cmd1])
 
-  (:import
-    [czlab.wabbit.etc CmdHelpError]
-    [java.io File]
-    [czlab.xlib I18N]
-    [java.util ResourceBundle List Locale]))
+  (:import [czlab.wabbit.etc CmdHelpError]
+           [java.io File]
+           [czlab.xlib I18N]
+           [java.util ResourceBundle List Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -52,10 +44,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getCmdInfo
-
   ""
   [rcb]
-
   (doall
     (partition
       2
@@ -81,14 +71,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn usage
-
   ""
   []
-
   (let
     [walls ["" "   " ""]
-     style {:top ["" "" ""] :middle ["" "" ""] :bottom ["" "" ""]
-            :dash " " :header-walls walls :body-walls walls }
+     style {:middle ["" "" ""]
+            :bottom ["" "" ""]
+            :top ["" "" ""]
+            :dash " "
+            :header-walls walls
+            :body-walls walls}
      rcb (I18N/base)]
     (printf "%s\n\n" (rstr rcb "wabbit.desc"))
     (printf "%s\n" (rstr rcb "cmds.header"))
@@ -108,14 +100,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- execArgs
-
   ""
   [args]
-
   (let [cmd (keyword (first args))
         args (vec (drop 1 args))
-        [f h]
-        (*wabbit-tasks* cmd)]
+        [f h] (*wabbit-tasks* cmd)]
     (if (fn? f)
       (f args)
       (trap! CmdHelpError))))
@@ -123,35 +112,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- bootAndRun
-
   ""
   [home & args]
-
   (binding [*wabbit-home* (io/file home)]
     (try
       (if (empty? args)
         (trap! CmdHelpError)
         (execArgs args))
-      (catch Throwable e
-        (if (inst? CmdHelpError e)
-          (usage)
-          (prtStk e))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+      (catch Throwable _
+        (if (inst? CmdHelpError _) (usage) (prtStk _))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main
-
   "Main Entry"
   [& args]
-
   (let [ver (loadResource C_VERPROPS)
         rcb (getResource C_RCB)
         h (first args)]
-    (->> (.getString ver "version")
-         (sysProp! "wabbit.version"))
+    (sysProp! "wabbit.version"
+              (.getString ver "version"))
     (I18N/setBase rcb)
     (if (and (hgl? h)
              (dirRead? (io/file h)))

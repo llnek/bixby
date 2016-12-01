@@ -17,46 +17,23 @@
 
   czlab.wabbit.etc.cmd2
 
-  (:require
-    [czlab.xlib.format :refer [writeEdnString readEdn]]
-    [czlab.xlib.guids :refer [uuid<>]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.str
-     :refer [strim
-             triml
-             trimr
-             stror
-             strimAny
-             strbf<>]]
-    [czlab.xlib.antlib :as a]
-    [clojure.string :as cs]
-    [clojure.java.io :as io]
-    [czlab.xlib.core
-     :refer [isWindows?
-             getUser
-             getCwd
-             juid
-             trap!
-             prn!!
-             prn!
-             fpath]]
-    [czlab.xlib.io
-     :refer [replaceFile!
-             readAsStr
-             spitUtf8
-             writeFile
-             dirRead?
-             touch!
-             mkdirs]])
+  (:require [czlab.xlib.format :refer [writeEdnString readEdn]]
+            [czlab.xlib.guids :refer [uuid<>]]
+            [czlab.xlib.logging :as log]
+            [czlab.xlib.antlib :as a]
+            [clojure.string :as cs]
+            [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.sys.core])
+  (:use [czlab.wabbit.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.io]
+        [czlab.xlib.str])
 
-  (:import
-    [org.apache.commons.io.filefilter FileFilterUtils]
-    [org.apache.commons.io FileUtils]
-    [java.util ResourceBundle UUID]
-    [czlab.wabbit.etc CmdHelpError]
-    [java.io File]))
+  (:import [org.apache.commons.io.filefilter FileFilterUtils]
+           [org.apache.commons.io FileUtils]
+           [java.util ResourceBundle UUID]
+           [czlab.wabbit.etc CmdHelpError]
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -67,43 +44,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getHomeDir "" ^File [] *wabbit-home*)
+(defn getHomeDir
+  ""
+  ^File [] (io/file *wabbit-home*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn runAppBg
-
   "Run the application in the background"
-  [^File hhh ^File appDir]
-
+  [homeDir appDir]
   (let
-    [progW (io/file hhh "bin/wabbit.bat")
-     prog (io/file hhh "bin/wabbit")
+    [progW (io/file homeDir "bin/wabbit.bat")
+     prog (io/file homeDir "bin/wabbit")
      tk (if (isWindows?)
           (a/antExec
             {:executable "cmd.exe"
              :dir appDir}
             [[:argvalues ["/C" "start" "/B"
                           "/MIN"
-                          (fpath progW) "start" ]]])
+                          (fpath progW) "run"]]])
           (a/antExec
             {:executable (fpath prog)
              :dir appDir}
-            [[:argvalues [ "start" "bg" ]]])) ]
+            [[:argvalues ["run" "bg"]]]))]
     (a/runTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn bundleApp
-
   "Bundle an app"
-  [^File hhh ^File app ^String out]
-
-  (let [dir (mkdirs (io/file out))]
+  [homeDir appDir outDir]
+  (let [dir (mkdirs (io/file outDir))]
     (->>
       (a/antZip
         {:destFile (io/file dir (str (.getName app) ".zip"))
-         :basedir app
+         :basedir (io/file appDir)
          :includes "**/*"})
       (a/runTasks* ))))
 
@@ -118,23 +93,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mkcljd
-
   ""
-  ^File
-  [appDir appDomain & [dir]]
-
-  (io/file appDir
-           "src/main"
-           (stror dir "clojure")
-           (cs/replace appDomain "." "/")))
+  {:tag File}
+  ([appDir appDomain] (mkcljd appDir appDomain nil))
+  ([appDir appDomain dir]
+   (io/file appDir
+            "src/main"
+            (stror dir "clojure")
+            (cs/replace appDomain "." "/"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- postConfigApp
-
   ""
-  [^File appDir ^String appId ^String appDomain]
-
+  [appDir appId appDomain]
   (let
     [h2db (str (if (isWindows?)
                  "/c:/temp/" "/tmp/") (juid))
@@ -154,13 +126,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- copyOneApp
-
   ""
-  [^File out appId appDomain kind]
-
+  [outDir appId appDomain kind]
   (let
     [domPath (cs/replace appDomain "." "/")
-     appDir (mkdirs (io/file out appId))
+     appDir (mkdirs (io/file outDir appId))
      other (if (= :soa kind) :web :soa)
      srcDir (io/file appDir "src")
      mcloj "main/clojure"
@@ -193,13 +163,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configOneApp
-
   ""
-  [^File out appId ^String appDomain kind]
-
+  [outDir appId appDomain kind]
   (let
     [domPath (cs/replace appDomain "." "/")
-     appDir (io/file out appId)
+     appDir (io/file outDir appId)
      srcDir (io/file appDir "src")
      verStr "0.1.0-SNAPSHOT"
      hhh (getHomeDir)]
@@ -234,10 +202,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
 (defn createApp
-
   "Create a new app"
   [option path]
-
   (let
     [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
      kind (keyword (triml option "-"))
@@ -249,8 +215,8 @@
      app (when (some? t)
            (if-some [tkn (last t)]
              (triml tkn ".")
-             (first t))) ]
-    (when (empty? app) (trap! CmdHelpError))
+             (first t)))]
+    (if (empty? app) (trap! CmdHelpError))
     (case option
       ("-web" "--web") nil
       ("-soa" "--soa") nil
@@ -261,16 +227,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- genOneCljDemo
-
   ""
   [^File demo ^File out]
-
   (let [top (io/file out (.getName demo))
         dn (.getName top)
         appDomain (mkDemoPath dn)
         domPath (cs/replace appDomain "." "/")
-        kind (if (contains? #{"mvc" "http"} dn)
-                    :web :soa)]
+        kind (if (in? #{"mvc" "http"} dn) :web :soa)]
     (prn!! "Generating: %s..." appDomain)
     (copyOneApp out dn appDomain kind)
     (FileUtils/copyDirectory
@@ -288,27 +251,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- genCljDemos
-
   ""
-  [^File out]
-
+  [outDir]
   (let
-    [dss (->> "src/main/clojure/czlab/wabbit/demo"
-              (io/file (getHomeDir))
+    [dss (->> (io/file (getHomeDir)
+                       "src/main/clojure"
+                       "czlab/wabbit/demo")
               (.listFiles ))]
     (doseq [d dss
             :when (dirRead? d)]
-      (genOneCljDemo d out))))
+      (genOneCljDemo d outDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn publishSamples
-
   "Unzip all samples"
-  [^String output]
-
-  (->> (mkdirs output)
-       (genCljDemos )))
+  [outDir]
+  (genCljDemos (mkdirs outDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

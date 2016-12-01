@@ -13,104 +13,102 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Implementation for HTTP/MVC service."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.http
 
-  (:require
-    [czlab.xlib.meta :refer [bytesClass isString? isBytes?]]
-    [czlab.net.util :refer [parseBasicAuth]]
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.net.mime :refer [getCharset]]
-    [czlab.xlib.io :refer [xdata<>]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [clojure.string :as cs])
+  (:require [czlab.convoy.net.util :refer [parseBasicAuth]]
+            [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.convoy.net.mime :refer [getCharset]]
+            [czlab.xlib.io :refer [xdata<>]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cs])
 
-  (:use [czlab.netty.routes]
-        [czlab.netty.server]
-        [czlab.netty.core]
+  (:use [czlab.convoy.netty.routes]
+        [czlab.convoy.netty.server]
+        [czlab.convoy.netty.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.io.core]
-        [czlab.crypto.ssl]
+        [czlab.twisty.ssl]
         [czlab.xlib.core]
         [czlab.xlib.str]
+        [czlab.xlib.meta]
         [czlab.wabbit.io.web])
 
-  (:import
-    [czlab.netty MixedFullRequest InboundFilter]
-    [java.nio.channels ClosedChannelException]
-    [io.netty.handler.codec.http.websocketx
-     TextWebSocketFrame
-     WebSocketFrame
-     BinaryWebSocketFrame]
-    [io.netty.handler.codec.http.cookie
-     ServerCookieDecoder
-     ServerCookieEncoder]
-    [io.netty.handler.codec DecoderException]
-    [czlab.netty CPDecorator TcpPipeline]
-    [czlab.wabbit.net WebAsset RangeInput]
-    [io.netty.bootstrap ServerBootstrap]
-    [io.netty.buffer ByteBuf Unpooled]
-    [io.netty.handler.ssl SslHandler]
-    [czlab.net RouteCracker RouteInfo]
-    [czlab.wabbit.server Container]
-    [czlab.wabbit.io IoService]
-    [clojure.lang APersistentMap]
-    [czlab.crypto PasswordAPI]
-    [java.util Timer TimerTask]
-    [io.netty.handler.codec.http
-     HttpResponseStatus
-     HttpRequest
-     HttpUtil
-     HttpResponse
-     DefaultHttpResponse
-     FullHttpRequest
-     HttpVersion
-     HttpRequestDecoder
-     HttpResponseEncoder
-     DefaultCookie
-     HttpHeaderValues
-     HttpHeaderNames
-     LastHttpContent
-     HttpHeaders
-     Cookie
-     QueryStringDecoder]
-    [java.io
-     Closeable
-     File
-     IOException
-     RandomAccessFile]
-    [java.net
-     HttpCookie
-     URI
-     URL
-     InetSocketAddress
-     InetAddress
-     SocketAddress]
-    [czlab.wabbit.io
-     HttpEvent
-     HttpResult
-     WebSockEvent
-     WebSockResult]
-    [io.netty.channel
-     Channel
-     ChannelHandler
-     ChannelFuture
-     ChannelFutureListener
-     ChannelPipeline
-     ChannelHandlerContext
-     SimpleChannelInboundHandler]
-    [io.netty.handler.stream
-     ChunkedStream
-     ChunkedFile
-     ChunkedInput
-     ChunkedWriteHandler]
-    [czlab.xlib
-     XData
-     Muble
-     Hierarchial
-     Identifiable]))
+  (:import [czlab.convoy.netty MixedFullRequest InboundFilter]
+           [java.nio.channels ClosedChannelException]
+           [io.netty.handler.codec.http.websocketx
+            TextWebSocketFrame
+            WebSocketFrame
+            BinaryWebSocketFrame]
+           [io.netty.handler.codec.http.cookie
+            ServerCookieDecoder
+            ServerCookieEncoder]
+           [io.netty.handler.codec DecoderException]
+           [czlab.convoy.netty CPDecorator TcpPipeline]
+           [czlab.wabbit.net WebAsset RangeInput]
+           [io.netty.bootstrap ServerBootstrap]
+           [io.netty.buffer ByteBuf Unpooled]
+           [io.netty.handler.ssl SslHandler]
+           [czlab.convoy.net RouteCracker RouteInfo]
+           [czlab.wabbit.server Container]
+           [czlab.wabbit.io IoService]
+           [clojure.lang APersistentMap]
+           [czlab.twisty IPassword]
+           [java.util Timer TimerTask]
+           [io.netty.handler.codec.http
+            HttpResponseStatus
+            HttpRequest
+            HttpUtil
+            HttpResponse
+            DefaultHttpResponse
+            FullHttpRequest
+            HttpVersion
+            HttpRequestDecoder
+            HttpResponseEncoder
+            DefaultCookie
+            HttpHeaderValues
+            HttpHeaderNames
+            LastHttpContent
+            HttpHeaders
+            Cookie
+            QueryStringDecoder]
+           [java.io
+            Closeable
+            File
+            IOException
+            RandomAccessFile]
+           [java.net
+            HttpCookie
+            URI
+            URL
+            InetAddress
+            SocketAddress
+            InetSocketAddress]
+           [czlab.wabbit.io
+            HttpEvent
+            HttpResult
+            WebSockEvent
+            WebSockResult]
+           [io.netty.channel
+            Channel
+            ChannelHandler
+            ChannelFuture
+            ChannelFutureListener
+            ChannelPipeline
+            ChannelHandlerContext
+            SimpleChannelInboundHandler]
+           [io.netty.handler.stream
+            ChunkedStream
+            ChunkedFile
+            ChunkedInput
+            ChunkedWriteHandler]
+           [czlab.xlib
+            XData
+            Muble
+            Hierarchial
+            Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -122,11 +120,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn scanBasicAuth
-
   "Scan and parse if exists basic authentication"
   ^APersistentMap
   [^HttpEvent evt]
-
   (if-some+ [v (-> (.msgGist evt)
                    (gistHeader AUTH))]
     (parseBasicAuth v)))
@@ -134,12 +130,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- httpBasicConfig
-
   "Basic http config"
   [^IoService co cfg0]
-
-  (let [{:keys [serverKey port passwd]
-         :as cfg}
+  (let [{:keys [serverKey port passwd] :as cfg}
         (merge (.config co) cfg0)
         kfile (expandVars serverKey)
         ssl? (hgl? kfile)]
@@ -152,41 +145,20 @@
        :passwd (->> (.server co)
                     (.appKey)
                     (passwd<> passwd) (.text))
-       :serverKey (if ssl? (URL. kfile))}
+       :serverKey (if ssl? (io/as-url kfile))}
       (merge cfg ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn wsockResult<>
-
-  "Create a WebSocket result object"
-  ^WebSockResult
-  [^IoService co]
-
-  (let [impl (muble<>)]
-    (reify WebSockResult
-      (isEmpty [this] (nil? (.content this)))
-      (setContent [_ c] (.setv impl :body c))
-      (content [_] (.getv impl :body))
-      (isText [_]
-        (isString? (class (.getv impl :body))))
-      (isBinary [_]
-        (isBytes? (class (.getv impl :body))))
-      (getx [_] impl)
-      (source [_] co))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn httpResult<>
-
+(defn h1Result<>
   "Create a HttpResult object"
   ^HttpResult
   [^IoService co]
-
-  (let [impl (muble<> {:version (.text HttpVersion/HTTP_1_1)
-                       :cookies []
-                       :code -1
-                       :headers {}})]
+  (let
+    [impl (muble<> {:version (.text HttpVersion/HTTP_1_1)
+                    :cookies []
+                    :code -1
+                    :headers {}})]
     (reify HttpResult
 
       (setRedirect [_ url] (.setv impl :redirect url))
@@ -239,10 +211,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeLoadRoutes
-
   ^APersistentMap
   [^IoService co]
-
   (let [ctr (.server co)
         ctx (.getx co)
         f (io/file (.appDir ctr)
@@ -256,11 +226,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- javaToCookie
-
   ""
   ^Cookie
   [^HttpCookie c]
-
   ;; stick with version 0, Java's HttpCookie defaults to 1 but that
   ;; screws up the Path attribute on the wire => it's quoted but
   ;; browser seems to not like it and mis-interpret it.
@@ -278,184 +246,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeClose
-
   ""
   [^HttpEvent evt ^ChannelFuture cf]
-
-  (->> (:keepAlive? (.msgGist evt))
-       (closeCF cf )))
+  (closeCF cf (:isKeepAlive? (.msgGist evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- csToNetty
-
   ""
   [cookies]
-
-  (pcoll!
-    (reduce
-      #(->> (.encode ServerCookieEncoder/STRICT ^Cookie %2)
-            (conj! %1 ))
-      (transient [])
-      (map #(javaToCookie %) (seq cookies)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nettyWSReply
-
-  ""
-  [^WebSockEvent evt]
-
-  (let [^WebSockResult res (.resultObj evt)
-        ^Channel ch (.socket evt)
-        c (.content res)
-        ^WebSocketFrame
-        f (condp instance? c
-            (bytesClass)
-            (->> (Unpooled/wrappedBuffer ^bytes c)
-                 (BinaryWebSocketFrame. ))
-            String
-            (TextWebSocketFrame. ^String c))]
-    (if (some? f)
-      (.writeAndFlush ch f))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- replyOneFile
-
-  ""
-  ^ChunkedInput
-  [^HttpEvent evt ^HttpResponse rsp ^File fp]
-
-  (RangeInput/fileRange
-    (-> (.msgGist evt)
-        (gistHeader "range") str)
-    rsp
-    (RandomAccessFile. fp "r")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nettyReplyMore
-
-  ""
-
-  ([^Channel ch
-    ^HttpResponse rsp
-    ^HttpEvent evt]
-   (nettyReplyMore ch rsp evt nil))
-
-  ([^Channel ch
-    ^HttpResponse rsp
-    ^HttpEvent evt
-    body]
-   (let
-     [gist (.msgGist evt)
-      [clen body]
-      (condp instance? body
-        ChunkedInput
-        [(.length ^ChunkedInput body) body]
-        XData
-        [(.size ^XData body)
-         (->> (.stream ^XData body)
-              (ChunkedStream.))]
-        (if (nil? body)
-          0
-          (throwBadArg "rogue payload type %s"
-                       (class body))))]
-     (log/debug "writing out %d bytes to client" clen)
-     (if (:keepAlive? gist)
-       (setHeader rsp
-                  HttpHeaderNames/CONNECTION
-                  HttpHeaderValues/KEEP_ALIVE))
-     (if-not
-       (hgl? (getHeader rsp
-                        HttpHeaderNames/CONTENT_LENGTH))
-       (HttpUtil/setContentLength rsp clen))
-     (let [f1 (.write ch rsp)
-           f2 (if (spos? clen)
-                (.write ch body))]
-       (if (some? f1)
-         (log/debug "wrote rsp-headers out to client"))
-       (if (some? f2)
-         (log/debug "wrote rsp-body out to client")
-         (.close ^ChunkedInput body))
-       (-> (or f2 f1)
-           (closeCF (:keepAlive? gist)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- nettyReply
-
-  ""
-  [^Channel ch ^HttpEvent evt]
-
-  (let [cl (lcase HttpHeaderNames/CONTENT_LENGTH)
-        res (.resultObj evt)
-        {:keys [redirect
-                cookies
-                code body headers]}
-        (.impl (.getx res))
-        gist (.msgGist evt)
-        rsp (httpReply<> code)]
-    ;;headers
-    (doseq [[nm vs] headers
-            :when (not= cl (lcase nm))]
-      (doseq [vv (seq vs)]
-        (addHeader rsp nm vv)))
-    ;;cookies
-    (doseq [s (csToNetty cookies)]
-      (addHeader rsp
-                 HttpHeaderNames/SET_COOKIE s))
-    (cond
-      ;;redirect?
-      (and (>= code 300)
-           (< code 400))
-      (do
-        (if (hgl? redirect)
-          (setHeader rsp
-                     HttpHeaderNames/LOCATION redirect))
-        (nettyReplyMore ch rsp evt))
-      ;;ok?
-      (and (>= code 200)
-           (< code 300))
-      (->>
-        (when (not= "HEAD" (:method gist))
-          (condp instance? body
-            WebAsset
-            (let [^WebAsset w body]
-              (setHeader rsp
-                         HttpHeaderNames/CONTENT_TYPE
-                         (.contentType w))
-              (->> (.file w)
-                   (replyOneFile evt rsp )))
-            File
-            (replyOneFile evt rsp ^File body)
-            ;;else
-            (xdata<> body)))
-        (nettyReplyMore ch rsp evt ))
-
-      :else
-      (nettyReplyMore ch rsp evt))))
+  (preduce<vec>
+    #(->> (.encode ServerCookieEncoder/STRICT ^Cookie %2)
+          (conj! %1 ))
+    (map #(javaToCookie %) (seq cookies))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- killTimerTask
   ""
   [^Muble m kee]
-  (cancelTimerTask (.getv m kee))
-  (.unsetv m kee))
+  (cancelTimerTask (.getv m kee)) (.unsetv m kee))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resumeWithResult
-
   ""
-  [ch ^HttpEvent evt]
-
-  (try!
-    (if (inst? WebSockEvent evt)
-      (nettyWSReply evt)
-      (nettyReply ch evt))))
+  [ch evt]
+  (if-some [e (cast? HttpEvent evt)]
+    (replyResult ch (.resultObj e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

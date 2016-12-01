@@ -13,38 +13,35 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Implementation for FilePicker."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.files
 
-  (:require
-    [czlab.xlib.io :refer [mkdirs]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io])
+  (:require [czlab.xlib.io :refer [mkdirs]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io])
 
-  (:use
-    [czlab.wabbit.sys.core]
-    [czlab.xlib.core]
-    [czlab.xlib.str]
-    [czlab.wabbit.io.loops]
-    [czlab.wabbit.io.core])
+  (:use [czlab.wabbit.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.wabbit.io.loops]
+        [czlab.wabbit.io.core])
 
-  (:import
-    [java.io FileFilter File IOException]
-    [java.util Properties ResourceBundle]
-    [czlab.wabbit.io IoService FileEvent]
-    [org.apache.commons.io.filefilter
-     SuffixFileFilter
-     PrefixFileFilter
-     RegexFileFilter
-     FileFileFilter]
-    [org.apache.commons.io.monitor
-     FileAlterationListener
-     FileAlterationMonitor
-     FileAlterationObserver
-     FileAlterationListenerAdaptor]
-    [org.apache.commons.io FileUtils]
-    [czlab.xlib Muble Identifiable]))
+  (:import [java.io FileFilter File IOException]
+           [java.util Properties ResourceBundle]
+           [czlab.wabbit.io IoService FileEvent]
+           [org.apache.commons.io.filefilter
+            SuffixFileFilter
+            PrefixFileFilter
+            RegexFileFilter
+            FileFileFilter]
+           [org.apache.commons.io.monitor
+            FileAlterationListener
+            FileAlterationMonitor
+            FileAlterationObserver
+            FileAlterationListenerAdaptor]
+           [org.apache.commons.io FileUtils]
+           [czlab.xlib Muble Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -53,31 +50,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Order of args must match
 (defmethod ioevent<>
-
   ::FilePicker
   [^IoService co {:keys [fname fp]}]
-
   (let
     [eeid (seqint2)
      f (io/file fp)]
     (with-meta
       (reify FileEvent
-
         (checkAuthenticity [_] false)
-        (source [_] co)
         (originalFileName [_] fname)
+        (source [_] co)
         (file [_] f)
         (id [_] eeid))
-
       {:typeid ::FileEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- postPoll
-
   "Only look for new files"
   [^IoService co ^File f action]
-
   (let
     [{:keys [recvFolder]}
      (.config co)
@@ -96,18 +87,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- toFMask
-
   ""
   ^FileFilter
   [^String mask]
-
   (cond
     (.startsWith mask "*.")
     (SuffixFileFilter. (.substring mask 1))
     (.endsWith mask "*")
     (PrefixFileFilter.
       (.substring mask
-                  0 (dec (.length mask))))
+                  0
+                  (dec (.length mask))))
     (> (.length mask) 0)
     (RegexFileFilter. mask)
     :else
@@ -116,10 +106,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::FilePicker
   [^IoService co cfg0]
-
   (logcomp "comp->init" co)
   (let
     [c2 (merge (.config co) cfg0)
@@ -158,10 +146,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableSchedule
-
   ::FilePicker
   [^IoService co _]
-
   (when-some
     [mon (.getv (.getx co) :monitor)]
     (log/info "apache io monitor starting...")

@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.etc.svcs)
 
@@ -23,7 +23,7 @@
 (def ^:dynamic *emitter-defs*
   {:czlab.wabbit.io.files/FilePicker
    {:info {:version "1.0"
-           :name "FILEPicker" }
+           :name "FILEPicker"}
     :conf {:targetFolder "/home/dropbox"
            :recvFolder "/home/joe"
            ;; reg-ex, blank => all
@@ -31,10 +31,10 @@
            ;; 5mins
            :intervalSecs 300
            :delaySecs 0
-           :handler "" }}
+           :handler ""}}
    :czlab.wabbit.io.mails/IMAP
    {:info {:version "1.0"
-           :name "IMAP" }
+           :name "IMAP"}
     :conf {:host "imap.gmail.com"
            :port 993
            :deleteMsg? false
@@ -43,10 +43,10 @@
            :passwd "secret"
            :intervalSecs 300
            :delaySecs 0
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.jms/JMS
    {:info {:version "1.0"
-           :name "JMS" }
+           :name "JMS"}
     :conf {:contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
            :providerUrl "java://aaa"
            :connFactory "tcf"
@@ -56,10 +56,10 @@
            :jmsUser "anonymous"
            :jmsPwd "anonymous"
            :intervalSecs 5
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.http/HTTP
    {:info {:version "1.0"
-           :name "HTTP" }
+           :name "HTTP"}
     :conf {:waitMillis (* 1000 300)
            :limitKB (* 1024 4)
            :sockTimeOut 0
@@ -67,10 +67,10 @@
            :port 8080
            :serverKey ""
            :passwd ""
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.http/WebMVC
    {:info {:version "1.0"
-           :name "WebMVC" }
+           :name "WebMVC"}
     :conf {:waitMillis (* 1000 300)
            :limitKB (* 1024 4)
            :sockTimeOut 0
@@ -87,15 +87,15 @@
            :maxAgeSecs 3600
            :useETags? false
            :errorHandler ""
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.loops/OnceTimer
    {:info {:version "1.0"
-           :name "OnceTimer" }
+           :name "OnceTimer"}
     :conf {:delaySecs 0
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.mails/POP3
    {:info {:version "1.0"
-           :name "POP3" }
+           :name "POP3"}
     :conf {:host "pop.gmail.com"
            :port 995
            :deleteMsg? false
@@ -104,19 +104,19 @@
            :intervalSecs 300
            :delaySecs 0
            :ssl? true
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.loops/RepeatingTimer
    {:info {:version "1.0"
-           :name "RepeatTimer" }
+           :name "RepeatTimer"}
     :conf {:intervalSecs 300
            :delaySecs 0
-           :handler "" } }
+           :handler ""}}
    :czlab.wabbit.io.socket/Socket
    {:info {:version "1.0"
-           :name "SocketIO" }
+           :name "SocketIO"}
     :conf {:host ""
            :port 8080
-           :handler "" } } })
+           :handler ""}}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

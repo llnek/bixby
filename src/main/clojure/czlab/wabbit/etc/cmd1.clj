@@ -67,7 +67,6 @@
 (defn- onHelpXXX
   ""
   [pfx end]
-
   (let [rcb (I18N/base)]
     (dotimes [n end]
       (printf "%s\n" (rstr rcb (str pfx (+ n 1)))))
@@ -80,10 +79,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onCreate
-
   "Create a new app"
   [args]
-
   (if (> (count args) 1)
     (createApp (args 0) (args 1))
     (trap! CmdHelpError)))
@@ -95,10 +92,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
 (defn- onBuild
-
   "Build the app"
   [args]
-
   (->> (if (empty? args) ["dev"] args)
        (apply execBootScript (getHomeDir) (getCwd))))
 
@@ -109,10 +104,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onPodify
-
   "Package the app"
   [args]
-
   (if-not (empty? args)
     (bundleApp (getHomeDir)
                (getCwd) (args 0))
@@ -125,10 +118,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onTest
-
   "Test the app"
   [args]
-
   (->> (if (empty? args) ["tst"] args)
        (apply execBootScript (getHomeDir) (getCwd) )))
 
@@ -139,10 +130,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onStart
-
   "Start and run the app"
   [args]
-
   (let [home (getHomeDir)
         cwd (getCwd)
         s2 (first args)]
@@ -167,10 +156,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onDemos
-
   "Generate demo apps"
   [args]
-
   (if-not (empty? args)
     (publishSamples (args 0))
     (trap! CmdHelpError)))
@@ -178,10 +165,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- genPwd
-
   ""
   [args]
-
   (let [c (first args)
         n (convLong (str c) 16)]
     (if (and (>= n 8)
@@ -200,10 +185,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onHash
-
   "Generate a hash"
   [args]
-
   (if-not (empty? args)
     (->> (passwd<> (first args))
          (.hashed )
@@ -214,10 +197,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onEncrypt
-
   "Encrypt the data"
   [args]
-
   (if (> (count args) 1)
     (->> (passwd<> (args 1) (args 0))
          (.encoded )
@@ -227,10 +208,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onDecrypt
-
   "Decrypt the cypher"
   [args]
-
   (if (> (count args) 1)
     (->> (passwd<> (args 1) (args 0))
          (.text )
@@ -244,10 +223,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onGenerate
-
   "Generate a bunch of stuff"
   [args]
-
   (let [c (first args)
         args (vec (drop 1 args))]
     (cond
@@ -272,10 +249,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onTestJCE
-
   "Test if JCE (crypto) is ok"
   [args]
-
   (let [rcb (I18N/base)]
     (assertJce)
     (println (rstr rcb "usage.testjce.ok"))))
@@ -287,10 +262,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onVersion
-
   "Show the version of system"
   [args]
-
   (let [rcb (I18N/base)]
     (->> (sysProp "wabbit.version")
          (rstr rcb "usage.version.o1")
@@ -303,11 +276,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- scanJars
-
   ""
   [^StringBuilder out ^File dir]
-
-  (let [sep (System/getProperty "line.separator")]
+  (let [sep (sysProp "line.separator")]
     (reduce
       (fn [^StringBuilder b f]
          (.append b
@@ -321,10 +292,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- genEclipseProj
-
   ""
   [^File appdir]
-
   (let [ec (mkdirs (io/file appdir "eclipse.projfiles"))
         app (.getName appdir)
         sb (strbf<>)]
@@ -367,10 +336,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onIDE
-
   "Generate IDE project files"
   [args]
-
   (if (and (not-empty args)
            (contains? #{"-e" "--eclipse"} (args 0)))
     (genEclipseProj (getCwd))
@@ -383,56 +350,54 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onSvc
-
   ""
-  [id hint & [svc]]
-
-  (let
-    [fp (io/file (getCwd) CFG_APP_CF)
-     cf (readEdn fp)
-     root (:services cf)
-     nw
-     (if (< hint 0)
-       (dissoc root id)
-       (when-some
-         [gist (:conf (*emitter-defs* svc))]
-         (when (contains? root id) (trap! CmdHelpError))
-         (assoc root id (assoc gist :service svc))))]
-    (when (some? nw)
-      (->> (assoc cf :services nw)
-           (writeEdnString)
-           (spitUtf8 fp)))))
+  ([id hint] (onSvc id hint nil))
+  ([id hint svc]
+   (let
+     [fp (io/file (getCwd) CFG_APP_CF)
+      cf (readEdn fp)
+      root (:services cf)
+      nw
+      (if (< hint 0)
+        (dissoc root id)
+        (when-some
+          [gist (:conf (*emitter-defs* svc))]
+          (when (contains? root id) (trap! CmdHelpError))
+          (assoc root id (assoc gist :service svc))))]
+     (when (some? nw)
+       (->> (assoc cf :services nw)
+            (writeEdnString)
+            (spitUtf8 fp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onService
-
   ""
   [args]
-
   (when (< (count args) 2) (trap! CmdHelpError))
-  (let [cmd (args 0)
-        id (keyword (args 1))
-        [hint svc]
-        (cond
-          (contains? #{"-r" "--remove"} cmd)
-          [-1 "?"]
-          (contains? #{"-a" "--add"} cmd)
-          (if (< (count args) 3)
-            (trap! CmdHelpError)
-            [1 (args 2)])
-          :else (trap! CmdHelpError))
-        t (case (keyword svc)
-            :repeat :czlab.wabbit.io.loops/RepeatingTimer
-            :once :czlab.wabbit.io.loops/OnceTimer
-            :files :czlab.wabbit.io.files/FilePicker
-            :http :czlab.wabbit.io.netty/NettyMVC
-            :pop3 :czlab.wabbit.io.mails/POP3
-            :imap :czlab.wabbit.io.mails/IMAP
-            :tcp :czlab.wabbit.io.socket/Socket
-            :jms :czlab.wabbit.io.jms/JMS
-            :? nil
-            (trap! CmdHelpError))]
+  (let
+    [id (keyword (args 1))
+     cmd (args 0)
+     [hint svc]
+     (cond
+       (contains? #{"-r" "--remove"} cmd)
+       [-1 "?"]
+       (contains? #{"-a" "--add"} cmd)
+       (if (< (count args) 3)
+         (trap! CmdHelpError)
+         [1 (args 2)])
+       :else (trap! CmdHelpError))
+     t (case (keyword svc)
+         :repeat :czlab.wabbit.io.loops/RepeatingTimer
+         :once :czlab.wabbit.io.loops/OnceTimer
+         :files :czlab.wabbit.io.files/FilePicker
+         :http :czlab.wabbit.io.netty/NettyMVC
+         :pop3 :czlab.wabbit.io.mails/POP3
+         :imap :czlab.wabbit.io.mails/IMAP
+         :tcp :czlab.wabbit.io.socket/Socket
+         :jms :czlab.wabbit.io.jms/JMS
+         :? nil
+         (trap! CmdHelpError))]
     (onSvc id hint t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -443,10 +408,8 @@
 ;;
 (declare getTasks)
 (defn onHelp
-
   "Show help"
   [args]
-
   (let
     [c (keyword (first args))
      [f h] ((getTasks) c)]
@@ -471,7 +434,7 @@
    :demos [onDemos onHelp-Demos]
    :generate [onGenerate onHelp-Generate]
    :testjce [onTestJCE onHelp-TestJCE]
-   :version [onVersion onHelp-Version] })
+   :version [onVersion onHelp-Version]})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

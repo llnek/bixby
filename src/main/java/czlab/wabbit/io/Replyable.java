@@ -22,7 +22,7 @@ package czlab.wabbit.io;
 public interface Replyable {
 
   /**/
-  public IoResult resultObj();
+  public Object resultObj();
 
   /**/
   public void replyResult();
