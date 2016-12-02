@@ -13,28 +13,26 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.sys.core
 
-  (:require
-    [czlab.xlib.io :refer [changeContent readAsStr]]
-    [czlab.xlib.logging :as log]
-    [clojure.string :as cs]
-    [clojure.java.io :as io])
+  (:require [czlab.xlib.io :refer [changeContent readAsStr]]
+            [czlab.xlib.logging :as log]
+            [clojure.string :as cs]
+            [clojure.java.io :as io])
 
   (:use [czlab.xlib.core]
         [czlab.xlib.str])
 
-  (:import
-    [org.apache.commons.lang3.text StrSubstitutor]
-    [czlab.wabbit.server Component]
-    [czlab.xlib
-     Hierarchial
-     Muble
-     Identifiable
-     Versioned]
-    [java.io File]))
+  (:import [org.apache.commons.lang3.text StrSubstitutor]
+           [czlab.wabbit.server Component]
+           [czlab.xlib
+            Hierarchial
+            Muble
+            Identifiable
+            Versioned]
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -47,8 +45,8 @@
 (def ^:private ^String SYS_DEVID_PFX "system.####")
 (def ^:private ^String SYS_DEVID_SFX "####")
 
-(def ^String SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
-(def ^String SHUTDOWN_DEVID #"system::kill_9" )
+(def SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
+(def SHUTDOWN_DEVID #"system::kill_9" )
 (def ^String DEF_DBID "default")
 
 (def ^String SHUTDOWN_URI "/kill9")
@@ -170,7 +168,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmulti comp->init
-  "Init component" ^Component (fn [a arg] (:typeid (meta a))))
+  "Initialize component" ^Component (fn [a arg] (:typeid (meta a))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,27 +177,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn readConf
-
   "Parse a edn configuration file"
   ^String
   [^File appDir ^String confile]
-
-  (let [rc (-> (io/file appDir DN_CONF confile)
-               (changeContent
-                 #(cs/replace %
-                              "${appdir}"
-                              (fpath appDir))))]
-    (log/debug "[%s]\n%s" confile rc)
-    rc))
+  (doto->>
+    (-> (io/file appDir DN_CONF confile)
+        (changeContent
+          #(cs/replace %
+                       "${appdir}"
+                       (fpath appDir))))
+    (log/debug "[%s]\n%s" confile )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn expandSysProps
-
   "Expand any system properties found inside the string value"
   ^String
   [^String value]
-
   (if-not (hgl? value)
     value
     (StrSubstitutor/replaceSystemProperties value)))
@@ -207,12 +201,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn expandEnvVars
-
   "Expand any env-vars found inside the string value"
-
   ^String
   [^String value]
-
   (if-not (hgl? value)
     value
     (.replace (StrSubstitutor. (System/getenv)) value)))
@@ -220,12 +211,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn expandVars
-
   "Replaces all system & env variables in the value"
-
   ^String
   [^String value]
-
   (if-not (hgl? value)
     value
     (-> (expandSysProps value)

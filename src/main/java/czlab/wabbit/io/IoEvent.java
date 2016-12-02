@@ -15,7 +15,7 @@
 
 package czlab.wabbit.io;
 
-import czlab.server.Event;
+import czlab.flux.server.Event;
 
 /**
  * @author Kenneth Leung

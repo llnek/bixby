@@ -6,10 +6,10 @@
     [commons-io/commons-io "2.5"]
     [org.slf4j/slf4j-api "1.7.21" ]
 
-    [czlab/czlab-fluxion "1.0.0"]
     [czlab/czlab-twisty "1.0.0"]
     [czlab/czlab-convoy "1.0.0"]
     [czlab/czlab-horde "1.0.0"]
+    [czlab/czlab-flux "1.0.0"]
     [czlab/czlab-xlib "1.0.0"]
 
     ;;[org.apache.ant/ant-apache-log4j "1.9.7" :exclusions [log4j]]
@@ -50,12 +50,12 @@
     [org.clojure/tools.cli "0.3.5" ]
     [org.clojure/data.generators "0.1.2" ]
     [org.clojure/data.priority-map "0.0.7" ]
-    [org.clojure/core.async "0.2.385" ]
-    [org.clojure/core.logic "0.8.10" ]
-    [org.clojure/algo.monads "0.1.5" ]
+    [org.clojure/core.async "0.2.395" ]
+    [org.clojure/core.logic "0.8.11" ]
+    [org.clojure/algo.monads "0.1.6" ]
     [org.clojure/algo.generic "0.1.2" ]
 
-    [org.apache.shiro/shiro-core "1.2.5" ]
+    [org.apache.shiro/shiro-core "1.3.2"]
     [org.mozilla/rhino "1.7.7.1" ]
     [jline/jline "2.14.2" ]
     [com.sun.tools/tools "1.8.0"  ]

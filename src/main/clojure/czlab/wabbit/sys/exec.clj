@@ -13,61 +13,44 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.sys.exec
 
-  (:require
-    [czlab.net.mime :refer [setupCache]]
-    [czlab.xlib.format :refer [readEdn]]
-    [czlab.xlib.str :refer [strim hgl?]]
-    [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.xlib.io
-     :refer [basename
-             mkdirs
-             readAsStr
-             listFiles]]
-    [czlab.xlib.core
-     :refer [test-hgl
-             rand<>
-             convLong
-             sysProp!
-             inst?
-             fpath
-             try!
-             getCwd
-             muble<>
-             juid
-             test-some]])
+  (:require [czlab.convoy.net.mime :refer [setupCache]]
+            [czlab.xlib.format :refer [readEdn]]
+            [czlab.xlib.meta :refer [getCldr]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io])
 
   (:use [czlab.wabbit.sys.dfts]
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.sys.extn]
-        [czlab.wabbit.sys.jmx])
+        [czlab.wabbit.sys.jmx]
+        [czlab.xlib.core]
+        [czlab.xlib.io]
+        [czlab.xlib.str])
 
-  (:import
-    [java.security SecureRandom]
-    [clojure.lang Atom]
-    [java.util Date]
-    [java.io File]
-    [java.net URL]
-    [czlab.xlib
-     Disposable
-     Startable
-     Muble
-     Versioned
-     Hierarchial
-     Identifiable]
-    [czlab.wabbit.io IoService IoGist]
-    [czlab.wabbit.server
-     Container
-     Execvisor
-     AppGist
-     JmxServer
-     Component]))
+  (:import [czlab.wabbit.io IoService IoGist]
+           [java.security SecureRandom]
+           [clojure.lang Atom]
+           [java.util Date]
+           [java.io File]
+           [java.net URL]
+           [czlab.xlib
+            Disposable
+            Startable
+            Muble
+            Versioned
+            Hierarchial
+            Identifiable]
+           [czlab.wabbit.server
+            Container
+            Execvisor
+            AppGist
+            JmxServer
+            Component]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -79,51 +62,50 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- inspectPod
-
   "Make sure the pod setup is ok"
   ^AppGist
-  [^Execvisor execv ^File des]
-
+  [^Execvisor execv desDir]
   (log/info "app dir : %s => inspecting..." des)
   ;;create the pod meta and register it
   ;;as a application
   (let
-    [conf (io/file des CFG_APP_CF)
+    [conf (io/file desDir CFG_APP_CF)
      dummy (precondFile conf)
-     app (basename des)
+     app (basename desDir)
      cf (readEdn conf)
      ctx (.getx execv)
-     m (-> (podMeta app
-                    cf
-                    (io/as-url des)))]
+     m (podMeta app
+                cf
+                (io/as-url desDir))]
     (comp->init m nil)
-    (.setv ctx :app m)
-    m))
+    (doto->>
+      m
+      (.setv ctx :app ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- startJmx
-
   "Basic JMX support"
   ^JmxServer
   [^Execvisor co cfg]
-
   (try!
     (let [jmx (jmxServer<> cfg)]
       (.start jmx)
-      (.reg jmx co "czlab" "execvisor" ["root=wabbit"])
-      (-> (.getx co)
-          (.setv :jmxServer jmx))
-      jmx)))
+      (.reg jmx
+            co
+            "czlab"
+            "execvisor"
+            ["root=wabbit"])
+      (doto->>
+        jmx
+        (.setv (.getx co) :jmxServer )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopJmx
-
   "Kill the internal JMX server"
   ^Component
   [^Execvisor co]
-
   (try!
     (let
       [ctx (.getx co)
@@ -137,45 +119,44 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ignitePod
-
   ""
   ^Execvisor
   [^Execvisor co ^AppGist gist]
-
   (try!
     (let
       [ctr (container<> co gist)
        app (.id gist)
        cid (.id ctr)]
       (log/debug "start pod = %s\ninstance = %s" app cid)
-      (.setv (.getx co) :container ctr)
-      (.start ctr)))
+      (doto->>
+        ctr
+        (.setv (.getx co) :container )
+        (.start ))))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopPods
-
   ""
   ^Execvisor
   [^Execvisor co]
-
   (log/info "preparing to stop pods...")
-  (let [^Container
-        c (.getv (.getx co) :container)]
-    (.stop c)
-    (.dispose c)
-    (.unsetv (.getx co) :container)
+  (let [cx (.getx co)
+        c (.getv cx :container)]
+    (doto->>
+      ^Container
+      c
+      (.stop )
+      (.dispose ))
+    (.unsetv cx :container)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn execvisor<>
-
   "Create a Execvisor"
   ^Execvisor
   []
-
   (let
     [impl (muble<> {:container nil
                     :app nil
@@ -209,11 +190,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- emitMeta
-
   ""
   ^IoGist
   [emsType gist]
-
   (let [{:keys [info conf]}
         gist
         pid (format "%s[%s]"
@@ -242,7 +221,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;description of a emitter
 (defmethod comp->init
-
   ::IoGist
   [^IoGist co execv]
 
@@ -253,31 +231,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- regoEmitters
-
   ""
   ^Execvisor
   [^Execvisor co]
-
   (let [ctx (.getx co)]
     (->>
-      (persistent!
-        (reduce
-          #(let [b (emitMeta (first %2)
-                             (last %2))]
-             (comp->init b co)
-             (assoc! %1 (.type b) b))
-          (transient {})
-          *emitter-defs*))
+      (preduce<map>
+        #(let [b (emitMeta (first %2)
+                           (last %2))]
+           (comp->init b co)
+           (assoc! %1 (.type b) b))
+        *emitter-defs*)
       (.setv ctx :emitters ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- regoApps
-
   ""
   ^Execvisor
   [^Execvisor co]
-
   (->> (.getv (.getx co) :appDir)
        (inspectPod co))
   co)
@@ -285,7 +257,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::Execvisor
   [^Execvisor co rootGist]
   {:pre [(inst? Atom rootGist)]}
@@ -296,11 +267,11 @@
     (test-some "conf file: jmx" jmx)
     (sysProp! "file.encoding" "utf-8")
     (.copy (.getx co) (muble<> @rootGist))
-    (->> (io/file appDir
-                  DN_ETC
-                  "mime.properties")
-         (io/as-url)
-         (setupCache ))
+    (-> (io/file appDir
+                 DN_ETC
+                 "mime.properties")
+        (io/as-url)
+        (setupCache ))
     (regoEmitters co)
     (regoApps co)
     (startJmx co jmx)))

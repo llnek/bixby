@@ -13,36 +13,34 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.sys.jmx
 
-  (:require
-    [czlab.xlib.logging :as log]
-    [clojure.string :as cs])
+  (:require [czlab.xlib.logging :as log]
+            [clojure.string :as cs])
 
   (:use [czlab.wabbit.sys.bean]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
-  (:import
-    [java.net InetAddress MalformedURLException]
-    [java.rmi.registry LocateRegistry Registry]
-    [java.lang.management ManagementFactory]
-    [java.rmi.server UnicastRemoteObject]
-    [czlab.wabbit.server JmxServer]
-    [java.rmi NoSuchObjectException]
-    [czlab.xlib Startable Muble]
-    [java.util HashMap]
-    [javax.management.remote
-     JMXConnectorServer
-     JMXServiceURL
-     JMXConnectorServerFactory]
-    [javax.management
-     JMException
-     MBeanServer
-     ObjectName
-     DynamicMBean]))
+  (:import [java.net InetAddress MalformedURLException]
+           [java.rmi.registry LocateRegistry Registry]
+           [java.lang.management ManagementFactory]
+           [java.rmi.server UnicastRemoteObject]
+           [czlab.wabbit.server JmxServer]
+           [java.rmi NoSuchObjectException]
+           [czlab.xlib Startable Muble]
+           [java.util HashMap]
+           [javax.management.remote
+            JMXConnectorServer
+            JMXServiceURL
+            JMXConnectorServerFactory]
+           [javax.management
+            JMException
+            MBeanServer
+            ObjectName
+            DynamicMBean]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -50,12 +48,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn objectName<>
-
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
    beanName: mybean"
   {:tag ObjectName}
-
   ([domain beanName] (objectName<> domain beanName nil))
   ([^String domain ^String beanName paths]
    (let [cs (seq (or paths []))
@@ -73,33 +69,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mkJMXrror
-
   ""
   [^String msg ^Throwable e]
-
   (throw (doto (JMException. msg) (.initCause e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- startRMI
-
   ""
   [^Muble impl]
-
   (try
     (->> (long (.getv impl :registryPort))
          (LocateRegistry/createRegistry )
          (.setv impl :rmi ))
-    (catch Throwable e#
-      (mkJMXrror "Failed to create RMI registry" e#))))
+    (catch Throwable _
+      (mkJMXrror "Failed to create RMI registry" _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- startJMX
-
   ""
   [^Muble impl]
-
   (let
     [cfc "com.sun.jndi.rmi.registry.RegistryContextFactory"
      svc (str "service:jmx:rmi://{{h}}:{{s}}"
@@ -128,10 +118,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doReg
-
   ""
-  [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean ]
-
+  [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
   (.registerMBean svr mbean objName)
   (log/info "jmx-bean: %s" objName)
   objName)
@@ -139,11 +127,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn jmxServer<>
-
   ""
   ^JmxServer
   [cfg]
-
   (log/debug "jmxServer config =\n%s" cfg)
   (let
     [impl (muble<> (merge

@@ -42,6 +42,11 @@ public class StartEvent implements IoEvent {
     return false;
   }
 
+  @Override
+  public Object socket() {
+    return null;
+  }
+
 }
 
 

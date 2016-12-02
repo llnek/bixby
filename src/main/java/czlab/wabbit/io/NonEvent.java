@@ -52,6 +52,11 @@ public class NonEvent implements IoEvent {
     return false;
   }
 
+  @Override
+  public Object socket() {
+    return null;
+  }
+
 }
 
 

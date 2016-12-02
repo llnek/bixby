@@ -13,52 +13,28 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.sys.extn
 
-  (:require
-    [czlab.xlib.resources :refer [loadResource]]
-    [czlab.xlib.scheduler :refer [scheduler<>]]
-    [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.format :refer [readEdn]]
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.dbio.connect :refer [dbopen<+>]]
-    [czlab.xlib.logging :as log]
-    [clojure.string :as cs]
-    [clojure.java.io :as io]
-    [czlab.xlib.str
-     :refer [nichts?
-             hgl?
-             stror
-             lcase
-             strim]]
-    [czlab.xlib.io
-     :refer [writeFile
-             readAsStr
-             fileRead?]]
-    [czlab.xlib.core
-     :refer [loadJavaProps
-             convToJava
-             when-some+
-             muble<>
-             doto->>
-             juid
-             fpath
-             cast?
-             trap!
-             inst?
-             try!
-             seqint2
-             convLong
-             bytesify]]
-    [czlab.dbio.core
-     :refer [dbspec<>
-             dbpool<>
-             dbschema<>]])
+  (:require [czlab.horde.dbio.connect :refer [dbopen<+>]]
+            [czlab.xlib.resources :refer [loadResource]]
+            [czlab.xlib.scheduler :refer [scheduler<>]]
+            [czlab.xlib.meta :refer [getCldr]]
+            [czlab.xlib.format :refer [readEdn]]
+            [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.logging :as log]
+            [clojure.string :as cs]
+            [clojure.java.io :as io]
+            [czlab.dbio.core
+             :refer [dbspec<>
+                     dbpool<>
+                     dbschema<>]])
 
   (:use
     [czlab.wabbit.sys.core]
+    [czlab.xlib.core]
+    [czlab.xlib.str]
     [czlab.xlib.io]
     [czlab.wabbit.io.core]
     [czlab.wabbit.sys.dfts]
@@ -68,42 +44,40 @@
     [czlab.wabbit.io.jms]
     [czlab.wabbit.io.http]
     [czlab.wabbit.io.socket])
-    ;;[czlab.wabbit.mvc.filters]
     ;;[czlab.wabbit.mvc.ftlshim])
 
-  (:import
-    [czlab.wabbit.etc PluginFactory Plugin]
-    [czlab.dbio Schema JDBCPool DBAPI]
-    [java.io File StringWriter]
-    [czlab.wabbit.server
-     AppGist
-     Execvisor
-     ServiceError
-     Component
-     Cljshim
-     Service
-     Container
-     ConfigError]
-    [freemarker.template
-     Configuration
-     Template
-     DefaultObjectWrapper]
-    [java.util Locale]
-    [java.net URL]
-    [czlab.xlib
-     Schedulable
-     Versioned
-     Hierarchial
-     XData
-     CU
-     Muble
-     I18N
-     Morphable
-     Activable
-     Startable
-     Disposable
-     Identifiable]
-    [czlab.wabbit.io IoGist IoEvent]))
+  (:import [czlab.wabbit.etc PluginFactory Plugin]
+           [czlab.horde Schema JDBCPool DBAPI]
+           [java.io File StringWriter]
+           [czlab.wabbit.server
+            AppGist
+            Execvisor
+            Component
+            Cljshim
+            Service
+            Container
+            ConfigError
+            ServiceError]
+           [freemarker.template
+            Configuration
+            Template
+            DefaultObjectWrapper]
+           [java.util Locale]
+           [java.net URL]
+           [czlab.xlib
+            Schedulable
+            Versioned
+            Hierarchial
+            XData
+            CU
+            Muble
+            I18N
+            Morphable
+            Activable
+            Startable
+            Disposable
+            Identifiable]
+           [czlab.wabbit.io IoGist IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -111,34 +85,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn getAppKeyFromEvent
-
   "Get the secret application key"
   ^String
   [^IoEvent evt]
-
   (.. evt source server appKey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBPool
-
   ""
   ^JDBCPool
   [^Container co ^String gid]
-
-  (let [dk (stror gid DEF_DBID)]
-    (get (.getv (.getx co) :dbps)
-         (keyword dk))))
+  (let
+    [dk (stror gid DEF_DBID)]
+    (get
+      (.getv (.getx co) :dbps)
+      (keyword dk))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBAPI
-
   ""
   ^DBAPI
   [^Container co ^String gid]
-
-  (when-some [p (maybeGetDBPool co gid)]
+  (when-some
+    [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
     (->> (.getv (.getx co) :schema)
          (dbopen<+> p))))
@@ -146,10 +117,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- releaseSysResources
-
   ""
   [^Container co]
-
   (log/info "container releasing system resources")
   (if-some
     [sc (.getv (.getx co) :core)]
@@ -159,17 +128,12 @@
     (log/debug "shutting down dbpool %s" (name k))
     (.shutdown ^JDBCPool v)))
 
-(defn- genFtlConfig [a b])
-(defn- renderFtl [a b c])
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- mkctr
-
   ""
   ^Container
   [^Execvisor parObj ^AppGist gist]
-
   (log/info "creating a container: %s" (.id gist))
   (let
     [pid (format "%s#%d" (.id gist) (seqint2))
@@ -196,6 +160,9 @@
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
 
+        (acquireDbPool [this] (maybeGetDBPool this ""))
+        (acquireDbAPI [this] (maybeGetDBAPI this ""))
+
         (setParent [_ x])
         (parent [_] parObj)
 
@@ -210,7 +177,7 @@
                (.endsWith tpl ".json") "application/json"
                (.endsWith tpl ".xml") "application/xml"
                (.endsWith tpl ".html") "text/html"
-               :else "text/plain")} ))
+               :else "text/plain")}))
 
         (isEnabled [_] true)
 
@@ -265,11 +232,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- service<+>
-
   ""
   ^Service
   [^Container co svcType nm cfg0]
-
   (let
     [^Execvisor exe (.parent co)
      bks (->> :emitters
@@ -294,47 +259,40 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- services<>
-
   ""
   ^Container
   [^Container co svcs]
-
   (->>
-    (persistent!
-      (reduce
-        #(let
-           [[k cfg] %2
-            {:keys [service
-                    enabled]} cfg]
-           (if-not (or (false? enabled)
-                       (nil? service))
-             (let [v (service<+>
-                       co service k cfg)]
-               (assoc! %1 (.id v) v))
-             %1))
-        (transient {})
-        (seq svcs)))
+    (preduce<map>
+      #(let
+         [[k cfg] %2
+          {:keys [service
+                  enabled]} cfg]
+         (if-not (or (false? enabled)
+                     (nil? service))
+           (let [v (service<+>
+                     co service k cfg)]
+             (assoc! %1 (.id v) v))
+           %1))
+      (seq svcs))
     (.setv (.getx co) :services ))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The runtime container for your application
 (defn container<>
-
   "Create an application container"
   ^Container
   [^Execvisor exe ^AppGist gist]
-
-  (doto (mkctr exe gist)
+  (doto
+    (mkctr exe gist)
     (comp->init  nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- parseConf
-
   ""
   [^Container co]
-
   (let
     [appDir (.appDir co)
      f
@@ -351,32 +309,28 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- fmtPluginFname
-
   ""
   ^File
   [^Container co ^String fc]
-
   (->> (cs/replace fc #"[\./]+" "")
        (io/file (.appDir co) "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- pluginInited?
-
   ""
   [^Container co ^String fc]
-
   (let [b (.exists (fmtPluginFname co fc))]
-    (if b (log/info "plugin %s already initialized" fc))
+    (if b
+      (log/info "plugin %s %s"
+                "already initialized" fc))
     b))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- postInitPlugin
-
   ""
   [^Container co ^String fc]
-
   (let [pfile (->> (.appDir co)
                    (fmtPluginFname fc))]
     (writeFile pfile "ok")
@@ -385,11 +339,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doOnePlugin
-
   ""
   ^Plugin
   [^Container co ^Cljshim rts ^String fc appConf]
-
   (log/info "plugin->factory: %s" fc)
   (let
     [^PluginFactory
@@ -408,30 +360,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeInitDBs
-
   ""
   [^Container co app]
-
-  (persistent!
-    (reduce
-      #(let
-         [[k v] %2]
-         (if-not (false? (:status v))
-           (let
-             [pwd (passwd<> (:passwd v)
-                            (.appKey co))
-              cfg (merge v {:passwd (.text pwd)
-                            :id k})]
-             (->> (dbpool<> (dbspec<> cfg) cfg)
-                  (assoc! %1 k)))
-           %1))
-      (transient {})
-      (seq (get-in app [:databases :jdbc])))))
+  (preduce<map>
+    #(let
+       [[k v] %2]
+       (if-not (false? (:status v))
+         (let
+           [pwd (passwd<> (:passwd v)
+                          (.appKey co))
+            cfg (merge v
+                       {:passwd (.text pwd)
+                        :id k})]
+           (->> (dbpool<> (dbspec<> cfg) cfg)
+                (assoc! %1 k)))
+         %1))
+    (seq (get-in app [:databases :jdbc]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::Container
   [^Container co arg]
 
@@ -464,16 +412,14 @@
       (log/debug "db [dbpools]\n%s" ))
     ;;handle the plugins
     (->>
-      (persistent!
-        (reduce
-          #(let
-             [[k v] %2]
-             (->>
-               (doOnePlugin
-                 co rts v appConf)
-               (assoc! %1 k)))
-          (transient {})
-          (seq (:plugins appConf))))
+      (preduce<map>
+        #(let
+           [[k v] %2]
+           (->>
+             (doOnePlugin
+               co rts v appConf)
+             (assoc! %1 k)))
+        (seq (:plugins appConf)))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+

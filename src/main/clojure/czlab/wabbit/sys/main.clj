@@ -12,66 +12,54 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.sys.main
 
-  (:require
-    [czlab.xlib.str :refer [str<> stror lcase hgl? strim]]
-    [czlab.netty.discarder :refer [discardHTTPD<>]]
-    [czlab.xlib.io :refer [readAsStr writeFile]]
-    [czlab.xlib.scheduler :refer [scheduler<>]]
-    [czlab.xlib.resources :refer [getResource]]
-    [czlab.xlib.meta :refer [setCldr getCldr]]
-    [czlab.wabbit.sys.exec :refer [execvisor<>]]
-    [czlab.xlib.format :refer [readEdn]]
-    [czlab.xlib.io :refer [closeQ]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.xlib.core
-     :refer [test-some
-             sysProp
-             getCwd
-             inst?
-             fpath
-             convLong]]
-    [czlab.netty.server :refer [startServer stopServer]])
+  (:require [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
+            [czlab.wabbit.sys.exec :refer [execvisor<>]]
+            [czlab.xlib.scheduler :refer [scheduler<>]]
+            [czlab.xlib.resources :refer [getResource]]
+            [czlab.xlib.meta :refer [setCldr getCldr]]
+            [czlab.xlib.format :refer [readEdn]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.convoy.netty.discarder]
+        [czlab.convoy.netty.server]
+        [czlab.wabbit.sys.core]
         [czlab.xlib.process]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.xlib.consts]
         [czlab.wabbit.sys.dfts])
 
-  (:import
-    [io.netty.bootstrap ServerBootstrap]
-    [czlab.wabbit.server CljAppLoader]
-    [clojure.lang
-     Atom
-     APersistentMap]
-    [io.netty.channel
-     Channel
-     ChannelFuture
-     ChannelFutureListener]
-    [czlab.wabbit.server
-     Execvisor
-     Component
-     ConfigError]
-    [czlab.xlib
-     Identifiable
-     Versioned
-     Disposable
-     Activable
-     Hierarchial
-     Startable
-     CU
-     Muble
-     I18N
-     Schedulable]
-    [java.io File]
-    [czlab.wabbit.etc CmdHelpError]
-    [java.util ResourceBundle Locale]))
+  (:import [io.netty.bootstrap ServerBootstrap]
+           [czlab.wabbit.server CljAppLoader]
+           [clojure.lang Atom APersistentMap]
+           [io.netty.channel
+            Channel
+            ChannelFuture
+            ChannelFutureListener]
+           [czlab.wabbit.server
+            Execvisor
+            Component
+            ConfigError]
+           [czlab.xlib
+            Versioned
+            Disposable
+            Activable
+            Hierarchial
+            Startable
+            CU
+            Muble
+            I18N
+            Schedulable
+            Identifiable]
+           [java.io File]
+           [czlab.wabbit.etc CmdHelpError]
+           [java.util ResourceBundle Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -83,11 +71,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- cliGist
-
   ""
   ^Atom
   [gist]
-
   (let [home (:basedir gist)]
     (precondDir (io/file home DN_DIST)
                 (io/file home DN_LIB)
@@ -98,11 +84,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopCLI
-
   "Stop all apps and processors"
   ^Atom
   [^Atom gist]
-
   (let [{:keys [pidFile
                 execv
                 kill9]}
@@ -111,8 +95,7 @@
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
-      (stopServer (:bootstrap kill9)
-                  (:channel kill9))
+      (stopServer (:channel kill9))
       (log/info "remote shutdown hook closed - ok")
       (log/info "containers are shutting down...")
       (log/info "about to stop wabbit...")
@@ -127,11 +110,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- enableRemoteShutdown
-
   "Listen on a port for remote kill command"
   ^Atom
   [^Atom gist]
-
   (log/info "enabling remote shutdown hook")
   (let [bs (discardHTTPD<> #(stopCLI gist))
         ch (->> {:port (-> (sysProp "wabbit.kill.port")
@@ -144,11 +125,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
 (defn- primodial
-
   ""
   ^Atom
   [^Atom gist]
-
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
@@ -171,10 +150,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn startViaCLI
-
   ""
   [home cwd]
-
   (let
     [env (->> (io/file cwd CFG_ENV_CF)
               (readEdn ))

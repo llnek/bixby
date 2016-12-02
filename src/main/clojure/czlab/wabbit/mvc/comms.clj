@@ -120,53 +120,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- replyError
-
-  ""
-  [^IoService src code]
-
-  (let [appDir (-> ^Container
-                   (.server src) (.appDir))]
-    (->> (str DN_PAGES "errors/" code ".html")
-         (getLocalContent appDir))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn serveError
   "Reply back an error"
-  [^IoService src ^Channel ch code]
-
+  [^HttpEvent evt status]
   (try
     (let
-      [rsp (httpReply<> code)
-       rts (-> ^Container
-               (.server src)
-               (.cljrt))
-       ctype "text/plain"
-       bits nil
-       wf nil
-       cfg (.config src)
-       h (:errorHandler cfg)
-       rc (if (hgl? h)
-            (cast? WebContent
-                   (.callEx rts h code)))
+      [rts (.. evt source server cljrt)
+       res (httpResult<> status)
+       {:keys [errorHandler]}
+       (.config src)
        ^WebContent
-       rc (or rc
-              (replyError src code))]
-      (->> (.contentType rc)
-           (setHeader rsp "content-type"))
-      (let [bits (.body rc)]
-        (->> (if (some? bits)
-               (alength bits) 0)
-             (contentLength! rsp))
-        (let [w1 (.writeAndFlush ch rsp)
-              w2
-              (if (some? bits)
-                (->> (Unpooled/wrappedBuffer bits)
-                     (.writeAndFlush ch ))
-                w1)]
-          (closeCF w2 false))))
-      (catch Throwable e# (.close ch))))
+       rc (if (hgl? errorHandler)
+            (.callEx rts
+                     errorHandler
+                     (.code status)))
+       ctype (or (some-> rc (.contentType))
+                 "application/octet-stream")
+       body (some-> rc (.content))]
+      (when (and (some? body)
+                 (.hasContent body))
+        (.setContentType res ctype)
+        (.setContent res body))
+      (replyResult (.socket evt) res))
+    (catch Throwable _ )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -201,10 +177,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn serveStatic
-
   "Reply back with a static file content"
-  [^IoService src ^Channel ch gist ^HttpEvent evt]
-
+  [^HttpEvent evt]
   (let
     [exp
      (try
@@ -212,7 +186,7 @@
          (upstream gist
                    (.appKeyBits (.server src))
                    (:maxIdleSecs (.config src))))
-       (catch AuthError e# e#))]
+       (catch AuthError _ _))]
     (if (some? exp)
       (serveError evt HttpResponseStatus/FORBIDDEN)
       (serveStatic2 evt))))
@@ -250,8 +224,8 @@
                    (:maxIdleSecs (.config src))))
        (catch AuthError _ _))]
     (if (some? exp)
-      (serveError src ch 403)
-      (serveRoute2 src ch gist evt))))
+      (serveError evt HttpResponseStatus/FORBIDDEN)
+      (serveRoute2 evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

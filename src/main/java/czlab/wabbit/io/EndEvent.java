@@ -39,6 +39,11 @@ public class EndEvent implements IoEvent {
   }
 
   @Override
+  public Object socket() {
+    return null;
+  }
+
+  @Override
   public boolean isStale() {
     return false;
   }
