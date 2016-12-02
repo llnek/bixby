@@ -13,26 +13,24 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Basic functions for loopable services."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.loops
 
-  (:require
-    [czlab.xlib.process :refer [async! safeWait]]
-    [czlab.xlib.dates :refer [parseDate]]
-    [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.process :refer [async! safeWait]]
+            [czlab.xlib.dates :refer [parseDate]]
+            [czlab.xlib.meta :refer [getCldr]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.sys.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.core])
 
-  (:import
-    [czlab.wabbit.io IoService TimerEvent]
-    [java.util Date Timer TimerTask]
-    [clojure.lang APersistentMap]
-    [czlab.xlib Muble Identifiable Startable]))
+  (:import [czlab.wabbit.io IoService TimerEvent]
+           [java.util Date Timer TimerTask]
+           [clojure.lang APersistentMap]
+           [czlab.xlib Muble Identifiable Startable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -48,30 +46,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- mkEventObj
-
+(defn- timerEvent<>
   ^TimerEvent
   [^IoService co repeat?]
-
   (let [eeid (str "event#" (seqint2))]
     (with-meta
       (reify
         TimerEvent
-
         (checkAuthenticity [_] false)
         (id [_] eeid)
         (source [_] co)
         (isRepeating [_] repeat?))
-
       {:typeid ::TimerEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configRepeat
-
   "Configure a repeating timer"
   [^Timer tm delays ^long intv func]
-
   (log/info "Scheduling a repeating timer: %dms" intv)
   (let [tt (tmtask<> func)
         [dw ds] delays]
@@ -84,10 +76,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configOnce
-
   "Configure a *one-time* timer"
   [^Timer tm delays func]
-
   (log/info "Scheduling a *single-shot* timer")
   (let [ tt (tmtask<> func)
         [dw ds] delays]
@@ -100,9 +90,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configTimerTask
-
   [^IoService co repeat?]
-
   (let [tm (.getv (.getx co) :timer)
         {:keys [intervalSecs
                 delayWhen
@@ -120,7 +108,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- startTimer
-
   ""
   [^IoService co repeat?]
 
@@ -131,7 +118,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- killTimer
-
   ""
   [^IoService co]
 
@@ -145,12 +131,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-  ::RepeatingTimer [^IoService co _] (mkEventObj co true))
+  ::RepeatingTimer [^IoService co _] (timeEvent<> co true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::RepeatingTimer
   [^IoService co]
 
@@ -161,7 +146,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::RepeatingTimer
   [^IoService co]
 
@@ -172,7 +156,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
-
   ::RepeatingTimer
   [^IoService co _]
 
@@ -182,7 +165,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableSchedule
-
   :czlab.wabbit.io.core/Service
   [^IoService co {:keys [repeat?]} ]
 
@@ -194,12 +176,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-  ::OnceTimer [^IoService co _] (mkEventObj false))
+  ::OnceTimer [^IoService co _] (timerEvent<> false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::OnceTimer
   [^IoService co]
 
@@ -210,7 +191,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::OnceTimer
   [^IoService co]
 
@@ -221,7 +201,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
-
   ::OnceTimer
   [^IoService co _]
 
@@ -231,7 +210,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Threaded Timer
 (defmethod loopableSchedule
-
   ::ThreadedTimer
   [^IoService co {:keys [intervalMillis]}]
 
@@ -247,7 +225,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
-
   ::ThreadedTimer
   [^IoService co {:keys [waitMillis]}]
 
@@ -259,7 +236,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::ThreadedTimer
   [^IoService co]
 
@@ -279,7 +255,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::ThreadedTimer
   [^IoService co]
 

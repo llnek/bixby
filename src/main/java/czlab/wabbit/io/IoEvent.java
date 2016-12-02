@@ -22,15 +22,22 @@ import czlab.server.Event;
  */
 public interface IoEvent extends Event {
 
-  /**/
+  /**
+   */
   default public boolean checkAuthenticity() {
     return false;
   }
 
-  /**/
+  /**
+   */
   public IoService source();
 
-  /**/
+  /**
+   */
+  public Object socket();
+
+  /**
+   */
   public boolean isStale();
 
 

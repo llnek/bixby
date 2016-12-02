@@ -13,25 +13,23 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Implementation for TCP socket service."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.socket
 
-  (:require
-    [czlab.xlib.process :refer [async!]]
-    [czlab.xlib.meta :refer [getCldr]]
-    [czlab.xlib.io :refer [closeQ]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.process :refer [async!]]
+            [czlab.xlib.meta :refer [getCldr]]
+            [czlab.xlib.io :refer [closeQ]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.io.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.sys.core])
 
-  (:import
-    [java.net InetAddress ServerSocket Socket]
-    [czlab.xlib Muble Identifiable]
-    [czlab.wabbit.io IoService SocketEvent]))
+  (:import [java.net InetAddress ServerSocket Socket]
+           [czlab.xlib Muble Identifiable]
+           [czlab.wabbit.io IoService SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -40,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-
   ::Socket
   [^IoService co {:keys [^Socket socket]}]
 
@@ -48,20 +45,17 @@
         impl (muble<>)]
     (with-meta
       (reify SocketEvent
-
         (checkAuthenticity [_] false)
         (id [_] eeid)
         (sockOut [_] (.getOutputStream socket))
         (sockIn [_] (.getInputStream socket))
         (source [_] co)
         (dispose [_] (closeQ socket)))
-
       {:typeid ::SocketEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::Socket
   [^IoService co cfg0]
 
@@ -86,17 +80,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sockItDown
-
   ""
   [^IoService co ^Socket soc]
-
   (try!
     (.dispatch co (ioevent<> co {:socket soc}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::Socket
   [^IoService co]
 
@@ -118,7 +109,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::Socket
   [^IoService co]
 

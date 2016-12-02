@@ -13,117 +13,47 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.mvc.comms
 
-  (:require
-    [czlab.xlib.str :refer [hgl? strim]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core
-     :refer [when-some+
-             do->nil
-             cast?
-             try!!
-             try!
-             fpath
-             convLong]]
-    [clojure.java.io :as io]
-    [clojure.string :as cs]
-    [czlab.wabbit.mvc.assets
-     :refer [webAsset<>
-             webContent<>
-             getLocalContent]])
+  (:require [czlab.xlib.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cs])
 
-  (:use [czlab.wabbit.io.http]
+  (:use [czlab.convoy.netty.core]
+        [czlab.wabbit.io.http]
         [czlab.wabbit.io.web]
         [czlab.xlib.consts]
-        [czlab.wflow.core]
-        [czlab.netty.core]
+        [czlab.flux.wflow.core]
         [czlab.wabbit.io.core]
         [czlab.wabbit.sys.core])
 
-  (:import
-    [czlab.wabbit.io IoService IoEvent HttpEvent HttpResult]
-    [czlab.xlib XData Muble Hierarchial Identifiable]
-    [io.netty.handler.codec.http HttpResponseStatus]
-    [czlab.net RouteInfo RouteCracker]
-    [czlab.wabbit.server Container]
-    [czlab.wabbit.net
-     MvcUtils
-     WebAsset
-     WebContent]
-    [czlab.wflow WorkStream Job]
-    [czlab.wabbit.etc AuthError]
-    [java.util Date]
-    [java.io File]
-    [io.netty.buffer Unpooled]
-    [io.netty.channel Channel]))
+  (:import [czlab.convoy.net HttpResult RouteInfo RouteCracker]
+           [czlab.xlib XData Muble Hierarchial Identifiable]
+           [czlab.wabbit.io IoService IoEvent HttpEvent]
+           [io.netty.handler.codec.http HttpResponseStatus]
+           [czlab.wabbit.server Container]
+           [czlab.flux.wflow WorkStream Job]
+           [czlab.wabbit.etc AuthError]
+           [java.util Date]
+           [java.io File]
+           [io.netty.buffer Unpooled]
+           [io.netty.channel Channel]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- isMod?
-
-  ""
-  [^String eTag lastTm gist]
-
-  (let
-    [unmod (gistHeader gist "if-unmodified-since")
-     none (gistHeader gist "if-none-match")]
-    (cond
-      (hgl? unmod)
-      (let [t (try!! -1 (-> (MvcUtils/getSDF)
-                            (.parse unmod)
-                            (.getTime)))]
-        (> lastTm t))
-
-      (hgl? none)
-      (not= eTag none)
-
-      :else true)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn addETag
-
-  "Add a ETag"
-  [^IoService src gist ^File f ^HttpResult res]
-
-  (let [lastTm (.lastModified f)
-        cfg (.config src)
-        maxAge (convLong (:maxAgeSecs cfg) 0)
-        eTag  (format "\"%s-%s\""
-                      lastTm (.hashCode f))]
-    (if (isMod? eTag lastTm gist)
-      (->> (Date. lastTm)
-           (.format (MvcUtils/getSDF))
-           (.setHeader res "last-modified" ))
-      (if (= (:method gist) "GET")
-        (->> HttpResponseStatus/NOT_MODIFIED
-             (.code )
-             (.setStatus res ))))
-    (->> (if (== maxAge 0)
-           "no-cache"
-           (str "max-age=" maxAge))
-         (.setHeader res "cache-control" ))
-    (when
-      (true? (:useETag cfg))
-      (.setHeader res "etag" eTag))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- maybeStripUrlCrap
-
   "Want to handle case where the url has stuff after the file name.
    For example:  /public/blab&hhh or /public/blah?ggg"
   ^String
   [^String path]
 
   (let [pos (.lastIndexOf path (int \/))]
-    (if (> pos 0)
+    (if (spos? pos)
       (let [p1 (.indexOf path (int \?) pos)
             p2 (.indexOf path (int \&) pos)
             p3 (cond
@@ -143,55 +73,50 @@
 (defn- getStatic
 
   ""
-  [gist ^HttpEvent evt ^File f]
-
-  (log/debug "serving file: %s" (fpath f))
-  (let [^HttpResult
-        res (.resultObj evt)]
+  [^HttpEvent evt file]
+  (let [^Channel ch (.socket evt)
+        res (httpResult<> )
+        gist (.msgGist evt)
+        fp (io/file file)]
+    (log/debug "serving file: %s" (fpath fp))
     (try
-      (if (or (nil? f)
-              (not (.exists f)))
+      (if (or (nil? fp)
+              (not (.exists fp)))
         (do
-          (.setStatus res 404)
-          (.replyResult evt))
+          (.setStatus res (.code HttpResponseStatus/NOT_FOUND))
+          (replyResult ch res))
         (do
-          (.setContent res f)
-          (.setStatus res 200)
-          (addETag gist f res)
-          (.replyResult evt)))
+          (.setContent res fp)
+          (replyResult ch res)))
       (catch Throwable e#
-        (log/error "get: %s"
-                   (:uri2 gist) e#)
+        (log/error "get: %s" (:uri gist) e#)
         (try!
+          (.setStatus res
+                      (.code HttpResponseStatus/INTERNAL_SERVER_ERROR))
           (.setContent res nil)
-          (.setStatus res 500)
-          (.replyResult evt))))))
+          (replyResult ch res))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- handleStatic
-
   "Handle static resource"
-  [^IoService src ^HttpEvent evt args]
-
+  [^HttpEvent evt args]
   (let
-    [appDir (-> ^Container
-                (.server src) (.appDir))
-     ps (fpath (io/file appDir DN_PUB))
-     ^HttpResult res (.resultObj evt)
+    [appDir (.. evt source server appDir)
+     pubDir (io/file appDir DN_PUB)
      cfg (.config src)
-     check? (:fileAccessCheck cfg)
+     check? (:fileAccessCheck? cfg)
      fpath (str (:path args))
-     gist (:gist args)]
+     gist (.msgGist evt)]
     (log/debug "request for file: %s" fpath)
-    (if (or (.startsWith fpath ps)
+    (if (or (.startsWith fpath (fpath pubDir))
             (false? check?))
-      (->> (io/file (maybeStripUrlCrap fpath))
-           (getStatic gist evt))
+      (->> (maybeStripUrlCrap fpath)
+           (getStatic evt))
       (do
         (log/warn "illegal access: %s" fpath)
-        (.setStatus res 403)
-        (.replyResult evt)))))
+        (-> (httpResult<> HttpResponseStatus/FORBIDDEN)
+            (replyResult evt res))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,7 +133,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn serveError
-
   "Reply back an error"
   [^IoService src ^Channel ch code]
 
@@ -249,30 +173,30 @@
 (defn- serveStatic2
 
   "Reply back with a static file content"
-  [^IoService src ^Channel ch gist ^HttpEvent evt]
+  [^HttpEvent evt]
 
   (let
-    [^RouteInfo ri (.getv (.getx evt) :ri)
-     parts (.getv (.getx evt) :riParts)
-     mpt (.getv (.getx ri) :mountPoint)
-     cfg (.config src)
-     appDir (-> ^Container
-                (.server src) (.appDir))
-     ps (fpath (io/file appDir DN_PUB))
-     mpt (.replace (str mpt)
-                   "${app.dir}"
-                   ^String (fpath appDir))
-     mpt
-     (-> #(cs/replace-first %1 "{}" %2)
-         (reduce mpt parts))
-     mpt (fpath (io/file mpt))]
-    (.hold src evt (:waitMillis cfg))
-    (.dispatchEx
-      src
-      evt
-      {:router "czlab.wabbit.mvc.comms/assetHandler<>"
-       :gist gist
-       :path mpt})))
+    [appDir (.. evt source server appDir)
+     pubDir (io/file appDir DN_PUB)
+     gist (.msgGist evt)
+     r (:route gist)
+     ^RouteInfo ri (:info r)
+     mpt (-> (.getx ri)
+             (.getv :mountPoint))
+     {:keys [waitMillis]}
+     (.. evt source config)
+     mpt (reduce
+           #(cs/replace-first %1 "{}" %2)
+           (.replace (str mpt)
+                     "${app.dir}" (fpath appDir))
+           (:groups r))
+     mDir (io/file mpt)]
+    (if (spos? waitMillis)
+      (.hold (.source evt) evt waitMillis))
+    (.dispatchEx (.source evt)
+                 evt
+                 {:router "czlab.wabbit.mvc.comms/assetHandler<>"
+                  :path (fpath mDir)})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -290,41 +214,41 @@
                    (:maxIdleSecs (.config src))))
        (catch AuthError e# e#))]
     (if (some? exp)
-      (serveError src ch 403)
-      (serveStatic2 src ch gist evt))))
+      (serveError evt HttpResponseStatus/FORBIDDEN)
+      (serveStatic2 evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- serveRoute2
-
   "Handle a matched route"
-  [^IoService src ^Channel ch gist ^HttpEvent evt]
-
+  [^HttpEvent evt]
   (let
-    [^RouteInfo ri (.getv (.getx evt) :ri)
-     pms (.getv (.getx evt) :riParams)
-     cfg (.config src)
+    [gist (.msgGist evt)
+     r (:route gist)
+     ^RouteInfo ri (:info r)
+     pms (:places r)
+     {:keys [waitMillis]}
+     (.. evt source config)
      options {:router (.handler ri)
               :params (or pms {})
               :template (.template ri)}]
-    (.hold src evt (:waitMillis cfg))
-    (.dispatchEx src evt options)))
+    (if (spos? waitMillis)
+      (.hold (.source evt) evt waitMillis))
+    (.dispatchEx (.source evt) evt options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn serveRoute
-
   "Handle a matched route"
-  [^IoService src ^Channel ch gist ^HttpEvent evt]
-
+  [^HttpEvent evt]
   (let
     [exp
      (try
        (do->nil
-         (upstream gist
-                   (.appKeyBits (.server src))
+         (upstream evt
+                   (.. evt source server appKeyBits)
                    (:maxIdleSecs (.config src))))
-       (catch AuthError e# e#))]
+       (catch AuthError _ _))]
     (if (some? exp)
       (serveError src ch 403)
       (serveRoute2 src ch gist evt))))
@@ -334,9 +258,8 @@
 (def ^:private ASSET_HANDLER
   (workStream<>
     (script<>
-      #(let [^IoEvent evt (.event ^Job %2)]
-         (handleStatic (.source evt)
-                       evt
+      #(let [evt (.event ^Job %2)]
+         (handleStatic evt
                        (.getv ^Job %2 EV_OPTS))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

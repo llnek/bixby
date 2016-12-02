@@ -13,30 +13,28 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.web
 
-  (:require
-    [czlab.crypto.core :refer [genMac]]
-    [czlab.xlib.io :refer [hexify]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.twisty.core :refer [genMac]]
+            [czlab.xlib.io :refer [hexify]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.netty.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
-  (:import
-    [czlab.wabbit.etc ExpiredError AuthError]
-    [czlab.wabbit.server Container]
-    [java.net HttpCookie]
-    [czlab.xlib Muble CU]
-    [czlab.wabbit.io
-     HttpSession
-     HttpResult
-     HttpEvent
-     IoService]
-    [czlab.net RouteInfo]))
+  (:import [czlab.wabbit.etc ExpiredError AuthError]
+           [czlab.wabbit.server Container]
+           [java.net HttpCookie]
+           [czlab.xlib Muble CU]
+           [czlab.wabbit.io
+            HttpSession
+            HttpResult
+            HttpEvent
+            IoService]
+           [czlab.convoy.net HttpResult RouteInfo]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -53,10 +51,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resetFlags
-
   "A negative value means that the cookie is not stored persistently and will be deleted when the Web browser exits. A zero value causes the cookie to be deleted."
   [^HttpSession mvs maxAgeSecs]
-
   (let [maxAgeSecs (or maxAgeSecs -1)
         now (now<>)]
     (doto mvs
@@ -72,11 +68,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn wsession<>
-
   ""
   ^HttpSession
   [^bytes pkey ssl?]
-
   (let [impl (muble<> {:maxIdleSecs 0
                        :newOne true})
         _attrs (muble<>)]
@@ -142,14 +136,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeMacIt
-
   ""
-  [^czlab.netty.core.HttpMsgGist gist pkey ^String data]
-
+  [gist pkey ^String data]
   (if
     (boolean
       (some-> ^RouteInfo
-              (get-in gist [:route :routeInfo])
+              (get-in gist [:route :info])
               (.isSecure)))
     (str (genMac pkey data) "-" data)
     data))
@@ -157,11 +149,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn downstream
-
   ""
   [^IoService co gist
    ^HttpSession mvs ^HttpResult res]
-
   (let
     [{:keys [sessionAgeSecs
              domainPath
@@ -194,10 +184,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- testCookie
-
   ""
   [^bytes pkey ^RouteInfo ri p1 p2]
-
   (if (boolean (some-> ri (.isSecure)))
     (when (not= (genMac pkey p2) p1)
       (log/error "session cookie - broken")
@@ -207,14 +195,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn upstream
-
   ""
   ^HttpSession
-  [^czlab.netty.core.HttpMsgGist gist pkey maxIdleSecs]
-
+  [gist pkey maxIdleSecs]
   (let [^RouteInfo
-        ri (get-in gist
-                   [:route :routeInfo])
+        ri (get-in gist [:route :info])
         [^HttpSession mvs
          ^HttpCookie ck]
         (if (.wantSession ri)

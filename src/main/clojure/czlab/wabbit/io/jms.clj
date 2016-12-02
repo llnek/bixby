@@ -18,41 +18,39 @@
 
   czlab.wabbit.io.jms
 
-  (:require
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.sys.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.core])
 
-  (:import
-    [java.util Hashtable Properties ResourceBundle]
-    [czlab.xlib Muble Identifiable]
-    [javax.jms
-     ConnectionFactory
-     Connection
-     Destination
-     Connection
-     Message
-     MessageConsumer
-     MessageListener
-     Queue
-     QueueConnection
-     QueueConnectionFactory
-     QueueReceiver
-     QueueSession
-     Session
-     Topic
-     TopicConnection
-     TopicConnectionFactory
-     TopicSession
-     TopicSubscriber]
-    [java.io IOException]
-    [javax.naming Context InitialContext]
-    [czlab.wabbit.server Container]
-    [czlab.wabbit.io IoService JmsEvent]))
+  (:import [java.util Hashtable Properties ResourceBundle]
+           [czlab.xlib Muble Identifiable]
+           [javax.jms
+            ConnectionFactory
+            Connection
+            Destination
+            Connection
+            Message
+            MessageConsumer
+            MessageListener
+            Queue
+            QueueConnection
+            QueueConnectionFactory
+            QueueReceiver
+            QueueSession
+            Session
+            Topic
+            TopicConnection
+            TopicConnectionFactory
+            TopicSession
+            TopicSubscriber]
+           [java.io IOException]
+           [javax.naming Context InitialContext]
+           [czlab.wabbit.server Container]
+           [czlab.wabbit.io IoService JmsEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -61,7 +59,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-
   ::JMS
   [^IoService co {:keys [msg]}]
 
@@ -74,29 +71,22 @@
         (id [_] eeid)
         (source [_] co)
         (message [_] msg))
-
       {:typeid ::JmsEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onMsg
-
   ""
   [^IoService co msg]
-
   ;;if (msg!=null) block { () => msg.acknowledge() }
   (.dispatch co (ioevent<> co {:msg msg})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- inizFac
-
   ""
   ^Connection
-  [^IoService co
-   ^InitialContext ctx
-   ^ConnectionFactory cf]
-
+  [^IoService co ^InitialContext ctx ^ConnectionFactory cf]
   (let
     [{:keys [^String destination
              ^String jmsPwd
@@ -126,17 +116,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- inizTopic
-
   ""
   ^Connection
-  [^IoService co
-   ^InitialContext ctx
-   ^TopicConnectionFactory cf]
-
+  [^IoService co ^InitialContext ctx ^TopicConnectionFactory cf]
   (let
     [{:keys [^String destination
              ^String jmsUser
-             durable
+             durable?
              ^String jmsPwd]}
      (.config co)
      pwd (->> (.server co)
@@ -153,7 +139,7 @@
      t (.lookup ctx destination)]
     (if-not (inst? Topic t)
       (throwIOE "Object not of Topic type"))
-    (-> (if durable
+    (-> (if durable?
           (.createDurableSubscriber s t (juid))
           (.createSubscriber s t))
         (.setMessageListener
@@ -164,13 +150,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- inizQueue
-
   ""
   ^Connection
-  [^IoService co
-   ^InitialContext ctx
-   ^QueueConnectionFactory cf]
-
+  [^IoService co ^InitialContext ctx ^QueueConnectionFactory cf]
   (let
     [{:keys [^String destination
              ^String jmsUser
@@ -199,10 +181,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sanitize
-
   ""
   [^IoService co cfg0]
-
   (let [{:keys [jndiPwd jmsPwd]}
         cfg0
         pkey (.appKey (.server co))]
@@ -213,7 +193,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::JMS
   [^IoService co cfg0]
 
@@ -226,7 +205,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::JMS
   [^IoService co]
 
@@ -266,7 +244,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::JMS
   [^IoService co]
 

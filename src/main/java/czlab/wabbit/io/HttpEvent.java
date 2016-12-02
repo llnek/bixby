@@ -15,16 +15,15 @@
 
 package czlab.wabbit.io;
 
+import czlab.convoy.net.HttpResult;
 import java.net.HttpCookie;
 import czlab.xlib.Context;
 import czlab.xlib.XData;
 
-
-
 /**
  * @author Kenneth Leung
  */
-public interface HttpEvent extends IoEvent, IoTrigger, Context, Replyable {
+public interface HttpEvent extends IoEvent, IoTrigger, Context {
 
   /**/
   public HttpCookie cookie(String name);
@@ -67,6 +66,9 @@ public interface HttpEvent extends IoEvent, IoTrigger, Context, Replyable {
 
   /**/
   public boolean isSSL();
+
+  /**/
+  public void reply(HttpResult r);
 
   /**/
   public HttpSession session();

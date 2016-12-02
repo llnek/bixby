@@ -148,66 +148,6 @@
        :serverKey (if ssl? (io/as-url kfile))}
       (merge cfg ))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn h1Result<>
-  "Create a HttpResult object"
-  ^HttpResult
-  [^IoService co]
-  (let
-    [impl (muble<> {:version (.text HttpVersion/HTTP_1_1)
-                    :cookies []
-                    :code -1
-                    :headers {}})]
-    (reify HttpResult
-
-      (setRedirect [_ url] (.setv impl :redirect url))
-      (setVersion [_ ver]  (.setv impl :version ver))
-      (setStatus [_ code] (.setv impl :code code))
-      (status [_] (.getv impl :code))
-      (source [_] co)
-
-      (addCookie [_ c]
-        (if (some? c)
-          (let [a (.getv impl :cookies)]
-            (.setv impl :cookies (conj a c)))))
-
-      (containsHeader [_ nm]
-        (let [m (.getv impl :headers)
-              a (get m (lcase nm))]
-          (and (some? a)
-               (> (count a) 0))))
-
-      (removeHeader [_ nm]
-        (let [m (.getv impl :headers)]
-          (->> (dissoc m (lcase nm))
-               (.setv impl :headers))))
-
-      (clearHeaders [_]
-        (.setv impl :headers {}))
-
-      (addHeader [_ nm v]
-        (let [m (.getv impl :headers)
-              a (or (get m (lcase nm)) [])]
-          (.setv impl
-                 :headers
-                 (assoc m (lcase nm) (conj a v)))))
-
-      (setHeader [_ nm v]
-        (let [m (.getv impl :headers)]
-          (.setv impl
-                 :headers
-                 (assoc m (lcase nm) [v]))))
-
-      (setChunked [_ b] (.setv impl :chunked? b))
-
-      (isEmpty [_] (nil? (.getv impl :body)))
-
-      (content [_] (.getv impl :body))
-
-      (setContent [_ data]
-          (.setv impl :body data)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeLoadRoutes
@@ -278,12 +218,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resumeOnExpiry
-
   ""
   [^Channel ch ^HttpEvent evt]
-
   (try
-    (->> (httpFullReply<> 500)
+    (->> (httpResult<>
+           HttpResponseStatus/INTERNAL_SERVER_ERROR)
          (.writeAndFlush ch )
          (maybeClose evt ))
     (catch ClosedChannelException _
@@ -292,58 +231,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeWEBSockEvent
-
+(defn- wsockEvent<>
   ""
   [^IoService co ^Channel ch ssl? msg]
-
   (let
-    [text? (inst? TextWebSocketFrame msg)
-     res (wsockResult<> co)
-     eeid (seqint2)
-     _body
-     (cond
-       (inst? BinaryWebSocketFrame msg)
-       (toByteArray (.content
-                     ^BinaryWebSocketFrame msg))
-       text?
-       (.text ^TextWebSocketFrame msg))]
+    [_body
+     (-> (cond
+           (inst? BinaryWebSocketFrame msg)
+           (-> (.content
+                 ^BinaryWebSocketFrame msg)
+               (toByteArray))
+           (inst? TextWebSocketFrame msg)
+           (.text ^TextWebSocketFrame msg))
+         (xdata<>))
+     eeid (seqint2)]
     (with-meta
       (reify WebSockEvent
-
+        (isBinary [_] (instBytes? (.content _body)))
+        (isText [_] (string? (.content _body)))
         (checkAuthenticity [_] false)
         (socket [_] ch)
         (id [_] eeid)
         (isSSL [_] ssl?)
-        (isBinary [_] (not text?))
-        (isText [_] text?)
         (body [_] _body)
-        (resultObj [_] res)
-        (replyResult [this]
-          (nettyWSReply this))
         (source [_] co))
-
-      {:typeid ::WebSockEvent })))
+      {:typeid ::WebSockEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- makeHttpEvent
-
+(defn- httpEvent<>
   ""
   ^HttpEvent
-  [^IoService co ^Channel ch gist ^XData _body]
-
+  [^IoService co ^Channel ch ssl? ^WholeRequest req]
   (let
     [^InetSocketAddress laddr (.localAddress ch)
-     ^RouteInfo
-     ri (get-in gist [:route :routeInfo])
-     wantSess? (boolean
-                 (some-> ri (.wantSession)))
-     wantSecure? (boolean
-                   (some-> ri (.isSecure)))
+     _body (.content req)
+     gist (.msgGist req)
+     ^RouteInfo ri (get-in gist [:route :info])
+     wantSess? (some-> ri (.wantSession))
+     wantSecure? (some-> ri (.isSecure))
      eeid (str "event#" (seqint2))
      cookieJar (:cookies gist)
-     res (httpResult<> co)
      impl (muble<> {:stale false})]
     (with-meta
       (reify HttpEvent
@@ -385,11 +313,10 @@
 
         (scheme [_] (if (:ssl? gist) "https" "http"))
         (isStale [_] (.getv impl :stale))
-        (isSSL [_] (:ssl? gist))
+        (isSSL [_] ssl?)
         (getx [_] impl)
 
-        (resultObj [_] res)
-        (replyResult [this]
+        (reply [this res]
           (let [t (.getv impl :trigger)
                 mvs (.session this)
                 code (.status res)]
@@ -397,10 +324,10 @@
             (.unsetv impl :trigger)
             (if (.isStale this)
               (throwIOE "Event has expired"))
-            (if (some-> ri (.wantSession))
-              (if (or (nil? mvs)
-                      (nil? (.isNull mvs)))
-                (throwIOE "Invalid/Null session")))
+            (if (and wantSession?
+                     (or (nil? mvs)
+                         (nil? (.isNull mvs))))
+              (throwIOE "Invalid/Null session"))
             (if (some? mvs)
               (downstream co gist mvs res))
             (resumeWithResult ch this))))
@@ -409,50 +336,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-
   ::HTTP
-  [^IoService co {:keys [^Channel ch gist ^XData body]}]
+  [^IoService co {:keys [^Channel ch msg]}]
 
   (logcomp "ioevent" co)
   (let [ssl? (maybeSSL? ch)]
-    (comment
     (if
       (inst? WebSocketFrame msg)
-      (makeWEBSockEvent co ch ssl? msg)))
-    (makeHttpEvent co ch gist body)))
+      (wsockEvent<> co ch ssl? msg)
+      (httpEvent<> co ch ssl? msg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- h1Handler->onRead
-
   ""
-  [^ChannelHandlerContext ctx
-   ^IoService co ^FullHttpRequest msg]
-
-  (if-not (decoderSuccess? msg)
-    (throw (or (decoderError msg)
-               (DecoderException. "Unknown decoder error"))))
-
-  (let [gist (getAKey ctx MSGGIST_KEY)
-        body
-        (if-some [r (cast? MixedFullRequest msg)]
-          (if (.isInMemory r) (.getBytes r) (.getFile r))
-          (-> (.content msg) (toByteArray)))
-        x (xdata<> body true)
-        {:keys [waitMillis]}
+  [^ChannelHandlerContext ctx ^IoService co ^WholeRequest req]
+  (let [{:keys [waitMillis]}
         (.config co)
         ^HttpEvent
-        evt (ioevent<> co {:ch (.channel ctx)
-                           :gist gist
-                           :body x})]
+        evt (ioevent<> co
+                       {:msg req
+                        :ch (.channel ctx)})]
     (if (spos? waitMillis)
       (.hold co evt waitMillis))
-    (.dispatch co evt )))
+    (.dispatch co evt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->start
-
   ::HTTP
   [^IoService co]
 
@@ -466,14 +377,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod io->stop
-
   ::HTTP
   [^IoService co]
 
   (logcomp "io->stop" co)
   (let [{:keys [bootstrap channel]}
         (.impl (.getx co))]
-    (stopServer bootstrap channel)
+    (stopServer channel)
     (doto (.getx co)
       (.unsetv :bootstrap)
       (.unsetv :channel))
@@ -482,7 +392,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::HTTP
   [^IoService co cfg0]
 
@@ -490,16 +399,11 @@
   (let [ctr (.server co)
         cfg (->> (httpBasicConfig co cfg0)
                  (.setv (.getx co) :emcfg))
-        h
-        (proxy [InboundFilter] []
-          (channelRead0 [ctx msg]
-            (h1Handler->onRead ctx co msg)))]
+        h (ihandler<> #(h1Handler->onRead %1 co %2))]
     (->>
       (httpServer<>
         (reify CPDecorator
-          (forH1 [_ ops] h)
-          (forH2H1 [_ _])
-          (forH2 [_ _]))
+          (forH1 [_ ops] h))
         cfg)
       (.setv (.getx co) :bootstrap ))
     co))

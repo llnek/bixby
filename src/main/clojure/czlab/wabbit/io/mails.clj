@@ -13,13 +13,12 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc "Implementation for email services."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.io.mails
 
-  (:require
-    [czlab.crypto.codec :refer [passwd<>]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.twisty.codec :refer [passwd<>]]
+            [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.io.loops]
         [czlab.wabbit.sys.core]
@@ -27,21 +26,20 @@
         [czlab.xlib.str]
         [czlab.wabbit.io.core])
 
-  (:import
-    [czlab.wabbit.io IoService EmailEvent]
-    [javax.mail.internet MimeMessage]
-    [javax.mail
-     Flags$Flag
-     Flags
-     Store
-     Folder
-     Session
-     Provider
-     Provider$Type]
-    [czlab.wabbit.server Container]
-    [java.util Properties]
-    [java.io IOException]
-    [czlab.xlib Muble Identifiable]))
+  (:import [czlab.wabbit.io IoService EmailEvent]
+           [javax.mail.internet MimeMessage]
+           [javax.mail
+            Flags$Flag
+            Flags
+            Store
+            Folder
+            Session
+            Provider
+            Provider$Type]
+           [czlab.wabbit.server Container]
+           [java.util Properties]
+           [java.io IOException]
+           [czlab.xlib Muble Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -67,10 +65,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- closeFolder
-
   ""
   [^Folder fd]
-
   (if (some? fd)
     (try!
       (if (.isOpen fd) (.close fd true)))))
@@ -78,10 +74,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- closeStore
-
   ""
   [^IoService co]
-
   (let [{:keys [store folder]}
         (.impl (.getx co))]
     (closeFolder folder)
@@ -95,10 +89,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- resolveProvider
-
   ""
   [^IoService co ^String cz ^String proto]
-
   (let
     [demo? (= "true" (sysProp "wabbit.demo.flag"))
      ss (-> (doto (Properties.)
@@ -125,11 +117,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ctorEmailEvent
-
+(defn- emailEvent<>
   ""
   [^IoService co msg]
-
   (let [eeid (str "event#" (seqint2))]
     (with-meta
       (reify EmailEvent
@@ -137,25 +127,21 @@
         (id [_] eeid)
         (source [_] co)
         (message [_] msg))
-
       {:typeid ::EmailEvent })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-
   ::EMAIL
   [^IoService co {:keys [msg]}]
 
-  (ctorEmailEvent co msg))
+  (emailEvent<> co msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- connectPop3
-
   ""
   [^IoService co]
-
   (let [{:keys [^Session session
                 ^String proto]}
         (.impl (.getx co))
@@ -185,10 +171,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- readPop3
-
   ""
   [^IoService co msgs]
-
   (let [d? (.getv (.getx co) :deleteMsg?)]
     (doseq [^MimeMessage mm  msgs]
       (doto mm
@@ -200,10 +184,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- scanPop3
-
   ""
   [^IoService co]
-
   (let [{:keys [^Folder folder
                 ^Store store]}
         (.impl (.getx co))]
@@ -223,7 +205,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
-
   ::POP3
   [^IoService co _]
 
@@ -239,7 +220,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sanitize
-
   ""
   [^IoService co cfg0]
 
@@ -258,7 +238,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::POP3
   [^IoService co cfg0]
 
@@ -283,7 +262,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod loopableWakeup
-
   ::IMAP
   [^IoService co _]
 
@@ -299,7 +277,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
-
   ::IMAP
   [^IoService co cfg0]
 

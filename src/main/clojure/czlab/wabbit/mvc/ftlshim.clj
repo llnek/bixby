@@ -12,31 +12,31 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^{:doc "Helpers related to Freemarker."
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.mvc.ftlshim
 
-  (:require
-    [clojure.walk :as cw :refer [postwalk]]
-    [czlab.xlib.core :refer [throwBadArg]]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io])
+  (:require [clojure.walk :as cw :refer [postwalk]]
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io])
 
-  (:import
-    [freemarker.template
-     TemplateMethodModelEx
-     TemplateBooleanModel
-     TemplateCollectionModel
-     TemplateDateModel
-     TemplateHashModelEx
-     TemplateNumberModel
-     TemplateScalarModel
-     TemplateSequenceModel
-     TemplateMethodModel
-     Configuration DefaultObjectWrapper]
-    [java.io File Writer StringWriter]))
+  (:use [czlab.xlib.core]
+        [czlab.xlib.str])
+
+  (:import [freemarker.template
+            TemplateMethodModelEx
+            TemplateBooleanModel
+            TemplateCollectionModel
+            TemplateDateModel
+            TemplateHashModelEx
+            TemplateNumberModel
+            TemplateScalarModel
+            TemplateSequenceModel
+            TemplateMethodModel
+            Configuration
+            DefaultObjectWrapper]
+           [java.io File Writer StringWriter]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -93,10 +93,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- fn->method
-
   ""
   [func]
-
   (reify
     TemplateMethodModelEx
     (exec [_ args]
@@ -105,7 +103,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- strkey
-
   ""
   [[k v]]
 
@@ -116,12 +113,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- map->model
-
   "Stringifies keys replacing hyphens with underscores,
    and replaces functions with template methods"
-
   [m]
-
   (cw/postwalk
     (fn [x]
       (cond
@@ -135,42 +129,47 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn genFtlConfig
-
   ""
-  [ & {:keys [root shared] :or {shared {}}} ]
+  {:tag Configuration}
 
-  (let [cfg (Configuration.)]
-    (when (.exists ^File root)
-      (log/info "freemarker template source: %s" root)
-      (doto cfg
-        (.setDirectoryForTemplateLoading root)
-        (.setObjectWrapper (DefaultObjectWrapper.)))
-      (doseq [[k v] (map->model shared)]
-        (.setSharedVariable cfg ^String k v)))
-    cfg))
+  ([] (genFtlConfig nil))
+  ([{:keys [root shared] :or {shared {}}}]
+   (let [cfg (Configuration.)]
+     (if-some [dir (cast? File (io/file root))]
+       (when (.exists dir)
+         (log/info "freemarker template source: %s" root)
+         (doto cfg
+           (.setDirectoryForTemplateLoading dir)
+           (.setObjectWrapper (DefaultObjectWrapper.)))
+         (doseq [[k v] (map->model shared)]
+           (.setSharedVariable cfg ^String k v))))
+     cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn renderFtl
-
   "Renders a template given by Configuration cfg and a path
    using model as input and writes it to out
    If out is not provided, returns a string
    If translate-model? is true, map->model is run on the model"
+  {:tag String}
 
-  (^String [^Configuration cfg path model]
-    (renderFtl cfg (StringWriter.) path model))
+  ([cfg writer path model]
+   (renderFtl cfg writer path model nil))
 
-  (^String [^Configuration cfg ^Writer out
-   ^String path model & {:keys [translate-model?]
-                         :or {translate-model? true}}]
-    (when-some [tpl (.getTemplate cfg path)]
-      (.process tpl
-                (if translate-model?
-                  (map->model model)
-                  model)
-                out))
-    (str out)))
+  ([cfg path model]
+   (renderFtl cfg (StringWriter.) path model nil))
+
+  ([^Configuration cfg ^Writer out
+    ^String path model {:keys [translate-model?]
+                        :or {translate-model? true}}]
+   (when-some [tpl (.getTemplate cfg path)]
+     (.process tpl
+               (if translate-model?
+                 (map->model model)
+                 model)
+               out))
+   (str out)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
