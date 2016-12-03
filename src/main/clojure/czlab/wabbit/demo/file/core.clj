@@ -12,66 +12,61 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^:no-doc
-    ^{:author "Kenneth Leung"}
+(ns ^{:no-doc true
+      :author "Kenneth Leung"}
 
   czlab.wabbit.demo.file.core
 
-  (:require
-    [czlab.xlib.core :refer :all]
-    [czlab.xlib.logging :as log]
-    [clojure.java.io :as io]
-    [czlab.xlib.str :refer [hgl?]])
+  (:require [czlab.xlib.logging :as log]
+            [clojure.java.io :as io])
 
-  (:use [czlab.xlib.io]
-        [czlab.wflow.core])
+  (:use [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.xlib.io]
+        [czlab.flux.wflow.core])
 
-  (:import
-    [czlab.wabbit.server Container ServiceProvider Service]
-    [java.util.concurrent.atomic AtomicInteger]
-    [czlab.wflow Job TaskDef]
-    [czlab.wabbit.io FileEvent]
-    [java.util Date]
-    [java.io File IOException]))
+  (:import [czlab.wabbit.server Container ServiceProvider Service]
+           [java.util.concurrent.atomic AtomicInteger]
+           [czlab.flux.wflow Job TaskDef]
+           [czlab.wabbit.io FileEvent]
+           [java.util Date]
+           [java.io File IOException]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(let [ctr (AtomicInteger.)]
-  (defn- ncount ""
-    []
-    (.incrementAndGet ctr)))
+(def ^:private GINT (AtomicInteger.))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- ncount "" [] (.incrementAndGet ^AtomicInteger GINT))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demoGen
-
   ""
   ^TaskDef
   []
-
   (script<>
     #(let [p (-> ^Container
                  (.server ^Job %2)
                  (.service :default-sample))]
-       (spitUtf8 (io/file (.getv (.getx p) :targetFolder)
-                          (str "ts-" (ncount) ".txt"))
-                 (str "Current time is " (Date.))))))
+       (-> (.getv (.getx p) :targetFolder)
+           (io/file (str "ts-" (ncount) ".txt"))
+           (spitUtf8 (str "Current time is " (Date.)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demoPick
-
   ""
   ^TaskDef
   []
-
   (script<>
-    #(let [f (-> ^FileEvent (.event ^Job %2)
-                  (.file)) ]
+    #(let [f (-> ^FileEvent
+                 (.event ^Job %2)
+                 (.file))]
        (println "picked up new file: " f)
        (println "content: " (slurpUtf8 f)))))
 

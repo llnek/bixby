@@ -12,9 +12,7 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.etc;
-
 
 import czlab.wabbit.server.Container;
 

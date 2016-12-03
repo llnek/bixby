@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 
-/**/
+/**
+ */
 @SuppressWarnings("unused")
 public class CljAppLoader extends URLClassLoader {
 
@@ -180,13 +181,14 @@ public class CljAppLoader extends URLClassLoader {
         }
       }
 
-      if (c == null && _parent != null && !tried_parent && sys) {
+      if (c == null && _parent != null &&
+          !tried_parent && sys) {
         tried_parent=true;
         source=_parent;
         c= _parent.loadClass(name);
       }
 
-      if (c == null && ex!=null) {
+      if (c == null && ex != null) {
         throw ex;
       }
 
@@ -196,6 +198,7 @@ public class CljAppLoader extends URLClassLoader {
 
       return c;
     }
+
   }
 
   /**/

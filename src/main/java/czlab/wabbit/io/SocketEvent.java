@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 import czlab.xlib.Disposable;
@@ -22,7 +21,7 @@ import java.io.InputStream;
 /**
  * @author Kenneth Leung
  */
-public interface SocketEvent extends IoEvent, Disposable {
+public interface SocketEvent extends IoEvent {
 
   /**/
   public OutputStream sockOut();

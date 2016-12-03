@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.server;
 
 import czlab.xlib.Identifiable;
@@ -23,6 +22,7 @@ import czlab.xlib.Context;
  * @author Kenneth Leung
  */
 public interface Component extends Context, Identifiable, Versioned {
+
 }
 
 

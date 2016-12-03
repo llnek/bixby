@@ -12,23 +12,20 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
+
+import czlab.xlib.Cancelable;
 
 /**
  * @author Kenneth Leung
  */
-public interface IoTrigger {
+public interface IoTrigger extends Cancelable {
 
   /**/
   public void setTrigger(Object t);
 
   /**/
   public void fire(Object arg);
-
-  /**
-   */
-  public void cancel();
 
 }
 

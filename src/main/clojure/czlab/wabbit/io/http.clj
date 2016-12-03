@@ -89,7 +89,7 @@
             InetSocketAddress]
            [czlab.wabbit.io
             HttpEvent
-            WebSockEvent]
+            WSockEvent]
            [io.netty.channel
             Channel
             ChannelHandler
@@ -245,7 +245,7 @@
          (xdata<>))
      eeid (seqint2)]
     (with-meta
-      (reify WebSockEvent
+      (reify WSockEvent
         (isBinary [_] (instBytes? (.content _body)))
         (isText [_] (string? (.content _body)))
         (checkAuthenticity [_] false)
@@ -254,7 +254,7 @@
         (isSSL [_] ssl?)
         (body [_] _body)
         (source [_] co))
-      {:typeid ::WebSockEvent})))
+      {:typeid ::WSockEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

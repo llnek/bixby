@@ -17,25 +17,25 @@
 
   czlab.wabbit.demo.http.core
 
-  (:require
-    [czlab.xlib.process :refer [delayExec]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core :refer [try!]]
-    [czlab.xlib.str :refer [hgl?]])
+  (:require [czlab.xlib.process :refer [delayExec]]
+            [czlab.xlib.logging :as log])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [czlab.wflow Job TaskDef]
-    [czlab.wabbit.io HttpEvent HttpResult]
-    [czlab.wabbit.server Container]))
+  (:import [czlab.convoy.net HttpResult]
+           [czlab.flux.wflow Job TaskDef]
+           [czlab.wabbit.io HttpEvent]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private
+(def
+  ^:private
   FX
   (str "<?xml version = \"1.0\" encoding = \"utf-8\"?>"
        "<hello xmlns=\"http://simple/\">"
@@ -47,26 +47,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
-    #(let [^HttpEvent ev (.event ^Job %2)
-           ^HttpResult
-            res (.resultObj ev) ]
-        ;; construct a simple html page back to caller
-        ;; by wrapping it into a stream data object
-        (doto res
-          (.setHeader "content-type" "text/xml")
-          (.setContent FX)
-          (.setStatus 200))
-        ;; associate this result with the orignal event
-        ;; this will trigger the http response
-        (.replyResult ev))))
+    #(let
+       [^HttpEvent ev (.event ^Job %2)
+        res (httpResult<>)]
+       ;; construct a simple html page back to caller
+       ;; by wrapping it into a stream data object
+       (doto res
+         (.setContentType "text/xml")
+         (.setContent FX))
+       ;; associate this result with the orignal event
+       ;; this will trigger the http response
+       (replyResult (.socket ev) res))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

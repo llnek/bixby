@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 import javax.mail.internet.MimeMessage;
@@ -21,9 +20,11 @@ import javax.mail.internet.MimeMessage;
  * @author Kenneth Leung
  */
 public interface EmailEvent extends IoEvent {
+
   /**
    */
   public MimeMessage message();
+
 }
 
 

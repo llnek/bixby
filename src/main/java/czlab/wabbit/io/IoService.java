@@ -26,6 +26,9 @@ public interface IoService extends Service {
   public void dispatchEx(IoEvent evt, Object arg);
 
   /**/
+  public void hold(IoTrigger t, long millis);
+
+  /**/
   public void dispatch(IoEvent evt);
 
   /**/
@@ -33,9 +36,6 @@ public interface IoService extends Service {
 
   /**/
   public Object config();
-
-  /**/
-  public void hold(IoTrigger t, long millis);
 
 }
 

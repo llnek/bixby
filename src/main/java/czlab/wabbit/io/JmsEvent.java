@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 import javax.jms.Message;
@@ -20,7 +19,7 @@ import javax.jms.Message;
 /**
  * @author Kenneth Leung
  */
-public interface JmsEvent  extends IoEvent {
+public interface JmsEvent extends IoEvent {
 
   /**
    */

@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.etc;
 
 /**
@@ -24,13 +23,13 @@ public interface AuthPlugin extends Plugin {
   public void checkAction(Object acctObj, Object action);
 
   /**/
+  public Object login(Object user, Object pwd);
+
+  /**/
   public Object addAccount(Object options);
 
   /**/
   public boolean hasAccount(Object options);
-
-  /**/
-  public Object login(Object user, Object pwd);
 
   /**/
   public Iterable<?> roles(Object acctObj);

@@ -12,50 +12,28 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
+
 package czlab.wabbit.io;
 
-import czlab.wabbit.server.Container;
-
+import czlab.xlib.XData;
 
 /**
  * @author Kenneth Leung
  */
-public class NonEvent implements IoEvent {
+public interface WSockEvent extends IoEvent {
 
-  private void init(Container s) {
-    _svc=new NulService(s);
-  }
+  /**/
+  public boolean isBinary();
 
-  public NonEvent(Container s) {
-    init(s);
-  }
+  /**/
+  public boolean isText();
 
-  public NonEvent() {
-    this(null);
-  }
+  /**/
+  public boolean isSSL();
 
-
-  @Override
-  public Object id() {
-    return "nada";
-  }
-
-  @Override
-  public IoService source() {
-    return _svc;
-  }
-
-  private IoService _svc;
-
-  @Override
-  public boolean isStale() {
-    return false;
-  }
-
-  @Override
-  public Object socket() {
-    return null;
-  }
+  /**
+   */
+  public XData body();
 
 }
 

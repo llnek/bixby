@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 import java.io.File;
@@ -20,7 +19,7 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface FileEvent  extends IoEvent {
+public interface FileEvent extends IoEvent {
 
   /**
    */
@@ -29,6 +28,7 @@ public interface FileEvent  extends IoEvent {
   /**
    */
   public File file();
+
 }
 
 

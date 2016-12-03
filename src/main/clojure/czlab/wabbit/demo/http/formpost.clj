@@ -12,27 +12,25 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^:no-doc
-    ^{:author "Kenneth Leung"}
+(ns
+  ^{:no-doc true
+    :author "Kenneth Leung"}
 
   czlab.wabbit.demo.http.formpost
 
-  (:require
-    [czlab.xlib.process :refer [delayExec]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core :refer [cast?]]
-    [czlab.xlib.str :refer [hgl?]])
+  (:require [czlab.xlib.process :refer [delayExec]]
+            [czlab.xlib.logging :as log])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [czlab.wabbit.io HttpEvent HttpResult]
-    [czlab.wflow Job TaskDef]
-    [java.util ListIterator]
-    [czlab.xlib XData]
-    [czlab.net ULFileItem ULFormItems]
-    [czlab.wabbit.server Container]))
+  (:import [czlab.convoy.net HttpResult ULFileItem ULFormItems]
+           [czlab.convoy.wflow Job TaskDef]
+           [czlab.wabbit.io HttpEvent]
+           [java.util ListIterator]
+           [czlab.xlib XData]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -40,36 +38,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
-    #(let [^HttpEvent ev (.event ^Job %2)
-           ^HttpResult
-            res (.resultObj ev)
-            data (.body ev)
-            stuff (when (and (some? data)
-                             (.hasContent data))
-                    (.content data)) ]
-        (if-some [^ULFormItems
+    #(let
+       [^HttpEvent ev (.event ^Job %2)
+        res (httpResult<>)
+        data (.body ev)
+        stuff (when (and (some? data)
+                         (.hasContent data))
+                (.content data))]
+       (if-some [^ULFormItems
                  fis (cast? ULFormItems stuff)]
-          (doseq [^ULFileItem fi (.intern fis)]
-            (println "Fieldname : " (.getFieldName fi))
-            (println "Name : " (.getName fi))
-            (println "Formfield : " (.isFormField fi))
-            (if (.isFormField fi)
-              (println "Field value: " (.getString fi))
-              (if-some [xs (.getFile fi)]
-                (println "Field file = "
-                         (.getCanonicalPath xs)))))
-          ;;else
-          (println "Error: data is not ULFormItems."))
-        (.setStatus res 200)
-        ;; associate this result with the orignal event
-        ;; this will trigger the http response
-        (.replyResult ev))))
+         (doseq [^ULFileItem fi (.intern fis)]
+           (println "Fieldname : " (.getFieldName fi))
+           (println "Name : " (.getName fi))
+           (println "Formfield : " (.isFormField fi))
+           (if (.isFormField fi)
+             (println "Field value: " (.getString fi))
+             (if-some [xs (.getFile fi)]
+               (println "Field file = "
+                        (.getCanonicalPath xs)))))
+         ;;else
+         (println "Error: data is not ULFormItems."))
+       ;; associate this result with the orignal event
+       ;; this will trigger the http response
+       (replyResult (.socket ev) res))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

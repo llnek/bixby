@@ -19,9 +19,8 @@ import czlab.convoy.net.HttpInvoke;
 /**
  * @author Kenneth Leung
  */
-public interface HttpEvent extends HttpInvoke, IoEvent, IoTrigger {
+public interface HttpEvent extends IoEvent, IoTrigger, HttpInvoke {
 
 }
-
 
 

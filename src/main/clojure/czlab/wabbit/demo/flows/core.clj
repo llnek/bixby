@@ -12,20 +12,24 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:no-doc true
       :author "Kenneth Leung"}
 
   czlab.wabbit.demo.flows.core
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [czlab.wflow ChoiceExpr BoolExpr Job TaskDef WorkStream]))
+  (:import [czlab.flux.wflow
+            ChoiceExpr
+            BoolExpr
+            Job
+            TaskDef
+            WorkStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 
 ;; What this example demostrates is a webservice which takes in some user info, authenticate the
 ;; user, then exec some EC2 operations such as granting permission to access an AMI, and
@@ -38,32 +42,29 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- getAuthMtd
-
   ""
   ^TaskDef
   [t]
-
   (case t
-    "facebook" (script<> (fn [_ _] (println "-> use facebook")))
-    "google+" (script<> (fn [_ _] (println "-> use google+")))
-    "openid" (script<> (fn [_ _] (println "-> use open-id")))
-    (script<> (fn [_ _] (println "-> use internal db")))))
+    "facebook" (script<> #(let [x %2] (println "-> use facebook")))
+    "google+" (script<> #(let [x %2] (println "-> use google+")))
+    "openid" (script<> (let [x %2] (println "-> use open-id")))
+    (script<> #(let[x %2] (println "-> use internal db")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step1. choose a method to authenticate the user
 ;;here, we'll use a switch() to pick which method
-(defn- auth-user
-
+(defn- authUser
   ""
   ^TaskDef
   []
-
   ;; hard code to use facebook in this example, but you
-  ;; could check some data from the job, such as URI/Query params
-  ;; and decide on which mth-value to switch() on
+  ;; could check some data from the job,
+  ;; such as URI/Query params
+  ;; and decide on which value to switch() on
   (choice<>
     (reify ChoiceExpr
-      (choose [_ j]
+      (choose [_ _]
         (println "step(1): choose an authentication method")
         "facebook"))
     (getAuthMtd "db")
@@ -73,27 +74,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step2
-(defonce ^:private ^TaskDef
+(def
+  ^:private
+  ^TaskDef
   GetProfile
-  (script<> (fn [_ _] (println "step(2): get user profile\n"
-                               "->user is superuser"))))
+  (script<> #(let [x %2]
+               (println "step(2): get user profile\n"
+                        "->user is superuser"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant permission
 ;;so here , we are using a while() to do that
-(defonce ^:private ^TaskDef
-  prov_ami
+(def
+  ^:private
+  ^TaskDef
+  provAmi
   (wloop<>
     (reify BoolExpr
-      (ptest [_ j]
-        (let [v (.getv ^Job j :ami_count)
+      (ptest [_ job]
+        (let [v (.getv job :ami_count)
               c (if (some? v) (inc v) 0)]
-         (.setv ^Job j :ami_count c)
+         (.setv job :ami_count c)
          (< c 3))))
     (script<>
       #(let [v (.getv ^Job %2 :ami_count)
-             c (if (some? v) v 0) ]
+             c (if (some? v) v 0)]
          (if (== 2 c)
            (println "step(3): granted permission for user "
                     "to launch this ami(id)")
@@ -105,18 +111,20 @@
 ;;step3'. we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant volume permission
 ;;so here , we are using a while() to do that
-(defonce ^:private ^TaskDef
-  prov_vol
+(def
+  ^:private
+  ^TaskDef
+  provVol
   (wloop<>
     (reify BoolExpr
-      (ptest [_ j]
-        (let [v (.getv ^Job j :vol_count)
-              c (if (some? v) (inc v) 0) ]
-          (.setv ^Job j :vol_count c)
+      (ptest [_ job]
+        (let [v (.getv job :vol_count)
+              c (if (some? v) (inc v) 0)]
+          (.setv job :vol_count c)
           (< c 3))))
     (script<>
       #(let [v (.getv ^Job %2 :vol_count)
-             c (if (some? v) v 0) ]
+             c (if (some? v) v 0)]
          (if (== c 2)
            (println "step(3'): granted permission for user "
                     "to access/snapshot this volume(id)")
@@ -127,18 +135,20 @@
 ;;step4. pretend to write stuff to db. again, we are going to dummy up the case
 ;;where the db write fails a couple of times
 ;;so again , we are using a while() to do that
-(defonce ^:private ^TaskDef
-  save_sdb
+(def
+  ^:private
+  ^TaskDef
+  saveSdb
   (wloop<>
     (reify BoolExpr
-      (ptest [_ j]
-        (let [v (.getv ^Job j :wdb_count)
+      (ptest [_ job]
+        (let [v (.getv job :wdb_count)
               c (if (some? v) (inc v) 0)]
-          (.setv ^Job j :wdb_count c)
+          (.setv job :wdb_count c)
           (< c 3))))
     (script<>
       #(let [v (.getv ^Job %2 :wdb_count)
-             c (if (some? v) v 0) ]
+             c (if (some? v) v 0)]
          (if (== c 2)
            (println "step(4): wrote stuff to database successfully")
            (println "step(4): failed to contact db- server, "
@@ -149,46 +159,53 @@
 ;;in parallel.  To do that, we use a split-we want to fork off both tasks in parallel.  Since
 ;;we don't want to continue until both provisioning tasks are done. we use a AndJoin to hold/freeze
 ;;the workflow
-(defonce ^:private ^TaskDef
+(def
+  ^:private
+  ^TaskDef
   Provision
   (group<>
-    (fork<> {:join :and} prov_ami prov_vol)
-    save_sdb))
+    (fork<> {:join :and} provAmi provVol)
+    saveSdb))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this is the final step, after all the work are done, reply back to the caller.
 ;; like, returning a 200-OK
-(defonce ^:private ^TaskDef
+(def
+  ^:private
+  ^TaskDef
   ReplyUser
-  (script<> (fn [_ _]
-              (println "step(5): we'd probably return a 200 OK "
-                             "back to caller here"))))
+  (script<> #(let [x %2]
+               (println "step(5): we'd probably return a 200 OK "
+                        "back to caller here"))))
 
-(defonce ^:private ^TaskDef
+(def
+  ^:private
+  ^TaskDef
   ErrorUser
-  (script<> (fn [_ _]
-              (println "step(5): we'd probably return a 200 OK "
-                             "but with errors"))))
+  (script<> #(let [x %2]
+               (println "step(5): we'd probably return a 200 OK "
+                        "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
-(defonce ^:private ^TaskDef
+(def
+  ^:private
+  ^TaskDef
   FinalTest
   (ternary<>
-    (reify BoolExpr (ptest [_ j] true))
+    (reify BoolExpr (ptest [_ _] true))
     ReplyUser
     ErrorUser))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^WorkStream
   []
   ;; the workflow is a small (4 step) workflow, with the 3rd step (Provision) being
   ;; a split, which forks off more steps in parallel.
   (workStream<>
-    (group<> (auth-user) GetProfile Provision FinalTest)))
+    (group<> (authUser) GetProfile Provision FinalTest)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

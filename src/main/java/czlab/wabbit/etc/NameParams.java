@@ -12,7 +12,6 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.etc;
 
 import java.util.Arrays;
@@ -62,12 +61,15 @@ public class NameParams {
   /**
    */
   public boolean equals(Object obj) {
-    if (obj == null || getClass() != obj.getClass() ) { return false; } else {
-      NameParams other = (NameParams) obj;
-      if ( !_name.equals( other._name)) { return false; } else {
-        return Arrays.equals(_pms, other._pms);
-      }
+    if (obj == null ||
+        getClass() != obj.getClass() ) {
+      return false;
     }
+    NameParams other = (NameParams) obj;
+    if ( !_name.equals( other._name)) {
+      return false;
+    }
+    return Arrays.equals(_pms, other._pms);
   }
 
 }

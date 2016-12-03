@@ -12,15 +12,15 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 import czlab.flux.server.Event;
+import czlab.xlib.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface IoEvent extends Event {
+public interface IoEvent extends Event, Disposable {
 
   /**
    */
@@ -34,12 +34,9 @@ public interface IoEvent extends Event {
 
   /**
    */
-  public Object socket();
-
-  /**
-   */
-  public boolean isStale();
-
+  default public Object socket() {
+    return null;
+  }
 
 }
 

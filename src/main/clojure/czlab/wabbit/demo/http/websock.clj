@@ -12,26 +12,23 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
     ^{:author "Kenneth Leung"}
 
   czlab.wabbit.demo.http.websock
 
-  (:require
-    [czlab.xlib.process :refer [delayExec]]
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.core :refer :all]
-    [czlab.xlib.str :refer :all]
-    [czlab.xlib.meta :refer [isBytes?]])
+  (:require [czlab.xlib.process :refer [delayExec]]
+            [czlab.xlib.logging :as log]
+            [czlab.xlib.meta :refer [instBytes?]])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [czlab.wabbit.io WebSockEvent WebSockResult]
-    [czlab.wflow Job TaskDef]
-    [czlab.xlib XData]
-    [czlab.wabbit.server Container]))
+  (:import [czlab.flux.wflow Job TaskDef]
+           [czlab.wabbit.io WSockEvent]
+           [czlab.xlib XData]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -39,27 +36,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
-    #(let [^WebSockEvent ev (.event ^Job %2)
-            res (.resultObj ev)
-            data (.body ev)
-            stuff (when (and (some? data)
-                             (.hasContent data))
-                    (.content data)) ]
-        (cond
-          (instance? String stuff)
-          (println "Got poked by websocket-text: " stuff)
+    #(let
+       [^WSockEvent ev (.event ^Job %2)
+        data (.body ev)
+        stuff (when (and (some? data)
+                         (.hasContent data))
+                (.content data))]
+       (cond
+         (instance? String stuff)
+         (println "Got poked by websocket-text: " stuff)
 
-          (isBytes? (class stuff))
-          (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
+         (instBytes? stuff)
+         (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
 
-          :else
-          (println "Funky data from websocket????")))))
+         :else
+         (println "Funky data from websocket????")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

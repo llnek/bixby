@@ -12,13 +12,12 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
 /**
  * @author Kenneth Leung
  */
-public interface TimerEvent  extends IoEvent {
+public interface TimerEvent extends IoEvent {
 
   /**/
   public boolean isRepeating();
