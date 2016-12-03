@@ -63,7 +63,7 @@
             SQLr
             JDBCPool
             JDBCInfo]
-           [czlab.wabbit.io HttpSession HttpEvent]))
+           [czlab.wabbit.io HttpEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

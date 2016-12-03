@@ -12,70 +12,14 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-
 package czlab.wabbit.io;
 
-import czlab.convoy.net.HttpResult;
-import java.net.HttpCookie;
-import czlab.xlib.Context;
-import czlab.xlib.XData;
+import czlab.convoy.net.HttpInvoke;
 
 /**
  * @author Kenneth Leung
  */
-public interface HttpEvent extends IoEvent, IoTrigger, Context {
-
-  /**/
-  public HttpCookie cookie(String name);
-
-  /**/
-  public Iterable<HttpCookie> cookies();
-
-  /**/
-  public XData body();
-
-  /**/
-  public Object msgGist();
-
-  /**/
-  public String localAddr();
-
-  /**/
-  public String localHost();
-
-  /**/
-  public int localPort();
-
-  /**/
-  public String remoteAddr();
-
-  /**/
-  public String remoteHost();
-
-  /**/
-  public int remotePort();
-
-  /**/
-  public String serverName();
-
-  /**/
-  public int serverPort();
-
-  /**/
-  public String scheme();
-
-  /**/
-  public boolean isSSL();
-
-  /**/
-  public void reply(HttpResult r);
-
-  /**/
-  public HttpSession session();
-
-  /**
-   */
-  public boolean checkSession();
+public interface HttpEvent extends HttpInvoke, IoEvent, IoTrigger {
 
 }
 

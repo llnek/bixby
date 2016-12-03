@@ -25,13 +25,12 @@
         [czlab.xlib.core]
         [czlab.xlib.str])
 
-  (:import [czlab.wabbit.etc ExpiredError AuthError]
-           [czlab.convoy.net HttpResult RouteInfo]
+  (:import [czlab.convoy.net HttpSession HttpResult RouteInfo]
+           [czlab.wabbit.etc ExpiredError AuthError]
            [czlab.wabbit.server Container]
            [java.net HttpCookie]
            [czlab.xlib Muble CU]
            [czlab.wabbit.io
-            HttpSession
             HttpEvent
             IoService]))
 
