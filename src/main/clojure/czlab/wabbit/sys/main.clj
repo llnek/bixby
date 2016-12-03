@@ -32,8 +32,7 @@
         [czlab.xlib.process]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.xlib.consts]
-        [czlab.wabbit.sys.dfts])
+        [czlab.xlib.consts])
 
   (:import [io.netty.bootstrap ServerBootstrap]
            [czlab.wabbit.server CljAppLoader]

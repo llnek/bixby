@@ -17,7 +17,7 @@
 
   czlab.wabbit.etc.cmd2
 
-  (:require [czlab.xlib.format :refer [writeEdnString readEdn]]
+  (:require [czlab.xlib.format :refer [writeEdnStr readEdn]]
             [czlab.xlib.guids :refer [uuid<>]]
             [czlab.xlib.logging :as log]
             [czlab.xlib.antlib :as a]
@@ -74,11 +74,12 @@
 (defn bundleApp
   "Bundle an app"
   [homeDir appDir outDir]
-  (let [dir (mkdirs (io/file outDir))]
+  (let [dir (mkdirs (io/file outDir))
+        a (io/file appDir)]
     (->>
       (a/antZip
-        {:destFile (io/file dir (str (.getName app) ".zip"))
-         :basedir (io/file appDir)
+        {:destFile (io/file dir (str (.getName a) ".zip"))
+         :basedir a
          :includes "**/*"})
       (a/runTasks* ))))
 

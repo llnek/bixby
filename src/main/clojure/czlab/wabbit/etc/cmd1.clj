@@ -17,18 +17,18 @@
 
   czlab.wabbit.etc.cmd1
 
-  (:require [czlab.xlib.format :refer [writeEdnString readEdn]]
-            [czlab.twisty.core :refer [assertJce dbgProvider]]
+  (:require [czlab.twisty.core :refer [assertJce dbgProvider]]
+            [czlab.xlib.format :refer [writeEdnStr readEdn]]
             [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
             [czlab.wabbit.sys.main :refer [startViaCLI]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cs]
+            ;;[czlab.tpcl.boot :refer :all]
             [boot.core :as bcore])
 
   (:use [czlab.wabbit.etc.cmd2]
-        [czlab.tpcl.boot]
         [czlab.xlib.guids]
         [czlab.xlib.core]
         [czlab.xlib.str]
@@ -366,7 +366,7 @@
           (assoc root id (assoc gist :service svc))))]
      (when (some? nw)
        (->> (assoc cf :services nw)
-            (writeEdnString)
+            (writeEdnStr)
             (spitUtf8 fp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

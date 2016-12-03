@@ -73,6 +73,10 @@ public interface HttpEvent extends IoEvent, IoTrigger, Context {
   /**/
   public HttpSession session();
 
+  /**
+   */
+  public boolean checkSession();
+
 }
 
 

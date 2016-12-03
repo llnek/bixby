@@ -21,20 +21,19 @@
             [czlab.xlib.io :refer [hexify]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.netty.core]
+  (:use [czlab.convoy.netty.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
   (:import [czlab.wabbit.etc ExpiredError AuthError]
+           [czlab.convoy.net HttpResult RouteInfo]
            [czlab.wabbit.server Container]
            [java.net HttpCookie]
            [czlab.xlib Muble CU]
            [czlab.wabbit.io
             HttpSession
-            HttpResult
             HttpEvent
-            IoService]
-           [czlab.convoy.net HttpResult RouteInfo]))
+            IoService]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -150,15 +149,16 @@
 ;;
 (defn downstream
   ""
-  [^IoService co gist
-   ^HttpSession mvs ^HttpResult res]
+  [^HttpEvent evt ^HttpResult res]
   (let
     [{:keys [sessionAgeSecs
              domainPath
              domain
              hidden
              maxIdleSecs]}
-     (.config co)]
+     (.. evt source config)
+     mvs (.session evt)
+     gist (.msgGist evt)]
     (when-not (.isNull mvs)
       (log/debug "session ok, about to set-cookie!")
       (if (.isNew mvs)

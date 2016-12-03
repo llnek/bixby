@@ -26,7 +26,7 @@
             [czlab.xlib.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io]
-            [czlab.dbio.core
+            [czlab.horde.dbio.core
              :refer [dbspec<>
                      dbpool<>
                      dbschema<>]])
@@ -37,14 +37,13 @@
     [czlab.xlib.str]
     [czlab.xlib.io]
     [czlab.wabbit.io.core]
-    [czlab.wabbit.sys.dfts]
     [czlab.wabbit.io.loops]
     [czlab.wabbit.io.mails]
     [czlab.wabbit.io.files]
     [czlab.wabbit.io.jms]
     [czlab.wabbit.io.http]
-    [czlab.wabbit.io.socket])
-    ;;[czlab.wabbit.mvc.ftlshim])
+    [czlab.wabbit.io.socket]
+    [czlab.wabbit.mvc.ftlshim])
 
   (:import [czlab.wabbit.etc PluginFactory Plugin]
            [czlab.horde Schema JDBCPool DBAPI]

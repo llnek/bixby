@@ -26,6 +26,10 @@ public interface IoTrigger {
   /**/
   public void fire(Object arg);
 
+  /**
+   */
+  public void cancel();
+
 }
 
 

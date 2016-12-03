@@ -17,21 +17,23 @@
 
   czlab.wabbit.sys.core
 
-  (:require [czlab.xlib.io :refer [changeContent readAsStr]]
+  (:require [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
   (:use [czlab.xlib.core]
+        [czlab.xlib.io]
         [czlab.xlib.str])
 
-  (:import [org.apache.commons.lang3.text StrSubstitutor]
-           [czlab.wabbit.server Component]
+  (:import [czlab.wabbit.server ConfigError AppGist Component]
+           [org.apache.commons.lang3.text StrSubstitutor]
            [czlab.xlib
-            Hierarchial
+            Versioned
             Muble
-            Identifiable
-            Versioned]
+            I18N
+            Hierarchial
+            Identifiable]
            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -154,6 +156,12 @@
 (def K_META :meta )
 (def K_KILLPORT :discarder)
 
+(def EV_OPTS :____eventoptions)
+(def JS_LAST :____lastresult)
+(def JS_CRED :credential)
+(def JS_USER :principal)
+(def JS_FLATLINE :____flatline)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmacro gtid "typeid of component" [obj] `(:typeid (meta ~obj)))
@@ -218,6 +226,63 @@
     value
     (-> (expandSysProps value)
         (expandEnvVars ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;asserts that the directory is readable & writable.
+(defn ^:no-doc precondDir
+  "Assert folder(s) are read-writeable?"
+  [f & dirs]
+  (doseq [d (cons f dirs)]
+    (test-cond (rstr (I18N/base)
+                     "dir.no.rw" d)
+               (dirReadWrite? d))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;asserts that the file is readable
+(defn ^:no-doc precondFile
+  "Assert file(s) are readable?"
+  [ff & files]
+  (doseq [f (cons ff files)]
+    (test-cond (rstr (I18N/base)
+                     "file.no.r" f)
+               (fileRead? f))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn ^:no-doc maybeDir
+  "If the key maps to a File"
+  ^File
+  [^Muble m kn]
+  (let [v (.getv m kn)]
+    (condp instance? v
+      String (io/file v)
+      File v
+      (trap! ConfigError (rstr (I18N/base)
+                               "wabbit.no.dir" kn)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn podMeta
+  "Create metadata for an application bundle"
+  ^AppGist
+  [^String app conf urlToApp]
+  {:pre [(map? conf)]}
+  (let [pid (juid)
+        info
+        (merge {:version "1.0"
+                :name app
+                :main ""}
+               (:info conf)
+               {:path urlToApp})
+        impl (muble<> info)]
+    (log/info "pod-meta:\n%s" (.impl impl))
+    (with-meta
+      (reify
+        AppGist
+        (id [_] (format "%s{%s}" (:name info) pid))
+        (version [_] (:version info))
+        (getx [_] impl))
+      {:typeid  ::AppGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

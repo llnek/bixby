@@ -19,7 +19,6 @@
 
   (:require [czlab.convoy.net.util :refer [parseBasicAuth]]
             [czlab.twisty.codec :refer [passwd<>]]
-            [czlab.convoy.net.mime :refer [getCharset]]
             [czlab.xlib.io :refer [xdata<>]]
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io]
@@ -28,6 +27,8 @@
   (:use [czlab.convoy.netty.routes]
         [czlab.convoy.netty.server]
         [czlab.convoy.netty.core]
+        [czlab.convoy.netty.resp]
+        [czlab.flux.wflow.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.io.core]
         [czlab.twisty.ssl]
@@ -36,7 +37,9 @@
         [czlab.xlib.meta]
         [czlab.wabbit.io.web])
 
-  (:import [czlab.convoy.netty MixedFullRequest InboundFilter]
+  (:import [czlab.convoy.net HttpResult RouteCracker RouteInfo]
+           [czlab.convoy.netty WholeRequest InboundHandler]
+           [czlab.convoy.netty CPDecorator TcpPipeline]
            [java.nio.channels ClosedChannelException]
            [io.netty.handler.codec.http.websocketx
             TextWebSocketFrame
@@ -46,14 +49,12 @@
             ServerCookieDecoder
             ServerCookieEncoder]
            [io.netty.handler.codec DecoderException]
-           [czlab.convoy.netty CPDecorator TcpPipeline]
-           [czlab.wabbit.net WebAsset RangeInput]
            [io.netty.bootstrap ServerBootstrap]
            [io.netty.buffer ByteBuf Unpooled]
            [io.netty.handler.ssl SslHandler]
-           [czlab.convoy.net RouteCracker RouteInfo]
+           [czlab.flux.wflow Job]
            [czlab.wabbit.server Container]
-           [czlab.wabbit.io IoService]
+           [czlab.wabbit.io IoService IoEvent]
            [clojure.lang APersistentMap]
            [czlab.twisty IPassword]
            [java.util Timer TimerTask]
@@ -88,9 +89,7 @@
             InetSocketAddress]
            [czlab.wabbit.io
             HttpEvent
-            HttpResult
-            WebSockEvent
-            WebSockResult]
+            WebSockEvent]
            [io.netty.channel
             Channel
             ChannelHandler
@@ -211,9 +210,9 @@
 ;;
 (defn- resumeWithResult
   ""
-  [ch evt]
+  [evt res]
   (if-some [e (cast? HttpEvent evt)]
-    (replyResult ch (.resultObj e))))
+    (replyResult (.socket e) res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -277,6 +276,7 @@
       (reify HttpEvent
 
         (checkAuthenticity [_] wantSecure?)
+        (checkSession [_] wantSess?)
         (session [_] (.getv impl :session))
         (id [_] eeid)
         (source [_] co)
@@ -304,6 +304,11 @@
           (str (gistHeader gist "server_name")))
 
         (setTrigger [_ t] (.setv impl :trigger t))
+        (cancel [_]
+          (if-some [t (.getv impl :trigger)]
+            (cancelTimerTask t))
+          (.unsetv impl :trigger))
+
         (fire [this _]
           (when-some [t (.getv impl :trigger)]
             (.setv impl :stale true)
@@ -314,23 +319,7 @@
         (scheme [_] (if (:ssl? gist) "https" "http"))
         (isStale [_] (.getv impl :stale))
         (isSSL [_] ssl?)
-        (getx [_] impl)
-
-        (reply [this res]
-          (let [t (.getv impl :trigger)
-                mvs (.session this)
-                code (.status res)]
-            (some-> t (cancelTimerTask ))
-            (.unsetv impl :trigger)
-            (if (.isStale this)
-              (throwIOE "Event has expired"))
-            (if (and wantSession?
-                     (or (nil? mvs)
-                         (nil? (.isNull mvs))))
-              (throwIOE "Invalid/Null session"))
-            (if (some? mvs)
-              (downstream co gist mvs res))
-            (resumeWithResult ch this))))
+        (getx [_] impl))
       {:typeid ::HTTPEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -398,15 +387,50 @@
   (logcomp "comp->init" co)
   (let [ctr (.server co)
         cfg (->> (httpBasicConfig co cfg0)
-                 (.setv (.getx co) :emcfg))
-        h (ihandler<> #(h1Handler->onRead %1 co %2))]
+                 (.setv (.getx co) :emcfg))]
     (->>
       (httpServer<>
-        (reify CPDecorator
-          (forH1 [_ ops] h))
+        (proxy [CPDecorator][]
+          (forH1 [_]
+            (ihandler<>
+              #(h1Handler->onRead %1 co %2))))
         cfg)
       (.setv (.getx co) :bootstrap ))
     co))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod processOrphan
+  HttpEvent
+  [_]
+  ;; 500 or 503
+  (workStream<>
+    (script<>
+      #(let [^Job job %2
+             s (or (.getv job :statusCode)
+                   500)
+             ^IoEvent evt (.event job)]
+         (->> (httpResult<> (HttpResponseStatus/valueOf s))
+              (replyResult (.socket evt)))
+         nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn replyEvent
+  ""
+  [^HttpEvent evt ^HttpResult res]
+  (let [mvs (.session evt)
+        code (.status res)]
+    (.cancel evt)
+    (if (.isStale evt)
+      (throwIOE "Event has expired"))
+    (if (and (.checkSession evt)
+             (or (nil? mvs)
+                 (nil? (.isNull mvs))))
+      (throwIOE "Invalid/Null session"))
+    (if (some? mvs)
+      (downstream evt res))
+    (resumeWithResult evt res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

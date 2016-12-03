@@ -35,9 +35,9 @@
         [czlab.horde.dbio.core])
 
   (:import [czlab.wabbit.etc AuthError UnknownUser DuplicateUser]
+           [czlab.convoy.net HttpResult ULFormItems ULFileItem]
            [org.apache.shiro.config IniSecurityManagerFactory]
            [org.apache.shiro.authc UsernamePasswordToken]
-           [czlab.convoy.net ULFormItems ULFileItem]
            [czlab.xlib Muble I18N BadDataError]
            [org.apache.shiro.subject Subject]
            [org.apache.shiro SecurityUtils]
@@ -57,16 +57,13 @@
             AuthPlugin
             PluginError
             PluginFactory]
-           [czlab.horde.dbio
+           [czlab.horde
             DBAPI
             Schema
             SQLr
             JDBCPool
             JDBCInfo]
-           [czlab.wabbit.io
-            HttpSession
-            HttpEvent
-            HttpResult]))
+           [czlab.wabbit.io HttpSession HttpEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

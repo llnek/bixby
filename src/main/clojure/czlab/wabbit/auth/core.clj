@@ -18,8 +18,8 @@
 
   czlab.wabbit.auth.core
 
-  (:require [czlab.convoy.net.util :refer [filterFormFields]]
-            [czlab.xlib.format :refer [readJson writeJson]]
+  (:require [czlab.xlib.format :refer [readJsonStr writeJsonStr]]
+            [czlab.convoy.net.util :refer [filterFormFields]]
             [czlab.wabbit.io.http :refer [scanBasicAuth]]
             [czlab.twisty.codec :refer [caesarDecrypt]]
             [czlab.xlib.logging :as log])
@@ -85,7 +85,7 @@
     [xs (some-> evt (.body) (.getBytes))
      json (-> (if (some? xs)
                 (stringify xs) "{}")
-              (readJson #(lcase %)))]
+              (readJsonStr #(lcase %)))]
     (preduce<map>
       #(let [[k [a1 a2]] %2]
          (if-some [fv (get json k)]

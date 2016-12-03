@@ -22,14 +22,17 @@
             [clojure.string :as cs])
 
   (:use [czlab.convoy.netty.core]
+        [czlab.convoy.netty.resp]
         [czlab.wabbit.io.http]
         [czlab.wabbit.io.web]
         [czlab.xlib.consts]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
         [czlab.flux.wflow.core]
         [czlab.wabbit.io.core]
         [czlab.wabbit.sys.core])
 
-  (:import [czlab.convoy.net HttpResult RouteInfo RouteCracker]
+  (:import [czlab.convoy.net WebContent HttpResult RouteInfo RouteCracker]
            [czlab.xlib XData Muble Hierarchial Identifiable]
            [czlab.wabbit.io IoService IoEvent HttpEvent]
            [io.netty.handler.codec.http HttpResponseStatus]
@@ -104,7 +107,7 @@
   (let
     [appDir (.. evt source server appDir)
      pubDir (io/file appDir DN_PUB)
-     cfg (.config src)
+     cfg (.. evt source config)
      check? (:fileAccessCheck? cfg)
      fpath (str (:path args))
      gist (.msgGist evt)]
@@ -116,7 +119,7 @@
       (do
         (log/warn "illegal access: %s" fpath)
         (-> (httpResult<> HttpResponseStatus/FORBIDDEN)
-            (replyResult evt res))))))
+            (replyResult evt ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,12 +131,12 @@
       [rts (.. evt source server cljrt)
        res (httpResult<> status)
        {:keys [errorHandler]}
-       (.config src)
+       (.. evt source config)
        ^WebContent
        rc (if (hgl? errorHandler)
             (.callEx rts
                      errorHandler
-                     (.code status)))
+                     (.status res)))
        ctype (or (some-> rc (.contentType))
                  "application/octet-stream")
        body (some-> rc (.content))]
@@ -183,9 +186,9 @@
     [exp
      (try
        (do->nil
-         (upstream gist
-                   (.appKeyBits (.server src))
-                   (:maxIdleSecs (.config src))))
+         (upstream (.msgGist evt)
+                   (.appKeyBits (.. evt source server))
+                   (:maxIdleSecs (.. evt source config))))
        (catch AuthError _ _))]
     (if (some? exp)
       (serveError evt HttpResponseStatus/FORBIDDEN)
@@ -221,7 +224,7 @@
        (do->nil
          (upstream evt
                    (.. evt source server appKeyBits)
-                   (:maxIdleSecs (.config src))))
+                   (:maxIdleSecs (.. evt source config))))
        (catch AuthError _ _))]
     (if (some? exp)
       (serveError evt HttpResponseStatus/FORBIDDEN)

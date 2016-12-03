@@ -17,8 +17,8 @@
 
   czlab.wabbit.io.loops
 
-  (:require [czlab.xlib.process :refer [async! safeWait]]
-            [czlab.xlib.dates :refer [parseDate]]
+  (:require [czlab.xlib.dates :refer [parseDate]]
+            [czlab.xlib.process :refer [async!]]
             [czlab.xlib.meta :refer [getCldr]]
             [czlab.xlib.logging :as log])
 
@@ -131,7 +131,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-  ::RepeatingTimer [^IoService co _] (timeEvent<> co true))
+  ::RepeatingTimer [^IoService co _] (timerEvent<> co true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

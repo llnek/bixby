@@ -23,8 +23,7 @@
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.sys.dfts]
-        [czlab.wabbit.etc.svcs]
+  (:use [czlab.wabbit.etc.svcs]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.sys.extn]
         [czlab.wabbit.sys.jmx]
@@ -65,7 +64,7 @@
   "Make sure the pod setup is ok"
   ^AppGist
   [^Execvisor execv desDir]
-  (log/info "app dir : %s => inspecting..." des)
+  (log/info "app dir : %s => inspecting..." desDir)
   ;;create the pod meta and register it
   ;;as a application
   (let

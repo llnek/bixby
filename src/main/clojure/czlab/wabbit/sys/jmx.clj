@@ -155,7 +155,7 @@
       (reg [_ obj domain nname paths]
         (let [nm (objectName<> domain nname paths)
               bs (.getv impl :beanSvr)]
-          (->> (doReg bs nm (mkJmxBean obj))
+          (->> (doReg bs nm (jmxBean<> obj))
                (swap! objNames conj))
           nm))
 

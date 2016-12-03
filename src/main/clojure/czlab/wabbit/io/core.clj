@@ -24,8 +24,7 @@
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.flux.wflow.core]
-        [czlab.wabbit.sys.core]
-        [czlab.wabbit.sys.dfts])
+        [czlab.wabbit.sys.core])
 
   (:import [czlab.wabbit.io IoTrigger IoService IoEvent]
            [czlab.flux.wflow WorkStream Job TaskDef]
@@ -46,6 +45,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmulti processOrphan
+  "Handle unhandled events"
+  {:tag WorkStream} (fn [j] (class (.event ^Job j))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod processOrphan
+  IoEvent
+  [_]
+  (workStream<>
+    (script<>
+      #(let [^Job job %2
+             evt (.event job)]
+         (log/error "event '%s' {job:#s} dropped"
+                    (:typeid (meta evt)) (.id job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,7 +138,7 @@
   :czlab.wabbit.io.core/Service
   [co ^Job job ^Throwable e]
   (log/exception e)
-  (some-> (fatalErrorFlow<> job)
+  (some-> (processOrphan job)
           (.execWith job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,7 +157,8 @@
   [^IoService src evt args]
   (log/debug "service '%s' onevent called" (.id src))
   (let
-    [c1 (:router args)
+    [cfg (.config src)
+     c1 (:router args)
      c0 (:handler cfg)
      ctr (.server src)
      cfg (.config src)
