@@ -21,8 +21,7 @@
             [clojure.java.io :as io]
             [clojure.string :as cs])
 
-  (:use [czlab.convoy.netty.core]
-        [czlab.convoy.netty.resp]
+  (:use [czlab.convoy.net.core]
         [czlab.wabbit.io.http]
         [czlab.wabbit.io.web]
         [czlab.xlib.consts]
@@ -78,7 +77,7 @@
   ""
   [^HttpEvent evt file]
   (let [^Channel ch (.socket evt)
-        res (httpResult<> )
+        res (httpResult<> ch)
         gist (.msgGist evt)
         fp (io/file file)]
     (log/debug "serving file: %s" (fpath fp))
@@ -116,10 +115,10 @@
             (false? check?))
       (->> (maybeStripUrlCrap fpath)
            (getStatic evt))
-      (do
+      (let [ch (.socket evt)]
         (log/warn "illegal access: %s" fpath)
-        (-> (httpResult<> HttpResponseStatus/FORBIDDEN)
-            (replyResult evt ))))))
+        (->> (httpResult<> ch HttpResponseStatus/FORBIDDEN)
+             (replyResult ch))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,7 +128,7 @@
   (try
     (let
       [rts (.. evt source server cljrt)
-       res (httpResult<> status)
+       res (httpResult<> (.socket evt) status)
        {:keys [errorHandler]}
        (.. evt source config)
        ^WebContent

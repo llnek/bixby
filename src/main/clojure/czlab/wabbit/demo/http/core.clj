@@ -21,6 +21,7 @@
             [czlab.xlib.logging :as log])
 
   (:use [czlab.flux.wflow.core]
+        [czlab.convoy.net.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
@@ -53,7 +54,7 @@
   (script<>
     #(let
        [^HttpEvent ev (.event ^Job %2)
-        res (httpResult<>)]
+        res (httpResult<> (.socket ev))]
        ;; construct a simple html page back to caller
        ;; by wrapping it into a stream data object
        (doto res

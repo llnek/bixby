@@ -27,7 +27,7 @@
   (:use [czlab.convoy.netty.routes]
         [czlab.convoy.netty.server]
         [czlab.convoy.netty.core]
-        [czlab.convoy.netty.resp]
+        [czlab.convoy.net.core]
         [czlab.flux.wflow.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.io.core]
@@ -221,6 +221,7 @@
   [^Channel ch ^HttpEvent evt]
   (try
     (->> (httpResult<>
+           ch
            HttpResponseStatus/INTERNAL_SERVER_ERROR)
          (.writeAndFlush ch )
          (maybeClose evt ))
@@ -410,7 +411,9 @@
              s (or (.getv job :statusCode)
                    500)
              ^IoEvent evt (.event job)]
-         (->> (httpResult<> (HttpResponseStatus/valueOf s))
+         (->> (httpResult<>
+                (.socket evt)
+                (HttpResponseStatus/valueOf s))
               (replyResult (.socket evt)))
          nil))))
 

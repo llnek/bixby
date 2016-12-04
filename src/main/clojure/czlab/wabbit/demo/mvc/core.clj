@@ -19,7 +19,8 @@
 
   (:require [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.convoy.net.core]
+        [czlab.wabbit.sys.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
@@ -64,10 +65,10 @@
           (.loadTemplate co
                          tpl
                          (ftlContext))
-          res (httpResult<>)]
+          res (httpResult<> (.socket evt))]
          (.setContentType res  ctype)
          (.setContent res data)
-         (replyResult (.socket) res)))
+         (replyResult (.socket evt) res)))
     :catch
     (fn [_]
       (log/info "Oops, I got an error!"))))

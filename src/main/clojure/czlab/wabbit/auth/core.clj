@@ -24,7 +24,7 @@
             [czlab.twisty.codec :refer [caesarDecrypt]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.convoy.netty.core]
+  (:use [czlab.convoy.net.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 

@@ -22,6 +22,7 @@
             [czlab.xlib.logging :as log])
 
   (:use [czlab.flux.wflow.core]
+        [czlab.convoy.net.core]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
@@ -44,7 +45,7 @@
   (script<>
     #(let
        [^HttpEvent ev (.event ^Job %2)
-        res (httpResult<>)
+        res (httpResult<> (.socket ev))
         data (.body ev)
         stuff (when (and (some? data)
                          (.hasContent data))
