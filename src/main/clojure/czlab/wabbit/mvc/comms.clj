@@ -34,14 +34,11 @@
   (:import [czlab.convoy.net WebContent HttpResult RouteInfo RouteCracker]
            [czlab.xlib XData Muble Hierarchial Identifiable]
            [czlab.wabbit.io IoService IoEvent HttpEvent]
-           [io.netty.handler.codec.http HttpResponseStatus]
            [czlab.wabbit.server Container]
            [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.etc AuthError]
            [java.util Date]
-           [java.io File]
-           [io.netty.buffer Unpooled]
-           [io.netty.channel Channel]))
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -85,7 +82,7 @@
       (if (or (nil? fp)
               (not (.exists fp)))
         (do
-          (.setStatus res (.code HttpResponseStatus/NOT_FOUND))
+          (.setStatus res 404)
           (replyResult ch res))
         (do
           (.setContent res fp)
@@ -93,8 +90,7 @@
       (catch Throwable e#
         (log/error "get: %s" (:uri gist) e#)
         (try!
-          (.setStatus res
-                      (.code HttpResponseStatus/INTERNAL_SERVER_ERROR))
+          (.setStatus res 500)
           (.setContent res nil)
           (replyResult ch res))))))
 
@@ -117,7 +113,7 @@
            (getStatic evt))
       (let [ch (.socket evt)]
         (log/warn "illegal access: %s" fpath)
-        (->> (httpResult<> ch HttpResponseStatus/FORBIDDEN)
+        (->> (httpResult<> ch 403)
              (replyResult ch))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +186,7 @@
                    (:maxIdleSecs (.. evt source config))))
        (catch AuthError _ _))]
     (if (some? exp)
-      (serveError evt HttpResponseStatus/FORBIDDEN)
+      (serveError evt 403)
       (serveStatic2 evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -226,7 +222,7 @@
                    (:maxIdleSecs (.. evt source config))))
        (catch AuthError _ _))]
     (if (some? exp)
-      (serveError evt HttpResponseStatus/FORBIDDEN)
+      (serveError evt 403)
       (serveRoute2 evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

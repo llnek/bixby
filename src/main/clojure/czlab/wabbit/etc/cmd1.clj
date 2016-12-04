@@ -391,7 +391,7 @@
          :repeat :czlab.wabbit.io.loops/RepeatingTimer
          :once :czlab.wabbit.io.loops/OnceTimer
          :files :czlab.wabbit.io.files/FilePicker
-         :http :czlab.wabbit.io.netty/NettyMVC
+         :http :czlab.wabbit.io.http/WebMVC
          :pop3 :czlab.wabbit.io.mails/POP3
          :imap :czlab.wabbit.io.mails/IMAP
          :tcp :czlab.wabbit.io.socket/Socket

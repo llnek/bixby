@@ -18,6 +18,7 @@
   czlab.wabbit.sys.main
 
   (:require [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
+            [czlab.wabbit.io.http :refer [cfgShutdownServer]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
             [czlab.xlib.scheduler :refer [scheduler<>]]
             [czlab.xlib.resources :refer [getResource]]
@@ -26,21 +27,14 @@
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlab.convoy.netty.discarder]
-        [czlab.convoy.netty.server]
-        [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.sys.core]
         [czlab.xlib.process]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [io.netty.bootstrap ServerBootstrap]
-           [czlab.wabbit.server CljAppLoader]
+  (:import [czlab.wabbit.server CljAppLoader]
            [clojure.lang Atom APersistentMap]
-           [io.netty.channel
-            Channel
-            ChannelFuture
-            ChannelFutureListener]
            [czlab.wabbit.server
             Execvisor
             Component
@@ -86,15 +80,15 @@
   "Stop all apps and processors"
   ^Atom
   [^Atom gist]
-  (let [{:keys [pidFile
+  (let [{:keys [killServer
                 execv
-                kill9]}
+                pidFile]}
         @gist]
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
-      (stopServer (:channel kill9))
+      (if (fn? killServer) (killServer))
       (log/info "remote shutdown hook closed - ok")
       (log/info "containers are shutting down...")
       (log/info "about to stop wabbit...")
@@ -113,13 +107,10 @@
   ^Atom
   [^Atom gist]
   (log/info "enabling remote shutdown hook")
-  (let [bs (discardHTTPD<> #(stopCLI gist))
-        ch (->> {:port (-> (sysProp "wabbit.kill.port")
-                           (convLong  4444))}
-                (startServer bs))]
-    (swap! gist assoc :kill9  {:bootstrap bs
-                               :channel ch})
-    gist))
+  (->> (-> (sysProp "wabbit.kill.port")
+           (convLong  4444))
+       (cfgShutdownServer gist #(stopCLI gist)))
+  gist)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor

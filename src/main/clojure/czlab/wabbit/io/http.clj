@@ -24,8 +24,9 @@
             [clojure.java.io :as io]
             [clojure.string :as cs])
 
-  (:use [czlab.convoy.netty.routes]
+  (:use [czlab.convoy.netty.discarder]
         [czlab.convoy.netty.server]
+        [czlab.convoy.netty.routes]
         [czlab.convoy.netty.core]
         [czlab.convoy.net.core]
         [czlab.flux.wflow.core]
@@ -55,7 +56,7 @@
            [czlab.flux.wflow Job]
            [czlab.wabbit.server Container]
            [czlab.wabbit.io IoService IoEvent]
-           [clojure.lang APersistentMap]
+           [clojure.lang Atom APersistentMap]
            [czlab.twisty IPassword]
            [java.util Timer TimerTask]
            [io.netty.handler.codec.http
@@ -434,6 +435,23 @@
     (if (some? mvs)
       (downstream evt res))
     (resumeWithResult evt res)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn cfgShutdownServer
+  ""
+  ^Atom
+  [^Atom gist func port]
+  (let [bs (discardHTTPD<> func)
+        ch (->> {:port port}
+                (startServer bs))]
+    (swap! gist
+           assoc
+           :kill9
+           {:bootstrap bs
+            :channel ch
+            :killServer #(stopServer ch)})
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
