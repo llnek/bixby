@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.etc.shell
 
@@ -34,8 +34,8 @@
         [czlab.wabbit.etc.cmd1])
 
   (:import [czlab.wabbit.etc CmdHelpError]
-           [java.io File]
            [czlab.xlib I18N]
+           [java.io File]
            [java.util ResourceBundle List Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,7 +104,7 @@
   [args]
   (let [cmd (keyword (first args))
         args (vec (drop 1 args))
-        [f h] (*wabbit-tasks* cmd)]
+        [f _] (*wabbit-tasks* cmd)]
     (if (fn? f)
       (f args)
       (trap! CmdHelpError))))

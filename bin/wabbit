@@ -1,24 +1,14 @@
 #!/bin/bash
 
 splash_crawford() {
-
-echo "${txtylw}  _____ __  _   ____  ____   ___"
-echo "${txtylw} / ___/|  |/ ] /    ||    \ /   \\"
-echo "${txtylw}(   \_ |  ' / |  o  ||  D  )     |"
-echo "${txtylw} \__  ||    \ |     ||    /|  O  |"
-echo "${txtylw} /  \ ||     ||  _  ||    \|     |"
-echo "${txtylw} \    ||  .  ||  |  ||  .  \     |"
-echo "${txtylw}  \___||__|\_||__|__||__|\_|\___/"
+echo "${txtylw}   __    __   ____  ____   ____   ____  ______"
+echo "${txtylw}  |  |__|  | /    ||    \ |    \ |    ||      |"
+echo "${txtylw}  |  |  |  ||  o  ||  o  )|  o  ) |  | |      |"
+echo "${txtylw}  |  |  |  ||     ||     ||     | |  | |_|  |_|"
+echo "${txtylw}  |  '  '  ||  _  ||  O  ||  O  | |  |   |  |"
+echo "${txtylw}   \      / |  |  ||     ||     | |  |   |  |"
+echo "${txtylw}    \_/\_/  |__|__||_____||_____||____|  |__|"
 echo "${txtcyn}"
-}
-
-splash_bubble() {
-
-echo "  _   _   _   _   _"
-echo " / \ / \ / \ / \ / \\"
-echo "( S | K | A | R | O )"
-echo " \_/ \_/ \_/ \_/ \_/"
-
 }
 
 txtred=$(tput setaf 1) #Red
