@@ -15,24 +15,37 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.io.web
+  czlab.wabbit.mvc.web
 
   (:require [czlab.twisty.core :refer [genMac]]
             [czlab.xlib.io :refer [hexify]]
-            [czlab.xlib.logging :as log])
+            [czlab.xlib.logging :as log]
+            [clojure.java.io :as io]
+            [clojure.string :as cs])
 
-  (:use [czlab.convoy.netty.core]
+  (:use [czlab.convoy.net.core]
+        [czlab.wabbit.io.http]
+        [czlab.xlib.consts]
         [czlab.xlib.core]
-        [czlab.xlib.str])
+        [czlab.xlib.str]
+        [czlab.flux.wflow.core]
+        [czlab.wabbit.io.core]
+        [czlab.wabbit.sys.core])
 
-  (:import [czlab.convoy.net HttpSession HttpResult RouteInfo]
+  (:import [czlab.xlib CU XData Muble Hierarchial Identifiable]
+           [czlab.wabbit.io IoService IoEvent HttpEvent]
            [czlab.wabbit.etc ExpiredError AuthError]
+           [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.server Container]
            [java.net HttpCookie]
-           [czlab.xlib Muble CU]
-           [czlab.wabbit.io
-            HttpEvent
-            IoService]))
+           [czlab.convoy.net
+            WebContent
+            HttpResult
+            RouteInfo
+            HttpSession
+            RouteCracker]
+           [java.util Date]
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -248,6 +261,219 @@
         (log/warn "no s-cookie found, invalidate!")
         (.invalidate mvs)))
     mvs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeStripUrlCrap
+  "Want to handle case where the url has stuff after the file name.
+   For example:  /public/blab&hhh or /public/blah?ggg"
+  ^String
+  [^String path]
+
+  (let [pos (.lastIndexOf path (int \/))]
+    (if (spos? pos)
+      (let [p1 (.indexOf path (int \?) pos)
+            p2 (.indexOf path (int \&) pos)
+            p3 (cond
+                 (and (> p1 0)
+                      (> p2 0))
+                 (Math/min p1 p2)
+                 (> p1 0) p1
+                 (> p2 0) p2
+                 :else -1)]
+        (if (> p3 0)
+          (.substring path 0 p3)
+          path))
+      path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getStatic
+
+  ""
+  [^HttpEvent evt file]
+  (let [^Channel ch (.socket evt)
+        res (httpResult<> ch)
+        gist (.msgGist evt)
+        fp (io/file file)]
+    (log/debug "serving file: %s" (fpath fp))
+    (try
+      (if (or (nil? fp)
+              (not (.exists fp)))
+        (do
+          (.setStatus res 404)
+          (replyResult ch res))
+        (do
+          (.setContent res fp)
+          (replyResult ch res)))
+      (catch Throwable e#
+        (log/error "get: %s" (:uri gist) e#)
+        (try!
+          (.setStatus res 500)
+          (.setContent res nil)
+          (replyResult ch res))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- handleStatic
+  "Handle static resource"
+  [^HttpEvent evt args]
+  (let
+    [appDir (.. evt source server appDir)
+     pubDir (io/file appDir DN_PUB)
+     cfg (.. evt source config)
+     check? (:fileAccessCheck? cfg)
+     fpath (str (:path args))
+     gist (.msgGist evt)]
+    (log/debug "request for file: %s" fpath)
+    (if (or (.startsWith fpath (fpath pubDir))
+            (false? check?))
+      (->> (maybeStripUrlCrap fpath)
+           (getStatic evt))
+      (let [ch (.socket evt)]
+        (log/warn "illegal access: %s" fpath)
+        (->> (httpResult<> ch 403)
+             (replyResult ch))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn serveError
+  "Reply back an error"
+  [^HttpEvent evt status]
+  (try
+    (let
+      [rts (.. evt source server cljrt)
+       res (httpResult<> (.socket evt) status)
+       {:keys [errorHandler]}
+       (.. evt source config)
+       ^WebContent
+       rc (if (hgl? errorHandler)
+            (.callEx rts
+                     errorHandler
+                     (.status res)))
+       ctype (or (some-> rc (.contentType))
+                 "application/octet-stream")
+       body (some-> rc (.content))]
+      (when (and (some? body)
+                 (.hasContent body))
+        (.setContentType res ctype)
+        (.setContent res body))
+      (replyResult (.socket evt) res))
+    (catch Throwable _ )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- serveStatic2
+
+  "Reply back with a static file content"
+  [^HttpEvent evt]
+
+  (let
+    [appDir (.. evt source server appDir)
+     pubDir (io/file appDir DN_PUB)
+     gist (.msgGist evt)
+     r (:route gist)
+     ^RouteInfo ri (:info r)
+     mpt (-> (.getx ri)
+             (.getv :mountPoint))
+     {:keys [waitMillis]}
+     (.. evt source config)
+     mpt (reduce
+           #(cs/replace-first %1 "{}" %2)
+           (.replace (str mpt)
+                     "${app.dir}" (fpath appDir))
+           (:groups r))
+     mDir (io/file mpt)]
+    (if (spos? waitMillis)
+      (.hold (.source evt) evt waitMillis))
+    (.dispatchEx (.source evt)
+                 evt
+                 {:router "czlab.wabbit.mvc.web/assetHandler<>"
+                  :path (fpath mDir)})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn serveStatic
+  "Reply back with a static file content"
+  [^HttpEvent evt]
+  (let
+    [exp
+     (try
+       (do->nil
+         (upstream (.msgGist evt)
+                   (.appKeyBits (.. evt source server))
+                   (:maxIdleSecs (.. evt source config))))
+       (catch AuthError _ _))]
+    (if (some? exp)
+      (serveError evt 403)
+      (serveStatic2 evt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- serveRoute2
+  "Handle a matched route"
+  [^HttpEvent evt]
+  (let
+    [gist (.msgGist evt)
+     r (:route gist)
+     ^RouteInfo ri (:info r)
+     pms (:places r)
+     {:keys [waitMillis]}
+     (.. evt source config)
+     options {:router (.handler ri)
+              :params (or pms {})
+              :template (.template ri)}]
+    (if (spos? waitMillis)
+      (.hold (.source evt) evt waitMillis))
+    (.dispatchEx (.source evt) evt options)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn serveRoute
+  "Handle a matched route"
+  [^HttpEvent evt]
+  (let
+    [exp
+     (try
+       (do->nil
+         (upstream evt
+                   (.. evt source server appKeyBits)
+                   (:maxIdleSecs (.. evt source config))))
+       (catch AuthError _ _))]
+    (if (some? exp)
+      (serveError evt 403)
+      (serveRoute2 evt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private ASSET_HANDLER
+  (workStream<>
+    (script<>
+      #(let [evt (.event ^Job %2)]
+         (handleStatic evt
+                       (.getv ^Job %2 EV_OPTS))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn assetHandler<> "" ^WorkStream [] ASSET_HANDLER)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn replyEvent
+  ""
+  [^HttpEvent evt ^HttpResult res]
+  (let [mvs (.session evt)
+        code (.status res)]
+    (.cancel evt)
+    (if (.isStale evt)
+      (throwIOE "Event has expired"))
+    (if (and (.checkSession evt)
+             (or (nil? mvs)
+                 (nil? (.isNull mvs))))
+      (throwIOE "Invalid/Null session"))
+    (if (some? mvs)
+      (downstream evt res))
+    (replyResult (.socket evt) res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

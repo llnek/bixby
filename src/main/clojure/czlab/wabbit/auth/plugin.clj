@@ -26,10 +26,10 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.auth.core]
+  (:use [czlab.wabbit.auth.model]
+        [czlab.wabbit.auth.core]
         [czlab.wabbit.sys.core]
-        [czlab.wabbit.io.web]
-        [czlab.wabbit.auth.model]
+        [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.horde.dbio.core])

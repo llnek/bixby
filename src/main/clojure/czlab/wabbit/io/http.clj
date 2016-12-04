@@ -35,8 +35,7 @@
         [czlab.twisty.ssl]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.xlib.meta]
-        [czlab.wabbit.io.web])
+        [czlab.xlib.meta])
 
   (:import [czlab.convoy.net HttpResult RouteCracker RouteInfo]
            [czlab.convoy.netty WholeRequest InboundHandler]
@@ -206,14 +205,6 @@
   ""
   [^Muble m kee]
   (cancelTimerTask (.getv m kee)) (.unsetv m kee))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- resumeWithResult
-  ""
-  [evt res]
-  (if-some [e (cast? HttpEvent evt)]
-    (replyResult (.socket e) res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -417,24 +408,6 @@
                 (HttpResponseStatus/valueOf s))
               (replyResult (.socket evt)))
          nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn replyEvent
-  ""
-  [^HttpEvent evt ^HttpResult res]
-  (let [mvs (.session evt)
-        code (.status res)]
-    (.cancel evt)
-    (if (.isStale evt)
-      (throwIOE "Event has expired"))
-    (if (and (.checkSession evt)
-             (or (nil? mvs)
-                 (nil? (.isNull mvs))))
-      (throwIOE "Invalid/Null session"))
-    (if (some? mvs)
-      (downstream evt res))
-    (resumeWithResult evt res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

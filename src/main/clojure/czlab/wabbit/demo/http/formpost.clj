@@ -27,7 +27,7 @@
         [czlab.xlib.str])
 
   (:import [czlab.convoy.net HttpResult ULFileItem ULFormItems]
-           [czlab.convoy.wflow Job TaskDef]
+           [czlab.flux.wflow Job TaskDef]
            [czlab.wabbit.io HttpEvent]
            [java.util ListIterator]
            [czlab.xlib XData]
