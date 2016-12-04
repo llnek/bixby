@@ -12,66 +12,62 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
     ^{:author "Kenneth Leung"}
 
   czlab.wabbit.demo.pop3.core
 
-  (:require
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.process :refer [delayExec]])
+  (:require [czlab.xlib.logging :as log]
+            [czlab.xlib.process :refer [delayExec]])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [javax.mail Message Message$RecipientType Multipart]
-    [java.util.concurrent.atomic AtomicInteger]
-    [czlab.wflow Job TaskDef]
-    [org.apache.commons.io IOUtils]
-    [javax.mail.internet MimeMessage]
-    [czlab.wabbit.server Container]
-    [czlab.wabbit.io EmailEvent]))
+  (:import [javax.mail Message Message$RecipientType Multipart]
+           [java.util.concurrent.atomic AtomicInteger]
+           [javax.mail.internet MimeMessage]
+           [czlab.flux.wflow Job TaskDef]
+           [org.apache.commons.io IOUtils]
+           [czlab.wabbit.server Container]
+           [czlab.wabbit.io EmailEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(let [ctr (AtomicInteger.)]
-  (defn- ncount ""
-    []
-    (.incrementAndGet ctr)))
+(def ^:private GINT (AtomicInteger.))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- ncount "" [] (.incrementAndGet ctr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
     #(let [^EmailEvent ev (.event ^Job %2)
-            ^MimeMessage msg (.message ev)
-            ^Multipart p (.getContent msg) ]
-        (println "######################## (" (ncount) ")" )
-        (print "Subj:" (.getSubject msg) "\r\n")
-        (print "Fr:" (first (.getFrom msg)) "\r\n")
-        (print "To:" (first (.getRecipients msg
-                                     Message$RecipientType/TO)))
-        (print "\r\n")
-        (println (IOUtils/toString (-> (.getBodyPart p 0)
+           ^MimeMessage msg (.message ev)
+           ^Multipart p (.getContent msg)]
+       (println "######################## (" (ncount) ")" )
+       (print "Subj:" (.getSubject msg) "\r\n")
+       (print "Fr:" (first (.getFrom msg)) "\r\n")
+       (print "To:" (first (.getRecipients msg
+                                           Message$RecipientType/TO)))
+       (print "\r\n")
+       (println (IOUtils/toString (-> (.getBodyPart p 0)
                                        (.getInputStream))
                                    "utf-8")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn myAppMain
-
   ""
   []
-
   (System/setProperty
     "wabbit.demo.pop3"
     "czlab.wabbit.mock.mail.MockPop3Store"))

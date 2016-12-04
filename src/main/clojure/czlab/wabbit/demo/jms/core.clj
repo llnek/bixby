@@ -12,53 +12,49 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
     ^{:author "Kenneth Leung"}
 
   czlab.wabbit.demo.jms.core
 
-  (:require
-    [czlab.xlib.logging :as log]
-    [czlab.xlib.process :refer [delayExec]])
+  (:require [czlab.xlib.logging :as log]
+            [czlab.xlib.process :refer [delayExec]])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [java.util.concurrent.atomic AtomicInteger]
-    [czlab.wflow Job TaskDef]
-    [czlab.wabbit.io JmsEvent]
-    [javax.jms TextMessage]
-    [czlab.wabbit.server Container]))
+  (:import [java.util.concurrent.atomic AtomicInteger]
+           [czlab.flux.wflow Job TaskDef]
+           [czlab.wabbit.io JmsEvent]
+           [javax.jms TextMessage]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(let [ctr (AtomicInteger.)]
-  (defn- ncount ""
-    []
-    (.incrementAndGet ctr)))
+(def ^:private GINT (AtomicInteger.))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- ncount "" [] (.incrementAndGet GINT))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
     #(let [^JmsEvent ev (.event ^Job %2)
-            ^TextMessage msg (.message ev)]
-        (println "-> Correlation ID= " (.getJMSCorrelationID msg))
-        (println "-> Msg ID= " (.getJMSMessageID msg))
-        (println "-> Type= " (.getJMSType msg))
-        (println "("
-                 (ncount)
-                 ") -> Message= "
-                 (.getText msg)))))
+           ^TextMessage msg (.message ev)]
+       (println "-> Correlation ID= " (.getJMSCorrelationID msg))
+       (println "-> Msg ID= " (.getJMSMessageID msg))
+       (println "-> Type= " (.getJMSType msg))
+       (println "("
+                (ncount) ") -> Message= " (.getText msg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

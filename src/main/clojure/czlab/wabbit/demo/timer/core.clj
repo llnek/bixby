@@ -12,48 +12,47 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (ns ^:no-doc
     ^{:author "Kenneth Leung"}
 
   czlab.wabbit.demo.timer.core
 
-  (:require
-    [czlab.xlib.process :refer [delayExec]]
-    [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.process :refer [delayExec]]
+            [czlab.xlib.logging :as log])
 
-  (:use [czlab.wflow.core])
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
 
-  (:import
-    [java.util.concurrent.atomic AtomicInteger]
-    [czlab.wflow Job TaskDef]
-    [java.util Date]
-    [czlab.wabbit.io TimerEvent]
-    [czlab.wabbit.server Container]))
+  (:import [java.util.concurrent.atomic AtomicInteger]
+           [czlab.flux.wflow Job TaskDef]
+           [java.util Date]
+           [czlab.wabbit.io TimerEvent]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(let [ctr (AtomicInteger.)]
-  (defn- ncount ""
-    []
-    (.incrementAndGet ctr)))
+(def ^:private GINT (AtomicInteger.))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- ncount "" [] (.incrementAndGet GINT))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn demo
-
   ""
   ^TaskDef
   []
-
   (script<>
-    #(let [^TimerEvent ev (.event ^Job %2)]
-        (if (.isRepeating ev)
-          (println "-----> (" (ncount) ") repeating-update: " (Date.))
-          (println "-----> once-only!!: " (Date.))))))
+    #(let
+       [^TimerEvent ev (.event ^Job %2)]
+       (if (.isRepeating ev)
+         (println "-----> (" (ncount) ") repeating-update: " (Date.))
+         (println "-----> once-only!!: " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

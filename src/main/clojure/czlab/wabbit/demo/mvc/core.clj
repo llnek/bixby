@@ -12,8 +12,7 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
-(ns ^{:doc ""
+(ns ^{:no-doc true
       :author "Kenneth Leung"}
 
   czlab.wabbit.demo.mvc.core
@@ -24,20 +23,18 @@
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.wflow.core])
+        [czlab.flux.wflow.core])
 
-  (:import
-    [czlab.wabbit.io HttpEvent HttpResult]
-    [czlab.wflow Job TaskDef WorkStream]
-    [czlab.wabbit.server Container]))
+  (:import [czlab.flux.wflow Job TaskDef WorkStream]
+           [czlab.convoy.net HttpResult]
+           [czlab.wabbit.io HttpEvent]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ftlContext
-
   ""
   []
-
   {:landing
              {:title_line "Sample Web App"
               :title_2 "Demo Skaro"
@@ -53,27 +50,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn handler
-
   ""
   ^WorkStream
   []
-
   (workStream<>
     (script<>
-      #(let [tpl (:template (.getv ^Job %2 EV_OPTS))
-             ^HttpEvent evt (.event ^Job %2)
-             src (.source evt)
-             co (.server src)
-             {:keys [data ctype] }
-             (.loadTemplate co
-                            tpl
-                            (ftlContext))
-             ^HttpResult
-             res (.resultObj evt) ]
-         (.setHeader res "content-type" ctype)
+      #(let
+         [^Job job %2
+          tpl (:template (.getv job EV_OPTS))
+          evt (.event job)
+          co (.. evt source server)
+          {:keys [data ctype]}
+          (.loadTemplate co
+                         tpl
+                         (ftlContext))
+          res (httpResult<>)]
+         (.setContentType res  ctype)
          (.setContent res data)
-         (.setStatus res 200)
-         (.replyResult evt)))
+         (replyResult (.socket) res)))
     :catch
     (fn [_]
       (log/info "Oops, I got an error!"))))
@@ -81,10 +75,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn myAppMain
-
   ""
   []
-
   (log/info "My AppMain called!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
