@@ -48,7 +48,7 @@
   (case t
     "facebook" (script<> #(let [x %2] (println "-> use facebook")))
     "google+" (script<> #(let [x %2] (println "-> use google+")))
-    "openid" (script<> (let [x %2] (println "-> use open-id")))
+    "openid" (script<> #(let [x %2] (println "-> use open-id")))
     (script<> #(let[x %2] (println "-> use internal db")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
