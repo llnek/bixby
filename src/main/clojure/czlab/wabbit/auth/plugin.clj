@@ -510,8 +510,8 @@
   (let [appDir (io/file (first args))
         cmd (nth args 1)
         db (nth args 2)
-        env (readEdn (io/file appDir CFG_ENV_CF))
-        app (readEdn (io/file appDir CFG_APP_CF))
+        env (slurpXXXConf appDir CFG_ENV_CF true)
+        app (slurpXXXConf appDir CFG_APP_CF true)
         pkey (-> (get-in app [:info :digest])
                  str
                  (.toCharArray))

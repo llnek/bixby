@@ -143,8 +143,7 @@
   ""
   [home cwd]
   (let
-    [env (->> (io/file cwd CFG_ENV_CF)
-              (readEdn ))
+    [env (slurpXXXConf cwd CFG_ENV_CF true)
      cn (get-in env [:locale :country])
      ln (get-in env [:locale :lang])
      ver (sysProp "wabbit.version")

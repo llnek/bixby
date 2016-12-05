@@ -294,12 +294,7 @@
   [^Container co]
   (let
     [appDir (.appDir co)
-     f
-     #(-> (readAsStr (io/file appDir %))
-          (cs/replace "${appdir}"
-                      (fpath appDir))
-          (expandVars)
-          (readEdn))]
+     f #(slurpXXXConf appDir % true)]
     (doto (.getx co)
       (.setv :envConf (f CFG_ENV_CF))
       (.setv :appConf (f CFG_APP_CF)))

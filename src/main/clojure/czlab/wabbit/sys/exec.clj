@@ -68,12 +68,9 @@
   ;;create the pod meta and register it
   ;;as a application
   (let
-    [conf (io/file desDir CFG_APP_CF)
-     _ (precondFile conf)
+    [_ (precondFile (io/file desDir CFG_APP_CF))
+     cf (slurpXXXConf desDir CFG_APP_CF true)
      app (basename desDir)
-     s (str "{\n"
-            (slurpUtf8 conf) "\n}\n")
-     cf (readEdn s)
      ctx (.getx execv)
      m (podMeta app
                 cf

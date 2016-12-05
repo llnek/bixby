@@ -22,7 +22,8 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.xlib.core]
+  (:use [czlab.xlib.format]
+        [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
 
@@ -283,6 +284,38 @@
         (version [_] (:version info))
         (getx [_] impl))
       {:typeid  ::AppGist})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn slurpXXXConf
+  "Parse config file"
+  ([appDir conf] (slurpXXXConf appDir conf false))
+  ([appDir conf expVars?]
+   (let [f (io/file appDir conf)
+         s (str "{\n"
+                (slurpUtf8 f) "\n}")]
+     (->
+       (if expVars?
+         (-> (cs/replace s "${appdir}" (fpath appDir))
+             (expandVars))
+         s)
+       (readEdn )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn spitXXXConf
+  "Write out config file"
+  [appDir conf cfgObj]
+  (let [f (io/file appDir conf)
+        s (strim (writeEdnStr cfgObj))]
+    (->>
+      (if (and (.startsWith s "{")
+               (.endsWith s "}"))
+        (-> (drophead s 1)
+            (droptail 1))
+        s)
+      (spitUtf8 f))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -353,10 +353,7 @@
   ([id hint] (onSvc id hint nil))
   ([id hint svc]
    (let
-     [fp (io/file (getCwd) CFG_APP_CF)
-      cf (-> (str "{\n"
-                  (slurpUtf8 fp) "\n}\n")
-             (readEdn ))
+     [cf (slurpXXXConf (getCwd) CFG_APP_CF)
       root (:services cf)
       nw
       (if (< hint 0)
@@ -365,16 +362,8 @@
           [gist (:conf (*emitter-defs* svc))]
           (if (contains? root id) (trap! CmdHelpError))
           (assoc root id (assoc gist :service svc))))]
-     (when (some? nw)
-       (let [s (-> (assoc cf :services nw)
-                   writeEdnStr
-                   strim)]
-         (->> (if (and (.startsWith s "{")
-                       (.endsWith s "}"))
-                (-> (droptail s 1)
-                    (drophead 1))
-                s)
-              (spitUtf8 fp)))))))
+     (if (some? nw)
+       (spitXXXConf (getCwd) CFG_APP_CF nw)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
