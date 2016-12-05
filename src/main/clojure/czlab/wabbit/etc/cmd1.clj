@@ -17,15 +17,14 @@
 
   czlab.wabbit.etc.cmd1
 
-  (:require [czlab.twisty.core :refer [assertJce dbgProvider]]
+  (:require [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
             [czlab.xlib.format :refer [writeEdnStr readEdn]]
-            [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
             [czlab.wabbit.sys.main :refer [startViaCLI]]
+            [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cs]
-            ;;[czlab.tpcl.boot :refer :all]
             [boot.core :as bcore])
 
   (:use [czlab.wabbit.etc.cmd2]
@@ -40,7 +39,6 @@
   (:import [czlab.wabbit.etc AppMain CmdHelpError]
            [org.apache.commons.io FileUtils]
            [czlab.twisty IPassword]
-           ;;[boot App]
            [java.util
             ResourceBundle
             Properties
@@ -60,6 +58,7 @@
   [^File homeDir ^File appDir & args]
   (sysProp! "wabbit.home.dir" (.getCanonicalPath homeDir))
   (sysProp! "wabbit.proc.dir" (.getCanonicalPath appDir))
+  (log/debug "execBootScript args: %s" args)
   (AppMain/invokeStatic (vargs String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,7 +222,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onGenerate
-  "Generate a bunch of stuff"
+  "Generate a bunch of crypto stuff"
   [args]
   (let [c (first args)
         args (vec (drop 1 args))]
@@ -355,26 +354,34 @@
   ([id hint svc]
    (let
      [fp (io/file (getCwd) CFG_APP_CF)
-      cf (readEdn fp)
+      cf (-> (str "{\n"
+                  (slurpUtf8 fp) "\n}\n")
+             (readEdn ))
       root (:services cf)
       nw
       (if (< hint 0)
         (dissoc root id)
         (when-some
           [gist (:conf (*emitter-defs* svc))]
-          (when (contains? root id) (trap! CmdHelpError))
+          (if (contains? root id) (trap! CmdHelpError))
           (assoc root id (assoc gist :service svc))))]
      (when (some? nw)
-       (->> (assoc cf :services nw)
-            (writeEdnStr)
-            (spitUtf8 fp))))))
+       (let [s (-> (assoc cf :services nw)
+                   writeEdnStr
+                   strim)]
+         (->> (if (and (.startsWith s "{")
+                       (.endsWith s "}"))
+                (-> (droptail s 1)
+                    (drophead 1))
+                s)
+              (spitUtf8 fp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onService
   ""
   [args]
-  (when (< (count args) 2) (trap! CmdHelpError))
+  (if (< (count args) 2) (trap! CmdHelpError))
   (let
     [id (keyword (args 1))
      cmd (args 0)

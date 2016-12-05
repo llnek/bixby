@@ -46,27 +46,26 @@
 (defn- getCmdInfo
   ""
   [rcb]
-  (doall
-    (partition
-      2
-      (rstr*
-        rcb
-        ["usage.new"] ["usage.new.desc"]
-        ["usage.svc"] ["usage.svc.desc"]
-        ["usage.podify"] ["usage.podify.desc"]
-        ["usage.ide"] [ "usage.ide.desc"]
-        ["usage.build"] [ "usage.build.desc"]
-        ["usage.test"] [ "usage.test.desc"]
+  (partition
+    2
+    (rstr*
+      rcb
+      ["usage.new"] ["usage.new.desc"]
+      ["usage.svc"] ["usage.svc.desc"]
+      ["usage.podify"] ["usage.podify.desc"]
+      ["usage.ide"] [ "usage.ide.desc"]
+      ["usage.build"] [ "usage.build.desc"]
+      ["usage.test"] [ "usage.test.desc"]
 
-        ["usage.debug"] ["usage.debug.desc"]
-        ["usage.start"] ["usage.start.desc"]
+      ["usage.debug"] ["usage.debug.desc"]
+      ["usage.start"] ["usage.start.desc"]
 
-        ["usage.gen"] [ "usage.gen.desc"]
-        ["usage.demo"] [ "usage.demo.desc"]
-        ["usage.version"] [ "usage.version.desc"]
+      ["usage.gen"] [ "usage.gen.desc"]
+      ["usage.demo"] [ "usage.demo.desc"]
+      ["usage.version"] [ "usage.version.desc"]
 
-        ["usage.testjce"] ["usage.testjce.desc"]
-        ["usage.help"] ["usage.help.desc"]))))
+      ["usage.testjce"] ["usage.testjce.desc"]
+      ["usage.help"] ["usage.help.desc"])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -103,22 +102,22 @@
   ""
   [args]
   (let [cmd (keyword (first args))
-        args (vec (drop 1 args))
-        [f _] (*wabbit-tasks* cmd)]
+        f (first (*wabbit-tasks* cmd))]
+    (log/debug "execArgs: %s" args)
     (if (fn? f)
-      (f args)
+      (f (vec (drop 1 args)))
       (trap! CmdHelpError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- bootAndRun
   ""
-  [home & args]
+  [home args]
   (binding [*wabbit-home* (io/file home)]
     (try
       (if (empty? args)
-        (trap! CmdHelpError)
-        (execArgs args))
+        (trap! CmdHelpError))
+      (execArgs args)
       (catch Throwable _
         (if (inst? CmdHelpError _) (usage) (prtStk _))))))
 
@@ -131,11 +130,13 @@
         rcb (getResource C_RCB)
         h (first args)]
     (sysProp! "wabbit.version"
-              (.getString ver "version"))
+              (or (some-> ver
+                          (.getString "version"))
+                  "?"))
     (I18N/setBase rcb)
     (if (and (hgl? h)
              (dirRead? (io/file h)))
-      (apply bootAndRun h (drop 1 args))
+      (bootAndRun h (drop 1 args))
       (usage))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

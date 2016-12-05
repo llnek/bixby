@@ -24,18 +24,18 @@
   {:czlab.wabbit.io.files/FilePicker
    {:info {:version "1.0"
            :name "FILEPicker"}
-    :conf {:targetFolder "/home/dropbox"
+    :conf {:comment# "place comments here"
+           :targetFolder "/home/dropbox"
            :recvFolder "/home/joe"
-           ;; reg-ex, blank => all
            :fmask ""
-           ;; 5mins
            :intervalSecs 300
            :delaySecs 0
            :handler ""}}
    :czlab.wabbit.io.mails/IMAP
    {:info {:version "1.0"
            :name "IMAP"}
-    :conf {:host "imap.gmail.com"
+    :conf {:comment# "place comments here"
+           :host "imap.gmail.com"
            :port 993
            :deleteMsg? false
            :ssl? true
@@ -48,6 +48,7 @@
    {:info {:version "1.0"
            :name "JMS"}
     :conf {:contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
+           :comment# "place comments here"
            :providerUrl "java://aaa"
            :connFactory "tcf"
            :destination "topic.abc"
@@ -60,8 +61,10 @@
    :czlab.wabbit.io.http/HTTP
    {:info {:version "1.0"
            :name "HTTP"}
-    :conf {:waitMillis (* 1000 300)
-           :limitKB (* 1024 4)
+    :conf {:comment# "place comments here"
+           :maxInMemory (* 1024 1024 4)
+           :waitMillis (* 1000 300)
+           :maxContentSize -1
            :sockTimeOut 0
            :host ""
            :port 8080
@@ -71,8 +74,10 @@
    :czlab.wabbit.io.http/WebMVC
    {:info {:version "1.0"
            :name "WebMVC"}
-    :conf {:waitMillis (* 1000 300)
-           :limitKB (* 1024 4)
+    :conf {:comment# "place comments here"
+           :maxInMemory (* 1024 1024 4)
+           :waitMillis (* 1000 300)
+           :maxContentSize -1
            :sockTimeOut 0
            :host ""
            :port 8080
@@ -83,7 +88,6 @@
            :hidden true
            :domain ""
            :domainPath "/"
-           :cacheAssets? false
            :maxAgeSecs 3600
            :useETags? false
            :errorHandler ""
@@ -91,12 +95,14 @@
    :czlab.wabbit.io.loops/OnceTimer
    {:info {:version "1.0"
            :name "OnceTimer"}
-    :conf {:delaySecs 0
+    :conf {:comment# "place comments here"
+           :delaySecs 0
            :handler ""}}
    :czlab.wabbit.io.mails/POP3
    {:info {:version "1.0"
            :name "POP3"}
-    :conf {:host "pop.gmail.com"
+    :conf {:comment# "place comments here"
+           :host "pop.gmail.com"
            :port 995
            :deleteMsg? false
            :username "joe"
@@ -108,13 +114,15 @@
    :czlab.wabbit.io.loops/RepeatingTimer
    {:info {:version "1.0"
            :name "RepeatTimer"}
-    :conf {:intervalSecs 300
+    :conf {:comment# "place comments here"
+           :intervalSecs 300
            :delaySecs 0
            :handler ""}}
    :czlab.wabbit.io.socket/Socket
    {:info {:version "1.0"
            :name "SocketIO"}
-    :conf {:host ""
+    :conf {:comment# "place comments here"
+           :host ""
            :port 8080
            :handler ""}}})
 

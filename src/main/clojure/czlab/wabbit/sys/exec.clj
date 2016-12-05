@@ -69,9 +69,11 @@
   ;;as a application
   (let
     [conf (io/file desDir CFG_APP_CF)
-     dummy (precondFile conf)
+     _ (precondFile conf)
      app (basename desDir)
-     cf (readEdn conf)
+     s (str "{\n"
+            (slurpUtf8 conf) "\n}\n")
+     cf (readEdn s)
      ctx (.getx execv)
      m (podMeta app
                 cf
