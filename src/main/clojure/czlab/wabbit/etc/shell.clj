@@ -113,14 +113,13 @@
 ;;
 (defn- bootAndRun
   ""
-  [home args]
-  (binding [*wabbit-home* (io/file home)]
-    (try
-      (if (empty? args)
-        (trap! CmdHelpError))
-      (execArgs args)
-      (catch Throwable _
-        (if (inst? CmdHelpError _) (usage) (prtStk _))))))
+  [args]
+  (try
+    (if (empty? args)
+      (trap! CmdHelpError))
+    (execArgs args)
+    (catch Throwable _
+      (if (inst? CmdHelpError _) (usage) (prtStk _)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -130,14 +129,17 @@
   (let [ver (loadResource C_VERPROPS)
         rcb (getResource C_RCB)
         h (first args)]
-    (sysProp! "wabbit.version"
-              (or (some-> ver
-                          (.getString "version"))
-                  "?"))
     (I18N/setBase rcb)
     (if (and (hgl? h)
              (dirRead? (io/file h)))
-      (bootAndRun h (drop 1 args))
+      (do
+        (sysProp! "wabbit.proc.dir" (fpath (getCwd)))
+        (sysProp! "wabbit.home.dir" h)
+        (sysProp! "wabbit.version"
+                  (or (some-> ver
+                              (.getString "version"))
+                      "?"))
+        (bootAndRun (drop 1 args)))
       (usage))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

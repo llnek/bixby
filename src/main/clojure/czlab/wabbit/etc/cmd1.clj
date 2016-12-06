@@ -73,8 +73,6 @@
 (defn- execBootScript
   "Call into boot/clj code"
   [^File homeDir ^File podDir & args]
-  (sysProp! "wabbit.home.dir" (.getCanonicalPath homeDir))
-  (sysProp! "wabbit.proc.dir" (.getCanonicalPath podDir))
   (log/debug "execBootScript args: %s" args)
   (AppMain/invokeStatic (vargs String args)))
 
