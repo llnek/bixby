@@ -51,6 +51,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn bannerText
+  ""
+  ^String
+  []
+
+  (->
+    (str "  __    __   ____  ____   ____   ____  ______"   "\n"
+         "  |  |__|  | /    ||    \\ |    \\ |    ||      |" "\n"
+         "  |  |  |  ||  o  ||  o  )|  o  ) |  | |      |" "\n"
+         "  |  |  |  ||     ||     ||     | |  | |_|  |_|" "\n"
+         "  |  '  '  ||  _  ||  O  ||  O  | |  |   |  |"   "\n"
+         "   \\      / |  |  ||     ||     | |  |   |  |"   "\n"
+         "    \\_/\\_/  |__|__||_____||_____||____|  |__|"   "\n"
+         "\n")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- execBootScript
@@ -138,7 +155,9 @@
     (if (and (contains? #{"-bg" "--background"} s2)
              (isWindows?))
       (runPodBg home cwd)
-      (startViaCLI home cwd))))
+      (do
+        (println (bannerText))
+        (startViaCLI home cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -385,12 +404,13 @@
        :else (trap! CmdHelpError))
      t (case (keyword svc)
          :repeat :czlab.wabbit.io.loops/RepeatingTimer
-         :once :czlab.wabbit.io.loops/OnceTimer
          :files :czlab.wabbit.io.files/FilePicker
-         :http :czlab.wabbit.io.http/WebMVC
+         :once :czlab.wabbit.io.loops/OnceTimer
+         :tcp :czlab.wabbit.io.socket/Socket
+         :web :czlab.wabbit.io.http/WebMVC
          :pop3 :czlab.wabbit.io.mails/POP3
          :imap :czlab.wabbit.io.mails/IMAP
-         :tcp :czlab.wabbit.io.socket/Socket
+         :http :czlab.wabbit.io.http/HTTP
          :jms :czlab.wabbit.io.jms/JMS
          :? nil
          (trap! CmdHelpError))]

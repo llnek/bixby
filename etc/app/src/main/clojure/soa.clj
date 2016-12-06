@@ -2,35 +2,33 @@
 ;;auto-generated
 
 (ns ^{:doc ""
-      :author "@@USER@@" }
+      :author "@@USER@@"}
 
   @@APPDOMAIN@@.core
 
   (:require [czlab.xlib.logging :as log])
-  (:use [czlab.wflow.core])
-  (:import
-    [czlab.wabbit.server AppMain]
-    [czlab.wflow TaskDef Job WorkStream ]))
+
+  (:use [czlab.flux.wflow.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str])
+
+  (:import [czlab.flux.wflow TaskDef Job WorkStream]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn dftHandler
-
   ""
   ^TaskDef
   []
-
   (script<>
-    (fn [_ job]
-      (log/info "I  just handled a job!"))))
+    (fn [_ ^Job job]
+      (log/info "I  just handled a job %s" (.id job)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn myAppMain
-
   ""
   (log/info "My AppMain called!"))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

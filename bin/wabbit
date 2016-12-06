@@ -1,16 +1,18 @@
 #!/bin/bash
 
-splash_crawford() {
-echo "${txtylw}   __    __   ____  ____   ____   ____  ______"
-echo "${txtylw}  |  |__|  | /    ||    \ |    \ |    ||      |"
-echo "${txtylw}  |  |  |  ||  o  ||  o  )|  o  ) |  | |      |"
-echo "${txtylw}  |  |  |  ||     ||     ||     | |  | |_|  |_|"
-echo "${txtylw}  |  '  '  ||  _  ||  O  ||  O  | |  |   |  |"
-echo "${txtylw}   \      / |  |  ||     ||     | |  |   |  |"
-echo "${txtylw}    \_/\_/  |__|__||_____||_____||____|  |__|"
-echo "${txtcyn}"
+### osx sux, has no proper readlink.
+check_darwin() {
+  WABBIT_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
+  WABBIT_BIN=$( dirname $WABBIT_BIN )
+  WABBIT_HOME=$( dirname $WABBIT_BIN )
+}
+check_linux() {
+  WABBIT_BIN=$(dirname $(readlink -f $0))/../
+  WABBIT_HOME=$(readlink -f $WABBIT_BIN)
+  WABBIT_BIN=$WABBIT_HOME/bin
 }
 
+txtrst=$(tput sgr0) # Text reset.
 txtred=$(tput setaf 1) #Red
 txtgrn=$(tput setaf 2) # Green
 txtylw=$(tput setaf 3) # Yellow
@@ -18,24 +20,6 @@ txtblu=$(tput setaf 4) # Blue
 txtpur=$(tput setaf 5) # Purple
 txtcyn=$(tput setaf 6) # Cyan
 txtwht=$(tput setaf 7) # White
-txtrst=$(tput sgr0) # Text reset.
-
-splash() {
-  echo ""
-  splash_crawford
-}
-
-### osx sux, has no proper readlink.
-check_darwin() {
-  wabbit_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
-  wabbit_BIN=$( dirname $wabbit_BIN )
-  wabbit_HOME=$( dirname $wabbit_BIN )
-}
-check_linux() {
-  wabbit_BIN=$(dirname $(readlink -f $0))/../
-  wabbit_HOME=$(readlink -f $wabbit_BIN)
-  wabbit_BIN=$wabbit_HOME/bin
-}
 
 OSTYPE=`uname -s`
 CWD=`pwd`
@@ -46,7 +30,6 @@ else
   check_linux
 fi
 
-
 if [ "$JAVA_HOME" = "" ] ; then
   echo "Attempt to reference standard java location on system: /usr/bin."
   #echo "Please set JAVA_HOME"
@@ -54,39 +37,30 @@ if [ "$JAVA_HOME" = "" ] ; then
   JAVA_HOME=/usr
 fi
 
-build_all() {
-  cd apps
-  for a in `ls`
-  do
-    cd  $CWD
-    ./bin/wabbit build $a
-  done
-}
-
-
 JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
-DBGOPTS="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
+DBG="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
 
-PATCHDIR=$wabbit_HOME/patch/*
-LIBDIR=$wabbit_HOME/lib/*
-#HACK=$wabbit_HOME/cout/j/:$wabbit_HOME/cout/c/:$wabbit_HOME/target/*
-BOOT=$HACK:$PATCHDIR:$wabbit_HOME/dist/*:$LIBDIR
+PATCHDIR=$WABBIT_HOME/patch/*
+LIBDIR=$WABBIT_HOME/lib/*
+DISTDIR=$WABBIT_HOME/dist/*
+BOOT=$PATCHDIR:$DISTDIR:$LIBDIR
 
-JAVA_CMD=$JAVA_HOME/bin/java
+JCMD=$JAVA_HOME/bin/java
 BG=false
 
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
 MAINCZ=czlab.wabbit.etc.shell
 
-LIBP="-Djava.library.path=$wabbit_BIN"
+#LIBP="-Djava.library.path=$WABBIT_BIN"
+#NETTY=-Dio.netty.eventLoopThreads=16
 #48G
-#VMARGS="-Xms8192m -Xmx49152m"
+#MEM="-Xms8192m -Xmx49152m"
 #36G
-#VMARGS="-Xms8192m -Xmx36864m"
+#MEM="-Xms8192m -Xmx36864m"
 #32G
-#VMARGS="-Xms8192m -Xmx32768m"
-VMARGS="-Xms512m -Xmx7096m $VMXRGS"
+#MEM="-Xms8192m -Xmx32768m"
+MEM="-Xms1024m -Xmx8192m"
 LJC=etc/log4j2c.xml
 LJD=etc/log4j2d.xml
 L4JFILE=
@@ -97,33 +71,32 @@ elif [ -e $LJC ]
 then
   L4JFILE=$LJC
 else
-  L4JFILE=${wabbit_BIN}/log4j2.xml
+  L4JFILE=${WABBIT_BIN}/log4j2.xml
 fi
-LOGCFG=-Dlog4j.configurationFile=file:${L4JFILE}
-BASEDIR="-Dwabbit.home=$wabbit_HOME"
+L4J=-Dlog4j.configurationFile=file:${L4JFILE}
 KPORT=4444
-KILLPORT="-Dwabbit.kill.port=$KPORT"
-NETTY=-Dio.netty.eventLoopThreads=16
+KILL9="-Dwabbit.kill.port=$KPORT"
 
 show_proc() {
-    pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
-    if [ -n "$pid" ]; then
-      echo "wabbit is running with process-id: ${pid}."
-    else
-      echo "wabbit is not running."
-    fi
-}
-stop_proc() {
-    pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
-    if [ -n "$pid" ]; then
-      #kill $pid
-      cd /tmp
-      wget http://127.0.0.1:$KPORT/kill9 2>&1 > /dev/null
-      cd $CWD
-    fi
+  pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
+  if [ -n "$pid" ]; then
+    echo "wabbit is running with process-id: ${pid}."
+  else
+    echo "wabbit is not running."
+  fi
 }
 
-if [ "$1" = "start" ]; then
+stop_proc() {
+  pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
+  if [ -n "$pid" ]; then
+    #kill $pid
+    cd /tmp
+    wget http://127.0.0.1:$KPORT/kill9 2>&1 > /dev/null
+    cd $CWD
+  fi
+}
+
+if [ "$1" = "run" ]; then
   MAINCZ=czlab.wabbit.server.Runtime
   if [ "$2" = "bg" ]; then
     BG=true
@@ -133,7 +106,7 @@ fi
 if [ $# -eq 1 -a "$1" = "debug" ]; then
   echo "remote debug mode"
 else
-  DBGOPTS=
+  DBG=
 fi
 
 if [ $# -eq 1 -a "$1" = "stop" ]; then
@@ -147,19 +120,10 @@ if [ $# -eq 1 -a "$1" = "status" ]; then
   exit 0
 fi
 
-if [ $# -eq 1 -a "$1" = "build-all" ]; then
-  build_all
-  exit 0
-fi
-
-
-#CMDLINE="$JAVA_CMD -cp $BOOT $DBGOPTS $LOGREF $BASEDIR $MAINCZ $wabbit_HOME $@ "
-#cd $wabbit_BIN
 if [ "$BG" = "true" ]; then
-  nohup $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGCFG $NETTY $KILLPORT $BASEDIR $MAINCZ $wabbit_HOME $@ &
+  nohup $JCMD $MEM -cp $BOOT $DBG $L4J $KILL9 $MAINCZ $WABBIT_HOME $@ &
 else
-  splash
-  $JAVA_CMD $VMARGS -cp $BOOT $LIBP $DBGOPTS $LOGCFG $NETTY $KILLPORT $BASEDIR  $MAINCZ $wabbit_HOME $@
+  $JCMD $MEM -cp $BOOT $DBG $L4J $KILL9 $MAINCZ $WABBIT_HOME $@
 fi
 #cd $CWD
 exit $?

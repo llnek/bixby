@@ -146,7 +146,7 @@
         (map #(->> (io/file podDir %)
                    (FileUtils/deleteDirectory ))
              ["src/web" "public"]))
-      (->> (io/file podDir DN_CONF "routes.conf")
+      (->> (io/file podDir DN_CONF "web.conf")
            (FileUtils/deleteQuietly )))
     (doall
       (map #(mkdirs (io/file podDir
@@ -196,7 +196,7 @@
            (cs/replace "@@APPID@@" podId)))
     (when (= :web kind)
       (replaceFile!
-        (io/file podDir DN_CONF "routes.conf")
+        (io/file podDir DN_CONF "web.conf")
         #(cs/replace % "@@APPDOMAIN@@" podDomain)))
     (postConfigPod podDir podId podDomain)))
 
@@ -207,21 +207,21 @@
   [option path]
   (let
     [rx #"^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*"
-     kind (keyword (triml option "-"))
      path (strimAny path ".")
      t (re-matches rx path)
      cwd (getCwd)
-     ;; treat as domain e.g com.acme => app = acme
+     kind
+     (case option
+       ("-w" "--web") :web
+       ("-s" "--soa") :soa
+       (trap! CmdHelpError))
+     ;; treat as domain e.g com.acme => pod = acme
      ;; regex gives ["com.acme" ".acme"]
      pod (when (some? t)
            (if-some [tkn (last t)]
              (triml tkn ".")
              (first t)))]
     (if (empty? pod) (trap! CmdHelpError))
-    (case option
-      ("-web" "--web") nil
-      ("-soa" "--soa") nil
-      (trap! CmdHelpError))
     (copyOnePod cwd pod path kind)
     (configOnePod cwd pod path kind)))
 

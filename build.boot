@@ -119,12 +119,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- distroInit ""
-
-  []
-
-  (let [root (io/file (ge :packDir)) ]
-    (a/cleanDir root)
+(defn- distroInit
+  ""
+  [root]
+  (let [basedir (ge :basedir)]
     (doseq [d ["conf" "dist" "bin"
                ["etc" "ems"] "lib" "docs" ]]
       (.mkdirs (if (vector? d)
@@ -133,11 +131,11 @@
     (a/runTarget*
       "pack/init"
       (a/antCopy
-        {:todir (fp! (ge :packDir) "etc")}
-        [[:fileset {:dir (fp! (ge :basedir) "etc")} ]])
+        {:todir (fp! root "etc")}
+        [[:fileset {:dir (fp! basedir "etc")} ]])
       (a/antCopy
-        {:todir (fp! (ge :packDir) "conf")}
-        [[:fileset {:dir (fp! (ge :basedir) "etc/conf")} ]]))))
+        {:todir (fp! root "conf")}
+        [[:fileset {:dir (fp! basedir "etc/conf")} ]]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -175,7 +173,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- packAll*
+  ""
+  []
+  (b/packAll distroInit)
+  (packRes)
+  (packBin))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  task defs below !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask qikPack
+
+  "private"
+  []
+
+  (bc/with-pre-wrap fileset
+    (packAll*)
+    fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask preJar
 
@@ -187,6 +207,21 @@
               "czlab/wabbit/demo")
          (a/deleteDir))
     fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask xxx
+
+  "for dev only"
+  []
+
+  (comp (b/initBuild)
+        (b/libjars)
+        (b/buildr)
+        (b/pom!)
+        (preJar)
+        (b/jar!)
+        (qikPack)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -202,6 +237,7 @@
         (preJar)
         (b/jar!)))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
@@ -212,64 +248,12 @@
 
   (bc/with-pre-wrap fileset
 
-    (let [root (ge :packDir)
-          dist (ge :distDir)
-          ver (ge :version)
-          src (ge :srcDir)]
-      ;; make some dirs
-      (a/cleanDir root)
-      (distroInit)
-      ;; copy license stuff
-      (a/runTarget*
-        "pack/lics"
-        (a/antCopy
-          {:todir root}
-          [[:fileset
-            {:dir (ge :basedir)
-             :includes "*.md,LICENSE"}]]))
-      ;; copy source
-      (a/runTarget*
-        "pack/src"
-        (a/antCopy
-          {:todir (fp! root "src/main/clojure")}
-          [[:fileset {:dir (fp! src "clojure")}]])
-        (a/antCopy
-          {:todir (fp! root "src/main/java")}
-          [[:fileset {:dir (fp! src "java")}]]))
-      ;; copy distro jars
-      (a/runTarget*
-        "pack/dist"
-        (a/antCopy
-          {:todir (fp! root "dist")}
-          [[:fileset {:dir dist
-                      :includes "*.jar"}]]))
-      (a/runTarget*
-        "pack/lib"
-        (a/antCopy
-          {:todir (fp! root "lib")}
-          [[:fileset {:dir (ge :libDir)}]]))
-
-      (packRes)
-      (packBin)
-
+    (let []
+      (packAll*)
       (if (ge :wantDocs) (b/genDocs))
-
-      ;; tar everything
-      (a/runTarget*
-        "pack/all"
-        (a/antTar
-          {:destFile
-           (fp! dist (str (artifactID)
-                          "-"
-                          ver
-                          ".tar.gz"))
-           :compression "gzip"}
-          [[:tarfileset {:dir root
-                         :excludes "bin/**"}]
-           [:tarfileset {:dir root
-                         :mode "755"
-                         :includes "bin/**"}]]))
+      (b/tarAll)
       nil)
+
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,6 +269,21 @@
         (b/localInstall)
         (packDistro)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask run
+
+  "for dev only"
+  []
+
+  (a/runTasks*
+    (a/antJava
+      {:classname "czlab.wabbit.etc.shell"
+       :fork true
+       :failonerror true
+       :maxmemory "2048m"}
+      [[:classpath (ge :TJPATH)]
+       [:argvalues ""]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

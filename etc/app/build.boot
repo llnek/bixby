@@ -12,7 +12,6 @@
 ;;
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
-
 (set-env!
 
   :buildVersion "0.1.0-SNAPSHOT"

@@ -2,14 +2,14 @@
 
 ### osx sux, has no proper readlink.
 check_darwin() {
-  SKARO_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
-  SKARO_BIN=$( dirname $SKARO_BIN )
-  SKARO_HOME=$( dirname $SKARO_BIN )
+  WABBIT_BIN=$( perl -e 'use Cwd "abs_path";print abs_path(shift)' $0 )
+  WABBIT_BIN=$( dirname $WABBIT_BIN )
+  WABBIT_HOME=$( dirname $WABBIT_BIN )
 }
 check_linux() {
-  SKARO_BIN=$(dirname $(readlink -f $0))/../
-  SKARO_HOME=$(readlink -f $SKARO_BIN)
-  SKARO_BIN=$SKARO_HOME/bin
+  WABBIT_BIN=$(dirname $(readlink -f $0))/../
+  WABBIT_HOME=$(readlink -f $WABBIT_BIN)
+  WABBIT_BIN=$WABBIT_HOME/bin
 }
 
 OSTYPE=`uname -s`
@@ -21,7 +21,6 @@ else
   check_linux
 fi
 
-
 if [ "$JAVA_HOME" = "" ] ; then
   echo "Attempt to reference standard java location on system: /usr/bin."
   #echo "Please set JAVA_HOME"
@@ -29,8 +28,8 @@ if [ "$JAVA_HOME" = "" ] ; then
   JAVA_HOME=/usr
 fi
 
+LIBDIR=$WABBIT_HOME/lib/h2*.jar
 JAVA_CMD=$JAVA_HOME/bin/java
-LIBDIR=$SKARO_HOME/lib/h2*.jar
 
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
@@ -44,18 +43,19 @@ MAINCZ=org.h2.tools.Console
 VMARGS="-Xms512m -Xmx7096m $VMXRGS"
 
 show_proc() {
-    pid=$( ps -ef | grep org.h2.tools.Console | grep -v grep | awk '{print $2}' )
-    if [ -n "$pid" ]; then
-      echo "H2DB Server is running with process-id: ${pid}."
-    else
-      echo "H2DB Server is not running."
-    fi
+  pid=$( ps -ef | grep org.h2.tools.Console | grep -v grep | awk '{print $2}' )
+  if [ -n "$pid" ]; then
+    echo "H2DB Server is running with process-id: ${pid}."
+  else
+    echo "H2DB Server is not running."
+  fi
 }
+
 stop_proc() {
-    pid=$( ps -ef | grep org.h2.tools.Console | grep -v grep | awk '{print $2}' )
-    if [ -n "$pid" ]; then
-      kill $pid
-    fi
+  pid=$( ps -ef | grep org.h2.tools.Console | grep -v grep | awk '{print $2}' )
+  if [ -n "$pid" ]; then
+    kill $pid
+  fi
 }
 
 if [ $# -eq 1 -a "$1" = "stop" ]; then
@@ -69,7 +69,9 @@ if [ $# -eq 1 -a "$1" = "status" ]; then
   exit 0
 fi
 
-cd $SKARO_BIN
+cd $WABBIT_BIN
 nohup $JAVA_CMD $VMARGS -cp $LIBDIR $MAINCZ -tcp -tcpAllowOthers 2>& 1 > /tmp/nohup.out &
 cd $CWD
 exit 0
+
+

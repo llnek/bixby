@@ -81,6 +81,7 @@
             :header-walls walls
             :body-walls walls}
      rcb (I18N/base)]
+    (println (bannerText))
     (printf "%s\n\n" (rstr rcb "wabbit.desc"))
     (printf "%s\n" (rstr rcb "cmds.header"))
     ;; prepend blanks to act as headers

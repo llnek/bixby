@@ -8,24 +8,23 @@
 
   (:require [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.convoy.net.core]
+        [czlab.wabbit.sys.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.wflow.core])
+        [czlab.flux.wflow.core])
 
-  (:import
-    [czlab.wabbit.io HttpEvent HttpResult]
-    [czlab.wflow Job TaskDef WorkStream]
-    [czlab.wabbit.server Container]))
+  (:import [czlab.flux.wflow Job TaskDef WorkStream]
+           [czlab.convoy.net HttpResult]
+           [czlab.wabbit.io HttpEvent]
+           [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ftlContext
-
   ""
   []
-
   {:landing
              {:title_line "Sample Web App"
               :title_2 "Demo wabbit"
@@ -41,38 +40,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn dftHandler
-
   ""
   ^WorkStream
   []
-
   (workStream<>
     (script<>
       (fn [_ ^Job job]
         (let
           [tpl (:template (.getv job EV_OPTS))
            ^HttpEvent evt (.event job)
-           src (.source evt)
-           co (.server src)
-           {:keys [data ctype] }
+           co (.. evt source server)
+           {:keys [data ctype]}
            (.loadTemplate co tpl (ftlContext))
-           ^HttpResult
-           res (.resultObj evt) ]
-          (.setHeader res "content-type" ctype)
+           res (httpResult<>)]
+          (.setContentType res ctype)
           (.setContent res data)
-          (.setStatus res 200)
-          (.replyResult evt))))
+          (replyResult (.socket evy) res))))
     :catch
-    (fn [ _ err]
-      (log/info "Oops, I got an error!"))))
+    (fn [_ err]
+      (log/error "Oops, I got an error!" err))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn myAppMain
-
   ""
   []
-
   (log/info "My AppMain called!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
