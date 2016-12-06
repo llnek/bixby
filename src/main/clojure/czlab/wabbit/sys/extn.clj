@@ -31,25 +31,24 @@
                      dbpool<>
                      dbschema<>]])
 
-  (:use
-    [czlab.wabbit.sys.core]
-    [czlab.xlib.core]
-    [czlab.xlib.str]
-    [czlab.xlib.io]
-    [czlab.wabbit.io.core]
-    [czlab.wabbit.io.loops]
-    [czlab.wabbit.io.mails]
-    [czlab.wabbit.io.files]
-    [czlab.wabbit.io.jms]
-    [czlab.wabbit.io.http]
-    [czlab.wabbit.io.socket]
-    [czlab.wabbit.mvc.ftlshim])
+  (:use [czlab.wabbit.sys.core]
+        [czlab.xlib.core]
+        [czlab.xlib.str]
+        [czlab.xlib.io]
+        [czlab.wabbit.io.core]
+        [czlab.wabbit.io.loops]
+        [czlab.wabbit.io.mails]
+        [czlab.wabbit.io.files]
+        [czlab.wabbit.io.jms]
+        [czlab.wabbit.io.http]
+        [czlab.wabbit.io.socket]
+        [czlab.wabbit.mvc.ftlshim])
 
   (:import [czlab.wabbit.etc PluginFactory Plugin]
            [czlab.horde Schema JDBCPool DBAPI]
            [java.io File StringWriter]
            [czlab.wabbit.server
-            AppGist
+            PodGist
             Execvisor
             Component
             Cljshim
@@ -79,15 +78,13 @@
            [czlab.wabbit.io IoGist IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* false)
+;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn getAppKeyFromEvent
+(defn getPodKeyFromEvent
   "Get the secret application key"
-  ^String
-  [^IoEvent evt]
-  (.. evt source server appKey))
+  ^String [^IoEvent evt] (.. evt source server podKey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -110,8 +107,8 @@
   (when-some
     [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
-    (->> (.getv (.getx co) :schema)
-         (dbopen<+> p))))
+    (dbopen<+> p
+               (.getv (.getx co) :schema))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -132,14 +129,15 @@
 (defn- mkctr
   ""
   ^Container
-  [^Execvisor parObj ^AppGist gist]
+  [^Execvisor parObj ^PodGist gist]
   (log/info "creating a container: %s" (.id gist))
   (let
-    [pid (format "%s#%d" (.id gist) (seqint2))
+    [pid (str (.id gist) "#" (seqint2))
      rts (Cljshim/newrt (getCldr) pid)
      ctx (.getx gist)
-     _appDir (io/file (.getv ctx :path))
-     pub (io/file _appDir DN_PUB DN_PAGES)
+     podPath (io/file (.getv ctx :path))
+     pub (io/file podPath
+                  DN_PUB DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
      impl (muble<> {:services {}})]
     (with-meta
@@ -147,9 +145,9 @@
 
         Container
 
-        (appKeyBits [this] (bytesify (.appKey this)))
-        (appKey [_] (.getv impl :digest ))
-        (appDir [this] _appDir)
+        (podKeyBits [this] (bytesify (.podKey this)))
+        (podKey [_] (.getv impl :digest ))
+        (podDir [this] podPath)
         (cljrt [_] rts)
         (getx [_] impl)
         (version [_] (.version gist))
@@ -194,8 +192,8 @@
         (envConfig [_]
           (.getv impl :envConf))
 
-        (appConfig [_]
-          (.getv impl :appConf))
+        (podConfig [_]
+          (.getv impl :podConf))
 
         (start [this]
           (let [svcs (.getv impl :services)]
@@ -244,7 +242,7 @@
       (let
         [cfg (merge (.impl (.getx bk)) cfg0)
          obj (service<> co svcType nm)
-         pkey (.appKey co)
+         pkey (.podKey co)
          hid (:handler cfg)]
         (log/info "making service %s..." svcType)
         (log/info "svc meta: %s" (meta obj))
@@ -282,7 +280,7 @@
 (defn container<>
   "Create an application container"
   ^Container
-  [^Execvisor exe ^AppGist gist]
+  [^Execvisor exe ^PodGist gist]
   (doto
     (mkctr exe gist)
     (comp->init  nil)))
@@ -293,11 +291,11 @@
   ""
   [^Container co]
   (let
-    [appDir (.appDir co)
-     f #(slurpXXXConf appDir % true)]
+    [podDir (.podDir co)
+     f #(slurpXXXConf podDir % true)]
     (doto (.getx co)
       (.setv :envConf (f CFG_ENV_CF))
-      (.setv :appConf (f CFG_APP_CF)))
+      (.setv :podConf (f CFG_POD_CF)))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -307,7 +305,7 @@
   ^File
   [^Container co ^String fc]
   (->> (cs/replace fc #"[\./]+" "")
-       (io/file (.appDir co) "modules" )))
+       (io/file (.podDir co) "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -325,7 +323,7 @@
 (defn- postInitPlugin
   ""
   [^Container co ^String fc]
-  (let [pfile (->> (.appDir co)
+  (let [pfile (->> (.podDir co)
                    (fmtPluginFname fc))]
     (writeFile pfile "ok")
     (log/info "initialized plugin: %s" fc)))
@@ -335,7 +333,7 @@
 (defn- doOnePlugin
   ""
   ^Plugin
-  [^Container co ^Cljshim rts ^String fc appConf]
+  [^Container co ^Cljshim rts ^String fc podConf]
   (log/info "plugin->factory: %s" fc)
   (let
     [^PluginFactory
@@ -344,7 +342,7 @@
      u (if (some? pf)
          (.createPlugin pf co))]
     (when (some? u)
-      (.init u {:appConf appConf})
+      (.init u {:podConf podConf})
       (postInitPlugin co fc)
       (log/info "plugin %s starting..." fc)
       (.start u)
@@ -355,21 +353,21 @@
 ;;
 (defn- maybeInitDBs
   ""
-  [^Container co app]
+  [^Container co pod]
   (preduce<map>
     #(let
        [[k v] %2]
        (if-not (false? (:status v))
          (let
            [pwd (passwd<> (:passwd v)
-                          (.appKey co))
+                          (.podKey co))
             cfg (merge v
                        {:passwd (.text pwd)
                         :id k})]
            (->> (dbpool<> (dbspec<> cfg) cfg)
                 (assoc! %1 k)))
          %1))
-    (seq (get-in app [:databases :jdbc]))))
+    (seq (get-in pod [:databases :jdbc]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -377,15 +375,15 @@
   ::Container
   [^Container co arg]
 
-  (log/info "comp->init: '%s' : '%s'" (gtid co) (.id co))
+  (logcomp "comp->init" co)
   (parseConf co)
   (let
     [cpu (scheduler<> (.id co))
      rts (.cljrt co)
      pid (.id co)
-     {:keys [envConf appConf]}
+     {:keys [envConf podConf]}
      (.impl (.getx co))
-     mcz (get-in appConf
+     mcz (get-in podConf
                  [:info :main])
      loc (-> ^Execvisor
              (.parent co)
@@ -394,14 +392,14 @@
            (str "Resources_"
                 loc
                 ".properties")
-           (io/file (.appDir co) DN_ETC))]
+           (io/file (.podDir co) DN_ETC))]
     (.setv (.getx co) :core cpu)
     (if (fileRead? res)
       (->> (loadResource res)
            (I18N/setBundle pid)))
     ;;db stuff
     (doto->>
-      (maybeInitDBs co appConf)
+      (maybeInitDBs co podConf)
       (.setv (.getx co) :dbps)
       (log/debug "db [dbpools]\n%s" ))
     ;;handle the plugins
@@ -411,13 +409,13 @@
            [[k v] %2]
            (->>
              (doOnePlugin
-               co rts v appConf)
+               co rts v podConf)
              (assoc! %1 k)))
-        (seq (:plugins appConf)))
+        (seq (:plugins podConf)))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+
-      [dmCZ (:data-model appConf)]
+      [dmCZ (:data-model podConf)]
       (log/info "schema-func: %s" dmCZ)
       (if-some
         [sc (cast? Schema
@@ -426,7 +424,7 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable cpu {})
-    (->> (or (:services appConf) {})
+    (->> (or (:services podConf) {})
          (services<> co ))
     (if (hgl? mcz)
       (.call rts mcz))

@@ -50,32 +50,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn runAppBg
+(defn runPodBg
   "Run the application in the background"
-  [homeDir appDir]
+  [homeDir podDir]
   (let
     [progW (io/file homeDir "bin/wabbit.bat")
      prog (io/file homeDir "bin/wabbit")
      tk (if (isWindows?)
           (a/antExec
             {:executable "cmd.exe"
-             :dir appDir}
+             :dir podDir}
             [[:argvalues ["/C" "start" "/B"
                           "/MIN"
                           (fpath progW) "run"]]])
           (a/antExec
             {:executable (fpath prog)
-             :dir appDir}
+             :dir podDir}
             [[:argvalues ["run" "bg"]]]))]
     (a/runTasks* tk)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn bundleApp
+(defn bundlePod
   "Bundle an app"
-  [homeDir appDir outDir]
+  [homeDir podDir outDir]
   (let [dir (mkdirs (io/file outDir))
-        a (io/file appDir)]
+        a (io/file podDir)]
     (->>
       (a/antZip
         {:destFile (io/file dir (str (.getName a) ".zip"))
@@ -96,60 +96,60 @@
 (defn- mkcljd
   ""
   {:tag File}
-  ([appDir appDomain] (mkcljd appDir appDomain nil))
-  ([appDir appDomain dir]
-   (io/file appDir
+  ([podDir podDomain] (mkcljd podDir podDomain nil))
+  ([podDir podDomain dir]
+   (io/file podDir
             "src/main"
             (stror dir "clojure")
-            (cs/replace appDomain "." "/"))))
+            (cs/replace podDomain "." "/"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postConfigApp
+(defn- postConfigPod
   ""
-  [appDir appId appDomain]
+  [podDir podId podDomain]
   (let
     [h2db (str (if (isWindows?)
                  "/c:/temp/" "/tmp/") (juid))
      h2dbUrl (str h2db
                   "/"
-                  appId
+                  podId
                   ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
-     domPath (cs/replace appDomain "." "/")
+     domPath (cs/replace podDomain "." "/")
      hhh (getHomeDir)
-     cljd (mkcljd appDir appDomain)]
+     cljd (mkcljd podDir podDomain)]
     (mkdirs h2db)
     (replaceFile!
-      (io/file appDir CFG_APP_CF)
+      (io/file podDir CFG_POD_CF)
       #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
-           (cs/replace "@@APPDOMAIN@@" appDomain)))))
+           (cs/replace "@@APPDOMAIN@@" podDomain)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- copyOneApp
+(defn- copyOnePod
   ""
-  [outDir appId appDomain kind]
+  [outDir podId podDomain kind]
   (let
-    [domPath (cs/replace appDomain "." "/")
-     appDir (mkdirs (io/file outDir appId))
+    [domPath (cs/replace podDomain "." "/")
+     podDir (mkdirs (io/file outDir podId))
      other (if (= :soa kind) :web :soa)
-     srcDir (io/file appDir "src")
+     srcDir (io/file podDir "src")
      mcloj "main/clojure"
      mjava "main/java"
      hhh (getHomeDir)]
     (FileUtils/copyDirectory
       (io/file hhh DN_ETC "app")
-      appDir
+      podDir
       (FileFilterUtils/trueFileFilter))
     (when (= :soa kind)
       (doall
-        (map #(->> (io/file appDir %)
+        (map #(->> (io/file podDir %)
                    (FileUtils/deleteDirectory ))
              ["src/web" "public"]))
-      (->> (io/file appDir DN_CONF "routes.conf")
+      (->> (io/file podDir DN_CONF "routes.conf")
            (FileUtils/deleteQuietly )))
     (doall
-      (map #(mkdirs (io/file appDir
+      (map #(mkdirs (io/file podDir
                              "src/main" % domPath))
            ["clojure" "java"]))
     (FileUtils/moveFile
@@ -163,46 +163,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- configOneApp
+(defn- configOnePod
   ""
-  [outDir appId appDomain kind]
+  [outDir podId podDomain kind]
   (let
-    [domPath (cs/replace appDomain "." "/")
-     appDir (io/file outDir appId)
-     srcDir (io/file appDir "src")
+    [domPath (cs/replace podDomain "." "/")
+     podDir (io/file outDir podId)
+     srcDir (io/file podDir "src")
      verStr "0.1.0-SNAPSHOT"
      hhh (getHomeDir)]
     (doseq [f (FileUtils/listFiles srcDir nil true)]
       (replaceFile!
         f
         #(-> (cs/replace % "@@USER@@" (getUser))
-             (cs/replace "@@APPDOMAIN@@" appDomain))))
+             (cs/replace "@@APPDOMAIN@@" podDomain))))
     (replaceFile!
-      (io/file appDir CFG_APP_CF)
+      (io/file podDir CFG_POD_CF)
       #(-> (cs/replace % "@@USER@@" (getUser))
            (cs/replace "@@APPKEY@@" (uuid<>))
            (cs/replace "@@VER@@" verStr)
-           (cs/replace "@@APPDOMAIN@@" appDomain)))
+           (cs/replace "@@APPDOMAIN@@" podDomain)))
     (replaceFile!
       (io/file srcDir "main/resources/pom.xml")
-      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+      #(-> (cs/replace % "@@APPDOMAIN@@" podDomain)
            (cs/replace "@@VER@@" verStr)
-           (cs/replace "@@APPID@@" appId)))
+           (cs/replace "@@APPID@@" podId)))
     (replaceFile!
-      (io/file appDir "build.boot")
-      #(-> (cs/replace % "@@APPDOMAIN@@" appDomain)
+      (io/file podDir "build.boot")
+      #(-> (cs/replace % "@@APPDOMAIN@@" podDomain)
            (cs/replace "@@TYPE@@" (name kind))
            (cs/replace "@@VER@@" verStr)
-           (cs/replace "@@APPID@@" appId)))
+           (cs/replace "@@APPID@@" podId)))
     (when (= :web kind)
       (replaceFile!
-        (io/file appDir DN_CONF "routes.conf")
-        #(cs/replace % "@@APPDOMAIN@@" appDomain)))
-    (postConfigApp appDir appId appDomain)))
+        (io/file podDir DN_CONF "routes.conf")
+        #(cs/replace % "@@APPDOMAIN@@" podDomain)))
+    (postConfigPod podDir podId podDomain)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?
-(defn createApp
+(defn createPod
   "Create a new app"
   [option path]
   (let
@@ -213,17 +213,17 @@
      cwd (getCwd)
      ;; treat as domain e.g com.acme => app = acme
      ;; regex gives ["com.acme" ".acme"]
-     app (when (some? t)
+     pod (when (some? t)
            (if-some [tkn (last t)]
              (triml tkn ".")
              (first t)))]
-    (if (empty? app) (trap! CmdHelpError))
+    (if (empty? pod) (trap! CmdHelpError))
     (case option
       ("-web" "--web") nil
       ("-soa" "--soa") nil
       (trap! CmdHelpError))
-    (copyOneApp cwd app path kind)
-    (configOneApp cwd app path kind)))
+    (copyOnePod cwd pod path kind)
+    (configOnePod cwd pod path kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -232,11 +232,11 @@
   [^File demo ^File out]
   (let [top (io/file out (.getName demo))
         dn (.getName top)
-        appDomain (mkDemoPath dn)
-        domPath (cs/replace appDomain "." "/")
+        podDomain (mkDemoPath dn)
+        domPath (cs/replace podDomain "." "/")
         kind (if (in? #{"mvc" "http"} dn) :web :soa)]
-    (prn!! "Generating: %s..." appDomain)
-    (copyOneApp out dn appDomain kind)
+    (prn!! "Generating: %s..." podDomain)
+    (copyOnePod out dn podDomain kind)
     (FileUtils/copyDirectory
       demo
       (io/file top DN_CONF)
@@ -245,9 +245,9 @@
       demo
       (io/file top "src/main/clojure" domPath)
       (FileFilterUtils/suffixFileFilter ".clj"))
-    (configOneApp out
+    (configOnePod out
                   dn
-                  appDomain kind)))
+                  podDomain kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -27,7 +27,7 @@
         [czlab.xlib.io]
         [czlab.xlib.str])
 
-  (:import [czlab.wabbit.server ConfigError AppGist Component]
+  (:import [czlab.wabbit.server ConfigError PodGist Component]
            [org.apache.commons.lang3.text StrSubstitutor]
            [czlab.xlib
             Versioned
@@ -72,7 +72,6 @@
 (def ^String DN_RCPROPS  "Resources_en.properties" )
 (def ^String DN_TEMPLATES  "templates" )
 
-(def ^String DN_BOXX "apps" )
 (def ^String DN_LOGS "logs" )
 (def ^String DN_TMP "tmp" )
 (def ^String DN_DBS "dbs" )
@@ -85,8 +84,9 @@
 (def ^String DN_STYLES "styles" )
 (def ^String DN_PUB "public" )
 
-(def ^String APP_CF  "appconfig.conf" )
+(def ^String POD_CF  "pod.conf" )
 (def ^String ENV_CF  "env.conf" )
+(def ^String WEB_CF  "web.conf" )
 
 (def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
@@ -98,70 +98,17 @@
 (def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
 (def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
 
-(def ^String CFG_APP_CF  (str DN_CONF  "/"  APP_CF ))
+(def ^String CFG_POD_CF  (str DN_CONF  "/"  POD_CF ))
 (def ^String CFG_ENV_CF  (str DN_CONF  "/"  ENV_CF ))
+(def ^String CFG_WEB_CF  (str DN_CONF  "/"  WEB_CF ))
 
-(def K_SKARO_APPDOMAIN :wabbit-app-domain )
-(def K_SKARO_APPID :wabbit-appid )
-(def K_SKARO_APPTASK :wabbit-app-task )
-(def K_JMXMGM :jmx-management )
-(def K_HOMEDIR :wabbit-home )
-(def K_ROUTE_INFO :route-info )
-(def K_CLISH :cli-shell )
-(def K_COMPS :components )
-;;(def K_ENDORSED :endorsed )
-(def K_REGS :registries )
-(def K_KERNEL :kernel )
-(def K_EXECV :execvisor )
-(def K_DEPLOYER :deployer )
-(def K_JCTOR :job-creator )
-(def K_EBUS :event-bus)
-(def K_SCHEDULER :scheduler )
-(def K_CONTAINERS :containers)
-(def K_BLOCKS :blocks )
-(def K_JMXSVR :jmxsvr )
-(def K_MCACHE :meta-cache)
 (def K_PLUGINS :plugins)
-(def K_APPS :apps )
-(def K_PODS :pods )
-(def K_SVCS :services )
-;;(def K_ROOT :root-rego )
 
-(def K_ROOT_CZLR :root-loader )
-(def K_APP_CZLR :app-loader )
-(def K_EXEC_CZLR :exec-loader )
-(def K_DBPS :db-pools )
-
-(def K_BASEDIR :base-dir )
-(def K_PODSDIR :pods-dir )
-(def K_CFGDIR :cfg-dir )
-(def K_APPDIR :app-dir )
-(def K_PLAYDIR :play-dir )
-(def K_LOGDIR :log-dir )
-(def K_TMPDIR :tmp-dir )
-(def K_DBSDIR :dbs-dir )
-(def K_BKSDIR :blocks-dir )
-
-(def K_COUNTRY :country )
-(def K_LOCALE :locale )
-(def K_L10N :l10n )
-(def K_LANG :lang )
-(def K_RCBUNDLE :str-bundle )
-
-(def K_PIDFILE :pid-file )
-(def K_APPCONF_FP :app-conf-file)
-(def K_APPCONF :app-conf)
-(def K_ENVCONF_FP :env-conf-file)
-(def K_ENVCONF :env-conf)
-(def K_MFPROPS :mf-props)
-(def K_META :meta )
-(def K_KILLPORT :discarder)
-
+(def JS_FLATLINE :____flatline)
 (def EV_OPTS :____eventoptions)
 (def JS_LAST :____lastresult)
 (def JS_CRED :credential)
 (def JS_USER :principal)
-(def JS_FLATLINE :____flatline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -188,14 +135,14 @@
 (defn readConf
   "Parse a edn configuration file"
   ^String
-  [^File appDir ^String confile]
+  [^File podDir ^String confile]
   (doto->>
-    (-> (io/file appDir DN_CONF confile)
+    (-> (io/file podDir DN_CONF confile)
         (changeContent
           #(cs/replace %
                        "${appdir}"
-                       (fpath appDir))))
-    (log/debug "[%s]\n%s" confile )))
+                       (fpath podDir))))
+    (log/debug "[%s]\n%s" confile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -265,38 +212,39 @@
 ;;
 (defn podMeta
   "Create metadata for an application bundle"
-  ^AppGist
-  [^String app conf urlToApp]
+  ^PodGist
+  [^String pod conf urlToPod]
   {:pre [(map? conf)]}
-  (let [pid (juid)
-        info
+  (let [info
         (merge {:version "1.0"
-                :name app
+                :name pod
                 :main ""}
                (:info conf)
-               {:path urlToApp})
+               {:path urlToPod})
+        pid (str (:name info)
+                 "#" (seqint2))
         impl (muble<> info)]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
-        AppGist
-        (id [_] (format "%s{%s}" (:name info) pid))
+        PodGist
         (version [_] (:version info))
+        (id [_] pid)
         (getx [_] impl))
-      {:typeid  ::AppGist})))
+      {:typeid  ::PodGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn slurpXXXConf
   "Parse config file"
-  ([appDir conf] (slurpXXXConf appDir conf false))
-  ([appDir conf expVars?]
-   (let [f (io/file appDir conf)
+  ([podDir conf] (slurpXXXConf podDir conf false))
+  ([podDir conf expVars?]
+   (let [f (io/file podDir conf)
          s (str "{\n"
                 (slurpUtf8 f) "\n}")]
      (->
        (if expVars?
-         (-> (cs/replace s "${appdir}" (fpath appDir))
+         (-> (cs/replace s "${appdir}" (fpath podDir))
              (expandVars))
          s)
        (readEdn )))))
@@ -305,8 +253,8 @@
 ;;
 (defn spitXXXConf
   "Write out config file"
-  [appDir conf cfgObj]
-  (let [f (io/file appDir conf)
+  [podDir conf cfgObj]
+  (let [f (io/file podDir conf)
         s (strim (writeEdnStr cfgObj))]
     (->>
       (if (and (.startsWith s "{")
@@ -315,7 +263,6 @@
             (droptail 1))
         s)
       (spitUtf8 f))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

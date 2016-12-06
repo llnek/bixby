@@ -33,7 +33,7 @@
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [czlab.wabbit.server CljAppLoader]
+  (:import [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.server
             Execvisor
@@ -122,7 +122,7 @@
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
   (log/info "execvisor = %s"
-            "czlab.wabbit.rt.Execvisor")
+            "czlab.wabbit.server.Execvisor")
   (let [execv (execvisor<>)]
     (swap! gist
            assoc
@@ -153,7 +153,7 @@
      loc (Locale. ln cn)
      rc (getResource C_RCB loc)
      ctx (->> {:basedir (io/file home)
-               :appDir (io/file cwd)
+               :podDir (io/file cwd)
                :pidFile fp
                :locale loc}
               (merge env)
@@ -162,21 +162,23 @@
     (log/info "wabbit.home    = %s" (fpath home))
     (log/info "wabbit.version = %s" ver)
     (log/info "wabbit folder - ok")
-    (test-some "base resouces" rc)
-    (I18N/setBase rc)
+    (doto->> rc
+             (test-some "base resource" )
+             (I18N/setBase ))
     (log/info "resource bundle found and loaded")
     (primodial ctx)
-    (writeFile fp (processPid))
-    (.deleteOnExit fp)
+    (doto fp
+      (writeFile (processPid))
+      (.deleteOnExit ))
     (log/info "wrote wabbit.pid - ok")
     (enableRemoteShutdown ctx)
     (exitHook #(stopCLI ctx))
     (log/info "added shutdown hook")
-    (log/info "class-loader: using %s" (type cz))
+    (log/info "app-loader: %s" (type cz))
     (log/info "sys-loader: %s"
               (type (.getParent cz)))
     (log/info "%s" @ctx)
-    (log/info "container(s) are now running...")
+    (log/info "container is now running...")
     (while (not @STOPCLI)
       (safeWait 5000))))
 

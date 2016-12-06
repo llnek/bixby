@@ -55,9 +55,9 @@
 ;;
 (defn- execBootScript
   "Call into boot/clj code"
-  [^File homeDir ^File appDir & args]
+  [^File homeDir ^File podDir & args]
   (sysProp! "wabbit.home.dir" (.getCanonicalPath homeDir))
-  (sysProp! "wabbit.proc.dir" (.getCanonicalPath appDir))
+  (sysProp! "wabbit.proc.dir" (.getCanonicalPath podDir))
   (log/debug "execBootScript args: %s" args)
   (AppMain/invokeStatic (vargs String args)))
 
@@ -78,10 +78,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onCreate
-  "Create a new app"
+  "Create a new pod"
   [args]
   (if (> (count args) 1)
-    (createApp (args 0) (args 1))
+    (createPod (args 0) (args 1))
     (trap! CmdHelpError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,7 +91,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build an app?
 (defn- onBuild
-  "Build the app"
+  "Build the pod"
   [args]
   (->> (if (empty? args) ["dev"] args)
        (apply execBootScript (getHomeDir) (getCwd))))
@@ -103,10 +103,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onPodify
-  "Package the app"
+  "Package the pod"
   [args]
   (if-not (empty? args)
-    (bundleApp (getHomeDir)
+    (bundlePod (getHomeDir)
                (getCwd) (args 0))
     (trap! CmdHelpError)))
 
@@ -117,7 +117,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onTest
-  "Test the app"
+  "Test the pod"
   [args]
   (->> (if (empty? args) ["tst"] args)
        (apply execBootScript (getHomeDir) (getCwd) )))
@@ -129,7 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onStart
-  "Start and run the app"
+  "Start and run the pod"
   [args]
   (let [home (getHomeDir)
         cwd (getCwd)
@@ -137,7 +137,7 @@
     ;; background job is handled differently on windows
     (if (and (contains? #{"-bg" "--background"} s2)
              (isWindows?))
-      (runAppBg home cwd)
+      (runPodBg home cwd)
       (startViaCLI home cwd))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -146,7 +146,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onDebug "Debug the app" [args] (onStart args))
+(defn- onDebug "Debug the pod" [args] (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -292,9 +292,9 @@
 ;;
 (defn- genEclipseProj
   ""
-  [^File appdir]
-  (let [ec (mkdirs (io/file appdir "eclipse.projfiles"))
-        app (.getName appdir)
+  [^File poddir]
+  (let [ec (mkdirs (io/file poddir "eclipse.projfiles"))
+        pod (.getName poddir)
         sb (strbf<>)]
     (FileUtils/cleanDirectory ec)
     (writeFile
@@ -302,25 +302,25 @@
       (-> (resStr (str "czlab/wabbit/eclipse/"
                        "java"
                        "/project.txt"))
-          (cs/replace "${APP.NAME}" app)
+          (cs/replace "${APP.NAME}" pod)
           (cs/replace "${JAVA.TEST}"
-                      (fpath (io/file appdir
+                      (fpath (io/file poddir
                                       "src/test/java")))
           (cs/replace "${JAVA.SRC}"
-                      (fpath (io/file appdir
+                      (fpath (io/file poddir
                                       "src/main/java")))
           (cs/replace "${CLJ.TEST}"
-                      (fpath (io/file appdir
+                      (fpath (io/file poddir
                                       "src/test/clojure")))
           (cs/replace "${CLJ.SRC}"
-                      (fpath (io/file appdir
+                      (fpath (io/file poddir
                                       "src/main/clojure")))))
-    (mkdirs (io/file appdir DN_BUILD "classes"))
+    (mkdirs (io/file poddir DN_BUILD "classes"))
     (doall
       (map (partial scanJars sb)
            [(io/file (getHomeDir) DN_DIST)
             (io/file (getHomeDir) DN_LIB)
-            (io/file appdir DN_TARGET)]))
+            (io/file poddir DN_TARGET)]))
     (writeFile
       (io/file ec ".classpath")
       (-> (resStr (str "czlab/wabbit/eclipse/"
@@ -353,7 +353,7 @@
   ([id hint] (onSvc id hint nil))
   ([id hint svc]
    (let
-     [cf (slurpXXXConf (getCwd) CFG_APP_CF)
+     [cf (slurpXXXConf (getCwd) CFG_POD_CF)
       root (:services cf)
       nw
       (if (< hint 0)
@@ -363,7 +363,7 @@
           (if (contains? root id) (trap! CmdHelpError))
           (assoc root id (assoc gist :service svc))))]
      (if (some? nw)
-       (spitXXXConf (getCwd) CFG_APP_CF nw)))))
+       (spitXXXConf (getCwd) CFG_POD_CF nw)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -22,7 +22,11 @@ import czlab.xlib.Startable;
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component, Initable, Startable, Hierarchial, Disposable {
+public interface Service extends Component
+                                 ,Initable
+                                 ,Startable
+                                 ,Disposable
+                                 ,Hierarchial {
 
   /**/
   public boolean isEnabled();

@@ -19,7 +19,7 @@ import czlab.xlib.Hierarchial;
 /**
  * @author Kenneth Leung
  */
-public interface AppGist extends Component, Hierarchial {
+public interface PodGist extends Component, Hierarchial {
 
 }
 

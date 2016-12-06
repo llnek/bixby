@@ -226,7 +226,7 @@
   (let [{:keys [port deleteMsg?
                 host user ssl? passwd]}
         cfg0
-        pkey (.appKey (.server co))]
+        pkey (.podKey (.server co))]
     (-> cfg0
         (assoc :ssl (if (false? ssl?) false true))
         (assoc :deleteMsg (true? deleteMsg?))

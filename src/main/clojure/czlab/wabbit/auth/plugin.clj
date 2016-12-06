@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.auth.plugin
 
@@ -296,8 +296,8 @@
 ;;
 (defn- init-shiro
   ""
-  [^File appDir ^String appKey]
-  (-> (io/file appDir "conf/shiro.ini")
+  [^File podDir ^String podKey]
+  (-> (io/file podDir "conf/shiro.ini")
       (io/as-url )
       str
       (IniSecurityManagerFactory. )
@@ -430,8 +430,8 @@
 
     (start [_]
       (assertPluginOK (.acquireDbPool ctr))
-      (init-shiro (.appDir ctr)
-                  (.appKey ctr))
+      (init-shiro (.podDir ctr)
+                  (.podKey ctr))
       (log/info "AuthPlugin started"))
 
     (stop [_]
@@ -443,7 +443,7 @@
     (checkAction [_ acctObj action] )
 
     (addAccount [_ arg]
-      (let [pkey (.appKey ctr)]
+      (let [pkey (.podKey ctr)]
         (createLoginAccount
           (getSQLr ctr)
           (:principal arg)
@@ -472,12 +472,12 @@
             (.getPrincipal cur)))))
 
     (hasAccount [_ arg]
-      (let [pkey (.appKey ctr)]
+      (let [pkey (.podKey ctr)]
         (hasLoginAccount? (getSQLr ctr)
                           (:principal arg))))
 
     (account [_ arg]
-      (let [pkey (.appKey ctr)
+      (let [pkey (.podKey ctr)
             sql (getSQLr ctr)]
         (cond
           (hgl? (:principal arg))
@@ -507,12 +507,12 @@
 (defn- doMain
   ""
   [& args]
-  (let [appDir (io/file (first args))
+  (let [podDir (io/file (first args))
         cmd (nth args 1)
         db (nth args 2)
-        env (slurpXXXConf appDir CFG_ENV_CF true)
-        app (slurpXXXConf appDir CFG_APP_CF true)
-        pkey (-> (get-in app [:info :digest])
+        env (slurpXXXConf podDir CFG_ENV_CF true)
+        pod (slurpXXXConf podDir CFG_POD_CF true)
+        pkey (-> (get-in pod [:info :digest])
                  str
                  (.toCharArray))
         cfg (get (get-in env [:databases :jdbc]) (keyword db))]

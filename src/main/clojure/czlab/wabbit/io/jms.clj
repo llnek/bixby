@@ -93,7 +93,7 @@
              ^String jmsUser]}
      (.config co)
      pwd (->> (.server co)
-              (.appKey )
+              (.podKey )
               (passwd<> jmsPwd))
      c (.lookup ctx destination)
      ^Connection
@@ -126,7 +126,7 @@
              ^String jmsPwd]}
      (.config co)
      pwd (->> (.server co)
-              (.appKey)
+              (.podKey)
               (passwd<> jmsPwd))
      conn (if (hgl? jmsUser)
             (.createTopicConnection
@@ -159,7 +159,7 @@
              ^String jmsPwd]}
      (.config co)
      pwd (->> (.server co)
-              (.appKey)
+              (.podKey)
               (passwd<> jmsPwd))
      conn (if (hgl? jmsUser)
             (.createQueueConnection
@@ -185,7 +185,7 @@
   [^IoService co cfg0]
   (let [{:keys [jndiPwd jmsPwd]}
         cfg0
-        pkey (.appKey (.server co))]
+        pkey (.podKey (.server co))]
     (-> cfg0
         (assoc :jndiPwd (.text (passwd<> jndiPwd pkey)))
         (assoc :jmsPwd (.text (passwd<> jmsPwd pkey))))))

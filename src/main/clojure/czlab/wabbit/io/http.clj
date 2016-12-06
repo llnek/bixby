@@ -18,8 +18,9 @@
   czlab.wabbit.io.http
 
   (:require [czlab.convoy.net.util :refer [parseBasicAuth]]
+            [czlab.xlib.io :refer [xdata<> slurpUtf8]]
+            [czlab.xlib.format :refer [readEdn]]
             [czlab.twisty.codec :refer [passwd<>]]
-            [czlab.xlib.io :refer [xdata<>]]
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io]
             [clojure.string :as cs])
@@ -126,6 +127,19 @@
                    (gistHeader AUTH))]
     (parseBasicAuth v)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeLoadRoutes
+  [^IoService co]
+  (let [f (-> (.. co server podDir)
+              (io/file CFG_WEB_CF))]
+    (when (.exists f)
+      (let [c (-> (str "{\n"
+                       (slurpUtf8 f) "\n}")
+                  (readEdn))
+            r (loadRoutes (:routes c))]
+        (.setv (.getx co) :routes r)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- httpBasicConfig
@@ -141,26 +155,12 @@
     (->>
       {:port (if-not (spos? port)
                (if ssl? 443 80) port)
+       :routes (maybeLoadRoutes co)
        :passwd (->> (.server co)
-                    (.appKey)
+                    (.podKey)
                     (passwd<> passwd) (.text))
        :serverKey (if ssl? (io/as-url kfile))}
       (merge cfg ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- maybeLoadRoutes
-  ^APersistentMap
-  [^IoService co]
-  (let [ctr (.server co)
-        ctx (.getx co)
-        f (io/file (.appDir ctr)
-                   DN_CONF
-                   "routes.conf")]
-    (doto->>
-      (if (.exists f)
-        (loadRoutes f) [])
-      (.setv ctx :routes ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,11 +373,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::HTTP
+(defn- initor
+  ""
   [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
   (let [ctr (.server co)
         cfg (->> (httpBasicConfig co cfg0)
                  (.setv (.getx co) :emcfg))]
@@ -391,6 +389,26 @@
       (.setv (.getx co) :bootstrap ))
     co))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->init
+  ::HTTP
+  [^IoService co cfg0]
+
+  (logcomp "comp->init" co)
+  (initor co cfg0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->init
+  ::WebMVC
+  [^IoService co cfg0]
+
+  (logcomp "comp->init" co)
+  (initor co cfg0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod processOrphan

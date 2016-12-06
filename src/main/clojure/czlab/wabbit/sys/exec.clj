@@ -33,6 +33,12 @@
 
   (:import [czlab.wabbit.io IoService IoGist]
            [java.security SecureRandom]
+           [czlab.wabbit.server
+            Container
+            Execvisor
+            PodGist
+            JmxServer
+            Component]
            [clojure.lang Atom]
            [java.util Date]
            [java.io File]
@@ -43,13 +49,7 @@
             Muble
             Versioned
             Hierarchial
-            Identifiable]
-           [czlab.wabbit.server
-            Container
-            Execvisor
-            AppGist
-            JmxServer
-            Component]))
+            Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -62,23 +62,23 @@
 ;;
 (defn- inspectPod
   "Make sure the pod setup is ok"
-  ^AppGist
+  ^PodGist
   [^Execvisor execv desDir]
-  (log/info "app dir : %s => inspecting..." desDir)
+  (log/info "pod dir : %s => inspecting..." desDir)
   ;;create the pod meta and register it
   ;;as a application
   (let
-    [_ (precondFile (io/file desDir CFG_APP_CF))
-     cf (slurpXXXConf desDir CFG_APP_CF true)
-     app (basename desDir)
+    [_ (precondFile (io/file desDir CFG_POD_CF))
+     cf (slurpXXXConf desDir CFG_POD_CF true)
+     pod (basename desDir)
      ctx (.getx execv)
-     m (podMeta app
+     m (podMeta pod
                 cf
                 (io/as-url desDir))]
     (comp->init m nil)
     (doto->>
       m
-      (.setv ctx :app ))))
+      (.setv ctx :pod ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -87,7 +87,8 @@
   ^JmxServer
   [^Execvisor co cfg]
   (try!
-    (let [jmx (jmxServer<> cfg)]
+    (let
+      [jmx (jmxServer<> cfg)]
       (.start jmx)
       (.reg jmx
             co
@@ -102,13 +103,12 @@
 ;;
 (defn- stopJmx
   "Kill the internal JMX server"
-  ^Component
   [^Execvisor co]
   (try!
     (let
       [ctx (.getx co)
        jmx (.getv ctx :jmxServer)]
-      (when (some? jmx)
+      (if (some? jmx)
         (.stop ^JmxServer jmx))
       (.unsetv ctx :jmxServer)))
   (log/info "jmx terminated")
@@ -118,14 +118,13 @@
 ;;
 (defn- ignitePod
   ""
-  ^Execvisor
-  [^Execvisor co ^AppGist gist]
+  [^Execvisor co ^PodGist gist]
   (try!
     (let
       [ctr (container<> co gist)
-       app (.id gist)
+       pod (.id gist)
        cid (.id ctr)]
-      (log/debug "start pod = %s\ninstance = %s" app cid)
+      (log/debug "start pod = %s\ninstance = %s" pod cid)
       (doto->>
         ctr
         (.setv (.getx co) :container )
@@ -136,9 +135,8 @@
 ;;
 (defn- stopPods
   ""
-  ^Execvisor
   [^Execvisor co]
-  (log/info "preparing to stop pods...")
+  (log/info "preparing to stop pod...")
   (let [cx (.getx co)
         c (.getv cx :container)]
     (doto->>
@@ -157,9 +155,9 @@
   []
   (let
     [impl (muble<> {:container nil
-                    :app nil
+                    :pod nil
                     :emitters {}})
-     pid (juid)]
+     pid (str "exec#" (seqint2))]
     (with-meta
       (reify
 
@@ -176,7 +174,7 @@
         (kill9 [_] (apply (.getv impl :stop!) []))
 
         (start [this]
-          (->> (.getv impl :app)
+          (->> (.getv impl :pod)
                (ignitePod this )))
 
         (stop [this]
@@ -193,21 +191,20 @@
   [emsType gist]
   (let [{:keys [info conf]}
         gist
-        pid (format "%s[%s]"
-                    (juid)
-                    (:name info))
+        pid (str "emit#"
+                 (:name info))
         impl (muble<> conf)]
     (with-meta
       (reify
 
         IoGist
 
+        (setParent [_ p] (.setv impl :execv p))
+        (parent [_] (.getv impl :execv))
+
         (version [_] (:version info))
         (getx [_] impl)
         (type [_] emsType)
-
-        (setParent [_ p] (.setv impl :execv p))
-        (parent [_] (.getv impl :execv))
 
         (isEnabled [_]
           (not (false? (:enabled info))))
@@ -222,9 +219,9 @@
   ::IoGist
   [^IoGist co execv]
 
-  (log/info "comp->init: '%s': '%s'" (gtid co) (.id co))
-  (.setParent co execv)
-  co)
+  (logcomp "com->init" co)
+  (doto co
+    (.setParent execv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -248,7 +245,7 @@
   ""
   ^Execvisor
   [^Execvisor co]
-  (->> (.getv (.getx co) :appDir)
+  (->> (.getv (.getx co) :podDir)
        (inspectPod co))
   co)
 
@@ -259,13 +256,13 @@
   [^Execvisor co rootGist]
   {:pre [(inst? Atom rootGist)]}
 
-  (let [{:keys [basedir appDir jmx]}
+  (let [{:keys [basedir podDir jmx]}
         @rootGist]
-    (log/info "com->init: '%s': '%s'" (gtid co) (.id co))
-    (test-some "conf file: jmx" jmx)
     (sysProp! "file.encoding" "utf-8")
+    (test-some "jmx-conf" jmx)
+    (logcomp "com->init" co)
     (.copy (.getx co) (muble<> @rootGist))
-    (-> (io/file appDir
+    (-> (io/file podDir
                  DN_ETC
                  "mime.properties")
         (io/as-url)

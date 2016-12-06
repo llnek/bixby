@@ -37,9 +37,9 @@ import org.slf4j.Logger;
 /**
  */
 @SuppressWarnings("unused")
-public class CljAppLoader extends URLClassLoader {
+public class CljPodLoader extends URLClassLoader {
 
-  public static final Logger TLOG= getLogger(CljAppLoader.class);
+  public static final Logger TLOG= getLogger(CljPodLoader.class);
   private final Set<String> _exts=new HashSet<String>();
   private final
     List<ClassFileTransformer>
@@ -53,16 +53,16 @@ public class CljAppLoader extends URLClassLoader {
 
   /**
    */
-  public static CljAppLoader newInstance(File homeDir, File appDir) {
+  public static CljPodLoader newInstance(File homeDir, File appDir) {
     ClassLoader c= Thread.currentThread().getContextClassLoader();
     ClassLoader s= ClassLoader.getSystemClassLoader();
-    CljAppLoader app= new CljAppLoader(c==null ? s : c);
+    CljPodLoader app= new CljPodLoader(c==null ? s : c);
     app.init(homeDir,appDir);
     return app;
   }
 
   /**/
-  private CljAppLoader(ClassLoader p) {
+  private CljPodLoader(ClassLoader p) {
     super(new URL[]{}, p);
     _parent=getParent();
     if (_parent==null) {
@@ -248,7 +248,7 @@ public class CljAppLoader extends URLClassLoader {
 
   @Override
   public String toString() {
-    return "CljAppLoader@"+Long.toHexString(hashCode());
+    return "CljPodLoader@"+Long.toHexString(hashCode());
   }
 
   /**/
@@ -261,7 +261,7 @@ public class CljAppLoader extends URLClassLoader {
 
   /**
    */
-  private CljAppLoader init(File homeDir, File appDir) {
+  private CljPodLoader init(File homeDir, File appDir) {
     File s= new File(appDir, "src/main/clojure");
     File j= new File(appDir, "build/j");
     File c= new File(appDir, "build/c");
@@ -285,7 +285,7 @@ public class CljAppLoader extends URLClassLoader {
 
   /**
    */
-  private CljAppLoader findUrls(File dir) {
+  private CljPodLoader findUrls(File dir) {
     if (dir.exists() ) {
       dir.listFiles(new FilenameFilter() {
         public boolean accept(File f,String n) {
@@ -301,7 +301,7 @@ public class CljAppLoader extends URLClassLoader {
 
   /**
    */
-  private CljAppLoader addUrl(File f) {
+  private CljPodLoader addUrl(File f) {
     if (f.exists())
     try {
       addURL( f.toURI().toURL() );

@@ -26,7 +26,13 @@ import java.io.File;
 /**
  * @author Kenneth Leung
  */
-public interface Container extends Component, ServerLike, ServiceProvider, Nameable, Disposable, Startable, Hierarchial {
+public interface Container extends Component
+                                   ,ServerLike
+                                   ,Nameable
+                                   ,Disposable
+                                   ,Startable
+                                   ,Hierarchial
+                                   ,ServiceProvider {
 
   /** load freemarker template */
   public Object loadTemplate(String tpl, Object ctx);
@@ -41,16 +47,16 @@ public interface Container extends Component, ServerLike, ServiceProvider, Namea
   public Object envConfig();
 
   /**/
-  public Object appConfig();
+  public Object podConfig();
 
   /**/
-  public byte[] appKeyBits();
+  public byte[] podKeyBits();
 
   /**/
-  public String appKey();
+  public String podKey();
 
   /**/
-  public File appDir();
+  public File podDir();
 
   /**/
   public JDBCPool acquireDbPool(Object groupid);

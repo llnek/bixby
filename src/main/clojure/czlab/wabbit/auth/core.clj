@@ -149,11 +149,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- getAppKey
+(defn- getPodKey
   ""
   ^bytes
   [^HttpEvent evt]
-  (.. evt source server appKeyBits))
+  (.. evt source server podKeyBits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

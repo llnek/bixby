@@ -32,7 +32,7 @@ public class Runtime {
     try {
       File cwd= new File(System.getProperties().getProperty("user.dir"));
       File home= new File(args[0]);
-      ClassLoader cl= CljAppLoader.newInstance(home, cwd);
+      ClassLoader cl= CljPodLoader.newInstance(home, cwd);
       //Thread.currentThread().setContextClassLoader(cl);
       Class<?> z= cl.loadClass("czlab.wabbit.server.Cljshim");
       Method m= z.getDeclaredMethod("newrt",ClassLoader.class, String.class);
