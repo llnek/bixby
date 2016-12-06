@@ -42,7 +42,7 @@
         [czlab.wabbit.io.jms]
         [czlab.wabbit.io.http]
         [czlab.wabbit.io.socket]
-        [czlab.wabbit.mvc.ftlshim])
+        [czlab.wabbit.mvc.ftl])
 
   (:import [czlab.wabbit.etc PluginFactory Plugin]
            [czlab.horde Schema JDBCPool DBAPI]

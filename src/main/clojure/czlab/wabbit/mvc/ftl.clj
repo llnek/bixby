@@ -15,7 +15,7 @@
 (ns ^{:doc "Helpers related to Freemarker."
       :author "Kenneth Leung"}
 
-  czlab.wabbit.mvc.ftlshim
+  czlab.wabbit.mvc.ftl
 
   (:require [clojure.walk :as cw :refer [postwalk]]
             [czlab.xlib.logging :as log]
