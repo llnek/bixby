@@ -77,7 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopCLI
-  "Stop all apps and processors"
+  "Stop all apps and services"
   ^Atom
   [^Atom gist]
   (let [{:keys [killServer
