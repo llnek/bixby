@@ -143,20 +143,18 @@
   ""
   [home cwd]
   (let
-    [{:keys [locale jmx] :as env}
+    [{:keys [locale info] :as env}
      (slurpXXXConf cwd CFG_POD_CF true)
+     cn (stror (:country locale) "US")
+     ln (stror (:lang locale) "en")
      ver (sysProp "wabbit.version")
      fp (io/file cwd "wabbit.pid")
-     cn (get locale :country)
-     ln (get locale :lang)
-     ln (stror ln "en")
-     cn (stror cn "US")
      loc (Locale. ln cn)
      rc (getResource C_RCB loc)
-     ctx (->> {:basedir (io/file home)
+     ctx (->> {:encoding (stror (:encoding info) "utf-8")
+               :basedir (io/file home)
                :podDir (io/file cwd)
                :pidFile fp
-               :jmx jmx
                :locale loc}
               (cliGist ))
      cz (getCldr)]

@@ -256,10 +256,9 @@
   [^Execvisor co rootGist]
   {:pre [(inst? Atom rootGist)]}
 
-  (let [{:keys [basedir podDir jmx]}
+  (let [{:keys [basedir encoding podDir]}
         @rootGist]
-    (sysProp! "file.encoding" "utf-8")
-    (test-some "jmx-conf" jmx)
+    (sysProp! "file.encoding" encoding)
     (logcomp "com->init" co)
     (.copy (.getx co) (muble<> @rootGist))
     (-> (io/file podDir
@@ -268,8 +267,7 @@
         (io/as-url)
         (setupCache ))
     (regoEmitters co)
-    (regoApps co)
-    (startJmx co jmx)))
+    (regoApps co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -115,6 +115,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- fragPlugin
+  ""
+  ^String
+  [kind]
+  (if (= :web kind)
+    ":auth \"czlab.skaro.auth.plugin/AuthPluginFactory\""
+    ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- postConfigPod
   ""
   [podDir podId podDomain kind]
@@ -128,6 +138,7 @@
      domPath (cs/replace podDomain "." "/")
      hhh (getHomeDir)
      cljd (mkcljd podDir podDomain)
+     p (fragPlugin kind)
      se (if (= :web kind)
           (fragSampleEmitter :czlab.wabbit.io.http/WebMVC)
           (fragSampleEmitter :czlab.wabbit.io.loops/OnceTimer))]
@@ -135,6 +146,7 @@
     (replaceFile!
       (io/file podDir CFG_POD_CF)
       #(-> (cs/replace % "@@SAMPLE-EMITTER@@" se)
+           (cs/replace "@@AUTH-PLUGIN@@" p)
            (cs/replace "@@H2DBPATH@@" h2dbUrl)
            (cs/replace "@@APPDOMAIN@@" podDomain)))))
 

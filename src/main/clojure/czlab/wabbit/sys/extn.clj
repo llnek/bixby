@@ -332,17 +332,20 @@
 (defn- doOnePlugin
   ""
   ^Plugin
-  [^Container co ^Cljshim rts ^String fc podConf]
-  (log/info "plugin->factory: %s" fc)
+  [^Container co ^Cljshim rts pc podConf]
+  (log/info "plugin->factory: %s" pc)
   (let
-    [^PluginFactory
-     pf (try! (cast? PluginFactory
-                    (.call rts fc)))
-     u (if (some? pf)
-         (.createPlugin pf co))]
+    [[pn opts]
+     (if (string? pc)
+       [pc {}] [(:name pc) pc])
+     pf (cast? PluginFactory
+               (.call rts pn))
+     u (some-> pf
+               (.createPlugin co))]
     (when (some? u)
-      (.init u {:podConf podConf})
-      (postInitPlugin co fc)
+      (.init u {:pod podConf
+                :pug opts})
+      (postInitPlugin co pn)
       (log/info "plugin %s starting..." fc)
       (.start u)
       (log/info "plugin %s started" fc)
