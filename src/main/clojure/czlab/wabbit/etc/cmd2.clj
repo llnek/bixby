@@ -25,6 +25,7 @@
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.svcs]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
@@ -101,9 +102,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- fragSampleEmitter
+  ""
+  ^String
+  [etype]
+  (let [c (get-in *emitter-defs* [etype :conf])
+        c (assoc c
+                 :service etype
+                 :handler "@@APPDOMAIN@@.core/dftHandler")]
+    (-> (writeEdnStr c)
+        (cs/replace "\n" "\n    "))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- postConfigPod
   ""
-  [podDir podId podDomain]
+  [podDir podId podDomain kind]
   (let
     [h2db (str (if (isWindows?)
                  "/c:/temp/" "/tmp/") (juid))
@@ -113,11 +127,15 @@
                   ";MVCC=TRUE;AUTO_RECONNECT=TRUE")
      domPath (cs/replace podDomain "." "/")
      hhh (getHomeDir)
-     cljd (mkcljd podDir podDomain)]
+     cljd (mkcljd podDir podDomain)
+     se (if (= :web kind)
+          (fragSampleEmitter :czlab.wabbit.io.http/WebMVC)
+          (fragSampleEmitter :czlab.wabbit.io.loops/OnceTimer))]
     (mkdirs h2db)
     (replaceFile!
       (io/file podDir CFG_POD_CF)
-      #(-> (cs/replace % "@@H2DBPATH@@" h2dbUrl)
+      #(-> (cs/replace % "@@SAMPLE-EMITTER@@" se)
+           (cs/replace "@@H2DBPATH@@" h2dbUrl)
            (cs/replace "@@APPDOMAIN@@" podDomain)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,9 +159,7 @@
       (doall
         (map #(->> (io/file podDir %)
                    (FileUtils/deleteDirectory ))
-             ["src/web" "public"]))
-      (->> (io/file podDir DN_CONF "web.conf")
-           (FileUtils/deleteQuietly )))
+             ["src/web" "public"])))
     (doall
       (map #(mkdirs (io/file podDir
                              "src/main" % domPath))
@@ -190,11 +206,7 @@
            (cs/replace "@@TYPE@@" (name kind))
            (cs/replace "@@VER@@" verStr)
            (cs/replace "@@APPID@@" podId)))
-    (when (= :web kind)
-      (replaceFile!
-        (io/file podDir DN_CONF "web.conf")
-        #(cs/replace % "@@APPDOMAIN@@" podDomain)))
-    (postConfigPod podDir podId podDomain)))
+    (postConfigPod podDir podId podDomain kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new app?

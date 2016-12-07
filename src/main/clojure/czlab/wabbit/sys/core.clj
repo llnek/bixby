@@ -84,10 +84,6 @@
 (def ^String DN_STYLES "styles" )
 (def ^String DN_PUB "public" )
 
-(def ^String POD_CF  "pod.conf" )
-(def ^String ENV_CF  "env.conf" )
-(def ^String WEB_CF  "web.conf" )
-
 (def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
 (def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
 (def ^String WEB_LOG  (str WEB_INF  "/logs"))
@@ -98,11 +94,8 @@
 (def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
 (def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
 
+(def ^String POD_CF  "pod.conf" )
 (def ^String CFG_POD_CF  (str DN_CONF  "/"  POD_CF ))
-(def ^String CFG_ENV_CF  (str DN_CONF  "/"  ENV_CF ))
-(def ^String CFG_WEB_CF  (str DN_CONF  "/"  WEB_CF ))
-
-(def K_PLUGINS :plugins)
 
 (def JS_FLATLINE :____flatline)
 (def EV_OPTS :____eventoptions)

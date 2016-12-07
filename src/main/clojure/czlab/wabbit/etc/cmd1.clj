@@ -371,7 +371,7 @@
   ([id hint svc]
    (let
      [cf (slurpXXXConf (getCwd) CFG_POD_CF)
-      root (:services cf)
+      root (:emitters cf)
       nw
       (if (< hint 0)
         (dissoc root id)

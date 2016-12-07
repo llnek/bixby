@@ -131,14 +131,11 @@
 ;;
 (defn- maybeLoadRoutes
   [^IoService co]
-  (let [f (-> (.. co server podDir)
-              (io/file CFG_WEB_CF))]
-    (when (.exists f)
-      (let [c (-> (str "{\n"
-                       (slurpUtf8 f) "\n}")
-                  (readEdn))
-            r (loadRoutes (:routes c))]
-        (.setv (.getx co) :routes r)))))
+  (let [{:keys [routes]}
+        (.config co)]
+    (when-not (empty? routes)
+      (->> (loadRoutes routes)
+           (.setv (.getx co) :routes )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

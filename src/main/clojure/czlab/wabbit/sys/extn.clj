@@ -139,7 +139,7 @@
      pub (io/file podPath
                   DN_PUB DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
-     impl (muble<> {:services {}})]
+     impl (muble<> {:emitters {}})]
     (with-meta
       (reify
 
@@ -179,11 +179,11 @@
         (isEnabled [_] true)
 
         (service [_ sid]
-          (get (.getv impl :services)
+          (get (.getv impl :emitters)
                (keyword sid)))
 
         (hasService [_ sid]
-          (contains? (.getv impl :services)
+          (contains? (.getv impl :emitters)
                      (keyword sid)))
 
         (core [_]
@@ -196,16 +196,16 @@
           (.getv impl :podConf))
 
         (start [this]
-          (let [svcs (.getv impl :services)]
-            (log/info "container starting services...")
+          (let [svcs (.getv impl :emitters)]
+            (log/info "container starting emitters...")
             (doseq [[k v] svcs]
               (log/info "service: %s to start" k)
               (.start ^Service v))))
 
         (stop [this]
-          (let [svcs (.getv impl :services)
+          (let [svcs (.getv impl :emitters)
                 pugs (.getv impl :plugins)]
-            (log/info "container stopping services...")
+            (log/info "container stopping emitters...")
             (doseq [[k v] svcs]
               (.stop ^Service v))
             (log/info "container stopping plugins...")
@@ -214,9 +214,9 @@
             (log/info "container stopping...")))
 
         (dispose [this]
-          (let [svcs (.getv impl :services)
+          (let [svcs (.getv impl :emitters)
                 pugs (.getv impl :plugins)]
-            (log/info "container dispose(): services")
+            (log/info "container dispose(): emitters")
             (doseq [[k v] svcs]
               (.dispose ^Service v))
             (log/info "container dispose(): plugins")
@@ -255,7 +255,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- services<>
+(defn- ioServices<>
   ""
   ^Container
   [^Container co svcs]
@@ -272,7 +272,7 @@
              (assoc! %1 (.id v) v))
            %1))
       (seq svcs))
-    (.setv (.getx co) :services ))
+    (.setv (.getx co) :emitters ))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,7 +294,6 @@
     [podDir (.podDir co)
      f #(slurpXXXConf podDir % true)]
     (doto (.getx co)
-      (.setv :envConf (f CFG_ENV_CF))
       (.setv :podConf (f CFG_POD_CF)))
     co))
 
@@ -424,8 +423,8 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable cpu {})
-    (->> (or (:services podConf) {})
-         (services<> co ))
+    (->> (or (:emitters podConf) {})
+         (ioServices<> co ))
     (if (hgl? mcz)
       (.call rts mcz))
     (log/info "app: %s initialized - ok" pid)

@@ -323,7 +323,7 @@
          rb (I18N/base)
          ^AuthPlugin
          pa (-> ^Muble (.server job)
-                (.getv K_PLUGINS)
+                (.getv :plugins)
                 (:auth ))]
         (log/debug "session csrf = %s%s%s"
                    csrf ", and form token = " (:csrf info))
@@ -385,7 +385,7 @@
          ^AuthPlugin
          pa (-> ^Muble
                 (.server job)
-                (.getv K_PLUGINS)
+                (.getv :plugins)
                 (:auth ))]
         (log/debug "session csrf = %s%s%s"
                    csrf
@@ -510,12 +510,11 @@
   (let [podDir (io/file (first args))
         cmd (nth args 1)
         db (nth args 2)
-        env (slurpXXXConf podDir CFG_ENV_CF true)
         pod (slurpXXXConf podDir CFG_POD_CF true)
         pkey (-> (get-in pod [:info :digest])
                  str
                  (.toCharArray))
-        cfg (get (get-in env [:databases :jdbc]) (keyword db))]
+        cfg (get-in pod [:rdbms (keyword db)])]
     (when (some? cfg)
       (let [pwd (.text (passwd<> (:passwd cfg) pkey))
             j (dbspec<> (assoc cfg :passwd pwd))

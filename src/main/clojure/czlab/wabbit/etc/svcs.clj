@@ -70,7 +70,14 @@
            :port 8080
            :serverKey ""
            :passwd ""
-           :handler ""}}
+           :handler ""
+           :routes
+           [{:handler ""
+             :uri "/get"
+             :verb #{:get}}
+            {:handler ""
+             :uri "/post"
+             :verb #{:post :put}}]}}
    :czlab.wabbit.io.http/WebMVC
    {:info {:version "1.0"
            :name "WebMVC"}
@@ -91,7 +98,16 @@
            :maxAgeSecs 3600
            :useETags? false
            :errorHandler ""
-           :handler ""}}
+           :handler ""
+           :routes
+           [{:mount "${pod.dir}/public/media/main/{}"
+             :uri "/(favicon\\..+)"}
+            {:mount "${pod.dir}/public/{}"
+             :uri "/public/(.*)"}
+            {:handler ""
+             :uri "/?"
+             :verb #{:get}
+             :template  "/main/index.html"}]}}
    :czlab.wabbit.io.loops/OnceTimer
    {:info {:version "1.0"
            :name "OnceTimer"}
