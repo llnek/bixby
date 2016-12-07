@@ -104,22 +104,10 @@
   [args]
   (let [cmd (keyword (first args))
         f (first (*wabbit-tasks* cmd))]
-    (log/debug "execArgs: %s" args)
+    ;;(log/debug "execArgs: %s" args)
     (if (fn? f)
       (f (vec (drop 1 args)))
       (trap! CmdError))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- bootAndRun
-  ""
-  [args]
-  (try
-    (if (empty? args)
-      (trap! CmdError))
-    (execArgs args)
-    (catch Throwable _
-      (if (inst? CmdError _) (usage) (prtStk _)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -128,18 +116,23 @@
   [& args]
   (let [ver (loadResource C_VERPROPS)
         rcb (getResource C_RCB)
-        h (first args)]
+        home (first args)
+        args (drop 1 args)]
     (I18N/setBase rcb)
-    (if (and (hgl? h)
-             (dirRead? (io/file h)))
+    (if (and (hgl? home)
+             (dirRead? (io/file home)))
       (do
         (sysProp! "wabbit.proc.dir" (fpath (getCwd)))
-        (sysProp! "wabbit.home.dir" h)
+        (sysProp! "wabbit.home.dir" home)
         (sysProp! "wabbit.version"
                   (or (some-> ver
                               (.getString "version"))
                       "?"))
-        (bootAndRun (drop 1 args)))
+        (try
+          (if (empty? args)(trap! CmdError))
+          (execArgs args)
+          (catch Throwable _
+            (if (inst? CmdError _) (usage) (prtStk _)))))
       (usage))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
