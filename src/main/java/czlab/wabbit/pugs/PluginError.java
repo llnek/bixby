@@ -12,16 +12,29 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.etc;
-
-import czlab.xlib.Disposable;
-import czlab.xlib.Initable;
-import czlab.xlib.Startable;
+package czlab.wabbit.pugs;
 
 /**
  * @author Kenneth Leung
  */
-public interface Plugin extends Initable, Startable, Disposable {
+public class PluginError extends Exception {
+
+  private static final long serialVersionUID = 1L;
+
+  /**/
+  public PluginError(String msg, Throwable e) {
+    super(msg, e);
+  }
+
+  /**/
+  public PluginError(Throwable e) {
+    this(null,e);
+  }
+
+  /**/
+  public PluginError(String msg) {
+    this(msg,null);
+  }
 
 }
 

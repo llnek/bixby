@@ -15,21 +15,22 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.sys.jmx
+  czlab.wabbit.pugs.jmx.core
 
   (:require [czlab.xlib.logging :as log]
             [clojure.string :as cs])
 
-  (:use [czlab.wabbit.sys.bean]
+  (:use [czlab.wabbit.pugs.jmx.bean]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
   (:import [java.net InetAddress MalformedURLException]
            [java.rmi.registry LocateRegistry Registry]
+           [czlab.wabbit.pugs JmxPlugin PluginFactory]
            [java.lang.management ManagementFactory]
            [java.rmi.server UnicastRemoteObject]
-           [czlab.wabbit.server JmxServer]
            [java.rmi NoSuchObjectException]
+           [czlab.wabbit.server Container]
            [czlab.xlib Startable Muble]
            [java.util HashMap]
            [javax.management.remote
@@ -126,19 +127,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn jmxServer<>
+(defn- jmsPlugin<>
   ""
-  ^JmxServer
-  [cfg]
-  (log/debug "jmxServer config =\n%s" cfg)
+  ^JmxPlugin
+  [^Container ctr]
   (let
-    [impl (muble<> (merge
-                     {:registryPort 7777
-                      :serverPort 7778
-                      :host (-> (InetAddress/getLocalHost)
-                                (.getHostName))} cfg))
+    [impl (muble<> {:registryPort 7777
+                    :serverPort 7778
+                    :host (-> (InetAddress/getLocalHost)
+                              (.getHostName))})
      objNames (atom [])]
-    (reify JmxServer
+    (reify JmxPlugin
 
       (reset [this]
         (let [bs (.getv impl :beanSvr)]
@@ -159,22 +158,43 @@
                (swap! objNames conj))
           nm))
 
-      ;; jconsole port
-      (setRegistryPort [_ p] (.setv impl :registryPort p))
-      (setServerPort[_ p] (.setv impl :serverPort p))
+      (init [_ arg]
+        (->> (or (:pug arg) {})
+             (.copyEx impl )))
 
-      (start [_] (startRMI impl) (startJMX impl))
+      (start [_]
+        (startRMI impl)
+        (startJMX impl)
+        (log/info "JmxPlugin started"))
 
       (stop [this]
         (let [^JMXConnectorServer c (.getv impl :conn)
               ^Registry r (.getv impl :rmi)]
           (.reset this)
-          (if (some? c) (try! (.stop c)))
-          (.setv impl :conn nil)
-          (if (some? r)
-            (try!
-              (UnicastRemoteObject/unexportObject r true)))
-          (.unsetv impl :rmi))))))
+          (try! (some-> c (.stop )))
+          (.unsetv impl :conn)
+          (try!
+            (some-> r
+                    (UnicastRemoteObject/unexportObject  true)))
+          (.unsetv impl :rmi)
+          (log/info "JmxPlugin stopped")))
+
+      (dispose [_]
+        (log/info "JmxPlugin disposed")))))
+
+  ;; jconsole port
+  ;;(setRegistryPort [_ p] (.setv impl :registryPort p))
+  ;;(setServerPort[_ p] (.setv impl :serverPort p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn pluginFactory<>
+  ""
+  ^PluginFactory
+  []
+  (reify PluginFactory
+    (createPlugin [_ ctr]
+      (jmsPlugin<> ctr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

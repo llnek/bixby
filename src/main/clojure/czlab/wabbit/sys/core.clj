@@ -27,8 +27,8 @@
         [czlab.xlib.io]
         [czlab.xlib.str])
 
-  (:import [czlab.wabbit.server ConfigError PodGist Component]
-           [org.apache.commons.lang3.text StrSubstitutor]
+  (:import [org.apache.commons.lang3.text StrSubstitutor]
+           [czlab.wabbit.etc Component Gist ConfigError]
            [czlab.xlib
             Versioned
             Muble
@@ -133,7 +133,7 @@
     (-> (io/file podDir DN_CONF confile)
         (changeContent
           #(cs/replace %
-                       "${appdir}"
+                       "${pod.dir}"
                        (fpath podDir))))
     (log/debug "[%s]\n%s" confile)))
 
@@ -205,7 +205,7 @@
 ;;
 (defn podMeta
   "Create metadata for an application bundle"
-  ^PodGist
+  ^Gist
   [^String pod conf urlToPod]
   {:pre [(map? conf)]}
   (let [info
@@ -220,7 +220,7 @@
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
-        PodGist
+        Gist
         (version [_] (:version info))
         (id [_] pid)
         (getx [_] impl))
@@ -237,7 +237,7 @@
                 (slurpUtf8 f) "\n}")]
      (->
        (if expVars?
-         (-> (cs/replace s "${appdir}" (fpath podDir))
+         (-> (cs/replace s "${pod.dir}" (fpath podDir))
              (expandVars))
          s)
        (readEdn )))))

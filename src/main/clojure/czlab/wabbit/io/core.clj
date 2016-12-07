@@ -31,7 +31,6 @@
            [java.util Timer TimerTask]
            [czlab.wabbit.server
             Cljshim
-            Component
             Container]
            [czlab.xlib
             Context

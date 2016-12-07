@@ -26,19 +26,16 @@
   (:use [czlab.wabbit.etc.svcs]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.sys.extn]
-        [czlab.wabbit.sys.jmx]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
 
   (:import [czlab.wabbit.io IoService IoGist]
            [java.security SecureRandom]
+           [czlab.wabbit.etc Gist]
            [czlab.wabbit.server
             Container
-            Execvisor
-            PodGist
-            JmxServer
-            Component]
+            Execvisor]
            [clojure.lang Atom]
            [java.util Date]
            [java.io File]
@@ -62,7 +59,7 @@
 ;;
 (defn- inspectPod
   "Make sure the pod setup is ok"
-  ^PodGist
+  ^Gist
   [^Execvisor execv desDir]
   (log/info "pod dir : %s => inspecting..." desDir)
   ;;create the pod meta and register it
@@ -80,45 +77,13 @@
       m
       (.setv ctx :pod ))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- startJmx
-  "Basic JMX support"
-  ^JmxServer
-  [^Execvisor co cfg]
-  (try!
-    (let
-      [jmx (jmxServer<> cfg)]
-      (.start jmx)
-      (.reg jmx
-            co
-            "czlab"
-            "execvisor"
-            ["root=wabbit"])
-      (doto->>
-        jmx
-        (.setv (.getx co) :jmxServer )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- stopJmx
-  "Kill the internal JMX server"
-  [^Execvisor co]
-  (try!
-    (let
-      [ctx (.getx co)
-       jmx (.getv ctx :jmxServer)]
-      (if (some? jmx)
-        (.stop ^JmxServer jmx))
-      (.unsetv ctx :jmxServer)))
-  (log/info "jmx terminated")
-  co)
+;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ignitePod
   ""
-  [^Execvisor co ^PodGist gist]
+  [^Execvisor co ^Gist gist]
   (try!
     (let
       [ctr (container<> co gist)
@@ -178,7 +143,6 @@
                (ignitePod this )))
 
         (stop [this]
-          (stopJmx this)
           (stopPods this)))
 
        {:typeid ::Execvisor})))

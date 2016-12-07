@@ -12,29 +12,30 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.etc;
+package czlab.wabbit.pugs;
 
 /**
  * @author Kenneth Leung
  */
-public class UnknownUser extends AuthError {
-
-  private static final long serialVersionUID = 1L;
+public interface AuthPlugin extends Plugin {
 
   /**/
-  public UnknownUser(String msg,Throwable e) {
-    super(msg,e);
-  }
+  public void checkAction(Object acctObj, Object action);
 
   /**/
-  public UnknownUser(Throwable e) {
-    this(null,e);
-  }
+  public Object login(Object user, Object pwd);
 
   /**/
-  public UnknownUser(String msg) {
-    this(msg,null);
-  }
+  public Object addAccount(Object options);
+
+  /**/
+  public boolean hasAccount(Object options);
+
+  /**/
+  public Iterable<?> roles(Object acctObj);
+
+  /**/
+  public Iterable<?> account(Object options);
 
 }
 

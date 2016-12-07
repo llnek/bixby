@@ -14,28 +14,21 @@
 
 package czlab.wabbit.etc;
 
+import java.lang.reflect.Method;
+
 /**
  * @author Kenneth Leung
  */
-public interface AuthPlugin extends Plugin {
+public class BootAppMain {
 
   /**/
-  public void checkAction(Object acctObj, Object action);
-
-  /**/
-  public Object login(Object user, Object pwd);
-
-  /**/
-  public Object addAccount(Object options);
-
-  /**/
-  public boolean hasAccount(Object options);
-
-  /**/
-  public Iterable<?> roles(Object acctObj);
-
-  /**/
-  public Iterable<?> account(Object options);
+  public static Object invokeStatic(String[] args)
+  throws Exception {
+    Class<?> z = Class.forName("boot.App");
+    String[] s = new String[0];
+    Method m= z.getDeclaredMethod("main", s.getClass());
+    return m.invoke(null, (Object)args);
+  }
 
 }
 

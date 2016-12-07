@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.etc.cmd1
 
@@ -36,7 +36,7 @@
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.sys.core])
 
-  (:import [czlab.wabbit.etc AppMain CmdHelpError]
+  (:import [czlab.wabbit.etc BootAppMain CmdError]
            [org.apache.commons.io FileUtils]
            [czlab.twisty IPassword]
            [java.util
@@ -74,7 +74,7 @@
   "Call into boot/clj code"
   [^File homeDir ^File podDir & args]
   (log/debug "execBootScript args: %s" args)
-  (AppMain/invokeStatic (vargs String args)))
+  (BootAppMain/invokeStatic (vargs String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,7 +97,7 @@
   [args]
   (if (> (count args) 1)
     (createPod (args 0) (args 1))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -123,7 +123,7 @@
   (if-not (empty? args)
     (bundlePod (getHomeDir)
                (getCwd) (args 0))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -176,7 +176,7 @@
   [args]
   (if-not (empty? args)
     (publishSamples (args 0))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -188,7 +188,7 @@
     (if (and (>= n 8)
              (<= n 32))
       (println (strongPwd<> n))
-      (trap! CmdHelpError))))
+      (trap! CmdError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -208,7 +208,7 @@
          (.hashed )
          (:hash )
          (println ))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -219,7 +219,7 @@
     (->> (passwd<> (args 1) (args 0))
          (.encoded )
          (println ))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -230,7 +230,7 @@
     (->> (passwd<> (args 1) (args 0))
          (.text )
          (println ))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -256,7 +256,7 @@
       (onEncrypt args)
       (contains? #{"-d" "--decrypt"} c)
       (onDecrypt args)
-      :else (trap! CmdHelpError))))
+      :else (trap! CmdError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -357,7 +357,7 @@
   (if (and (not-empty args)
            (contains? #{"-e" "--eclipse"} (args 0)))
     (genEclipseProj (getCwd))
-    (trap! CmdHelpError)))
+    (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -377,7 +377,7 @@
         (dissoc root id)
         (when-some
           [gist (:conf (*emitter-defs* svc))]
-          (if (contains? root id) (trap! CmdHelpError))
+          (if (contains? root id) (trap! CmdError))
           (assoc root id (assoc gist :service svc))))]
      (if (some? nw)
        (spitXXXConf (getCwd) CFG_POD_CF nw)))))
@@ -387,7 +387,7 @@
 (defn- onService
   ""
   [args]
-  (if (< (count args) 2) (trap! CmdHelpError))
+  (if (< (count args) 2) (trap! CmdError))
   (let
     [id (keyword (args 1))
      cmd (args 0)
@@ -397,9 +397,9 @@
        [-1 "?"]
        (contains? #{"-a" "--add"} cmd)
        (if (< (count args) 3)
-         (trap! CmdHelpError)
+         (trap! CmdError)
          [1 (args 2)])
-       :else (trap! CmdHelpError))
+       :else (trap! CmdError))
      t (case (keyword svc)
          :repeat :czlab.wabbit.io.loops/RepeatingTimer
          :files :czlab.wabbit.io.files/FilePicker
@@ -411,12 +411,12 @@
          :http :czlab.wabbit.io.http/HTTP
          :jms :czlab.wabbit.io.jms/JMS
          :? nil
-         (trap! CmdHelpError))]
+         (trap! CmdError))]
     (onSvc id hint t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn onHelp-Help "" [] (trap! CmdHelpError))
+(defn onHelp-Help "" [] (trap! CmdError))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -429,7 +429,7 @@
      [f h] ((getTasks) c)]
     (if (fn? h)
       (h)
-      (trap! CmdHelpError))))
+      (trap! CmdError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

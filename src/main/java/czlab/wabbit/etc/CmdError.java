@@ -12,16 +12,25 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.server;
-
-import czlab.xlib.Identifiable;
-import czlab.xlib.Versioned;
-import czlab.xlib.Context;
+package czlab.wabbit.etc;
 
 /**
  * @author Kenneth Leung
+ *
  */
-public interface Component extends Context, Identifiable, Versioned {
+public class CmdError extends Exception {
+
+  private static final long serialVersionUID = 1L;
+
+  /**/
+  public CmdError(String msg) {
+    super(msg);
+  }
+
+  /**/
+  public CmdError() {
+    this("");
+  }
 
 }
 

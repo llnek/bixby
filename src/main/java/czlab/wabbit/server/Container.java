@@ -15,6 +15,7 @@
 package czlab.wabbit.server;
 
 import czlab.flux.server.ServerLike;
+import czlab.wabbit.etc.Component;
 import czlab.xlib.Hierarchial;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
@@ -42,9 +43,6 @@ public interface Container extends Component
 
   /**/
   public Cljshim cljrt();
-
-  /**/
-  public Object envConfig();
 
   /**/
   public Object podConfig();

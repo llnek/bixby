@@ -44,18 +44,15 @@
         [czlab.wabbit.io.socket]
         [czlab.wabbit.mvc.ftl])
 
-  (:import [czlab.wabbit.etc PluginFactory Plugin]
+  (:import [czlab.wabbit.etc Gist ServiceError ConfigError]
+           [czlab.wabbit.pugs PluginFactory Plugin]
            [czlab.horde Schema JDBCPool DBAPI]
            [java.io File StringWriter]
            [czlab.wabbit.server
-            PodGist
             Execvisor
-            Component
             Cljshim
             Service
-            Container
-            ConfigError
-            ServiceError]
+            Container]
            [freemarker.template
             Configuration
             Template
@@ -129,7 +126,7 @@
 (defn- mkctr
   ""
   ^Container
-  [^Execvisor parObj ^PodGist gist]
+  [^Execvisor parObj ^Gist gist]
   (log/info "creating a container: %s" (.id gist))
   (let
     [pid (str (.id gist) "#" (seqint2))
@@ -189,9 +186,6 @@
         (core [_]
           (.getv impl :core))
 
-        (envConfig [_]
-          (.getv impl :envConf))
-
         (podConfig [_]
           (.getv impl :podConf))
 
@@ -199,7 +193,7 @@
           (let [svcs (.getv impl :emitters)]
             (log/info "container starting emitters...")
             (doseq [[k v] svcs]
-              (log/info "service: %s to start" k)
+              (log/info "emitter: %s to start" k)
               (.start ^Service v))))
 
         (stop [this]
@@ -280,7 +274,7 @@
 (defn container<>
   "Create an application container"
   ^Container
-  [^Execvisor exe ^PodGist gist]
+  [^Execvisor exe ^Gist gist]
   (doto
     (mkctr exe gist)
     (comp->init  nil)))
@@ -346,9 +340,9 @@
       (.init u {:pod podConf
                 :pug opts})
       (postInitPlugin co pn)
-      (log/info "plugin %s starting..." fc)
+      (log/info "plugin %s starting..." pn)
       (.start u)
-      (log/info "plugin %s started" fc)
+      (log/info "plugin %s started" pn)
       u)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

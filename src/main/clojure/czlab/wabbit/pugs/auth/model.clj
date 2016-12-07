@@ -13,9 +13,9 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
-  czlab.wabbit.auth.model
+  czlab.wabbit.pugs.auth.model
 
   (:require [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.io :refer [spitUtf8]]

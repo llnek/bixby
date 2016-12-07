@@ -17,23 +17,18 @@ package czlab.wabbit.etc;
 /**
  * @author Kenneth Leung
  */
-public class DuplicateUser extends AuthError {
+public class ServiceError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
   /**/
-  public DuplicateUser(String msg, Throwable e) {
-    super(msg,e);
+  public ServiceError(Throwable e) {
+    super(null,e);
   }
 
   /**/
-  public DuplicateUser(Throwable e) {
-    this(null,e);
-  }
-
-  /**/
-  public DuplicateUser(String msg) {
-    this(msg,null);
+  public ServiceError(String msg) {
+    super(msg,null);
   }
 
 }

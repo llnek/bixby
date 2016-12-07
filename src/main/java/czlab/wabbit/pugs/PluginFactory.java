@@ -12,24 +12,17 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.server;
+package czlab.wabbit.pugs;
+
+import czlab.wabbit.server.Container;
 
 /**
  * @author Kenneth Leung
  */
-public class ServiceError extends Exception {
-
-  private static final long serialVersionUID = 1L;
+@FunctionalInterface public interface PluginFactory {
 
   /**/
-  public ServiceError(Throwable e) {
-    super(null,e);
-  }
-
-  /**/
-  public ServiceError(String msg) {
-    super(msg,null);
-  }
+  public Plugin createPlugin(Container c);
 
 }
 

@@ -33,12 +33,10 @@
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [czlab.wabbit.server CljPodLoader]
+  (:import [czlab.wabbit.etc CmdError ConfigError]
+           [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
-           [czlab.wabbit.server
-            Execvisor
-            Component
-            ConfigError]
+           [czlab.wabbit.server Execvisor]
            [czlab.xlib
             Versioned
             Disposable
@@ -51,7 +49,6 @@
             Schedulable
             Identifiable]
            [java.io File]
-           [czlab.wabbit.etc CmdHelpError]
            [java.util ResourceBundle Locale]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

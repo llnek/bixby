@@ -12,25 +12,21 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.etc;
+package czlab.wabbit.pugs;
+
+import javax.management.ObjectName;
+import czlab.xlib.Resetable;
 
 /**
  * @author Kenneth Leung
  */
-public class AuthError extends Exception {
-
-  private static final long serialVersionUID = 1L;
+public interface JmxPlugin extends Plugin, Resetable {
 
   /**/
-  public AuthError(String msg,Throwable e) {
-    super(msg,e);
-  }
-
+  public ObjectName reg(Object obj, String domain, String nname, Object paths);
 
   /**/
-  public AuthError(String msg) {
-    this(msg,null);
-  }
+  public void dereg(ObjectName nname);
 
 }
 

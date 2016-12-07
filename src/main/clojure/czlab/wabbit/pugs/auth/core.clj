@@ -15,35 +15,50 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.auth.plugin
+  czlab.wabbit.pugs.auth.core
 
-  (:require [czlab.convoy.net.util :refer [filterFormFields]]
+  (:require [czlab.xlib.format :refer [readEdn readJsonStr writeJsonStr]]
+            [czlab.twisty.codec :refer [caesarDecrypt passwd<>]]
+            [czlab.convoy.net.util :refer [filterFormFields]]
+            [czlab.wabbit.io.http :refer [scanBasicAuth]]
             [czlab.horde.dbio.connect :refer [dbopen<+>]]
-            [czlab.twisty.codec :refer [passwd<>]]
             [czlab.xlib.resources :refer [rstr]]
-            [czlab.xlib.format :refer [readEdn]]
-            [czlab.xlib.logging :as log]
             [clojure.string :as cs]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.auth.model]
-        [czlab.wabbit.auth.core]
+  (:use [czlab.wabbit.pugs.auth.model]
+        [czlab.wabbit.pugs.auth.core]
+        [czlab.convoy.net.core]
         [czlab.wabbit.sys.core]
         [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
+        [czlab.xlib.meta]
         [czlab.xlib.str]
         [czlab.horde.dbio.core])
 
-  (:import [czlab.wabbit.etc AuthError UnknownUser DuplicateUser]
+  (:import [czlab.wabbit.pugs AuthError UnknownUser DuplicateUser]
            [czlab.convoy.net HttpResult ULFormItems ULFileItem]
+           [org.apache.shiro.authc.credential CredentialsMatcher]
            [org.apache.shiro.config IniSecurityManagerFactory]
            [org.apache.shiro.authc UsernamePasswordToken]
-           [czlab.xlib Muble I18N BadDataError]
+           [czlab.xlib XData Muble I18N BadDataError]
+           [org.apache.shiro.realm AuthorizingRealm]
            [org.apache.shiro.subject Subject]
+           [java.util Base64 Base64$Decoder]
            [org.apache.shiro SecurityUtils]
            [czlab.wabbit.server Container]
            [clojure.lang APersistentMap]
            [java.io File IOException]
+           [czlab.wabbit.io HttpEvent]
+           [org.apache.shiro.authz
+            AuthorizationException
+            AuthorizationInfo]
+           [org.apache.shiro.authc
+            SimpleAccount
+            AuthenticationException
+            AuthenticationToken
+            AuthenticationInfo]
            [czlab.twisty IPassword]
            [java.util Properties]
            [czlab.flux.wflow
@@ -52,7 +67,7 @@
             If
             Job
             Script]
-           [czlab.wabbit.etc
+           [czlab.wabbit.pugs
             Plugin
             AuthPlugin
             PluginError
@@ -62,14 +77,146 @@
             Schema
             SQLr
             JDBCPool
-            JDBCInfo]
-           [czlab.wabbit.io HttpEvent]))
+            JDBCInfo]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
+
+(def ^:private ^String NONCE_PARAM "nonce_token")
+(def ^:private ^String CSRF_PARAM "csrf_token")
+(def ^:private ^String PWD_PARAM "credential")
+(def ^:private ^String EMAIL_PARAM "email")
+(def ^:private ^String USER_PARAM "principal")
+(def ^:private ^String CAPTCHA_PARAM "captcha")
+
+;; hard code the shift position, the encrypt code
+;; should match this value.
+(def ^:private CAESAR_SHIFT 16)
+
+(def ^:private PMS
+  {EMAIL_PARAM [ :email #(normalizeEmail %) ]
+   CAPTCHA_PARAM [ :captcha #(strim %) ]
+   USER_PARAM [ :principal #(strim %) ]
+   PWD_PARAM [ :credential #(strim %) ]
+   CSRF_PARAM [ :csrf #(strim %) ]
+   NONCE_PARAM [ :nonce #(some? %) ]})
 
 (def ^:dynamic *META-CACHE* nil)
 (def ^:dynamic *JDBC-POOL* nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- crackFormFields
+  "Parse a standard login-like form with userid,password,email"
+  [^HttpEvent evt]
+  (if-some
+    [itms (cast? ULFormItems
+                 (some-> evt
+                         (.body)(.content)))]
+    (preduce<map>
+      #(let [fm (.getFieldNameLC ^ULFileItem %2)
+             fv (str %2)]
+         (log/debug "form-field=%s, value=%s" fm fv)
+         (if-some [[k v] (get PMS fm)]
+           (assoc! %1 k (v fv))
+           %1))
+      (filterFormFields itms))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- crackBodyContent
+  "Parse a JSON body"
+  [^HttpEvent evt]
+  (let
+    [xs (some-> evt (.body) (.getBytes))
+     json (-> (if (some? xs)
+                (stringify xs) "{}")
+              (readJsonStr #(lcase %)))]
+    (preduce<map>
+      #(let [[k [a1 a2]] %2]
+         (if-some [fv (get json k)]
+           (assoc! %1 a1 (a2 fv))
+           %1))
+      PMS)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- crackParams
+  "Parse form fields in the Url"
+  [^HttpEvent evt]
+  (let [gist (.msgGist evt)]
+    (preduce<map>
+      #(let [[k [a1 a2]] PMS]
+         (if (gistParam? gist k)
+             (assoc! %1
+                     a1
+                     (a2 (gistParam gist k)))
+             %1))
+      PMS)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn maybeGetAuthInfo
+  "Attempt to parse and get authentication info"
+  ^APersistentMap
+  [^HttpEvent evt]
+  (let [gist (.msgGist evt)]
+    (if-some+
+      [ct (gistHeader gist "content-type")]
+      (cond
+        (or (embeds? ct "form-urlencoded")
+            (embeds? ct "form-data"))
+        (crackFormFields evt)
+
+        (embeds? ct "/json")
+        (crackBodyContent evt)
+
+        :else
+        (crackParams evt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeDecodeField
+  ""
+  [info fld shiftCount]
+  (if (:nonce info)
+    (try!
+      (let
+        [decr (->> (get info fld)
+                   (caesarDecrypt shiftCount))
+         s (->> decr
+                (.decode (Base64/getMimeDecoder))
+                (stringify))]
+        (log/debug "info = %s" info)
+        (log/debug "decr = %s" decr)
+        (log/debug "val = %s" s)
+        (assoc info fld s)))
+    info))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- getPodKey
+  ""
+  ^bytes
+  [^HttpEvent evt]
+  (.. evt source server podKeyBits))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmacro ^:private getXXXInfo
+  ""
+  [evt]
+  `(-> (maybeGetAuthInfo ~evt)
+       (maybeDecodeField :principal CAESAR_SHIFT)
+       (maybeDecodeField :credential CAESAR_SHIFT)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getSignupInfo "" [^HttpEvent evt] (getXXXInfo evt))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getLoginInfo "" [^HttpEvent evt] (getXXXInfo evt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -78,7 +225,7 @@
    by looking into the db"
   [^JDBCPool pool]
   {:pre [(some? pool)]}
-  (let [tbl (->> :czlab.wabbit.auth.model/LoginAccount
+  (let [tbl (->> :czlab.wabbit.pugs.auth.model/LoginAccount
                  (.get ^Schema *auth-meta-cache*)
                  (dbtable))]
     (when-not (tableExist? pool tbl)
@@ -107,7 +254,7 @@
   [^SQLr sql ^String role ^String desc]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.auth.model/AuthRole)
+                :czlab.wabbit.pugs.auth.model/AuthRole)
         rc (-> (dbpojo<> m)
                (dbSetFlds* {:name role
                             :desc desc}))]
@@ -120,7 +267,7 @@
   [^SQLr sql ^String role]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.auth.model/AuthRole)]
+                :czlab.wabbit.pugs.auth.model/AuthRole)]
     (.exec sql
            (format
              "delete from %s where %s =?"
@@ -134,7 +281,7 @@
   ^Iterable
   [^SQLr sql]
   {:pre [(some? sql)]}
-  (.findAll sql :czlab.wabbit.auth.model/AuthRole))
+  (.findAll sql :czlab.wabbit.pugs.auth.model/AuthRole))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,7 +296,7 @@
   ([^SQLr sql ^String user ^IPassword pwdObj props roleObjs]
    {:pre [(some? sql)(hgl? user)]}
    (let [m (.get (.metas sql)
-                 :czlab.wabbit.auth.model/LoginAccount)
+                 :czlab.wabbit.pugs.auth.model/LoginAccount)
          ps (if (some? pwdObj)
               (:hash (.hashed pwdObj)))
          acc
@@ -162,7 +309,7 @@
      ;; previous insert. That is, if we fail to set a role, it's
      ;; assumed ok for the account to remain inserted
      (doseq [r roleObjs]
-       (dbSetM2M {:joined :czlab.wabbit.auth.model/AccountRoles
+       (dbSetM2M {:joined :czlab.wabbit.pugs.auth.model/AccountRoles
                   :with sql} acc r))
      (log/debug "created new account %s%s%s%s"
                 "into db: " acc "\nwith meta\n" (meta acc))
@@ -176,7 +323,7 @@
   [^SQLr sql ^String email]
   {:pre [(some? sql)]}
   (.findOne sql
-            :czlab.wabbit.auth.model/LoginAccount
+            :czlab.wabbit.pugs.auth.model/LoginAccount
             {:email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -187,7 +334,7 @@
   [^SQLr sql ^String user]
   {:pre [(some? sql)]}
   (.findOne sql
-            :czlab.wabbit.auth.model/LoginAccount
+            :czlab.wabbit.pugs.auth.model/LoginAccount
             {:acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -249,7 +396,7 @@
   [^SQLr sql user role]
   {:pre [(some? sql)]}
   (dbClrM2M
-    {:joined :czlab.wabbit.auth.model/AccountRoles :with sql} user role))
+    {:joined :czlab.wabbit.pugs.auth.model/AccountRoles :with sql} user role))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -259,7 +406,7 @@
   [^SQLr sql user role]
   {:pre [(some? sql)]}
   (dbSetM2M
-    {:joined :czlab.wabbit.auth.model/AccountRoles :with sql} user role))
+    {:joined :czlab.wabbit.pugs.auth.model/AccountRoles :with sql} user role))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -276,7 +423,7 @@
   [^SQLr sql ^String user]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.auth.model/LoginAccount)]
+                :czlab.wabbit.pugs.auth.model/LoginAccount)]
     (.exec sql
            (format
              "delete from %s where %s =?"
@@ -290,7 +437,7 @@
   ^Iterable
   [^SQLr sql]
   {:pre [(some? sql)]}
-  (.findAll sql :czlab.wabbit.auth.model/LoginAccount))
+  (.findAll sql :czlab.wabbit.pugs.auth.model/LoginAccount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -421,8 +568,9 @@
 ;;
 (defn- authPlugin<>
   ""
-  ^Plugin
+  ^AuthPlugin
   [^Container ctr]
+
   (reify AuthPlugin
 
     (init [_ arg]
@@ -501,7 +649,27 @@
     (createPlugin [_ ctr]
       (authPlugin<> ctr))))
 
-;;(ns-unmap *ns* '->AuthPluginFactory)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftype PwdMatcher [] CredentialsMatcher
+
+  (doCredentialsMatch [_ token info]
+    (let [^AuthenticationToken tkn token
+          ^AuthenticationInfo inf info
+          pwd (.getCredentials tkn)
+          uid (.getPrincipal tkn)
+          pc (.getCredentials inf)
+          tstPwd (passwd<>
+                   (if (instChars? pwd)
+                     (String. ^chars pwd)
+                     (str pwd)))
+          acc (-> (.getPrincipals inf)
+                  (.getPrimaryPrincipal))]
+      (and (= (:acctid acc) uid)
+           (.validateHash tstPwd pc)))))
+
+(ns-unmap *ns* '->PwdMatcher)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- doMain

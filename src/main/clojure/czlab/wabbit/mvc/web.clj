@@ -34,7 +34,7 @@
 
   (:import [czlab.xlib CU XData Muble Hierarchial Identifiable]
            [czlab.wabbit.io IoService IoEvent HttpEvent]
-           [czlab.wabbit.etc ExpiredError AuthError]
+           [czlab.wabbit.pugs ExpiredError AuthError]
            [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.server Container]
            [java.net HttpCookie]

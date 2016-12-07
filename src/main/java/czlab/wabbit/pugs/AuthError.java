@@ -12,27 +12,23 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.etc;
+package czlab.wabbit.pugs;
 
 /**
  * @author Kenneth Leung
  */
-public class PluginError extends Exception {
+public class AuthError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
   /**/
-  public PluginError(String msg, Throwable e) {
-    super(msg, e);
+  public AuthError(String msg,Throwable e) {
+    super(msg,e);
   }
 
-  /**/
-  public PluginError(Throwable e) {
-    this(null,e);
-  }
 
   /**/
-  public PluginError(String msg) {
+  public AuthError(String msg) {
     this(msg,null);
   }
 

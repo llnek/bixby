@@ -13,13 +13,13 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
-  czlab.wabbit.auth.realm
+  czlab.wabbit.pugs.auth.realm
 
   (:gen-class
    :extends org.apache.shiro.realm.AuthorizingRealm
-   :name czlab.wabbit.auth.realm.JdbcRealm
+   :name czlab.wabbit.pugs.auth.realm.JdbcRealm
    :init myInit
    :constructors {[] []}
    :exposes-methods { }
@@ -28,7 +28,7 @@
   (:require [czlab.twisty.codec :refer [passwd<>]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.auth.plugin]
+  (:use [czlab.wabbit.pugs.auth.core]
         [czlab.horde.dbio.connect]
         [czlab.horde.dbio.core])
 

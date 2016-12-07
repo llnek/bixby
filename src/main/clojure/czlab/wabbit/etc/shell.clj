@@ -33,7 +33,7 @@
         [czlab.xlib.consts]
         [czlab.wabbit.etc.cmd1])
 
-  (:import [czlab.wabbit.etc CmdHelpError]
+  (:import [czlab.wabbit.etc CmdError]
            [czlab.xlib I18N]
            [java.io File]
            [java.util ResourceBundle List Locale]))
@@ -107,7 +107,7 @@
     (log/debug "execArgs: %s" args)
     (if (fn? f)
       (f (vec (drop 1 args)))
-      (trap! CmdHelpError))))
+      (trap! CmdError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -116,10 +116,10 @@
   [args]
   (try
     (if (empty? args)
-      (trap! CmdHelpError))
+      (trap! CmdError))
     (execArgs args)
     (catch Throwable _
-      (if (inst? CmdHelpError _) (usage) (prtStk _)))))
+      (if (inst? CmdError _) (usage) (prtStk _)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

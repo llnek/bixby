@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.sys.bean
+  czlab.wabbit.pugs.jmx.bean
 
   (:require [czlab.xlib.logging :as log])
 
@@ -25,7 +25,7 @@
 
   (:import [java.lang Exception IllegalArgumentException]
            [java.lang.reflect Field Method]
-           [czlab.wabbit.etc NameParams]
+           [czlab.wabbit.pugs NameParams]
            [javax.management
             AttributeList
             Attribute

@@ -14,13 +14,12 @@
 
 package czlab.wabbit.io;
 
-import czlab.wabbit.server.Component;
-import czlab.xlib.Hierarchial;
+import czlab.wabbit.etc.Gist;
 
 /**
  * @author Kenneth Leung
  */
-public interface IoGist extends Component, Hierarchial {
+public interface IoGist extends Gist {
 
   /**/
   public boolean isEnabled();

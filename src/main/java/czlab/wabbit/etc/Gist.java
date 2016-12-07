@@ -14,15 +14,12 @@
 
 package czlab.wabbit.etc;
 
-import czlab.wabbit.server.Container;
+import czlab.xlib.Hierarchial;
 
 /**
  * @author Kenneth Leung
  */
-@FunctionalInterface public interface PluginFactory {
-
-  /**/
-  public Plugin createPlugin(Container c);
+public interface Gist extends Component, Hierarchial {
 
 }
 

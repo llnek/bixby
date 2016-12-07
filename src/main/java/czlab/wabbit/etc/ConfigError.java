@@ -14,20 +14,23 @@
 
 package czlab.wabbit.etc;
 
-import java.lang.reflect.Method;
-
 /**
  * @author Kenneth Leung
  */
-public class AppMain {
+public class ConfigError extends Exception {
 
-  /**/
-  public static Object invokeStatic(String[] args)
-  throws Exception {
-    Class<?> z = Class.forName("boot.App");
-    String[] s = new String[0];
-    Method m= z.getDeclaredMethod("main", s.getClass());
-    return m.invoke(null, (Object)args);
+  private static final long serialVersionUID = 1L;
+
+  public ConfigError(String msg,Throwable e) {
+    super(msg,e);
+  }
+
+  public ConfigError(Throwable e) {
+    this(null,e);
+  }
+
+  public ConfigError(String msg) {
+    this(msg,null);
   }
 
 }

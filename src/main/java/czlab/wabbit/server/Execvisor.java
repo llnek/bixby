@@ -14,6 +14,7 @@
 
 package czlab.wabbit.server;
 
+import czlab.wabbit.etc.Component;
 import czlab.xlib.Startable;
 import java.io.File;
 import java.util.Locale;

@@ -12,24 +12,27 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.server;
+package czlab.wabbit.pugs;
 
 /**
  * @author Kenneth Leung
  */
-public class ConfigError extends Exception {
+public class DuplicateUser extends AuthError {
 
   private static final long serialVersionUID = 1L;
 
-  public ConfigError(String msg,Throwable e) {
+  /**/
+  public DuplicateUser(String msg, Throwable e) {
     super(msg,e);
   }
 
-  public ConfigError(Throwable e) {
+  /**/
+  public DuplicateUser(Throwable e) {
     this(null,e);
   }
 
-  public ConfigError(String msg) {
+  /**/
+  public DuplicateUser(String msg) {
     this(msg,null);
   }
 

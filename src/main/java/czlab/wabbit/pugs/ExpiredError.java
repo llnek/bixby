@@ -12,30 +12,29 @@
  *
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved. */
 
-package czlab.wabbit.server;
-
-import javax.management.ObjectName;
-import czlab.xlib.Startable;
+package czlab.wabbit.pugs;
 
 /**
  * @author Kenneth Leung
  */
-public interface JmxServer extends Startable {
+public class ExpiredError extends Exception {
+
+  private static final long serialVersionUID = 1L;
 
   /**/
-  public ObjectName reg(Object obj, String domain, String nname, Object paths);
+  public ExpiredError(String msg, Throwable e) {
+    super(msg,e);
+  }
 
   /**/
-  public void setRegistryPort(int port);
+  public ExpiredError(Throwable e) {
+    this(null,e);
+  }
 
   /**/
-  public void setServerPort(int port);
-
-  /**/
-  public void reset();
-
-  /**/
-  public void dereg(ObjectName nname);
+  public ExpiredError(String msg) {
+    this(msg,null);
+  }
 
 }
 

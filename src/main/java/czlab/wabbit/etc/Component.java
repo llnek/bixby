@@ -14,23 +14,14 @@
 
 package czlab.wabbit.etc;
 
+import czlab.xlib.Identifiable;
+import czlab.xlib.Versioned;
+import czlab.xlib.Context;
+
 /**
  * @author Kenneth Leung
- *
  */
-public class CmdHelpError extends Exception {
-
-  private static final long serialVersionUID = 1L;
-
-  /**/
-  public CmdHelpError(String msg) {
-    super(msg);
-  }
-
-  /**/
-  public CmdHelpError() {
-    this("");
-  }
+public interface Component extends Context, Identifiable, Versioned {
 
 }
 

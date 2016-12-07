@@ -13,7 +13,7 @@
 ;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 
 (ns ^{:doc ""
-      :author "Kenneth Leung" }
+      :author "Kenneth Leung"}
 
   czlab.wabbit.etc.cmd2
 
@@ -33,7 +33,7 @@
   (:import [org.apache.commons.io.filefilter FileFilterUtils]
            [org.apache.commons.io FileUtils]
            [java.util ResourceBundle UUID]
-           [czlab.wabbit.etc CmdHelpError]
+           [czlab.wabbit.etc CmdError]
            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -120,7 +120,7 @@
   ^String
   [kind]
   (if (= :web kind)
-    ":auth \"czlab.skaro.auth.plugin/AuthPluginFactory\""
+    ":auth \"czlab.wabbit.pugs.auth.core/pluginFactory<>\""
     ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -234,14 +234,14 @@
      (case option
        ("-w" "--web") :web
        ("-s" "--soa") :soa
-       (trap! CmdHelpError))
+       (trap! CmdError))
      ;; treat as domain e.g com.acme => pod = acme
      ;; regex gives ["com.acme" ".acme"]
      pod (when (some? t)
            (if-some [tkn (last t)]
              (triml tkn ".")
              (first t)))]
-    (if (empty? pod) (trap! CmdHelpError))
+    (if (empty? pod) (trap! CmdError))
     (copyOnePod cwd pod path kind)
     (configOnePod cwd pod path kind)))
 
