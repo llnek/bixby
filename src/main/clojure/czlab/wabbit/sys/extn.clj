@@ -127,7 +127,7 @@
   ""
   ^Container
   [^Execvisor parObj ^Gist gist]
-  (log/info "creating a container: %s" (.id gist))
+  (log/info "spawning a container for pod: %s" (.id gist))
   (let
     [pid (str (.id gist) "#" (seqint2))
      rts (Cljshim/newrt (getCldr) pid)
@@ -180,8 +180,8 @@
                (keyword sid)))
 
         (hasService [_ sid]
-          (contains? (.getv impl :services)
-                     (keyword sid)))
+          (in? (.getv impl :services)
+               (keyword sid)))
 
         (core [_]
           (.getv impl :core))
@@ -191,15 +191,15 @@
 
         (start [this]
           (let [svcs (.getv impl :services)]
-            (log/info "container starting emitters...")
+            (log/info "container starting io#services...")
             (doseq [[k v] svcs]
-              (log/info "emitter: %s to start" k)
+              (log/info "ioservice: %s to start" k)
               (.start ^Service v))))
 
         (stop [this]
           (let [svcs (.getv impl :services)
                 pugs (.getv impl :plugins)]
-            (log/info "container stopping emitters...")
+            (log/info "container stopping io#services...")
             (doseq [[k v] svcs]
               (.stop ^Service v))
             (log/info "container stopping plugins...")
@@ -210,7 +210,7 @@
         (dispose [this]
           (let [svcs (.getv impl :services)
                 pugs (.getv impl :plugins)]
-            (log/info "container dispose(): emitters")
+            (log/info "container dispose(): io#services")
             (doseq [[k v] svcs]
               (.dispose ^Service v))
             (log/info "container dispose(): plugins")
@@ -231,17 +231,15 @@
      bks (->> :services
               (.getv (.getx exe)))]
     (if-some
-      [^IoGist
-       bk (bks svcType)]
+      [^IoGist bk (bks svcType)]
       (let
-        [cfg (merge (.impl (.getx bk)) cfg0)
-         obj (service<> co svcType nm)
+        [obj (service<> co svcType nm (.impl (.getx bk)))
          pkey (.podKey co)
-         hid (:handler cfg)]
-        (log/info "making service %s..." svcType)
+         hid (:handler cfg0)]
+        (log/info "preparing service %s..." svcType)
         (log/info "svc meta: %s" (meta obj))
-        (log/info "config params =\n%s" cfg)
-        (.init obj cfg)
+        (log/info "config params =\n%s" cfg0)
+        (.init obj cfg0)
         (log/info "service - ok. handler => %s" hid)
         obj)
       (trap! ServiceError
@@ -258,14 +256,14 @@
       #(let
          [[k cfg] %2
           {:keys [service
-                  enabled]} cfg]
-         (if-not (or (false? enabled)
+                  enabled?]} cfg]
+         (if-not (or (false? enabled?)
                      (nil? service))
            (let [v (service<+>
                      co service k cfg)]
              (assoc! %1 (.id v) v))
            %1))
-      (seq svcs))
+      svcs)
     (.setv (.getx co) :services ))
   co)
 
@@ -277,19 +275,7 @@
   [^Execvisor exe ^Gist gist]
   (doto
     (mkctr exe gist)
-    (comp->init  nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- parseConf
-  ""
-  [^Container co]
-  (let
-    [podDir (.podDir co)
-     f #(slurpXXXConf podDir % true)]
-    (doto (.getx co)
-      (.setv :podConf (f CFG_POD_CF)))
-    co))
+    (comp->init  exe)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -326,7 +312,7 @@
 (defn- doOnePlugin
   ""
   ^Plugin
-  [^Container co ^Cljshim rts pc podConf]
+  [^Container co ^Cljshim rts pc env]
   (log/info "plugin->factory: %s" pc)
   (let
     [[pn opts]
@@ -337,7 +323,7 @@
      u (some-> pf
                (.createPlugin co))]
     (when (some? u)
-      (.init u {:pod podConf
+      (.init u {:pod env
                 :pug opts})
       (postInitPlugin co pn)
       (log/info "plugin %s starting..." pn)
@@ -349,11 +335,11 @@
 ;;
 (defn- maybeInitDBs
   ""
-  [^Container co pod]
+  [^Container co env]
   (preduce<map>
     #(let
        [[k v] %2]
-       (if-not (false? (:status v))
+       (if-not (false? (:enabled? v))
          (let
            [pwd (passwd<> (:passwd v)
                           (.podKey co))
@@ -363,39 +349,35 @@
            (->> (dbpool<> (dbspec<> cfg) cfg)
                 (assoc! %1 k)))
          %1))
-    (seq (get-in pod [:databases :jdbc]))))
+    (:rdbms env)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod comp->init
   ::Container
-  [^Container co arg]
+  [^Container co ^Execvisor execv]
 
   (logcomp "comp->init" co)
-  (parseConf co)
   (let
     [cpu (scheduler<> (.id co))
+     {:keys [env] :as conf}
+     (.impl (.getx execv))
      rts (.cljrt co)
      pid (.id co)
-     {:keys [envConf podConf]}
-     (.impl (.getx co))
-     mcz (get-in podConf
+     mcz (get-in env
                  [:info :main])
-     loc (-> ^Execvisor
-             (.parent co)
-             (.locale))
+     ^Locale loc (:locale conf)
      res (->>
-           (str "Resources_"
-                loc
-                ".properties")
-           (io/file (.podDir co) DN_ETC))]
+           (format "Resources_%s.properties"
+                   (.getLanguage loc))
+           (io/file (:podDir conf) DN_ETC))]
     (.setv (.getx co) :core cpu)
     (if (fileRead? res)
       (->> (loadResource res)
            (I18N/setBundle pid)))
     ;;db stuff
     (doto->>
-      (maybeInitDBs co podConf)
+      (maybeInitDBs co env)
       (.setv (.getx co) :dbps)
       (log/debug "db [dbpools]\n%s" ))
     ;;handle the plugins
@@ -403,15 +385,14 @@
       (preduce<map>
         #(let
            [[k v] %2]
-           (->>
-             (doOnePlugin
-               co rts v podConf)
-             (assoc! %1 k)))
-        (seq (:plugins podConf)))
+           (assoc! %1
+                   k
+                   (doOnePlugin co rts v env)))
+        (:plugins conf))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+
-      [dmCZ (:data-model podConf)]
+      [dmCZ (:data-model env)]
       (log/info "schema-func: %s" dmCZ)
       (if-some
         [sc (cast? Schema
@@ -420,11 +401,11 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable cpu {})
-    (->> (or (:services podConf) {})
+    (->> (or (:services env) {})
          (ioServices<> co ))
     (if (hgl? mcz)
       (.call rts mcz))
-    (log/info "app: %s initialized - ok" pid)
+    (log/info "pod: %s initialized - ok" pid)
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

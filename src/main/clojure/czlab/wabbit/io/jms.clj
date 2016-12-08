@@ -199,7 +199,7 @@
   (logcomp "comp->init" co)
   (->> (merge (.config co)
               (sanitize cfg0))
-       (.setv (.getx co) :emcfg ))
+       (.setv (.getx co) :emcfg))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

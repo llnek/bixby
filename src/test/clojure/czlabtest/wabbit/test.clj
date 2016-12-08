@@ -27,7 +27,8 @@
         [czlab.xlib.str]
         [clojure.test])
 
-  (:import [java.io File ]))
+  (:import [czlab.wabbit.etc CmdError]
+           [java.io File ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,6 +80,61 @@
         (and (== 1 (count m))
              (string? (:a m))
              (> (count (:a m)) 0))))
+
+  (is (== 17 (-> (with-out-str
+                   (onGenerate ["--password" "17"] ))
+                 (trimr "\n")
+                 count)))
+  (is (== 13 (-> (with-out-str
+                   (onGenerate ["-p" "13"] ))
+                 (trimr "\n")
+                 count)))
+
+  (is (> (-> (with-out-str
+               (onGenerate ["--hash" "hello"]))
+             (trimr "\n")
+             count) 0))
+  (is (> (-> (with-out-str
+               (onGenerate ["-h" "hello"]))
+             (trimr "\n")
+             count) 0))
+
+  (is (> (-> (with-out-str
+               (onGenerate ["--uuid"]))
+             (trimr "\n")
+             count) 0))
+  (is (> (-> (with-out-str
+               (onGenerate ["-u"]))
+             (trimr "\n")
+             count) 0))
+
+  (is (> (-> (with-out-str
+               (onGenerate ["--wwid"]))
+             (trimr "\n")
+             count) 0))
+  (is (> (-> (with-out-str
+               (onGenerate ["-w"]))
+             (trimr "\n")
+             count) 0))
+
+  (is (let [e (-> (with-out-str
+                    (onGenerate ["--encrypt" "secret" "hello"]))
+                  (trimr "\n"))
+            d (-> (with-out-str
+                    (onGenerate ["--decrypt" "secret" e]))
+                  (trimr "\n"))]
+        (= d "hello")))
+
+  (is (let [e (-> (with-out-str
+                    (onGenerate ["-e" "secret" "hello"]))
+                  (trimr "\n"))
+            d (-> (with-out-str
+                    (onGenerate ["-d" "secret" e]))
+                  (trimr "\n"))]
+        (= d "hello")))
+
+  (is (thrown? CmdError (onGenerate ["-bbbbb"])))
+
 
 
 

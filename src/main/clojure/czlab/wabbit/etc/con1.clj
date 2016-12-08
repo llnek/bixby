@@ -23,6 +23,7 @@
             [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
+            [czlab.xlib.antlib :as a]
             [clojure.java.io :as io]
             [clojure.string :as cs]
             [boot.core :as bcore])
@@ -93,8 +94,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onCreate
+(defn onCreate
   "Create a new pod"
+  {:no-doc true}
   [args]
   (if (> (count args) 1)
     (createPod (args 0) (args 1))
@@ -107,25 +109,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build a pod?
-(defn- onBuild
+(defn onBuild
   "Build the pod"
+  {:no-doc true}
   [args]
   (->> (if (empty? args) ["dev"] args)
-       (apply execBootScript (getHomeDir) (getCwd))))
+       (apply execBootScript (getHomeDir) (getProcDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onHelp-Podify
   "" [] (onHelpXXX "usage.podify.d" 2))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- bundlePod
+  "Bundle an app"
+  [homeDir podDir outDir]
+  (let [dir (mkdirs (io/file outDir))
+        a (io/file podDir)]
+    (->>
+      (a/antZip
+        {:destFile (io/file dir (str (.getName a) ".zip"))
+         :basedir a
+         :includes "**/*"})
+      (a/runTasks* ))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onPodify
+(defn onPodify
   "Package the pod"
+  {:no-doc true}
   [args]
   (if-not (empty? args)
     (bundlePod (getHomeDir)
-               (getCwd) (args 0))
+               (getProcDir) (args 0))
     (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,24 +153,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onTest
+(defn onTest
   "Test the pod"
+  {:no-doc true}
   [args]
   (->> (if (empty? args) ["tst"] args)
-       (apply execBootScript (getHomeDir) (getCwd))))
+       (apply execBootScript (getHomeDir) (getProcDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- onHelp-Start
   "" [] (onHelpXXX "usage.start.d" 4))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- runPodBg
+  "Run the pod in the background"
+  [homeDir podDir]
+  (let
+    [progW (io/file homeDir "bin/wabbit.bat")
+     prog (io/file homeDir "bin/wabbit")
+     tk (if (isWindows?)
+          (a/antExec
+            {:executable "cmd.exe"
+             :dir podDir}
+            [[:argvalues ["/C" "start" "/B"
+                          "/MIN"
+                          (fpath progW) "run"]]]))
+     _ (if false
+          (a/antExec
+            {:executable (fpath prog)
+             :dir podDir}
+            [[:argvalues ["run" "bg"]]]))]
+    (if (some? tk)
+      (a/runTasks* tk)
+      (trap! CmdError))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onStart
+(defn onStart
   "Start and run the pod"
+  {:no-doc true}
   [args]
   (let [home (getHomeDir)
-        cwd (getCwd)
+        cwd (getProcDir)
         s2 (first args)]
     ;; background job is handled differently on windows
     (if (and (in? #{"-bg" "--background"} s2)
@@ -169,8 +213,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onDebug
-  "Debug the pod" [args] (onStart args))
+(defn onDebug
+  "Debug the pod" {:no-doc true} [args] (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,8 +223,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onDemos
+(defn onDemos
   "Generate demo apps"
+  {:no-doc true}
   [args]
   (if-not (empty? args)
     (publishSamples (args 0))
@@ -195,7 +240,7 @@
         n (convLong (str c) 16)]
     (if (and (>= n 8)
              (<= n 32))
-      (println (strongPwd<> n))
+      (println (.text (strongPwd<> n)))
       (trap! CmdError))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -242,12 +287,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Generate "" [] (onHelpXXX "usage.gen.d" 8))
+(defn- onHelp-Generate
+  "" [] (onHelpXXX "usage.gen.d" 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onGenerate
+(defn onGenerate
   "Generate a bunch of crypto stuff"
+  {:no-doc true}
   [args]
   (let [c (first args)
         args (vec (drop 1 args))]
@@ -268,12 +315,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-TestJCE "" [] (onHelpXXX "usage.testjce.d" 2))
+(defn- onHelp-TestJCE
+  "" [] (onHelpXXX "usage.testjce.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onTestJCE
+(defn onTestJCE
   "Test if JCE (crypto) is ok"
+  {:no-doc true}
   [args]
   (let [rcb (I18N/base)]
     (assertJce)
@@ -281,12 +330,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Version "" [] (onHelpXXX "usage.version.d" 2))
+(defn- onHelp-Version
+  "" [] (onHelpXXX "usage.version.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onVersion
+(defn onVersion
   "Show the version of system"
+  {:no-doc true}
   [args]
   (let [rcb (I18N/base)]
     (->> (sysProp "wabbit.version")
@@ -317,10 +368,12 @@
 ;;
 (defn- genEclipseProj
   ""
-  [^File poddir]
-  (let [ec (mkdirs (io/file poddir "eclipse.projfiles"))
+  [pdir]
+  (let [ec (io/file pdir "eclipse.projfiles")
+        poddir (io/file pdir)
         pod (.getName poddir)
         sb (strbf<>)]
+    (mkdirs ec)
     (FileUtils/cleanDirectory ec)
     (writeFile
       (io/file ec ".project")
@@ -355,21 +408,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-IDE "" [] (onHelpXXX "usage.ide.d" 4))
+(defn- onHelp-IDE
+  "" [] (onHelpXXX "usage.ide.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onIDE
+(defn onIDE
   "Generate IDE project files"
+  {:no-doc true}
   [args]
   (if (and (not-empty args)
-           (contains? #{"-e" "--eclipse"} (args 0)))
-    (genEclipseProj (getCwd))
+           (in? #{"-e" "--eclipse"} (args 0)))
+    (genEclipseProj (getProcDir))
     (trap! CmdError)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Service "" [] (onHelpXXX "usage.svc.d" 8))
+(defn- onHelp-Service
+  "" [] (onHelpXXX "usage.svc.d" 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -378,22 +434,23 @@
   ([id hint] (onSvc id hint nil))
   ([id hint svc]
    (let
-     [cf (slurpXXXConf (getCwd) CFG_POD_CF)
+     [cf (slurpXXXConf (getProcDir) CFG_POD_CF)
       root (:services cf)
       nw
       (if (< hint 0)
         (dissoc root id)
         (when-some
           [gist (:conf (*emitter-defs* svc))]
-          (if (contains? root id) (trap! CmdError))
+          (if (in? root id) (trap! CmdError))
           (assoc root id (assoc gist :service svc))))]
      (if (some? nw)
-       (spitXXXConf (getCwd) CFG_POD_CF nw)))))
+       (spitXXXConf (getProcDir) CFG_POD_CF nw)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onService
+(defn onService
   ""
+  {:no-doc true}
   [args]
   (if (< (count args) 2) (trap! CmdError))
   (let
@@ -401,9 +458,9 @@
      cmd (args 0)
      [hint svc]
      (cond
-       (contains? #{"-r" "--remove"} cmd)
+       (in? #{"-r" "--remove"} cmd)
        [-1 "?"]
-       (contains? #{"-a" "--add"} cmd)
+       (in? #{"-a" "--add"} cmd)
        (if (< (count args) 3)
          (trap! CmdError)
          [1 (args 2)])
@@ -431,10 +488,11 @@
 (declare getTasks)
 (defn onHelp
   "Show help"
+  {:no-doc true}
   [args]
   (let
     [c (keyword (first args))
-     [f h] ((getTasks) c)]
+     [_ h] ((getTasks) c)]
     (if (fn? h)
       (h)
       (trap! CmdError))))

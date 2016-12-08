@@ -124,6 +124,18 @@
 (defmethod comp->init :default [co _]
   (log/warn "No init defined for comp: %s" co) co)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getHomeDir
+  ""
+  ^File [] (io/file (sysProp "wabbit.home.dir")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn getProcDir
+  ""
+  ^File [] (io/file (sysProp "wabbit.proc.dir")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn expandSysProps

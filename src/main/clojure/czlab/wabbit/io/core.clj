@@ -185,18 +185,18 @@
 (defn service<>
   "Create a IO/Service"
   ^IoService
-  [^Container parObj emType emAlias]
+  [^Container parObj emType emAlias cfg0]
   {:pre [(keyword? emType)]}
   (let [timer (atom nil)
-        impl (muble<>)]
+        impl (muble<> {:emcfg cfg0})]
     (with-meta
       (reify IoService
 
         (isEnabled [_]
-          (not (false? (.getv impl :enabled))))
+          (not (false? (.getv impl :enabled?))))
 
         (isActive [_]
-          (not (false? (.getv impl :active))))
+          (not (false? (.getv impl :active?))))
 
         (config [_] (.getv impl :emcfg))
         (server [this] (.parent this))

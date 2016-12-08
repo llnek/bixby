@@ -77,17 +77,16 @@
   "Stop all apps and services"
   ^Atom
   [^Atom gist]
-  (let [{:keys [killServer
+  (let [{:keys [pidFile
                 execv
-                pidFile]}
-        @gist]
+                killSvr]} @gist]
     (when-not @STOPCLI
       (reset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
-      (if (fn? killServer) (killServer))
+      (if (fn? killSvr) (killSvr))
       (log/info "remote shutdown hook closed - ok")
-      (log/info "containers are shutting down...")
+      (log/info "container is shutting down...")
       (log/info "about to stop wabbit...")
       (if (some? execv)
         (.stop ^Startable execv))
@@ -151,7 +150,9 @@
      ctx (->> {:encoding (stror (:encoding info) "utf-8")
                :basedir (io/file home)
                :podDir (io/file cwd)
+               :version ver
                :pidFile fp
+               :env env
                :locale loc}
               (cliGist ))
      cz (getCldr)]
@@ -173,7 +174,7 @@
     (log/info "app-loader: %s" (type cz))
     (log/info "sys-loader: %s"
               (type (.getParent cz)))
-    (log/info "%s" @ctx)
+    (log/debug "%s" @ctx)
     (log/info "container is now running...")
     (while (not @STOPCLI)
       (safeWait 5000))))

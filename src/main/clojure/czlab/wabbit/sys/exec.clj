@@ -62,20 +62,18 @@
   ^Gist
   [^String pod conf urlToPod]
   {:pre [(map? conf)]}
-  (let [info
-        (merge {:version "1.0"
-                :name pod
-                :main ""}
-               (:info conf)
-               {:path urlToPod})
-        pid (str (:name info)
-                 "#" (seqint2))
-        impl (muble<> info)]
+  (let [impl (muble<>
+               (merge {:version "?" :main ""}
+                      (:info conf)
+                      {:name pod :path urlToPod}))
+        pid (format "%s#%d" pod (seqint2))]
     (log/info "pod-meta:\n%s" (.impl impl))
     (with-meta
       (reify
         Gist
-        (version [_] (:version info))
+        (setParent [_ p] (.setv impl :parent p))
+        (parent [_] (.getv impl :parent))
+        (version [_] (.getv impl :version))
         (id [_] pid)
         (getx [_] impl))
       {:typeid  ::PodGist})))
@@ -87,22 +85,30 @@
   ^Gist
   [^Execvisor execv desDir]
   (log/info "pod dir : %s => inspecting..." desDir)
-  ;;create the pod meta and register it
-  ;;as a application
+  ;;create the meta and register it
+  ;;as a pod
   (let
-    [_ (precondFile (io/file desDir CFG_POD_CF))
-     cf (slurpXXXConf desDir CFG_POD_CF true)
-     pod (basename desDir)
-     ctx (.getx execv)
-     m (podMeta pod
-                cf
-                (io/as-url desDir))]
-    (comp->init m nil)
-    (doto->>
-      m
-      (.setv ctx :pod ))))
+    [pod (basename desDir)
+     {:keys [env]}
+     (.impl (.getx execv))]
+    (doto
+      (podMeta pod
+               env
+               (io/as-url desDir))
+      (comp->init execv))))
 
 ;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defmethod comp->init
+  ::PodGist
+  [^Gist co ^Execvisor execv]
+
+  (logcomp "com->init" co)
+  (doto (.getx execv)
+    (.setv :pod co))
+  (doto co
+    (.setParent execv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -114,7 +120,7 @@
       [ctr (container<> co gist)
        pod (.id gist)
        cid (.id ctr)]
-      (log/debug "start pod = %s\ninstance = %s" pod cid)
+      (log/debug "start pod = %s\ncontainer = %s" pod cid)
       (doto->>
         ctr
         (.setv (.getx co) :container )
@@ -126,15 +132,16 @@
 (defn- stopPods
   ""
   [^Execvisor co]
-  (log/info "preparing to stop pod...")
+  (log/info "preparing to stop container...")
   (let [cx (.getx co)
         c (.getv cx :container)]
-    (doto->>
-      ^Container
-      c
-      (.stop )
-      (.dispose ))
-    (.unsetv cx :container)
+    (when (some? c)
+      (doto->>
+        ^Container
+        c
+        (.stop )
+        (.dispose ))
+      (.unsetv cx :container))
     co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,10 +162,10 @@
 
         (uptimeInMillis [_]
           (- (System/currentTimeMillis) START-TIME))
-        (id [_] (format "%s{%s}" "execvisor" pid))
+        (id [_] pid)
         (homeDir [_] (.getv impl :basedir))
         (locale [_] (.getv impl :locale))
-        (version [_] "1.0")
+        (version [_] (.getv impl :version))
         (getx [_] impl)
         (startTime [_] START-TIME)
         (kill9 [_] (apply (.getv impl :stop!) []))
@@ -180,23 +187,23 @@
   [emsType gist]
   (let [{:keys [info conf]}
         gist
-        pid (str "emit#"
-                 (:name info))
+        pid (format "emit#%d{%s}"
+                    (seqint2) (:name info))
         impl (muble<> conf)]
     (with-meta
       (reify
 
         IoGist
 
-        (setParent [_ p] (.setv impl :execv p))
-        (parent [_] (.getv impl :execv))
+        (setParent [_ p] (.setv impl :parent p))
+        (parent [_] (.getv impl :parent))
+
+        (isEnabled [_]
+          (not (false? (:enabled? info))))
 
         (version [_] (:version info))
         (getx [_] impl)
         (type [_] emsType)
-
-        (isEnabled [_]
-          (not (false? (:enabled info))))
 
         (id [_] pid))
 
@@ -216,7 +223,6 @@
 ;;
 (defn- regoEmitters
   ""
-  ^Execvisor
   [^Execvisor co]
   (let [ctx (.getx co)]
     (->>
@@ -244,17 +250,17 @@
   ::Execvisor
   [^Execvisor co rootGist]
   {:pre [(inst? Atom rootGist)]}
-
   (let [{:keys [basedir encoding podDir]}
         @rootGist]
     (sysProp! "file.encoding" encoding)
     (logcomp "com->init" co)
-    (.copy (.getx co) (muble<> @rootGist))
+    (.copyEx (.getx co) @rootGist)
     (-> (io/file podDir
                  DN_ETC
                  "mime.properties")
         (io/as-url)
         (setupCache ))
+    (log/info "loaded mime#cache - ok")
     (regoEmitters co)
     (regoApps co)))
 
