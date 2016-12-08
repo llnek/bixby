@@ -30,7 +30,7 @@
         [czlab.xlib.str]
         [czlab.flux.wflow.core]
         [czlab.wabbit.io.core]
-        [czlab.wabbit.sys.core])
+        [czlab.wabbit.etc.core])
 
   (:import [czlab.xlib CU XData Muble Hierarchial Identifiable]
            [czlab.wabbit.io IoService IoEvent HttpEvent]

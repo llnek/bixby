@@ -31,7 +31,7 @@
                      dbpool<>
                      dbschema<>]])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.etc.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.io]
@@ -136,7 +136,7 @@
      pub (io/file podPath
                   DN_PUB DN_PAGES)
      ftlCfg (genFtlConfig :root pub)
-     impl (muble<> {:emitters {}})]
+     impl (muble<> {:services {}})]
     (with-meta
       (reify
 
@@ -176,11 +176,11 @@
         (isEnabled [_] true)
 
         (service [_ sid]
-          (get (.getv impl :emitters)
+          (get (.getv impl :services)
                (keyword sid)))
 
         (hasService [_ sid]
-          (contains? (.getv impl :emitters)
+          (contains? (.getv impl :services)
                      (keyword sid)))
 
         (core [_]
@@ -190,14 +190,14 @@
           (.getv impl :podConf))
 
         (start [this]
-          (let [svcs (.getv impl :emitters)]
+          (let [svcs (.getv impl :services)]
             (log/info "container starting emitters...")
             (doseq [[k v] svcs]
               (log/info "emitter: %s to start" k)
               (.start ^Service v))))
 
         (stop [this]
-          (let [svcs (.getv impl :emitters)
+          (let [svcs (.getv impl :services)
                 pugs (.getv impl :plugins)]
             (log/info "container stopping emitters...")
             (doseq [[k v] svcs]
@@ -208,7 +208,7 @@
             (log/info "container stopping...")))
 
         (dispose [this]
-          (let [svcs (.getv impl :emitters)
+          (let [svcs (.getv impl :services)
                 pugs (.getv impl :plugins)]
             (log/info "container dispose(): emitters")
             (doseq [[k v] svcs]
@@ -228,7 +228,7 @@
   [^Container co svcType nm cfg0]
   (let
     [^Execvisor exe (.parent co)
-     bks (->> :emitters
+     bks (->> :services
               (.getv (.getx exe)))]
     (if-some
       [^IoGist
@@ -266,7 +266,7 @@
              (assoc! %1 (.id v) v))
            %1))
       (seq svcs))
-    (.setv (.getx co) :emitters ))
+    (.setv (.getx co) :services ))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -420,7 +420,7 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable cpu {})
-    (->> (or (:emitters podConf) {})
+    (->> (or (:services podConf) {})
          (ioServices<> co ))
     (if (hgl? mcz)
       (.call rts mcz))

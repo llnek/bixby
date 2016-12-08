@@ -24,7 +24,7 @@
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.flux.wflow.core]
-        [czlab.wabbit.sys.core])
+        [czlab.wabbit.etc.core])
 
   (:import [czlab.wabbit.io IoTrigger IoService IoEvent]
            [czlab.flux.wflow WorkStream Job TaskDef]

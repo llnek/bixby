@@ -22,7 +22,7 @@
             [czlab.xlib.meta :refer [getCldr]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.etc.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.core])

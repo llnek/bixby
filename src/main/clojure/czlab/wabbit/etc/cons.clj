@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.etc.shell
+  czlab.wabbit.etc.cons
 
   (:gen-class)
 
@@ -24,14 +24,14 @@
             [clojure.java.io :as io]
             [czlab.table.core :as tbl])
 
-  (:use [czlab.wabbit.etc.cmd2]
-        [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.etc.con2]
+        [czlab.wabbit.etc.core]
         [czlab.xlib.resources]
         [czlab.xlib.format]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.consts]
-        [czlab.wabbit.etc.cmd1])
+        [czlab.wabbit.etc.con1])
 
   (:import [czlab.wabbit.etc CmdError]
            [czlab.xlib I18N]
@@ -99,18 +99,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- execArgs
-  ""
-  [args]
-  (let [cmd (keyword (first args))
-        f (first (*wabbit-tasks* cmd))]
-    ;;(log/debug "execArgs: %s" args)
-    (if (fn? f)
-      (f (vec (drop 1 args)))
-      (trap! CmdError))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn -main
   "Main Entry"
   [& args]
@@ -130,7 +118,12 @@
                       "?"))
         (try
           (if (empty? args)(trap! CmdError))
-          (execArgs args)
+          (let [[f _]
+                (-> (keyword (first args))
+                    (*wabbit-tasks* ))]
+            (if (fn? f)
+              (f (vec (drop 1 args)))
+              (trap! CmdError)))
           (catch Throwable _
             (if (inst? CmdError _) (usage) (prtStk _)))))
       (usage))))

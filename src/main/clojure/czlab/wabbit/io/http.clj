@@ -31,7 +31,7 @@
         [czlab.convoy.netty.core]
         [czlab.convoy.net.core]
         [czlab.flux.wflow.core]
-        [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.core]
         [czlab.wabbit.io.core]
         [czlab.twisty.ssl]
         [czlab.xlib.core]

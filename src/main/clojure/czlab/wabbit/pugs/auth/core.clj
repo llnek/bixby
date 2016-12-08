@@ -30,7 +30,7 @@
   (:use [czlab.wabbit.pugs.auth.model]
         [czlab.wabbit.pugs.auth.core]
         [czlab.convoy.net.core]
-        [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.core]
         [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
         [czlab.xlib.meta]

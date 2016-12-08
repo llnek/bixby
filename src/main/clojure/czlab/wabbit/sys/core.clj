@@ -17,247 +17,168 @@
 
   czlab.wabbit.sys.core
 
-  (:require [czlab.xlib.resources :refer [rstr]]
+  (:require [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
+            [czlab.wabbit.io.http :refer [cfgShutdownServer]]
+            [czlab.wabbit.sys.exec :refer [execvisor<>]]
+            [czlab.xlib.scheduler :refer [scheduler<>]]
+            [czlab.xlib.resources :refer [getResource]]
+            [czlab.xlib.meta :refer [setCldr getCldr]]
+            [czlab.xlib.format :refer [readEdn]]
             [czlab.xlib.logging :as log]
-            [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.xlib.format]
+  (:use [czlab.wabbit.etc.core]
+        [czlab.xlib.process]
         [czlab.xlib.core]
-        [czlab.xlib.io]
-        [czlab.xlib.str])
+        [czlab.xlib.str]
+        [czlab.xlib.consts])
 
-  (:import [org.apache.commons.lang3.text StrSubstitutor]
-           [czlab.wabbit.etc Component Gist ConfigError]
+  (:import [czlab.wabbit.etc CmdError ConfigError]
+           [czlab.wabbit.server CljPodLoader]
+           [clojure.lang Atom APersistentMap]
+           [czlab.wabbit.server Execvisor]
            [czlab.xlib
             Versioned
+            Disposable
+            Activable
+            Hierarchial
+            Startable
+            CU
             Muble
             I18N
-            Hierarchial
+            Schedulable
             Identifiable]
-           [java.io File]))
+           [java.io File]
+           [java.util ResourceBundle Locale]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(def ^String C_VERPROPS "czlab/czlab-wabbit/version.properties")
-(def ^String C_RCB "czlab.wabbit.etc/Resources")
-
-(def ^:private ^String SYS_DEVID_PFX "system.####")
-(def ^:private ^String SYS_DEVID_SFX "####")
-
-(def SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
-(def SHUTDOWN_DEVID #"system::kill_9" )
-(def ^String DEF_DBID "default")
-
-(def ^String SHUTDOWN_URI "/kill9")
-(def ^String POD_PROTOCOL  "pod:" )
-(def ^String META_INF  "META-INF" )
-(def ^String WEB_INF  "WEB-INF" )
-
-(def ^String DN_TARGET "target")
-(def ^String DN_BUILD "build")
-
-(def ^String DN_CLASSES "classes" )
-(def ^String DN_BIN "bin" )
-(def ^String DN_CONF "conf" )
-(def ^String DN_LIB "lib" )
-
-(def ^String DN_CFGAPP "etc/app" )
-(def ^String DN_CFGWEB "etc/web" )
-(def ^String DN_ETC "etc" )
-
-(def ^String DN_RCPROPS  "Resources_en.properties" )
-(def ^String DN_TEMPLATES  "templates" )
-
-(def ^String DN_LOGS "logs" )
-(def ^String DN_TMP "tmp" )
-(def ^String DN_DBS "dbs" )
-(def ^String DN_DIST "dist" )
-(def ^String DN_VIEWS  "htmls" )
-(def ^String DN_PAGES  "pages" )
-(def ^String DN_PATCH "patch" )
-(def ^String DN_MEDIA "media" )
-(def ^String DN_SCRIPTS "scripts" )
-(def ^String DN_STYLES "styles" )
-(def ^String DN_PUB "public" )
-
-(def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
-(def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
-(def ^String WEB_LOG  (str WEB_INF  "/logs"))
-(def ^String WEB_XML  (str WEB_INF  "/web.xml"))
-
-(def ^String MN_RNOTES (str META_INF "/" "RELEASE-NOTES.txt"))
-(def ^String MN_README (str META_INF "/" "README.md"))
-(def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
-(def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
-
-(def ^String POD_CF  "pod.conf" )
-(def ^String CFG_POD_CF  (str DN_CONF  "/"  POD_CF ))
-
-(def JS_FLATLINE :____flatline)
-(def EV_OPTS :____eventoptions)
-(def JS_LAST :____lastresult)
-(def JS_CRED :credential)
-(def JS_USER :principal)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(def ^:private STOPCLI (atom false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmacro gtid "typeid of component" [obj] `(:typeid (meta ~obj)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmacro logcomp
+(defn- cliGist
   ""
-  [pfx co]
-  `(log/info "%s: '%s'# '%s'" ~pfx (gtid ~co) (.id ~co)))
+  ^Atom
+  [gist]
+  (let [home (:basedir gist)]
+    (precondDir (io/file home DN_DIST)
+                (io/file home DN_LIB)
+                (io/file home DN_ETC)
+                (io/file home DN_BIN))
+    (atom gist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti comp->init
-  "Initialize component" ^Component (fn [a arg] (:typeid (meta a))))
+(defn- stopCLI
+  "Stop all apps and services"
+  ^Atom
+  [^Atom gist]
+  (let [{:keys [killServer
+                execv
+                pidFile]}
+        @gist]
+    (when-not @STOPCLI
+      (reset! STOPCLI true)
+      (print "\n\n")
+      (log/info "closing the remote shutdown hook")
+      (if (fn? killServer) (killServer))
+      (log/info "remote shutdown hook closed - ok")
+      (log/info "containers are shutting down...")
+      (log/info "about to stop wabbit...")
+      (if (some? execv)
+        (.stop ^Startable execv))
+      (shutdown-agents)
+      (log/info "wabbit stopped")
+      (log/info "vm shut down")
+      (log/info "(bye)"))
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init :default [co arg] co)
+(defn- enableRemoteShutdown
+  "Listen on a port for remote kill command"
+  ^Atom
+  [^Atom gist]
+  (log/info "enabling remote shutdown hook")
+  (->> (-> (sysProp "wabbit.kill.port")
+           (convLong  4444))
+       (cfgShutdownServer gist #(stopCLI gist)))
+  gist)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;create and synthesize Execvisor
+(defn- primodial
+  ""
+  ^Atom
+  [^Atom gist]
+  (log/info "\n%s\n%s\n%s"
+            (str<> 78 \=)
+            "inside primodial()" (str<> 78 \=))
+  (log/info "execvisor = %s"
+            "czlab.wabbit.server.Execvisor")
+  (let [execv (execvisor<>)]
+    (swap! gist
+           assoc
+           :execv execv
+           :stop! #(stopCLI gist))
+    (comp->init execv gist)
+    (log/info "\n%s\n%s\n%s"
+              (str<> 78 \*)
+              "about to start wabbit..."
+              (str<> 78 \*))
+    (.start execv)
+    (log/info "wabbit started!")
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn readConf
-  "Parse a edn configuration file"
-  ^String
-  [^File podDir ^String confile]
-  (doto->>
-    (-> (io/file podDir DN_CONF confile)
-        (changeContent
-          #(cs/replace %
-                       "${pod.dir}"
-                       (fpath podDir))))
-    (log/debug "[%s]\n%s" confile)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn expandSysProps
-  "Expand any system properties found inside the string value"
-  ^String
-  [^String value]
-  (if-not (hgl? value)
-    value
-    (StrSubstitutor/replaceSystemProperties value)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn expandEnvVars
-  "Expand any env-vars found inside the string value"
-  ^String
-  [^String value]
-  (if-not (hgl? value)
-    value
-    (.replace (StrSubstitutor. (System/getenv)) value)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn expandVars
-  "Replaces all system & env variables in the value"
-  ^String
-  [^String value]
-  (if-not (hgl? value)
-    value
-    (-> (expandSysProps value)
-        (expandEnvVars ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;asserts that the directory is readable & writable.
-(defn ^:no-doc precondDir
-  "Assert folder(s) are read-writeable?"
-  [f & dirs]
-  (doseq [d (cons f dirs)]
-    (test-cond (rstr (I18N/base)
-                     "dir.no.rw" d)
-               (dirReadWrite? d))))
+(defn startViaCLI
+  ""
+  [home cwd]
+  (let
+    [{:keys [locale info] :as env}
+     (slurpXXXConf cwd CFG_POD_CF true)
+     cn (stror (:country locale) "US")
+     ln (stror (:lang locale) "en")
+     ver (sysProp "wabbit.version")
+     fp (io/file cwd "wabbit.pid")
+     loc (Locale. ln cn)
+     rc (getResource C_RCB loc)
+     ctx (->> {:encoding (stror (:encoding info) "utf-8")
+               :basedir (io/file home)
+               :podDir (io/file cwd)
+               :pidFile fp
+               :locale loc}
+              (cliGist ))
+     cz (getCldr)]
+    (log/info "wabbit.home    = %s" (fpath home))
+    (log/info "wabbit.version = %s" ver)
+    (log/info "wabbit folder - ok")
+    (doto->> rc
+             (test-some "base resource" )
+             (I18N/setBase ))
+    (log/info "resource bundle found and loaded")
+    (primodial ctx)
+    (doto fp
+      (writeFile (processPid))
+      (.deleteOnExit ))
+    (log/info "wrote wabbit.pid - ok")
+    (enableRemoteShutdown ctx)
+    (exitHook #(stopCLI ctx))
+    (log/info "added shutdown hook")
+    (log/info "app-loader: %s" (type cz))
+    (log/info "sys-loader: %s"
+              (type (.getParent cz)))
+    (log/info "%s" @ctx)
+    (log/info "container is now running...")
+    (while (not @STOPCLI)
+      (safeWait 5000))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;asserts that the file is readable
-(defn ^:no-doc precondFile
-  "Assert file(s) are readable?"
-  [ff & files]
-  (doseq [f (cons ff files)]
-    (test-cond (rstr (I18N/base)
-                     "file.no.r" f)
-               (fileRead? f))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ^:no-doc maybeDir
-  "If the key maps to a File"
-  ^File
-  [^Muble m kn]
-  (let [v (.getv m kn)]
-    (condp instance? v
-      String (io/file v)
-      File v
-      (trap! ConfigError (rstr (I18N/base)
-                               "wabbit.no.dir" kn)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn podMeta
-  "Create metadata for an application bundle"
-  ^Gist
-  [^String pod conf urlToPod]
-  {:pre [(map? conf)]}
-  (let [info
-        (merge {:version "1.0"
-                :name pod
-                :main ""}
-               (:info conf)
-               {:path urlToPod})
-        pid (str (:name info)
-                 "#" (seqint2))
-        impl (muble<> info)]
-    (log/info "pod-meta:\n%s" (.impl impl))
-    (with-meta
-      (reify
-        Gist
-        (version [_] (:version info))
-        (id [_] pid)
-        (getx [_] impl))
-      {:typeid  ::PodGist})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn slurpXXXConf
-  "Parse config file"
-  ([podDir conf] (slurpXXXConf podDir conf false))
-  ([podDir conf expVars?]
-   (let [f (io/file podDir conf)
-         s (str "{\n"
-                (slurpUtf8 f) "\n}")]
-     (->
-       (if expVars?
-         (-> (cs/replace s "${pod.dir}" (fpath podDir))
-             (expandVars))
-         s)
-       (readEdn )))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn spitXXXConf
-  "Write out config file"
-  [podDir conf cfgObj]
-  (let [f (io/file podDir conf)
-        s (strim (writeEdnStr cfgObj))]
-    (->>
-      (if (and (.startsWith s "{")
-               (.endsWith s "}"))
-        (-> (drophead s 1)
-            (droptail 1))
-        s)
-      (spitUtf8 f))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
 
 

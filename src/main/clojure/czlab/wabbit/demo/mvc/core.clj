@@ -20,7 +20,7 @@
   (:require [czlab.xlib.logging :as log])
 
   (:use [czlab.convoy.net.core]
-        [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]

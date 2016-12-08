@@ -15,11 +15,11 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.etc.cmd1
+  czlab.wabbit.etc.con1
 
   (:require [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
             [czlab.xlib.format :refer [writeEdnStr readEdn]]
-            [czlab.wabbit.sys.main :refer [startViaCLI]]
+            [czlab.wabbit.sys.core :refer [startViaCLI]]
             [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
@@ -27,14 +27,14 @@
             [clojure.string :as cs]
             [boot.core :as bcore])
 
-  (:use [czlab.wabbit.etc.cmd2]
+  (:use [czlab.wabbit.etc.con2]
         [czlab.xlib.guids]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.io]
         [czlab.xlib.meta]
         [czlab.wabbit.etc.svcs]
-        [czlab.wabbit.sys.core])
+        [czlab.wabbit.etc.core])
 
   (:import [czlab.wabbit.etc BootAppMain CmdError]
            [org.apache.commons.io FileUtils]
@@ -82,12 +82,14 @@
   [pfx end]
   (let [rcb (I18N/base)]
     (dotimes [n end]
-      (printf "%s\n" (rstr rcb (str pfx (+ n 1)))))
+      (printf "%s\n" (rstr rcb
+                           (str pfx (+ n 1)))))
     (println)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Create "" [] (onHelpXXX "usage.new.d" 5))
+(defn- onHelp-Create
+  "" [] (onHelpXXX "usage.new.d" 5))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,7 +102,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Build "" [] (onHelpXXX "usage.build.d" 4))
+(defn- onHelp-Build
+  "" [] (onHelpXXX "usage.build.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe build a pod?
@@ -112,7 +115,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Podify "" [] (onHelpXXX "usage.podify.d" 2))
+(defn- onHelp-Podify
+  "" [] (onHelpXXX "usage.podify.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -126,7 +130,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Test "" [] (onHelpXXX "usage.test.d" 2))
+(defn- onHelp-Test
+  "" [] (onHelpXXX "usage.test.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,7 +143,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Start "" [] (onHelpXXX "usage.start.d" 4))
+(defn- onHelp-Start
+  "" [] (onHelpXXX "usage.start.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,7 +155,7 @@
         cwd (getCwd)
         s2 (first args)]
     ;; background job is handled differently on windows
-    (if (and (contains? #{"-bg" "--background"} s2)
+    (if (and (in? #{"-bg" "--background"} s2)
              (isWindows?))
       (runPodBg home cwd)
       (do
@@ -158,15 +164,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Debug "" [] (onHelpXXX "usage.debug.d" 2))
+(defn- onHelp-Debug
+  "" [] (onHelpXXX "usage.debug.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onDebug "Debug the pod" [args] (onStart args))
+(defn- onDebug
+  "Debug the pod" [args] (onStart args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onHelp-Demos "" [] (onHelpXXX "usage.demo.d" 2))
+(defn- onHelp-Demos
+  "" [] (onHelpXXX "usage.demo.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -370,7 +379,7 @@
   ([id hint svc]
    (let
      [cf (slurpXXXConf (getCwd) CFG_POD_CF)
-      root (:emitters cf)
+      root (:services cf)
       nw
       (if (< hint 0)
         (dissoc root id)

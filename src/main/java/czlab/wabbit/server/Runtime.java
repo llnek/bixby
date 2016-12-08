@@ -38,7 +38,7 @@ public class Runtime {
       Method m= z.getDeclaredMethod("newrt",ClassLoader.class, String.class);
       Object obj= m.invoke(null, cl, "wabbit-runner");
       m=z.getDeclaredMethod("callEx", String.class, Object[].class);
-      m.invoke(obj, "czlab.wabbit.etc.shell/-main", (Object[])args);
+      m.invoke(obj, "czlab.wabbit.etc.cons/-main", (Object[])args);
     }
     catch (Throwable t) {
       t.printStackTrace();

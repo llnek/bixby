@@ -50,7 +50,8 @@ BG=false
 
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
-MAINCZ=czlab.wabbit.etc.shell
+MAINCZ=czlab.wabbit.etc.cons
+PROCCZ=czlab.wabbit.server.Runtime
 
 #LIBP="-Djava.library.path=$WABBIT_BIN"
 #NETTY=-Dio.netty.eventLoopThreads=16
@@ -78,7 +79,7 @@ KPORT=4444
 KILL9="-Dwabbit.kill.port=$KPORT"
 
 show_proc() {
-  pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
+  pid=$( ps -ef | grep $PROCCZ | grep -v grep | awk '{print $2}' )
   if [ -n "$pid" ]; then
     echo "wabbit is running with process-id: ${pid}."
   else
@@ -87,7 +88,7 @@ show_proc() {
 }
 
 stop_proc() {
-  pid=$( ps -ef | grep czlab.wabbit.etc.shell | grep -v grep | awk '{print $2}' )
+  pid=$( ps -ef | grep $PROCCZ | grep -v grep | awk '{print $2}' )
   if [ -n "$pid" ]; then
     #kill $pid
     cd /tmp
@@ -97,7 +98,7 @@ stop_proc() {
 }
 
 if [ "$1" = "run" ]; then
-  MAINCZ=czlab.wabbit.server.Runtime
+  MAINCZ=$PROCCZ
   if [ "$2" = "bg" ]; then
     BG=true
   fi

@@ -24,7 +24,7 @@
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.etc.svcs]
-        [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.core]
         [czlab.wabbit.sys.extn]
         [czlab.xlib.core]
         [czlab.xlib.io]
@@ -54,6 +54,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (def ^:private START-TIME (.getTime (Date.)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- podMeta
+  "Create metadata for an application bundle"
+  ^Gist
+  [^String pod conf urlToPod]
+  {:pre [(map? conf)]}
+  (let [info
+        (merge {:version "1.0"
+                :name pod
+                :main ""}
+               (:info conf)
+               {:path urlToPod})
+        pid (str (:name info)
+                 "#" (seqint2))
+        impl (muble<> info)]
+    (log/info "pod-meta:\n%s" (.impl impl))
+    (with-meta
+      (reify
+        Gist
+        (version [_] (:version info))
+        (id [_] pid)
+        (getx [_] impl))
+      {:typeid  ::PodGist})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -121,7 +146,7 @@
   (let
     [impl (muble<> {:container nil
                     :pod nil
-                    :emitters {}})
+                    :services {}})
      pid (str "exec#" (seqint2))]
     (with-meta
       (reify
@@ -201,7 +226,7 @@
            (comp->init b co)
            (assoc! %1 (.type b) b))
         *emitter-defs*)
-      (.setv ctx :emitters ))))
+      (.setv ctx :services ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -14,8 +14,7 @@
  * Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
 */
 
-
-package com.zotohlab.wabbit;
+package czlabtest.wabbit;
 
 import mikera.cljunit.ClojureTest;
 import java.util.Arrays;
@@ -25,25 +24,7 @@ public class ClojureJUnit extends ClojureTest {
     @Override
     public List<String> namespaces() {
         return Arrays.asList(new String[]{
-                "testcljc.util.byteutils",
-                "testcljc.util.codes",
-                "testcljc.util.coreutils",
-                "testcljc.util.dateutils",
-                "testcljc.util.fileutils",
-                "testcljc.util.guids",
-                "testcljc.util.ioutils",
-                "testcljc.util.metautils",
-                "testcljc.util.mimeutils",
-                "testcljc.util.procutils",
-                "testcljc.util.seqnumgen",
-                "testcljc.util.strutils",
-                "testcljc.util.win32ini",
-                "testcljc.net.netstuff",
-                "testcljc.i18n.i18nstuff",
-                "testcljc.crypto.cryptostuff",
-                "testcljc.crypto.mimestuff",
-                "testcljc.dbio.dbstuff"
-                //"testcljc.wabbit.auth"
+          "czlabtest.wabbit.test"
 
         });
     }

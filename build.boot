@@ -60,10 +60,14 @@
     [jline/jline "2.14.2" ]
     [com.sun.tools/tools "1.8.0"  ]
 
-    [com.cemerick/pomegranate "0.3.1"];; :scope "provided"]
+    [com.cemerick/pomegranate "0.3.1" :scope "provided"]
     ;;[org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
     ;;[org.projectodd.shimdandy/shimdandy-api "1.2.0"]
     [codox/codox "0.10.2" :scope "provided"]
+
+    [net.mikera/cljunit "0.6.0" :scope "provided"]
+    [junit/junit "4.12" :scope "provided"]
+
     ;; boot/clj stuff
     [boot/base "2.6.0" ]
     [boot/core "2.6.0" ]
@@ -237,6 +241,15 @@
         (preJar)
         (b/jar!)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask tst
+
+  "test all"
+  []
+
+  (comp (b/testJava)
+        (b/testClj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

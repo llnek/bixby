@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.etc.cmd2
+  czlab.wabbit.etc.con2
 
   (:require [czlab.xlib.format :refer [writeEdnStr readEdn]]
             [czlab.xlib.guids :refer [uuid<>]]
@@ -24,7 +24,7 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.etc.core]
         [czlab.wabbit.etc.svcs]
         [czlab.xlib.core]
         [czlab.xlib.io]

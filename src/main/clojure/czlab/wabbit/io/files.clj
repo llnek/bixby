@@ -21,7 +21,7 @@
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.sys.core]
+  (:use [czlab.wabbit.etc.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.loops]
