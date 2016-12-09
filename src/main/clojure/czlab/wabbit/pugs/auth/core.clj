@@ -33,11 +33,12 @@
         [czlab.wabbit.etc.core]
         [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
+        [czlab.xlib.io]
         [czlab.xlib.meta]
         [czlab.xlib.str]
         [czlab.horde.dbio.core])
 
-  (:import [czlab.wabbit.pugs AuthError UnknownUser DuplicateUser]
+  (:import
            [czlab.convoy.net HttpResult ULFormItems ULFileItem]
            [org.apache.shiro.authc.credential CredentialsMatcher]
            [org.apache.shiro.config IniSecurityManagerFactory]
@@ -48,6 +49,7 @@
            [java.util Base64 Base64$Decoder]
            [org.apache.shiro SecurityUtils]
            [czlab.wabbit.server Container]
+           [czlab.wabbit.etc ConfigError]
            [clojure.lang APersistentMap]
            [java.io File IOException]
            [czlab.wabbit.io HttpEvent]
@@ -70,7 +72,10 @@
            [czlab.wabbit.pugs
             Plugin
             AuthPlugin
+            AuthError
             PluginError
+            UnknownUser
+            DuplicateUser
             PluginFactory]
            [czlab.horde
             DBAPI
@@ -441,16 +446,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init-shiro
+(defn- initShiro
   ""
   [^File podDir ^String podKey]
-  (-> (io/file podDir "conf/shiro.ini")
-      (io/as-url )
+  (let [f (io/file podDir "ext/shiro.ini")]
+    (if-not (fileRead? f)
+      (trap! ConfigError "Missing shiro ini file"))
+    (-> (io/as-url f)
       str
       (IniSecurityManagerFactory. )
       (.getInstance)
       (SecurityUtils/setSecurityManager ))
-  (log/info "created shiro security manager"))
+    (log/info "created shiro security manager")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -578,8 +585,8 @@
 
     (start [_]
       (assertPluginOK (.acquireDbPool ctr))
-      (init-shiro (.podDir ctr)
-                  (.podKey ctr))
+      (initShiro (.podDir ctr)
+                 (.podKey ctr))
       (log/info "AuthPlugin started"))
 
     (stop [_]

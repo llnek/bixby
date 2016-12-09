@@ -126,7 +126,7 @@
       (doall
         (map #(->> (io/file podDir %)
                    (FileUtils/deleteDirectory ))
-             ["src/web" "public"])))
+             ["src/web" "public" "ext"])))
     (doall
       (map #(mkdirs (io/file podDir
                              "src/main" % domPath))

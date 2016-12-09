@@ -14,45 +14,41 @@
 
 (set-env!
 
-  :license {:name "Apache License 2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0"}
-  :description ""
-  ;;:url ""
+  :buildVersion "0.1.0-SNAPSHOT"
+  :buildDebug true
+  :buildType "@@TYPE@@"
 
-  :dependencies '[
-    [czlab/czlab-wabbit "1.0.0"]
-    [com.cemerick/pomegranate "0.3.1"]
-    [net.mikera/cljunit "0.6.0"]
-    [codox/codox "0.10.2"]
-    [junit/junit "4.12"]
-  ]
+  :DOMAIN "@@APPDOMAIN@@"
+  :PID "@@APPID@@"
 
-  :source-paths #{"src/main/clojure" "src/main/java"}
-  :test-runner "@@APPDOMAIN@@.ClojureJUnit"
-  :version "0.1.0-SNAPSHOT"
-  :debug true
-  :project '@@APPDOMAIN@@)
+  :source-paths #{"src/main/clojure"
+                  "src/main/java"}
+
+  :dependencies '[ ] )
 
 (require
-  '[czlab.tpcl.boot :as b :refer [fp! ge se!]]
-  '[clojure.tools.logging :as log]
+  '[czlab.tpcl.boot :as b :refer [fp! ge
+                                  testjava testclj]]
   '[clojure.java.io :as io]
   '[clojure.string :as cs]
   '[boot.core :as bc]
-  '[czlab.xlib.core :as xc]
-  '[czlab.xlib.antlib :as a])
+  '[czlab.tpcl.antlib :as a])
 
 (import
   '[java.io File])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(b/bootEnv!
+(b/BootEnvVars
   {:wjs "scripts"
    :wcs "styles"
-   :websrc (fn [_] (fp! (ge :wzzDir) (ge :wjs)))
-   :webcss (fn [_] (fp! (ge :wzzDir) (ge :wcs)))
-   :webDir (fn [_] (fp! (ge :basedir) "src/web"))})
+   :websrc #(set-env! %2 (fp! (ge :wzzDir) (ge :wjs)))
+   :webcss #(set-env! %2 (fp! (ge :wzzDir) (ge :wcs)))
+   :webDir #(set-env! %2 (fp! (ge :basedir) "src/web"))})
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(b/BootEnvPaths)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -60,7 +56,7 @@
 
   [wappid]
 
-  (a/deleteDir (fp! (ge :webDir) wappid "scripts" (ge :bld))))
+  (a/DeleteDir (fp! (ge :webDir) wappid "scripts" (ge :bld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,10 +77,10 @@
     (cond
       (true? postgen)
       (let [bf (io/file dir (ge :bld) mid)]
-        (b/replaceFile! bf
-                        #(-> (cs/replace % "/*@@" "")
-                             (cs/replace "@@*/" "")))
-        (a/moveFile bf des))
+        (b/ReplaceFile bf
+                       #(-> (cs/replace % "/*@@" "")
+                            (cs/replace "@@*/" "")))
+        (a/MoveFile bf des))
 
       (.isDirectory f)
       (if (= (ge :bld) (.getName f)) nil {})
@@ -97,7 +93,7 @@
                 "--module-ids" mid
                 "--out-dir" (ge :bld) ]}
         (do
-          (a/copyFile (io/file dir mid) des)
+          (a/CopyFile (io/file dir mid) des)
           nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,13 +106,13 @@
         tks (atom []) ]
     (try
       (cleanLocalJs wappid)
-      ;;(b/babelTree root (partial onbabel wappid))
+      (b/BabelTree root (partial onbabel wappid))
     (finally
       (cleanLocalJs wappid)))
 
     (when false
-      (a/runTasks*
-        (a/antExec
+      (a/RunTasks*
+        (a/AntExec
           {:executable "jsdoc"
            :dir (ge :basedir)
            :spawn true}
@@ -127,13 +123,13 @@
                          "-d"
                          (fp! (ge :docs) wappid)]]])))
 
-    (->> (a/antCopy
+    (->> (a/AntCopy
            {:todir (fp! (ge :basedir) "public/scripts" wappid) }
            [[:fileset {:dir (fp! (ge :websrc) wappid) } ]])
          (conj @tks)
          (reset! tks))
 
-    (apply a/runTasks* (reverse @tks))))
+    (apply a/RunTasks* (reverse @tks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -141,12 +137,12 @@
 
   [wappid]
 
-  (a/runTasks*
-    (a/antCopy
+  (a/RunTasks*
+    (a/AntCopy
       {:todir (io/file (ge :webcss) wappid)}
       [[:fileset {:dir (fp! (ge :webDir) wappid "styles")
                   :includes "**/*.scss"}]])
-    (a/antApply
+    (a/AntApply
       {:executable "sass" :parallel false}
       [[:fileset {:dir (fp! (ge :webcss) wappid)
                   :includes "**/*.scss"}]
@@ -160,13 +156,13 @@
           :from "*"
           :to (fp! (ge :webcss) wappid "*")}]]
        [:targetfile {}]])
-    (a/antCopy
+    (a/AntCopy
       {:todir (io/file (ge :webcss) wappid)}
       [[:fileset {:dir (fp! (ge :webDir) wappid "styles")
                   :includes "**/*.css"}]])
-    (a/antMkdir {:dir (fp! (ge :basedir)
+    (a/AntMkdir {:dir (fp! (ge :basedir)
                            "public/styles" wappid)})
-    (a/antCopy
+    (a/AntCopy
       {:todir (fp! (ge :basedir)
                    "public/styles" wappid)}
       [[:fileset {:dir (fp! (ge :webcss) wappid)
@@ -178,10 +174,10 @@
 
   [wappid]
 
-  (a/runTasks*
-    (a/antMkdir {:dir (fp! (ge :basedir)
+  (a/RunTasks*
+    (a/AntMkdir {:dir (fp! (ge :basedir)
                            "public/media" wappid)})
-    (a/antCopy
+    (a/AntCopy
       {:todir (fp! (ge :basedir)
                    "public/media" wappid)}
       [[:fileset {:dir (fp! (ge :webDir) wappid "media")}] ])))
@@ -192,8 +188,8 @@
 
   [wappid]
 
-  (a/runTasks*
-    (a/antCopy
+  (a/RunTasks*
+    (a/AntCopy
       {:todir (fp! (ge :basedir) "public/pages" wappid)}
       [[:fileset {:dir (fp! (ge :webDir) wappid "pages")}]])))
 
@@ -235,8 +231,8 @@
 
   []
 
-  (a/runTasks*
-    (a/antApply
+  (a/RunTasks*
+    (a/AntApply
       {:executable "java" :parallel false}
       [[:fileset {:dir (fp! (ge :basedir) "public/styles")
                   :excludes "**/*.min.css"
@@ -257,8 +253,8 @@
 ;;
 (defn- yuiJS ""
   []
-  (a/runTasks*
-    (a/antApply
+  (a/RunTasks*
+    (a/AntApply
       {:executable "java" :parallel false}
       [[:fileset {:dir (fp! (ge :basedir) "public/scripts")
                   :excludes "**/*.min.js"
@@ -283,36 +279,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask dev ""
-  []
-  (comp (b/initBuild)
-        (b/libjars)
-        (b/buildr)
-        (b/pom!)
-        (b/jar!)))
+(deftask clean4build "clean,pre-build"
 
-(deftask Xdev ""
   []
+
   (bc/with-pre-wrap fileset
-    (let [m (b/dbgBootVars)]
-      (printf "%s\n" (:L-VARS m))
-      (printf "%s\n" (:U-VARS m)))
+    (b/Clean4Build)
+    (b/PreBuild)
     fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask dev "clean,resolve,build"
+
+  []
+
+  (comp (clean4build)
+        (b/libjars)
+        (b/buildr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (deftask webdev ""
+
   []
+
   (bc/with-pre-wrap fileset
 
+    (when (= "web" (ge :buildType))
+      (b/CleanPublic)
+      (fn [& args]
+        (a/CleanDir (fp! (ge :websrc)))
+        (a/CleanDir (fp! (ge :webcss))))
+      (buildWebApps)
+      (yuiCSS)
+      (yuiJS))
 
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(deftask rel ""
+(deftask release ""
   []
-  (se! :pmode "release")
+
+  (set-env! :pmode "release")
   (comp (dev) (webdev)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

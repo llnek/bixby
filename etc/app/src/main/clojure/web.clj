@@ -10,6 +10,7 @@
 
   (:use [czlab.convoy.net.core]
         [czlab.wabbit.sys.core]
+        [czlab.wabbit.etc.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
@@ -55,7 +56,7 @@
            res (httpResult<>)]
           (.setContentType res ctype)
           (.setContent res data)
-          (replyResult (.socket evy) res))))
+          (replyResult (.socket evt) res))))
     :catch
     (fn [_ err]
       (log/error "Oops, I got an error!" err))))
