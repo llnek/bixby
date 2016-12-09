@@ -510,7 +510,7 @@
    :test [onTest onHelp-Test]
    :debug [onDebug onHelp-Debug]
    :help [onHelp onHelp-Help]
-   :start [onStart onHelp-Start]
+   :run [onStart onHelp-Start]
    :demos [onDemos onHelp-Demos]
    :generate [onGenerate onHelp-Generate]
    :testjce [onTestJCE onHelp-TestJCE]

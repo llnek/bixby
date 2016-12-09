@@ -135,7 +135,7 @@
      podPath (io/file (.getv ctx :path))
      pub (io/file podPath
                   DN_PUB DN_PAGES)
-     ftlCfg (genFtlConfig :root pub)
+     ftlCfg (genFtlConfig {:root pub})
      impl (muble<> {:services {}})]
     (with-meta
       (reify
@@ -282,7 +282,7 @@
   ""
   ^File
   [^Container co ^String fc]
-  (->> (cs/replace fc #"[\./]+" "")
+  (->> (cs/replace fc #"[\./<>]+" "")
        (io/file (.podDir co) "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,8 +301,7 @@
 (defn- postInitPlugin
   ""
   [^Container co ^String fc]
-  (let [pfile (->> (.podDir co)
-                   (fmtPluginFname fc))]
+  (let [pfile (fmtPluginFname co fc)]
     (writeFile pfile "ok")
     (log/info "initialized plugin: %s" fc)))
 

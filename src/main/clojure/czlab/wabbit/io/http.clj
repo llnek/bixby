@@ -431,7 +431,7 @@
   ^Atom
   [^Atom gist func port]
   (let [bs (discardHTTPD<> func)
-        ch (->> {:port port}
+        ch (->> {:host "127.0.0.1" :port port}
                 (startServer bs))]
     (swap! gist
            assoc

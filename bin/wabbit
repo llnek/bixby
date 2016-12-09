@@ -99,7 +99,7 @@ stop_proc() {
 
 if [ "$1" = "run" ]; then
   MAINCZ=$PROCCZ
-  if [ "$2" = "-bg" -o "$2" = "--background"]; then
+  if [ "$2" = "-bg" -o "$2" = "--background" ]; then
     BG=true
   fi
 fi
