@@ -221,14 +221,18 @@
 (defn- regoEmitters
   ""
   [^Execvisor co]
-  (let [ctx (.getx co)]
+  (let [ctx (.getx co)
+        env (.getv ctx :env)
+        defs (merge *emitter-defs*
+                    (:emitters env))]
+    ;;add user defined emitters and register all
     (->>
       (preduce<map>
         #(let [b (emitMeta (first %2)
                            (last %2))]
            (comp->init b co)
            (assoc! %1 (.type b) b))
-        *emitter-defs*)
+        defs)
       (.setv ctx :services ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
