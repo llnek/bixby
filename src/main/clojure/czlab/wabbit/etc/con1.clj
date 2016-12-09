@@ -19,7 +19,7 @@
 
   (:require [czlab.twisty.codec :refer [strongPwd<> passwd<>]]
             [czlab.xlib.format :refer [writeEdnStr readEdn]]
-            [czlab.wabbit.sys.core :refer [startViaCLI]]
+            [czlab.wabbit.sys.core :refer [startViaCons]]
             [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
@@ -204,7 +204,7 @@
       (runPodBg home cwd)
       (do
         (println (bannerText))
-        (startViaCLI home cwd)))))
+        (startViaCons home cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -25,7 +25,7 @@
 
   (:use [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core]
-        [czlab.wabbit.sys.extn]
+        [czlab.wabbit.sys.cont]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
@@ -67,7 +67,7 @@
                       (:info conf)
                       {:name pod :path urlToPod}))
         pid (format "%s#%d" pod (seqint2))]
-    (log/info "pod-meta:\n%s" (.impl impl))
+    (log/info "pod-meta:\n%s" (.intern impl))
     (with-meta
       (reify
         Gist
@@ -90,7 +90,7 @@
   (let
     [pod (basename desDir)
      {:keys [env]}
-     (.impl (.getx execv))]
+     (.intern (.getx execv))]
     (doto
       (podMeta pod
                env
@@ -102,13 +102,12 @@
 ;;
 (defmethod comp->init
   ::PodGist
-  [^Gist co ^Execvisor execv]
-
+  [^Gist co ^Execvisor ec]
   (logcomp "com->init" co)
-  (doto (.getx execv)
+  (doto (.getx ec)
     (.setv :pod co))
   (doto co
-    (.setParent execv)))
+    (.setParent ec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -199,7 +198,7 @@
         (parent [_] (.getv impl :parent))
 
         (isEnabled [_]
-          (not (false? (:enabled? info))))
+          (not (false? (.getv impl :enabled?))))
 
         (version [_] (:version info))
         (getx [_] impl)
@@ -213,11 +212,9 @@
 ;;description of a emitter
 (defmethod comp->init
   ::IoGist
-  [^IoGist co execv]
-
+  [^IoGist co ec]
   (logcomp "com->init" co)
-  (doto co
-    (.setParent execv)))
+  (doto co (.setParent ec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

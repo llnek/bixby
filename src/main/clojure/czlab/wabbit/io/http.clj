@@ -361,7 +361,7 @@
 
   (logcomp "io->stop" co)
   (let [{:keys [bootstrap channel]}
-        (.impl (.getx co))]
+        (.intern (.getx co))]
     (stopServer channel)
     (doto (.getx co)
       (.unsetv :bootstrap)

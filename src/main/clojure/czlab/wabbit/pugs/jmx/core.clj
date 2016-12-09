@@ -97,7 +97,7 @@
               "/jndi/rmi://{{h}}:{{r}}/jmxrmi")
      {:keys [registryPort serverPort
              host url contextFactory]}
-     (.impl impl)
+     (.intern impl)
      env (HashMap.)
      endpt (-> (cs/replace (stror url svc) "{{h}}" host)
                (cs/replace "{{s}}" (str serverPort))

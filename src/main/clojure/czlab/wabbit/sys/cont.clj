@@ -15,7 +15,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.sys.extn
+  czlab.wabbit.sys.cont
 
   (:require [czlab.horde.dbio.connect :refer [dbopen<+>]]
             [czlab.xlib.resources :refer [loadResource]]
@@ -228,12 +228,11 @@
   [^Container co svcType nm cfg0]
   (let
     [^Execvisor exe (.parent co)
-     bks (->> :services
-              (.getv (.getx exe)))]
+     bks (.getv (.getx exe) :services)]
     (if-some
       [^IoGist bk (bks svcType)]
       (let
-        [obj (service<> co svcType nm (.impl (.getx bk)))
+        [obj (service<> co svcType nm (.intern (.getx bk)))
          pkey (.podKey co)
          hid (:handler cfg0)]
         (log/info "preparing service %s..." svcType)
@@ -361,7 +360,7 @@
   (let
     [cpu (scheduler<> (.id co))
      {:keys [env] :as conf}
-     (.impl (.getx execv))
+     (.intern (.getx execv))
      rts (.cljrt co)
      pid (.id co)
      mcz (get-in env
@@ -388,7 +387,7 @@
            (assoc! %1
                    k
                    (doOnePlugin co rts v env)))
-        (:plugins conf))
+        (:plugins env))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+

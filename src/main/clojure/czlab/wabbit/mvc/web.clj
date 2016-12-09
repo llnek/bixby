@@ -98,7 +98,7 @@
           (if (number? idleSecs)
             (.setv impl :maxIdleSecs idleSecs)))
 
-        (isNull [_] (empty? (.impl impl)))
+        (isNull [_] (empty? (.intern impl)))
         (isNew [_] (.getv impl :newOne))
         (isSSL [_] ssl?)
 

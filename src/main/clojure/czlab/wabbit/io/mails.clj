@@ -77,7 +77,7 @@
   ""
   [^IoService co]
   (let [{:keys [store folder]}
-        (.impl (.getx co))]
+        (.intern (.getx co))]
     (closeFolder folder)
     (if (some? store)
       (try!
@@ -144,7 +144,7 @@
   [^IoService co]
   (let [{:keys [^Session session
                 ^String proto]}
-        (.impl (.getx co))
+        (.intern (.getx co))
         {:keys [^String host
                 port
                 ^String user
@@ -188,7 +188,7 @@
   [^IoService co]
   (let [{:keys [^Folder folder
                 ^Store store]}
-        (.impl (.getx co))]
+        (.intern (.getx co))]
     (if (and (some? folder)
              (not (.isOpen folder)))
       (.open folder Folder/READ_WRITE))
