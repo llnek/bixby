@@ -135,8 +135,17 @@
 
   (is (thrown? CmdError (onGenerate ["-bbbbb"])))
 
+  (is (let [p (fpath "/private/tmp");;*TEMPFILE-REPO*)
+            _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
+            _ (sysProp! "wabbit.proc.dir" p)
+            _ (onCreate ["-w" "web"])]
+        true))
 
-
+  (is (let [p (fpath "/private/tmp");;*TEMPFILE-REPO*)
+              _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
+              _ (sysProp! "wabbit.proc.dir" p)
+              _ (onCreate ["-s" "soa"])]
+          true))
 
 
   (is (string? "That's all folks!")))

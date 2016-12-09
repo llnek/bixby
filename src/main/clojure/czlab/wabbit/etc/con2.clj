@@ -84,7 +84,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- postConfigPod
+(defn- postCopyPod
   ""
   [podDir podId podDomain kind]
   (let
@@ -138,7 +138,8 @@
       (io/file srcDir mcloj (str (name other) ".clj")))
     (FileUtils/moveToDirectory
       (io/file srcDir mjava "HelloWorld.java")
-      (io/file srcDir mjava domPath) true)))
+      (io/file srcDir mjava domPath) true)
+    (postCopyPod podDir podId podDomain kind)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -159,8 +160,7 @@
              (cs/replace "@@APPKEY@@" (uuid<>))
              (cs/replace "@@VER@@" verStr)
              (cs/replace "@@APPID@@" podId)
-             (cs/replace "@@TYPE@@" (name kind)))))
-    (postConfigPod podDir podId podDomain kind)))
+             (cs/replace "@@TYPE@@" (name kind)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Maybe create a new pod?
