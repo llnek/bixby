@@ -325,10 +325,9 @@
      u (some-> pf
                (.createPlugin co))]
     (log/info "plugin-obj : %s" u)
-    (if (and (some? u)
-             (.init u {:pod env
-                       :pug opts}))
+    (if (some? u)
       (do
+        (.init u {:pod env :pug opts})
         (log/info "plugin %s starting..." pn)
         (.start u)
         (log/info "plugin %s started" pn)
