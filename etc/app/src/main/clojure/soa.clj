@@ -20,9 +20,10 @@
   ""
   ^TaskDef
   []
-  (script<>
-    (fn [_ ^Job job]
-      (log/info "I  just handled a job %s" (.id job)))))
+  (workStream<>
+    (script<>
+      (fn [_ ^Job job]
+        (log/info "I  just handled a job %s" (.id job))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -67,11 +67,14 @@
   (log/info "Scheduling a repeating timer: %dms" intv)
   (let [tt (tmtask<> func)
         [dw ds] delays]
-    (cond
-      (inst? Date dw)
-      (.schedule tm tt ^Date dw intv)
-      (spos? ds)
-      (.schedule tm tt ^long ds intv))))
+    (if (spos? intv)
+      (cond
+        (inst? Date dw)
+        (.schedule tm tt ^Date dw intv)
+        :else
+        (.schedule tm
+                   tt
+                   (long (if (> ds 0) ds 1000)) intv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -79,13 +82,16 @@
   "Configure a *one-time* timer"
   [^Timer tm delays func]
   (log/info "Scheduling a *single-shot* timer")
-  (let [ tt (tmtask<> func)
+  (let [tt (tmtask<> func)
         [dw ds] delays]
     (cond
       (inst? Date dw)
       (.schedule tm tt ^Date dw)
-      (spos? ds)
-      (.schedule tm tt ^long ds))))
+      :else
+      ;;wait at least 1 sec
+      (.schedule tm
+                 tt
+                 (long (if (> ds 0) ds 1000))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -176,7 +182,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defmethod ioevent<>
-  ::OnceTimer [^IoService co _] (timerEvent<> false))
+  ::OnceTimer [^IoService co _] (timerEvent<> co false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,6 +210,7 @@
   ::OnceTimer
   [^IoService co _]
 
+  ;;(log/debug "loopableWakeup#onceTimer called()")
   (.dispatch co (ioevent<> co nil))
   (.stop ^Startable co))
 
