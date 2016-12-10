@@ -16,6 +16,7 @@ package czlab.wabbit.server;
 
 import java.lang.reflect.Method;
 import java.io.File;
+import java.io.Closeable;
 
 /**
  * @author Kenneth Leung
@@ -36,9 +37,12 @@ public class Runtime {
       //Thread.currentThread().setContextClassLoader(cl);
       Class<?> z= cl.loadClass("czlab.wabbit.server.Cljshim");
       Method m= z.getDeclaredMethod("newrt",ClassLoader.class, String.class);
-      Object obj= m.invoke(null, cl, "wabbit-runner");
+      Object clj= m.invoke(null, cl, "wabbit-runner");
       m=z.getDeclaredMethod("callEx", String.class, Object[].class);
-      m.invoke(obj, "czlab.wabbit.etc.cons/-main", (Object[])args);
+      m.invoke(clj, "czlab.wabbit.etc.cons/-main", (Object[])args);
+      Closeable c = (Closeable) clj;
+      c.close();
+      //System.out.println("Runtime has stopped.");
     }
     catch (Throwable t) {
       t.printStackTrace();

@@ -428,18 +428,12 @@
 ;;
 (defn cfgShutdownServer
   ""
-  ^Atom
   [^Atom gist func port]
   (let [bs (discardHTTPD<> func)
         ch (->> {:host "127.0.0.1" :port port}
                 (startServer bs))]
-    (swap! gist
-           assoc
-           :kill9
-           {:bootstrap bs
-            :channel ch
-            :killServer #(stopServer ch)})
-    gist))
+    (fn []
+      (stopServer ch))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

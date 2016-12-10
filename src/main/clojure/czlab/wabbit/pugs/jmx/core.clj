@@ -160,7 +160,8 @@
 
       (init [_ arg]
         (->> (or (:pug arg) {})
-             (.copyEx impl )))
+             (.copyEx impl ))
+        true)
 
       (start [_]
         (startRMI impl)

@@ -19,7 +19,7 @@ import org.projectodd.shimdandy.ClojureRuntimeShim;
 /**
  * @author Kenneth Leung
  */
-public class Cljshim {
+public class Cljshim implements java.io.Closeable {
 
   /**
    *

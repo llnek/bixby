@@ -119,7 +119,9 @@
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
     (log/debug "shutting down dbpool %s" (name k))
-    (.shutdown ^JDBCPool v)))
+    (.shutdown ^JDBCPool v))
+  (some-> (.cljrt co)
+          (.close)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -282,7 +284,7 @@
   ""
   ^File
   [^Container co ^String fc]
-  (->> (cs/replace fc #"[\./<>]+" "")
+  (->> (cs/replace fc #"[^a-zA-Z_\-]" "")
        (io/file (.podDir co) "modules" )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -310,24 +312,29 @@
 (defn- doOnePlugin
   ""
   ^Plugin
-  [^Container co ^Cljshim rts pc env]
-  (log/info "plugin->factory: %s" pc)
+  [^Container co ^Cljshim rts kee pc env]
+  (log/info "plugin: %s ->factory: %s" kee pc)
   (let
     [[pn opts]
      (if (string? pc)
        [pc {}] [(:name pc) pc])
+     _ (log/info "calling plugin fac: %s" pn)
      pf (cast? PluginFactory
                (.call rts pn))
+     _ (log/info "plugin fac-obj: %s" pf)
      u (some-> pf
                (.createPlugin co))]
-    (when (some? u)
-      (.init u {:pod env
-                :pug opts})
-      (postInitPlugin co pn)
-      (log/info "plugin %s starting..." pn)
-      (.start u)
-      (log/info "plugin %s started" pn)
-      u)))
+    (log/info "plugin-obj : %s" u)
+    (if (and (some? u)
+             (.init u {:pod env
+                       :pug opts}))
+      (do
+        (log/info "plugin %s starting..." pn)
+        (.start u)
+        (log/info "plugin %s started" pn)
+        u)
+      (do->nil
+        (log/warn "failed to create plugin %s" kee)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -373,19 +380,20 @@
     (if (fileRead? res)
       (->> (loadResource res)
            (I18N/setBundle pid)))
-    ;;db stuff
+    (log/info "about to process db-defs")
     (doto->>
       (maybeInitDBs co env)
       (.setv (.getx co) :dbps)
       (log/debug "db [dbpools]\n%s" ))
-    ;;handle the plugins
+    (log/info "about to process plugins")
     (->>
       (preduce<map>
         #(let
-           [[k v] %2]
-           (assoc! %1
-                   k
-                   (doOnePlugin co rts v env)))
+           [[k v] %2
+            p (doOnePlugin co rts k v env)]
+           (if (some? p)
+             (assoc! %1 k p)
+             %1))
         (:plugins env))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?

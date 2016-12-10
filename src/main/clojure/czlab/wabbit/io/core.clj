@@ -229,7 +229,8 @@
           (io->dispose this))
 
         (init [this cfg]
-          (comp->init this cfg))
+          (do->true
+            (comp->init this cfg)))
 
         (start [this]
           (reset! timer (Timer. true))

@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private STOPCLI (atom false))
+(def ^:private STOPCLI (volatile! false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,7 +81,7 @@
                 execv
                 killSvr]} @gist]
     (when-not @STOPCLI
-      (reset! STOPCLI true)
+      (vreset! STOPCLI true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
       (if (fn? killSvr) (killSvr))
@@ -91,9 +91,7 @@
       (if (some? execv)
         (.stop ^Startable execv))
       (shutdown-agents)
-      (log/info "wabbit stopped")
-      (log/info "vm shut down")
-      (log/info "(bye)"))
+      (log/info "wabbit stopped"))
     gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -103,9 +101,12 @@
   ^Atom
   [^Atom gist]
   (log/info "enabling remote shutdown hook")
-  (->> (-> (sysProp "wabbit.kill.port")
-           (convLong  4444))
-       (cfgShutdownServer gist #(stopCLI gist)))
+  (swap! gist
+         assoc
+         :killSvr
+         (->> (-> (sysProp "wabbit.kill.port")
+                  (convLong  4444))
+              (cfgShutdownServer gist #(stopCLI gist))))
   gist)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,7 +178,10 @@
     (log/debug "%s" @ctx)
     (log/info "container is now running...")
     (while (not @STOPCLI)
-      (safeWait 5000))))
+      (safeWait 3000))
+    (log/info "vm shut down")
+    (log/info "(bye)")
+    (shutdown-agents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
