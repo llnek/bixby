@@ -100,14 +100,18 @@
   "Listen on a port for remote kill command"
   ^Atom
   [^Atom gist]
-  (log/info "enabling remote shutdown hook")
-  (swap! gist
-         assoc
-         :killSvr
-         (->> (-> (sysProp "wabbit.kill.port")
-                  (convLong  4444))
-              (cfgShutdownServer gist #(stopCLI gist))))
-  gist)
+  (let [ss (-> (sysProp "wabbit.kill.port")
+               str
+               (.split ":"))
+        m {:host (first ss)
+           :port (convLong (last ss) 4444)}]
+    (log/info "enabling remote shutdown hook: %s" m)
+    (swap! gist
+           assoc
+           :killSvr
+           (cfgShutdownServer gist
+                              #(stopCLI gist) m))
+    gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor

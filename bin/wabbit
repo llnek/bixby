@@ -75,7 +75,7 @@ else
   L4JFILE=${WABBIT_BIN}/log4j2.xml
 fi
 L4J=-Dlog4j.configurationFile=file:${L4JFILE}
-KPORT=4444
+KPORT=localhost:4444
 KILL9="-Dwabbit.kill.port=$KPORT"
 
 show_proc() {
@@ -92,7 +92,7 @@ stop_proc() {
   if [ -n "$pid" ]; then
     #kill $pid
     cd /tmp
-    wget http://127.0.0.1:$KPORT/kill9 2>&1 > /dev/null
+    wget http://$KPORT/kill9 2>&1 > /dev/null
     cd $CWD
   fi
 }
