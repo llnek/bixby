@@ -18,15 +18,19 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.etc.svcs]
+  (:use [czlabtest.wabbit.mock]
+        [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core]
+        [czlab.wabbit.io.core]
+        [czlab.flux.wflow.core]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str]
         [clojure.test])
 
-  (:import [czlab.wabbit.etc CmdError]
-           [java.io File ]))
+  (:import [czlab.flux.wflow WorkStream Job]
+           [czlab.wabbit.server Container]
+           [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -39,7 +43,9 @@
   []
   (workStream<>
     (script<>
-      (fn [_ _] (do->nil (reset! RESULT 8))))))
+      (fn [_ _]
+        (do->nil
+          (reset! RESULT 8))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -50,15 +56,17 @@
             c (assoc (:conf m)
                      :delaySecs 1
                      :handler "czlabtest.wabbit.svcs/testHandler")
+            ^Container
             ctr (mock :container)
-            s (service<> ctr emType "t" c)]
+            s (service<> ctr etype "t" c)]
         (.start s)
         (safeWait 2000)
         (.stop s)
         (.dispose ctr)
-        (= 8 @RESULT)))
+        (== 8 @RESULT)))
 
   (is (string? "That's all folks!")))
 
 ;;(clojure.test/run-tests 'czlabtest.wabbit.svcs)
+
 

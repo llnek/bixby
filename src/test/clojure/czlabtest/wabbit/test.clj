@@ -138,13 +138,15 @@
   (is (let [p (fpath "/wdrive/tmp");;*TEMPFILE-REPO*)
             _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
             _ (sysProp! "wabbit.proc.dir" p)
+            _ (deleteDir (io/file p "web"))
             _ (onCreate ["-w" "web"])]
         true))
 
   (is (let [p (fpath "/wdrive/tmp");;*TEMPFILE-REPO*)
-              _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
-              _ (sysProp! "wabbit.proc.dir" p)
-              _ (onCreate ["-s" "soa"])]
+            _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
+            _ (sysProp! "wabbit.proc.dir" p)
+            _ (deleteDir (io/file p "soa"))
+            _ (onCreate ["-s" "soa"])]
           true))
 
 

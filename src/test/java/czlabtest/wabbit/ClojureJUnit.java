@@ -26,8 +26,6 @@ public class ClojureJUnit extends ClojureTest {
         return Arrays.asList(new String[]{
           "czlabtest.wabbit.test",
           "czlabtest.wabbit.svcs"
-
-
         });
     }
 }

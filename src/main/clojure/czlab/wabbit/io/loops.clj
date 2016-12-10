@@ -81,7 +81,7 @@
 (defn- configOnce
   "Configure a *one-time* timer"
   [^Timer tm delays func]
-  (log/info "Scheduling a *single-shot* timer")
+  (log/info "Scheduling a *single-shot* timer at %s" delays)
   (let [tt (tmtask<> func)
         [dw ds] delays]
     (cond

@@ -29,6 +29,7 @@
 
   (:import [org.apache.commons.lang3.text StrSubstitutor]
            [czlab.wabbit.etc Component Gist ConfigError]
+           [org.apache.commons.io FileUtils]
            [czlab.xlib
             Versioned
             Muble
@@ -250,6 +251,20 @@
             (droptail 1))
         s)
       (spitUtf8 f))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn deleteDir
+  ""
+  [dir]
+  (try! (FileUtils/deleteDirectory (io/file dir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn cleanDir
+  ""
+  [dir]
+  (try! (FileUtils/cleanDirectory (io/file dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
