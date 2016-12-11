@@ -143,17 +143,19 @@ public class MockQueueSession implements QueueSession {
 
   @Override
   public void run() {
+    String s= System.getProperty("wabbit.mock.jms.loopsecs","1");
+    final int v= 1000 * Integer.valueOf(s);
     _active=true;
     Thread t= new Thread(new Runnable() {
       public void run() {
         try {
-          Thread.sleep(3000);
+          Thread.sleep(500);
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
         while (_active && _conn.isActive())    try  {
           trigger();
-          Thread.sleep(3000);
+          Thread.sleep(v);
         } catch (Throwable e) {}
         _active=false;
       }

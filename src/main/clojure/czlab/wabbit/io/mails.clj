@@ -46,7 +46,9 @@
 (derive ::EMAIL :czlab.wabbit.io.loops/ThreadedTimer)
 (derive ::IMAP ::EMAIL)
 (derive ::POP3 ::EMAIL)
-(def ^:dynamic ^String *mock-mail-provider* "")
+(def ^:dynamic
+  ^String
+  *mock-mail-provider* "czlab.wabbit.mock.mail.MockPop3SSLStore")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
@@ -97,18 +99,17 @@
               (.put  "mail.store.protocol" proto))
             (Session/getInstance nil))
      ps (.getProviders ss)
-     [^Provider sun ^String pz ^String proto]
+     [^Provider sun ^String pz]
      (if demo?
        [(Provider. Provider$Type/STORE
-                   *mock-mail-provider*
-                   POP3S "test" "1")
-        *mock-mail-provider* POP3S]
-       [(some #(if (= cz (.getClassName ^Provider %)) %)
-              (seq ps))
-        cz proto])]
+                   *mock-mail-provider* proto "test" "1")
+        *mock-mail-provider*]
+       [(some #(if (= cz
+                      (.getClassName ^Provider %)) %)
+              (seq ps)) cz])]
     (if (nil? sun)
       (throwIOE (str "Failed to find store: " pz)))
-    (log/debug "mail store impl = '%s'" pz)
+    (log/info "mail store impl = %s" sun)
     (.setProvider ss sun)
     (doto (.getx co)
       (.setv :proto proto)
@@ -151,6 +152,7 @@
                 ^String passwd]}
         (.config co)]
     (when-some [s (.getStore session proto)]
+      (log/info "s ====== %s" (class s))
       (.connect s
                 host
                 ^long port
@@ -212,7 +214,7 @@
     (connectPop3 co)
     (scanPop3 co)
     (catch Throwable e#
-      (log/exception e#))
+      (log/exception e#) (safeWait 3000))
     (finally
       (closeStore co)))
   co)
@@ -228,8 +230,8 @@
         cfg0
         pkey (.podKey (.server co))]
     (-> cfg0
-        (assoc :ssl (if (false? ssl?) false true))
-        (assoc :deleteMsg (true? deleteMsg?))
+        (assoc :ssl? (if (false? ssl?) false true))
+        (assoc :deleteMsg? (true? deleteMsg?))
         (assoc :host (str host))
         (assoc :port (if (spos? port) port 995))
         (assoc :user (str user ))
@@ -243,7 +245,7 @@
 
   (logcomp "comp->init" co)
   (let [c2 (merge (.config co)
-                  (sanitize cfg0))
+                  (sanitize co cfg0))
         [z p]
         (if (:ssl? c2)
           [CZ_POP3S POP3S] [CZ_POP3 POP3C])]
@@ -282,7 +284,7 @@
 
   (logcomp "comp->init" co)
   (let [c2 (merge (.config co)
-                  (sanitize cfg0))
+                  (sanitize co cfg0))
         [z p]
         (if (:ssl? c2)
           [CZ_IMAPS IMAPS] [CZ_IMAP IMAP])]

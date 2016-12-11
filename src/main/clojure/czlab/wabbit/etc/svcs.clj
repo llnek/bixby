@@ -56,7 +56,6 @@
            :jndiPwd "root"
            :jmsUser "anonymous"
            :jmsPwd "anonymous"
-           :intervalSecs 5
            :handler ""}}
    :czlab.wabbit.io.http/HTTP
    {:info {:version "1.0"
@@ -136,7 +135,7 @@
            :handler ""}}
    :czlab.wabbit.io.socket/Socket
    {:info {:version "1.0"
-           :name "SocketIO"}
+           :name "TCPSocket"}
     :conf {:comment# "place comments here"
            :host ""
            :port 8080

@@ -198,7 +198,7 @@
 
   (logcomp "comp->init" co)
   (->> (merge (.config co)
-              (sanitize cfg0))
+              (sanitize co cfg0))
        (.setv (.getx co) :emcfg))
   co)
 
@@ -222,7 +222,8 @@
             contextFactory))
     (when (hgl? jndiUser)
       (.put vars "jndi.user" jndiUser)
-      (.put vars "jndi.password" (stror jndiPwd nil)))
+      (if (hgl? jndiPwd)
+        (.put vars "jndi.password" jndiPwd)))
     (let
       [ctx (InitialContext. vars)
        obj (->> (str connFactory)

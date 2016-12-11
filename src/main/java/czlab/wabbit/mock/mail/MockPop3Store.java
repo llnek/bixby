@@ -44,8 +44,9 @@ public class MockPop3Store extends Store {
 
   /**
    */
-  public synchronized boolean protocolConnect(String host, int portNum,
-          String user, String pwd) {
+  @Override
+  protected synchronized boolean protocolConnect(String host, int portNum,
+          String user, String pwd)  throws MessagingException {
     if ((host == null) || (pwd == null) || (user == null)) { return false; } else {
       _portNum = (portNum == -1) ? _dftPort : portNum ;
       _host = host;

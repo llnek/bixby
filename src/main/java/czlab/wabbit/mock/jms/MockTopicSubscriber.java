@@ -56,7 +56,7 @@ public class MockTopicSubscriber implements TopicSubscriber {
 
   @Override
   public MessageListener getMessageListener() throws JMSException {
-    return null;
+    return _sub;
   }
 
   @Override

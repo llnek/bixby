@@ -29,9 +29,12 @@
         [clojure.test])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
-           [czlab.wabbit.io SocketEvent FileEvent]
+           [czlab.wabbit.io EmailEvent SocketEvent FileEvent JmsEvent]
            [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.server Container]
+           [javax.mail Message Message$RecipientType Multipart]
+           [javax.mail.internet MimeMessage]
+           [javax.jms TextMessage]
            [java.net Socket]
            [java.io File]))
 
@@ -93,7 +96,107 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn jmsHandler
+  ""
+  []
+  (workStream<>
+    (script<>
+      #(let [^JmsEvent ev (.event ^Job %2)
+             ^TextMessage msg (.message ev)
+             s (.getText msg)]
+         (assert (hgl? s))
+         (swap! RESULT + 8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn pop3Handler
+  ""
+  []
+  (workStream<>
+    (script<>
+      #(let [^EmailEvent ev (.event ^Job %2)
+             ^MimeMessage msg (.message ev)
+             _ (assert (some? msg))
+             ^Multipart p (.getContent msg)]
+         (assert (some? p))
+         (swap! RESULT + 8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest czlabtestwabbit-svcs
+
+  (is (let [_ (sysProp! "wabbit.demo.flag" "true")
+            etype :czlab.wabbit.io.mails/POP3
+            m (*emitter-defs* etype)
+            c (:conf m)
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
+        (.init s
+               {:handler "czlabtest.wabbit.svcs/pop3Handler"
+                :host "localhost"
+                :port 7110
+                :intervalSecs 1
+                :username "test1"
+                :passwd "secret"})
+        (.start s)
+        (safeWait 3000)
+        (.stop s)
+        (.dispose ctr)
+        (> @RESULT 8)))
+
+  (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
+            etype :czlab.wabbit.io.jms/JMS
+            m (*emitter-defs* etype)
+            c (assoc (:conf m)
+                     :contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
+                     :providerUrl "java://aaa"
+                     ;;:connFactory "tcf"
+                     ;;:destination "topic.abc"
+                     :connFactory "qcf"
+                     :destination "queue.xyz"
+                     :handler "czlabtest.wabbit.svcs/jmsHandler")
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
+        (.init s
+               {:jndiUser "root"
+                :jndiPwd "root"
+                :jmsUser "anonymous"
+                :jmsPwd "anonymous"})
+        (.start s)
+        (safeWait 3000)
+        (.stop s)
+        (.dispose ctr)
+        (> @RESULT 8)))
+
+  (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
+            etype :czlab.wabbit.io.jms/JMS
+            m (*emitter-defs* etype)
+            c (assoc (:conf m)
+                     :contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
+                     :providerUrl "java://aaa"
+                     ;;:connFactory "tcf"
+                     ;;:destination "topic.abc"
+                     :connFactory "qcf"
+                     :destination "queue.xyz"
+                     :handler "czlabtest.wabbit.svcs/jmsHandler")
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
+        (.init s
+               {:jndiUser "root"
+                :jndiPwd "root"
+                :jmsUser "anonymous"
+                :jmsPwd "anonymous"})
+        (.start s)
+        (safeWait 3000)
+        (.stop s)
+        (.dispose ctr)
+        (> @RESULT 8)))
 
   (is (let [etype :czlab.wabbit.io.socket/Socket
             m (*emitter-defs* etype)
