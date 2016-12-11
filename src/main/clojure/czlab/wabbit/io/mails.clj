@@ -102,7 +102,8 @@
      [^Provider sun ^String pz]
      (if demo?
        [(Provider. Provider$Type/STORE
-                   *mock-mail-provider* proto "test" "1")
+                   proto
+                   *mock-mail-provider* "czlab" "1.1.7")
         *mock-mail-provider*]
        [(some #(if (= cz
                       (.getClassName ^Provider %)) %)
@@ -152,7 +153,6 @@
                 ^String passwd]}
         (.config co)]
     (when-some [s (.getStore session proto)]
-      (log/info "s ====== %s" (class s))
       (.connect s
                 host
                 ^long port
@@ -214,7 +214,7 @@
     (connectPop3 co)
     (scanPop3 co)
     (catch Throwable e#
-      (log/exception e#) (safeWait 3000))
+      (log/exception e#))
     (finally
       (closeStore co)))
   co)
