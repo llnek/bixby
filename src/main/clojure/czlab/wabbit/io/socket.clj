@@ -41,6 +41,7 @@
   ::Socket
   [^IoService co {:keys [^Socket socket]}]
 
+  (log/debug "opened socket: %s" socket)
   (let [eeid (str "event#" (seqint2))
         impl (muble<>)]
     (with-meta
@@ -87,6 +88,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- finxSocket
+  ""
+  [^IoService co]
+
+  (when-some
+    [ssoc (.getv (.getx co) :ssocket)]
+    (closeQ ssoc)
+    (.unsetv (.getx co) :ssocket)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defmethod io->start
   ::Socket
   [^IoService co]
@@ -96,13 +108,10 @@
     [^ServerSocket
      ssoc (.getv (.getx co) :ssocket)]
     (async!
-      #(while (.isBound ssoc)
+      #(while (not (.isClosed ssoc))
          (try
            (sockItDown co (.accept ssoc))
-           (catch Throwable e#
-             (log/exception e#)
-             (closeQ ssoc)
-             (.unsetv (.getx co) :ssocket))))
+           (catch Throwable _ (finxSocket co))))
       {:cl (getCldr)}))
   (io<started> co))
 
@@ -111,13 +120,8 @@
 (defmethod io->stop
   ::Socket
   [^IoService co]
-
   (logcomp "io->stop" co)
-  (when-some
-    [^ServerSocket
-     ssoc (.getv (.getx co) :ssocket)]
-    (closeQ ssoc)
-    (.unsetv (.getx co) :ssocket))
+  (finxSocket co)
   (io<stopped> co))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

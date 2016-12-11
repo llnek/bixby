@@ -28,9 +28,11 @@
         [czlab.xlib.str]
         [clojure.test])
 
-  (:import [czlab.flux.wflow WorkStream Job]
+  (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
+           [czlab.wabbit.io SocketEvent FileEvent]
+           [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.server Container]
-           [czlab.wabbit.io FileEvent]
+           [java.net Socket]
            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,7 +76,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn sockHandler
+  ""
+  []
+  (workStream<>
+    (script<>
+      #(let
+         [^Job job %2
+          ^SocketEvent ev (.event job)
+          dis (DataInputStream. (.sockIn ev))
+          dos (DataOutputStream. (.sockOut ev))
+          nm (.readInt dis)]
+         (swap! RESULT + nm)
+         (.writeInt dos (int nm))
+         (.flush dos)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest czlabtestwabbit-svcs
+
+  (is (let [etype :czlab.wabbit.io.socket/Socket
+            m (*emitter-defs* etype)
+            host "localhost"
+            port 5555
+            c (assoc (:conf m)
+                     :host host
+                     :port port
+                     :handler "czlabtest.wabbit.svcs/sockHandler")
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (.init s {})
+        (.start s)
+        (reset! RESULT 0)
+        (dotimes [n 2]
+          (safeWait 1000)
+          (with-open [soc (Socket. host (int port))]
+             (let [os (.getOutputStream soc)
+                   is (.getInputStream soc)
+                   dis (DataInputStream. is)]
+               (doto (DataOutputStream. os)
+                 (.writeInt (int 8))
+                 (.flush))
+               (let [nm (.readInt dis)]
+                 (swap! RESULT + nm)))))
+        (.stop s)
+        (.dispose ctr)
+        (== @RESULT 32)))
+
 
   (is (let [etype :czlab.wabbit.io.loops/OnceTimer
             m (*emitter-defs* etype)
@@ -133,7 +182,7 @@
         (.start s)
         (safeWait 1000)
         (touch! firstfn)
-        (safeWait 4500)
+        (safeWait 3000)
         (.stop s)
         (.dispose ctr)
         (deleteDir from)
