@@ -30,6 +30,7 @@
 
   (:import [czlab.flux.wflow WorkStream Job]
            [czlab.wabbit.server Container]
+           [czlab.wabbit.io FileEvent]
            [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,7 +46,31 @@
     (script<>
       (fn [_ _]
         (do->nil
-          (reset! RESULT 8))))))
+          (swap! RESULT + 8))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn fileHandler
+  ""
+  []
+  (workStream<>
+    (script<>
+      (fn [_ ^Job job]
+        (let [^FileEvent e (.event job)
+              {:keys [targetFolder recvFolder]}
+              (.. e source config)
+              tp (fpath targetFolder)
+              rp (fpath recvFolder)
+              nm (juid)
+              f (.file e)
+              fp (fpath f)
+              s (slurpUtf8 f)
+              n (convLong s 0)]
+          ;;the file should be in the recv-folder
+          (when (>= (.indexOf fp rp) 0)
+            ;; generate a new file in target-folder
+            (spitUtf8 (io/file tp nm) s)
+            (swap! RESULT + n)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -59,11 +84,65 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
         (.start s)
         (safeWait 2000)
         (.stop s)
         (.dispose ctr)
         (== 8 @RESULT)))
+
+  (is (let [etype :czlab.wabbit.io.loops/RepeatingTimer
+            m (*emitter-defs* etype)
+            c (assoc (:conf m)
+                     :delaySecs 1
+                     :intervalSecs 1
+                     :handler "czlabtest.wabbit.svcs/testHandler")
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
+        (.start s)
+        (safeWait 3500)
+        (.stop s)
+        (.dispose ctr)
+        (> @RESULT 8)))
+
+  (is (let [etype :czlab.wabbit.io.files/FilePicker
+            m (*emitter-defs* etype)
+            root "/wdrive/tmp";;*TEMPFILE-REPO*
+            from (str root "/from")
+            to (str root "/to")
+            firstfn (str from "/" (juid))
+            c (assoc (:conf m)
+                     :targetFolder from
+                     :recvFolder to
+                     :fmask ""
+                     :intervalSecs 1
+                     :delaySecs 0
+                     :handler "czlabtest.wabbit.svcs/fileHandler")
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (.init s {})
+        (deleteDir from)
+        (deleteDir to)
+        (mkdirs from)
+        (mkdirs to)
+        (spitUtf8 firstfn "8")
+        (reset! RESULT 0)
+        (.start s)
+        (safeWait 1000)
+        (touch! firstfn)
+        (safeWait 4500)
+        (.stop s)
+        (.dispose ctr)
+        (deleteDir from)
+        (deleteDir to)
+        (> @RESULT 8)))
+
+
+
+
 
   (is (string? "That's all folks!")))
 
