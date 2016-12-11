@@ -46,9 +46,13 @@
 (derive ::EMAIL :czlab.wabbit.io.loops/ThreadedTimer)
 (derive ::IMAP ::EMAIL)
 (derive ::POP3 ::EMAIL)
-(def ^:dynamic
-  ^String
-  *mock-mail-provider* "czlab.wabbit.mock.mail.MockPop3SSLStore")
+(def
+  ^:dynamic
+  *mock-mail-provider*
+  {:pop3s "czlab.wabbit.mock.mail.MockPop3SSLStore"
+   :imaps "czlab.wabbit.mock.mail.MockIMapSSLStore"
+   :pop3 "czlab.wabbit.mock.mail.MockPop3Store"
+   :imap "czlab.wabbit.mock.mail.MockIMapStore"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
@@ -94,7 +98,11 @@
   ""
   [^IoService co ^String cz ^String proto]
   (let
-    [demo? (= "true" (sysProp "wabbit.demo.flag"))
+    [mockp (sysProp "wabbit.mock.mail.proto")
+     demo? (hgl? mockp)
+     proto (if demo? mockp proto)
+     kee (keyword proto)
+     demop (kee *mock-mail-provider*)
      ss (-> (doto (Properties.)
               (.put  "mail.store.protocol" proto))
             (Session/getInstance nil))
@@ -102,9 +110,7 @@
      [^Provider sun ^String pz]
      (if demo?
        [(Provider. Provider$Type/STORE
-                   proto
-                   *mock-mail-provider* "czlab" "1.1.7")
-        *mock-mail-provider*]
+                   proto demop "czlab" "1.1.7") demop]
        [(some #(if (= cz
                       (.getClassName ^Provider %)) %)
               (seq ps)) cz])]

@@ -109,7 +109,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn pop3Handler
+(defn mailHandler
   ""
   []
   (workStream<>
@@ -125,7 +125,28 @@
 ;;
 (deftest czlabtestwabbit-svcs
 
-  (is (let [_ (sysProp! "wabbit.demo.flag" "true")
+  (is (let [_ (sysProp! "wabbit.mock.mail.proto" "imaps")
+            etype :czlab.wabbit.io.mails/IMAP
+            m (*emitter-defs* etype)
+            c (:conf m)
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (reset! RESULT 0)
+        (.init s
+               {:handler "czlabtest.wabbit.svcs/mailHandler"
+                :host "localhost"
+                :port 7110
+                :intervalSecs 1
+                :username "test1"
+                :passwd "secret"})
+        (.start s)
+        (safeWait 3000)
+        (.stop s)
+        (.dispose ctr)
+        (> @RESULT 8)))
+
+  (is (let [_ (sysProp! "wabbit.mock.mail.proto" "pop3s")
             etype :czlab.wabbit.io.mails/POP3
             m (*emitter-defs* etype)
             c (:conf m)
@@ -134,7 +155,7 @@
             s (service<> ctr etype "t" c)]
         (reset! RESULT 0)
         (.init s
-               {:handler "czlabtest.wabbit.svcs/pop3Handler"
+               {:handler "czlabtest.wabbit.svcs/mailHandler"
                 :host "localhost"
                 :port 7110
                 :intervalSecs 1

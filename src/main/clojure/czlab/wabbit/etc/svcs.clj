@@ -31,6 +31,7 @@
            :intervalSecs 300
            :delaySecs 0
            :handler ""}}
+
    :czlab.wabbit.io.mails/IMAP
    {:info {:version "1.0"
            :name "IMAP"}
@@ -44,6 +45,7 @@
            :intervalSecs 300
            :delaySecs 0
            :handler ""}}
+
    :czlab.wabbit.io.jms/JMS
    {:info {:version "1.0"
            :name "JMS"}
@@ -57,6 +59,7 @@
            :jmsUser "anonymous"
            :jmsPwd "anonymous"
            :handler ""}}
+
    :czlab.wabbit.io.http/HTTP
    {:info {:version "1.0"
            :name "HTTP"}
@@ -77,6 +80,7 @@
             {:handler ""
              :uri "/post"
              :verb #{:post :put}}]}}
+
    :czlab.wabbit.io.http/WebMVC
    {:info {:version "1.0"
            :name "WebMVC"}
@@ -107,12 +111,14 @@
              :uri "/?"
              :verb #{:get}
              :template  "/main/index.html"}]}}
+
    :czlab.wabbit.io.loops/OnceTimer
    {:info {:version "1.0"
            :name "OnceTimer"}
     :conf {:comment# "place comments here"
            :delaySecs 0
            :handler ""}}
+
    :czlab.wabbit.io.mails/POP3
    {:info {:version "1.0"
            :name "POP3"}
@@ -126,6 +132,7 @@
            :delaySecs 0
            :ssl? true
            :handler ""}}
+
    :czlab.wabbit.io.loops/RepeatingTimer
    {:info {:version "1.0"
            :name "RepeatTimer"}
@@ -133,6 +140,7 @@
            :intervalSecs 300
            :delaySecs 0
            :handler ""}}
+
    :czlab.wabbit.io.socket/Socket
    {:info {:version "1.0"
            :name "TCPSocket"}

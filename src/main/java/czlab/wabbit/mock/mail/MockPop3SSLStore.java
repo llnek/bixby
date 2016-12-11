@@ -28,10 +28,10 @@ public class MockPop3SSLStore extends MockPop3Store {
    */
   public MockPop3SSLStore(Session s,URLName url) {
     super(s, url);
+    _isSSL=true;
+    _dftPort = 995;
   }
 
-  public boolean _isSSL=true;
-  public int _dftPort = 995;
 
 }
 

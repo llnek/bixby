@@ -28,11 +28,11 @@ import java.util.Random;
  * @author Kenneth Leung
  *
  */
-public class MockPop3Folder extends Folder {
+public class MockIMapFolder extends Folder {
 
   /**
    */
-  public MockPop3Folder(String n, Store s) {
+  public MockIMapFolder(String n, Store s) {
     super(s);
     _name=n;
   }

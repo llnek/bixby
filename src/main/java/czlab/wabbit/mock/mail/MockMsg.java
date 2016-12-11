@@ -33,7 +33,7 @@ import javax.mail.Session;
  *
  */
 @SuppressWarnings("unused")
-public class MockPop3Msg {
+public class MockMsg {
   private static final String _mime=
   "From: Some One <someone@example.com>\r\n"+
   "To: Some Body <somebody@ex.com>\r\n"+
@@ -90,7 +90,7 @@ public class MockPop3Msg {
 
   /**
    */
-  public MockPop3Msg(Folder f, int m)  {
+  public MockMsg(Folder f, int m)  {
   }
 
   /**

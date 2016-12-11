@@ -68,9 +68,7 @@
 (defn myAppMain
   ""
   []
-  (System/setProperty
-    "wabbit.demo.pop3"
-    "czlab.wabbit.mock.mail.MockPop3Store"))
+  (System/setProperty "wabbit.mock.mail.proto" "pop3s"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

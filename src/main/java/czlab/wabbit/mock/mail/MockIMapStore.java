@@ -26,14 +26,14 @@ import javax.mail.URLName;
  *
  */
 @SuppressWarnings("unused")
-public class MockPop3Store extends MockStore {
+public class MockIMapStore extends MockStore {
 
   /**
    */
-  public MockPop3Store(Session s,URLName url) {
+  public MockIMapStore(Session s,URLName url) {
     super(s, url);
-    _name="pop3";
-    _dftPort=110;
+    _name="imap";
+    _dftPort=143;
   }
 
   /**
@@ -41,7 +41,7 @@ public class MockPop3Store extends MockStore {
   @Override
   public Folder getFolder(String name) {
     checkConnected();
-    return new MockPop3Folder(name,this);
+    return new MockIMapFolder(name,this);
   }
 
   /**
@@ -49,7 +49,7 @@ public class MockPop3Store extends MockStore {
   @Override
   public Folder getFolder(URLName url) {
     checkConnected();
-    return new MockPop3Folder( url.getFile(), this);
+    return new MockIMapFolder( url.getFile(), this);
   }
 
 }

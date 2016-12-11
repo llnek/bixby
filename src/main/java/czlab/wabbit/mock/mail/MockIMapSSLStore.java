@@ -14,10 +14,7 @@
 
 package czlab.wabbit.mock.mail;
 
-import javax.mail.MessagingException;
-import javax.mail.Folder;
 import javax.mail.Session;
-import javax.mail.Store;
 import javax.mail.URLName;
 
 
@@ -25,33 +22,18 @@ import javax.mail.URLName;
  * @author Kenneth Leung
  *
  */
-@SuppressWarnings("unused")
-public class MockPop3Store extends MockStore {
+public class MockIMapSSLStore extends MockIMapStore {
 
   /**
    */
-  public MockPop3Store(Session s,URLName url) {
+  public MockIMapSSLStore(Session s,URLName url) {
     super(s, url);
-    _name="pop3";
-    _dftPort=110;
+    _isSSL=true;
+    _dftPort = 993;
   }
 
-  /**
-   */
-  @Override
-  public Folder getFolder(String name) {
-    checkConnected();
-    return new MockPop3Folder(name,this);
-  }
-
-  /**
-   */
-  @Override
-  public Folder getFolder(URLName url) {
-    checkConnected();
-    return new MockPop3Folder( url.getFile(), this);
-  }
 
 }
+
 
 
