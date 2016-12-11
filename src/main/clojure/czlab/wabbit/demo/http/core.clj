@@ -54,7 +54,7 @@
   (script<>
     #(let
        [^HttpEvent ev (.event ^Job %2)
-        res (httpResult<> (.socket ev))]
+        res (httpResult<> (.socket ev) (.msgGist ev))]
        ;; construct a simple html page back to caller
        ;; by wrapping it into a stream data object
        (doto res

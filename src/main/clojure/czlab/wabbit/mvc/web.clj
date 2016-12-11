@@ -293,7 +293,7 @@
   ""
   [^HttpEvent evt file]
   (let [^Channel ch (.socket evt)
-        res (httpResult<> ch)
+        res (httpResult<> ch (.msgGist evt))
         gist (.msgGist evt)
         fp (io/file file)]
     (log/debug "serving file: %s" (fpath fp))
@@ -332,7 +332,7 @@
            (getStatic evt))
       (let [ch (.socket evt)]
         (log/warn "illegal access: %s" fpath)
-        (->> (httpResult<> ch 403)
+        (->> (httpResult<> ch (.msgGist evt) 403)
              (replyResult ch))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -343,7 +343,7 @@
   (try
     (let
       [rts (.. evt source server cljrt)
-       res (httpResult<> (.socket evt) status)
+       res (httpResult<> (.socket evt) (.msgGist evt) status)
        {:keys [errorHandler]}
        (.. evt source config)
        ^WebContent

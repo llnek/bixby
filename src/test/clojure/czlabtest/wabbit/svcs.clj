@@ -18,7 +18,10 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlabtest.wabbit.mock]
+  (:use [czlab.convoy.netty.client]
+        [czlab.convoy.net.core]
+        [czlab.convoy.netty.resp]
+        [czlabtest.wabbit.mock]
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core]
         [czlab.wabbit.io.core]
@@ -29,12 +32,19 @@
         [clojure.test])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
-           [czlab.wabbit.io EmailEvent SocketEvent FileEvent JmsEvent]
+           [czlab.wabbit.io
+            EmailEvent
+            SocketEvent
+            FileEvent
+            JmsEvent
+            HttpEvent]
            [czlab.flux.wflow WorkStream Job]
+           [io.netty.channel Channel]
            [czlab.wabbit.server Container]
            [javax.mail Message Message$RecipientType Multipart]
            [javax.mail.internet MimeMessage]
            [javax.jms TextMessage]
+           [czlab.convoy.netty WholeResponse]
            [java.net Socket]
            [java.io File]))
 
@@ -123,8 +133,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn httpHandler
+  ""
+  []
+  (workStream<>
+    (script<>
+      #(let [^HttpEvent ev (.event ^Job %2)
+             soc (.socket ev)
+             res (httpResult<> soc (.msgGist ev))]
+         (.setContentType res "text/plain")
+         (.setContent res "hello")
+         (replyResult soc res)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (deftest czlabtestwabbit-svcs
 
+  (is (let [etype :czlab.wabbit.io.http/HTTP
+            m (*emitter-defs* etype)
+            c (:conf m)
+            ^Container
+            ctr (mock :container)
+            s (service<> ctr etype "t" c)]
+        (.init s
+               {:handler "czlabtest.wabbit.svcs/httpHandler"
+                :host "localhost"
+                :port 8888})
+        (.start s)
+        (safeWait 1000)
+        (let [res (h1get "http://localhost:8888/test/get/xxx")
+              rc (deref res 2000 nil)
+              x (some-> ^WholeResponse
+                        rc
+                        (.content ))
+              g (some-> x (.stringify ))]
+          (.stop s)
+          (.dispose s)
+          (.dispose ctr)
+          (= "hello" g))))
+(comment
   (is (let [_ (sysProp! "wabbit.mock.mail.proto" "imaps")
             etype :czlab.wabbit.io.mails/IMAP
             m (*emitter-defs* etype)
@@ -314,7 +361,7 @@
         (> @RESULT 8)))
 
 
-
+)
 
 
   (is (string? "That's all folks!")))

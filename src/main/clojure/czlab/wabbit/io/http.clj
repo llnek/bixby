@@ -210,7 +210,8 @@
   [^Channel ch ^HttpEvent evt]
   (try
     (->> (httpResult<>
-           ch
+           (.socket evt)
+           (.msgGist evt)
            HttpResponseStatus/INTERNAL_SERVER_ERROR)
          (.writeAndFlush ch )
          (maybeClose evt ))
@@ -270,6 +271,7 @@
         (session [_] (.getv impl :session))
         (id [_] eeid)
         (source [_] co)
+        (socket [_] ch)
 
         (cookie [_ n] (get cookieJar n))
         (cookies [_] (vals cookieJar))
@@ -318,6 +320,7 @@
   ::HTTP
   [^IoService co {:keys [^Channel ch msg]}]
 
+  ;;(log/debug "ioevent: channel =>>>>>>>> %s" ch)
   (logcomp "ioevent" co)
   (let [ssl? (maybeSSL? ch)]
     (if
@@ -417,9 +420,10 @@
       #(let [^Job job %2
              s (or (.getv job :statusCode)
                    500)
-             ^IoEvent evt (.event job)]
+             ^HttpEvent evt (.event job)]
          (->> (httpResult<>
                 (.socket evt)
+                (.msgGist evt)
                 (HttpResponseStatus/valueOf s))
               (replyResult (.socket evt)))
          nil))))

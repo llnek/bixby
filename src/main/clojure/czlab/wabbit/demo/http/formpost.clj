@@ -45,7 +45,7 @@
   (script<>
     #(let
        [^HttpEvent ev (.event ^Job %2)
-        res (httpResult<> (.socket ev))
+        res (httpResult<> (.socket ev)(.msgGist ev))
         data (.body ev)
         stuff (when (and (some? data)
                          (.hasContent data))

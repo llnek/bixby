@@ -65,29 +65,30 @@
            :name "HTTP"}
     :conf {:comment# "place comments here"
            :maxInMemory (* 1024 1024 4)
-           :waitMillis (* 1000 300)
            :maxContentSize -1
+           :waitMillis 0
            :sockTimeOut 0
            :host ""
            :port 8080
            :serverKey ""
            :passwd ""
            :handler ""
-           :routes
+           :routes nil
+           :routes_example
            [{:handler ""
              :uri "/get"
-             :verb #{:get}}
+             :verbs #{:get}}
             {:handler ""
              :uri "/post"
-             :verb #{:post :put}}]}}
+             :verbs #{:post :put}}]}}
 
    :czlab.wabbit.io.http/WebMVC
    {:info {:version "1.0"
            :name "WebMVC"}
     :conf {:comment# "place comments here"
            :maxInMemory (* 1024 1024 4)
-           :waitMillis (* 1000 300)
            :maxContentSize -1
+           :waitMillis 0
            :sockTimeOut 0
            :host ""
            :port 8080
@@ -102,14 +103,15 @@
            :useETags? false
            :errorHandler ""
            :handler ""
-           :routes
+           :routes nil
+           :routes_example
            [{:mount "${pod.dir}/public/media/main/{}"
              :uri "/(favicon\\..+)"}
             {:mount "${pod.dir}/public/{}"
              :uri "/public/(.*)"}
             {:handler ""
              :uri "/?"
-             :verb #{:get}
+             :verbs #{:get}
              :template  "/main/index.html"}]}}
 
    :czlab.wabbit.io.loops/OnceTimer

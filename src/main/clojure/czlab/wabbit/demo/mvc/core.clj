@@ -65,7 +65,7 @@
           (.loadTemplate co
                          tpl
                          (ftlContext))
-          res (httpResult<> (.socket evt))]
+          res (httpResult<> (.socket evt)(.msgGist evt))]
          (.setContentType res  ctype)
          (.setContent res data)
          (replyResult (.socket evt) res)))
