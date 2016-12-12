@@ -162,16 +162,15 @@
         (.start s)
         (safeWait 1000)
         (let [res (h1get "http://localhost:8888/test/get/xxx")
+              ^WholeResponse
               rc (deref res 2000 nil)
-              x (some-> ^WholeResponse
-                        rc
-                        (.content ))
-              g (some-> x (.stringify ))]
+              z (some-> rc
+                        (.content ) (.stringify))]
           (.stop s)
           (.dispose s)
           (.dispose ctr)
-          (= "hello" g))))
-(comment
+          (= "hello" z))))
+
   (is (let [_ (sysProp! "wabbit.mock.mail.proto" "imaps")
             etype :czlab.wabbit.io.mails/IMAP
             m (*emitter-defs* etype)
@@ -360,8 +359,6 @@
         (deleteDir to)
         (> @RESULT 8)))
 
-
-)
 
 
   (is (string? "That's all folks!")))
