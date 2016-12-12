@@ -20,7 +20,7 @@
 
   (:use [czlab.convoy.netty.client]
         [czlab.convoy.net.core]
-        [czlab.convoy.netty.resp]
+        ;;[czlab.convoy.netty.resp]
         [czlabtest.wabbit.mock]
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core]
@@ -136,6 +136,7 @@
 (defn httpHandler
   ""
   []
+  (require 'czlab.convoy.netty.resp)
   (workStream<>
     (script<>
       #(let [^HttpEvent ev (.event ^Job %2)
