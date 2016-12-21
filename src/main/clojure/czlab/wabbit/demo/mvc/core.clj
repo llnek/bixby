@@ -28,7 +28,7 @@
 
   (:import [czlab.flux.wflow Job TaskDef WorkStream]
            [czlab.convoy.net HttpResult]
-           [czlab.wabbit.io IoEvent HttpEvent]
+           [czlab.wabbit.io HttpEvent]
            [czlab.wabbit.server Container]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,7 +59,7 @@
       #(let
          [^Job job %2
           tpl (:template (.getv job EV_OPTS))
-          ^IoEvent evt (.event job)
+          ^HttpEvent evt (.event job)
           co (.. evt source server)
           {:keys [data ctype]}
           (.loadTemplate co

@@ -4,17 +4,14 @@
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
     [org.apache.commons/commons-lang3 "3.5"]
     [commons-io/commons-io "2.5"]
-    [org.slf4j/slf4j-api "1.7.21" ]
+    [org.slf4j/slf4j-api "1.7.22" ]
 
-    [czlab/czlab-twisty "1.0.0"]
-    [czlab/czlab-convoy "1.0.0"]
-    [czlab/czlab-horde "1.0.0"]
-    [czlab/czlab-flux "1.0.0"]
-    [czlab/czlab-xlib "1.0.0"]
+    [czlab/czlab-twisty "0.1.0"]
+    [czlab/czlab-convoy "0.1.0"]
+    [czlab/czlab-horde "0.1.0"]
+    [czlab/czlab-flux "0.1.0"]
+    [czlab/czlab-xlib "0.1.0"]
 
-    ;;[org.apache.ant/ant-apache-log4j "1.9.7" :exclusions [log4j]]
-    [ant-contrib/ant-contrib "1.0b3" :exclusions [ant]]
-    ;;[org.apache.ivy/ivy "2.4.0" ]
     [org.apache.ant/ant "1.9.7" ]
     [org.apache.ant/ant-launcher "1.9.7" ]
     [org.apache.ant/ant-junit4 "1.9.7" ]
@@ -24,7 +21,7 @@
     [com.google.code.findbugs/jsr305 "3.0.1" ]
     [org.javassist/javassist "3.21.0-GA"  ]
 
-    [com.github.spullara.mustache.java/compiler "0.9.4" ]
+    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
     [org.freemarker/freemarker "2.3.25-incubating" ]
 
     [org.clojure/clojure "1.8.0" ]
@@ -32,7 +29,6 @@
 
     [org.clojure/math.numeric-tower "0.0.4" ]
     [org.clojure/math.combinatorics "0.1.3" ]
-    [org.clojure/tools.logging "0.3.1" ]
     [org.clojure/tools.nrepl "0.2.12" ]
     [org.clojure/tools.reader "0.10.0" ]
     [org.clojure/data.codec "0.1.0" ]
@@ -40,7 +36,6 @@
     [org.clojure/java.jdbc "0.6.1" ]
     [org.clojure/java.data "0.1.1" ]
     [org.clojure/java.jmx "0.3.3" ]
-    [org.clojure/data.json "0.2.6" ]
     [org.clojure/data.xml "0.0.8" ]
     [org.clojure/core.cache "0.6.5" ]
     [org.clojure/core.match "0.2.2" ]
@@ -61,20 +56,17 @@
     [com.sun.tools/tools "1.8.0"  ]
 
     [com.cemerick/pomegranate "0.3.1" :scope "provided"]
-    ;;[org.projectodd.shimdandy/shimdandy-impl "1.1.0"]
-    ;;[org.projectodd.shimdandy/shimdandy-api "1.2.0"]
     [codox/codox "0.10.2" :scope "provided"]
-
     [net.mikera/cljunit "0.6.0" :scope "provided"]
     [junit/junit "4.12" :scope "provided"]
 
     ;; boot/clj stuff
-    [boot/base "2.6.0" ]
-    [boot/core "2.6.0" ]
-    [boot/pod "2.6.0" ]
-    [boot/worker "2.6.0" ]
+    [boot/base "2.7.0" ]
+    [boot/core "2.7.0" ]
+    [boot/pod "2.7.0" ]
+    [boot/worker "2.7.0" ]
     ;; this is causing the RELEASE_6 warning
-    [boot/aether "2.6.0" ]
+    [boot/aether "2.7.0" ]
 
   ]
 
@@ -84,7 +76,7 @@
    :exclude-clj #"^czlab.wabbit.demo.*"
    ;;:exclude-java ""
 
-  :version "1.0.0"
+  :version "0.1.0"
   :debug true
   :project 'czlab/czlab-wabbit)
 
