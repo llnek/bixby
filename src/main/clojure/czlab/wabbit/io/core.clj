@@ -171,11 +171,16 @@
                     "io-handler = %s")
                (type evt) args c1 c0)
     (try
-      (if-some [w (cast? WorkStream wf)]
-        (do
-          (log/debug "job#%s => %s" (.id job) (.id src))
-          (.setv job EV_OPTS args)
-          (.execWith w job))
+      (log/debug "job#%s => %s" (.id job) (.id src))
+      (.setv job EV_OPTS args)
+      (cond
+        (inst? WorkStream wf)
+        (do->nil
+          (.execWith ^WorkStream wf job))
+        (fn? wf)
+        (do->nil
+          (wf job))
+        :else
         (throwBadArg "Want WorkStream, got %s" (class wf)))
       (catch Throwable _
         (io->error! src job _)))))
