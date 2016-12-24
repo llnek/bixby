@@ -14,14 +14,15 @@
 
 package czlab.wabbit.server;
 
-import clojure.lang.Symbol;
 import clojure.lang.IFn;
 import clojure.lang.RT;
+import clojure.lang.Symbol;
 import clojure.lang.Var;
 
 /**
  * @author Kenneth Leung
  */
+@SuppressWarnings("unused")
 public class Cljshim implements java.io.Closeable {
 
   /**

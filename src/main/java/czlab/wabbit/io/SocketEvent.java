@@ -14,9 +14,8 @@
 
 package czlab.wabbit.io;
 
-import czlab.xlib.Disposable;
-import java.io.OutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * @author Kenneth Leung

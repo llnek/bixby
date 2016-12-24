@@ -16,18 +16,20 @@
 package czlab.wabbit.mock.mail;
 
 
-import javax.mail.MessagingException;
+import java.util.Random;
+
 import javax.mail.Flags;
 import javax.mail.Folder;
 import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.Store;
-import java.util.Random;
 
 
 /**
  * @author Kenneth Leung
  *
  */
+@SuppressWarnings("unused")
 public class MockIMapFolder extends Folder {
 
   /**

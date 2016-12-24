@@ -25,7 +25,6 @@ import javax.mail.URLName;
  * @author Kenneth Leung
  *
  */
-@SuppressWarnings("unused")
 public abstract class MockStore extends Store {
 
   /**
