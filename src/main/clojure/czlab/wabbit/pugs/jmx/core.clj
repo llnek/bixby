@@ -31,7 +31,7 @@
            [java.rmi.server UnicastRemoteObject]
            [java.rmi NoSuchObjectException]
            [czlab.wabbit.server Container]
-           [czlab.xlib Startable Muble]
+           [czlab.xlib Muble]
            [java.util HashMap]
            [javax.management.remote
             JMXConnectorServer
@@ -163,7 +163,7 @@
              (.copyEx impl ))
         true)
 
-      (start [_]
+      (start [_ _]
         (startRMI impl)
         (startJMX impl)
         (log/info "JmxPlugin started"))

@@ -39,7 +39,6 @@
             Hierarchial
             Muble
             Disposable
-            Startable
             Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,7 +236,7 @@
           (do->true
             (comp->init this cfg)))
 
-        (start [this]
+        (start [this _]
           (reset! timer (Timer. true))
           (io->start this))
 

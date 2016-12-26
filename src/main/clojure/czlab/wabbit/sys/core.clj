@@ -134,7 +134,7 @@
               (str<> 78 \*)
               "about to start wabbit..."
               (str<> 78 \*))
-    (.start execv)
+    (.start execv nil)
     (log/info "wabbit started!")
     gist))
 

@@ -63,7 +63,8 @@ public class MockIOService implements IoService {
   }
 
   @Override
-  public void start() {
+  public Object start(Object a) {
+    return this;
   }
 
   @Override

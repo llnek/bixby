@@ -42,7 +42,6 @@
            [java.net URL]
            [czlab.xlib
             Disposable
-            Startable
             Muble
             Versioned
             Hierarchial
@@ -120,10 +119,8 @@
        pod (.id gist)
        cid (.id ctr)]
       (log/debug "start pod = %s\ncontainer = %s" pod cid)
-      (doto->>
-        ctr
-        (.setv (.getx co) :container )
-        (.start ))))
+      (.setv (.getx co) :container ctr)
+      (.start  ctr nil)))
   co)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,7 +166,7 @@
         (startTime [_] START-TIME)
         (kill9 [_] (apply (.getv impl :stop!) []))
 
-        (start [this]
+        (start [this _]
           (->> (.getv impl :pod)
                (ignitePod this )))
 

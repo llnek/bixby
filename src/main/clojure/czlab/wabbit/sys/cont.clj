@@ -65,11 +65,9 @@
             Hierarchial
             XData
             CU
-            Muble
             I18N
             Morphable
             Activable
-            Startable
             Disposable
             Identifiable]
            [czlab.wabbit.io IoGist IoEvent]))
@@ -191,12 +189,12 @@
         (podConfig [_]
           (.getv impl :podConf))
 
-        (start [this]
+        (start [this _]
           (let [svcs (.getv impl :services)]
             (log/info "container starting io#services...")
             (doseq [[k v] svcs]
               (log/info "ioservice: %s to start" k)
-              (.start ^Service v))))
+              (.start ^Service v nil))))
 
         (stop [this]
           (let [svcs (.getv impl :services)
@@ -329,7 +327,7 @@
       (do
         (.init u {:pod env :pug opts})
         (log/info "plugin %s starting..." pn)
-        (.start u)
+        (.start u nil)
         (log/info "plugin %s started" pn)
         u)
       (do->nil

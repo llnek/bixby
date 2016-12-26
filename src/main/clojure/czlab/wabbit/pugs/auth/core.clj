@@ -583,7 +583,7 @@
     (init [_ arg]
       (applyDDL (.acquireDbPool ctr)))
 
-    (start [_]
+    (start [_ _]
       (assertPluginOK (.acquireDbPool ctr))
       (initShiro (.podDir ctr)
                  (.podKey ctr))

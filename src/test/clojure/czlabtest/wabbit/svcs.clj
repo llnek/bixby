@@ -160,7 +160,7 @@
                {:handler "czlabtest.wabbit.svcs/httpHandler"
                 :host "localhost"
                 :port 8888})
-        (.start s)
+        (.start s nil)
         (safeWait 1000)
         (let [res (h1get "http://localhost:8888/test/get/xxx")
               ^WholeResponse
@@ -187,7 +187,7 @@
                 :intervalSecs 1
                 :username "test1"
                 :passwd "secret"})
-        (.start s)
+        (.start s nil)
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
@@ -208,7 +208,7 @@
                 :intervalSecs 1
                 :username "test1"
                 :passwd "secret"})
-        (.start s)
+        (.start s nil)
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
@@ -234,7 +234,7 @@
                 :jndiPwd "root"
                 :jmsUser "anonymous"
                 :jmsPwd "anonymous"})
-        (.start s)
+        (.start s nil)
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
@@ -260,7 +260,7 @@
                 :jndiPwd "root"
                 :jmsUser "anonymous"
                 :jmsPwd "anonymous"})
-        (.start s)
+        (.start s nil)
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
@@ -278,7 +278,7 @@
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
         (.init s {})
-        (.start s)
+        (.start s nil)
         (reset! RESULT 0)
         (dotimes [n 2]
           (safeWait 1000)
@@ -305,7 +305,7 @@
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
         (reset! RESULT 0)
-        (.start s)
+        (.start s nil)
         (safeWait 2000)
         (.stop s)
         (.dispose ctr)
@@ -321,7 +321,7 @@
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
         (reset! RESULT 0)
-        (.start s)
+        (.start s nil)
         (safeWait 3500)
         (.stop s)
         (.dispose ctr)
@@ -350,7 +350,7 @@
         (mkdirs to)
         (spitUtf8 firstfn "8")
         (reset! RESULT 0)
-        (.start s)
+        (.start s nil)
         (safeWait 1000)
         (touch! firstfn)
         (safeWait 3000)

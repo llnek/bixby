@@ -41,9 +41,8 @@
             Cljshim
             Container]
            [czlab.xlib
-            Schedulable
             Activable
-            Startable]
+            Schedulable]
            [czlab.wabbit.io IoGist IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,7 +89,7 @@
 
         (podConfig [_] {})
 
-        (start [this] )
+        (start [this _] )
         (stop [this] )
         (dispose [this]
           (.dispose (.core this))
@@ -132,7 +131,7 @@
         (getx [_] impl)
         (startTime [_] 0)
         (kill9 [_] )
-        (start [this] )
+        (start [this _] )
         (stop [this] ))
       {:typeid ::Execvisor})))
 
