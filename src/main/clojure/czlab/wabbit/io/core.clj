@@ -236,6 +236,7 @@
           (do->true
             (comp->init this cfg)))
 
+        (restart [_ _])
         (start [this _]
           (reset! timer (Timer. true))
           (io->start this))

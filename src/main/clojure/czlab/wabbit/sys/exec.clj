@@ -166,6 +166,8 @@
         (startTime [_] START-TIME)
         (kill9 [_] (apply (.getv impl :stop!) []))
 
+        (restart [this _] this)
+
         (start [this _]
           (->> (.getv impl :pod)
                (ignitePod this )))

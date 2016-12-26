@@ -61,6 +61,11 @@ public class MockContainer implements Container {
   }
 
   @Override
+  public Object restart(Object a) {
+    return this;
+  }
+
+  @Override
   public Object start(Object a) {
     return this;
   }

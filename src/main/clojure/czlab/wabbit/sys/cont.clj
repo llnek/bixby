@@ -196,6 +196,8 @@
               (log/info "ioservice: %s to start" k)
               (.start ^Service v nil))))
 
+        (restart [_ _])
+
         (stop [this]
           (let [svcs (.getv impl :services)
                 pugs (.getv impl :plugins)]
