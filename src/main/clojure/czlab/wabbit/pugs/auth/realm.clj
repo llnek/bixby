@@ -41,7 +41,7 @@
             SimpleAccount
             AuthenticationToken
             AuthenticationException]
-           [czlab.horde DBAPI]
+           [czlab.horde DbApi]
            [java.util Collection]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,7 +56,7 @@
 (defn -doGetAuthenticationInfo
   ""
   [^AuthorizingRealm this ^AuthenticationToken token]
-  (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
+  (let [db (dbopen<+> *jdbc-pool* *meta-cache*)
         ;;pwd (.getCredentials token)
         user (.getPrincipal token)
         sql (.simpleSQLr db)]
@@ -73,7 +73,7 @@
 (defn -doGetAuthorizationInfo
   ""
   [^AuthorizingRealm this ^PrincipalCollection principals]
-  (let [db (dbopen<+> *JDBC-POOL* *META-CACHE*)
+  (let [db (dbopen<+> *jdbc-pool* *meta-cache*)
         acc (.getPrimaryPrincipal principals)
         rc (SimpleAccount. acc
                            (:passwd acc)

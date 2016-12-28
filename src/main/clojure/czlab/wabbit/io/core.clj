@@ -171,7 +171,7 @@
                (type evt) args c1 c0)
     (try
       (log/debug "job#%s => %s" (.id job) (.id src))
-      (.setv job EV_OPTS args)
+      (.setv job evt-opts args)
       (cond
         (inst? WorkStream wf)
         (do->nil

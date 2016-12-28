@@ -102,8 +102,8 @@
 (defn -main
   "Main Entry"
   [& args]
-  (let [ver (loadResource C_VERPROPS)
-        rcb (getResource C_RCB)
+  (let [ver (loadResource c-verprops)
+        rcb (getResource c-rcb)
         home (first args)
         args (drop 1 args)]
     (I18N/setBase rcb)

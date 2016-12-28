@@ -16,8 +16,8 @@ package czlab.wabbit.mock.test;
 
 import java.io.File;
 
-import czlab.horde.DBAPI;
-import czlab.horde.JDBCPool;
+import czlab.horde.DbApi;
+import czlab.horde.JdbcPool;
 import czlab.wabbit.server.Cljshim;
 import czlab.wabbit.server.Container;
 import czlab.wabbit.server.Service;
@@ -129,22 +129,22 @@ public class MockContainer implements Container {
   }
 
   @Override
-  public JDBCPool acquireDbPool(Object groupid) {
+  public JdbcPool acquireDbPool(Object groupid) {
     return null;
   }
 
   @Override
-  public DBAPI acquireDbAPI(Object groupid) {
+  public DbApi acquireDbAPI(Object groupid) {
     return null;
   }
 
   @Override
-  public JDBCPool acquireDbPool() {
+  public JdbcPool acquireDbPool() {
     return null;
   }
 
   @Override
-  public DBAPI acquireDbAPI() {
+  public DbApi acquireDbAPI() {
     return null;
   }
 

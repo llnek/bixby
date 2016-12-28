@@ -30,7 +30,7 @@
         [czlab.horde.dbddl.mysql]
         [czlab.horde.dbddl.oracle])
 
-  (:import [czlab.horde JDBCInfo JDBCPool Schema]
+  (:import [czlab.horde JdbcInfo JdbcPool Schema]
            [java.sql Connection]
            [java.io File]
            [czlab.xlib I18N]))
@@ -82,7 +82,7 @@
   ^String
   [spec]
   {:pre [(keyword? spec)]}
-  (if (contains? *DBTYPES* spec)
+  (if (contains? *db-types* spec)
     (getDDL *auth-meta-cache* spec)
     (dberr! (rstr (I18N/base)
                   "db.unknown"
@@ -96,13 +96,13 @@
 ;;
 (extend-protocol PluginDDL
 
-  JDBCInfo
+  JdbcInfo
   (applyDDL [this]
     (when-some [t (matchUrl (.url this))]
       (with-open [c (dbconnect<> this)]
         (uploadDdl c (genAuthPluginDDL t)))))
 
-  JDBCPool
+  JdbcPool
   (applyDDL [this]
     (when-some [t (matchUrl (.dbUrl this))]
       (uploadDdl this (genAuthPluginDDL t)))))

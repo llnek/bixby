@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private STOPCLI (volatile! false))
+(def ^:private stopcli (volatile! false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -65,10 +65,10 @@
   ^Atom
   [gist]
   (let [home (:basedir gist)]
-    (precondDir (io/file home DN_DIST)
-                (io/file home DN_LIB)
-                (io/file home DN_ETC)
-                (io/file home DN_BIN))
+    (precondDir (io/file home dn-dist)
+                (io/file home dn-lib)
+                (io/file home dn-etc)
+                (io/file home dn-bin))
     (atom gist)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -80,8 +80,8 @@
   (let [{:keys [pidFile
                 execv
                 killSvr]} @gist]
-    (when-not @STOPCLI
-      (vreset! STOPCLI true)
+    (when-not @stopcli
+      (vreset! stopcli true)
       (print "\n\n")
       (log/info "closing the remote shutdown hook")
       (if (fn? killSvr) (killSvr))
@@ -145,13 +145,13 @@
   [home cwd]
   (let
     [{:keys [locale info] :as env}
-     (slurpXXXConf cwd CFG_POD_CF true)
+     (slurpXXXConf cwd cfg-pod-cf true)
      cn (stror (:country locale) "US")
      ln (stror (:lang locale) "en")
      ver (sysProp "wabbit.version")
      fp (io/file cwd "wabbit.pid")
      loc (Locale. ln cn)
-     rc (getResource C_RCB loc)
+     rc (getResource c-rcb loc)
      ctx (->> {:encoding (stror (:encoding info) "utf-8")
                :basedir (io/file home)
                :podDir (io/file cwd)
@@ -181,7 +181,7 @@
               (type (.getParent cz)))
     (log/debug "%s" @ctx)
     (log/info "container is now running...")
-    (while (not @STOPCLI)
+    (while (not @stopcli)
       (safeWait 3000))
     (log/info "vm shut down")
     (log/info "(bye)")

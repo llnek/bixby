@@ -43,7 +43,7 @@
               (expandEnvVars "${HOME}"))
          (expandVars "${user.home}${HOME}")))
 
-  (is (precondDir *TEMPFILE-REPO*))
+  (is (precondDir *tempfile-repo*))
   (is (let [t (tempFile)
             _ (spitUtf8 t "hello")
             ok (precondFile t)]
@@ -55,7 +55,7 @@
         (and (inst? File (maybeDir m :s))
              (inst? File (maybeDir m :f)))))
 
-  (is (let [fp (fpath *TEMPFILE-REPO*)
+  (is (let [fp (fpath *tempfile-repo*)
             _ (sysProp! "wabbit.proc.dir" fp)
             t (tempFile)
             _ (spitUtf8 t "${pod.dir}")
@@ -63,7 +63,7 @@
         (deleteQ t)
         (= s fp)))
 
-  (is (let [fp (fpath *TEMPFILE-REPO*)
+  (is (let [fp (fpath *tempfile-repo*)
             tn (juid)
             _ (spitXXXConf fp tn {:a 1})
             m (slurpXXXConf fp tn)]
@@ -71,7 +71,7 @@
         (and (== 1 (count m))
              (== 1 (:a m)))))
 
-  (is (let [fp (fpath *TEMPFILE-REPO*)
+  (is (let [fp (fpath *tempfile-repo*)
             _ (sysProp! "wabbit.proc.dir" fp)
             tn (juid)
             _ (spitXXXConf fp tn {:a "${pod.dir}"})
@@ -135,14 +135,14 @@
 
   (is (thrown? CmdError (onGenerate ["-bbbbb"])))
 
-  (is (let [p (fpath "/wdrive/tmp");;*TEMPFILE-REPO*)
+  (is (let [p (fpath "/wdrive/tmp");;*tempfile-repo*)
             _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
             _ (sysProp! "wabbit.proc.dir" p)
             _ (deleteDir (io/file p "web"))
             _ (onCreate ["-w" "web"])]
         true))
 
-  (is (let [p (fpath "/wdrive/tmp");;*TEMPFILE-REPO*)
+  (is (let [p (fpath "/wdrive/tmp");;*tempfile-repo*)
             _ (sysProp! "wabbit.home.dir" (fpath (getCwd)))
             _ (sysProp! "wabbit.proc.dir" p)
             _ (deleteDir (io/file p "soa"))

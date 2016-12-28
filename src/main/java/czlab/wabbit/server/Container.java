@@ -20,8 +20,8 @@ import czlab.xlib.Hierarchial;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
 import czlab.xlib.Startable;
-import czlab.horde.JDBCPool;
-import czlab.horde.DBAPI;
+import czlab.horde.JdbcPool;
+import czlab.horde.DbApi;
 import java.io.File;
 
 /**
@@ -57,16 +57,16 @@ public interface Container extends Component
   public File podDir();
 
   /**/
-  public JDBCPool acquireDbPool(Object groupid);
+  public JdbcPool acquireDbPool(Object groupid);
 
   /**/
-  public DBAPI acquireDbAPI(Object groupid);
+  public DbApi acquireDbAPI(Object groupid);
 
   /**/
-  public JDBCPool acquireDbPool();
+  public JdbcPool acquireDbPool();
 
   /**/
-  public DBAPI acquireDbAPI();
+  public DbApi acquireDbAPI();
 
 }
 

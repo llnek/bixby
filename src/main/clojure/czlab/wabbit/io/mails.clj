@@ -56,17 +56,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
-(def CZ_POP3S  "com.sun.mail.pop3.POP3SSLStore")
-(def CZ_POP3  "com.sun.mail.pop3.POP3Store")
-(def POP3S "pop3s")
-(def POP3C "pop3")
+(def ^:private cz-pop3s  "com.sun.mail.pop3.POP3SSLStore")
+(def ^:private cz-pop3  "com.sun.mail.pop3.POP3Store")
+(def ^:private pop3s "pop3s")
+(def ^:private pop3c "pop3")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IMAP
-(def CZ_IMAPS "com.sun.mail.imap.IMAPSSLStore")
-(def CZ_IMAP "com.sun.mail.imap.IMAPStore")
-(def IMAPS "imaps")
-(def IMAP "imap")
+(def ^:private cz-imaps "com.sun.mail.imap.IMAPSSLStore")
+(def ^:private cz-imap "com.sun.mail.imap.IMAPStore")
+(def ^:private imaps "imaps")
+(def ^:private imap "imap")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -254,7 +254,7 @@
                   (sanitize co cfg0))
         [z p]
         (if (:ssl? c2)
-          [CZ_POP3S POP3S] [CZ_POP3 POP3C])]
+          [cz-pop3s pop3s] [cz-pop3 pop3c])]
     (.setv (.getx co) :emcfg c2)
     (resolveProvider co z p)
     co))
@@ -293,7 +293,7 @@
                   (sanitize co cfg0))
         [z p]
         (if (:ssl? c2)
-          [CZ_IMAPS IMAPS] [CZ_IMAP IMAP])]
+          [cz-imaps imaps] [cz-imap imap])]
     (.setv (.getx co) :emcfg c2)
     (resolveProvider co z p)
     co))

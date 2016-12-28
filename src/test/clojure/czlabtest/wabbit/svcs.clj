@@ -50,7 +50,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private RESULT (atom 0))
+(def ^:private result-var (atom 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -61,7 +61,7 @@
     (script<>
       (fn [_ _]
         (do->nil
-          (swap! RESULT + 8))))))
+          (swap! result-var + 8))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -85,7 +85,7 @@
           (when (>= (.indexOf fp rp) 0)
             ;; generate a new file in target-folder
             (spitUtf8 (io/file tp nm) s)
-            (swap! RESULT + n)))))))
+            (swap! result-var + n)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,7 +100,7 @@
           dis (DataInputStream. (.sockIn ev))
           dos (DataOutputStream. (.sockOut ev))
           nm (.readInt dis)]
-         (swap! RESULT + nm)
+         (swap! result-var + nm)
          (.writeInt dos (int nm))
          (.flush dos)))))
 
@@ -115,7 +115,7 @@
              ^TextMessage msg (.message ev)
              s (.getText msg)]
          (assert (hgl? s))
-         (swap! RESULT + 8)))))
+         (swap! result-var + 8)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,7 +129,7 @@
              _ (assert (some? msg))
              ^Multipart p (.getContent msg)]
          (assert (some? p))
-         (swap! RESULT + 8)))))
+         (swap! result-var + 8)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -179,7 +179,7 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.init s
                {:handler "czlabtest.wabbit.svcs/mailHandler"
                 :host "localhost"
@@ -191,7 +191,7 @@
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
   (is (let [_ (sysProp! "wabbit.mock.mail.proto" "pop3s")
             etype :czlab.wabbit.io.mails/POP3
@@ -200,7 +200,7 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.init s
                {:handler "czlabtest.wabbit.svcs/mailHandler"
                 :host "localhost"
@@ -212,7 +212,7 @@
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
   (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
             etype :czlab.wabbit.io.jms/JMS
@@ -228,7 +228,7 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.init s
                {:jndiUser "root"
                 :jndiPwd "root"
@@ -238,7 +238,7 @@
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
   (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
             etype :czlab.wabbit.io.jms/JMS
@@ -254,7 +254,7 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.init s
                {:jndiUser "root"
                 :jndiPwd "root"
@@ -264,7 +264,7 @@
         (safeWait 3000)
         (.stop s)
         (.dispose ctr)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
   (is (let [etype :czlab.wabbit.io.socket/Socket
             m (*emitter-defs* etype)
@@ -279,7 +279,7 @@
             s (service<> ctr etype "t" c)]
         (.init s {})
         (.start s nil)
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (dotimes [n 2]
           (safeWait 1000)
           (with-open [soc (Socket. host (int port))]
@@ -290,10 +290,10 @@
                  (.writeInt (int 8))
                  (.flush))
                (let [nm (.readInt dis)]
-                 (swap! RESULT + nm)))))
+                 (swap! result-var + nm)))))
         (.stop s)
         (.dispose ctr)
-        (== @RESULT 32)))
+        (== @result-var 32)))
 
 
   (is (let [etype :czlab.wabbit.io.loops/OnceTimer
@@ -304,12 +304,12 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.start s nil)
         (safeWait 2000)
         (.stop s)
         (.dispose ctr)
-        (== 8 @RESULT)))
+        (== 8 @result-var)))
 
   (is (let [etype :czlab.wabbit.io.loops/RepeatingTimer
             m (*emitter-defs* etype)
@@ -320,12 +320,12 @@
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.start s nil)
         (safeWait 3500)
         (.stop s)
         (.dispose ctr)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
   (is (let [etype :czlab.wabbit.io.files/FilePicker
             m (*emitter-defs* etype)
@@ -349,7 +349,7 @@
         (mkdirs from)
         (mkdirs to)
         (spitUtf8 firstfn "8")
-        (reset! RESULT 0)
+        (reset! result-var 0)
         (.start s nil)
         (safeWait 1000)
         (touch! firstfn)
@@ -358,7 +358,7 @@
         (.dispose ctr)
         (deleteDir from)
         (deleteDir to)
-        (> @RESULT 8)))
+        (> @result-var 8)))
 
 
 

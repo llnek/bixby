@@ -43,66 +43,66 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^String C_VERPROPS "czlab/czlab-wabbit/version.properties")
-(def ^String C_RCB "czlab.wabbit.etc/Resources")
+(def ^String c-verprops "czlab/czlab-wabbit/version.properties")
+(def ^String c-rcb "czlab.wabbit.etc/Resources")
 
-(def ^:private ^String SYS_DEVID_PFX "system.####")
-(def ^:private ^String SYS_DEVID_SFX "####")
+(def ^:private ^String sys-devid-pfx "system.####")
+(def ^:private ^String sys-devid-sfx "####")
 
-(def SYS_DEVID_REGEX #"system::[0-9A-Za-z_\-\.]+" )
-(def SHUTDOWN_DEVID #"system::kill_9" )
-(def ^String DEF_DBID "default")
+(def sys-devid-regex #"system::[0-9A-Za-z_\-\.]+" )
+(def shutdown-devid #"system::kill_9" )
+(def ^String dft-dbid "default")
 
-(def ^String SHUTDOWN_URI "/kill9")
-(def ^String POD_PROTOCOL  "pod:" )
-(def ^String META_INF  "META-INF" )
-(def ^String WEB_INF  "WEB-INF" )
+(def ^String shutdown-uri "/kill9")
+(def ^String pod-protocol  "pod:" )
+(def ^String meta-inf  "META-INF" )
+(def ^String web-inf  "WEB-INF" )
 
-(def ^String DN_TARGET "target")
-(def ^String DN_BUILD "build")
+(def ^String dn-target "target")
+(def ^String dn-build "build")
 
-(def ^String DN_CLASSES "classes" )
-(def ^String DN_BIN "bin" )
-(def ^String DN_CONF "conf" )
-(def ^String DN_LIB "lib" )
+(def ^String dn-classes "classes" )
+(def ^String dn-bin "bin" )
+(def ^String dn-conf "conf" )
+(def ^String dn-lib "lib" )
 
-(def ^String DN_CFGAPP "etc/app" )
-(def ^String DN_CFGWEB "etc/web" )
-(def ^String DN_ETC "etc" )
+(def ^String dn-cfgapp "etc/app" )
+(def ^String dn-cfgweb "etc/web" )
+(def ^String dn-etc "etc" )
 
-(def ^String DN_RCPROPS  "Resources_en.properties" )
-(def ^String DN_TEMPLATES  "templates" )
+(def ^String dn-rcprops  "Resources_en.properties" )
+(def ^String dn-templates  "templates" )
 
-(def ^String DN_LOGS "logs" )
-(def ^String DN_TMP "tmp" )
-(def ^String DN_DBS "dbs" )
-(def ^String DN_DIST "dist" )
-(def ^String DN_VIEWS  "htmls" )
-(def ^String DN_PAGES  "pages" )
-(def ^String DN_PATCH "patch" )
-(def ^String DN_MEDIA "media" )
-(def ^String DN_SCRIPTS "scripts" )
-(def ^String DN_STYLES "styles" )
-(def ^String DN_PUB "public" )
+(def ^String dn-logs "logs" )
+(def ^String dn-tmp "tmp" )
+(def ^String dn-dbs "dbs" )
+(def ^String dn-dist "dist" )
+(def ^String dn-views  "htmls" )
+(def ^String dn-pages  "pages" )
+(def ^String dn-patch "patch" )
+(def ^String dn-media "media" )
+(def ^String dn-scripts "scripts" )
+(def ^String dn-styles "styles" )
+(def ^String dn-pub "public" )
 
-(def ^String WEB_CLASSES  (str WEB_INF  "/" DN_CLASSES))
-(def ^String WEB_LIB  (str WEB_INF  "/" DN_LIB))
-(def ^String WEB_LOG  (str WEB_INF  "/logs"))
-(def ^String WEB_XML  (str WEB_INF  "/web.xml"))
+(def ^String web-classes  (str web-inf  "/" dn-classes))
+(def ^String web-lib  (str web-inf  "/" dn-lib))
+(def ^String web-log  (str web-inf  "/logs"))
+(def ^String web-xml  (str web-inf  "/web.xml"))
 
-(def ^String MN_RNOTES (str META_INF "/" "RELEASE-NOTES.txt"))
-(def ^String MN_README (str META_INF "/" "README.md"))
-(def ^String MN_NOTES (str META_INF "/" "NOTES.txt"))
-(def ^String MN_LIC (str META_INF "/" "LICENSE.txt"))
+(def ^String mn-rnotes (str meta-inf "/" "RELEASE-NOTES.txt"))
+(def ^String mn-readme (str meta-inf "/" "README.md"))
+(def ^String mn-notes (str meta-inf "/" "NOTES.txt"))
+(def ^String mn-lic (str meta-inf "/" "LICENSE.txt"))
 
-(def ^String POD_CF  "pod.conf" )
-(def ^String CFG_POD_CF  (str DN_CONF  "/"  POD_CF ))
+(def ^String pod-cf  "pod.conf" )
+(def ^String cfg-pod-cf  (str dn-conf  "/"  pod-cf ))
 
-(def JS_FLATLINE :____flatline)
-(def EV_OPTS :____eventoptions)
-(def JS_LAST :____lastresult)
-(def JS_CRED :credential)
-(def JS_USER :principal)
+(def jslot-flatline :____flatline)
+(def evt-opts :____eventoptions)
+(def jslot-last :____lastresult)
+(def jslot-cred :credential)
+(def jslot-user :principal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -174,7 +174,7 @@
   "Parse a edn configuration file"
   {:tag String}
   ([podDir confile]
-   (readConf (io/file podDir DN_CONF confile)))
+   (readConf (io/file podDir dn-conf confile)))
   ([file]
    (doto->>
      (-> (io/file file)

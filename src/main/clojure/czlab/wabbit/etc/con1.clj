@@ -393,12 +393,12 @@
           (cs/replace "${CLJ.SRC}"
                       (fpath (io/file poddir
                                       "src/main/clojure")))))
-    (mkdirs (io/file poddir DN_BUILD "classes"))
+    (mkdirs (io/file poddir dn-build "classes"))
     (doall
       (map (partial scanJars sb)
-           [(io/file (getHomeDir) DN_DIST)
-            (io/file (getHomeDir) DN_LIB)
-            (io/file poddir DN_TARGET)]))
+           [(io/file (getHomeDir) dn-dist)
+            (io/file (getHomeDir) dn-lib)
+            (io/file poddir dn-target)]))
     (writeFile
       (io/file ec ".classpath")
       (-> (resStr (str "czlab/wabbit/eclipse/"
@@ -434,7 +434,7 @@
   ([id hint] (onSvc id hint nil))
   ([id hint svc]
    (let
-     [cf (slurpXXXConf (getProcDir) CFG_POD_CF)
+     [cf (slurpXXXConf (getProcDir) cfg-pod-cf)
       root (:services cf)
       nw
       (if (< hint 0)
@@ -444,7 +444,7 @@
           (if (in? root id) (trap! CmdError))
           (assoc root id (assoc gist :service svc))))]
      (if (some? nw)
-       (spitXXXConf (getProcDir) CFG_POD_CF nw)))))
+       (spitXXXConf (getProcDir) cfg-pod-cf nw)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

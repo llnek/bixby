@@ -58,7 +58,7 @@
     (script<>
       #(let
          [^Job job %2
-          tpl (:template (.getv job EV_OPTS))
+          tpl (:template (.getv job evt-opts))
           ^HttpEvent evt (.event job)
           co (.. evt source server)
           {:keys [data ctype]}

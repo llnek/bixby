@@ -52,12 +52,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^String SESSION_COOKIE "__ss117")
-(def ^:private SSID_FLAG :__f01es)
-(def ^:private CS_FLAG :__f184n ) ;; creation time
-(def ^:private LS_FLAG :__f384n ) ;; last access time
-(def ^:private ES_FLAG :__f484n ) ;; expiry time
-(def ^:private ^String NV_SEP "\u0000")
+(def ^:private ^String session-cookie "__ss117")
+(def ^:private ssid-flag :__f01es)
+(def ^:private cs-flag :__f184n ) ;; creation time
+(def ^:private ls-flag :__f384n ) ;; last access time
+(def ^:private es-flag :__f484n ) ;; expiry time
+(def ^:private ^String nv-sep "\u0000")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -67,14 +67,14 @@
   (let [maxAgeSecs (or maxAgeSecs -1)
         now (now<>)]
     (doto mvs
-      (.setAttr SSID_FLAG
+      (.setAttr ssid-flag
                 (hexify (bytesify (juid))))
-      (.setAttr ES_FLAG
+      (.setAttr es-flag
                 (if (spos? maxAgeSecs)
                   (+ now (* maxAgeSecs 1000))
                   maxAgeSecs))
-      (.setAttr CS_FLAG now)
-      (.setAttr LS_FLAG now))))
+      (.setAttr cs-flag now)
+      (.setAttr ls-flag now))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -120,15 +120,15 @@
           (.setv impl :newOne flag))
 
         (maxIdleSecs [_] (or (.getv impl :maxIdleSecs) 0))
-        (creationTime [_] (or (.getv _attrs CS_FLAG) 0))
-        (expiryTime [_] (or (.getv _attrs ES_FLAG) 0))
+        (creationTime [_] (or (.getv _attrs cs-flag) 0))
+        (expiryTime [_] (or (.getv _attrs es-flag) 0))
         (xref [_] (.getv _attrs :csrf))
-        (id [_] (.getv _attrs SSID_FLAG))
+        (id [_] (.getv _attrs ssid-flag))
 
         (lastError [_] (.getv impl :error))
 
         (lastAccessedTime [_]
-          (or (.getv _attrs LS_FLAG) 0))
+          (or (.getv _attrs ls-flag) 0))
 
         Object
 
@@ -137,7 +137,7 @@
             (reduce
               #(let [[k v] %2]
                  (addDelim! %1
-                            NV_SEP
+                            nv-sep
                             (str (name k) ":" v)))
               (strbf<>)
               (.seq _attrs)))))
@@ -180,7 +180,7 @@
         [ck (->> (maybeMacIt gist
                              (.signer mvs)
                              (str mvs))
-                 (HttpCookie. SESSION_COOKIE))
+                 (HttpCookie. session-cookie))
          est (.expiryTime mvs)]
         (->> (long (or maxIdleSecs -1))
              (.setMaxIdleSecs mvs))
@@ -217,7 +217,7 @@
         (if (.wantSession ri)
           [(wsession<> pkey (:ssl? gist))
            (-> (:cookies gist)
-               (get SESSION_COOKIE))])]
+               (get session-cookie))])]
     (cond
       (some? ck)
       (let
@@ -231,7 +231,7 @@
          ok (testCookie pkey ri p1 p2)]
         (log/debug "session attrs= %s" p2)
         (try
-          (doseq [^String nv (.split p2 NV_SEP)
+          (doseq [^String nv (.split p2 nv-sep)
                   :let [ss (.split nv ":" 2)
                         ^String s1 (aget ss 0)
                         k1 (keyword s1)
@@ -245,15 +245,15 @@
           (catch Throwable _
             (trap! ExpiredError "malformed cookie")))
         (.setNew mvs false 0)
-        (let [ts (or (.attr mvs LS_FLAG) -1)
-              es (or (.attr mvs ES_FLAG) -1)
+        (let [ts (or (.attr mvs ls-flag) -1)
+              es (or (.attr mvs es-flag) -1)
               mi (or maxIdleSecs 0)
               now (now<>)]
           (if (or (< es now)
                   (and (spos? mi)
                        (< (+ ts (* 1000 mi)) now)))
             (trap! ExpiredError "Session has expired"))
-          (.setAttr mvs LS_FLAG now)
+          (.setAttr mvs ls-flag now)
           mvs))
 
       (some? mvs)
@@ -320,7 +320,7 @@
   [^HttpEvent evt args]
   (let
     [podDir (.. evt source server podDir)
-     pubDir (io/file podDir DN_PUB)
+     pubDir (io/file podDir dn-pub)
      cfg (.. evt source config)
      check? (:fileAccessCheck? cfg)
      fpath (str (:path args))
@@ -370,7 +370,7 @@
 
   (let
     [podDir (.. evt source server podDir)
-     pubDir (io/file podDir DN_PUB)
+     pubDir (io/file podDir dn-pub)
      gist (.msgGist evt)
      r (:route gist)
      ^RouteInfo ri (:info r)
@@ -446,16 +446,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ASSET_HANDLER
+(def ^:private asset-handler
   (workStream<>
     (script<>
       #(let [evt (.event ^Job %2)]
          (handleStatic evt
-                       (.getv ^Job %2 EV_OPTS))))))
+                       (.getv ^Job %2 evt-opts))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn assetHandler<> "" ^WorkStream [] ASSET_HANDLER)
+(defn assetHandler<> "" ^WorkStream [] asset-handler)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

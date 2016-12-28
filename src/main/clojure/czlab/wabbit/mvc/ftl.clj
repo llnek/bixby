@@ -43,11 +43,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol FtlCljAPI (ftl->clj [obj] ))
+(defprotocol FtlCljApi (ftl->clj [obj] ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(extend-protocol FtlCljAPI
+(extend-protocol FtlCljApi
 
   TemplateBooleanModel
   (ftl->clj [obj]

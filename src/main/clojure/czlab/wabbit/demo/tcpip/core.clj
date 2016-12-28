@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private ^String TEXTMsg "Hello World, time is ${TS} !")
+(def ^:private ^String text-msg "Hello World, time is ${TS} !")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -54,7 +54,7 @@
           tcp (-> ^Container
                   (.server job)
                   (.service :default-sample))
-          s (.replace TEXTMsg "${TS}" (str (Date.)))
+          s (.replace text-msg "${TS}" (str (Date.)))
           ^String host (.getv (.getx tcp) :host)
           bits (.getBytes s "utf-8")
           port (.getv (.getx tcp) :port)]

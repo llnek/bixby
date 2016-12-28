@@ -48,11 +48,11 @@
             Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(set! *warn-on-reflection* false)
+;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(def ^:private START-TIME (.getTime (Date.)))
+(def ^:private start-time (.getTime (Date.)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -157,13 +157,13 @@
         Execvisor
 
         (uptimeInMillis [_]
-          (- (System/currentTimeMillis) START-TIME))
+          (- (System/currentTimeMillis) start-time))
         (id [_] pid)
         (homeDir [_] (.getv impl :basedir))
         (locale [_] (.getv impl :locale))
         (version [_] (.getv impl :version))
         (getx [_] impl)
-        (startTime [_] START-TIME)
+        (startTime [_] start-time)
         (kill9 [_] (apply (.getv impl :stop!) []))
 
         (restart [this _] this)
@@ -256,7 +256,7 @@
     (logcomp "com->init" co)
     (.copyEx (.getx co) @rootGist)
     (-> (io/file podDir
-                 DN_ETC
+                 dn-etc
                  "mime.properties")
         (io/as-url)
         (setupCache ))

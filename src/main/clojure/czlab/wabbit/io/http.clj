@@ -114,8 +114,8 @@
 ;;(set! *warn-on-reflection* true)
 (derive ::HTTP :czlab.wabbit.io.core/Service)
 (derive ::WebMVC ::HTTP)
-(def ^:private ^String AUTH "authorization")
-(def ^:private ^String BASIC "basic")
+(def ^:private ^String auth-token "authorization")
+(def ^:private ^String basic-token "basic")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -124,7 +124,7 @@
   ^APersistentMap
   [^HttpEvent evt]
   (if-some+ [v (-> (.msgGist evt)
-                   (gistHeader AUTH))]
+                   (gistHeader auth-token))]
     (parseBasicAuth v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

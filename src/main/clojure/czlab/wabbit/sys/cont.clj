@@ -46,7 +46,7 @@
 
   (:import [czlab.wabbit.etc Gist ServiceError ConfigError]
            [czlab.wabbit.pugs PluginFactory Plugin]
-           [czlab.horde Schema JDBCPool DBAPI]
+           [czlab.horde Schema JdbcPool DbApi]
            [java.io File StringWriter]
            [czlab.wabbit.server
             Execvisor
@@ -85,10 +85,10 @@
 ;;
 (defn- maybeGetDBPool
   ""
-  ^JDBCPool
+  ^JdbcPool
   [^Container co ^String gid]
   (let
-    [dk (stror gid DEF_DBID)]
+    [dk (stror gid dft-dbid)]
     (get
       (.getv (.getx co) :dbps)
       (keyword dk))))
@@ -97,7 +97,7 @@
 ;;
 (defn- maybeGetDBAPI
   ""
-  ^DBAPI
+  ^DbApi
   [^Container co ^String gid]
   (when-some
     [p (maybeGetDBPool co gid)]
@@ -117,7 +117,7 @@
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
     (log/debug "shutting down dbpool %s" (name k))
-    (.shutdown ^JDBCPool v))
+    (.shutdown ^JdbcPool v))
   (some-> (.cljrt co)
           (.close)))
 
@@ -134,7 +134,7 @@
      ctx (.getx gist)
      podPath (io/file (.getv ctx :path))
      pub (io/file podPath
-                  DN_PUB DN_PAGES)
+                  dn-pub dn-pages)
      ftlCfg (genFtlConfig {:root pub})
      impl (muble<> {:services {}})]
     (with-meta
@@ -374,7 +374,7 @@
      res (->>
            (format "Resources_%s.properties"
                    (.getLanguage loc))
-           (io/file (:podDir conf) DN_ETC))]
+           (io/file (:podDir conf) dn-etc))]
     (.setv (.getx co) :core cpu)
     (if (fileRead? res)
       (->> (loadResource res)

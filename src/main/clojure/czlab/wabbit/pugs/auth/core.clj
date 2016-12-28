@@ -78,36 +78,36 @@
             DuplicateUser
             PluginFactory]
            [czlab.horde
-            DBAPI
+            DbApi
             Schema
             SQLr
-            JDBCPool
-            JDBCInfo]))
+            JdbcPool
+            JdbcInfo]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-(def ^:private ^String NONCE_PARAM "nonce_token")
-(def ^:private ^String CSRF_PARAM "csrf_token")
-(def ^:private ^String PWD_PARAM "credential")
-(def ^:private ^String EMAIL_PARAM "email")
-(def ^:private ^String USER_PARAM "principal")
-(def ^:private ^String CAPTCHA_PARAM "captcha")
+(def ^:private ^String nonce-param "nonce_token")
+(def ^:private ^String csrf-param "csrf_token")
+(def ^:private ^String pwd-param "credential")
+(def ^:private ^String email-param "email")
+(def ^:private ^String user-param "principal")
+(def ^:private ^String captcha-param "captcha")
 
 ;; hard code the shift position, the encrypt code
 ;; should match this value.
-(def ^:private CAESAR_SHIFT 16)
+(def ^:private caesar-shift 16)
 
-(def ^:private PMS
-  {EMAIL_PARAM [ :email #(normalizeEmail %) ]
-   CAPTCHA_PARAM [ :captcha #(strim %) ]
-   USER_PARAM [ :principal #(strim %) ]
-   PWD_PARAM [ :credential #(strim %) ]
-   CSRF_PARAM [ :csrf #(strim %) ]
-   NONCE_PARAM [ :nonce #(some? %) ]})
+(def ^:private props-map
+  {email-param [ :email #(normalizeEmail %) ]
+   captcha-param [ :captcha #(strim %) ]
+   user-param [ :principal #(strim %) ]
+   pwd-param [ :credential #(strim %) ]
+   csrf-param [ :csrf #(strim %) ]
+   nonce-param [ :nonce #(some? %) ]})
 
-(def ^:dynamic *META-CACHE* nil)
-(def ^:dynamic *JDBC-POOL* nil)
+(def ^:dynamic *meta-cache* nil)
+(def ^:dynamic *jdbc-pool* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -122,7 +122,7 @@
       #(let [fm (.getFieldNameLC ^ULFileItem %2)
              fv (str %2)]
          (log/debug "form-field=%s, value=%s" fm fv)
-         (if-some [[k v] (get PMS fm)]
+         (if-some [[k v] (get props-map fm)]
            (assoc! %1 k (v fv))
            %1))
       (filterFormFields itms))))
@@ -142,7 +142,7 @@
          (if-some [fv (get json k)]
            (assoc! %1 a1 (a2 fv))
            %1))
-      PMS)))
+      props-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -151,13 +151,13 @@
   [^HttpEvent evt]
   (let [gist (.msgGist evt)]
     (preduce<map>
-      #(let [[k [a1 a2]] PMS]
+      #(let [[k [a1 a2]] props-map]
          (if (gistParam? gist k)
              (assoc! %1
                      a1
                      (a2 (gistParam gist k)))
              %1))
-      PMS)))
+      props-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -212,8 +212,8 @@
   ""
   [evt]
   `(-> (maybeGetAuthInfo ~evt)
-       (maybeDecodeField :principal CAESAR_SHIFT)
-       (maybeDecodeField :credential CAESAR_SHIFT)))
+       (maybeDecodeField :principal caesar-shift)
+       (maybeDecodeField :credential caesar-shift)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -228,7 +228,7 @@
 (defn assertPluginOK
   "If the plugin has been initialized,
    by looking into the db"
-  [^JDBCPool pool]
+  [^JdbcPool pool]
   {:pre [(some? pool)]}
   (let [tbl (->> :czlab.wabbit.pugs.auth.model/LoginAccount
                  (.get ^Schema *auth-meta-cache*)
@@ -610,8 +610,8 @@
 
     (login [_ u p]
       (binding
-        [*JDBC-POOL* (.acquireDbPool ctr)
-         *META-CACHE* *auth-meta-cache*]
+        [*jdbc-pool* (.acquireDbPool ctr)
+         *meta-cache* *auth-meta-cache*]
         (let
           [cur (SecurityUtils/getSubject)
            sss (.getSession cur)]
@@ -685,7 +685,7 @@
   (let [podDir (io/file (first args))
         cmd (nth args 1)
         db (nth args 2)
-        pod (slurpXXXConf podDir CFG_POD_CF true)
+        pod (slurpXXXConf podDir cfg-pod-cf true)
         pkey (-> (get-in pod [:info :digest])
                  str
                  (.toCharArray))

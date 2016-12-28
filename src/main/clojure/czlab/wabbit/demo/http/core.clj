@@ -37,7 +37,7 @@
 ;;
 (def
   ^:private
-  FX
+  fx-str
   (str "<?xml version = \"1.0\" encoding = \"utf-8\"?>"
        "<hello xmlns=\"http://simple/\">"
        "<world>"
@@ -59,7 +59,7 @@
        ;; by wrapping it into a stream data object
        (doto res
          (.setContentType "text/xml")
-         (.setContent FX))
+         (.setContent fx-str))
        ;; associate this result with the orignal event
        ;; this will trigger the http response
        (replyResult (.socket ev) res))))

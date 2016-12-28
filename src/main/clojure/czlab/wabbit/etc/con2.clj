@@ -100,7 +100,7 @@
           (fragSampleEmitter :czlab.wabbit.io.loops/OnceTimer))]
     (mkdirs h2db)
     (replaceFile!
-      (io/file podDir CFG_POD_CF)
+      (io/file podDir cfg-pod-cf)
       #(-> (cs/replace % "@@SAMPLE-EMITTER@@" se)
            (cs/replace "@@AUTH-PLUGIN@@" p)
            (cs/replace "@@H2DBPATH@@" h2dbUrl)))))
@@ -119,7 +119,7 @@
      mjava "main/java"
      hhh (getHomeDir)]
     (FileUtils/copyDirectory
-      (io/file hhh DN_ETC "app")
+      (io/file hhh dn-etc "app")
       podDir
       (FileFilterUtils/trueFileFilter))
     (when (= :soa kind)
@@ -202,7 +202,7 @@
     (copyOnePod out dn podDomain kind)
     (FileUtils/copyDirectory
       demo
-      (io/file top DN_CONF)
+      (io/file top dn-conf)
       (FileFilterUtils/suffixFileFilter ".conf"))
     (FileUtils/copyDirectory
       demo
