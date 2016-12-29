@@ -28,7 +28,7 @@
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
-  :test-runner "@@APPDOMAIN@@.ClojureJUnit"
+  :test-runner "test.ClojureJUnit"
   :version "0.1.0-SNAPSHOT"
   :debug true
   :project '@@APPDOMAIN@@)
@@ -48,7 +48,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (b/bootEnv!
-  {:wabbitDir (xc/fpath (sysProp "wabbit.home.dir"))
+  {:wabbitDir (xc/fpath (xc/sysProp "wabbit.home.dir"))
    :wabbitLibs (fn [_]
                  [[:fileset {:dir (fp! (ge :wabbitDir) "patch")
                              :includes "**/*.jar"}]
@@ -308,6 +308,16 @@
       (printf "%s\n" (:l-vars m))
       (printf "%s\n" (:u-vars m)))
     fileset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(deftask tst
+
+  "for test only"
+  []
+
+  (comp (b/testJava)
+        (b/testClj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
