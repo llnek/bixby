@@ -20,7 +20,7 @@
   ;;:url ""
 
   :dependencies '[
-    [czlab/czlab-wabbit "1.0.0"]
+    [czlab/czlab-wabbit "0.1.0"]
     [com.cemerick/pomegranate "0.3.1"]
     [net.mikera/cljunit "0.6.0"]
     [codox/codox "0.10.2"]
@@ -295,8 +295,8 @@
   []
   (bc/with-pre-wrap fileset
     (let [m (b/dbgBootVars)]
-      (printf "%s\n" (:L-VARS m))
-      (printf "%s\n" (:U-VARS m)))
+      (printf "%s\n" (:l-vars m))
+      (printf "%s\n" (:u-vars m)))
     fileset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

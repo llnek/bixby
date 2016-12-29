@@ -10,6 +10,9 @@
     </Console>
   </Appenders>
   <Loggers>
+    <Logger name="@@APPDOMAIN@@" level="info" additivity="false">
+      <AppenderRef ref="STDOUT"/>
+    </Logger>
     <Logger name="czlab" level="info" additivity="false">
       <AppenderRef ref="STDOUT"/>
     </Logger>

@@ -162,6 +162,8 @@ public class CljPodLoader extends URLClassLoader {
       boolean sys=isSystem(name);
       ClassLoader source=null;
 
+      //TLOG.info("loadClass##### {}", name);
+
       if (c == null && _parent != null && sys) {
         tried_parent= true;
         source=_parent;
@@ -215,6 +217,7 @@ public class CljPodLoader extends URLClassLoader {
   protected Class<?> findClass(final String name)
   throws ClassNotFoundException {
     Class<?> clazz=null;
+    //TLOG.info("findClass##### {}", name);
     if (_transformers.isEmpty()) {
       clazz = super.findClass(name);
     }
@@ -263,18 +266,19 @@ public class CljPodLoader extends URLClassLoader {
    */
   private CljPodLoader init(File homeDir, File appDir) {
     File s= new File(appDir, "src/main/clojure");
-    File j= new File(appDir, "build/j");
-    File c= new File(appDir, "build/c");
-    File d= new File(appDir, "build/d");
+    File j= new File(appDir, "out/j");
+    File c= new File(appDir, "out/c");
+    File d= new File(appDir, "out/d");
     File p= new File(appDir, "patch");
     File b= new File(appDir, "target");
 
-    c.mkdirs();
+    //TLOG.info("classloader#init\nhome={}\ncwd={}", homeDir, appDir);
+    //c.mkdirs();
     if (!_loaded) {
       findUrls(p);
-      addUrl(s);
       addUrl(j);
       addUrl(c);
+      addUrl(s);
       findUrls(d);
       findUrls(b);
       init0(homeDir);

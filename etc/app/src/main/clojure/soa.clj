@@ -18,7 +18,7 @@
 ;;
 (defn dftHandler
   ""
-  ^TaskDef
+  ^WorkStream
   []
   (workStream<>
     (script<>

@@ -6,11 +6,11 @@
 
   @@APPDOMAIN@@.core
 
-  (:require [czlab.xlib.logging :as log])
+  (:require [czlab.xlib.logging :as log]
+            [czlab.wabbit.etc.core :as etc :refer :all])
 
   (:use [czlab.convoy.net.core]
         [czlab.wabbit.sys.core]
-        [czlab.wabbit.etc.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
@@ -48,7 +48,7 @@
     (script<>
       (fn [_ ^Job job]
         (let
-          [tpl (:template (.getv job EV_OPTS))
+          [tpl (:template (.getv job etc/evt-opts))
            ^HttpEvent evt (.event job)
            co (.. evt source server)
            {:keys [data ctype]}

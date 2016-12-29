@@ -25,6 +25,10 @@
     </RollingFile>
   </Appenders>
   <Loggers>
+    <Logger name="@@APPDOMAIN@@" level="debug" additivity="false">
+      <AppenderRef ref="ROLLER" />
+      <AppenderRef ref="STDOUT"/>
+    </Logger>
     <Logger name="czlab" level="debug" additivity="false">
       <AppenderRef ref="ROLLER" />
       <AppenderRef ref="STDOUT" />

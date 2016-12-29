@@ -108,12 +108,14 @@ public class Cljshim implements java.io.Closeable {
   private Cljshim(ClassLoader cl, String name) {
     _require = RT.var("clojure.core", "require");
     _resolve = RT.var("clojure.core", "resolve");
+    _refer = RT.var("clojure.core", "refer");
     _loader=cl;
     _name=name;
   }
 
   private ClassLoader _loader;
   private Var _require;
+  private Var _refer;
   private Var _resolve;
   private String _name;
 
