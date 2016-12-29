@@ -20,11 +20,11 @@
   ;;:url ""
 
   :dependencies '[
-    [czlab/czlab-wabbit "0.1.0"]
-    [com.cemerick/pomegranate "0.3.1"]
-    [net.mikera/cljunit "0.6.0"]
-    [codox/codox "0.10.2"]
-    [junit/junit "4.12"]
+    ;;[czlab/czlab-wabbit "0.1.0"]
+    ;;[com.cemerick/pomegranate "0.3.1"]
+    ;;[net.mikera/cljunit "0.6.0"]
+    ;;[codox/codox "0.10.2"]
+    ;;[junit/junit "4.12"]
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
@@ -48,11 +48,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (b/bootEnv!
-  {:wjs "scripts"
+  {:wabbitDir (xc/fpath (sysProp "wabbit.home.dir"))
+   :wabbitLibs (fn [_]
+                 [[:fileset {:dir (fp! (ge :wabbitDir) "patch")
+                             :includes "**/*.jar"}]
+                  [:fileset {:dir (fp! (ge :wabbitDir) "lib")
+                             :includes "**/*.jar"}]
+                  [:fileset {:dir (fp! (ge :wabbitDir) "dist")
+                             :includes "**/*.jar"}]])
+   :wjs "scripts"
    :wcs "styles"
    :websrc (fn [_] (fp! (ge :wzzDir) (ge :wjs)))
    :webcss (fn [_] (fp! (ge :wzzDir) (ge :wcs)))
-   :webDir (fn [_] (fp! (ge :basedir) "src/web"))})
+   :webDir (fn [_] (fp! (ge :basedir) "src/web"))}
+  #(let [c (ge :CPATH)]
+     (se! :CPATH (fn [_] (concat c (ge :wabbitLibs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
