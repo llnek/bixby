@@ -130,12 +130,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeLoadRoutes
-  [^IoService co]
-  (let [{:keys [routes]}
-        (.config co)]
+  [cfg]
+  (let [{:keys [routes]} cfg]
     (when-not (empty? routes)
-      (->> (loadRoutes routes)
-           (.setv (.getx co) :routes )))))
+      (loadRoutes routes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -152,7 +150,7 @@
     (->>
       {:port (if-not (spos? port)
                (if ssl? 443 80) port)
-       :routes (maybeLoadRoutes co)
+       :routes (maybeLoadRoutes cfg)
        :passwd (->> (.server co)
                     (.podKey)
                     (passwd<> passwd) (.text))
@@ -247,6 +245,8 @@
         (source [_] co))
       {:typeid ::WSockEvent})))
 
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- httpEvent<>
@@ -257,7 +257,8 @@
     [^InetSocketAddress laddr (.localAddress ch)
      _body (.content req)
      gist (.msgGist req)
-     ^RouteInfo ri (get-in gist [:route :info])
+     rgist (:route gist)
+     ^RouteInfo ri (:info rgist)
      wantSess? (some-> ri (.wantSession))
      wantSecure? (some-> ri (.isSecure))
      eeid (str "event#" (seqint2))
@@ -272,6 +273,9 @@
         (id [_] eeid)
         (source [_] co)
         (socket [_] ch)
+
+        ;;:route {:redirect :status :info :groups :places }
+        (routeGist [_] rgist)
 
         (cookie [_ n] (get cookieJar n))
         (cookies [_] (vals cookieJar))

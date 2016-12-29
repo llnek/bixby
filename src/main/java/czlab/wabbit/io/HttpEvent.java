@@ -21,6 +21,7 @@ import czlab.convoy.net.HttpInvoke;
  */
 public interface HttpEvent extends IoEvent, IoTrigger, HttpInvoke {
 
+
 }
 
 

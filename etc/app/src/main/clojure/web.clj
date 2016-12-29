@@ -17,7 +17,7 @@
         [czlab.flux.wflow.core])
 
   (:import [czlab.flux.wflow Job TaskDef WorkStream]
-           [czlab.convoy.net HttpResult]
+           [czlab.convoy.net RouteInfo HttpResult]
            [czlab.wabbit.io HttpEvent]
            [czlab.wabbit.server Container]))
 
@@ -48,8 +48,9 @@
     (script<>
       (fn [_ ^Job job]
         (let
-          [tpl (:template (.getv job etc/evt-opts))
-           ^HttpEvent evt (.event job)
+          [^HttpEvent evt (.event job)
+           ri (:info (.routeGist evt))
+           tpl (.template ^RouteInfo ri)
            co (.. evt source server)
            {:keys [data ctype]}
            (.loadTemplate co tpl (ftlContext))

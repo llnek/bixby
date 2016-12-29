@@ -159,7 +159,6 @@
      c1 (:router args)
      c0 (:handler cfg)
      ctr (.server src)
-     cfg (.config src)
      rts (.cljrt ctr)
      cb (stror c1 c0)
      job (job<+> ctr evt)
@@ -168,7 +167,7 @@
                     "event opts = %s\n"
                     "event router = %s\n"
                     "io-handler = %s")
-               (type evt) args c1 c0)
+               (:typeid (meta src)) args c1 c0)
     (try
       (log/debug "job#%s => %s" (.id job) (.id src))
       (.setv job evt-opts args)

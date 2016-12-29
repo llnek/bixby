@@ -317,7 +317,7 @@
   (let
     [[pn opts]
      (if (string? pc)
-       [pc {}] [(:name pc) pc])
+       [pc {}] [(:factory pc) pc])
      _ (log/info "calling plugin fac: %s" pn)
      pf (cast? PluginFactory
                (.call rts pn))

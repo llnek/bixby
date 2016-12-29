@@ -69,7 +69,7 @@
            :waitMillis 0
            :sockTimeOut 0
            :host ""
-           :port 8080
+           :port 9090
            :serverKey ""
            :passwd ""
            :handler ""
@@ -91,7 +91,7 @@
            :waitMillis 0
            :sockTimeOut 0
            :host ""
-           :port 8080
+           :port 9090
            :serverKey ""
            :passwd ""
            :sessionAgeSecs 2592000
@@ -148,7 +148,7 @@
            :name "TCPSocket"}
     :conf {:comment# "place comments here"
            :host ""
-           :port 8080
+           :port 7551
            :handler ""}}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
