@@ -15,6 +15,9 @@
 package czlab.wabbit.etc;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Kenneth Leung
@@ -22,12 +25,35 @@ import java.lang.reflect.Method;
 public class BootAppMain {
 
   /**/
-  public static Object invokeStatic(String[] args)
+  public static Object invokeStatic(ClassLoader cl,
+      String mz, String[] args)
   throws Exception {
-    Class<?> z = Class.forName("boot.App");
-    String[] s = new String[0];
-    Method m= z.getDeclaredMethod("main", s.getClass());
-    return m.invoke(null, (Object)args);
+    Class<?> z = Class.forName(mz, true, cl);
+    Method m= z.getDeclaredMethod("main", String[].class);
+    return m.invoke(null, new Object[] {args});
+  }
+
+  /**
+   */
+  public static void main(String[] args) {
+    try {
+      ClassLoader cl= Thread.currentThread().getContextClassLoader();
+      boolean skip=false;
+      if (args.length > 2 &&
+          "task".equals(args[1])) {
+        List<String> t = new ArrayList<>();
+        t.addAll(Arrays.asList(args));
+        t.remove(0);
+        t.remove(0);
+        skip=true;
+        invokeStatic(cl, "boot.App", t.toArray(new String[0]));
+      }
+      if (!skip) {
+        invokeStatic(cl, "czlab.wabbit.etc.cons", args);
+      }
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
   }
 
 }

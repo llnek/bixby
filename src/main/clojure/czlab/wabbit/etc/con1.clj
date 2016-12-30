@@ -74,7 +74,7 @@
   "Call into boot/clj code"
   [^File homeDir ^File podDir & args]
   (log/debug "execBootScript args: %s" args)
-  (BootAppMain/invokeStatic (vargs String args)))
+  (BootAppMain/invokeStatic (getCldr) "boot.App" (vargs String args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

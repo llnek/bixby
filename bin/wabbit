@@ -50,7 +50,7 @@ BG=false
 
 ##VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
 VMXRGS=" -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
-MAINCZ=czlab.wabbit.etc.cons
+MAINCZ=czlab.wabbit.etc.BootAppMain
 PROCCZ=czlab.wabbit.server.Runtime
 
 #LIBP="-Djava.library.path=$WABBIT_BIN"
