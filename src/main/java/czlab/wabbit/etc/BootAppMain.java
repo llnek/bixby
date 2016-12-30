@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.io.File;
 
 /**
  * @author Kenneth Leung
@@ -36,8 +37,10 @@ public class BootAppMain {
   /**
    */
   public static void main(String[] args) {
+    if (args.length > 0)
     try {
-      ClassLoader cl= Thread.currentThread().getContextClassLoader();
+      System.setProperty("wabbit.home.dir", new File(args[0]).getCanonicalPath());
+      ClassLoader cl= BootAppMain.class.getClassLoader();
       boolean skip=false;
       if (args.length > 2 &&
           "task".equals(args[1])) {
