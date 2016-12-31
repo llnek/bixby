@@ -391,6 +391,7 @@ public class App {
     runBoot(Future<ClojureRuntimeShim> core,
             Future<ClojureRuntimeShim> worker,
             String[] args) throws Exception {
+        System.out.println("runBoot!!!! ===== ");
         ConcurrentLinkedQueue<Runnable>
         hooks = new ConcurrentLinkedQueue<>();
         try {
@@ -398,12 +399,25 @@ public class App {
                 worker.get().require("boot.aether");
                 worker.get().invoke("boot.aether/set-local-repo!", localrepo); }
             try {
+            System.out.println("about to require boot.main!!!! ===== ");
             core.get().require("boot.main");
+            System.out.println("about to invoke boot.main!!!! ===== ");
             core.get().invoke("boot.main/-main", nextId(), worker.get(), hooks, args);
+            System.out.println("about to DONE!!!!boot.main!!!! ===== ");
             } catch (Throwable t) {
                 if (t instanceof java.lang.IllegalStateException) {} else {
-                    throw t;
+                    //throw t;
                 }
+                Throwable[] tt= t.getSuppressed();
+                if (tt != null) {
+                  System.out.println("Suppressed===> " + tt.length);
+                  for (Throwable w : tt) {
+                      w.printStackTrace();
+                  }
+                }
+
+                System.out.println("YO %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+                throw t;
             }
             return -1; }
         catch (Throwable t) {
