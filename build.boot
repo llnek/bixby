@@ -61,12 +61,12 @@
     [junit/junit "4.12" :scope "provided"]
 
     ;; boot/clj stuff
-    [boot/base "2.7.0" ]
-    [boot/core "2.7.0" ]
-    [boot/pod "2.7.0" ]
-    [boot/worker "2.7.0" ]
+    [boot/base "2.7.1" ]
+    [boot/core "2.7.1" ]
+    [boot/pod "2.7.1" ]
+    [boot/worker "2.7.1" ]
     ;; this is causing the RELEASE_6 warning
-    [boot/aether "2.7.0" ]
+    [boot/aether "2.7.1" ]
 
   ]
 
