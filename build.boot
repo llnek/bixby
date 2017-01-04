@@ -4,27 +4,19 @@
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
     [org.apache.commons/commons-lang3 "3.5"]
     [commons-io/commons-io "2.5"]
-    ;;[org.slf4j/slf4j-api "1.7.22" ]
 
+    [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
+    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
+    [com.google.code.findbugs/jsr305 "3.0.1" ]
+    [org.freemarker/freemarker "2.3.25-incubating" ]
+
+    [org.clojure/clojurescript "1.9.293"]
+    [org.clojure/clojure "1.8.0"]
     [czlab/czlab-twisty "0.1.0"]
     [czlab/czlab-convoy "0.1.0"]
     [czlab/czlab-horde "0.1.0"]
     [czlab/czlab-flux "0.1.0"]
     [czlab/czlab-xlib "0.1.0"]
-
-    ;;[org.apache.ant/ant "1.9.7" ]
-    ;;[org.apache.ant/ant-launcher "1.9.7" ]
-    ;;[org.apache.ant/ant-junit4 "1.9.7" ]
-    ;;[org.apache.ant/ant-junit "1.9.7" ]
-
-    [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
-    [com.google.code.findbugs/jsr305 "3.0.1" ]
-    ;;[org.javassist/javassist "3.21.0-GA"  ]
-    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
-    [org.freemarker/freemarker "2.3.25-incubating" ]
-
-    [org.clojure/clojure "1.8.0"]
-    [org.clojure/clojurescript "1.9.293"]
 
     [org.clojure/math.numeric-tower "0.0.4"]
     [org.clojure/math.combinatorics "0.1.3"]
@@ -53,18 +45,6 @@
     [org.mozilla/rhino "1.7.7.1" ]
     [jline/jline "2.14.2" ]
     [com.sun.tools/tools "1.8.0"]
-
-    [com.cemerick/pomegranate "0.3.1" :scope "provided"]
-    [codox/codox "0.10.2" :scope "provided"]
-    [net.mikera/cljunit "0.6.0" :scope "provided"]
-    [junit/junit "4.12" :scope "provided"]
-
-    ;;[boot/base "2.7.1" ]
-    ;;[boot/core "2.7.1" ]
-    ;;[boot/pod "2.7.1" ]
-    ;;[boot/worker "2.7.1" ]
-    ;;[boot/aether "2.7.1" ]
-
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
