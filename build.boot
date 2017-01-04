@@ -17,6 +17,7 @@
     [czlab/czlab-horde "0.1.0"]
     [czlab/czlab-flux "0.1.0"]
     [czlab/czlab-xlib "0.1.0"]
+    [czlab/czlab-pariah "0.1.0" :scope "provided"]
 
     [org.clojure/math.numeric-tower "0.0.4"]
     [org.clojure/math.combinatorics "0.1.3"]
@@ -81,14 +82,14 @@
 
    :mdirs
    (fn [_]
-     (concat [(ge :wzzDir)]
+     (concat [(ge :webDir)]
              (ge :mdirs :local)))
 
-   :CPATH
+   :cpath
    (fn [_]
      (concat [[:location (fp! (ge :basedir)
-                              "artifacts")]]
-             (ge :CPATH :local)))})
+                              "attic")]]
+             (ge :cpath :local)))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,7 +98,7 @@
   [root]
   (let [basedir (ge :basedir)]
     (doseq [d ["conf" "dist" "bin"
-               ["etc" "ems"] "lib" "docs" ]]
+               "etc" "lib" "docs"]]
       (.mkdirs (if (vector? d)
                  (apply io/file root d)
                  (io/file root d))))
@@ -119,7 +120,7 @@
   (a/runTarget*
     "pack/res"
     (a/antCopy
-      {:todir (fp! (ge :packDir) "etc/ems")
+      {:todir (fp! (ge :packDir) "etc")
        :flatten true}
       [[:fileset {:dir (fp! (ge :srcDir) "clojure")
                   :includes "**/io.edn"}]])
