@@ -19,12 +19,15 @@
   :description ""
   ;;:url ""
 
-  :dependencies '[
-    ;;[czlab/czlab-wabbit "0.1.0"]
-    ;;[com.cemerick/pomegranate "0.3.1"]
-    ;;[net.mikera/cljunit "0.6.0"]
-    ;;[codox/codox "0.10.2"]
-    ;;[junit/junit "4.12"]
+  :exclusions '[org.apache.logging.log4j/log4j-slf4j-impl]
+
+  :dependencies
+  '[[org.clojure/clojure "1.8.0"]
+    [czlab/czlab-xlib "0.1.0"]
+    [com.cemerick/pomegranate "0.3.1"]
+    [net.mikera/cljunit "0.6.0"]
+    [codox/codox "0.10.2"]
+    [junit/junit "4.12"]
   ]
 
   :source-paths #{"src/main/clojure" "src/main/java"}
@@ -34,13 +37,13 @@
   :project '@@APPDOMAIN@@)
 
 (require
-  '[czlab.tpcl.boot :as b :refer [fp! ge se!]]
+  '[czlab.pariah.boot :as b :refer [fp! ge se!]]
   '[clojure.tools.logging :as log]
   '[clojure.java.io :as io]
   '[clojure.string :as cs]
   '[boot.core :as bc]
   '[czlab.xlib.core :as xc]
-  '[czlab.xlib.antlib :as a])
+  '[czlab.pariah.antlib :as a])
 
 (import
   '[java.io File])

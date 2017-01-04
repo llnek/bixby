@@ -16,7 +16,7 @@ public/pages/
 
 *.class
 *.asc
-*.jar
+#*.jar
 *.zip
 *.gz
 

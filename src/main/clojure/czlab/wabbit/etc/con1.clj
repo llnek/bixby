@@ -23,10 +23,9 @@
             [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
-            [czlab.xlib.antlib :as a]
+            [czlab.pariah.antlib :as a]
             [clojure.java.io :as io]
-            [clojure.string :as cs]
-            [boot.core :as bcore])
+            [clojure.string :as cs])
 
   (:use [czlab.wabbit.etc.con2]
         [czlab.xlib.guids]
@@ -37,8 +36,8 @@
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core])
 
-  (:import [czlab.wabbit.etc BootAppMain CmdError]
-           [org.apache.commons.io FileUtils]
+  (:import [org.apache.commons.io FileUtils]
+           [czlab.wabbit.etc CmdError]
            [czlab.twisty IPassword]
            [java.util
             ResourceBundle
@@ -70,14 +69,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- execBootScript
-  "Call into boot/clj code"
-  [^File homeDir ^File podDir & args]
-  (log/debug "execBootScript args: %s" args)
-  (BootAppMain/invokeStatic (getCldr) "boot.App" (vargs String args)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- onHelpXXX
   ""
   [pfx end]
@@ -101,20 +92,6 @@
   (if (> (count args) 1)
     (createPod (args 0) (args 1))
     (trap! CmdError)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- onHelp-Build
-  "" [] (onHelpXXX "usage.build.d" 4))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Maybe build a pod?
-(defn onBuild
-  "Build the pod"
-  {:no-doc true}
-  [args]
-  (->> (if (empty? args) ["dev"] args)
-       (apply execBootScript (getHomeDir) (getProcDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -145,20 +122,6 @@
     (bundlePod (getHomeDir)
                (getProcDir) (args 0))
     (trap! CmdError)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- onHelp-Test
-  "" [] (onHelpXXX "usage.test.d" 2))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn onTest
-  "Test the pod"
-  {:no-doc true}
-  [args]
-  (->> (if (empty? args) ["tst"] args)
-       (apply execBootScript (getHomeDir) (getProcDir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -505,9 +468,7 @@
   {:service [onService onHelp-Service]
    :new [onCreate onHelp-Create]
    :ide [onIDE onHelp-IDE]
-   :make [onBuild onHelp-Build]
    :podify [onPodify onHelp-Podify]
-   :test [onTest onHelp-Test]
    :debug [onDebug onHelp-Debug]
    :help [onHelp onHelp-Help]
    :run [onStart onHelp-Start]

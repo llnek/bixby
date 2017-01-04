@@ -4,7 +4,7 @@
     [com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
     [org.apache.commons/commons-lang3 "3.5"]
     [commons-io/commons-io "2.5"]
-    [org.slf4j/slf4j-api "1.7.22" ]
+    ;;[org.slf4j/slf4j-api "1.7.22" ]
 
     [czlab/czlab-twisty "0.1.0"]
     [czlab/czlab-convoy "0.1.0"]
@@ -12,61 +12,58 @@
     [czlab/czlab-flux "0.1.0"]
     [czlab/czlab-xlib "0.1.0"]
 
-    [org.apache.ant/ant "1.9.7" ]
-    [org.apache.ant/ant-launcher "1.9.7" ]
-    [org.apache.ant/ant-junit4 "1.9.7" ]
-    [org.apache.ant/ant-junit "1.9.7" ]
+    ;;[org.apache.ant/ant "1.9.7" ]
+    ;;[org.apache.ant/ant-launcher "1.9.7" ]
+    ;;[org.apache.ant/ant-junit4 "1.9.7" ]
+    ;;[org.apache.ant/ant-junit "1.9.7" ]
 
     [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1" ]
     [com.google.code.findbugs/jsr305 "3.0.1" ]
-    [org.javassist/javassist "3.21.0-GA"  ]
-
+    ;;[org.javassist/javassist "3.21.0-GA"  ]
     ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
     [org.freemarker/freemarker "2.3.25-incubating" ]
 
-    [org.clojure/clojure "1.8.0" ]
-    [org.clojure/clojurescript "1.9.293" ]
+    [org.clojure/clojure "1.8.0"]
+    [org.clojure/clojurescript "1.9.293"]
 
-    [org.clojure/math.numeric-tower "0.0.4" ]
-    [org.clojure/math.combinatorics "0.1.3" ]
-    [org.clojure/tools.nrepl "0.2.12" ]
-    [org.clojure/tools.reader "0.10.0" ]
-    [org.clojure/data.codec "0.1.0" ]
-    [org.clojure/data.csv "0.1.3" ]
-    [org.clojure/java.jdbc "0.6.1" ]
-    [org.clojure/java.data "0.1.1" ]
-    [org.clojure/java.jmx "0.3.3" ]
-    [org.clojure/data.xml "0.0.8" ]
-    [org.clojure/core.cache "0.6.5" ]
-    [org.clojure/core.match "0.2.2" ]
-    [org.clojure/core.memoize "0.5.9" ]
+    [org.clojure/math.numeric-tower "0.0.4"]
+    [org.clojure/math.combinatorics "0.1.3"]
+    [org.clojure/tools.nrepl "0.2.12"]
+    [org.clojure/tools.reader "0.10.0"]
+    [org.clojure/data.codec "0.1.0"]
+    [org.clojure/data.csv "0.1.3"]
+    [org.clojure/java.jdbc "0.6.1"]
+    [org.clojure/java.data "0.1.1"]
+    [org.clojure/java.jmx "0.3.3"]
+    [org.clojure/data.xml "0.0.8"]
+    [org.clojure/core.cache "0.6.5"]
+    [org.clojure/core.match "0.2.2"]
+    [org.clojure/core.memoize "0.5.9"]
     [org.clojure/tools.analyzer.jvm "0.6.10"]
     [org.clojure/tools.analyzer "0.6.9"]
-    [org.clojure/tools.cli "0.3.5" ]
-    [org.clojure/data.generators "0.1.2" ]
-    [org.clojure/data.priority-map "0.0.7" ]
-    [org.clojure/core.async "0.2.395" ]
-    [org.clojure/core.logic "0.8.11" ]
-    [org.clojure/algo.monads "0.1.6" ]
-    [org.clojure/algo.generic "0.1.2" ]
+    [org.clojure/tools.cli "0.3.5"]
+    [org.clojure/data.generators "0.1.2"]
+    [org.clojure/data.priority-map "0.0.7"]
+    [org.clojure/core.async "0.2.395"]
+    [org.clojure/core.logic "0.8.11"]
+    [org.clojure/algo.monads "0.1.6"]
+    [org.clojure/algo.generic "0.1.2"]
 
     [org.apache.shiro/shiro-core "1.3.2"]
     [org.mozilla/rhino "1.7.7.1" ]
     [jline/jline "2.14.2" ]
-    [com.sun.tools/tools "1.8.0"  ]
+    [com.sun.tools/tools "1.8.0"]
 
     [com.cemerick/pomegranate "0.3.1" :scope "provided"]
     [codox/codox "0.10.2" :scope "provided"]
     [net.mikera/cljunit "0.6.0" :scope "provided"]
     [junit/junit "4.12" :scope "provided"]
 
-    ;; boot/clj stuff
-    [boot/base "2.7.1" ]
-    [boot/core "2.7.1" ]
-    [boot/pod "2.7.1" ]
-    [boot/worker "2.7.1" ]
-    ;; this is causing the RELEASE_6 warning
-    [boot/aether "2.7.1" ]
+    ;;[boot/base "2.7.1" ]
+    ;;[boot/core "2.7.1" ]
+    ;;[boot/pod "2.7.1" ]
+    ;;[boot/worker "2.7.1" ]
+    ;;[boot/aether "2.7.1" ]
 
   ]
 
@@ -82,11 +79,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(require '[czlab.tpcl.boot :as b :refer [fp! se! ge artifactID]]
+(require '[czlab.pariah.boot :as b :refer [fp! se! ge artifactID]]
          '[clojure.tools.logging :as log]
          '[clojure.java.io :as io]
          '[clojure.string :as cs]
-         '[czlab.xlib.antlib :as a]
+         '[czlab.pariah.antlib :as a]
          '[boot.core :as bc])
 
 (import '[org.apache.tools.ant Project Target Task]
@@ -176,8 +173,8 @@
   (a/runTarget*
     "pack/boot"
     (a/antCopy
-      {:todir (fp! (ge :packDir) "bt")}
-      [[:fileset {:dir (fp! (ge :basedir) "bt")} ]])))
+      {:todir (fp! (ge :packDir) "bfs")}
+      [[:fileset {:dir (fp! (ge :basedir) "bfs")} ]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

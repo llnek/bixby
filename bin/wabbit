@@ -39,7 +39,7 @@ fi
 
 JPROF=-agentpath:/Applications/jprofiler7/bin/macos/libjprofilerti.jnilib=port=8849
 DBG="-agentlib:jdwp=transport=dt_socket,server=y,address=8787,suspend=n"
-BOOT_HOME=$WABBIT_HOME/bt
+BOOT_HOME=$WABBIT_HOME/bfs
 
 PATCHDIR=$WABBIT_HOME/patch/*
 LIBDIR=$WABBIT_HOME/lib/*
@@ -49,7 +49,8 @@ WABLIB=$PATCHDIR:$DISTDIR:$LIBDIR
 JCMD=$JAVA_HOME/bin/java
 BG=false
 
-VMXRGS="-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:MaxPermSize=256m"
+VMXRGS="-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
+# -XX:MaxPermSize=256m
 MAINCZ=czlab.wabbit.etc.cons
 PROCCZ=czlab.wabbit.server.Runtime
 
@@ -127,7 +128,7 @@ if [ "$1" = "task" ]; then
   -Dwabbit.home.dir="$WABBIT_HOME" \
   -Dwabbit.proc.dir="$CWD" \
   -Dboot.app.path="$WABBIT_BIN" \
-  -DBOOT_HOME="$BOOT_HOME" -jar "$WABBIT_BIN/boot.jar" "$@"
+  -DBOOT_HOME="$BOOT_HOME" -jar "$WABBIT_BIN/bs.jar" "$@"
 else
   if [ "$BG" = "true" ]; then
     nohup $JCMD $VMXRGS $MEM -cp $WABLIB $DBG $L4J $KILL9 $MAINCZ $WABBIT_HOME $@ &
