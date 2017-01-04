@@ -120,11 +120,6 @@
   (a/runTarget*
     "pack/res"
     (a/antCopy
-      {:todir (fp! (ge :packDir) "etc")
-       :flatten true}
-      [[:fileset {:dir (fp! (ge :srcDir) "clojure")
-                  :includes "**/io.edn"}]])
-    (a/antCopy
       {:todir (fp! (ge :packDir) "etc")}
       [[:fileset {:dir (fp! (ge :basedir) "etc")} ]])))
 
