@@ -23,7 +23,7 @@
             [czlab.twisty.core :refer [assertJce]]
             [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.logging :as log]
-            [czlab.pariah.antlib :as a]
+            [czlab.antclj.antlib :as a]
             [clojure.java.io :as io]
             [clojure.string :as cs])
 

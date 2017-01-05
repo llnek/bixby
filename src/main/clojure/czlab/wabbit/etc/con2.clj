@@ -20,7 +20,7 @@
   (:require [czlab.xlib.format :refer [writeEdnStr readEdn]]
             [czlab.xlib.guids :refer [uuid<>]]
             [czlab.xlib.logging :as log]
-            [czlab.pariah.antlib :as a]
+            [czlab.antclj.antlib :as a]
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
