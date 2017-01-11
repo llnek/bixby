@@ -8,30 +8,23 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.pugs;
+package czlabtest.wabbit;
+
+import mikera.cljunit.ClojureTest;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Kenneth Leung
  */
-public class UnknownUser extends AuthError {
-
-  private static final long serialVersionUID = 1L;
-
-  /**/
-  public UnknownUser(String msg,Throwable e) {
-    super(msg,e);
-  }
-
-  /**/
-  public UnknownUser(Throwable e) {
-    this(null,e);
-  }
-
-  /**/
-  public UnknownUser(String msg) {
-    this(msg,null);
-  }
-
+public class ClojureJUnit extends ClojureTest {
+    @Override
+    public List<String> namespaces() {
+        return Arrays.asList(new String[]{
+          "czlab.test.wabbit.test",
+          "czlab.test.wabbit.svcs"
+        });
+    }
 }
 
 

@@ -1,12 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject czlab/czlab-wabbit "0.1.0"
+(defproject io.czlab/wabbit "0.1.0"
 
   :description ""
   :url "https://github.com/llnek/wabbit"
 
-  :license {:name "Apache License 2.0"
-            :url "http://www.apache.org/licenses/LICENSE-2.0"}
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies
   [[com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
@@ -16,12 +16,12 @@
    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
    [com.google.code.findbugs/jsr305 "3.0.1"]
    [org.freemarker/freemarker "2.3.25-incubating"]
-   [czlab/czlab-antclj "0.1.0"]
-   [czlab/czlab-twisty "0.1.0"]
-   [czlab/czlab-convoy "0.1.0"]
-   [czlab/czlab-horde "0.1.0"]
-   [czlab/czlab-flux "0.1.0"]
-   [czlab/czlab-xlib "0.1.0"]
+   [io.czlab/twisty "0.1.0"]
+   [io.czlab/convoy "0.1.0"]
+   [io.czlab/horde "0.1.0"]
+   [io.czlab/flux "0.1.0"]
+   [io.czlab/xlib "0.1.0"]
+   [io.czlab/antclj "0.1.0"]
    [org.clojure/math.numeric-tower "0.0.4"]
    [org.clojure/math.combinatorics "0.1.3"]
    [org.clojure/tools.nrepl "0.2.12"]
@@ -49,7 +49,9 @@
    [jline/jline "2.14.2" ]
    [com.sun.tools/tools "1.8.0"]]
 
-  :plugins [[lein-codox "0.10.2"]]
+  :plugins [[lein-codox "0.10.2"]
+            [lein-czlab "0.1.0"]]
+  :hooks [leiningen.lein-czlab]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojurescript "1.9.293" :scope "provided"]
@@ -63,7 +65,11 @@
   :target-path "out/%s"
   :aot :all
 
-  :java-source-paths ["src/main/java" "test/main/java"]
+  ;;:jar-exclusions [#"(?:^|/).svn/"]
+  :root-package "czlab"
+  :omit-source true
+
+  :java-source-paths ["src/main/java" "src/test/java"]
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :resource-paths ["src/main/resources"]
@@ -71,5 +77,8 @@
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
   :javac-options ["-source" "8"
                   "-Xlint:unchecked" "-Xlint:-options" "-Xlint:deprecation"])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;EOF
 
 

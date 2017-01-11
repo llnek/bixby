@@ -1,18 +1,12 @@
-;; Licensed under the Apache License, Version 2.0 (the "License");
-;; you may not use this file except in compliance with the License.
-;; You may obtain a copy of the License at
-;;
-;;     http://www.apache.org/licenses/LICENSE-2.0
-;;
-;; Unless required by applicable law or agreed to in writing, software
-;; distributed under the License is distributed on an "AS IS" BASIS,
-;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-;; See the License for the specific language governing permissions and
-;; limitations under the License.
-;;
-;; Copyright (c) 2013-2016, Kenneth Leung. All rights reserved.
+;; Copyright (c) 2013-2017, Kenneth Leung. All rights reserved.
+;; The use and distribution terms for this software are covered by the
+;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
+;; which can be found in the file epl-v10.html at the root of this distribution.
+;; By using this software in any fashion, you are agreeing to be bound by
+;; the terms of this license.
+;; You must not remove this notice, or any other, from this software.
 
-(ns czlabtest.wabbit.svcs
+(ns czlab.test.wabbit.svcs
 
   (:require [czlab.xlib.logging :as log]
             [clojure.string :as cs]
@@ -21,7 +15,7 @@
   (:use [czlab.convoy.netty.client]
         [czlab.convoy.net.core]
         ;;[czlab.convoy.netty.resp]
-        [czlabtest.wabbit.mock]
+        [czlab.test.wabbit.mock]
         [czlab.wabbit.etc.svcs]
         [czlab.wabbit.etc.core]
         [czlab.wabbit.io.core]
@@ -157,7 +151,7 @@
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
         (.init s
-               {:handler "czlabtest.wabbit.svcs/httpHandler"
+               {:handler "czlab.test.wabbit.svcs/httpHandler"
                 :host "localhost"
                 :port 8888})
         (.start s nil)
@@ -181,7 +175,7 @@
             s (service<> ctr etype "t" c)]
         (reset! result-var 0)
         (.init s
-               {:handler "czlabtest.wabbit.svcs/mailHandler"
+               {:handler "czlab.test.wabbit.svcs/mailHandler"
                 :host "localhost"
                 :port 7110
                 :intervalSecs 1
@@ -202,7 +196,7 @@
             s (service<> ctr etype "t" c)]
         (reset! result-var 0)
         (.init s
-               {:handler "czlabtest.wabbit.svcs/mailHandler"
+               {:handler "czlab.test.wabbit.svcs/mailHandler"
                 :host "localhost"
                 :port 7110
                 :intervalSecs 1
@@ -224,7 +218,7 @@
                      ;;:destination "topic.abc"
                      :connFactory "qcf"
                      :destination "queue.xyz"
-                     :handler "czlabtest.wabbit.svcs/jmsHandler")
+                     :handler "czlab.test.wabbit.svcs/jmsHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -250,7 +244,7 @@
                      ;;:destination "topic.abc"
                      :connFactory "qcf"
                      :destination "queue.xyz"
-                     :handler "czlabtest.wabbit.svcs/jmsHandler")
+                     :handler "czlab.test.wabbit.svcs/jmsHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -273,7 +267,7 @@
             c (assoc (:conf m)
                      :host host
                      :port port
-                     :handler "czlabtest.wabbit.svcs/sockHandler")
+                     :handler "czlab.test.wabbit.svcs/sockHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -300,7 +294,7 @@
             m (*emitter-defs* etype)
             c (assoc (:conf m)
                      :delaySecs 1
-                     :handler "czlabtest.wabbit.svcs/testHandler")
+                     :handler "czlab.test.wabbit.svcs/testHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -316,7 +310,7 @@
             c (assoc (:conf m)
                      :delaySecs 1
                      :intervalSecs 1
-                     :handler "czlabtest.wabbit.svcs/testHandler")
+                     :handler "czlab.test.wabbit.svcs/testHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -339,7 +333,7 @@
                      :fmask ""
                      :intervalSecs 1
                      :delaySecs 0
-                     :handler "czlabtest.wabbit.svcs/fileHandler")
+                     :handler "czlab.test.wabbit.svcs/fileHandler")
             ^Container
             ctr (mock :container)
             s (service<> ctr etype "t" c)]
@@ -364,6 +358,6 @@
 
   (is (string? "That's all folks!")))
 
-;;(clojure.test/run-tests 'czlabtest.wabbit.svcs)
+;;(clojure.test/run-tests 'czlab.test.wabbit.svcs)
 
 
