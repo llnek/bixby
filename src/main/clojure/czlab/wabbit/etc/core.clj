@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^String c-verprops "czlab/czlab-wabbit/version.properties")
+(def ^String c-verprops "czlab/wabbit/version.properties")
 (def ^String c-rcb "czlab.wabbit.etc/Resources")
 
 (def ^:private ^String sys-devid-pfx "system.####")

@@ -51,7 +51,9 @@
    [com.sun.tools/tools "1.8.0"]]
 
   :plugins [[lein-codox "0.10.2"]
+            [lein-czlab "0.1.1"]
             [lein-pprint "1.1.2"]]
+  :hooks [leiningen.lein-czlab]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojurescript "1.9.293" :scope "provided"]
