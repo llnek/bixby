@@ -2,11 +2,11 @@
 ;;
 (defproject io.czlab/wabbit "0.1.0"
 
-  :description ""
-  :url "https://github.com/llnek/wabbit"
-
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
+
+  :description ""
+  :url "https://github.com/llnek/wabbit"
 
   :dependencies
   [[com.yahoo.platform.yui/yuicompressor "2.4.8"  :exclusions [rhino]]
@@ -16,6 +16,7 @@
    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
    [com.google.code.findbugs/jsr305 "3.0.1"]
    [org.freemarker/freemarker "2.3.25-incubating"]
+   [io.czlab/wabbit-svcs "0.1.0"]
    [io.czlab/twisty "0.1.0"]
    [io.czlab/convoy "0.1.0"]
    [io.czlab/horde "0.1.0"]
@@ -50,8 +51,7 @@
    [com.sun.tools/tools "1.8.0"]]
 
   :plugins [[lein-codox "0.10.2"]
-            [lein-czlab "0.1.0"]]
-  :hooks [leiningen.lein-czlab]
+            [lein-pprint "1.1.2"]]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojurescript "1.9.293" :scope "provided"]
@@ -66,7 +66,7 @@
   :aot :all
 
   ;;:jar-exclusions [#"(?:^|/).svn/"]
-  :root-package "czlab"
+  :coordinate! "czlab"
   :omit-source true
 
   :java-source-paths ["src/main/java" "src/test/java"]

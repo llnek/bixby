@@ -19,7 +19,7 @@
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.etc.core]
-        [czlab.wabbit.etc.svcs]
+        [czlab.wabbit.svcs.core]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
@@ -59,7 +59,7 @@
   ""
   ^String
   [etype]
-  (let [c (get-in *emitter-defs* [etype :conf])
+  (let [c (get-in (emittersByService) [etype :conf])
         c (assoc c
                  :service etype
                  :handler "@@APPDOMAIN@@.core/dftHandler")]

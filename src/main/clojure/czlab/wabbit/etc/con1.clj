@@ -27,7 +27,7 @@
         [czlab.xlib.str]
         [czlab.xlib.io]
         [czlab.xlib.meta]
-        [czlab.wabbit.etc.svcs]
+        [czlab.wabbit.svcs.core]
         [czlab.wabbit.etc.core])
 
   (:import [org.apache.commons.io FileUtils]
@@ -397,7 +397,7 @@
       (if (< hint 0)
         (dissoc root id)
         (when-some
-          [gist (:conf (*emitter-defs* svc))]
+          [gist (:conf ((emittersByService) svc))]
           (if (in? root id) (trap! CmdError))
           (assoc root id (assoc gist :service svc))))]
      (if (some? nw)

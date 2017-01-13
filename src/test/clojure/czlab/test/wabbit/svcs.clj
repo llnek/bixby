@@ -16,7 +16,7 @@
         [czlab.convoy.net.core]
         ;;[czlab.convoy.netty.resp]
         [czlab.test.wabbit.mock]
-        [czlab.wabbit.etc.svcs]
+        [czlab.wabbit.svcs.core]
         [czlab.wabbit.etc.core]
         [czlab.wabbit.io.core]
         [czlab.flux.wflow.core]
@@ -145,7 +145,7 @@
 (deftest czlabtestwabbit-svcs
 
   (is (let [etype :czlab.wabbit.io.http/HTTP
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (:conf m)
             ^Container
             ctr (mock :container)
@@ -168,7 +168,7 @@
 
   (is (let [_ (sysProp! "wabbit.mock.mail.proto" "imaps")
             etype :czlab.wabbit.io.mails/IMAP
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (:conf m)
             ^Container
             ctr (mock :container)
@@ -189,7 +189,7 @@
 
   (is (let [_ (sysProp! "wabbit.mock.mail.proto" "pop3s")
             etype :czlab.wabbit.io.mails/POP3
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (:conf m)
             ^Container
             ctr (mock :container)
@@ -210,7 +210,7 @@
 
   (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
             etype :czlab.wabbit.io.jms/JMS
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (assoc (:conf m)
                      :contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
                      :providerUrl "java://aaa"
@@ -236,7 +236,7 @@
 
   (is (let [_ (sysProp! "wabbit.mock.jms.loopsecs" "1")
             etype :czlab.wabbit.io.jms/JMS
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (assoc (:conf m)
                      :contextFactory "czlab.wabbit.mock.jms.MockContextFactory"
                      :providerUrl "java://aaa"
@@ -261,7 +261,7 @@
         (> @result-var 8)))
 
   (is (let [etype :czlab.wabbit.io.socket/Socket
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             host "localhost"
             port 5555
             c (assoc (:conf m)
@@ -291,7 +291,7 @@
 
 
   (is (let [etype :czlab.wabbit.io.loops/OnceTimer
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (assoc (:conf m)
                      :delaySecs 1
                      :handler "czlab.test.wabbit.svcs/testHandler")
@@ -306,7 +306,7 @@
         (== 8 @result-var)))
 
   (is (let [etype :czlab.wabbit.io.loops/RepeatingTimer
-            m (*emitter-defs* etype)
+            m ((emittersByService) etype)
             c (assoc (:conf m)
                      :delaySecs 1
                      :intervalSecs 1
@@ -322,8 +322,8 @@
         (> @result-var 8)))
 
   (is (let [etype :czlab.wabbit.io.files/FilePicker
-            m (*emitter-defs* etype)
-            root "/wdrive/tmp";;*TEMPFILE-REPO*
+            m ((emittersByService) etype)
+            root *tempfile-repo*
             from (str root "/from")
             to (str root "/to")
             firstfn (str from "/" (juid))
