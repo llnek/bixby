@@ -17,7 +17,8 @@
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.svcs.core]
+  (:use [czlab.wabbit.common.core]
+        [czlab.wabbit.common.svcs]
         [czlab.wabbit.etc.core]
         [czlab.wabbit.sys.cont]
         [czlab.xlib.core]
@@ -216,7 +217,7 @@
   [^Execvisor co]
   (let [ctx (.getx co)
         env (.getv ctx :env)
-        defs (merge (emittersByService)
+        defs (merge (emitterServices)
                     (:emitters env))]
     ;;add user defined emitters and register all
     (->>

@@ -21,7 +21,9 @@
             [clojure.java.io :as io]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.pugs.auth.model]
+  (:use [czlab.wabbit.common.core]
+        [czlab.wabbit.cons.core]
+        [czlab.wabbit.pugs.auth.model]
         [czlab.wabbit.pugs.auth.core]
         [czlab.convoy.net.core]
         [czlab.wabbit.etc.core]

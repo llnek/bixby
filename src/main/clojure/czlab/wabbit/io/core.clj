@@ -14,7 +14,8 @@
   (:require [czlab.xlib.meta :refer [getCldr]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.xlib.consts]
+  (:use [czlab.wabbit.common.core]
+        [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.flux.wflow.core]

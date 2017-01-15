@@ -12,16 +12,17 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.etc.con1]
-        [czlab.wabbit.etc.con2]
-        [czlab.wabbit.etc.cons]
-        [czlab.wabbit.etc.core]
+  (:use [czlab.wabbit.cons.con1]
+        [czlab.wabbit.cons.con2]
+        [czlab.wabbit.cons.con8]
+        [czlab.wabbit.cons.core]
+        [czlab.wabbit.common.core]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str]
         [clojure.test])
 
-  (:import [czlab.wabbit.etc CmdError]
+  (:import [czlab.wabbit.cons CmdError]
            [java.io File ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -22,12 +22,14 @@
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.etc.core]
+        [czlab.wabbit.cons.core]
+        [czlab.wabbit.common.core]
         [czlab.xlib.process]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [czlab.wabbit.etc CmdError ConfigError]
+  (:import [czlab.wabbit.etc ConfigError]
            [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.server Execvisor]

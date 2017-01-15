@@ -19,7 +19,8 @@
             [clojure.java.io :as io]
             [clojure.string :as cs])
 
-  (:use [czlab.convoy.netty.discarder]
+  (:use [czlab.wabbit.cons.core]
+        [czlab.convoy.netty.discarder]
         [czlab.convoy.netty.server]
         [czlab.convoy.netty.routes]
         [czlab.convoy.netty.core]
