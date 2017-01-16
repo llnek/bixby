@@ -15,7 +15,7 @@
             [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.io.loops]
-        [czlab.wabbit.etc.core]
+        [czlab.wabbit.base.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.core])

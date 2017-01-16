@@ -21,12 +21,10 @@
             [clojure.java.io :as io]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.common.core]
-        [czlab.wabbit.cons.core]
+  (:use [czlab.wabbit.base.core]
         [czlab.wabbit.pugs.auth.model]
         [czlab.wabbit.pugs.auth.core]
         [czlab.convoy.net.core]
-        [czlab.wabbit.etc.core]
         [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
         [czlab.xlib.io]

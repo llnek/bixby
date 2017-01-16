@@ -14,7 +14,7 @@
   (:require [czlab.twisty.codec :refer [passwd<>]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.etc.core]
+  (:use [czlab.wabbit.base.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.wabbit.io.core])

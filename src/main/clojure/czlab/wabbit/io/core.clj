@@ -14,12 +14,11 @@
   (:require [czlab.xlib.meta :refer [getCldr]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.common.core]
+  (:use [czlab.wabbit.base.core]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.flux.wflow.core]
-        [czlab.wabbit.etc.core])
+        [czlab.flux.wflow.core])
 
   (:import [czlab.wabbit.io IoTrigger IoService IoEvent]
            [czlab.flux.wflow WorkStream Job TaskDef]

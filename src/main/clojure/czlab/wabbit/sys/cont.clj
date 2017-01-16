@@ -25,8 +25,7 @@
                      dbpool<>
                      dbschema<>]])
 
-  (:use [czlab.wabbit.common.core]
-        [czlab.wabbit.etc.core]
+  (:use [czlab.wabbit.base.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.xlib.io]

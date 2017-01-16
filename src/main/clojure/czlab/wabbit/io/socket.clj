@@ -19,7 +19,7 @@
   (:use [czlab.wabbit.io.core]
         [czlab.xlib.core]
         [czlab.xlib.str]
-        [czlab.wabbit.etc.core])
+        [czlab.wabbit.base.core])
 
   (:import [java.net InetAddress ServerSocket Socket]
            [czlab.xlib Muble Identifiable]

@@ -17,9 +17,8 @@
             [czlab.xlib.logging :as log]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.common.core]
-        [czlab.wabbit.common.svcs]
-        [czlab.wabbit.etc.core]
+  (:use [czlab.wabbit.common.svcs]
+        [czlab.wabbit.base.core]
         [czlab.wabbit.sys.cont]
         [czlab.xlib.core]
         [czlab.xlib.io]

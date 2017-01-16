@@ -17,15 +17,14 @@
             [clojure.java.io :as io]
             [clojure.string :as cs])
 
-  (:use [czlab.wabbit.common.core]
+  (:use [czlab.wabbit.base.core]
         [czlab.convoy.net.core]
         [czlab.wabbit.io.http]
         [czlab.xlib.consts]
         [czlab.xlib.core]
         [czlab.xlib.str]
         [czlab.flux.wflow.core]
-        [czlab.wabbit.io.core]
-        [czlab.wabbit.etc.core])
+        [czlab.wabbit.io.core])
 
   (:import [czlab.xlib CU XData Muble Hierarchial Identifiable]
            [czlab.wabbit.io IoService IoEvent HttpEvent]
