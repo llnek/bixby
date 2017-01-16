@@ -26,7 +26,7 @@
 
   (:import [czlab.wabbit.io IoService IoGist]
            [java.security SecureRandom]
-           [czlab.wabbit.etc Gist]
+           [czlab.wabbit.base Gist]
            [czlab.wabbit.server
             Container
             Execvisor]

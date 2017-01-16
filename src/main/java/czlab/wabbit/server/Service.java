@@ -10,7 +10,7 @@
 
 package czlab.wabbit.server;
 
-import czlab.wabbit.etc.Component;
+import czlab.wabbit.base.Component;
 import czlab.xlib.Hierarchial;
 import czlab.xlib.Disposable;
 import czlab.xlib.Initable;

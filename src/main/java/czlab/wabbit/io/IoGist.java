@@ -10,7 +10,7 @@
 
 package czlab.wabbit.io;
 
-import czlab.wabbit.etc.Gist;
+import czlab.wabbit.base.Gist;
 
 /**
  * @author Kenneth Leung

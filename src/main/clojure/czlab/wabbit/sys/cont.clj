@@ -38,7 +38,7 @@
         [czlab.wabbit.io.socket]
         [czlab.wabbit.mvc.ftl])
 
-  (:import [czlab.wabbit.etc Gist ServiceError ConfigError]
+  (:import [czlab.wabbit.base Gist ServiceError ConfigError]
            [czlab.wabbit.pugs PluginFactory Plugin]
            [czlab.horde Schema JdbcPool DbApi]
            [java.io File StringWriter]

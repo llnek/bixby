@@ -27,7 +27,7 @@
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [czlab.wabbit.etc ConfigError]
+  (:import [czlab.wabbit.base ConfigError]
            [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.server Execvisor]

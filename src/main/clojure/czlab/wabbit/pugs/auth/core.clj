@@ -43,7 +43,7 @@
            [java.util Base64 Base64$Decoder]
            [org.apache.shiro SecurityUtils]
            [czlab.wabbit.server Container]
-           [czlab.wabbit.etc ConfigError]
+           [czlab.wabbit.base ConfigError]
            [clojure.lang APersistentMap]
            [java.io File IOException]
            [czlab.wabbit.io HttpEvent]

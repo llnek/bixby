@@ -11,7 +11,7 @@
 package czlab.wabbit.server;
 
 import czlab.flux.server.ServerLike;
-import czlab.wabbit.etc.Component;
+import czlab.wabbit.base.Component;
 import czlab.xlib.Hierarchial;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
