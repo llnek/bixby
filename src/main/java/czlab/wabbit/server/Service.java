@@ -28,9 +28,6 @@ public interface Service extends Component
   /**/
   public boolean isEnabled();
 
-  /**/
-  public boolean isActive();
-
 }
 
 
