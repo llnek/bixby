@@ -139,28 +139,30 @@
 ;;
 (defn FilePicker
   ""
-  [spec]
+  [co {:keys [conf] :as spec}]
   (let
     [impl (muble<>)
+     mee (keyword (juid))
      schedule
-     (fn [_ _]
-       (log/info "apache io monitor starting...")
-       (some-> ^FileAlterationMonitor
-               (.getv impl :monitor)
-               (.start)))
-     stop
-     (fn [_]
+     #(do (log/info "apache io monitor starting...")
+          %
+          (some-> ^FileAlterationMonitor
+                  (.getv impl mee) (.start)))
+     par (threadedTimer {:schedule schedule})]
+    (reify
+      LifeCycle
+      (init [_ arg]
+        (.copyEx impl (merge conf arg)))
+      (config [_] (.internal impl))
+      (start [_ _]
+        ((:start par) (.intern impl)))
+      (stop [_]
        (log/info "apache io monitor stopping...")
        (some-> ^FileAlterationMonitor
-               (.getv impl :monitor)
+               (.getv impl mee)
                (.stop))
-       (.unsetv impl :monitor))
-     par (ThreadedTimer)]
-    (merge par
-           {:schedule schedule
-            :wakeup nil
-            :init init
-            :stop stop})))
+       (.unsetv impl mee))
+      (parent [_] co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

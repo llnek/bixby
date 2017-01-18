@@ -24,48 +24,10 @@
   (:import [czlab.wabbit.io IoService TimerEvent]
            [java.util Date Timer TimerTask]
            [clojure.lang APersistentMap]
-           [czlab.xlib Muble Identifiable Startable]))
+           [czlab.xlib Muble LifeCycle]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn ThreadedTimer
-  ""
-  [{:keys [info conf] :as spec}]
-  (let
-    [loopy (volatile! true)
-     schedule
-     (fn [co funcs arg]
-       (async!
-         #(while @loopy
-            ((or (:wakeup funcs)
-                 (constantly nil)) co arg)
-            (safeWait (:intervalMillis arg)))
-         {:cl (getCldr)}))
-     start
-     (fn [co funcs]
-       (let
-         [{:keys [intervalSecs
-                  delaySecs delayWhen]}
-          (.config ^IoService co)
-          func #(schedule co
-                          funcs
-                          {:intervalMillis
-                           (s2ms intervalSecs)})]
-         (if (or (spos? delaySecs)
-                 (inst? Date delayWhen))
-           (configOnce (Timer.)
-                       [delayWhen (s2ms delaySecs)] func)
-           (func))))
-     stop (fn [_] (vreset! loopy false))
-     init (fn [_ cfg0] (merge conf cfg0))]
-    (doto
-      {:schedule schedule
-       :init init
-       :start start
-       :stop })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -105,25 +67,54 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- configTimer
-  [^IoService co
-   timer
-   wakeup
-   {:keys [intervalSecs
-           delayWhen delaySecs] :as cfg} repeat?]
+  [timer wakeup {:keys [intervalSecs
+                        delayWhen
+                        delaySecs] :as cfg} repeat?]
   (let
-    [d [delayWhen (s2ms delaySecs)]
-     func #(wakeup co nil)]
+    [d [delayWhen (s2ms delaySecs)]]
     (test-some "java-timer" timer)
     (if (and repeat?
              (spos? intervalSecs))
       (configRepeat timer
                     d
-                    (s2ms intervalSecs) func)
-      (configOnce timer d func))))
+                    (s2ms intervalSecs) wakeup)
+      (configOnce timer d wakeup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ioevent<>
+(defn threadedTimer
+  ""
+  [funcs]
+  (let
+    [wake (or (:wakeup funcs)
+              (constantly nil))
+     loopy (volatile! true)
+     schedule
+     (or (:schedule funcs)
+         #(async!
+            #(while @loopy
+               (wake)
+               (safeWait (:intervalMillis %)))
+            {:cl (getCldr)}))]
+    (doto
+      {:start
+       #(let
+          [{:keys [intervalSecs
+                   delaySecs delayWhen]}
+           %
+           func #(schedule {:intervalMillis
+                            (s2ms intervalSecs)})]
+          (if (or (spos? delaySecs)
+                  (inst? Date delayWhen))
+            (configOnce (Timer.)
+                        [delayWhen (s2ms delaySecs)] func)
+            (func)))
+       :stop
+       #(vreset! loopy false)})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- evt<>
   ^TimerEvent
   [co repeat?]
   (let [eeid (str "event#"
@@ -139,49 +130,42 @@
 ;;
 (defn- xxxTimer<>
   ""
-  [{:keys [conf] :as spec} repeat?]
+  [co {:keys [conf] :as spec} repeat?]
   (let
-    [timer (atom nil)
-     wakeup
-     (fn [^IoService co _]
-       (.dispatch co (ioevent<> co repeat?))
-       (if-not repeat? (stop co)))
-     schedule
-     (fn [co funcs _]
-       (configTimer co
-                    @timer
-                    (:wakeup funcs) repeat?))
-     start
-     (fn [co funcs]
-       (swap! timer (Timer. true))
-       (schedule co funcs _))
-     stop
-     (fn [_]
-       (try! (some-> ^Timer
-                     @timer (.cancel )))
-       (reset! timer nil))
-     init
-     (fn [_ cfg0] (merge conf cfg0))]
-    (doto
-      {:schedule schedule
-       :wakeup wakeup
-       :init init
-       :start start
-       :stop stop})))
+    [impl (muble<>)
+     tee (keyword (juid))
+     stop #(do (try! (some-> ^Timer
+                             (.getv impl tee)
+                             (.cancel)))
+               (.unsetv impl tee))
+     wakeup #(do (.dispatch co
+                            (evt<> co repeat?))
+                 (if-not repeat? (stop)))]
+    (reify
+      LifeCycle
+      (config [_] (dissoc (.intern impl) tee))
+      (parent [_] co)
+      (init [_ arg]
+        (.copyEx impl (merge conf cfg0)))
+      (start [_ arg]
+        (let [t (Timer. true)]
+          (.setv impl tee t)
+          (configTimer t wakeup repeat?)))
+      (stop [_] stop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RepeatingTimer
   ""
-  [spec]
-  (xxxTimer<> spec true))
+  [co spec]
+  (xxxTimer<> co spec true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn OnceTimer
   ""
-  [spec]
-  (xxxTimer<> spec false))
+  [co spec]
+  (xxxTimer<> co spec false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
