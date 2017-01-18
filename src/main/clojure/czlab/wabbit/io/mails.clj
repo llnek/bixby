@@ -37,16 +37,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-(derive ::EMAIL :czlab.wabbit.io.loops/ThreadedTimer)
-(derive ::IMAP ::EMAIL)
-(derive ::POP3 ::EMAIL)
 (def
   ^:dynamic
   *mock-mail-provider*
-  {:pop3s "czlab.wabbit.mock.mail.MockPop3SSLStore"
-   :imaps "czlab.wabbit.mock.mail.MockIMapSSLStore"
-   :pop3 "czlab.wabbit.mock.mail.MockPop3Store"
-   :imap "czlab.wabbit.mock.mail.MockIMapStore"})
+  {:pop3s "czlab.proto.mock.mail.MockPop3SSLStore"
+   :imaps "czlab.proto.mock.mail.MockIMapSSLStore"
+   :pop3 "czlab.proto.mock.mail.MockPop3Store"
+   :imap "czlab.proto.mock.mail.MockIMapStore"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
@@ -119,9 +116,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- emailEvent<>
+(defn- evt<>
   ""
-  [^IoService co msg]
+  [^IoService co {:keys [msg]}]
   (let [eeid (str "event#" (seqint2))]
     (with-meta
       (reify EmailEvent
@@ -130,14 +127,6 @@
         (source [_] co)
         (message [_] msg))
       {:typeid ::EmailEvent })))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod ioevent<>
-  ::EMAIL
-  [^IoService co {:keys [msg]}]
-
-  (emailEvent<> co msg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -206,31 +195,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableWakeup
-  ::POP3
-  [^IoService co _]
-
+(defn- wakeup
+  ""
+  [co]
   (try
     (connectPop3 co)
     (scanPop3 co)
     (catch Throwable e#
       (log/exception e#))
     (finally
-      (closeStore co)))
-  co)
+      (closeStore co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sanitize
   ""
-  [^IoService co cfg0]
-
-  (let [{:keys [port deleteMsg?
-                host user ssl? passwd]}
-        cfg0
-        pkey (.podKey (.server co))]
-    (-> cfg0
-        (assoc :ssl? (if (false? ssl?) false true))
+  [^IoService co {:keys [port deleteMsg?
+                         host user ssl? passwd]
+                  :as cfg0}]
+  (let [pkey (.podKey (.server co))]
+    (-> (assoc cfg0 :ssl? (not (false? ssl?)))
         (assoc :deleteMsg? (true? deleteMsg?))
         (assoc :host (str host))
         (assoc :port (if (spos? port) port 995))
@@ -239,19 +223,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::POP3
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
-  (let [c2 (merge (.config co)
-                  (sanitize co cfg0))
-        [z p]
-        (if (:ssl? c2)
-          [cz-pop3s pop3s] [cz-pop3 pop3c])]
-    (.setv (.getx co) :emcfg c2)
-    (resolveProvider co z p)
-    co))
+(defn POP3
+  ""
+  ^LifeCycle
+  [co {:keys [conf] :as spec}]
+  (let
+    [impl (muble<>)
+     funcs (threadedTimer {:wakeup wakeup<o>})]
+    (reify LifeCycle
+      (config [_] (.intern impl))
+      (parent [_] co)
+      (start [_ _] ((:start funcs) (.intern impl)))
+      (stop [_] ((:stop funcs)))
+      (init [_ arg]
+        (let [c2 (merge conf
+                        (sanitize co arg))
+              [z p] (if (:ssl? c2)
+                      [cz-pop3s pop3s]
+                      [cz-pop3 pop3c])]
+          (.copyEx impl c2)
+          (resolveProvider co z p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -263,34 +254,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableWakeup
-  ::IMAP
-  [^IoService co _]
-
+(defn- wakeup<i>
+  ""
+  [co]
   (try
     (connectIMAP co)
     (scanIMAP co)
     (catch Throwable e#
       (log/exception e#))
     (finally
-      (closeStore co)))
-  co)
+      (closeStore co))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::IMAP
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
-  (let [c2 (merge (.config co)
-                  (sanitize co cfg0))
-        [z p]
-        (if (:ssl? c2)
-          [cz-imaps imaps] [cz-imap imap])]
-    (.setv (.getx co) :emcfg c2)
-    (resolveProvider co z p)
-    co))
+(defn IMAP
+  ""
+  ^LifeCycle
+  [co {:keys [conf] :as spec}]
+  (let
+    [impl (muble<>)
+     funcs (threadedTimer {:wakeup wakeup<i>})]
+    (reify LifeCycle
+      (config [_] (.intern impl))
+      (parent [_] co)
+      (start [_ _] ((:start funcs) (.intern impl)))
+      (stop [_] ((:stop funcs)))
+      (init [_ arg]
+        (let [c2 (merge conf
+                        (sanitize co arg))
+              [z p] (if (:ssl? c2)
+                      [cz-imaps imaps]
+                      [cz-imap imap])]
+          (.copyEx impl c2)
+          (resolveProvider co z p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -35,19 +35,18 @@
             FileAlterationObserver
             FileAlterationListenerAdaptor]
            [org.apache.commons.io FileUtils]
-           [czlab.xlib Muble Identifiable]))
+           [czlab.xlib LifeCycle]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-(derive ::FilePicker :czlab.wabbit.io.loops/ThreadedTimer)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Order of args must match
-(defmethod ioevent<>
-  ::FilePicker
+;;
+(defn- evt<>
+  ""
   [^IoService co {:keys [fname fp]}]
   (let
-    [eeid (seqint2)
+    [eeid (str "file#" (seqint2))
      f (io/file fp)]
     (with-meta
       (reify FileEvent
@@ -73,10 +72,10 @@
             (try!
               (doto->> (io/file recvFolder orig)
                        (FileUtils/moveFile f))))]
-      (->> (ioevent<> co {:fname orig
-                          :fp cf
-                          :action action})
-           (.dispatch co)))))
+      (->> (evt<> co {:fname orig
+                      :fp cf
+                      :action action})
+           (dispatchEvent co)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -99,15 +98,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::FilePicker
-  [^IoService co cfg0]
-  (logcomp "comp->init" co)
+(defn- init
+  ""
+  [co conf cfg0]
   (let
-    [c2 (merge (.config co) cfg0)
-     {:keys [recvFolder
+    [{:keys [recvFolder
              fmask
-             targetFolder]} c2
+             targetFolder] :as c2}
+     (merge conf cfg0)
      root (expandVars targetFolder)
      dest (expandVars recvFolder)
      ff (toFMask (str fmask))]
@@ -115,14 +113,13 @@
     (log/info
       (str "monitoring folder: %s\n"
            "rcv folder: %s") root (nsn dest))
-    (->> (merge c2 {:targetFolder root
-                    :recvFolder dest
-                    :fmask ff})
-         (.setv (.getx co) :emcfg))
     (let
       [obs (FileAlterationObserver. (io/file root) ff)
+       c2 (merge c2 {:targetFolder root
+                     :fmask ff
+                     :recvFolder dest})
        mon (-> (s2ms (:intervalSecs c2))
-               (FileAlterationMonitor. ))]
+               (FileAlterationMonitor.))]
       (->>
         (proxy [FileAlterationListenerAdaptor][]
           (onFileCreate [f]
@@ -133,19 +130,36 @@
             (postPoll co f :FP-DELETED)))
         (.addListener obs ))
       (.addObserver mon obs)
-      (doto (.getx co)
-        (.setv :monitor mon)))
-    co))
+      [c2 mon])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod loopableSchedule
-  ::FilePicker
-  [^IoService co _]
-  (when-some
-    [mon (.getv (.getx co) :monitor)]
-    (log/info "apache io monitor starting...")
-    (.start ^FileAlterationMonitor mon)))
+(defn FilePicker
+  ""
+  [co {:keys [conf] :as spec}]
+  (let
+    [mee (keyword (juid))
+     impl (muble<>)
+     schedule
+     #(let [_ %]
+        (log/info "apache io monitor starting...")
+        (some-> ^FileAlterationMonitor
+                (.getv impl mee) (.start)))
+     par (threadedTimer {:schedule schedule})]
+    (reify LifeCycle
+      (init [_ arg]
+        (let [[c m] (init co conf arg)]
+          (.copyEx impl c)
+          (.setv impl mee m)))
+      (config [_] (.intern impl))
+      (start [_ _]
+        ((:start par) (.intern impl)))
+      (stop [_]
+       (log/info "apache io monitor stopping...")
+       (some-> ^FileAlterationMonitor
+               (.getv impl mee) (.stop))
+       (.unsetv impl mee))
+      (parent [_] co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

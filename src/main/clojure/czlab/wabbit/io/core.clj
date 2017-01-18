@@ -26,35 +26,23 @@
            [czlab.wabbit.server
             Cljshim
             Container]
-           [czlab.xlib
-            Context
-            XData
-            Versioned
-            Hierarchial
-            Muble
-            Disposable
-            Identifiable]))
+           [czlab.xlib LifeCycle]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti processOrphan
-  "Handle unhandled events"
-  {:tag WorkStream} (fn [j] (class (.event ^Job j))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod processOrphan
-  IoEvent
+(defn- processOrphan
+  ""
   [_]
   (workStream<>
     (script<>
       #(let [^Job job %2
              evt (.event job)]
-         (log/error "event '%s' {job:#s} dropped"
-                    (:typeid (meta evt)) (.id job))))))
+         (do->nil
+           (log/error "event '%s' {job:#s} dropped"
+                      (:typeid (meta evt)) (.id job)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -66,178 +54,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmulti io->dispose
-  "Dispose a io-service" (fn [a] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io->start
-  "Start a io-service" (fn [a] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io->stop
-  "Stop a io-service" (fn [a] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti io->error!
-  "Handle io-service error" (fn [a b c] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmulti ioevent<>
-  "Create an event" (fn [a args] (:typeid (meta a))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->init
-  :czlab.wabbit.io.core/Service
-  [^IoService co args]
-  (logcomp "comp->init" co)
-  (if (and (not-empty args)
-           (map? args))
-    (->> (merge (.config co) args)
-         (.setv (.getx co) :emcfg )))
-  co)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn io<started>
+(defn- error!
   ""
-  [^IoService co]
-  (log/info "service '%s' config:" (.id co))
-  (log/info "%s" (pr-str (.config co)))
-  (log/info "service '%s' started - ok" (.id co)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn io<stopped>
-  ""
-  [^IoService co]
-  (log/info "service '%s' stopped - ok" (.id co)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->dispose
-  :czlab.wabbit.io.core/Service
-  [^IoService co]
-  (log/info "service '%s' disposed - ok" (.id co)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->error!
-  :czlab.wabbit.io.core/Service
-  [co ^Job job ^Throwable e]
+  [co job e]
   (log/exception e)
-  (some-> (processOrphan job)
-          (.execWith job)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- job<+>
-  ""
-  ^Job
-  [co evt]
-  (with-meta (job<> co nil evt)
-             {:typeid :czlab.wabbit.io.core/Job}))
+  (some-> (processOrphan job) (.execWith job)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- onEvent
+(defn dispatchEvent
   ""
-  [^IoService src evt args]
-  (log/debug "service '%s' onevent called" (.id src))
-  (let
-    [cfg (.config src)
-     c1 (:router args)
-     c0 (:handler cfg)
-     ctr (.server src)
-     rts (.cljrt ctr)
-     cb (stror c1 c0)
-     job (job<+> ctr evt)
-     wf (try! (.call rts cb))]
-    (log/debug (str "event type = %s\n"
-                    "event opts = %s\n"
-                    "event router = %s\n"
-                    "io-handler = %s")
-               (:typeid (meta src)) args c1 c0)
-    (try
-      (log/debug "job#%s => %s" (.id job) (.id src))
-      (.setv job evt-opts args)
-      (cond
-        (inst? WorkStream wf)
-        (do->nil
-          (.execWith ^WorkStream wf job))
-        (fn? wf)
-        (do->nil
-          (wf job))
-        :else
-        (throwBadArg "Want WorkStream, got %s" (class wf)))
-      (catch Throwable _
-        (io->error! src job _)))))
+  ([src evt] (dispatchEvent src evt nil))
+  ([^IoService src evt arg]
+   (log/debug "io-service [%s] event is being dispatched" (.id src))
+   (let
+     [cfg (.config src)
+      c1 (:router arg)
+      c0 (:handler cfg)
+      ctr (.server src)
+      rts (.cljrt ctr)
+      cb (stror c1 c0)
+      job (job<> ctr nil evt)
+      wf (try! (.call rts cb))]
+     (log/debug (str "event type = %s\n"
+                     "event opts = %s\n"
+                     "event router = %s\n"
+                     "io-handler = %s")
+                (:typeid (meta src)) arg c1 c0)
+     (try
+       (log/debug "job#%s => %s" (.id job) (.id src))
+       (.setv job evt-opts arg)
+       (cond
+         (inst? WorkStream wf)
+         (do->nil (.execWith ^WorkStream wf job))
+         (fn? wf)
+         (do->nil (wf job))
+         :else
+         (throwBadArg "Want WorkStream, got %s" (class wf)))
+       (catch Throwable _
+         (error! src job _))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn service<>
   "Create a IO/Service"
   ^IoService
-  [^Container parObj emType emAlias cfg0]
-  {:pre [(keyword? emType)]}
+  [^Container parObj
+   emType
+   emAlias
+   {:keys [info conf] :as spec}]
   (let [timer (atom nil)
-        impl (muble<> {:emcfg cfg0})]
+        impl (atom nil)]
     (with-meta
       (reify IoService
-
+        (setParent [_ p] (throwUOE "can't setParent"))
+        (getx [_] (throwUOE "can't getx"))
         (isEnabled [_]
-          (not (false? (.getv impl :enabled?))))
-
-        (isActive [_]
-          (not (false? (.getv impl :active?))))
-
-        (config [_] (.getv impl :emcfg))
+          (not (false? (:enabled? (.config ^LifeCycle @impl)))))
         (server [this] (.parent this))
-
-        (dispatch [this ev]
-          (.dispatchEx this ev nil))
-
-        (dispatchEx [this ev arg]
-          (try! (onEvent this ev arg)))
-
+        (config [_] (.config ^LifeCycle @impl))
         (hold [_ trig millis]
           (if (and (some? @timer)
                    (spos? millis))
-            (let [t (tmtask<>
+            (let [k (tmtask<>
                       #(.fire trig nil))]
-              (.schedule ^Timer @timer t millis)
-              (.setTrigger trig t))))
-
-        (version [_] "1.0")
-        (getx [_] impl)
+              (.schedule ^Timer @timer k millis)
+              (.setTrigger trig k))))
+        (version [_] (str (:version info)))
         (id [_] emAlias)
-
         (parent [_] parObj)
-        (setParent [_ p]
-          (throwUOE "can't set service parent"))
-
-        (dispose [this]
+        (dispose [_]
+          (log/info "io-service [%s] is being disposed" emAlias)
           (some-> ^Timer @timer (.cancel))
-          (reset! timer nil)
-          (io->dispose this))
-
-        (init [this cfg]
-          (do->true
-            (comp->init this cfg)))
-
-        (restart [_ _])
-        (start [this _]
-          (reset! timer (Timer. true))
-          (io->start this))
-
-        (stop [this]
-          (some-> ^Timer @timer (.cancel ))
-          (reset! timer nil)
-          (io->stop this)))
+          (rset! timer)
+          (.dispose ^LifeCycle @impl)
+          (log/info "io-service [%s] disposed - ok" emAlias))
+        (init [this cfg0]
+          (log/info "io-service [%s] is initializing..." emAlias)
+          (let [c (-> (.cljrt parObj)
+                      (.callEx (strKW emType)
+                               (vargs* Object this spec)))]
+            (rset! impl c)
+            (.init ^LifeCycle c cfg0))
+          (log/info "io-service [%s] init'ed - ok" emAlias))
+        (start [this arg]
+          (log/info "io-service [%s] is starting..." emAlias)
+          (rset! timer (Timer. true))
+          (.start ^LifeCycle @impl arg)
+          (log/info "io-service [%s] config:" emAlias)
+          (log/info "%s" (pr-str (.config this)))
+          (log/info "io-service [%s] started - ok" emAlias))
+        (stop [_]
+          (log/info "io-service [%s] is stopping..." emAlias)
+          (some-> ^Timer @timer (.cancel))
+          (rset! timer)
+          (.stop ^LifeCycle @impl)
+          (log/info "io-service [%s] stopped - ok" emAlias)))
 
       {:typeid emType})))
 

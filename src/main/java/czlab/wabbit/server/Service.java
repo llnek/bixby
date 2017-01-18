@@ -11,19 +11,12 @@
 package czlab.wabbit.server;
 
 import czlab.wabbit.base.Component;
-import czlab.xlib.Hierarchial;
-import czlab.xlib.Disposable;
-import czlab.xlib.Initable;
-import czlab.xlib.Startable;
+import czlab.xlib.LifeCycle;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component
-                                 ,Initable
-                                 ,Startable
-                                 ,Disposable
-                                 ,Hierarchial {
+public interface Service extends Component, LifeCycle {
 
   /**/
   public boolean isEnabled();

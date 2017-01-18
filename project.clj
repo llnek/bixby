@@ -14,7 +14,7 @@
    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
    ;;[com.google.code.findbugs/jsr305 "3.0.1"]
    [org.freemarker/freemarker "2.3.25-incubating"]
-   [io.czlab/wabbit-mock "0.1.0" :scope "test"]
+   [io.czlab/proto "0.1.0" :scope "test"]
    [io.czlab/wabbit-cons "0.1.0"]
    [io.czlab/twisty "0.1.0"]
    [io.czlab/convoy "0.1.0"]

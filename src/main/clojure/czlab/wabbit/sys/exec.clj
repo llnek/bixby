@@ -143,7 +143,7 @@
   (let
     [impl (muble<> {:container nil
                     :pod nil
-                    :services {}})
+                    :emitters {}})
      pid (str "exec#" (seqint2))]
     (with-meta
       (reify
@@ -219,14 +219,7 @@
         defs (merge (emitterServices)
                     (:emitters env))]
     ;;add user defined emitters and register all
-    (->>
-      (preduce<map>
-        #(let [b (emitMeta (first %2)
-                           (last %2))]
-           (comp->init b co)
-           (assoc! %1 (.type b) b))
-        defs)
-      (.setv ctx :services ))))
+    (.setv ctx :emitters defs)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

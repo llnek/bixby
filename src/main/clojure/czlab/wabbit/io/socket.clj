@@ -27,17 +27,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-(derive ::Socket :czlab.wabbit.io.core/Service)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<>
-  ::Socket
+(defn- evt<>
+  ""
   [^IoService co {:keys [^Socket socket]}]
 
-  (log/debug "opened socket: %s" socket)
-  (let [eeid (str "event#" (seqint2))
-        impl (muble<>)]
+  (let [eeid (str "event#" (seqint2))]
+    (log/debug "opened socket: %s" socket)
     (with-meta
       (reify SocketEvent
         (checkAuthenticity [_] false)
@@ -50,16 +48,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::Socket
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
+(defn- init
+  ""
+  [conf cfg0]
   (let
     [{:keys [timeoutMillis
              backlog host port]
       :as cfg}
-     (merge (.config co) cfg0)
+     (merge conf cfg0)
      ip (if (hgl? host)
           (InetAddress/getByName host)
           (InetAddress/getLocalHost))]
@@ -69,8 +65,7 @@
                           (int (or backlog 100)) ip)]
       (log/info "Server socket %s (bound?) %s" soc (.isBound soc))
       (.setReuseAddress soc true)
-      (.setv (.getx co) :ssocket soc))
-    co))
+      [cfg soc])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -78,45 +73,44 @@
   ""
   [^IoService co ^Socket soc]
   (try!
-    (.dispatch co (ioevent<> co {:socket soc}))))
+    (.dispatch co (evt<> co {:socket soc}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- finxSocket
+(defn- closeSocket
   ""
-  [^IoService co]
-
+  [^Muble m kee]
   (when-some
-    [ssoc (.getv (.getx co) :ssocket)]
-    (closeQ ssoc)
-    (.unsetv (.getx co) :ssocket)))
+    [ssoc (.getv m kee)] (closeQ ssoc) (.unsetv m kee)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io->start
-  ::Socket
-  [^IoService co]
-
-  (logcomp "io->start" co)
-  (if-some
-    [^ServerSocket
-     ssoc (.getv (.getx co) :ssocket)]
-    (async!
-      #(while (not (.isClosed ssoc))
-         (try
-           (sockItDown co (.accept ssoc))
-           (catch Throwable _ (finxSocket co))))
-      {:cl (getCldr)}))
-  (io<started> co))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->stop
-  ::Socket
-  [^IoService co]
-  (logcomp "io->stop" co)
-  (finxSocket co)
-  (io<stopped> co))
+(defn Socket
+  ""
+  ^LifeCycle
+  [co {:keys [conf] :as spec}]
+  (let
+    [see (keyword (juid))
+     impl (muble<>)]
+    (reify
+      LifeCycle
+      (init [_ arg]
+        (let [[cfg soc]
+              (init conf arg)]
+          (.copyEx impl cfg)
+          (.setv impl see soc)))
+      (start [_ _]
+        (if-some
+          [^ServerSocket
+           ssoc (.getv impl see)]
+          (async!
+            #(while (not (.isClosed ssoc))
+               (try
+                 (sockItDown co (.accept ssoc))
+                 (catch Throwable _ (closeSocket impl see))))
+            {:cl (getCldr)})))
+      (stop [_]
+        (closeSocket impl see)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

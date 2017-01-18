@@ -106,8 +106,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-(derive ::HTTP :czlab.wabbit.io.core/Service)
-(derive ::WebMVC ::HTTP)
 (def ^:private ^String auth-token "authorization")
 (def ^:private ^String basic-token "basic")
 
@@ -128,28 +126,6 @@
   (let [{:keys [routes]} cfg]
     (when-not (empty? routes)
       (loadRoutes routes))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- httpBasicConfig
-  "Basic http config"
-  [^IoService co cfg0]
-  (let [{:keys [serverKey port passwd] :as cfg}
-        (merge (.config co) cfg0)
-        kfile (expandVars serverKey)
-        ssl? (hgl? kfile)]
-    (if ssl?
-      (test-cond "server-key file url"
-                 (.startsWith kfile "file:")))
-    (->>
-      {:port (if-not (spos? port)
-               (if ssl? 443 80) port)
-       :routes (maybeLoadRoutes cfg)
-       :passwd (->> (.server co)
-                    (.podKey)
-                    (passwd<> passwd) (.text))
-       :serverKey (if ssl? (io/as-url kfile))}
-      (merge cfg ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -314,12 +290,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<>
-  ::HTTP
-  [^IoService co {:keys [^Channel ch msg]}]
-
-  ;;(log/debug "ioevent: channel =>>>>>>>> %s" ch)
-  (logcomp "ioevent" co)
+(defn- evt<>
+  ""
+  [co {:keys [ch msg]}]
   (let [ssl? (maybeSSL? ch)]
     (if
       (inst? WebSocketFrame msg)
@@ -334,77 +307,34 @@
   (let [{:keys [waitMillis]}
         (.config co)
         ^HttpEvent
-        evt (ioevent<> co
-                       {:msg req
-                        :ch (.channel ctx)})]
+        evt (evt<> co {:msg req
+                       :ch (.channel ctx)})]
     (if (spos? waitMillis)
       (.hold co evt waitMillis))
     (.dispatch co evt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io->start
-  ::HTTP
-  [^IoService co]
-
-  (logcomp "io->start" co)
-  (let [bs (.getv (.getx co) :bootstrap)
-        cfg (.config co)
-        ch (startServer bs cfg)]
-    (.setv (.getx co) :channel ch)
-    (io<started> co)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->stop
-  ::HTTP
-  [^IoService co]
-
-  (logcomp "io->stop" co)
-  (let [{:keys [bootstrap channel]}
-        (.intern (.getx co))]
-    (stopServer channel)
-    (doto (.getx co)
-      (.unsetv :bootstrap)
-      (.unsetv :channel))
-    (io<stopped> co)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- initor
+(defn- start
   ""
-  [^IoService co cfg0]
-  (let [ctr (.server co)
-        cfg (->> (httpBasicConfig co cfg0)
-                 (.setv (.getx co) :emcfg))]
-    (->>
-      (httpServer<>
-        (proxy [CPDecorator][]
-          (forH1 [_]
-            (ihandler<>
-              #(h1Handler->onRead %1 co %2))))
-        cfg)
-      (.setv (.getx co) :bootstrap ))
-    co))
+  [^Muble m bee cee]
+  (let [bs (.getv m bee)
+        cfg (.intern m)
+        ch (startServer bs cfg)]
+    (.setv m cee ch)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::HTTP
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
-  (initor co cfg0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->init
-  ::WebMVC
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
-  (initor co cfg0))
+(defn- stop
+  ""
+  [^Muble m bee cee]
+  (let [{:keys [channel
+                bootstrap]}
+        (.intern m)]
+    (stopServer channel)
+    (doto m
+      (.unsetv bee)
+      (.unsetv cee))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -434,6 +364,79 @@
   (let [ch (-> (discardHTTPD<> func)
                (startServer arg))]
     #(stopServer ch)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- httpBasicConfig
+  "Basic http config"
+  [co conf cfg0]
+  (let [{:keys [serverKey
+                port
+                passwd] :as cfg}
+        (merge conf cfg0)
+        kfile (expandVars serverKey)
+        ssl? (hgl? kfile)]
+    (if ssl?
+      (test-cond "server-key file url"
+                 (.startsWith kfile "file:")))
+    (->>
+      {:port (if-not (spos? port)
+               (if ssl? 443 80) port)
+       :routes (maybeLoadRoutes cfg)
+       :passwd (->> (.server co)
+                    (.podKey)
+                    (passwd<> passwd) (.text))
+       :serverKey (if ssl? (io/as-url kfile))}
+      (merge cfg ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- initor
+  ""
+  [co conf cfg0]
+  (let [cfg (httpBasicConfig co conf cfg0)]
+    [(httpServer<>
+       (proxy [CPDecorator][]
+         (forH1 [_]
+           (ihandler<>
+             #(h1Handler->onRead %1 co %2)))) cfg)
+     cfg]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- httpXXX<>
+  ""
+  [co {:keys [conf] :as spec}]
+  (let
+    [bee (keyword (juid))
+     cee (keyword (juid))
+     impl (muble<>)]
+    (reify LifeCycle
+      (init [_ arg]
+        (let [[b c] (initor co conf arg)]
+          (.copyEx impl c)
+          (.setv impl bee b)))
+      (start [_ _] (start impl bee cee))
+      (stop [_] (stop impl bee cee))
+      (config [_] (.intern impl))
+      (parent [_] co))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn WebMVC
+  ""
+  ^LifeCycle
+  [co spec]
+  (httpXXX<> co spec))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn HTTP
+  ""
+  ^LifeCycle
+  [co spec]
+  (httpXXX<> co spec))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

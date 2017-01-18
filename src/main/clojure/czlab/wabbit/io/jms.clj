@@ -47,15 +47,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-(derive ::JMS :czlab.wabbit.io.core/Service)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod ioevent<>
-  ::JMS
+(defn- evt<>
+  ""
   [^IoService co {:keys [msg]}]
-
-  (logcomp "ioevent" co)
   (let [eeid (str "event#" (seqint2))
         impl (muble<>)]
     (with-meta
@@ -72,7 +69,7 @@
   ""
   [^IoService co msg]
   ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (ioevent<> co {:msg msg})))
+  (.dispatch co (evt<> co {:msg msg})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -185,28 +182,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::JMS
-  [^IoService co cfg0]
-
-  (logcomp "comp->init" co)
-  (->> (merge (.config co)
-              (sanitize co cfg0))
-       (.setv (.getx co) :emcfg))
-  co)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod io->start
-  ::JMS
-  [^IoService co]
-
-  (logcomp "io->start" co)
+(defn- start
+  ""
+  ^Connection
+  [co {:keys [contextFactory
+              providerUrl
+              jndiUser jndiPwd connFactory]}]
   (let
-    [{:keys [contextFactory providerUrl
-             jndiUser jndiPwd connFactory]}
-     (.config co)
-     vars (Hashtable.)]
+    [vars (Hashtable.)]
     (if (hgl? providerUrl)
       (.put vars Context/PROVIDER_URL providerUrl))
     (if (hgl? contextFactory)
@@ -231,23 +214,33 @@
            (inizFac co ctx obj))]
       (if (nil? c)
         (throwIOE "Unsupported JMS Connection Factory"))
-      (.setv (.getx co) :conn c)
       (.start c)
-      (io<started> co))))
+      c)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod io->stop
-  ::JMS
-  [^IoService co]
-
-  (logcomp "io->stop" co)
-  (when-some
-    [^Connection c
-     (.getv (.getx co) :conn)]
-    (try! (.close c))
-    (.unsetv (.getx co) :conn)
-    (io<stopped> co)))
+(defn JMS
+  ""
+  [co {:keys [conf] :as spec}]
+  (let
+    [cee (keyword (juid))
+     impl (muble<>)]
+    (reify
+      LifeCycle
+      (init [_ arg]
+        (->> (merge conf
+                    (sanitize co arg))
+             (.copyEx impl)))
+      (parent [_] co)
+      (config [_] (.intern impl))
+      (start [_ _]
+        (let [c (start co (.intern impl))]
+          (.setv impl cee c)))
+      (stop [_]
+        (when-some
+          [^Connection c (.getv impl cee)]
+          (try! (.close c))
+          (.unsetv impl cee))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

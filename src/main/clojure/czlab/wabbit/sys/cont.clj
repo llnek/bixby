@@ -224,17 +224,17 @@
   [^Container co svcType nm cfg0]
   (let
     [^Execvisor exe (.parent co)
-     bks (.getv (.getx exe) :services)]
+     bks (.getv (.getx exe) :emitters)]
     (if-some
-      [^IoGist bk (bks svcType)]
+      [bk (bks svcType)]
       (let
-        [obj (service<> co svcType nm (.intern (.getx bk)))
-         pkey (.podKey co)
+        [obj (service<> co svcType nm bk)
+         _ (.init obj cfg0)
+         cfg0 (.config co)
          hid (:handler cfg0)]
         (log/info "preparing service %s..." svcType)
         (log/info "svc meta: %s" (meta obj))
         (log/info "config params =\n%s" cfg0)
-        (.init obj cfg0)
         (log/info "service - ok. handler => %s" hid)
         obj)
       (trap! ServiceError

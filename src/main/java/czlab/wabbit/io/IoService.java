@@ -19,19 +19,10 @@ import czlab.wabbit.server.Service;
 public interface IoService extends Service {
 
   /**/
-  public void dispatchEx(IoEvent evt, Object arg);
-
-  /**/
   public void hold(IoTrigger t, long millis);
 
   /**/
-  public void dispatch(IoEvent evt);
-
-  /**/
   public Container server();
-
-  /**/
-  public Object config();
 
 }
 
