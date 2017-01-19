@@ -98,11 +98,7 @@
             ChunkedFile
             ChunkedInput
             ChunkedWriteHandler]
-           [czlab.xlib
-            XData
-            Muble
-            Hierarchial
-            Identifiable]))
+           [czlab.xlib XData Muble LifeCycle]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -166,13 +162,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- killTimerTask
-  ""
-  [^Muble m kee]
-  (cancelTimerTask (.getv m kee)) (.unsetv m kee))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- resumeOnExpiry
   ""
   [^Channel ch ^HttpEvent evt]
@@ -214,8 +203,6 @@
         (body [_] _body)
         (source [_] co))
       {:typeid ::WSockEvent})))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -311,36 +298,28 @@
                        :ch (.channel ctx)})]
     (if (spos? waitMillis)
       (.hold co evt waitMillis))
-    (.dispatch co evt)))
+    (dispatch! evt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- start
+(defn- boot<>
   ""
-  [^Muble m bee cee]
-  (let [bs (.getv m bee)
-        cfg (.intern m)
-        ch (startServer bs cfg)]
-    (.setv m cee ch)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- stop
-  ""
-  [^Muble m bee cee]
-  (let [{:keys [channel
-                bootstrap]}
-        (.intern m)]
-    (stopServer channel)
-    (doto m
-      (.unsetv bee)
-      (.unsetv cee))))
+  [co]
+  (let
+    [cfg (.config ^IoService co)
+     bs
+     (httpServer<>
+       (proxy [CPDecorator][]
+         (forH1 [_]
+           (ihandler<>
+             #(h1Handler->onRead %1 co %2)))) cfg)
+     ch (startServer bs cfg)]
+    [bs ch]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod processOrphan
-  HttpEvent
+(defn- processOrphan
+  ""
   [_]
   ;; 500 or 503
   (workStream<>
@@ -369,7 +348,7 @@
 ;;
 (defn- httpBasicConfig
   "Basic http config"
-  [co conf cfg0]
+  [pkey conf cfg0]
   (let [{:keys [serverKey
                 port
                 passwd] :as cfg}
@@ -380,27 +359,11 @@
       (test-cond "server-key file url"
                  (.startsWith kfile "file:")))
     (->>
-      {:port (if-not (spos? port)
-               (if ssl? 443 80) port)
+      {:port (if-not (spos? port) (if ssl? 443 80) port)
        :routes (maybeLoadRoutes cfg)
-       :passwd (->> (.server co)
-                    (.podKey)
-                    (passwd<> passwd) (.text))
+       :passwd (.text (passwd<> passwd pkey))
        :serverKey (if ssl? (io/as-url kfile))}
       (merge cfg ))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- initor
-  ""
-  [co conf cfg0]
-  (let [cfg (httpBasicConfig co conf cfg0)]
-    [(httpServer<>
-       (proxy [CPDecorator][]
-         (forH1 [_]
-           (ihandler<>
-             #(h1Handler->onRead %1 co %2)))) cfg)
-     cfg]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -408,16 +371,23 @@
   ""
   [co {:keys [conf] :as spec}]
   (let
-    [bee (keyword (juid))
+    [pkey (.podKey (.server ^IoService co))
+     bee (keyword (juid))
      cee (keyword (juid))
      impl (muble<>)]
     (reify LifeCycle
       (init [_ arg]
-        (let [[b c] (initor co conf arg)]
-          (.copyEx impl c)
-          (.setv impl bee b)))
-      (start [_ _] (start impl bee cee))
-      (stop [_] (stop impl bee cee))
+        (.copyEx impl
+                 (httpBasicConfig pkey conf arg)))
+      (start [_ _]
+        (let [[bs ch] (boot<> co)]
+          (.setv impl bee bs)
+          (.setv impl cee ch)))
+      (stop [_]
+        (when-some [c (.getv impl cee)]
+          (stopServer c)
+          (.unsetv impl bee)
+          (.unsetv impl cee)))
       (config [_] (.intern impl))
       (parent [_] co))))
 

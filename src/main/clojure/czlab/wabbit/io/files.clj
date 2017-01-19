@@ -61,11 +61,9 @@
 ;;
 (defn- postPoll
   "Only look for new files"
-  [^IoService co ^File f action]
+  [co {:keys [recvFolder]} ^File f action]
   (let
-    [{:keys [recvFolder]}
-     (.config co)
-     orig (.getName f)]
+    [orig (.getName f)]
     (if-some
       [cf (if (and (not= action :FP-DELETED)
                    (some? recvFolder))
@@ -75,7 +73,7 @@
       (->> (evt<> co {:fname orig
                       :fp cf
                       :action action})
-           (dispatchEvent co)))))
+           (dispatch! )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -100,7 +98,7 @@
 ;;
 (defn- init
   ""
-  [co conf cfg0]
+  [conf cfg0]
   (let
     [{:keys [recvFolder
              fmask
@@ -113,29 +111,39 @@
     (log/info
       (str "monitoring folder: %s\n"
            "rcv folder: %s") root (nsn dest))
-    (let
-      [obs (FileAlterationObserver. (io/file root) ff)
-       c2 (merge c2 {:targetFolder root
-                     :fmask ff
-                     :recvFolder dest})
-       mon (-> (s2ms (:intervalSecs c2))
-               (FileAlterationMonitor.))]
-      (->>
-        (proxy [FileAlterationListenerAdaptor][]
-          (onFileCreate [f]
-            (postPoll co f :FP-CREATED))
-          (onFileChange [f]
-            (postPoll co f :FP-CHANGED))
-          (onFileDelete [f]
-            (postPoll co f :FP-DELETED)))
-        (.addListener obs ))
-      (.addObserver mon obs)
-      [c2 mon])))
+    (merge c2 {:targetFolder root
+               :fmask ff
+               :recvFolder dest})))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- fileMon<>
+  ""
+  ^FileAlterationMonitor
+  [co {:keys [targetFolder
+              intervalSecs
+              ^FileFilter fmask] :as cfg}]
+  (let
+    [obs (FileAlterationObserver. (io/file targetFolder) fmask)
+     mon (-> (s2ms intervalSecs)
+             (FileAlterationMonitor.))]
+    (->>
+      (proxy [FileAlterationListenerAdaptor][]
+        (onFileCreate [f]
+          (postPoll co cfg f :FP-CREATED))
+        (onFileChange [f]
+          (postPoll co cfg f :FP-CHANGED))
+        (onFileDelete [f]
+          (postPoll co cfg f :FP-DELETED)))
+      (.addListener obs ))
+    (.addObserver mon obs)
+    mon))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn FilePicker
   ""
+  ^LifeCycle
   [co {:keys [conf] :as spec}]
   (let
     [mee (keyword (juid))
@@ -148,12 +156,12 @@
      par (threadedTimer {:schedule schedule})]
     (reify LifeCycle
       (init [_ arg]
-        (let [[c m] (init co conf arg)]
-          (.copyEx impl c)
-          (.setv impl mee m)))
+        (.copyEx impl (init conf arg)))
       (config [_] (.intern impl))
       (start [_ _]
-        ((:start par) (.intern impl)))
+        (let [m (fileMon<> co (.intern impl))]
+          (.setv impl mee m)
+          ((:start par) (.intern impl))))
       (stop [_]
        (log/info "apache io monitor stopping...")
        (some-> ^FileAlterationMonitor

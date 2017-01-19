@@ -33,7 +33,7 @@
            [czlab.wabbit.server Container]
            [java.util Properties]
            [java.io IOException]
-           [czlab.xlib Muble Identifiable]))
+           [czlab.xlib LifeCycle]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -169,7 +169,7 @@
       (doto mm
         (.getAllHeaders)
         (.getContent))
-      (.dispatch co (ioevent<> co {:msg mm}))
+      (dispatch! (evt<> co {:msg mm}))
       (when d? (.setFlag mm Flags$Flag/DELETED true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,9 +177,8 @@
 (defn- scanPop3
   ""
   [^IoService co]
-  (let [{:keys [^Folder folder
-                ^Store store]}
-        (.intern (.getx co))]
+  (let [{:keys [^Folder folder ^Store store]}
+        (.config co)]
     (if (and (some? folder)
              (not (.isOpen folder)))
       (.open folder Folder/READ_WRITE))
@@ -195,9 +194,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wakeup
+(defn- wake<o>
   ""
-  [co]
+  [^IoService co]
   (try
     (connectPop3 co)
     (scanPop3 co)
@@ -210,16 +209,14 @@
 ;;
 (defn- sanitize
   ""
-  [^IoService co {:keys [port deleteMsg?
-                         host user ssl? passwd]
-                  :as cfg0}]
-  (let [pkey (.podKey (.server co))]
-    (-> (assoc cfg0 :ssl? (not (false? ssl?)))
-        (assoc :deleteMsg? (true? deleteMsg?))
-        (assoc :host (str host))
-        (assoc :port (if (spos? port) port 995))
-        (assoc :user (str user ))
-        (assoc :passwd (.text (passwd<> passwd pkey))))))
+  [pkey {:keys [port deleteMsg?
+                host user ssl? passwd] :as cfg0}]
+  (-> (assoc cfg0 :ssl? (not (false? ssl?)))
+      (assoc :deleteMsg? (true? deleteMsg?))
+      (assoc :host (str host))
+      (assoc :port (if (spos? port) port 995))
+      (assoc :user (str user ))
+      (assoc :passwd (.text (passwd<> passwd pkey)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -228,8 +225,9 @@
   ^LifeCycle
   [co {:keys [conf] :as spec}]
   (let
-    [impl (muble<>)
-     funcs (threadedTimer {:wakeup wakeup<o>})]
+    [funcs (threadedTimer {:wakeup wake<o>})
+     pkey (.podKey (.server ^IoService co))
+     impl (muble<>)]
     (reify LifeCycle
       (config [_] (.intern impl))
       (parent [_] co)
@@ -237,7 +235,7 @@
       (stop [_] ((:stop funcs)))
       (init [_ arg]
         (let [c2 (merge conf
-                        (sanitize co arg))
+                        (sanitize pkey arg))
               [z p] (if (:ssl? c2)
                       [cz-pop3s pop3s]
                       [cz-pop3 pop3c])]
@@ -254,7 +252,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- wakeup<i>
+(defn- wake<i>
   ""
   [co]
   (try
@@ -272,8 +270,9 @@
   ^LifeCycle
   [co {:keys [conf] :as spec}]
   (let
-    [impl (muble<>)
-     funcs (threadedTimer {:wakeup wakeup<i>})]
+    [funcs (threadedTimer {:wakeup wake<i>})
+     pkey (.podKey (.server ^IoService co))
+     impl (muble<>)]
     (reify LifeCycle
       (config [_] (.intern impl))
       (parent [_] co)
@@ -281,7 +280,7 @@
       (stop [_] ((:stop funcs)))
       (init [_ arg]
         (let [c2 (merge conf
-                        (sanitize co arg))
+                        (sanitize pkey arg))
               [z p] (if (:ssl? c2)
                       [cz-imaps imaps]
                       [cz-imap imap])]

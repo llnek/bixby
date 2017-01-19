@@ -22,7 +22,7 @@
         [czlab.wabbit.base.core])
 
   (:import [java.net InetAddress ServerSocket Socket]
-           [czlab.xlib Muble Identifiable]
+           [czlab.xlib LifeCycle]
            [czlab.wabbit.io IoService SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -32,10 +32,9 @@
 ;;
 (defn- evt<>
   ""
-  [^IoService co {:keys [^Socket socket]}]
+  [co {:keys [^Socket socket]}]
 
   (let [eeid (str "event#" (seqint2))]
-    (log/debug "opened socket: %s" socket)
     (with-meta
       (reify SocketEvent
         (checkAuthenticity [_] false)
@@ -44,48 +43,37 @@
         (sockIn [_] (.getInputStream socket))
         (source [_] co)
         (dispose [_] (closeQ socket)))
-      {:typeid ::SocketEvent })))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- init
-  ""
-  [conf cfg0]
-  (let
-    [{:keys [timeoutMillis
-             backlog host port]
-      :as cfg}
-     (merge conf cfg0)
-     ip (if (hgl? host)
-          (InetAddress/getByName host)
-          (InetAddress/getLocalHost))]
-    (test-pos "socket port" port)
-    (let
-      [soc (ServerSocket. port
-                          (int (or backlog 100)) ip)]
-      (log/info "Server socket %s (bound?) %s" soc (.isBound soc))
-      (.setReuseAddress soc true)
-      [cfg soc])))
+      {:typeid ::SocketEvent})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- sockItDown
   ""
-  [^IoService co ^Socket soc]
+  [co soc]
   (try!
-    (.dispatch co (evt<> co {:socket soc}))))
+    (log/debug "opened socket: %s" soc)
+    (dispatch! (evt<> co {:socket soc}))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- closeSocket
+(defn- ssoc<>
   ""
-  [^Muble m kee]
-  (when-some
-    [ssoc (.getv m kee)] (closeQ ssoc) (.unsetv m kee)))
+  ^ServerSocket
+  [{:keys [timeoutMillis backlog host port]}]
+  (let
+    [ip (if (hgl? host)
+          (InetAddress/getByName host)
+          (InetAddress/getLocalHost))
+     _ (test-pos "socket port" port)
+     soc (ServerSocket. port
+                        (int (or backlog 100)) ip)]
+    (log/info "Server socket %s (bound?) %s" soc (.isBound soc))
+    (.setReuseAddress soc true)
+    soc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn Socket
+(defn SocketIO
   ""
   ^LifeCycle
   [co {:keys [conf] :as spec}]
@@ -95,22 +83,24 @@
     (reify
       LifeCycle
       (init [_ arg]
-        (let [[cfg soc]
-              (init conf arg)]
-          (.copyEx impl cfg)
-          (.setv impl see soc)))
+        (.copyEx impl (merge conf arg)))
+      (config [_] (.intern impl))
+      (parent [_] co)
       (start [_ _]
-        (if-some
-          [^ServerSocket
-           ssoc (.getv impl see)]
+        (when-some
+          [ss (ssoc<> (.intern impl))]
+          (.setv impl see ss)
           (async!
-            #(while (not (.isClosed ssoc))
+            #(while (not (.isClosed ss))
                (try
-                 (sockItDown co (.accept ssoc))
-                 (catch Throwable _ (closeSocket impl see))))
+                 (sockItDown co (.accept ss))
+                 (catch Throwable _
+                   (.unsetv impl see) (closeQ ss))))
             {:cl (getCldr)})))
       (stop [_]
-        (closeSocket impl see)))))
+        (when-some [s (.getv impl see)]
+          (.unsetv impl see)
+          (closeQ s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

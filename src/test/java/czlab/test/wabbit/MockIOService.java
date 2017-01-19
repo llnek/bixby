@@ -35,11 +35,6 @@ public class MockIOService implements IoService {
   }
 
   @Override
-  public boolean isActive() {
-    return false;
-  }
-
-  @Override
   public Muble getx() {
     return null;
   }
@@ -82,15 +77,7 @@ public class MockIOService implements IoService {
   }
 
   @Override
-  public void dispatchEx(IoEvent evt, Object arg) {
-  }
-
-  @Override
   public void hold(IoTrigger t, long millis) {
-  }
-
-  @Override
-  public void dispatch(IoEvent evt) {
   }
 
   @Override

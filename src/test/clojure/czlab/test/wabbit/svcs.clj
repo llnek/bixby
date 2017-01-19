@@ -157,7 +157,7 @@
                 :host "localhost"
                 :port 8888})
         (.start s nil)
-        (safeWait 1000)
+        (pause 1000)
         (let [res (h1get "http://localhost:8888/test/get/xxx")
               ^WholeResponse
               rc (deref res 2000 nil)
@@ -184,7 +184,7 @@
                 :username "test1"
                 :passwd "secret"})
         (.start s nil)
-        (safeWait 3000)
+        (pause 3000)
         (.stop s)
         (.dispose ctr)
         (> @result-var 8)))
@@ -205,7 +205,7 @@
                 :username "test1"
                 :passwd "secret"})
         (.start s nil)
-        (safeWait 3000)
+        (pause 3000)
         (.stop s)
         (.dispose ctr)
         (> @result-var 8)))
@@ -231,7 +231,7 @@
                 :jmsUser "anonymous"
                 :jmsPwd "anonymous"})
         (.start s nil)
-        (safeWait 3000)
+        (pause 3000)
         (.stop s)
         (.dispose ctr)
         (> @result-var 8)))
@@ -257,7 +257,7 @@
                 :jmsUser "anonymous"
                 :jmsPwd "anonymous"})
         (.start s nil)
-        (safeWait 3000)
+        (pause 3000)
         (.stop s)
         (.dispose ctr)
         (> @result-var 8)))
@@ -277,7 +277,7 @@
         (.start s nil)
         (reset! result-var 0)
         (dotimes [n 2]
-          (safeWait 1000)
+          (pause 1000)
           (with-open [soc (Socket. host (int port))]
              (let [os (.getOutputStream soc)
                    is (.getInputStream soc)
@@ -302,7 +302,7 @@
             s (service<> ctr etype "t" c)]
         (reset! result-var 0)
         (.start s nil)
-        (safeWait 2000)
+        (pause 2000)
         (.stop s)
         (.dispose ctr)
         (== 8 @result-var)))
@@ -318,7 +318,7 @@
             s (service<> ctr etype "t" c)]
         (reset! result-var 0)
         (.start s nil)
-        (safeWait 3500)
+        (pause 3500)
         (.stop s)
         (.dispose ctr)
         (> @result-var 8)))
@@ -347,9 +347,9 @@
         (spitUtf8 firstfn "8")
         (reset! result-var 0)
         (.start s nil)
-        (safeWait 1000)
+        (pause 1000)
         (touch! firstfn)
-        (safeWait 3000)
+        (pause 3000)
         (.stop s)
         (.dispose ctr)
         (deleteDir from)

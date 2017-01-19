@@ -35,6 +35,7 @@
 ;;
 (defn- processOrphan
   ""
+  ^WorkStream
   [_]
   (workStream<>
     (script<>
@@ -62,13 +63,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn dispatchEvent
+(defn dispatch!
   ""
-  ([src evt] (dispatchEvent src evt nil))
-  ([^IoService src evt arg]
-   (log/debug "io-service [%s] event is being dispatched" (.id src))
+  ([evt] (dispatch! evt nil))
+  ([^IoEvent evt arg]
+   (log/debug "[%s] event is disp!" (.id (.source evt)))
    (let
-     [cfg (.config src)
+     [src (.source evt)
+      cfg (.config src)
       c1 (:router arg)
       c0 (:handler cfg)
       ctr (.server src)

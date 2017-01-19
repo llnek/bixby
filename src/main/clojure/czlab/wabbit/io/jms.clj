@@ -20,7 +20,7 @@
         [czlab.wabbit.io.core])
 
   (:import [java.util Hashtable Properties ResourceBundle]
-           [czlab.xlib Muble Identifiable]
+           [czlab.xlib LifeCycle]
            [javax.jms
             ConnectionFactory
             Connection
@@ -52,7 +52,7 @@
 ;;
 (defn- evt<>
   ""
-  [^IoService co {:keys [msg]}]
+  [co {:keys [msg]}]
   (let [eeid (str "event#" (seqint2))
         impl (muble<>)]
     (with-meta
@@ -67,9 +67,9 @@
 ;;
 (defn- onMsg
   ""
-  [^IoService co msg]
+  [co msg]
   ;;if (msg!=null) block { () => msg.acknowledge() }
-  (.dispatch co (evt<> co {:msg msg})))
+  (dispatch! (evt<> co {:msg msg})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -172,13 +172,9 @@
 ;;
 (defn- sanitize
   ""
-  [^IoService co cfg0]
-  (let [{:keys [jndiPwd jmsPwd]}
-        cfg0
-        pkey (.podKey (.server co))]
-    (-> cfg0
-        (assoc :jndiPwd (.text (passwd<> jndiPwd pkey)))
-        (assoc :jmsPwd (.text (passwd<> jmsPwd pkey))))))
+  [pkey {:keys [jndiPwd jmsPwd] :as cfg}]
+  (-> (assoc cfg :jndiPwd (.text (passwd<> jndiPwd pkey)))
+      (assoc :jmsPwd (.text (passwd<> jmsPwd pkey)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -221,20 +217,22 @@
 ;;
 (defn JMS
   ""
+  ^LifeCycle
   [co {:keys [conf] :as spec}]
   (let
-    [cee (keyword (juid))
+    [pkey (.podKey (.server ^IoService co))
+     cee (keyword (juid))
      impl (muble<>)]
     (reify
       LifeCycle
       (init [_ arg]
-        (->> (merge conf
-                    (sanitize co arg))
-             (.copyEx impl)))
+        (.copyEx impl
+                 (merge conf
+                        (sanitize pkey arg))))
       (parent [_] co)
       (config [_] (.intern impl))
       (start [_ _]
-        (let [c (start co (.intern impl))]
+        (when-some [c (start co (.intern impl))]
           (.setv impl cee c)))
       (stop [_]
         (when-some

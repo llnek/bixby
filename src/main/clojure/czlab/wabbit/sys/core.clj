@@ -176,7 +176,7 @@
     (log/debug "%s" @ctx)
     (log/info "container is now running...")
     (while (not @stopcli)
-      (safeWait 3000))
+      (pause 3000))
     (log/info "vm shut down")
     (log/info "(bye)")
     (shutdown-agents)))

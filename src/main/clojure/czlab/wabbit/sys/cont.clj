@@ -230,7 +230,7 @@
       (let
         [obj (service<> co svcType nm bk)
          _ (.init obj cfg0)
-         cfg0 (.config co)
+         cfg0 (.config obj)
          hid (:handler cfg0)]
         (log/info "preparing service %s..." svcType)
         (log/info "svc meta: %s" (meta obj))

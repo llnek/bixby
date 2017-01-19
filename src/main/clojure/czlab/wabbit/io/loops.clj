@@ -41,9 +41,9 @@
     (if (spos? intv)
       (cond
         (inst? Date dw)
-        (.schedule tm tt ^Date dw intv)
+        (.schedule timer tt ^Date dw intv)
         :else
-        (.schedule tm
+        (.schedule timer
                    tt
                    (long (if (> ds 0) ds 1000)) intv)))))
 
@@ -91,24 +91,25 @@
      loopy (volatile! true)
      schedule
      (or (:schedule funcs)
-         #(async!
+         (fn [c]
+           (async!
             #(while @loopy
                (wake)
-               (safeWait (:intervalMillis %)))
-            {:cl (getCldr)}))]
+               (pause (:intervalMillis c)))
+            {:cl (getCldr)})))]
     (doto
       {:start
-       #(let
-          [{:keys [intervalSecs
-                   delaySecs delayWhen]}
-           %
-           func #(schedule {:intervalMillis
+       (fn [cfg]
+         (let
+           [{:keys [intervalSecs
+                    delaySecs delayWhen]} cfg
+            func #(schedule {:intervalMillis
                             (s2ms intervalSecs)})]
-          (if (or (spos? delaySecs)
-                  (inst? Date delayWhen))
-            (configOnce (Timer.)
-                        [delayWhen (s2ms delaySecs)] func)
-            (func)))
+           (if (or (spos? delaySecs)
+                   (inst? Date delayWhen))
+             (configOnce (Timer.)
+                         [delayWhen (s2ms delaySecs)] func)
+             (func))))
        :stop
        #(vreset! loopy false)})))
 
@@ -132,31 +133,30 @@
   ""
   [co {:keys [conf] :as spec} repeat?]
   (let
-    [impl (muble<>)
-     tee (keyword (juid))
+    [tee (keyword (juid))
+     impl (muble<>)
      stop #(do (try! (some-> ^Timer
-                             (.getv impl tee)
-                             (.cancel)))
+                             (.getv impl tee) (.cancel)))
                (.unsetv impl tee))
-     wakeup #(do (.dispatch co
-                            (evt<> co repeat?))
+     wakeup #(do (dispatch! (evt<> co repeat?))
                  (if-not repeat? (stop)))]
     (reify
       LifeCycle
       (config [_] (dissoc (.intern impl) tee))
       (parent [_] co)
       (init [_ arg]
-        (.copyEx impl (merge conf cfg0)))
+        (.copyEx impl (merge conf arg)))
       (start [_ arg]
         (let [t (Timer. true)]
           (.setv impl tee t)
-          (configTimer t wakeup repeat?)))
+          (configTimer t wakeup (.intern impl) repeat?)))
       (stop [_] stop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn RepeatingTimer
   ""
+  ^LifeCycle
   [co spec]
   (xxxTimer<> co spec true))
 
@@ -164,6 +164,7 @@
 ;;
 (defn OnceTimer
   ""
+  ^LifeCycle
   [co spec]
   (xxxTimer<> co spec false))
 

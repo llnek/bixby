@@ -380,10 +380,9 @@
      mDir (io/file mpt)]
     (if (spos? waitMillis)
       (.hold (.source evt) evt waitMillis))
-    (.dispatchEx (.source evt)
-                 evt
-                 {:router "czlab.wabbit.mvc.web/assetHandler<>"
-                  :path (fpath mDir)})))
+    (dispatch! evt
+               {:router "czlab.wabbit.mvc.web/assetHandler<>"
+                :path (fpath mDir)})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -419,7 +418,7 @@
               :template (.template ri)}]
     (if (spos? waitMillis)
       (.hold (.source evt) evt waitMillis))
-    (.dispatchEx (.source evt) evt options)))
+    (dispatch! evt options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
