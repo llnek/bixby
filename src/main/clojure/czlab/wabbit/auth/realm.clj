@@ -9,11 +9,11 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.pugs.auth.realm
+  czlab.wabbit.auth.realm
 
   (:gen-class
    :extends org.apache.shiro.realm.AuthorizingRealm
-   :name czlab.wabbit.pugs.auth.realm.JdbcRealm
+   :name czlab.wabbit.auth.realm.JdbcRealm
    :init myInit
    :constructors {[] []}
    :exposes-methods { }
@@ -22,7 +22,7 @@
   (:require [czlab.twisty.codec :refer [passwd<>]]
             [czlab.xlib.logging :as log])
 
-  (:use [czlab.wabbit.pugs.auth.core]
+  (:use [czlab.wabbit.auth.core]
         [czlab.horde.dbio.connect]
         [czlab.horde.dbio.core])
 

@@ -9,7 +9,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.pugs.auth.model
+  czlab.wabbit.auth.model
 
   (:require [czlab.xlib.resources :refer [rstr]]
             [czlab.xlib.io :refer [spitUtf8]]

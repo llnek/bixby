@@ -9,18 +9,18 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.pugs.jmx.core
+  czlab.wabbit.jmx.core
 
   (:require [czlab.xlib.logging :as log]
             [clojure.string :as cs])
 
-  (:use [czlab.wabbit.pugs.jmx.bean]
+  (:use [czlab.wabbit.jmx.bean]
         [czlab.xlib.core]
         [czlab.xlib.str])
 
   (:import [java.net InetAddress MalformedURLException]
            [java.rmi.registry LocateRegistry Registry]
-           [czlab.wabbit.pugs JmxPlugin PluginFactory]
+           [czlab.wabbit.pugs JmxPlugin]
            [java.lang.management ManagementFactory]
            [java.rmi.server UnicastRemoteObject]
            [java.rmi NoSuchObjectException]
@@ -183,13 +183,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn pluginFactory<>
-  ""
-  ^PluginFactory
-  []
-  (reify PluginFactory
-    (createPlugin [_ ctr]
-      (jmsPlugin<> ctr))))
+(defn JmxPluginFactory "" ^Plugin [ctr] (jmsPlugin<> ctr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

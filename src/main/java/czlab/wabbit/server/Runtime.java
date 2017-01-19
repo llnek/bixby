@@ -27,7 +27,7 @@ public class Runtime {
     }
     else
     try {
-      File cwd= new File(System.getProperties().getProperty("user.dir"));
+      File cwd= new File(System.getProperty("user.dir"));
       File home= new File(args[0]);
       ClassLoader cl= CljPodLoader.newInstance(home, cwd);
       Thread.currentThread().setContextClassLoader(cl);

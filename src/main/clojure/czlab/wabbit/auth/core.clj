@@ -9,7 +9,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.pugs.auth.core
+  czlab.wabbit.auth.core
 
   (:require [czlab.xlib.format :refer [readEdn readJsonStr writeJsonStr]]
             [czlab.twisty.codec :refer [caesarDecrypt passwd<>]]
@@ -22,8 +22,8 @@
             [czlab.xlib.logging :as log])
 
   (:use [czlab.wabbit.base.core]
-        [czlab.wabbit.pugs.auth.model]
-        [czlab.wabbit.pugs.auth.core]
+        [czlab.wabbit.auth.model]
+        [czlab.wabbit.auth.core]
         [czlab.convoy.net.core]
         [czlab.wabbit.mvc.web]
         [czlab.xlib.core]
@@ -69,8 +69,7 @@
             AuthError
             PluginError
             UnknownUser
-            DuplicateUser
-            PluginFactory]
+            DuplicateUser]
            [czlab.horde
             DbApi
             Schema
@@ -224,7 +223,7 @@
    by looking into the db"
   [^JdbcPool pool]
   {:pre [(some? pool)]}
-  (let [tbl (->> :czlab.wabbit.pugs.auth.model/LoginAccount
+  (let [tbl (->> :czlab.wabbit.auth.model/LoginAccount
                  (.get ^Schema *auth-meta-cache*)
                  (dbtable))]
     (when-not (tableExist? pool tbl)
@@ -253,7 +252,7 @@
   [^SQLr sql ^String role ^String desc]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.pugs.auth.model/AuthRole)
+                :czlab.wabbit.auth.model/AuthRole)
         rc (-> (dbpojo<> m)
                (dbSetFlds* {:name role
                             :desc desc}))]
@@ -266,7 +265,7 @@
   [^SQLr sql ^String role]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.pugs.auth.model/AuthRole)]
+                :czlab.wabbit.auth.model/AuthRole)]
     (.exec sql
            (format
              "delete from %s where %s =?"
@@ -280,7 +279,7 @@
   ^Iterable
   [^SQLr sql]
   {:pre [(some? sql)]}
-  (.findAll sql :czlab.wabbit.pugs.auth.model/AuthRole))
+  (.findAll sql :czlab.wabbit.auth.model/AuthRole))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -295,7 +294,7 @@
   ([^SQLr sql ^String user ^IPassword pwdObj props roleObjs]
    {:pre [(some? sql)(hgl? user)]}
    (let [m (.get (.metas sql)
-                 :czlab.wabbit.pugs.auth.model/LoginAccount)
+                 :czlab.wabbit.auth.model/LoginAccount)
          ps (if (some? pwdObj)
               (:hash (.hashed pwdObj)))
          acc
@@ -308,7 +307,7 @@
      ;; previous insert. That is, if we fail to set a role, it's
      ;; assumed ok for the account to remain inserted
      (doseq [r roleObjs]
-       (dbSetM2M {:joined :czlab.wabbit.pugs.auth.model/AccountRoles
+       (dbSetM2M {:joined :czlab.wabbit.auth.model/AccountRoles
                   :with sql} acc r))
      (log/debug "created new account %s%s%s%s"
                 "into db: " acc "\nwith meta\n" (meta acc))
@@ -322,7 +321,7 @@
   [^SQLr sql ^String email]
   {:pre [(some? sql)]}
   (.findOne sql
-            :czlab.wabbit.pugs.auth.model/LoginAccount
+            :czlab.wabbit.auth.model/LoginAccount
             {:email (strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,7 +332,7 @@
   [^SQLr sql ^String user]
   {:pre [(some? sql)]}
   (.findOne sql
-            :czlab.wabbit.pugs.auth.model/LoginAccount
+            :czlab.wabbit.auth.model/LoginAccount
             {:acctid (strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -395,7 +394,7 @@
   [^SQLr sql user role]
   {:pre [(some? sql)]}
   (dbClrM2M
-    {:joined :czlab.wabbit.pugs.auth.model/AccountRoles :with sql} user role))
+    {:joined :czlab.wabbit.auth.model/AccountRoles :with sql} user role))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -405,7 +404,7 @@
   [^SQLr sql user role]
   {:pre [(some? sql)]}
   (dbSetM2M
-    {:joined :czlab.wabbit.pugs.auth.model/AccountRoles :with sql} user role))
+    {:joined :czlab.wabbit.auth.model/AccountRoles :with sql} user role))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -422,7 +421,7 @@
   [^SQLr sql ^String user]
   {:pre [(some? sql)]}
   (let [m (.get (.metas sql)
-                :czlab.wabbit.pugs.auth.model/LoginAccount)]
+                :czlab.wabbit.auth.model/LoginAccount)]
     (.exec sql
            (format
              "delete from %s where %s =?"
@@ -436,7 +435,7 @@
   ^Iterable
   [^SQLr sql]
   {:pre [(some? sql)]}
-  (.findAll sql :czlab.wabbit.pugs.auth.model/LoginAccount))
+  (.findAll sql :czlab.wabbit.auth.model/LoginAccount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -642,13 +641,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn pluginFactory<>
-  ""
-  ^PluginFactory
-  []
-  (reify PluginFactory
-    (createPlugin [_ ctr]
-      (authPlugin<> ctr))))
+(defn AuthPluginFactory "" ^Plugin [ctr] (authPlugin<> ctr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

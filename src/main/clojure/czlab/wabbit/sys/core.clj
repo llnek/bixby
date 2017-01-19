@@ -11,14 +11,15 @@
 
   czlab.wabbit.sys.core
 
-  (:require [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
+  (:require [czlab.xlib.resources :refer [loadResource getResource]]
+            [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
             [czlab.wabbit.io.http :refer [cfgShutdownServer]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
             [czlab.xlib.scheduler :refer [scheduler<>]]
-            [czlab.xlib.resources :refer [getResource]]
             [czlab.xlib.meta :refer [setCldr getCldr]]
             [czlab.xlib.format :refer [readEdn]]
             [czlab.xlib.logging :as log]
+            [clojure.string :as cs]
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.base.core]
@@ -27,21 +28,11 @@
         [czlab.xlib.str]
         [czlab.xlib.consts])
 
-  (:import [czlab.wabbit.base ConfigError]
+  (:import [czlab.xlib Startable CU Muble I18N]
            [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.server Execvisor]
-           [czlab.xlib
-            Versioned
-            Disposable
-            Activable
-            Hierarchial
-            Startable
-            CU
-            Muble
-            I18N
-            Schedulable
-            Identifiable]
+           [czlab.wabbit.base ConfigError]
            [java.io File]
            [java.util ResourceBundle Locale]))
 
@@ -57,13 +48,9 @@
 (defn- cliGist
   ""
   ^Atom
-  [gist]
-  (let [home (:basedir gist)]
-    (precondDir (io/file home dn-dist)
-                (io/file home dn-lib)
-                (io/file home dn-etc)
-                (io/file home dn-bin))
-    (atom gist)))
+  [{:keys [podDir] :as gist}]
+  (precondFile (io/file podDir cfg-pod-cf))
+  (atom gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -94,11 +81,11 @@
   "Listen on a port for remote kill command"
   ^Atom
   [^Atom gist]
-  (let [ss (-> (sysProp "wabbit.kill.port")
-               str
-               (.split ":"))
-        m {:host (first ss)
-           :port (convLong (last ss) 4444)}]
+  (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
+                  (.split ":"))
+        m {}
+        m (if (hgl? h) (assoc m :host h) m)
+        m (if (hgl? p) (assoc m :port (convLong p 4444)))]
     (log/info "enabling remote shutdown hook: %s" m)
     (swap! gist
            assoc
@@ -123,12 +110,12 @@
            assoc
            :execv execv
            :stop! #(stopCLI gist))
-    (comp->init execv gist)
+    (.init execv gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
               "about to start wabbit..."
               (str<> 78 \*))
-    (.start execv nil)
+    (.start execv)
     (log/info "wabbit started!")
     gist))
 
@@ -136,32 +123,31 @@
 ;;
 (defn startViaCons
   ""
-  [home cwd]
+  [cwd]
   (let
     [{:keys [locale info] :as env}
      (slurpXXXConf cwd cfg-pod-cf true)
      cn (stror (:country locale) "US")
      ln (stror (:lang locale) "en")
-     ver (sysProp "wabbit.version")
+     verStr (str (some-> (loadResource c-verprops)
+                         (.getString "version")))
      fp (io/file cwd "wabbit.pid")
      loc (Locale. ln cn)
      rc (getResource c-rcb loc)
      ctx (->> {:encoding (stror (:encoding info) "utf-8")
-               :basedir (io/file home)
                :podDir (io/file cwd)
-               :version ver
+               :version verStr
                :pidFile fp
                :env env
                :locale loc}
               (cliGist ))
      cz (getCldr)]
-    (log/info "wabbit.home    = %s" (fpath home))
-    (log/info "wabbit.version = %s" ver)
-    (log/info "wabbit folder - ok")
+    (log/info "wabbit.proc.dir = %s" (fpath cwd))
+    (log/info "wabbit.version = %s" verStr)
     (doto->> rc
              (test-some "base resource" )
              (I18N/setBase ))
-    (log/info "resource bundle found and loaded")
+    (log/info "wabbit's i18n#base found and loaded")
     (primodial ctx)
     (doto fp
       (writeFile (processPid))
@@ -175,8 +161,7 @@
               (type (.getParent cz)))
     (log/debug "%s" @ctx)
     (log/info "container is now running...")
-    (while (not @stopcli)
-      (pause 3000))
+    (while (not @stopcli) (pause 3000))
     (log/info "vm shut down")
     (log/info "(bye)")
     (shutdown-agents)))

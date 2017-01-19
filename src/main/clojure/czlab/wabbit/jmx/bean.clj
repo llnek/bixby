@@ -9,7 +9,7 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.pugs.jmx.bean
+  czlab.wabbit.jmx.bean
 
   (:require [czlab.xlib.logging :as log])
 

@@ -15,31 +15,25 @@
             [czlab.xlib.format :refer [readEdn]]
             [czlab.xlib.meta :refer [getCldr]]
             [czlab.xlib.logging :as log]
+            [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.common.svcs]
+  (:use [czlab.wabbit.shared.svcs]
         [czlab.wabbit.base.core]
-        [czlab.wabbit.sys.cont]
+        [czlab.wabbit.sys.runc]
         [czlab.xlib.core]
         [czlab.xlib.io]
         [czlab.xlib.str])
 
-  (:import [czlab.wabbit.io IoService IoGist]
+  (:import [czlab.wabbit.server Container Execvisor]
            [java.security SecureRandom]
+           [czlab.wabbit.io IoService]
            [czlab.wabbit.base Gist]
-           [czlab.wabbit.server
-            Container
-            Execvisor]
            [clojure.lang Atom]
            [java.util Date]
            [java.io File]
            [java.net URL]
-           [czlab.xlib
-            Disposable
-            Muble
-            Versioned
-            Hierarchial
-            Identifiable]))
+           [czlab.xlib Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -50,16 +44,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- podMeta
+(defn- pmeta<>
   "Create metadata for an application bundle"
   ^Gist
   [^String pod conf urlToPod]
   {:pre [(map? conf)]}
-  (let [impl (muble<>
-               (merge {:version "?" :main ""}
-                      (:info conf)
-                      {:name pod :path urlToPod}))
-        pid (format "%s#%d" pod (seqint2))]
+  (let
+    [impl (muble<>
+            (merge {:version "?" :main ""}
+                   (:info conf)
+                   {:name pod :path urlToPod}))
+     pid (format "%s#%d" pod (seqint2))]
     (log/info "pod-meta:\n%s" (.intern impl))
     (with-meta
       (reify
@@ -76,19 +71,13 @@
 (defn- inspectPod
   "Make sure the pod setup is ok"
   ^Gist
-  [^Execvisor execv desDir]
-  (log/info "pod dir : %s => inspecting..." desDir)
-  ;;create the meta and register it
-  ;;as a pod
-  (let
-    [pod (basename desDir)
-     {:keys [env]}
-     (.intern (.getx execv))]
-    (doto
-      (podMeta pod
-               env
-               (io/as-url desDir))
-      (comp->init execv))))
+  [^Execvisor exe desDir]
+  (log/info "pod dir: %s => inspecting..." desDir)
+  (->>
+    (pmeta<> (basename desDir)
+             (.getv (.getx exe) :env)
+             (io/as-url desDir))
+    (.init execv)))
 
 ;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,144 +101,87 @@
       [ctr (container<> co gist)
        pod (.id gist)
        cid (.id ctr)]
-      (log/debug "start pod = %s\ncontainer = %s" pod cid)
-      (.setv (.getx co) :container ctr)
-      (.start  ctr nil)))
-  co)
+      (log/debug "start pod= %s\ncontainer= %s" pod cid)
+      (.setv (.getx co) ::container ctr)
+      (.start ctr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopPods
   ""
   [^Execvisor co]
-  (log/info "preparing to stop container...")
-  (let [cx (.getx co)
-        c (.getv cx :container)]
-    (when (some? c)
+  (let [ctx (.getx co)]
+    (log/info "stopping container...")
+    (when-some
+      [c (.getv ctx ::container)]
       (doto->>
         ^Container
         c
         (.stop )
         (.dispose ))
-      (.unsetv cx :container))
-    co))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn execvisor<>
-  "Create a Execvisor"
-  ^Execvisor
-  []
-  (let
-    [impl (muble<> {:container nil
-                    :pod nil
-                    :emitters {}})
-     pid (str "exec#" (seqint2))]
-    (with-meta
-      (reify
-
-        Execvisor
-
-        (uptimeInMillis [_]
-          (- (System/currentTimeMillis) start-time))
-        (id [_] pid)
-        (homeDir [_] (.getv impl :basedir))
-        (locale [_] (.getv impl :locale))
-        (version [_] (.getv impl :version))
-        (getx [_] impl)
-        (startTime [_] start-time)
-        (kill9 [_] (apply (.getv impl :stop!) []))
-
-        (restart [this _] this)
-
-        (start [this _]
-          (->> (.getv impl :pod)
-               (ignitePod this )))
-
-        (stop [this]
-          (stopPods this)))
-
-       {:typeid ::Execvisor})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- emitMeta
-  ""
-  ^IoGist
-  [emsType gist]
-  (let [{:keys [info conf]}
-        gist
-        pid (format "emit#%d{%s}"
-                    (seqint2) (:name info))
-        impl (muble<> conf)]
-    (with-meta
-      (reify
-
-        IoGist
-
-        (setParent [_ p] (.setv impl :parent p))
-        (parent [_] (.getv impl :parent))
-
-        (isEnabled [_]
-          (not (false? (.getv impl :enabled?))))
-
-        (version [_] (:version info))
-        (getx [_] impl)
-        (type [_] emsType)
-
-        (id [_] pid))
-
-      {:typeid  ::IoGist})))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;description of a emitter
-(defmethod comp->init
-  ::IoGist
-  [^IoGist co ec]
-  (logcomp "com->init" co)
-  (doto co (.setParent ec)))
+      (.unsetv ctx ::container))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- regoEmitters
-  ""
+  "Add user defined emitters and register all"
   [^Execvisor co]
   (let [ctx (.getx co)
-        env (.getv ctx :env)
-        defs (merge (emitterServices)
-                    (:emitters env))]
-    ;;add user defined emitters and register all
-    (.setv ctx :emitters defs)))
+        env (.getv ctx :env)]
+    (->>
+      (merge (emitterServices)
+             (:emitters env))
+      (.setv ctx ::emitters))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- regoApps
   ""
-  ^Execvisor
   [^Execvisor co]
-  (->> (.getv (.getx co) :podDir)
-       (inspectPod co))
-  co)
+  (inspectPod co
+              (.getv (.getx co) ::podDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defmethod comp->init
-  ::Execvisor
-  [^Execvisor co rootGist]
-  {:pre [(inst? Atom rootGist)]}
-  (let [{:keys [basedir encoding podDir]}
-        @rootGist]
-    (sysProp! "file.encoding" encoding)
-    (logcomp "com->init" co)
-    (.copyEx (.getx co) @rootGist)
-    (-> (io/file podDir
-                 dn-etc
-                 "mime.properties")
-        (io/as-url)
-        (setupCache ))
-    (log/info "loaded mime#cache - ok")
-    (regoEmitters co)
-    (regoApps co)))
+(defn execvisor<>
+  "Create an Execvisor"
+  ^Execvisor
+  []
+  (let
+    [impl (muble<> {::container nil
+                    ::pod nil
+                    ::emitters {}})
+     pid (str "exec#" (seqint2))]
+    (with-meta
+      (reify Execvisor
+
+        (version [_] (.getv impl :version))
+        (id [_] pid)
+        (getx [_] impl)
+
+        (uptimeInMillis [_] (- (now<>) start-time))
+        (kill9 [_] (apply (.getv impl :stop!) []))
+        (homeDir [_] (.getv impl :podDir))
+        (locale [_] (.getv impl :locale))
+        (startTime [_] start-time)
+
+        (init [this arg]
+          (let [{:keys [encoding podDir]} @arg]
+            (sysProp! "file.encoding" encoding)
+            (logcomp "comp->init" this)
+            (.copyEx impl @arg)
+            (-> (io/file podDir
+                         dn-etc "mime.properties")
+                (io/as-url)
+                (setupCache ))
+            (log/info "loaded mime#cache - ok")
+            (regoEmitters this)
+            (regoApps this)))
+        (restart [_ _] )
+        (stop [this] (stopPods this))
+        (start [this _] (ignitePod this
+                                   (.getv impl ::pod))))
+      {:typeid ::Execvisor})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

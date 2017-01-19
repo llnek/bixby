@@ -18,7 +18,7 @@ import java.util.Locale;
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Component, Startable {
+public interface Execvisor extends Component, LifeCycle {
 
   /**/
   public long uptimeInMillis();
