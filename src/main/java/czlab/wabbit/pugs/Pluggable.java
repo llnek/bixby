@@ -10,14 +10,13 @@
 
 package czlab.wabbit.pugs;
 
-import czlab.xlib.Disposable;
-import czlab.xlib.Initable;
-import czlab.xlib.Startable;
+import czlab.xlib.LifeCycle;
+import czlab.xlib.Config;
 
 /**
  * @author Kenneth Leung
  */
-public interface Plugin extends Initable, Startable, Disposable {
+public interface Pluggable extends LifeCycle, Config {
 
 }
 

@@ -33,7 +33,7 @@
            [czlab.wabbit.server Container]
            [java.util Properties]
            [java.io IOException]
-           [czlab.xlib LifeCycle]))
+           [czlab.wabbit.pugs Pluggable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -222,15 +222,14 @@
 ;;
 (defn POP3
   ""
-  ^LifeCycle
+  ^Pluggable
   [co {:keys [conf] :as spec}]
   (let
     [funcs (threadedTimer {:wakeup wake<o>})
      pkey (.podKey (.server ^IoService co))
      impl (muble<>)]
-    (reify LifeCycle
+    (reify Pluggable
       (config [_] (.intern impl))
-      (parent [_] co)
       (start [_ _] ((:start funcs) (.intern impl)))
       (stop [_] ((:stop funcs)))
       (init [_ arg]
@@ -267,15 +266,14 @@
 ;;
 (defn IMAP
   ""
-  ^LifeCycle
+  ^Pluggable
   [co {:keys [conf] :as spec}]
   (let
     [funcs (threadedTimer {:wakeup wake<i>})
      pkey (.podKey (.server ^IoService co))
      impl (muble<>)]
-    (reify LifeCycle
+    (reify Pluggable
       (config [_] (.intern impl))
-      (parent [_] co)
       (start [_ _] ((:start funcs) (.intern impl)))
       (stop [_] ((:stop funcs)))
       (init [_ arg]

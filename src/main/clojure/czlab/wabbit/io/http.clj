@@ -98,7 +98,7 @@
             ChunkedFile
             ChunkedInput
             ChunkedWriteHandler]
-           [czlab.xlib XData Muble LifeCycle]))
+           [czlab.wabbit.pugs Pluggable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -375,7 +375,7 @@
      bee (keyword (juid))
      cee (keyword (juid))
      impl (muble<>)]
-    (reify LifeCycle
+    (reify Pluggable
       (init [_ arg]
         (.copyEx impl
                  (httpBasicConfig pkey conf arg)))
@@ -388,14 +388,13 @@
           (stopServer c)
           (.unsetv impl bee)
           (.unsetv impl cee)))
-      (config [_] (.intern impl))
-      (parent [_] co))))
+      (config [_] (.intern impl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn WebMVC
   ""
-  ^LifeCycle
+  ^Pluggable
   [co spec]
   (httpXXX<> co spec))
 
@@ -403,7 +402,7 @@
 ;;
 (defn HTTP
   ""
-  ^LifeCycle
+  ^Pluggable
   [co spec]
   (httpXXX<> co spec))
 

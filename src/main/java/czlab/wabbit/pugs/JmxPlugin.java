@@ -16,7 +16,7 @@ import czlab.xlib.Resetable;
 /**
  * @author Kenneth Leung
  */
-public interface JmxPlugin extends Plugin, Resetable {
+public interface JmxPlugin extends Pluggable, Resetable {
 
   /**/
   public ObjectName reg(Object obj, String domain, String nname, Object paths);

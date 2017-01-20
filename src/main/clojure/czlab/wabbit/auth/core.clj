@@ -32,9 +32,8 @@
         [czlab.xlib.str]
         [czlab.horde.dbio.core])
 
-  (:import
+  (:import [org.apache.shiro.authc.credential CredentialsMatcher]
            [czlab.convoy.net HttpResult ULFormItems ULFileItem]
-           [org.apache.shiro.authc.credential CredentialsMatcher]
            [org.apache.shiro.config IniSecurityManagerFactory]
            [org.apache.shiro.authc UsernamePasswordToken]
            [czlab.xlib XData Muble I18N BadDataError]
@@ -64,7 +63,7 @@
             Job
             Script]
            [czlab.wabbit.pugs
-            Plugin
+            Pluggable
             AuthPlugin
             AuthError
             PluginError
@@ -641,7 +640,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn AuthPluginFactory "" ^Plugin [ctr] (authPlugin<> ctr))
+(defn AuthPluginFactory "" ^Pluggable [ctr] (authPlugin<> ctr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

@@ -47,24 +47,25 @@
 (defn- pmeta<>
   "Create metadata for an application bundle"
   ^Gist
-  [^String pod conf urlToPod]
+  [^Execvisor exe pod conf urlToPod]
   {:pre [(map? conf)]}
   (let
     [impl (muble<>
             (merge {:version "?" :main ""}
                    (:info conf)
                    {:name pod :path urlToPod}))
-     pid (format "%s#%d" pod (seqint2))]
+     pid (format "%s#%d" pod (seqint2))
+     g (with-meta
+         (reify
+           Gist
+           (version [_] (.getv impl :version))
+           (parent [_] exe)
+           (id [_] pid)
+           (getx [_] impl))
+         {:typeid  ::PodGist})]
     (log/info "pod-meta:\n%s" (.intern impl))
-    (with-meta
-      (reify
-        Gist
-        (setParent [_ p] (.setv impl :parent p))
-        (parent [_] (.getv impl :parent))
-        (version [_] (.getv impl :version))
-        (id [_] pid)
-        (getx [_] impl))
-      {:typeid  ::PodGist})))
+    (.setv (.getx exe) :pod g)
+    g))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -74,23 +75,12 @@
   [^Execvisor exe desDir]
   (log/info "pod dir: %s => inspecting..." desDir)
   (->>
-    (pmeta<> (basename desDir)
+    (pmeta<> exe
+             (basename desDir)
              (.getv (.getx exe) :env)
-             (io/as-url desDir))
-    (.init execv)))
+             (io/as-url desDir))))
 
 ;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defmethod comp->init
-  ::PodGist
-  [^Gist co ^Execvisor ec]
-  (logcomp "com->init" co)
-  (doto (.getx ec)
-    (.setv :pod co))
-  (doto co
-    (.setParent ec)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- ignitePod
@@ -103,7 +93,7 @@
        cid (.id ctr)]
       (log/debug "start pod= %s\ncontainer= %s" pod cid)
       (.setv (.getx co) ::container ctr)
-      (.start ctr))))
+      (.start ctr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

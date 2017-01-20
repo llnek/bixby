@@ -39,7 +39,7 @@
         [czlab.wabbit.mvc.ftl])
 
   (:import [czlab.wabbit.base Gist ServiceError ConfigError]
-           [czlab.wabbit.pugs PluginFactory Plugin]
+           [czlab.wabbit.pugs Pluggable]
            [czlab.xlib I18N Activable Disposable]
            [czlab.horde Schema JdbcPool DbApi]
            [java.io File StringWriter]
@@ -148,7 +148,7 @@
 ;;
 (defn- plugin<>
   ""
-  ^Plugin
+  ^Pluggable
   [^Container co [kee pc] env]
   (log/info "plugin: %s -> %s" kee pc)
   (let
@@ -157,14 +157,14 @@
      (if (string? pc)
        [pc {}] [(:factory pc) pc])
      _ (log/info "plugin fac: %s" pn)
-     u (cast? Plugin
+     u (cast? Pluggable
               (.callEx rts pn (vargs* Object co)))]
     (log/info "plugin-obj: %s" u)
     (if (some? u)
       (do
         (.init u {:pod env :pug opts})
         (log/info "plugin %s starting..." pn)
-        (.start u)
+        (.start u nil)
         (log/info "plugin %s started" pn)
         u)
       (do->nil
@@ -223,8 +223,8 @@
       (preduce<map>
         #(if-some [p (plugin<> co %2 env)]
            (assoc! %1 (first %2) p)
-           %1))
-      (:plugins env)
+           %1)
+        (:plugins env))
       (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+
@@ -310,7 +310,7 @@
             (log/info "pod starting io#services...")
             (doseq [[k v] svcs]
               (log/info "io-service: %s to start" k)
-              (.start ^Service v))))
+              (.start ^Service v nil))))
 
         (restart [_ _] (throwUOE "Can't restart"))
 
@@ -322,7 +322,7 @@
               (.stop ^Service v))
             (log/info "container stopping plugins...")
             (doseq [[k v] pugs]
-              (.stop ^Plugin v))
+              (.stop ^Pluggable v))
             (log/info "container stopping...")))
 
         (dispose [this]
@@ -333,7 +333,7 @@
               (.dispose ^Service v))
             (log/info "container dispose(): plugins")
             (doseq [[k v] pugs]
-              (.dispose ^Plugin v))
+              (.dispose ^Pluggable v))
             (releaseSysResources this))))
 
     {:typeid ::Container})))

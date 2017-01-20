@@ -38,7 +38,7 @@
            [czlab.xlib
             Activable
             Schedulable]
-           [czlab.wabbit.io IoGist IoEvent]))
+           [czlab.wabbit.io IoEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

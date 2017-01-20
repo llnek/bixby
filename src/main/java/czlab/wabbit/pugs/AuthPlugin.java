@@ -13,7 +13,7 @@ package czlab.wabbit.pugs;
 /**
  * @author Kenneth Leung
  */
-public interface AuthPlugin extends Plugin {
+public interface AuthPlugin extends Pluggable {
 
   /**/
   public void checkAction(Object acctObj, Object action);

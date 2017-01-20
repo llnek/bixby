@@ -15,7 +15,7 @@ import czlab.wabbit.base.Component;
 import czlab.xlib.Hierarchial;
 import czlab.xlib.Disposable;
 import czlab.xlib.Nameable;
-import czlab.xlib.Startable;
+import czlab.xlib.LifeCycle;
 import czlab.horde.JdbcPool;
 import czlab.horde.DbApi;
 import java.io.File;
@@ -26,8 +26,7 @@ import java.io.File;
 public interface Container extends Component
                                    ,ServerLike
                                    ,Nameable
-                                   ,Disposable
-                                   ,Startable
+                                   ,LifeCycle
                                    ,Hierarchial
                                    ,ServiceProvider {
 

@@ -11,7 +11,7 @@
 package czlab.wabbit.server;
 
 import czlab.wabbit.base.Component;
-import czlab.xlib.Startable;
+import czlab.xlib.LifeCycle;
 import java.io.File;
 import java.util.Locale;
 

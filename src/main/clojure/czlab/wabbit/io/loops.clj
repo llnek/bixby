@@ -24,7 +24,7 @@
   (:import [czlab.wabbit.io IoService TimerEvent]
            [java.util Date Timer TimerTask]
            [clojure.lang APersistentMap]
-           [czlab.xlib Muble LifeCycle]))
+           [czlab.wabbit.pugs Pluggable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -141,9 +141,8 @@
      wakeup #(do (dispatch! (evt<> co repeat?))
                  (if-not repeat? (stop)))]
     (reify
-      LifeCycle
+      Pluggable
       (config [_] (dissoc (.intern impl) tee))
-      (parent [_] co)
       (init [_ arg]
         (.copyEx impl (merge conf arg)))
       (start [_ arg]
@@ -156,7 +155,7 @@
 ;;
 (defn RepeatingTimer
   ""
-  ^LifeCycle
+  ^Pluggable
   [co spec]
   (xxxTimer<> co spec true))
 
@@ -164,7 +163,7 @@
 ;;
 (defn OnceTimer
   ""
-  ^LifeCycle
+  ^Pluggable
   [co spec]
   (xxxTimer<> co spec false))
 

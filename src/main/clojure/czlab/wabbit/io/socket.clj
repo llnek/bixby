@@ -22,7 +22,7 @@
         [czlab.wabbit.base.core])
 
   (:import [java.net InetAddress ServerSocket Socket]
-           [czlab.xlib LifeCycle]
+           [czlab.wabbit.pugs Pluggable]
            [czlab.wabbit.io IoService SocketEvent]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,17 +75,16 @@
 ;;
 (defn SocketIO
   ""
-  ^LifeCycle
+  ^Pluggable
   [co {:keys [conf] :as spec}]
   (let
     [see (keyword (juid))
      impl (muble<>)]
     (reify
-      LifeCycle
+      Pluggable
       (init [_ arg]
         (.copyEx impl (merge conf arg)))
       (config [_] (.intern impl))
-      (parent [_] co)
       (start [_ _]
         (when-some
           [ss (ssoc<> (.intern impl))]

@@ -71,6 +71,9 @@ public class MockContainer implements Container {
   }
 
   @Override
+  public void init(Object arg) {}
+
+  @Override
   public Object parent() {
     return null;
   }

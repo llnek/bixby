@@ -20,7 +20,7 @@
         [czlab.wabbit.io.core])
 
   (:import [java.util Hashtable Properties ResourceBundle]
-           [czlab.xlib LifeCycle]
+           [czlab.wabbit.pugs Pluggable]
            [javax.jms
             ConnectionFactory
             Connection
@@ -217,19 +217,18 @@
 ;;
 (defn JMS
   ""
-  ^LifeCycle
+  ^Pluggable
   [co {:keys [conf] :as spec}]
   (let
     [pkey (.podKey (.server ^IoService co))
      cee (keyword (juid))
      impl (muble<>)]
     (reify
-      LifeCycle
+      Pluggable
       (init [_ arg]
         (.copyEx impl
                  (merge conf
                         (sanitize pkey arg))))
-      (parent [_] co)
       (config [_] (.intern impl))
       (start [_ _]
         (when-some [c (start co (.intern impl))]

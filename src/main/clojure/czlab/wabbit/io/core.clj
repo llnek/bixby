@@ -26,7 +26,7 @@
            [czlab.wabbit.server
             Cljshim
             Container]
-           [czlab.xlib LifeCycle]))
+           [czlab.wabbit.pugs Pluggable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -112,9 +112,9 @@
         (setParent [_ p] (throwUOE "can't setParent"))
         (getx [_] (throwUOE "can't getx"))
         (isEnabled [_]
-          (not (false? (:enabled? (.config ^LifeCycle @impl)))))
+          (not (false? (:enabled? (.config ^Pluggable @impl)))))
         (server [this] (.parent this))
-        (config [_] (.config ^LifeCycle @impl))
+        (config [_] (.config ^Pluggable @impl))
         (hold [_ trig millis]
           (if (and (some? @timer)
                    (spos? millis))
@@ -129,7 +129,7 @@
           (log/info "io-service [%s] is being disposed" emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.dispose ^LifeCycle @impl)
+          (.dispose ^Pluggable @impl)
           (log/info "io-service [%s] disposed - ok" emAlias))
         (init [this cfg0]
           (log/info "io-service [%s] is initializing..." emAlias)
@@ -137,12 +137,12 @@
                       (.callEx (strKW emType)
                                (vargs* Object this spec)))]
             (rset! impl c)
-            (.init ^LifeCycle c cfg0))
+            (.init ^Pluggable c cfg0))
           (log/info "io-service [%s] init'ed - ok" emAlias))
         (start [this arg]
           (log/info "io-service [%s] is starting..." emAlias)
           (rset! timer (Timer. true))
-          (.start ^LifeCycle @impl arg)
+          (.start ^Pluggable @impl arg)
           (log/info "io-service [%s] config:" emAlias)
           (log/info "%s" (pr-str (.config this)))
           (log/info "io-service [%s] started - ok" emAlias))
@@ -150,7 +150,7 @@
           (log/info "io-service [%s] is stopping..." emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.stop ^LifeCycle @impl)
+          (.stop ^Pluggable @impl)
           (log/info "io-service [%s] stopped - ok" emAlias)))
 
       {:typeid emType})))

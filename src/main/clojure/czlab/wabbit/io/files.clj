@@ -35,7 +35,7 @@
             FileAlterationObserver
             FileAlterationListenerAdaptor]
            [org.apache.commons.io FileUtils]
-           [czlab.xlib LifeCycle]))
+           [czlab.wabbit.pugs Pluggable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
@@ -143,7 +143,7 @@
 ;;
 (defn FilePicker
   ""
-  ^LifeCycle
+  ^Pluggable
   [co {:keys [conf] :as spec}]
   (let
     [mee (keyword (juid))
@@ -154,7 +154,7 @@
         (some-> ^FileAlterationMonitor
                 (.getv impl mee) (.start)))
      par (threadedTimer {:schedule schedule})]
-    (reify LifeCycle
+    (reify Pluggable
       (init [_ arg]
         (.copyEx impl (init conf arg)))
       (config [_] (.intern impl))
@@ -166,8 +166,7 @@
        (log/info "apache io monitor stopping...")
        (some-> ^FileAlterationMonitor
                (.getv impl mee) (.stop))
-       (.unsetv impl mee))
-      (parent [_] co))))
+       (.unsetv impl mee)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

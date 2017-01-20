@@ -20,7 +20,7 @@
 
   (:import [java.net InetAddress MalformedURLException]
            [java.rmi.registry LocateRegistry Registry]
-           [czlab.wabbit.pugs JmxPlugin]
+           [czlab.wabbit.pugs Pluggable JmxPlugin]
            [java.lang.management ManagementFactory]
            [java.rmi.server UnicastRemoteObject]
            [java.rmi NoSuchObjectException]
@@ -183,7 +183,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn JmxPluginFactory "" ^Plugin [ctr] (jmsPlugin<> ctr))
+(defn JmxPluginFactory "" ^Pluggable [ctr] (jmsPlugin<> ctr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
