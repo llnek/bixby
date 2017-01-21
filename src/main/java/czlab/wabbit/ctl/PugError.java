@@ -13,22 +13,22 @@ package czlab.wabbit.ctl;
 /**
  * @author Kenneth Leung
  */
-public class ServiceError extends Exception {
+public class PugError extends Exception {
 
   private static final long serialVersionUID = 1L;
 
   /**/
-  public ServiceError(String msg, Throwable e) {
+  public PugError(String msg, Throwable e) {
     super(msg, e);
   }
 
   /**/
-  public ServiceError(Throwable e) {
+  public PugError(Throwable e) {
     this(null,e);
   }
 
   /**/
-  public ServiceError(String msg) {
+  public PugError(String msg) {
     this(msg,null);
   }
 

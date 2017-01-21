@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.sys;
 
 import clojure.lang.IFn;
 import clojure.lang.RT;

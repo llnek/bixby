@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.ext;
+package czlab.wabbit.ctl;
 
 import czlab.jasal.LifeCycle;
 import czlab.jasal.Config;
@@ -17,6 +17,10 @@ import czlab.jasal.Config;
  * @author Kenneth Leung
  */
 public interface Pluggable extends LifeCycle, Config {
+
+  /**
+   */
+  public Object spec();
 
 }
 

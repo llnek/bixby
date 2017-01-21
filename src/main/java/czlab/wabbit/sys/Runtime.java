@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.sys;
 
 import java.lang.reflect.Method;
 import java.io.File;

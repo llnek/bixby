@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.sys;
 
 import czlab.wabbit.base.Component;
 import czlab.jasal.LifeCycle;
@@ -18,7 +18,7 @@ import java.util.Locale;
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Component, LifeCycle {
+public interface Execvisor extends Component, Config, LifeCycle {
 
   /**/
   public long uptimeInMillis();
@@ -30,10 +30,40 @@ public interface Execvisor extends Component, LifeCycle {
   public long startTime();
 
   /**/
-  public File homeDir();
+  public void kill9();
 
   /**/
-  public void kill9();
+  public boolean hasChild(Object pug);
+
+  /**/
+  public Puglet child(Object pug);
+
+  /**/
+  public boolean isEnabled();
+
+  /**/
+  public Cljshim cljrt();
+
+  /**/
+  public byte[] podKeyBits();
+
+  /**/
+  public String podKey();
+
+  /**/
+  public File podDir();
+
+  /**/
+  public JdbcPool acquireDbPool(Object groupid);
+
+  /**/
+  public DbApi acquireDbAPI(Object groupid);
+
+  /**/
+  public JdbcPool acquireDbPool();
+
+  /**/
+  public DbApi acquireDbAPI();
 
 }
 

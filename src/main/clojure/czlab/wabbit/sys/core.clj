@@ -13,7 +13,7 @@
 
   (:require [czlab.basal.resources :refer [loadResource getResource]]
             [czlab.basal.io :refer [closeQ readAsStr writeFile]]
-            [czlab.wabbit.io.http :refer [cfgShutdownServer]]
+            [czlab.wabbit.pugs.io.http :refer [hookShutdown]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
             [czlab.basal.scheduler :refer [scheduler<>]]
             [czlab.basal.meta :refer [setCldr getCldr]]
@@ -29,10 +29,8 @@
         [czlab.basal.consts])
 
   (:import [czlab.jasal Startable CU Muble I18N]
-           [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
-           [czlab.wabbit.server Execvisor]
-           [czlab.wabbit.base ConfigError]
+           [czlab.wabbit.sys Execvisor]
            [java.io File]
            [java.util ResourceBundle Locale]))
 
@@ -90,8 +88,7 @@
     (swap! gist
            assoc
            :killSvr
-           (cfgShutdownServer gist
-                              #(stopCLI gist) m))
+           (hookShutdown gist #(stopCLI gist) m))
     gist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,7 +107,7 @@
            assoc
            :execv execv
            :stop! #(stopCLI gist))
-    (.init execv gist)
+    (.init execv @gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
               "about to start wabbit..."
@@ -135,8 +132,8 @@
      loc (Locale. ln cn)
      rc (getResource c-rcb loc)
      ctx (->> {:encoding (stror (:encoding info) "utf-8")
+               :wabbit {:version verStr}
                :podDir (io/file cwd)
-               :version verStr
                :pidFile fp
                :env env
                :locale loc}

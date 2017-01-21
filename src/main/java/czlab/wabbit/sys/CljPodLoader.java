@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.sys;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -262,20 +262,15 @@ public class CljPodLoader extends URLClassLoader {
    */
   private CljPodLoader init(File homeDir, File appDir) {
     File s= new File(appDir, "src/main/clojure");
-    File j= new File(appDir, "out/j");
-    File c= new File(appDir, "out/c");
-    File d= new File(appDir, "out/d");
+    File c= new File(appDir, "out/classes");
     File p= new File(appDir, "patch");
-    File b= new File(appDir, "target");
+    File b= new File(appDir, "lib");
 
     //TLOG.info("classloader#init\nhome={}\ncwd={}", homeDir, appDir);
     //c.mkdirs();
     if (!_loaded) {
       findUrls(p);
-      addUrl(j);
       addUrl(c);
-      addUrl(s);
-      findUrls(d);
       findUrls(b);
       init0(homeDir);
     }

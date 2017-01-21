@@ -10,13 +10,12 @@
 
 package czlab.wabbit.ctl;
 
-import czlab.flux.server.Event;
 import czlab.jasal.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface ServiceEvent extends Event, Disposable {
+public interface PugEvent extends Disposable {
 
   /**
    */
@@ -26,13 +25,17 @@ public interface ServiceEvent extends Event, Disposable {
 
   /**
    */
-  public Service source();
-
-  /**
-   */
   default public Object socket() {
     return null;
   }
+
+  /**
+   */
+  public Puglet source();
+
+  /**
+   */
+  public boolean isStale();
 
 }
 

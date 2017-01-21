@@ -18,34 +18,45 @@
         [czlab.xlib.core]
         [czlab.xlib.str])
 
-  (:import [czlab.wabbit.server Cljshim Container]
-           [czlab.wabbit.ctl Service]
-           [java.util Timer TimerTask]
-           [czlab.wabbit.ext Pluggable]))
+  (:import [czlab.wabbit.sys Cljshim Execvisor]
+           [czlab.wabbit.ctl Puglet Pluggable]
+           [java.util Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- reifyPlug
+  ""
+  ^Pluggable
+  [^Execvisor co emType]
+  (let [emStr (strKW emType)]
+    (if (neg? (.indexOf emStr "/"))
+      nil
+      (-> (.cljrt co)
+          (.callEx emStr
+                   (vargs* Object co))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn pluggable<>
   "Create a Service"
-  ^Service
-  [^Container parObj
-   emType
-   emAlias
-   {:keys [info conf] :as spec}]
-  (let [timer (atom nil)
-        impl (muble<>)
-        plug (atom nil)]
+  ^Puglet
+  [^Execvisor parObj emType emAlias]
+  (let
+    [plug (reifyPlug parObj emType)
+     {:keys [info conf] :as spec}
+     (.spec plug)
+     impl (muble<>)
+     timer (atom nil)]
     (with-meta
-      (reify Service
-        (setParent [_ p] (throwUOE "can't setParent"))
+      (reify Puglet
         (getx [_] impl)
         (isEnabled [_]
-          (not (false? (:enabled? (.config ^Pluggable @plug)))))
-        (server [this] (.parent this))
-        (config [_] (.config ^Pluggable @plug))
+          (not (false? (:enabled? (.config plug)))))
+        (server [this] parObj)
+        (config [_] (.config plug))
         (hold [_ trig millis]
           (if (and (some? @timer)
                    (spos? millis))
@@ -55,34 +66,29 @@
               (.setTrigger trig k))))
         (version [_] (str (:version info)))
         (id [_] emAlias)
-        (parent [_] parObj)
         (dispose [_]
-          (log/info "service [%s] is being disposed" emAlias)
+          (log/info "puglet [%s] is being disposed" emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.dispose ^Pluggable @plug)
-          (log/info "service [%s] disposed - ok" emAlias))
+          (.dispose plug)
+          (log/info "puglet [%s] disposed - ok" emAlias))
         (init [this cfg0]
-          (log/info "service [%s] is initializing..." emAlias)
-          (let [c (-> (.cljrt parObj)
-                      (.callEx (strKW emType)
-                               (vargs* Object this spec)))]
-            (rset! plug c)
-            (.init ^Pluggable c cfg0))
-          (log/info "service [%s] init'ed - ok" emAlias))
+          (log/info "puglet [%s] is initializing..." emAlias)
+          (.init plug cfg0)
+          (log/info "puglet [%s] init'ed - ok" emAlias))
         (start [this arg]
-          (log/info "service [%s] is starting..." emAlias)
+          (log/info "puglet [%s] is starting..." emAlias)
           (rset! timer (Timer. true))
-          (.start ^Pluggable @plug arg)
-          (log/info "service [%s] config:" emAlias)
+          (.start plug arg)
+          (log/info "puglet [%s] config:" emAlias)
           (log/info "%s" (pr-str (.config this)))
-          (log/info "service [%s] started - ok" emAlias))
+          (log/info "puglet [%s] started - ok" emAlias))
         (stop [_]
-          (log/info "service [%s] is stopping..." emAlias)
+          (log/info "puglet [%s] is stopping..." emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.stop ^Pluggable @plug)
-          (log/info "service [%s] stopped - ok" emAlias)))
+          (.stop plug)
+          (log/info "puglet [%s] stopped - ok" emAlias)))
 
       {:typeid emType})))
 

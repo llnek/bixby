@@ -11,29 +11,37 @@
 
   czlab.wabbit.sys.exec
 
-  (:require [czlab.convoy.net.mime :refer [setupCache]]
-            [czlab.basal.format :refer [readEdn]]
+  (:require [czlab.horde.dbio.connect :refer [dbopen<+>]]
+            [czlab.basal.resources :refer [loadResource]]
+            [czlab.basal.scheduler :refer [scheduler<>]]
+            [czlab.convoy.net.mime :refer [setupCache]]
             [czlab.basal.meta :refer [getCldr]]
+            [czlab.basal.format :refer [readEdn]]
+            [czlab.twisty.codec :refer [passwd<>]]
             [czlab.basal.logging :as log]
             [clojure.string :as cs]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [czlab.horde.dbio.core
+             :refer [dbspec<>
+                     dbpool<>
+                     dbschema<>]])
 
-  (:use [czlab.wabbit.shared.svcs]
-        [czlab.wabbit.base.core]
-        [czlab.wabbit.sys.runc]
+  (:use [czlab.wabbit.base.core]
         [czlab.basal.core]
+        [czlab.basal.str]
         [czlab.basal.io]
-        [czlab.basal.str])
+        [czlab.wabbit.ctl.core])
 
-  (:import [czlab.wabbit.server Container Execvisor]
+  (:import [czlab.wabbit.ctl Pluggable Puglet PugEvent PugError]
+           [czlab.jasal I18N Activable Disposable]
+           [czlab.wabbit.sys Execvisor Cljshim]
+           [czlab.wabbit.base Gist ConfigError]
+           [czlab.horde Schema JdbcPool DbApi]
            [java.security SecureRandom]
-           [czlab.wabbit.ctrl Service]
-           [czlab.wabbit.base Gist]
-           [clojure.lang Atom]
-           [java.util Date]
-           [java.io File]
+           [java.io File StringWriter]
+           [java.util Date Locale]
            [java.net URL]
-           [czlab.jasal Identifiable]))
+           [clojure.lang Atom]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -44,133 +52,219 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- pmeta<>
-  "Create metadata for an application bundle"
-  ^Gist
-  [^Execvisor exe pod conf urlToPod]
-  {:pre [(map? conf)]}
+(defn getPodKeyFromEvent
+  "Get the secret application key"
+  ^String [^PugEvent evt] (.. evt source server podKey))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeGetDBPool
+  ""
+  ^JdbcPool
+  [^Execvisor co gid]
+  (get
+    (.getv (.getx co) :dbps)
+    (keyword (stror gid dft-dbid))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeGetDBAPI
+  ""
+  ^DbApi
+  [^Execvisor co ^String gid]
+  (when-some
+    [p (maybeGetDBPool co gid)]
+    (log/debug "acquiring from dbpool: %s" p)
+    (dbopen<+> p
+               (.getv (.getx co) :schema))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- releaseSysResources
+  ""
+  [^Execvisor co]
+  (log/info "execvisor releasing system resources")
+  (if-some [sc (.core co)]
+    (.dispose ^Disposable sc))
+  (doseq [[k v]
+          (.getv (.getx co) :dbps)]
+    (log/debug "shutting down dbpool %s" (name k))
+    (.shutdown ^JdbcPool v))
+  (some-> (.cljrt co) (.close)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- plug<>
+  ""
+  ^Puglet
+  [^Execvisor co plug nm cfg0]
   (let
-    [impl (muble<>
-            (merge {:version "?" :main ""}
-                   (:info conf)
-                   {:name pod :path urlToPod}))
-     pid (format "%s#%d" pod (seqint2))
-     g (with-meta
-         (reify
-           Gist
-           (version [_] (.getv impl :version))
-           (parent [_] exe)
-           (id [_] pid)
-           (getx [_] impl))
-         {:typeid  ::PodGist})]
-    (log/info "pod-meta:\n%s" (.intern impl))
-    (.setv (.getx exe) :pod g)
-    g))
+    [svc (doto
+           (pluggable<> co plug nm)
+           (.init cfg0))
+     cfg0 (.config svc)]
+    (log/info "preparing puglet %s..." svc)
+    (log/info "config params=\n%s" cfg0)
+    (log/info "puglet - ok")
+    svc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- inspectPod
-  "Make sure the pod setup is ok"
-  ^Gist
-  [^Execvisor exe desDir]
-  (log/info "pod dir: %s => inspecting..." desDir)
+(defn- xrefPlugs<>
+  ""
+  [^Execvisor co plugs]
   (->>
-    (pmeta<> exe
-             (basename desDir)
-             (.getv (.getx exe) :env)
-             (io/as-url desDir))))
+    (preduce<map>
+      #(let
+         [[k cfg] %2
+          {:keys [pluggable
+                  enabled?]} cfg]
+         (if-not (or (false? enabled?)
+                     (nil? pluggable))
+           (let [v (plug<> co pluggable k cfg)]
+             (assoc! %1 (.id v) v))
+           %1))
+      plugs)
+    (.setv (.getx co) :plugs)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- maybeInitDBs
+  ""
+  [^Execvisor co env]
+  (preduce<map>
+    #(let
+       [[k v] %2]
+       (if-not (false? (:enabled? v))
+         (let
+           [pwd (passwd<> (:passwd v)
+                          (.podKey co))
+            cfg (merge v
+                       {:passwd (.text pwd)
+                        :id k})]
+           (->> (dbpool<> (dbspec<> cfg) cfg)
+                (assoc! %1 k)))
+         %1))
+    (:rdbms env)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- init2
+  ""
+  [^Execvisor co {:keys [env] :as conf}]
+  (let
+    [mcz (strKW (get-in env
+                        [:info :main]))
+     ^Locale loc (:locale conf)
+     rts (.cljrt co)
+     pid (.id co)
+     ctx (.getx co)
+     res (->>
+           (format c-rcprops (.getLanguage loc))
+           (io/file (.podDir co) dn-etc))]
+    (if (fileRead? res)
+      (->> (loadResource res)
+           (I18N/setBundle pid)))
+    (log/info "processing db-defs...")
+    (doto->>
+      (maybeInitDBs co env)
+      (.setv ctx :dbps)
+      (log/debug "db [dbpools]\n%s"))
+    ;; build the user data-models?
+    (when-some+
+      [dmCZ (strKW (:data-model env))]
+      (log/info "schema-func: %s" dmCZ)
+      (if-some
+        [sc (cast? Schema
+                   (try! (.callEx rts
+                                  dmCZ
+                                  (vargs* Object co))))]
+        (.setv ctx :schema sc)
+        (trap! ConfigError
+               "Invalid data-model schema ")))
+    (.activate ^Activable cpu nil)
+    (xrefPluges<> co (:plugs env))
+    (if (hgl? mcz) (.call rts mcz))
+    (log/info "pod: (%s) initialized - ok" pid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- ignitePod
-  ""
-  [^Execvisor co ^Gist gist]
-  (try!
-    (let
-      [ctr (container<> co gist)
-       pod (.id gist)
-       cid (.id ctr)]
-      (log/debug "start app= %s\npod= %s" pod cid)
-      (.setv (.getx co) :container ctr)
-      (.start ctr nil))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- stopPods
-  ""
-  [^Execvisor co]
-  (let [ctx (.getx co)]
-    (log/info "stopping pod...")
-    (when-some
-      [c (.getv ctx :container)]
-      (doto->>
-        ^Container
-        c
-        (.stop )
-        (.dispose ))
-      (.unsetv ctx :container))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- regoPlugs
-  "Add user defined pluggables and register all"
-  [^Execvisor co]
-  (let [ctx (.getx co)
-        env (.getv ctx :env)]
-    (->>
-      (merge (emitterServices)
-             (:plugs env))
-      (.setv ctx :plugs))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- regoApps
-  ""
-  [^Execvisor co]
-  (inspectPod co
-              (.getv (.getx co) :podDir)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn execvisor<>
   "Create an Execvisor"
   ^Execvisor
   []
   (let
-    [impl (muble<> {:container nil
-                    :pod nil
-                    :plugs {}})
-     pid (str "exec#" (seqint2))]
+    [pid (str "exec#" (seqint2))
+     cpu (scheduler<> pid)
+     impl (muble<> {:plugs {}})
+     rts (Cljshim/newrt (getCldr) pid)]
     (with-meta
       (reify Execvisor
 
-        (version [_] (.getv impl :version))
+        (acquireDbPool [this gid] (maybeGetDBPool this gid))
+        (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
+        (acquireDbPool [this] (maybeGetDBPool this ""))
+        (acquireDbAPI [this] (maybeGetDBAPI this ""))
+
+        (podKeyBits [this] (bytesify (.podKey this)))
+        (podKey [_] (get-in (.getv impl :env)
+                            [:info :digest]))
+
+        (cljrt [_] rts)
+        (version [_] (get-in (.getv impl :env)
+                             [:info :version]))
         (id [_] pid)
         (getx [_] impl)
 
         (uptimeInMillis [_] (- (now<>) start-time))
         (kill9 [_] (apply (.getv impl :stop!) []))
-        (homeDir [_] (.getv impl :podDir))
+        (podDir [_] (.getv impl :podDir))
         (locale [_] (.getv impl :locale))
         (startTime [_] start-time)
 
+        (child [_ sid]
+          ((.getv impl :plugs) (keyword sid)))
+        (hasChild [_ sid]
+          (in? (.getv impl :plugs) (keyword sid)))
+        (core [_] cpu)
+        (config [_] (.getv impl :env))
+
         (init [this arg]
-          (let [{:keys [encoding podDir]} @arg]
+          (let [{:keys [encoding podDir]} arg]
             (sysProp! "file.encoding" encoding)
             (logcomp "comp->init" this)
-            (.copyEx impl @arg)
+            (.copyEx impl arg)
             (-> (io/file podDir
-                         dn-etc "mime.properties")
+                         dn-etc
+                         "mime.properties")
                 (io/as-url)
                 (setupCache ))
             (log/info "loaded mime#cache - ok")
-            (regoPlus this)
-            (regoApps this)))
-        (restart [_ _] )
-        (stop [this] (stopPods this))
-        (start [this _] (ignitePod this
-                                   (.getv impl :pod))))
+            (init2 this (.intern impl))))
+
+        (stop [_]
+          (let [svcs (.getv impl :plugs)]
+            (log/info "execvisor stopping puglets...")
+            (doseq [[k v] svcs] (.stop ^Puglet v))
+            (log/info "execvisor stopped")))
+
+        (dispose [this]
+          (let [svcs (.getv impl :plugs)]
+            (log/info "execvisor disposing puglets...")
+            (doseq [[k v] svcs]
+              (.dispose ^Puglet v))
+            (releaseSysResources this)
+            (log/info "execvisor disposed")))
+
+        (start [this _]
+          (let [svcs (.getv impl :plugs)]
+            (log/info "execvisor starting puglets...")
+            (doseq [[k v] svcs]
+              (log/info "puglet: %s to start" k)
+              (.start ^Puglet v nil))
+            (log/info "execvisor started"))))
+
       {:typeid ::Execvisor})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -10,16 +10,16 @@
 
 package czlab.wabbit.ctl;
 
-import czlab.wabbit.server.Container;
 import czlab.wabbit.base.Component;
-import czlab.jasal.LifeCycle;
+import czlab.wabbit.sys.Execvisor;
 import czlab.jasal.Triggerable;
+import czlab.jasal.LifeCycle;
 import czlab.jasal.Config;
 
 /**
  * @author Kenneth Leung
  */
-public interface Service extends Component , LifeCycle , Config {
+public interface Puglet extends Component, LifeCycle, Config {
 
   /**
    */
@@ -31,7 +31,7 @@ public interface Service extends Component , LifeCycle , Config {
 
   /**
    */
-  public Container server();
+  public Execvisor server();
 
 }
 
