@@ -12,28 +12,28 @@
   czlab.wabbit.sys.exec
 
   (:require [czlab.convoy.net.mime :refer [setupCache]]
-            [czlab.xlib.format :refer [readEdn]]
-            [czlab.xlib.meta :refer [getCldr]]
-            [czlab.xlib.logging :as log]
+            [czlab.basal.format :refer [readEdn]]
+            [czlab.basal.meta :refer [getCldr]]
+            [czlab.basal.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.shared.svcs]
         [czlab.wabbit.base.core]
         [czlab.wabbit.sys.runc]
-        [czlab.xlib.core]
-        [czlab.xlib.io]
-        [czlab.xlib.str])
+        [czlab.basal.core]
+        [czlab.basal.io]
+        [czlab.basal.str])
 
   (:import [czlab.wabbit.server Container Execvisor]
            [java.security SecureRandom]
-           [czlab.wabbit.io IoService]
+           [czlab.wabbit.ctrl Service]
            [czlab.wabbit.base Gist]
            [clojure.lang Atom]
            [java.util Date]
            [java.io File]
            [java.net URL]
-           [czlab.xlib Identifiable]))
+           [czlab.jasal Identifiable]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -91,8 +91,8 @@
       [ctr (container<> co gist)
        pod (.id gist)
        cid (.id ctr)]
-      (log/debug "start pod= %s\ncontainer= %s" pod cid)
-      (.setv (.getx co) ::container ctr)
+      (log/debug "start app= %s\npod= %s" pod cid)
+      (.setv (.getx co) :container ctr)
       (.start ctr nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,27 +101,27 @@
   ""
   [^Execvisor co]
   (let [ctx (.getx co)]
-    (log/info "stopping container...")
+    (log/info "stopping pod...")
     (when-some
-      [c (.getv ctx ::container)]
+      [c (.getv ctx :container)]
       (doto->>
         ^Container
         c
         (.stop )
         (.dispose ))
-      (.unsetv ctx ::container))))
+      (.unsetv ctx :container))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- regoEmitters
-  "Add user defined emitters and register all"
+(defn- regoPlugs
+  "Add user defined pluggables and register all"
   [^Execvisor co]
   (let [ctx (.getx co)
         env (.getv ctx :env)]
     (->>
       (merge (emitterServices)
-             (:emitters env))
-      (.setv ctx ::emitters))))
+             (:plugs env))
+      (.setv ctx :plugs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -129,7 +129,7 @@
   ""
   [^Execvisor co]
   (inspectPod co
-              (.getv (.getx co) ::podDir)))
+              (.getv (.getx co) :podDir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -138,9 +138,9 @@
   ^Execvisor
   []
   (let
-    [impl (muble<> {::container nil
-                    ::pod nil
-                    ::emitters {}})
+    [impl (muble<> {:container nil
+                    :pod nil
+                    :plugs {}})
      pid (str "exec#" (seqint2))]
     (with-meta
       (reify Execvisor
@@ -165,12 +165,12 @@
                 (io/as-url)
                 (setupCache ))
             (log/info "loaded mime#cache - ok")
-            (regoEmitters this)
+            (regoPlus this)
             (regoApps this)))
         (restart [_ _] )
         (stop [this] (stopPods this))
         (start [this _] (ignitePod this
-                                   (.getv impl ::pod))))
+                                   (.getv impl :pod))))
       {:typeid ::Execvisor})))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

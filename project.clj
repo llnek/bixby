@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/wabbit "0.1.0"
+(defproject io.czlab/wabbit "1.0.0"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -14,13 +14,12 @@
    ;;[com.github.spullara.mustache.java/compiler "0.9.4" ]
    ;;[com.google.code.findbugs/jsr305 "3.0.1"]
    [org.freemarker/freemarker "2.3.25-incubating"]
-   [io.czlab/proto "0.1.0" :scope "test"]
-   [io.czlab/wabbit-cons "0.1.0"]
-   [io.czlab/twisty "0.1.0"]
-   [io.czlab/convoy "0.1.0"]
-   [io.czlab/horde "0.1.0"]
-   [io.czlab/flux "0.1.0"]
-   [io.czlab/xlib "0.1.0"]
+   [io.czlab/proto "1.0.0" :scope "test"]
+   [io.czlab/wabbit-cons "1.0.0"]
+   [io.czlab/twisty "1.0.0"]
+   [io.czlab/convoy "1.0.0"]
+   [io.czlab/horde "1.0.0"]
+   [io.czlab/flux "1.0.0"]
    ;;[org.clojure/math.numeric-tower "0.0.4"]
    ;;[org.clojure/math.combinatorics "0.1.3"]
    ;;[org.clojure/tools.nrepl "0.2.12"]
@@ -49,7 +48,7 @@
    [com.sun.tools/tools "1.8.0"]]
 
   :plugins [[lein-codox "0.10.2"]
-            [lein-czlab "0.1.1"]
+            [lein-czlab "1.0.0"]
             [lein-pprint "1.1.2"]]
   :hooks [leiningen.lein-czlab]
 

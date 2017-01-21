@@ -8,7 +8,7 @@
 
 (ns czlab.test.wabbit.svcs
 
-  (:require [czlab.xlib.logging :as log]
+  (:require [czlab.basal.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
@@ -22,9 +22,9 @@
         [czlab.wabbit.etc.core]
         [czlab.wabbit.io.core]
         [czlab.flux.wflow.core]
-        [czlab.xlib.core]
-        [czlab.xlib.io]
-        [czlab.xlib.str]
+        [czlab.basal.core]
+        [czlab.basal.io]
+        [czlab.basal.str]
         [clojure.test])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]

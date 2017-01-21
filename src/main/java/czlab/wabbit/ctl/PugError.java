@@ -8,21 +8,29 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.pugs;
-
-import javax.management.ObjectName;
-import czlab.xlib.Resetable;
+package czlab.wabbit.ctl;
 
 /**
  * @author Kenneth Leung
  */
-public interface JmxPlugin extends Pluggable, Resetable {
+public class ServiceError extends Exception {
+
+  private static final long serialVersionUID = 1L;
 
   /**/
-  public ObjectName reg(Object obj, String domain, String nname, Object paths);
+  public ServiceError(String msg, Throwable e) {
+    super(msg, e);
+  }
 
   /**/
-  public void dereg(ObjectName nname);
+  public ServiceError(Throwable e) {
+    this(null,e);
+  }
+
+  /**/
+  public ServiceError(String msg) {
+    this(msg,null);
+  }
 
 }
 

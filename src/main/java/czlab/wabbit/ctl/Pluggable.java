@@ -8,32 +8,15 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.ext;
 
-import czlab.wabbit.base.Component;
-import czlab.xlib.LifeCycle;
-import java.io.File;
-import java.util.Locale;
+import czlab.jasal.LifeCycle;
+import czlab.jasal.Config;
 
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Component, LifeCycle {
-
-  /**/
-  public long uptimeInMillis();
-
-  /**/
-  public Locale locale();
-
-  /**/
-  public long startTime();
-
-  /**/
-  public File homeDir();
-
-  /**/
-  public void kill9();
+public interface Pluggable extends LifeCycle, Config {
 
 }
 

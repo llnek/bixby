@@ -8,29 +8,32 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.pugs;
+package czlab.wabbit.server;
+
+import czlab.wabbit.base.Component;
+import czlab.jasal.LifeCycle;
+import java.io.File;
+import java.util.Locale;
 
 /**
  * @author Kenneth Leung
  */
-public class UnknownUser extends AuthError {
-
-  private static final long serialVersionUID = 1L;
+public interface Execvisor extends Component, LifeCycle {
 
   /**/
-  public UnknownUser(String msg,Throwable e) {
-    super(msg,e);
-  }
+  public long uptimeInMillis();
 
   /**/
-  public UnknownUser(Throwable e) {
-    this(null,e);
-  }
+  public Locale locale();
 
   /**/
-  public UnknownUser(String msg) {
-    this(msg,null);
-  }
+  public long startTime();
+
+  /**/
+  public File homeDir();
+
+  /**/
+  public void kill9();
 
 }
 

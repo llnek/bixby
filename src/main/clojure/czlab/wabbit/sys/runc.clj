@@ -12,12 +12,12 @@
   czlab.wabbit.sys.runc
 
   (:require [czlab.horde.dbio.connect :refer [dbopen<+>]]
-            [czlab.xlib.resources :refer [loadResource]]
-            [czlab.xlib.scheduler :refer [scheduler<>]]
-            [czlab.xlib.meta :refer [getCldr]]
-            [czlab.xlib.format :refer [readEdn]]
+            [czlab.basal.resources :refer [loadResource]]
+            [czlab.basal.scheduler :refer [scheduler<>]]
+            [czlab.basal.meta :refer [getCldr]]
+            [czlab.basal.format :refer [readEdn]]
             [czlab.twisty.codec :refer [passwd<>]]
-            [czlab.xlib.logging :as log]
+            [czlab.basal.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io]
             [czlab.horde.dbio.core
@@ -26,35 +26,24 @@
                      dbschema<>]])
 
   (:use [czlab.wabbit.base.core]
-        [czlab.xlib.core]
-        [czlab.xlib.str]
-        [czlab.xlib.io]
-        [czlab.wabbit.io.core]
-        [czlab.wabbit.io.loops]
-        [czlab.wabbit.io.mails]
-        [czlab.wabbit.io.files]
-        [czlab.wabbit.io.jms]
-        [czlab.wabbit.io.http]
-        [czlab.wabbit.io.socket]
-        [czlab.wabbit.mvc.ftl])
+        [czlab.basal.core]
+        [czlab.basal.str]
+        [czlab.basal.io]
+        [czlab.wabbit.ctl.core])
 
-  (:import [czlab.wabbit.base Gist ServiceError ConfigError]
-           [czlab.wabbit.pugs Pluggable]
-           [czlab.xlib I18N Activable Disposable]
+  (:import [czlab.wabbit.ctl Service ServiceEvent ServiceError]
+           [czlab.wabbit.server Execvisor Cljshim Container]
+           [czlab.jasal I18N Activable Disposable]
+           [czlab.wabbit.base Gist ConfigError]
+           [czlab.wabbit.ext Pluggable]
            [czlab.horde Schema JdbcPool DbApi]
            [java.io File StringWriter]
-           [czlab.wabbit.server
-            Execvisor
-            Cljshim
-            Service
-            Container]
            [freemarker.template
             Configuration
             Template
             DefaultObjectWrapper]
            [java.util Locale]
-           [java.net URL]
-           [czlab.wabbit.io IoEvent]))
+           [java.net URL]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -63,7 +52,7 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^String [^IoEvent evt] (.. evt source server podKey))
+  ^String [^ServiceEvent evt] (.. evt source server podKey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -104,71 +93,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- svc<>
+(defn- plug<>
   ""
   ^Service
-  [^Container co svc nm cfg0]
+  [^Container co plug nm cfg0]
   (let
     [^Execvisor exe (.parent co)
-     bks (.getv (.getx exe) :emitters)]
+     bks (.getv (.getx exe) :plugs)]
     (if-some
-      [bk (bks svc)]
+      [bk (bks plug)]
       (let
-        [ios (doto
-               (service<> co svc nm bk)
+        [svc (doto
+               (pluggable<> co plug nm bk)
                (.init cfg0))
-         cfg0 (.config ios)]
-        (log/info "preparing io-service %s..." svc)
+         cfg0 (.config svc)]
+        (log/info "preparing service %s..." svc)
         (log/info "config params=\n%s" cfg0)
         (log/info "service - ok")
-        ios)
+        svc)
       (trap! ServiceError
-             (str "No such service: " svc)))))
+             (str "No such pluggable: " plug)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- ioServices<>
+(defn- xrefPlugs<>
   ""
-  [^Container co svcs]
+  [^Container co plugs]
   (->>
     (preduce<map>
       #(let
          [[k cfg] %2
-          {:keys [service
+          {:keys [pluggable
                   enabled?]} cfg]
          (if-not (or (false? enabled?)
-                     (nil? service))
-           (let [v (svc<> co service k cfg)]
+                     (nil? pluggable))
+           (let [v (plug<> co pluggable k cfg)]
              (assoc! %1 (.id v) v))
            %1))
-      svcs)
-    (.setv (.getx co) :services )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- plugin<>
-  ""
-  ^Pluggable
-  [^Container co [kee pc] env]
-  (log/info "plugin: %s -> %s" kee pc)
-  (let
-    [rts (.cljrt co)
-     [pn opts]
-     (if (string? pc)
-       [pc {}] [(:factory pc) pc])
-     _ (log/info "plugin fac: %s" pn)
-     u (cast? Pluggable
-              (.callEx rts pn (vargs* Object co)))]
-    (log/info "plugin-obj: %s" u)
-    (if (some? u)
-      (do
-        (.init u {:pod env :pug opts})
-        (log/info "plugin %s starting..." pn)
-        (.start u nil)
-        (log/info "plugin %s started" pn)
-        u)
-      (do->nil
-        (log/warn "failed to create plugin %s" kee)))))
+      plugs)
+    (.setv (.getx co) :services)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -218,14 +181,6 @@
       (maybeInitDBs co env)
       (.setv (.getx co) :dbps)
       (log/debug "db [dbpools]\n%s"))
-    (log/info "processing plugins...")
-    (->>
-      (preduce<map>
-        #(if-some [p (plugin<> co %2 env)]
-           (assoc! %1 (first %2) p)
-           %1)
-        (:plugins env))
-      (.setv (.getx co) :plugins))
     ;; build the user data-models?
     (when-some+
       [dmCZ (:data-model env)]
@@ -239,7 +194,7 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable cpu nil)
-    (->> (:services env) (ioServices<> co))
+    (->> (:services env) (xrefPlugs<> co))
     (if (hgl? mcz) (.call rts mcz))
     (log/info "pod: (%s) initialized - ok" pid)))
 

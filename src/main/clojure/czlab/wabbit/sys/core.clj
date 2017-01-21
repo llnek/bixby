@@ -11,24 +11,24 @@
 
   czlab.wabbit.sys.core
 
-  (:require [czlab.xlib.resources :refer [loadResource getResource]]
-            [czlab.xlib.io :refer [closeQ readAsStr writeFile]]
+  (:require [czlab.basal.resources :refer [loadResource getResource]]
+            [czlab.basal.io :refer [closeQ readAsStr writeFile]]
             [czlab.wabbit.io.http :refer [cfgShutdownServer]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
-            [czlab.xlib.scheduler :refer [scheduler<>]]
-            [czlab.xlib.meta :refer [setCldr getCldr]]
-            [czlab.xlib.format :refer [readEdn]]
-            [czlab.xlib.logging :as log]
+            [czlab.basal.scheduler :refer [scheduler<>]]
+            [czlab.basal.meta :refer [setCldr getCldr]]
+            [czlab.basal.format :refer [readEdn]]
+            [czlab.basal.logging :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
   (:use [czlab.wabbit.base.core]
-        [czlab.xlib.process]
-        [czlab.xlib.core]
-        [czlab.xlib.str]
-        [czlab.xlib.consts])
+        [czlab.basal.process]
+        [czlab.basal.core]
+        [czlab.basal.str]
+        [czlab.basal.consts])
 
-  (:import [czlab.xlib Startable CU Muble I18N]
+  (:import [czlab.jasal Startable CU Muble I18N]
            [czlab.wabbit.server CljPodLoader]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.server Execvisor]
@@ -67,7 +67,7 @@
       (log/info "closing the remote shutdown hook")
       (if (fn? killSvr) (killSvr))
       (log/info "remote shutdown hook closed - ok")
-      (log/info "container is shutting down...")
+      (log/info "pod is shutting down...")
       (log/info "about to stop wabbit...")
       (if (some? execv)
         (.stop ^Startable execv))
@@ -160,7 +160,7 @@
     (log/info "sys-loader: %s"
               (type (.getParent cz)))
     (log/debug "%s" @ctx)
-    (log/info "container is now running...")
+    (log/info "pod is now running...")
     (while (not @stopcli) (pause 3000))
     (log/info "vm shut down")
     (log/info "(bye)")

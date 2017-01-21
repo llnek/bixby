@@ -8,18 +8,30 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.io;
+package czlab.wabbit.ctl;
 
-import javax.mail.internet.MimeMessage;
+import czlab.wabbit.server.Container;
+import czlab.wabbit.base.Component;
+import czlab.jasal.LifeCycle;
+import czlab.jasal.Triggerable;
+import czlab.jasal.Config;
 
 /**
  * @author Kenneth Leung
  */
-public interface EmailEvent extends IoEvent {
+public interface Service extends Component , LifeCycle , Config {
 
   /**
    */
-  public MimeMessage message();
+  public void hold(Triggerable t, long millis);
+
+  /**
+   */
+  public boolean isEnabled();
+
+  /**
+   */
+  public Container server();
 
 }
 

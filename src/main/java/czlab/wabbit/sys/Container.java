@@ -12,10 +12,10 @@ package czlab.wabbit.server;
 
 import czlab.flux.server.ServerLike;
 import czlab.wabbit.base.Component;
-import czlab.xlib.Hierarchial;
-import czlab.xlib.Disposable;
-import czlab.xlib.Nameable;
-import czlab.xlib.LifeCycle;
+import czlab.jasal.Hierarchial;
+import czlab.jasal.Disposable;
+import czlab.jasal.Nameable;
+import czlab.jasal.LifeCycle;
 import czlab.horde.JdbcPool;
 import czlab.horde.DbApi;
 import java.io.File;
@@ -28,7 +28,13 @@ public interface Container extends Component
                                    ,Nameable
                                    ,LifeCycle
                                    ,Hierarchial
-                                   ,ServiceProvider {
+                                   {
+
+  /**/
+  public boolean hasService(Object serviceId);
+
+  /**/
+  public Service service(Object serviceId);
 
   /** load freemarker template */
   public Object loadTemplate(String tpl, Object ctx);

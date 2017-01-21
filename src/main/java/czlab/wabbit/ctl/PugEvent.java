@@ -8,18 +8,31 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.server;
+package czlab.wabbit.ctl;
+
+import czlab.flux.server.Event;
+import czlab.jasal.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface ServiceProvider {
+public interface ServiceEvent extends Event, Disposable {
 
-  /**/
-  public boolean hasService(Object serviceId);
+  /**
+   */
+  default public boolean checkAuthenticity() {
+    return false;
+  }
 
-  /**/
-  public Service service(Object serviceId);
+  /**
+   */
+  public Service source();
+
+  /**
+   */
+  default public Object socket() {
+    return null;
+  }
 
 }
 
