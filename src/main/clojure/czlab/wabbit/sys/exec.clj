@@ -182,8 +182,8 @@
         (.setv ctx :schema sc)
         (trap! ConfigError
                "Invalid data-model schema ")))
-    (.activate ^Activable cpu nil)
-    (xrefPluges<> co (:plugs env))
+    (.activate ^Activable (.core co) nil)
+    (xrefPlugs<> co (:plugs env))
     (if (hgl? mcz) (.call rts mcz))
     (log/info "pod: (%s) initialized - ok" pid)))
 

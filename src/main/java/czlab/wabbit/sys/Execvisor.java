@@ -12,8 +12,13 @@ package czlab.wabbit.sys;
 
 import czlab.wabbit.base.Component;
 import czlab.jasal.LifeCycle;
+import czlab.jasal.Config;
+import czlab.jasal.Schedulable;
 import java.io.File;
 import java.util.Locale;
+import czlab.horde.DbApi;
+import czlab.horde.JdbcPool;
+import czlab.wabbit.ctl.Puglet;
 
 /**
  * @author Kenneth Leung
@@ -43,6 +48,9 @@ public interface Execvisor extends Component, Config, LifeCycle {
 
   /**/
   public Cljshim cljrt();
+
+  /**/
+  public Schedulable core();
 
   /**/
   public byte[] podKeyBits();

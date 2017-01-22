@@ -10,12 +10,13 @@
 
 package czlab.wabbit.ctl;
 
+import czlab.jasal.Identifiable;
 import czlab.jasal.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface PugEvent extends Disposable {
+public interface PugEvent extends Identifiable, Disposable {
 
   /**
    */

@@ -11,12 +11,12 @@
 
   czlab.wabbit.ctl.core
 
-  (:require [czlab.xlib.logging :as log])
+  (:require [czlab.basal.logging :as log])
 
   (:use [czlab.wabbit.base.core]
-        [czlab.xlib.consts]
-        [czlab.xlib.core]
-        [czlab.xlib.str])
+        [czlab.basal.consts]
+        [czlab.basal.core]
+        [czlab.basal.str])
 
   (:import [czlab.wabbit.sys Cljshim Execvisor]
            [czlab.wabbit.ctl Puglet Pluggable]

@@ -13,7 +13,6 @@
 
   (:require [czlab.basal.resources :refer [loadResource getResource]]
             [czlab.basal.io :refer [closeQ readAsStr writeFile]]
-            [czlab.wabbit.pugs.io.http :refer [hookShutdown]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
             [czlab.basal.scheduler :refer [scheduler<>]]
             [czlab.basal.meta :refer [setCldr getCldr]]
@@ -72,6 +71,12 @@
       (shutdown-agents)
       (log/info "wabbit stopped"))
     gist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- hookShutdown
+  ""
+  [a b c] )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
