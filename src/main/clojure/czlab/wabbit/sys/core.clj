@@ -42,35 +42,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- cliGist
-  ""
-  ^Atom
-  [{:keys [podDir] :as gist}]
-  (precondFile (io/file podDir cfg-pod-cf))
-  (atom gist))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (defn- stopCLI
   "Stop all apps and services"
-  ^Atom
   [^Atom gist]
   (let [{:keys [pidFile
-                execv
+                exec
                 killSvr]} @gist]
     (when-not @stopcli
       (vreset! stopcli true)
       (print "\n\n")
-      (log/info "closing the remote shutdown hook")
+      (log/info "unhooking remote shutdown...")
       (if (fn? killSvr) (killSvr))
-      (log/info "remote shutdown hook closed - ok")
-      (log/info "pod is shutting down...")
+      (log/info "remote hook closed - ok")
+      (log/info "wabbit is shutting down...")
       (log/info "about to stop wabbit...")
-      (if (some? execv)
-        (.stop ^Startable execv))
+      (if (some? exec)
+        (.stop ^Startable exec))
       (shutdown-agents)
-      (log/info "wabbit stopped"))
-    gist))
+      (log/info "wabbit stopped"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,7 +71,6 @@
 ;;
 (defn- enableRemoteShutdown
   "Listen on a port for remote kill command"
-  ^Atom
   [^Atom gist]
   (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
                   (.split ":"))
@@ -93,24 +81,22 @@
     (swap! gist
            assoc
            :killSvr
-           (hookShutdown gist #(stopCLI gist) m))
-    gist))
+           (hookShutdown gist #(stopCLI gist) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
 (defn- primodial
   ""
-  ^Atom
   [^Atom gist]
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
   (log/info "execvisor = %s"
-            "czlab.wabbit.server.Execvisor")
+            "czlab.wabbit.sys.Execvisor")
   (let [execv (execvisor<>)]
     (swap! gist
            assoc
-           :execv execv
+           :exec execv
            :stop! #(stopCLI gist))
     (.init execv @gist)
     (log/info "\n%s\n%s\n%s"
@@ -118,8 +104,7 @@
               "about to start wabbit..."
               (str<> 78 \*))
     (.start execv nil)
-    (log/info "wabbit started!")
-    gist))
+    (log/info "wabbit started")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -127,7 +112,8 @@
   ""
   [cwd]
   (let
-    [{:keys [locale info] :as env}
+    [_ (precondFile (io/file cwd cfg-pod-cf))
+     {:keys [locale info] :as conf}
      (slurpXXXConf cwd cfg-pod-cf true)
      cn (stror (:country locale) "US")
      ln (stror (:lang locale) "en")
@@ -136,15 +122,15 @@
      fp (io/file cwd "wabbit.pid")
      loc (Locale. ln cn)
      rc (getResource c-rcb loc)
-     ctx (->> {:encoding (stror (:encoding info) "utf-8")
-               :wabbit {:version verStr}
-               :podDir (io/file cwd)
-               :pidFile fp
-               :env env
-               :locale loc}
-              (cliGist ))
+     ctx (atom
+           {:encoding (stror (:encoding info) "utf-8")
+            :wabbit {:version verStr}
+            :homeDir (io/file cwd)
+            :pidFile fp
+            :conf conf
+            :locale loc})
      cz (getCldr)]
-    (log/info "wabbit.proc.dir = %s" (fpath cwd))
+    (log/info "wabbit.user.dir = %s" (fpath cwd))
     (log/info "wabbit.version = %s" verStr)
     (doto->> rc
              (test-some "base resource" )
@@ -162,7 +148,7 @@
     (log/info "sys-loader: %s"
               (type (.getParent cz)))
     (log/debug "%s" @ctx)
-    (log/info "pod is now running...")
+    (log/info "wabbit is now running...")
     (while (not @stopcli) (pause 3000))
     (log/info "vm shut down")
     (log/info "(bye)")

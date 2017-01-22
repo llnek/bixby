@@ -16,14 +16,21 @@ import czlab.jasal.Config;
 import czlab.jasal.Schedulable;
 import java.io.File;
 import java.util.Locale;
-import czlab.horde.DbApi;
-import czlab.horde.JdbcPool;
-import czlab.wabbit.ctl.Puglet;
 
 /**
  * @author Kenneth Leung
  */
-public interface Execvisor extends Component, Config, LifeCycle {
+public interface Execvisor extends Component
+                                   ,Config
+                                   ,LifeCycle
+                                   ,DbAccess
+                                   ,KeyAccess {
+
+  /**/
+  public boolean hasChild(Object pug);
+
+  /**/
+  public Object child(Object pug);
 
   /**/
   public long uptimeInMillis();
@@ -38,40 +45,13 @@ public interface Execvisor extends Component, Config, LifeCycle {
   public void kill9();
 
   /**/
-  public boolean hasChild(Object pug);
-
-  /**/
-  public Puglet child(Object pug);
-
-  /**/
-  public boolean isEnabled();
-
-  /**/
   public Cljshim cljrt();
 
   /**/
   public Schedulable core();
 
   /**/
-  public byte[] podKeyBits();
-
-  /**/
-  public String podKey();
-
-  /**/
-  public File podDir();
-
-  /**/
-  public JdbcPool acquireDbPool(Object groupid);
-
-  /**/
-  public DbApi acquireDbAPI(Object groupid);
-
-  /**/
-  public JdbcPool acquireDbPool();
-
-  /**/
-  public DbApi acquireDbAPI();
+  public File homeDir();
 
 }
 

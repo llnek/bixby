@@ -54,7 +54,7 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^String [^PugEvent evt] (.. evt source server podKey))
+  ^String [^PugEvent evt] (.. evt source server pkey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -131,48 +131,47 @@
 ;;
 (defn- maybeInitDBs
   ""
-  [^Execvisor co env]
+  [^Execvisor co conf]
   (preduce<map>
     #(let
        [[k v] %2]
        (if-not (false? (:enabled? v))
          (let
            [pwd (passwd<> (:passwd v)
-                          (.podKey co))
+                          (.pkey co))
             cfg (merge v
                        {:passwd (.text pwd)
                         :id k})]
            (->> (dbpool<> (dbspec<> cfg) cfg)
                 (assoc! %1 k)))
          %1))
-    (:rdbms env)))
+    (:rdbms conf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- init2
   ""
-  [^Execvisor co {:keys [env] :as conf}]
+  [^Execvisor co {:keys [locale conf] :as env}]
   (let
-    [mcz (strKW (get-in env
+    [mcz (strKW (get-in conf
                         [:info :main]))
-     ^Locale loc (:locale conf)
      rts (.cljrt co)
      pid (.id co)
      ctx (.getx co)
      res (->>
-           (format c-rcprops (.getLanguage loc))
-           (io/file (.podDir co) dn-etc))]
+           (format c-rcprops (.getLanguage ^Locale locale))
+           (io/file (.homeDir co) dn-etc))]
     (if (fileRead? res)
       (->> (loadResource res)
            (I18N/setBundle pid)))
     (log/info "processing db-defs...")
     (doto->>
-      (maybeInitDBs co env)
+      (maybeInitDBs co conf)
       (.setv ctx :dbps)
       (log/debug "db [dbpools]\n%s"))
     ;; build the user data-models?
     (when-some+
-      [dmCZ (strKW (:data-model env))]
+      [dmCZ (strKW (:data-model conf))]
       (log/info "schema-func: %s" dmCZ)
       (if-some
         [sc (cast? Schema
@@ -183,9 +182,9 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable (.core co) nil)
-    (xrefPlugs<> co (:plugs env))
+    (xrefPlugs<> co (:plugs conf))
     (if (hgl? mcz) (.call rts mcz))
-    (log/info "pod: (%s) initialized - ok" pid)))
+    (log/info "execvisor: (%s) initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
@@ -204,38 +203,39 @@
 
         (acquireDbPool [this gid] (maybeGetDBPool this gid))
         (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
-        (acquireDbPool [this] (maybeGetDBPool this ""))
-        (acquireDbAPI [this] (maybeGetDBAPI this ""))
+        (dftDbPool [this] (maybeGetDBPool this ""))
+        (dftDbAPI [this] (maybeGetDBAPI this ""))
 
-        (podKeyBits [this] (bytesify (.podKey this)))
-        (podKey [_] (get-in (.getv impl :env)
-                            [:info :digest]))
+        (pkeyBytes [this] (bytesify (.pkey this)))
+        (pkey [_] (->> [:info :digest]
+                       (get-in (.getv impl :conf))))
 
         (cljrt [_] rts)
-        (version [_] (get-in (.getv impl :env)
-                             [:info :version]))
+        (version [_] (->> [:info :version]
+                          (get-in (.getv impl :conf))))
         (id [_] pid)
         (getx [_] impl)
 
         (uptimeInMillis [_] (- (now<>) start-time))
         (kill9 [_] (apply (.getv impl :stop!) []))
-        (podDir [_] (.getv impl :podDir))
+        (homeDir [_] (.getv impl :homeDir))
         (locale [_] (.getv impl :locale))
         (startTime [_] start-time)
 
-        (child [_ sid]
-          ((.getv impl :plugs) (keyword sid)))
         (hasChild [_ sid]
           (in? (.getv impl :plugs) (keyword sid)))
+        (child [_ sid]
+          ((.getv impl :plugs) (keyword sid)))
+
         (core [_] cpu)
-        (config [_] (.getv impl :env))
+        (config [_] (.getv impl :conf))
 
         (init [this arg]
-          (let [{:keys [encoding podDir]} arg]
+          (let [{:keys [encoding homeDir]} arg]
             (sysProp! "file.encoding" encoding)
             (logcomp "comp->init" this)
             (.copyEx impl arg)
-            (-> (io/file podDir
+            (-> (io/file homeDir
                          dn-etc
                          "mime.properties")
                 (io/as-url)
