@@ -16,7 +16,7 @@ import czlab.horde.DbApi;
 /**
  * @author Kenneth Leung
  */
-public interface DbAccess {
+public interface SqlAccess {
 
   /**/
   public JdbcPool acquireDbPool(Object id);

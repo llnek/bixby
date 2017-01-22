@@ -23,7 +23,7 @@ import java.util.Locale;
 public interface Execvisor extends Component
                                    ,Config
                                    ,LifeCycle
-                                   ,DbAccess
+                                   ,SqlAccess
                                    ,KeyAccess {
 
   /**/
