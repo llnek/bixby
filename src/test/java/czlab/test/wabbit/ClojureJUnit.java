@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlabtest.wabbit;
+package czlab.test.wabbit;
 
 import mikera.cljunit.ClojureTest;
 import java.util.Arrays;
@@ -21,8 +21,7 @@ public class ClojureJUnit extends ClojureTest {
     @Override
     public List<String> namespaces() {
         return Arrays.asList(new String[]{
-          "czlab.test.wabbit.test",
-          "czlab.test.wabbit.svcs"
+          "czlab.test.wabbit.test"
         });
     }
 }

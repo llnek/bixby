@@ -30,33 +30,36 @@
 (defn- reifyPlug
   ""
   ^Pluggable
-  [^Execvisor co emType]
+  [^Puglet co emType]
   (let [emStr (strKW emType)]
     (if (neg? (.indexOf emStr "/"))
       nil
-      (-> (.cljrt co)
+      (-> (.. co server cljrt)
           (.callEx emStr
                    (vargs* Object co))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn pluggable<>
+(defn pluglet<>
   "Create a Service"
   ^Puglet
   [^Execvisor parObj emType emAlias]
+  {:pre [(some? parObj)
+         (keyword? emType)(hgl? emAlias)]}
   (let
-    [plug (reifyPlug parObj emType)
-     {:keys [info conf] :as spec}
-     (.spec plug)
+    [plug (atom nil)
      impl (muble<>)
      timer (atom nil)]
     (with-meta
       (reify Puglet
-        (getx [_] impl)
-        (isEnabled [_]
-          (not (false? (:enabled? (.config plug)))))
+        (isEnabled [this] (not (false?
+                                 (:enabled? (.config this)))))
+        (version [_] (str (get-in
+                            (.spec ^Pluggable @plug)
+                            [:info :version])))
+        (config [_] (.config ^Pluggable @plug))
         (server [this] parObj)
-        (config [_] (.config plug))
+        (getx [_] impl)
         (hold [_ trig millis]
           (if (and (some? @timer)
                    (spos? millis))
@@ -64,22 +67,23 @@
                       #(.fire trig nil))]
               (.schedule ^Timer @timer k millis)
               (.setTrigger trig k))))
-        (version [_] (str (:version info)))
         (id [_] emAlias)
         (dispose [_]
           (log/info "puglet [%s] is being disposed" emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.dispose plug)
+          (.dispose ^Pluggable @plug)
           (log/info "puglet [%s] disposed - ok" emAlias))
         (init [this cfg0]
           (log/info "puglet [%s] is initializing..." emAlias)
-          (.init plug cfg0)
+          (let [p (reifyPlug this emType)]
+            (.init p cfg0)
+            (rset! plug p))
           (log/info "puglet [%s] init'ed - ok" emAlias))
         (start [this arg]
           (log/info "puglet [%s] is starting..." emAlias)
           (rset! timer (Timer. true))
-          (.start plug arg)
+          (.start ^Pluggable @plug arg)
           (log/info "puglet [%s] config:" emAlias)
           (log/info "%s" (pr-str (.config this)))
           (log/info "puglet [%s] started - ok" emAlias))
@@ -87,7 +91,7 @@
           (log/info "puglet [%s] is stopping..." emAlias)
           (some-> ^Timer @timer (.cancel))
           (rset! timer)
-          (.stop plug)
+          (.stop ^Pluggable @plug)
           (log/info "puglet [%s] stopped - ok" emAlias)))
 
       {:typeid emType})))

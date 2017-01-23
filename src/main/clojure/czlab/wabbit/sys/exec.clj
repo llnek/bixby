@@ -100,7 +100,7 @@
   [^Execvisor co plug nm cfg0]
   (let
     [svc (doto
-           (pluggable<> co plug nm)
+           (pluglet<> co plug nm)
            (.init cfg0))
      cfg0 (.config svc)]
     (log/info "preparing puglet %s..." svc)
