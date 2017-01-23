@@ -31,7 +31,7 @@ public class Runtime {
       File home= new File(args[0]);
       ClassLoader cl= CljPodLoader.newInstance(home, cwd);
       Thread.currentThread().setContextClassLoader(cl);
-      Class<?> z= cl.loadClass("czlab.wabbit.server.Cljshim");
+      Class<?> z= cl.loadClass("czlab.wabbit.base.Cljshim");
       Method m= z.getDeclaredMethod("newrt",ClassLoader.class, String.class);
       Object clj= m.invoke(null, cl, "wabbit-runner");
       m=z.getDeclaredMethod("callEx", String.class, Object[].class);

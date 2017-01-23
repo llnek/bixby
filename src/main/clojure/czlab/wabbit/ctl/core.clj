@@ -18,8 +18,8 @@
         [czlab.basal.core]
         [czlab.basal.str])
 
-  (:import [czlab.wabbit.sys Cljshim Execvisor]
-           [czlab.wabbit.ctl Pluglet Pluggable]
+  (:import [czlab.wabbit.ctl Pluglet Pluggable]
+           [czlab.wabbit.sys Execvisor]
            [java.util Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

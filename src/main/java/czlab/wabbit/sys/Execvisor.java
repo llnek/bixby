@@ -11,6 +11,7 @@
 package czlab.wabbit.sys;
 
 import czlab.wabbit.base.Component;
+import czlab.wabbit.base.Cljshim;
 import czlab.jasal.LifeCycle;
 import czlab.jasal.Config;
 import czlab.jasal.Schedulable;

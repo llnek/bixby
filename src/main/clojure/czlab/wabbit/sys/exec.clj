@@ -34,7 +34,8 @@
 
   (:import [czlab.wabbit.ctl Pluggable Pluglet PlugMsg PlugError]
            [czlab.jasal I18N Activable Disposable]
-           [czlab.wabbit.sys Execvisor Cljshim]
+           [czlab.wabbit.sys Execvisor]
+           [czlab.wabbit.base Cljshim]
            [czlab.wabbit.base Gist ConfigError]
            [czlab.horde Schema JdbcPool DbApi]
            [java.security SecureRandom]
