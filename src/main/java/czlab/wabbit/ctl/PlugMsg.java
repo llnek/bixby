@@ -10,27 +10,33 @@
 
 package czlab.wabbit.ctl;
 
+import czlab.jasal.Identifiable;
+import czlab.jasal.Disposable;
+
 /**
  * @author Kenneth Leung
  */
-public class PugError extends Exception {
+public interface PlugMsg extends Identifiable, Disposable {
 
-  private static final long serialVersionUID = 1L;
-
-  /**/
-  public PugError(String msg, Throwable e) {
-    super(msg, e);
+  /**
+   */
+  default public boolean checkAuthenticity() {
+    return false;
   }
 
-  /**/
-  public PugError(Throwable e) {
-    this(null,e);
+  /**
+   */
+  default public Object socket() {
+    return null;
   }
 
-  /**/
-  public PugError(String msg) {
-    this(msg,null);
-  }
+  /**
+   */
+  public Pluglet source();
+
+  /**
+   */
+  public boolean isStale();
 
 }
 

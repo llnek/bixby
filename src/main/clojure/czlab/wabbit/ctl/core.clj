@@ -19,7 +19,7 @@
         [czlab.basal.str])
 
   (:import [czlab.wabbit.sys Cljshim Execvisor]
-           [czlab.wabbit.ctl Puglet Pluggable]
+           [czlab.wabbit.ctl Pluglet Pluggable]
            [java.util Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -30,7 +30,7 @@
 (defn- reifyPlug
   ""
   ^Pluggable
-  [^Puglet co emType]
+  [^Pluglet co emType]
   (let [emStr (strKW emType)]
     (if (neg? (.indexOf emStr "/"))
       nil
@@ -42,7 +42,7 @@
 ;;
 (defn pluglet<>
   "Create a Service"
-  ^Puglet
+  ^Pluglet
   [^Execvisor parObj emType emAlias]
   {:pre [(some? parObj)
          (keyword? emType)(hgl? emAlias)]}
@@ -51,7 +51,7 @@
      impl (muble<>)
      timer (atom nil)]
     (with-meta
-      (reify Puglet
+      (reify Pluglet
         (isEnabled [this] (not (false?
                                  (:enabled? (.config this)))))
         (version [_] (str (get-in

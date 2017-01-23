@@ -19,7 +19,7 @@ import czlab.jasal.Config;
 /**
  * @author Kenneth Leung
  */
-public interface Puglet extends Component, LifeCycle, Config {
+public interface Pluglet extends Component, LifeCycle, Config {
 
   /**
    */

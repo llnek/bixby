@@ -32,7 +32,7 @@
         [czlab.basal.io]
         [czlab.wabbit.ctl.core])
 
-  (:import [czlab.wabbit.ctl Pluggable Puglet PugEvent PugError]
+  (:import [czlab.wabbit.ctl Pluggable Pluglet PlugMsg PlugError]
            [czlab.jasal I18N Activable Disposable]
            [czlab.wabbit.sys Execvisor Cljshim]
            [czlab.wabbit.base Gist ConfigError]
@@ -54,7 +54,7 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^String [^PugEvent evt] (.. evt source server pkey))
+  ^String [^PlugMsg evt] (.. evt source server pkey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -96,7 +96,7 @@
 ;;
 (defn- plug<>
   ""
-  ^Puglet
+  ^Pluglet
   [^Execvisor co plug nm cfg0]
   (let
     [svc (doto
@@ -246,14 +246,14 @@
         (stop [_]
           (let [svcs (.getv impl :plugs)]
             (log/info "execvisor stopping puglets...")
-            (doseq [[k v] svcs] (.stop ^Puglet v))
+            (doseq [[k v] svcs] (.stop ^Pluglet v))
             (log/info "execvisor stopped")))
 
         (dispose [this]
           (let [svcs (.getv impl :plugs)]
             (log/info "execvisor disposing puglets...")
             (doseq [[k v] svcs]
-              (.dispose ^Puglet v))
+              (.dispose ^Pluglet v))
             (releaseSysResources this)
             (log/info "execvisor disposed")))
 
@@ -262,7 +262,7 @@
             (log/info "execvisor starting puglets...")
             (doseq [[k v] svcs]
               (log/info "puglet: %s to start" k)
-              (.start ^Puglet v nil))
+              (.start ^Pluglet v nil))
             (log/info "execvisor started"))))
 
       {:typeid ::Execvisor})))
