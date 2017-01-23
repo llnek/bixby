@@ -33,6 +33,7 @@
         [czlab.wabbit.ctl.core])
 
   (:import [czlab.wabbit.ctl Pluggable Pluglet PlugMsg PlugError]
+           [czlab.wabbit.jmx JmxPluglet]
            [czlab.jasal I18N Activable Disposable]
            [czlab.wabbit.sys Execvisor]
            [czlab.wabbit.base Cljshim]
@@ -111,6 +112,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn- handleDep
+  ""
+  [^Execvisor co out dep]
+  (let [kee (keyword (juid))]
+    (log/debug "adding a pluglet dependency: %s" dep)
+    (assoc! out
+            kee
+            (plug<> co dep kee {}))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn- xrefPlugs<>
   ""
   [^Execvisor co plugs]
@@ -122,8 +134,12 @@
                   enabled?]} cfg]
          (if-not (or (false? enabled?)
                      (nil? pluggable))
-           (let [v (plug<> co pluggable k cfg)]
-             (assoc! %1 (.id v) v))
+           (let [v (plug<> co pluggable k cfg)
+                 deps (:deps (.spec v))]
+             (-> (reduce
+                   (fn [m d]
+                     (handleDep co m d)) %1 deps)
+                 (assoc! (.id v) v)))
            %1))
       plugs)
     (.setv (.getx co) :plugs)))
@@ -183,12 +199,34 @@
         (trap! ConfigError
                "Invalid data-model schema ")))
     (.activate ^Activable (.core co) nil)
-    (xrefPlugs<> co (:plugs conf))
+    (xrefPlugs<> co (:plugins conf))
     (if (hgl? mcz) (.call rts mcz))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- enableJmxMonitor
+  ""
+  ^JmxPluglet
+  [^Execvisor co]
+  (let
+    [{:keys [jmx] :as conf} (.config co)
+     api :czlab.wabbit.plugs.jmx.core/JmxMonitor]
+    (when-not (false? (:enabled? jmx))
+      (when-some
+        [j (cast? JmxPluglet
+                  (.callEx (.cljrt co)
+                           (strKW api)
+                           (vargs* Object co)))]
+        (doto j
+          (.init jmx)
+          (.start nil)
+          (.reg co
+                "czlab"
+                "execvisor"
+                ["root=wabbit"]))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(.reg jmx co "czlab" "execvisor" ["root=wabbit"])
 ;;
 (defn execvisor<>
   "Create an Execvisor"
@@ -245,13 +283,18 @@
             (init2 this (.intern impl))))
 
         (stop [_]
-          (let [svcs (.getv impl :plugs)]
+          (let [svcs (.getv impl :plugs)
+                jmx (.getv impl :jmx)]
+            (some-> ^Pluglet jmx (.stop))
             (log/info "execvisor stopping puglets...")
             (doseq [[k v] svcs] (.stop ^Pluglet v))
             (log/info "execvisor stopped")))
 
         (dispose [this]
-          (let [svcs (.getv impl :plugs)]
+          (let [svcs (.getv impl :plugs)
+                jmx (.getv impl :jmx)]
+            (some-> ^Pluglet jmx (.dispose))
+            (.unsetv impl :jmx)
             (log/info "execvisor disposing puglets...")
             (doseq [[k v] svcs]
               (.dispose ^Pluglet v))
@@ -259,7 +302,10 @@
             (log/info "execvisor disposed")))
 
         (start [this _]
-          (let [svcs (.getv impl :plugs)]
+          (let [svcs (.getv impl :plugs)
+                jmx (if (not-empty svcs)
+                      (enableJmxMonitor this))]
+            (.setv impl :jmx jmx)
             (log/info "execvisor starting puglets...")
             (doseq [[k v] svcs]
               (log/info "puglet: %s to start" k)

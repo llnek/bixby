@@ -8,34 +8,22 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.ctl;
+package czlab.wabbit.jmx;
 
-import czlab.wabbit.base.Component;
-import czlab.wabbit.sys.Execvisor;
-import czlab.jasal.Triggerable;
-import czlab.jasal.LifeCycle;
-import czlab.jasal.Config;
+import javax.management.ObjectName;
+import czlab.jasal.Resetable;
+import czlab.wabbit.ctl.Pluglet;
 
 /**
  * @author Kenneth Leung
  */
-public interface Pluglet extends Component, LifeCycle, Config {
+public interface JmxPluglet extends Pluglet, Resetable {
 
-  /**
-   */
-  public void hold(Triggerable t, long millis);
+  /**/
+  public ObjectName reg(Object obj, String domain, String nname, Object paths);
 
-  /**
-   */
-  public Object spec();
-
-  /**
-   */
-  public boolean isEnabled();
-
-  /**
-   */
-  public Execvisor server();
+  /**/
+  public void dereg(ObjectName nname);
 
 }
 

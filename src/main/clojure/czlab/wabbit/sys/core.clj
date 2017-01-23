@@ -11,6 +11,8 @@
 
   czlab.wabbit.sys.core
 
+  (:gen-class)
+
   (:require [czlab.basal.resources :refer [loadResource getResource]]
             [czlab.basal.io :refer [closeQ readAsStr writeFile]]
             [czlab.wabbit.sys.exec :refer [execvisor<>]]
@@ -153,6 +155,17 @@
     (log/info "vm shut down")
     (log/info "(bye)")
     (shutdown-agents)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn -main
+  ""
+  [& args]
+  (let
+    [cwd (getCwd)
+     dir (io/file cwd)]
+    (sysProp! "wabbit.user.dir" (fpath dir))
+    (startViaCons dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
