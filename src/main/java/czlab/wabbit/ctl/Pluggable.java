@@ -10,13 +10,14 @@
 
 package czlab.wabbit.ctl;
 
+import czlab.jasal.Hierarchial;
 import czlab.jasal.LifeCycle;
 import czlab.jasal.Config;
 
 /**
  * @author Kenneth Leung
  */
-public interface Pluggable extends LifeCycle, Config {
+public interface Pluggable extends LifeCycle, Hierarchial, Config {
 
   /**
    */

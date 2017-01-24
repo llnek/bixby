@@ -96,30 +96,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- plug<>
+(defn- plug!
   ""
   ^Pluglet
-  [^Execvisor co plug nm cfg0]
-  (let
-    [svc (doto
-           (pluglet<> co plug nm)
-           (.init cfg0))
-     cfg0 (.config svc)]
-    (log/info "preparing puglet %s..." svc)
-    (log/info "config params=\n%s" cfg0)
-    (log/info "puglet - ok")
-    svc))
+  [^Execvisor co ^Pluglet p cfg0]
+  (log/info "preparing puglet %s..." p)
+  (log/info "config params=\n%s" cfg0)
+  (.init p cfg0)
+  (log/info "puglet - ok")
+  p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- handleDep
   ""
   [^Execvisor co out dep]
-  (let [kee (keyword (juid))]
-    (log/debug "adding a pluglet dependency: %s" dep)
-    (assoc! out
-            kee
-            (plug<> co dep kee {}))))
+  (let [nm (keyword (juid))
+        v (plugletViaType<> co dep nm)
+        v (plug! co v nil)]
+    (assoc! out (.id v) v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -130,11 +125,12 @@
     (preduce<map>
       #(let
          [[k cfg] %2
-          {:keys [pluggable
+          {:keys [$pluggable
                   enabled?]} cfg]
          (if-not (or (false? enabled?)
-                     (nil? pluggable))
-           (let [v (plug<> co pluggable k cfg)
+                     (nil? $pluggable))
+           (let [v (plugletViaType<> co $pluggable k)
+                 v (plug! co v cfg)
                  deps (:deps (.spec v))]
              (-> (reduce
                    (fn [m d]
