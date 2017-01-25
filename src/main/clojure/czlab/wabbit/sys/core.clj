@@ -137,7 +137,7 @@
     (doto->> rc
              (test-some "base resource" )
              (I18N/setBase ))
-    (log/info "wabbit's i18n#base found and loaded")
+    (log/info "wabbit's i18n#base loaded")
     (primodial ctx)
     (doto fp
       (writeFile (processPid))

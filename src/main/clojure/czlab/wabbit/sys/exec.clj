@@ -174,9 +174,10 @@
      res (->>
            (format c-rcprops (.getLanguage ^Locale locale))
            (io/file (.homeDir co) dn-etc))]
-    (if (fileRead? res)
+    (when (fileRead? res)
       (->> (loadResource res)
-           (I18N/setBundle pid)))
+           (I18N/setBundle pid))
+      (log/info "loaded i18n resources"))
     (log/info "processing db-defs...")
     (doto->>
       (maybeInitDBs co conf)
@@ -268,7 +269,7 @@
         (init [this arg]
           (let [{:keys [encoding homeDir]} arg]
             (sysProp! "file.encoding" encoding)
-            (logcomp "comp->init" this)
+            (logcomp "init" this)
             (.copyEx impl arg)
             (-> (io/file homeDir
                          dn-etc
