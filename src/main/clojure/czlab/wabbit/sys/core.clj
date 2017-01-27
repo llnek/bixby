@@ -32,6 +32,7 @@
   (:import [czlab.jasal Startable CU Muble I18N]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.sys Execvisor]
+           [czlab.wabbit.base Cljshim]
            [java.io File]
            [java.util ResourceBundle Locale]))
 
@@ -65,9 +66,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hookShutdown
+(defn- hookShutDown
   ""
-  [a b c] )
+  [gist cb cfg]
+  (let [rt (Cljshim/newrt (getCldr) "h")]
+    (.callEx rt
+             "czlab.wabbit.plugs.io.http/Discarder!"
+             (vargs* Object cb cfg))
+    (.close rt)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -76,14 +82,14 @@
   [^Atom gist]
   (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
                   (.split ":"))
-        m {}
+        m {:host "localhost" :port 4444}
         m (if (hgl? h) (assoc m :host h) m)
-        m (if (hgl? p) (assoc m :port (convLong p 4444)))]
+        m (if (hgl? p) (assoc m :port (convLong p 4444)) m)]
     (log/info "enabling remote shutdown hook: %s" m)
     (swap! gist
            assoc
            :killSvr
-           (hookShutdown gist #(stopCLI gist) m))))
+           (hookShutDown gist #(stopCLI gist) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
