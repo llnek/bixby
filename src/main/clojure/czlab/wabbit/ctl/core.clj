@@ -30,12 +30,14 @@
 ;;
 (defn- reifyPlug
   ""
-  ^Pluggable
-  [^Cljshim clj emType]
-  (let [emStr (strKW emType)]
+  [exec emType]
+  (let [clj (.cljrt ^Execvisor exec)
+        emStr (strKW emType)]
     (if (neg? (.indexOf emStr "/"))
       nil
-      (.call clj emStr))))
+      (.callEx clj
+               emStr
+               (vargs* Object exec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -98,8 +100,17 @@
   "Create a Service"
   ^Pluglet
   [^Execvisor parObj emType emAlias]
-  (pluglet<> parObj
-             (reifyPlug (.cljrt parObj) emType) emAlias))
+
+  (let [u (reifyPlug parObj emType)]
+    (cond
+      (inst? Pluggable u)
+      (pluglet<> parObj u emAlias)
+      (inst? Pluglet u)
+      u
+      :else
+      (throw
+        (ClassCastException.
+          "Must be Pluggable or Pluglet")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

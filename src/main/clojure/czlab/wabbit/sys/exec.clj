@@ -121,24 +121,34 @@
 (defn- xrefPlugs<>
   ""
   [^Execvisor co plugs]
-  (->>
-    (preduce<map>
-      #(let
-         [[k cfg] %2
-          {:keys [$pluggable
-                  enabled?]} cfg]
-         (if-not (or (false? enabled?)
-                     (nil? $pluggable))
-           (let [v (plugletViaType<> co $pluggable k)
-                 v (plug! co v cfg)
-                 deps (:deps (.spec v))]
-             (-> (reduce
-                   (fn [m d]
-                     (handleDep co m d)) %1 deps)
-                 (assoc! (.id v) v)))
-           %1))
-      plugs)
-    (.setv (.getx co) :plugs)))
+  (let
+    [ps
+     (preduce<map>
+       #(let
+          [[k cfg] %2
+           {:keys [$pluggable
+                   enabled?]} cfg]
+          (if-not (or (false? enabled?)
+                      (nil? $pluggable))
+            (let [v (plugletViaType<> co $pluggable k)
+                  v (plug! co v cfg)
+                  deps (:deps (.spec v))]
+              (-> (reduce
+                    (fn [m d]
+                      (handleDep co m d)) %1 deps)
+                  (assoc! (.id v) v)))
+            %1))
+       plugs)]
+    (->>
+      (let [api :czlab.wabbit.plugs.jmx.core/JmxMonitor
+            {:keys [jmx] :as conf} (.config co)]
+        (if (and (not (false? (:enabled? jmx)))
+                 (not-empty ps))
+          (let [x (plugletViaType<> co api :$$jmx)
+                x (plug! co x jmx)]
+            (assoc ps (.id x) x))
+          ps))
+      (.setv (.getx co) :plugs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -200,29 +210,6 @@
     (if (hgl? mcz) (.call rts mcz))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- enableJmxMonitor
-  ""
-  ^JmxPluglet
-  [^Execvisor co]
-  (let
-    [{:keys [jmx] :as conf} (.config co)
-     api :czlab.wabbit.plugs.jmx.core/JmxMonitor]
-    (when-not (false? (:enabled? jmx))
-      (when-some
-        [j (cast? JmxPluglet
-                  (.callEx (.cljrt co)
-                           (strKW api)
-                           (vargs* Object co)))]
-        (doto j
-          (.init jmx)
-          (.start nil)
-          (.reg co
-                "czlab"
-                "execvisor"
-                ["root=wabbit"]))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn execvisor<>
@@ -280,18 +267,13 @@
             (init2 this (.intern impl))))
 
         (stop [_]
-          (let [svcs (.getv impl :plugs)
-                jmx (.getv impl :jmx)]
-            (some-> ^Pluglet jmx (.stop))
+          (let [svcs (.getv impl :plugs)]
             (log/info "execvisor stopping puglets...")
             (doseq [[k v] svcs] (.stop ^Pluglet v))
             (log/info "execvisor stopped")))
 
         (dispose [this]
-          (let [svcs (.getv impl :plugs)
-                jmx (.getv impl :jmx)]
-            (some-> ^Pluglet jmx (.dispose))
-            (.unsetv impl :jmx)
+          (let [svcs (.getv impl :plugs)]
             (log/info "execvisor disposing puglets...")
             (doseq [[k v] svcs]
               (.dispose ^Pluglet v))
@@ -300,13 +282,17 @@
 
         (start [this _]
           (let [svcs (.getv impl :plugs)
-                jmx (if (not-empty svcs)
-                      (enableJmxMonitor this))]
-            (.setv impl :jmx jmx)
+                jmx (:$$jmx svcs)]
             (log/info "execvisor starting puglets...")
             (doseq [[k v] svcs]
               (log/info "puglet: %s to start" k)
               (.start ^Pluglet v nil))
+            (some-> ^JmxPluglet
+                    jmx
+                    (.reg this
+                          "czlab"
+                          "execvisor"
+                          ["root=wabbit"]))
             (log/info "execvisor started"))))
 
       {:typeid ::Execvisor})))
