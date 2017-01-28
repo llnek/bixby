@@ -59,8 +59,10 @@
       (log/info "remote hook closed - ok")
       (log/info "wabbit is shutting down...")
       (log/info "about to stop wabbit...")
-      (if (some? exec)
-        (.stop ^Startable exec))
+      (when-some
+        [e (cast? Execvisor exec)]
+        (.stop e)
+        (.dispose e))
       (shutdown-agents)
       (log/info "wabbit stopped"))))
 
@@ -70,10 +72,12 @@
   ""
   [gist cb cfg]
   (let [rt (Cljshim/newrt (getCldr) "h")]
-    (.callEx rt
-             "czlab.wabbit.plugs.io.http/Discarder!"
-             (vargs* Object cb cfg))
-    (.close rt)))
+    (try
+      (.callEx rt
+               "czlab.wabbit.plugs.io.http/Discarder!"
+               (vargs* Object cb cfg))
+      (finally
+        (.close rt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
