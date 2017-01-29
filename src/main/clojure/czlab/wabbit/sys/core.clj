@@ -86,7 +86,7 @@
   [^Atom gist]
   (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
                   (.split ":"))
-        m {:host "localhost" :port 4444}
+        m {:host "localhost" :port 4444 :threads 2}
         m (if (hgl? h) (assoc m :host h) m)
         m (if (hgl? p) (assoc m :port (convLong p 4444)) m)]
     (log/info "enabling remote shutdown hook: %s" m)
