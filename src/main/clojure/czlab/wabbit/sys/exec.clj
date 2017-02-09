@@ -33,8 +33,8 @@
         [czlab.wabbit.ctl.core])
 
   (:import [czlab.wabbit.ctl Pluggable Pluglet PlugMsg PlugError]
+           [czlab.jasal Context I18N Activable Disposable]
            [czlab.wabbit.jmx JmxPluglet]
-           [czlab.jasal I18N Activable Disposable]
            [czlab.wabbit.sys Execvisor]
            [czlab.wabbit.base Cljshim]
            [czlab.wabbit.base Gist ConfigError]
@@ -61,45 +61,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBPool
-  ""
-  ^JdbcPool
-  [^Execvisor co gid]
-  (get
-    (.getv (.getx co) :dbps)
-    (keyword (stror gid dft-dbid))))
+  "" ^JdbcPool [co gid]
+  ((keyword (stror gid dft-dbid))
+   (:dbps (.. ^Context co getx intern))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBAPI
-  ""
-  ^DbApi
-  [^Execvisor co ^String gid]
+  "" ^DbApi [co gid]
   (when-some
     [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
     (dbopen<+> p
-               (.getv (.getx co) :schema))))
+               (:schema (.. ^Context co getx intern)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- releaseSysResources
-  ""
-  [^Execvisor co]
+(defn- relSysRes
+  "" [^Execvisor co]
   (log/info "execvisor releasing system resources")
   (if-some [sc (.core co)]
-    (.dispose ^Disposable sc))
+    (. ^Disposable sc dispose))
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
     (log/debug "shutting down dbpool %s" (name k))
     (.shutdown ^JdbcPool v))
-  (some-> (.cljrt co) (.close)))
+  (some-> (.cljrt co) .close))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- plug!
-  ""
-  ^Pluglet
-  [^Execvisor co ^Pluglet p cfg0]
+(defn- plug! "" ^Pluglet [co ^Pluglet p cfg0]
   (log/info "preparing puglet %s..." p)
   (log/info "config params=\n%s" cfg0)
   (.init p cfg0)
@@ -108,9 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleDep
-  ""
-  [^Execvisor co out dep]
+(defn- handleDep "" [co out dep]
   (let [nm (keyword (juid))
         v (plugletViaType<> co dep nm)
         v (plug! co v nil)]
@@ -119,8 +108,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- xrefPlugs<>
-  ""
-  [^Execvisor co plugs]
+  "" [^Execvisor co plugs]
   (let
     [ps
      (preduce<map>
@@ -142,7 +130,7 @@
     (->>
       (let [api :czlab.wabbit.plugs.jmx.core/JmxMonitor
             {:keys [jmx] :as conf} (.config co)]
-        (if (and (not (false? (:enabled? jmx)))
+        (if (and (!false? (:enabled? jmx))
                  (not-empty ps))
           (let [x (plugletViaType<> co api :$$jmx)
                 x (plug! co x jmx)]
@@ -153,12 +141,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeInitDBs
-  ""
-  [^Execvisor co conf]
+  "" [^Execvisor co conf]
   (preduce<map>
     #(let
        [[k v] %2]
-       (if-not (false? (:enabled? v))
+       (if (!false? (:enabled? v))
          (let
            [pwd (passwd<> (:passwd v)
                           (.pkey co))
@@ -172,9 +159,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init2
-  ""
-  [^Execvisor co {:keys [locale conf] :as env}]
+(defn- init2 "" [^Execvisor co
+                 {:keys [locale conf] :as env}]
   (let
     [mcz (strKW (get-in conf
                         [:info :main]))
@@ -261,8 +247,8 @@
             (-> (io/file homeDir
                          dn-etc
                          "mime.properties")
-                (io/as-url)
-                (setupCache ))
+                io/as-url
+                setupCache)
             (log/info "loaded mime#cache - ok")
             (init2 this (.intern impl))))
 
@@ -277,7 +263,7 @@
             (log/info "execvisor disposing puglets...")
             (doseq [[k v] svcs]
               (.dispose ^Pluglet v))
-            (releaseSysResources this)
+            (relSysRes this)
             (log/info "execvisor disposed")))
 
         (start [this _]
@@ -299,5 +285,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

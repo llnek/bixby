@@ -45,9 +45,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stopCLI
-  "Stop all apps and services"
-  [^Atom gist]
+(defn- stopCLI "" [gist]
   (let [{:keys [pidFile
                 exec
                 killSvr]} @gist]
@@ -68,9 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hookShutDown
-  ""
-  [gist cb cfg]
+(defn- hookToKill "" [gist cb cfg]
   (let [rt (Cljshim/newrt (getCldr) "h")]
     (try
       (.callEx rt
@@ -81,9 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- enableRemoteShutdown
-  "Listen on a port for remote kill command"
-  [^Atom gist]
+(defn- enableKillHook "" [gist]
   (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
                   (.split ":"))
         m {:host "localhost" :port 4444 :threads 2}
@@ -93,13 +87,11 @@
     (swap! gist
            assoc
            :killSvr
-           (hookShutDown gist #(stopCLI gist) m))))
+           (hookToKill gist #(stopCLI gist) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
-(defn- primodial
-  ""
-  [^Atom gist]
+(defn- primodial "" [gist]
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
@@ -120,23 +112,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn startViaCons
-  ""
-  [cwd]
+(defn startViaCons "" [cwd]
   (let
     [_ (precondFile (io/file cwd cfg-pod-cf))
      {:keys [locale info] :as conf}
      (slurpXXXConf cwd cfg-pod-cf true)
      cn (stror (:country locale) "US")
      ln (stror (:lang locale) "en")
-     verStr (str (some-> (loadResource c-verprops)
-                         (.getString "version")))
+     verStr (some-> c-verprops
+                    loadResource (.getString "version"))
      fp (io/file cwd "wabbit.pid")
      loc (Locale. ln cn)
      rc (getResource c-rcb loc)
      ctx (atom
            {:encoding (stror (:encoding info) "utf-8")
-            :wabbit {:version verStr}
+            :wabbit {:version (str verStr) }
             :homeDir (io/file cwd)
             :pidFile fp
             :conf conf
@@ -146,14 +136,14 @@
     (log/info "wabbit.version = %s" verStr)
     (doto->> rc
              (test-some "base resource" )
-             (I18N/setBase ))
+             I18N/setBase )
     (log/info "wabbit's i18n#base loaded")
     (primodial ctx)
     (doto fp
       (writeFile (processPid))
       (.deleteOnExit ))
     (log/info "wrote wabbit.pid - ok")
-    (enableRemoteShutdown ctx)
+    (enableKillHook ctx)
     (exitHook #(stopCLI ctx))
     (log/info "added shutdown hook")
     (log/info "app-loader: %s" (type cz))
@@ -168,9 +158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn -main
-  ""
-  [& args]
+(defn -main "" [& args]
   (let
     [cwd (getCwd)
      dir (io/file cwd)]

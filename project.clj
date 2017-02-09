@@ -52,8 +52,7 @@
             [lein-pprint "1.1.2"]]
 
   :profiles {:provided {:dependencies
-                        [;;[org.clojure/clojurescript "1.9.293" :scope "provided"]
-                         [org.clojure/clojure "1.8.0" :scope "provided"]
+                        [[org.clojure/clojure "1.8.0" :scope "provided"]
                          [net.mikera/cljunit "0.6.0" :scope "test"]
                          [junit/junit "4.12" :scope "test"]
                          [codox/codox "0.10.2" :scope "provided"]]}
@@ -78,5 +77,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

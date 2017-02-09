@@ -29,12 +29,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- reifyPlug
-  ""
-  [exec emType]
-  (let [clj (.cljrt ^Execvisor exec)
+  "" [exec emType]
+  (let [clj (. ^Execvisor exec cljrt)
         emStr (strKW emType)]
-    (if (neg? (.indexOf emStr "/"))
-      nil
+    (if-not (neg? (.indexOf emStr "/"))
       (.callEx clj
                emStr
                (vargs* Object exec)))))
@@ -51,8 +49,7 @@
         timer (atom nil)]
     (with-meta
       (reify Pluglet
-        (isEnabled [this] (not (false?
-                                 (:enabled? (.config this)))))
+        (isEnabled [this] (!false? (:enabled? (.config this))))
         (version [_] (str (get-in
                             (.spec plug)
                             [:info :version])))
@@ -61,16 +58,16 @@
         (server [this] parObj)
         (getx [_] impl)
         (hold [_ trig millis]
-          (if (and (some? @timer)
+          (if (and @timer
                    (spos? millis))
             (let [k (tmtask<>
                       #(.fire trig nil))]
-              (.schedule ^Timer @timer k millis)
-              (.setTrigger trig k))))
+              (. ^Timer @timer schedule k millis)
+              (. trig setTrigger k))))
         (id [_] emAlias)
         (dispose [_]
           (log/info "puglet [%s] is being disposed" emAlias)
-          (some-> ^Timer @timer (.cancel))
+          (some-> ^Timer @timer .cancel)
           (rset! timer)
           (.dispose plug)
           (log/info "puglet [%s] disposed - ok" emAlias))
@@ -88,7 +85,7 @@
           (log/info "puglet [%s] started - ok" emAlias))
         (stop [_]
           (log/info "puglet [%s] is stopping..." emAlias)
-          (some-> ^Timer @timer (.cancel))
+          (some-> ^Timer @timer .cancel)
           (rset! timer)
           (.stop plug)
           (log/info "puglet [%s] stopped - ok" emAlias)))
@@ -114,5 +111,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 
