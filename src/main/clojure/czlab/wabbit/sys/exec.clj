@@ -193,7 +193,7 @@
                "Invalid data-model schema ")))
     (.activate ^Activable (.core co) nil)
     (xrefPlugs<> co (:plugins conf))
-    (if (hgl? mcz) (.call rts mcz))
+    (if (hgl? mcz) (.callEx rts mcz (vargs* Object co)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
