@@ -26,12 +26,6 @@ public interface PlugMsg extends Identifiable, Disposable {
 
   /**
    */
-  default public Object socket() {
-    return null;
-  }
-
-  /**
-   */
   public Pluglet source();
 
   /**
