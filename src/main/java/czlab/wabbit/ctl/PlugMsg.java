@@ -20,12 +20,6 @@ public interface PlugMsg extends Identifiable, Disposable {
 
   /**
    */
-  default public boolean checkAuthenticity() {
-    return false;
-  }
-
-  /**
-   */
   public Pluglet source();
 
   /**
