@@ -29,13 +29,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- reifyPlug
-  "" [exec emType]
+  "" [exec emType emAlias]
   (let [clj (. ^Execvisor exec cljrt)
         emStr (strKW emType)]
     (if-not (neg? (.indexOf emStr "/"))
       (.callEx clj
                emStr
-               (vargs* Object exec)))))
+               (vargs* Object exec emAlias)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -98,7 +98,7 @@
   ^Pluglet
   [^Execvisor parObj emType emAlias]
 
-  (let [u (reifyPlug parObj emType)]
+  (let [u (reifyPlug parObj emType emAlias)]
     (cond
       (inst? Pluggable u)
       (pluglet<> parObj u emAlias)

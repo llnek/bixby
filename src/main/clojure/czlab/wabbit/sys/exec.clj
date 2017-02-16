@@ -99,10 +99,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- handleDep "" [co out dep]
-  (let [nm (keyword (juid))
-        v (plugletViaType<> co dep nm)
-        v (plug! co v nil)]
+(defn- handleDep "" [co out [dn dv]]
+  (log/debug "handleDep: %s %s" dn dv)
+  (let [[dep cfg] dv
+        v (plugletViaType<> co dep (keyword dn))
+        v (plug! co v cfg)]
     (assoc! out (.id v) v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,6 +122,7 @@
             (let [v (plugletViaType<> co $pluggable k)
                   v (plug! co v cfg)
                   deps (:deps (.spec v))]
+              (log/debug "pluglet %s: deps = %s" k deps)
               (-> (reduce
                     (fn [m d]
                       (handleDep co m d)) %1 deps)
@@ -132,7 +134,7 @@
             {:keys [jmx] :as conf} (.config co)]
         (if (and (!false? (:enabled? jmx))
                  (not-empty ps))
-          (let [x (plugletViaType<> co api :$$jmx)
+          (let [x (plugletViaType<> co api :$jmx)
                 x (plug! co x jmx)]
             (assoc ps (.id x) x))
           ps))
