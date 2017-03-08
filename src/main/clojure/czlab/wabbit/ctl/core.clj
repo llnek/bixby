@@ -14,7 +14,6 @@
   (:require [czlab.basal.logging :as log])
 
   (:use [czlab.wabbit.base.core]
-        [czlab.basal.consts]
         [czlab.basal.core]
         [czlab.basal.str])
 
@@ -40,9 +39,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn pluglet<>
-  "Create a Service"
-  ^Pluglet
-  [^Execvisor parObj ^Pluggable plug emAlias]
+  "Create a Service" ^Pluglet
+  [parObj ^Pluggable plug emAlias]
   (let [emType (get-in (.spec plug)
                        [:conf :$pluggable])
         impl (muble<>)
@@ -94,15 +92,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn plugletViaType<>
-  "Create a Service"
-  ^Pluglet
-  [^Execvisor parObj emType emAlias]
+  "Create a Service" ^Pluglet
+  [execvisor emType emAlias]
 
-  (let [u (reifyPlug parObj emType emAlias)]
+  (let [u (reifyPlug execvisor emType emAlias)]
     (cond
-      (inst? Pluggable u)
-      (pluglet<> parObj u emAlias)
-      (inst? Pluglet u)
+      (ist? Pluggable u)
+      (pluglet<> execvisor u emAlias)
+      (ist? Pluglet u)
       u
       :else
       (throw

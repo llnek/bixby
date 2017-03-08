@@ -28,6 +28,7 @@
 
   (:use [czlab.wabbit.base.core]
         [czlab.basal.core]
+        [clojure.walk]
         [czlab.basal.str]
         [czlab.basal.io]
         [czlab.wabbit.ctl.core])
@@ -56,14 +57,14 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^String [^PlugMsg evt] (.. evt source server pkey))
+  ^String [evt] (some.. ^PlugMsg evt source server pkey))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBPool
   "" ^JdbcPool [co gid]
   ((keyword (stror gid dft-dbid))
-   (:dbps (.. ^Context co getx intern))))
+   (:dbps (some.. ^Context co getx intern))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,27 +74,26 @@
     [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
     (dbopen<+> p
-               (:schema (.. ^Context co getx intern)))))
+               (:schema (some.. ^Context co getx intern)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- relSysRes
   "" [^Execvisor co]
   (log/info "execvisor releasing system resources")
-  (if-some [sc (.core co)]
-    (. ^Disposable sc dispose))
+  (some-> ^Disposable (.core co) .dispose)
   (doseq [[k v]
           (.getv (.getx co) :dbps)]
-    (log/debug "shutting down dbpool %s" (name k))
+    (log/debug "closing dbpool %s" (name k))
     (.shutdown ^JdbcPool v))
   (some-> (.cljrt co) .close))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- plug! "" ^Pluglet [co ^Pluglet p cfg0]
+(defn- plug! "" ^Pluglet [co p cfg0]
   (log/info "preparing puglet %s..." p)
   (log/info "config params=\n%s" cfg0)
-  (.init p cfg0)
+  (. ^Pluglet p init cfg0)
   (log/info "puglet - ok")
   p)
 
@@ -121,7 +121,7 @@
                       (nil? $pluggable))
             (let [v (plugletViaType<> co $pluggable k)
                   v (plug! co v cfg)
-                  deps (:deps (.spec v))]
+                  deps (:deps (some-> v .spec))]
               (log/debug "pluglet %s: deps = %s" k deps)
               (-> (reduce
                     (fn [m d]
@@ -193,7 +193,7 @@
         (.setv ctx :schema sc)
         (trap! ConfigError
                "Invalid data-model schema ")))
-    (.activate ^Activable (.core co) nil)
+    (. ^Activable (.core co) activate {})
     (xrefPlugs<> co (:plugins conf))
     (if (hgl? mcz) (.callEx rts mcz (vargs* Object co)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
@@ -201,13 +201,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn execvisor<>
-  "Create an Execvisor"
-  ^Execvisor
-  []
+  "Create an Execvisor" ^Execvisor []
+
   (let
     [pid (str "exec#" (seqint2))
-     cpu (scheduler<> pid)
      impl (muble<> {:plugs {}})
+     cpu (scheduler<> pid)
      rts (Cljshim/newrt (getCldr) pid)]
     (with-meta
       (reify Execvisor
@@ -218,8 +217,10 @@
         (dftDbAPI [this] (maybeGetDBAPI this ""))
 
         (pkeyBytes [this] (bytesify (.pkey this)))
-        (pkey [_] (->> [:info :digest]
-                       (get-in (.getv impl :conf))))
+        (pkey [_] (->> (get-in (.getv impl :conf)
+                               [:info :digest])
+                       str
+                       .toCharArray))
 
         (cljrt [_] rts)
         (version [_] (->> [:info :version]
@@ -274,7 +275,7 @@
             (log/info "execvisor starting puglets...")
             (doseq [[k v] svcs]
               (log/info "puglet: %s to start" k)
-              (.start ^Pluglet v nil))
+              (. ^Pluglet v start {}))
             (some-> ^JmxPluglet
                     jmx
                     (.reg this

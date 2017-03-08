@@ -26,8 +26,7 @@
   (:use [czlab.wabbit.base.core]
         [czlab.basal.process]
         [czlab.basal.core]
-        [czlab.basal.str]
-        [czlab.basal.consts])
+        [czlab.basal.str])
 
   (:import [czlab.jasal Startable CU Muble I18N]
            [clojure.lang Atom APersistentMap]
@@ -46,6 +45,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- stopCLI "" [gist]
+
   (let [{:keys [pidFile
                 exec
                 killSvr]} @gist]
@@ -55,10 +55,9 @@
       (log/info "unhooking remote shutdown...")
       (if (fn? killSvr) (killSvr))
       (log/info "remote hook closed - ok")
-      (log/info "wabbit is shutting down...")
       (log/info "about to stop wabbit...")
-      (when-some
-        [e (cast? Execvisor exec)]
+      (log/info "wabbit is shutting down...")
+      (when-some [e (cast? Execvisor exec)]
         (.stop e)
         (.dispose e))
       (shutdown-agents)
@@ -67,19 +66,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- hookToKill "" [gist cb cfg]
-  (let [rt (Cljshim/newrt (getCldr) "h")]
-    (try
-      (.callEx rt
-               "czlab.wabbit.plugs.io.http/Discarder!"
-               (vargs* Object cb cfg))
-      (finally
-        (.close rt)))))
+  (let-try [rt (Cljshim/newrt (getCldr))]
+    (. rt callEx
+       (str "czlab.wabbit.plugs."
+            "io.http/Discarder!")
+       (vargs* Object cb cfg)) (finally (.close rt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- enableKillHook "" [gist]
-  (let [[h p] (-> (str (sysProp "wabbit.kill.port"))
-                  (.split ":"))
+  (let [[h p] (-> "wabbit.kill.port" sysProp str (.split ":"))
         m {:host "localhost" :port 4444 :threads 2}
         m (if (hgl? h) (assoc m :host h) m)
         m (if (hgl? p) (assoc m :port (convLong p 4444)) m)]
@@ -95,19 +91,17 @@
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
-  (log/info "execvisor = %s"
-            "czlab.wabbit.sys.Execvisor")
-  (let [execv (execvisor<>)]
+  (log/info "exec = czlab.wabbit.sys.Execvisor")
+  (let [e (execvisor<>)]
     (swap! gist
            assoc
-           :exec execv
+           :exec e
            :stop! #(stopCLI gist))
-    (.init execv @gist)
+    (.init e @gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
-              "about to start wabbit..."
-              (str<> 78 \*))
-    (.start execv nil)
+              "starting wabbit..." (str<> 78 \*))
+    (.start e {})
     (log/info "wabbit started")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,9 +133,7 @@
              I18N/setBase )
     (log/info "wabbit's i18n#base loaded")
     (primodial ctx)
-    (doto fp
-      (writeFile (processPid))
-      (.deleteOnExit ))
+    (doto fp (writeFile (processPid)) .deleteOnExit)
     (log/info "wrote wabbit.pid - ok")
     (enableKillHook ctx)
     (exitHook #(stopCLI ctx))

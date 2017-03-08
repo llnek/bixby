@@ -19,7 +19,7 @@ public interface KeyAccess {
   public byte[] pkeyBytes();
 
   /**/
-  public String pkey();
+  public char[] pkey();
 
 }
 
