@@ -216,7 +216,11 @@
         (dftDbPool [this] (maybeGetDBPool this ""))
         (dftDbAPI [this] (maybeGetDBAPI this ""))
 
-        (pkeyBytes [this] (bytesify (.pkey this)))
+        (pkeyBytes [this] (->> (get-in (.getv impl :conf)
+                                       [:info :digest])
+                               str
+                               bytesify))
+
         (pkey [_] (->> (get-in (.getv impl :conf)
                                [:info :digest])
                        str
