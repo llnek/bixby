@@ -219,7 +219,7 @@
         (pkeyBytes [this] (->> (get-in (.getv impl :conf)
                                        [:info :digest])
                                str
-                               bytesify))
+                               bytesit))
 
         (pkey [_] (->> (get-in (.getv impl :conf)
                                [:info :digest])
