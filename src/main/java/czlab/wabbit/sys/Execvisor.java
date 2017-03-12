@@ -11,7 +11,7 @@
 package czlab.wabbit.sys;
 
 import czlab.wabbit.base.Component;
-import czlab.wabbit.base.Cljshim;
+import czlab.basal.Cljrt;
 import czlab.jasal.LifeCycle;
 import czlab.jasal.Config;
 import czlab.jasal.Schedulable;
@@ -46,7 +46,7 @@ public interface Execvisor extends Component
   public void kill9();
 
   /**/
-  public Cljshim cljrt();
+  public Cljrt cljrt();
 
   /**/
   public Schedulable core();

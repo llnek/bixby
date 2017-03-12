@@ -31,7 +31,7 @@
   (:import [czlab.jasal Startable CU Muble I18N]
            [clojure.lang Atom APersistentMap]
            [czlab.wabbit.sys Execvisor]
-           [czlab.wabbit.base Cljshim]
+           [czlab.basal Cljrt]
            [java.io File]
            [java.util ResourceBundle Locale]))
 
@@ -66,7 +66,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- hookToKill "" [gist cb cfg]
-  (let-try [rt (Cljshim/newrt (getCldr))]
+  (let-try [rt (Cljrt/newrt (getCldr))]
     (. rt callEx
        (str "czlab.wabbit.plugs."
             "io.http/Discarder!")

@@ -37,12 +37,12 @@
            [czlab.jasal Context I18N Activable Disposable]
            [czlab.wabbit.jmx JmxPluglet]
            [czlab.wabbit.sys Execvisor]
-           [czlab.wabbit.base Cljshim]
            [czlab.wabbit.base Gist ConfigError]
            [czlab.horde Schema JdbcPool DbApi]
            [java.security SecureRandom]
            [java.io File StringWriter]
            [java.util Date Locale]
+           [czlab.basal Cljrt]
            [java.net URL]
            [clojure.lang Atom]))
 
@@ -193,7 +193,7 @@
         (.setv ctx :schema sc)
         (trap! ConfigError
                "Invalid data-model schema ")))
-    (. ^Activable (.core co) activate {})
+    (. ^Activable (.core co) activate)
     (xrefPlugs<> co (:plugins conf))
     (if (hgl? mcz) (.callEx rts mcz (vargs* Object co)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
@@ -207,7 +207,7 @@
     [pid (str "exec#" (seqint2))
      impl (muble<> {:plugs {}})
      cpu (scheduler<> pid)
-     rts (Cljshim/newrt (getCldr) pid)]
+     rts (Cljrt/newrt (getCldr) pid)]
     (with-meta
       (reify Execvisor
 

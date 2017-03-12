@@ -19,7 +19,6 @@
 
   (:import [czlab.wabbit.ctl Pluglet Pluggable]
            [czlab.wabbit.sys Execvisor]
-           [czlab.wabbit.base Cljshim]
            [java.util Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
