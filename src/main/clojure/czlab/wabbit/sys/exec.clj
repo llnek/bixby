@@ -254,7 +254,6 @@
             (-> (io/file homeDir
                          dn-etc
                          "mime.properties")
-                io/as-url
                 setupCache)
             (log/info "loaded mime#cache - ok")
             (init2 this (.intern impl))))

@@ -106,47 +106,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defn startViaConfig ""
+
+  ([cwd confObj] (startViaConfig cwd confObj false))
+  ([cwd confObj join?]
+   (let
+     [{:keys [locale info]}
+      confObj
+      cn (stror (:country locale) "US")
+      ln (stror (:lang locale) "en")
+      verStr (some-> c-verprops
+                     loadResource (.getString "version"))
+      fp (io/file cwd "wabbit.pid")
+      loc (Locale. ln cn)
+      rc (getResource c-rcb loc)
+      ctx (atom
+            {:encoding (stror (:encoding info) "utf-8")
+             :wabbit {:version (str verStr) }
+             :homeDir (io/file cwd)
+             :pidFile fp
+             :locale loc
+             :conf confObj})
+      cz (getCldr)]
+     (log/info "wabbit.user.dir = %s" (fpath cwd))
+     (log/info "wabbit.version = %s" verStr)
+     (doto->> rc
+              (test-some "base resource" )
+              I18N/setBase )
+     (log/info "wabbit's i18n#base loaded")
+     (primodial ctx)
+     (doto fp (writeFile (processPid)) .deleteOnExit)
+     (log/info "wrote wabbit.pid - ok")
+     (enableKillHook ctx)
+     (exitHook #(stopCLI ctx))
+     (log/info "added shutdown hook")
+     (log/info "app-loader: %s" (type cz))
+     (log/info "sys-loader: %s"
+               (type (.getParent cz)))
+     (log/debug "%s" @ctx)
+     (log/info "wabbit is now running...")
+     (when join?
+       (while (not @stopcli) (pause 3000))
+       (log/info "vm shut down")
+       (log/info "(bye)")
+       (shutdown-agents)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defn startViaCons "" [cwd]
-  (let
-    [_ (precondFile (io/file cwd cfg-pod-cf))
-     {:keys [locale info] :as conf}
-     (slurpXXXConf cwd cfg-pod-cf true)
-     cn (stror (:country locale) "US")
-     ln (stror (:lang locale) "en")
-     verStr (some-> c-verprops
-                    loadResource (.getString "version"))
-     fp (io/file cwd "wabbit.pid")
-     loc (Locale. ln cn)
-     rc (getResource c-rcb loc)
-     ctx (atom
-           {:encoding (stror (:encoding info) "utf-8")
-            :wabbit {:version (str verStr) }
-            :homeDir (io/file cwd)
-            :pidFile fp
-            :conf conf
-            :locale loc})
-     cz (getCldr)]
-    (log/info "wabbit.user.dir = %s" (fpath cwd))
-    (log/info "wabbit.version = %s" verStr)
-    (doto->> rc
-             (test-some "base resource" )
-             I18N/setBase )
-    (log/info "wabbit's i18n#base loaded")
-    (primodial ctx)
-    (doto fp (writeFile (processPid)) .deleteOnExit)
-    (log/info "wrote wabbit.pid - ok")
-    (enableKillHook ctx)
-    (exitHook #(stopCLI ctx))
-    (log/info "added shutdown hook")
-    (log/info "app-loader: %s" (type cz))
-    (log/info "sys-loader: %s"
-              (type (.getParent cz)))
-    (log/debug "%s" @ctx)
-    (log/info "wabbit is now running...")
-    (while (not @stopcli) (pause 3000))
-    (log/info "vm shut down")
-    (log/info "(bye)")
-    (shutdown-agents)))
+
+  (precondFile (io/file cwd cfg-pod-cf))
+  (startViaConfig cwd
+                  (slurpXXXConf cwd cfg-pod-cf true) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
