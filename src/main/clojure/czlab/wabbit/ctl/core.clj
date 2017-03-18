@@ -40,53 +40,55 @@
 (defn pluglet<>
   "Create a Service" ^Pluglet
   [parObj ^Pluggable plug emAlias]
-  (let [emType (get-in (.spec plug)
-                       [:conf :$pluggable])
-        impl (muble<>)
+  (let [impl (muble<>)
         timer (atom nil)]
-    (with-meta
-      (reify Pluglet
-        (isEnabled [this] (!false? (:enabled? (.config this))))
-        (version [_] (str (get-in
-                            (.spec plug)
-                            [:info :version])))
-        (config [_] (.config plug))
-        (spec [_] (.spec plug))
-        (server [this] parObj)
-        (getx [_] impl)
-        (hold [_ trig millis]
-          (if (and @timer
-                   (spos? millis))
-            (let [k (tmtask<>
-                      #(.fire trig nil))]
-              (. ^Timer @timer schedule k millis)
-              (. trig setTrigger k))))
-        (id [_] emAlias)
-        (dispose [_]
-          (log/info "puglet [%s] is being disposed" emAlias)
-          (some-> ^Timer @timer .cancel)
-          (rset! timer)
-          (.dispose plug)
-          (log/info "puglet [%s] disposed - ok" emAlias))
-        (init [this cfg0]
-          (log/info "puglet [%s] is initializing..." emAlias)
-          (.setParent plug this)
-          (.init plug cfg0)
-          (log/info "puglet [%s] init'ed - ok" emAlias))
-        (start [this arg]
-          (log/info "puglet [%s] is starting..." emAlias)
-          (rset! timer (Timer. true))
-          (.start plug arg)
-          (log/info "puglet [%s] config:" emAlias)
-          (log/info "%s" (pr-str (.config this)))
-          (log/info "puglet [%s] started - ok" emAlias))
-        (stop [_]
-          (log/info "puglet [%s] is stopping..." emAlias)
-          (some-> ^Timer @timer .cancel)
-          (rset! timer)
-          (.stop plug)
-          (log/info "puglet [%s] stopped - ok" emAlias)))
-      {:typeid emType})))
+    (reify Pluglet
+      (isEnabled [this] (!false? (:enabled? (.config this))))
+      (version [_] (str (get-in
+                          (.spec plug)
+                          [:info :version])))
+      (config [_] (.config plug))
+      (spec [_] (.spec plug))
+      (server [this] parObj)
+      (getx [_] impl)
+      (hold [_ trig millis]
+        (if (and @timer
+                 (spos? millis))
+          (let [k (tmtask<>
+                    #(.fire trig nil))]
+            (. ^Timer @timer schedule k millis)
+            (. trig setTrigger k))))
+      (id [_] emAlias)
+      (dispose [_]
+        (log/info "puglet [%s] is being disposed" emAlias)
+        (some-> ^Timer @timer .cancel)
+        (rset! timer)
+        (.dispose plug)
+        (log/info "puglet [%s] disposed - ok" emAlias))
+      (init [this cfg0]
+        (log/info "puglet [%s] is initializing..." emAlias)
+        (.setParent plug this)
+        (.init plug cfg0)
+        (log/info "puglet [%s] init'ed - ok" emAlias))
+      (start [this arg]
+        (log/info "puglet [%s] is starting..." emAlias)
+        (rset! timer (Timer. true))
+        (.start plug arg)
+        (log/info "puglet [%s] config:" emAlias)
+        (log/info "%s" (pr-str (.config this)))
+        (log/info "puglet [%s] started - ok" emAlias))
+      (stop [_]
+        (log/info "puglet [%s] is stopping..." emAlias)
+        (some-> ^Timer @timer .cancel)
+        (rset! timer)
+        (.stop plug)
+        (log/info "puglet [%s] stopped - ok" emAlias))
+
+      Object
+
+      (toString [this]
+        (str (strKW  (get-in (.spec this)
+                             [:conf :$pluggable])) "#" (.id this))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

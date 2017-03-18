@@ -195,6 +195,7 @@
                "Invalid data-model schema ")))
     (. ^Activable (.core co) activate)
     (xrefPlugs<> co (:plugins conf))
+    (log/info "main func: %s" mcz)
     (if (hgl? mcz) (.callEx rts mcz (vargs* Object co)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
@@ -204,90 +205,94 @@
   "Create an Execvisor" ^Execvisor []
 
   (let
-    [pid (str "exec#" (seqint2))
+    [pid (str "Execvisor." (seqint2))
      impl (muble<> {:plugs {}})
      cpu (scheduler<> pid)
      rts (Cljrt/newrt (getCldr) pid)]
-    (with-meta
-      (reify Execvisor
 
-        (acquireDbPool [this gid] (maybeGetDBPool this gid))
-        (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
-        (dftDbPool [this] (maybeGetDBPool this ""))
-        (dftDbAPI [this] (maybeGetDBAPI this ""))
+    (reify Execvisor
 
-        (pkeyBytes [this] (->> (get-in (.getv impl :conf)
-                                       [:info :digest])
-                               str
-                               bytesit))
+      (acquireDbPool [this gid] (maybeGetDBPool this gid))
+      (acquireDbAPI [this gid] (maybeGetDBAPI this gid))
+      (dftDbPool [this] (maybeGetDBPool this ""))
+      (dftDbAPI [this] (maybeGetDBAPI this ""))
 
-        (pkey [_] (->> (get-in (.getv impl :conf)
-                               [:info :digest])
-                       str
-                       .toCharArray))
+      (pkeyBytes [this] (->> (get-in (.getv impl :conf)
+                                     [:info :digest])
+                             str
+                             bytesit))
 
-        (cljrt [_] rts)
-        (version [_] (->> [:info :version]
-                          (get-in (.getv impl :conf))))
-        (id [_] pid)
-        (getx [_] impl)
+      (pkey [_] (->> (get-in (.getv impl :conf)
+                             [:info :digest])
+                     str
+                     .toCharArray))
 
-        (uptimeInMillis [_] (- (now<>) start-time))
-        (kill9 [_] (apply (.getv impl :stop!) []))
-        (homeDir [_] (.getv impl :homeDir))
-        (locale [_] (.getv impl :locale))
-        (startTime [_] start-time)
+      (cljrt [_] rts)
+      (version [_] (->> [:info :version]
+                        (get-in (.getv impl :conf))))
+      (id [_] pid)
+      (getx [_] impl)
 
-        (hasChild [_ sid]
-          (in? (.getv impl :plugs) (keyword sid)))
-        (child [_ sid]
-          ((.getv impl :plugs) (keyword sid)))
+      (uptimeInMillis [_] (- (now<>) start-time))
+      (kill9 [_] (apply (.getv impl :stop!) []))
+      (homeDir [_] (.getv impl :homeDir))
+      (locale [_] (.getv impl :locale))
+      (startTime [_] start-time)
 
-        (core [_] cpu)
-        (config [_] (.getv impl :conf))
+      (hasChild [_ sid]
+        (in? (.getv impl :plugs) (keyword sid)))
+      (child [_ sid]
+        ((.getv impl :plugs) (keyword sid)))
 
-        (init [this arg]
-          (let [{:keys [encoding homeDir]} arg]
-            (sysProp! "file.encoding" encoding)
-            (logcomp "init" this)
-            (.copyEx impl arg)
-            (-> (io/file homeDir
-                         dn-etc
-                         "mime.properties")
-                setupCache)
-            (log/info "loaded mime#cache - ok")
-            (init2 this (.intern impl))))
+      (core [_] cpu)
+      (config [_] (.getv impl :conf))
 
-        (stop [_]
-          (let [svcs (.getv impl :plugs)]
-            (log/info "execvisor stopping puglets...")
-            (doseq [[k v] svcs] (.stop ^Pluglet v))
-            (log/info "execvisor stopped")))
+      (init [this arg]
+        (let [{:keys [encoding homeDir]} arg]
+          (sysProp! "file.encoding" encoding)
+          (logcomp "init" this)
+          (.copyEx impl arg)
+          (-> (io/file homeDir
+                       dn-etc
+                       "mime.properties")
+              setupCache)
+          (log/info "loaded mime#cache - ok")
+          (init2 this (.intern impl))))
 
-        (dispose [this]
-          (let [svcs (.getv impl :plugs)]
-            (log/info "execvisor disposing puglets...")
-            (doseq [[k v] svcs]
-              (.dispose ^Pluglet v))
-            (relSysRes this)
-            (log/info "execvisor disposed")))
+      (stop [_]
+        (let [svcs (.getv impl :plugs)]
+          (log/info "execvisor stopping puglets...")
+          (doseq [[k v] svcs] (.stop ^Pluglet v))
+          (log/info "execvisor stopped")))
 
-        (start [this _]
-          (let [svcs (.getv impl :plugs)
-                jmx (:$$jmx svcs)]
-            (log/info "execvisor starting puglets...")
-            (doseq [[k v] svcs]
-              (log/info "puglet: %s to start" k)
-              (. ^Pluglet v start {}))
-            (some-> ^JmxPluglet
-                    jmx
-                    (.reg this
-                          "czlab"
-                          "execvisor"
-                          ["root=wabbit"]))
-            (log/info "execvisor started"))))
+      (dispose [this]
+        (let [svcs (.getv impl :plugs)]
+          (log/info "execvisor disposing puglets...")
+          (doseq [[k v] svcs]
+            (.dispose ^Pluglet v))
+          (relSysRes this)
+          (log/info "execvisor disposed")))
 
-      {:typeid ::Execvisor})))
+      (start [this _]
+        (let [svcs (.getv impl :plugs)
+              jmx (:$$jmx svcs)]
+          (log/info "execvisor starting puglets...")
+          (doseq [[k v] svcs]
+            (log/info "puglet: %s to start" k)
+            (. ^Pluglet v start {}))
+          (some-> ^JmxPluglet
+                  jmx
+                  (.reg this
+                        "czlab"
+                        "execvisor"
+                        ["root=wabbit"]))
+          (log/info "execvisor started")))
+
+      Object
+
+      (toString [this] (str (strKW ::Execvisor)
+                         "#"
+                         (.id this))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
