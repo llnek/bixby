@@ -10,13 +10,13 @@
 
 package czlab.wabbit.ctl;
 
-import czlab.jasal.Identifiable;
+import czlab.jasal.Idable;
 import czlab.jasal.Disposable;
 
 /**
  * @author Kenneth Leung
  */
-public interface PlugMsg extends Identifiable, Disposable {
+public interface PlugMsg extends Idable, Disposable {
 
   /**
    */
