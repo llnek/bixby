@@ -8,7 +8,7 @@
  * You must not remove this notice, or any other, from this software.
  */
 
-package czlab.wabbit.sys;
+package czlab.wabbit;
 
 import java.lang.instrument.IllegalClassFormatException;
 import java.util.concurrent.CopyOnWriteArrayList;
