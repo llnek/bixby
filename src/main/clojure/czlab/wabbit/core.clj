@@ -9,13 +9,13 @@
 (ns ^{:doc ""
       :author "Kenneth Leung"}
 
-  czlab.wabbit.sys.core
+  czlab.wabbit.core
 
   (:gen-class)
 
   (:require [czlab.basal.resources :refer [loadResource getResource]]
             [czlab.basal.io :refer [closeQ readAsStr writeFile]]
-            [czlab.wabbit.sys.exec :refer [execvisor<>]]
+            [czlab.wabbit.exec :refer [execvisor<>]]
             [czlab.basal.scheduler :refer [scheduler<>]]
             [czlab.basal.meta :refer [setCldr getCldr]]
             [czlab.basal.format :refer [readEdn]]
@@ -28,9 +28,13 @@
         [czlab.basal.core]
         [czlab.basal.str])
 
-  (:import [czlab.jasal Startable CU Muble I18N]
+  (:import [czlab.jasal
+            Startable
+            CU
+            I18N
+            Initable
+            Disposable]
            [clojure.lang Atom APersistentMap]
-           [czlab.wabbit.sys Execvisor]
            [czlab.basal Cljrt]
            [java.io File]
            [java.util ResourceBundle Locale]))
@@ -57,20 +61,19 @@
       (log/info "remote hook closed - ok")
       (log/info "about to stop wabbit...")
       (log/info "wabbit is shutting down...")
-      (when-some [e (cast? Execvisor exec)]
-        (.stop e)
-        (.dispose e))
+      (.stop ^Startable exec)
+      (.dispose ^Disposable exec)
       (shutdown-agents)
       (log/info "wabbit stopped"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- hookToKill "" [gist cb cfg]
-  (let-try [rt (Cljrt/newrt (getCldr))]
-    (. rt callEx
-       (str "czlab.wabbit.plugs."
-            "io.http/Discarder!")
-       (vargs* Object cb cfg)) (finally (.close rt))))
+  (with-open [rt (Cljrt/newrt (getCldr))]
+    (try! (.callEx rt
+                   (str "czlab.wabbit.plugs."
+                        "io.http/Discarder!")
+                   (vargs* Object cb cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -97,11 +100,11 @@
            assoc
            :exec e
            :stop! #(stopCLI gist))
-    (.init e @gist)
+    (.init ^Initable e @gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
               "starting wabbit..." (str<> 78 \*))
-    (.start e {})
+    (.start ^Startable e)
     (log/info "wabbit started")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
