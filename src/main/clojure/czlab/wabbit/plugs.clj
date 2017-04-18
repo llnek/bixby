@@ -46,61 +46,119 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defstateful PlugletObj
+(def ^:private
+  pluglet-vtbl
+  (defvtbl*
+    :version (fn [me]
+               (str (get-in @me [:pspec :info  :version])))
+    :config (fn [me] (:conf @me))
+    :id (fn [me] (:emAlias @me))
+    :dispose (fn [me]
+               (let [{:keys [emAlias timer]} @me]
+                 (log/info "puglet [%s] is being disposed" emAlias)
+                 (some-> ^Timer timer .cancel)
+                 (log/info "puglet [%s] disposed - ok" emAlias)))
+    :isEnabled? (fn [me] (!false? (get-in @me [:conf :enabled?])))
+    :plugSpec (fn [me] (:pspec @me))
+    :getServer (fn [me] (:parent @me))
+    :holdEvent (fn [me ^Triggerable trig ^long millis]
+                 (if-some [t (:timer @me)]
+                   (if (spos? millis)
+                     (let [k (tmtask<> #(.fire trig))]
+                       (.schedule ^Timer t k millis)
+                       (.setTrigger trig k)))))
+    :init (fn [me cfg0]
+            (let [{:keys [plug emAlias]} @me]
+              (log/info "puglet [%s] is initializing..." emAlias)
+              (.init plug cfg0)
+              (log/info "puglet [%s] init'ed - ok" emAlias)))
+    :start (fn [me arg]
+             (let [{:keys [plug emAlias]} @me]
+               (log/info "puglet [%s] is starting..." emAlias)
+               (.start ^Startable plug arg)
+               (log/info "puglet [%s] config:" emAlias)
+               (log/info "%s" (pr-str (.config me)))
+               (log/info "puglet [%s] started - ok" emAlias)))
+    :stop (fn [me]
+            (let [{:keys [plug timer emAlias]} @me]
+              (log/info "puglet [%s] is stopping..." emAlias)
+              (some-> ^Timer timer .cancel)
+              (.stop ^Startable plug)
+              (log/info "puglet [%s] stopped - ok" emAlias)))
+    :toString (fn [me]
+                (str (strKW  (get-in @me
+                         [:conf :$pluggable])) "#" (id?? me)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defobject PlugletObj
   Versioned
-  (version [_] (str (get-in
-                          (pluggableSpec (:plug @data))
-                          [:info :version])))
+  (version [me]
+    (some-> (rvtbl (:vtbl @me) :pspec) :info :version))
   Config
-  (config [_] (.config ^Config (:plug @data)))
+  (config [me] (.getv ^Muble (:impl @me) :conf))
   Idable
-  (id [_] (:emAlias @data))
+  (id [me] (:emAlias @me))
   Disposable
   (dispose [me]
-    (let [{:keys [emAlias plug timer]} @data]
+    (let [{:keys [vtbl emAlias timer]} @me]
       (log/info "puglet [%s] is being disposed" emAlias)
       (some-> ^Timer timer .cancel)
-      ;;(alterStateful me dissoc :timer)
-      (.dispose ^Disposable plug)
+      (rvtbl vtbl :dispose me)
       (log/info "puglet [%s] disposed - ok" emAlias)))
   Pluglet
   (isEnabled? [me] (!false? (:enabled? (.config me))))
-  (plugSpec [_] (pluggableSpec (:plug @data)))
-  (getServer [_] (:parent @data))
-  (holdEvent [_ trig millis]
-    (if-some [t (:timer @data)]
-      (if (spos? millis)
-        (let [k (tmtask<> #(.fire ^Triggerable trig))]
-          (.schedule ^Timer t k ^long millis)
-          (.setTrigger ^Triggerable trig k)))))
+  (getServer [me] (:parent @me))
+  (plugSpec [me] (rvtbl (:vtbl @me) :pspec))
+  (holdEvent [me trig millis]
+    (let [^Timer t (:timer @me)]
+      (if (and t (spos? millis))
+        (let [^Triggerable trig tirg
+              k (tmtask<> #(.fire trig))]
+          (.schedule t k ^long millis)
+          (.setTrigger trig k)))))
   Initable
-  (init [me cfg0]
-    (let [{:keys [plug emAlias]} @data]
+  (init [me arg]
+    (let [{:keys [impl vtbl emAlias]} @me
+          c (:conf (rvtbl vtbl :pspec))]
       (log/info "puglet [%s] is initializing..." emAlias)
-      (.setParent ^Hierarchial plug me)
-      (.init ^Initable plug cfg0)
+      (->>
+        (if (cvtbl? vtbl :init)
+          (rvtbl vtbl :init me arg)
+          (prevarCfg (merge c arg)))
+        (.setv impl :conf))
       (log/info "puglet [%s] init'ed - ok" emAlias)))
   Startable
   (start [me arg]
-    (let [{:keys [plug emAlias]} @data]
+    (let [{:keys [vtbl emAlias]} @me]
       (log/info "puglet [%s] is starting..." emAlias)
-      (alterStateful me
-                     assoc
-                     :timer (Timer. true))
-      (.start ^Startable plug arg)
+      (rvtbl vtbl :start me arg)
       (log/info "puglet [%s] config:" emAlias)
       (log/info "%s" (pr-str (.config me)))
       (log/info "puglet [%s] started - ok" emAlias)))
-  (stop [_]
-    (let [{:keys [plug timer emAlias]} @data]
+  (stop [me]
+    (let [{:keys [vtbl timer emAlias]} @me]
       (log/info "puglet [%s] is stopping..." emAlias)
       (some-> ^Timer timer .cancel)
-      (.stop ^Startable plug)
+      (rvtbl vtbl :stop me)
       (log/info "puglet [%s] stopped - ok" emAlias)))
   Object
   (toString [me]
-    (str (strKW  (get-in (plugSpec me)
-                         [:conf :$pluggable])) "#" (id?? me))))
+    (str (strKW  (:$pluggable (.config me))) "#" (id?? me))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn plugletVar "" [plug kee] (-> (:impl @plug) (.getv kee)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn alterPluglet+
+  "" [plug kee v] (-> (:impl @plug) (.setv kee v)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn alterPluglet-
+  "" [plug kee] (-> (:impl @plug) (.unsetv kee)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,9 +166,11 @@
   "Create a Service"
   ^czlab.wabbit.xpis.Pluglet
   [parObj plug emAlias]
-  (entity<> PlugletObj
-            {:parent parObj
-             :plug plug
+  (object<> PlugletObj
+            {:timer (Timer. true)
+             :impl (muble<>)
+             :parent parObj
+             :vtbl plug
              :emAlias emAlias}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,10 +182,10 @@
 
   (let [u (reifyPlug exec emType emAlias)]
     (cond
-      (satisfies? Pluggable u)
-      (pluglet<> exec u emAlias)
       (satisfies? Pluglet u)
       u
+      (map? u)
+      (pluglet<> exec u emAlias)
       :else
       (throw
         (ClassCastException.
