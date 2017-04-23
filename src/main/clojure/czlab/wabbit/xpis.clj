@@ -31,61 +31,54 @@
 ;;
 (defprotocol SqlAccess
   ""
-  (acquireDbPool [_ id] "")
-  (acquireDbAPI [_ id] "")
-  (dftDbPool [_] "")
-  (dftDbAPI [_] ""))
+  (acquire-db-pool [_ id] "")
+  (acquire-db-api [_ id] "")
+  (dft-db-pool [_] "")
+  (dft-db-api [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol KeyAccess
   ""
-  (^chars pkeyChars [_] "")
-  (^bytes pkeyBytes [_] ""))
+  (^chars pkey-chars [_] "")
+  (^bytes pkey-bytes [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol PlugMsg ;;extends Idable, Disposable {
   ""
-  (msgSource [_] "")
-  (isStale? [_] ""))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol Pluggable ;;extends LifeCycle, Hierarchial, Config {
-  ""
-  (pluggableSpec [_] ""))
+  (msg-source [_] "")
+  (is-stale? [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol Pluglet ;;extends Component, LifeCycle, Config {
   ""
-  (holdEvent [_ ^Triggerable t ^long millis] "")
-  (plugSpec [_] "")
-  (isEnabled? [_] "")
-  (getServer [_] ""))
+  (hold-event [_ ^Triggerable t ^long millis] "")
+  (plug-spec [_] "")
+  (is-enabled? [_] "")
+  (get-server [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol JmxPluglet ;;extends Pluglet, Resetable {
   ""
-  (^ObjectName jmxReg [_ obj ^String domain ^String nname paths] "")
-  (jmxDereg [_ ^ObjectName nname] ""))
+  (^ObjectName jmx-reg [_ obj ^String domain ^String nname paths] "")
+  (jmx-dereg [_ ^ObjectName nname] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defprotocol Execvisor ;;extends Component ,Config ,LifeCycle ,SqlAccess ,KeyAccess {
   ""
-  (hasChild? [_ id] "")
-  (getChild [_ id] "")
-  (^long uptimeInMillis [_] "")
-  (^Locale getLocale [_] "")
-  (^long getStartTime [_] "")
-  (kill9 [_] "")
+  (has-child? [_ id] "")
+  (get-child [_ id] "")
+  (^long uptime-in-millis [_] "")
+  (^Locale get-locale [_] "")
+  (^long get-start-time [_] "")
+  (kill9! [_] "")
   (^Cljrt cljrt [_] "")
   (^Schedulable scheduler [_] "")
-  (^File getHomeDir [_] ""))
-
+  (^File get-home-dir [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

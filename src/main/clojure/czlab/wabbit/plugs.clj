@@ -46,6 +46,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(decl-mutable PlugletObj
+  Versioned
+  (version [me] (str (get-in @me [:pspec :info :version])))
+  Config
+  (config [me] (:conf @me))
+  Idable
+  (id [me] (:emAlias @me))
+  Disposable
+  (dispose [me]
+    (let [{:keys [emAlias timer]} @me]
+      (log/info "puglet [%s] is being disposed" emAlias)
+      (some-> ^Timer timer .cancel)
+      (log/info "puglet [%s] disposed - ok" emAlias)))
+  Pluglet
+  (is-enabled? [me] (!false? (get-in @me [:conf :enabled?])))
+  (plug-spec [me] (:pspec @me))
+  (get-server [me] (:parent @me))
+  (hold-event [me ^Triggerable trig ^long millis]
+    (if-some [t (:timer @me)]
+      (if (spos? millis)
+        (let [k (tmtask<> #(.fire trig))]
+          (.schedule ^Timer t k millis)
+          (.setTrigger trig k)))))
+  Initable
+  (init [me cfg0]
+    (let [{:keys [plug emAlias]} @me]
+      (log/info "puglet [%s] is initializing..." emAlias)
+      (.init plug cfg0)
+      (log/info "puglet [%s] init'ed - ok" emAlias)))
+  Startable
+  (start [me arg]
+    (let [{:keys [plug emAlias]} @me]
+      (log/info "puglet [%s] is starting..." emAlias)
+      (.start ^Startable plug arg)
+      (log/info "puglet [%s] config:" emAlias)
+      (log/info "%s" (pr-str (.config me)))
+      (log/info "puglet [%s] started - ok" emAlias)))
+  (stop [me]
+    (let [{:keys [plug timer emAlias]} @me]
+      (log/info "puglet [%s] is stopping..." emAlias)
+      (some-> ^Timer timer .cancel)
+      (.stop ^Startable plug)
+      (log/info "puglet [%s] stopped - ok" emAlias)))
+  Object
+  (toString [me]
+    (str (strKW  (get-in @me
+                         [:conf :$pluggable])) "#" (id?? me))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (def ^:private
   pluglet-vtbl
   (defvtbl*
@@ -91,7 +141,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defobject PlugletObj
+(decl-object PlugletObj
   Versioned
   (version [me]
     (some-> (rvtbl (:vtbl @me) :pspec) :info :version))
