@@ -23,7 +23,7 @@
             [clojure.string :as cs]
             [clojure.java.io :as io])
 
-  (:use [czlab.wabbit.base.core]
+  (:use [czlab.wabbit.base]
         [czlab.basal.process]
         [czlab.basal.core]
         [czlab.basal.str])

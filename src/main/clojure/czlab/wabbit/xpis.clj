@@ -19,8 +19,14 @@
         [czlab.basal.str])
 
   (:import [javax.management ObjectName]
-           [czlab.jasal Schedulable]
            [czlab.basal Cljrt]
+           [czlab.jasal
+            Disposable
+            Startable
+            Idable
+            Initable
+            Triggerable
+            Schedulable]
            [java.io File]
            [java.util Locale]))
 
@@ -45,30 +51,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol PlugMsg ;;extends Idable, Disposable {
-  ""
-  (msg-source [_] "")
-  (is-stale? [_] ""))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol Pluglet ;;extends Component, LifeCycle, Config {
+(defprotocol Pluglet
   ""
   (hold-event [_ ^Triggerable t ^long millis] "")
-  (plug-spec [_] "")
-  (is-enabled? [_] "")
   (get-server [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol JmxPluglet ;;extends Pluglet, Resetable {
+(defprotocol JmxPluglet
   ""
   (^ObjectName jmx-reg [_ obj ^String domain ^String nname paths] "")
   (jmx-dereg [_ ^ObjectName nname] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defprotocol Execvisor ;;extends Component ,Config ,LifeCycle ,SqlAccess ,KeyAccess {
+(defprotocol Execvisor
   ""
   (has-child? [_ id] "")
   (get-child [_ id] "")
@@ -77,8 +74,43 @@
   (^long get-start-time [_] "")
   (kill9! [_] "")
   (^Cljrt cljrt [_] "")
-  (^Schedulable scheduler [_] "")
+  (^Schedulable get-scheduler [_] "")
   (^File get-home-dir [_] ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn- reifyPlug
+  "" [exec emType emAlias]
+  (let [^Cljrt clj (cljrt exec)
+        emStr (strKW emType)]
+    (if-not (neg? (.indexOf emStr "/"))
+      (.callEx clj
+               emStr
+               (vargs* Object exec emAlias)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn assertPluglet
+  ""
+  [plug]
+  (test-cond "Pluglet is malformed"
+             (and (satisfies? Pluglet plug)
+                  (ist? Startable plug)
+                  (ist? Initable plug)
+                  (ist? Disposable plug)))
+  plug)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn plugletViaType<>
+
+  "Create a Service"
+  [exec emType emAlias]
+
+  (let [u (reifyPlug exec emType emAlias)]
+    (if (satisfies? Pluglet u)
+      (assertPluglet u)
+      (throw (ClassCastException. "Must be Pluglet")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
