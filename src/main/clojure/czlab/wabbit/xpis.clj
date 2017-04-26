@@ -58,6 +58,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+(defprotocol PlugletMsg
+  ""
+  (get-pluglet [_] ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 (defprotocol JmxPluglet
   ""
   (^ObjectName jmx-reg [_ obj ^String domain ^String nname paths] "")
