@@ -22,6 +22,7 @@
            [czlab.basal Cljrt]
            [czlab.jasal
             Disposable
+            Hierarchical
             Startable
             Idable
             Initable
@@ -48,13 +49,6 @@
   ""
   (^chars pkey-chars [_] "")
   (^bytes pkey-bytes [_] ""))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defprotocol Pluglet
-  ""
-  (hold-event [_ ^Triggerable t ^long millis] "")
-  (get-server [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,6 +111,11 @@
     (if (satisfies? Pluglet u)
       (assertPluglet u)
       (throw (ClassCastException. "Must be Pluglet")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+(defn get-server
+  "" [^Hierarchical plug] (.getParent plug))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
