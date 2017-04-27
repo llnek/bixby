@@ -21,6 +21,7 @@
   (:import [javax.management ObjectName]
            [czlab.basal Cljrt]
            [czlab.jasal
+            LifeCycle
             Disposable
             Hierarchical
             Startable
@@ -93,29 +94,27 @@
 (defn assertPluglet
   ""
   [plug]
-  (test-cond "Pluglet is malformed"
-             (and (satisfies? Pluglet plug)
-                  (ist? Startable plug)
-                  (ist? Initable plug)
-                  (ist? Disposable plug)))
-  plug)
+  (do-with [plug plug]
+    (test-cond "Pluglet is malformed"
+               (and (ist? Hierarchical plug)
+                    (ist? LifeCycle plug)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn plugletViaType<>
 
   "Create a Service"
+  ^LifeCycle
   [exec emType emAlias]
 
-  (let [u (reifyPlug exec emType emAlias)]
-    (if (satisfies? Pluglet u)
-      (assertPluglet u)
-      (throw (ClassCastException. "Must be Pluglet")))))
+  (if-some [u (reifyPlug exec emType emAlias)]
+    (assertPluglet u)
+    (throw (ClassCastException. "Must be Pluglet"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn get-server
-  "" [^Hierarchical plug] (.getParent plug))
+  "" [^Hierarchical plug] (.parent plug))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
