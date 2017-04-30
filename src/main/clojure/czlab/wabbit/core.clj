@@ -71,8 +71,7 @@
 (defn- hookToKill "" [gist cb cfg]
   (with-open [rt (Cljrt/newrt (getCldr))]
     (try! (.callEx rt
-                   (str "czlab.wabbit.plugs."
-                        "io.http/Discarder!")
+                   (str "czlab.wabbit.plugs." "http/Discarder!")
                    (vargs* Object cb cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,7 +93,7 @@
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
-  (log/info "exec = czlab.wabbit.sys.Execvisor")
+  (log/info "exec = czlab.wabbit.exec.Execvisor")
   (let [e (execvisor<>)]
     (swap! gist
            assoc
@@ -146,7 +145,7 @@
      (log/info "app-loader: %s" (type cz))
      (log/info "sys-loader: %s"
                (type (.getParent cz)))
-     (log/debug "%s" @ctx)
+     ;;(log/debug "%s" @ctx)
      (log/info "wabbit is now running...")
      (when join?
        (while (not @stopcli) (pause 3000))

@@ -62,7 +62,7 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^chars [evt] (some-> (:source evt) get-server pkey-chars))
+  ^chars [evt] (some-> (get-pluglet evt) get-server pkey-chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -119,7 +119,7 @@
                       (nil? $pluggable))
             (let [v (plugletViaType<> exec $pluggable k)
                   v (plug! exec v cfg)
-                  deps (:deps (some-> v :pspec))]
+                  deps (:deps (:pspec @v))]
               (log/debug "pluglet %s: deps = %s" k deps)
               (-> (reduce
                     (fn [m d]
@@ -128,7 +128,7 @@
             %1))
        plugs)]
     (->>
-      (let [api :czlab.wabbit.plugs.jmx.core/JmxMonitor
+      (let [api :czlab.wabbit.jmx.core/JmxMonitor
             {:keys [jmx] :as conf} (.config ^Config exec)]
         (if (and (!false? (:enabled? jmx))
                  (not-empty ps))
@@ -257,6 +257,7 @@
               (jmx-reg me
                       "czlab" "execvisor" ["root=wabbit"]))
       (log/info "execvisor started")))
+  (start [me] (.start me nil))
   (stop [me]
     (let [svcs (:plugs @me)]
       (log/info "execvisor stopping puglets...")
@@ -279,12 +280,13 @@
 ;;
 (defn execvisor<> "Create an Execvisor" []
 
-  (let [pid (toKW "Execvisor." (seqint2))]
+  (let [pid (toKW "Execvisor." (seqint2))
+        ps (sname pid)]
     (atomic<> ExecvisorObj
               {:plugs {}
                :id pid
-               :cpu (scheduler<> pid)
-               :rts (Cljrt/newrt (getCldr) pid) })))
+               :cpu (scheduler<> ps)
+               :rts (Cljrt/newrt (getCldr) ps) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
