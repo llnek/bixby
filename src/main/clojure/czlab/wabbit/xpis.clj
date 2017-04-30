@@ -82,12 +82,14 @@
 ;;
 (defn- reifyPlug
   "" [exec emType emAlias]
-  (let [^Cljrt clj (cljrt exec)
-        emStr (strKW emType)]
-    (if-not (neg? (.indexOf emStr "/"))
-      (.callEx clj
-               emStr
-               (vargs* Object exec emAlias)))))
+  (if (var? emType)
+    (@emType exec emAlias)
+    (let [^Cljrt clj (cljrt exec)
+          emStr (strKW emType)]
+      (if-not (neg? (.indexOf emStr "/"))
+        (.callEx clj
+                 emStr
+                 (vargs* Object exec emAlias))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

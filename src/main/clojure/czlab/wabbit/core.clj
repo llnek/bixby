@@ -48,10 +48,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- stopCLI "" [gist]
+(defn- stopCLI "" [exec gist]
 
   (let [{:keys [pidFile
-                exec
                 killSvr]} @gist]
     (when-not @stopcli
       (vreset! stopcli true)
@@ -68,15 +67,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- hookToKill "" [gist cb cfg]
-  (with-open [rt (Cljrt/newrt (getCldr))]
-    (try! (.callEx rt
-                   (str "czlab.wabbit.plugs." "http/Discarder!")
-                   (vargs* Object cb cfg)))))
+(defn- hookToKill "" [cb cfg]
+  (with-open [rts (Cljrt/newrt)]
+    (let [v "czlab.wabbit.plugs.http/Discarder!"]
+      (.callEx rts
+               v
+               (vargs* Object cb cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- enableKillHook "" [gist]
+(defn- enableKillHook "" [exec gist]
   (let [[h p] (-> "wabbit.kill.port" sysProp str (.split ":"))
         m {:host "localhost" :port 4444 :threads 2}
         m (if (hgl? h) (assoc m :host h) m)
@@ -85,7 +85,7 @@
     (swap! gist
            assoc
            :killSvr
-           (hookToKill gist #(stopCLI gist) m))))
+           (hookToKill #(stopCLI exec gist) m))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;create and synthesize Execvisor
@@ -93,12 +93,11 @@
   (log/info "\n%s\n%s\n%s"
             (str<> 78 \=)
             "inside primodial()" (str<> 78 \=))
-  (log/info "exec = czlab.wabbit.exec.Execvisor")
-  (let [e (execvisor<>)]
+  ;;(log/info "exec = czlab.wabbit.exec.Execvisor")
+  (do-with [e (execvisor<>)]
     (swap! gist
            assoc
-           :exec e
-           :stop! #(stopCLI gist))
+           :stop! #(stopCLI e gist))
     (.init ^Initable e @gist)
     (log/info "\n%s\n%s\n%s"
               (str<> 78 \*)
@@ -136,22 +135,22 @@
               (test-some "base resource" )
               I18N/setBase )
      (log/info "wabbit's i18n#base loaded")
-     (primodial ctx)
-     (doto fp (writeFile (processPid)) .deleteOnExit)
-     (log/info "wrote wabbit.pid - ok")
-     (enableKillHook ctx)
-     (exitHook #(stopCLI ctx))
-     (log/info "added shutdown hook")
-     (log/info "app-loader: %s" (type cz))
-     (log/info "sys-loader: %s"
-               (type (.getParent cz)))
-     ;;(log/debug "%s" @ctx)
-     (log/info "wabbit is now running...")
-     (when join?
-       (while (not @stopcli) (pause 3000))
-       (log/info "vm shut down")
-       (log/info "(bye)")
-       (shutdown-agents)))))
+     (let [exec (primodial ctx)]
+       (doto fp (writeFile (processPid)) .deleteOnExit)
+       (log/info "wrote wabbit.pid - ok")
+       (enableKillHook exec ctx)
+       (exitHook #(stopCLI exec ctx))
+       (log/info "added shutdown hook")
+       (log/info "app-loader: %s" (type cz))
+       (log/info "sys-loader: %s"
+                 (type (.getParent cz)))
+       (log/debug "%s" @ctx)
+       (log/info "wabbit is now running...")
+       (when join?
+         (while (not @stopcli) (pause 3000))
+         (log/info "vm shut down")
+         (log/info "(bye)")
+         (shutdown-agents))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

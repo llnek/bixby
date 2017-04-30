@@ -90,16 +90,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- plug! "" [co p cfg0]
-  (log/info "preparing puglet %s..." p)
-  (log/info "config params=\n%s" cfg0)
-  (.init ^Initable p cfg0)
-  (log/info "puglet - ok")
-  p)
+  (do-with [p p]
+    (log/info "preparing puglet %s..." p)
+    (log/info "config params=\n%s" cfg0)
+    (.init ^Initable p cfg0)
+    (log/info "puglet - ok")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- handleDep "" [co out [dn dv]]
-  (log/debug "handleDep: %s %s" dn dv)
+  ;;(log/debug "handleDep: %s %s" dn dv)
   (let [[dep cfg] dv
         v (plugletViaType<> co dep (keyword dn))
         v (plug! co v cfg)]
@@ -128,45 +128,52 @@
             %1))
        plugs)]
     (->>
-      (let [api :czlab.wabbit.jmx.core/JmxMonitor
-            {:keys [jmx] :as conf} (.config ^Config exec)]
+      (let [api "czlab.wabbit.jmx.core/JmxMonitor"
+            {:keys [jmx]} (:conf @exec)]
         (if (and (!false? (:enabled? jmx))
                  (not-empty ps))
           (let [x (plugletViaType<> exec api :$jmx)
                 x (plug! exec x jmx)]
             (assoc ps (id?? x) x))
           ps))
-      (alter-atomic exec assoc :plugs))))
+      (setf! exec :plugs))
+    (log/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")
+    (doseq [[k _] (:plugs @exec)]
+      (log/info "pluglet id= %s" k))
+    (log/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeInitDBs "" [exec conf]
-  (preduce<map>
-    #(let
-       [[k v] %2]
-       (if (!false? (:enabled? v))
-         (let
-           [pwd (pwd<> (:passwd v)
-                          (pkey-chars exec))
-            cfg (merge v
-                       {:passwd (p-text pwd)
-                        :id k})]
-           (->> (dbpool<> (dbspec<> cfg) cfg)
-                (assoc! %1 k)))
-         %1))
-    (:rdbms conf)))
+  (let [pk (pkey-chars exec)]
+    (preduce<map>
+      #(let
+         [[k v] %2]
+         (if (!false? (:enabled? v))
+           (let
+             [pwd (-> (:passwd v)
+                      (pwd<> pk) p-text)
+              cfg (merge v
+                         {:passwd pwd :id k})]
+             (assoc! %1
+                     k
+                     (dbpool<> (dbspec<> cfg) cfg)))
+           %1))
+      (:rdbms conf))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defn- init2 "" [exec {:keys [locale conf] :as env}]
+(defn- init2 "" [exec {:keys [locale version conf] :as env}]
   (let
     [mcz (strKW (get-in conf
                         [:info :main]))
      rts (cljrt exec)
      pid (id?? exec)
      res (->>
-           (format c-rcprops (.getLanguage ^Locale locale))
+           (format c-rcprops
+                   (.getLanguage ^Locale locale))
            (io/file (get-home-dir exec) dn-etc))]
+    (setf! exec :version version)
     (when (fileRead? res)
       (->> (loadResource res)
            (I18N/setBundle pid))
@@ -174,7 +181,7 @@
     (log/info "processing db-defs...")
     (doto->>
       (maybeInitDBs exec conf)
-      (alter-atomic exec assoc :dbps)
+      (setf! exec :dbps)
       (log/debug "db [dbpools]\n%s"))
     ;; build the user data-models?
     (when-some+
@@ -183,26 +190,29 @@
       (if-some
         [sc (try! (.callEx rts
                            dmCZ (vargs* Object exec)))]
-        (alter-atomic exec assoc :schema sc)
+        (setf! exec :schema sc)
         (trap! Exception
                "Invalid data-model schema ")))
-    (.activate ^Activable (get-scheduler exec))
+    (.activate ^Activable
+               (get-scheduler exec))
     (xrefPlugs<> exec (:plugins conf))
     (log/info "main func: %s" mcz)
-    (if (hgl? mcz) (.callEx rts mcz (vargs* Object exec)))
+    (if (hgl? mcz)
+      (.callEx rts mcz (vargs* Object exec)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(decl-atomic ExecvisorObj
+(decl-mutable ExecvisorObj
 
   Execvisor
-  (cljrt [me] (:rts @me))
+
   (uptime-in-millis [_] (- (now<>) start-time))
-  (kill9! [me] (apply (:stop! @me) []))
   (get-home-dir [me] (:homeDir @me))
   (get-locale [me] (:locale @me))
   (get-start-time [_] start-time)
+  (cljrt [me] (:rts @me))
+  (kill9! [me] ((:stop! @me) ))
   (has-child? [me sid]
     (in? (:plugs @me) (keyword sid)))
   (get-child [me sid]
@@ -216,39 +226,30 @@
   (dft-db-api [this] (maybeGetDBAPI this ""))
 
   KeyAccess
-  (pkey-bytes [this] (->> (get-in (:conf @this)
-                                  [:info :digest])
-                          str
-                          bytesit))
-  (pkey-chars [me] (->> (get-in (:conf @me)
-                               [:info :digest])
-                       str
-                       .toCharArray))
+  (pkey-bytes [me] (-> (get-in (:conf @me)
+                               [:info :digest]) bytesit))
+  (pkey-chars [me] (-> (get-in (:conf @me)
+                               [:info :digest]) charsit))
 
   Versioned
-  (version [me] (->> [:info :version]
-                    (get-in (:conf @me))))
-
-  Config
-  (config [me] (:conf @me))
+  (version [me] (:version @me))
 
   Initable
   (init [me arg]
     (let [{:keys [encoding homeDir]} arg]
       (sysProp! "file.encoding" encoding)
       (logcomp "init" me)
-      (alter-atomic me merge arg)
+      (copy* me arg)
       (-> (io/file homeDir
                    dn-etc
-                   "mime.properties")
-          setupCache)
+                   "mime.properties") setupCache)
       (log/info "loaded mime#cache - ok")
       (init2 me @me)))
 
   Startable
   (start [me _]
     (let [svcs (:plugs @me)
-          jmx (:$$jmx svcs)]
+          jmx (:$jmx svcs)]
       (log/info "execvisor starting puglets...")
       (doseq [[k v] svcs]
         (log/info "puglet: %s to start" k)
@@ -282,11 +283,12 @@
 
   (let [pid (toKW "Execvisor." (seqint2))
         ps (sname pid)]
-    (atomic<> ExecvisorObj
-              {:plugs {}
-               :id pid
-               :cpu (scheduler<> ps)
-               :rts (Cljrt/newrt (getCldr) ps) })))
+    (mutable<> ExecvisorObj
+               {:cpu (scheduler<> ps)
+                :plugs {}
+                :dbps {}
+                :id pid
+                :rts (Cljrt/newrt (getCldr) ps) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
