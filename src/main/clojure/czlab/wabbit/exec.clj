@@ -11,29 +11,27 @@
 
   czlab.wabbit.exec
 
-  (:require [czlab.basal.resources :refer [loadResource]]
-            [czlab.basal.scheduler :refer [scheduler<>]]
-            [czlab.convoy.mime :refer [setupCache]]
-            [czlab.horde.connect :refer [dbopen<+>]]
-            [czlab.basal.meta :refer [getCldr]]
-            [czlab.basal.format :refer [readEdn]]
-            [czlab.twisty.codec :refer [pwd<>]]
-            [czlab.basal.logging :as log]
+  (:require [czlab.basal.resources :as r :refer [loadResource]]
+            [czlab.basal.scheduler :as u :refer [scheduler<>]]
+            [czlab.convoy.mime :as mi :refer [setupCache]]
+            [czlab.horde.connect :as ht :refer [dbopen<+>]]
+            [czlab.basal.meta :as m :refer [getCldr]]
+            [czlab.basal.format :as f :refer [readEdn]]
+            [czlab.twisty.codec :as cc :refer [pwd<>]]
+            [czlab.basal.log :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io]
             [czlab.horde.core
+             :as hc
              :refer [dbspec<>
                      dbpool<>
-                     dbschema<>]])
-
-  (:use [czlab.twisty.codec]
-        [czlab.wabbit.base]
-        [czlab.horde.core]
-        [czlab.basal.core]
-        [clojure.walk]
-        [czlab.basal.str]
-        [czlab.basal.io]
-        [czlab.wabbit.xpis])
+                     dbschema<>]]
+            [czlab.wabbit.base :as b]
+            [czlab.basal.core :as c]
+            [clojure.walk :as cw]
+            [czlab.basal.str :as s]
+            [czlab.basal.io :as i]
+            [czlab.wabbit.xpis :as xp])
 
   (:import [java.security SecureRandom]
            [java.io File StringWriter]
@@ -62,12 +60,12 @@
 ;;
 (defn getPodKeyFromEvent
   "Get the secret application key"
-  ^chars [evt] (some-> (get-pluglet evt) get-server pkey-chars))
+  ^chars [evt] (some-> (xp/get-pluglet evt) xp/get-server xp/pkey-chars))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBPool "" [co gid]
-  (get (:dbps @co) (keyword (stror gid dft-dbid))))
+  (get (:dbps @co) (keyword (s/stror gid dft-dbid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -81,11 +79,11 @@
 ;;
 (defn- relSysRes "" [exec]
   (log/info "execvisor releasing system resources")
-  (some-> ^Disposable (get-scheduler exec) .dispose)
+  (some-> ^Disposable (xp/get-scheduler exec) .dispose)
   (doseq [[k v] (:dbps @exec)]
     (log/debug "finz dbpool %s" (name k))
-    (shut-down v))
-  (closeQ (cljrt exec)))
+    (xp/shut-down v))
+  (i/closeQ (cljrt exec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

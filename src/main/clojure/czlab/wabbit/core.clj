@@ -13,20 +13,19 @@
 
   (:gen-class)
 
-  (:require [czlab.basal.resources :refer [loadResource getResource]]
-            [czlab.basal.io :refer [closeQ readAsStr writeFile]]
-            [czlab.wabbit.exec :refer [execvisor<>]]
-            [czlab.basal.scheduler :refer [scheduler<>]]
-            [czlab.basal.meta :refer [setCldr getCldr]]
-            [czlab.basal.format :refer [readEdn]]
-            [czlab.basal.logging :as log]
+  (:require [czlab.basal.resources :as r :refer [loadResource getResource]]
+            [czlab.basal.io :as i :refer [closeQ readAsStr writeFile]]
+            [czlab.wabbit.exec :as e :refer [execvisor<>]]
+            [czlab.basal.scheduler :as u :refer [scheduler<>]]
+            [czlab.basal.meta :as m :refer [setCldr getCldr]]
+            [czlab.basal.format :as f :refer [readEdn]]
+            [czlab.basal.process :as p]
+            [czlab.basal.log :as log]
             [clojure.string :as cs]
-            [clojure.java.io :as io])
-
-  (:use [czlab.wabbit.base]
-        [czlab.basal.process]
-        [czlab.basal.core]
-        [czlab.basal.str])
+            [clojure.java.io :as io]
+            [czlab.wabbit.base :as b]
+            [czlab.basal.core :as c]
+            [czlab.basal.str :as s])
 
   (:import [czlab.jasal
             Startable
@@ -72,15 +71,15 @@
     (let [v "czlab.wabbit.plugs.http/Discarder!"]
       (.callEx rts
                v
-               (vargs* Object cb cfg)))))
+               (c/vargs* Object cb cfg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- enableKillHook "" [exec gist]
   (let [[h p] (-> "wabbit.kill.port" sysProp str (.split ":"))
         m {:host "localhost" :port 4444 :threads 2}
-        m (if (hgl? h) (assoc m :host h) m)
-        m (if (hgl? p) (assoc m :port (convLong p 4444)) m)]
+        m (if (s/hgl? h) (assoc m :host h) m)
+        m (if (s/hgl? p) (assoc m :port (c/convLong p 4444)) m)]
     (log/info "enabling remote shutdown hook: %s" m)
     (swap! gist
            assoc
@@ -91,17 +90,17 @@
 ;;create and synthesize Execvisor
 (defn- primodial "" [gist]
   (log/info "\n%s\n%s\n%s"
-            (str<> 78 \=)
-            "inside primodial()" (str<> 78 \=))
+            (s/str<> 78 \=)
+            "inside primodial()" (s/str<> 78 \=))
   ;;(log/info "exec = czlab.wabbit.exec.Execvisor")
-  (do-with [e (execvisor<>)]
+  (c/do-with [e (e/execvisor<>)]
     (swap! gist
            assoc
            :stop! #(stopCLI e gist))
     (.init ^Initable e @gist)
     (log/info "\n%s\n%s\n%s"
-              (str<> 78 \*)
-              "starting wabbit..." (str<> 78 \*))
+              (s/str<> 78 \*)
+              "starting wabbit..." (s/str<> 78 \*))
     (.start ^Startable e)
     (log/info "wabbit started")))
 
@@ -114,29 +113,29 @@
    (let
      [{:keys [locale info]}
       confObj
-      cn (stror (:country locale) "US")
-      ln (stror (:lang locale) "en")
+      cn (s/stror (:country locale) "US")
+      ln (s/stror (:lang locale) "en")
       verStr (some-> c-verprops
-                     loadResource (.getString "version"))
+                     r/loadResource
+                     (.getString "version"))
       fp (io/file cwd "wabbit.pid")
       loc (Locale. ln cn)
-      rc (getResource c-rcb loc)
+      rc (r/getResource c-rcb loc)
       ctx (atom
-            {:encoding (stror (:encoding info) "utf-8")
+            {:encoding (s/stror (:encoding info) "utf-8")
              :wabbit {:version (str verStr) }
              :homeDir (io/file cwd)
              :pidFile fp
              :locale loc
              :conf confObj})
-      cz (getCldr)]
-     (log/info "wabbit.user.dir = %s" (fpath cwd))
+      cz (m/getCldr)]
+     (log/info "wabbit.user.dir = %s" (c/fpath cwd))
      (log/info "wabbit.version = %s" verStr)
-     (doto->> rc
-              (test-some "base resource" )
-              I18N/setBase )
+     (c/doto->> rc
+                (c/test-some "base resource" ) I18N/setBase)
      (log/info "wabbit's i18n#base loaded")
      (let [exec (primodial ctx)]
-       (doto fp (writeFile (processPid)) .deleteOnExit)
+       (doto fp (i/writeFile (p/processPid)) .deleteOnExit)
        (log/info "wrote wabbit.pid - ok")
        (enableKillHook exec ctx)
        (exitHook #(stopCLI exec ctx))
@@ -147,7 +146,7 @@
        (log/debug "%s" @ctx)
        (log/info "wabbit is now running...")
        (when join?
-         (while (not @stopcli) (pause 3000))
+         (while (not @stopcli) (c/pause 3000))
          (log/info "vm shut down")
          (log/info "(bye)")
          (shutdown-agents))))))
@@ -158,15 +157,13 @@
 
   (precondFile (io/file cwd cfg-pod-cf))
   (startViaConfig cwd
-                  (slurpXXXConf cwd cfg-pod-cf true) true))
+                  (b/slurpXXXConf cwd cfg-pod-cf true) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main "" [& args]
-  (let
-    [cwd (getCwd)
-     dir (io/file cwd)]
-    (sysProp! "wabbit.user.dir" (fpath dir))
+  (let [dir (-> (c/getCwd) io/file)]
+    (c/sysProp! "wabbit.user.dir" (c/fpath dir))
     (startViaCons dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
