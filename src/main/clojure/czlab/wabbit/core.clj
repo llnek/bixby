@@ -76,8 +76,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- enableKillHook "" [exec gist]
-  (let [[h p] (-> "wabbit.kill.port" sysProp str (.split ":"))
-        m {:host "localhost" :port 4444 :threads 2}
+  (let [[h p] (-> "wabbit.kill.port" c/sysProp str (.split ":"))
+        m {:host "localhost" :port 4444 :threads 1}
         m (if (s/hgl? h) (assoc m :host h) m)
         m (if (s/hgl? p) (assoc m :port (c/convLong p 4444)) m)]
     (log/info "enabling remote shutdown hook: %s" m)
@@ -115,12 +115,12 @@
       confObj
       cn (s/stror (:country locale) "US")
       ln (s/stror (:lang locale) "en")
-      verStr (some-> c-verprops
+      verStr (some-> b/c-verprops
                      r/loadResource
                      (.getString "version"))
       fp (io/file cwd "wabbit.pid")
       loc (Locale. ln cn)
-      rc (r/getResource c-rcb loc)
+      rc (r/getResource b/c-rcb loc)
       ctx (atom
             {:encoding (s/stror (:encoding info) "utf-8")
              :wabbit {:version (str verStr) }
@@ -138,7 +138,7 @@
        (doto fp (i/writeFile (p/processPid)) .deleteOnExit)
        (log/info "wrote wabbit.pid - ok")
        (enableKillHook exec ctx)
-       (exitHook #(stopCLI exec ctx))
+       (p/exitHook #(stopCLI exec ctx))
        (log/info "added shutdown hook")
        (log/info "app-loader: %s" (type cz))
        (log/info "sys-loader: %s"
@@ -155,9 +155,9 @@
 ;;
 (defn startViaCons "" [cwd]
 
-  (precondFile (io/file cwd cfg-pod-cf))
+  (b/precondFile (io/file cwd b/cfg-pod-cf))
   (startViaConfig cwd
-                  (b/slurpXXXConf cwd cfg-pod-cf true) true))
+                  (b/slurpXXXConf cwd b/cfg-pod-cf true) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

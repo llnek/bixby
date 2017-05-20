@@ -8,16 +8,16 @@
 
 (ns czlab.test.wabbit.test
 
-  (:require [czlab.basal.logging :as log]
+  (:require [czlab.basal.log :as log]
             [clojure.string :as cs]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [czlab.basal.core :as c]
+            [czlab.basal.io :as i]
+            [czlab.basal.str :as s])
 
-  (:use [czlab.basal.core]
-        [czlab.basal.io]
-        [czlab.basal.str]
-        [clojure.test])
+  (:use [clojure.test])
 
-  (:import [java.io File ]))
+  (:import [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

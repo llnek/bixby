@@ -65,7 +65,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeGetDBPool "" [co gid]
-  (get (:dbps @co) (keyword (s/stror gid dft-dbid))))
+  (get (:dbps @co) (keyword (s/stror gid b/dft-dbid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -73,7 +73,7 @@
   (when-some
     [p (maybeGetDBPool co gid)]
     (log/debug "acquiring from dbpool: %s" p)
-    (dbopen<+> p (:schema @co))))
+    (ht/dbopen<+> p (:schema @co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -82,13 +82,13 @@
   (some-> ^Disposable (xp/get-scheduler exec) .dispose)
   (doseq [[k v] (:dbps @exec)]
     (log/debug "finz dbpool %s" (name k))
-    (xp/shut-down v))
-  (i/closeQ (cljrt exec)))
+    (hc/shut-down v))
+  (i/closeQ (xp/cljrt exec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- plug! "" [co p cfg0]
-  (do-with [p p]
+  (c/do-with [p p]
     (log/info "preparing puglet %s..." p)
     (log/info "config params=\n%s" cfg0)
     (.init ^Initable p cfg0)
@@ -99,42 +99,42 @@
 (defn- handleDep "" [co out [dn dv]]
   ;;(log/debug "handleDep: %s %s" dn dv)
   (let [[dep cfg] dv
-        v (plugletViaType<> co dep (keyword dn))
+        v (xp/plugletViaType<> co dep (keyword dn))
         v (plug! co v cfg)]
-    (assoc! out (id?? v) v)))
+    (assoc! out (c/id?? v) v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- xrefPlugs<> "" [exec plugs]
   (let
     [ps
-     (preduce<map>
+     (c/preduce<map>
        #(let
           [[k cfg] %2
            {:keys [$pluggable
                    enabled?]} cfg]
           (if-not (or (false? enabled?)
                       (nil? $pluggable))
-            (let [v (plugletViaType<> exec $pluggable k)
+            (let [v (xp/plugletViaType<> exec $pluggable k)
                   v (plug! exec v cfg)
                   deps (:deps (:pspec @v))]
               (log/debug "pluglet %s: deps = %s" k deps)
               (-> (reduce
                     (fn [m d]
                       (handleDep exec m d)) %1 deps)
-                  (assoc! (id?? v) v)))
+                  (assoc! (c/id?? v) v)))
             %1))
        plugs)]
     (->>
       (let [api "czlab.wabbit.jmx.core/JmxMonitor"
             {:keys [jmx]} (:conf @exec)]
-        (if (and (!false? (:enabled? jmx))
+        (if (and (c/!false? (:enabled? jmx))
                  (not-empty ps))
-          (let [x (plugletViaType<> exec api :$jmx)
+          (let [x (xp/plugletViaType<> exec api :$jmx)
                 x (plug! exec x jmx)]
-            (assoc ps (id?? x) x))
+            (assoc ps (c/id?? x) x))
           ps))
-      (setf! exec :plugs))
+      (c/setf! exec :plugs))
     (log/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")
     (doseq [[k _] (:plugs @exec)]
       (log/info "pluglet id= %s" k))
@@ -143,19 +143,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn- maybeInitDBs "" [exec conf]
-  (let [pk (pkey-chars exec)]
-    (preduce<map>
+  (let [pk (xp/pkey-chars exec)]
+    (c/preduce<map>
       #(let
          [[k v] %2]
-         (if (!false? (:enabled? v))
+         (if (c/!false? (:enabled? v))
            (let
-             [pwd (-> (:passwd v)
-                      (pwd<> pk) p-text)
-              cfg (merge v
-                         {:passwd pwd :id k})]
+             [pwd (-> (:passwd v) (cc/pwd<> pk) cc/p-text)
+              cfg (merge v {:passwd pwd :id k})]
              (assoc! %1
                      k
-                     (dbpool<> (dbspec<> cfg) cfg)))
+                     (hc/dbpool<> (hc/dbspec<> cfg) cfg)))
            %1))
       (:rdbms conf))))
 
@@ -163,71 +161,71 @@
 ;;
 (defn- init2 "" [exec {:keys [locale version conf] :as env}]
   (let
-    [mcz (strKW (get-in conf
-                        [:info :main]))
-     rts (cljrt exec)
-     pid (id?? exec)
+    [mcz (s/strKW (get-in conf
+                          [:info :main]))
+     rts (xp/cljrt exec)
+     pid (c/id?? exec)
      res (->>
-           (format c-rcprops
+           (format b/c-rcprops
                    (.getLanguage ^Locale locale))
-           (io/file (get-home-dir exec) dn-etc))]
-    (setf! exec :version version)
-    (when (fileRead? res)
-      (->> (loadResource res)
+           (io/file (xp/get-home-dir exec) b/dn-etc))]
+    (c/setf! exec :version version)
+    (when (i/fileRead? res)
+      (->> (r/loadResource res)
            (I18N/setBundle pid))
       (log/info "loaded i18n resources"))
     (log/info "processing db-defs...")
-    (doto->>
+    (c/doto->>
       (maybeInitDBs exec conf)
-      (setf! exec :dbps)
+      (c/setf! exec :dbps)
       (log/debug "db [dbpools]\n%s"))
     ;; build the user data-models?
-    (when-some+
-      [dmCZ (strKW (:data-model conf))]
+    (c/when-some+
+      [dmCZ (s/strKW (:data-model conf))]
       (log/info "schema-func: %s" dmCZ)
       (if-some
-        [sc (try! (.callEx rts
-                           dmCZ (vargs* Object exec)))]
-        (setf! exec :schema sc)
-        (trap! Exception
-               "Invalid data-model schema ")))
+        [sc (c/try! (.callEx rts
+                             dmCZ (c/vargs* Object exec)))]
+        (c/setf! exec :schema sc)
+        (c/trap! Exception
+                 "Invalid data-model schema ")))
     (.activate ^Activable
-               (get-scheduler exec))
+               (xp/get-scheduler exec))
     (xrefPlugs<> exec (:plugins conf))
     (log/info "main func: %s" mcz)
-    (if (hgl? mcz)
-      (.callEx rts mcz (vargs* Object exec)))
+    (if (s/hgl? mcz)
+      (.callEx rts mcz (c/vargs* Object exec)))
     (log/info "execvisor: (%s) initialized - ok" pid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(decl-mutable ExecvisorObj
+(c/decl-mutable ExecvisorObj
 
-  Execvisor
+  xp/Execvisor
 
-  (uptime-in-millis [_] (- (now<>) start-time))
+  (uptime-in-millis [_] (- (c/now<>) start-time))
   (get-home-dir [me] (:homeDir @me))
   (get-locale [me] (:locale @me))
   (get-start-time [_] start-time)
   (cljrt [me] (:rts @me))
   (kill9! [me] ((:stop! @me) ))
   (has-child? [me sid]
-    (in? (:plugs @me) (keyword sid)))
+    (c/in? (:plugs @me) (keyword sid)))
   (get-child [me sid]
     (get (:plugs @me) (keyword sid)))
   (get-scheduler [me] (:cpu @me))
 
-  SqlAccess
+  xp/SqlAccess
   (acquire-db-pool [this gid] (maybeGetDBPool this gid))
   (acquire-db-api [this gid] (maybeGetDBAPI this gid))
   (dft-db-pool [this] (maybeGetDBPool this ""))
   (dft-db-api [this] (maybeGetDBAPI this ""))
 
-  KeyAccess
+  xp/KeyAccess
   (pkey-bytes [me] (-> (get-in (:conf @me)
-                               [:info :digest]) bytesit))
+                               [:info :digest]) c/bytesit))
   (pkey-chars [me] (-> (get-in (:conf @me)
-                               [:info :digest]) charsit))
+                               [:info :digest]) c/charsit))
 
   Versioned
   (version [me] (:version @me))
@@ -235,12 +233,12 @@
   Initable
   (init [me arg]
     (let [{:keys [encoding homeDir]} arg]
-      (sysProp! "file.encoding" encoding)
-      (logcomp "init" me)
-      (copy* me arg)
+      (c/sysProp! "file.encoding" encoding)
+      (b/logcomp "init" me)
+      (c/copy* me arg)
       (-> (io/file homeDir
-                   dn-etc
-                   "mime.properties") setupCache)
+                   b/dn-etc
+                   "mime.properties") mi/setupCache)
       (log/info "loaded mime#cache - ok")
       (init2 me @me)))
 
@@ -253,8 +251,8 @@
         (log/info "puglet: %s to start" k)
         (.start ^Startable v))
       (some-> jmx
-              (jmx-reg me
-                      "czlab" "execvisor" ["root=wabbit"]))
+              (xp/jmx-reg me
+                          "czlab" "execvisor" ["root=wabbit"]))
       (log/info "execvisor started")))
   (start [me] (.start me nil))
   (stop [me]
@@ -279,14 +277,14 @@
 ;;
 (defn execvisor<> "Create an Execvisor" []
 
-  (let [pid (toKW "Execvisor." (seqint2))
-        ps (sname pid)]
-    (mutable<> ExecvisorObj
-               {:cpu (scheduler<> ps)
-                :plugs {}
-                :dbps {}
-                :id pid
-                :rts (Cljrt/newrt (getCldr) ps) })))
+  (let [pid (s/toKW "Execvisor." (c/seqint2))
+        ps (s/sname pid)]
+    (c/mutable<> ExecvisorObj
+                 {:cpu (u/scheduler<> ps)
+                  :plugs {}
+                  :dbps {}
+                  :id pid
+                  :rts (Cljrt/newrt (m/getCldr) ps) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

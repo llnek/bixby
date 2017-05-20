@@ -11,12 +11,11 @@
 
   czlab.wabbit.xpis
 
-  (:require [czlab.basal.logging :as log]
+  (:require [czlab.basal.log :as log]
             [clojure.string :as cs]
-            [clojure.java.io :as io])
-
-  (:use [czlab.basal.core]
-        [czlab.basal.str])
+            [clojure.java.io :as io]
+            [czlab.basal.core :as c]
+            [czlab.basal.str :as s])
 
   (:import [javax.management ObjectName]
            [czlab.basal Cljrt]
@@ -85,21 +84,21 @@
   (if (var? emType)
     (@emType exec emAlias)
     (let [^Cljrt clj (cljrt exec)
-          emStr (strKW emType)]
+          emStr (s/strKW emType)]
       (if-not (neg? (.indexOf emStr "/"))
         (.callEx clj
                  emStr
-                 (vargs* Object exec emAlias))))))
+                 (c/vargs* Object exec emAlias))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn assertPluglet
   ""
   [plug]
-  (do-with [plug plug]
-    (test-cond "Pluglet is malformed"
-               (and (ist? Hierarchical plug)
-                    (ist? LifeCycle plug)))))
+  (c/do-with [plug plug]
+    (c/test-cond "Pluglet is malformed"
+               (and (c/ist? Hierarchical plug)
+                    (c/ist? LifeCycle plug)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
