@@ -9,6 +9,7 @@
   :url "https://github.com/llnek/wabbit"
 
   :dependencies [[io.czlab/wabbit-base "1.0.0"]
+                 [commons-logging "1.2"]
                  [io.czlab/twisty "1.0.0"]
                  [io.czlab/convoy "1.0.0"]
                  [io.czlab/horde "1.0.0"]]
