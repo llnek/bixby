@@ -163,9 +163,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn -main "" [& args]
-  (let [dir (-> (c/getCwd) io/file)]
-    (c/sysProp! "wabbit.user.dir" (c/fpath dir))
-    (startViaCons dir)))
+  (let [p2 (second args)
+        p1 (first args)]
+    (c/do-with [dir
+                (if (or (= "--home" p1)(= "-home" p1))
+                  (io/file p2)
+                  (io/file (c/getCwd)))]
+               (c/sysProp! "wabbit.user.dir" (c/fpath dir))
+               (startViaCons dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
