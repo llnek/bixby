@@ -20,6 +20,7 @@
             [czlab.basal.meta :as m :refer [setCldr getCldr]]
             [czlab.basal.format :as f :refer [readEdn]]
             [czlab.basal.process :as p]
+            [io.aviso.ansi :as ansi]
             [czlab.basal.log :as log]
             [clojure.string :as cs]
             [clojure.java.io :as io]
@@ -154,7 +155,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 (defn startViaCons "" [cwd]
-
+  (println (ansi/bold-yellow (b/bannerText)))
   (b/precondFile (io/file cwd b/cfg-pod-cf))
   (startViaConfig cwd
                   (b/slurpXXXConf cwd b/cfg-pod-cf true) true))

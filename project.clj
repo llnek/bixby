@@ -9,6 +9,8 @@
   :url "https://github.com/llnek/wabbit"
 
   :dependencies [[io.czlab/wabbit-base "1.0.0"]
+                 [io.aviso/pretty "0.1.33"]
+                 ;;shiro needs this
                  [commons-logging "1.2"]
                  [io.czlab/twisty "1.0.0"]
                  [io.czlab/convoy "1.0.0"]
