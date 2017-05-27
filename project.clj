@@ -20,9 +20,7 @@
   :plugins [[cider/cider-nrepl "0.14.0"]
             [lein-javadoc "0.3.0"]
             [lein-codox "0.10.3"]
-            [lein-czlab "1.0.0"]
             [lein-cprint "1.2.0"]]
-  :hooks [leiningen.lein-czlab]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojure "1.8.0" :scope "provided"]]}
