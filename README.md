@@ -1,6 +1,6 @@
 wabbit
 =====
-Serverside framework
+Service bus, web framework
 
 [![Build Status](https://travis-ci.org/llnek/wabbit.svg?branch=master)](https://travis-ci.org/llnek/wabbit)
 

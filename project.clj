@@ -5,7 +5,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
-  :description ""
+  :description "Service bus, web framework."
   :url "https://github.com/llnek/wabbit"
 
   :dependencies [[org.apache.commons/commons-lang3 "3.5"]
@@ -40,6 +40,7 @@
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
   :resource-paths ["src/main/resources"]
+
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
   :javac-options ["-source" "8"
