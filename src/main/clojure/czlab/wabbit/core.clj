@@ -121,7 +121,7 @@
                      (.getString "version"))
       fp (io/file cwd "wabbit.pid")
       loc (Locale. ln cn)
-      rc (r/getResource b/c-rcb loc)
+      rc (r/getResource b/c-rcb-base loc)
       ctx (atom
             {:encoding (s/stror (:encoding info) "utf-8")
              :wabbit {:version (str verStr) }

@@ -8,7 +8,8 @@
   :description ""
   :url "https://github.com/llnek/wabbit"
 
-  :dependencies [[io.czlab/wabbit-base "1.0.0"]
+  :dependencies [[org.apache.commons/commons-lang3 "3.5"]
+                 [commons-io/commons-io "2.5"]
                  [io.aviso/pretty "0.1.33"]
                  ;;shiro needs this
                  [commons-logging "1.2"]
@@ -19,7 +20,9 @@
   :plugins [[cider/cider-nrepl "0.14.0"]
             [lein-javadoc "0.3.0"]
             [lein-codox "0.10.3"]
+            [lein-czlab "1.0.0"]
             [lein-cprint "1.2.0"]]
+  :hooks [leiningen.lein-czlab]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojure "1.8.0" :scope "provided"]]}
@@ -38,6 +41,7 @@
   :java-source-paths ["src/main/java" "src/test/java"]
   :source-paths ["src/main/clojure"]
   :test-paths ["src/test/clojure"]
+  :resource-paths ["src/main/resources"]
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
   :javac-options ["-source" "8"
