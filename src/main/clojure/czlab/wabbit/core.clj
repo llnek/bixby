@@ -1,4 +1,4 @@
-;; Copyright (c) 2013-2017, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -13,166 +13,274 @@
 
   (:gen-class)
 
-  (:require [czlab.basal.resources :as r :refer [loadResource getResource]]
-            [czlab.basal.io :as i :refer [closeQ readAsStr writeFile]]
-            [czlab.wabbit.exec :as e :refer [execvisor<>]]
-            [czlab.basal.scheduler :as u :refer [scheduler<>]]
-            [czlab.basal.meta :as m :refer [setCldr getCldr]]
-            [czlab.basal.format :as f :refer [readEdn]]
-            [czlab.basal.process :as p]
-            [io.aviso.ansi :as ansi]
-            [czlab.basal.log :as log]
-            [clojure.string :as cs]
+  (:require [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
+            [clojure.walk :as cw]
             [clojure.java.io :as io]
-            [czlab.wabbit.base :as b]
+            [io.aviso.ansi :as ansi]
+            [czlab.basal.log :as l]
+            [clojure.string :as cs]
+            [czlab.basal.str :as s]
             [czlab.basal.core :as c]
-            [czlab.basal.str :as s])
+            [czlab.basal.proc :as p]
+            [czlab.basal.meta :as m]
+            [czlab.basal.cljrt :as rt])
 
-  (:import [czlab.jasal
-            Startable
-            CU
-            I18N
-            Initable
-            Disposable]
-           [clojure.lang Atom APersistentMap]
-           [czlab.basal Cljrt]
-           [java.io File]
-           [java.util ResourceBundle Locale]))
+  (:import [clojure.lang Atom APersistentMap]
+           [java.util ResourceBundle Locale]
+           [org.apache.commons.io
+            FileUtils]
+           [java.io
+            File
+            IOException]
+           [org.apache.commons.lang3.text StrSubstitutor]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(def ^:private stopcli (volatile! false))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String c-verprops "czlab/wabbit/version.properties")
+(def ^String c-rcb-base "czlab.wabbit/Resources")
+(def ^String en-rcprops  "Resources_en.properties")
+(def ^String c-rcprops  "Resources_%s.properties")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- stopCLI "" [exec gist]
-
-  (let [{:keys [pidFile
-                killSvr]} @gist]
-    (when-not @stopcli
-      (vreset! stopcli true)
-      (print "\n\n")
-      (log/info "unhooking remote shutdown...")
-      (if (fn? killSvr) (killSvr))
-      (log/info "remote hook closed - ok")
-      (log/info "about to stop wabbit...")
-      (log/info "wabbit is shutting down...")
-      (.stop ^Startable exec)
-      (.dispose ^Disposable exec)
-      (shutdown-agents)
-      (log/info "wabbit stopped"))))
+;(def ^:private ^String sys-devid-pfx "system.####")
+;(def ^:private ^String sys-devid-sfx "####")
+;(def sys-devid-regex #"system::[0-9A-Za-z_\-\.]+" )
+;(def shutdown-devid #"system::kill_9" )
+;(def ^String pod-protocol  "pod:" )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- hookToKill "" [cb cfg]
-  (with-open [rts (Cljrt/newrt)]
-    (let [v "czlab.wabbit.plugs.http/Discarder!"]
-      (.callEx rts
-               v
-               (c/vargs* Object cb cfg)))))
+(def ^String shutdown-uri "/kill9")
+(def ^String dft-dbid "default")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn- enableKillHook "" [exec gist]
-  (let [[h p] (-> "wabbit.kill.port" c/sysProp str (.split ":"))
-        m {:host "localhost" :port 4444 :threads 1}
-        m (if (s/hgl? h) (assoc m :host h) m)
-        m (if (s/hgl? p) (assoc m :port (c/convLong p 4444)) m)]
-    (log/info "enabling remote shutdown hook: %s" m)
-    (swap! gist
-           assoc
-           :killSvr
-           (hookToKill #(stopCLI exec gist) m))))
+(def ^String meta-inf  "META-INF")
+(def ^String web-inf  "WEB-INF")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;create and synthesize Execvisor
-(defn- primodial "" [gist]
-  (log/info "\n%s\n%s\n%s"
-            (s/str<> 78 \=)
-            "inside primodial()" (s/str<> 78 \=))
-  ;;(log/info "exec = czlab.wabbit.exec.Execvisor")
-  (c/do-with [e (e/execvisor<>)]
-    (swap! gist
-           assoc
-           :stop! #(stopCLI e gist))
-    (.init ^Initable e @gist)
-    (log/info "\n%s\n%s\n%s"
-              (s/str<> 78 \*)
-              "starting wabbit..." (s/str<> 78 \*))
-    (.start ^Startable e)
-    (log/info "wabbit started")))
+(def ^String dn-target "target")
+(def ^String dn-build "build")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String dn-templates  "templates")
+(def ^String dn-classes "classes")
+(def ^String dn-bin "bin")
+(def ^String dn-conf "conf")
+(def ^String dn-lib "lib")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String dn-cfgapp "etc/app")
+(def ^String dn-etc "etc")
+(def ^String dn-cfgweb "etc/web")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String dn-scripts "scripts")
+(def ^String dn-styles "styles")
+(def ^String dn-pub "public")
+(def ^String dn-logs "logs")
+(def ^String dn-tmp "tmp")
+(def ^String dn-dbs "dbs")
+(def ^String dn-dist "dist")
+(def ^String dn-views  "htmls")
+(def ^String dn-pages  "pages")
+(def ^String dn-patch "patch")
+(def ^String dn-media "media")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String web-classes  (str web-inf  "/" dn-classes))
+(def ^String web-lib  (str web-inf  "/" dn-lib))
+(def ^String web-log  (str web-inf  "/logs"))
+(def ^String web-xml  (str web-inf  "/web.xml"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String mn-rnotes (str meta-inf "/" "RELEASE-NOTES.txt"))
+(def ^String mn-readme (str meta-inf "/" "README.md"))
+(def ^String mn-notes (str meta-inf "/" "NOTES.txt"))
+(def ^String mn-lic (str meta-inf "/" "LICENSE.txt"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def ^String pod-cf  "pod.conf")
+(def ^String cfg-pod-cf  (str dn-conf "/" pod-cf))
+(def ^String cfg-pub-pages  (str dn-pub "/" dn-pages))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def evt-opts :____eventoptions)
+(def jslot-cred :credential)
+(def jslot-user :principal)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defonce ^:private rc-bundles-cache (atom {:base nil :rcbs {}}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn del-rc-bundle!
+  "Remove a resource bundle from the cache." [b]
+  (swap! rc-bundles-cache #(update-in % [:rcbs] dissoc b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn put-rc-bundle!
+  "Add a resource bundle to the cache." [b rc]
+  (swap! rc-bundles-cache #(update-in % [:rcbs] assoc b rc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-rc-bundle
+  "Get a cached bundle." [b] (get-in @rc-bundles-cache [:rcbs b]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-rc-base
+  "Get the baseline bundle." [] (:base @rc-bundles-cache))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn set-rc-base!
+  "Set the baseline resource bundle." [base]
+  (swap! rc-bundles-cache #(assoc % :base base)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn banner
+  "A ASCII banner."
+  {:no-doc true :tag String} []
+  (str  "              __   __   _ __ " "\n"
+        " _    _____ _/ /  / /  (_) /_" "\n"
+        "| |/|/ / _ `/ _ \\/ _ \\/ / __/" "\n"
+        "|__,__/\\_,_/_.__/_.__/_/\\__/ " "\n"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defmacro gtid
+  "typeid of component." [obj] `(str ~obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn startViaConfig ""
-
-  ([cwd confObj] (startViaConfig cwd confObj false))
-  ([cwd confObj join?]
-   (let
-     [{:keys [locale info]}
-      confObj
-      cn (s/stror (:country locale) "US")
-      ln (s/stror (:lang locale) "en")
-      verStr (some-> b/c-verprops
-                     r/loadResource
-                     (.getString "version"))
-      fp (io/file cwd "wabbit.pid")
-      loc (Locale. ln cn)
-      rc (r/getResource b/c-rcb-base loc)
-      ctx (atom
-            {:encoding (s/stror (:encoding info) "utf-8")
-             :wabbit {:version (str verStr) }
-             :homeDir (io/file cwd)
-             :pidFile fp
-             :locale loc
-             :conf confObj})
-      cz (m/getCldr)]
-     (log/info "wabbit.user.dir = %s" (c/fpath cwd))
-     (log/info "wabbit.version = %s" verStr)
-     (c/doto->> rc
-                (c/test-some "base resource" ) I18N/setBase)
-     (log/info "wabbit's i18n#base loaded")
-     (let [exec (primodial ctx)]
-       (doto fp (i/writeFile (p/processPid)) .deleteOnExit)
-       (log/info "wrote wabbit.pid - ok")
-       (enableKillHook exec ctx)
-       (p/exitHook #(stopCLI exec ctx))
-       (log/info "added shutdown hook")
-       (log/info "app-loader: %s" (type cz))
-       (log/info "sys-loader: %s"
-                 (type (.getParent cz)))
-       (log/debug "%s" @ctx)
-       (log/info "wabbit is now running...")
-       (when join?
-         (while (not @stopcli) (c/pause 3000))
-         (log/info "vm shut down")
-         (log/info "(bye)")
-         (shutdown-agents))))))
+(defmacro log-comp
+  "*internal*" [pfx co]
+  `(czlab.basal.log/info
+     "%s: {%s}#<%s>" ~pfx (czlab.wabbit.core/gtid ~co) (:typeid ~co)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn startViaCons "" [cwd]
-  (println (ansi/bold-yellow (b/bannerText)))
-  (b/precondFile (io/file cwd b/cfg-pod-cf))
-  (startViaConfig cwd
-                  (b/slurpXXXConf cwd b/cfg-pod-cf true) true))
+(defn get-proc-dir
+  "Get the current directory."
+  ^File [] (io/file (u/sys-prop "wabbit.user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-(defn -main "" [& args]
-  (let [p2 (second args)
-        p1 (first args)]
-    (c/do-with [dir
-                (if (or (= "--home" p1)(= "-home" p1))
-                  (io/file p2)
-                  (io/file (c/getCwd)))]
-               (c/sysProp! "wabbit.user.dir" (c/fpath dir))
-               (startViaCons dir))))
+(defn expand-sys-props
+  "Expand system properties found in value."
+  ^String [value]
+  (if (s/nichts? value)
+    value (StrSubstitutor/replaceSystemProperties ^String value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn expand-env-vars
+  "Expand env vars found in value."
+  ^String [value]
+  (if (s/nichts? value)
+    value (-> (System/getenv) StrSubstitutor. (.replace ^String value))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn expand-vars
+  "Replaces all variables in value."
+  ^String [value]
+  (if (or (s/nichts? value)
+          (nil? (cs/index-of value "${")))
+    value
+    (-> (cs/replace value
+                    "${pod.dir}"
+                    "${wabbit.user.dir}")
+        expand-sys-props expand-env-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn expand-vars-in-form
+  "" [form]
+  (cw/postwalk #(if (string? %) (expand-vars %) %) form))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn read-conf
+  "Parse an edn configuration file."
+  {:tag String}
+  ([podDir confile]
+   (read-conf (io/file podDir dn-conf confile)))
+  ([file]
+   (c/doto->> (i/change-content (io/file file)
+                                #(expand-vars %))
+              (l/debug "[%s]\n%s." file))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;asserts that the directory is readable & writable.
+(defn ^:no-doc precond-dir
+  "Assert dir(s) are read-writeable?" [f & dirs]
+  (c/let#true [base (get-rc-base)]
+    (doseq [d (cons f dirs)]
+      (c/test-cond (u/rstr base "dir.no.rw" d) (i/dir-read-write? d)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;asserts that the file is readable
+(defn ^:no-doc precond-file
+  "Assert file(s) are readable?" [ff & files]
+  (c/let#true [base (get-rc-base)]
+    (doseq [f (cons ff files)]
+      (c/test-cond (u/rstr base "file.no.r" f) (i/file-read? f)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn ^:no-doc maybe-dir??
+  "If the key maps to a File?"
+  ^File [m kn]
+  (let [v (get m kn)]
+    (condp instance? v
+      String (io/file v)
+      File v
+      (u/throw-IOE (u/rstr (get-rc-base) "wabbit.no.dir" kn)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn expand-conf
+  "" [cfgObj] (-> (i/fmt->edn cfgObj) expand-vars i/read-edn))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn slurp-conf
+  "Parse config file."
+  ([podDir conf]
+   (slurp-conf podDir conf false))
+  ([podDir conf expVars?]
+   (let [f (io/file podDir conf)
+         s (str "{\n" (i/slurp-utf8 f) "\n}")]
+     (i/read-edn
+       (if expVars?
+         (expand-vars (cs/replace s
+                                  "${pod.dir}"
+                                  "${wabbit.user.dir}")) s)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn spit-conf
+  "Write out config file."
+  [podDir conf cfgObj]
+  (let [f (io/file podDir conf)
+        s (s/strim (i/fmt->edn cfgObj))]
+    (i/spit-utf8 f
+                 (if (s/wrapped? s "{" "}")
+                   (-> (s/drop-head s 1) (s/drop-tail 1)) s))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn prevar-cfg
+  ""
+  ([cfg] (prevar-cfg cfg :handler))
+  ([cfg kee]
+   (let [h (get cfg kee)
+         h (if (keyword? h) (s/kw->str h) h)]
+     (c/wo* [clj (rt/cljrt<>)]
+       (assoc cfg
+              kee (cond (s/hgl? h) (rt/var* clj h)
+                        (or (var? h)
+                            (nil? h)) h
+                        :else
+                        (c/raise! "Bad handler: %s!" kee)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn delete-dir
+  "Safely delete a folder." [dir]
+  (c/try! (FileUtils/deleteDirectory (io/file dir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn clean-dir
+  "Safely clear a folder." [dir]
+  (c/try! (FileUtils/cleanDirectory (io/file dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 
