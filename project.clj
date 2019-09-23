@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/wabbit "1.0.0"
+(defproject io.czlab/wabbit "1.1.0"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -15,6 +15,7 @@
                  ;;shiro needs this
                  [commons-logging "1.2"]
                  [io.czlab/twisty "1.1.0"]
+                 [io.czlab/flux "1.1.0"]
                  [io.czlab/niou "1.1.0"]
                  [io.czlab/nettio "1.2.0"]
                  [io.czlab/hoard "1.1.0"]

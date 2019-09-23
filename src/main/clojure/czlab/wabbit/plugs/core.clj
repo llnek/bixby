@@ -15,10 +15,9 @@
             [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.basal.proc :as p]
-            [czlab.basal.str :as s]
             [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.proto :as po])
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.xpis :as xp])
 
   (:import [java.util Timer TimerTask]))
 
@@ -65,11 +64,11 @@
      (c/do#nil
        (l/debug "plug = %s\narg = %s\ncb = %s." (b/gtid plug) arg h)
        (l/debug "#%s => %s :is disp!" (po/id evt) (po/id plug))
-       (if (fn? f)
-         (p/run sc (if-not (fn? dispfn)
-                     (u/run<> (f evt))
-                     (u/run<> (dispfn f evt))))
-         (process-orphan evt))))))
+       (if-not (fn? f)
+         (process-orphan evt)
+         (p/run* sc
+                 (or dispfn f)
+                 (if dispfn [f evt] [evt])))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

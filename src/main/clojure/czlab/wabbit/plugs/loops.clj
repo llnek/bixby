@@ -18,13 +18,11 @@
             [czlab.basal.log :as l]
             [czlab.wabbit.core :as b]
             [czlab.wabbit.xpis :as xp]
-            [czlab.basal.core :as c :refer [is?]]
-            [czlab.basal.str :as s]
-            [czlab.basal.proto :as po]
-            [czlab.wabbit.plugs.core :as pc])
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.plugs.core :as pc]
+            [czlab.basal.core :as c :refer [is?]])
 
-  (:import [java.util Date Timer TimerTask]
-           [clojure.lang APersistentMap]))
+  (:import [java.util Date Timer TimerTask]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -33,7 +31,6 @@
 (defn- cfg-repeat
   ^TimerTask
   [^Timer timer [dw ds] ^long intv func]
-
   (when (c/spos? intv)
     (l/info "scheduling a *repeating* timer: %dms" intv)
     (c/do-with [tt (u/tmtask<> func)]
@@ -47,7 +44,6 @@
 (defn- cfg-once
   ^TimerTask
   [^Timer timer [dw ds] func]
-
   (l/info "scheduling a *one-shot* timer at %s" (i/fmt->edn [dw ds]))
   (c/do-with [tt (u/tmtask<> func)]
     (if (is? Date dw)
@@ -95,9 +91,9 @@
 (defn- evt<>
   [co repeat?]
   (c/object<> TimerMsg
-              :id (str "TimerMsg#" (u/seqint2))
               :source co
-              :tstamp (u/system-time)))
+              :tstamp (u/system-time)
+              :id (str "TimerMsg#" (u/seqint2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xxx-timer
@@ -107,11 +103,9 @@
                     :info (:info spec)})]
     (reify
       xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :handler]))
+      (user-handler [_] (get-in @impl [:conf :$handler]))
+      (err-handler [_] (get-in @impl [:conf :$error]))
       (get-conf [_] (:conf @impl))
-      (err-handler [_]
-        (or (get-in @impl
-                    [:conf :error]) (:error spec)))
       po/Hierarchical
       (parent [me] plug)
       po/Idable
@@ -119,54 +113,58 @@
       po/Initable
       (init [me arg]
         (swap! impl
-               (c/fn_1 (update-in ____1
-                                  [:conf]
-                                  #(b/prevar-cfg (merge % arg))))))
+               update-in
+               [:conf]
+               #(-> (merge % arg)
+                    b/expand-vars
+                    b/prevar-cfg)) me)
       po/Finzable
-      (finz [me] (po/stop me))
+      (finz [me] (po/stop me) me)
       po/Startable
       (stop [me]
-        (u/cancel-timer-task! (:ttask @impl)))
+        (u/cancel-timer-task! (:ttask @impl)) me)
       (start [_] (po/start _ nil))
       (start [me arg]
         (swap! impl
-               (c/fn_1 (assoc ____1
-                              :ttask
-                              (cfg-timer (Timer. true)
-                                         #(pc/dispatch!
-                                            (evt<> me repeat?))
-                                         (:conf @impl) repeat?))))))))
+               assoc
+               :ttask
+               (cfg-timer (Timer. true)
+                          #(pc/dispatch!
+                             (evt<> me repeat?))
+                          (:conf @impl) repeat?)) me))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def RepeatingTimerSpec {:info {:name "Repeating Timer"
-                                :version "1.0.0"}
-                         :conf {:$pluggable ::RepeatingTimer
-                                :interval-secs 300
-                                :delay-secs 0
-                                :handler nil}})
+(def RepeatingTimerSpec
+  {:info {:name "Repeating Timer"
+          :version "1.0.0"}
+   :conf {:$pluggable ::RepeatingTimer
+          :interval-secs 300
+          :delay-secs 0
+          :$handler nil}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def OnceTimerSpec {:info {:name "One Shot Timer"
-                           :version "1.0.0"}
-                    :conf {:$pluggable ::OnceTimer
-                           :delay-secs 0
-                           :handler nil}})
+(def OnceTimerSpec
+  {:info {:name "One Shot Timer"
+          :version "1.0.0"}
+   :conf {:$pluggable ::OnceTimer
+          :delay-secs 0
+          :$handler nil}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn repeating-timer<>
   ""
-  ([_ id]
-   (repeating-timer<> _ id RepeatingTimerSpec))
   ([_ id spec]
-   (xxx-timer _ id (update-in spec [:conf] b/expand-vars-in-form) true)))
+   (xxx-timer _ id spec true))
+  ([_ id]
+   (repeating-timer<> _ id RepeatingTimerSpec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn once-timer<>
   ""
-  ([_ id]
-   (once-timer<> _ id OnceTimerSpec))
   ([_ id spec]
-   (xxx-timer _ id (update-in spec [:conf] b/expand-vars-in-form) false)))
+   (xxx-timer _ id spec false))
+  ([_ id]
+   (once-timer<> _ id OnceTimerSpec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

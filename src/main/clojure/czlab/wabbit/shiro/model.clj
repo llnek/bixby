@@ -13,7 +13,6 @@
 
   (:require [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.str :as s]
             [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.hoard.core :as hc]
@@ -28,8 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (hc/defschema
-  ^{:dynamic true}
-  *auth-meta-cache*
+  auth-meta-cache
   (hc/dbmodel<> ::StdAddress
                 (hc/dbfields {:addr1 {:size 255 :null false}
                               :addr2 {}
@@ -60,8 +58,8 @@
   ^String
   [spec]
   {:pre [(keyword? spec)]}
-  (if (c/in? hc/*db-types* spec)
-    (hd/get-ddl *auth-meta-cache* spec)
+  (if (hc/match-spec?? spec)
+    (hd/get-ddl auth-meta-cache spec)
     (hc/dberr! (u/rstr (b/get-rc-base) "db.unknown" (name spec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -18,8 +18,7 @@
             [clojure.string :as cs]
             [czlab.wabbit.core :as b]
             [czlab.wabbit.xpis :as xp]
-            [czlab.basal.str :as s]
-            [czlab.basal.proto :as po]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.plugs.core :as pc]
             [czlab.wabbit.plugs.loops :as pl]
             [czlab.basal.core :as c :refer [n#]])
@@ -86,14 +85,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init2
   [conf cfg0]
-  (let [{:as c2
-         :keys [fmask]
+  (let [{root :target-folder
          dest :recv-folder
-         root :target-folder} (merge conf cfg0)
+         :keys [fmask]
+         :as c2} (merge conf cfg0)
         ff (to-fmask (str fmask))]
-    (c/test-hgl "file-root-folder" root)
-    (l/info (str "monitoring folder: %s\n"
-                 "rcv folder: %s") root (s/nsn dest))
+    (assert (c/hgl? root)
+            (c/fmt "Bad file-root-folder %s." root))
+    (l/info (str "monitoring dir: %s\n"
+                 "receiving dir: %s") root (c/nsn dest))
     (merge c2 {:target-folder root
                :fmask ff :recv-folder dest})))
 
@@ -115,8 +115,7 @@
                         (post-poll plug recv-folder f :FP-CHANGED))
                       (onFileDelete [f]
                         (post-poll plug recv-folder f :FP-DELETED))))
-      (.addObserver mon obs)
-      (.start mon))))
+      (doto mon (.addObserver obs) .start))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
@@ -125,56 +124,59 @@
                     :info (:info spec)})]
     (reify
       xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :handler]))
+      (user-handler [_] (get-in @impl [:conf :$handler]))
+      (err-handler [_] (get-in @impl [:conf :$error]))
       (get-conf [_] (:conf @impl))
-      (err-handler [_]
-        (or (get-in @impl
-                    [:conf :error]) (:error spec)))
       po/Hierarchical
-      (parent [me] plug)
+      (parent [_] plug)
       po/Idable
       (id [_] _id)
       po/Initable
       (init [me arg]
         (swap! impl
-               (c/fn_1 (update-in ____1
-                                  [:conf]
-                                  #(b/prevar-cfg (init2 % arg))))))
+               update-in
+               [:conf]
+               #(-> (init2 % arg)
+                    b/expand-vars* b/prevar-cfg)) me)
       po/Finzable
-      (finz [_] (po/stop _))
+      (finz [_] (po/stop _) _)
       po/Startable
       (start [_] (po/start _ nil))
       (start [me arg]
-        (let [w (c/fn_0 (let [m (file-mon<> me)]
-                          (swap! impl #(assoc % :mon m))))]
+        (let [w #(swap! impl
+                        assoc
+                        :mon (file-mon<> me))]
           (l/info "apache io monitor starting...")
           (swap! impl
-                 #(assoc %
-                         :ttask
-                         (pl/cfg-timer (Timer. true) w (:conf @impl) false)))))
+                 assoc
+                 :ttask
+                 (pl/cfg-timer (Timer. true)
+                               w
+                               (:conf @impl) false)) me))
       (stop [me]
         (l/info "apache io monitor stopping...")
         (u/cancel-timer-task! (:ttask @impl))
-        (some-> ^FileAlterationMonitor (:mon @impl) .stop)))))
+        (some-> ^FileAlterationMonitor (:mon @impl) .stop) me))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def FilePickerSpec {:info {:name "File Picker"
-                            :version "1.0.0"}
-                     :conf {:$pluggable ::file-picker<>
-                            :target-folder "/home/dropbox"
-                            :recv-folder "/home/joe"
-                            :fmask ""
-                            :interval-secs 300
-                            :delay-secs 0
-                            :handler nil}})
+(def FilePickerSpec
+  {:info {:name "File Picker"
+          :version "1.0.0"}
+   :conf {:$pluggable ::file-picker<>
+          :target-folder "/home/dropbox"
+          :recv-folder "/home/joe"
+          :fmask ""
+          :interval-secs 300
+          :delay-secs 0
+          :$handler nil}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn file-picker<>
-  ([_ id]
-   (file-picker<> _ id FilePickerSpec))
+  "Create a File Picker Pluglet."
   ([_ id spec]
-   (pluglet _ id (update-in spec
-                            [:conf] b/expand-vars-in-form))))
+   (pluglet _ id spec))
+  ([_ id]
+   (file-picker<> _ id FilePickerSpec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

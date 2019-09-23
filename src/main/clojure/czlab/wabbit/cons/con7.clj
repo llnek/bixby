@@ -20,10 +20,9 @@
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [czlab.table.core :as tbl]
-            [czlab.basal.core :as c :refer [is?]]
-            [czlab.basal.str :as s]
             [czlab.wabbit.cons.con2 :as c2]
-            [czlab.wabbit.cons.con1 :as c1])
+            [czlab.wabbit.cons.con1 :as c1]
+            [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.basal DataError]
            [java.io File]
@@ -31,7 +30,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-(def ^:private c-rcb "czlab.wabbit/Resources")
+(c/def- c-rcb "czlab.wabbit/Resources")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-cmd-info
@@ -57,12 +56,14 @@
                :body-walls walls
                :header-walls walls}
         rcb (b/get-rc-base)]
-    (c/prn!! (ansi/bold-yellow (b/banner)))
-    (c/prn! "%s\n\n" (u/rstr rcb "wabbit.desc"))
-    (c/prn! "%s\n" (u/rstr rcb "cmds.header"))
+    (-> b/banner ansi/bold-yellow c/prn!!)
+    (c/prn! "%s\n\n"
+            (u/rstr rcb "wabbit.desc"))
+    (c/prn! "%s\n"
+            (u/rstr rcb "cmds.header"))
     ;; prepend blanks to act as headers
     (c/prn! "%s\n\n"
-            (s/strim
+            (c/strim
               (with-out-str
                 (-> (concat '(("" ""))
                             (get-cmd-info rcb pod?))
@@ -79,28 +80,32 @@
         rcb (u/get-resource c-rcb)
         [p1 p2 & _] args
         pod? (= "-domus" p1)
-        verStr (or (some-> ver (.getString "version")) "?")]
-    (u/sys-prop! "wabbit.version" verStr)
+        verStr (c/stror (some-> ver
+                                (.getString "version")) "?")]
+    (u/set-sys-prop! "wabbit.version" verStr)
     (b/set-rc-base! rcb)
     (try (if (empty? args)
            (u/throw-BadData "CmdError!"))
          (let [pred #(and (or (= "-home" %1)
-                              pod?) (s/hgl? %2))
+                              pod?) (c/hgl? %2))
                args (if (pred p1 p2) (drop 2 args) args)
-               _ (->> (if (pred p1 p2) p2 (u/get-cwd))
-                      io/file u/fpath
-                      (u/sys-prop! "wabbit.user.dir"))
                cfg (b/slurp-conf
                      (c1/get-home-dir) b/cfg-pod-cf)
                [f _] (c1/wabbit-tasks (keyword (c/_1 args)))]
-           (if (fn? f)
-            (binding [c1/*config-object* cfg
-                      c1/*pkey-object* (i/x->chars  (get-in cfg
-                                                            [:info :digest]))]
-              (f (drop 1 args)))
-            (u/throw-BadData "CmdError!")))
+           (->> (if (pred p1 p2) p2 (u/get-user-dir))
+                io/file u/fpath
+                (u/set-sys-prop! "wabbit.user.dir"))
+           (if-not (fn? f)
+            (u/throw-BadData "CmdError!")
+            (binding
+              [c1/*config-object* cfg
+               c1/*pkey-object* (i/x->chars
+                                  (get-in cfg
+                                          [:info :digest]))]
+              (f (drop 1 args)))))
          (catch Throwable _
-           (if (is? DataError _) (usage pod?) (u/prn-stk _))))))
+           (if (is? DataError _)
+             (usage pod?) (u/prn-stk _))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

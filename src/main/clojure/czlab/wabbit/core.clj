@@ -11,8 +11,6 @@
 
   czlab.wabbit.core
 
-  (:gen-class)
-
   (:require [czlab.basal.util :as u]
             [czlab.basal.io :as i]
             [clojure.walk :as cw]
@@ -20,11 +18,8 @@
             [io.aviso.ansi :as ansi]
             [czlab.basal.log :as l]
             [clojure.string :as cs]
-            [czlab.basal.str :as s]
             [czlab.basal.core :as c]
-            [czlab.basal.proc :as p]
-            [czlab.basal.meta :as m]
-            [czlab.basal.cljrt :as rt])
+            [czlab.basal.proc :as p])
 
   (:import [clojure.lang Atom APersistentMap]
            [java.util ResourceBundle Locale]
@@ -111,7 +106,7 @@
 (def jslot-user :principal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defonce ^:private rc-bundles-cache (atom {:base nil :rcbs {}}))
+(c/defonce- rc-bundles-cache (atom {:base nil :rcbs {}}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn del-rc-bundle!
@@ -158,27 +153,27 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-proc-dir
   "Get the current directory."
-  ^File [] (io/file (u/sys-prop "wabbit.user.dir")))
+  ^File [] (io/file (u/get-sys-prop "wabbit.user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-sys-props
   "Expand system properties found in value."
   ^String [value]
-  (if (s/nichts? value)
+  (if (c/nichts? value)
     value (StrSubstitutor/replaceSystemProperties ^String value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-env-vars
   "Expand env vars found in value."
   ^String [value]
-  (if (s/nichts? value)
+  (if (c/nichts? value)
     value (-> (System/getenv) StrSubstitutor. (.replace ^String value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-vars
   "Replaces all variables in value."
   ^String [value]
-  (if (or (s/nichts? value)
+  (if (or (c/nichts? value)
           (nil? (cs/index-of value "${")))
     value
     (-> (cs/replace value
@@ -187,7 +182,7 @@
         expand-sys-props expand-env-vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn expand-vars-in-form
+(defn expand-vars*
   "" [form]
   (cw/postwalk #(if (string? %) (expand-vars %) %) form))
 
@@ -208,7 +203,8 @@
   "Assert dir(s) are read-writeable?" [f & dirs]
   (c/let#true [base (get-rc-base)]
     (doseq [d (cons f dirs)]
-      (c/test-cond (u/rstr base "dir.no.rw" d) (i/dir-read-write? d)))))
+      (->> (i/dir-read-write? d)
+           (c/test-cond (u/rstr base "dir.no.rw" d))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the file is readable
@@ -216,7 +212,8 @@
   "Assert file(s) are readable?" [ff & files]
   (c/let#true [base (get-rc-base)]
     (doseq [f (cons ff files)]
-      (c/test-cond (u/rstr base "file.no.r" f) (i/file-read? f)))))
+      (->> (i/file-read? f)
+           (c/test-cond (u/rstr base "file.no.r" f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn ^:no-doc maybe-dir??
@@ -241,35 +238,41 @@
    (let [f (io/file podDir conf)
          s (str "{\n" (i/slurp-utf8 f) "\n}")]
      (i/read-edn
-       (if expVars?
+       (if-not expVars?
+         s
          (expand-vars (cs/replace s
                                   "${pod.dir}"
-                                  "${wabbit.user.dir}")) s)))))
+                                  "${wabbit.user.dir}")))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn spit-conf
   "Write out config file."
   [podDir conf cfgObj]
   (let [f (io/file podDir conf)
-        s (s/strim (i/fmt->edn cfgObj))]
+        s (c/strim (i/fmt->edn cfgObj))]
     (i/spit-utf8 f
-                 (if (s/wrapped? s "{" "}")
-                   (-> (s/drop-head s 1) (s/drop-tail 1)) s))))
+                 (if-not (c/wrapped? s "{" "}")
+                   s
+                   (-> (c/drop-head s 1) (c/drop-tail 1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn prevar-cfg
   ""
-  ([cfg] (prevar-cfg cfg :handler))
-  ([cfg kee]
-   (let [h (get cfg kee)
-         h (if (keyword? h) (s/kw->str h) h)]
-     (c/wo* [clj (rt/cljrt<>)]
-       (assoc cfg
-              kee (cond (s/hgl? h) (rt/var* clj h)
-                        (or (var? h)
-                            (nil? h)) h
-                        :else
-                        (c/raise! "Bad handler: %s!" kee)))))))
+  [cfg]
+  (let [lock (atom 0)
+        rt (u/cljrt<>)]
+    (cw/postwalk
+      #(if (= 1 @lock)
+         (let [h (if (keyword? %) (c/kw->str %) %)]
+           (reset! lock 0)
+           (cond (c/hgl? h) (u/var* rt h)
+                 (or (var? h)
+                     (nil? h)) h
+                 :else
+                 (c/raise! "Bad handler: %s!" %)))
+         (if (or (= :$error %)
+                 (= :$handler %))
+           (do (reset! lock 1) %) %)) cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn delete-dir

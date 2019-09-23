@@ -15,9 +15,8 @@
             [clojure.string :as cs]
             [czlab.basal.util :as u]
             [czlab.basal.core :as c]
-            [czlab.basal.str :as s]
             [czlab.basal.meta :as m]
-            [czlab.basal.proto :as po])
+            [czlab.basal.xpis :as po])
 
   (:import [java.lang Exception IllegalArgumentException]
            [java.lang.reflect Field Method]
@@ -96,12 +95,12 @@
 (defn- throw-UnknownError
   [attr]
   (c/trap! AttributeNotFoundException
-           (format "Unknown property %s" attr)))
+           (c/fmt "Unknown property %s" attr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- throw-BeanError
-  [^String msg]
-  (c/trap! MBeanException (c/exp! Exception msg)))
+  [msg]
+  (c/trap! MBeanException (c/exp! Exception ^String msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- assert-args
@@ -128,7 +127,7 @@
        (conj! %1 (MBeanParameterInfo.
                    (format "p%d" n) (.getName t) "")))
     (partition 2 (interleave
-                   (vec (.getParameterTypes mtd)) (map inc (range))))))
+                   (vec (.getParameterTypes mtd)) (map inc range)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- test-jmx-type
@@ -199,9 +198,9 @@
         mn (.getName mtd)
         pname (maybe-get-prop-name mn)
         methodInfo (propsBin pname)]
-    (cond (s/nichts? pname)
+    (cond (c/nichts? pname)
           propsBin
-          (and (s/sw-any? mn ["get" "is"])
+          (and (c/sw-any? mn ["get" "is"])
                (empty? ptypes))
           (if (nil? methodInfo)
             (->> (mk-bprop-info pname "" mtd nil)
@@ -266,7 +265,7 @@
          mtds (transient {})
          rc (transient [])]
     (if (empty? ms)
-      [(c/ps! rc) (c/ps! mtds)]
+      [(c/persist! rc) (c/persist! mtds)]
       (let [[m r] (handle-methods2 (c/_1 ms) mtds rc)]
         (recur (rest ms) m r)))))
 

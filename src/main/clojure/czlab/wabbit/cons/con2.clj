@@ -11,24 +11,27 @@
 
   czlab.wabbit.cons.con2
 
-  (:require [czlab.wabbit.shared.new :as ws]
+  (:require [clojure.java.io :as io]
             [czlab.basal.log :as l]
             [clojure.string :as cs]
-            [clojure.java.io :as io]
             [czlab.basal.core :as c]
             [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.str :as s]
-            [czlab.wabbit.core :as b])
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.shared.new :as ws])
 
   (:import [java.io File]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;doing this to get rid reflection warning from stencil
 ;seems to work
-(binding [*warn-on-reflection* false]
-            (require '[stencil.core :as sc]))
+(binding
+  [*warn-on-reflection* false]
+  (require '[stencil.core :as sc]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(set! *warn-on-reflection* true)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;simulate what lein new template does
 (defn create-pod
@@ -38,12 +41,11 @@
              options {:renderer-fn sc/render-string
                       :force? (some? (c/_1 (drop-while
                                              #(not= "--force" %) args)))
-                      :dir (or dir (-> (u/get-cwd)
-                                       (io/file name) .getPath))}]
+                      :dir (or dir (-> (u/get-user-dir) (io/file name) .getPath))}]
          ;;(prn!! "opts = " options)
          (apply ws/new<> name options args))
        (catch Throwable t
-         (c/prn!! "Failed to generate project.\n%s." (.getMessage t)))))
+         (c/prn!! "Failed to generate project.\n%s." (u/emsg t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn publish-samples

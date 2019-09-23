@@ -14,11 +14,9 @@
   (:require [czlab.basal.log :as l]
             [clojure.string :as cs]
             [clojure.java.io :as io]
-            [czlab.basal.str :as s]
             [czlab.basal.util :as u]
             [czlab.basal.core :as c]
-            [czlab.basal.cljrt :as rt]
-            [czlab.basal.proto :as po])
+            [czlab.basal.xpis :as po])
 
   (:import [javax.management ObjectName]
            [java.io File]
@@ -29,10 +27,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol SqlAccess
   ""
-  (dft-db-pool [_] "")
-  (dft-db-api [_] "")
-  (acquire-db-api [_ id] "")
-  (acquire-db-pool [_ id] ""))
+  (acquire-dbapi?? [_] [_ id] "")
+  (acquire-dbpool?? [_] [_ id] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol KeyAccess
@@ -54,8 +50,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol Execvisor
   ""
-  (has-child? [_ id] "")
-  (get-child [_ id] "")
+  (has-plugin? [_ id] "")
+  (get-plugin [_ id] "")
   (get-locale [_] "")
   (get-start-time [_] "")
   (kill9! [_] "")
@@ -72,28 +68,21 @@
   (user-handler [_] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- reify-plug
-  [exec emType emAlias]
-  (if (var? emType)
-    (@emType exec emAlias)
-    (let [clj (cljrt exec)
-          emStr (s/kw->str emType)]
-      (if (cs/index-of emStr "/")
-        (rt/call* clj
-                  emStr
-                  (c/vargs* Object exec emAlias))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn pluglet-via-type<>
+(defn pluglet<>
   "Create a Service."
   [exec emType emAlias]
-  (if-some [u (reify-plug exec emType emAlias)]
-    nil
-    (throw (ClassCastException. "Must be Pluglet."))))
+  (if-some [p (if (var? emType)
+                (@emType exec emAlias)
+                (let [emStr (c/kw->str emType)]
+                  (if (cs/index-of emStr "/")
+                    (u/call* (cljrt exec)
+                             emStr
+                             (c/vargs* Object exec emAlias)))))]
+    (throw (ClassCastException. (c/fmt "Not pluglet: %s" emType)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- get-server
-  "" [plug] (po/parent plug))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-pod-key
+  ^bytes [evt] (-> evt get-pluglet po/parent pkey-bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

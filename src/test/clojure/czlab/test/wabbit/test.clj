@@ -8,19 +8,17 @@
 
 (ns czlab.test.wabbit.test
 
-  (:require [czlab.basal.log :as log]
+  (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [clojure.java.io :as io]
-            [czlab.basal.core :as c]
             [czlab.basal.io :as i]
-            [czlab.basal.str :as s])
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c])
 
   (:use [clojure.test])
 
   (:import [java.io File]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (deftest czlabtestwabbit-test
 
   (is (string? "That's all folks!")))

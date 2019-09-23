@@ -11,14 +11,13 @@
 
   czlab.wabbit.plugs.jms
 
-  (:require [czlab.basal.log :as l]
-            [czlab.twisty.codec :as co]
+  (:require [czlab.twisty.codec :as co]
             [czlab.wabbit.core :as b]
             [czlab.wabbit.xpis :as xp]
             [czlab.basal.util :as u]
+            [czlab.basal.log :as l]
             [czlab.basal.io :as i]
-            [czlab.basal.str :as s]
-            [czlab.basal.proto :as po]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.plugs.core :as pc]
             [czlab.basal.core :as c :refer [is?]])
 
@@ -43,18 +42,16 @@
             TopicSession
             TopicSubscriber]
            [java.io IOException]
-           [clojure.lang APersistentMap]
            [javax.naming Context InitialContext]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 (defprotocol JMSApi
   ""
   (start2 [_] "")
+  (iniz-fac [_ ctx cf] "")
   (iniz-queue [_ ctx cf] "")
-  (iniz-topic [_ ctx cf] "")
-  (iniz-fac [_ ctx cf] ""))
+  (iniz-topic [_ ctx cf] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord JmsMsg []
@@ -80,15 +77,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sanitize
   [pkey {:keys [jndi-pwd jms-pwd] :as cfg}]
-  (-> (assoc cfg :jndi-pwd (co/pw-text (co/pwd<> jndi-pwd pkey)))
+  (-> cfg
+      (assoc :jndi-pwd (co/pw-text (co/pwd<> jndi-pwd pkey)))
       (assoc :jms-pwd (co/pw-text (co/pwd<> jms-pwd pkey)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init-map
   [args]
-  (let [m (Hashtable.)]
+  (c/do-with [m (Hashtable.)]
     (doseq [[k v]
-            (partition 2 args)] (if (s/hgl? v) (.put m k v))) m))
+            (partition 2 args)] (if (c/hgl? v) (.put m k v)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
@@ -103,11 +101,11 @@
               pwd (->> me po/parent
                        xp/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
           (c/do-with [^Connection
-                      conn (if (s/nichts? jms-user)
+                      conn (if (c/nichts? jms-user)
                              (.createConnection ^ConnectionFactory cf)
                              (.createConnection ^ConnectionFactory cf
                                                 ^String jms-user
-                                                (s/stror (i/x->str pwd) nil)))]
+                                                (c/stror (i/x->str pwd) nil)))]
             ;;TODO ? ack always ?
             (if-not (is? Destination c)
               (u/throw-IOE "Object not of Destination type!")
@@ -123,19 +121,19 @@
                        xp/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
           (c/do-with [^TopicConnection
                       conn
-                      (if (s/nichts? jms-user)
+                      (if (c/nichts? jms-user)
                         (.createTopicConnection ^TopicConnectionFactory cf)
                         (.createTopicConnection ^TopicConnectionFactory cf
                                                 ^String jms-user
-                                                (s/stror (i/x->str pwd) nil)))]
+                                                (c/stror (i/x->str pwd) nil)))]
             (let [s (.createTopicSession
                       conn false Session/CLIENT_ACKNOWLEDGE)
                   t (.lookup ^InitialContext ctx ^String destination)]
               (if-not (is? Topic t)
                 (u/throw-IOE "Object not of Topic type!"))
-              (-> (if durable?
-                    (.createDurableSubscriber s t (u/jid<>))
-                    (.createSubscriber s t))
+              (-> (if-not durable?
+                    (.createSubscriber s t)
+                    (.createDurableSubscriber s t (u/jid<>)))
                   (.setMessageListener
                     (reify MessageListener
                       (onMessage [_ m] (on-msg me m)))))))))
@@ -145,11 +143,11 @@
                        xp/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
           (c/do-with [^QueueConnection
                       conn
-                      (if (s/nichts? jms-user)
+                      (if (c/nichts? jms-user)
                         (.createQueueConnection ^QueueConnectionFactory cf)
                         (.createQueueConnection ^QueueConnectionFactory cf
                                                 ^String jms-user
-                                                (s/stror (i/x->str pwd) nil)))]
+                                                (c/stror (i/x->str pwd) nil)))]
             (let [s (.createQueueSession conn
                                          false Session/CLIENT_ACKNOWLEDGE)
                   q (.lookup ^InitialContext ctx ^String destination)]
@@ -163,26 +161,24 @@
         (let [{:keys [context-factory
                       provider-url
                       jndi-user jndi-pwd conn-factory]} (:conf @impl)
-              ctx (-> (init-map ["jndi.user" jndi-user
-                                 "jndi.password" jndi-pwd
-                                 Context/PROVIDER_URL provider-url
-                                 Context/INITIAL_CONTEXT_FACTORY context-factory])
-                      InitialContext.)
+              ctx (InitialContext.
+                    (init-map ["jndi.user" jndi-user
+                               "jndi.password" jndi-pwd
+                               Context/PROVIDER_URL provider-url
+                               Context/INITIAL_CONTEXT_FACTORY context-factory]))
               obj (.lookup ctx (str conn-factory))]
           (c/do-with [^Connection
                       c (c/condp?? instance? obj
                           ConnectionFactory (iniz-fac co ctx obj)
                           QueueConnectionFactory (iniz-queue co ctx obj)
                           TopicConnectionFactory (iniz-topic co ctx obj))]
-            (if (nil? c)
-              (u/throw-IOE "Unsupported JMS Connection Factory!"))
-            (.start c))))
+            (if c
+              (.start c)
+              (u/throw-IOE "Unsupported JMS Connection Factory!")))))
       xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :handler]))
+      (user-handler [_] (get-in @impl [:conf :$handler]))
+      (err-handler [_] (get-in @impl [:conf :$error]))
       (get-conf [_] (:conf @impl))
-      (err-handler [_]
-        (or (get-in @impl
-                    [:conf :error]) (:error spec)))
       po/Hierarchical
       (parent [_] plug)
       po/Idable
@@ -190,34 +186,37 @@
       po/Initable
       (init [me arg]
         (swap! impl
-               (c/fn_1 (update-in ____1
-                                  [:conf]
-                                  #(-> me
-                                       po/parent xp/pkey-chars
-                                       (sanitize (merge % arg)) b/prevar-cfg)))))
+               update-in
+               [:conf]
+               #(-> me
+                    po/parent
+                    xp/pkey-chars
+                    (sanitize (merge % arg))
+                    b/expand-vars* b/prevar-cfg)) me)
       po/Finzable
-      (finz [_] (po/stop _))
+      (finz [_] (po/stop _) _)
       po/Startable
       (stop [me]
-        (c/try! (i/klose (:conn @impl))))
+        (c/try! (i/klose (:conn @impl))) me)
       (start [_] (po/start _ nil))
       (start [me arg]
         (swap! impl
-               #(assoc % :conn (start2 me)))))))
+               assoc :conn (start2 me)) me))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def JMSSpec {:info {:name "JMS Client"
-                     :version "1.0.0"}
-              :conf {:$pluggable ::jms<>
-                     :context-factory "czlab.proto.mock.jms.MockContextFactory"
-                     :provider-url "java://aaa"
-                     :conn-factory "tcf"
-                     :destination "topic.abc"
-                     :jndi-user "root"
-                     :jndi-pwd "root"
-                     :jms-user "anonymous"
-                     :jms-pwd "anonymous"
-                     :handler nil}})
+(def JMSSpec
+  {:info {:name "JMS Client"
+          :version "1.0.0"}
+   :conf {:context-factory "czlab.proto.mock.jms.MockContextFactory"
+          :$pluggable ::jms<>
+          :provider-url "java://aaa"
+          :conn-factory "tcf"
+          :destination "topic.abc"
+          :jndi-user "root"
+          :jndi-pwd "root"
+          :jms-user "anonymous"
+          :jms-pwd "anonymous"
+          :$handler nil}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn jms<>
@@ -225,8 +224,7 @@
   ([_ id]
    (jms<> _ id JMSSpec))
   ([_ id spec]
-   (pluglet _ id (update-in spec
-                            [:conf] b/expand-vars-in-form))))
+   (pluglet _ id spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

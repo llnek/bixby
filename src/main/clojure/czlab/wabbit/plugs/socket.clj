@@ -17,9 +17,8 @@
             [czlab.basal.log :as l]
             [czlab.wabbit.xpis :as xp]
             [czlab.basal.core :as c]
-            [czlab.basal.str :as s]
             [czlab.wabbit.core :as b]
-            [czlab.basal.proto :as po]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.plugs.core :as pc])
 
   (:import [java.net InetAddress ServerSocket Socket]
@@ -27,53 +26,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrecord TcpMsg []
-  xp/PlugletMsg
-  (get-pluglet [me] (:source me))
+(defrecord TcpConnectMsg []
   po/Idable
   (id [me] (:id me))
-  po/Finzable
-  (finz [me] (i/klose (:socket me))))
+  xp/PlugletMsg
+  (get-pluglet [me] (:source me)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
-  [co ^Socket socket]
-  (c/object<> TcpMsg
-              :id (str "TcpMsg#" (u/seqint2))
+  [plug ^Socket socket]
+  (c/object<> TcpConnectMsg
               :socket socket
-              :source co
+              :source plug
               :sockin (.getInputStream socket)
-              :sockout (.getOutputStream socket)))
+              :sockout (.getOutputStream socket)
+              :id (str "TcpConnectMsg#" (u/seqint2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sock-it
-  [co soc]
-  (c/try! (l/debug "opened socket: %s." soc)
-          (pc/dispatch! (evt<> co soc))))
+  [plug soc]
+  (c/try! (l/debug "opened soc: %s." soc)
+          (pc/dispatch! (evt<> plug soc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ssoc<>
   ^ServerSocket
   [{:keys [timeoutMillis backlog host port]}]
-  (let [ip (if (s/nichts? host)
+  (let [ip (if (c/nichts? host)
              (InetAddress/getLocalHost)
              (InetAddress/getByName host))]
-    (c/test-pos "socket port" port)
+    (assert (c/spos? port)
+            (str "Bad socket port: " port))
     (c/do-with
       [soc (ServerSocket. port
-                          (int (or backlog 100)) ip)]
+                          (int (c/num?? backlog 100)) ip)]
       (.setReuseAddress soc true)
       (l/info "Server socket %s (bound?) %s" soc (.isBound soc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def SocketIOSpec {:conf {:$pluggable ::socket<>
-                          :host ""
-                          :port 7551
-                          :handler nil}
-                   :info {:version "1.0.0"
-                          :name "TCP Socket Server"}})
+(def SocketIOSpec
+  {:conf {:$pluggable ::socket<>
+          :host ""
+          :port 7551
+          :$handler nil}
+   :info {:version "1.0.0"
+          :name "TCP Socket Server"}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
@@ -83,11 +81,11 @@
                     :conf (:conf spec)})]
     (reify
       xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :handler]))
+      (user-handler [_]
+        (get-in @impl [:conf :$handler]))
       (get-conf [_] (:conf @impl))
       (err-handler [_]
-        (or (get-in @impl
-                    [:conf :error]) (:error spec)))
+        (get-in @impl [:conf :$error]))
       po/Hierarchical
       (parent [_] server)
       po/Idable
@@ -96,39 +94,37 @@
       (start [me]
         (po/start me nil))
       (start [me _]
-        (when-some [s (ssoc<> (:conf @impl))]
-          (swap! impl #(assoc % :soc s))
+        (let [ssoc (ssoc<> (:conf @impl))]
+          (swap! impl assoc :soc ssoc)
           (p/async!
-            #(loop []
-               (when-not (.isClosed s)
-                 (try (sock-it me (.accept s))
-                      (catch Throwable t
-                        (let [m (s/lcase (.getMessage t))]
-                          (if-not (and (s/embeds? m "closed")
-                                       (s/embeds? m "socket"))
-                            (l/warn t "")))))
-                 (recur))))))
+            #(while (and ssoc
+                         (not (.isClosed ssoc)))
+               (try (sock-it me (.accept ssoc))
+                    (catch Throwable t
+                      (when-not
+                        (->> ["closed" "socket"]
+                             (c/hasic-all? (u/emsg t)))
+                        (l/warn t "")))))) me))
       (stop [me]
         (i/klose (:soc @impl))
-        (swap! impl #(assoc % :soc nil)))
+        (swap! impl assoc :soc nil) me)
       po/Finzable
-      (finz [me] (po/stop me))
+      (finz [me] (po/stop me) me)
       po/Initable
-      (init [_ arg]
+      (init [me arg]
         (swap! impl
-               (c/fn_1 (update-in ____1
-                                  [:conf]
-                                  #(b/prevar-cfg (merge % arg)))))))))
+               update-in
+               [:conf]
+               #(-> (merge % arg)
+                    b/expand-vars* b/prevar-cfg)) me))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn socket<>
   ""
-  ([_ id]
-   (socket<> _ id SocketIOSpec))
   ([_ id spec]
-   (pluglet _ id (update-in spec
-                            [:conf]
-                            b/expand-vars-in-form))))
+   (pluglet _ id spec))
+  ([_ id]
+   (socket<> _ id SocketIOSpec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -19,8 +19,6 @@
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
-            [czlab.basal.cljrt :as rt]
-            [czlab.basal.str :as s]
             [czlab.basal.io :as i]
             [czlab.basal.util :as u]
             [czlab.wabbit.exec :as we]
@@ -43,14 +41,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-home-dir
-  "" [] (io/file (u/sys-prop "wabbit.user.dir")))
+  "" [] (io/file (u/get-sys-prop "wabbit.user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-xxx
   [pfx end]
-  (let [rcb (wc/get-rc-base)]
-    (dotimes [n end]
-      (c/prn! "%s\n" (u/rstr rcb (str pfx (+ 1 n))))) (c/prn!! "")))
+  (try (dotimes [n end]
+         (c/prn! "%s\n"
+                 (u/rstr (wc/get-rc-base)
+                         (str pfx (+ 1 n)))))
+       (finally
+         (c/prn!! ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-create
@@ -229,10 +230,10 @@
 (defn on-version
   "" {:no-doc true} [args]
   (let [rcb (wc/get-rc-base)]
-    (->> (u/sys-prop "wabbit.version")
+    (->> (u/get-sys-prop "wabbit.version")
          (u/rstr rcb "usage.version.o1")
          (c/prn!! "%s" ))
-    (->> (u/sys-prop "java.version")
+    (->> (u/get-sys-prop "java.version")
          (u/rstr rcb "usage.version.o2")
          (c/prn!! "%s"))
     (c/prn!! "")))
@@ -240,10 +241,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- scan-jars
   [out dir]
-  (let [sep (u/sys-prop "line.separator")]
-    (s/sbf+ out
-            (s/sreduce<>
-              #(s/sbf+ %1
+  (let [sep (u/get-sys-prop "line.separator")]
+    (c/sbf+ out
+            (c/sreduce<>
+              #(c/sbf+ %1
                        (str "<classpathentry  "
                             "kind=\"lib\""
                             " path=\"" (u/fpath %2) "\"/>" sep))
@@ -255,7 +256,7 @@
   (let [ec (io/file pdir "eclipse.projfiles")
         poddir (io/file pdir)
         pod (i/fname poddir)
-        sb (s/sbf<>)]
+        sb (c/sbf<>)]
     (i/mkdirs ec)
     (FileUtils/cleanDirectory ec)
     (i/spit-utf8
@@ -288,7 +289,7 @@
 (defn on-ide
   "" {:no-doc true} [args]
   (if-not (and (not-empty args)
-           (c/in? #{"-e" "--eclipse"} (c/_1 args)))
+               (c/in? #{"-e" "--eclipse"} (c/_1 args)))
     (u/throw-BadData "CmdError!")
     (gen-eclipse-proj (wc/get-proc-dir))))
 
@@ -299,13 +300,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-service-specs
   "" [args]
-  (c/wo* [clj (rt/cljrt<>)]
+  (let [clj (u/cljrt<>)]
     (-> (c/preduce<map>
           #(assoc! %1
                    (c/_1 %2)
-                   (rt/call* clj
-                             (str "czlab.wabbit.plugs."
-                                  (s/kw->str (c/_2 %2))) []))
+                   (u/call* clj
+                            (str "czlab.wabbit.plugs."
+                                 (c/kw->str (c/_2 %2))) []))
           {:OnceTimer :loops/OnceTimerSpec
            :FilePicker :files/FilePickerSpec
            :SocketIO :socket/SocketIOSpec
@@ -339,7 +340,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-help
   "" {:no-doc true} [args]
-  (c/if-fn? [h (c/_2 (wabbit-tasks (keyword (c/_1 args))))]
+  (c/if-fn? [h (c/_2 (wabbit-tasks
+                       (keyword (c/_1 args))))]
     (h)
     (u/throw-BadData "CmdError!")))
 
