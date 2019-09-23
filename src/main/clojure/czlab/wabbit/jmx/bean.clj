@@ -127,7 +127,7 @@
        (conj! %1 (MBeanParameterInfo.
                    (format "p%d" n) (.getName t) "")))
     (partition 2 (interleave
-                   (vec (.getParameterTypes mtd)) (map inc range)))))
+                   (vec (.getParameterTypes mtd)) (map inc (range))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- test-jmx-type

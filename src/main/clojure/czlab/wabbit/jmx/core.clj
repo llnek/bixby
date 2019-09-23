@@ -142,12 +142,10 @@
       po/Startable
       (start [_] (po/start _ nil))
       (start [me _]
-        (let [rmi (start-rmi me)
-              [conn bsvr] (start-jmx me)]
-          (swap! impl
-                 merge (start-rmi me) (start-jmx me))
-          (l/info "JmxPluglet started - ok.")
-          me))
+        (swap! impl
+               merge (start-rmi me) (start-jmx me))
+        (l/info "JmxPluglet started - ok.")
+        me)
       (stop [me]
         (let [{:keys [^Registry rmi
                       ^JMXConnectorServer conn]} @impl]

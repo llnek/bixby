@@ -39,11 +39,6 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn pod-key-from-event
-  "Get the secret application key."
-  ^chars [evt] (some-> (xp/get-pluglet evt) po/parent xp/pkey-chars))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-dbpool??
   [co gid]
   (get (:dbps @co) (keyword (c/stror gid wc/dft-dbid))))
@@ -59,34 +54,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sys-finz
+
+  ""
   [exec ctx]
+
   (l/info "execvisor releasing system resources.")
-  (some-> exec xp/get-scheduler po/finz)
   (doseq [[k v] (:dbps @ctx)]
     (hc/db-finz v)
-    (l/debug "finz'ed dbpool %s." k)))
+    (l/debug "finz'ed dbpool %s." k))
+  (some-> exec xp/get-scheduler po/finz))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xref-plugs
+
+  ""
   [exec ctx]
-  (let [api "czlab.wabbit.jmx.core/JmxMonitor"
+
+  (let [api "czlab.wabbit.jmx.core/jmx-monitor<>"
         {:keys [jmx]} (:conf @ctx)
         ;process each plugin
         ps (c/preduce<map>
              #(let [[k cfg] %2
                     {:keys [$pluggable enabled?]} cfg]
-                (if-some [v (and (c/!false? enabled?)
+                (if-some [p (and (c/!false? enabled?)
                                  $pluggable
                                  (-> (xp/pluglet<>
                                        exec $pluggable k)
                                      (po/init cfg)))]
-                  (assoc! %1 (po/id v) v) %1)) (:plugins @ctx))]
+                  (assoc! %1 (po/id p) p) %1))
+             (get-in @ctx [:conf :plugins]))]
     ;add the jmx pluglet
-    (->> (if-some [v (and (c/!false? (:enabled? jmx))
+    (->> (if-some [p (and (c/!false? (:enabled? jmx))
                           (-> (xp/pluglet<>
                                 exec api :$jmx) (po/init jmx)))]
-             (assoc ps (po/id v) v) ps)
-         (swap! ctx :plugins))
+             (assoc ps (po/id p) p) ps)
+         (swap! ctx assoc :plugins))
     (l/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")
     (doseq [[k _] (:plugins @ctx)]
       (l/info "pluglet id= %s." k))
@@ -94,7 +96,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init-dbs??
+
+  ""
   [exec ctx]
+
   (let [pk (xp/pkey-chars exec)
         m (c/preduce<map>
             #(let [[k v] %2]
@@ -112,7 +117,7 @@
                                                      passwd) cfg)))))
             (get-in @ctx [:conf :rdbms]))]
     ;here we go
-    (try (update-in ctx [:conf] assoc :rdbms m)
+    (try (update-in @ctx [:conf] assoc :rdbms m)
          (finally
            (l/debug "db [dbpools]\n%s" (i/fmt->edn m))))))
 
@@ -145,12 +150,14 @@
     (when (c/hgl? mcz)
       (l/info "main func: %s." mcz)
       (u/call* cljrt mcz (c/vargs* Object @ctx)))
-    (l/info "execvisor: (%s) initialized - ok." id)
-    exec))
+    (l/info "execvisor: (%s) initialized - ok." id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn execvisor<>
-  "Create an Execvisor." [ctx]
+
+  "Create an Execvisor."
+  [ctx]
+
   (let [cpu (p/scheduler<>)
         start-time (u/system-time)
         _id (c/x->kw "exec#" (u/seqint2))]
@@ -165,7 +172,7 @@
       (get-scheduler [_] cpu)
       (get-home-dir [_] (:home-dir @ctx))
       (get-locale [_] (:locale @ctx))
-      (kill9! [_] ((:stop! @ctx)))
+      (kill9! [_] (c/funcit?? (:stop! @ctx)))
       (has-plugin? [_ sid]
         (c/in? (:plugins @ctx) (keyword sid)))
       (get-plugin [_ sid]
@@ -180,7 +187,7 @@
           (u/set-sys-prop! "file.encoding" encoding)
           (mi/setup-cache f)
           (l/info "loaded mime#cache: %s." f)
-          (init2 me arg)))
+          (init2 me arg) me))
       po/Startable
       (start [me] (.start me nil))
       (start [me _]
@@ -218,7 +225,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- stop-cli
+
+  "This function will stop the process."
   [exec ctx]
+
   #(let [{:keys [stopcli? kill-hook]} @ctx]
      (when-not @stopcli?
        (vreset! stopcli? true)
@@ -247,22 +257,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- primodial
+
+  "Create the execvisor."
   [ctx]
+
   (l/info "\n%s\ninside primodial()\n%s."
           (c/repeat-str 78 "=") (c/repeat-str 78 "="))
-  (let [e (execvisor<>)]
+  (c/do-with [e (execvisor<> ctx)]
     (swap! ctx assoc :stop! (stop-cli e ctx))
-    (enable-kill-hook e ctx)
-    (c/do-with [e (po/init e ctx)]
-      (l/info "\n%s\nstarting wabbit server...\n%s."
-              (c/repeat-str 78 "*") (c/repeat-str 78 "*"))
-      (po/start e)
-      (l/info "wabbit started - ok."))))
+    ;TODO
+    ;(enable-kill-hook e ctx)
+    (po/init e ctx)
+    (l/info "\n%s\nstarting wabbit server...\n%s."
+            (c/repeat-str 78 "*") (c/repeat-str 78 "*"))
+    (po/start e)
+    (l/info "wabbit started - ok.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config
+
   ([cwd confObj]
    (start-via-config cwd confObj false))
+
   ([cwd confObj join?]
    (let [{{:keys [encoding]} :info
           {:keys [country lang]} :locale} confObj
@@ -276,13 +292,13 @@
          v (str (some-> wc/c-verprops u/load-resource (.getString "version")))
          fp (io/file cwd "wabbit.pid")
          cz (u/get-cldr)
-         ctx (atom {:version v
+         ctx (atom {:stopcli? (volatile! false)
+                    :home-dir (io/file cwd)
+                    :cljrt (u/cljrt<>)
+                    :version v
                     :hook hook
                     :dbps {}
                     :plugins {}
-                    :home-dir (io/file cwd)
-                    :stopcli? (volatile! false)
-                    :cljrt (u/cljrt<> (u/get-cldr))
                     :pid-file fp
                     :locale loc
                     :conf confObj
@@ -312,8 +328,10 @@
 (defn start-via-cons
   "" [cwd]
   (c/prn!! (ansi/bold-yellow (wc/banner)))
-  (wc/precond-file
-    (io/file cwd wc/cfg-pod-cf))
+  (c/doto->>
+    (io/file cwd wc/cfg-pod-cf)
+    (l/debug "checking for file: %s")
+    (wc/precond-file))
   (start-via-config cwd
                     (wc/slurp-conf cwd wc/cfg-pod-cf true) true))
 

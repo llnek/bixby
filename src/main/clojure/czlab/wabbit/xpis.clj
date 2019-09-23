@@ -69,8 +69,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn pluglet<>
+
   "Create a Service."
   [exec emType emAlias]
+
   (if-some [p (if (var? emType)
                 (@emType exec emAlias)
                 (let [emStr (c/kw->str emType)]
@@ -78,6 +80,7 @@
                     (u/call* (cljrt exec)
                              emStr
                              (c/vargs* Object exec emAlias)))))]
+    p
     (throw (ClassCastException. (c/fmt "Not pluglet: %s" emType)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
