@@ -42,10 +42,10 @@
 (def
   ^:dynamic
   *mock-mail-provider*
-  {:pop3s "czlab.proto.mock.mail.MockPop3SSLStore"
-   :imaps "czlab.proto.mock.mail.MockIMapSSLStore"
-   :pop3 "czlab.proto.mock.mail.MockPop3Store"
-   :imap "czlab.proto.mock.mail.MockIMapStore"})
+  {:pop3s "czlab.wabbit.mock.mail.MockPop3SSLStore"
+   :imaps "czlab.wabbit.mock.mail.MockIMapSSLStore"
+   :pop3 "czlab.wabbit.mock.mail.MockPop3Store"
+   :imap "czlab.wabbit.mock.mail.MockIMapStore"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3

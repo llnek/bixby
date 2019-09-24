@@ -13,6 +13,7 @@
 
   (:require [czlab.basal.log :as log]
             [czlab.wabbit.xpis :as xp]
+            [czlab.basal.io :as i]
             [czlab.basal.core :as c]
             [czlab.basal.xpis :as po])
 
@@ -37,7 +38,7 @@
         {:keys [host port]}
         (xp/get-conf tcp)
         bits (.getBytes s "utf-8")]
-    (println "TCP Client: about to send message" s)
+    (c/prn!! "TCP Client: about to send message= %s" s)
     (with-open [soc (Socket. ^String host (int port))]
       (let [os (.getOutputStream soc)]
         (-> (DataOutputStream. os)
@@ -55,7 +56,8 @@
         buf (byte-array clen)]
     (.read bf buf)
     (->> (String. buf "utf-8")
-         (println "Socket Server Received: "))))
+         (c/prn!! "Socket Server Received: %s"))
+    (i/klose (:socket evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

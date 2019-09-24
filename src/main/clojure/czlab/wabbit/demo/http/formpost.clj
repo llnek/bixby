@@ -26,7 +26,7 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo
+(defn demo<>
   "" [evt res]
   (c/do-with
     [ch (:socket evt)]
@@ -34,15 +34,16 @@
           stuff (some-> ^XData data .content)]
       (if (c/sas? cu/ULFormItems stuff)
         (doseq [^FileItem fi (cu/get-all-items stuff)]
-          (println "Fieldname : " (.getFieldName fi))
-          (println "Name : " (.getName fi))
-          (println "Formfield : " (.isFormField fi))
+          (c/prn!! "Fieldname: %s" (.getFieldName fi))
+          (c/prn!! "Name: %s" (.getName fi))
+          (c/prn!! "Formfield: %s" (.isFormField fi))
+          (c/prn!! "Field-size: %s" (.getSize fi))
           (if (.isFormField fi)
-            (println "Field value: " (.getString fi))
+            (c/prn!! "Field value: %s" (.getString fi))
             (if-some [^File xs (cu/get-field-file fi)]
-              (println "Field file = "
+              (c/prn!! "Field file = %s"
                        (.getCanonicalPath xs)))))
-         (println "Error: data is not ULFormItems."))
+         (c/prn!! "Error: data is not ULFormItems."))
       ;; associate this result with the orignal event
       ;; this will trigger the http response
       (cc/reply-result res))))

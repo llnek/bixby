@@ -134,6 +134,10 @@
     (when (i/file-read? res)
       (wc/put-rc-bundle! id (u/load-resource res))
       (l/info "loaded i18n resources: %s." (str res)))
+    (when (c/hgl? mcz)
+      (l/info "main func: %s." mcz)
+      (u/call* cljrt mcz (c/vargs* Object @ctx)))
+    ;any databases?
     (init-dbs?? exec ctx)
     ;; build the user data-models?
     (c/when-some+
@@ -147,9 +151,6 @@
         (c/raise! "Invalid data-model schema! " dmCZ)))
     (po/activate (xp/get-scheduler exec))
     (xref-plugs exec ctx)
-    (when (c/hgl? mcz)
-      (l/info "main func: %s." mcz)
-      (u/call* cljrt mcz (c/vargs* Object @ctx)))
     (l/info "execvisor: (%s) initialized - ok." id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

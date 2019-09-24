@@ -21,7 +21,7 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo
+(defn demo<>
   "" [evt]
   (c/do-with
     [ch (:socket evt)]
@@ -29,11 +29,11 @@
           stuff (some-> ^XData data .content)]
       (cond
         (string? stuff)
-        (println "Got poked by websocket-text: " stuff)
+        (c/prn!! "Got poked by websocket-text: %s" stuff)
         (bytes? stuff)
-        (println "Got poked by websocket-bin: len = " (alength ^bytes stuff))
+        (c/prn!! "Got poked by websocket-bin: len = %s" (alength ^bytes stuff))
         :else
-        (println "Funky data from websocket????")))))
+        (c/prn!! "Funky data from websocket????")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

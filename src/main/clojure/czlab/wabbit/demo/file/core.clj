@@ -46,8 +46,8 @@
 (defn picker<>
   [evt]
   (let [f (:file evt)]
-    (println "picked up new file: " f)
-    (println "content: " (i/slurp-utf8 f))))
+    (c/prn!! "picked up new file: %s" f)
+    (c/prn!! "content: %s" (i/slurp-utf8 f))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -47,7 +47,7 @@
   ;; and decide on which value to switch on
   (wf/choice<>
     #(let [_ %]
-       (println "step(1): choose an auth-method") "facebook")
+       (c/prn!! "step(1): choose an auth-method") "facebook")
     "facebook"  (perf-auth-mtd "facebook")
     "google+" (perf-auth-mtd "google+")
     "openid" (perf-auth-mtd "openid")
@@ -58,7 +58,7 @@
 ;;step2
 (c/def-
   get-profile
-  #(c/do#nil %2 (c/prn!! "step(2): get user profile\n" "->user is superuser")))
+  #(c/do#nil %2 (c/prn!! "step(2): get user profile\n%s" "->user is superuser")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
@@ -77,9 +77,9 @@
              v (po/getv job :ami_count)
              c (if (some? v) v 0)]
          (if (== 2 c)
-           (c/prn!! "step(3): granted permission for user "
+           (c/prn!! "step(3): granted permission for user %s"
                     "to launch this ami(id)")
-           (c/prn!! "step(3): failed to contact "
+           (c/prn!! "step(3): failed to contact %s%s%s"
                     "ami- server, will retry again (" c ")"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,9 +99,9 @@
              v (po/getv job :vol_count)
              c (if (some? v) v 0)]
          (if (== c 2)
-           (c/prn!! "step(3'): granted permission for user "
+           (c/prn!! "step(3'): granted permission for user %s"
                     "to access/snapshot this volume(id)")
-           (c/prn!! "step(3'): failed to contact vol- server, "
+           (c/prn!! "step(3'): failed to contact vol- server, %s%s%s"
                     "will retry again (" c ")"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,7 +122,7 @@
              c (if (some? v) v 0)]
          (if (== c 2)
            (c/prn!! "step(4): wrote stuff to database successfully")
-           (c/prn!! "step(4): failed to contact db- server, "
+           (c/prn!! "step(4): failed to contact db- server, %s%s%s"
                     "will retry again (" c ")"))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,7 +141,7 @@
   reply-user
   #(c/do#nil
      (let [job %2]
-       (c/prn!! "step(5): we'd probably return a 200 OK "
+       (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "back to caller here"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,7 +149,7 @@
   error-user
   #(c/do#nil
      (let [job %2]
-       (c/prn!! "step(5): we'd probably return a 200 OK "
+       (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
@@ -165,7 +165,7 @@
   (let [p (xp/get-pluglet evt)
         s (po/parent p)
         c (xp/get-scheduler s)]
-    (wf/exec (wf/workflow<>
+    (wf/exec (wf/workflow*
                (wf/group<> (auth-user)
                            get-profile provision final-test)) (wf/job<> c nil evt))))
 

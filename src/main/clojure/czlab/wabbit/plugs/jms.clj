@@ -48,7 +48,6 @@
 ;;(set! *warn-on-reflection* true)
 (defprotocol JMSApi
   ""
-  (start2 [_] "")
   (iniz-fac [_ ctx cf] "")
   (iniz-queue [_ ctx cf] "")
   (iniz-topic [_ ctx cf] ""))
@@ -88,6 +87,28 @@
     (doseq [[k v]
             (partition 2 args)] (if (c/hgl? v) (.put m k v)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- start2
+  [co]
+  (let [{:keys [context-factory
+                provider-url
+                jndi-user jndi-pwd conn-factory]} (xp/get-conf co)
+        ctx (InitialContext.
+              (init-map ["jndi.user" jndi-user
+                         "jndi.password" jndi-pwd
+                         Context/PROVIDER_URL provider-url
+                         Context/INITIAL_CONTEXT_FACTORY context-factory]))
+        obj (.lookup ctx (str conn-factory))]
+    (c/do-with [^Connection
+                c (some-> (c/condp?? instance? obj
+                            QueueConnectionFactory iniz-queue
+                            TopicConnectionFactory iniz-topic
+                            ConnectionFactory iniz-fac)
+                          (apply co ctx obj []))]
+      (if c
+        (.start c)
+        (u/throw-IOE "Unsupported JMS Connection Factory!")))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
   [plug _id spec]
@@ -106,6 +127,9 @@
                              (.createConnection ^ConnectionFactory cf
                                                 ^String jms-user
                                                 (c/stror (i/x->str pwd) nil)))]
+          (l/info "conn== %s" conn)
+          (l/info "c === %s" c)
+          (l/info "pwd === %s" (i/x->str pwd))
             ;;TODO ? ack always ?
             (if-not (is? Destination c)
               (u/throw-IOE "Object not of Destination type!")
@@ -157,24 +181,6 @@
                   (.setMessageListener
                     (reify MessageListener
                       (onMessage [_ m] (on-msg me m)))))))))
-      (start2 [co]
-        (let [{:keys [context-factory
-                      provider-url
-                      jndi-user jndi-pwd conn-factory]} (:conf @impl)
-              ctx (InitialContext.
-                    (init-map ["jndi.user" jndi-user
-                               "jndi.password" jndi-pwd
-                               Context/PROVIDER_URL provider-url
-                               Context/INITIAL_CONTEXT_FACTORY context-factory]))
-              obj (.lookup ctx (str conn-factory))]
-          (c/do-with [^Connection
-                      c (c/condp?? instance? obj
-                          ConnectionFactory (iniz-fac co ctx obj)
-                          QueueConnectionFactory (iniz-queue co ctx obj)
-                          TopicConnectionFactory (iniz-topic co ctx obj))]
-            (if c
-              (.start c)
-              (u/throw-IOE "Unsupported JMS Connection Factory!")))))
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
@@ -207,7 +213,7 @@
 (def JMSSpec
   {:info {:name "JMS Client"
           :version "1.0.0"}
-   :conf {:context-factory "czlab.proto.mock.jms.MockContextFactory"
+   :conf {:context-factory "czlab.wabbit.mock.jms.MockContextFactory"
           :$pluggable ::jms<>
           :provider-url "java://aaa"
           :conn-factory "tcf"

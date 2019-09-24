@@ -30,7 +30,7 @@
        "</hello>"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo
+(defn demo<>
   "" [evt res]
   ;; construct a simple html page back to caller
   ;; by wrapping it into a stream data object

@@ -13,6 +13,7 @@
 
   (:require [czlab.basal.log :as log]
             [czlab.wabbit.xpis :as xp]
+            [czlab.basal.util :as u]
             [czlab.basal.core :as c])
 
   (:import [javax.mail Message Message$RecipientType Multipart]

@@ -66,7 +66,7 @@
            (c/prn!! "*Child->child*: done."))))
     #(c/do#nil
        (let [job %2]
-         (c/prn!! "*Child*: the result for (5 * 60) according to "
+         (c/prn!! "*Child*: the result for (5 * 60) according to %s%s"
                   "my own child is = "
                   (po/getv job :result))
          (c/prn!! "*Child*: done.")))))
@@ -84,7 +84,7 @@
        (c/prn!! (str b) "\n" "*Parent*: done."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo
+(defn demo<>
   "Split but no wait, parent continues" [evt]
   (let [p (xp/get-pluglet evt)
         s (po/parent p)

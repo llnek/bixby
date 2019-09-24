@@ -30,13 +30,13 @@
   "" [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo
+(defn demo<>
   "" [evt]
   (let [^TextMessage msg (:message evt)]
-    (println "-> Correlation ID= " (.getJMSCorrelationID msg))
-    (println "-> Msg ID= " (.getJMSMessageID msg))
-    (println "-> Type= " (.getJMSType msg))
-    (println "(" (ncount) ") -> Message= " (.getText msg))))
+    (c/prn!! "-> Correlation ID= %s" (.getJMSCorrelationID msg))
+    (c/prn!! "-> Msg ID= %s" (.getJMSMessageID msg))
+    (c/prn!! "-> Type= %s" (.getJMSType msg))
+    (c/prn!! "(%s) -> Message= %s" (ncount) (.getText msg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
