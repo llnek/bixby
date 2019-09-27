@@ -34,7 +34,7 @@
   "" [evt]
   (let [plug (xp/get-pluglet evt)
         {:keys [repeat?]}
-        (xp/get-conf plug)]
+        (xp/gconf plug)]
     (if repeat?
       (println "-----> (" (ncount) ") repeating-update: " (Date.))
       (println "-----> once-only!!: " (Date.)))))

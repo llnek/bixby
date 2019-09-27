@@ -6,14 +6,16 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
+(ns
+  ^{:doc ""
       :author "Kenneth Leung"}
 
   czlab.wabbit.cons.con7
 
   (:gen-class)
 
-  (:require [czlab.basal.util :as u]
+  (:require [czlab.basal.cmenu :as cm]
+            [czlab.basal.util :as u]
             [czlab.basal.io :as i]
             [czlab.wabbit.core :as b]
             [czlab.basal.log :as l]
@@ -30,11 +32,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* false)
-(c/def- c-rcb "czlab.wabbit/Resources")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-cmd-info
+
+  "Collect all cmdline usage messages."
   [rcb pod?]
+
   (let [arr '(["usage.gen"] [ "usage.gen.desc"]
               ["usage.version"] [ "usage.version.desc"]
               ["usage.testjce"] ["usage.testjce.desc"]
@@ -47,7 +50,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- usage
+
+  "Echo usage."
   [pod?]
+
   (let [walls ["" "        " ""]
         style {:middle ["" "" ""]
                :bottom ["" "" ""]
@@ -56,7 +62,7 @@
                :body-walls walls
                :header-walls walls}
         rcb (b/get-rc-base)]
-    (-> b/banner ansi/bold-yellow c/prn!!)
+    (-> (b/banner) ansi/bold-yellow c/prn!!)
     (c/prn! "%s\n\n"
             (u/rstr rcb "wabbit.desc"))
     (c/prn! "%s\n"
@@ -75,34 +81,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -main
-  "" [& args]
-  (let [ver (u/load-resource b/c-verprops)
-        rcb (u/get-resource c-rcb)
-        [p1 p2 & _] args
-        pod? (= "-domus" p1)
+
+  "Main function."
+  [& args]
+
+  (let [[options args] (cm/parse-options args)
+        ver (u/load-resource b/c-verprops)
+        rcb (u/get-resource b/c-rcb-base)
+        home (io/file (or (:home options)
+                          (u/get-user-dir)))
+        cf (io/file home b/cfg-pod-cf)
+        pod? (i/file-ok? cf)
         verStr (c/stror (some-> ver
                                 (.getString "version")) "?")]
+    (u/set-sys-prop! "wabbit.user.dir" (u/fpath home))
     (u/set-sys-prop! "wabbit.version" verStr)
     (b/set-rc-base! rcb)
     (try (if (empty? args)
            (u/throw-BadData "CmdError!"))
-         (let [pred #(and (or (= "-home" %1)
-                              pod?) (c/hgl? %2))
-               args (if (pred p1 p2) (drop 2 args) args)
-               cfg (b/slurp-conf
-                     (c1/get-home-dir) b/cfg-pod-cf)
-               [f _] (c1/wabbit-tasks (keyword (c/_1 args)))]
-           (->> (if (pred p1 p2) p2 (u/get-user-dir))
-                io/file u/fpath
-                (u/set-sys-prop! "wabbit.user.dir"))
-           (if-not (fn? f)
-            (u/throw-BadData "CmdError!")
-            (binding
-              [c1/*config-object* cfg
-               c1/*pkey-object* (i/x->chars
-                                  (get-in cfg
-                                          [:info :digest]))]
-              (f (drop 1 args)))))
+         (let [[f _] (->> (c/_1 args)
+                          keyword
+                          c1/wabbit-tasks)]
+           (if (fn? f)
+             (f (drop 1 args))
+             (u/throw-BadData "CmdError!")))
          (catch Throwable _
            (if (is? DataError _)
              (usage pod?) (u/prn-stk _))))))

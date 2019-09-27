@@ -6,7 +6,8 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
+(ns
+  ^{:doc ""
       :author "Kenneth Leung"}
 
   czlab.wabbit.exec
@@ -40,64 +41,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-dbpool??
-  [co gid]
-  (get (:dbps @co) (keyword (c/stror gid wc/dft-dbid))))
+
+  "Get this db config, or default."
+  [ctx gid]
+
+  (get (:dbps ctx) (keyword (c/stror gid wc/dft-dbid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-dbapi??
-  [co gid]
+
+  "Create a db-pool from this config, or default."
+  [ctx gid]
+
   (when-some
-    [p (get-dbpool?? co gid)]
-    (try (hc/dbio<+> p (:schema @co))
+    [p (get-dbpool?? ctx gid)]
+    (try (hc/dbio<+> p (:schema ctx))
          (finally
-           (l/debug "using dbcfg: %s." p)))))
+           (l/debug "using db-config: %s." (i/fmt->edn p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sys-finz
 
-  ""
+  "Release all system resources."
   [exec ctx]
 
   (l/info "execvisor releasing system resources.")
-  (doseq [[k v] (:dbps @ctx)]
+  ;disconnect dbs
+  (doseq [[k v] (:dbps ctx)]
     (hc/db-finz v)
     (l/debug "finz'ed dbpool %s." k))
+  ;stop the scheduler
   (some-> exec xp/get-scheduler po/finz))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xref-plugs
 
-  ""
+  "Scan and instantiate plugins from the config."
   [exec ctx]
 
   (let [api "czlab.wabbit.jmx.core/jmx-monitor<>"
-        {:keys [jmx]} (:conf @ctx)
+        {:keys [jmx] :as C} (:conf @ctx)
         ;process each plugin
         ps (c/preduce<map>
              #(let [[k cfg] %2
                     {:keys [$pluggable enabled?]} cfg]
                 (if-some [p (and (c/!false? enabled?)
                                  $pluggable
-                                 (-> (xp/pluglet<>
-                                       exec $pluggable k)
+                                 (-> (xp/pluglet<> exec k $pluggable)
                                      (po/init cfg)))]
-                  (assoc! %1 (po/id p) p) %1))
-             (get-in @ctx [:conf :plugins]))]
+                  (assoc! %1 (po/id p) p) %1)) (:plugins C))]
+
     ;add the jmx pluglet
     (->> (if-some [p (and (c/!false? (:enabled? jmx))
-                          (-> (xp/pluglet<>
-                                exec api :$jmx) (po/init jmx)))]
-             (assoc ps (po/id p) p) ps)
-         (swap! ctx assoc :plugins))
+                          (-> (xp/pluglet<> exec :$jmx api) (po/init jmx)))]
+           (assoc ps (po/id p) p) ps)
+         (swap! ctx update-in [:conf] assoc :plugins))
+
     (l/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")
-    (doseq [[k _] (:plugins @ctx)]
-      (l/info "pluglet id= %s." k))
+    (doseq [[k _]
+            (get-in @ctx [:conf :plugins])] (l/info "pluglet id= %s." k))
     (l/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init-dbs??
 
-  ""
+  "Initialize and connect all required dbs."
   [exec ctx]
 
   (let [pk (xp/pkey-chars exec)
@@ -123,7 +131,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init2
+
+  "Step 2 of the initialization."
   [exec ctx]
+
   (let [{:keys [locale version conf cljrt]} @ctx
         {:keys [data-model info]} conf
         mcz (c/kw->str (:main info))
@@ -131,9 +142,11 @@
         res (->> (format wc/c-rcprops
                          (.getLanguage ^Locale locale))
                  (io/file (xp/get-home-dir exec) wc/dn-etc))]
+    ;load application resources
     (when (i/file-read? res)
       (wc/put-rc-bundle! id (u/load-resource res))
       (l/info "loaded i18n resources: %s." (str res)))
+    ;run the main app function, if any
     (when (c/hgl? mcz)
       (l/info "main func: %s." mcz)
       (u/call* cljrt mcz (c/vargs* Object @ctx)))
@@ -148,8 +161,11 @@
                              dmCZ
                              (c/vargs* Object @ctx)))]
         (swap! ctx assoc :schema sc)
-        (c/raise! "Invalid data-model schema! " dmCZ)))
+        (c/raise! "Invalid data-model schema: %s!" dmCZ)))
+    ;ok
+    ;start the main scheduler
     (po/activate (xp/get-scheduler exec))
+    ;build plugins
     (xref-plugs exec ctx)
     (l/info "execvisor: (%s) initialized - ok." id)))
 
@@ -165,19 +181,6 @@
     (reify
       po/Idable
       (id [_] _id)
-      xp/Execvisor
-      (get-start-time [_] start-time)
-      (uptime-in-millis [_]
-        (- (u/system-time) start-time))
-      (cljrt [_] (:cljrt @ctx))
-      (get-scheduler [_] cpu)
-      (get-home-dir [_] (:home-dir @ctx))
-      (get-locale [_] (:locale @ctx))
-      (kill9! [_] (c/funcit?? (:stop! @ctx)))
-      (has-plugin? [_ sid]
-        (c/in? (:plugins @ctx) (keyword sid)))
-      (get-plugin [_ sid]
-        (get (:plugins @ctx) (keyword sid)))
       po/Versioned
       (version [_] (:version @ctx))
       po/Initable
@@ -192,37 +195,45 @@
       po/Startable
       (start [me] (.start me nil))
       (start [me _]
-        (let [{:keys [plugins]} @ctx]
+        (let [plugins (get-in @ctx [:conf :plugins])]
           (l/info "execvisor starting plugins...")
           (doseq [[k v] plugins]
-            (l/info "plugin: %s -> start()" k)
-            (po/start v))
+            (l/info "plugin: %s -> start()" k) (po/start v))
           (some-> (:$jmx plugins)
                   (xp/jmx-reg me
                               "czlab" "execvisor" ["root=wabbit"]))
           (l/info "execvisor started - ok.")))
       (stop [me]
-        (let [{:keys [plugins]} @ctx]
+        (let [plugins (get-in @ctx [:conf :plugins])]
           (l/info "execvisor stopping plugins...")
           (doseq [[k v] plugins] (po/stop v))
           (l/info "execvisor stopped - ok.")))
       po/Finzable
       (finz [me]
-        (let [{:keys [plugins]} @ctx]
+        (let [plugins (get-in @ctx [:conf :plugins])]
           (l/info "execvisor disposing plugins...")
           (doseq [[k v] plugins] (po/finz v))
-          (sys-finz me ctx)
+          (sys-finz me @ctx)
           (l/info "execvisor terminated - ok.")))
-      xp/SqlAccess
-      (acquire-dbpool?? [_ gid] (get-dbpool?? ctx gid))
+      xp/Execvisor
+      (get-start-time [_] start-time)
+      (uptime-in-millis [_]
+        (- (u/system-time) start-time))
+      (cljrt [_] (:cljrt @ctx))
+      (get-scheduler [_] cpu)
+      (get-home-dir [_] (:home-dir @ctx))
+      (get-locale [_] (:locale @ctx))
+      (kill9! [_] (c/funcit?? (:stop! @ctx)))
+      (has-plugin? [_ sid]
+        (c/in? (get-in @ctx [:conf :plugins]) (keyword sid)))
+      (get-plugin [_ sid]
+        (get (get-in @ctx [:conf :plugins]) (keyword sid)))
+      (acquire-dbpool?? [_ gid] (get-dbpool?? @ctx gid))
       (acquire-dbpool?? [_] (xp/acquire-dbpool?? _ ""))
-      (acquire-dbapi?? [_ gid] (get-dbapi?? ctx gid))
+      (acquire-dbapi?? [_ gid] (get-dbapi?? @ctx gid))
       (acquire-dbapi?? [_ ] (xp/acquire-dbapi?? _ ""))
-      xp/KeyAccess
-      (pkey-bytes [_] (-> (get-in (:conf @ctx)
-                                  [:info :digest]) i/x->bytes))
-      (pkey-chars [_] (-> (get-in (:conf @ctx)
-                                  [:info :digest]) i/x->chars)))))
+      (pkey-bytes [_] (-> (get-in @ctx [:conf :info :digest]) i/x->bytes))
+      (pkey-chars [_] (-> (get-in @ctx [:conf :info :digest]) i/x->chars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- stop-cli
@@ -245,16 +256,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- hook-to-kill
+
+  "not used."
   [exec ctx]
+
   (let [{:keys [stop! cljrt hook]} @ctx]
     (u/call* cljrt
              :czlab.wabbit.plugs.http/discarder! (c/vargs* Object stop! hook))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- enable-kill-hook
+
+  "Install the http hook to kill process."
   [exec ctx]
+
   (l/info "enabling remote shutdown hook...")
-  (swap! ctx assoc :kill-hook (hook-to-kill exec ctx)))
+  (swap! ctx assoc :kill-hook nil));(hook-to-kill exec ctx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- primodial
@@ -262,20 +279,23 @@
   "Create the execvisor."
   [ctx]
 
-  (l/info "\n%s\ninside primodial()\n%s."
-          (c/repeat-str 78 "=") (c/repeat-str 78 "="))
+  (l/info "%s" (c/repeat-str 78 "*"))
+  (l/info "inside primodial().")
+  (l/info "%s" (c/repeat-str 78 "*"))
   (c/do-with [e (execvisor<> ctx)]
     (swap! ctx assoc :stop! (stop-cli e ctx))
-    ;TODO
-    ;(enable-kill-hook e ctx)
+    (enable-kill-hook e ctx)
     (po/init e ctx)
-    (l/info "\n%s\nstarting wabbit server...\n%s."
-            (c/repeat-str 78 "*") (c/repeat-str 78 "*"))
+    (l/info "%s" (c/repeat-str 78 "*"))
+    (l/info "starting wabbit server...")
+    (l/info "%s" (c/repeat-str 78 "*"))
     (po/start e)
     (l/info "wabbit started - ok.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config
+
+  "Start wabbit."
 
   ([cwd confObj]
    (start-via-config cwd confObj false))
@@ -298,47 +318,51 @@
                     :cljrt (u/cljrt<>)
                     :version v
                     :hook hook
-                    :dbps {}
-                    :plugins {}
                     :pid-file fp
                     :locale loc
                     :conf confObj
                     :encoding (c/stror encoding "utf-8")})]
-     (l/info (str "wabbit.user.dir = %s."
-                  "wabbit.version = %s.") (u/fpath cwd) v)
+     (l/info "wabbit.user.dir = %s." (u/fpath cwd))
+     (l/info "wabbit.version = %s." v)
      (c/doto->> rc
                 wc/set-rc-base! (c/test-some "base resource"))
      (l/info "wabbit's i18n#base loaded - ok.")
-     (c/do-with [exec (primodial ctx)]
-       (doto fp
-         (i/spit-utf8 (p/process-pid)) .deleteOnExit)
-       (l/info "wrote wabbit.pid - ok.")
-       (p/exit-hook (:stop! @ctx))
-       (l/info "added shutdown hook- ok.")
-       (l/info "app-loader: %s." (type cz))
-       (l/info "sys-loader: %s." (type (.getParent cz)))
-       (l/debug "%s" (i/fmt->edn @ctx))
-       (l/info "wabbit is now running...")
-       (when join?
-         (loop []
-           (if @(:stopcli? @ctx)
-             (shutdown-agents)
-             (do (u/pause 3000) (recur)))))))))
+     (primodial ctx)
+     (doto fp
+       (i/spit-utf8 (p/process-pid)) .deleteOnExit)
+     (l/info "wrote wabbit.pid - ok.")
+     (p/exit-hook (:stop! @ctx))
+     (l/info "added shutdown hook- ok.")
+     (l/info "app-loader: %s." (type cz))
+     (l/info "sys-loader: %s." (type (.getParent cz)))
+     ;(l/debug "%s" (i/fmt->edn @ctx))
+     (l/info "wabbit is now running...")
+     ;block?
+     (when join?
+       (loop []
+         (if @(:stopcli? @ctx)
+           (shutdown-agents)
+           (do (u/pause 3000) (recur))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-cons
-  "" [cwd]
+
+  "Starts wabbit."
+  [cwd]
+
   (c/prn!! (ansi/bold-yellow (wc/banner)))
   (c/doto->>
     (io/file cwd wc/cfg-pod-cf)
-    (l/debug "checking for file: %s")
-    (wc/precond-file))
+    (l/debug "checking for file: %s") (wc/precond-file))
   (start-via-config cwd
                     (wc/slurp-conf cwd wc/cfg-pod-cf true) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -main
+
+  "Main function."
   [& args]
+
   (let [[p1 p2] args]
     (c/do-with [dir (io/file (if (or (= "-home" p1)
                                      (= "--home" p1)) p2 (u/get-user-dir)))]

@@ -36,7 +36,7 @@
         tcp (xp/get-plugin svr :sample)
         s (.replace text-msg "${TS}" (str (Date.)))
         {:keys [host port]}
-        (xp/get-conf tcp)
+        (xp/gconf tcp)
         bits (.getBytes s "utf-8")]
     (c/prn!! "TCP Client: about to send message= %s" s)
     (with-open [soc (Socket. ^String host (int port))]

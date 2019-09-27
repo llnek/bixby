@@ -6,7 +6,8 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
+(ns
+  ^{:doc ""
       :author "Kenneth Leung"}
 
   czlab.wabbit.core
@@ -21,13 +22,9 @@
             [czlab.basal.core :as c]
             [czlab.basal.proc :as p])
 
-  (:import [clojure.lang Atom APersistentMap]
-           [java.util ResourceBundle Locale]
-           [org.apache.commons.io
-            FileUtils]
-           [java.io
-            File
-            IOException]
+  (:import [java.util ResourceBundle Locale]
+           [org.apache.commons.io FileUtils]
+           [java.io File IOException]
            [org.apache.commons.lang3.text StrSubstitutor]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,13 +35,6 @@
 (def ^String c-rcb-base "czlab.wabbit/Resources")
 (def ^String en-rcprops  "Resources_en.properties")
 (def ^String c-rcprops  "Resources_%s.properties")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(def ^:private ^String sys-devid-pfx "system.####")
-;(def ^:private ^String sys-devid-sfx "####")
-;(def sys-devid-regex #"system::[0-9A-Za-z_\-\.]+" )
-;(def shutdown-devid #"system::kill_9" )
-;(def ^String pod-protocol  "pod:" )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^String shutdown-uri "/kill9")
@@ -110,69 +100,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn del-rc-bundle!
-  "Remove a resource bundle from the cache." [b]
-  (swap! rc-bundles-cache #(update-in % [:rcbs] dissoc b)))
+
+  "Remove a resource bundle from the cache."
+  [b]
+
+  (swap! rc-bundles-cache update-in [:rcbs] dissoc b)
+  rc-bundles-cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn put-rc-bundle!
-  "Add a resource bundle to the cache." [b rc]
-  (swap! rc-bundles-cache #(update-in % [:rcbs] assoc b rc)))
+
+  "Add a resource bundle to the cache."
+  [b rc]
+
+  (swap! rc-bundles-cache update-in [:rcbs] assoc b rc)
+  rc-bundles-cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-rc-bundle
-  "Get a cached bundle." [b] (get-in @rc-bundles-cache [:rcbs b]))
+
+  "Get a cached bundle."
+  [b]
+
+  (if b (get-in @rc-bundles-cache [:rcbs b])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-rc-base
-  "Get the baseline bundle." [] (:base @rc-bundles-cache))
+
+  "Get the baseline bundle."
+  []
+
+  (:base @rc-bundles-cache))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn set-rc-base!
-  "Set the baseline resource bundle." [base]
-  (swap! rc-bundles-cache #(assoc % :base base)))
+
+  "Set the baseline resource bundle."
+  [base]
+
+  (swap! rc-bundles-cache assoc :base base)
+  rc-bundles-cache)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn banner
+
   "A ASCII banner."
   {:no-doc true :tag String} []
+
   (str  "              __   __   _ __ " "\n"
         " _    _____ _/ /  / /  (_) /_" "\n"
         "| |/|/ / _ `/ _ \\/ _ \\/ / __/" "\n"
         "|__,__/\\_,_/_.__/_.__/_/\\__/ " "\n"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defmacro gtid
-  "typeid of component." [obj] `(str ~obj))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defmacro log-comp
-  "*internal*" [pfx co]
-  `(czlab.basal.log/info
-     "%s: {%s}#<%s>" ~pfx (czlab.wabbit.core/gtid ~co) (:typeid ~co)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-proc-dir
+
   "Get the current directory."
-  ^File [] (io/file (u/get-sys-prop "wabbit.user.dir")))
+  ^File []
+
+  (io/file (u/get-sys-prop "wabbit.user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-sys-props
+
   "Expand system properties found in value."
   ^String [value]
+
   (if (c/nichts? value)
     value (StrSubstitutor/replaceSystemProperties ^String value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-env-vars
-  "Expand env vars found in value."
+
+  "Expand environment vars found in value."
   ^String [value]
+
   (if (c/nichts? value)
     value (-> (System/getenv) StrSubstitutor. (.replace ^String value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-vars
-  "Replaces all variables in value."
+
+  "Replace all variables in value."
   ^String [value]
+
   (if (or (c/nichts? value)
           (nil? (cs/index-of value "${")))
     value
@@ -183,15 +194,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-vars*
-  "" [form]
+
+  "Replace all variables in this form."
+  [form]
+
   (cw/postwalk #(if (string? %) (expand-vars %) %) form))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn read-conf
+
   "Parse an edn configuration file."
   {:tag String}
+
   ([podDir confile]
    (read-conf (io/file podDir dn-conf confile)))
+
   ([file]
    (c/doto->> (i/change-content (io/file file)
                                 #(expand-vars %))
@@ -199,8 +216,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the directory is readable & writable.
-(defn ^:no-doc precond-dir
-  "Assert dir(s) are read-writeable?" [f & dirs]
+(defn precond-dir
+
+  "Assert dir(s) are read-writeable?"
+  [f & dirs]
+
   (c/let#true [base (get-rc-base)]
     (doseq [d (cons f dirs)]
       (->> (i/dir-read-write? d)
@@ -208,17 +228,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the file is readable
-(defn ^:no-doc precond-file
-  "Assert file(s) are readable?" [ff & files]
+(defn precond-file
+
+  "Assert file(s) are readable?"
+  [ff & files]
+
   (c/let#true [base (get-rc-base)]
     (doseq [f (cons ff files)]
       (->> (i/file-read? f)
            (c/test-cond (u/rstr base "file.no.r" f))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn ^:no-doc maybe-dir??
+(defn maybe-dir??
+
   "If the key maps to a File?"
   ^File [m kn]
+
   (let [v (get m kn)]
     (condp instance? v
       String (io/file v)
@@ -227,13 +252,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-conf
-  "" [cfgObj] (-> (i/fmt->edn cfgObj) expand-vars i/read-edn))
+
+  "Expand vars in this config object."
+  [cfgObj]
+
+  (expand-vars* cfgObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn slurp-conf
+
   "Parse config file."
+
   ([podDir conf]
    (slurp-conf podDir conf false))
+
   ([podDir conf expVars?]
    (let [f (io/file podDir conf)
          s (str "{\n" (i/slurp-utf8 f) "\n}")]
@@ -246,8 +278,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn spit-conf
+
   "Write out config file."
   [podDir conf cfgObj]
+
   (let [f (io/file podDir conf)
         s (c/strim (i/fmt->edn cfgObj))]
     (i/spit-utf8 f
@@ -257,8 +291,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn prevar-cfg
-  ""
+
+  "Scan the config object looking for references to
+  functions, supported markers are $error, $handler.
+  For each one found, load it as a Var via clojure/RT."
   [cfg]
+
   (let [lock (atom 0)
         rt (u/cljrt<>)]
     (cw/postwalk
@@ -271,17 +309,22 @@
                  :else
                  (c/raise! "Bad handler: %s!" %)))
          (if (or (= :$error %)
-                 (= :$handler %))
-           (do (reset! lock 1) %) %)) cfg)))
+                 (= :$handler %)) (do (reset! lock 1) %) %)) cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn delete-dir
-  "Safely delete a folder." [dir]
+
+  "Safely delete a folder."
+  [dir]
+
   (c/try! (FileUtils/deleteDirectory (io/file dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn clean-dir
-  "Safely clear a folder." [dir]
+
+  "Safely clear a folder."
+  [dir]
+
   (c/try! (FileUtils/cleanDirectory (io/file dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

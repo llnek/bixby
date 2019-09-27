@@ -6,7 +6,8 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
+(ns
+  ^{:doc ""
       :author "Kenneth Leung"}
 
   czlab.wabbit.cons.con1
@@ -25,14 +26,14 @@
             [czlab.wabbit.cons.con2 :as c2]
             [czlab.basal.core :as c :refer [n#]])
 
-  (:import [org.apache.commons.io FileUtils]
-           [java.util
+  (:import [java.util
             ResourceBundle
             Properties
             Calendar
             Map
             Date]
-           [java.io File]))
+           [java.io File]
+           [org.apache.commons.io FileUtils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -41,60 +42,87 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-home-dir
-  "" [] (io/file (u/get-sys-prop "wabbit.user.dir")))
+
+  "The current directory."
+  []
+
+  (io/file (u/get-sys-prop "wabbit.user.dir")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-xxx
+
+  "Print out help messages."
   [pfx end]
+
   (try (dotimes [n end]
-         (c/prn! "%s\n"
-                 (u/rstr (wc/get-rc-base)
-                         (str pfx (+ 1 n)))))
+         (c/prn!! "%s"
+                  (u/rstr (wc/get-rc-base)
+                          (str pfx (+ 1 n)))))
        (finally
          (c/prn!! ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-create
-  [] (on-help-xxx "usage.new.d" 5))
+
+  "Help message for action: create."
+  []
+
+  (on-help-xxx "usage.new.d" 5))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-create
-  "Create a new pod." [args]
-  (if-not (empty? args)
-    (apply c2/create-pod
-           (c/_1 args) (drop 1 args)) (u/throw-BadData "CmdError!")))
+
+  "Create a new pod."
+  [args]
+
+  (if (empty? args)
+    (u/throw-BadData "CmdError!")
+    (apply c2/create-pod (c/_1 args) (drop 1 args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-podify
-  [] (on-help-xxx "usage.podify.d" 2))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- bundle-pod
-  [podDir outDir]
-  (let [a (io/file podDir)
-        dir (i/mkdirs (io/file outDir))]
-    (a/run* (a/zip {:includes "**/*"
-                    :basedir a
-                    :destFile (io/file dir (str (.getName a) ".zip"))}))))
+  "Help messages for action: podify."
+  []
+
+  (on-help-xxx "usage.podify.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-podify
-  "" [args]
+
+  ""
+  [args]
+
   (if (empty? args)
     (u/throw-BadData "CmdError!")
-    (bundle-pod (wc/get-proc-dir) (c/_1 args))))
+    (let [a (io/file (wc/get-proc-dir))
+          dir (i/mkdirs (io/file (c/_1 args)))]
+      (a/run* (a/zip {:includes "**/*"
+                      :basedir a
+                      :destFile (io/file dir (str (.getName a) ".zip"))})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-start
-  [] (on-help-xxx "usage.start.d" 4))
+
+  "Help message for action: start."
+  []
+
+  (on-help-xxx "usage.start.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-stop
-  [] (on-help-xxx "usage.stop.d" 2))
+
+  "Help message for action: stop."
+  []
+
+  (on-help-xxx "usage.stop.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- run-pod-bg
+
+  "Run the application in the background."
   [podDir]
+
   (let [progW (io/file podDir "bin/wabbit.bat")
         prog (io/file podDir "bin/wabbit")
         tk (if (u/is-windows?)
@@ -106,11 +134,17 @@
                 {:dir podDir
                  :executable (u/fpath prog)}
                 [[:argvalues ["run" "bg"]]]))
-    (if tk (a/run* tk) (u/throw-BadData "CmdError!"))))
+    ;run the target
+    (if tk
+      (a/run* tk)
+      (u/throw-BadData "CmdError!"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-start
-  "" [args]
+
+  "Start the application."
+  [args]
+
   (let [s2 (c/_1 args)
         cwd (wc/get-proc-dir)]
     ;; background job is handled differently on windows
@@ -118,35 +152,55 @@
              (c/in? #{"-bg" "--background"} s2))
       (run-pod-bg cwd)
       (do (-> wc/banner
-              ansi/bold-yellow c/prn!!)
-          (we/start-via-cons cwd)))))
+              ansi/bold-yellow c/prn!!) (we/start-via-cons cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-stop
+
   "" {:no-doc true} [args])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-debug
-  [] (on-help-xxx "usage.debug.d" 2))
+
+  "Help message for action: debug."
+  []
+
+  (on-help-xxx "usage.debug.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-debug
-  "Debug the pod." {:no-doc true} [args] (on-start args))
+
+  "Debug the application."
+  {:no-doc true}
+  [args]
+
+  (on-start args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-demos
-  [] (on-help-xxx "usage.demo.d" 2))
+
+  "Help message for action :demo."
+  []
+
+  (on-help-xxx "usage.demo.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-demos
-  "" {:no-doc true} [args]
+
+  "Generate demo samples."
+  {:no-doc true}
+  [args]
+
   (if (empty? args)
     (u/throw-BadData "CmdError!")
     (c2/publish-samples (c/_1 args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn gen-pwd
-  "" [args]
+
+  "Generate a passord."
+  [args]
+
   (let [c (c/_1 args)
         n (c/s->long (str c) 16)]
     (if-not (and (>= n 8)
@@ -156,47 +210,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn gen-guid
-  "" [] (u/uuid<>))
+
+  "Generate a UUID."
+  []
+
+  (u/uuid<>))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-encrypt
+
+  "Encrypt some data."
   [args]
+
   (let [[s k] (cond (c/one? args) [(c/_1 args) *pkey-object*]
                     (c/two? args) [(c/_2 args)(c/_1 args)]
                     :else (u/throw-BadData "CmdError!"))]
     (try (-> (co/pwd<> s k) co/pw-encoded i/x->str)
-         (catch Throwable _ (c/prn!! "Failed to encrypt.")))))
+         (catch Throwable e (c/prn!! "Failed to encrypt: %s." (u/emsg e))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-decrypt
+
+  "Decrypt some data."
   [args]
+
   (let [[s k] (cond (c/one? args) [(c/_1 args) *pkey-object*]
                     (c/two? args) [(c/_2 args)(c/_1 args)]
                     :else (u/throw-BadData "CmdError!"))]
     (try (-> (co/pwd<> s k) co/pw-text i/x->str)
-         (catch Throwable _ (c/prn!! "Failed to decrypt.")))))
+         (catch Throwable e (c/prn!! "Failed to decrypt: %s." (u/emsg e))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-hash
+
+  "Generate a hash/digest on the data."
   [args]
+
   (if-not (empty? args)
     (tc/gen-digest (c/_1 args))
     (u/throw-BadData "CmdError!")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-mac
+
+  "Generate a MAC on the data."
   [args]
+
   (if (empty? args)
     (u/throw-BadData "CmdError!")
     (tc/gen-mac *pkey-object* (c/_1 args))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-generate
-  [] (on-help-xxx "usage.gen.d" 9))
+
+  "Help message for action: generate."
+  []
+
+  (on-help-xxx "usage.gen.d" 9))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-generate
-  "" {:no-doc true} [args]
+
+  "Various generate functions."
+  {:no-doc true}
+  [args]
+
   (let [c (c/_1 args)
         args (drop 1 args)]
     (cond (c/in? #{"-p" "--password"} c) (gen-pwd args)
@@ -209,26 +287,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn prn-generate
-  "" {:no-doc true} [args] (c/prn!! (on-generate args)))
+
+  "Print out result from the generate function."
+  {:no-doc true}
+  [args]
+
+  (c/prn!! (on-generate args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-test-jce
-  [] (on-help-xxx "usage.testjce.d" 2))
+
+  "Help message for action: test-jce."
+  []
+
+  (on-help-xxx "usage.testjce.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-test-jce
-  "" {:no-doc true} [args]
+
+  "Assert JCE."
+  {:no-doc true}
+  [args]
+
   (let [rcb (wc/get-rc-base)]
     (tc/assert-jce)
     (c/prn!! (u/rstr rcb "usage.testjce.ok"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-version
-  "" [] (on-help-xxx "usage.version.d" 2))
+
+  "Help message for action: version."
+  []
+
+  (on-help-xxx "usage.version.d" 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-version
-  "" {:no-doc true} [args]
+
+  "Print out the version."
+  {:no-doc true}
+  [args]
+
   (let [rcb (wc/get-rc-base)]
     (->> (u/get-sys-prop "wabbit.version")
          (u/rstr rcb "usage.version.o1")
@@ -240,7 +339,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- scan-jars
+
+  "Scan a directory for jar files and list the file paths."
   [out dir]
+
   (let [sep (u/get-sys-prop "line.separator")]
     (c/sbf+ out
             (c/sreduce<>
@@ -252,7 +354,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- gen-eclipse-proj
+
+  "Generate a eclipse project file."
   [pdir]
+
   (let [ec (io/file pdir "eclipse.projfiles")
         poddir (io/file pdir)
         pod (i/fname poddir)
@@ -283,11 +388,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-ide
-  [] (on-help-xxx "usage.ide.d" 4))
+
+  "Help message for action: ide."
+  []
+
+  (on-help-xxx "usage.ide.d" 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-ide
-  "" {:no-doc true} [args]
+
+  "Generate project files for IDEs."
+  {:no-doc true}
+  [args]
+
   (if-not (and (not-empty args)
                (c/in? #{"-e" "--eclipse"} (c/_1 args)))
     (u/throw-BadData "CmdError!")
@@ -295,18 +408,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-service-specs
-  [] (on-help-xxx "usage.svc.d" 8))
+
+  "Help message for action: service."
+  []
+
+  (on-help-xxx "usage.svc.d" 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-service-specs
-  "" [args]
+
+  "Print out specs for built-in plugins."
+  [args]
+
   (let [clj (u/cljrt<>)]
     (-> (c/preduce<map>
           #(assoc! %1
                    (c/_1 %2)
-                   (u/call* clj
-                            (str "czlab.wabbit.plugs."
-                                 (c/kw->str (c/_2 %2))) []))
+                   (u/var* clj
+                           (str "czlab.wabbit.plugs."
+                                (c/kw->str (c/_2 %2)))))
           {:OnceTimer :loops/OnceTimerSpec
            :FilePicker :files/FilePickerSpec
            :SocketIO :socket/SocketIOSpec
@@ -318,33 +438,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-help-help
-  "" [] (u/throw-BadData "CmdError!"))
+
+  "Help message for action: help."
+  []
+
+  (u/throw-BadData "CmdError!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(declare on-help)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def wabbit-tasks
-  {:service [on-service-specs on-help-service-specs]
-   :new [on-create on-help-create]
-   :ide [on-ide on-help-ide]
-   :podify [on-podify on-help-podify]
-   :debug [on-debug on-help-debug]
-   :help [on-help on-help-help]
-   :run [on-start on-help-start]
-   :stop [on-stop on-help-stop]
-   :demos [on-demos on-help-demos]
-   :crypto [prn-generate on-help-generate]
-   :testjce [on-test-jce on-help-test-jce]
-   :version [on-version on-help-version]})
+(def wabbit-tasks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-help
-  "" {:no-doc true} [args]
+
+  "Print out help message for an action."
+  {:no-doc true}
+  [args]
+
   (c/if-fn? [h (c/_2 (wabbit-tasks
                        (keyword (c/_1 args))))]
     (h)
     (u/throw-BadData "CmdError!")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(alter-var-root
+  #'wabbit-tasks
+  (fn [_]
+    {:service [on-service-specs on-help-service-specs]
+     :new [on-create on-help-create]
+     :ide [on-ide on-help-ide]
+     :podify [on-podify on-help-podify]
+     :debug [on-debug on-help-debug]
+     :help [on-help on-help-help]
+     :run [on-start on-help-start]
+     :stop [on-stop on-help-stop]
+     :demos [on-demos on-help-demos]
+     :crypto [prn-generate on-help-generate]
+     :testjce [on-test-jce on-help-test-jce]
+     :version [on-version on-help-version]}))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-

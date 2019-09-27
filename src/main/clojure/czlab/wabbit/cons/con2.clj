@@ -6,7 +6,8 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
+(ns
+  ^{:doc ""
       :author "Kenneth Leung"}
 
   czlab.wabbit.cons.con2
@@ -35,21 +36,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;simulate what lein new template does
 (defn create-pod
-  "" [name & args]
-  (c/prn!! "Generating fresh 'wabbit' project...")
+
+  "Create a new wabbit application."
+  [name & args]
+
+  (c/prn!! "Generating new 'wabbit' project...")
   (try (let [dir (c/_2 (drop-while #(not= "--to-dir" %) args))
              options {:renderer-fn sc/render-string
                       :force? (some? (c/_1 (drop-while
                                              #(not= "--force" %) args)))
                       :dir (or dir (-> (u/get-user-dir) (io/file name) .getPath))}]
-         ;;(prn!! "opts = " options)
+         ;;(c/prn!! "opts = %s" options)
          (apply ws/new<> name options args))
        (catch Throwable t
          (c/prn!! "Failed to generate project.\n%s." (u/emsg t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn publish-samples
-  "" [outDir] )
+
+  "Generate all samples."
+  [outDir] )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

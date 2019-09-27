@@ -143,7 +143,7 @@
          {:keys [info]} :route} req
         {:as cfg
          :keys [want-session?]
-         {:keys [macit?]} :session} (xp/get-conf plug)]
+         {:keys [macit?]} :session} (xp/gconf plug)]
     (assoc req
            :source plug
            :stale? false
@@ -171,7 +171,7 @@
 (defn- boot!
   [plug]
   (let [asset! #'czlab.wabbit.plugs.mvc/asset-loader
-        {:as cfg :keys [wait-millis]} (xp/get-conf plug)]
+        {:as cfg :keys [wait-millis]} (xp/gconf plug)]
     (l/debug "boot! http-plug: %s." cfg)
     (sv/tcp-server<>
       (assoc cfg
@@ -235,7 +235,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [_] server)
       po/Idable

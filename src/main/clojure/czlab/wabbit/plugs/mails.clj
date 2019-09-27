@@ -182,7 +182,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [_] plug)
       po/Idable

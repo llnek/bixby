@@ -67,7 +67,7 @@
 (defn schedule-threaded-loop
   "" [plug waker]
   (let [{:keys [interval-secs] :as cfg}
-        (xp/get-conf plug)]
+        (xp/gconf plug)]
     (c/do-with
       [loopy (volatile! true)]
       (let [ms (pc/s2ms interval-secs)
@@ -105,7 +105,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [me] plug)
       po/Idable

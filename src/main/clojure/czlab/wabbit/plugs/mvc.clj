@@ -167,7 +167,7 @@
 (defn- reply-static
   [{:keys [request] :as res} file]
   (let [plug (xp/get-pluglet request)
-        cfg (xp/get-conf plug)
+        cfg (xp/gconf plug)
         fp (io/file file)
         {:keys [uri]} request]
     (l/debug "serving file: %s." (u/fpath fp))
@@ -190,7 +190,7 @@
         {:as cfg
          :keys [file-access-check?]
          {:keys [public-dir]} :wsite}
-        (xp/get-conf plug)
+        (xp/gconf plug)
         home-dir (u/fpath (-> plug
                               po/parent
                               xp/get-home-dir))

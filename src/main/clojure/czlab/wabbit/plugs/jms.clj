@@ -92,7 +92,7 @@
   [co]
   (let [{:keys [context-factory
                 provider-url
-                jndi-user jndi-pwd conn-factory]} (xp/get-conf co)
+                jndi-user jndi-pwd conn-factory]} (xp/gconf co)
         ctx (InitialContext.
               (init-map ["jndi.user" jndi-user
                          "jndi.password" jndi-pwd
@@ -184,7 +184,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [_] plug)
       po/Idable

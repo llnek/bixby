@@ -8,9 +8,9 @@
   :description "Service bus, web framework."
   :url "https://github.com/llnek/wabbit"
 
-  :dependencies [[org.apache.commons/commons-lang3 "3.5"]
-                 [commons-io/commons-io "2.5"]
-                 [io.aviso/pretty "0.1.33"]
+  :dependencies [[org.apache.commons/commons-lang3 "3.9"]
+                 [commons-io/commons-io "2.6"]
+                 [io.aviso/pretty "0.1.37"]
                  [stencil "0.5.0"]
                  ;;shiro needs this
                  [commons-logging "1.2"]
@@ -27,7 +27,10 @@
                  [io.czlab/antclj "1.0.4"]
                  [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
 
+  :exclusions [org.clojure/clojure]
+
   :plugins [;[cider/cider-nrepl "0.14.0"]
+            [lein-czlab "1.0.0"]
             [lein-javadoc "0.3.0"]
             [lein-codox "0.10.3"]
             [lein-cprint "1.2.0"]]
@@ -51,7 +54,8 @@
   :test-paths ["src/test/clojure"]
   :resource-paths ["src/main/resources"]
 
-  :main czlab.wabbit.exec
+  :main czlab.wabbit.cons.con7
+  ;:main czlab.wabbit.exec
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
   :javac-options [;"-source" "8"

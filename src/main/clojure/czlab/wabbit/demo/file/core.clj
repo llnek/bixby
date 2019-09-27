@@ -38,7 +38,7 @@
   (let [plug (xp/get-pluglet evt)
         svr (po/parent plug)
         c (xp/get-plugin svr :picker)]
-    (-> (:target-folder (xp/get-conf plug))
+    (-> (:target-folder (xp/gconf plug))
         (io/file (str "ts-" (ncount) ".txt"))
         (i/spit-utf8 (str "Current time is " (Date.))))))
 

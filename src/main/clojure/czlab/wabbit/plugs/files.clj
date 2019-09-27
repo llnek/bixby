@@ -102,7 +102,7 @@
   ^FileAlterationMonitor [plug]
   (let [{:keys [target-folder recv-folder
                 interval-secs ^FileFilter fmask] :as cfg}
-        (xp/get-conf plug)
+        (xp/gconf plug)
         obs (-> (io/file target-folder)
                 (FileAlterationObserver. fmask))]
     (c/do-with [mon (FileAlterationMonitor.
@@ -126,7 +126,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [_] plug)
       po/Idable

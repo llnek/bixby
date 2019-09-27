@@ -32,7 +32,7 @@
       (@e evt ex)
       (do (some-> ex l/exception)
           (l/error (str "event [%s] "
-                        "%s dropped.") (b/gtid evt) (po/id plug))))))
+                        "%s dropped.") (po/id evt) (po/id plug))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- process-orphan
@@ -62,7 +62,7 @@
                (xp/user-handler plug))
          f (if (var? h) @h)]
      (c/do#nil
-       (l/debug "plug = %s\narg = %s\ncb = %s." (b/gtid plug) arg h)
+       (l/debug "plug = %s\narg = %s\ncb = %s." (po/id plug) arg h)
        (l/debug "#%s => %s :is disp!" (po/id evt) (po/id plug))
        (if-not (fn? f)
          (process-orphan evt)

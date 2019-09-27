@@ -63,7 +63,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- start-rmi
   [plug]
-  (try (let [{:keys [registry-port]} (xp/get-conf plug)]
+  (try (let [{:keys [registry-port]} (xp/gconf plug)]
          {:rmi (LocateRegistry/createRegistry ^long registry-port)})
        (catch Throwable _ (mk-jmxrror "Failed to create RMI registry" _))))
 
@@ -73,7 +73,7 @@
 (defn- start-jmx
   [plug]
   (let [{:keys [registry-port server-port
-                host url context-factory]} (xp/get-conf plug)
+                host url context-factory]} (xp/gconf plug)
         host (c/stror host
                       (-> (InetAddress/getLocalHost) .getHostName))
         endpt (-> (cs/replace (c/stror url SVC) "{{h}}" host)
@@ -102,7 +102,7 @@
     (reify
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       (err-handler [_]
         (get-in @impl [:conf :$error]))
       xp/JmxPluglet

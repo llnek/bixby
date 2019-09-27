@@ -103,7 +103,7 @@
    (let [plug (xp/get-pluglet evt)]
      (c/do-with
        [s (ss/wsession<> (-> plug po/parent xp/pkey-bytes)
-                         (:session (xp/get-conf plug)))]
+                         (:session (xp/gconf plug)))]
        (doseq [[k v] attrs] (ss/set-session-attr s k v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -487,7 +487,7 @@
       xp/Pluglet
       (user-handler [_] (get-in @impl [:conf :$handler]))
       (err-handler [_] (get-in @impl [:conf :$error]))
-      (get-conf [_] (:conf @impl))
+      (gconf [_] (:conf @impl))
       po/Hierarchical
       (parent [_] server)
       po/Idable
@@ -500,7 +500,7 @@
                [:conf]
                #(-> (merge % arg)
                     b/expand-vars* b/prevar-cfg))
-        (init-shiro (.get-conf me)
+        (init-shiro (.gconf me)
                     (xp/get-home-dir server)) me)
       po/Finzable
       (finz [_]
