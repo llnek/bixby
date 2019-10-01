@@ -14,8 +14,8 @@
 
   (:gen-class)
 
-  (:require [czlab.basal.util :as u]
-            [czlab.basal.proc :as p]
+  (:require [czlab.basal [util :as u][proc :as p]]
+            ;[czlab.basal.proc :as p]
             [czlab.niou.mime :as mi]
             [io.aviso.ansi :as ansi]
             [czlab.basal.io :as i]

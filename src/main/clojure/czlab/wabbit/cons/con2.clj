@@ -18,8 +18,8 @@
             [czlab.basal.core :as c]
             [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.shared.new :as ws])
+            [czlab.wabbit.core :as b])
+            ;[czlab.wabbit.shared.new :as ws])
 
   (:import [java.io File]))
 
@@ -47,7 +47,9 @@
                                              #(not= "--force" %) args)))
                       :dir (or dir (-> (u/get-user-dir) (io/file name) .getPath))}]
          ;;(c/prn!! "opts = %s" options)
-         (apply ws/new<> name options args))
+         ;TODO:
+         ;(apply ws/new<> name options args)
+         )
        (catch Throwable t
          (c/prn!! "Failed to generate project.\n%s." (u/emsg t)))))
 
