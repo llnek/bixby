@@ -11,13 +11,15 @@
 
   czlab.wabbit.demo.mvc.core
 
-  (:require [czlab.wabbit.plugs.mvc :as mvc]
-            [czlab.basal.log :as log]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.core :as b]
-            [czlab.niou.core :as cc]
-            [czlab.basal.core :as c]))
+  (:require [czlab.niou.core :as cc]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.basal
+             [log :as l]
+             [core :as c]
+             [xpis :as po]]
+            [czlab.wabbit.plugs.mvc :as mvc])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ftl-context

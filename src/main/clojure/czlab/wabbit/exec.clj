@@ -14,21 +14,24 @@
 
   (:gen-class)
 
-  (:require [czlab.basal [util :as u][proc :as p]]
-            ;[czlab.basal.proc :as p]
-            [czlab.niou.mime :as mi]
+  (:require [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
             [clojure.string :as cs]
-            [clojure.java.io :as io]
-            [czlab.hoard.core :as h]
-            [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.core :as wc]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.twisty.codec :as cc]
-            [czlab.hoard.connect :as hc])
+            [czlab.basal
+             [util :as u]
+             [proc :as p]
+             [io :as i]
+             [log :as l]
+             [core :as c]
+             [xpis :as po]]
+            [czlab.wabbit
+             [core :as wc]
+             [xpis :as xp]]
+            [czlab.hoard
+             [core :as h]
+             [connect :as hc]]
+            [czlab.niou.mime :as mi]
+            [czlab.twisty.codec :as cc])
 
   (:import [java.io File StringWriter]
            [java.util Date Locale]

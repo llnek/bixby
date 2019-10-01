@@ -12,11 +12,13 @@
 
   czlab.wabbit.demo.http.formpost
 
-  (:require [czlab.basal.log :as log]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.niou.upload :as cu]
-            [czlab.niou.core :as cc]
-            [czlab.basal.core :as c])
+  (:require [czlab.wabbit.xpis :as xp]
+            [czlab.niou
+             [core :as cc]
+             [upload :as cu]]
+            [czlab.basal
+             [log :as l]
+             [core :as c]])
 
   (:import [org.apache.commons.fileupload FileItem]
            [java.io File]

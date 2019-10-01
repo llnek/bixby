@@ -6,18 +6,21 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Core functions for all IO services."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Core functions for all IO services."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.core
 
-  (:require [czlab.basal.util :as u]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c]
-            [czlab.basal.proc :as p]
-            [czlab.wabbit.core :as b]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.xpis :as xp])
+  (:require [czlab.basal
+             [util :as u]
+             [log :as l]
+             [core :as c]
+             [proc :as p]
+             [xpis :as po]]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]])
 
   (:import [java.util Timer TimerTask]))
 

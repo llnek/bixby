@@ -12,15 +12,17 @@
 
   czlab.wabbit.core
 
-  (:require [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
-            [clojure.walk :as cw]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
-            [czlab.basal.log :as l]
-            [clojure.string :as cs]
-            [czlab.basal.core :as c]
-            [czlab.basal.proc :as p])
+            [clojure
+             [walk :as cw]
+             [string :as cs]]
+            [czlab.basal
+             [util :as u]
+             [io :as i]
+             [log :as l]
+             [core :as c]
+             [proc :as p]])
 
   (:import [java.util ResourceBundle Locale]
            [org.apache.commons.io FileUtils]

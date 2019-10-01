@@ -12,19 +12,22 @@
 
   czlab.wabbit.cons.con1
 
-  (:require [czlab.wabbit.core :as wc]
-            [czlab.twisty.core :as tc]
-            [czlab.twisty.codec :as co]
-            [czlab.basal.log :as l]
-            [czlab.antclj.antlib :as a]
+  (:require [czlab.antclj.antlib :as a]
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
-            [czlab.basal.io :as i]
-            [czlab.basal.util :as u]
-            [czlab.wabbit.exec :as we]
-            [czlab.wabbit.cons.con2 :as c2]
-            [czlab.basal.core :as c :refer [n#]])
+            [czlab.wabbit
+             [core :as wc]
+             [exec :as we]]
+            [czlab.twisty
+             [core :as tc]
+             [codec :as co]]
+            [czlab.basal
+             [log :as l]
+             [io :as i]
+             [util :as u]
+             [core :as c :refer [n#]]]
+            [czlab.wabbit.cons [con2 :as c2]])
 
   (:import [java.util
             ResourceBundle

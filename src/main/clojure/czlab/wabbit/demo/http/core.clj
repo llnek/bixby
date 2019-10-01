@@ -6,15 +6,17 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.demo.http.core
 
-  (:require [czlab.basal.log :as log]
-            [czlab.wabbit.xpis :as xp]
+  (:require [czlab.wabbit.xpis :as xp]
             [czlab.niou.core :as cc]
-            [czlab.basal.core :as c]))
+            [czlab.basal
+             [log :as l]
+             [core :as c]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

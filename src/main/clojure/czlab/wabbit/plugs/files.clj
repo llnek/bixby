@@ -6,22 +6,26 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Implementation for FilePicker."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Implementation for FilePicker."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.files
 
-  (:require [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.wabbit.plugs.loops :as pl]
-            [czlab.basal.core :as c :refer [n#]])
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.wabbit.plugs
+             [core :as pc]
+             [loops :as pl]]
+            [czlab.basal
+             [util :as u]
+             [io :as i]
+             [log :as l]
+             [xpis :as po]
+             [core :as c :refer [n#]]])
 
   (:import [java.util Timer Properties ResourceBundle]
            [java.io FileFilter File IOException]

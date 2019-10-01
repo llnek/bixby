@@ -6,21 +6,24 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Basic functions for loopable services."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Basic functions for loopable services."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.loops
 
-  (:require [czlab.basal.dates :as dt]
-            [czlab.basal.proc :as p]
-            [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.basal.core :as c :refer [is?]])
+  (:require [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.basal
+             [dates :as dt]
+             [proc :as p]
+             [util :as u]
+             [io :as i]
+             [log :as l]
+             [xpis :as po]
+             [core :as c :refer [is?]]]
+            [czlab.wabbit.plugs.core :as pc])
 
   (:import [java.util Date Timer TimerTask]))
 

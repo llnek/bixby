@@ -6,31 +6,38 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Implementation for HTTP/MVC service."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Implementation for HTTP/MVC service."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.http
 
-  (:require [czlab.basal.xpis :as po]
-            [czlab.niou.util :as ct]
-            [czlab.basal.util :as u]
-            [czlab.niou.routes :as cr]
-            [czlab.nettio.server :as sv]
-            [czlab.twisty.codec :as co]
-            [czlab.nettio.core :as nc]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.niou.core :as cc]
-            [czlab.niou.webss :as ss]
-            [czlab.twisty.ssl :as ssl]
-            [czlab.basal.log :as l]
-            [clojure.java.io :as io]
-            [czlab.basal.io :as i]
+  (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.wabbit.plugs.mvc :as mvc]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.nettio.apps.discard :as ds]
-            [czlab.basal.core :as c :refer [is?]])
+            [czlab.nettio
+             [core :as nc]
+             [server :as sv]]
+            [czlab.niou
+             [util :as ct]
+             [core :as cc]
+             [webss :as ss]
+             [routes :as cr]]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.twisty
+             [ssl :as ssl]
+             [codec :as co]]
+            [czlab.wabbit.plugs
+             [core :as pc]
+             [mvc :as mvc]]
+            [czlab.basal
+             [util :as u]
+             [xpis :as po]
+             [log :as l]
+             [io :as i]
+             [core :as c :refer [is?]]]
+            [czlab.nettio.apps.discard :as ds])
 
   (:import [czlab.niou.core WsockMsg Http1xMsg]
            [java.nio.channels ClosedChannelException]

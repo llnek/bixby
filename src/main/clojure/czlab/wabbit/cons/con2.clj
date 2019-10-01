@@ -13,13 +13,13 @@
   czlab.wabbit.cons.con2
 
   (:require [clojure.java.io :as io]
-            [czlab.basal.log :as l]
             [clojure.string :as cs]
-            [czlab.basal.core :as c]
-            [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
+            [czlab.basal
+             [log :as l]
+             [io :as i]
+             [core :as c]
+             [util :as u]]
             [czlab.wabbit.core :as b])
-            ;[czlab.wabbit.shared.new :as ws])
 
   (:import [java.io File]))
 

@@ -6,20 +6,23 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Implementation for JMS service."
-      :author "Kenneth Leung" }
+(ns
+  ^{:doc "Implementation for JMS service."
+    :author "Kenneth Leung" }
 
   czlab.wabbit.plugs.jms
 
-  (:require [czlab.twisty.codec :as co]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.util :as u]
-            [czlab.basal.log :as l]
-            [czlab.basal.io :as i]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.basal.core :as c :refer [is?]])
+  (:require [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.basal
+             [util :as u]
+             [log :as l]
+             [io :as i]
+             [xpis :as po]
+             [core :as c :refer [is?]]]
+            [czlab.twisty.codec :as co]
+            [czlab.wabbit.plugs.core :as pc])
 
   (:import [java.util Hashtable Properties ResourceBundle]
            [javax.jms

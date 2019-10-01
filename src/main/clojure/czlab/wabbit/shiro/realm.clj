@@ -6,8 +6,9 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.shiro.realm
 
@@ -19,14 +20,17 @@
    :exposes-methods { }
    :state my-state)
 
-  (:require [czlab.twisty.codec :as co :refer [pwd<>]]
-            [czlab.wabbit.shiro.model :as mo]
-            [czlab.wabbit.shiro.core :as sh]
-            [czlab.hoard.connect :as ht]
-            [czlab.hoard.rels :as hr]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c]
-            [czlab.hoard.core :as hc])
+  (:require [czlab.wabbit.shiro
+             [core :as sh]
+             [model :as mo]]
+            [czlab.basal
+             [log :as l]
+             [core :as c]]
+            [czlab.hoard
+             [core :as hc]
+             [rels :as hr]
+             [connect :as ht]]
+            [czlab.twisty.codec :as co :refer [pwd<>]])
 
   (:import [org.apache.shiro.realm CachingRealm AuthorizingRealm]
            [org.apache.shiro.subject PrincipalCollection]

@@ -8,16 +8,17 @@
 
 (ns
   ^{:doc ""
-      :author "Kenneth Leung"}
+    :author "Kenneth Leung"}
 
   czlab.wabbit.xpis
 
-  (:require [czlab.basal.log :as l]
+  (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [clojure.java.io :as io]
-            [czlab.basal.util :as u]
-            [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po])
+            [czlab.basal
+             [log :as l]
+             [util :as u]
+             [core :as c]
+             [xpis :as po]])
 
   (:import [java.io File]
            [java.util Locale]

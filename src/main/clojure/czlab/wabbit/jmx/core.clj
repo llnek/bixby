@@ -6,18 +6,21 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.jmx.core
 
-  (:require [czlab.wabbit.xpis :as xp]
-            [czlab.basal.log :as l]
-            [clojure.string :as cs]
-            [czlab.wabbit.core :as b]
-            [czlab.basal.core :as c]
-            [czlab.basal.util :as u]
-            [czlab.basal.xpis :as po]
+  (:require [clojure.string :as cs]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.basal
+             [core :as c]
+             [log :as l]
+             [util :as u]
+             [xpis :as po]]
             [czlab.wabbit.jmx.bean :as bn])
 
   (:import [java.net InetAddress MalformedURLException]

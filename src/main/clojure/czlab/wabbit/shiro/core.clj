@@ -6,31 +6,37 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.shiro.core
 
   ;;(:gen-class)
 
-  (:require [czlab.basal.util :as u]
-            [czlab.niou.util :as ct]
-            [czlab.niou.webss  :as ss]
+  (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [clojure.java.io :as io]
-            [czlab.basal.log :as l]
+            [czlab.niou
+             [util :as ct]
+             [webss  :as ss]]
+            [czlab.basal
+             [util :as u]
+             [log :as l]
+             [core :as c]
+             [io :as i]
+             [xpis :as po]]
+            [czlab.hoard
+             [core :as hc]
+             [rels :as hr]
+             [connect :as ht]]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.niou
+             [mime :as mi]
+             [core :as cc]
+             [upload :as cu]]
             [czlab.twisty.codec :as co]
-            [czlab.hoard.connect :as ht]
-            [czlab.hoard.rels :as hr]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.wabbit.core :as b]
-            [czlab.niou.upload :as cu]
-            [czlab.niou.mime :as mi]
-            [czlab.niou.core :as cc]
-            [czlab.basal.core :as c]
-            [czlab.basal.io :as i]
-            [czlab.hoard.core :as hc]
-            [czlab.basal.xpis :as po]
             [czlab.wabbit.plugs.http :as hp]
             [czlab.wabbit.shiro.model :as mo])
 

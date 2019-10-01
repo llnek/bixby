@@ -6,15 +6,17 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.demo.pop3.core
 
-  (:require [czlab.basal.log :as log]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.util :as u]
-            [czlab.basal.core :as c])
+  (:require [czlab.basal
+             [log :as l]
+             [util :as u]
+             [core :as c]]
+            [czlab.wabbit.xpis :as xp])
 
   (:import [javax.mail Message Message$RecipientType Multipart]
            [java.util.concurrent.atomic AtomicInteger]

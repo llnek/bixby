@@ -6,17 +6,19 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.jmx.bean
 
-  (:require [czlab.basal.log :as l]
-            [clojure.string :as cs]
-            [czlab.basal.util :as u]
-            [czlab.basal.core :as c]
-            [czlab.basal.meta :as m]
-            [czlab.basal.xpis :as po])
+  (:require [clojure.string :as cs]
+            [czlab.basal
+             [util :as u]
+             [log :as l]
+             [core :as c]
+             [meta :as m]
+             [xpis :as po]])
 
   (:import [java.lang Exception IllegalArgumentException]
            [java.lang.reflect Field Method]

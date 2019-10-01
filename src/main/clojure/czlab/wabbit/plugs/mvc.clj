@@ -6,23 +6,28 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.mvc
 
-  (:require [czlab.basal.xpis :as po]
-            [clojure.walk :as cw]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [clojure.string :as cs]
-            [clojure.java.io :as io]
-            [czlab.wabbit.core :as b]
-            [czlab.niou.core :as cc]
-            [czlab.niou.webss :as ss]
-            [czlab.basal.core :as c]
-            [czlab.basal.util :as u]
-            [czlab.wabbit.xpis :as xp]
+  (:require [clojure.java.io :as io]
+            [clojure
+             [walk :as cw]
+             [string :as cs]]
+            [czlab.niou
+             [core :as cc]
+             [webss :as ss]]
+            [czlab.basal
+             [xpis :as po]
+             [io :as i]
+             [log :as l]
+             [core :as c]
+             [util :as u]]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
             [czlab.nettio.resp :as nr]
             [czlab.wabbit.plugs.core :as pc])
 

@@ -6,19 +6,22 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Implementation for TCP socket service."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Implementation for TCP socket service."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.socket
 
-  (:require [czlab.basal.proc :as p]
-            [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.core :as c]
-            [czlab.wabbit.core :as b]
-            [czlab.basal.xpis :as po]
+  (:require [czlab.basal
+             [proc :as p]
+             [util :as u]
+             [io :as i]
+             [log :as l]
+             [core :as c]
+             [xpis :as po]]
+            [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
             [czlab.wabbit.plugs.core :as pc])
 
   (:import [java.net InetAddress ServerSocket Socket]

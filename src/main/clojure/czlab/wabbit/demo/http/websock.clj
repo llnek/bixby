@@ -6,14 +6,16 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^:no-doc
-    ^{:author "Kenneth Leung"}
+(ns
+  ^:no-doc
+  ^{:author "Kenneth Leung"}
 
   czlab.wabbit.demo.http.websock
 
   (:require [czlab.wabbit.xpis :as xp]
-            [czlab.basal.log :as log]
-            [czlab.basal.core :as c])
+            [czlab.basal
+             [log :as l]
+             [core :as c]])
 
   (:import [czlab.basal XData]))
 

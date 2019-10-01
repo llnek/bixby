@@ -6,16 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.demo.file.core
 
-  (:require [czlab.basal.log :as log]
-            [clojure.java.io :as io]
-            [czlab.basal.core :as c]
-            [czlab.basal.io :as i]
-            [czlab.basal.xpis :as po]
+  (:require [clojure.java.io :as io]
+            [czlab.basal
+             [log :as l]
+             [core :as c]
+             [io :as i]
+             [xpis :as po]]
             [czlab.wabbit.xpis :as xp])
 
   (:import [java.util.concurrent.atomic AtomicInteger]

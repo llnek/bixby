@@ -6,21 +6,25 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc "Implementation for email services."
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc "Implementation for email services."
+    :author "Kenneth Leung"}
 
   czlab.wabbit.plugs.mails
 
-  (:require [czlab.twisty.codec :as co]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.log :as l]
-            [czlab.basal.io :as i]
-            [czlab.basal.core :as c]
-            [czlab.basal.util :as u]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.wabbit.plugs.loops :as pl])
+  (:require [czlab.wabbit
+             [core :as b]
+             [xpis :as xp]]
+            [czlab.basal
+             [log :as l]
+             [io :as i]
+             [core :as c]
+             [util :as u]
+             [xpis :as po]]
+            [czlab.wabbit.plugs
+             [core :as pc]
+             [loops :as pl]]
+            [czlab.twisty.codec :as co])
 
   (:import [javax.mail.internet MimeMessage]
            [clojure.lang APersistentMap]

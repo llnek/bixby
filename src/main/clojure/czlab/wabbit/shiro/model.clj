@@ -6,18 +6,21 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.shiro.model
 
-  (:require [czlab.basal.util :as u]
-            [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c]
-            [czlab.hoard.core :as hc]
-            [czlab.wabbit.core :as b]
-            [czlab.hoard.drivers :as hd])
+  (:require [czlab.basal
+             [util :as u]
+             [io :as i]
+             [log :as l]
+             [core :as c]]
+            [czlab.hoard
+             [core :as hc]
+             [drivers :as hd]]
+            [czlab.wabbit.core :as b])
 
   (:import [java.sql Connection]
            [java.io File]))

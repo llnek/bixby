@@ -6,16 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
+(ns
+  ^{:doc ""
+    :author "Kenneth Leung"}
 
   czlab.wabbit.demo.tcpip.core
 
-  (:require [czlab.basal.log :as log]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.io :as i]
-            [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po])
+  (:require [czlab.basal
+             [log :as l]
+             [io :as i]
+             [core :as c]
+             [xpis :as po]]
+            [czlab.wabbit.xpis :as xp])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
            [java.net Socket]
