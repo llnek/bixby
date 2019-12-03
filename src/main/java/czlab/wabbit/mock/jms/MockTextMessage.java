@@ -20,7 +20,6 @@ import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockTextMessage implements TextMessage {

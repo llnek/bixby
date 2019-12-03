@@ -18,7 +18,6 @@ import javax.mail.URLName;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public abstract class MockStore extends Store {

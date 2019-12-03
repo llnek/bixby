@@ -6,19 +6,13 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:no-doc true
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.http.formpost
+(ns czlab.wabbit.demo.http.formpost
 
   (:require [czlab.wabbit.xpis :as xp]
-            [czlab.niou
-             [core :as cc]
-             [upload :as cu]]
-            [czlab.basal
-             [log :as l]
-             [core :as c]])
+            [czlab.niou.core :as cc]
+            [czlab.niou.upload :as cu]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c])
 
   (:import [org.apache.commons.fileupload FileItem]
            [java.io File]
@@ -29,7 +23,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "" [evt res]
+
+  [evt res]
+
   (c/do-with
     [ch (:socket evt)]
     (let [data (:body evt)

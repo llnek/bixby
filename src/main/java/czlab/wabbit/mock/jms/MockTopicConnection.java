@@ -25,7 +25,6 @@ import javax.jms.TopicSession;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

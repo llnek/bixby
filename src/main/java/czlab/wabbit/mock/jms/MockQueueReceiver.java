@@ -17,7 +17,6 @@ import javax.jms.Queue;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockQueueReceiver implements QueueReceiver {

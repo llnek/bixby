@@ -6,23 +6,19 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Implementation for JMS service."
-    :author "Kenneth Leung" }
+(ns czlab.wabbit.plugs.jms
 
-  czlab.wabbit.plugs.jms
+  "Implementation for JMS service."
 
-  (:require [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.basal
-             [util :as u]
-             [log :as l]
-             [io :as i]
-             [xpis :as po]
-             [core :as c :refer [is?]]]
+  (:require [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.basal.util :as u]
+            [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.xpis :as po]
             [czlab.twisty.codec :as co]
-            [czlab.wabbit.plugs.core :as pc])
+            [czlab.wabbit.plugs.core :as pc]
+            [czlab.basal.core :as c :refer [is?]])
 
   (:import [java.util Hashtable Properties ResourceBundle]
            [javax.jms
@@ -50,7 +46,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 (defprotocol JMSApi
-  ""
   (iniz-fac [_ ctx cf] "")
   (iniz-queue [_ ctx cf] "")
   (iniz-topic [_ ctx cf] ""))
@@ -64,6 +59,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
+
   [co msg]
   (c/object<> JmsMsg
               :source co
@@ -72,19 +68,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-msg
+
   [co msg]
   ;;if (msg!=null) block { () => msg.acknowledge() }
   (pc/dispatch! (evt<> co msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sanitize
+
   [pkey {:keys [jndi-pwd jms-pwd] :as cfg}]
+
   (-> cfg
       (assoc :jndi-pwd (co/pw-text (co/pwd<> jndi-pwd pkey)))
       (assoc :jms-pwd (co/pw-text (co/pwd<> jms-pwd pkey)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init-map
+
   [args]
   (c/do-with [m (Hashtable.)]
     (doseq [[k v]
@@ -92,7 +92,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- start2
+
   [co]
+
   (let [{:keys [context-factory
                 provider-url
                 jndi-user jndi-pwd conn-factory]} (xp/gconf co)
@@ -114,7 +116,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
+
   [plug _id spec]
+
   (let [impl (atom {:info (:info spec)
                     :conf (:conf spec)})]
     (reify
@@ -229,7 +233,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn jms<>
-  ""
+
   ([_ id]
    (jms<> _ id JMSSpec))
   ([_ id spec]

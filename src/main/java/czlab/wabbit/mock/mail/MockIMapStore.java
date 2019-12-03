@@ -18,7 +18,6 @@ import javax.mail.URLName;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

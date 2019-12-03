@@ -6,21 +6,17 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Core functions for all IO services."
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.plugs.core
 
-  czlab.wabbit.plugs.core
+  "Core functions for all IO services."
 
-  (:require [czlab.basal
-             [util :as u]
-             [log :as l]
-             [core :as c]
-             [proc :as p]
-             [xpis :as po]]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]])
+  (:require [czlab.basal.util :as u]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.proc :as p]
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp])
 
   (:import [java.util Timer TimerTask]))
 
@@ -28,7 +24,9 @@
 ;;(set! *warn-on-reflection* true)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn error!
+
   [evt ex]
+
   (let [plug (xp/get-pluglet evt)
         e (xp/err-handler plug)]
     (if (var? e)
@@ -39,21 +37,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- process-orphan
-  ""
+
   ([evt] (process-orphan evt nil))
   ([evt ^Throwable e] (error! evt e)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro s2ms
+
   "Convert seconds to milliseconds."
   {:no-doc true}
   [s]
+
   `(let [t# ~s] (if (czlab.basal.core/spos? t#) (* 1000 t#) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dispatch!
-  ""
+
   ([evt] (dispatch! evt nil))
+
   ([evt arg]
    (let [pid (str "disp#" (u/seqint2))
          {:keys [dispfn handler]} arg
@@ -75,5 +76,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

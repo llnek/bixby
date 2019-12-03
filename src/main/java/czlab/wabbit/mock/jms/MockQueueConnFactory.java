@@ -16,7 +16,6 @@ import javax.jms.Connection;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockQueueConnFactory implements QueueConnectionFactory {

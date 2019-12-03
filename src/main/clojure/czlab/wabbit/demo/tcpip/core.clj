@@ -6,17 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.demo.tcpip.core
 
-  czlab.wabbit.demo.tcpip.core
-
-  (:require [czlab.basal
-             [log :as l]
-             [io :as i]
-             [core :as c]
-             [xpis :as po]]
+  (:require [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.xpis :as xp])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
@@ -27,12 +22,13 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (c/def- ^String text-msg "Hello World, time is ${TS} !")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dclient<>
-  "" [evt]
+
+  [evt]
+
   (let [plug (xp/get-pluglet evt)
         svr (po/parent plug)
         tcp (xp/get-plugin svr :sample)
@@ -51,7 +47,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dserver<>
-  "" [evt]
+
+  [evt]
+
   (let [dis (DataInputStream. (:sockin evt))
         clen (.readInt dis)
         bf (BufferedInputStream. (:sockin evt))

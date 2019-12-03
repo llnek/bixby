@@ -25,7 +25,6 @@ import javax.mail.Session;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

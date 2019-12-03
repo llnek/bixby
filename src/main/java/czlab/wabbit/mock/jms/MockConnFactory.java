@@ -16,7 +16,6 @@ import javax.jms.Connection;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockConnFactory implements ConnectionFactory {

@@ -15,7 +15,6 @@ import javax.jms.Queue;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockQueue implements Queue {

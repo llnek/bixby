@@ -6,25 +6,20 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Implementation for email services."
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.plugs.mails
 
-  czlab.wabbit.plugs.mails
+  "Implementation for email services."
 
-  (:require [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.basal
-             [log :as l]
-             [io :as i]
-             [core :as c]
-             [util :as u]
-             [xpis :as po]]
-            [czlab.wabbit.plugs
-             [core :as pc]
-             [loops :as pl]]
-            [czlab.twisty.codec :as co])
+  (:require [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.core :as c]
+            [czlab.basal.util :as u]
+            [czlab.basal.xpis :as po]
+            [czlab.twisty.codec :as co]
+            [czlab.wabbit.plugs.core :as pc]
+            [czlab.wabbit.plugs.loops :as pl])
 
   (:import [javax.mail.internet MimeMessage]
            [clojure.lang APersistentMap]
@@ -67,12 +62,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- close-folder
+
   [^Folder fd]
   (if fd (c/try! (if (.isOpen fd) (.close fd true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol MailStoreAPI
-  ""
   (connect-pop3 [_] "")
   (read-pop3 [_ msgs] "")
   (scan-pop3 [_] "")
@@ -88,6 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
+
   [co msg]
   (c/object<> MailMsg
               :source co
@@ -96,8 +92,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sanitize
+
   [pkey {:keys [port delete-msg?
                 host user ssl? passwd] :as cfg0}]
+
   (-> cfg0
       (assoc :ssl? (c/!false? ssl?))
       (assoc :delete-msg? (true? delete-msg?))
@@ -108,7 +106,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
+
   [plug _id spec options]
+
   (let [impl (atom (merge {:conf (:conf spec)
                            :info (:info spec)} options))]
     (reify
@@ -126,8 +126,8 @@
               (if demo?
                 [(Provider. Provider$Type/STORE
                       proto demop "czlab" "1.1.7") demop]
-                [(some #(if (= cz
-                               (.getClassName ^Provider %)) %)
+                [(some #(if (.equals ^String cz
+                                     (.getClassName ^Provider %)) %)
                        (.getProviders ss)) cz])]
           (if (nil? sun)
             (u/throw-IOE "Failed to find store: %s" pz))
@@ -217,7 +217,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- email-xxx
+
   [_ id spec sslvars vars wakerFunc]
+
   (pluglet _ id spec {:sslvars sslvars
                       :vars vars
                       :waker wakerFunc}))
@@ -239,22 +241,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wake-pop3
-  [co]
-  (try (connect-pop3 co)
-       (scan-pop3 co)
-       (catch Throwable _ (l/exception _))
-       (finally (close-store co))))
+
+  [co] (try (connect-pop3 co)
+            (scan-pop3 co)
+            (catch Throwable _ (l/exception _))
+            (finally (close-store co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defmacro- connect-imap [co] `(connect-pop3 ~co))
-(c/defmacro- scan-imap [co] `(scan-pop3 ~co))
+(c/defmacro- connect-imap
+
+  [co] `(connect-pop3 ~co))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(c/defmacro- scan-imap
+
+  [co] `(scan-pop3 ~co))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wake-imap
-  [co]
-  (try (connect-imap co)
-       (scan-imap co)
-       (catch Throwable _ (l/exception _))
-       (finally (close-store co))))
+
+  [co] (try (connect-imap co)
+            (scan-imap co)
+            (catch Throwable _ (l/exception _))
+            (finally (close-store co))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def IMAPSpec
@@ -273,7 +282,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn imap<>
-  ""
+
   ([_ id]
    (imap _ id IMAPSpec))
   ([_ id spec]
@@ -281,7 +290,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn pop3<>
-  ""
+
   ([_ id]
    (pop3<> _ id POP3Spec))
   ([_ id spec]

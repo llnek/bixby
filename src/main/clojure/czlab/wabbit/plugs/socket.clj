@@ -6,22 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Implementation for TCP socket service."
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.plugs.socket
 
-  czlab.wabbit.plugs.socket
+  "Implementation for TCP socket service."
 
-  (:require [czlab.basal
-             [proc :as p]
-             [util :as u]
-             [io :as i]
-             [log :as l]
-             [core :as c]
-             [xpis :as po]]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
+  (:require [czlab.basal.proc :as p]
+            [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
             [czlab.wabbit.plugs.core :as pc])
 
   (:import [java.net InetAddress ServerSocket Socket]
@@ -38,7 +34,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
+
   [plug ^Socket socket]
+
   (c/object<> TcpConnectMsg
               :socket socket
               :source plug
@@ -48,14 +46,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- sock-it
+
   [plug soc]
   (c/try! (l/debug "opened soc: %s." soc)
           (pc/dispatch! (evt<> plug soc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ssoc<>
+
   ^ServerSocket
   [{:keys [timeoutMillis backlog host port]}]
+
   (let [ip (if (c/nichts? host)
              (InetAddress/getLocalHost)
              (InetAddress/getByName host))]
@@ -78,7 +79,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
+
   [server _id spec]
+
   (let [impl (atom {:ssoc nil
                     :info (:info spec)
                     :conf (:conf spec)})]
@@ -123,7 +126,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn socket<>
-  ""
+
   ([_ id spec]
    (pluglet _ id spec))
   ([_ id]

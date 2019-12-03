@@ -22,7 +22,6 @@ import javax.naming.Name;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockContext implements Context {

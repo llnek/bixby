@@ -6,24 +6,21 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.mvc.core
+(ns czlab.wabbit.demo.mvc.core
 
   (:require [czlab.niou.core :as cc]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.basal
-             [log :as l]
-             [core :as c]
-             [xpis :as po]]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.plugs.mvc :as mvc])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ftl-context
-  "" []
+
+  []
+
   {:landing {:title_line "Sample Web App"
              :title_2 "Demo Skaro"
              :tagline "Say something" }
@@ -36,7 +33,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn handler
-  "" [evt res]
+
+  [evt res]
+
   (c/do-with
     [ch (:socket evt)]
     (let [ri (get-in evt [:route :info])
@@ -51,7 +50,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn main
-  "" [_] (println "My AppMain called!"))
+  [_] (println "My AppMain called!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

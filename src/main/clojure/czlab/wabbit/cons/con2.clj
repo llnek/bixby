@@ -6,19 +6,14 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.cons.con2
+(ns czlab.wabbit.cons.con2
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.basal
-             [log :as l]
-             [io :as i]
-             [core :as c]
-             [util :as u]]
+            [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.core :as c]
+            [czlab.basal.util :as u]
             [czlab.wabbit.core :as b])
 
   (:import [java.io File]))
@@ -56,8 +51,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn publish-samples
 
-  "Generate all samples."
-  [outDir] )
+  "Generate all samples." [outDir] )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

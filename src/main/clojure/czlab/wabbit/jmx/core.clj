@@ -6,21 +6,15 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.jmx.core
+(ns czlab.wabbit.jmx.core
 
   (:require [clojure.string :as cs]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.basal
-             [core :as c]
-             [log :as l]
-             [util :as u]
-             [xpis :as po]]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.basal.core :as c]
+            [czlab.basal.log :as l]
+            [czlab.basal.util :as u]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.jmx.bean :as bn])
 
   (:import [java.net InetAddress MalformedURLException]
@@ -44,6 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn object-name<>
+
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
    beanName: mybean."
@@ -60,21 +55,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- mk-jmxrror
+
   [^String msg ^Throwable e]
+
   (throw (doto (JMException. msg) (.initCause e))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- start-rmi
+
   [plug]
+
   (try (let [{:keys [registry-port]} (xp/gconf plug)]
          {:rmi (LocateRegistry/createRegistry ^long registry-port)})
        (catch Throwable _ (mk-jmxrror "Failed to create RMI registry" _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- SVC "service:jmx:rmi://{{h}}:{{s}}/jndi/rmi://{{h}}:{{r}}/jmxrmi")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- CFC "com.sun.jndi.rmi.registry.RegistryContextFactory")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- start-jmx
+
   [plug]
+
   (let [{:keys [registry-port server-port
                 host url context-factory]} (xp/gconf plug)
         host (c/stror host
@@ -93,13 +98,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- doreg
+
   [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
+
   (c/doto->> objName
              (.registerMBean svr mbean) (l/info "jmx-bean: %s.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
+
   [server _id spec]
+
   (let [impl (atom {:info (:info spec)
                     :conf (:conf spec)})]
     (reify
@@ -173,8 +182,8 @@
 ;;:host (-> (InetAddress/getLocalHost) .getHostName)})
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn jmx-monitor<>
-  "" [ctr pid]
-  (pluglet ctr pid JMXSpec))
+
+  [ctr pid] (pluglet ctr pid JMXSpec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; jconsole port

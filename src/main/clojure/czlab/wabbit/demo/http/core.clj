@@ -6,24 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.http.core
+(ns czlab.wabbit.demo.http.core
 
   (:require [czlab.wabbit.xpis :as xp]
             [czlab.niou.core :as cc]
-            [czlab.basal
-             [log :as l]
-             [core :as c]])
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/def-
-  fx-str
+(c/def- fx-str
   (str "<?xml version = \"1.0\" encoding = \"utf-8\"?>"
        "<hello xmlns=\"http://simple/\">"
        "<world>"
@@ -33,7 +27,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "" [evt res]
+
+  [evt res]
+
   ;; construct a simple html page back to caller
   ;; by wrapping it into a stream data object
   (c/do-with

@@ -6,24 +6,20 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Basic functions for loopable services."
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.plugs.loops
 
-  czlab.wabbit.plugs.loops
+  "Basic functions for loopable services."
 
-  (:require [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.basal
-             [dates :as dt]
-             [proc :as p]
-             [util :as u]
-             [io :as i]
-             [log :as l]
-             [xpis :as po]
-             [core :as c :refer [is?]]]
-            [czlab.wabbit.plugs.core :as pc])
+  (:require [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.basal.dates :as dt]
+            [czlab.basal.proc :as p]
+            [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.plugs.core :as pc]
+            [czlab.basal.core :as c :refer [is?]])
 
   (:import [java.util Date Timer TimerTask]))
 
@@ -32,8 +28,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- cfg-repeat
+
   ^TimerTask
   [^Timer timer [dw ds] ^long intv func]
+
   (when (c/spos? intv)
     (l/info "scheduling a *repeating* timer: %dms" intv)
     (c/do-with [tt (u/tmtask<> func)]
@@ -45,8 +43,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- cfg-once
+
   ^TimerTask
   [^Timer timer [dw ds] func]
+
   (l/info "scheduling a *one-shot* timer at %s" (i/fmt->edn [dw ds]))
   (c/do-with [tt (u/tmtask<> func)]
     (if (is? Date dw)
@@ -57,9 +57,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn cfg-timer
-  "" ^TimerTask
+
+  ^TimerTask
   [timer wakeup {:keys [interval-secs
                         delay-when delay-secs]} repeat?]
+
   (let [d [delay-when (pc/s2ms delay-secs)]]
     (if-not (and repeat?
                  (c/spos? interval-secs))
@@ -68,7 +70,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn schedule-threaded-loop
-  "" [plug waker]
+
+  [plug waker]
+
   (let [{:keys [interval-secs] :as cfg}
         (xp/gconf plug)]
     (c/do-with
@@ -81,7 +85,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn stop-threaded-loop!
-  "" [loopy] (vreset! loopy false))
+
+  [loopy] (vreset! loopy false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord TimerMsg []
@@ -92,7 +97,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
+
   [co repeat?]
+
   (c/object<> TimerMsg
               :source co
               :tstamp (u/system-time)
@@ -100,7 +107,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xxx-timer
+
   [plug _id spec repeat?]
+
   (let [impl (atom {:ttask nil
                     :conf (:conf spec)
                     :info (:info spec)})]
@@ -155,7 +164,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn repeating-timer<>
-  ""
+
   ([_ id spec]
    (xxx-timer _ id spec true))
   ([_ id]
@@ -163,7 +172,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn once-timer<>
-  ""
+
   ([_ id spec]
    (xxx-timer _ id spec false))
   ([_ id]

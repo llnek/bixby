@@ -18,7 +18,6 @@ import javax.jms.Connection;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockTopicConnFactory implements TopicConnectionFactory {

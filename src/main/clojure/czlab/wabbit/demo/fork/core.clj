@@ -6,26 +6,20 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.fork.core
+(ns czlab.wabbit.demo.fork.core
 
   (:require [czlab.wabbit.xpis :as xp]
             [czlab.flux.core :as w]
-            [czlab.basal
-             [core :as c]
-             [log :as l]
-             [xpis :as po]])
+            [czlab.basal.core :as c]
+            [czlab.basal.log :as l]
+            [czlab.basal.xpis :as po])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- fib
-  "" [n]
-  (if (< n 3) 1 (+ (fib (- n 2)) (fib (- n 1)))))
+  [n] (if (< n 3) 1 (+ (fib (- n 2)) (fib (- n 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -38,8 +32,7 @@
 ;;                  |-------> parent(s2)----> end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/def-
-  a1
+(c/def- a1
   #(c/do#nil
      (let [job %2]
        (println "I am the *Parent*")
@@ -47,8 +40,7 @@
                 "and continue my business."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/def-
-  a2
+(c/def- a2
   (w/group<>
     #(c/do#nil
        (let [job %2]
@@ -74,8 +66,7 @@
          (c/prn!! "*Child*: done.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/def-
-  a3
+(c/def- a3
   #(c/do#nil
      (let [_ %2
            b (c/sbf<> "*Parent*: ")]
@@ -87,7 +78,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "Split but no wait, parent continues" [evt]
+
+  "Split but no wait, parent continues."
+  [evt]
+
   (let [p (xp/get-pluglet evt)
         s (po/parent p)
         c (xp/get-scheduler s)]

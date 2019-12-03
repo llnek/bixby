@@ -20,7 +20,6 @@ import javax.jms.Topic;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

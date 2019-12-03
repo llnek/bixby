@@ -6,18 +6,13 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.file.core
+(ns czlab.wabbit.demo.file.core
 
   (:require [clojure.java.io :as io]
-            [czlab.basal
-             [log :as l]
-             [core :as c]
-             [io :as i]
-             [xpis :as po]]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.io :as i]
+            [czlab.basal.xpis :as po]
             [czlab.wabbit.xpis :as xp])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
@@ -36,7 +31,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
+
   [evt]
+
   (let [plug (xp/get-pluglet evt)
         svr (po/parent plug)
         c (xp/get-plugin svr :picker)]
@@ -46,7 +43,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn picker<>
+
   [evt]
+
   (let [f (:file evt)]
     (c/prn!! "picked up new file: %s" f)
     (c/prn!! "content: %s" (i/slurp-utf8 f))))

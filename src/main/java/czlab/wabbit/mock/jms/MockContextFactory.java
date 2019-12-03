@@ -17,7 +17,6 @@ import javax.naming.Context;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockContextFactory implements InitialContextFactory {

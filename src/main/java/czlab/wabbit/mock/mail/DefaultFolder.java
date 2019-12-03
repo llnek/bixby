@@ -18,7 +18,6 @@ import javax.mail.Message;
 import javax.mail.Store;
 
 /**
- * @author Kenneth Leung
  *
  */
 public class DefaultFolder extends Folder {

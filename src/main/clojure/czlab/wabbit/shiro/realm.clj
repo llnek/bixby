@@ -6,11 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.shiro.realm
+(ns czlab.wabbit.shiro.realm
 
   (:gen-class
    :extends org.apache.shiro.realm.AuthorizingRealm
@@ -20,16 +16,13 @@
    :exposes-methods { }
    :state my-state)
 
-  (:require [czlab.wabbit.shiro
-             [core :as sh]
-             [model :as mo]]
-            [czlab.basal
-             [log :as l]
-             [core :as c]]
-            [czlab.hoard
-             [core :as hc]
-             [rels :as hr]
-             [connect :as ht]]
+  (:require [czlab.wabbit.shiro.core :as sh]
+            [czlab.wabbit.shiro.model :as mo]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.hoard.core :as hc]
+            [czlab.hoard.rels :as hr]
+            [czlab.hoard.connect :as ht]
             [czlab.twisty.codec :as co :refer [pwd<>]])
 
   (:import [org.apache.shiro.realm CachingRealm AuthorizingRealm]
@@ -51,29 +44,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -doGetAuthenticationInfo
+
   [^AuthorizingRealm this ^AuthenticationToken token]
+
   (let [db (ht/dbio<+> sh/*jdbc-pool* sh/*meta-cache*)
         ;;pwd (.getCredentials token)
         user (.getPrincipal token)
-        sql (ht/db-simple db)]
+        sql (ht/simple db)]
     (when-some [acc (sh/find-login-account sql user)]
-      (SimpleAccount. acc
-                      (:passwd acc)
-                      (.getName this)))))
+      (SimpleAccount. acc (:passwd acc) (.getName this)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -doGetAuthorizationInfo
+
   [^AuthorizingRealm this ^PrincipalCollection principals]
+
   (let [db (ht/dbio<+> sh/*jdbc-pool* sh/*meta-cache*)
         acc (.getPrimaryPrincipal principals)
-        sql (ht/db-simple db)
+        sql (ht/simple db)
         S (:schema sql)]
     (c/do-with
       [rc (SimpleAccount. acc
                           (:passwd acc)
                           (.getName this))]
-      (doseq [r (hr/db-get-m2m
-                  (hc/gmxm (hc/find-model S ::mo/AccountRoles)) sql acc)]
+      (doseq [r (hr/get-m2m
+                  (hc/gmxm (hc/find-model S
+                                          ::mo/AccountRoles)) sql acc)]
         (.addRole rc ^String (:name r))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

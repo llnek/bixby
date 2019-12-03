@@ -6,16 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.demo.pop3.core
 
-  czlab.wabbit.demo.pop3.core
-
-  (:require [czlab.basal
-             [log :as l]
-             [util :as u]
-             [core :as c]]
+  (:require [czlab.basal.log :as l]
+            [czlab.basal.util :as u]
+            [czlab.basal.core :as c]
             [czlab.wabbit.xpis :as xp])
 
   (:import [javax.mail Message Message$RecipientType Multipart]
@@ -31,11 +26,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ncount
-  "" [] (.incrementAndGet gint))
+  [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo
-  "" [evt]
+
+  [evt]
+
   (let [^MimeMessage msg (:message evt)
         ^Multipart p (.getContent msg)]
     (println "######################## (" (ncount) ")" )
@@ -49,7 +46,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn main
-  "" [_]
+  [_]
   (System/setProperty "wabbit.mock.mail.proto" "pop3s"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

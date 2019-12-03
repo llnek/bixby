@@ -15,7 +15,6 @@ import javax.jms.Topic;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockTopic implements Topic {

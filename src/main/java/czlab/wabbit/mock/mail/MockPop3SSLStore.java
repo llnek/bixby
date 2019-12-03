@@ -15,7 +15,6 @@ import javax.mail.URLName;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 public class MockPop3SSLStore extends MockPop3Store {

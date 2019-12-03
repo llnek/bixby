@@ -18,7 +18,6 @@ import javax.jms.Message;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

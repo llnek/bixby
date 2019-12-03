@@ -6,19 +6,14 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.xpis
+(ns czlab.wabbit.xpis
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.basal
-             [log :as l]
-             [util :as u]
-             [core :as c]
-             [xpis :as po]])
+            [czlab.basal.log :as l]
+            [czlab.basal.util :as u]
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po])
 
   (:import [java.io File]
            [java.util Locale]
@@ -29,18 +24,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol PlugletMsg
-
   (get-pluglet [_] "Get reference to the pluglet."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol JmxPluglet
-
   (jmx-dereg [_ ^ObjectName nname] "")
   (^ObjectName jmx-reg [_ obj ^String domain ^String nname paths] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol Execvisor
-
   (has-plugin? [_ id] "")
   (get-plugin [_ id] "")
   (get-locale [_] "")
@@ -57,7 +49,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol Pluglet
-
   (gconf [_] "")
   (err-handler [_] "")
   (user-handler [_] ""))
@@ -75,7 +66,7 @@
             (u/call* (cljrt exec)
                      emStr
                      (c/vargs* Object exec emAlias)))))
-      (throw (ClassCastException. (c/fmt "Not pluglet: %s." emType)))))
+      (c/trap! ClassCastException (c/fmt "Not pluglet: %s." emType))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-pod-key

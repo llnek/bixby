@@ -6,15 +6,10 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.demo.timer.core
 
-  czlab.wabbit.demo.timer.core
-
-  (:require [czlab.basal
-             [log :as l]
-             [core :as c]]
+  (:require [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
             [czlab.wabbit.xpis :as xp])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
@@ -24,16 +19,15 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (c/def- ^AtomicInteger gint (AtomicInteger.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ncount
-  "" [] (.incrementAndGet gint))
+  [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "" [evt]
+  [evt]
   (let [plug (xp/get-pluglet evt)
         {:keys [repeat?]}
         (xp/gconf plug)]

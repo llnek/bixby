@@ -6,19 +6,14 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.jmx.bean
+(ns czlab.wabbit.jmx.bean
 
   (:require [clojure.string :as cs]
-            [czlab.basal
-             [util :as u]
-             [log :as l]
-             [core :as c]
-             [meta :as m]
-             [xpis :as po]])
+            [czlab.basal.util :as u]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.meta :as m]
+            [czlab.basal.xpis :as po])
 
   (:import [java.lang Exception IllegalArgumentException]
            [java.lang.reflect Field Method]
@@ -43,14 +38,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- to-string-name-params
+
   [nps]
+
   (let [{:keys [name params]} nps]
     (if (empty? params) name (str name "/" (cs/join "#" params)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- name-params<>
+
   ([name]
    (name-params<> name nil))
+
   ([name pms]
    (c/object<> NameParams
                :name name
@@ -62,14 +61,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- mk-bfield-info
+
   [field getter? setter?]
+
   (c/object<> BFieldInfo
               :getter? getter?
               :setter? setter? :field field))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-prop-type
+
   [prop]
+
   (if-some [g (:getter prop)]
     (.getReturnType ^Method g)
     (let [ps (some-> ^Method
@@ -78,7 +81,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- is-prop-query?
+
   [prop]
+
   (if-some [^Method g (:getter prop)]
     (and (-> (.getName g)
              (cs/starts-with? "is"))
@@ -86,7 +91,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- mk-bprop-info
+
   [prop desc getr setr]
+
   (c/object<> BPropInfo
               :desc desc
               :name prop
@@ -95,24 +102,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- throw-UnknownError
+
   [attr]
+
   (c/trap! AttributeNotFoundException
            (c/fmt "Unknown property %s" attr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- throw-BeanError
+
   [msg]
+
   (c/trap! MBeanException (c/exp! Exception ^String msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- assert-args
+
   [mtd ptypes n]
+
   (if (not= n (count ptypes))
     (u/throw-BadArg (str "\"" mtd "\" needs " n "args"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- maybe-get-prop-name
+
   ^String [^String mn]
+
   (let [pos (cond (or (cs/starts-with? mn "get")
                       (cs/starts-with? mn "set")) 3
                   (cs/starts-with? mn "is") 2
@@ -123,7 +138,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- mk-parameter-info
+
   [^Method mtd]
+
   (c/preduce<vec>
     #(let [[^Class t n] %2]
        (conj! %1 (MBeanParameterInfo.
@@ -133,8 +150,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- test-jmx-type
+
   "If primitive types?"
   ^Class [cz]
+
   (if (or (m/is-boolean? cz)
           (m/is-void? cz)
           (m/is-object? cz)
@@ -148,16 +167,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- test-jmx-types?
+
   "Make sure we are dealing with primitive types."
   [^Class rtype ptypes]
+
   (if (some #(nil? (test-jmx-type %))(seq ptypes))
     false
     (some? (test-jmx-type rtype))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- bean-attr-info<>
+
   ^MBeanAttributeInfo
   [{:keys [name desc getter setter] :as prop}]
+
   (MBeanAttributeInfo. name
                        (str (some-> ^Class
                                     (get-prop-type prop) .getName))
@@ -168,7 +191,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- bean-field-info<>
+
   [^Field f]
+
   (let [fnm (.getName f)
         t (.getType f)]
     (MBeanAttributeInfo. fnm
@@ -181,7 +206,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- bean-op-info<>
+
   [^Method m]
+
   (let [t (.getReturnType m)
         mn (.getName m)]
     (MBeanOperationInfo. mn
@@ -193,8 +220,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- handle-props2
+
   "Only deal with getters and setters."
   [^Method mtd propsBin]
+
   (let [ptypes (.getParameterTypes mtd)
         rtype (.getReturnType mtd)
         mn (.getName mtd)
@@ -220,7 +249,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- handle-props
+
   [cz]
+
   (let [props (c/preduce<map>
                 #(handle-props2 %2 %1) (.getMethods ^Class cz))
         ba (c/preduce<vec>
@@ -232,7 +263,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- handle-flds
+
   [cz]
+
   (let [dcls (.getDeclaredFields ^Class cz)
         flds (c/preduce<map>
                #(let [^Field f %2
@@ -247,7 +280,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- handle-methods2
-  "" [^Method m mtds rc]
+
+  [^Method m mtds rc]
+
   (let [ptypes (.getParameterTypes m)
         rtype (.getReturnType m)
         mn (.getName m)]
@@ -261,7 +296,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- handle-methods
+
   [cz]
+
   (l/info "jmx-bean: processing methods for class: %s." cz)
   (loop [ms (.getMethods ^Class cz)
          mtds (transient {})
@@ -273,10 +310,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn jmx-bean<>
+
   "Make a JMX bean from this object."
   ^DynamicMBean
   [^Object obj]
   {:pre [(some? obj)]}
+
   (let [cz (.getClass obj)
         [ps propsMap] (handle-props cz)
         [fs fldsMap] (handle-flds cz)

@@ -6,38 +6,29 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc "Implementation for HTTP/MVC service."
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.plugs.http
 
-  czlab.wabbit.plugs.http
+  "Implementation for HTTP/MVC service."
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.nettio
-             [core :as nc]
-             [server :as sv]]
-            [czlab.niou
-             [util :as ct]
-             [core :as cc]
-             [webss :as ss]
-             [routes :as cr]]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
-            [czlab.twisty
-             [ssl :as ssl]
-             [codec :as co]]
-            [czlab.wabbit.plugs
-             [core :as pc]
-             [mvc :as mvc]]
-            [czlab.basal
-             [util :as u]
-             [xpis :as po]
-             [log :as l]
-             [io :as i]
-             [core :as c :refer [is?]]]
-            [czlab.nettio.apps.discard :as ds])
+            [czlab.nettio.core :as nc]
+            [czlab.nettio.server :as sv]
+            [czlab.niou.util :as ct]
+            [czlab.niou.core :as cc]
+            [czlab.niou.webss :as ss]
+            [czlab.niou.routes :as cr]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.twisty.ssl :as ssl]
+            [czlab.twisty.codec :as co]
+            [czlab.wabbit.plugs.core :as pc]
+            [czlab.wabbit.plugs.mvc :as mvc]
+            [czlab.basal.util :as u]
+            [czlab.basal.xpis :as po]
+            [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.niou.core WsockMsg Http1xMsg]
            [java.nio.channels ClosedChannelException]
@@ -118,17 +109,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn scan-basic-auth
+
   "Scan and parse if exists basic authentication."
   [evt] (c/if-some+
           [v (cc/msg-header evt auth-token)] (ct/parse-basic-auth v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- load-routes??
+
   [routes] (when-not (empty? routes) (cr/load-routes routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- resume-on-expiry
+
   [evt]
+
   (try (nc/reply-status (:socket evt) 500)
        (catch ClosedChannelException _)
          ;(l/warn "channel closed already."))
@@ -136,16 +131,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wsock-event<>
-  "" [plug ch msg]
+
+  [plug ch msg]
+
   (assoc msg
          :socket ch
          :source plug
-         :ssl? (nc/maybe-ssl? ch)
+         :ssl? (some? (nc/get-ssl?? ch))
          :id (str "WsockMsg#" (u/seqint2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- http-event<>
-  "" [plug ch req]
+
+  [plug ch req]
+
   (let [{:keys [cookies]
          {:keys [info]} :route} req
         {:as cfg
@@ -163,7 +162,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
-  "" [plug ch msg]
+
+  [plug ch msg]
+
   (cond (is? WsockMsg msg)
         (wsock-event<> plug ch msg)
         (c/sas? cc/HttpMsgGist msg)
@@ -171,36 +172,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- funky
+
   [evt] (if (c/sas? cc/HttpMsgGist evt)
           (let [res (cc/http-result evt)] (fn [h e] (h e res)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- boot!
+
   [plug]
+
   (let [asset! #'czlab.wabbit.plugs.mvc/asset-loader
         {:as cfg :keys [wait-millis]} (xp/gconf plug)]
     (l/debug "boot! http-plug: %s." cfg)
-    (sv/tcp-server<>
+    (sv/web-server-module<>
       (assoc cfg
-             :hh1
-             (fn [ctx msg]
-               (let [ev (evt<> plug (nc/ch?? ctx) msg)
-                     {:keys [uri2]
-                      {:keys [info status?]} :route} msg
-                     {:keys [static? $handler]} info
-                     hd (if (and static?
-                                 (nil? $handler)) asset! $handler)]
-                 (l/debug "route status= %s, info= %s." status? info)
-                 ;;(if (spos? wait-millis) (hold-event co ev wait-millis))
-                 (if status?
-                   (pc/dispatch! ev
-                                 {:handler hd :dispfn (funky ev)})
-                   (pc/error! ev
-                              (Exception. (c/fmt "Bad route uri: %s" uri2))))))))))
+             :user-cb
+             #(let [ev (evt<> plug (:socket %1) %1)
+                    {:keys [route uri]} %1
+                    {:keys [mount $handler]} route
+                    hd (if (c/hgl? mount) asset! $handler)]
+                (l/debug "route=%s." route)
+                (if route
+                  (pc/dispatch! ev
+                                {:handler hd :dispfn (funky ev)})
+                  (pc/error! ev
+                             (Exception. (c/fmt "Bad route uri: %s" uri)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn p-error
-  "" [{:keys [socket] :as evt} error]
+
+  [{:keys [socket] :as evt} error]
   ;; 500 or 503
   (try (nc/reply-status socket 500)
        (finally
@@ -208,13 +209,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn discarder!
-  "" [func arg]
-  (let [w (ds/discard-httpd<> func arg)] (po/start w arg) #(po/stop w)))
+
+  [func arg])
+  ;(let [w (ds/discard-httpd<> func arg)] (po/start w arg) #(po/stop w)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- basicfg
+
   "Basic http config."
   [plug conf cfg0]
+
   (let [svr (po/parent plug)
         {:as cfg
          :keys [passwd
@@ -227,13 +231,14 @@
                    port
                    (if (c/hgl? server-key) 443 80))
            :routes (load-routes?? routes)
+           :server-key server-key
            :passwd (->> svr
                         xp/pkey-chars
-                        (co/pwd<> passwd) co/pw-text)
-           :server-key (if (c/hgl? server-key) (io/as-url server-key)))))
+                        (co/pwd<> passwd) co/pw-text))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- pluglet
+
   [server _id spec]
   (let [impl (atom {:info (:info spec)
                     :conf (:conf spec)
@@ -310,7 +315,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn http<>
-  ""
+
   ([co id spec]
    (pluglet co id spec))
   ([_ id]

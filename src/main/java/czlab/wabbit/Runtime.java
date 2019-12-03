@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.Closeable;
 
 /**
- * @author Kenneth Leung
  */
 public class Runtime {
 

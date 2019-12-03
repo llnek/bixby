@@ -6,17 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.demo.flows.core
+(ns czlab.wabbit.demo.flows.core
 
   (:require [czlab.wabbit.xpis :as xp]
             [czlab.flux.core :as wf]
-            [czlab.basal
-             [core :as c]
-             [xpis :as po]])
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -31,7 +26,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- perf-auth-mtd
-  "" [t]
+
+  [t]
+
   (case t
     "facebook" #(c/do#nil %2 (c/prn!! "-> use facebook"))
     "google+" #(c/do#nil %2 (c/prn!! "-> use google+"))
@@ -42,7 +39,9 @@
 ;;step1. choose a method to authenticate the user
 ;;here, we'll use choice<> to pick which method
 (defn- auth-user
-  "" []
+
+  []
+
   ;; hard code to use facebook in this example, but you
   ;; could check some data from the job,
   ;; such as URI/Query params
@@ -58,16 +57,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step2
-(c/def-
-  get-profile
+(c/def- get-profile
   #(c/do#nil %2 (c/prn!! "step(2): get user profile\n%s" "->user is superuser")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant permission
 ;;so here , we are using a wloop to do that
-(c/def-
-  prov-ami
+(c/def- prov-ami
   (wf/while<>
     #(let [job %
            v (po/getv job :ami_count)
@@ -88,8 +85,7 @@
 ;;step3'. we are going to dummy up a retry of 2 times to simulate network/operation
 ;;issues encountered with EC2 while trying to grant volume permission
 ;;so here , we are using a wloop to do that
-(c/def-
-  prov-vol
+(c/def- prov-vol
   (wf/while<>
     #(let [job %
            v (po/getv job :vol_count)
@@ -110,8 +106,7 @@
 ;;step4. pretend to write stuff to db. again, we are going to dummy up the case
 ;;where the db write fails a couple of times
 ;;so again , we are using a wloop to do that
-(c/def-
-  save-sdb
+(c/def- save-sdb
   (wf/while<>
     #(let [job %
            v (po/getv job :wdb_count)
@@ -132,36 +127,34 @@
 ;;in parallel.  To do that, we use a split-we want to fork off both tasks in parallel.  Since
 ;;we don't want to continue until both provisioning tasks are done. we use a AndJoin to hold/freeze
 ;;the workflow
-(c/def-
-  provision
+(c/def- provision
   (wf/group<> (wf/split-join<> [:type :and] prov-ami prov-vol) save-sdb))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this is the final step, after all the work are done, reply back to the caller.
 ;; like, returning a 200-OK
-(c/def-
-  reply-user
+(c/def- reply-user
   #(c/do#nil
      (let [job %2]
        (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "back to caller here"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/def-
-  error-user
+(c/def- error-user
   #(c/do#nil
      (let [job %2]
        (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
-(c/def-
-  final-test
+(c/def- final-test
   (wf/decision<> #(c/do#true %) reply-user error-user))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "" [evt]
+
+  [evt]
+
   ;; this workflow is a small (4 step) workflow, with the 3rd step (Provision) being
   ;; a split, which forks off more steps in parallel.
   (let [p (xp/get-pluglet evt)

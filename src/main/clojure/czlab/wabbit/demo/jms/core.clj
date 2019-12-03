@@ -6,15 +6,10 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
+(ns czlab.wabbit.demo.jms.core
 
-  czlab.wabbit.demo.jms.core
-
-  (:require [czlab.basal
-             [log :as l]
-             [core :as c]]
+  (:require [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
             [czlab.wabbit.xpis :as xp])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
@@ -24,16 +19,17 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 (c/def- ^AtomicInteger gint (AtomicInteger.))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ncount
-  "" [] (.incrementAndGet gint))
+  [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
-  "" [evt]
+
+  [evt]
+
   (let [^TextMessage msg (:message evt)]
     (c/prn!! "-> Correlation ID= %s" (.getJMSCorrelationID msg))
     (c/prn!! "-> Msg ID= %s" (.getJMSMessageID msg))

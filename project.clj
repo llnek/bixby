@@ -16,24 +16,22 @@
                  [commons-logging "1.2"]
                  [io.czlab/twisty "1.1.0"]
                  [io.czlab/flux "1.1.0"]
-                 [io.czlab/niou "1.1.0"]
                  [io.czlab/nettio "1.2.0"]
                  [io.czlab/hoard "1.1.0"]
                  [io.czlab/basal "1.1.0"]
                  [commons-net/commons-net "3.6"]
-                 [org.apache.shiro/shiro-core "1.4.1"]
+                 [org.apache.shiro/shiro-core "1.4.2"]
                  [org.freemarker/freemarker "2.3.29"]
-                 ;[io.czlab/wabbit-shared "1.1.0"]
                  [io.czlab/antclj "1.0.4"]
                  [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
 
   :exclusions [org.clojure/clojure]
 
   :plugins [[wabbit/lein-template "1.1.0"]
-            [cider/cider-nrepl "0.22.3"]
+            [cider/cider-nrepl "0.22.4"]
             [lein-javadoc "0.3.0"]
             [lein-codox "0.10.7"]]
-            ;[lein-cprint "1.3.1"]]
+            ;[lein-cprint "1.3.2"]]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojure "1.10.1" :scope "provided"]]}

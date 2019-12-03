@@ -22,7 +22,6 @@ import javax.mail.Store;
 
 
 /**
- * @author Kenneth Leung
  *
  */
 @SuppressWarnings("unused")

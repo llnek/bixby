@@ -6,28 +6,20 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-    :author "Kenneth Leung"}
-
-  czlab.wabbit.plugs.mvc
+(ns czlab.wabbit.plugs.mvc
 
   (:require [clojure.java.io :as io]
-            [clojure
-             [walk :as cw]
-             [string :as cs]]
-            [czlab.niou
-             [core :as cc]
-             [webss :as ss]]
-            [czlab.basal
-             [xpis :as po]
-             [io :as i]
-             [log :as l]
-             [core :as c]
-             [util :as u]]
-            [czlab.wabbit
-             [core :as b]
-             [xpis :as xp]]
+            [clojure.walk :as cw]
+            [clojure.string :as cs]
+            [czlab.niou.core :as cc]
+            [czlab.niou.webss :as ss]
+            [czlab.basal.xpis :as po]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.util :as u]
+            [czlab.wabbit.core :as b]
+            [czlab.wabbit.xpis :as xp]
             [czlab.nettio.resp :as nr]
             [czlab.wabbit.plugs.core :as pc])
 
@@ -54,8 +46,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol CljApi
-  ""
-  (x->clj [_] ""))
+  (x->clj [_] "Turn something into clojure."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-protocol CljApi
@@ -87,31 +78,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- x->ftl<method>
+
   "Morph the func into a ftl method call."
   [func]
+
   (reify
     TemplateMethodModelEx
     (exec [_ args] (apply func (map x->clj args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- skey
+
   "Sanitize the key."
   [[k v]]
+
   [(cs/replace (c/kw->str k) #"[$!#*+\-]" "_")  v])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- x->ftl<model>
+
   "Sanitize the model to be ftl compliant."
   [m]
+
   (cw/postwalk #(cond
                   (map? %) (c/map-> (map skey %))
                   (fn? %) (x->ftl<method> %) :else %) m))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn ftl-config<>
+
   "Create a FTL config."
   {:tag Configuration}
+
   ([root] (ftl-config<> root nil))
+
   ([root shared-vars]
    (c/do-with [cfg (Configuration.)]
      (let [dir (io/file root)]
@@ -127,12 +127,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- render->ftl
+
   "Renders a template given by Configuration and a path
    using model as input and writes it to a output string.
    If xref?, x->ftl<model> is run on the model."
   {:tag String}
+
   ([path cfg model]
    (render->ftl path cfg model nil))
+
   ([path cfg model xref?]
    (c/do-with-str [out (StringWriter.)]
      (l/debug "about to render tpl: %s." path)
@@ -142,7 +145,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn load-template
-  "" [tpath cfg data]
+
+  [tpath cfg data]
+
   (let [ts (str "/" (c/triml tpath "/"))]
     {:data (-> (render->ftl ts cfg data) XData.)
      :ctype
@@ -152,10 +157,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- strip-url-crap??
+
   "Want to handle case where the url has stuff after the file name.
    For example:  /public/blab&hhh or /public/blah?ggg."
   ^String
   [^String path]
+
   (let [pos (cs/last-index-of path \/)]
     (if-not (c/spos? pos)
       path
@@ -170,7 +177,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- reply-static
+
   [{:keys [request] :as res} file]
+
   (let [plug (xp/get-pluglet request)
         cfg (xp/gconf plug)
         fp (io/file file)
@@ -189,8 +198,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn asset-loader
+
   "Load a file from the public folder."
   [{:keys [route] :as evt} res]
+
   (let [plug (xp/get-pluglet evt)
         {:as cfg
          :keys [file-access-check?]

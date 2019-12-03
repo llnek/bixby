@@ -6,23 +6,17 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.core
+(ns czlab.wabbit.core
 
   (:require [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
-            [clojure
-             [walk :as cw]
-             [string :as cs]]
-            [czlab.basal
-             [util :as u]
-             [io :as i]
-             [log :as l]
-             [core :as c]
-             [proc :as p]])
+            [clojure.walk :as cw]
+            [clojure.string :as cs]
+            [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.proc :as p])
 
   (:import [java.util ResourceBundle Locale]
            [org.apache.commons.io FileUtils]
@@ -223,7 +217,8 @@
   "Assert dir(s) are read-writeable?"
   [f & dirs]
 
-  (c/let#true [base (get-rc-base)]
+  (c/let#true
+    [base (get-rc-base)]
     (doseq [d (cons f dirs)]
       (->> (i/dir-read-write? d)
            (c/test-cond (u/rstr base "dir.no.rw" d))))))
@@ -235,7 +230,8 @@
   "Assert file(s) are readable?"
   [ff & files]
 
-  (c/let#true [base (get-rc-base)]
+  (c/let#true
+    [base (get-rc-base)]
     (doseq [f (cons ff files)]
       (->> (i/file-read? f)
            (c/test-cond (u/rstr base "file.no.r" f))))))
@@ -302,7 +298,7 @@
   (let [lock (atom 0)
         rt (u/cljrt<>)]
     (cw/postwalk
-      #(if (= 1 @lock)
+      #(if (== 1 @lock)
          (let [h (if (keyword? %) (c/kw->str %) %)]
            (reset! lock 0)
            (cond (c/hgl? h) (u/var* rt h)

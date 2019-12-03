@@ -6,30 +6,23 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.exec
+(ns czlab.wabbit.exec
 
   (:gen-class)
 
   (:require [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
-            [czlab.basal
-             [util :as u]
-             [proc :as p]
-             [io :as i]
-             [log :as l]
-             [core :as c]
-             [xpis :as po]]
-            [czlab.wabbit
-             [core :as wc]
-             [xpis :as xp]]
-            [czlab.hoard
-             [core :as h]
-             [connect :as hc]]
+            [czlab.basal.util :as u]
+            [czlab.basal.proc :as p]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c]
+            [czlab.basal.xpis :as po]
+            [czlab.wabbit.core :as wc]
+            [czlab.wabbit.xpis :as xp]
+            [czlab.hoard.core :as h]
+            [czlab.hoard.connect :as hc]
             [czlab.niou.mime :as mi]
             [czlab.twisty.codec :as cc])
 
@@ -71,7 +64,7 @@
   (l/info "execvisor releasing system resources.")
   ;disconnect dbs
   (doseq [[k v] (:dbps ctx)]
-    (hc/db-finz v)
+    (po/finz v)
     (l/debug "finz'ed dbpool %s." k))
   ;stop the scheduler
   (some-> exec xp/get-scheduler po/finz))
@@ -87,22 +80,24 @@
         ;process each plugin
         ps (c/preduce<map>
              #(let [[k cfg] %2
-                    {:keys [$pluggable enabled?]} cfg]
-                (if-some [p (and (c/!false? enabled?)
-                                 $pluggable
-                                 (-> (xp/pluglet<> exec k $pluggable)
-                                     (po/init cfg)))]
-                  (assoc! %1 (po/id p) p) %1)) (:plugins C))]
-
+                    {:keys [$pluggable enabled?]} cfg
+                    p (and (c/!false? enabled?)
+                           $pluggable
+                           (-> (xp/pluglet<> exec k $pluggable)
+                               (po/init cfg)))]
+                (if (nil? p)
+                  %1 (assoc! %1 (po/id p) p))) (:plugins C))]
     ;add the jmx pluglet
-    (->> (if-some [p (and (c/!false? (:enabled? jmx))
-                          (-> (xp/pluglet<> exec :$jmx api) (po/init jmx)))]
+    (->> (if-some [p (and (c/!false?
+                            (:enabled? jmx))
+                          (-> (xp/pluglet<> exec :$jmx api)
+                              (po/init jmx)))]
            (assoc ps (po/id p) p) ps)
          (swap! ctx update-in [:conf] assoc :plugins))
-
     (l/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")
     (doseq [[k _]
-            (get-in @ctx [:conf :plugins])] (l/info "pluglet id= %s." k))
+            (get-in @ctx
+                    [:conf :plugins])] (l/info "pluglet id= %s." k))
     (l/info "+++++++++++++++++++++++++ pluglets +++++++++++++++++++")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -367,8 +362,8 @@
   [& args]
 
   (let [[p1 p2] args]
-    (c/do-with [dir (io/file (if (or (= "-home" p1)
-                                     (= "--home" p1)) p2 (u/get-user-dir)))]
+    (c/do-with [dir (io/file (if (or (.equals "-home" p1)
+                                     (.equals "--home" p1)) p2 (u/get-user-dir)))]
       (u/set-sys-prop! "wabbit.user.dir" (u/fpath dir)) (start-via-cons dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

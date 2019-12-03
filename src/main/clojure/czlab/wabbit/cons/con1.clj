@@ -6,28 +6,21 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.cons.con1
+(ns czlab.wabbit.cons.con1
 
   (:require [czlab.antclj.antlib :as a]
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
-            [czlab.wabbit
-             [core :as wc]
-             [exec :as we]]
-            [czlab.twisty
-             [core :as tc]
-             [codec :as co]]
-            [czlab.basal
-             [log :as l]
-             [io :as i]
-             [util :as u]
-             [core :as c :refer [n#]]]
-            [czlab.wabbit.cons [con2 :as c2]])
+            [czlab.wabbit.core :as wc]
+            [czlab.wabbit.exec :as we]
+            [czlab.twisty.core :as tc]
+            [czlab.twisty.codec :as co]
+            [czlab.basal.log :as l]
+            [czlab.basal.io :as i]
+            [czlab.basal.util :as u]
+            [czlab.wabbit.cons.con2 :as c2]
+            [czlab.basal.core :as c :refer [n#]])
 
   (:import [java.util
             ResourceBundle
@@ -159,8 +152,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-stop
-
-  "" {:no-doc true} [args])
+  [args])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-debug
@@ -275,7 +267,6 @@
 (defn on-generate
 
   "Various generate functions."
-  {:no-doc true}
   [args]
 
   (let [c (c/_1 args)
@@ -292,7 +283,6 @@
 (defn prn-generate
 
   "Print out result from the generate function."
-  {:no-doc true}
   [args]
 
   (c/prn!! (on-generate args)))
@@ -309,7 +299,6 @@
 (defn on-test-jce
 
   "Assert JCE."
-  {:no-doc true}
   [args]
 
   (let [rcb (wc/get-rc-base)]
@@ -328,7 +317,6 @@
 (defn on-version
 
   "Print out the version."
-  {:no-doc true}
   [args]
 
   (let [rcb (wc/get-rc-base)]
@@ -401,7 +389,6 @@
 (defn on-ide
 
   "Generate project files for IDEs."
-  {:no-doc true}
   [args]
 
   (if-not (and (not-empty args)
@@ -454,7 +441,6 @@
 (defn on-help
 
   "Print out help message for an action."
-  {:no-doc true}
   [args]
 
   (c/if-fn? [h (c/_2 (wabbit-tasks
@@ -481,3 +467,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+

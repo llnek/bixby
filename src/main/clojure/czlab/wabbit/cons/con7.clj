@@ -6,11 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns
-  ^{:doc ""
-      :author "Kenneth Leung"}
-
-  czlab.wabbit.cons.con7
+(ns czlab.wabbit.cons.con7
 
   (:gen-class)
 
@@ -18,15 +14,13 @@
             [czlab.wabbit.core :as b]
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
-            [czlab.wabbit.cons
-             [con2 :as c2]
-             [con1 :as c1]]
-            [czlab.basal
-             [cmenu :as cm]
-             [util :as u]
-             [io :as i]
-             [log :as l]
-             [core :as c :refer [is?]]])
+            [czlab.wabbit.cons.con2 :as c2]
+            [czlab.wabbit.cons.con1 :as c1]
+            [czlab.basal.cmenu :as cm]
+            [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
+            [czlab.basal.log :as l]
+            [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.basal DataError]
            [java.io File]
