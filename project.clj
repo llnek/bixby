@@ -1,12 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/wabbit "1.1.0"
+(defproject io.czlab/blutbad "1.1.0"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :description "Service bus, web framework."
-  :url "https://github.com/llnek/wabbit"
+  :url "https://github.com/llnek/blutbad"
 
   :dependencies [[org.apache.commons/commons-lang3 "3.9"]
                  [commons-io/commons-io "2.6"]
@@ -27,18 +27,13 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[wabbit/lein-template "1.1.0"]
-            [cider/cider-nrepl "0.22.4"]
-            [lein-javadoc "0.3.0"]
-            [lein-codox "0.10.7"]]
-            ;[lein-cprint "1.3.2"]]
+  :plugins [[blutbad/lein-template "1.1.0"]
+            [lein-codox "0.10.7"]
+            [cider/cider-nrepl "0.22.4"]]
 
   :profiles {:provided {:dependencies
                         [[org.clojure/clojure "1.10.1" :scope "provided"]]}
              :uberjar {:aot :all}}
-
-  :javadoc-opts {:package-names ["czlab.wabbit"]
-                 :output-dir "docs"}
 
   :global-vars {*warn-on-reflection* true}
   :target-path "out/%s"
@@ -52,8 +47,8 @@
   :test-paths ["src/test/clojure"]
   :resource-paths ["src/main/resources"]
 
-  ;:main czlab.wabbit.cons.con7
-  :main czlab.wabbit.exec
+  ;:main czlab.blutbad.cons.con7
+  :main czlab.blutbad.exec
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
   :javac-options [;"-source" "8"

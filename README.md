@@ -1,18 +1,18 @@
-wabbit
-=====
+blutbad
+=======
 Service bus, web framework
 
-[![Build Status](https://travis-ci.org/llnek/wabbit.svg?branch=master)](https://travis-ci.org/llnek/wabbit)
+[![Build Status](https://travis-ci.org/llnek/blutbad.svg?branch=master)](https://travis-ci.org/llnek/blutbad)
 
 ## Installation
 
 Add the following dependency to your `project.clj` file:
 
-    [io.czlab/wabbit "1.1.0"]
+    [io.czlab/blutbad "1.1.0"]
 
 ## Documentation
 
-* [API Docs](https://llnek.github.io/wabbit/)
+* [API Docs](https://llnek.github.io/blutbad/)
 
 ## Usage
 
@@ -32,9 +32,9 @@ Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
 
 <!--- links (repos) -->
-[CHANGELOG]: https://github.com/llnek/wabbit/releases
-[GitHub issues page]: https://github.com/llnek/wabbit/issues
-[GitHub contributors page]: https://github.com/llnek/wabbit/graphs/contributors
+[CHANGELOG]: https://github.com/llnek/blutbad/releases
+[GitHub issues page]: https://github.com/llnek/blutbad/issues
+[GitHub contributors page]: https://github.com/llnek/blutbad/graphs/contributors
 
 
 
