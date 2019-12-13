@@ -6,11 +6,10 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.http.websock
+(ns czlab.blutbad.demo.http.websock
 
-  (:require [czlab.wabbit.xpis :as xp]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c])
+  (:require [czlab.basal.core :as c]
+            [czlab.blutbad.core :as b])
 
   (:import [czlab.basal XData]))
 

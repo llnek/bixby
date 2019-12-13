@@ -8,7 +8,8 @@
   :description "Service bus, web framework."
   :url "https://github.com/llnek/blutbad"
 
-  :dependencies [[org.apache.commons/commons-lang3 "3.9"]
+  :dependencies [;[org.apache.commons/commons-lang3 "3.9"]
+                 [org.apache.commons/commons-text "1.8"]
                  [commons-io/commons-io "2.6"]
                  [io.aviso/pretty "0.1.37"]
                  [stencil "0.5.0"]
@@ -27,7 +28,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [[blutbad/lein-template "1.1.0"]
+  :plugins [;[blutbad/lein-template "1.1.0"]
             [lein-codox "0.10.7"]
             [cider/cider-nrepl "0.22.4"]]
 

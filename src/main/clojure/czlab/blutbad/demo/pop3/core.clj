@@ -6,12 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.pop3.core
+(ns czlab.blutbad.demo.pop3.core
 
-  (:require [czlab.basal.log :as l]
-            [czlab.basal.util :as u]
+  (:require [czlab.basal.util :as u]
             [czlab.basal.core :as c]
-            [czlab.wabbit.xpis :as xp])
+            [czlab.blutbad.core :as b])
 
   (:import [javax.mail Message Message$RecipientType Multipart]
            [java.util.concurrent.atomic AtomicInteger]
@@ -35,19 +34,19 @@
 
   (let [^MimeMessage msg (:message evt)
         ^Multipart p (.getContent msg)]
-    (println "######################## (" (ncount) ")" )
-    (print "Subj:" (.getSubject msg) "\r\n")
-    (print "Fr:" (first (.getFrom msg)) "\r\n")
-    (print "To:" (first (.getRecipients msg
-                                        Message$RecipientType/TO)))
-    (print "\r\n")
-    (println (IOUtils/toString (-> (.getBodyPart p 0)
+    (c/prn!! "######################## (%d)" (ncount))
+    (c/prn! "Subj:%s\r\n" (.getSubject msg))
+    (c/prn! "Fr:%s\r\n" (first (.getFrom msg)))
+    (c/prn! "To:%s" (first (.getRecipients msg
+                                           Message$RecipientType/TO)))
+    (c/prn! "\r\n")
+    (c/prn!! (IOUtils/toString (-> (.getBodyPart p 0)
                                    (.getInputStream)) "utf-8"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn main
   [_]
-  (System/setProperty "wabbit.mock.mail.proto" "pop3s"))
+  (System/setProperty "blutbad.mock.mail.proto" "pop3s"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

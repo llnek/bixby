@@ -6,12 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.http.core
+(ns czlab.blutbad.demo.http.core
 
-  (:require [czlab.wabbit.xpis :as xp]
-            [czlab.niou.core :as cc]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c])
+  (:require [czlab.niou.core :as cc]
+            [czlab.basal.core :as c]
+            [czlab.blutbad.core :as b]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)

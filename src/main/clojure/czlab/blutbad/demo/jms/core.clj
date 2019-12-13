@@ -6,11 +6,10 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.jms.core
+(ns czlab.blutbad.demo.jms.core
 
-  (:require [czlab.basal.log :as l]
-            [czlab.basal.core :as c]
-            [czlab.wabbit.xpis :as xp])
+  (:require [czlab.basal.core :as c]
+            [czlab.blutbad.core :as b])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
            [javax.jms TextMessage]))

@@ -6,41 +6,35 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.shiro.core
+(ns czlab.blutbad.shiro.core
 
   ;;(:gen-class)
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.niou.util :as ct]
-            [czlab.niou.webss  :as ss]
             [czlab.basal.util :as u]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.basal.io :as i]
-            [czlab.basal.xpis :as po]
-            [czlab.hoard.core :as hc]
-            [czlab.hoard.rels :as hr]
-            [czlab.hoard.connect :as ht]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
+            [czlab.niou.util :as ct]
+            [czlab.niou.webss  :as ss]
             [czlab.niou.mime :as mi]
             [czlab.niou.core :as cc]
             [czlab.niou.upload :as cu]
             [czlab.twisty.codec :as co]
-            [czlab.wabbit.plugs.http :as hp]
-            [czlab.wabbit.shiro.model :as mo])
+            [czlab.hoard.core :as hc]
+            [czlab.hoard.rels :as hr]
+            [czlab.hoard.connect :as ht]
+            [czlab.blutbad.core :as b]
+            [czlab.blutbad.plugs.http :as hp]
+            [czlab.blutbad.shiro.model :as mo])
 
   (:import [org.apache.shiro.authc.credential CredentialsMatcher]
            [org.apache.shiro.config IniSecurityManagerFactory]
            [org.apache.shiro.authc UsernamePasswordToken]
            [java.security GeneralSecurityException]
            [org.apache.commons.fileupload FileItem]
+           [czlab.niou.upload ULFormItems]
            [czlab.basal DataError XData]
-           [org.apache.shiro.realm AuthorizingRealm]
-           [org.apache.shiro.subject Subject]
-           [java.util Base64 Base64$Decoder]
-           [org.apache.shiro SecurityUtils]
            [clojure.lang APersistentMap]
            [java.io File IOException]
            [org.apache.shiro.authz
@@ -52,7 +46,11 @@
             AuthenticationToken
             AuthenticationInfo]
            [java.net HttpCookie]
-           [java.util Properties]))
+           [java.util Properties]
+           [java.util Base64 Base64$Decoder]
+           [org.apache.shiro SecurityUtils]
+           [org.apache.shiro.subject Subject]
+           [org.apache.shiro.realm AuthorizingRealm]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -66,8 +64,8 @@
 (c/def- ^String captcha-param "captcha")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; hard code the shift position, the encrypt code
-;; should match this value.
+;;hard code the shift position, the encrypt code
+;;should match this value.
 (c/def- caesar-shift 13)
 (c/def- props-map
   {captcha-param [:captcha #(c/strim %)]
@@ -82,7 +80,7 @@
 (def ^:dynamic *jdbc-pool* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol AuthPluglet
+(defprotocol WebAuthPluginAPI
   (do-login [_ user pwd] "")
   (add-account [_ options] "")
   (has-account? [_ options] "")
@@ -97,10 +95,10 @@
    (new-session<> evt nil))
 
   ([evt attrs]
-   (let [plug (xp/get-pluglet evt)]
+   (let [plug (c/parent evt)]
      (c/do-with
-       [s (ss/wsession<> (-> plug po/parent xp/pkey-bytes)
-                         (:session (xp/gconf plug)))]
+       [s (ss/wsession<> (-> plug c/parent b/pkey-bytes)
+                         (:session (:conf plug)))]
        (doseq [[k v] attrs] (ss/set-session-attr s k v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +107,7 @@
   "Create or delete a csrf cookie,
   if maxAge=-1, browser doesnt sent it back!"
   ^HttpCookie
-  [{:keys [domain-path domain]} token]
+  [{:keys [domain domain-path]} token]
 
   (c/do-with
     [c (HttpCookie. ss/csrf-cookie
@@ -124,48 +122,45 @@
 
   "Parse a standard login-like form,
   with userid,password,email."
-  [evt]
+  [{:keys [^XData body] :as evt}]
 
-  (if-some
-    [itms (c/cast? czlab.niou.upload.ULFormItems
-                   (some-> ^XData (:body evt) .content))]
+  (when-some
+    [itms (c/cast? ULFormItems
+                   (some-> body .content))]
     (c/preduce<map>
       #(let [fm (cu/get-field-name-lc %2)
-             fv (.getString ^FileItem %2)]
-         (l/debug "form-field=%s, value=%s." fm fv)
-         (if-some [[k v]
-                   (get props-map fm)]
-           (assoc! %1 k (v fv))
-           %1))
-      (cu/get-all-fields itms))))
+             fv (.getString ^FileItem %2)
+             [k v] (get props-map fm)]
+         (c/debug "fld=%s, val=%s." fm fv)
+         (c/if-nil k %1 (assoc! %1 k (v fv)))) (cu/get-all-fields itms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- crack-body-content
 
   "Parse a JSON body."
-  [evt]
+  [{:keys [^XData body] :as evt}]
 
-  (let [^XData b (:body evt)
-        xs (some-> b .getBytes)
-        json (i/read-json (if xs
-                            (i/x->str xs
-                                      (.encoding b)) "{}")
-                          #(c/lcase %))]
+  (let [xs (some-> body .getBytes)
+        json (->> #(c/lcase %)
+                  (i/read-json (c/if-nil xs
+                                 "{}"
+                                 (->> (.encoding body)
+                                      (i/x->str xs)))))]
     (c/preduce<map>
-      #(let [[k [a1 a2]] %2]
-         (if-some [fv (get json k)]
-           (assoc! %1 a1 (a2 fv)) %1)) props-map)))
+      #(let [[k [a1 a2]] %2
+             v (get json k)]
+         (c/if-nil v %1 (assoc! %1 a1 (a2 v)))) props-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- crack-params
 
   "Parse form fields in the Url."
-  [evt]
+  [{:keys [body] :as evt}]
 
   (c/preduce<map>
-    #(let [[k [a1 a2]] props-map]
-       (if (cc/gist-param? evt k)
-         (assoc! %1 a1 (a2 (cc/gist-param evt k))) %1)) props-map))
+    #(let [[k [a1 a2]] %2
+           v (cc/gist-param? evt k)]
+       (c/if-nil v %1 (assoc! %1 a1 (a2 v)))) props-map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-auth-info??
@@ -186,7 +181,7 @@
 
   [info fld shiftCount]
 
-  (if-not (:nonce info)
+  (c/if-nil (:nonce info)
     info
     (c/try!
       (let [decr (co/decrypt (co/caesar<>)
@@ -194,9 +189,7 @@
                              (get info fld))
             s (-> (Base64/getMimeDecoder)
                   (.decode ^String decr) i/x->str)]
-        (l/debug (str "info = %s."
-                             "decr = %s."
-                             "val = %s.") info decr s)
+        (c/debug "val = %s, decr = %s." s decr)
         (assoc info fld s)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,7 +213,7 @@
 (defn- assert-plugin-ok
 
   "If the plugin has been initialized,
-   by looking into the db."
+  by looking into the db."
   [pool]
   {:pre [(some? pool)]}
 
@@ -230,7 +223,7 @@
       (hc/table-exist? pool tbl)
       (mo/apply-ddl pool))
     (if (hc/table-exist? pool tbl)
-      (l/info "czlab.wabbit.shiro.model* - ok.")
+      (c/info "czlab.blutbad.shiro.model* - ok.")
       (hc/dberr! (u/rstr (b/get-rc-base) "auth.no.table" tbl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,7 +234,7 @@
 
   ([ctr tx?]
    {:pre [(some? ctr)]}
-   (let [db (-> (xp/acquire-dbpool?? ctr)
+   (let [db (-> (b/dbpool?? ctr)
                 (ht/dbio<+> mo/auth-meta-cache))]
      (if-not tx?
        (ht/simple db)
@@ -269,10 +262,11 @@
   (let [m (hc/find-model (:schema sql) ::mo/AuthRole)]
     (hc/exec-sql sql
                  (format "delete from %s where %s =?"
-                         (hc/fmt-id sql (hc/find-table m))
-                         (hc/fmt-id sql
-                                    (hc/find-col (hc/find-field m :name))))
-                 [(c/strim role)])))
+                         (->> (hc/find-table m)
+                              (hc/fmt-id sql))
+                         (->> (hc/find-field m :name)
+                              hc/find-col
+                              (hc/fmt-id sql))) [(c/strim role)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn list-auth-roles
@@ -287,8 +281,8 @@
 (defn create-login-account
 
   "Create a new account
-   props : extra properties, such as email address.
-   roleObjs : a list of roles to be assigned to the account."
+  props : extra properties, such as email address.
+  roleObjs : a list of roles to be assigned to the account."
 
   ([sql user pwdObj props]
    (create-login-account sql user pwdObj props nil))
@@ -303,16 +297,17 @@
          ps (some-> pwdObj co/hashed)]
      (c/do-with
        [acc
-        (->>
-          (hc/db-set-flds (hc/dbpojo<> m)
-                          (merge props {:acctid (c/strim user) :passwd ps}))
-          (hc/add-obj sql))]
-       ;; currently adding roles to the account is not bound to the
-       ;; previous insert. That is, if we fail to set a role, it's
-       ;; assumed ok for the account to remain inserted
+        (->> (hc/db-set-flds (hc/dbpojo<> m)
+                             (merge props
+                                    {:passwd ps
+                                     :acctid (c/strim user)}))
+             (hc/add-obj sql))]
+       ;;currently adding roles to the account is not bound to the
+       ;;previous insert. That is, if we fail to set a role, it's
+       ;;assumed ok for the account to remain inserted
        (doseq [ro roleObjs]
          (hr/set-m2m (hc/gmxm r) sql acc ro))
-       (l/debug "created new account %s%s%s%s"
+       (c/debug "created new account %s%s%s%s"
                 "into db: " acc "\nwith meta\n" (meta acc))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -345,7 +340,7 @@
       acct
       (c/trap! GeneralSecurityException
                (u/rstr (b/get-rc-base) "auth.bad.pwd")))
-    (c/trap! GeneralSecurityException (str "UnknownUser: " user))))
+    (c/trap! GeneralSecurityException (str "Unknown User: " user))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn has-login-account?
@@ -358,10 +353,10 @@
 
   "Change the account password."
   [sql userObj pwdObj]
-  {:pre [(some? sql)
-         (map? userObj)(some? pwdObj)]}
+  {:pre [(some? sql)]}
 
-  (let [m {:passwd (some-> pwdObj co/hashed)}]
+  (let [m {:passwd (some-> pwdObj
+                           co/hashed)}]
     (->> (hc/db-set-flds*
            (hc/mock-pojo<> userObj) m)
          (hc/mod-obj sql))
@@ -373,14 +368,15 @@
   "Update account details
    details: a set of properties such as email address."
   [sql userObj details]
-  {:pre [(some? sql)(map? userObj)]}
+  {:pre [(some? sql)(or (nil? details)
+                        (map? details))]}
 
-  (if-not (empty? details)
+  (if (empty? details)
+    userObj
     (do (->> (hc/db-set-flds*
                (hc/mock-pojo<> userObj) details)
              (hc/mod-obj sql))
-        (hc/db-set-flds* userObj details))
-    userObj))
+        (hc/db-set-flds* userObj details))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn delete-login-account-role
@@ -390,7 +386,8 @@
   [sql user role]
   {:pre [(some? sql)]}
 
-  (let [r (hc/find-model (:schema sql) ::mo/AccountRoles)]
+  (let [r (hc/find-model (:schema sql)
+                         ::mo/AccountRoles)]
     (hr/clr-m2m (hc/gmxm r) sql user role)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -400,7 +397,8 @@
   [sql user role]
   {:pre [(some? sql)]}
 
-  (let [r (hc/find-model (:schema sql) ::mo/AccountRoles)]
+  (let [r (hc/find-model (:schema sql)
+                         ::mo/AccountRoles)]
     (hr/set-m2m (hc/gmxm r) sql user role)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,14 +416,15 @@
   [sql user]
   {:pre [(some? sql)]}
 
-  (let [m (hc/find-model (:schema sql) ::mo/LoginAccount)]
+  (let [m (hc/find-model (:schema sql)
+                         ::mo/LoginAccount)]
     (hc/exec-sql sql
                  (format "delete from %s where %s =?"
-                         (hc/fmt-id sql (hc/find-table m))
                          (hc/fmt-id sql
-                                    (hc/find-col
-                                      (hc/find-field m :acctid))))
-                 [(c/strim user)])))
+                                    (hc/find-table m))
+                         (->> (hc/find-field m :acctid)
+                              hc/find-col
+                              (hc/fmt-id sql))) [(c/strim user)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn list-login-accounts
@@ -442,25 +441,24 @@
   [conf homeDir]
 
   (let [{:keys [shiro]} conf
-        f (io/file homeDir "etc/shiro.ini")
-        f (if (i/file-read? f)
-            f
-            (doto f
-              (i/spit-utf8
-                (str "[main]\n"
-                     (c/sreduce<>
-                       #(let [[k v] %2]
-                          (c/sbf+ %1
-                                  (c/kw->str k)
-                                  "=" (str v) "\n"))
-                       (partition 2 shiro))))))]
-    (try (-> (io/as-url f)
-             str
-             IniSecurityManagerFactory.
-             .getInstance
-             SecurityUtils/setSecurityManager)
-         (finally
-           (l/info "created shiro security manager- ok.")))))
+        f (io/file homeDir b/dn-etc "shiro.ini")]
+    (if-not (i/file-read? f)
+      (i/spit-utf8 f
+                   (str "[main]\n"
+                        (c/sreduce<>
+                          #(let [[k v] %2]
+                             (c/sbf+ %1
+                                     (c/kw->str k)
+                                     "=" (str v) "\n"))
+                          (partition 2 shiro)))))
+    (try
+      (-> (io/as-url f)
+          str
+          IniSecurityManagerFactory.
+          .getInstance
+          SecurityUtils/setSecurityManager)
+      (finally
+        (c/info "created shiro security manager - ok.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn signup-test-expr<>
@@ -468,24 +466,23 @@
   "Test component of a standard sign-up workflow."
   [^String challengeStr evt]
 
-  (let [^HttpCookie
-        ck (get (:cookies evt) ss/csrf-cookie)
-        csrf (some-> ck .getValue)
+  (let [ck ((:cookies evt) ss/csrf-cookie)
+        csrf (some-> ^HttpCookie
+                     ck .getValue)
         info (try (get-signup-info evt)
                   (catch DataError _ {:e _}))
         rb (b/get-rc-base)
-        pa (-> (xp/get-pluglet evt)
-               po/parent
-               (xp/get-plugin :$auth))]
-    (l/debug "csrf = %s%s%s"
+        pa (-> (c/parent evt)
+               c/parent (b/get-plugin :$auth))]
+    (c/test-some "auth-plugin" pa)
+    (c/debug "csrf = %s%s%s"
              csrf ", and form parts = " info)
-    (c/test-some "auth-pluglet" pa)
     (cond (some? (:e info))
           (:e info)
           (and (c/hgl? challengeStr)
-               (.equals ^String challengeStr (:captcha info)))
+               (c/!eq? challengeStr (:captcha info)))
           (GeneralSecurityException. (u/rstr rb "auth.bad.cha"))
-          (not= csrf (:csrf info))
+          (c/!eq? csrf (:csrf info))
           (GeneralSecurityException. (u/rstr rb "auth.bad.tkn"))
           (and (c/hgl? (:credential info))
                (c/hgl? (:principal info))
@@ -501,116 +498,107 @@
 
   [evt]
 
-  (let [^HttpCookie
-        ck (get (:cookies evt) ss/csrf-cookie)
-        csrf (some-> ck .getValue)
+  (let [ck ((:cookies evt) ss/csrf-cookie)
+        csrf (some-> ^HttpCookie
+                     ck .getValue)
         info (try (get-signup-info evt)
                   (catch DataError _ {:e _}))
         rb (b/get-rc-base)
-        pa (-> (xp/get-pluglet evt)
-               po/parent
-               (xp/get-plugin :$auth))]
-    (l/debug "csrf = %s%s%s"
+        pa (-> (c/parent evt)
+               c/parent (b/get-plugin :$auth))]
+    (c/test-some "auth-plugin" pa)
+    (c/debug "csrf = %s%s%s"
              csrf
              ", and form parts = " info)
-    (c/test-some "auth-pluglet" pa)
     (cond (some? (:e info))
           (:e info)
-          (not= csrf (:csrf info))
+          (c/!eq? csrf (:csrf info))
           (GeneralSecurityException. (u/rstr rb "auth.bad.tkn"))
           (and (c/hgl? (:credential info))
                (c/hgl? (:principal info)))
-          (do-login pa (:principal info) (:credential info))
+          (do-login pa
+                    (:principal info)
+                    (:credential info))
           :else
           (GeneralSecurityException. (u/rstr rb "auth.bad.req")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- pluglet
-
-  [server _id spec]
-
-  (let [impl (atom {:info (:info spec)
-                    :conf (:conf spec)})]
-    (reify
-      xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :$handler]))
-      (err-handler [_] (get-in @impl [:conf :$error]))
-      (gconf [_] (:conf @impl))
-      po/Hierarchical
-      (parent [_] server)
-      po/Idable
-      (id [_] _id)
-      po/Initable
-      (init [me arg]
-        (-> server xp/acquire-dbpool?? assert-plugin-ok)
-        (swap! impl
-               update-in
-               [:conf]
-               #(-> (merge % arg)
-                    b/expand-vars* b/prevar-cfg))
-        (init-shiro (.gconf me)
-                    (xp/get-home-dir server)) me)
-      po/Finzable
-      (finz [_]
-        (l/info "AuthPluglet disposed"))
-      po/Startable
-      (start [_] (po/start _ nil))
-      (start [me _]
-        (l/info "AuthPluglet started"))
-      (stop [_]
-        (l/info "AuthPluglet stopped"))
-      AuthPluglet
-      (check-action [_ acctObj action] nil)
-      (add-account [me arg]
-        (let [{:keys [principal credential]} arg
-              pkey (xp/pkey-chars server)]
-          (create-login-account (get-sqlr server)
-                                principal
-                                (co/pwd<> credential pkey)
-                                (dissoc arg :principal :credential) [])))
-      (do-login [me u p]
-        (binding [*meta-cache* mo/auth-meta-cache
-                  *jdbc-pool* (xp/acquire-dbpool?? server)]
-          (let [cur (SecurityUtils/getSubject)
-                sss (.getSession cur)]
-            (l/debug "Current user session %s, object %s." sss cur)
-            (when-not (.isAuthenticated cur)
-              (c/try! ;;(.setRememberMe token true)
-                      (.login cur
-                              (UsernamePasswordToken. ^String u (i/x->str p)))
-                      (l/debug "User [%s] logged in successfully." u)))
-            (if (.isAuthenticated cur)
-              (.getPrincipal cur)))))
-      (has-account? [me arg]
-        (let [pkey (xp/pkey-chars server)]
-          (has-login-account? (get-sqlr server)
-                              (:principal arg))))
-      (get-account [me arg]
-        (let [{:keys [principal email]} arg
-              pkey (xp/pkey-chars server)
-              sql (get-sqlr server)]
-          (cond (c/hgl? principal)
-                (find-login-account sql principal)
-                (c/hgl? email)
-                (find-login-account-via-email sql email))))
-      (get-roles [_ acct] []))))
+(defrecord WebAuthPlugin [server _id info conf]
+  c/Hierarchical
+  (parent [_] server)
+  c/Idable
+  (id [_] _id)
+  c/Initable
+  (init [me arg]
+    (let [me2 (update-in me
+                         [:conf]
+                         #(b/expand-vars* (merge % arg)))]
+      (-> server b/dbpool?? assert-plugin-ok)
+      (init-shiro (:conf me2) (b/home-dir server))
+      me2))
+  c/Finzable
+  (finz [me]
+    (c/info "AuthPlugin disposed") me)
+  c/Startable
+  (start [_]
+    (c/start _ nil))
+  (start [me _]
+    (c/info "AuthPlugin started") me)
+  (stop [me]
+    (c/info "AuthPlugin stopped") me)
+  WebAuthPluginAPI
+  (check-action [me acctObj action] me)
+  (add-account [me arg]
+    (let [{:keys [principal credential]} arg
+          pkey (b/pkey-chars server)]
+      (create-login-account (get-sqlr server)
+                            principal
+                            (co/pwd<> credential pkey)
+                            (dissoc arg :principal :credential) [])))
+  (do-login [me u p]
+    (binding [*meta-cache* mo/auth-meta-cache
+              *jdbc-pool* (b/dbpool?? server)]
+      (let [cur (SecurityUtils/getSubject)
+            sss (.getSession cur)]
+        (c/debug "Current user session %s, object %s." sss cur)
+        (when-not (.isAuthenticated cur)
+          (c/try! ;;(.setRememberMe token true)
+                  (.login cur
+                          (UsernamePasswordToken. ^String u (i/x->str p)))
+                  (c/debug "User [%s] logged in successfully." u)))
+        (if (.isAuthenticated cur)
+          (.getPrincipal cur)))))
+  (get-roles [_ acct] [])
+  (has-account? [me arg]
+    (let [pkey (b/pkey-chars server)]
+      (has-login-account? (get-sqlr server)
+                          (:principal arg))))
+  (get-account [me arg]
+    (let [{:keys [principal email]} arg
+          pkey (b/pkey-chars server)
+          sql (get-sqlr server)]
+      (cond (c/hgl? principal)
+            (find-login-account sql principal)
+            (c/hgl? email)
+            (find-login-account-via-email sql email)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def WebAuthSpec
   {:info {:name "Web Auth"
           :version "1.0.0"}
    :conf {:$pluggable ::web-ath<>
-          :shiro [:kkkCredentialsMatcher "czlab.wabbit.shiro.core.PwdMatcher"
-                  :kkk "czlab.wabbit.shiro.realm.JdbcRealm"
+          :shiro [:kkkCredentialsMatcher "czlab.blutbad.shiro.core.PwdMatcher"
+                  :kkk "czlab.blutbad.shiro.realm.JdbcRealm"
                   :kkk.credentialsMatcher "$kkkCredentialsMatcher"]}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn web-auth<>
 
-  ([co id spec]
-   (pluglet co id spec))
   ([_ id]
-   (web-auth<> _ id WebAuthSpec)))
+   (web-auth<> _ id WebAuthSpec))
+
+  ([co id {:keys [info conf]}]
+   (WebAuthPlugin. co id info conf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (deftype PwdMatcher []
@@ -624,7 +612,7 @@
           tstPwd (co/pwd<> pwd)
           acc (-> (.getPrincipals inf)
                   .getPrimaryPrincipal)]
-      (and (= (:acctid acc) uid)
+      (and (c/eq? uid (:acctid acc))
            (co/is-hash-valid? tstPwd pc)))))
 
 (ns-unmap *ns* '->PwdMatcher)

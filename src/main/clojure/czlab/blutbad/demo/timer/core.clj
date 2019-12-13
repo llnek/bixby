@@ -6,11 +6,10 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.timer.core
+(ns czlab.blutbad.demo.timer.core
 
-  (:require [czlab.basal.log :as l]
-            [czlab.basal.core :as c]
-            [czlab.wabbit.xpis :as xp])
+  (:require [czlab.basal.core :as c]
+            [czlab.blutbad.core :as b])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
            [java.util Date]))
@@ -28,12 +27,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo<>
   [evt]
-  (let [plug (xp/get-pluglet evt)
-        {:keys [repeat?]}
-        (xp/gconf plug)]
+  (let [plug (c/parent evt)
+        {:keys [repeat?]} (:conf plug)]
     (if repeat?
-      (println "-----> (" (ncount) ") repeating-update: " (Date.))
-      (println "-----> once-only!!: " (Date.)))))
+      (c/prn!! "-----> (%d) repeating-update: %s" (ncount) (Date.))
+      (c/prn!! "-----> once-only!!: %s" (Date.)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

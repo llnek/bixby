@@ -6,20 +6,19 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.cons.con1
+(ns czlab.blutbad.cons.con1
 
   (:require [czlab.antclj.antlib :as a]
-            [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
-            [czlab.wabbit.core :as wc]
-            [czlab.wabbit.exec :as we]
-            [czlab.twisty.core :as tc]
-            [czlab.twisty.codec :as co]
-            [czlab.basal.log :as l]
+            [clojure.java.io :as io]
             [czlab.basal.io :as i]
             [czlab.basal.util :as u]
-            [czlab.wabbit.cons.con2 :as c2]
+            [czlab.blutbad.core :as b]
+            [czlab.blutbad.exec :as e]
+            [czlab.twisty.core :as tc]
+            [czlab.twisty.codec :as co]
+            [czlab.blutbad.cons.con2 :as c2]
             [czlab.basal.core :as c :refer [n#]])
 
   (:import [java.util
@@ -36,14 +35,6 @@
 (def ^:dynamic *config-object* nil)
 (def ^:dynamic *pkey-object* nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn get-home-dir
-
-  "The current directory."
-  []
-
-  (io/file (u/get-sys-prop "wabbit.user.dir")))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-xxx
 
@@ -52,7 +43,7 @@
 
   (try (dotimes [n end]
          (c/prn!! "%s"
-                  (u/rstr (wc/get-rc-base)
+                  (u/rstr (b/get-rc-base)
                           (str pfx (+ 1 n)))))
        (finally
          (c/prn!! ""))))
@@ -60,7 +51,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-create
 
-  "Help message for action: create."
+  "Help for action: create."
   []
 
   (on-help-xxx "usage.new.d" 5))
@@ -78,7 +69,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-podify
 
-  "Help messages for action: podify."
+  "Help for action: podify."
   []
 
   (on-help-xxx "usage.podify.d" 2))
@@ -86,12 +77,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-podify
 
-  ""
   [args]
 
   (if (empty? args)
     (u/throw-BadData "CmdError!")
-    (let [a (io/file (wc/get-proc-dir))
+    (let [a (io/file (b/get-proc-dir))
           dir (i/mkdirs (io/file (c/_1 args)))]
       (a/run* (a/zip {:includes "**/*"
                       :basedir a
@@ -100,7 +90,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-start
 
-  "Help message for action: start."
+  "Help for action: start."
   []
 
   (on-help-xxx "usage.start.d" 4))
@@ -108,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-stop
 
-  "Help message for action: stop."
+  "Help for action: stop."
   []
 
   (on-help-xxx "usage.stop.d" 2))
@@ -119,8 +109,8 @@
   "Run the application in the background."
   [podDir]
 
-  (let [progW (io/file podDir "bin/wabbit.bat")
-        prog (io/file podDir "bin/wabbit")
+  (let [progW (io/file podDir "bin/blutbad.bat")
+        prog (io/file podDir "bin/blutbad")
         tk (if (u/is-windows?)
              (a/exec {:dir podDir
                       :executable "cmd.exe"}
@@ -142,13 +132,13 @@
   [args]
 
   (let [s2 (c/_1 args)
-        cwd (wc/get-proc-dir)]
+        cwd (b/get-proc-dir)]
     ;; background job is handled differently on windows
     (if (and (u/is-windows?)
              (c/in? #{"-bg" "--background"} s2))
       (run-pod-bg cwd)
-      (do (-> wc/banner
-              ansi/bold-yellow c/prn!!) (we/start-via-cons cwd)))))
+      (do (-> b/banner
+              ansi/bold-yellow c/prn!!) (e/start-via-cons cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-stop
@@ -157,7 +147,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-debug
 
-  "Help message for action: debug."
+  "Help for action: debug."
   []
 
   (on-help-xxx "usage.debug.d" 2))
@@ -174,7 +164,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-demos
 
-  "Help message for action :demo."
+  "Help for action :demo."
   []
 
   (on-help-xxx "usage.demo.d" 2))
@@ -206,10 +196,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn gen-guid
 
-  "Generate a UUID."
-  []
-
-  (u/uuid<>))
+  "Generate a UUID." [] (u/uuid<>))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-encrypt
@@ -220,8 +207,10 @@
   (let [[s k] (cond (c/one? args) [(c/_1 args) *pkey-object*]
                     (c/two? args) [(c/_2 args)(c/_1 args)]
                     :else (u/throw-BadData "CmdError!"))]
-    (try (-> (co/pwd<> s k) co/pw-encoded i/x->str)
-         (catch Throwable e (c/prn!! "Failed to encrypt: %s." (u/emsg e))))))
+    (try (-> (co/pwd<> s k)
+             co/pw-encoded i/x->str)
+         (catch Throwable e
+           (c/prn!! "Failed to encrypt: %s." (u/emsg e))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-decrypt
@@ -232,8 +221,10 @@
   (let [[s k] (cond (c/one? args) [(c/_1 args) *pkey-object*]
                     (c/two? args) [(c/_2 args)(c/_1 args)]
                     :else (u/throw-BadData "CmdError!"))]
-    (try (-> (co/pwd<> s k) co/pw-text i/x->str)
-         (catch Throwable e (c/prn!! "Failed to decrypt: %s." (u/emsg e))))))
+    (try (-> (co/pwd<> s k)
+             co/pw-text i/x->str)
+         (catch Throwable e
+           (c/prn!! "Failed to decrypt: %s." (u/emsg e))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-hash
@@ -258,7 +249,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-generate
 
-  "Help message for action: generate."
+  "Help for action: generate."
   []
 
   (on-help-xxx "usage.gen.d" 9))
@@ -282,7 +273,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn prn-generate
 
-  "Print out result from the generate function."
+  "Print from the function."
   [args]
 
   (c/prn!! (on-generate args)))
@@ -290,7 +281,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-test-jce
 
-  "Help message for action: test-jce."
+  "Help for action: test-jce."
   []
 
   (on-help-xxx "usage.testjce.d" 2))
@@ -301,14 +292,14 @@
   "Assert JCE."
   [args]
 
-  (let [rcb (wc/get-rc-base)]
+  (let [rcb (b/get-rc-base)]
     (tc/assert-jce)
     (c/prn!! (u/rstr rcb "usage.testjce.ok"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-version
 
-  "Help message for action: version."
+  "Help for action: version."
   []
 
   (on-help-xxx "usage.version.d" 2))
@@ -319,8 +310,8 @@
   "Print out the version."
   [args]
 
-  (let [rcb (wc/get-rc-base)]
-    (->> (u/get-sys-prop "wabbit.version")
+  (let [rcb (b/get-rc-base)]
+    (->> (u/get-sys-prop "blutbad.version")
          (u/rstr rcb "usage.version.o1")
          (c/prn!! "%s" ))
     (->> (u/get-sys-prop "java.version")
@@ -357,7 +348,7 @@
     (FileUtils/cleanDirectory ec)
     (i/spit-utf8
       (io/file ec ".project")
-      (-> (i/res->str (str "czlab/wabbit/eclipse/java/project.txt"))
+      (-> (i/res->str (str "czlab/blutbad/eclipse/java/project.txt"))
           (cs/replace "${APP.NAME}" pod)
           (cs/replace "${JAVA.TEST}"
                       (u/fpath (io/file poddir "src/test/java")))
@@ -367,20 +358,20 @@
                       (u/fpath (io/file poddir "src/test/clojure")))
           (cs/replace "${CLJ.SRC}"
                       (u/fpath (io/file poddir "src/main/clojure")))))
-    (i/mkdirs (io/file poddir wc/dn-build "classes"))
+    (i/mkdirs (io/file poddir b/dn-build "classes"))
     (doall (map (partial scan-jars sb)
-                [(io/file (get-home-dir) wc/dn-dist)
-                 (io/file (get-home-dir) wc/dn-lib)
-                 (io/file poddir wc/dn-target)]))
+                [(io/file (b/get-proc-dir) b/dn-dist)
+                 (io/file (b/get-proc-dir) b/dn-lib)
+                 (io/file poddir b/dn-target)]))
     (i/spit-utf8
       (io/file ec ".classpath")
-      (-> (i/res->str (str "czlab/wabbit/eclipse/java/classpath.txt"))
+      (-> (i/res->str (str "czlab/blutbad/eclipse/java/classpath.txt"))
           (cs/replace "${CLASS.PATH.ENTRIES}" (str sb))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-ide
 
-  "Help message for action: ide."
+  "Help for action: ide."
   []
 
   (on-help-xxx "usage.ide.d" 4))
@@ -394,12 +385,12 @@
   (if-not (and (not-empty args)
                (c/in? #{"-e" "--eclipse"} (c/_1 args)))
     (u/throw-BadData "CmdError!")
-    (gen-eclipse-proj (wc/get-proc-dir))))
+    (gen-eclipse-proj (b/get-proc-dir))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-service-specs
 
-  "Help message for action: service."
+  "Help for action: service."
   []
 
   (on-help-xxx "usage.svc.d" 8))
@@ -415,11 +406,11 @@
           #(assoc! %1
                    (c/_1 %2)
                    (u/var* clj
-                           (str "czlab.wabbit.plugs."
+                           (str "czlab.blutbad.plugs."
                                 (c/kw->str (c/_2 %2)))))
           {:OnceTimer :loops/OnceTimerSpec
            :FilePicker :files/FilePickerSpec
-           :SocketIO :socket/SocketIOSpec
+           :TCP :socket/TCPSpec
            :JMS :jms/JMSSpec
            :POP3 :mails/POP3Spec
            :IMAP :mails/IMAPSpec
@@ -429,13 +420,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-help-help
 
-  "Help message for action: help."
+  "Help for action: help."
   []
 
   (u/throw-BadData "CmdError!"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def wabbit-tasks nil)
+(def blutbad-tasks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-help
@@ -443,16 +434,16 @@
   "Print out help message for an action."
   [args]
 
-  (c/if-fn? [h (c/_2 (wabbit-tasks
+  (c/if-fn [h (c/_2 (blutbad-tasks
                        (keyword (c/_1 args))))]
     (h)
     (u/throw-BadData "CmdError!")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (alter-var-root
-  #'wabbit-tasks
+  #'blutbad-tasks
   (fn [_]
-    {:service [on-service-specs on-help-service-specs]
+    {:testjce [on-test-jce on-help-test-jce]
      :new [on-create on-help-create]
      :ide [on-ide on-help-ide]
      :podify [on-podify on-help-podify]
@@ -462,8 +453,8 @@
      :stop [on-stop on-help-stop]
      :demos [on-demos on-help-demos]
      :crypto [prn-generate on-help-generate]
-     :testjce [on-test-jce on-help-test-jce]
-     :version [on-version on-help-version]}))
+     :version [on-version on-help-version]
+     :service [on-service-specs on-help-service-specs]}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

@@ -6,14 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.file.core
+(ns czlab.blutbad.demo.file.core
 
   (:require [clojure.java.io :as io]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.basal.io :as i]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.xpis :as xp])
+            [czlab.blutbad.core :as b])
 
   (:import [java.util.concurrent.atomic AtomicInteger]
            [java.util Date]
@@ -34,10 +32,10 @@
 
   [evt]
 
-  (let [plug (xp/get-pluglet evt)
-        svr (po/parent plug)
-        c (xp/get-plugin svr :picker)]
-    (-> (:target-folder (xp/gconf plug))
+  (let [plug (c/parent evt)
+        c (-> (c/parent plug)
+              (b/get-plugin :picker))]
+    (-> (:target-folder (:conf plug))
         (io/file (str "ts-" (ncount) ".txt"))
         (i/spit-utf8 (str "Current time is " (Date.))))))
 

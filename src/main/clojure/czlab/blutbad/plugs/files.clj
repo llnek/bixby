@@ -6,20 +6,16 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.plugs.files
+(ns czlab.blutbad.plugs.files
 
   "Implementation for FilePicker."
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.wabbit.plugs.loops :as pl]
             [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [czlab.basal.xpis :as po]
+            [czlab.blutbad.core :as b]
+            [czlab.blutbad.plugs.loops :as l]
             [czlab.basal.core :as c :refer [n#]])
 
   (:import [java.util Timer Properties ResourceBundle]
@@ -42,10 +38,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord FileMsg []
-  po/Idable
+  c/Idable
   (id [_] (:id _))
-  xp/PlugletMsg
-  (get-pluglet [me] (:source me)))
+  c/Hierarchical
+  (parent [me] (:source me)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
@@ -62,134 +58,115 @@
 (defn- post-poll
 
   "Only look for new files."
-  [plug recvFolder f action]
+  [{{:keys [recv-folder]} :conf :as plug} f action]
 
   (let [orig (i/fname f)]
     (when-some
-      [cf (if (and recvFolder
+      [cf (if (and recv-folder
                    (not= action :FP-DELETED))
-            (c/try! (c/doto->> (io/file recvFolder orig)
+            (c/try! (c/doto->> (io/file recv-folder orig)
                                (FileUtils/moveFile ^File f))))]
-      (pc/dispatch! (evt<> plug orig cf action)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- to-fmask
-
-  ^FileFilter [mask]
-
-  (cond (cs/starts-with? mask "*.")
-        (SuffixFileFilter. (subs mask 1))
-        (cs/ends-with? mask "*")
-        (PrefixFileFilter.
-          (subs mask 0 (- (n# mask) 1)))
-        (not-empty mask)
-        (RegexFileFilter. ^String mask)
-        :else
-        FileFileFilter/FILE))
+      (b/dispatch (evt<> plug orig cf action)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init2
 
   [conf cfg0]
 
-  (let [{root :target-folder
-         dest :recv-folder
-         :keys [fmask]
-         :as c2} (merge conf cfg0)
-        ff (to-fmask (str fmask))]
-    (assert (c/hgl? root)
-            (c/fmt "Bad file-root-folder %s." root))
-    (l/info (str "monitoring dir: %s\n"
-                 "receiving dir: %s") root (c/nsn dest))
-    (merge c2 {:target-folder root
-               :fmask ff :recv-folder dest})))
+  (letfn
+    [(to-fmask [mask]
+       (cond (cs/starts-with? mask "*.")
+             (SuffixFileFilter. (subs mask 1))
+             (cs/ends-with? mask "*")
+             (PrefixFileFilter.
+               (subs mask 0 (- (n# mask) 1)))
+             (not-empty mask)
+             (RegexFileFilter. ^String mask)
+             :else
+             FileFileFilter/FILE))]
+    (let [{:as c2
+           :keys [fmask]
+           dest :recv-folder
+           root :target-folder} (merge conf cfg0)]
+      (assert (c/hgl? root)
+              (c/fmt "Bad file-root-folder %s." root))
+      (c/info (str "monitoring dir: %s\n"
+                   "receiving dir: %s") root (c/nsn dest))
+      (assoc c2
+             :fmask (to-fmask (str fmask))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- file-mon<>
 
-  ^FileAlterationMonitor [plug]
+  [plug]
 
-  (let [{:keys [target-folder recv-folder
-                interval-secs ^FileFilter fmask] :as cfg}
-        (xp/gconf plug)
-        obs (-> (io/file target-folder)
-                (FileAlterationObserver. fmask))]
-    (c/do-with [mon (FileAlterationMonitor.
-                      (pc/s2ms interval-secs))]
-      (.addListener obs
-                    (proxy [FileAlterationListenerAdaptor][]
-                      (onFileCreate [f]
-                        (post-poll plug recv-folder f :FP-CREATED))
-                      (onFileChange [f]
-                        (post-poll plug recv-folder f :FP-CHANGED))
-                      (onFileDelete [f]
-                        (post-poll plug recv-folder f :FP-DELETED))))
-      (doto mon (.addObserver obs) .start))))
+  (let [{:keys [target-folder
+                interval-secs
+                ^FileFilter fmask]} (:conf plug)]
+    [(FileAlterationMonitor. (b/s2ms interval-secs))
+     (-> (io/file target-folder) (FileAlterationObserver. fmask))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- pluglet
-
-  [plug _id spec]
-
-  (let [impl (atom {:conf (:conf spec)
-                    :info (:info spec)})]
-    (reify
-      xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :$handler]))
-      (err-handler [_] (get-in @impl [:conf :$error]))
-      (gconf [_] (:conf @impl))
-      po/Hierarchical
-      (parent [_] plug)
-      po/Idable
-      (id [_] _id)
-      po/Initable
-      (init [me arg]
-        (swap! impl
-               update-in
+(defrecord FilePickerPlugin [server _id info conf]
+  c/Hierarchical
+  (parent [_] server)
+  c/Idable
+  (id [_] _id)
+  c/Initable
+  (init [me arg]
+    (update-in me
                [:conf]
-               #(-> (init2 % arg)
-                    b/expand-vars* b/prevar-cfg)) me)
-      po/Finzable
-      (finz [_] (po/stop _) _)
-      po/Startable
-      (start [_] (po/start _ nil))
-      (start [me arg]
-        (let [w #(swap! impl
-                        assoc
-                        :mon (file-mon<> me))]
-          (l/info "apache io monitor starting...")
-          (swap! impl
-                 assoc
-                 :ttask
-                 (pl/cfg-timer (Timer. true)
-                               w
-                               (:conf @impl) false)) me))
-      (stop [me]
-        (l/info "apache io monitor stopping...")
-        (u/cancel-timer-task! (:ttask @impl))
-        (some-> ^FileAlterationMonitor (:mon @impl) .stop) me))))
+               #(b/expand-vars* (init2 % arg))))
+  c/Finzable
+  (finz [_] (c/stop _))
+  c/Startable
+  (start [_]
+    (c/start _ nil))
+  (start [me arg]
+    (let [[^FileAlterationMonitor mon
+           ^FileAlterationObserver obs] (file-mon<> me)
+          plug (assoc me :monitor mon)]
+      (.addListener obs (proxy [FileAlterationListenerAdaptor][]
+                          (onFileCreate [f]
+                            (post-poll plug f :FP-CREATED))
+                          (onFileChange [f]
+                            (post-poll plug f :FP-CHANGED))
+                          (onFileDelete [f]
+                            (post-poll plug f :FP-DELETED))))
+      (.addObserver mon obs)
+      (l/cfg-timer (Timer. true)
+                   #(do (c/info "apache io monitor starting...")
+                        (.start ^FileAlterationMonitor mon))
+                   (:conf plug) false)
+      plug))
+  (stop [me]
+    (c/info "apache io monitor stopping...")
+    (some-> ^FileAlterationMonitor (:monitor me) .stop)
+    (assoc me :monitor nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def FilePickerSpec
   {:info {:name "File Picker"
           :version "1.0.0"}
    :conf {:$pluggable ::file-picker<>
-          :target-folder "/home/dropbox"
-          :recv-folder "/home/joe"
-          :fmask ""
+          :$action nil
+          :$error nil
           :interval-secs 300
           :delay-secs 0
-          :$handler nil}})
+          :fmask ""
+          :recv-folder "/home/joe"
+          :target-folder "/home/dropbox"}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn file-picker<>
 
-  "Create a File Picker Pluglet."
+  "Create a File Picker Plugin."
 
-  ([_ id spec]
-   (pluglet _ id spec))
   ([_ id]
-   (file-picker<> _ id FilePickerSpec)))
+   (file-picker<> _ id FilePickerSpec))
+
+  ([server id {:keys [info conf]}]
+   (FilePickerPlugin. server id info conf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

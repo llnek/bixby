@@ -6,13 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.fork.core
+(ns czlab.blutbad.demo.fork.core
 
-  (:require [czlab.wabbit.xpis :as xp]
-            [czlab.flux.core :as w]
+  (:require [czlab.flux.core :as w]
             [czlab.basal.core :as c]
-            [czlab.basal.log :as l]
-            [czlab.basal.xpis :as po])
+            [czlab.blutbad.core :as b]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -45,8 +43,8 @@
     #(c/do#nil
        (let [job %2]
          (c/prn!! "*Child*: will create my own child (blocking)")
-         (po/setv job :rhs 60)
-         (po/setv job :lhs 5)))
+         (c/setv job :rhs 60)
+         (c/setv job :lhs 5)))
     (w/split-join<> [:type :and]
       #(c/do#nil
          (let [job %2]
@@ -55,14 +53,14 @@
              (Thread/sleep 1000) (c/prn! "."))
            (c/prn!! "")
            (c/prn!! "*Child->child*: returning result back to *Child*.")
-           (po/setv job :result (* (po/getv job :rhs)
-                                   (po/getv job :lhs)))
+           (c/setv job :result (* (c/getv job :rhs)
+                                  (c/getv job :lhs)))
            (c/prn!! "*Child->child*: done."))))
     #(c/do#nil
        (let [job %2]
          (c/prn!! "*Child*: the result for (5 * 60) according to %s%s"
                   "my own child is = "
-                  (po/getv job :result))
+                  (c/getv job :result))
          (c/prn!! "*Child*: done.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,9 +80,9 @@
   "Split but no wait, parent continues."
   [evt]
 
-  (let [p (xp/get-pluglet evt)
-        s (po/parent p)
-        c (xp/get-scheduler s)]
+  (let [p (c/parent evt)
+        s (c/parent p)
+        c (b/scheduler s)]
     (w/exec (w/workflow*
               (w/group<> a1 (w/split<> a2) a3)) (w/job<> c nil evt))))
 

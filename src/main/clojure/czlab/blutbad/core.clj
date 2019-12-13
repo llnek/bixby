@@ -14,24 +14,28 @@
             [clojure.string :as cs]
             [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.basal.proc :as p])
 
   (:import [java.util ResourceBundle Locale]
-           [org.apache.commons.io FileUtils]
            [java.io File IOException]
            [java.util Locale]
            [javax.management ObjectName]
-           [org.apache.commons.lang3.text StrSubstitutor]))
+           [org.apache.commons.text StringSubstitutor]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defmacro s2ms
+  "Convert seconds to milliseconds."
+  [s]
+  `(let [t# ~s] (if (czlab.basal.core/spos? t#) (* 1000 t#) 0)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^String c-verprops "czlab/blutbad/version.properties")
 (def ^String c-rcb-base "czlab.blutbad/Resources")
-(def ^String en-rcprops  "Resources_en.properties")
+(def ^String en-rcprops "Resources_en.properties")
 (def ^String c-rcprops  "Resources_%s.properties")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +88,7 @@
 (def ^String mn-lic (str meta-inf "/" "LICENSE.txt"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def ^String pod-cf  "pod.conf")
+(def ^String pod-cf  "app.conf")
 (def ^String cfg-pod-cf  (str dn-conf "/" pod-cf))
 (def ^String cfg-pub-pages  (str dn-pub "/" dn-pages))
 
@@ -94,7 +98,9 @@
 (def jslot-user :principal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defonce- rc-bundles-cache (atom {:base nil :rcbs {}}))
+(c/defonce-
+  rc-bundles-cache
+  (atom {:base nil :rcbs {}}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn del-rc-bundle!
@@ -102,8 +108,8 @@
   "Remove a resource bundle from the cache."
   [b]
 
-  (swap! rc-bundles-cache update-in [:rcbs] dissoc b)
-  rc-bundles-cache)
+  (doto rc-bundles-cache
+    (swap! update-in [:rcbs] dissoc b)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn put-rc-bundle!
@@ -111,8 +117,8 @@
   "Add a resource bundle to the cache."
   [b rc]
 
-  (swap! rc-bundles-cache update-in [:rcbs] assoc b rc)
-  rc-bundles-cache)
+  (doto rc-bundles-cache
+    (swap! update-in [:rcbs] assoc b rc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-rc-bundle
@@ -136,8 +142,7 @@
   "Set the baseline resource bundle."
   [base]
 
-  (swap! rc-bundles-cache assoc :base base)
-  rc-bundles-cache)
+  (doto rc-bundles-cache (swap! assoc :base base)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn banner
@@ -145,10 +150,12 @@
   "A ASCII banner."
   {:no-doc true :tag String} []
 
-  (str  "              __   __   _ __ " "\n"
-        " _    _____ _/ /  / /  (_) /_" "\n"
-        "| |/|/ / _ `/ _ \\/ _ \\/ / __/" "\n"
-        "|__,__/\\_,_/_.__/_.__/_/\\__/ " "\n"))
+  (str
+    " ______   __       __  __   ______  ______   ______   _____    " "\n"
+    "/\\  == \\ /\\ \\     /\\ \\/\\ \\ /\\__  _\\/\\  == \\ /\\  __ \\ /\\  __-.  " "\n"
+    "\\ \\  __< \\ \\ \\____\\ \\ \\_\\ \\\\/_/\\ \\/\\ \\  __< \\ \\  __ \\\\ \\ \\/\\ \\ " "\n"
+    " \\ \\_____\\\\ \\_____\\\\ \\_____\\  \\ \\_\\ \\ \\_____\\\\ \\_\\ \\_\\\\ \\____- " "\n"
+    "  \\/_____/ \\/_____/ \\/_____/   \\/_/  \\/_____/ \\/_/\\/_/ \\/____/ " "\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-proc-dir
@@ -156,7 +163,8 @@
   "Get the current directory."
   ^File []
 
-  (io/file (u/get-sys-prop "blutbad.user.dir")))
+  (c/if-some+
+    [d (u/get-sys-prop "blutbad.user.dir")] (io/file d) (u/get-user-dir)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-sys-props
@@ -165,7 +173,7 @@
   ^String [value]
 
   (if (c/nichts? value)
-    value (StrSubstitutor/replaceSystemProperties ^String value)))
+    value (StringSubstitutor/replaceSystemProperties value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-env-vars
@@ -174,7 +182,7 @@
   ^String [value]
 
   (if (c/nichts? value)
-    value (-> (System/getenv) StrSubstitutor. (.replace ^String value))))
+    value (-> (System/getenv) StringSubstitutor. (.replace ^String value))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-vars
@@ -210,7 +218,7 @@
   ([file]
    (c/doto->> (i/change-content (io/file file)
                                 #(expand-vars %))
-              (l/debug "[%s]\n%s." file))))
+              (c/debug "[%s]\n%s." file))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;asserts that the directory is readable & writable.
@@ -251,51 +259,39 @@
       (u/throw-IOE (u/rstr (get-rc-base) "blutbad.no.dir" kn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn expand-conf
-
-  "Expand vars in this config object."
-  [cfgObj]
-
-  (expand-vars* cfgObj))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn slurp-conf
 
   "Parse config file."
 
   ([podDir conf]
-   (slurp-conf podDir conf false))
+   (slurp-conf (io/file podDir conf)))
 
-  ([podDir conf expVars?]
-   (let [f (io/file podDir conf)
-         s (str "{\n" (i/slurp-utf8 f) "\n}")]
-     (i/read-edn
-       (if-not expVars?
-         s
-         (expand-vars (cs/replace s
-                                  "${pod.dir}"
-                                  "${blutbad.user.dir}")))))))
+  ([f]
+   (-> (str "{\n"
+            (i/slurp-utf8 f) "\n}") expand-vars i/read-edn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn spit-conf
 
   "Write out config file."
-  [podDir conf cfgObj]
+  ([podDir conf cfgObj]
+   (spit-conf (io/file podDir conf) cfgObj))
 
-  (let [f (io/file podDir conf)
-        s (c/strim (i/fmt->edn cfgObj))]
+  ([f cfgObj]
+  (let [s (c/strim (i/fmt->edn cfgObj))]
     (i/spit-utf8 f
                  (if-not (c/wrapped? s "{" "}")
-                   s
-                   (-> (c/drop-head s 1) (c/drop-tail 1))))))
+                   s (-> (c/drop-head s 1) (c/drop-tail 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn prevar-cfg
+(defn- prevar-cfg
 
   "Scan the config object looking for references to
-  functions, supported markers are $error, $handler.
+  functions, supported markers are $error, $action
   For each one found, load it as a Var via clojure/RT."
   [cfg]
+  ;the lock flag is used to signal that the next
+  ;string is to be resolved.
 
   (let [lock (atom 0)
         rt (u/cljrt<>)]
@@ -307,32 +303,12 @@
                  (or (var? h)
                      (nil? h)) h
                  :else
-                 (c/raise! "Bad handler: %s!" %)))
+                 (c/raise! "Bad action %s!" %)))
          (if (or (= :$error %)
-                 (= :$handler %)) (do (reset! lock 1) %) %)) cfg)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn delete-dir
-
-  "Safely delete a folder."
-  [dir]
-
-  (c/try! (FileUtils/deleteDirectory (io/file dir))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn clean-dir
-
-  "Safely clear a folder."
-  [dir]
-
-  (c/try! (FileUtils/cleanDirectory (io/file dir))))
+                 (= :$action %)) (do (reset! lock 1) %) %)) cfg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol PlugletMsg
-  (get-pluglet [_] "Get reference to the pluglet."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol JmxPluglet
+(defprotocol JmxAPI
   (jmx-dereg [_ ^ObjectName nname] "")
   (^ObjectName jmx-reg [_ obj ^String domain ^String nname paths] ""))
 
@@ -340,48 +316,65 @@
 (defprotocol Execvisor
   (has-plugin? [_ id] "")
   (get-plugin [_ id] "")
-  (get-locale [_] "")
-  (get-start-time [_] "")
+  (locale [_] "")
+  (start-time [_] "")
   (pkey-chars [_] "")
   (pkey-bytes [_] "")
   (kill9! [_] "")
   (cljrt [_] "")
-  (get-scheduler [_] "")
-  (get-home-dir [_] "")
-  (uptime-in-millis [_] "")
-  (acquire-dbapi?? [_] [_ id] "")
-  (acquire-dbpool?? [_] [_ id] ""))
+  (scheduler [_] "")
+  (home-dir [_] "")
+  (uptime [_] "")
+  (dbapi?? [_] [_ id] "")
+  (dbpool?? [_] [_ id] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol Pluglet
-  (gconf [_] "")
-  (err-handler [_] "")
-  (user-handler [_] ""))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn pluglet<>
+(defn plugin<>
 
   "Create a Service."
-  [exec emAlias emType]
+  [exec id {:keys [enabled? $pluggable] :as cfg}]
 
-  (or (if (var? emType)
-        (@emType exec emAlias)
-        (let [emStr (c/kw->str emType)]
-          (if (cs/index-of emStr "/")
-            (u/call* (cljrt exec)
-                     emStr
-                     (c/vargs* Object exec emAlias)))))
-      (c/trap! ClassCastException (c/fmt "Not pluglet: %s." emType))))
+  (when (and $pluggable
+             (c/!false? enabled?))
+      (or (some-> (u/call* (cljrt exec)
+                           (c/kw->str $pluggable)
+                           (c/vargs* Object exec id))
+                  (c/init cfg))
+          (c/trap! ClassCastException (c/fmt "Not plugin: %s." $pluggable)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn get-pod-key
+(defn dispatch
 
-  "Get the application's private key."
-  ^bytes [evt]
+  ([evt]
+   (dispatch evt nil))
 
-  (-> evt get-pluglet po/parent pkey-bytes))
+  ([evt arg]
+   (letfn
+     [(err [plug evt]
+        (let [ex (Exception. "No handler.")]
+          (c/if-fn [e (get-in plug [:conf :$error])]
+            (e evt ex)
+            (do (c/exception ex)
+                (c/error (str "event#%s - "
+                              "%s dropped.") (c/id evt) (c/id plug))))))]
+     (let [{:keys [dispfn handler]} arg
+           plug (c/parent evt)
+           ctr (c/parent plug)
+           sc (scheduler ctr)
+           clj (cljrt ctr)
+           h (or handler
+                 (get-in plug
+                         [:conf :$action]))
+           f (if (var? h) @h h)]
+       (c/do#nil
+         (c/debug "plug = %s\narg = %s\ncb = %s." (c/id plug) arg h)
+         (c/debug "#%s => %s :is disp!" (c/id evt) (c/id plug))
+         (if-not (fn? f)
+           (err plug evt)
+           (p/run* sc
+                   (or dispfn f)
+                   (if dispfn [f evt] [evt]))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

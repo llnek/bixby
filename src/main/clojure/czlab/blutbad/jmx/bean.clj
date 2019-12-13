@@ -6,14 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.jmx.bean
+(ns czlab.blutbad.jmx.bean
 
   (:require [clojure.string :as cs]
             [czlab.basal.util :as u]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
-            [czlab.basal.meta :as m]
-            [czlab.basal.xpis :as po])
+            [czlab.basal.meta :as m])
 
   (:import [java.lang Exception IllegalArgumentException]
            [java.lang.reflect Field Method]
@@ -299,7 +297,7 @@
 
   [cz]
 
-  (l/info "jmx-bean: processing methods for class: %s." cz)
+  (c/info "jmx-bean: processing methods for class: %s." cz)
   (loop [ms (.getMethods ^Class cz)
          mtds (transient {})
          rc (transient [])]
@@ -349,7 +347,7 @@
                       (Attribute. nm)
                       (.add rcl))
                  (catch Throwable e#
-                   (l/exception e#)
+                   (c/exception e#)
                    (->> (.getMessage e#)
                         (Attribute. nm) (.add rcl)))))))
       (getMBeanInfo [_] bi)
@@ -376,13 +374,13 @@
                       (Attribute. nn)
                       (.add rcl))
                  (catch Throwable e#
-                   (l/exception e#)
+                   (c/exception e#)
                    (->> (.getMessage e#)
                         (Attribute. nn) (.add rcl)))))))
       (invoke [_ opName params sig]
         (if-some [^Method mtd (mtdsMap (name-params<>
                                          opName (into [] sig)))]
-          (c/try! (l/debug "jmx-invoke: '%s'\n%s%s\n%s%s"
+          (c/try! (c/debug "jmx-invoke: '%s'\n%s%s\n%s%s"
                            opName "(params) "
                            (seq params) "(sig) " (seq sig))
                   (if (empty? params)

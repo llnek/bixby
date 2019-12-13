@@ -6,22 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.plugs.mvc
+(ns czlab.blutbad.plugs.mvc
 
   (:require [clojure.java.io :as io]
             [clojure.walk :as cw]
             [clojure.string :as cs]
             [czlab.niou.core :as cc]
             [czlab.niou.webss :as ss]
-            [czlab.basal.xpis :as po]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
             [czlab.basal.util :as u]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
             [czlab.nettio.resp :as nr]
-            [czlab.wabbit.plugs.core :as pc])
+            [czlab.blutbad.core :as b])
 
   (:import [clojure.lang APersistentMap]
            [freemarker.template
@@ -117,7 +113,7 @@
      (let [dir (io/file root)]
        (assert (.exists dir)
                (c/fmt "Bad root dir %s." root))
-       (l/info "freemarker root: %s." root)
+       (c/info "freemarker root: %s." root)
        (doto cfg
          (.setDirectoryForTemplateLoading dir)
          (.setObjectWrapper (DefaultObjectWrapper.)))
@@ -138,7 +134,7 @@
 
   ([path cfg model xref?]
    (c/do-with-str [out (StringWriter.)]
-     (l/debug "about to render tpl: %s." path)
+     (c/debug "about to render tpl: %s." path)
      (if-some [t (.getTemplate ^Configuration cfg ^String path)]
        (.process t
                  (if xref? (x->ftl<model> model) model) out)))))
@@ -180,18 +176,18 @@
 
   [{:keys [request] :as res} file]
 
-  (let [plug (xp/get-pluglet request)
-        cfg (xp/gconf plug)
+  (let [plug (c/parent request)
+        cfg (:conf plug)
         fp (io/file file)
         {:keys [uri]} request]
-    (l/debug "serving file: %s." (u/fpath fp))
+    (c/debug "serving file: %s." (u/fpath fp))
     (try (cc/reply-result
            (if (and fp
                     (.exists fp))
              (assoc res :body fp)
              (assoc res :status 404)))
          (catch Throwable _
-           (l/error _ "get: %s." uri)
+           (c/error _ "get: %s." uri)
            (c/try! (-> res
                        (assoc :body nil)
                        (assoc :status 500) cc/reply-result))))))
@@ -202,29 +198,29 @@
   "Load a file from the public folder."
   [{:keys [route] :as evt} res]
 
-  (let [plug (xp/get-pluglet evt)
+  (let [plug (c/parent evt)
         {:as cfg
          :keys [file-access-check?]
          {:keys [public-dir]} :wsite}
-        (xp/gconf plug)
+        (:conf plug)
         home-dir (u/fpath (-> plug
-                              po/parent
-                              xp/get-home-dir))
-        mp (str (some-> route :info :mount))
+                              c/parent
+                              b/get-proc-dir))
         public-dir (b/expand-vars public-dir)
         pub-dir (io/file public-dir)
+        mp (str (:mount route))
         fp (-> (reduce #(cs/replace-first
                           %1 "{}" %2)
                        mp (:groups route))
                strip-url-crap?? c/strim)
         ffile (io/file pub-dir fp)]
-    (l/debug "request for asset: %s." ffile)
+    (c/debug "request for asset: %s." ffile)
     (if (and (c/hgl? fp)
              (or (false? file-access-check?)
                  (cs/starts-with? (u/fpath ffile)
                                   (u/fpath pub-dir))))
       (reply-static res ffile)
-      (do (l/warn "illegal uri access: %s." fp)
+      (do (c/warn "illegal uri access: %s." fp)
           (-> (assoc res :status 403) cc/reply-result)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

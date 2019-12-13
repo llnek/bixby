@@ -6,13 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.shiro.model
+(ns czlab.blutbad.shiro.model
 
   (:require [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
-            [czlab.wabbit.core :as b]
+            [czlab.blutbad.core :as b]
             [czlab.hoard.core :as hc]
             [czlab.hoard.drivers :as hd])
 

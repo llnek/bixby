@@ -6,15 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.mvc.core
+(ns czlab.blutbad.demo.mvc.core
 
   (:require [czlab.niou.core :as cc]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.log :as l]
             [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.mvc :as mvc])
+            [czlab.blutbad.core :as b]
+            [czlab.blutbad.plugs.mvc :as mvc])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ftl-context
@@ -38,10 +35,10 @@
 
   (c/do-with
     [ch (:socket evt)]
-    (let [ri (get-in evt [:route :info])
+    (let [ri (:route evt)
           tpl (:template ri)
-          plug (xp/get-pluglet evt)
-          co (po/parent plug)
+          plug (c/parent evt)
+          co (c/parent plug)
           {:keys [data ctype]}
           (mvc/load-template co tpl (ftl-context))]
       (->> (-> (cc/res-header-set res "content-type" ctype)

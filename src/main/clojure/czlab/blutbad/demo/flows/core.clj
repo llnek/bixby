@@ -6,12 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.flows.core
+(ns czlab.blutbad.demo.flows.core
 
-  (:require [czlab.wabbit.xpis :as xp]
-            [czlab.flux.core :as wf]
+  (:require [czlab.flux.core :as wf]
             [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po])
+            [czlab.blutbad.core :as b]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -67,13 +66,13 @@
 (c/def- prov-ami
   (wf/while<>
     #(let [job %
-           v (po/getv job :ami_count)
+           v (c/getv job :ami_count)
            c (if (some? v) (inc v) 0)]
-       (po/setv job :ami_count c)
+       (c/setv job :ami_count c)
        (< c 3))
     #(c/do#nil
        (let [job %2
-             v (po/getv job :ami_count)
+             v (c/getv job :ami_count)
              c (if (some? v) v 0)]
          (if (== 2 c)
            (c/prn!! "step(3): granted permission for user %s"
@@ -88,13 +87,13 @@
 (c/def- prov-vol
   (wf/while<>
     #(let [job %
-           v (po/getv job :vol_count)
+           v (c/getv job :vol_count)
            c (if (some? v) (inc v) 0)]
-       (po/setv job :vol_count c)
+       (c/setv job :vol_count c)
        (< c 3))
     #(c/do#nil
        (let [job %2
-             v (po/getv job :vol_count)
+             v (c/getv job :vol_count)
              c (if (some? v) v 0)]
          (if (== c 2)
            (c/prn!! "step(3'): granted permission for user %s"
@@ -109,13 +108,13 @@
 (c/def- save-sdb
   (wf/while<>
     #(let [job %
-           v (po/getv job :wdb_count)
+           v (c/getv job :wdb_count)
            c (if (some? v) (inc v) 0)]
-          (po/setv job :wdb_count c)
+          (c/setv job :wdb_count c)
           (< c 3))
     #(c/do#nil
        (let [job %2
-             v (po/getv job :wdb_count)
+             v (c/getv job :wdb_count)
              c (if (some? v) v 0)]
          (if (== c 2)
            (c/prn!! "step(4): wrote stuff to database successfully")
@@ -157,14 +156,13 @@
 
   ;; this workflow is a small (4 step) workflow, with the 3rd step (Provision) being
   ;; a split, which forks off more steps in parallel.
-  (let [p (xp/get-pluglet evt)
-        s (po/parent p)
-        c (xp/get-scheduler s)]
+  (let [p (c/parent evt)
+        s (c/parent p)
+        c (b/scheduler s)]
     (wf/exec (wf/workflow*
                (wf/group<> (auth-user)
                            get-profile provision final-test)) (wf/job<> c nil evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

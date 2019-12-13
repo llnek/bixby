@@ -6,13 +6,12 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.http.formpost
+(ns czlab.blutbad.demo.http.formpost
 
-  (:require [czlab.wabbit.xpis :as xp]
+  (:require [czlab.blutbad.core :as b]
             [czlab.niou.core :as cc]
-            [czlab.niou.upload :as cu]
-            [czlab.basal.log :as l]
-            [czlab.basal.core :as c])
+            [czlab.basal.core :as c]
+            [czlab.niou.upload :as cu])
 
   (:import [org.apache.commons.fileupload FileItem]
            [java.io File]

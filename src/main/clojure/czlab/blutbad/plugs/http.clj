@@ -6,28 +6,24 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.plugs.http
+(ns czlab.blutbad.plugs.http
 
   "Implementation for HTTP/MVC service."
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.nettio.core :as nc]
-            [czlab.nettio.server :as sv]
             [czlab.niou.util :as ct]
             [czlab.niou.core :as cc]
             [czlab.niou.webss :as ss]
             [czlab.niou.routes :as cr]
-            [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
             [czlab.twisty.ssl :as ssl]
             [czlab.twisty.codec :as co]
-            [czlab.wabbit.plugs.core :as pc]
-            [czlab.wabbit.plugs.mvc :as mvc]
             [czlab.basal.util :as u]
-            [czlab.basal.xpis :as po]
-            [czlab.basal.log :as l]
             [czlab.basal.io :as i]
+            [czlab.nettio.core :as nc]
+            [czlab.nettio.server :as sv]
+            [czlab.blutbad.core :as b]
+            [czlab.blutbad.plugs.mvc :as mvc]
             [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.niou.core WsockMsg Http1xMsg]
@@ -95,17 +91,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-type WsockMsg
-  po/Idable
+  c/Idable
   (id [me] (:id me))
-  xp/PlugletMsg
-  (get-pluglet [me] (:source me)))
+  c/Hierarchical
+  (parent [me] (:source me)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-type Http1xMsg
-  po/Idable
+  c/Idable
   (id [me] (:id me))
-  xp/PlugletMsg
-  (get-pluglet [me] (:source me)))
+  c/Hierarchical
+  (parent [me] (:source me)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn scan-basic-auth
@@ -126,8 +122,7 @@
 
   (try (nc/reply-status (:socket evt) 500)
        (catch ClosedChannelException _)
-         ;(l/warn "channel closed already."))
-       (catch Throwable t# (l/exception t#))))
+       (catch Throwable t# (c/exception t#))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wsock-event<>
@@ -145,20 +140,19 @@
 
   [plug ch req]
 
-  (let [{:keys [cookies]
-         {:keys [info]} :route} req
+  (let [{:keys [cookies route]} req
         {:as cfg
          :keys [want-session?]
-         {:keys [macit?]} :session} (xp/gconf plug)]
+         {:keys [macit?]} :session} (:conf plug)]
     (assoc req
            :source plug
            :stale? false
            :id (str "HttpMsg#" (u/seqint2))
-           :session (if (and (:session? info)
-                             (c/!false? want-session?))
+           :session (if (and (c/!false? want-session?)
+                             (get-in route [:route :session?]))
                        (ss/upstream (-> plug
-                                        po/parent
-                                        xp/pkey-bytes) cookies macit?)))))
+                                        c/parent
+                                        b/pkey-bytes) cookies macit?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
@@ -176,28 +170,6 @@
   [evt] (if (c/sas? cc/HttpMsgGist evt)
           (let [res (cc/http-result evt)] (fn [h e] (h e res)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- boot!
-
-  [plug]
-
-  (let [asset! #'czlab.wabbit.plugs.mvc/asset-loader
-        {:as cfg :keys [wait-millis]} (xp/gconf plug)]
-    (l/debug "boot! http-plug: %s." cfg)
-    (sv/web-server-module<>
-      (assoc cfg
-             :user-cb
-             #(let [ev (evt<> plug (:socket %1) %1)
-                    {:keys [route uri]} %1
-                    {:keys [mount $handler]} route
-                    hd (if (c/hgl? mount) asset! $handler)]
-                (l/debug "route=%s." route)
-                (if route
-                  (pc/dispatch! ev
-                                {:handler hd :dispfn (funky ev)})
-                  (pc/error! ev
-                             (Exception. (c/fmt "Bad route uri: %s" uri)))))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn p-error
 
@@ -205,7 +177,29 @@
   ;; 500 or 503
   (try (nc/reply-status socket 500)
        (finally
-         (l/warn "processing orphan/error event: %s." error))))
+         (c/warn "processing orphan/error event: %s." error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- boot!
+
+  [plug]
+
+  (let [asset! #'czlab.blutbad.plugs.mvc/asset-loader
+        {:as cfg :keys [wait-millis]} (:conf plug)]
+    (c/debug "boot! http-plug: %s." cfg)
+    (sv/web-server-module<>
+      (assoc cfg
+             :user-cb
+             #(let [ev (evt<> plug (:socket %1) %1)
+                    {:keys [route uri]} %1
+                    {:keys [mount handler]} route
+                    hd (if (c/hgl? mount) asset! handler)]
+                (c/debug "route=%s." route)
+                (if route
+                  (b/dispatch ev
+                              {:handler hd :dispfn (funky ev)})
+                  (p-error ev
+                           (Exception. (c/fmt "Bad route uri: %s" uri)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn discarder!
@@ -217,10 +211,9 @@
 (defn- basicfg
 
   "Basic http config."
-  [plug conf cfg0]
+  [server conf cfg0]
 
-  (let [svr (po/parent plug)
-        {:as cfg
+  (let [{:as cfg
          :keys [passwd
                 routes server-key port]} (merge conf cfg0)]
     (if (c/hgl? server-key)
@@ -232,58 +225,47 @@
                    (if (c/hgl? server-key) 443 80))
            :routes (load-routes?? routes)
            :server-key server-key
-           :passwd (->> svr
-                        xp/pkey-chars
+           :passwd (->> server
+                        b/pkey-chars
                         (co/pwd<> passwd) co/pw-text))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- pluglet
-
-  [server _id spec]
-  (let [impl (atom {:info (:info spec)
-                    :conf (:conf spec)
-                    :timer (Timer. true)})]
-    (reify
-      xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :$handler]))
-      (err-handler [_] (get-in @impl [:conf :$error]))
-      (gconf [_] (:conf @impl))
-      po/Hierarchical
-      (parent [_] server)
-      po/Idable
-      (id [_] _id)
-      po/Initable
-      (init [me arg]
-        (let [cfg (-> (basicfg me
-                               (:conf @impl) arg)
-                      b/expand-vars* b/prevar-cfg)
-              {:keys [public-dir page-dir]} (:wsite cfg)
-              pub (io/file (str public-dir) (str page-dir))]
-          (l/info (str "http-plug: page-dir= %s.\n"
-                       "http-plug: pub-dir= %s.") page-dir pub)
-          (swap! impl
-                 assoc
-                 :conf
-                 (assoc cfg :ftl-cfg (mvc/ftl-config<> pub))) me))
-      po/Finzable
-      (finz [me] (po/stop me) me)
-      po/Startable
-      (start [_] (po/start _ nil))
-      (start [me arg]
-        (let [w (boot! me)]
-          (swap! impl assoc :boot w)
-          (po/start w (:conf @impl)) me))
-      (stop [me]
-        (some-> (:boot @impl) po/stop) me))))
+(defrecord HTTPPlugin [server _id info conf]
+  c/Hierarchical
+  (parent [_] server)
+  c/Idable
+  (id [_] _id)
+  c/Initable
+  (init [me arg]
+    (let [{:as cfg
+           {:keys[public-dir page-dir]} :wsite}
+          (b/expand-vars* (basicfg server (:conf me)) arg)
+          pub (io/file (str public-dir) (str page-dir))]
+      (c/info (str "http-plug: page-dir= %s.\n"
+                   "http-plug: pub-dir= %s.") page-dir pub)
+      (update-in me
+                 [:conf]
+                 #(assoc cfg :ftl-cfg (mvc/ftl-config<> pub)))))
+  c/Finzable
+  (finz [me] (c/stop me))
+  c/Startable
+  (stop [me]
+    (some-> (:boot me) c/stop) me)
+  (start [_]
+    (c/start _ nil))
+  (start [me arg]
+    (let [w (boot! me)
+          me2 (assoc me :boot w)]
+      (c/start w (:conf me2)) me2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def HTTPSpec
   {:info {:name "Web Site"
           :version "1.0.0"}
-   :conf {:$error :czlab.wabbit.plugs.http/p-error
-          :max-mem-size (* 1024 1024 4)
+   :conf {:max-mem-size (* 1024 1024 4)
           :$pluggable ::http<>
-          :$handler nil
+          :$error ::p-error
+          :$action nil
           :max-msg-size -1
           :wait-millis 0
           :sock-time-out 0
@@ -292,22 +274,22 @@
           :server-key ""
           :passwd ""
           :use-etags? false
-          :wsock-path ""
-          ;;:want-session? true
+          ;:wsock-path ""
+          ;:want-session? true
           :session {;;4weeks
                     :max-age-secs 2419200
                     ;;1week
                     :max-idle-secs 604800
-                    :is-hidden? true
+                    :hidden? true
                     :ssl-only? false
-                    :macit? false
+                    :crypt? false
                     :web-auth? true
                     :domain ""
                     :domainPath "/"}
-          :wsite {:public-dir "${wabbit.user.dir}/public"
+          :wsite {:public-dir "${blutbad.user.dir}/public"
                   :media-dir "res"
                   :page-dir "htm"
-                  :js-dir "jsc"
+                  :js-dir "src"
                   :css-dir "css"}
           :routes [{:mount "res/{}" :uri "/(favicon\\..+)"}
                    {:mount "{}" :uri "/public/(.*)"}
@@ -316,10 +298,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn http<>
 
-  ([co id spec]
-   (pluglet co id spec))
   ([_ id]
-   (http<> _ id HTTPSpec)))
+   (http<> _ id HTTPSpec))
+
+  ([co id {:keys [info conf]}]
+   (HTTPPlugin. co id info conf)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

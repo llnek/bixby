@@ -6,20 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.cons.con7
+(ns czlab.blutbad.cons.con7
 
   (:gen-class)
 
   (:require [czlab.table.core :as tbl]
-            [czlab.wabbit.core :as b]
+            [czlab.blutbad.core :as b]
             [clojure.java.io :as io]
             [io.aviso.ansi :as ansi]
-            [czlab.wabbit.cons.con2 :as c2]
-            [czlab.wabbit.cons.con1 :as c1]
-            [czlab.basal.cmenu :as cm]
-            [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
+            [czlab.basal.util :as u]
+            [czlab.blutbad.cons.con1 :as c1]
+            [czlab.blutbad.cons.con2 :as c2]
             [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.basal DataError]
@@ -34,15 +32,17 @@
   "Collect all cmdline usage messages."
   [rcb pod?]
 
-  (let [arr '(["usage.gen"] [ "usage.gen.desc"]
-              ["usage.version"] [ "usage.version.desc"]
-              ["usage.testjce"] ["usage.testjce.desc"]
-              ["usage.help"] ["usage.help.desc"])
-        arr (if pod?
-              (concat '(["usage.debug"] ["usage.debug.desc"]
-                        ["usage.start"] ["usage.start.desc"]
-                        ["usage.stop"] ["usage.stop.desc"]) arr) arr)]
-    (partition 2 (apply u/rstr* rcb arr))))
+  (->> (concat (if-not pod?
+                 '()
+                 '(["usage.debug"] ["usage.debug.desc"]
+                   ["usage.start"] ["usage.start.desc"]
+                   ["usage.stop"] ["usage.stop.desc"]))
+               '(["usage.gen"] [ "usage.gen.desc"]
+                 ["usage.version"] [ "usage.version.desc"]
+                 ["usage.testjce"] ["usage.testjce.desc"]
+                 ["usage.help"] ["usage.help.desc"]))
+       (apply u/rstr* rcb)
+       (partition 2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- usage
@@ -60,7 +60,7 @@
         rcb (b/get-rc-base)]
     (-> (b/banner) ansi/bold-yellow c/prn!!)
     (c/prn! "%s\n\n"
-            (u/rstr rcb "wabbit.desc"))
+            (u/rstr rcb "blutbad.desc"))
     (c/prn! "%s\n"
             (u/rstr rcb "cmds.header"))
     ;; prepend blanks to act as headers
@@ -81,7 +81,7 @@
   "Main function."
   [& args]
 
-  (let [[options args] (cm/parse-options args)
+  (let [[options args] (u/parse-options args)
         ver (u/load-resource b/c-verprops)
         rcb (u/get-resource b/c-rcb-base)
         home (io/file (or (:home options)
@@ -90,14 +90,14 @@
         pod? (i/file-ok? cf)
         verStr (c/stror (some-> ver
                                 (.getString "version")) "?")]
-    (u/set-sys-prop! "wabbit.user.dir" (u/fpath home))
-    (u/set-sys-prop! "wabbit.version" verStr)
+    (u/set-sys-prop! "blutbad.user.dir" (u/fpath home))
+    (u/set-sys-prop! "blutbad.version" verStr)
     (b/set-rc-base! rcb)
     (try (if (empty? args)
            (u/throw-BadData "CmdError!"))
          (let [[f _] (->> (c/_1 args)
                           keyword
-                          c1/wabbit-tasks)]
+                          c1/blutbad-tasks)]
            (if (fn? f)
              (f (drop 1 args))
              (u/throw-BadData "CmdError!")))
@@ -107,5 +107,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

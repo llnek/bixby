@@ -6,19 +6,18 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.shiro.realm
+(ns czlab.blutbad.shiro.realm
 
   (:gen-class
    :extends org.apache.shiro.realm.AuthorizingRealm
-   :name czlab.wabbit.shiro.realm.JdbcRealm
+   :name czlab.blutbad.shiro.realm.JdbcRealm
    :init my-init
    :constructors {[] []}
    :exposes-methods { }
    :state my-state)
 
-  (:require [czlab.wabbit.shiro.core :as sh]
-            [czlab.wabbit.shiro.model :as mo]
-            [czlab.basal.log :as l]
+  (:require [czlab.blutbad.shiro.core :as sh]
+            [czlab.blutbad.shiro.model :as mo]
             [czlab.basal.core :as c]
             [czlab.hoard.core :as hc]
             [czlab.hoard.rels :as hr]
@@ -77,5 +76,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

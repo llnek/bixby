@@ -6,13 +6,11 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.demo.tcpip.core
+(ns czlab.blutbad.demo.tcpip.core
 
-  (:require [czlab.basal.log :as l]
-            [czlab.basal.io :as i]
+  (:require [czlab.basal.io :as i]
             [czlab.basal.core :as c]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.xpis :as xp])
+            [czlab.blutbad.core :as b])
 
   (:import [java.io DataOutputStream DataInputStream BufferedInputStream]
            [java.net Socket]
@@ -29,12 +27,12 @@
 
   [evt]
 
-  (let [plug (xp/get-pluglet evt)
-        svr (po/parent plug)
-        tcp (xp/get-plugin svr :sample)
+  (let [plug (c/parent evt)
+        svr (c/parent plug)
+        tcp (b/get-plugin svr :sample)
         s (.replace text-msg "${TS}" (str (Date.)))
         {:keys [host port]}
-        (xp/gconf tcp)
+        (:conf tcp)
         bits (.getBytes s "utf-8")]
     (c/prn!! "TCP Client: about to send message= %s" s)
     (with-open [soc (Socket. ^String host (int port))]

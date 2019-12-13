@@ -6,15 +6,14 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.cons.con2
+(ns czlab.blutbad.cons.con2
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
-            [czlab.basal.log :as l]
             [czlab.basal.io :as i]
             [czlab.basal.core :as c]
             [czlab.basal.util :as u]
-            [czlab.wabbit.core :as b])
+            [czlab.blutbad.core :as b])
 
   (:import [java.io File]))
 
@@ -32,14 +31,15 @@
 ;;simulate what lein new template does
 (defn create-pod
 
-  "Create a new wabbit application."
+  "Create a new blutbad application."
   [name & args]
 
-  (c/prn!! "Generating new 'wabbit' project...")
-  (try (let [dir (c/_2 (drop-while #(not= "--to-dir" %) args))
+  (c/prn!! "Generating new 'blutbad' project...")
+  (try (let [dir (c/_2 (drop-while
+                         #(c/!eq? "--to-dir" %) args))
              options {:renderer-fn sc/render-string
                       :force? (some? (c/_1 (drop-while
-                                             #(not= "--force" %) args)))
+                                             #(c/!eq? "--force" %) args)))
                       :dir (or dir (-> (u/get-user-dir) (io/file name) .getPath))}]
          ;;(c/prn!! "opts = %s" options)
          ;TODO:

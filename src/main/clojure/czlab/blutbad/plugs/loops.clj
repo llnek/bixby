@@ -6,19 +6,15 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.wabbit.plugs.loops
+(ns czlab.blutbad.plugs.loops
 
   "Basic functions for loopable services."
 
-  (:require [czlab.wabbit.core :as b]
-            [czlab.wabbit.xpis :as xp]
-            [czlab.basal.dates :as dt]
+  (:require [czlab.blutbad.core :as b]
             [czlab.basal.proc :as p]
-            [czlab.basal.util :as u]
             [czlab.basal.io :as i]
-            [czlab.basal.log :as l]
-            [czlab.basal.xpis :as po]
-            [czlab.wabbit.plugs.core :as pc]
+            [czlab.basal.util :as u]
+            [czlab.basal.dates :as dt]
             [czlab.basal.core :as c :refer [is?]])
 
   (:import [java.util Date Timer TimerTask]))
@@ -33,7 +29,7 @@
   [^Timer timer [dw ds] ^long intv func]
 
   (when (c/spos? intv)
-    (l/info "scheduling a *repeating* timer: %dms" intv)
+    (c/info "scheduling a *repeating* timer: %dms" intv)
     (c/do-with [tt (u/tmtask<> func)]
       (if (is? Date dw)
         (.schedule timer tt ^Date dw intv)
@@ -47,7 +43,7 @@
   ^TimerTask
   [^Timer timer [dw ds] func]
 
-  (l/info "scheduling a *one-shot* timer at %s" (i/fmt->edn [dw ds]))
+  (c/info "scheduling a *one-shot* timer at %s" (i/fmt->edn [dw ds]))
   (c/do-with [tt (u/tmtask<> func)]
     (if (is? Date dw)
       (.schedule timer tt ^Date dw)
@@ -62,26 +58,26 @@
   [timer wakeup {:keys [interval-secs
                         delay-when delay-secs]} repeat?]
 
-  (let [d [delay-when (pc/s2ms delay-secs)]]
+  (let [d [delay-when (b/s2ms delay-secs)]]
     (if-not (and repeat?
                  (c/spos? interval-secs))
       (cfg-once timer d wakeup)
-      (cfg-repeat timer d (pc/s2ms interval-secs) wakeup))))
+      (cfg-repeat timer d (b/s2ms interval-secs) wakeup))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn schedule-threaded-loop
 
   [plug waker]
 
-  (let [{:keys [interval-secs] :as cfg}
-        (xp/gconf plug)]
+  (let [{:as C
+         :keys [interval-secs]} (:conf plug)]
     (c/do-with
       [loopy (volatile! true)]
-      (let [ms (pc/s2ms interval-secs)
+      (let [ms (b/s2ms interval-secs)
             w (c/fn_0 (p/async!
                         #(while @loopy
                            (waker plug) (u/pause ms))))]
-        (cfg-timer (Timer. true) w cfg false)))))
+        (cfg-timer (Timer. true) w C false)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn stop-threaded-loop!
@@ -90,10 +86,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord TimerMsg []
-  po/Idable
+  c/Idable
   (id [_] (:id _))
-  xp/PlugletMsg
-  (get-pluglet [_] (:source _)))
+  c/Hierarchical
+  (parent [_] (:source _)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
@@ -105,78 +101,67 @@
               :tstamp (u/system-time)
               :id (str "TimerMsg#" (u/seqint2))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- xxx-timer
-
-  [plug _id spec repeat?]
-
-  (let [impl (atom {:ttask nil
-                    :conf (:conf spec)
-                    :info (:info spec)})]
-    (reify
-      xp/Pluglet
-      (user-handler [_] (get-in @impl [:conf :$handler]))
-      (err-handler [_] (get-in @impl [:conf :$error]))
-      (gconf [_] (:conf @impl))
-      po/Hierarchical
-      (parent [me] plug)
-      po/Idable
-      (id [_] _id)
-      po/Initable
-      (init [me arg]
-        (swap! impl
-               update-in
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defrecord TimerPlugin [server _id info conf repeat?]
+  c/Hierarchical
+  (parent [me] server)
+  c/Idable
+  (id [_] _id)
+  c/Initable
+  (init [me arg]
+    (update-in me
                [:conf]
-               #(-> (merge % arg)
-                    b/expand-vars
-                    b/prevar-cfg)) me)
-      po/Finzable
-      (finz [me] (po/stop me) me)
-      po/Startable
-      (stop [me]
-        (u/cancel-timer-task! (:ttask @impl)) me)
-      (start [_] (po/start _ nil))
-      (start [me arg]
-        (swap! impl
-               assoc
-               :ttask
-               (cfg-timer (Timer. true)
-                          #(pc/dispatch!
-                             (evt<> me repeat?))
-                          (:conf @impl) repeat?)) me))))
+               #(b/expand-vars* (merge % arg))) me)
+  c/Finzable
+  (finz [me] (c/stop me) me)
+  c/Startable
+  (stop [me]
+    (u/cancel-timer-task! (:ttask me)) me)
+  (start [_]
+    (c/start _ nil))
+  (start [me arg]
+    (assoc me
+           :ttask
+           (cfg-timer (Timer. true)
+                      #(b/dispatch
+                         (evt<> me repeat?)) (:conf me) repeat?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def RepeatingTimerSpec
   {:info {:name "Repeating Timer"
           :version "1.0.0"}
    :conf {:$pluggable ::RepeatingTimer
-          :interval-secs 300
+          :$error nil
+          :$action nil
           :delay-secs 0
-          :$handler nil}})
+          :interval-secs 300}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def OnceTimerSpec
   {:info {:name "One Shot Timer"
           :version "1.0.0"}
    :conf {:$pluggable ::OnceTimer
-          :delay-secs 0
-          :$handler nil}})
+          :$error nil
+          :$action nil
+          :delay-secs 0}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn repeating-timer<>
 
-  ([_ id spec]
-   (xxx-timer _ id spec true))
+  ([ctr id {:keys [info conf]}]
+   (TimerPlugin. ctr id info conf true))
+
   ([_ id]
    (repeating-timer<> _ id RepeatingTimerSpec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn once-timer<>
 
-  ([_ id spec]
-   (xxx-timer _ id spec false))
   ([_ id]
-   (once-timer<> _ id OnceTimerSpec)))
+   (once-timer<> _ id OnceTimerSpec))
+
+  ([ctr id {:keys [info conf]}]
+   (TimerPlugin. ctr id info conf false)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
