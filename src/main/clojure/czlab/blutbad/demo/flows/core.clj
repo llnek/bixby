@@ -150,7 +150,7 @@
   (wf/decision<> #(c/do#true %) reply-user error-user))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
 
   [evt]
 

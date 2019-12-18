@@ -21,29 +21,28 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo-formpost
 
-  [evt res]
+  [evt]
 
-  (c/do-with
-    [ch (:socket evt)]
-    (let [data (:body evt)
-          stuff (some-> ^XData data .content)]
-      (if (c/sas? cu/ULFormItems stuff)
-        (doseq [^FileItem fi (cu/get-all-items stuff)]
-          (c/prn!! "Fieldname: %s" (.getFieldName fi))
-          (c/prn!! "Name: %s" (.getName fi))
-          (c/prn!! "Formfield: %s" (.isFormField fi))
-          (c/prn!! "Field-size: %s" (.getSize fi))
-          (if (.isFormField fi)
-            (c/prn!! "Field value: %s" (.getString fi))
-            (if-some [^File xs (cu/get-field-file fi)]
-              (c/prn!! "Field file = %s"
-                       (.getCanonicalPath xs)))))
-         (c/prn!! "Error: data is not ULFormItems."))
-      ;; associate this result with the orignal event
-      ;; this will trigger the http response
-      (cc/reply-result res))))
+  (let [^XData data (:body evt)
+        res (cc/http-result evt)
+        stuff (some-> data .content)]
+    (if (satisfies? cu/ULFormItems stuff)
+      (doseq [^FileItem fi (cu/get-all-items stuff)]
+        (c/prn!! "Fieldname: %s" (.getFieldName fi))
+        (c/prn!! "Name: %s" (.getName fi))
+        (c/prn!! "Formfield: %s" (.isFormField fi))
+        (c/prn!! "Field-size: %s" (.getSize fi))
+        (if (.isFormField fi)
+          (c/prn!! "Field value: %s" (.getString fi))
+          (if-some [^File xs (cu/get-field-file fi)]
+            (c/prn!! "Field file = %s"
+                     (.getCanonicalPath xs)))))
+      (c/prn!! "Error: data is not ULFormItems."))
+    ;; associate this result with the orignal event
+    ;; this will trigger the http response
+    (cc/reply-result res)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

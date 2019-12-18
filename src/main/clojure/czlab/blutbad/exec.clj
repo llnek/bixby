@@ -21,7 +21,8 @@
             [czlab.hoard.core :as h]
             [czlab.blutbad.core :as b]
             [czlab.twisty.codec :as cc]
-            [czlab.hoard.connect :as hc])
+            [czlab.hoard.connect :as hc]
+            [czlab.blutbad.jmx.core :as jmx])
 
   (:import [java.io File StringWriter]
            [java.util Date Locale]
@@ -46,23 +47,11 @@
   "Create a db-pool from this config, or default."
   [ctx gid]
 
-  (when-some
-    [p (get-dbpool?? ctx gid)]
-    (try (hc/dbio<+> p (:schema @ctx))
-         (finally
-           (c/debug "using db-config: %s." (i/fmt->edn p))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- sys-finz
-
-  "Release all system resources."
-  [exec ctx]
-
-  (c/info "releasing sys-resources...")
-  (doseq [[k v] (:dbps @ctx)]
-    (c/finz v)
-    (c/debug "finz'ed dbpool %s." k))
-  (some-> exec b/scheduler c/finz))
+  (try
+    (some-> (get-dbpool?? ctx gid)
+            (hc/dbio<+> (:schema @ctx)))
+    (finally
+      (c/debug "using db-config: %s." gid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xref-plugs
@@ -70,7 +59,8 @@
   "Scan and instantiate plugins from the config."
   [exec ctx]
 
-  (let [jmx (some->> (get-in @ctx [:conf :jmx])
+  (let [jmx (some->> (get-in @ctx
+                             [:conf :jmx])
                      (b/plugin<> exec :$jmx))
         ps (c/preduce<map>
              #(let [[k cfg] %2
@@ -79,11 +69,14 @@
                   %1 (assoc! %1 (c/id p) p)))
              (get-in @ctx [:conf :plugins]))
         ps (if (nil? jmx) ps (assoc ps (c/id jmx) jmx))]
-    (swap! ctx update-in [:conf] assoc :plugins ps)
+    (swap! ctx
+           #(update-in % [:conf] assoc :plugins ps))
     (c/info "+++++++++++++++++++++++++ plugins +++++++++++++++++++")
-    (doseq [[k _]
+    (doseq [[k v]
             (get-in @ctx
-                    [:conf :plugins])] (c/info "plugin id = %s." k))
+                    [:conf :plugins])]
+      (c/info "plugin id = %s." k)
+      (c/info "%s" (:conf v)))
     (c/info "+++++++++++++++++++++++++ plugins +++++++++++++++++++")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +101,8 @@
             (filter (fn [[k v :as xs]]
                       (if-not (false? (:enabled? v)) xs))
                     (get-in @ctx [:conf :rdbms])))]
-    (try (update-in @ctx [:conf] assoc :rdbms m)
+    (try (swap! ctx
+                #(update-in % [:conf] assoc :rdbms m))
          (finally
            (c/debug "db [dbpools]\n%s" (i/fmt->edn m))))))
 
@@ -119,38 +113,44 @@
   [exec ctx]
 
   (let [{:keys [locale version conf cljrt]} @ctx
-        {:keys [info data-model]} conf
-        mcz (c/kw->str (:main info))
+        {:keys [env jmx info data-model]} conf
+        {:keys [main]} info
         id (c/id exec)
+        sys' (merge {:threads (u/pthreads)} env)
+        jmx' (-> jmx/JMXSpec :conf (merge jmx))
         res (->> (c/fmt b/c-rcprops
                         (.getLanguage ^Locale locale))
                  (io/file (b/home-dir exec) b/dn-etc))]
+    (swap! ctx
+           #(update-in %
+                       [:conf]
+                       assoc :jmx jmx' :env sys'))
     ;load application resources
     (when (i/file-read? res)
       (b/put-rc-bundle! id (u/load-resource res))
       (c/info "loaded i18n resource: %s." (str res)))
     ;; build the user data-models?
-    (c/when-some+
-      [dmCZ (c/kw->str data-model)]
-      (c/info "schema-func: %s." dmCZ)
+    (when (some? data-model)
+      (c/info "schema-func: %s." data-model)
       (if-some
         [sc (c/try! (u/call* cljrt
-                             dmCZ
+                             data-model
                              (c/vargs* Object @ctx)))]
         (swap! ctx assoc :schema sc)
-        (c/raise! "Invalid data-model schema: %s!" dmCZ)))
+        (c/raise! "Invalid data-model schema: %s!" data-model)))
     ;any databases?
     (init-dbs?? exec ctx)
     ;run the main app function, if any
-    (when (c/hgl? mcz)
-      (c/info "main func: %s." mcz)
-      (u/call* cljrt mcz (c/vargs* Object @ctx)))
-    ;ok
+    (when (c/hgl? (str main))
+      (c/info "main func: %s." main)
+      (u/call* cljrt main (c/vargs* Object @ctx)))
     ;start the main scheduler
-    (c/activate (b/scheduler exec))
+    (swap! ctx
+           assoc
+           :cpu (-> (p/scheduler<> id sys') c/activate))
     ;build plugins
     (xref-plugs exec ctx)
-    (c/info "execvisor: (%s) initialized - ok." id)))
+    (c/info "execvisor: (%s) initialized - ok." id) exec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- execvisor<>
@@ -158,8 +158,7 @@
   "Create an Execvisor."
   [ctx]
 
-  (let [cpu (p/scheduler<>)
-        _start-time (u/system-time)
+  (let [_start-time (u/system-time)
         _id (c/x->kw "exec#" (u/seqint2))]
     (reify
       c/Idable
@@ -168,55 +167,76 @@
       (version [_] (:version @ctx))
       c/Initable
       (init [me arg]
-        (let [{:keys [encoding home-dir]} @arg]
-          (c/doto->>
-            (io/file home-dir
-                     b/dn-etc "mime.properties")
-            mi/setup-cache
-            (c/info "loaded mime#cache: %s."))
-          (u/set-sys-prop!
-            "file.encoding" encoding)
-          (init2 me arg) me))
+        (let [{:keys [encoding home-dir]} @arg
+              mf (io/file home-dir
+                          b/dn-etc
+                          "mime.properties")
+              rc (mi/setup-cache mf)]
+          (u/set-sys-prop! "file.encoding" encoding)
+          (c/info "loaded mime#cache: %s."
+                  (if (c/is? File rc) rc "built-in"))
+          (init2 me arg)))
       c/Startable
       (start [me]
         (.start me nil))
       (start [me _]
-        (let [plugins (get-in @ctx
-                              [:conf :plugins])]
-          (c/info "execvisor starting plugins...")
-          (doseq [[k v] plugins]
-            (c/start v)
-            (c/info "plugin: %s -> start()" k))
-          (some-> (:$jmx plugins)
-                  (b/jmx-reg me
-                             "czlab"
-                             "blutbad"
-                             ["root=execvisor"]))
+        (c/info "execvisor starting plugins...")
+        (let [ps (into {}
+                       (map #(let [[k v] %
+                                   v' (c/start v)]
+                               (c/info "plugin-start: %s" k)
+                               (c/info "%s" (:conf v))
+                               [k (if (not= k :$jmx)
+                                    v'
+                                    (c/_2 (b/jmx-reg v'
+                                                     me
+                                                     "czlab"
+                                                     "blutbad"
+                                                     ["root=execvisor"])))])
+                            (get-in @ctx [:conf :plugins])))]
+          (swap! ctx
+                 #(update-in %
+                             [:conf] assoc :plugins ps))
           (c/info "execvisor started - ok.")))
       (stop [me]
         (c/info "execvisor stopping plugins...")
-        (doseq [[k v]
-                (get-in @ctx
-                        [:conf :plugins])]
-          (c/stop v)
-          (c/info "plugin: %s -> stop()" k))
-        (c/info "execvisor stopped - ok."))
+        (let [ps (into {} (map #(let [[k v] %
+                                      v' (c/stop v)]
+                                  (c/info "plugin-stop: %s" k)
+                                  [k v'])
+                               (get-in @ctx [:conf :plugins])))]
+          (swap! ctx
+                 #(update-in %
+                             [:conf] assoc :plugins ps))
+          (c/info "execvisor stopped - ok.")))
       c/Finzable
       (finz [me]
         (c/info "execvisor disposing plugins...")
-        (doseq [[k v]
-                (get-in @ctx
-                        [:conf :plugins])]
-          (c/finz v)
-          (c/info "plugin: %s -> finz()" k))
-        (sys-finz me ctx)
-        (c/info "execvisor terminated - ok."))
+        (let [ps (into {} (map #(let [[k v] %
+                                      v' (c/finz v)]
+                                  (c/info "plugin-finz: %s" k)
+                                  [k v'])
+                               (get-in @ctx [:conf :plugins])))
+              ds (into {} (map #(let [[k v] %
+                                      v' (c/finz v)]
+                                  (c/info "db-finz: %s" k)
+                                  [k v'])
+                               (get-in @ctx [:conf :rdbms])))]
+          (swap! ctx
+                 #(update-in %
+                             [:conf]
+                             assoc
+                             :rdbms ds
+                             :plugins ps))
+          (swap! ctx
+                 #(assoc :cpu (c/finz (:cpu %))))
+          (c/info "execvisor terminated - ok.")))
       b/Execvisor
       (start-time [_] _start-time)
       (uptime [_]
         (- (u/system-time) _start-time))
       (cljrt [_] (:cljrt @ctx))
-      (scheduler [_] cpu)
+      (scheduler [_] (:cpu @ctx))
       (home-dir [_] (:home-dir @ctx))
       (locale [_] (:locale @ctx))
       (kill9! [_] (c/funcit?? (:stop! @ctx)))
@@ -234,39 +254,85 @@
       (pkey-chars [_] (-> (get-in @ctx [:conf :info :digest]) i/x->chars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- stop-cli
-
-  "This function will stop the process."
-  [exec ctx]
-
-  #(let [{:keys [stopcli?]} @ctx]
-     (when-not @stopcli?
-       (vreset! stopcli? true)
-       (c/info "stopping blutbad server...")
-       (c/stop exec)
-       (c/finz exec)
-       (shutdown-agents)
-       (c/info "blutbad has stopped - ok."))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- primodial
 
   "Create the execvisor."
-  [ctx]
+  [ctx stopcli?]
 
   (c/info "%s" (c/repeat-str 78 "="))
   (c/info "primodial().")
   (c/info "%s" (c/repeat-str 78 "="))
   (c/do-with
     [e (execvisor<> ctx)]
-    (->> (stop-cli e ctx)
-         (swap! ctx assoc :stop!))
-    (c/init e ctx)
+    (->> #(when-not @stopcli?
+            (vreset! stopcli? true)
+            (c/info "stopping blutbad server...")
+            (c/stop e)
+            (c/finz e)
+            (shutdown-agents)
+            (c/info "blutbad has stopped - ok."))
+         (c/assoc!! ctx :stop!)
+         (c/init e))
     (c/info "%s" (c/repeat-str 78 "*"))
     (c/info "starting blutbad server...")
     (c/info "%s" (c/repeat-str 78 "*"))
     (c/start e)
     (c/info "blutbad started - ok.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- start*
+
+  [home confObj join?]
+
+  (let [{{:keys [encoding]} :info
+         {:keys [country lang]} :locale} confObj
+        stopcli? (volatile! false)
+        ctx (atom {:encoding (c/stror encoding "utf-8")
+                   :home-dir (io/file home)
+                   :cljrt (u/cljrt<>)
+                   :locale (Locale. (c/stror lang "en")
+                                    (c/stror country "US"))
+                   :conf confObj
+                   :pid-file (io/file home "blutbad.pid")
+                   :version (str (some-> b/c-verprops
+                                         u/load-resource
+                                         (.getString "version")))})]
+    ;show class loaders
+    (let [cz (u/get-cldr)]
+      (c/info "app-loader: %s." (type cz))
+      (c/info "sys-loader: %s." (type (.getParent cz))))
+
+    ;show basic info
+    (c/info "blutbad.user.dir = %s." (u/fpath home))
+    (c/info "blutbad.version = %s." (:version @ctx))
+
+    ;set base bundle
+    (c/doto->> (:locale @ctx)
+               (u/get-resource b/c-rcb-base)
+               b/set-rc-base!
+               (c/test-some "base resource"))
+    (c/info "blutbad's i18n.base loaded - ok.")
+
+    ;bring up the app
+    (primodial ctx stopcli?)
+
+    ;keep track of process id
+    (doto ^File
+      (:pid-file @ctx)
+      (i/spit-utf8 (p/process-pid)) .deleteOnExit)
+
+    (c/info "wrote blutbad.pid - ok.")
+    ;install exit function
+    (p/exit-hook (:stop! @ctx))
+    (c/info "added shutdown hook - ok.")
+    (c/info "blutbad is now running...")
+
+    ;block?
+
+    (when join?
+      (loop []
+        (if @stopcli?
+          (shutdown-agents) (do (u/pause 3000) (recur)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config
@@ -277,48 +343,9 @@
    (start-via-config home confObj false))
 
   ([home confObj join?]
-   (let [{{:keys [encoding]} :info
-          {:keys [country lang]} :locale} confObj
-         ctx (atom {:encoding (c/stror encoding "utf-8")
-                    :stopcli? (volatile! false)
-                    :home-dir (io/file home)
-                    :cljrt (u/cljrt<>)
-                    :locale (Locale. (c/stror lang "en")
-                                     (c/stror country "US"))
-                    :conf confObj
-                    :pid-file (io/file home "blutbad.pid")
-                    :version (str (some-> b/c-verprops
-                                          u/load-resource
-                                          (.getString "version")))})]
-     ;show class loaders
-     (let [cz (u/get-cldr)]
-       (c/info "app-loader: %s." (type cz))
-       (c/info "sys-loader: %s." (type (.getParent cz))))
-     ;show basic info
-     (c/info "blutbad.user.dir = %s." (u/fpath home))
-     (c/info "blutbad.version = %s." (:version @ctx))
-     ;set base bundle
-     (c/doto->> (:locale @ctx)
-                (u/get-resource b/c-rcb-base)
-                b/set-rc-base!
-                (c/test-some "base resource"))
-     (c/info "blutbad's i18n.base loaded - ok.")
-     ;bring up the app
-     (primodial ctx)
-     ;keep track of process id
-     (doto ^File
-       (:pid-file @ctx)
-       (i/spit-utf8 (p/process-pid)) .deleteOnExit)
-     (c/info "wrote blutbad.pid - ok.")
-     ;install exit function
-     (p/exit-hook (:stop! @ctx))
-     (c/info "added shutdown hook - ok.")
-     (c/info "blutbad is now running...")
-     ;block?
-     (when join?
-       (loop []
-         (if @(:stopcli? @ctx)
-           (shutdown-agents) (do (u/pause 3000) (recur))))))))
+   (try
+     (start* home confObj join?)
+     (catch Throwable _ (c/exception _)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-cons
@@ -326,14 +353,9 @@
   "Starts blutbad."
   [home]
 
-  (let [cf (io/file home b/cfg-pod-cf)]
-    ;print app banner
-    (-> (b/banner) ansi/bold-yellow c/prn!!)
-    ;check for config file
-    (b/precond-file cf)
-    (c/debug "checking for config file: %s" cf)
-    ;read config file and continue
-    (start-via-config home (b/slurp-conf cf true) true)))
+  (-> (b/banner) ansi/bold-yellow c/prn!!)
+  (c/debug "checking for <app.conf>...")
+  (-> (b/get-conf-file) b/slurp-conf ((partial start-via-config home) true)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -main

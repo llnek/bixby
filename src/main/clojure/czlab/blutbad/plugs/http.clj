@@ -116,6 +116,26 @@
   [routes] (when-not (empty? routes) (cr/load-routes routes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- strip-url-crap??
+
+  "Want to handle case where the url has stuff after the file name.
+   For example:  /public/blab&hhh or /public/blah?ggg."
+  ^String
+  [^String path]
+
+  (let [pos (cs/last-index-of path \/)]
+    (if-not (c/spos? pos)
+      path
+      (let [p1 (cs/index-of path \? pos)
+            p2 (cs/index-of path \& pos)
+            p3 (cond (and (c/spos? p1)
+                          (c/spos? p2))
+                     (min p1 p2)
+                     (c/spos? p1) p1
+                     (c/spos? p2) p2 :else -1)]
+        (if (c/spos? p3) (subs path 0 p3) path)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- resume-on-expiry
 
   [evt]
@@ -143,16 +163,16 @@
   (let [{:keys [cookies route]} req
         {:as cfg
          :keys [want-session?]
-         {:keys [macit?]} :session} (:conf plug)]
+         {:keys [crypt?]} :session} (:conf plug)]
     (assoc req
            :source plug
            :stale? false
            :id (str "HttpMsg#" (u/seqint2))
            :session (if (and (c/!false? want-session?)
-                             (get-in route [:route :session?]))
+                             (:session? route))
                        (ss/upstream (-> plug
                                         c/parent
-                                        b/pkey-bytes) cookies macit?)))))
+                                        b/pkey-bytes) cookies crypt?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
@@ -179,27 +199,64 @@
        (finally
          (c/warn "processing orphan/error event: %s." error))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn asset-loader
+
+  "Load a file from the public folder."
+  [{:keys [uri2] :as evt}]
+
+  (letfn
+    [(reply-static [res file]
+       (cc/reply-result
+         (try (if (i/file-read? file)
+                (cc/res-body-set res file)
+                (cc/res-status-set res 404))
+              (catch Throwable _
+                (c/error _ "get: %s." uri2)
+                (-> res
+                    (cc/res-body-set nil)
+                    (cc/res-status-set 500))))))]
+    (let [[path _] (cc/decoded-path uri2)
+          res (cc/http-result evt)
+          plug (c/parent evt)
+          {:keys [public-dir
+                  uri-prefix
+                  file-access-check?]}
+          (get-in plug [:conf :wsite])
+          pub-dir (io/file public-dir)
+          home-dir (-> plug
+                       c/parent
+                       b/home-dir u/fpath)]
+      (or (if (cs/starts-with? path uri-prefix)
+            (let [fp (cs/replace-first path
+                                       uri-prefix "")
+                  ffile (io/file pub-dir fp)]
+              (c/debug "request for asset: %s." ffile)
+              (if (or (false? file-access-check?)
+                      (cs/starts-with? (u/fpath ffile)
+                                       (u/fpath pub-dir)))
+                (do (reply-static res ffile) true)
+                (do (c/warn "illegal uri access: %s." fp) false))))
+          (-> (cc/res-status-set res 403) cc/reply-result)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- boot!
 
-  [plug]
+  [{:keys [conf] :as plug}]
 
-  (let [asset! #'czlab.blutbad.plugs.mvc/asset-loader
-        {:as cfg :keys [wait-millis]} (:conf plug)]
-    (c/debug "boot! http-plug: %s." cfg)
+  (let [{:keys [uri-prefix]} (:wsite conf)]
     (sv/web-server-module<>
-      (assoc cfg
+      (assoc conf
              :user-cb
              #(let [ev (evt<> plug (:socket %1) %1)
-                    {:keys [route uri]} %1
-                    {:keys [mount handler]} route
-                    hd (if (c/hgl? mount) asset! handler)]
-                (c/debug "route=%s." route)
-                (if route
-                  (b/dispatch ev
-                              {:handler hd :dispfn (funky ev)})
-                  (p-error ev
-                           (Exception. (c/fmt "Bad route uri: %s" uri)))))))))
+                    {:keys [uri2]
+                     {:keys [info]} :route} %1
+                    [path _] (cc/decoded-path uri2)]
+                (->> (if-not (cs/starts-with? path
+                                              uri-prefix)
+                       (:handler info)
+                       #'czlab.blutbad.plugs.http/asset-loader)
+                     (b/dispatch ev)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn discarder!
@@ -211,11 +268,10 @@
 (defn- basicfg
 
   "Basic http config."
-  [server conf cfg0]
+  [cfg server]
 
-  (let [{:as cfg
-         :keys [passwd
-                routes server-key port]} (merge conf cfg0)]
+  (let [{:keys [passwd
+                routes server-key port]} cfg]
     (if (c/hgl? server-key)
       (assert (cs/starts-with? server-key "file:")
               (c/fmt "Bad server-key: %s" server-key)))
@@ -223,7 +279,7 @@
            :port (if (c/spos? port)
                    port
                    (if (c/hgl? server-key) 443 80))
-           :routes (load-routes?? routes)
+           ;:routes (load-routes?? routes)
            :server-key server-key
            :passwd (->> server
                         b/pkey-chars
@@ -239,13 +295,15 @@
   (init [me arg]
     (let [{:as cfg
            {:keys[public-dir page-dir]} :wsite}
-          (b/expand-vars* (basicfg server (:conf me)) arg)
+          (-> (c/merge+ conf arg)
+              (basicfg server)
+              b/expand-vars* b/prevar-cfg)
           pub (io/file (str public-dir) (str page-dir))]
       (c/info (str "http-plug: page-dir= %s.\n"
                    "http-plug: pub-dir= %s.") page-dir pub)
-      (update-in me
-                 [:conf]
-                 #(assoc cfg :ftl-cfg (mvc/ftl-config<> pub)))))
+      (assoc me
+             :conf
+             (assoc cfg :ftl-cfg (mvc/ftl-config<> pub)))))
   c/Finzable
   (finz [me] (c/stop me))
   c/Startable
@@ -254,15 +312,13 @@
   (start [_]
     (c/start _ nil))
   (start [me arg]
-    (let [w (boot! me)
-          me2 (assoc me :boot w)]
-      (c/start w (:conf me2)) me2)))
+    (assoc me :boot (-> (boot! me) (c/start conf)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def HTTPSpec
   {:info {:name "Web Site"
           :version "1.0.0"}
-   :conf {:max-mem-size (* 1024 1024 4)
+   :conf {:max-mem-size (* 4 c/MegaBytes)
           :$pluggable ::http<>
           :$error ::p-error
           :$action nil
@@ -281,19 +337,19 @@
                     ;;1week
                     :max-idle-secs 604800
                     :hidden? true
-                    :ssl-only? false
+                    :secure? false
                     :crypt? false
                     :web-auth? true
                     :domain ""
                     :domainPath "/"}
           :wsite {:public-dir "${blutbad.user.dir}/public"
+                  :file-access-check? true
+                  :uri-prefix "/public/"
                   :media-dir "res"
                   :page-dir "htm"
                   :js-dir "src"
                   :css-dir "css"}
-          :routes [{:mount "res/{}" :uri "/(favicon\\..+)"}
-                   {:mount "{}" :uri "/public/(.*)"}
-                   {:uri "/?" :template  "main/index.html"}]}})
+          :routes [{:name "test" :pattern "/?" :template  "main/index.html"}]}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn http<>

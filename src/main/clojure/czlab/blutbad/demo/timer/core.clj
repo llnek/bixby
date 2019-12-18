@@ -25,11 +25,10 @@
   [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
   [evt]
-  (let [plug (c/parent evt)
-        {:keys [repeat?]} (:conf plug)]
-    (if repeat?
+  (let [plug (c/parent evt)]
+    (if (:repeat? evt)
       (c/prn!! "-----> (%d) repeating-update: %s" (ncount) (Date.))
       (c/prn!! "-----> once-only!!: %s" (Date.)))))
 

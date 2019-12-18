@@ -150,12 +150,12 @@
   "A ASCII banner."
   {:no-doc true :tag String} []
 
-  (str
-    " ______   __       __  __   ______  ______   ______   _____    " "\n"
-    "/\\  == \\ /\\ \\     /\\ \\/\\ \\ /\\__  _\\/\\  == \\ /\\  __ \\ /\\  __-.  " "\n"
-    "\\ \\  __< \\ \\ \\____\\ \\ \\_\\ \\\\/_/\\ \\/\\ \\  __< \\ \\  __ \\\\ \\ \\/\\ \\ " "\n"
-    " \\ \\_____\\\\ \\_____\\\\ \\_____\\  \\ \\_\\ \\ \\_____\\\\ \\_\\ \\_\\\\ \\____- " "\n"
-    "  \\/_____/ \\/_____/ \\/_____/   \\/_/  \\/_____/ \\/_/\\/_/ \\/____/ " "\n"))
+  (str "___.   .__          __ ___.               .___" "\n"
+       "\\_ |__ |  |  __ ___/  |\\_ |__ _____     __| _/" "\n"
+       " | __ \\|  | |  |  \\   __\\ __ \\\\__  \\   / __ | " "\n"
+       " | \\_\\ \\  |_|  |  /|  | | \\_\\ \\/ __ \\_/ /_/ | " "\n"
+       " |___  /____/____/ |__| |___  (____  /\\____ | " "\n"
+       "     \\/                     \\/     \\/      \\/ " "\n"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-proc-dir
@@ -165,6 +165,19 @@
 
   (c/if-some+
     [d (u/get-sys-prop "blutbad.user.dir")] (io/file d) (u/get-user-dir)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-conf-file
+
+  "Get the app's config file - app.conf.
+  First check the app-dir, then app-dir/conf."
+  ^File []
+
+  (let [f1 (io/file (get-proc-dir) pod-cf)
+        f2 (io/file (get-proc-dir) dn-conf pod-cf)]
+    (cond (i/file-read? f1) f1
+          (i/file-read? f2) f2
+          :else (u/throw-IOE "No config file or not readable."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn expand-sys-props
@@ -263,8 +276,8 @@
 
   "Parse config file."
 
-  ([podDir conf]
-   (slurp-conf (io/file podDir conf)))
+  ([podDir cf]
+   (slurp-conf (io/file podDir cf)))
 
   ([f]
    (-> (str "{\n"
@@ -284,7 +297,7 @@
                    s (-> (c/drop-head s 1) (c/drop-tail 1)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- prevar-cfg
+(defn prevar-cfg
 
   "Scan the config object looking for references to
   functions, supported markers are $error, $action
@@ -299,7 +312,9 @@
       #(if (== 1 @lock)
          (let [h (if (keyword? %) (c/kw->str %) %)]
            (reset! lock 0)
-           (cond (c/hgl? h) (u/var* rt h)
+           (cond (c/hgl? h)
+                 (do (c/debug "calling rt-var %s." h)
+                     (u/var* rt h))
                  (or (var? h)
                      (nil? h)) h
                  :else
@@ -336,11 +351,9 @@
 
   (when (and $pluggable
              (c/!false? enabled?))
-      (or (some-> (u/call* (cljrt exec)
-                           (c/kw->str $pluggable)
-                           (c/vargs* Object exec id))
-                  (c/init cfg))
-          (c/trap! ClassCastException (c/fmt "Not plugin: %s." $pluggable)))))
+    (some-> (u/call* (cljrt exec)
+                     $pluggable
+                     (c/vargs* Object exec id)) (c/init cfg))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dispatch
@@ -355,25 +368,23 @@
           (c/if-fn [e (get-in plug [:conf :$error])]
             (e evt ex)
             (do (c/exception ex)
-                (c/error (str "event#%s - "
-                              "%s dropped.") (c/id evt) (c/id plug))))))]
-     (let [{:keys [dispfn handler]} arg
-           plug (c/parent evt)
+                (c/error (str "event#%s dropped.") (c/id evt))))))]
+     (let [plug (c/parent evt)
            ctr (c/parent plug)
            sc (scheduler ctr)
            clj (cljrt ctr)
-           h (or handler
+           h (or arg
                  (get-in plug
                          [:conf :$action]))
-           f (if (var? h) @h h)]
+           f (if (var? h) (var-get h) h)]
        (c/do#nil
-         (c/debug "plug = %s\narg = %s\ncb = %s." (c/id plug) arg h)
-         (c/debug "#%s => %s :is disp!" (c/id evt) (c/id plug))
+         ;(c/debug "plug handler type = %s." (type h))
+         ;(c/debug "plug handler func = %s." (type f))
+         (c/debug "plug = %s, fn = %s." (c/id plug) f)
          (if-not (fn? f)
            (err plug evt)
-           (p/run* sc
-                   (or dispfn f)
-                   (if dispfn [f evt] [evt]))))))))
+           (do (p/run* sc f [evt])
+               (c/debug "dispatched %s => %s." (c/id evt) (c/id plug)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

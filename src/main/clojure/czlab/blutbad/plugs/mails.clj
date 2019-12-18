@@ -37,24 +37,24 @@
 (def
   ^:dynamic
   *mock-mail-provider*
-  {:pop3s :czlab.blutbad.mock.mail.MockPop3SSLStore
-   :imaps :czlab.blutbad.mock.mail.MockIMapSSLStore
-   :pop3 :czlab.blutbad.mock.mail.MockPop3Store
-   :imap :czlab.blutbad.mock.mail.MockIMapStore})
+  {:pop3s "czlab.blutbad.mock.mail.MockPop3SSLStore"
+   :imaps "czlab.blutbad.mock.mail.MockIMapSSLStore"
+   :pop3 "czlab.blutbad.mock.mail.MockPop3Store"
+   :imap "czlab.blutbad.mock.mail.MockIMapStore"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; POP3
-(c/def- cz-pop3s  :com.sun.mail.pop3.POP3SSLStore)
-(c/def- cz-pop3  :com.sun.mail.pop3.POP3Store)
-(c/def- pop3s :pop3s)
-(c/def- pop3 :pop3)
+(c/def- cz-pop3s  "com.sun.mail.pop3.POP3SSLStore")
+(c/def- cz-pop3  "com.sun.mail.pop3.POP3Store")
+(c/def- pop3s "pop3s")
+(c/def- pop3 "pop3")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IMAP
-(c/def- cz-imaps :com.sun.mail.imap.IMAPSSLStore)
-(c/def- cz-imap :com.sun.mail.imap.IMAPStore)
-(c/def- imaps :imaps)
-(c/def- imap :imap)
+(c/def- cz-imaps "com.sun.mail.imap.IMAPSSLStore")
+(c/def- cz-imap "com.sun.mail.imap.IMAPStore")
+(c/def- imaps "imaps")
+(c/def- imap "imap")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- close-folder
@@ -65,12 +65,11 @@
        (c/try! (if (.isOpen fd) (.close fd true)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol MailPluginAPI
-  (connect-pop3 [_] "")
-  (read-pop3 [_ msgs] "")
-  (scan-pop3 [_] "")
-  (close-store [_] "")
-  (resolve-provider [_ arg] ""))
+(defn- close-store
+
+  [^Store store]
+
+  (c/try! (some-> store .close)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord MailMsg []
@@ -103,73 +102,59 @@
       (assoc :user (str user))
       (assoc :passwd (co/pw-text (co/pwd<> passwd pkey)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- init2
+
+  [plug [cz proto :as arg]]
+
+  (let [mockp (u/get-sys-prop "blutbad.mock.mail.proto")
+        demo? (c/hgl? mockp)
+        cz (name cz)
+        proto (name (if demo?
+                      mockp proto))
+        demop ((keyword proto)
+               *mock-mail-provider*)
+        ss (Session/getInstance
+             (doto (Properties.)
+               (.put  "mail.store.protocol" proto)) nil)
+        [^Provider sun ^String pz]
+        (if demo?
+          [(Provider. Provider$Type/STORE
+                      proto demop "czlab" "1.1.7") demop]
+          [(some #(if (c/eq? cz
+                             (.getClassName ^Provider %)) %)
+                 (.getProviders ss)) cz])]
+    (u/assert-IOE (some? sun) "Failed to find store: %s" pz)
+    (c/info "mail store impl = %s" sun)
+    (.setProvider ss sun)
+    (assoc plug :proto proto :pz pz :session ss)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrecord MailPlugin [server _id info conf]
-  MailPluginAPI
-  (resolve-provider [me arg]
-    (let [mockp (u/get-sys-prop "blutbad.mock.mail.proto")
-          demo? (c/hgl? mockp)
-          [cz proto] arg
-          proto (if demo? mockp proto)
-          demop (*mock-mail-provider* (keyword proto))
-          ss (Session/getInstance
-               (doto (Properties.)
-                 (.put  "mail.store.protocol" proto)) nil)
-          [^Provider sun ^String pz]
-          (if demo?
-            [(Provider. Provider$Type/STORE
-                        proto demop "czlab" "1.1.7") demop]
-            [(some #(if (c/eq? cz
-                               (.getClassName ^Provider %)) %)
-                   (.getProviders ss)) cz])]
-      (if (nil? sun)
-        (u/throw-IOE "Failed to find store: %s" pz))
-      (c/info "mail store impl = %s" sun)
-      (.setProvider ss sun)
-      (assoc me :proto proto :pz pz :session ss)))
-  (scan-pop3 [me]
-    (let [{:keys [^Folder folder ^Store store]} me]
-      (when folder
-        (if-not (.isOpen folder)
-          (.open folder Folder/READ_WRITE))
-        (when (.isOpen folder)
-          (try (let [cnt (.getMessageCount folder)]
-                 (c/debug "count of new mail-messages: %d." cnt)
-                 (if (c/spos? cnt)
-                   (read-pop3 me (.getMessages folder))))
-               (finally (c/try! (.close folder true))))))))
-  (read-pop3 [me msgs]
-    (let [d? (get-in me [:conf :delete-msg?])]
-      (doseq [^MimeMessage mm msgs]
-        (doto mm .getAllHeaders .getContent)
-        (when d?
-          (.setFlag mm Flags$Flag/DELETED true))
-        (b/dispatch (evt<> me mm)))))
-  (connect-pop3 [me]
-    (let [{:keys [conf proto session]} me
+(defrecord MailPlugin [server _id info conf wakerFunc]
+  c/Connectable
+  (disconnect [_] _)
+  (connect [_]
+    (c/connect _ nil))
+  (connect [me _]
+    (let [{:keys [proto session]} me
           {:keys [host user port passwd]} conf
           s (.getStore ^Session session ^String proto)]
       (if (nil? s)
-        (do (c/warn "failed to get session store#%s." proto) me)
-        (do (c/debug "connecting to session store#%s..." proto)
-            (.connect s
-                      ^String host
-                      ^long port
-                      ^String user
-                      (c/stror (i/x->str passwd) nil))
-            (let [fd (some-> (.getDefaultFolder s)
-                             (.getFolder "INBOX"))]
-              (if (or (nil? fd)
-                      (not (.exists fd)))
-                (do (c/warn "bad mail store folder#%s." proto)
-                    (c/try! (.close s))
-                    (u/throw-IOE "Cannot find inbox!"))
-                (assoc me :store s :folder fd)))))))
-  (close-store [me]
-    (let [{:keys [^Store store folder]} me]
-      (close-folder folder)
-      (c/try! (some-> store .close))
-      (assoc me :store nil :folder nil)))
+        (c/do#nil (c/warn "failed to get session store [%s]." proto))
+        (let [_ (c/debug "connecting to session store [%s]..." proto)
+              _ (.connect s
+                          ^String host
+                          ^long port
+                          ^String user
+                          (c/stror (i/x->str passwd) nil))
+              fd (some-> (.getDefaultFolder s)
+                         (.getFolder "INBOX"))]
+          (when (or (nil? fd)
+                    (not (.exists fd)))
+            (c/warn "bad mail store folder#%s." proto)
+            (c/try! (.close s))
+            (u/throw-IOE "Cannot find inbox!"))
+          [s fd]))))
   c/Hierarchical
   (parent [_] server)
   c/Idable
@@ -177,12 +162,13 @@
   c/Initable
   (init [me arg]
     (let [{:keys [sslvars vars]} me
-          pk (-> me c/parent b/pkey-chars)
-          p2 (update-in me
-                        [:conf]
-                        #(b/expand-vars* (sanitize pk
-                                                   (merge % arg))))]
-      (resolve-provider p2 (if (:ssl? (:conf p2)) sslvars vars))))
+          pk (-> me c/parent b/pkey-chars)]
+      (-> (update-in me
+                     [:conf]
+                     #(sanitize pk
+                                (-> (c/merge+ % arg)
+                                    b/expand-vars* b/prevar-cfg)))
+          (init2 (if (:ssl? conf) sslvars vars)))))
   c/Finzable
   (finz [_] (c/stop _))
   c/Startable
@@ -190,16 +176,17 @@
     (l/stop-threaded-loop! (:loopy me)) me)
   (start [_]
     (c/start _ nil))
-  (start [me arg]
-    (assoc me :loopy (l/schedule-threaded-loop me (:waker me)))))
+  (start [me _]
+    (assoc me :loopy (l/schedule-threaded-loop me wakerFunc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- email-xxx
 
   [server id {:keys [info conf]} sslvars vars wakerFunc]
 
-  (-> (MailPlugin. server id info conf)
-      (assoc :sslvars sslvars :vars vars :waker wakerFunc)))
+  (-> (MailPlugin. server id
+                   info conf wakerFunc)
+      (assoc :sslvars sslvars :vars vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def POP3Spec
@@ -218,30 +205,50 @@
           :$action nil}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- scan*
+
+  [plug ^Store store ^Folder folder]
+
+  (letfn
+    [(read* [msgs]
+       (let [d? (get-in plug [:conf :delete-msg?])]
+         (doseq [^MimeMessage mm msgs]
+           (doto mm .getAllHeaders .getContent)
+           (when d?
+             (.setFlag mm Flags$Flag/DELETED true))
+           (b/dispatch (evt<> plug mm)))))]
+    (when folder
+      (if-not (.isOpen folder)
+        (.open folder Folder/READ_WRITE)))
+    (when (.isOpen folder)
+      (try
+        (let [cnt (.getMessageCount folder)]
+          (c/debug "count of new mail-messages: %d." cnt)
+          (if (c/spos? cnt)
+            (read* (.getMessages folder))))
+        (finally (c/try! (.close folder true)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wake-pop3
 
-  [co] (try (connect-pop3 co)
-            (scan-pop3 co)
-            (catch Throwable _
-              (c/exception _))
-            (finally (close-store co))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defmacro- connect-imap
-  [co] `(connect-pop3 ~co))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defmacro- scan-imap
-  [co] `(scan-pop3 ~co))
+  [co] (let [[store folder] (c/connect co)]
+         (try (scan* co store folder)
+              (catch Throwable _
+                (c/exception _))
+              (finally
+                (close-folder folder)
+                (close-store store)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- wake-imap
 
-  [co] (try (connect-imap co)
-            (scan-imap co)
-            (catch Throwable _
-              (c/exception _))
-            (finally (close-store co))))
+  [co] (let [[store folder] (c/connect co)]
+         (try (scan* co store folder)
+              (catch Throwable _
+                (c/exception _))
+              (finally
+                (close-folder folder)
+                (close-store store)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def IMAPSpec

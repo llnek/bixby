@@ -67,17 +67,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn schedule-threaded-loop
 
-  [plug waker]
+  [{:keys [conf] :as plug} waker]
 
-  (let [{:as C
-         :keys [interval-secs]} (:conf plug)]
-    (c/do-with
-      [loopy (volatile! true)]
-      (let [ms (b/s2ms interval-secs)
-            w (c/fn_0 (p/async!
-                        #(while @loopy
-                           (waker plug) (u/pause ms))))]
-        (cfg-timer (Timer. true) w C false)))))
+  (c/do-with [loopy (volatile! true)]
+    (let [ms (b/s2ms (:interval-secs conf))]
+      (cfg-timer (Timer. true)
+                 (c/fn_0 (p/async!
+                           #(while @loopy
+                              (waker plug)
+                              (u/pause ms)))) conf false))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn stop-threaded-loop!
@@ -97,6 +95,7 @@
   [co repeat?]
 
   (c/object<> TimerMsg
+              :repeat? repeat?
               :source co
               :tstamp (u/system-time)
               :id (str "TimerMsg#" (u/seqint2))))
@@ -111,9 +110,10 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(b/expand-vars* (merge % arg))) me)
+               #(-> (c/merge+ % arg)
+                    b/expand-vars* b/prevar-cfg)))
   c/Finzable
-  (finz [me] (c/stop me) me)
+  (finz [me] (c/stop me))
   c/Startable
   (stop [me]
     (u/cancel-timer-task! (:ttask me)) me)
@@ -124,13 +124,13 @@
            :ttask
            (cfg-timer (Timer. true)
                       #(b/dispatch
-                         (evt<> me repeat?)) (:conf me) repeat?))))
+                         (evt<> me repeat?)) conf repeat?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def RepeatingTimerSpec
   {:info {:name "Repeating Timer"
           :version "1.0.0"}
-   :conf {:$pluggable ::RepeatingTimer
+   :conf {:$pluggable ::repeating-timer<>
           :$error nil
           :$action nil
           :delay-secs 0
@@ -140,7 +140,7 @@
 (def OnceTimerSpec
   {:info {:name "One Shot Timer"
           :version "1.0.0"}
-   :conf {:$pluggable ::OnceTimer
+   :conf {:$pluggable ::once-timer<>
           :$error nil
           :$action nil
           :delay-secs 0}})

@@ -75,7 +75,7 @@
        (c/prn!! (str b) "\n" "*Parent*: done."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
 
   "Split but no wait, parent continues."
   [evt]

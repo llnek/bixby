@@ -25,7 +25,7 @@
   [] (.incrementAndGet gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
 
   [evt]
 
@@ -34,6 +34,13 @@
     (c/prn!! "-> Msg ID= %s" (.getJMSMessageID msg))
     (c/prn!! "-> Type= %s" (.getJMSType msg))
     (c/prn!! "(%s) -> Message= %s" (ncount) (.getText msg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn my-main
+
+  [_]
+
+  (System/setProperty "czlab.blutbad.mock.jms.loopsecs" "3"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

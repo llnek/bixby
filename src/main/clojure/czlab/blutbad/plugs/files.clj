@@ -49,8 +49,8 @@
   [co fname fp action]
 
   (c/object<> FileMsg
-              :file (io/file fp)
               :source co
+              :file (io/file fp)
               :original-fname fname
               :id (str "FileMsg#" (u/seqint2))))
 
@@ -71,7 +71,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init2
 
-  [conf cfg0]
+  [conf]
 
   (letfn
     [(to-fmask [mask]
@@ -84,15 +84,14 @@
              (RegexFileFilter. ^String mask)
              :else
              FileFileFilter/FILE))]
-    (let [{:as c2
-           :keys [fmask]
+    (let [{:keys [fmask]
            dest :recv-folder
-           root :target-folder} (merge conf cfg0)]
+           root :target-folder} conf]
       (assert (c/hgl? root)
-              (c/fmt "Bad file-root-folder %s." root))
-      (c/info (str "monitoring dir: %s\n"
-                   "receiving dir: %s") root (c/nsn dest))
-      (assoc c2
+              (c/fmt "Bad root-folder %s." root))
+      (c/info (str "source dir: %s\n"
+                   "receiving dir: %s") root dest)
+      (assoc conf
              :fmask (to-fmask (str fmask))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,7 +115,8 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(b/expand-vars* (init2 % arg))))
+               #(-> (c/merge+ % arg)
+                    b/expand-vars* b/prevar-cfg init2)))
   c/Finzable
   (finz [_] (c/stop _))
   c/Startable
@@ -136,8 +136,7 @@
       (.addObserver mon obs)
       (l/cfg-timer (Timer. true)
                    #(do (c/info "apache io monitor starting...")
-                        (.start ^FileAlterationMonitor mon))
-                   (:conf plug) false)
+                        (.start ^FileAlterationMonitor mon)) conf false)
       plug))
   (stop [me]
     (c/info "apache io monitor stopping...")

@@ -17,21 +17,18 @@
 ;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo-wsock
 
   [evt]
 
-  (c/do-with
-    [ch (:socket evt)]
-    (let [data (:body evt)
-          stuff (some-> ^XData data .content)]
-      (cond
-        (string? stuff)
-        (c/prn!! "Got poked by websocket-text: %s" stuff)
-        (bytes? stuff)
-        (c/prn!! "Got poked by websocket-bin: len = %s" (alength ^bytes stuff))
-        :else
-        (c/prn!! "Funky data from websocket????")))))
+  (let [^XData data (:body evt)
+        stuff (some-> data .content)]
+    (cond (string? stuff)
+          (c/prn!! "Got poked by websocket-text: %s" stuff)
+          (bytes? stuff)
+          (c/prn!! "Got poked by websocket-bin: len = %s" (alength ^bytes stuff))
+          :else
+          (c/prn!! "Funky data from websocket????"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

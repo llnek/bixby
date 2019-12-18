@@ -25,17 +25,17 @@
        "</hello>"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
 
-  [evt res]
+  [evt]
 
   ;; construct a simple html page back to caller
   ;; by wrapping it into a stream data object
-  (c/do-with
-    [ch (:socket evt)]
-    (->> (-> (cc/res-header-set res "content-type" "text/xml")
-             (assoc :body fx-str))
-         cc/reply-result )))
+  (-> (cc/http-result evt)
+      (cc/res-body-set fx-str)
+      (cc/res-header-set "content-type"
+                         "text/xml")
+      cc/reply-result))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

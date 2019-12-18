@@ -92,6 +92,7 @@
 
   [^MBeanServer svr ^ObjectName objName ^DynamicMBean mbean]
 
+  (c/info "JMX registering object: %s." objName)
   (c/doto->> objName
              (.registerMBean svr mbean) (c/info "jmx-bean: %s.")))
 
@@ -100,8 +101,8 @@
 (defrecord JMXPlugin [server _id info conf]
   b/JmxAPI
   (jmx-dereg [me nname]
-    (-> ^MBeanServer
-        (:bean-svr me) (.unregisterMBean nname)) me)
+    (some-> ^MBeanServer
+            (:bean-svr me) (.unregisterMBean nname)) me)
   (jmx-reg [me obj domain nname paths]
     (let [nm (object-name<> domain nname paths)]
       [nm (update-in me
@@ -123,7 +124,8 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(b/expand-vars* (merge % arg))))
+               #(-> (c/merge+ % arg)
+                    b/expand-vars* b/prevar-cfg)))
   c/Finzable
   (finz [me]
     (c/stop me)

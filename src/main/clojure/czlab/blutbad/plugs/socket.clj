@@ -36,8 +36,8 @@
   (c/object<> TcpConnectMsg
               :socket socket
               :source plug
-              :sockin (.getInputStream socket)
-              :sockout (.getOutputStream socket)
+              :in (.getInputStream socket)
+              :out (.getOutputStream socket)
               :id (str "TcpConnectMsg#" (u/seqint2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,16 +66,6 @@
       (c/info "Server socket %s (bound?) %s" soc (.isBound soc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def TCPSpec
-  {:conf {:$pluggable ::socket<>
-          :host ""
-          :port 7551
-          :$error nil
-          :$action nil}
-   :info {:version "1.0.0"
-          :name "TCP Socket Server"}})
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord TCPPlugin [server _id info conf]
   c/Hierarchical
   (parent [_] server)
@@ -85,15 +75,16 @@
   (start [me]
     (c/start me nil))
   (start [me _]
-    (let [ssoc (ssoc<> (:conf me))]
+    (let [ssoc (ssoc<> conf)]
       (p/async!
         #(while (and ssoc
                      (not (.isClosed ssoc)))
            (try (sock-it me (.accept ssoc))
                 (catch Throwable t
-                  (when-not (c/hasic-all? (u/emsg t)
-                                          ["closed" "socket"])
-                    (c/warn t ""))))))
+                  (if-not (c/hasic-all?
+                            (u/emsg t)
+                            ["closed" "socket"])
+                    (c/warn t "socket error"))))))
       (assoc me :soc ssoc)))
   (stop [me]
     (i/klose (:soc me))
@@ -104,7 +95,18 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(b/expand-vars*  (merge % arg)))))
+               #(-> (c/merge+ % arg)
+                    b/expand-vars* b/prevar-cfg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def TCPSpec
+  {:conf {:$pluggable ::socket<>
+          :host ""
+          :port 7551
+          :$error nil
+          :$action nil}
+   :info {:version "1.0.0"
+          :name "TCP Socket Server"}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn socket<>

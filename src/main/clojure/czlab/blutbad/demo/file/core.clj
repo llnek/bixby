@@ -28,19 +28,19 @@
   [] (.incrementAndGet ^AtomicInteger gint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn demo<>
+(defn demo
 
   [evt]
 
   (let [plug (c/parent evt)
         c (-> (c/parent plug)
               (b/get-plugin :picker))]
-    (-> (:target-folder (:conf plug))
+    (-> (:target-folder (:conf c))
         (io/file (str "ts-" (ncount) ".txt"))
         (i/spit-utf8 (str "Current time is " (Date.))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn picker<>
+(defn picker
 
   [evt]
 

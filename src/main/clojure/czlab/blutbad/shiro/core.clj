@@ -532,7 +532,7 @@
   (init [me arg]
     (let [me2 (update-in me
                          [:conf]
-                         #(b/expand-vars* (merge % arg)))]
+                         #(b/expand-vars* (c/merge+ % arg)))]
       (-> server b/dbpool?? assert-plugin-ok)
       (init-shiro (:conf me2) (b/home-dir server))
       me2))

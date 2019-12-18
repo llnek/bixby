@@ -28,7 +28,7 @@
 
   :exclusions [org.clojure/clojure]
 
-  :plugins [;[blutbad/lein-template "1.1.0"]
+  :plugins [[blutbad/lein-template "1.1.0"]
             [lein-codox "0.10.7"]
             [cider/cider-nrepl "0.22.4"]]
 

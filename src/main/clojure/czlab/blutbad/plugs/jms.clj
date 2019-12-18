@@ -93,14 +93,14 @@
 
   [co]
 
-  (let [{:keys [context-factory
-                provider-url
+  (let [{:keys [provider-url
+                context-factory
                 jndi-user jndi-pwd conn-factory]} (:conf co)
         ctx (InitialContext.
               (init-map ["jndi.user" jndi-user
                          "jndi.password" jndi-pwd
                          Context/PROVIDER_URL provider-url
-                         Context/INITIAL_CONTEXT_FACTORY context-factory]))
+                         Context/INITIAL_CONTEXT_FACTORY (name context-factory)]))
         obj (.lookup ctx (str conn-factory))]
     (c/do-with [^Connection
                 c (some-> (c/condp?? instance? obj
@@ -116,7 +116,7 @@
 (defrecord JMSPlugin [server _id info conf]
   JMSApi
   (iniz-fac [me ctx cf]
-    (let [{:keys [destination jms-pwd jms-user]} (:conf me)
+    (let [{:keys [destination jms-pwd jms-user]} conf
           c (.lookup ^InitialContext ctx ^String destination)
           pwd (->> me c/parent
                    b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
@@ -130,16 +130,16 @@
         (c/info "c === %s" c)
         (c/info "pwd === %s" (i/x->str pwd))
         ;;TODO ? ack always ?
-        (if-not (is? Destination c)
-          (u/throw-IOE "Object not of Destination type!")
-          (-> (.createSession conn false Session/CLIENT_ACKNOWLEDGE)
-              (.createConsumer c)
-              (.setMessageListener
-                (reify MessageListener
-                  (onMessage [_ m] (on-msg me m)))))))))
+        (u/assert-IOE (is? Destination c)
+                      "Object not of Destination type!")
+        (-> (.createSession conn false Session/CLIENT_ACKNOWLEDGE)
+            (.createConsumer c)
+            (.setMessageListener
+              (reify MessageListener
+                (onMessage [_ m] (on-msg me m))))))))
   (iniz-topic [me ctx cf]
     (let [{:keys [destination
-                  jms-user durable? jms-pwd]} (:conf me)
+                  jms-user durable? jms-pwd]} conf
           pwd (->> me c/parent
                    b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
       (c/do-with [^TopicConnection
@@ -152,8 +152,8 @@
         (let [s (.createTopicSession
                   conn false Session/CLIENT_ACKNOWLEDGE)
               t (.lookup ^InitialContext ctx ^String destination)]
-          (if-not (is? Topic t)
-            (u/throw-IOE "Object not of Topic type!"))
+          (u/assert-IOE (is? Topic t)
+                        "Object not of Topic type!")
           (-> (if-not durable?
                 (.createSubscriber s t)
                 (.createDurableSubscriber s t (u/jid<>)))
@@ -161,7 +161,7 @@
                 (reify MessageListener
                   (onMessage [_ m] (on-msg me m)))))))))
   (iniz-queue [me ctx cf]
-    (let [{:keys [destination jms-user jms-pwd]} (:conf me)
+    (let [{:keys [destination jms-user jms-pwd]} conf
           pwd (->> me c/parent
                    b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
       (c/do-with [^QueueConnection
@@ -174,8 +174,8 @@
         (let [s (.createQueueSession conn
                                      false Session/CLIENT_ACKNOWLEDGE)
               q (.lookup ^InitialContext ctx ^String destination)]
-          (if-not (is? Queue q)
-            (u/throw-IOE "Object not of Queue type!"))
+          (u/assert-IOE (is? Queue q)
+                        "Object not of Queue type!")
           (-> (.createReceiver s ^Queue q)
               (.setMessageListener
                 (reify MessageListener
@@ -188,11 +188,11 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(b/expand-vars*
-                  (-> me
-                      c/parent
-                      b/pkey-chars
-                      (sanitize (merge % arg))))))
+               #(-> me
+                    c/parent
+                    b/pkey-chars
+                    (sanitize (c/merge+ % arg))
+                    b/expand-vars* b/prevar-cfg)))
   c/Finzable
   (finz [_] (c/stop _))
   c/Startable
@@ -201,7 +201,7 @@
   (start [_]
     (c/start _ nil))
   (start [me arg]
-    (assoc :conn (start2 me))))
+    (assoc me :conn (start2 me))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def JMSSpec

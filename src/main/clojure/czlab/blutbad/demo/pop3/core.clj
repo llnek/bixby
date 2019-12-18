@@ -9,13 +9,13 @@
 (ns czlab.blutbad.demo.pop3.core
 
   (:require [czlab.basal.util :as u]
+            [czlab.basal.io :as i]
             [czlab.basal.core :as c]
             [czlab.blutbad.core :as b])
 
   (:import [javax.mail Message Message$RecipientType Multipart]
            [java.util.concurrent.atomic AtomicInteger]
-           [javax.mail.internet MimeMessage]
-           [org.apache.commons.io IOUtils]))
+           [javax.mail.internet MimeMessage]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -33,6 +33,7 @@
   [evt]
 
   (let [^MimeMessage msg (:message evt)
+        plug (c/parent evt)
         ^Multipart p (.getContent msg)]
     (c/prn!! "######################## (%d)" (ncount))
     (c/prn! "Subj:%s\r\n" (.getSubject msg))
@@ -40,8 +41,8 @@
     (c/prn! "To:%s" (first (.getRecipients msg
                                            Message$RecipientType/TO)))
     (c/prn! "\r\n")
-    (c/prn!! (IOUtils/toString (-> (.getBodyPart p 0)
-                                   (.getInputStream)) "utf-8"))))
+    (c/prn!! (i/x->str (-> (.getBodyPart p 0)
+                           (.getInputStream)) "utf-8"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn main

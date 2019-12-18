@@ -86,24 +86,25 @@
         rcb (u/get-resource b/c-rcb-base)
         home (io/file (or (:home options)
                           (u/get-user-dir)))
-        cf (io/file home b/cfg-pod-cf)
-        pod? (i/file-ok? cf)
         verStr (c/stror (some-> ver
                                 (.getString "version")) "?")]
     (u/set-sys-prop! "blutbad.user.dir" (u/fpath home))
     (u/set-sys-prop! "blutbad.version" verStr)
     (b/set-rc-base! rcb)
-    (try (if (empty? args)
-           (u/throw-BadData "CmdError!"))
-         (let [[f _] (->> (c/_1 args)
-                          keyword
-                          c1/blutbad-tasks)]
-           (if (fn? f)
-             (f (drop 1 args))
-             (u/throw-BadData "CmdError!")))
-         (catch Throwable _
-           (if (is? DataError _)
-             (usage pod?) (u/prn-stk _))))))
+    (try
+      (if (empty? args)
+        (u/throw-BadData "CmdError!"))
+      (let [[f _] (->> (c/_1 args)
+                       keyword
+                       c1/blutbad-tasks)]
+        (if (fn? f)
+          (f (drop 1 args))
+          (u/throw-BadData "CmdError!")))
+      (catch Throwable _
+        (if-not (is? DataError _)
+          (u/prn-stk _)
+          (usage (try (b/get-conf-file)
+                      (catch Throwable _ nil))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
