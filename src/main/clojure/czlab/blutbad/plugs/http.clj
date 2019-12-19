@@ -203,7 +203,7 @@
 (defn asset-loader
 
   "Load a file from the public folder."
-  [{:keys [uri2] :as evt}]
+  [{:keys [uri2 route] :as evt}]
 
   (letfn
     [(reply-static [res file]
@@ -216,7 +216,8 @@
                 (-> res
                     (cc/res-body-set nil)
                     (cc/res-status-set 500))))))]
-    (let [[path _] (cc/decoded-path uri2)
+    (let [path (c/stror (:rewrite route)
+                        (c/_1 (cc/decoded-path uri2)))
           res (cc/http-result evt)
           plug (c/parent evt)
           {:keys [public-dir
@@ -240,6 +241,24 @@
           (-> (cc/res-status-set res 403) cc/reply-result)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn redirector
+  [{:keys [route uri2
+           scheme
+           local-host local-port] :as evt}]
+  ;(c/debug "evt = %s" (i/fmt->edn evt))
+  (let [host (cc/msg-header evt "host")
+        {:keys [status location]} (:info route)
+        target (if-not (cs/starts-with? location "/")
+                 location
+                 (str (name scheme)
+                      "://"
+                      (if (c/hgl? host)
+                        host
+                        (str local-host ":" local-port)) location))]
+    (-> (cc/http-result evt status)
+        (cc/res-header-set "Location" target) cc/reply-result)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- boot!
 
   [{:keys [conf] :as plug}]
@@ -250,13 +269,17 @@
              :user-cb
              #(let [ev (evt<> plug (:socket %1) %1)
                     {:keys [uri2]
-                     {:keys [info]} :route} %1
-                    [path _] (cc/decoded-path uri2)]
-                (->> (if-not (cs/starts-with? path
-                                              uri-prefix)
-                       (:handler info)
-                       #'czlab.blutbad.plugs.http/asset-loader)
-                     (b/dispatch ev)))))))
+                     {:keys [rewrite
+                             info params]} :route} %1
+                    path (first (cc/decoded-path uri2))]
+                (b/dispatch ev
+                            (cond (cs/starts-with?
+                                    (c/stror rewrite path) uri-prefix)
+                                  #'czlab.blutbad.plugs.http/asset-loader
+                                  (:redirect info)
+                                  #'czlab.blutbad.plugs.http/redirector
+                                  :else
+                                  (:handler info))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn discarder!
@@ -349,7 +372,17 @@
                   :page-dir "htm"
                   :js-dir "src"
                   :css-dir "css"}
-          :routes [{:name "test" :pattern "/?" :template  "main/index.html"}]}})
+          :routes [{:name :favicon
+                    :pattern "/{f}"
+                    :remap "/public/res/{f}"
+                    :groups {:f "favicon\\.[a-zA-Z]{3}"}}
+                   {:name :index
+                    :pattern "/{x}"
+                    :remap "/public/htm/{x}"
+                    :groups {:x "index\\.html?"}}
+                   {:name :home
+                    :pattern "/?"
+                    :redirect {:status 307 :location "/index.html"}}]}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn http<>
