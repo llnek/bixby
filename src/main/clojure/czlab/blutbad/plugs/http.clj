@@ -241,24 +241,6 @@
           (-> (cc/res-status-set res 403) cc/reply-result)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn redirector
-  [{:keys [route uri2
-           scheme
-           local-host local-port] :as evt}]
-  ;(c/debug "evt = %s" (i/fmt->edn evt))
-  (let [host (cc/msg-header evt "host")
-        {:keys [status location]} (:info route)
-        target (if-not (cs/starts-with? location "/")
-                 location
-                 (str (name scheme)
-                      "://"
-                      (if (c/hgl? host)
-                        host
-                        (str local-host ":" local-port)) location))]
-    (-> (cc/http-result evt status)
-        (cc/res-header-set "Location" target) cc/reply-result)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- boot!
 
   [{:keys [conf] :as plug}]
@@ -277,7 +259,7 @@
                                     (c/stror rewrite path) uri-prefix)
                                   #'czlab.blutbad.plugs.http/asset-loader
                                   (:redirect info)
-                                  #'czlab.blutbad.plugs.http/redirector
+                                  #'czlab.nettio.core/redirector
                                   :else
                                   (:handler info))))))))
 
