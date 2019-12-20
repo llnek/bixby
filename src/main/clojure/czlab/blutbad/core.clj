@@ -383,11 +383,8 @@
          (c/debug "plug = %s, fn = %s." (c/id plug) f)
          (if-not (fn? f)
            (err plug evt)
-           (let [f' #(try (f %1)
-                          (catch Throwable _
-                            (c/exception _)))]
-             (p/run* sc f' [evt])
-             (c/debug "dispatched %s => %s." (c/id evt) (c/id plug)))))))))
+           (do (p/run* sc f [evt])
+               (c/debug "dispatched %s => %s." (c/id evt) (c/id plug)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
