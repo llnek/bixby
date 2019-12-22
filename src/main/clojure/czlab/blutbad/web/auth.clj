@@ -6,9 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.blutbad.shiro.core
-
-  ;;(:gen-class)
+(ns czlab.blutbad.web.auth
 
   (:require [clojure.java.io :as io]
             [clojure.string :as cs]
@@ -24,9 +22,9 @@
             [czlab.hoard.core :as hc]
             [czlab.hoard.rels :as hr]
             [czlab.hoard.connect :as ht]
+            [czlab.hoard.drivers :as hd]
             [czlab.blutbad.core :as b]
-            [czlab.blutbad.plugs.http :as hp]
-            [czlab.blutbad.shiro.model :as mo])
+            [czlab.blutbad.plugs.http :as hp])
 
   (:import [org.apache.shiro.authc.credential CredentialsMatcher]
            [org.apache.shiro.config IniSecurityManagerFactory]
@@ -47,6 +45,7 @@
             AuthenticationInfo]
            [java.net HttpCookie]
            [java.util Properties]
+           [java.sql Connection]
            [java.util Base64 Base64$Decoder]
            [org.apache.shiro SecurityUtils]
            [org.apache.shiro.subject Subject]
@@ -76,8 +75,7 @@
    email-param [:email #(mi/normalize-email %)]})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def ^:dynamic *meta-cache* nil)
-(def ^:dynamic *jdbc-pool* nil)
+(def ^:dynamic *auth-db* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol WebAuthPluginAPI
@@ -88,6 +86,65 @@
   (get-account [_ options] "")
   (check-action [_ acctObj action] ""))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(hc/defschema
+  auth-meta-cache
+  (hc/dbmodel<> ::StdAddress
+                (hc/dbfields {:addr1 {:size 255 :null false}
+                              :addr2 {}
+                              :state {:null false}
+                              :city {:null false}
+                              :zip {:null false}
+                              :country {:null false}})
+                (hc/dbindexes {:i1 #{:city :state :country}
+                               :i2 #{:zip :country}
+                               :state #{:state}
+                               :zip #{:zip}}))
+  (hc/dbmodel<> ::AuthRole
+                (hc/dbfields {:name {:column "ROLE_NAME" :null false}
+                              :desc {:column "DESCRIPTION" :null false}})
+                (hc/dbuniques {:u1 #{:name}}))
+  (hc/dbmodel<> ::LoginAccount
+                (hc/dbfields {:acctid {:null false}
+                              :email {:size 128}
+                              ;;:salt { :size 128}
+                              :passwd {:null false :domain :Password}})
+                (hc/dbo2o :addr :cascade true :other ::StdAddress)
+                (hc/dbuniques {:u2 #{:acctid}}))
+  (hc/dbjoined<> ::AccountRoles ::LoginAccount ::AuthRole))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn gen-auth-plugin-ddl
+
+  "Generate db ddl for the auth-plugin."
+  ^String
+  [spec]
+  {:pre [(keyword? spec)]}
+
+  (if (hc/match-spec?? spec)
+    (hd/get-ddl auth-meta-cache spec)
+    (hc/dberr! (u/rstr (b/get-rc-base) "db.unknown" (name spec)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn apply-ddl
+
+  [arg] (cond
+          (satisfies? hc/JdbcPool arg)
+          (apply-ddl (:jdbc arg))
+
+          (c/is? czlab.hoard.core.JdbcSpec arg)
+          (when-some [t (hc/match-url?? (:url arg))]
+            (c/wo* [^Connection c (hc/conn<> arg)]
+              (hc/upload-ddl c (gen-auth-plugin-ddl t))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn export-auth-pluglet-ddl
+
+  "Output the auth-plugin ddl to file."
+  [spec file]
+
+  (i/spit-utf8 file (gen-auth-plugin-ddl spec)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn new-session<>
 
@@ -97,8 +154,10 @@
   ([evt attrs]
    (let [plug (c/parent evt)]
      (c/do-with
-       [s (ss/wsession<> (-> plug c/parent b/pkey-bytes)
-                         (:session (:conf plug)))]
+       [s (ss/wsession<> (-> plug
+                             c/parent
+                             b/pkey-bytes)
+                         (get-in plug [:conf :session]))]
        (doseq [[k v] attrs] (ss/set-session-attr s k v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,16 +165,21 @@
 
   "Create or delete a csrf cookie,
   if maxAge=-1, browser doesnt sent it back!"
-  ^HttpCookie
-  [{:keys [domain domain-path]} token]
+  {:tag HttpCookie}
 
-  (c/do-with
-    [c (HttpCookie. ss/csrf-cookie
-                    (if (c/hgl? token) token "*"))]
-    (if (c/hgl? domain-path) (.setPath c domain-path))
-    (if (c/hgl? domain) (.setDomain c domain))
-    (.setHttpOnly c true)
-    (.setMaxAge c (if (c/hgl? token) 3600 0))))
+  ([cfg]
+   (csrf-token<> cfg nil))
+
+  ([{:keys [domain domain-path]} token]
+   (c/do-with
+     [c (HttpCookie. ss/csrf-cookie
+                     (if (c/hgl? token) token "*"))]
+     (if (c/hgl? domain)
+       (.setDomain c domain))
+     (if (c/hgl? domain-path)
+       (.setPath c domain-path))
+     (.setHttpOnly c true)
+     (.setMaxAge c (if (c/hgl? token) 3600 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- crack-form-fields
@@ -177,6 +241,7 @@
           :else (crack-params evt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(comment
 (defn- decode-field??
 
   [info fld shiftCount]
@@ -190,24 +255,7 @@
             s (-> (Base64/getMimeDecoder)
                   (.decode ^String decr) i/x->str)]
         (c/debug "val = %s, decr = %s." s decr)
-        (assoc info fld s)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defmacro- get-xxx-info
-
-  [evt] `(-> (get-auth-info?? ~evt)
-             (decode-field?? :principal caesar-shift)
-             (decode-field?? :credential caesar-shift)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn get-signup-info
-
-  [evt] (get-xxx-info evt))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn get-login-info
-
-  [evt] (get-xxx-info evt))
+        (assoc info fld s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- assert-plugin-ok
@@ -217,28 +265,14 @@
   [pool]
   {:pre [(some? pool)]}
 
-  (let [tbl (->> ::mo/LoginAccount
-                 (hc/find-model mo/auth-meta-cache) hc/find-table)]
+  (let [tbl (->> ::LoginAccount
+                 (hc/find-model auth-meta-cache) hc/find-table)]
     (if-not
       (hc/table-exist? pool tbl)
-      (mo/apply-ddl pool))
+      (apply-ddl pool))
     (if (hc/table-exist? pool tbl)
-      (c/info "czlab.blutbad.shiro.model* - ok.")
+      (c/info "czlab.blutbad.web.auth - db = ok.")
       (hc/dberr! (u/rstr (b/get-rc-base) "auth.no.table" tbl)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- get-sqlr
-
-  ([ctr]
-   (get-sqlr ctr false))
-
-  ([ctr tx?]
-   {:pre [(some? ctr)]}
-   (let [db (-> (b/dbpool?? ctr)
-                (ht/dbio<+> mo/auth-meta-cache))]
-     (if-not tx?
-       (ht/simple db)
-       (ht/composite db)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn create-auth-role
@@ -247,7 +281,7 @@
   [sql role desc]
   {:pre [(some? sql)]}
 
-  (let [m (hc/find-model (:schema sql) ::mo/AuthRole)]
+  (let [m (hc/find-model (:schema sql) ::AuthRole)]
     (hc/add-obj sql
                 (-> (hc/dbpojo<> m)
                     (hc/db-set-flds* :name role :desc desc)))))
@@ -259,7 +293,7 @@
   [sql role]
   {:pre [(some? sql)]}
 
-  (let [m (hc/find-model (:schema sql) ::mo/AuthRole)]
+  (let [m (hc/find-model (:schema sql) ::AuthRole)]
     (hc/exec-sql sql
                  (format "delete from %s where %s =?"
                          (->> (hc/find-table m)
@@ -275,7 +309,15 @@
   [sql]
   {:pre [(some? sql)]}
 
-  (hc/find-all sql ::mo/AuthRole))
+  (hc/find-all sql ::AuthRole))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn list-roles
+
+  "List all roles assigned to this account."
+  [acct sql]
+
+  (hr/get-m2m (hc/gmxm (hc/find-model (:schema sql) ::AccountRoles)) sql acct))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn create-login-account
@@ -292,15 +334,15 @@
 
   ([sql user pwdObj props roleObjs]
    {:pre [(some? sql)(c/hgl? user)]}
-   (let [m (hc/find-model (:schema sql) ::mo/LoginAccount)
-         r (hc/find-model (:schema sql) ::mo/AccountRoles)
+   (let [m (hc/find-model (:schema sql) ::LoginAccount)
+         r (hc/find-model (:schema sql) ::AccountRoles)
          ps (some-> pwdObj co/hashed)]
      (c/do-with
        [acc
         (->> (hc/db-set-flds (hc/dbpojo<> m)
-                             (merge props
-                                    {:passwd ps
-                                     :acctid (c/strim user)}))
+                             (assoc props
+                                    :passwd ps
+                                    :acctid (c/strim user)))
              (hc/add-obj sql))]
        ;;currently adding roles to the account is not bound to the
        ;;previous insert. That is, if we fail to set a role, it's
@@ -317,7 +359,7 @@
   [sql email]
   {:pre [(some? sql)]}
 
-  (hc/find-one sql ::mo/LoginAccount {:email (c/strim email) }))
+  (hc/find-one sql ::LoginAccount {:email (c/strim email) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn find-login-account
@@ -326,7 +368,7 @@
   [sql user]
   {:pre [(some? sql)]}
 
-  (hc/find-one sql ::mo/LoginAccount {:acctid (c/strim user) }))
+  (hc/find-one sql ::LoginAccount {:acctid (c/strim user) }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-login-account
@@ -387,7 +429,7 @@
   {:pre [(some? sql)]}
 
   (let [r (hc/find-model (:schema sql)
-                         ::mo/AccountRoles)]
+                         ::AccountRoles)]
     (hr/clr-m2m (hc/gmxm r) sql user role)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -398,7 +440,7 @@
   {:pre [(some? sql)]}
 
   (let [r (hc/find-model (:schema sql)
-                         ::mo/AccountRoles)]
+                         ::AccountRoles)]
     (hr/set-m2m (hc/gmxm r) sql user role)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -417,7 +459,7 @@
   {:pre [(some? sql)]}
 
   (let [m (hc/find-model (:schema sql)
-                         ::mo/LoginAccount)]
+                         ::LoginAccount)]
     (hc/exec-sql sql
                  (format "delete from %s where %s =?"
                          (hc/fmt-id sql
@@ -433,7 +475,7 @@
   [sql]
   {:pre [(some? sql)]}
 
-  (hc/find-all sql ::mo/LoginAccount))
+  (hc/find-all sql ::LoginAccount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- init-shiro
@@ -460,8 +502,73 @@
       (finally
         (c/info "created shiro security manager - ok.")))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn signup-test-expr<>
+(defrecord WebAuthPlugin [server _id info conf]
+  c/Hierarchical
+  (parent [_] server)
+  c/Idable
+  (id [_] _id)
+  c/Initable
+  (init [me arg]
+    (let [me2 (update-in me
+                         [:conf]
+                         #(-> (c/merge+ % arg)
+                              b/expand-vars* b/prevar-cfg))
+          po (b/dbpool?? server)
+          db (ht/dbio<+> po auth-meta-cache)]
+      (assert-plugin-ok po)
+      (init-shiro (:conf me2) (b/home-dir server))
+      (assoc me2 :db db)))
+  c/Finzable
+  (finz [me]
+    (some-> (:db me) c/finz)
+    (try (assoc me :db nil)
+         (finally (c/info "AuthPlugin disposed"))))
+  c/Startable
+  (start [_]
+    (c/start _ nil))
+  (start [me _]
+    (c/info "AuthPlugin started") me)
+  (stop [me]
+    (c/info "AuthPlugin stopped") me)
+  WebAuthPluginAPI
+  (check-action [me acctObj action] me)
+  (add-account [me arg]
+    (let [{:keys [principal credential]} arg
+          pkey (b/pkey-chars server)]
+      (create-login-account (ht/simple (:db me))
+                            principal
+                            (co/pwd<> credential pkey)
+                            (dissoc arg :principal :credential) [])))
+  (do-login [me u p]
+    (binding [*auth-db* (:db me)]
+      (let [cur (SecurityUtils/getSubject)
+            sss (.getSession cur)]
+        (c/debug "Current user session %s, object %s." sss cur)
+        (when-not (.isAuthenticated cur)
+          (c/try! ;;(.setRememberMe token true)
+                  (.login cur
+                          (UsernamePasswordToken. ^String u (i/x->str p)))
+                  (c/debug "User [%s] logged in successfully." u)))
+        (if (.isAuthenticated cur)
+          (.getPrincipal cur)))))
+  (get-roles [_ acct] [])
+  (has-account? [me arg]
+    (let [pkey (b/pkey-chars server)]
+      (has-login-account? (ht/simple (:db me))
+                          (:principal arg))))
+  (get-account [me arg]
+    (let [{:keys [principal email]} arg
+          pkey (b/pkey-chars server)
+          sql (ht/simple (:db me))]
+      (cond (c/hgl? principal)
+            (find-login-account sql principal)
+            (c/hgl? email)
+            (find-login-account-via-email sql email)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- signup??
 
   "Test component of a standard sign-up workflow."
   [^String challengeStr evt]
@@ -469,11 +576,11 @@
   (let [ck ((:cookies evt) ss/csrf-cookie)
         csrf (some-> ^HttpCookie
                      ck .getValue)
-        info (try (get-signup-info evt)
+        info (try (get-auth-info?? evt)
                   (catch DataError _ {:e _}))
         rb (b/get-rc-base)
-        pa (-> (c/parent evt)
-               c/parent (b/get-plugin :$auth))]
+        pa (-> evt c/parent c/parent
+               (b/find-plugin WebAuthPlugin))]
     (c/test-some "auth-plugin" pa)
     (c/debug "csrf = %s%s%s"
              csrf ", and form parts = " info)
@@ -494,22 +601,21 @@
           (GeneralSecurityException. (u/rstr rb "auth.bad.req")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn login-test-expr<>
+(defn- login??
 
   [evt]
 
   (let [ck ((:cookies evt) ss/csrf-cookie)
         csrf (some-> ^HttpCookie
                      ck .getValue)
-        info (try (get-signup-info evt)
+        info (try (get-auth-info?? evt)
                   (catch DataError _ {:e _}))
         rb (b/get-rc-base)
-        pa (-> (c/parent evt)
-               c/parent (b/get-plugin :$auth))]
+        pa (-> evt c/parent c/parent
+               (b/find-plugin WebAuthPlugin))]
     (c/test-some "auth-plugin" pa)
     (c/debug "csrf = %s%s%s"
-             csrf
-             ", and form parts = " info)
+             csrf ", and form parts = " info)
     (cond (some? (:e info))
           (:e info)
           (c/!eq? csrf (:csrf info))
@@ -523,72 +629,13 @@
           (GeneralSecurityException. (u/rstr rb "auth.bad.req")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defrecord WebAuthPlugin [server _id info conf]
-  c/Hierarchical
-  (parent [_] server)
-  c/Idable
-  (id [_] _id)
-  c/Initable
-  (init [me arg]
-    (let [me2 (update-in me
-                         [:conf]
-                         #(b/expand-vars* (c/merge+ % arg)))]
-      (-> server b/dbpool?? assert-plugin-ok)
-      (init-shiro (:conf me2) (b/home-dir server))
-      me2))
-  c/Finzable
-  (finz [me]
-    (c/info "AuthPlugin disposed") me)
-  c/Startable
-  (start [_]
-    (c/start _ nil))
-  (start [me _]
-    (c/info "AuthPlugin started") me)
-  (stop [me]
-    (c/info "AuthPlugin stopped") me)
-  WebAuthPluginAPI
-  (check-action [me acctObj action] me)
-  (add-account [me arg]
-    (let [{:keys [principal credential]} arg
-          pkey (b/pkey-chars server)]
-      (create-login-account (get-sqlr server)
-                            principal
-                            (co/pwd<> credential pkey)
-                            (dissoc arg :principal :credential) [])))
-  (do-login [me u p]
-    (binding [*meta-cache* mo/auth-meta-cache
-              *jdbc-pool* (b/dbpool?? server)]
-      (let [cur (SecurityUtils/getSubject)
-            sss (.getSession cur)]
-        (c/debug "Current user session %s, object %s." sss cur)
-        (when-not (.isAuthenticated cur)
-          (c/try! ;;(.setRememberMe token true)
-                  (.login cur
-                          (UsernamePasswordToken. ^String u (i/x->str p)))
-                  (c/debug "User [%s] logged in successfully." u)))
-        (if (.isAuthenticated cur)
-          (.getPrincipal cur)))))
-  (get-roles [_ acct] [])
-  (has-account? [me arg]
-    (let [pkey (b/pkey-chars server)]
-      (has-login-account? (get-sqlr server)
-                          (:principal arg))))
-  (get-account [me arg]
-    (let [{:keys [principal email]} arg
-          pkey (b/pkey-chars server)
-          sql (get-sqlr server)]
-      (cond (c/hgl? principal)
-            (find-login-account sql principal)
-            (c/hgl? email)
-            (find-login-account-via-email sql email)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def WebAuthSpec
   {:info {:name "Web Auth"
           :version "1.0.0"}
    :conf {:$pluggable ::web-ath<>
-          :shiro [:kkkCredentialsMatcher "czlab.blutbad.shiro.core.PwdMatcher"
-                  :kkk "czlab.blutbad.shiro.realm.JdbcRealm"
+          :data-source :default
+          :shiro [:kkkCredentialsMatcher "czlab.blutbad.web.auth.PwdMatcher"
+                  :kkk "czlab.blutbad.web.realm.JdbcRealm"
                   :kkk.credentialsMatcher "$kkkCredentialsMatcher"]}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -633,11 +680,11 @@
             j (hc/dbspec<> (assoc cfg :passwd pwd))
             t (hc/match-url?? (:url cfg))]
         (cond (.equals "init-db" cmd)
-              (mo/apply-ddl j)
+              (apply-ddl j)
               (.equals "gen-sql" cmd)
               (if (> (count args) 3)
-                (mo/export-auth-pluglet-ddl t
-                                            (io/file (nth args 3)))))))))
+                (export-auth-pluglet-ddl t
+                                         (io/file (nth args 3)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; home gen-sql alias outfile
@@ -650,5 +697,55 @@
   (if-not (< (count args) 3) (apply do-main args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn login
+
+  [evt]
+
+  (letfn
+    [(success [evt acct]
+       (let [res (cc/http-result evt)
+             plug (c/parent evt)
+             svr (c/parent plug)
+             pk (b/pkey-bytes svr)
+             cfg (get-in plug
+                         [:conf :session])
+             ck (csrf-token<> cfg)
+             mvs (-> (ss/wsession<> pk cfg)
+                     (ss/set-principal (:acctid acct)))]
+         (-> (cc/res-cookie-add res ck)
+             (cc/reply-result mvs))))
+     (fail [evt]
+       (-> (cc/http-result evt 403) cc/reply-result))]
+    (c/if-throw
+      [rc (login?? evt)] (fail evt) (success evt rc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn do-signup
+
+  [evt]
+
+  (letfn
+    [(success [evt acct]
+       (cc/reply-result (cc/http-result evt)))
+     (fail [evt ^Throwable err]
+       (let [rcb (-> evt
+                     c/parent
+                     c/parent c/id b/get-rc-bundle)
+             e (if (c/eq? "DuplicateUser"
+                          (.getMessage err))
+                 (u/rstr rcb "acct.dup.user"))
+             res (cc/http-result evt (if (c/hgl? e) 409 400))]
+         (cc/reply-result
+           (if (c/nichts? e)
+             res
+             (->> (if-not (cc/is-ajax? evt)
+                    e
+                    (i/fmt->json {:error {:msg e}}))
+                  (cc/res-body-set res))))))]
+    (c/if-throw
+      [rc (signup?? "32" evt)] (fail evt rc) (success evt rc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
+
 

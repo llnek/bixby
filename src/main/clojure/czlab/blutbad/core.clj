@@ -329,8 +329,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol Execvisor
-  (has-plugin? [_ id] "")
+  (find-plugin [_ ptype] "")
   (get-plugin [_ id] "")
+  (has-plugin? [_ id] "")
   (locale [_] "")
   (start-time [_] "")
   (pkey-chars [_] "")

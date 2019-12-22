@@ -6,7 +6,7 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.blutbad.plugs.socket
+(ns czlab.blutbad.plugs.tcp
 
   "Implementation for TCP socket service."
 

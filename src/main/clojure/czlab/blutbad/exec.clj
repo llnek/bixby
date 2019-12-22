@@ -243,6 +243,10 @@
       (has-plugin? [_ sid]
         (c/in? (get-in @ctx
                        [:conf :plugins]) (keyword sid)))
+      (find-plugin [_ ptype]
+        (some #(let [[_ v] %]
+                 (c/if-inst ptype v v))
+              (get-in @ctx [:conf :plugins])))
       (get-plugin [_ sid]
         (get (get-in @ctx
                      [:conf :plugins]) (keyword sid)))

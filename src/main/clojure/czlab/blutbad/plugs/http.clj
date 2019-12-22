@@ -344,7 +344,6 @@
                     :hidden? true
                     :secure? false
                     :crypt? false
-                    :web-auth? true
                     :domain ""
                     :domainPath "/"}
           :wsite {:public-dir "${blutbad.user.dir}/public"

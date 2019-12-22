@@ -6,18 +6,17 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.blutbad.shiro.realm
+(ns czlab.blutbad.web.realm
 
   (:gen-class
    :extends org.apache.shiro.realm.AuthorizingRealm
-   :name czlab.blutbad.shiro.realm.JdbcRealm
+   :name czlab.blutbad.web.realm.JdbcRealm
    :init my-init
    :constructors {[] []}
    :exposes-methods { }
    :state my-state)
 
-  (:require [czlab.blutbad.shiro.core :as sh]
-            [czlab.blutbad.shiro.model :as mo]
+  (:require [czlab.blutbad.web.auth :as w]
             [czlab.basal.core :as c]
             [czlab.hoard.core :as hc]
             [czlab.hoard.rels :as hr]
@@ -46,11 +45,10 @@
 
   [^AuthorizingRealm this ^AuthenticationToken token]
 
-  (let [db (ht/dbio<+> sh/*jdbc-pool* sh/*meta-cache*)
-        ;;pwd (.getCredentials token)
+  (let [;;pwd (.getCredentials token)
         user (.getPrincipal token)
-        sql (ht/simple db)]
-    (when-some [acc (sh/find-login-account sql user)]
+        sql (ht/simple w/*auth-db*)]
+    (when-some [acc (w/find-login-account sql user)]
       (SimpleAccount. acc (:passwd acc) (.getName this)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -58,18 +56,14 @@
 
   [^AuthorizingRealm this ^PrincipalCollection principals]
 
-  (let [db (ht/dbio<+> sh/*jdbc-pool* sh/*meta-cache*)
-        acc (.getPrimaryPrincipal principals)
-        sql (ht/simple db)
+  (let [acc (.getPrimaryPrincipal principals)
+        sql (ht/simple w/*auth-db*)
         S (:schema sql)]
     (c/do-with
       [rc (SimpleAccount. acc
                           (:passwd acc)
                           (.getName this))]
-      (doseq [r (hr/get-m2m
-                  (hc/gmxm (hc/find-model S
-                                          ::mo/AccountRoles)) sql acc)]
-        (.addRole rc ^String (:name r))))))
+      (doseq [r (w/list-roles acc sql)] (.addRole rc ^String (:name r))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -init [] nil)
