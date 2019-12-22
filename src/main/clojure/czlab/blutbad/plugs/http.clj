@@ -23,7 +23,6 @@
             [czlab.nettio.core :as nc]
             [czlab.nettio.server :as sv]
             [czlab.blutbad.core :as b]
-            [czlab.blutbad.plugs.mvc :as mvc]
             [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.niou.core WsockMsg Http1xMsg]
@@ -170,9 +169,7 @@
            :id (str "HttpMsg#" (u/seqint2))
            :session (if (and (c/!false? want-session?)
                              (:session? route))
-                       (ss/upstream (-> plug
-                                        c/parent
-                                        b/pkey-bytes) cookies crypt?)))))
+                       (ss/upstream (-> plug c/parent b/pkey) cookies crypt?)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- evt<>
@@ -287,7 +284,8 @@
            ;:routes (load-routes?? routes)
            :server-key server-key
            :passwd (->> server
-                        b/pkey-chars
+                        b/pkey
+                        i/x->chars
                         (co/pwd<> passwd) co/pw-text))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -306,9 +304,7 @@
           pub (io/file (str public-dir) (str page-dir))]
       (c/info (str "http-plug: page-dir= %s.\n"
                    "http-plug: pub-dir= %s.") page-dir pub)
-      (assoc me
-             :conf
-             (assoc cfg :ftl-cfg (mvc/ftl-config<> pub)))))
+      (assoc me :conf cfg)))
   c/Finzable
   (finz [me] (c/stop me))
   c/Startable

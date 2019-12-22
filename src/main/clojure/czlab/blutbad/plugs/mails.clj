@@ -162,7 +162,7 @@
   c/Initable
   (init [me arg]
     (let [{:keys [sslvars vars]} me
-          pk (-> me c/parent b/pkey-chars)]
+          pk (i/x->chars (-> me c/parent b/pkey))]
       (-> (update-in me
                      [:conf]
                      #(sanitize pk

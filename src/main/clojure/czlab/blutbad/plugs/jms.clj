@@ -118,8 +118,8 @@
   (iniz-fac [me ctx cf]
     (let [{:keys [destination jms-pwd jms-user]} conf
           c (.lookup ^InitialContext ctx ^String destination)
-          pwd (->> me c/parent
-                   b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
+          pwd (->> (c/parent me)
+                   b/pkey i/x->chars (co/pwd<> jms-pwd) co/pw-text)]
       (c/do-with [^Connection
                   conn (if (c/nichts? jms-user)
                          (.createConnection ^ConnectionFactory cf)
@@ -140,8 +140,8 @@
   (iniz-topic [me ctx cf]
     (let [{:keys [destination
                   jms-user durable? jms-pwd]} conf
-          pwd (->> me c/parent
-                   b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
+          pwd (->> (c/parent me)
+                   b/pkey i/x->chars (co/pwd<> jms-pwd) co/pw-text)]
       (c/do-with [^TopicConnection
                   conn
                   (if (c/nichts? jms-user)
@@ -162,8 +162,8 @@
                   (onMessage [_ m] (on-msg me m)))))))))
   (iniz-queue [me ctx cf]
     (let [{:keys [destination jms-user jms-pwd]} conf
-          pwd (->> me c/parent
-                   b/pkey-chars (co/pwd<> jms-pwd) co/pw-text)]
+          pwd (->> (c/parent me)
+                   b/pkey i/x->chars (co/pwd<> jms-pwd) co/pw-text)]
       (c/do-with [^QueueConnection
                   conn
                   (if (c/nichts? jms-user)
@@ -188,9 +188,9 @@
   (init [me arg]
     (update-in me
                [:conf]
-               #(-> me
-                    c/parent
-                    b/pkey-chars
+               #(-> (c/parent me)
+                    b/pkey
+                    i/x->chars
                     (sanitize (c/merge+ % arg))
                     b/expand-vars* b/prevar-cfg)))
   c/Finzable

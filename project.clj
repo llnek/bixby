@@ -22,7 +22,7 @@
                  [io.czlab/basal "1.1.0"]
                  [commons-net/commons-net "3.6"]
                  [org.apache.shiro/shiro-core "1.4.2"]
-                 [org.freemarker/freemarker "2.3.29"]
+                 ;[org.freemarker/freemarker "2.3.29"]
                  [io.czlab/antclj "1.0.4"]
                  [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
 

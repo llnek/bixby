@@ -85,7 +85,7 @@
   "Initialize and connect all required dbs."
   [exec ctx]
 
-  (let [pk (b/pkey-chars exec)
+  (let [pk (i/x->chars (b/pkey exec))
         m (c/preduce<map>
             #(let [[k v] %2
                    pwd (-> (:passwd v)
@@ -254,8 +254,7 @@
       (dbpool?? [_] (get-dbpool?? ctx ""))
       (dbapi?? [_ gid] (get-dbapi?? ctx gid))
       (dbapi?? [_ ] (get-dbapi?? ctx ""))
-      (pkey-bytes [_] (-> (get-in @ctx [:conf :info :digest]) i/x->bytes))
-      (pkey-chars [_] (-> (get-in @ctx [:conf :info :digest]) i/x->chars)))))
+      (pkey [_] (-> (get-in @ctx [:conf :info :digest]) i/x->bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- primodial

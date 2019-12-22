@@ -56,9 +56,8 @@
 
   [^AuthorizingRealm this ^PrincipalCollection principals]
 
-  (let [acc (.getPrimaryPrincipal principals)
-        sql (ht/simple w/*auth-db*)
-        S (:schema sql)]
+  (let [sql (ht/simple w/*auth-db*)
+        acc (.getPrimaryPrincipal principals)]
     (c/do-with
       [rc (SimpleAccount. acc
                           (:passwd acc)

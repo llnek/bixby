@@ -154,9 +154,7 @@
   ([evt attrs]
    (let [plug (c/parent evt)]
      (c/do-with
-       [s (ss/wsession<> (-> plug
-                             c/parent
-                             b/pkey-bytes)
+       [s (ss/wsession<> (-> plug c/parent b/pkey)
                          (get-in plug [:conf :session]))]
        (doseq [[k v] attrs] (ss/set-session-attr s k v))))))
 
@@ -536,7 +534,7 @@
   (check-action [me acctObj action] me)
   (add-account [me arg]
     (let [{:keys [principal credential]} arg
-          pkey (b/pkey-chars server)]
+          pkey (i/x->chars (b/pkey server))]
       (create-login-account (ht/simple (:db me))
                             principal
                             (co/pwd<> credential pkey)
@@ -555,13 +553,13 @@
           (.getPrincipal cur)))))
   (get-roles [_ acct] [])
   (has-account? [me arg]
-    (let [pkey (b/pkey-chars server)]
+    (let [pkey (i/x->chars (b/pkey server))]
       (has-login-account? (ht/simple (:db me))
                           (:principal arg))))
   (get-account [me arg]
     (let [{:keys [principal email]} arg
-          pkey (b/pkey-chars server)
-          sql (ht/simple (:db me))]
+          sql (ht/simple (:db me))
+          pkey (i/x->chars (b/pkey server))]
       (cond (c/hgl? principal)
             (find-login-account sql principal)
             (c/hgl? email)
@@ -571,11 +569,14 @@
 (defn- signup??
 
   "Test component of a standard sign-up workflow."
-  [^String challengeStr evt]
+  [{:keys [cookies] :as evt}]
 
-  (let [ck ((:cookies evt) ss/csrf-cookie)
-        csrf (some-> ^HttpCookie
-                     ck .getValue)
+  (let [^HttpCookie ck
+        (get cookies ss/csrf-cookie)
+        ^HttpCookie cp
+        (get cookies ss/capc-cookie)
+        csrf (some-> ck .getValue)
+        capc (some-> cp .getValue)
         info (try (get-auth-info?? evt)
                   (catch DataError _ {:e _}))
         rb (b/get-rc-base)
@@ -586,10 +587,11 @@
              csrf ", and form parts = " info)
     (cond (some? (:e info))
           (:e info)
-          (and (c/hgl? challengeStr)
-               (c/!eq? challengeStr (:captcha info)))
+          (not (and (c/hgl? capc)
+                    (c/eq? capc (:captcha info))))
           (GeneralSecurityException. (u/rstr rb "auth.bad.cha"))
-          (c/!eq? csrf (:csrf info))
+          (not (and (c/hgl? csrf)
+                    (c/eq? csrf (:csrf info))))
           (GeneralSecurityException. (u/rstr rb "auth.bad.tkn"))
           (and (c/hgl? (:credential info))
                (c/hgl? (:principal info))
@@ -603,9 +605,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- login??
 
-  [evt]
+  [{:keys [cookies] :as evt}]
 
-  (let [ck ((:cookies evt) ss/csrf-cookie)
+  (let [ck (get cookies ss/csrf-cookie)
         csrf (some-> ^HttpCookie
                      ck .getValue)
         info (try (get-auth-info?? evt)
@@ -618,7 +620,8 @@
              csrf ", and form parts = " info)
     (cond (some? (:e info))
           (:e info)
-          (c/!eq? csrf (:csrf info))
+          (not (and (c/hgl? csrf)
+                    (c/eq? csrf (:csrf info))))
           (GeneralSecurityException. (u/rstr rb "auth.bad.tkn"))
           (and (c/hgl? (:credential info))
                (c/hgl? (:principal info)))
@@ -706,11 +709,10 @@
        (let [res (cc/http-result evt)
              plug (c/parent evt)
              svr (c/parent plug)
-             pk (b/pkey-bytes svr)
              cfg (get-in plug
                          [:conf :session])
              ck (csrf-token<> cfg)
-             mvs (-> (ss/wsession<> pk cfg)
+             mvs (-> (ss/wsession<> (b/pkey svr) cfg)
                      (ss/set-principal (:acctid acct)))]
          (-> (cc/res-cookie-add res ck)
              (cc/reply-result mvs))))
