@@ -20,9 +20,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;doing this to get rid reflection warning from stencil
 ;seems to work
+(comment
 (binding
   [*warn-on-reflection* false]
-  (require '[stencil.core :as sc]))
+  (require '[stencil.core :as sc])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(set! *warn-on-reflection* true)
@@ -37,7 +38,7 @@
   (c/prn!! "Generating new 'blutbad' project...")
   (try (let [dir (c/_2 (drop-while
                          #(c/!eq? "--to-dir" %) args))
-             options {:renderer-fn sc/render-string
+             options {:renderer-fn nil ;sc/render-string
                       :force? (some? (c/_1 (drop-while
                                              #(c/!eq? "--force" %) args)))
                       :dir (or dir (-> (u/get-user-dir) (io/file name) .getPath))}]

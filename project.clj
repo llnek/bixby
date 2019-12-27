@@ -12,7 +12,7 @@
                  [org.apache.commons/commons-text "1.8"]
                  [commons-io/commons-io "2.6"]
                  [io.aviso/pretty "0.1.37"]
-                 [stencil "0.5.0"]
+                 ;[stencil "0.5.0"]
                  ;;shiro needs this
                  [commons-logging "1.2"]
                  [io.czlab/twisty "1.1.0"]
@@ -22,7 +22,7 @@
                  [io.czlab/basal "1.1.0"]
                  [commons-net/commons-net "3.6"]
                  [org.apache.shiro/shiro-core "1.4.2"]
-                 ;[org.freemarker/freemarker "2.3.29"]
+                 [org.freemarker/freemarker "2.3.29"]
                  [io.czlab/antclj "1.0.4"]
                  [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
 

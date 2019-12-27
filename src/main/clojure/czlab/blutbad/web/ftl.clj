@@ -6,21 +6,16 @@
 ;; the terms of this license.
 ;; You must not remove this notice, or any other, from this software.
 
-(ns czlab.blutbad.plugs.mvc
+(ns czlab.blutbad.web.ftl
 
   (:require [clojure.java.io :as io]
             [clojure.walk :as cw]
             [clojure.string :as cs]
-            [czlab.niou.core :as cc]
-            [czlab.niou.webss :as ss]
             [czlab.basal.io :as i]
             [czlab.basal.core :as c]
-            [czlab.basal.util :as u]
-            [czlab.nettio.resp :as nr]
-            [czlab.blutbad.core :as b])
+            [czlab.basal.util :as u])
 
-  (:import [clojure.lang APersistentMap]
-           [freemarker.template
+  (:import [freemarker.template
             TemplateMethodModelEx
             TemplateBooleanModel
             TemplateCollectionModel
@@ -32,7 +27,6 @@
             TemplateMethodModel
             Configuration
             DefaultObjectWrapper]
-           [java.net HttpCookie]
            [java.util Date]
            [czlab.basal XData]
            [java.io File Writer StringWriter]))
@@ -43,6 +37,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol CljApi
   (x->clj [_] "Turn something into clojure."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defprotocol ConfigAPI
+  (load-template [_ tpath data] "")
+  (render->ftl [_ path model]
+               [_ path model xref?] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-protocol CljApi
@@ -73,32 +73,20 @@
     (u/throw-BadArg "Failed to convert %s" (class _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- x->ftl<method>
-
-  "Morph the func into a ftl method call."
-  [func]
-
-  (reify
-    TemplateMethodModelEx
-    (exec [_ args] (apply func (map x->clj args)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- skey
-
-  "Sanitize the key."
-  [[k v]]
-
-  [(cs/replace (c/kw->str k) #"[$!#*+\-]" "_")  v])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- x->ftl<model>
 
   "Sanitize the model to be ftl compliant."
   [m]
 
-  (cw/postwalk #(cond
-                  (map? %) (c/map-> (map skey %))
-                  (fn? %) (x->ftl<method> %) :else %) m))
+  (letfn
+    [(skey [[k v]]
+       [(cs/replace (c/kw->str k) #"[$!#*+\-]" "_") v])
+     (x->ftl [func]
+       (reify TemplateMethodModelEx
+         (exec [_ args] (apply func (map x->clj args)))))]
+    (cw/postwalk #(cond
+                    (map? %) (c/map-> (map skey %))
+                    (fn? %) (x->ftl %) :else %) m)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn ftl-config<>
@@ -106,7 +94,8 @@
   "Create a FTL config."
   {:tag Configuration}
 
-  ([root] (ftl-config<> root nil))
+  ([root]
+   (ftl-config<> root nil))
 
   ([root shared-vars]
    (c/do-with [cfg (Configuration.)]
@@ -122,34 +111,26 @@
          (.setSharedVariable cfg k v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- render->ftl
-
-  "Renders a template given by Configuration and a path
-   using model as input and writes it to a output string.
-   If xref?, x->ftl<model> is run on the model."
-  {:tag String}
-
-  ([path cfg model]
-   (render->ftl path cfg model nil))
-
-  ([path cfg model xref?]
-   (c/do-with-str [out (StringWriter.)]
-     (c/debug "about to render tpl: %s." path)
-     (if-some [t (.getTemplate ^Configuration cfg ^String path)]
-       (.process t
-                 (if xref? (x->ftl<model> model) model) out)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn load-template
-
-  [tpath cfg data]
-
-  (let [ts (str "/" (c/triml tpath "/"))]
-    {:data (-> (render->ftl ts cfg data) XData.)
-     :ctype
-     (cond (cs/ends-with? ts ".json") "application/json"
-           (cs/ends-with? ts ".xml") "application/xml"
-           (cs/ends-with? ts ".html") "text/html" :else "text/plain")}))
+(extend-protocol ConfigAPI
+  Configuration
+  (load-template [cfg tpath data]
+    (let [ts (str "/" (c/triml tpath "/"))]
+      {:data (XData. (render->ftl cfg ts data))
+       :ctype (condp #(cs/ends-with? %2 %1) ts
+                ".json" "application/json"
+                ".xml" "application/xml"
+                ".html" "text/html"
+                ;else
+                "text/plain")}))
+  (render->ftl
+    ([cfg path model]
+     (render->ftl cfg path model nil))
+    ([cfg path model xref?]
+     (c/do-with-str [out (StringWriter.)]
+       (c/debug "about to render tpl: %s." path)
+       (if-some [t (.getTemplate cfg ^String path)]
+         (.process t
+                   (if xref? (x->ftl<model> model) model) out))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

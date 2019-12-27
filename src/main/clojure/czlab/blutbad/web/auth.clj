@@ -265,10 +265,11 @@
 
   (let [tbl (->> ::LoginAccount
                  (hc/find-model auth-meta-cache) hc/find-table)]
-    (if-not
-      (hc/table-exist? pool tbl)
-      (apply-ddl pool))
-    (if (hc/table-exist? pool tbl)
+    (if-not (c/wo* [^Connection
+                    c (hc/next pool)]
+              (hc/table-exist? c tbl)) (apply-ddl pool))
+    (if (c/wo* [^Connection
+                c (hc/next pool)] (hc/table-exist? c tbl))
       (c/info "czlab.blutbad.web.auth - db = ok.")
       (hc/dberr! (u/rstr (b/get-rc-base) "auth.no.table" tbl)))))
 
@@ -482,6 +483,7 @@
 
   (let [{:keys [shiro]} conf
         f (io/file homeDir b/dn-etc "shiro.ini")]
+    (.mkdirs (.getParentFile f))
     (if-not (i/file-read? f)
       (i/spit-utf8 f
                    (str "[main]\n"
@@ -513,11 +515,14 @@
                          [:conf]
                          #(-> (c/merge+ % arg)
                               b/expand-vars* b/prevar-cfg))
-          po (b/dbpool?? server)
-          db (ht/dbio<+> po auth-meta-cache)]
+          _ (c/debug "%s" (i/fmt->edn conf))
+          po (b/dbpool?? server (:data-source conf))]
+      (->> (b/home-dir server)
+           (init-shiro conf))
       (assert-plugin-ok po)
-      (init-shiro (:conf me2) (b/home-dir server))
-      (assoc me2 :db db)))
+      (assoc me2
+             :db
+             (ht/dbio<+> po auth-meta-cache))))
   c/Finzable
   (finz [me]
     (some-> (:db me) c/finz)

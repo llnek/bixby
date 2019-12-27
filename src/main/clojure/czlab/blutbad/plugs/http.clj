@@ -23,6 +23,7 @@
             [czlab.nettio.core :as nc]
             [czlab.nettio.server :as sv]
             [czlab.blutbad.core :as b]
+            [czlab.blutbad.web.ftl :as t]
             [czlab.basal.core :as c :refer [is?]])
 
   (:import [czlab.niou.core WsockMsg Http1xMsg]
@@ -297,14 +298,21 @@
   c/Initable
   (init [me arg]
     (let [{:as cfg
-           {:keys[public-dir page-dir]} :wsite}
+           {:keys[template-engine
+                  public-dir page-dir]} :wsite}
           (-> (c/merge+ conf arg)
               (basicfg server)
               b/expand-vars* b/prevar-cfg)
-          pub (io/file (str public-dir) (str page-dir))]
-      (c/info (str "http-plug: page-dir= %s.\n"
-                   "http-plug: pub-dir= %s.") page-dir pub)
-      (assoc me :conf cfg)))
+          pub (io/file (str public-dir)
+                       (str page-dir))
+          eng (if
+                (c/or?? [= template-engine]
+                        :default :freemarker)
+                (t/ftl-config<> pub))]
+      (c/info "page-dir= %s." page-dir)
+      (c/info "pub-dir= %s." pub)
+      (assoc me
+             :conf (assoc cfg :template-engine eng))))
   c/Finzable
   (finz [me] (c/stop me))
   c/Startable
@@ -344,6 +352,7 @@
                     :domainPath "/"}
           :wsite {:public-dir "${blutbad.user.dir}/public"
                   :file-access-check? true
+                  :template-engine :default
                   :uri-prefix "/public/"
                   :media-dir "res"
                   :page-dir "htm"

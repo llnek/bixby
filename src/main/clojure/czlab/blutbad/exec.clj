@@ -39,7 +39,7 @@
   "Get this db config, or default."
   [ctx gid]
 
-  (get (:dbps @ctx) (keyword (c/stror gid b/dft-dbid))))
+  (get (get-in @ctx [:conf :rdbms]) (or gid b/dft-dbid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- get-dbapi??
@@ -251,9 +251,9 @@
         (get (get-in @ctx
                      [:conf :plugins]) (keyword sid)))
       (dbpool?? [_ gid] (get-dbpool?? ctx gid))
-      (dbpool?? [_] (get-dbpool?? ctx ""))
+      (dbpool?? [_] (get-dbpool?? ctx nil))
       (dbapi?? [_ gid] (get-dbapi?? ctx gid))
-      (dbapi?? [_ ] (get-dbapi?? ctx ""))
+      (dbapi?? [_ ] (get-dbapi?? ctx nil))
       (pkey [_] (-> (get-in @ctx [:conf :info :digest]) i/x->bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
