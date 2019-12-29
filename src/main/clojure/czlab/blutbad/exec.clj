@@ -229,8 +229,8 @@
                              :rdbms ds
                              :plugins ps))
           (swap! ctx
-                 #(assoc :cpu (c/finz (:cpu %))))
-          (c/info "execvisor terminated - ok.")))
+                 #(assoc % :cpu (c/finz (:cpu %))))
+          (c/info "execvisor finz'ed - ok.") me))
       b/Execvisor
       (start-time [_] _start-time)
       (uptime [_]
@@ -268,12 +268,13 @@
   (c/do-with
     [e (execvisor<> ctx)]
     (->> #(when-not @stopcli?
-            (vreset! stopcli? true)
-            (c/info "stopping blutbad server...")
-            (c/stop e)
-            (c/finz e)
-            (shutdown-agents)
-            (c/info "blutbad has stopped - ok."))
+            (try
+              (c/info "stopping blutbad server...")
+              (c/stop e)
+              (c/finz e)
+              (c/info "blutbad has stopped - ok.")
+              (finally
+                (vreset! stopcli? true))))
          (c/assoc!! ctx :stop!)
          (c/init e))
     (c/info "%s" (c/repeat-str 78 "*"))
@@ -288,7 +289,9 @@
   [home confObj join?]
 
   (let [{{:keys [encoding]} :info
+         {:keys [main-wait-millis]} :env
          {:keys [country lang]} :locale} confObj
+        main-wait-millis (c/num?? main-wait-millis 5000)
         stopcli? (volatile! false)
         ctx (atom {:encoding (c/stror encoding "utf-8")
                    :home-dir (io/file home)
@@ -333,9 +336,11 @@
     ;block?
 
     (when join?
-      (loop []
-        (if @stopcli?
-          (shutdown-agents) (do (u/pause 3000) (recur)))))))
+      (while
+        (not @stopcli?)
+        (u/pause main-wait-millis))
+      (c/info "exiting...")
+      (c/try! (shutdown-agents)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config

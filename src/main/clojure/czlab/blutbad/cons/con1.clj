@@ -276,7 +276,7 @@
   "Print from the function."
   [args]
 
-  (c/prn!! (on-generate args)))
+  (c/prn!! "%s" (on-generate args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-test-jce

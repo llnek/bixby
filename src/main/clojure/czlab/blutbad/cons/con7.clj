@@ -51,26 +51,28 @@
   [pod?]
 
   (let [walls ["" "        " ""]
+        rcb (b/get-rc-base)
         style {:middle ["" "" ""]
                :bottom ["" "" ""]
                :top ["" "" ""]
                :dash " "
                :body-walls walls
-               :header-walls walls}
-        rcb (b/get-rc-base)]
-    (-> (b/banner) ansi/bold-yellow c/prn!!)
-    (c/prn! "%s\n\n"
-            (u/rstr rcb "blutbad.desc"))
-    (c/prn! "%s\n"
-            (u/rstr rcb "cmds.header"))
+               :header-walls walls}]
+    (-> (b/banner)
+        ansi/bold-yellow c/prn!!)
+
+    (c/prn!! "%s\n"
+             (u/rstr rcb "blutbad.desc"))
+    (c/prn!! "%s"
+             (u/rstr rcb "cmds.header"))
     ;; prepend blanks to act as headers
-    (c/prn! "%s\n\n"
-            (c/strim
-              (with-out-str
-                (-> (concat '(("" ""))
-                            (get-cmd-info rcb pod?))
-                    (tbl/table :style style)))))
-    (c/prn! "%s\n\n" (u/rstr rcb "cmds.trailer"))
+    (c/prn!! "%s\n"
+             (c/strim
+               (with-out-str
+                 (-> (concat '(("" ""))
+                             (get-cmd-info rcb pod?))
+                     (tbl/table :style style)))))
+    (c/prn!! "%s\n" (u/rstr rcb "cmds.trailer"))
     ;;the table module causes some agent stuff to hang
     ;;the vm without exiting, so shut them down
     (shutdown-agents)))
@@ -86,6 +88,11 @@
         rcb (u/get-resource b/c-rcb-base)
         home (io/file (or (:home options)
                           (u/get-user-dir)))
+        cfg (if-some
+              [f (c/try!
+                   (b/get-conf-file))]
+              (b/slurp-conf f))
+        pk (get-in cfg [:info :digest])
         verStr (c/stror (some-> ver
                                 (.getString "version")) "?")]
     (u/set-sys-prop! "blutbad.user.dir" (u/fpath home))
@@ -98,13 +105,13 @@
                        keyword
                        c1/blutbad-tasks)]
         (if (fn? f)
-          (f (drop 1 args))
+          (binding [c1/*pkey-object* pk
+                    c1/*config-object* cfg]
+            (f (drop 1 args)))
           (u/throw-BadData "CmdError!")))
       (catch Throwable _
-        (if-not (is? DataError _)
-          (u/prn-stk _)
-          (usage (try (b/get-conf-file)
-                      (catch Throwable _ nil))))))))
+        (if (is? DataError _)
+          (usage cfg) (u/prn-stk _))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

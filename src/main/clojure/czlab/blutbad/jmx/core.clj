@@ -141,7 +141,7 @@
   (stop [me]
     (let [{:keys [rmi conn]} me]
       (c/try! (some-> ^JMXConnectorServer conn c/stop))
-      (u/try!!!
+      (c/try!
         (some-> ^Registry rmi
                 (UnicastRemoteObject/unexportObject true)))
       (try (c/reset me)
