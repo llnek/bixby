@@ -84,7 +84,7 @@
                   (if-not (c/hasic-all?
                             (u/emsg t)
                             ["closed" "socket"])
-                    (c/warn t "socket error"))))))
+                    (c/warn t "socket error"))))) {:daemon? true})
       (assoc me :soc ssoc)))
   (stop [me]
     (i/klose (:soc me))

@@ -26,9 +26,10 @@
 
   (:import [java.io File StringWriter]
            [java.util Date Locale]
-           [java.net URL]
+           [java.io DataInputStream]
            [clojure.lang Atom]
-           [java.security SecureRandom]))
+           [java.security SecureRandom]
+           [java.net InetAddress URL Socket]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -54,21 +55,38 @@
       (c/debug "using db-config: %s." gid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(c/def- kw-kill (keyword (str "kill-" (u/jid<>))))
+(c/def- kw-jmx (keyword (str "jmx-" (u/jid<>))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xref-plugs
 
   "Scan and instantiate plugins from the config."
-  [exec ctx]
+  [exec ctx kill?]
 
-  (let [jmx (some->> (get-in @ctx
+  (let [kill-port (c/s->int (u/get-sys-prop "blutbad.kill.port") 4444)
+        kill-host (-> (InetAddress/getLocalHost) .getHostName)
+        kill (->> {:$pluggable :czlab.blutbad.plugs.tcp/socket<>
+                   :enabled? kill?
+                   :$action (fn [evt]
+                              (let [n (-> (:in evt)
+                                          DataInputStream. .readInt)]
+                                (c/try! (.close ^Socket (:socket evt)))
+                                (when (== 117 n)
+                                  (p/async! (:stop! @ctx) {:daemon? true}))))
+                   :host kill-host
+                   :port kill-port}
+                  (b/plugin<> exec kw-kill))
+        jmx (some->> (get-in @ctx
                              [:conf :jmx])
-                     (b/plugin<> exec :$jmx))
+                     (b/plugin<> exec kw-jmx))
         ps (c/preduce<map>
              #(let [[k cfg] %2
                     p (b/plugin<> exec k cfg)]
                 (if (nil? p)
                   %1 (assoc! %1 (c/id p) p)))
              (get-in @ctx [:conf :plugins]))
-        ps (if (nil? jmx) ps (assoc ps (c/id jmx) jmx))]
+        ps (if (nil? jmx) ps (assoc ps (c/id jmx) jmx))
+        ps (if (nil? kill) ps (assoc ps (c/id kill) kill))]
     (swap! ctx
            #(update-in % [:conf] assoc :plugins ps))
     (c/info "+++++++++++++++++++++++++ plugins +++++++++++++++++++")
@@ -117,7 +135,7 @@
         {:keys [main]} info
         id (c/id exec)
         sys' (merge {:threads (u/pthreads)} env)
-        jmx' (-> jmx/JMXSpec :conf (merge jmx))
+        jmx' (-> jmx/JMXSpec :conf (c/merge+ jmx))
         res (->> (c/fmt b/c-rcprops
                         (.getLanguage ^Locale locale))
                  (io/file (b/home-dir exec) b/dn-etc))]
@@ -149,7 +167,7 @@
            assoc
            :cpu (-> (p/scheduler<> id sys') c/activate))
     ;build plugins
-    (xref-plugs exec ctx)
+    (xref-plugs exec ctx (c/!false? (:kill-port? sys')))
     (c/info "execvisor: (%s) initialized - ok." id) exec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -186,7 +204,7 @@
                                    v' (c/start v)]
                                (c/info "plugin-start: %s" k)
                                (c/info "%s" (:conf v))
-                               [k (if (not= k :$jmx)
+                               [k (if (not= k kw-jmx)
                                     v'
                                     (c/_2 (b/jmx-reg v'
                                                      me
@@ -339,8 +357,8 @@
       (while
         (not @stopcli?)
         (u/pause main-wait-millis))
-      (c/info "exiting...")
-      (c/try! (shutdown-agents)))))
+      (c/try! (shutdown-agents))
+      (c/info "exiting main()..."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config

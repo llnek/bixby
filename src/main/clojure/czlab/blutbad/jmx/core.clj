@@ -137,16 +137,15 @@
     (try (merge me
                 (start-rmi me) (start-jmx me))
          (finally
-           (c/info "JmxPluglet started - ok."))))
+           (c/info "JmxPlugin started - ok."))))
   (stop [me]
-    (let [{:keys [rmi conn]} me]
-      (c/try! (some-> ^JMXConnectorServer conn c/stop))
+    (let [{:as me2
+           :keys [rmi conn]} (c/reset me)]
+      (c/try! (some-> ^JMXConnectorServer conn .stop))
       (c/try!
         (some-> ^Registry rmi
                 (UnicastRemoteObject/unexportObject true)))
-      (try (c/reset me)
-           (finally
-             (c/info "jmx pluglet stopped - ok."))))))
+      (c/info "jmx plugin stopped - ok.") me2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def JMXSpec

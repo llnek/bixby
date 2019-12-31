@@ -75,7 +75,7 @@
                  (c/fn_0 (p/async!
                            #(while @loopy
                               (waker plug)
-                              (u/pause ms)))) conf false))))
+                              (u/pause ms)) {:daemon? true})) conf false))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn stop-threaded-loop!

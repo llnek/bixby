@@ -316,6 +316,7 @@
                  (do (c/debug "calling rt-var %s." h)
                      (u/var* rt h))
                  (or (var? h)
+                     (fn? h)
                      (nil? h)) h
                  :else
                  (c/raise! "Bad action %s!" %)))

@@ -88,30 +88,30 @@
         rcb (u/get-resource b/c-rcb-base)
         home (io/file (or (:home options)
                           (u/get-user-dir)))
-        cfg (if-some
-              [f (c/try!
-                   (b/get-conf-file))]
-              (b/slurp-conf f))
-        pk (get-in cfg [:info :digest])
         verStr (c/stror (some-> ver
                                 (.getString "version")) "?")]
     (u/set-sys-prop! "blutbad.user.dir" (u/fpath home))
     (u/set-sys-prop! "blutbad.version" verStr)
     (b/set-rc-base! rcb)
-    (try
-      (if (empty? args)
-        (u/throw-BadData "CmdError!"))
-      (let [[f _] (->> (c/_1 args)
-                       keyword
-                       c1/blutbad-tasks)]
-        (if (fn? f)
-          (binding [c1/*pkey-object* pk
-                    c1/*config-object* cfg]
-            (f (drop 1 args)))
-          (u/throw-BadData "CmdError!")))
-      (catch Throwable _
-        (if (is? DataError _)
-          (usage cfg) (u/prn-stk _))))))
+    (let [cfg (if-some
+                [f (c/try!
+                     (b/get-conf-file))]
+                (b/slurp-conf f))]
+      (try
+        (if (empty? args)
+          (u/throw-BadData "CmdError!"))
+        (let [pk (get-in cfg [:info :digest])
+              [f _] (->> (c/_1 args)
+                         keyword
+                         c1/blutbad-tasks)]
+          (if (fn? f)
+            (binding [c1/*pkey-object* pk
+                      c1/*config-object* cfg]
+              (f (drop 1 args)))
+            (u/throw-BadData "CmdError!")))
+        (catch Throwable _
+          (if (is? DataError _)
+            (usage cfg) (u/prn-stk _)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

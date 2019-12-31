@@ -27,8 +27,8 @@
             Calendar
             Map
             Date]
-           [java.io File]
-           [org.apache.commons.io FileUtils]))
+           [java.io DataOutputStream File]
+           [java.net Socket InetAddress InetSocketAddress]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -142,7 +142,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-stop
-  [args])
+  [args]
+
+  (c/try!
+    (c/wo* [soc (Socket.)]
+      (.connect soc
+                (InetSocketAddress. (InetAddress/getLocalHost)
+                                    (-> "blutbad.kill.port"
+                                        u/get-sys-prop (c/s->int 4444)))
+                5000)
+      (let [os (.getOutputStream soc)]
+        (-> (DataOutputStream. os) (.writeInt 117))
+        (.flush os)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-debug
@@ -345,7 +356,7 @@
         pod (i/fname poddir)
         sb (c/sbf<>)]
     (i/mkdirs ec)
-    (FileUtils/cleanDirectory ec)
+    (i/clean-dir ec)
     (i/spit-utf8
       (io/file ec ".project")
       (-> (i/res->str (str "czlab/blutbad/eclipse/java/project.txt"))

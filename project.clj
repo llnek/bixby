@@ -36,6 +36,10 @@
                         [[org.clojure/clojure "1.10.1" :scope "provided"]]}
              :uberjar {:aot :all}}
 
+  :aliases {"blutbad-stop" ["trampoline" "run" "-m" "czlab.blutbad.cons.con4"]
+            "blutbad-run" ["trampoline" "run" "-m" "czlab.blutbad.exec"]
+            "blutbad-console" ["trampoline" "run" "-m" "czlab.blutbad.cons.con7"]}
+
   :global-vars {*warn-on-reflection* true}
   :target-path "out/%s"
   :aot :all
@@ -51,7 +55,7 @@
   ;:main czlab.blutbad.cons.con7
   :main czlab.blutbad.exec
 
-  :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml"]
+  :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml" "-Dblutbad.kill.port=4444"]
   :javac-options [;"-source" "8"
                   "-Xlint:unchecked" "-Xlint:-options" "-Xlint:deprecation"])
 
